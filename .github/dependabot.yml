@@ -33,7 +33,6 @@ updates:
           - "patch"
           - "major"
     # Majors stay individual + un-grouped so the auto-merge workflow can skip them.
-    ignore: []
 
   # GitHub Actions used by ci.yml / release.yml / dependabot-auto-merge.yml.
   - package-ecosystem: "github-actions"

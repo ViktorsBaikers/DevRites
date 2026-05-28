@@ -34,4 +34,23 @@ for (const u of updates) {
   fs.writeFileSync(p, JSON.stringify(data, null, 2) + '\n');
   console.log(`  → ${u.file}`);
 }
+
+// Update README status line so the published version shows on the repo
+// landing page. Matches the previous status block (single- or two-line form)
+// and rewrites it to a one-liner pointing at the new tag.
+const readmePath = path.resolve('README.md');
+const readme = fs.readFileSync(readmePath, 'utf8');
+const statusLine =
+  `**Status:** [\`v${version}\`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v${version}) — ` +
+  "see [`CHANGELOG.md`](CHANGELOG.md) for release notes.";
+const re = /\*\*Status:\*\*[^\n]*(?:\n(?!\n)[^\n]*)*/;
+if (re.test(readme)) {
+  const updated = readme.replace(re, statusLine);
+  if (updated !== readme) {
+    fs.writeFileSync(readmePath, updated);
+    console.log('  → README.md');
+  }
+} else {
+  console.warn('  ! README.md status line not found — skipping');
+}
 NODE

@@ -38,6 +38,7 @@
     ["@semantic-release/git", {
       "assets": [
         "CHANGELOG.md",
+        "README.md",
         "package.json",
         "package-lock.json",
         ".claude-plugin/plugin.json",
