@@ -1,0 +1,26 @@
+{
+  "skill": "rite-zoom-out",
+  "description": "Trigger evals for /rite-zoom-out — user-invocable utility that returns a map of an unfamiliar area (modules, callers, callees, decisions) in the project's domain vocabulary.",
+  "queries": [
+    {"text": "/rite-zoom-out", "expected": "should_trigger", "rationale": "Direct slash invocation."},
+    {"text": "zoom out", "expected": "should_trigger", "rationale": "Description names this exact trigger phrase."},
+    {"text": "I don't know this area of the code", "expected": "should_trigger", "rationale": "Description names this exact phrase."},
+    {"text": "give me the bigger picture of this module", "expected": "should_trigger", "rationale": "Description names 'bigger picture'."},
+    {"text": "map this area for me", "expected": "should_trigger", "rationale": "Description names 'map this area'."},
+    {"text": "how does this fit together", "expected": "should_trigger", "rationale": "Description names this phrasing."},
+    {"text": "I'm stuck — go up an abstraction layer and show me the surrounding modules and callers", "expected": "should_trigger", "rationale": "Description's exact framing — step up an abstraction layer."},
+    {"text": "Who calls into this file and what does it depend on?", "expected": "should_trigger", "rationale": "Callers + callees + map matches zoom-out output shape."},
+    {"text": "List the modules touching this area and any ADRs that constrain it", "expected": "should_trigger", "rationale": "ADRs + module map = zoom-out's purpose."},
+    {"text": "Where would a fix for something here naturally land? I need the smallest sensible scope.", "expected": "should_trigger", "rationale": "Smallest sensible change-scope is in the output shape."},
+    {"text": "give me a structural overview in the project's vocabulary", "expected": "should_trigger", "rationale": "Domain vocabulary + structural overview matches."},
+    {"text": "I'm new to this part of the repo — orient me", "expected": "should_trigger", "rationale": "Orientation in an unfamiliar area = zoom-out's core purpose."},
+    {"text": "Grep for the string 'INVOICE_NOT_FOUND' across the repo", "expected": "should_not_trigger", "rationale": "Literal text lookup — that's grep, not zoom-out."},
+    {"text": "Design a new export endpoint for the orders module", "expected": "should_not_trigger", "rationale": "Designing a change is /rite-spec, not zoom-out."},
+    {"text": "Plan the next slice of the active feature", "expected": "should_not_trigger", "rationale": "Planning belongs to /rite-define or /rite-plan."},
+    {"text": "Audit the entire codebase for refactor opportunities", "expected": "should_not_trigger", "rationale": "Project-wide audit is improve-codebase-architecture, not feature-scoped zoom-out."},
+    {"text": "Fix this failing test", "expected": "should_not_trigger", "rationale": "Debugging belongs to /devrites-debug-recovery."},
+    {"text": "Polish the UI of this page", "expected": "should_not_trigger", "rationale": "UI polish is /rite-polish."},
+    {"text": "Open a PR for the work I just did", "expected": "should_not_trigger", "rationale": "PR / git workflow, not zoom-out."},
+    {"text": "What time is it?", "expected": "should_not_trigger", "rationale": "Off-topic; no DevRites skill should fire."}
+  ]
+}

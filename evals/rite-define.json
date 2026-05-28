@@ -1,0 +1,26 @@
+{
+  "skill": "rite-define",
+  "description": "Trigger evals for /rite-define — turning an approved spec.md into plan.md + task slices + state.",
+  "queries": [
+    {"text": "/rite-define", "expected": "should_trigger", "rationale": "Direct slash invocation."},
+    {"text": "The spec is approved — turn it into a plan with slices.", "expected": "should_trigger", "rationale": "Spec → plan phrasing matches description."},
+    {"text": "Break the active spec into vertical task slices.", "expected": "should_trigger", "rationale": "Vertical-slice planning."},
+    {"text": "Define the approach and architecture from the spec we just wrote.", "expected": "should_trigger", "rationale": "HOW from WHAT = rite-define."},
+    {"text": "I've approved spec.md. Plan the implementation.", "expected": "should_trigger", "rationale": "Post-spec planning."},
+    {"text": "Write tasks.md for this feature.", "expected": "should_trigger", "rationale": "tasks.md is /rite-define output."},
+    {"text": "Set up the state file and slice plan now that we have a spec.", "expected": "should_trigger", "rationale": "state + slice = rite-define."},
+    {"text": "Decompose this feature into shippable slices given the spec.", "expected": "should_trigger", "rationale": "Decomposition post-spec."},
+    {"text": "Plan the order I should build these slices in.", "expected": "should_trigger", "rationale": "Dependency-ordered slicing belongs to rite-define."},
+    {"text": "Start investigating a new feature called multi-tenant billing.", "expected": "should_not_trigger", "rationale": "Investigation = /rite-spec."},
+    {"text": "Re-plan the active feature — the slices are too big.", "expected": "should_not_trigger", "rationale": "Re-plan = /rite-plan."},
+    {"text": "Build slice 1.", "expected": "should_not_trigger", "rationale": "/rite-build."},
+    {"text": "Prove this feature works end-to-end.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
+    {"text": "We had a drift event; how should I update the plan?", "expected": "should_not_trigger", "rationale": "Drift repair = /rite-plan."},
+    {"text": "Interview me before we plan.", "expected": "should_not_trigger", "rationale": "Interview = /rite-spec via devrites-interview."},
+    {"text": "Show me the status of the active feature.", "expected": "should_not_trigger", "rationale": "/rite-status."},
+    {"text": "Generate the GitHub issue list from this plan.", "expected": "should_not_trigger", "rationale": "Out of scope; /to-issues if anything."},
+    {"text": "Polish the API error responses.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
+    {"text": "Run a security review on the diff.", "expected": "should_not_trigger", "rationale": "/rite-review."},
+    {"text": "What's a good cron schedule for a nightly job?", "expected": "should_not_trigger", "rationale": "Off-topic Q."}
+  ]
+}

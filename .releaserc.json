@@ -1,0 +1,56 @@
+{
+  "branches": ["main"],
+  "tagFormat": "v${version}",
+  "plugins": [
+    ["@semantic-release/commit-analyzer", {
+      "preset": "conventionalcommits",
+      "releaseRules": [
+        { "type": "docs", "scope": "README", "release": "patch" },
+        { "type": "refactor", "release": "patch" },
+        { "type": "perf", "release": "patch" },
+        { "type": "build", "release": "patch" },
+        { "scope": "no-release", "release": false }
+      ]
+    }],
+    ["@semantic-release/release-notes-generator", {
+      "preset": "conventionalcommits",
+      "presetConfig": {
+        "types": [
+          { "type": "feat", "section": "Features" },
+          { "type": "fix", "section": "Bug Fixes" },
+          { "type": "perf", "section": "Performance" },
+          { "type": "refactor", "section": "Refactors" },
+          { "type": "docs", "section": "Documentation" },
+          { "type": "build", "section": "Build" },
+          { "type": "ci", "section": "CI", "hidden": true },
+          { "type": "chore", "section": "Chores", "hidden": true },
+          { "type": "test", "section": "Tests", "hidden": true }
+        ]
+      }
+    }],
+    ["@semantic-release/changelog", {
+      "changelogFile": "CHANGELOG.md",
+      "changelogTitle": "# Changelog\n\nAll notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`."
+    }],
+    ["@semantic-release/exec", {
+      "prepareCmd": "bash scripts/sync-version.sh ${nextRelease.version} && bash scripts/build-release-tarball.sh ${nextRelease.version}"
+    }],
+    ["@semantic-release/git", {
+      "assets": [
+        "CHANGELOG.md",
+        "package.json",
+        "package-lock.json",
+        ".claude-plugin/plugin.json",
+        ".claude-plugin/marketplace.json"
+      ],
+      "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+    }],
+    ["@semantic-release/github", {
+      "assets": [
+        { "path": "dist/devrites-v*.tar.gz", "label": "devrites-v${nextRelease.version}.tar.gz (pack tarball)" }
+      ],
+      "successComment": false,
+      "failComment": false
+    }]
+  ]
+}

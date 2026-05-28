@@ -1,0 +1,112 @@
+name: evals
+
+# Live trigger-eval execution against Anthropic's API.
+#
+# Schema validation runs in `ci.yml` on every PR (no API key needed).
+# This workflow actually executes the evals: for each public skill, ask
+# Claude to predict which DevRites skill would fire for each query, then
+# score against the expected verdict. Per-skill budget gate per the brutal
+# review (REVIEW.md issue #9):
+#   * accuracy ≥ 0.90 (≈ 18/20 correct)
+#   * false-positives ≤ 2  (≤ 2 should_not_trigger queries that fired)
+#
+# Triggers:
+#   - nightly schedule (catch description drift / model updates).
+#   - manual workflow_dispatch (run on demand).
+#   - pull-request opt-in via the `run-evals` label (gated by secret).
+#
+# Requires the repo secret `ANTHROPIC_API_KEY`. Without it, the job is
+# skipped automatically.
+
+on:
+  schedule:
+    - cron: '17 7 * * *'   # 07:17 UTC daily
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'Override DEVRITES_EVAL_MODEL (e.g. claude-haiku-4-5-20251001)'
+        required: false
+        default: ''
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  evals:
+    name: trigger evals
+    runs-on: ubuntu-latest
+    # On PRs, only run when the `run-evals` label is present (avoids burning
+    # tokens on every push). Schedule + manual always run.
+    if: |
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'run-evals')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip when secret is missing
+        id: secret-check
+        run: |
+          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "secret_set=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::ANTHROPIC_API_KEY is not configured — skipping live eval execution."
+          else
+            echo "secret_set=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        if: steps.secret-check.outputs.secret_set == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Anthropic SDK
+        if: steps.secret-check.outputs.secret_set == 'true'
+        run: python3 -m pip install --upgrade anthropic
+
+      - name: Schema validate eval JSONs
+        if: steps.secret-check.outputs.secret_set == 'true'
+        run: bash scripts/run-evals.sh
+
+      - name: Run trigger evals against Claude
+        if: steps.secret-check.outputs.secret_set == 'true'
+        env:
+          CLAUDE_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEVRITES_EVAL_MODEL: ${{ inputs.model || 'claude-haiku-4-5-20251001' }}
+        run: |
+          python3 scripts/eval-runner.py \
+            --min-accuracy 0.90 \
+            --max-false-positives 2 \
+            --summary-file eval-summary.jsonl \
+            --verbose \
+            evals/*.json | tee eval-output.txt
+
+      - name: Render job summary
+        if: always() && steps.secret-check.outputs.secret_set == 'true'
+        env:
+          DEVRITES_EVAL_MODEL: ${{ inputs.model || 'claude-haiku-4-5-20251001' }}
+        run: |
+          {
+            python3 scripts/render-eval-summary.py eval-summary.jsonl
+            echo ""
+            echo "<details><summary>Full output</summary>"
+            echo ""
+            echo '```'
+            tail -200 eval-output.txt 2>/dev/null || true
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload eval artifacts
+        if: always() && steps.secret-check.outputs.secret_set == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: |
+            eval-summary.jsonl
+            eval-output.txt
+          if-no-files-found: ignore
+          retention-days: 30

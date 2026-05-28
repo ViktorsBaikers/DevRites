@@ -1,0 +1,26 @@
+{
+  "skill": "rite-resolve",
+  "description": "Trigger evals for /rite-resolve — answer, drop, or batch-resolve open questions.md entries and clear state.md `Awaiting human` so the workflow can resume.",
+  "queries": [
+    {"text": "/rite-resolve q-2026-05-28-001 \"composite — single-col is fine for now\"", "expected": "should_trigger", "rationale": "Direct slash invocation with qid + answer."},
+    {"text": "/rite-resolve --drop q-2026-05-28-002", "expected": "should_trigger", "rationale": "Direct slash invocation with --drop."},
+    {"text": "/rite-resolve --batch answers.yaml", "expected": "should_trigger", "rationale": "Direct slash invocation with --batch."},
+    {"text": "Answer that question.", "expected": "should_trigger", "rationale": "Description names this phrase."},
+    {"text": "Drop that question.", "expected": "should_trigger", "rationale": "Description names this phrase."},
+    {"text": "Resolve q-2026-05-28-001 with \"yes, prefer the streaming path\".", "expected": "should_trigger", "rationale": "Answering an open qid = /rite-resolve."},
+    {"text": "The HITL checkpoint is waiting on me — here's the answer: use UUIDv7.", "expected": "should_trigger", "rationale": "HITL checkpoint answer = /rite-resolve."},
+    {"text": "Clear the Awaiting human block — the answer is no, we don't need that column.", "expected": "should_trigger", "rationale": "Clearing Awaiting human is canonically /rite-resolve."},
+    {"text": "Mark q-2026-05-28-003 as dropped — out of scope.", "expected": "should_trigger", "rationale": "--drop path."},
+    {"text": "Batch-resolve from answers.yaml please.", "expected": "should_trigger", "rationale": "--batch path."},
+    {"text": "Start a new feature.", "expected": "should_not_trigger", "rationale": "/rite-spec, not resolving questions."},
+    {"text": "Raise a new question about the migration approach.", "expected": "should_not_trigger", "rationale": "Raising new questions comes from /rite-build, devrites-doubt, or /rite-spec."},
+    {"text": "Edit the answer on q-2026-05-28-001 — I changed my mind.", "expected": "should_not_trigger", "rationale": "Answered/dropped are terminal; open a new qid that supersedes the old one."},
+    {"text": "Plan from the spec.", "expected": "should_not_trigger", "rationale": "/rite-define."},
+    {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "/rite-build — /rite-resolve does not auto-run the next slice."},
+    {"text": "Where am I in the workflow?", "expected": "should_not_trigger", "rationale": "/rite-status (read-only)."},
+    {"text": "Final go/no-go on this feature.", "expected": "should_not_trigger", "rationale": "/rite-seal."},
+    {"text": "Review my diff.", "expected": "should_not_trigger", "rationale": "/rite-review."},
+    {"text": "Run git status.", "expected": "should_not_trigger", "rationale": "Git, not DevRites resolve."},
+    {"text": "Open the questions.md file in my editor.", "expected": "should_not_trigger", "rationale": "Off-topic editor action; /rite-resolve is the canonical writer."}
+  ]
+}

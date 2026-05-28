@@ -1,0 +1,102 @@
+# DevRites core rules — always-on
+
+The minimal always-on subset of the DevRites engineering rules. Loaded by the
+Claude Code autoload of `.claude/rules/core.md` at session start. The
+other rule files in this directory are **referenced on demand** by the phase
+that needs them (see `README.md` for the index).
+
+Project conventions always win where they exist; these rules fill gaps.
+
+## Operating rules (every phase)
+
+1. **Right step, right time** — use the smallest relevant workflow; don't load
+   everything.
+2. **No silent assumptions** — surface material assumptions; ask when the answer
+   changes scope, architecture, data model, UX, security, migration risk, or
+   acceptance.
+3. **No guessing through confusion** — if requirements / code / tests / docs
+   conflict, stop, name the conflict, present options, wait for resolution
+   when the answer changes the product.
+4. **Spec is living, not sacred** — change spec / plan only through the
+   Spec Drift Guard; never code against a known-wrong plan.
+5. **One slice at a time** — build a single vertical slice, leave it working +
+   proven, then stop. Don't auto-continue.
+6. **Evidence over confidence** — tests, builds, runtime, screenshots beat
+   assertions; record commands and output.
+7. **Feature scope only** — review / simplify / polish / security stay within
+   the active feature and touched files. No project-wide refactor, no drive-by
+   cleanup.
+8. **Prefer existing conventions** — follow the project's architecture,
+   components, tokens, tests, and commands; ask before adding a dependency or a
+   second design system.
+9. **Verify uncertain facts at the source** — when framework / library
+   behaviour matters and isn't certain, check the docs or source and record it.
+
+## Universal anti-rationalizations
+
+When you catch yourself reaching for one of these excuses, stop, name it,
+apply the rebuttal:
+
+| Excuse | Rebuttal |
+|---|---|
+| "I'll add the tests later." | Tests written after the fact don't drive design and miss the boundary cases the act of writing exposes. Test now. |
+| "It's only a small refactor while I'm in here." | Feature scope only — drive-by cleanup balloons the diff and gets rejected at seal. Record as FYI follow-up. |
+| "This is a special case, the pattern doesn't apply." | Either it really is special (record *why* in `decisions.md`) or it's not (and the pattern wins). |
+| "The user will tell me if something is wrong." | Drift detection is the workflow's job, not the user's QA. Surface assumptions; route material questions through the Spec Drift Guard. |
+| "Lint and build pass — that proves quality." | Automation proves syntax and style, not design or correctness. Never cite clean automation as evidence of good design. |
+
+## One-line discipline (load the full rule file when in scope)
+
+These are the universal craft musts. Each links to the full file — Claude
+reads it only when the phase needs depth.
+
+- **Fail fast, no silent catches.** Validate at the top; catch narrow, recover
+  or rethrow with context; fail closed on auth / permission / transaction. →
+  [`error-handling.md`](error-handling.md)
+- **Reuse before write.** Before adding a new util / component / helper /
+  type, search for an existing one. **Reuse → extend → build new.**
+  Duplication beats the wrong abstraction (AHA). →
+  [`coding-style.md`](coding-style.md), [`patterns.md`](patterns.md)
+- **Test behaviour, not implementation.** Assert on observable behaviour and
+  public interfaces; one behaviour per test; cover unhappy paths; no flaky
+  tests. → [`testing.md`](testing.md)
+- **Three-tier trust boundary.** *untrusted* → explicit validation + authz at
+  the *boundary* → *trusted* core. Every value crosses the boundary
+  deliberately; one that skips it is a finding. →
+  [`security.md`](security.md)
+- **Measure before you optimize.** An optimisation without a measurement is a
+  guess that adds complexity. → [`performance.md`](performance.md)
+- **Names reveal intent.** No `process()` / `handle()` / `data` / `temp`.
+  One concept, one word, across the codebase. → [`coding-style.md`](coding-style.md)
+- **Comments explain *why*, not *what*.** Rename before you comment; delete
+  commented-out code. → [`coding-style.md`](coding-style.md)
+- **Atomic commits, Conventional Commits.** One logical change per commit;
+  it builds + passes tests on its own. → [`git-workflow.md`](git-workflow.md)
+
+## Persistence before stopping (handoff discipline)
+
+Before any `rite-*` skill stops:
+- Open question? → `questions.md` (with `status`, `gate`, `slice`, `proposed`,
+  `raised_at`). Decision discussed? → `decisions.md`.
+- Assumption made? → `assumptions.md`. Drift raised? → `drift.md`.
+- Next-action ambiguous? → resolve to one command in `state.md`.
+- HITL pause? → write the `Awaiting human` block to `state.md` and set
+  `Status: awaiting_human` before stopping; resume via `/rite-resolve <qid> "<answer>"`.
+  See [`afk-hitl.md`](afk-hitl.md) for the full AFK / HITL contract.
+
+A skill that "stops" without doing this leaves the workspace lying.
+
+## Context hygiene (end of every phase)
+
+Long contexts degrade reasoning quality (Liu et al. 2023 "lost in the middle";
+"context rot" on long inputs). Act on context at **50–70% used, not 95%**.
+
+Every `rite-*` skill ends with a one-line **Session hygiene** advisory naming
+the right move (`/clear` vs `/compact`) and the single resume command. Full
+phase-by-phase guidance: [`context-hygiene.md`](context-hygiene.md).
+
+## Precedence
+
+Project conventions > DevRites rules. The rules fill gaps; they don't
+overwrite the project's choices. When the project's own conventions disagree
+with these rules, **project wins**.

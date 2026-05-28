@@ -1,0 +1,59 @@
+version: 2
+
+updates:
+  # JS toolchain — husky, commitlint, semantic-release plugins, etc.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    versioning-strategy: "increase"
+    commit-message:
+      prefix: "build"
+      prefix-development: "build"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automerge"
+    groups:
+      # Collapse all routine patch + minor bumps into a single weekly PR.
+      npm-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      # Security updates ship together as soon as Dependabot detects them.
+      npm-security:
+        applies-to: security-updates
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"
+    # Majors stay individual + un-grouped so the auto-merge workflow can skip them.
+    ignore: []
+
+  # GitHub Actions used by ci.yml / release.yml / dependabot-auto-merge.yml.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automerge"
+      - "github-actions"
+    groups:
+      actions-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"

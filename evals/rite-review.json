@@ -1,0 +1,26 @@
+{
+  "skill": "rite-review",
+  "description": "Trigger evals for /rite-review — feature-scoped multi-axis quality review of the finished, polished feature.",
+  "queries": [
+    {"text": "/rite-review", "expected": "should_trigger", "rationale": "Direct slash invocation."},
+    {"text": "Review the active feature before sealing.", "expected": "should_trigger", "rationale": "Pre-seal review."},
+    {"text": "Multi-axis quality review of the diff.", "expected": "should_trigger", "rationale": "Multi-axis = rite-review."},
+    {"text": "Check correctness, readability, architecture, and security on this feature.", "expected": "should_trigger", "rationale": "Five-axis review framing."},
+    {"text": "Are the tests actually proving the acceptance criteria?", "expected": "should_trigger", "rationale": "Tests-first review."},
+    {"text": "Run security and performance passes on this feature.", "expected": "should_trigger", "rationale": "rite-review delegates to the audits."},
+    {"text": "Senior review of the polished feature.", "expected": "should_trigger", "rationale": "Senior-review framing."},
+    {"text": "Find Critical and Important findings on this slice.", "expected": "should_trigger", "rationale": "Severity-labeled findings = rite-review."},
+    {"text": "Score the feature on quality dimensions.", "expected": "should_trigger", "rationale": "Advisory /20 score is part of rite-review output."},
+    {"text": "Start a new feature for invoicing.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
+    {"text": "Plan slices from the spec.", "expected": "should_not_trigger", "rationale": "/rite-define."},
+    {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "/rite-build."},
+    {"text": "Run all tests + build/typecheck/lint.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
+    {"text": "Polish before review.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
+    {"text": "Final go/no-go decision.", "expected": "should_not_trigger", "rationale": "/rite-seal."},
+    {"text": "Where am I?", "expected": "should_not_trigger", "rationale": "/rite-status."},
+    {"text": "Open a PR for this branch.", "expected": "should_not_trigger", "rationale": "Off-topic; not a DevRites step."},
+    {"text": "Suggest a better algorithm for sorting tasks.", "expected": "should_not_trigger", "rationale": "Off-topic algorithm advice."},
+    {"text": "What's the project's tech stack?", "expected": "should_not_trigger", "rationale": "Q about project, not a review."},
+    {"text": "Run /code-review on the current diff.", "expected": "should_not_trigger", "rationale": "Different skill (vanilla code-review)."}
+  ]
+}

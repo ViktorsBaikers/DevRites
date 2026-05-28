@@ -1,0 +1,24 @@
+{
+  "name": "devrites-marketplace",
+  "description": "DevRites — disciplined senior-engineer workflow skills pack for Claude Code.",
+  "owner": {
+    "name": "Viktors Baikers",
+    "url": "https://github.com/ViktorsBaikers"
+  },
+  "plugins": [
+    {
+      "name": "devrites",
+      "source": "./",
+      "description": "Spec → plan → build → prove → polish → review → seal workflow with persistent state, drift guard, browser-proof ladder, and anti-AI-slop guardrails.",
+      "version": "0.1.0",
+      "license": "personal-use-or-by-approval",
+      "keywords": [
+        "workflow",
+        "skills",
+        "senior-engineer",
+        "spec-driven",
+        "anti-slop"
+      ]
+    }
+  ]
+}
