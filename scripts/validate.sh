@@ -52,6 +52,29 @@ for a in $AGENT_FILES; do
   if [ -f "$AGENTS/$a.md" ]; then good "$a"; else bad "missing agent: $a"; fi
 done
 
+section "plugin manifest agents list matches pack/.claude/agents"
+PLUGIN_JSON="$ROOT/.claude-plugin/plugin.json"
+if [ -r "$PLUGIN_JSON" ] && command -v python3 >/dev/null 2>&1; then
+  manifest_list="$(python3 -c '
+import json, sys
+m = json.load(open(sys.argv[1]))
+a = m.get("agents", [])
+if isinstance(a, str):
+    a = [a]
+for p in a:
+    print(p.lstrip("./"))
+' "$PLUGIN_JSON" | sort -u)"
+  disk_list="$(cd "$ROOT" && ls pack/.claude/agents/*.md 2>/dev/null | sort -u)"
+  if [ "$manifest_list" = "$disk_list" ]; then
+    good "plugin.json agents array matches pack/.claude/agents/*.md"
+  else
+    bad "plugin.json agents array out of sync with pack/.claude/agents/*.md"
+    diff <(printf '%s\n' "$manifest_list") <(printf '%s\n' "$disk_list") || true
+  fi
+else
+  echo "skip: cannot validate manifest sync (missing python3 or plugin.json)"
+fi
+
 # ---- 5. frontmatter validation ------------------------------------------
 section "frontmatter"
 if command -v python3 >/dev/null 2>&1; then
