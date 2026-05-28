@@ -7,10 +7,7 @@
     "url": "https://github.com/ViktorsBaikers"
   },
   "homepage": "https://github.com/ViktorsBaikers/DevRites",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ViktorsBaikers/DevRites.git"
-  },
+  "repository": "https://github.com/ViktorsBaikers/DevRites",
   "license": "SEE LICENSE IN LICENSE",
   "keywords": [
     "claude-code",
@@ -28,6 +25,6 @@
     "design-system",
     "devrites"
   ],
-  "skills": "pack/.claude/skills",
-  "agents": "pack/.claude/agents"
+  "skills": "./pack/.claude/skills",
+  "agents": "./pack/.claude/agents"
 }
