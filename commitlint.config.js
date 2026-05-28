@@ -17,6 +17,9 @@
  */
 module.exports = {
   extends: ['@commitlint/config-conventional'],
+  // Skip lint for semantic-release auto-commits — their bodies embed
+  // changelog markdown links that exceed body-max-line-length.
+  ignores: [(message) => /^chore\(release\):\s+\d+\.\d+\.\d+/.test(message)],
   rules: {
     // type
     'type-enum': [
