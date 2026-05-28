@@ -1,0 +1,26 @@
+{
+  "skill": "rite-prove",
+  "description": "Trigger evals for /rite-prove — full targeted tests, build/typecheck/lint, browser evidence once all slices are built.",
+  "queries": [
+    {"text": "/rite-prove", "expected": "should_trigger", "rationale": "Direct slash invocation."},
+    {"text": "All slices are built — prove the feature works.", "expected": "should_trigger", "rationale": "All-slices-built trigger phrase."},
+    {"text": "Run the full test suite for this feature.", "expected": "should_trigger", "rationale": "Full-suite trigger."},
+    {"text": "Capture browser evidence for the dashboard route.", "expected": "should_trigger", "rationale": "Browser proof = rite-prove."},
+    {"text": "Verify the feature end-to-end before review.", "expected": "should_trigger", "rationale": "End-to-end verify = prove."},
+    {"text": "Build, typecheck, lint and screenshot the new UI.", "expected": "should_trigger", "rationale": "Build/typecheck/lint + browser = prove."},
+    {"text": "Prove acceptance criteria 3 is met with evidence.", "expected": "should_trigger", "rationale": "Acceptance proving."},
+    {"text": "I want to record commands + outputs for the seal.", "expected": "should_trigger", "rationale": "Evidence recording = rite-prove."},
+    {"text": "Just one slice built so far; can you prove it?", "expected": "should_not_trigger", "rationale": "Skill stops if slices are pending — but description is explicit so it should not auto-fire."},
+    {"text": "Start a new feature.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
+    {"text": "Plan the implementation.", "expected": "should_not_trigger", "rationale": "/rite-define."},
+    {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "/rite-build."},
+    {"text": "Polish the page UI.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
+    {"text": "Run a security review.", "expected": "should_not_trigger", "rationale": "/rite-review."},
+    {"text": "Decide if this feature ships.", "expected": "should_not_trigger", "rationale": "/rite-seal."},
+    {"text": "Where am I?", "expected": "should_not_trigger", "rationale": "/rite-status."},
+    {"text": "Debug this failing test.", "expected": "should_not_trigger", "rationale": "Debugging = devrites-debug-recovery via build/prove."},
+    {"text": "Generate a CI workflow.", "expected": "should_not_trigger", "rationale": "Off-topic infra."},
+    {"text": "What's the latest Tailwind version?", "expected": "should_not_trigger", "rationale": "Off-topic Q."},
+    {"text": "Recommend a UI library.", "expected": "should_not_trigger", "rationale": "Off-topic."}
+  ]
+}

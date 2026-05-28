@@ -1,0 +1,26 @@
+{
+  "skill": "rite-spec",
+  "description": "Trigger evals for /rite-spec — starting a feature, investigation + spec writing.",
+  "queries": [
+    {"text": "/rite-spec add CSV export", "expected": "should_trigger", "rationale": "Direct slash invocation."},
+    {"text": "Start a new feature for invoice generation.", "expected": "should_trigger", "rationale": "Phrase 'start a feature' matches description."},
+    {"text": "Help me spec out a notification system.", "expected": "should_trigger", "rationale": "Explicit 'spec' keyword."},
+    {"text": "Investigate and design a search ranking change.", "expected": "should_trigger", "rationale": "Investigation framing matches description."},
+    {"text": "Interview me about a webhook delivery feature.", "expected": "should_trigger", "rationale": "Description names 'interview me' phrasing."},
+    {"text": "Grill me on this idea for a dashboard.", "expected": "should_trigger", "rationale": "Description names 'grill me' phrasing."},
+    {"text": "I want to add bulk import. Where should it live in the code and what does it touch?", "expected": "should_trigger", "rationale": "Placement question = spec phase."},
+    {"text": "Write me a spec.md for adding two-factor auth.", "expected": "should_trigger", "rationale": "Direct request for spec.md."},
+    {"text": "We're starting work on the new billing flow.", "expected": "should_trigger", "rationale": "Starting a new feature = rite-spec."},
+    {"text": "I have a vague idea about an admin panel — can you flesh it out?", "expected": "should_trigger", "rationale": "Vague idea = rite-spec (via rite-pressure-test)."},
+    {"text": "Here are some screenshots of a design — start a feature from them.", "expected": "should_trigger", "rationale": "Design references intake belongs to rite-spec."},
+    {"text": "Plan how to implement the existing spec.md.", "expected": "should_not_trigger", "rationale": "Plan from existing spec = /rite-define, not /rite-spec."},
+    {"text": "Build the next slice of the active feature.", "expected": "should_not_trigger", "rationale": "/rite-build territory."},
+    {"text": "Run the tests and prove this works.", "expected": "should_not_trigger", "rationale": "/rite-prove territory."},
+    {"text": "Review my pending PR for the export feature.", "expected": "should_not_trigger", "rationale": "/rite-review (or vanilla code review)."},
+    {"text": "What DevRites commands are available?", "expected": "should_not_trigger", "rationale": "/rite menu."},
+    {"text": "Fix this bug in the auth middleware.", "expected": "should_not_trigger", "rationale": "Debugging, not new-feature spec."},
+    {"text": "Where am I in DevRites?", "expected": "should_not_trigger", "rationale": "/rite-status."},
+    {"text": "Polish the dashboard UI.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
+    {"text": "What's the weather in Berlin?", "expected": "should_not_trigger", "rationale": "Off-topic; nothing DevRites should fire."}
+  ]
+}

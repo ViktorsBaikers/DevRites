@@ -1,0 +1,92 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm deps
+        run: npm install --no-audit --no-fund
+
+      - name: Validate pack structure
+        run: bash scripts/validate.sh
+
+      - name: Frontmatter validator rejects unknown fields
+        run: bash tests/validate-frontmatter-rejects-unknown.sh
+
+      - name: Validate trigger evals
+        run: bash scripts/run-evals.sh
+
+      - name: Anti-slop detector (advisory)
+        run: bash scripts/devrites-detect.sh || true
+
+  commitlint:
+    name: commitlint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm deps
+        run: npm install --no-audit --no-fund
+
+      - name: Lint commit messages
+        run: |
+          npx --no-install commitlint \
+            --from "${{ github.event.pull_request.base.sha }}" \
+            --to   "${{ github.event.pull_request.head.sha }}" \
+            --verbose
+
+  install-smoke:
+    name: install / uninstall smoke
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: install smoke
+        run: bash tests/install-smoke.sh
+
+      - name: uninstall smoke
+        run: bash tests/uninstall-smoke.sh
+
+      - name: fixture install
+        run: bash tests/fixture-install.sh
+
+      - name: pack validation script
+        run: bash tests/validate-pack.sh

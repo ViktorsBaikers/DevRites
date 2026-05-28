@@ -1,0 +1,40 @@
+# CODEOWNERS — review requirements for DevRites
+#
+# Order matters: the LAST matching pattern wins. See
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default: maintainer reviews everything.
+*                                       @ViktorsBaikers
+
+# Pack contents — the skills, agents, rules, references.
+/pack/                                  @ViktorsBaikers
+/pack/.claude/skills/                   @ViktorsBaikers
+/pack/.claude/agents/                   @ViktorsBaikers
+/pack/.claude/rules/                    @ViktorsBaikers
+
+# Install / uninstall surface — safety-critical.
+/install.sh                             @ViktorsBaikers
+/uninstall.sh                           @ViktorsBaikers
+/scripts/install-lib.sh                 @ViktorsBaikers
+/scripts/check-no-global-writes.sh      @ViktorsBaikers
+
+# Plugin manifest — published metadata.
+/.claude-plugin/                        @ViktorsBaikers
+
+# Validation + CI — gating logic for every PR.
+/scripts/validate.sh                    @ViktorsBaikers
+/scripts/validate-frontmatter.py        @ViktorsBaikers
+/scripts/run-evals.sh                   @ViktorsBaikers
+/scripts/devrites-detect.sh             @ViktorsBaikers
+/.github/                               @ViktorsBaikers
+/tests/                                 @ViktorsBaikers
+
+# Evals — change requires reviewing trigger behavior.
+/evals/                                 @ViktorsBaikers
+
+# Security policy + release hygiene.
+/SECURITY.md                            @ViktorsBaikers
+/CHANGELOG.md                           @ViktorsBaikers
+/CODE_OF_CONDUCT.md                     @ViktorsBaikers
+/LICENSE                                @ViktorsBaikers
+/NOTICE.md                              @ViktorsBaikers

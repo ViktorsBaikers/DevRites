@@ -1,0 +1,152 @@
+# All 23 skills
+
+The pack ships **23 skills total** — 15 user-invocable `rite-*` workflow + utility skills, 8 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/` and are autoloaded by Claude Code natively (no carrier skill).
+
+**Naming convention.** `rite-*` is the user-facing slash-command surface (lifecycle phases plus utilities — `rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`). `devrites-*` is internal (model-invoked, hidden from the menu) and collision-avoiding against bundled Claude Code skill names. Visibility is governed by each skill's `user-invocable:` flag; the prefix mirrors it.
+
+---
+
+## Commands quick reference
+
+Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` for the discoverable entry point) and `/rite-<verb>` (direct shortcut). Both hit the same skill; use whichever reads more naturally.
+
+| Menu form | Direct shortcut | Phase | Does |
+|---|---|---|---|
+| `/rite` | — | menu | Compact menu + dispatches verb args to the matching `rite-<verb>` skill. Without args, renders the menu. |
+| `/rite spec <feature>` | `/rite-spec <feature>` | spec | **Start here.** Deep investigation → writes `spec.md`: understands the ask fully, decides **placement** (where it lives), names what it resolves, closes gaps with you (questions with options), and gathers any design references you optionally attach (screenshots / Figma / links / video — there may be none). |
+| `/rite define` | `/rite-define` | plan | Turns the approved spec into `plan.md` + vertical task slices + state. |
+| `/rite plan` | `/rite-plan` | re-plan | Decompose / reslice / repair an active plan. |
+| `/rite build` | `/rite-build` | build | Implement **exactly one** vertical slice, then stop. |
+| `/rite prove` | `/rite-prove` | prove | Tests + build + runtime + browser evidence for the current scope. |
+| `/rite polish` | `/rite-polish` | polish | Code polish always; UI normalize + polish if UI in scope. Modes: `bolder / quieter / distill / harden / normalize-only`. |
+| `/rite review` | `/rite-review` | review | Feature-scoped multi-axis review (parallel Spec + Standards axes). |
+| `/rite seal` | `/rite-seal` | seal | Final GO / NO-GO senior review. |
+| `/rite status` | `/rite-status` | status | Where the active feature stands. |
+| `/rite resolve <qid> "<answer>"` | `/rite-resolve <qid> "<answer>"` | resume | Answer a HITL checkpoint (or `--drop <qid>` / `--batch <file>`); clears `state.md` `Awaiting human` and resumes. |
+| `/rite zoom-out` | `/rite-zoom-out` | utility | Step up an abstraction layer when stuck — returns a map of the area (modules, callers, decisions) in the project's vocabulary. |
+| `/rite prototype` | `/rite-prototype` | utility | Throwaway code that answers ONE design question before committing — routes between a Logic harness (state/data model) and 2–4 radically different UI variations on one route. |
+| `/rite handoff` | `/rite-handoff` | utility | Compact the chat session into a handoff doc a fresh agent can pick up — syncs to the workspace, references existing artifacts by path. |
+| `/rite pressure-test` | `/rite-pressure-test` | utility | Diverge → converge on a rough idea before specifying. |
+
+Internal specialists (model-invoked, hidden from the menu): `devrites-interview`, `-source-driven`, `-doubt`, `-frontend-craft`, `-browser-proof`, `-debug-recovery`, `-api-interface`, `-audit` (security / perf / simplify), `-rules`, `-parallel-review`. The `/rite` menu carries the routing previously held by `devrites-selector` (now removed), the four user-invocable utilities all use the `rite-*` prefix (`rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`), and the `/rite-polish` phases live as references inside the same skill rather than as `rite-polish-code` / `rite-polish-ui`. Triggers and interactions are documented in [`command-map.md`](command-map.md); diagrams in [`flow.md`](flow.md).
+
+---
+
+## Phase-by-phase catalogue
+
+### Menu & status — Find your place
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite`](../pack/.claude/skills/rite/SKILL.md) | Compact menu + active-feature status + suggested next command. Does not run a workflow. | You type `/rite`, ask "what DevRites commands exist", or "where am I". |
+| [`rite-status`](../pack/.claude/skills/rite-status/SKILL.md) | Read-only report: phase, run mode (AFK/HITL), status, active slice, next action, evidence, open questions by gate, drift, risks. | You ask "where am I", "what's the status", "what's next". |
+| [`rite-resolve`](../pack/.claude/skills/rite-resolve/SKILL.md) | Answer / drop / batch-resolve open `questions.md` entries; clears `state.md` `Awaiting human` and resumes the workflow. | A HITL checkpoint is open or AFK left blocking questions; you type `/rite-resolve <qid> "<answer>"`. |
+
+### Spec — Understand the ask before any code
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-spec`](../pack/.claude/skills/rite-spec/SKILL.md) | Deep investigation → writes `spec.md`. Decides **placement**, names what it resolves, closes gaps with you, gathers design refs. | You start a feature, have a vague idea, attach screenshots/Figma/video, or say "spec this". |
+| [`devrites-interview`](../pack/.claude/skills/devrites-interview/SKILL.md) | One-question-at-a-time interview until ~95% confidence. | The ask is underspecified, or user says "interview me" / "grill me". |
+| [`rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | Structured divergent → convergent thinking; rough concept → buildable proposal. | The idea itself needs exploration before specifying; users say "ideate", "stress-test my plan", "I have a vague idea". |
+
+### Plan — Decompose into vertical slices
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-define`](../pack/.claude/skills/rite-define/SKILL.md) | Approved spec → `plan.md` + vertical task slices + `state.md`. | `spec.md` exists and is approved. |
+| [`rite-plan`](../pack/.claude/skills/rite-plan/SKILL.md) | Decompose / reslice / repair an active plan after drift. | Spec Drift Guard fires, or you need to repair an existing plan. |
+
+### Build — One verified slice at a time
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-build`](../pack/.claude/skills/rite-build/SKILL.md) | Implements **exactly one** vertical slice, then stops with evidence. | A plan exists and the next slice is ready. |
+| [`devrites-source-driven`](../pack/.claude/skills/devrites-source-driven/SKILL.md) | Consult official docs / source before relying on framework behavior; record the source. | API, config, or framework behavior is assumed rather than known. |
+| [`devrites-api-interface`](../pack/.claude/skills/devrites-api-interface/SKILL.md) | Design stable API / interface contracts — REST/GraphQL, module boundaries, type contracts, FE/BE split. | A slice crosses a boundary or defines a public interface. |
+| [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | Reproduce → ranked hypotheses → instrument → fix in scope → regression-test. Stops guess-and-retry. | Tests, builds, or runtime checks fail. |
+
+### Prove — Real evidence, including the browser
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | Tests + build + runtime + browser evidence for the current scope. | All slices built; ready for full verification. |
+| [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | Browser proof ladder: browser-harness → Chrome DevTools MCP → `/run`+`/verify` → project E2E → manual. | Scope touches UI. |
+
+### Polish — Normalize, then ship-quality detail pass
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-polish`](../pack/.claude/skills/rite-polish/SKILL.md) | Orchestrator. Always runs code polish (`reference/code.md`); detects UI scope and runs UI normalize + polish (`reference/ui.md`) when needed. Accepts mode tokens (`bolder`, `quieter`, `distill`, `harden`, `normalize-only`). | All slices proven; ready to finish. |
+| [`devrites-frontend-craft`](../pack/.claude/skills/devrites-frontend-craft/SKILL.md) | Senior frontend craft — register, shape-before-code, all states, design system, anti-AI-slop, Core Web Vitals + WCAG 2.2. | A slice touches UI. |
+
+### Review — Adversarial, scoped to the feature
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-review`](../pack/.claude/skills/rite-review/SKILL.md) | Multi-axis feature-scoped review. Parallel **Spec axis** (`devrites-spec-reviewer`) + **Standards axis** (`devrites-code-reviewer`) sub-agents; severity-labeled findings. | Polish done; ready for a final pass. |
+| [`devrites-doubt`](../pack/.claude/skills/devrites-doubt/SKILL.md) | In-flight adversarial review of risky decisions — branching logic, boundaries, data/auth/API changes, migrations. | About to stand a "this is safe / scales / matches spec" claim. |
+| [`devrites-audit`](../pack/.claude/skills/devrites-audit/SKILL.md) | Read-only audit dispatch — picks the right reviewer subagent on the requested axis (`security` / `perf` / `simplify`). Single-axis only; multi-axis parallel fan-out lives inline in `/rite-seal` (see `rite-seal/reference/parallel-dispatch.md`). | Polish Phase 1 (`simplify`); review involves user input / auth / data / external integrations / secrets / permissions (`security`); performance is relevant or regression risk visible (`perf`). |
+
+### Seal — GO / NO-GO
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-seal`](../pack/.claude/skills/rite-seal/SKILL.md) | Final senior GO / NO-GO. Interactive type-`GO` confirmation before commit / push / tag. | Review is clean; ready to ship. |
+
+### Utility — Stand-alone helpers
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | Map an unfamiliar area — modules, callers, callees, decisions — in the project's domain glossary. | You say "zoom out", "I don't know this area", "map this area", "bigger picture". |
+| [`rite-prototype`](../pack/.claude/skills/rite-prototype/SKILL.md) | Throwaway code answering ONE design question — logic harness OR 2–4 UI variations on one route. | "Prototype this", "let me play with it", "try a few designs", question is undecidable on paper. |
+| [`rite-handoff`](../pack/.claude/skills/rite-handoff/SKILL.md) | Compact chat session → handoff doc. References existing `.devrites/work/<slug>/` artifacts by path. | "Handoff", "summarize this session", before `/clear`, fresh agent will continue. |
+
+### Foundation — Auto-loaded carriers
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| (engineering rules) | Live at `.claude/rules/` post-install — `core.md` is autoloaded by Claude Code at session start; the other 14 rule files (`coding-style.md`, `error-handling.md`, `testing.md`, `code-review.md`, `security.md`, `performance.md`, `patterns.md`, `git-workflow.md`, `hooks.md`, `documentation.md`, `development-workflow.md`, `agents.md`, `context-hygiene.md`, `afk-hitl.md`, `anti-patterns.md`) load on demand per skill body. No carrier skill — native autoload. | n/a — always-on / on-demand by path. |
+
+---
+
+## Review agents — Fresh-context reviewers
+
+Spawned by `/rite-review` and `/rite-seal` for independent judgment. Read-only; given the workspace path + diff without the author's reasoning.
+
+| Agent | Purpose |
+|---|---|
+| [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | Does the diff implement the spec? Missing / partial / wrong criteria; scope creep. |
+| [`devrites-code-reviewer`](../pack/.claude/agents/devrites-code-reviewer.md) | Correctness / readability / architecture / maintainability. |
+| [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | Do the tests actually prove the acceptance criteria? |
+| [`devrites-frontend-reviewer`](../pack/.claude/agents/devrites-frontend-reviewer.md) | UX, a11y, responsive, design-system, anti-AI-slop. |
+| [`devrites-security-auditor`](../pack/.claude/agents/devrites-security-auditor.md) | OWASP Top 10, trust boundary, secrets, deps. |
+| [`devrites-performance-reviewer`](../pack/.claude/agents/devrites-performance-reviewer.md) | N+1s, hot paths, payload size. |
+| [`devrites-doubt-reviewer`](../pack/.claude/agents/devrites-doubt-reviewer.md) | Adversarial check of a single claim/decision. |
+| [`devrites-simplifier-reviewer`](../pack/.claude/agents/devrites-simplifier-reviewer.md) | Independent simplification judgment (called by `devrites-audit simplify`). |
+
+Seal fan-out diagram: [`flow.md` § /rite-seal fan-out](flow.md#4-rite-seal-fan-out).
+
+---
+
+## `/rite-polish` orchestrator
+
+`/rite-polish` always runs code polish; it detects UI scope from the diff and runs UI normalize + polish only when needed. Each half lives as a progressive-disclosure reference inside the skill (`reference/code.md`, `reference/ui.md`) so the orchestrator body stays small and each phase loads only when its trigger fires.
+
+```mermaid
+flowchart LR
+    P[/rite-polish/] -->|always| C[reference/code.md<br/>Phase 1 + 2]
+    P -->|UI touched?| U[reference/ui.md<br/>Phase 3 + 4]
+    C --> O([polish-report.md])
+    U --> O
+    classDef o fill:#1f2937,stroke:#60a5fa,color:#f9fafb
+    classDef s fill:#312e81,stroke:#818cf8,color:#eef2ff
+    class P o
+    class C,U s
+```
+
+Argument modes (`bolder`, `quieter`, `distill`, `harden`, `normalize-only`) pass through to Phase 4 (`reference/ui.md`).
+
+## `/rite-review` parallel axes & `/rite-seal` fan-out
+
+`/rite-review` runs **Spec axis** (`devrites-spec-reviewer`) and **Standards axis** (`devrites-code-reviewer`) as parallel sub-agents so neither masks the other. `/rite-seal` fans out the full reviewer set in parallel (`devrites-{spec,code,test,frontend,security,performance}-reviewer`) and reconciles findings before the GO / NO-GO gate. Severity labels (Critical / Important / Suggestion / Nit / FYI) drive the gate; there's no advisory number — the gate is `Critical == 0` plus proven acceptance plus resolved drift. Diagrams: [`flow.md`](flow.md#3-rite-review-parallel-axes).

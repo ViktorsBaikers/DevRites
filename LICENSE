@@ -1,0 +1,56 @@
+DevRites License
+Copyright (c) 2026 Viktors Baikers.
+
+DevRites is free to use and its source is available. Some uses require permission, as set
+out below. This is a source-available license; because it restricts modification and
+redistribution, it is not an OSI-approved open-source license.
+
+1. Definitions
+   "Software" means DevRites — the skills, review subagents, engineering rules, scripts,
+   and documentation in this repository.
+   "You" means the person or entity exercising rights under this License.
+   "Personal Use" means use by an individual, acting on their own behalf, for private,
+   non-commercial purposes (personal projects and learning that are not undertaken for,
+   and do not generate, commercial advantage or monetary compensation).
+
+2. Use — free
+   You may use and run the Software, for any purpose, at no charge.
+
+3. Modification — for personal use
+   You may modify the Software for Your own Personal Use, at no charge. Modifying the
+   Software for any non-personal purpose, or distributing any modified version, requires
+   prior written approval (Section 5).
+
+4. Other use — by approval on request
+   Any other use requires prior written approval, including without limitation:
+   distributing or publishing the Software or any derivative; sublicensing, selling, or
+   renting it; offering it (or a service based on it) to third parties; and any
+   commercial or organizational use beyond Personal Use.
+
+5. Requesting approval
+   Approvals are granted in writing by the copyright holder. Request one via the project
+   repository: https://github.com/ViktorsBaikers/DevRites (open an issue or contact the
+   owner). Approval, if granted, may be subject to terms agreed in writing.
+
+6. Conditions
+   Retain this License and the copyright notice in copies or substantial portions of the
+   Software that You are permitted to make. Do not remove or alter attribution.
+
+7. No trademark rights
+   This License grants no rights to the names, logos, or trademarks of the copyright
+   holder.
+
+8. Disclaimer of warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+   PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+9. Limitation of liability
+   IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF,
+   OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+10. Termination
+    Use outside the scope of this License terminates the rights granted in Sections 2–3
+    automatically. On termination You must stop the disallowed use; permitted Personal
+    Use may continue.

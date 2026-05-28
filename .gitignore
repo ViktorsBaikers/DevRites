@@ -1,0 +1,29 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Python
+__pycache__/
+*.pyc
+
+# Node (commitlint / husky tooling) — keep package-lock.json tracked
+node_modules/
+npm-debug.log*
+.husky/_/
+
+# Internal docs (research, development notes) — not part of the shipped pack.
+# Public docs (architecture.md, command-map.md, usage.md) DO ship.
+docs/internal/
+
+# DevRites runtime state belongs to the *target* project, never this repo
+.devrites/
+
+# Release artifacts built by scripts/build-release-tarball.sh
+dist/
+
+# Local MCP config carries developer API keys (BRAVE_API_KEY etc.) — never commit.
+# Copy `.mcp.example.json` to `.mcp.json` and fill in keys locally.
+.mcp.json
+.mcp.local.json

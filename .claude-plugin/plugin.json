@@ -1,0 +1,33 @@
+{
+  "name": "devrites",
+  "version": "0.1.0",
+  "description": "Disciplined senior-engineer workflow skills pack — spec/plan/build/prove/polish/review/seal with persistent .devrites/ Markdown state, Spec Drift Guard, browser-proof ladder, fullstack contract-first slicing, and anti-AI-slop guardrails.",
+  "author": {
+    "name": "Viktors Baikers",
+    "url": "https://github.com/ViktorsBaikers"
+  },
+  "homepage": "https://github.com/ViktorsBaikers/DevRites",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ViktorsBaikers/DevRites.git"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "agent-skills",
+    "workflow",
+    "senior-engineer",
+    "spec-driven",
+    "tdd",
+    "code-review",
+    "polish",
+    "frontend",
+    "fullstack",
+    "anti-slop",
+    "design-system",
+    "devrites"
+  ],
+  "skills": "pack/.claude/skills",
+  "agents": "pack/.claude/agents"
+}
