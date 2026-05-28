@@ -7,6 +7,9 @@
 #   ./install.sh --force              overwrite existing non-DevRites files
 #   ./install.sh --no-agents          skip the review subagents
 #   ./install.sh --no-rules           skip the DevRites engineering rules
+#   ./install.sh --rules-only         install only the engineering rules
+#                                     (use after `claude plugin install devrites`
+#                                      to add the rules the plugin can't ship)
 #   ./install.sh --short-aliases=all  install /define /build /prove /seal aliases
 #
 # Network install (no git clone needed):
@@ -86,6 +89,7 @@ PACK_SRC="$SELF_DIR/pack/.claude"
 TARGET="$PWD"
 DRYRUN=0
 FORCE=0
+WITH_SKILLS=1
 WITH_AGENTS=1
 WITH_RULES=1
 ALIAS_MODE="safe"     # safe | off | all
@@ -99,6 +103,7 @@ while [ $# -gt 0 ]; do
     --force) FORCE=1 ;;
     --no-agents) WITH_AGENTS=0 ;;
     --no-rules) WITH_RULES=0 ;;
+    --rules-only) WITH_SKILLS=0; WITH_AGENTS=0; WITH_RULES=1; ALIAS_MODE="off" ;;
     --no-short-aliases) ALIAS_MODE="off" ;;       # accepted for backward compat; aliases are off by default now
     --short-aliases) ALIAS_MODE="off" ;;          # /polish + /normalize were removed in favor of /rite-polish argument-hint modes
     --short-aliases=all) ALIAS_MODE="all" ;;
@@ -180,6 +185,7 @@ gen_alias_wrapper() { dr_gen_alias_wrapper "$@"; }
 dr_info "DevRites installer"
 dr_say  "  source : $SELF_DIR"
 dr_say  "  target : $TARGET"
+dr_say  "  skills : $([ "$WITH_SKILLS" -eq 1 ] && echo yes || echo no)"
 dr_say  "  rules  : $([ "$WITH_RULES" -eq 1 ] && echo 'DevRites engineering rules' || echo 'skipped')"
 dr_say  "  agents : $([ "$WITH_AGENTS" -eq 1 ] && echo yes || echo no)"
 dr_say  "  aliases: $ALIAS_MODE"
@@ -189,13 +195,15 @@ dr_say ""
 # 1) skills — every dir under pack/.claude/skills/ (the deleted /polish and
 # /normalize aliases are no longer present; /rite-polish carries the modes via
 # argument-hint).
-while IFS= read -r d; do
-  name="$(basename "$d")"
-  install_tree "$d" ".claude/skills/$name"
-done < <(find "$PACK_SRC/skills" -mindepth 1 -maxdepth 1 -type d)
+if [ "$WITH_SKILLS" -eq 1 ]; then
+  while IFS= read -r d; do
+    name="$(basename "$d")"
+    install_tree "$d" ".claude/skills/$name"
+  done < <(find "$PACK_SRC/skills" -mindepth 1 -maxdepth 1 -type d)
+fi
 
 # 2) optional --short-aliases=all wrappers for /define /build /prove /seal.
-if [ "$ALIAS_MODE" = "all" ]; then
+if [ "$WITH_SKILLS" -eq 1 ] && [ "$ALIAS_MODE" = "all" ]; then
   for pair in "define:rite-define" "build:rite-build" "prove:rite-prove" "seal:rite-seal"; do
     a="${pair%%:*}"; to="${pair#*:}"
     gen_alias_wrapper "$a" "$to" "$TMP_GEN_DIR/$a.md"
@@ -255,6 +263,7 @@ if [ -r "$_plugin_json" ]; then
 fi
 
 DR_INSTALL_FLAGS=""
+[ "$WITH_SKILLS" -eq 0 ] && DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --no-skills"
 [ "$WITH_AGENTS" -eq 0 ] && DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --no-agents"
 [ "$WITH_RULES"  -eq 0 ] && DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --no-rules"
 case "$ALIAS_MODE" in
