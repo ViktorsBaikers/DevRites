@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="images/logo.png" alt="DevRites" width="240">
+  <img src="images/logo.png" alt="DevRites">
 </p>
-
-# DevRites
 
 **Per-feature workspace on disk.** Every feature gets its own `.devrites/work/<slug>/`
 directory with `spec.md` → `plan.md` → `tasks.md` → `state.md` → `evidence.md` (plus
