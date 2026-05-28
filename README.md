@@ -86,7 +86,7 @@ rules carrier, workspace state, namespace map) →
 
 - [Why distributed skills](#why-distributed-skills-not-one-engine)
 - [Modes — HITL & AFK](#modes--hitl--afk)
-- [Install](#install) — [plugin (A)](#option-a-claude-code-plugin-recommended-for-claude-code-21) · [bash (B)](#option-b-bash-installer-works-on-any-claude-code-version)
+- [Install](#install) — [bash (A, recommended)](#option-a-bash-installer-recommended-full-install) · [plugin (B, partial)](#option-b-claude-code-plugin-partial--skills--agents-only)
 - [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · browser-harness
 - [Skills](#skills) — 23 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
@@ -123,19 +123,17 @@ Full rationale: [`docs/architecture.md`](docs/architecture.md).
 DevRites installs **into a project** (project-local only — it never writes to
 `~/.claude`). Two install paths are supported:
 
-### Option A: Claude Code plugin (recommended for Claude Code 2.1+)
+| Path | Ships | When to use |
+|---|---|---|
+| **A. bash installer** *(recommended)* | skills, agents, **rules**, aliases | full DevRites — any Claude Code version |
+| B. Claude Code plugin | skills, agents *(no rules)* | Claude Code 2.1+ if you want plugin-managed updates and don't need the engineering rules |
 
-```bash
-claude plugin marketplace add ViktorsBaikers/DevRites
-claude plugin install devrites@devrites-marketplace
-```
+> **Heads-up:** the Claude Code plugin manifest only ships `skills/` and
+> `agents/` — there is no plugin field for the DevRites engineering rules.
+> If you install via the plugin you'll need a follow-up `--rules-only` bash
+> run to drop the rules into `.claude/rules/` (see Option B below).
 
-The plugin runtime places skills + agents in their canonical Claude Code
-locations. Engineering rules install to `.claude/rules/` and are autoloaded
-by Claude Code (`core.md` always-on; the rest on demand) — no edits to your
-`~/.claude/CLAUDE.md`. To uninstall: `claude plugin uninstall devrites`.
-
-### Option B: bash installer (works on any Claude Code version)
+### Option A: bash installer (recommended, full install)
 
 **One-liner over the network** — no `git clone` required:
 
@@ -174,12 +172,46 @@ Common flags:
 | `--force` | Overwrite existing non-DevRites files |
 | `--no-rules` | Skip the engineering rules |
 | `--no-agents` | Skip the review subagents |
+| `--rules-only` | Install only the engineering rules — pair with Option B below |
 | `--short-aliases=all` | Add `/define`, `/build`, `/prove`, `/seal` short aliases (off by default) |
 
 Every installed file is recorded in `.claude/devrites.manifest` (with the installed
 version and the original install flags in the header). `./uninstall.sh` removes
 exactly those files (and prunes empty dirs) — your feature data in
 `.devrites/work/` and `.devrites/ACTIVE` is preserved.
+
+### Option B: Claude Code plugin (partial — skills + agents only)
+
+```bash
+claude plugin marketplace add ViktorsBaikers/DevRites
+claude plugin install devrites@devrites-marketplace
+```
+
+The plugin runtime places **skills + agents** in their canonical Claude Code
+locations and lets you manage updates with `claude plugin update devrites`.
+Uninstall with `claude plugin uninstall devrites`.
+
+**The plugin does not install the DevRites engineering rules.** The Claude
+Code plugin manifest has no `rules` field — `core.md`, `state-machine.md`,
+`afk-hitl.md`, `browser-proof.md`, and the rest of `.claude/rules/` won't be
+present. Many skills (`/rite-build`, `/rite-prove`, `/rite-polish`, …) cite
+those rules at runtime and degrade noticeably without them.
+
+To add the rules after a plugin install, run the bash installer in
+`--rules-only` mode:
+
+```bash
+# Drop only the engineering rules into the current project's .claude/rules/
+curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash -s -- --rules-only
+
+# Or target a specific project
+curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash -s -- --target /path/to/your/project --rules-only
+```
+
+This writes nothing outside `.claude/rules/` and records the rule files in
+`.claude/devrites.manifest`. Running `./uninstall.sh` later removes only
+what's in the manifest (just the rules in this case) — the plugin's own
+skills + agents are managed by `claude plugin uninstall devrites`.
 
 ### Upgrading an existing install
 
