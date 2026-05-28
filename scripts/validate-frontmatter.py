@@ -31,17 +31,39 @@ def extract_frontmatter(text):
 
 
 def parse_simple(fm):
-    """Minimal top-level 'key: value' parser. Good enough for these files."""
+    """Minimal top-level 'key: value' parser. Good enough for these files.
+
+    Handles YAML block scalars ('|', '>') by collecting indented continuation
+    lines so multi-line values are preserved (and can be detected/rejected).
+    """
     data = {}
-    for raw in fm.splitlines():
+    lines = fm.splitlines()
+    i = 0
+    while i < len(lines):
+        raw = lines[i]
         if not raw.strip() or raw.lstrip().startswith("#"):
+            i += 1
+            continue
+        if raw[0] in (" ", "\t"):
+            i += 1
             continue
         if ":" not in raw:
-            continue
-        if raw[0] in (" ", "\t"):  # nested line — ignore for top-level keys
+            i += 1
             continue
         key, val = raw.split(":", 1)
-        data[key.strip()] = val.strip().strip('"').strip("'")
+        v = val.strip()
+        # Block scalar indicators: gather indented following lines.
+        if v and v[0] in ("|", ">"):
+            collected = []
+            j = i + 1
+            while j < len(lines) and (lines[j] == "" or lines[j].startswith((" ", "\t"))):
+                collected.append(lines[j].lstrip())
+                j += 1
+            data[key.strip()] = "\n".join(collected).rstrip()
+            i = j
+            continue
+        data[key.strip()] = v.strip('"').strip("'")
+        i += 1
     return data
 
 
