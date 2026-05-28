@@ -19,7 +19,7 @@ flowchart LR
     Define -->|plan.md + tasks.md<br/>each slice tagged AFK/HITL| Build[/rite-build/]
     Build -->|one slice done<br/>+ evidence| Build
     Build -->|HITL gate fires| Await{{Awaiting human<br/>state.md + questions.md}}
-    Await -->|/rite-resolve qid "answer"| Build
+    Await -->|"/rite-resolve &lt;qid&gt; &lt;answer&gt;"| Build
     Build -->|all slices built| Prove[/rite-prove/]
     Prove -->|evidence captured| Polish[/rite-polish/]
     Polish -->|polish-report.md| Review[/rite-review/]
