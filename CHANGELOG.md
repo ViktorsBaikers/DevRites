@@ -1,5 +1,20 @@
 # Changelog
 
+All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
+
+## 1.0.0 (2026-05-28)
+
+### Features
+
+* **repo:** ship DevRites skills pack ([0915d40](https://github.com/ViktorsBaikers/DevRites/commit/0915d40f0c88e81dc9c122f5c755c7975957fdd4))
+
+### Bug Fixes
+
+* **ci:** bypass commitlint on semantic-release commits, tidy README ([0cf52a3](https://github.com/ViktorsBaikers/DevRites/commit/0cf52a3f27216ab5edb8197ec22628d03f2e5e31))
+* **ci:** sync lockfile and reject multiline descriptions without PyYAML ([0efa85f](https://github.com/ViktorsBaikers/DevRites/commit/0efa85f052612b94926cf3382f88510059e5a8e8))
+
+# Changelog
+
 All notable changes to DevRites are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
