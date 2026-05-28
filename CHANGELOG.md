@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.1...v1.0.2) (2026-05-28)
+
+### Bug Fixes
+
+* **installer:** plugin.json must use string repo and ./-prefixed paths ([cb50c01](https://github.com/ViktorsBaikers/DevRites/commit/cb50c01efcd45f813cc9fa7aeee7f25795bfd503))
+
 ## [1.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.0...v1.0.1) (2026-05-28)
 
 ### Bug Fixes
