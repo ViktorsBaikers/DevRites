@@ -26,5 +26,14 @@
     "devrites"
   ],
   "skills": "./pack/.claude/skills",
-  "agents": "./pack/.claude/agents"
+  "agents": [
+    "./pack/.claude/agents/devrites-code-reviewer.md",
+    "./pack/.claude/agents/devrites-doubt-reviewer.md",
+    "./pack/.claude/agents/devrites-frontend-reviewer.md",
+    "./pack/.claude/agents/devrites-performance-reviewer.md",
+    "./pack/.claude/agents/devrites-security-auditor.md",
+    "./pack/.claude/agents/devrites-simplifier-reviewer.md",
+    "./pack/.claude/agents/devrites-spec-reviewer.md",
+    "./pack/.claude/agents/devrites-test-analyst.md"
+  ]
 }
