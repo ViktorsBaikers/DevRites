@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.0...v1.0.1) (2026-05-28)
+
+### Bug Fixes
+
+* **ci:** repair dependabot, sync README on release, use bot author ([d928765](https://github.com/ViktorsBaikers/DevRites/commit/d928765a965e4c49d1618cf07842e907f28deb0a))
+
 ## 1.0.0 (2026-05-28)
 
 ### Features
