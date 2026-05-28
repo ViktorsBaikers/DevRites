@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.3...v1.0.4) (2026-05-28)
+
+### Bug Fixes
+
+* **docs:** quote inside mermaid edge label broke flow.md diagram ([5112ba3](https://github.com/ViktorsBaikers/DevRites/commit/5112ba3be1cfb9f47195e98a5b7d50927662b64f))
+
 ## [1.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.2...v1.0.3) (2026-05-28)
 
 ### Bug Fixes
