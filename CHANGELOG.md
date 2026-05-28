@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.2...v1.0.3) (2026-05-28)
+
+### Bug Fixes
+
+* **installer:** list agents as file array, validate manifest sync ([97d5004](https://github.com/ViktorsBaikers/DevRites/commit/97d50049cdaf4877272e8f555b92b87d1be26887))
+
+### Documentation
+
+* **docs:** bash install is recommended, plugin path is partial ([e729d18](https://github.com/ViktorsBaikers/DevRites/commit/e729d1851498ccda5be7496ffff72d88fd2b4ce7))
+
 ## [1.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.1...v1.0.2) (2026-05-28)
 
 ### Bug Fixes
