@@ -1,6 +1,7 @@
 {
   // DevRites website — static assets only (no Worker script).
   // Serves the contents of web/ on Cloudflare Workers Static Assets.
+  // Production branch on Cloudflare: site/web.
   "name": "devrites",
   "compatibility_date": "2026-05-29",
   "assets": {
