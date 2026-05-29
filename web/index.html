@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DevRites — a disciplined senior engineer for Claude Code</title>
+  <meta name="description" content="DevRites turns Claude Code into a disciplined senior engineer: spec, build one verified slice, prove with evidence, review, seal. State lives on disk, so a fresh agent picks up where the last one stopped." />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0c1330" />
+
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/mark-64.png" />
+  <link rel="apple-touch-icon" href="/assets/img/mark-256.png" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="DevRites — a disciplined senior engineer for Claude Code" />
+  <meta property="og:description" content="Spec, build one verified slice, prove with evidence, review, seal. The agent that refuses to claim done without proof." />
+  <meta property="og:url" content="https://devrites.com/" />
+  <meta property="og:image" content="https://devrites.com/assets/img/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preload" href="/assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/assets/css/fonts.css" />
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="brand" href="/" aria-label="DevRites home">
+      <img src="/assets/img/mark-64.png" width="28" height="28" alt="" />
+      <b>DevRites</b>
+      <span class="v">v0.1.0</span>
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#workflow">Workflow</a>
+      <a href="#proof">Proof</a>
+      <a href="#guardrails">Guardrails</a>
+      <a href="#modes">Modes</a>
+      <a href="/docs/">Docs</a>
+    </nav>
+    <div class="nav__cta">
+      <a class="btn btn--ghost btn--sm" href="https://github.com/ViktorsBaikers/DevRites" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.79 23.4c.6.1.82-.26.82-.58v-2c-3.34.73-4.04-1.6-4.04-1.6-.55-1.4-1.34-1.77-1.34-1.77-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5 1 .1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.3.47-2.38 1.24-3.22-.13-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.82.57A12 12 0 0 0 12 .5Z"/></svg>
+        GitHub
+      </a>
+      <a class="btn btn--primary btn--sm" href="#install">Install</a>
+      <button class="nav__burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap hero__grid">
+    <div class="hero__copy">
+      <div class="hero__chips">
+        <span class="chip chip--run"><span class="dot"></span>running</span>
+        <span class="chip chip--pause"><span class="dot"></span>paused</span>
+        <span class="chip chip--seal"><span class="dot"></span>sealed</span>
+      </div>
+      <h1>A <span class="cut">senior engineer</span>, on every feature.</h1>
+      <p class="lead">DevRites turns Claude Code into an engineer that asks the right questions before writing a line, ships work you can verify, and refuses to claim done without proof.</p>
+      <div class="hero__actions">
+        <a class="btn btn--primary" href="#install">
+          Install in one command
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="btn btn--ghost" href="#workflow">See the workflow</a>
+      </div>
+      <p class="hero__note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Free and open source. Installs into one project, never touches <span class="k">~/.claude</span>.</span>
+      </p>
+    </div>
+
+    <!-- live console -->
+    <div class="hero__console">
+      <div class="panel" id="console">
+        <div class="panel__bar">
+          <span class="panel__dots"><i></i><i></i><i></i></span>
+          <span class="panel__title"><b>auth-tokens</b> · .devrites/work</span>
+          <span class="chip chip--run" style="margin-left:auto"><span class="dot"></span>build 3/5</span>
+        </div>
+        <div class="panel__body">
+          <div class="rail flow__rail" aria-hidden="true">
+            <div class="rail__track">
+              <div class="rail__line"></div>
+              <div class="rail__fill" id="railFill"></div>
+              <div class="node" data-i="0"><span class="node__dot">1</span><span class="node__name">spec</span></div>
+              <div class="node" data-i="1"><span class="node__dot">2</span><span class="node__name">define</span></div>
+              <div class="node" data-i="2"><span class="node__here">you are here</span><span class="node__dot">3</span><span class="node__name">build</span></div>
+              <div class="node" data-i="3"><span class="node__dot">4</span><span class="node__name">prove</span></div>
+              <div class="node" data-i="4"><span class="node__dot">5</span><span class="node__name">polish</span></div>
+              <div class="node" data-i="5"><span class="node__dot">6</span><span class="node__name">review</span></div>
+              <div class="node" data-i="6"><span class="node__dot">7</span><span class="node__name">seal</span></div>
+            </div>
+          </div>
+          <div style="margin-top:1.2rem" id="termRoot">
+            <div class="term__line"><span class="term__pre">›</span><span class="term__cmd" id="termCmd"></span><span class="cursor" id="termCursor"></span></div>
+            <div class="term__out" id="termOut" hidden>
+              <span class="dim">slice 3/5 · refresh-token rotation</span><br/>
+              <span class="ok">✓</span> 14 tests green &nbsp;<span class="dim">·</span>&nbsp; <span class="ok">✓</span> types &nbsp;<span class="dim">·</span>&nbsp; <span class="ok">✓</span> build<br/>
+              <span class="dim">→ evidence.md, touched-files.md written. stopped.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROBLEM ============ -->
+<section class="section" id="problem">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">The problem</span>
+      <h2>Your agent writes plausible code, then says it's done.</h2>
+    </div>
+    <p class="prose reveal" data-d="1" style="font-size:var(--fs-lead)">
+      Plausible is not correct. A wrong turn three steps back costs you a day. "Done" with no
+      tests, a half-finished migration, and an auth change you never approved costs you trust.
+      DevRites makes the agent work the way a careful engineer does: one slice at a time, decisions
+      recorded, the receipts written to disk where you can read them.
+    </p>
+  </div>
+</section>
+
+<hr class="blade-rule wrap" />
+
+<!-- ============ WORKFLOW ============ -->
+<section class="section" id="workflow">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">The workflow</span>
+      <h2>Seven phases. One verified slice at a time.</h2>
+      <p class="lead">Every feature walks the same path. Each phase reads the last one's files and writes its own, so nothing important lives only in a chat window you can lose.</p>
+    </div>
+
+    <div class="rail flow__rail reveal" data-d="1" data-rail="static" aria-hidden="true">
+      <div class="rail__track">
+        <div class="rail__line"></div>
+        <div class="rail__fill" style="width:100%"></div>
+        <div class="node is-done"><span class="node__dot">1</span><span class="node__name">spec</span></div>
+        <div class="node is-done"><span class="node__dot">2</span><span class="node__name">define</span></div>
+        <div class="node is-done"><span class="node__dot">3</span><span class="node__name">build</span></div>
+        <div class="node is-done"><span class="node__dot">4</span><span class="node__name">prove</span></div>
+        <div class="node is-done"><span class="node__dot">5</span><span class="node__name">polish</span></div>
+        <div class="node is-done"><span class="node__dot">6</span><span class="node__name">review</span></div>
+        <div class="node is-current"><span class="node__dot">7</span><span class="node__name">seal</span></div>
+      </div>
+    </div>
+
+    <div class="flow__detail reveal" data-d="2">
+      <div class="phase">
+        <span class="phase__n">01 · spec</span>
+        <h3>Investigate, then write it down</h3>
+        <p>Deep read of the codebase before a line is written. Placement, what it resolves, gaps closed with options.</p>
+        <p class="phase__cmd"><b>/rite-spec</b> → spec.md, references/</p>
+      </div>
+      <div class="phase">
+        <span class="phase__n">02 · define</span>
+        <h3>Slice the plan</h3>
+        <p>The approved spec becomes a plan and vertical task slices, each tagged HITL or AFK with a gate.</p>
+        <p class="phase__cmd"><b>/rite-define</b> → plan.md, tasks.md</p>
+      </div>
+      <div class="phase">
+        <span class="phase__n">03 · build</span>
+        <h3>One slice, then stop</h3>
+        <p>Implement exactly one vertical slice and stop with evidence. The Spec Drift Guard catches a wrong plan mid-build.</p>
+        <p class="phase__cmd"><b>/rite-build</b> → code, evidence.md</p>
+      </div>
+      <div class="phase">
+        <span class="phase__n">04 · prove</span>
+        <h3>Show the receipts</h3>
+        <p>Tests, build, runtime, and browser proof of the finished feature. Claims get backed by output.</p>
+        <p class="phase__cmd"><b>/rite-prove</b> → browser-evidence.md</p>
+      </div>
+      <div class="phase">
+        <span class="phase__n">05 · polish</span>
+        <h3>Tidy without breaking</h3>
+        <p>Behavior-preserving cleanup first, then UI polish against the design system. Nothing silently changes.</p>
+        <p class="phase__cmd"><b>/rite-polish</b> → polish-report.md</p>
+      </div>
+      <div class="phase">
+        <span class="phase__n">06 · review</span>
+        <h3>Fresh eyes, in parallel</h3>
+        <p>Independent fresh-context reviewers check the diff against the spec and the standards, at once.</p>
+        <p class="phase__cmd"><b>/rite-review</b> → review.md</p>
+      </div>
+      <div class="phase">
+        <span class="phase__n">07 · seal</span>
+        <h3>GO or NO-GO</h3>
+        <p>Walk the acceptance criteria, fan out the reviewers, and demand a typed GO before any irreversible git.</p>
+        <p class="phase__cmd"><b>/rite-seal</b> → seal.md</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="blade-rule wrap" />
+
+<!-- ============ PROOF / PAPER TRAIL ============ -->
+<section class="section" id="proof">
+  <div class="wrap install__grid">
+    <div>
+      <div class="section-head reveal">
+        <span class="eyebrow">On disk, not in chat</span>
+        <h2>The paper trail survives <span class="k k--accent">/clear</span>.</h2>
+      </div>
+      <p class="prose reveal" data-d="1">
+        Every feature gets its own directory under <span class="k">.devrites/work/</span>. When the
+        context window fills and you clear it, the next agent reads these files and picks up exactly
+        where the last one stopped. No summary, no re-explaining, no lost decisions.
+      </p>
+      <p class="prose reveal" data-d="2" style="margin-top:1rem">
+        <span class="k">spec.md</span> holds the contract. <span class="k">decisions.md</span> and
+        <span class="k">assumptions.md</span> hold the reasoning. <span class="k">evidence.md</span>
+        holds the proof. <span class="k">drift.md</span> records where the plan was wrong and why.
+      </p>
+    </div>
+
+    <div class="panel reveal" data-d="2">
+      <div class="panel__bar">
+        <span class="panel__dots"><i></i><i></i><i></i></span>
+        <span class="panel__title">.devrites/work/<b>auth-tokens</b>/</span>
+      </div>
+      <div class="panel__body">
+        <div class="tree">
+          <div class="tree__row"><span><span class="f">spec.md</span></span><span class="tree__stat ok">✓ approved</span></div>
+          <div class="tree__row"><span><span class="f">plan.md</span> &nbsp;<span class="f">tasks.md</span></span><span class="tree__stat dim">5 slices</span></div>
+          <div class="tree__row"><span><span class="f">state.md</span></span><span class="tree__stat ok">● running · 3/5</span></div>
+          <div class="tree__row"><span><span class="f">decisions.md</span> &nbsp;<span class="f">assumptions.md</span></span><span class="tree__stat dim">12 entries</span></div>
+          <div class="tree__row"><span><span class="f">evidence.md</span></span><span class="tree__stat ok">✓ 14 tests</span></div>
+          <div class="tree__row"><span><span class="f">drift.md</span></span><span class="tree__stat warn">1 logged</span></div>
+          <div class="tree__row"><span><span class="f">questions.md</span></span><span class="tree__stat warn">◐ 1 gate open</span></div>
+          <div class="tree__row"><span><span class="f">review.md</span> &nbsp;<span class="f">seal.md</span></span><span class="tree__stat dim">pending</span></div>
+          <div class="tree__row"><span><span class="tree__dir">references/</span></span><span class="tree__stat dim">4 sources</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="blade-rule wrap" />
+
+<!-- ============ GUARDRAILS ============ -->
+<section class="section" id="guardrails">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Guardrails</span>
+      <h2>It stops before it costs you.</h2>
+      <p class="lead">Three mechanisms keep an unattended agent from doing the expensive, irreversible thing on its own.</p>
+    </div>
+
+    <div class="guards">
+      <div class="guard reveal" data-d="1">
+        <svg class="guard__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v6m0 0 3-2.5M12 9 9 6.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9v5a7 7 0 0 0 14 0V9" stroke-linecap="round"/><path d="m9 14 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>Spec Drift Guard</h3>
+        <p>When the build reveals the plan was wrong, it stops, records the drift, and routes through plan repair before resuming. The wrong turn never compounds.</p>
+        <div class="guard__demo">
+          <span class="warn">⚠ drift detected</span> · build paused<br/>
+          → recorded to <span style="color:var(--ink-muted)">drift.md</span>, asking before behavior changes
+        </div>
+      </div>
+
+      <div class="guard reveal" data-d="2">
+        <svg class="guard__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none"/></svg>
+        <h3>type-GO</h3>
+        <p>No commit, push, or tag happens on a hunch. The final gate demands a literal typed confirmation before anything irreversible touches your git history.</p>
+        <div class="guard__demo">
+          seal: <span class="ok">GO</span> · awaiting confirmation<br/>
+          → type <span style="color:var(--accent)">GO</span> to commit · push · tag
+        </div>
+      </div>
+
+      <div class="guard reveal" data-d="3">
+        <svg class="guard__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><rect x="14" y="15" width="7" height="6" rx="1.5"/></svg>
+        <h3>Reviewer fan-out</h3>
+        <p>At seal, independent fresh-context reviewers read the diff in parallel. None of them is the agent that wrote the code, so none inherits its blind spots.</p>
+        <div class="fanout">
+          <span class="tag">spec</span><span class="tag">code</span><span class="tag">tests</span>
+          <span class="tag">frontend</span><span class="tag">security</span><span class="tag">perf</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="blade-rule wrap" />
+
+<!-- ============ MODES ============ -->
+<section class="section" id="modes">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Two run modes</span>
+      <h2>At the keyboard, or away from it.</h2>
+      <p class="lead">Same workflow, two postures. You decide how much rope the agent gets per slice.</p>
+    </div>
+
+    <div class="modes">
+      <div class="mode reveal" data-d="1">
+        <div class="mode__head">
+          <h3>HITL</h3>
+          <span class="chip chip--pause"><span class="dot"></span>human-in-the-loop</span>
+        </div>
+        <p class="mode__sub">Default. You're at the keyboard.</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Risky slices pause <b style="color:var(--ink)">before</b> code is written, at a typed checkpoint.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Checkpoints escalate: advisory, validating, blocking, escalating.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Answer once with <span class="k">/rite-resolve</span> and the build resumes.</span></li>
+        </ul>
+      </div>
+
+      <div class="mode mode--afk reveal" data-d="2">
+        <div class="mode__head">
+          <h3>AFK</h3>
+          <span class="chip chip--run"><span class="dot"></span>away-from-keyboard</span>
+        </div>
+        <p class="mode__sub">Drop <span class="k">.devrites/AFK</span> in the project. It runs unattended.</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Discretionary pauses downgrade to advisory notes so the loop keeps moving.</span></li>
+          <li><svg class="gate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 8v5" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1.1" fill="currentColor" stroke="none"/><path d="M10.3 4.3 3 17a1.8 1.8 0 0 0 1.6 2.7h14.8A1.8 1.8 0 0 0 21 17L13.7 4.3a1.9 1.9 0 0 0-3.4 0Z" stroke-linejoin="round"/></svg><span>Destructive migrations, auth changes, public-API breaks, and red tests <b style="color:var(--ink)">always</b> pause.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Optional <span class="k">max_slices</span> caps the run; <span class="k">notify</span> pings your phone on a pause.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="blade-rule wrap" />
+
+<!-- ============ INSTALL ============ -->
+<section class="section" id="install">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Install</span>
+      <h2>One command. One project.</h2>
+    </div>
+    <div class="install__grid">
+      <div class="reveal" data-d="1">
+        <div class="copyblock">
+          <code id="installCmd"><span class="p">curl</span> -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash</code>
+          <button class="copybtn" id="copyBtn" type="button" aria-label="Copy install command">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke-linecap="round"/></svg>
+            <span>copy</span>
+          </button>
+        </div>
+        <p class="install__alt">
+          Prefer the Claude Code plugin? Skills and agents install partial via the
+          <a href="https://github.com/ViktorsBaikers/DevRites#option-b-claude-code-plugin-partial--skills--agents-only" rel="noopener">plugin marketplace</a>.
+          Then run <span class="k k--accent">/rite-spec &lt;feature&gt;</span> to begin.
+        </p>
+      </div>
+
+      <ul class="install__list reveal" data-d="2">
+        <li><span class="n">→</span><span><b>No global writes, ever.</b> Installs into the target project; <span class="k">~/.claude</span> is refused.</span></li>
+        <li><span class="n">→</span><span><b>Every file is recorded</b> in <span class="k">.claude/devrites.manifest</span>. <span class="k">./uninstall.sh</span> removes exactly those.</span></li>
+        <li><span class="n">→</span><span><b>Your work is preserved.</b> Feature data in <span class="k">.devrites/work/</span> is never touched by uninstall.</span></li>
+        <li><span class="n">→</span><span><b>Preview first</b> with <span class="k">--dry-run</span>. Pin a release with <span class="k">DEVRITES_REF=v0.1.0</span>.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot__grid">
+      <div class="foot__brand">
+        <a class="brand" href="/"><img src="/assets/img/mark-64.png" width="28" height="28" alt="" /><b>DevRites</b></a>
+        <p>A disciplined senior-engineer workflow for Claude Code. Spec, build, prove, seal, with the receipts on disk.</p>
+      </div>
+      <div class="foot__cols">
+        <div class="foot__col">
+          <h4>Product</h4>
+          <a href="#workflow">Workflow</a>
+          <a href="#proof">Paper trail</a>
+          <a href="#guardrails">Guardrails</a>
+          <a href="#install">Install</a>
+        </div>
+        <div class="foot__col">
+          <h4>Docs</h4>
+          <a href="/docs/">Overview</a>
+          <a href="/docs/command-map.html">Command map</a>
+          <a href="/docs/flow.html">Flow</a>
+          <a href="/docs/architecture.html">Architecture</a>
+        </div>
+        <div class="foot__col">
+          <h4>Source</h4>
+          <a href="https://github.com/ViktorsBaikers/DevRites" rel="noopener">GitHub</a>
+          <a href="https://github.com/ViktorsBaikers/DevRites/releases" rel="noopener">Releases</a>
+          <a href="https://github.com/ViktorsBaikers/DevRites/blob/main/LICENSE" rel="noopener">License</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot__legal">
+      <span>© 2026 Viktors Baikers · DevRites v0.1.0</span>
+      <span>spec → build → prove → seal</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/main.js" defer></script>
+</body>
+</html>

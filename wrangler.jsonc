@@ -1,0 +1,13 @@
+{
+  // DevRites website — static assets only (no Worker script).
+  // Serves the contents of web/ on Cloudflare Workers Static Assets.
+  "name": "devrites",
+  "compatibility_date": "2026-05-29",
+  "assets": {
+    "directory": "./web",
+    // /docs/ -> /docs/index.html, strip .html where possible
+    "html_handling": "auto-trailing-slash",
+    // unknown paths render web/404.html with a 404 status
+    "not_found_handling": "404-page"
+  }
+}
