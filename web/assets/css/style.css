@@ -164,6 +164,7 @@ code, kbd, samp { font-family: var(--font-mono); }
 .nav.is-open .nav__burger span:nth-child(3) { transform: translateY(-5.6px) rotate(-45deg); }
 @media (max-width: 860px) {
   .nav__burger { display: flex; }
+  .nav__cta { margin-left: auto; } /* links (which carried the auto margin) are hidden here */
   .nav__cta .btn--ghost { display: none; }
   .nav__links {
     position: absolute; top: 100%; left: 0; right: 0;
