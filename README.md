@@ -219,13 +219,13 @@ skills + agents are managed by `claude plugin uninstall devrites`.
 
 ```bash
 # Upgrade the install in the current directory
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/update.sh | bash
+curl -fsSL https://devrites.com/update | bash
 
 # Upgrade an install elsewhere
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/update.sh | bash -s -- --target /path/to/proj
+curl -fsSL https://devrites.com/update | bash -s -- --target /path/to/proj
 
 # Just check (exit 10 = update available, 0 = current)
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/update.sh | bash -s -- --check
+curl -fsSL https://devrites.com/update | bash -s -- --check
 ```
 
 From a local checkout:
@@ -249,8 +249,8 @@ because the installer only touches manifest-tracked paths.
 
 ```bash
 # Network one-liner
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/uninstall.sh | bash
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/uninstall.sh | bash -s -- --target /path
+curl -fsSL https://devrites.com/remove | bash
+curl -fsSL https://devrites.com/remove | bash -s -- --target /path
 
 # Local checkout
 ./uninstall.sh                       # remove DevRites from the current project
