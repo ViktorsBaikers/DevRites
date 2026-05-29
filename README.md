@@ -139,16 +139,16 @@ DevRites installs **into a project** (project-local only — it never writes to
 
 ```bash
 # Install latest release into the current directory
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash
+curl -fsSL https://devrites.com | bash
 
 # Install into a specific project
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash -s -- --target /path/to/your/project
+curl -fsSL https://devrites.com | bash -s -- --target /path/to/your/project
 
 # Preview (no changes)
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash -s -- --dry-run
+curl -fsSL https://devrites.com | bash -s -- --dry-run
 
 # Pin to a specific release
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | DEVRITES_REF=v0.1.0 bash
+curl -fsSL https://devrites.com | DEVRITES_REF=v1.0.4 bash
 ```
 
 The script is self-bootstrapping: when piped through `bash` it auto-downloads the latest
@@ -202,10 +202,10 @@ To add the rules after a plugin install, run the bash installer in
 
 ```bash
 # Drop only the engineering rules into the current project's .claude/rules/
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash -s -- --rules-only
+curl -fsSL https://devrites.com | bash -s -- --rules-only
 
 # Or target a specific project
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash -s -- --target /path/to/your/project --rules-only
+curl -fsSL https://devrites.com | bash -s -- --target /path/to/your/project --rules-only
 ```
 
 This writes nothing outside `.claude/rules/` and records the rule files in
