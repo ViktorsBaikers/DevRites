@@ -1,14 +1,16 @@
 {
-  // DevRites website — static assets only (no Worker script).
-  // Serves the contents of web/ on Cloudflare Workers Static Assets.
+  // DevRites website + install endpoint.
+  // Static assets in web/ are served directly; a small worker (worker.js) runs
+  // only for "/" and "/install.sh" to hand the install script to CLI clients.
   // Production branch on Cloudflare: site/web.
   "name": "devrites",
+  "main": "worker.js",
   "compatibility_date": "2026-05-29",
   "assets": {
     "directory": "./web",
-    // /docs/ -> /docs/index.html, strip .html where possible
+    "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
-    // unknown paths render web/404.html with a 404 status
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/", "/install.sh"]
   }
 }

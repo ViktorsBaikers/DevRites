@@ -118,4 +118,17 @@
   document.querySelectorAll('[data-rail="static"] .node').forEach(function (node, idx) {
     node.tabIndex = 0;
   });
+
+  /* ---- version badge: reflect the latest published release (falls back to hardcoded) ---- */
+  var versionEls = document.querySelectorAll(".js-version");
+  if (versionEls.length && "fetch" in window) {
+    fetch("https://api.github.com/repos/ViktorsBaikers/DevRites/releases/latest", {
+      headers: { Accept: "application/vnd.github+json" },
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (d && d.tag_name) versionEls.forEach(function (el) { el.textContent = d.tag_name; });
+      })
+      .catch(function () { /* keep the hardcoded fallback */ });
+  }
 })();

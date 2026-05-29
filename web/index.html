@@ -31,7 +31,7 @@
     <a class="brand" href="/" aria-label="DevRites home">
       <img src="/assets/img/mark-64.png" width="28" height="28" alt="" />
       <b>DevRites</b>
-      <span class="v">v0.1.0</span>
+      <span class="v js-version">v1.0.4</span>
     </a>
     <nav class="nav__links" aria-label="Primary">
       <a href="#workflow">Workflow</a>
@@ -344,7 +344,7 @@
     <div class="install__grid">
       <div class="reveal" data-d="1">
         <div class="copyblock">
-          <code id="installCmd"><span class="p">curl</span> -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash</code>
+          <code id="installCmd"><span class="p">curl</span> -fsSL https://devrites.com | bash</code>
           <button class="copybtn" id="copyBtn" type="button" aria-label="Copy install command">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke-linecap="round"/></svg>
             <span>copy</span>
@@ -361,7 +361,7 @@
         <li><span class="n">→</span><span><b>No global writes, ever.</b> Installs into the target project; <span class="k">~/.claude</span> is refused.</span></li>
         <li><span class="n">→</span><span><b>Every file is recorded</b> in <span class="k">.claude/devrites.manifest</span>. <span class="k">./uninstall.sh</span> removes exactly those.</span></li>
         <li><span class="n">→</span><span><b>Your work is preserved.</b> Feature data in <span class="k">.devrites/work/</span> is never touched by uninstall.</span></li>
-        <li><span class="n">→</span><span><b>Preview first</b> with <span class="k">--dry-run</span>. Pin a release with <span class="k">DEVRITES_REF=v0.1.0</span>.</span></li>
+        <li><span class="n">→</span><span><b>Preview first</b> with <span class="k">--dry-run</span>. Pin a release with <span class="k">DEVRITES_REF=v1.0.4</span>.</span></li>
       </ul>
     </div>
   </div>
@@ -400,7 +400,7 @@
       </div>
     </div>
     <div class="foot__legal">
-      <span>© 2026 Viktors Baikers · DevRites v0.1.0</span>
+      <span>© 2026 Viktors Baikers · DevRites <span class="js-version">v1.0.4</span></span>
       <span>spec → build → prove → seal</span>
     </div>
   </div>
