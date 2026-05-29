@@ -1,7 +1,8 @@
 {
-  // DevRites website + install endpoint.
+  // DevRites website + install/update/uninstall endpoints.
   // Static assets in web/ are served directly; a small worker (worker.js) runs
-  // only for "/" and "/install.sh" to hand the install script to CLI clients.
+  // only for the script paths below, handing install/update/uninstall scripts
+  // to CLI clients and the website to browsers.
   // Production branch on Cloudflare: site/web.
   "name": "devrites",
   "main": "worker.js",
@@ -11,6 +12,6 @@
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/", "/install.sh"]
+    "run_worker_first": ["/", "/install.sh", "/update", "/update.sh", "/remove", "/uninstall", "/uninstall.sh"]
   }
 }
