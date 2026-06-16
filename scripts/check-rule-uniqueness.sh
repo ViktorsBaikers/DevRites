@@ -41,4 +41,33 @@ for entry in "${PRINCIPLES[@]}"; do
   fi
 done
 
+# Anti-rationalization table: core.md keeps a minimal 5-row subset that MUST be
+# byte-identical to the matching rows in anti-patterns.md (the single source of
+# the full table). The unique-heading check above can't see this — the rows live
+# under the same heading in both files — so assert the 5 shared excuse strings
+# (the excuse-column text, stable across both files) appear verbatim in both.
+# These cover the five rows core.md duplicates:
+#   tests-later / small-refactor / special-case / user-will-tell / lint-and-build.
+CORE="$PACK/rules/core.md"
+ANTI="$PACK/rules/anti-patterns.md"
+SHARED_EXCUSES=(
+  '"I'\''ll add the tests later."'
+  '"It'\''s only a small refactor while I'\''m in here."'
+  '"This is a special case, the pattern doesn'\''t apply."'
+  '"The user will tell me if something is wrong."'
+  '"Lint and build pass — that proves quality."'
+)
+for excuse in "${SHARED_EXCUSES[@]}"; do
+  in_core=0; in_anti=0
+  grep -qF -- "$excuse" "$CORE" 2>/dev/null && in_core=1
+  grep -qF -- "$excuse" "$ANTI" 2>/dev/null && in_anti=1
+  if [ "$in_core" -eq 1 ] && [ "$in_anti" -eq 1 ]; then
+    printf 'ok: shared excuse present in core.md + anti-patterns.md: %s\n' "$excuse"
+  else
+    printf 'FAIL: shared excuse must appear verbatim in BOTH core.md and anti-patterns.md: %s (core=%d anti=%d)\n' \
+      "$excuse" "$in_core" "$in_anti" >&2
+    fail=1
+  fi
+done
+
 exit "$fail"

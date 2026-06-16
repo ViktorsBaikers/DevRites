@@ -6,6 +6,7 @@
 #   resolve.sh <qid> "<answer>"
 #   resolve.sh --drop <qid> ["<reason>"]
 #   resolve.sh --batch <path-to-yaml>
+#   resolve.sh next-qid <questions.md path>
 #
 # Exit codes:
 #   0  resolved
@@ -13,10 +14,35 @@
 #   3  qid not found
 #   4  qid not open (already answered/dropped)
 #   5  bad arguments
+#   6  qid collision (next-qid: computed id already has a header)
 
 set -u
 
 die() { printf '%s\n' "$*" >&2; exit "${2:-1}"; }
+
+# next-qid: print the next sequential qid for TODAY. Counts existing
+# `## q-YYYY-MM-DD-` headers for today's date, prints q-YYYY-MM-DD-NNN with the
+# next zero-padded id, and refuses (exit 6) if that header already exists.
+# Operates on an explicit questions.md path — no active workspace required.
+if [ "${1:-}" = "next-qid" ]; then
+  qpath="${2:-}"
+  [ -n "$qpath" ] || die "Usage: resolve.sh next-qid <questions.md path>" 5
+  today="$(date +%F)"
+  # A fresh questions.md may not exist yet — treat absent as zero headers.
+  if [ -f "$qpath" ]; then
+    used="$(grep -c "^## q-${today}-" "$qpath" 2>/dev/null || true)"
+  else
+    used=0
+  fi
+  next=$(( used + 1 ))
+  qid="$(printf 'q-%s-%03d' "$today" "$next")"
+  # Defend against gaps/manual edits: never hand out an id that already exists.
+  if [ -f "$qpath" ] && grep -q "^## ${qid}\([[:space:]]\|$\)" "$qpath"; then
+    die "qid already present: $qid (questions.md edited out of sequence)" 6
+  fi
+  printf '%s\n' "$qid"
+  exit 0
+fi
 
 slug="$(cat .devrites/ACTIVE 2>/dev/null || true)"
 [ -n "$slug" ] || die "No active workspace. Run /rite-spec <feature> first." 2
