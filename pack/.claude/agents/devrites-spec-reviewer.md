@@ -39,7 +39,7 @@ requirements + placement + design references), `tasks.md`, `decisions.md`,
 - Do not edit anything. Return findings only.
 - For each finding quote the spec line (or "spec did not mention X").
 - Classify findings as `missing / partial / wrong / scope-creep`.
-- Label severity as Critical / Important / Suggestion / FYI per DevRites
+- Label severity as Critical / Important / Suggestion / Nit / FYI per DevRites
   review conventions.
 
 ## Output

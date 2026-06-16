@@ -64,13 +64,17 @@ In one atomic write (one `state.md` rewrite + one `questions.md` append):
    - blocking_slices: [<list, from `Blocked by` lookups>]
    ```
 
-3. **`notify:` hook (if `.devrites/AFK` defines one):**
+3. **`notify:` hook (if `.devrites/AFK` defines one):** export all six env vars from the
+   canonical contract in [`afk-discipline.md`](afk-discipline.md) (the `notify:` hook
+   contract table is the source of truth):
 
    ```bash
    DEVRITES_QID="$qid" \
    DEVRITES_GATE="$gate" \
    DEVRITES_SLICE="$slice_id" \
    DEVRITES_SLUG="$slug" \
+   DEVRITES_QUESTION="$question" \
+   DEVRITES_PROPOSED="$proposed" \
    sh -c "$notify_cmd"
    ```
 
@@ -81,9 +85,11 @@ In one atomic write (one `state.md` rewrite + one `questions.md` append):
 ## qid generation
 
 Format: `q-YYYY-MM-DD-NNN`, where `NNN` is the next sequential integer for that date in
-`questions.md`. Implementation: count existing `## q-YYYY-MM-DD-` headers in the file,
-add 1, zero-pad to 3 digits. The script-level helper lives in
-`scripts/load-state.sh` (read side) and `rite-resolve/scripts/resolve.sh` (write side).
+`questions.md`. For the write side, call
+`bash .claude/skills/rite-resolve/scripts/resolve.sh next-qid <questions.md path>` — it
+counts existing `## q-YYYY-MM-DD-` headers for today, prints the next zero-padded id, and
+refuses to print an id whose header already exists. Use that id verbatim so each qid is
+unique within the date.
 
 ## When AFK is active
 
@@ -94,8 +100,11 @@ If `.devrites/AFK` exists and the slice's `Gate` is in `allow_gates`, `/rite-bui
   `decisions.md`, and continue building the slice.
 - For `validating` (only when `allow_gates` includes it): build the slice, write a
   `gate: validating` entry to `questions.md`, mark the slice `built (pending review)` in
-  `state.md`, and continue. The slice does not advance to `proven` until
-  `/rite-resolve` lands.
+  `state.md`, and continue. A slice's only states are `pending` and `built` —
+  acceptance is proven at the **feature** level by `/rite-prove` (recorded in
+  `evidence.md`), not per slice. The `built (pending review)` slice is not done until the
+  open `validating` gate resolves via `/rite-resolve`; an open `validating` gate is a
+  NO-GO at seal.
 
 For `blocking` and `escalating`, AFK **always** invokes the checkpoint protocol — the
 sentinel does not unlock these gates. See `afk-discipline.md` for the irreversible-risk

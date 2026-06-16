@@ -1,6 +1,6 @@
 # Parallel review dispatch
 
-How `/rite-review` and `/rite-seal` fan out the fresh-context review subagents under `pack/.claude/agents/`. Loaded on demand by the calling skill — not a skill itself.
+How `/rite-review` and `/rite-seal` fan out the fresh-context review subagents under `.claude/agents/`. Loaded on demand by the calling skill — not a skill itself.
 
 DevRites ships eight fresh-context review subagents under `.claude/agents/`. The seal and the multi-axis review need most of them running **at the same time**, on the same workspace + diff, so the verdicts don't contaminate each other.
 
@@ -11,7 +11,7 @@ Pattern: delegate to specialized agents with isolated context, brief each one pr
 | Subagent | Always | Conditional |
 |---|---|---|
 | `devrites-spec-reviewer` | `/rite-review` Spec axis; `/rite-seal` | — |
-| `devrites-code-reviewer` | `/rite-review` Standards axis; `/rite-seal` | — |
+| `devrites-code-reviewer` | `/rite-review` Code-review axis; `/rite-seal` | — |
 | `devrites-test-analyst` | `/rite-seal` | — |
 | `devrites-frontend-reviewer` | — | UI files in the diff |
 | `devrites-security-auditor` | — | input / auth / data / external integrations / secrets in scope |
@@ -52,8 +52,8 @@ Rules:
 
 When the subagents return:
 
-1. **Quote verbatim.** Place each subagent's findings under its own `## <axis>` heading in `review.md` / `seal.md`. Do not merge, re-rank, or summarize.
-2. **Surface contradictions explicitly.** "Spec axis says complete, Standards axis says untestable" is a finding, not noise. The caller decides at the gate.
+1. **Quote verbatim.** Place each subagent's findings under its own `## <axis>` heading in `review.md` / `seal.md`. Do not merge, re-rank, or summarize. `devrites-code-reviewer` runs its **full** documented discipline (tests-first, correctness, readability, architecture, maintainability, standards); the inline lead **reconciles** the returned reports — it does not re-run those same axes itself.
+2. **Surface contradictions explicitly.** "Spec axis says complete, Code-review axis says untestable" is a finding, not noise. The caller decides at the gate.
 3. **Severity is the gate, not a score.** Sum the labels (`Critical / Important / Suggestion / Nit / FYI`) and apply the caller's gate (`/rite-seal` blocks on `Critical == 0`; `/rite-review` reports counts).
 4. **One scale.** All subagents use the same five-label scale. Reject any subagent output that invents its own.
 

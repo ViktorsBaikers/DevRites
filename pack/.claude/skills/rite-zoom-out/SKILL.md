@@ -10,6 +10,10 @@ When the agent (or the user) is staring at unfamiliar code without a working men
 model of how it fits the larger system. Stops the "open more files" reflex by returning
 a single, structured map instead.
 
+Read `.claude/rules/core.md` first — chiefly its vocabulary / existing-conventions
+disciplines, which keep the map in the project's own language. The other rule files load
+on demand.
+
 ## What this skill returns
 
 A **map, not an essay**. One pass should answer:

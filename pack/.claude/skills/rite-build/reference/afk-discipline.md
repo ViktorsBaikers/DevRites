@@ -20,10 +20,15 @@ Claude Code auto mode):
 `.devrites/AFK` (presence = AFK). Optional YAML body:
 
 ```yaml
-max_slices: 10                       # decrement per built slice; 0 → forced HITL stop
+max_slices: 10                       # read-only INITIAL budget; seeds state.md on first AFK build
 notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition
 allow_gates: [advisory, validating]  # gate severities AFK may auto-handle
 ```
+
+`.devrites/AFK` is **read-only config** — never rewritten in place. `max_slices` is the
+initial budget; the mutable remaining count lives in `state.md` as `AFK slices remaining:
+<n>`, seeded from `max_slices` on the first AFK build and decremented by `tick-afk.sh`
+(see "Iteration cap").
 
 Defaults when keys are omitted:
 - `max_slices`: unlimited (a missing cap is risky — see "Always cap iterations").
@@ -35,14 +40,20 @@ into HITL.
 
 ## Iteration cap
 
-`/rite-build` step 11 decrements `max_slices` by 1 each time a slice is marked `built`.
-When it reaches 0:
+`/rite-build` step 11 decrements `state.md`'s `AFK slices remaining` by 1 each time a
+slice is marked `built`, by running
+`bash .claude/skills/rite-build/scripts/tick-afk.sh <state.md path>`. The script reads the
+field, decrements, writes it back, prints the new value, and **exits `3` when it hits 0**.
+The cap is enforced by `tick-afk.sh`, not by prose — when it exits 3:
 
-- `/rite-build` boots into step 0, sees `max_slices: 0`, and stops with:
+- `/rite-build` treats exit 3 as a forced HITL stop:
   ```
-  AFK cap reached. Reset `.devrites/AFK` `max_slices:` or remove the sentinel to continue.
+  AFK cap reached. Raise `state.md` `AFK slices remaining` or remove the sentinel to continue.
   ```
 - The workspace stays consistent — no half-built slice, no pending question.
+
+Step 0 re-derives the remaining budget from `state.md` (seeding it from `.devrites/AFK`
+`max_slices` on the first AFK build); `max_slices` itself is read-only and never rewritten.
 
 The cap is intentional: a missing or large cap **must be a conscious choice**. Ralph's
 rule: 5-10 iterations for small tasks, 30-50 for larger ones. Don't ship "unlimited" as

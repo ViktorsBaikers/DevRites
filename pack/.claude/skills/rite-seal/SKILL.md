@@ -10,8 +10,9 @@ user-invocable: true
 The last gate before shipping. **Read the active workspace first**; if none, tell the
 user to run `/rite-spec <feature>`. Produces `seal.md` with a clear verdict.
 
-## Rules consulted (read on demand from `pack/.claude/rules/`)
-`core.md` is already loaded. Pull these via `Read` before sealing:
+## Rules consulted (read on demand from `.claude/rules/`)
+**Step 0:** Read `.claude/rules/core.md` first. The other rule files load on demand —
+pull these via `Read` before sealing:
 - `agents.md` — review-subagent fan-out at seal.
 - `code-review.md` — severity labels (Critical / Important / Suggestion / Nit / FYI).
 - `git-workflow.md` — Conventional Commits, atomic commits, the never-commit list.
@@ -33,26 +34,36 @@ Read `review.md` and the latest reviewer outputs.
 | `Critical > 0` | **NO-GO**, no exceptions. List every Critical with `file:line` and fix direction. |
 | Any acceptance criterion unproven | **NO-GO**, list the unproven criteria. |
 | Unresolved drift in `drift.md` | **NO-GO**, route through `/rite-plan` first. |
+| Any `questions.md` entry with `gate: validating` and `status: open` | **NO-GO** regardless of behavior impact — an open validating gate is merge-blocking by definition. A slice marked `built (pending review)` is not done. |
 
 ## Workflow
 1. Read all artifacts: `brief.md`, `spec.md`, `plan.md`, `tasks.md`, `state.md`,
    `decisions.md`, `assumptions.md`, `questions.md`, `drift.md`, `evidence.md`,
-   `browser-evidence.md`, `polish-report.md`, `review.md`, and the **final diff**.
-   If a code-intelligence index (`codegraph` / `graphify`) is available, use it
-   for blast-radius checks on the final diff in step 5.
+   `browser-evidence.md`, `polish-report.md`, `review.md`, `design-brief.md` (if UI),
+   and the **final diff**. If a code-intelligence index (`codegraph` / `graphify`) is
+   available, use it for blast-radius checks on the final diff in step 5.
 2. Check **acceptance criteria one by one** — [final-evidence](reference/final-evidence.md).
    Each gets a checkbox + the evidence that proves it (or "unproven").
 3. Verify tests, build/typecheck/lint, and browser proof are present and green for the
    scope. Re-run if cheap and in doubt.
 4. Check unresolved **questions** and **drift** — any open item that changes product
-   behavior blocks.
+   behavior blocks. **Any `questions.md` entry with `gate: validating` and `status: open`
+   is a NO-GO regardless of behavior impact** (an open validating gate is merge-blocking by
+   definition); a slice marked `built (pending review)` is not done.
 5. Check **security, data, migration, rollback** risk —
    [risk-and-rollback](reference/risk-and-rollback.md).
 6. Check **frontend polish** if UI is involved (states, a11y, responsive, design-system,
    browser evidence).
-7. **Independent review** — if subagents are available, fan out to the DevRites
+7. **Independent review** — seal is the final gate, not a re-run of `/rite-review`.
+   It **always re-spawns** the axes `/rite-review` did not cover: `devrites-test-analyst`,
+   `devrites-security-auditor`, `devrites-performance-reviewer`, and
+   `devrites-frontend-reviewer` (UI). It **only re-runs the Spec and Code axes**
+   (`devrites-spec-reviewer`, `devrites-code-reviewer`) when the diff changed since
+   `/rite-review` ran (compare against `review.md`); if the diff is unchanged, carry
+   review's verdicts on those axes forward rather than re-litigating them.
+   If subagents are available, fan out to the chosen DevRites
    reviewers (`.claude/agents/devrites-*`) **in parallel** (one `Task` block,
-   multiple tool calls; see `pack/.claude/rules/agents.md` — "Run independent
+   multiple tool calls; see `.claude/rules/agents.md` — "Run independent
    reviewers in parallel"): `devrites-spec-reviewer` (does the diff implement
    the spec?), `devrites-test-analyst` (do the tests prove acceptance?),
    `devrites-code-reviewer`, `devrites-frontend-reviewer` (UI features),
@@ -60,6 +71,10 @@ Read `review.md` and the latest reviewer outputs.
    `devrites-performance-reviewer` (perf-relevant). Give each the workspace
    path + diff *without the author's reasoning*. If subagents are unavailable,
    run the equivalent reviews sequentially yourself.
+   The reviewer **AGENTS** here (fresh context, no author reasoning) are the seal
+   GATE; `devrites-audit` is the inline single-axis pass run during build/polish.
+   The two paths are intentional, not divergent — the inline audit catches issues
+   early; the fresh-context agents are the independent gate before ship.
 8. Decide GO / NO-GO — [go-no-go](reference/go-no-go.md) — and write `seal.md`.
 
 ## `seal.md` template
@@ -73,7 +88,8 @@ each section + write to `.devrites/work/<slug>/seal.md` as the durable record.
 
 `/rite-seal` may proceed into downstream actions that cannot be undone
 silently — `git commit`, `git push`, `git tag`, publishing, deploying. The
-seal verdict alone is **not** authorization to run those.
+seal verdict alone is **not** authorization to run those. (See
+`.claude/rules/hooks.md` when configuring repo hooks for the commit/push path.)
 
 Before invoking any irreversible action, **render this prompt verbatim and
 wait for the user**:

@@ -27,8 +27,14 @@ complete, not after each slice. (Each slice already got its own targeted tests d
 
 **Never report a pass you didn't observe.** If a command couldn't run, say so and give exact manual steps.
 
-## Rules consulted (read on demand from `pack/.claude/rules/`)
-`core.md` is already loaded. Pull these via `Read` when relevant:
+**Re-runnable, scoped.** `/rite-prove` runs once when the full feature is assembled, but
+it can be **re-run scoped** afterwards: when `/rite-polish` or `/rite-review` edit code,
+the existing `evidence.md` no longer post-dates the change, so re-run `/rite-prove` over
+the affected criteria/routes to refresh proof before `/rite-seal`.
+
+## Rules consulted (read on demand from `.claude/rules/`)
+**Step 0:** Read `.claude/rules/core.md` first. The other rule files load on demand;
+pull these via `Read` when relevant:
 - `testing.md` — pyramid, determinism, no-flake discipline.
 - `performance.md` — measure first when perf is in scope.
 
@@ -39,6 +45,8 @@ complete, not after each slice. (Each slice already got its own targeted tests d
   drift (`rite-build/reference/spec-drift-guard.md`).
 
 ## Workflow
+0. Read `.claude/rules/core.md` first (the always-on operating rules); pull the
+   on-demand rules above when relevant.
 1. **Confirm the gate** (all slices built). Read `spec.md` (acceptance criteria +
    "Commands discovered"), `tasks.md`, `state.md`, and the full `git diff`.
 2. **Discover commands** if not recorded —

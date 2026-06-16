@@ -29,6 +29,7 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
       polish-report.md            # normalize+polish output
       review.md                   # review findings + decisions
       seal.md                     # final GO / NO-GO
+      handoff.md                  # human/next-agent-facing handoff summary (overwritten each handoff)
 ```
 
 ## Rules
@@ -41,18 +42,21 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
   `state.md`. Other skills read the active workspace; none create a new one.
 - Each phase **updates `state.md`** and the relevant evidence files.
 - Don't create `evidence.md` / `browser-evidence.md` / `design-brief.md` /
-  `polish-report.md` / `review.md` / `seal.md` until the producing phase runs — absence
-  is meaningful (it means "not done yet").
+  `polish-report.md` / `review.md` / `seal.md` / `handoff.md` until the producing phase
+  runs — absence is meaningful (it means "not done yet"). `handoff.md` is written by
+  `/rite-handoff` and overwritten each handoff (latest snapshot, not a log).
 
 ## `state.md` template
 ```markdown
 # State: <slug>
 
 - Phase: spec | plan | build | prove | polish | review | seal | done
-- Run mode: afk | hitl                              # mirrors .devrites/AFK presence (see below)
 - Status: running | awaiting_human | blocked | done
 - Active slice: <N — name> | none
 - Slice mode: AFK | HITL | none
+- Spec gate: passed <iso> | none                    # optional — set when the spec readiness gate passes
+- Plan approved: <iso> | none                       # optional — /rite-define sets it when the human confirms the plan
+- AFK slices remaining: <n> | none                  # mutable counter; initialized from .devrites/AFK max_slices on first AFK build
 - Risk: <highest current risk> | none
 - Next step: <single recommended command + why>
 
@@ -65,26 +69,37 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
 - blocking_slices: [<slice ids that cannot advance until answered>]
 
 ## Slice progress
-- [ ] Slice 1: <name> — <pending|built|proven|done>
+- [ ] Slice 1: <name> — <pending|built>
 - [ ] Slice 2: ...
 
 ## Log
 - <date> <phase>: <one line of what happened>
 ```
 
+A slice is only ever `pending` or `built`. Acceptance proof lives at the **feature**
+level in `evidence.md` (recorded by `/rite-prove`), not per slice — there is no per-slice
+`proven` / `done` state.
+
 ## `.devrites/AFK` sentinel (AFK mode toggle)
 
 Presence of the file `.devrites/AFK` puts DevRites into **AFK mode**: skills that would
 normally pause for the user instead log to `questions.md` (when the gate severity allows
-it — see [`pack/.claude/rules/afk-hitl.md`](../../../rules/afk-hitl.md)) and continue.
-The file content is optional YAML configuring loop discipline:
+it — see [`.claude/rules/afk-hitl.md`](../../../rules/afk-hitl.md)) and continue.
+`.devrites/AFK` presence is the **single source of truth** for run mode (`load-state.sh`
+derives it); skills re-read the sentinel at decision time rather than trusting a mirrored
+`state.md` field. The file content is optional YAML configuring loop discipline:
 
 ```yaml
 # .devrites/AFK — presence = AFK mode active. All keys optional.
-max_slices: 10                       # /rite-build decrements per built slice; 0 → forced HITL stop
-notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition; gets qid/gate/slice as env
+max_slices: 10                       # read-only INITIAL budget; the mutable remaining count lives in state.md
+notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition; see afk-discipline.md for the env table
 allow_gates: [advisory, validating]  # gate severities AFK may auto-handle; everything else pauses
 ```
+
+`max_slices` is **read-only config** — never rewritten in place. The mutable remaining
+count lives in `state.md` as `AFK slices remaining: <n>`, initialized from `max_slices` on
+the first AFK build and decremented per built slice (the cap is enforced by
+`tick-afk.sh`, not by prose).
 
 Absent or empty file = AFK active with defaults (`max_slices: unlimited`, no `notify`,
 `allow_gates: [advisory]`). **Destructive migrations, auth/authz boundary changes, and

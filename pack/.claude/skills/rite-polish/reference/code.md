@@ -3,7 +3,7 @@
 Loaded from `/rite-polish` every run, regardless of UI scope. Two sub-phases:
 code polish (Phase 1) and, when backend is touched, backend polish (Phase 2).
 
-## Rules consulted (read on demand from `pack/.claude/rules/`)
+## Rules consulted (read on demand from `.claude/rules/`)
 
 - `coding-style.md` — Phase 1 (simplify, dead code, naming, comments).
 - `patterns.md` — Phase 1 simplification — avoid over-engineering.
@@ -21,17 +21,35 @@ code polish (Phase 1) and, when backend is touched, backend polish (Phase 2).
 
 ## Phase 1 — Code polish *(always)*
 
-Delegates the audit to `devrites-audit simplify`; see
-[code-simplification.md](code-simplification.md).
+Delegates the audit to `devrites-audit simplify`. Reduce complexity in the
+feature's touched code while **preserving exact behavior**. Scope = active
+feature only.
 
 - **Measure first, target hotspots** — deep nesting, long branchy functions,
-  sprawling conditionals. Don't redistribute complexity, reduce it.
+  high cyclomatic complexity, sprawling conditionals. Don't redistribute
+  complexity, reduce it. Untargeted cleanup just moves decision points around.
 - **Behavior-preserving techniques** (name the one used per change): guard
-  clauses, Extract Method, simplify conditionals (switch/lookup), dedupe,
-  replace hand-rolled utils with stdlib/existing helpers, delete dead code
-  this feature added.
-- **Chesterton's Fence** — explain why something exists before removing it.
-- **Don't over-reduce** — inherent complexity is fine; readability is the goal.
+  clauses (flatten nested if/else, return early on unwanted cases), Extract
+  Method (a coherent block into a named single-responsibility helper), simplify
+  conditionals (switch/lookup over a long if-else; decompose a complex boolean
+  into well-named parts), dedupe, inline single-use indirection, replace
+  hand-rolled utils with the stdlib/existing helper, delete dead code this
+  feature added.
+- **Chesterton's Fence** — understand *why* something exists before removing it.
+  If you can't explain a check, branch, or wrapper, you may not remove it —
+  many "useless" lines guard a real edge case.
+- **Behavior preservation** — observable behavior stays identical; tests stay
+  green. If behavior would change, it's not simplification — it needs its own
+  acceptance + proof (and maybe drift handling). Prefer transformations with
+  obvious equivalence.
+- **Don't over-reduce / proportionality** — inherent complexity is fine;
+  readability is the goal, not a metric. Forcing the complexity number down by
+  *hiding* branches elsewhere is worse. Don't spend disproportionate effort on
+  small, stable, rarely-touched code; target central/often-read code.
+- **Guardrails** — feature scope only, no project-wide refactor; don't delete
+  suspected dead code **outside** this feature without asking; re-prove after
+  simplifying (a simplification that breaks a test wasn't behavior-preserving);
+  cleverness that's shorter but harder to read is not simpler.
 - **Cleanup**: remove TODOs, `console.log`s, commented-out code, unused
   imports/vars; tighten naming and comments in code this feature touched.
 

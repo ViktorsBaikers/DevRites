@@ -96,8 +96,8 @@ If the project has the tools, run them; capture evidence in `evidence.md`.
 
 ## Reporting in `/rite-polish`
 
-For each finding raised by this checklist, classify by Phase-1 bucket per
-`normalize-polish.md`:
+For each finding raised by this checklist, classify by Phase-3 normalize bucket
+per [ui.md](ui.md):
 - **Token gap** — the design system already has the answer (`text-truncate`
   token, `state-empty` component) and it isn't being used.
 - **Component miss** — the project already has an `EmptyState`, `ErrorBanner`,

@@ -33,8 +33,9 @@ If no workspace: tell the user to run `/rite-spec <feature>` to start. Stop.
 Otherwise summarize from the loaded state, concisely:
 
 1. **Feature** + one-line objective (from `brief.md`).
-2. **Phase**, **run mode** (`afk` / `hitl`), **active slice** + its slice mode
-   (from `state.md`; `.devrites/AFK` presence = AFK).
+2. **Phase**, **active slice** + its slice mode (from `state.md`). **Run mode**
+   (`afk` / `hitl`) is derived from `.devrites/AFK` presence (the load-state.sh script
+   already does this), not from a `state.md` field — present = `afk`, absent = `hitl`.
 3. **Status** — `running` / `awaiting_human` / `blocked` / `done`. If
    `awaiting_human`, render the `Awaiting human` block from `state.md` (qid, gate,
    question, proposed, raised_at, blocking_slices) and instruct
@@ -85,5 +86,5 @@ Gaps (if any):
 ```
 
 If gaps exist, the recommended next command is to **persist them first** (see
-`pack/.claude/rules/core.md` — "Persistence before stopping"). Only then
+`.claude/rules/core.md` — "Persistence before stopping"). Only then
 move to the phase's next action.

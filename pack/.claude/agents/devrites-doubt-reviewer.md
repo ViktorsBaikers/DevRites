@@ -1,6 +1,6 @@
 ---
 name: devrites-doubt-reviewer
-description: Fresh-context adversarial reviewer for the devrites-doubt loop and /rite-seal. Use to stress-test a single claim or decision with zero anchoring context. Its job is to break the claim, not to validate it.
+description: Fresh-context adversarial reviewer for the devrites-doubt loop. Use to stress-test a single claim or decision with zero anchoring context. Its job is to break the claim, not to validate it.
 tools: Read, Grep, Glob, Bash
 ---
 

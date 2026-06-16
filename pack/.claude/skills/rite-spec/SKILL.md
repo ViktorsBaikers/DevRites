@@ -12,9 +12,10 @@ The spec phase. Turn a request (even a vague one) into a **fully-covered, correc
 `/rite-define` can plan it and nothing is missed. **No plan, tasks, or code here** — those
 are `/rite-define` and `/rite-build`.
 
-## Rules consulted (read on demand from `pack/.claude/rules/`)
-`core.md` is already loaded. Pull `documentation.md` via `Read` when capturing
-significant spec decisions (why-not-what, ADR-style notes in `decisions.md`).
+## Rules consulted (read on demand from `.claude/rules/`)
+**Step 0:** Read `.claude/rules/core.md` first. DevRites skills Read `.claude/rules/core.md`
+as their first step; the other rule files load on demand. Pull `documentation.md` via `Read`
+when capturing significant spec decisions (why-not-what, ADR-style notes in `decisions.md`).
 
 ## Operating rules (DevRites core)
 - No silent assumptions · no guessing through confusion · prefer existing conventions ·
@@ -22,6 +23,7 @@ significant spec decisions (why-not-what, ADR-style notes in `decisions.md`).
   migration risk, or acceptance.
 
 ## Workflow
+0. **Read `.claude/rules/core.md`** — the always-on operating rules and anti-rationalizations.
 1. **Understand the request** (`$ARGUMENTS`). Restate the goal and the *real problem
    behind it* in a sentence or two.
 2. **Investigate deeply** — [investigation](reference/investigation.md). Produce, and
@@ -56,7 +58,7 @@ significant spec decisions (why-not-what, ADR-style notes in `decisions.md`).
 6. **Run the spec readiness gate** (bottom of spec-template): no blocking
    `[NEEDS CLARIFICATION]`, placement decided, all material gaps resolved, any design
    references provided are saved, requirements testable, success criteria measurable.
-   **Stop** when it passes.
+   When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when it passes.
 
 > **Mid-flight discipline.** When tempted to skip investigation depth, gap-closing, or placement decisions — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 

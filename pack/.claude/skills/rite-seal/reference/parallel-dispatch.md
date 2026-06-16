@@ -1,6 +1,6 @@
 # Parallel review dispatch
 
-How `/rite-review` and `/rite-seal` fan out the fresh-context review subagents under `pack/.claude/agents/`. Loaded on demand by the calling skill — not a skill itself.
+How `/rite-review` and `/rite-seal` fan out the fresh-context review subagents under `.claude/agents/`. Loaded on demand by the calling skill — not a skill itself.
 
 DevRites ships eight fresh-context review subagents under `.claude/agents/`. The seal and the multi-axis review need most of them running **at the same time**, on the same workspace + diff, so the verdicts don't contaminate each other.
 
@@ -55,7 +55,7 @@ When the subagents return:
 1. **Quote verbatim.** Place each subagent's findings under its own `## <axis>` heading in `review.md` / `seal.md`. Do not merge, re-rank, or summarize.
 2. **Surface contradictions explicitly.** "Spec axis says complete, Standards axis says untestable" is a finding, not noise. The caller decides at the gate.
 3. **Severity is the gate, not a score.** Sum the labels (`Critical / Important / Suggestion / Nit / FYI`) and apply the caller's gate (`/rite-seal` blocks on `Critical == 0`; `/rite-review` reports counts).
-4. **One scale.** All subagents use the same five-label scale. Reject any subagent output that invents its own.
+4. **One scale.** All subagents use the same five-label scale (Critical / Important / Suggestion / Nit / FYI). Reject any subagent output that invents its own. **Exception:** `devrites-simplifier-reviewer` deliberately emits only Suggestion / Nit / FYI (it is non-blocking by design) — that is a valid subset of the scale, not an invented one; do not reject it during reconciliation.
 
 ## Fallback
 

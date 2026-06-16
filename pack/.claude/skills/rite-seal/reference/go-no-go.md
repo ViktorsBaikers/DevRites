@@ -10,6 +10,9 @@ list beats a hopeful GO.
 - **Unresolved spec drift** remains (a known-wrong plan or an open behavior question).
 - A **security-critical issue** remains (auth bypass, data exposure, injection).
 - A **data migration or destructive change lacks a rollback plan**.
+- Any `questions.md` entry with `gate: validating` and `status: open` — **NO-GO
+  regardless of behavior impact** (an open validating gate is merge-blocking by
+  definition). A slice marked `built (pending review)` is not done.
 
 ## GO requires
 - Every critical acceptance criterion checked with evidence attached.
