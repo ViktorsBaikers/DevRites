@@ -32,6 +32,8 @@ A slice is done only when:
 - it's reviewed and within scope;
 - docs/comments touched by the change are updated (`documentation.md`);
 - any destructive/migration step has a rollback.
+- evidence post-dates the code it proves; edits made after `/rite-prove` (polish/review)
+  require re-proof before seal — stale evidence is not proof.
 "Code written" is not done. "Proven and reviewed" is.
 
 ## Incremental delivery

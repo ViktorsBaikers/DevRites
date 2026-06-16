@@ -14,18 +14,24 @@ The contract is intentionally small: one sentinel, one queue, one verb.
   discretionary pauses (e.g. `devrites-doubt` findings) downgrade to advisory entries
   in `questions.md` instead of blocking, subject to the gate ceiling.
 
-`state.md` mirrors the mode (`Run mode: afk | hitl`) so any single skill can branch on
-one field without re-checking the filesystem.
+`.devrites/AFK` presence is authoritative for run mode; gate-deciding skills re-read the
+sentinel at decision time (`load-state.sh` derives the mode from it). There is no
+`state.md` run-mode field to drift out of sync.
 
 ## The sentinel — `.devrites/AFK`
 
 Presence = AFK active. The file body is optional YAML:
 
 ```yaml
-max_slices: 10                       # /rite-build decrements per built slice; 0 → forced HITL stop
+max_slices: 10                       # read-only INITIAL budget; seeds state.md `AFK slices remaining`
 notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition
 allow_gates: [advisory, validating]  # gate severities AFK may auto-handle
 ```
+
+The file is **read-only config** — never rewritten in place. `max_slices` is the initial
+budget; the mutable remaining count lives in `state.md` as `AFK slices remaining: <n>`,
+seeded from `max_slices` on the first AFK build and decremented by `tick-afk.sh` (which
+exits non-zero at 0, forcing a HITL stop). The cap is enforced by the script, not prose.
 
 Missing keys fall back to defaults:
 
@@ -40,7 +46,7 @@ To leave AFK, delete the file. The next skill invocation reverts to HITL.
 ## The four gates
 
 Every `Mode: HITL` slice declares a `Gate:` and an `SLA:`. See
-[`pack/.claude/skills/rite-define/reference/gates.md`](../skills/rite-define/reference/gates.md)
+[`.claude/skills/rite-define/reference/gates.md`](../skills/rite-define/reference/gates.md)
 for the full taxonomy. Summary:
 
 | Gate | Stakes | Pause? | SLA | AFK auto-handle when in `allow_gates`? |
@@ -52,6 +58,11 @@ for the full taxonomy. Summary:
 
 `blocking` and `escalating` always pause regardless of `allow_gates`. They are the
 "AFK never silently accepts" guarantees in protocol form.
+
+An open `gate: validating` entry is **merge-blocking by definition**: at `/rite-seal` any
+`questions.md` entry with `gate: validating` and `status: open` is a NO-GO, regardless of
+its behavior impact. A slice marked `built (pending review)` is **not done** until that
+validating gate resolves.
 
 ## Irreversible-risk list (always pause)
 
@@ -159,11 +170,11 @@ AFK shifts the boundary between automatic and "ask"; nothing else.
 
 ## Cross-reference
 
-- Skill: `/rite-resolve` (`pack/.claude/skills/rite-resolve/SKILL.md`).
-- Workflow integration: `/rite-build` (`pack/.claude/skills/rite-build/SKILL.md`),
+- Skill: `/rite-resolve` (`.claude/skills/rite-resolve/SKILL.md`).
+- Workflow integration: `/rite-build` (`.claude/skills/rite-build/SKILL.md`),
   workflow steps 0 + 2a + 10.
-- Render contract: `pack/.claude/skills/rite-build/reference/checkpoint-protocol.md`.
-- Loop discipline: `pack/.claude/skills/rite-build/reference/afk-discipline.md`.
-- Gate taxonomy: `pack/.claude/skills/rite-define/reference/gates.md`.
-- Schema: `pack/.claude/skills/rite-spec/reference/state-workspace.md`.
-- Doubt's AFK exception: `pack/.claude/skills/devrites-doubt/SKILL.md` (AFK exception section).
+- Render contract: `.claude/skills/rite-build/reference/checkpoint-protocol.md`.
+- Loop discipline: `.claude/skills/rite-build/reference/afk-discipline.md`.
+- Gate taxonomy: `.claude/skills/rite-define/reference/gates.md`.
+- Schema: `.claude/skills/rite-spec/reference/state-workspace.md`.
+- Doubt's AFK exception: `.claude/skills/devrites-doubt/SKILL.md` (AFK exception section).

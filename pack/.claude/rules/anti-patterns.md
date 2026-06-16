@@ -4,8 +4,9 @@ The pack-wide rationalizations the agent reaches for when discipline gets in
 the way. Apply at every phase. Each `rite-*/reference/anti-patterns.md`
 extends this with phase-specific items.
 
-The minimal version of this table lives in `core.md` (Universal
-anti-rationalizations); this file is the longer reference loaded on demand.
+This file is the **single source** of the universal anti-rationalization table.
+`core.md` carries only a minimal 5-row subset (its first five rows are
+byte-identical to the matching rows below); read this file for the full set.
 
 ## Universal rationalizations
 

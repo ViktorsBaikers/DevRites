@@ -38,7 +38,7 @@ The prefix mirrors visibility:
   collide on the bare names internally even though these never appear in the
   user's slash menu. Parallel reviewer fan-out at `/rite-seal` is no longer
   a skill — it lives as a reference file
-  (`pack/.claude/skills/rite-seal/reference/parallel-dispatch.md`).
+  (`.claude/skills/rite-seal/reference/parallel-dispatch.md`).
 
 The `/rite` menu carries the routing previously held by `devrites-selector`, which
 has been removed. `user-invocable:` in each `SKILL.md` is the source of truth; the
