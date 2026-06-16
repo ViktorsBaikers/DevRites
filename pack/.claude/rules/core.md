@@ -1,9 +1,9 @@
 # DevRites core rules — always-on
 
-The minimal always-on subset of the DevRites engineering rules. Loaded by the
-Claude Code autoload of `.claude/rules/core.md` at session start. The
-other rule files in this directory are **referenced on demand** by the phase
-that needs them (see `README.md` for the index).
+The minimal always-on subset of the DevRites engineering rules. DevRites
+`rite-*` skills Read `.claude/rules/core.md` as their first step; the other 15
+rule files in this directory load on demand by the phase that needs them (see
+`README.md` for the index).
 
 Project conventions always win where they exist; these rules fill gaps.
 
@@ -35,15 +35,16 @@ Project conventions always win where they exist; these rules fill gaps.
 ## Universal anti-rationalizations
 
 When you catch yourself reaching for one of these excuses, stop, name it,
-apply the rebuttal:
+apply the rebuttal. This is the **minimal subset — full table in
+[`.claude/rules/anti-patterns.md`](anti-patterns.md)**:
 
 | Excuse | Rebuttal |
 |---|---|
-| "I'll add the tests later." | Tests written after the fact don't drive design and miss the boundary cases the act of writing exposes. Test now. |
-| "It's only a small refactor while I'm in here." | Feature scope only — drive-by cleanup balloons the diff and gets rejected at seal. Record as FYI follow-up. |
-| "This is a special case, the pattern doesn't apply." | Either it really is special (record *why* in `decisions.md`) or it's not (and the pattern wins). |
-| "The user will tell me if something is wrong." | Drift detection is the workflow's job, not the user's QA. Surface assumptions; route material questions through the Spec Drift Guard. |
+| "I'll add the tests later." | Tests written after the fact don't drive design and miss the boundary cases the act of writing exposes. Test now or the tests you eventually write are worse. |
 | "Lint and build pass — that proves quality." | Automation proves syntax and style, not design or correctness. Never cite clean automation as evidence of good design. |
+| "It's only a small refactor while I'm in here." | Feature scope only — drive-by cleanup balloons the diff, hides intent, and gets rejected at seal. Record as an FYI follow-up. |
+| "This is a special case, the pattern doesn't apply." | Special cases multiply silently. Either they really are special (record *why* in `decisions.md`) or they're not (and the pattern wins). |
+| "The user will tell me if something is wrong." | Drift detection is the workflow's job, not the user's QA. Surface assumptions; route material questions through the Spec Drift Guard. |
 
 ## One-line discipline (load the full rule file when in scope)
 

@@ -10,12 +10,12 @@ prefers what's already there).
 
 ## Loading model — progressive disclosure
 
-To keep context lean, the rules follow Claude's progressive-disclosure pattern. Only the
-**core** loads automatically; everything else is referenced and read on demand by the
-phase that needs it. `core.md` is autoloaded by Claude Code from
-`.claude/rules/core.md` at session start; the others load on demand.
+To keep context lean, the rules follow Claude's progressive-disclosure pattern. There
+are 16 rule files (plus this README index): each DevRites `rite-*` skill Reads
+`.claude/rules/core.md` as its first step; the other 15 rule files load on demand by the
+phase that needs them.
 
-### Always-on (autoloaded from `.claude/rules/core.md` at session start)
+### Always-on (read by each `rite-*` skill as step 0)
 
 | Rule | Covers |
 |---|---|
@@ -33,7 +33,7 @@ phase that needs it. `core.md` is autoloaded by Claude Code from
 | `performance.md` | Measure first, common pitfalls, prove the win. | When perf is in scope. |
 | `patterns.md` | SOLID, composition, loose coupling, avoid over-engineering. | `/rite-build`, simplification audit. |
 | `git-workflow.md` | Conventional Commits, atomic commits, small PRs. | `/rite-seal`, commit / push steps. |
-| `hooks.md` | Stage checks by cost, fast local hooks, secret scanning. | When configuring hooks. |
+| `hooks.md` | Stage checks by cost, fast local hooks, secret scanning. | When configuring hooks; `/rite-seal` commit/git step points here. |
 | `documentation.md` | Explain why, keep current, record decisions. | `/rite-spec`, `/rite-define`, `/rite-seal`. |
 | `development-workflow.md` | Small batches, trunk-always-green, definition of done. | `/rite-define`, `/rite-plan`. |
 | `agents.md` | DevRites review subagents + specialist skills, when to fan out. | `/rite-review`, `/rite-seal`. |
