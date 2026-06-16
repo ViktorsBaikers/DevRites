@@ -46,16 +46,21 @@ q="$d/questions.md"
 if [ -f "$q" ]; then
   # Tally by gate using "status:" + "gate:" lines that follow each "## q-" header.
   awk '
-    /^## q-/ { in_q=1; status=""; gate=""; next }
+    # Finalize the previous block BEFORE resetting — adjacent "## q-" headers
+    # would otherwise drop every open question except the last.
+    /^## q-/ {
+      if (in_q && status == "open") counts[gate]++
+      in_q=1; status=""; gate=""; next
+    }
     in_q && /^status:/ { sub(/^status:[[:space:]]*/, "", $0); status=$0 }
     in_q && /^gate:/   { sub(/^gate:[[:space:]]*/,   "", $0); gate=$0 }
     in_q && /^##[[:space:]]/ {
-      # next header — finalize previous; only counts "open"
+      # a non-question header ends the block — finalize; only counts "open"
       if (status == "open") counts[gate]++
       in_q=0
     }
     END {
-      if (status == "open") counts[gate]++
+      if (in_q && status == "open") counts[gate]++
       printf "  open: %d blocking, %d validating, %d advisory, %d escalating\n", \
         counts["blocking"]+0, counts["validating"]+0, counts["advisory"]+0, counts["escalating"]+0
     }
