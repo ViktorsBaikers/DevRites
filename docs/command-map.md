@@ -12,8 +12,9 @@ what it writes, and how the pieces interact.
 `devrites-` is a **namespace prefix** chosen for collision avoidance against
 bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`,
 …). It does **not** signal "internal" — visibility is governed by the
-`user-invocable:` flag in each `SKILL.md`. Three `devrites-*` skills are
-public (`zoom-out`, `prototype`, `handoff`); the rest are model-invoked.
+`user-invocable:` flag in each `SKILL.md`. All four public utilities use the
+`rite-*` prefix (`rite-zoom-out`, `rite-prototype`, `rite-handoff`,
+`rite-pressure-test`); every `devrites-*` skill is model-invoked.
 
 ## Public commands (`user-invocable: true`)
 
@@ -66,8 +67,9 @@ public (`zoom-out`, `prototype`, `handoff`); the rest are model-invoked.
 
 ## Engineering rules (`pack/.claude/rules/`)
 
-Progressive-disclosure rules. `core.md` always loads; the rest are referenced
-on demand. Full index in [`pack/.claude/rules/README.md`](../pack/.claude/rules/README.md).
+Progressive-disclosure rules. Each `rite-*` skill Reads `core.md` as its
+first step (step 0); the rest are referenced on demand. Full index in
+[`pack/.claude/rules/README.md`](../pack/.claude/rules/README.md).
 
 - `core.md` (always-on) — operating rules + universal anti-rationalizations + 1-line craft disciplines + persistence-before-stopping summary.
 - `coding-style.md` · `error-handling.md` · `testing.md` · `code-review.md` · `security.md` · `performance.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md`

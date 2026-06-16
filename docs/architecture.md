@@ -27,9 +27,10 @@ spec+plan → build one verified slice → prove with evidence → polish → re
    internal is governed by the `user-invocable:` flag, not by the name
    prefix.
 
-   Engineering rules live at `.claude/rules/` (autoloaded natively by Claude
-   Code; `core.md` always-on, other 14 files on demand). Parallel reviewer
-   fan-out at `/rite-seal` is a reference file
+   Engineering rules live at `.claude/rules/` (each `rite-*` skill Reads
+   `.claude/rules/core.md` as its first step; the other 15 files load on
+   demand — no session-start autoload). Parallel reviewer fan-out at
+   `/rite-seal` is a reference file
    (`rite-seal/reference/parallel-dispatch.md`), not a skill.
 4. **Supporting references** — `reference/*.md` inside each skill. Long checklists,
    templates, and anti-rationalization tables loaded on demand (progressive
@@ -39,8 +40,8 @@ spec+plan → build one verified slice → prove with evidence → polish → re
    `-test-analyst`, `-frontend-reviewer`, `-security-auditor`,
    `-performance-reviewer`, `-doubt-reviewer`, `-simplifier-reviewer`.
 6. **Engineering rules** — DevRites' own stack-agnostic rules installed to
-   `.claude/rules/`. One always-on file (`core.md`) plus 15 on-demand files
-   loaded by the phase that needs them:
+   `.claude/rules/`. Each `rite-*` skill Reads `core.md` as its first step
+   (step 0); 15 on-demand files load by the phase that needs them:
    - **Craft:** `coding-style.md` · `patterns.md` · `error-handling.md` ·
      `testing.md` · `documentation.md`.
    - **Quality / safety:** `code-review.md` · `security.md` ·
@@ -150,16 +151,20 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 11 public `rite-*` skills (incl. `rite-resolve` resume verb) + a
-  thin `/rite` menu (carries the routing) + `rite-pressure-test` + 3 public
-  `devrites-*` utilities + internal `devrites-*` specialists — not one
+- **Surface**: 15 public `rite-*` skills — the thin `/rite` menu (carries the
+  routing) + 8 lifecycle phases (`rite-spec`, `rite-define`, `rite-plan`,
+  `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`) +
+  `rite-status` + the `rite-resolve` resume verb + 4 utilities
+  (`rite-zoom-out`, `rite-prototype`, `rite-handoff`, `rite-pressure-test`) —
+  plus 8 internal model-invoked `devrites-*` specialists, not one
   mega-command. The `devrites-` prefix is a namespace (collision avoidance),
-  not a public/internal marker — `user-invocable:` is.
+  not a public/internal marker — `user-invocable:` is. All `devrites-*`
+  skills are model-invoked.
 - **Selection**: the `/rite` menu skill carries the routing table; every
   workflow skill enforces a "right skill, right time" rule in its body.
 - **State**: durable `.devrites/` Markdown that survives compaction and new sessions.
-  Run mode (HITL/AFK) is mirrored into `state.md`; `.devrites/AFK` is the
-  session-level toggle.
+  `.devrites/AFK` presence is the single source of truth for run mode (HITL/AFK);
+  there is no `state.md` run-mode field to drift out of sync.
 - **Run modes**: same lifecycle runs HITL (default; pause at typed gate) or AFK
   (drop `.devrites/AFK`; loop continues, discretionary pauses downgrade to
   advisory log, irreversible risk always pauses).
