@@ -1,6 +1,6 @@
 # All 23 skills
 
-The pack ships **23 skills total** — 15 user-invocable `rite-*` workflow + utility skills, 8 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/` and are autoloaded by Claude Code natively (no carrier skill).
+The pack ships **23 skills total** — 15 user-invocable `rite-*` workflow + utility skills, 8 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other rule files on demand (no carrier skill, no session-start autoload).
 
 **Naming convention.** `rite-*` is the user-facing slash-command surface (lifecycle phases plus utilities — `rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`). `devrites-*` is internal (model-invoked, hidden from the menu) and collision-avoiding against bundled Claude Code skill names. Visibility is governed by each skill's `user-invocable:` flag; the prefix mirrors it.
 
@@ -28,7 +28,7 @@ Every user-invocable skill responds to **both** `/rite <verb>` (menu form — ty
 | `/rite handoff` | `/rite-handoff` | utility | Compact the chat session into a handoff doc a fresh agent can pick up — syncs to the workspace, references existing artifacts by path. |
 | `/rite pressure-test` | `/rite-pressure-test` | utility | Diverge → converge on a rough idea before specifying. |
 
-Internal specialists (model-invoked, hidden from the menu): `devrites-interview`, `-source-driven`, `-doubt`, `-frontend-craft`, `-browser-proof`, `-debug-recovery`, `-api-interface`, `-audit` (security / perf / simplify), `-rules`, `-parallel-review`. The `/rite` menu carries the routing previously held by `devrites-selector` (now removed), the four user-invocable utilities all use the `rite-*` prefix (`rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`), and the `/rite-polish` phases live as references inside the same skill rather than as `rite-polish-code` / `rite-polish-ui`. Triggers and interactions are documented in [`command-map.md`](command-map.md); diagrams in [`flow.md`](flow.md).
+The 8 model-invoked internal specialists (hidden from the menu): `devrites-interview`, `-source-driven`, `-doubt`, `-frontend-craft`, `-browser-proof`, `-debug-recovery`, `-api-interface`, `-audit` (security / perf / simplify). The `/rite` menu carries the routing, the four user-invocable utilities all use the `rite-*` prefix (`rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`), and the `/rite-polish` phases live as references inside the same skill rather than as `rite-polish-code` / `rite-polish-ui`. Triggers and interactions are documented in [`command-map.md`](command-map.md); diagrams in [`flow.md`](flow.md).
 
 ---
 
@@ -102,11 +102,11 @@ Internal specialists (model-invoked, hidden from the menu): `devrites-interview`
 | [`rite-prototype`](../pack/.claude/skills/rite-prototype/SKILL.md) | Throwaway code answering ONE design question — logic harness OR 2–4 UI variations on one route. | "Prototype this", "let me play with it", "try a few designs", question is undecidable on paper. |
 | [`rite-handoff`](../pack/.claude/skills/rite-handoff/SKILL.md) | Compact chat session → handoff doc. References existing `.devrites/work/<slug>/` artifacts by path. | "Handoff", "summarize this session", before `/clear`, fresh agent will continue. |
 
-### Foundation — Auto-loaded carriers
+### Foundation — Engineering rules
 
 | Skill | What It Does | Use When |
 |---|---|---|
-| (engineering rules) | Live at `.claude/rules/` post-install — `core.md` is autoloaded by Claude Code at session start; the other 14 rule files (`coding-style.md`, `error-handling.md`, `testing.md`, `code-review.md`, `security.md`, `performance.md`, `patterns.md`, `git-workflow.md`, `hooks.md`, `documentation.md`, `development-workflow.md`, `agents.md`, `context-hygiene.md`, `afk-hitl.md`, `anti-patterns.md`) load on demand per skill body. No carrier skill — native autoload. | n/a — always-on / on-demand by path. |
+| (engineering rules) | Live at `.claude/rules/` post-install — each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0); the other 15 rule files (`coding-style.md`, `error-handling.md`, `testing.md`, `code-review.md`, `security.md`, `performance.md`, `patterns.md`, `git-workflow.md`, `hooks.md`, `documentation.md`, `development-workflow.md`, `agents.md`, `context-hygiene.md`, `afk-hitl.md`, `anti-patterns.md`) load on demand per skill body. No carrier skill, no session-start autoload. | n/a — step-0 core / on-demand by path. |
 
 ---
 

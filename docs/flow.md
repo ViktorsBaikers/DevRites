@@ -164,14 +164,15 @@ stays small.
 
 ## 6. Engineering-rules carrier
 
-Claude Code autoloads `.claude/rules/core.md` (the always-on subset) at
-session start. Per-phase skills pull additional rule files on demand via
-plain `Read` as their workflow demands. No carrier skill — native autoload.
+Each `rite-*` skill Reads `.claude/rules/core.md` (the always-on subset) as
+its first step (step 0); the other rule files load on demand. Per-phase
+skills pull additional rule files via plain `Read` as their workflow
+demands. No carrier skill, no session-start autoload.
 
 ```mermaid
 flowchart TD
-    R[Claude Code<br/>autoload] -->|always-on| Core[.claude/rules/core.md]
-    R -->|on demand index| Idx[(.claude/rules/README.md<br/>14 specialist rule files)]
+    R[rite-* skill<br/>step 0] -->|always-on| Core[.claude/rules/core.md]
+    R -->|on demand index| Idx[(.claude/rules/README.md<br/>15 specialist rule files)]
     Idx --> CS[coding-style.md]
     Idx --> EH[error-handling.md]
     Idx --> T[testing.md]
@@ -185,6 +186,7 @@ flowchart TD
     Idx --> DWf[development-workflow.md]
     Idx --> Ag[agents.md]
     Idx --> CH[context-hygiene.md]
+    Idx --> Afk[afk-hitl.md]
     Idx --> AP[anti-patterns.md]
 
     Build[/rite-build/] -.->|pulls| CS
@@ -202,7 +204,7 @@ flowchart TD
     classDef rule fill:#1f2937,stroke:#9ca3af,color:#f9fafb
     classDef phase fill:#064e3b,stroke:#34d399,color:#ecfdf5
     class R carrier
-    class Core,CS,EH,T,CR,S,P,Pat,Gw,Hk,Doc,Wf,Ag,CH,AP rule
+    class Core,CS,EH,T,CR,S,P,Pat,Gw,Hk,Doc,Wf,Ag,CH,Afk,AP rule
     class Build,Polish,Review,Seal phase
 ```
 
@@ -217,9 +219,8 @@ run mode for all skills.
 ```mermaid
 erDiagram
     ACTIVE ||--o| WORKSPACE : points-to
-    AFK_SENTINEL }|..|| RUN_MODE : "presence flips mode to AFK"
+    AFK_SENTINEL }|..|| RUN_MODE : "presence is authoritative — skills re-read at decision time"
     WORKSPACE ||--|| state : has
-    state }|..|| RUN_MODE : "mirrors session mode"
     WORKSPACE ||--|| brief : has
     WORKSPACE ||--|| spec : has
     WORKSPACE ||--|| plan : "has (from /rite-define)"
@@ -241,7 +242,7 @@ erDiagram
     }
     AFK_SENTINEL {
         bool present "presence = AFK active"
-        int max_slices "optional iteration cap"
+        int max_slices "read-only initial budget — copied to state.md once"
         string notify "optional shell command on pause"
         list allow_gates "gate severities AFK may auto-handle"
     }
@@ -250,9 +251,9 @@ erDiagram
     }
     state {
         string phase "spec | plan | build | prove | polish | review | seal | done"
-        string run_mode "afk | hitl"
         string status "running | awaiting_human | blocked | done"
         string active_slice "N — name"
+        int afk_slices_remaining "from .devrites/AFK max_slices on first AFK build"
         block awaiting_human "qid, gate, question, proposed, raised_at (only when paused)"
     }
     questions {
@@ -292,24 +293,22 @@ flowchart TB
         D2[/rite-prototype/]
         D3[/rite-handoff/]
     end
-    subgraph Internal["Internal (user-invocable: false) — 12 skills, model-invoked"]
+    subgraph Internal["Internal (user-invocable: false) — 8 skills, model-invoked"]
         direction TB
-        I3[devrites-interview]
-        I6[devrites-source-driven]
-        I7[devrites-doubt]
-        I8[devrites-frontend-craft]
-        I9[devrites-browser-proof]
-        I10[devrites-debug-recovery]
-        I11[devrites-api-interface]
-        I12[devrites-audit simplify]
-        I13[devrites-audit security]
-        I14[devrites-audit perf]
+        I1[devrites-api-interface]
+        I2[devrites-audit<br/>security · perf · simplify]
+        I3[devrites-browser-proof]
+        I4[devrites-debug-recovery]
+        I5[devrites-doubt]
+        I6[devrites-frontend-craft]
+        I7[devrites-interview]
+        I8[devrites-source-driven]
     end
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
     class R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11,IPT,D1,D2,D3 pub
-    class I3,I6,I7,I8,I9,I10,I11,I12,I13,I14 int
+    class I1,I2,I3,I4,I5,I6,I7,I8 int
 ```
 
 ## 9. AFK & HITL state machine

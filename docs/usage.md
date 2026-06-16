@@ -22,7 +22,7 @@ survives compaction and new sessions:
 | `references/` + `references.md` | `/rite-spec` | saved design refs — screenshots, Figma, video, links |
 | `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback |
 | `tasks.md` | `/rite-define` | ordered vertical slices, each tagged `Mode: AFK \| HITL` + `Gate` / `SLA` / `Checkpoint` when HITL |
-| `state.md` | every phase | phase, run mode, status, active slice, risk, next step (the cursor); plus `Awaiting human` block when paused |
+| `state.md` | every phase | phase, status, active slice + slice mode, risk, next step (the cursor); plus `Awaiting human` block when paused (run mode is derived from `.devrites/AFK`, not stored here) |
 | `questions.md` | every phase | append-only Q&A — qid, slice, gate, status (`open` / `answered` / `dropped`), proposed answer, raised/answered timestamps |
 | `decisions.md` / `assumptions.md` | every phase | running logs |
 | `drift.md` | Spec Drift Guard | drift events + resolutions |
@@ -238,7 +238,7 @@ EOF
     a validating question; slice stays at `built (pending review)`
   → slice 07 (HITL, Gate: blocking) → ALWAYS pauses; writes Awaiting human,
     fires notify hook (your phone pings), STOPs
-  → max_slices: 10 → 7 remaining
+  → state.md `AFK slices remaining`: 10 → 7 (max_slices stays 10, read-only)
 
 # In the morning:
 /rite-status
@@ -269,8 +269,10 @@ full list.
 
 - Commit `.devrites/` so the team and future sessions share feature state.
 - **`.devrites/AFK` is per-developer, not per-repo** — gitignore it (or commit
-  it deliberately if the team agrees on AFK defaults). The sentinel toggles
-  your local session mode; nothing else.
+  it deliberately if the team agrees on AFK defaults). The sentinel is
+  read-only config: it toggles your local session mode and sets the initial
+  `max_slices` budget; nothing else. The mutable remaining-slice count lives
+  in `state.md` (`AFK slices remaining`), never in the sentinel.
 - One feature active at a time (`ACTIVE`). To start or switch, run
   `/rite-spec <other>` (it creates/selects that workspace and writes its
   spec).

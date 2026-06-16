@@ -16,7 +16,7 @@ typed confirmation before any irreversible commit / push / tag.
   ACTIVE                    # which feature is active
   AFK                       # presence = AFK mode; YAML body sets max_slices / notify / allow_gates
   work/<slug>/
-    spec.md  plan.md  tasks.md  state.md  evidence.md
+    brief.md  spec.md  plan.md  tasks.md  state.md  evidence.md
     decisions.md  assumptions.md  drift.md  questions.md
     references/  browser-evidence.md  touched-files.md
     polish-report.md  review.md  seal.md  handoff.md
@@ -107,7 +107,7 @@ rules carrier, workspace state, namespace map) →
 
 A single command that does everything loads every phase's instructions at once, creates
 constant context pressure, and hides the intent of each step. DevRites splits the
-lifecycle into ~10 small public skills (`rite-*`) that each own one phase and load only
+lifecycle into 15 small public skills (`rite-*`) that each own one phase and load only
 what that phase needs, plus internal specialists (`devrites-*`) that fire on triggers.
 
 **Naming:** the `devrites-` prefix is a **namespace** for collision avoidance against
@@ -192,10 +192,11 @@ locations and lets you manage updates with `claude plugin update devrites`.
 Uninstall with `claude plugin uninstall devrites`.
 
 **The plugin does not install the DevRites engineering rules.** The Claude
-Code plugin manifest has no `rules` field — `core.md`, `state-machine.md`,
-`afk-hitl.md`, `browser-proof.md`, and the rest of `.claude/rules/` won't be
-present. Many skills (`/rite-build`, `/rite-prove`, `/rite-polish`, …) cite
-those rules at runtime and degrade noticeably without them.
+Code plugin manifest has no `rules` field — `core.md`, `afk-hitl.md`,
+`coding-style.md`, `testing.md`, `security.md`, and the rest of
+`.claude/rules/` won't be present. Many skills (`/rite-build`, `/rite-prove`,
+`/rite-polish`, …) cite those rules at runtime and degrade noticeably without
+them.
 
 To add the rules after a plugin install, run the bash installer in
 `--rules-only` mode:
@@ -279,7 +280,7 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **23 skills total** — 15 user-invocable `rite-*` workflow + utility skills, 8 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/` and are autoloaded by Claude Code natively — no carrier skill.
+The pack ships **23 skills total** — 15 user-invocable `rite-*` workflow + utility skills, 8 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
 
 **Two invocation forms.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
@@ -416,8 +417,8 @@ browser-harness, backend-only, polish modes, zoom-out, mid-flight handoff):
 DevRites ships its own stack-agnostic engineering rules and installs them to
 `.claude/rules/` — 16 rule files plus a README index. They're **common** by design
 (no language assumptions); a project's own conventions always win where they exist.
-Skip them with `--no-rules`. Loading model: `core.md` is autoloaded by Claude Code
-from `.claude/rules/core.md` at session start; the other 15 rule files load on
+Skip them with `--no-rules`. Loading model: each `rite-*` skill Reads
+`.claude/rules/core.md` as its first step; the other 15 rule files load on
 demand via `Read` from the skill body that needs them.
 
 | Always-on | On-demand |
@@ -425,7 +426,7 @@ demand via `Read` from the skill body that needs them.
 | `core.md` | `coding-style.md` · `error-handling.md` · `testing.md` · `code-review.md` · `security.md` · `performance.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `anti-patterns.md` |
 
 Full index with phase mapping: [`pack/.claude/rules/README.md`](pack/.claude/rules/README.md);
-diagram: [`docs/flow.md` § Engineering-rules autoload](docs/flow.md#6-engineering-rules-carrier).
+diagram: [`docs/flow.md` § Engineering-rules loading](docs/flow.md#6-engineering-rules-carrier).
 
 ## Browser proof ladder
 
