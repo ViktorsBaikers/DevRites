@@ -8,6 +8,10 @@
 #   ./update.sh --force               re-install even if already at the latest version
 #   ./update.sh --pre                 allow pre-release tags (default: stable only)
 #
+# Env:
+#   DEVRITES_UPDATE_BUNDLE=PATH       use a local .tar.gz instead of downloading
+#                                     (air-gapped upgrades; also used by tests)
+#
 # How it works:
 #   1. Reads the installed version + flags from .claude/devrites.manifest.
 #   2. Asks the GitHub API for the latest release tag (or the tag passed via --to).
@@ -38,7 +42,7 @@ while [ $# -gt 0 ]; do
     --check)   CHECK_ONLY=1 ;;
     --force)   FORCE=1 ;;
     --pre)     ALLOW_PRE=1 ;;
-    -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)         echo "error: unknown option: $1 (try --help)" >&2; exit 1 ;;
   esac
   shift
@@ -160,11 +164,19 @@ ARTIFACT="devrites-${LATEST_TAG}.tar.gz"
 URL="https://github.com/$REPO/releases/download/$LATEST_TAG/$ARTIFACT"
 SRC_TARBALL_URL="https://github.com/$REPO/archive/refs/tags/$LATEST_TAG.tar.gz"
 
-info "downloading $ARTIFACT …"
-if ! curl -fsSL -o "$TMP/$ARTIFACT" "$URL" 2>/dev/null; then
-  warn "release artifact $ARTIFACT not found; falling back to the source tarball ($LATEST_TAG)."
-  ARTIFACT="src-$LATEST_TAG.tar.gz"
-  curl -fsSL -o "$TMP/$ARTIFACT" "$SRC_TARBALL_URL" || die "could not download $SRC_TARBALL_URL"
+# DEVRITES_UPDATE_BUNDLE — optional escape hatch for air-gapped upgrades and
+# tests: a readable local .tar.gz to use instead of downloading from GitHub.
+if [ -n "${DEVRITES_UPDATE_BUNDLE:-}" ]; then
+  [ -r "$DEVRITES_UPDATE_BUNDLE" ] || die "DEVRITES_UPDATE_BUNDLE not readable: $DEVRITES_UPDATE_BUNDLE"
+  info "using local bundle $DEVRITES_UPDATE_BUNDLE (DEVRITES_UPDATE_BUNDLE set) …"
+  cp "$DEVRITES_UPDATE_BUNDLE" "$TMP/$ARTIFACT" || die "could not copy $DEVRITES_UPDATE_BUNDLE"
+else
+  info "downloading $ARTIFACT …"
+  if ! curl -fsSL -o "$TMP/$ARTIFACT" "$URL" 2>/dev/null; then
+    warn "release artifact $ARTIFACT not found; falling back to the source tarball ($LATEST_TAG)."
+    ARTIFACT="src-$LATEST_TAG.tar.gz"
+    curl -fsSL -o "$TMP/$ARTIFACT" "$SRC_TARBALL_URL" || die "could not download $SRC_TARBALL_URL"
+  fi
 fi
 
 tar -C "$TMP" -xzf "$TMP/$ARTIFACT"

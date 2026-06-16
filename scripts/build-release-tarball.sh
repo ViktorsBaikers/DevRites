@@ -55,5 +55,19 @@ rm -rf "$STAGE/docs/internal" "$STAGE/scripts/.cache" 2>/dev/null || true
 tar -C "$DIST" -czf "$DIST/${NAME}.tar.gz" "$NAME"
 rm -rf "$STAGE"
 
+# Emit a sibling checksum so install.sh can verify the artifact when present.
+# Write just "<sha256>  <filename>" (no path) so it verifies from any cwd.
+(
+  cd "$DIST"
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "${NAME}.tar.gz" > "${NAME}.tar.gz.sha256"
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "${NAME}.tar.gz" > "${NAME}.tar.gz.sha256"
+  else
+    echo "warning: no sha256 tool found; skipping ${NAME}.tar.gz.sha256" >&2
+  fi
+)
+
 echo "  → $DIST/${NAME}.tar.gz"
 ls -lh "$DIST/${NAME}.tar.gz"
+[[ -f "$DIST/${NAME}.tar.gz.sha256" ]] && { echo "  → $DIST/${NAME}.tar.gz.sha256"; cat "$DIST/${NAME}.tar.gz.sha256"; } || true
