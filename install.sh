@@ -48,11 +48,12 @@ if [ -z "$SELF_DIR" ] || [ ! -d "$SELF_DIR/pack/.claude" ] || [ ! -r "$SELF_DIR/
   fi
 
   BOOT_DOWNLOADED=0
+  BOOT_FROM_RELEASE=0   # 1 only when we fetched the published release artifact (the one with a .sha256)
   if [ -n "$BOOT_TAG" ]; then
     # 1) try the published release artifact (tarball produced by build-release-tarball.sh)
     BOOT_URL="https://github.com/$DEVRITES_REPO/releases/download/$BOOT_TAG/devrites-$BOOT_TAG.tar.gz"
     if curl -fsSL -o "$BOOT_TMP/devrites.tar.gz" "$BOOT_URL" 2>/dev/null; then
-      BOOT_DOWNLOADED=1
+      BOOT_DOWNLOADED=1; BOOT_FROM_RELEASE=1
     else
       # 2) fall back to the tag's source tarball
       BOOT_URL="https://github.com/$DEVRITES_REPO/archive/refs/tags/$BOOT_TAG.tar.gz"
@@ -63,6 +64,35 @@ if [ -z "$SELF_DIR" ] || [ ! -d "$SELF_DIR/pack/.claude" ] || [ ! -r "$SELF_DIR/
     # 3) no release yet (or refs failed) → grab main
     BOOT_URL="https://github.com/$DEVRITES_REPO/archive/refs/heads/main.tar.gz"
     curl -fsSL -o "$BOOT_TMP/devrites.tar.gz" "$BOOT_URL" || { echo "error: could not download DevRites from $BOOT_URL" >&2; exit 1; }
+  fi
+
+  # Best-effort checksum verification for the published release artifact: if the
+  # sibling .sha256 asset is present, the tarball MUST match it; if it's absent
+  # (older release, offline mirror, source/main fallback) we warn and proceed.
+  if [ "$BOOT_FROM_RELEASE" -eq 1 ]; then
+    BOOT_SUM_URL="https://github.com/$DEVRITES_REPO/releases/download/$BOOT_TAG/devrites-$BOOT_TAG.tar.gz.sha256"
+    if curl -fsSL -o "$BOOT_TMP/devrites.tar.gz.sha256" "$BOOT_SUM_URL" 2>/dev/null; then
+      BOOT_WANT="$(awk '{print $1; exit}' "$BOOT_TMP/devrites.tar.gz.sha256" 2>/dev/null)"
+      if command -v shasum >/dev/null 2>&1; then
+        BOOT_GOT="$(shasum -a 256 "$BOOT_TMP/devrites.tar.gz" | awk '{print $1}')"
+      elif command -v sha256sum >/dev/null 2>&1; then
+        BOOT_GOT="$(sha256sum "$BOOT_TMP/devrites.tar.gz" | awk '{print $1}')"
+      else
+        BOOT_GOT=""
+      fi
+      if [ -z "$BOOT_GOT" ]; then
+        echo "DevRites: warning: no sha256 tool found; skipping checksum verification." >&2
+      elif [ "$BOOT_GOT" = "$BOOT_WANT" ]; then
+        echo "DevRites: checksum verified (sha256)."
+      else
+        echo "error: checksum mismatch for devrites-$BOOT_TAG.tar.gz — refusing to install." >&2
+        echo "  expected: $BOOT_WANT" >&2
+        echo "  got:      $BOOT_GOT" >&2
+        exit 1
+      fi
+    else
+      echo "DevRites: warning: no .sha256 asset for $BOOT_TAG; skipping checksum verification." >&2
+    fi
   fi
 
   tar -C "$BOOT_TMP" -xzf "$BOOT_TMP/devrites.tar.gz" || { echo "error: could not extract DevRites tarball" >&2; exit 1; }
@@ -101,11 +131,12 @@ while [ $# -gt 0 ]; do
     --target=*) TARGET="${1#*=}" ;;
     --dry-run) DRYRUN=1 ;;
     --force) FORCE=1 ;;
+    --no-skills) WITH_SKILLS=0 ;;                 # accepted so a --rules-only manifest round-trips through update.sh's flag replay
     --no-agents) WITH_AGENTS=0 ;;
     --no-rules) WITH_RULES=0 ;;
     --rules-only) WITH_SKILLS=0; WITH_AGENTS=0; WITH_RULES=1; ALIAS_MODE="off" ;;
     --no-short-aliases) ALIAS_MODE="off" ;;       # accepted for backward compat; aliases are off by default now
-    --short-aliases) ALIAS_MODE="off" ;;          # /polish + /normalize were removed in favor of /rite-polish argument-hint modes
+    --short-aliases) dr_warn "--short-aliases with no value is a no-op (aliases default off); use --short-aliases=all to install /define /build /prove /seal."; ALIAS_MODE="off" ;;  # /polish + /normalize were removed in favor of /rite-polish argument-hint modes
     --short-aliases=all) ALIAS_MODE="all" ;;
     -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) dr_die "unknown option: $1 (try --help)" ;;

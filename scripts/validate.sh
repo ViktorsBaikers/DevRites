@@ -156,7 +156,57 @@ else
   bad "rule-uniqueness check failed (see scripts/check-rule-uniqueness.sh)"
 fi
 
-# ---- 12. shellcheck (advisory) -------------------------------------------
+# ---- 12. version lockstep across manifests -------------------------------
+section "version lockstep (package.json == plugin.json == marketplace.json)"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 - "$ROOT" <<'PY'
+import json, sys, os
+root = sys.argv[1]
+pkg  = json.load(open(os.path.join(root, "package.json")))["version"]
+plug = json.load(open(os.path.join(root, ".claude-plugin/plugin.json")))["version"]
+mkt  = json.load(open(os.path.join(root, ".claude-plugin/marketplace.json")))
+mver = next((p.get("version") for p in mkt.get("plugins", []) if p.get("name") == "devrites"), None)
+print("  package.json     %s" % pkg)
+print("  plugin.json      %s" % plug)
+print("  marketplace.json %s" % mver)
+if pkg == plug == mver and mver is not None:
+    sys.exit(0)
+print("FAIL: version mismatch across manifests")
+sys.exit(1)
+PY
+  then good "versions match across package.json / plugin.json / marketplace.json"; else bad "version mismatch across manifests (run scripts/sync-version.sh)"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+# ---- 13. no runtime-broken pack/.claude/ path in installed prose ---------
+# After install the leading pack/ is stripped, so any literal pack/.claude/rules/
+# or pack/.claude/skills/ in shipped SKILL.md / reference prose is a dead path
+# at runtime. (Repo README/docs links are out of scope — they're GitHub links.)
+section "no literal pack/.claude/ paths in shipped skill prose"
+# Exclude the intentional dual-path dispatch fallbacks (`... || F=pack/.claude/...`)
+# in the /rite menu + /rite-status: they try the installed `.claude/` path first.
+PACKPATH_HITS="$(grep -rn -e 'pack/\.claude/rules/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
+if [ -n "$PACKPATH_HITS" ]; then
+  bad "literal pack/.claude/ path in shipped skill prose (strips to .claude/ on install):"
+  printf '%s\n' "$PACKPATH_HITS" | sed "s|$ROOT/||"
+else
+  good "no literal pack/.claude/rules/ or pack/.claude/skills/ in shipped skill prose"
+fi
+
+# ---- 14. no false session-start autoload claim ---------------------------
+# DevRites ships no autoload wiring; skills Read .claude/rules/core.md at step 0.
+# Fail if any shipped skill or doc asserts native/session-start autoload.
+section "no false session-start autoload claim"
+AUTOLOAD_HITS="$(grep -rl 'autoloaded by Claude Code' "$ROOT/pack" "$ROOT/docs" "$ROOT/README.md" 2>/dev/null || true)"
+if [ -n "$AUTOLOAD_HITS" ]; then
+  bad "false 'autoloaded by Claude Code' claim — the pack ships no autoload wiring:"
+  printf '%s\n' "$AUTOLOAD_HITS" | sed "s|$ROOT/||"
+else
+  good "no false session-start autoload claim in pack/ docs/ README.md"
+fi
+
+# ---- 15. shellcheck (advisory) -------------------------------------------
 section "shellcheck (advisory)"
 if command -v shellcheck >/dev/null 2>&1; then
   for f in $SH_LIST; do shellcheck -S warning "$f" || echo "  (shellcheck advisory only — not failing the build)"; done

@@ -165,6 +165,9 @@ jobs:
       - name: uninstall smoke
         run: bash tests/uninstall-smoke.sh
 
+      - name: update smoke
+        run: bash tests/update-smoke.sh
+
       - name: fixture install
         run: bash tests/fixture-install.sh
 

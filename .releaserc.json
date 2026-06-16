@@ -48,7 +48,8 @@
     }],
     ["@semantic-release/github", {
       "assets": [
-        { "path": "dist/devrites-v*.tar.gz", "label": "devrites-v${nextRelease.version}.tar.gz (pack tarball)" }
+        { "path": "dist/devrites-v*.tar.gz", "label": "devrites-v${nextRelease.version}.tar.gz (pack tarball)" },
+        { "path": "dist/devrites-v*.tar.gz.sha256", "label": "devrites-v${nextRelease.version}.tar.gz.sha256 (checksum)" }
       ],
       "successComment": false,
       "failComment": false
