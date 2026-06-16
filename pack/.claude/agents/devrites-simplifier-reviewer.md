@@ -32,6 +32,12 @@ Workspace `.devrites/work/<slug>/`: read `spec.md` (acceptance criteria),
 - **Scope.** Active feature + touched files only. Out-of-scope ideas are FYI
   follow-ups; never recommend deleting suspected dead code outside the
   feature.
+- **Severity scale (intentional exception).** The canonical DevRites scale is
+  Critical / Important / Suggestion / Nit / FYI, but this reviewer emits **only
+  Suggestion / Nit / FYI** — its findings are behavior-preserving and
+  non-blocking by design. It never raises Critical or Important; a genuinely
+  blocking complexity issue is a correctness or architecture finding for
+  `devrites-code-reviewer`, not this pass.
 
 ## Techniques (name the one you used)
 

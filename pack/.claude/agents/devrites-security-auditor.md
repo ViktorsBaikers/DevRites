@@ -24,11 +24,11 @@ Workspace `.devrites/work/<slug>/`: read `spec.md` (data model / API / affected 
 - **Deserialization** of untrusted data.
 
 ## Trust boundary
-Apply the three-tier discipline per `pack/.claude/rules/security.md`. Flag any value
+Apply the three-tier discipline per `.claude/rules/security.md`. Flag any value
 reaching the trusted tier without crossing the boundary.
 
 ## Rules
-- Don't edit. Findings only, labeled Critical / Important / Suggestion / FYI with
+- Don't edit. Findings only, labeled Critical / Important / Suggestion / Nit / FYI with
   `file:line`, the **impact**, and a concrete fix. A real auth-bypass / data-exposure /
   injection is **Critical → NO-GO**.
 - Feature scope; out-of-scope risks → FYI follow-ups. If unsure whether something is
@@ -38,7 +38,7 @@ reaching the trusted tier without crossing the boundary.
 ```
 Security audit (<slug>) — independent
 [Critical] file:line — issue. impact. fix.
-[Important]/[Suggestion]/[FYI] ...
+[Important]/[Suggestion]/[Nit]/[FYI] ...
 Boundary check: <skips? | clean>
 Dependencies: <audited; issues?>
 Verdict: <GO-able / NO-GO — blockers>

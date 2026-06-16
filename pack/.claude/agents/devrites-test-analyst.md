@@ -26,7 +26,7 @@ Workspace `.devrites/work/<slug>/`: read `spec.md` (acceptance criteria), `evide
 ## Rules
 - Do not edit anything. Return analysis only.
 - Be specific: name the criterion, the missing/weak test, and what to add.
-- Label findings Critical / Important / Suggestion / FYI.
+- Label findings Critical / Important / Suggestion / Nit / FYI.
 
 ## Output
 ```

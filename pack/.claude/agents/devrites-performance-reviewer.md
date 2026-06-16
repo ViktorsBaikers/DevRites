@@ -24,7 +24,7 @@ Workspace `.devrites/work/<slug>/`: read `spec.md` (any perf budget), `evidence.
   regression. Distinguish "measured regression" from "likely hot spot, verify with X".
 
 ## Rules
-- Don't edit. Findings only, labeled Critical / Important / Suggestion / FYI with
+- Don't edit. Findings only, labeled Critical / Important / Suggestion / Nit / FYI with
   `file:line`. A breach of a stated budget is Important/Critical; a speculative
   micro-opt with no measured impact is a Suggestion at most. Feature scope only.
 
@@ -32,7 +32,7 @@ Workspace `.devrites/work/<slug>/`: read `spec.md` (any perf budget), `evidence.
 ```
 Performance review (<slug>) — independent
 [Important] file:line — issue. measured: <number | "measure: <cmd/metric>">. direction.
-[Suggestion]/[FYI] ...
+[Suggestion]/[Nit]/[FYI] ...
 Budget: <breached? | none stated>
 To prove any win: <measure X before/after>
 Verdict: <blockers? none/list>

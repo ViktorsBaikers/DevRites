@@ -12,8 +12,10 @@ dependency-ordered set of **vertical slices**, and the state cursor. The spec is
 WHY (from `/rite-spec`); this is the **HOW**. Splitting spec and plan keeps each focused so
 nothing gets missed in one batch. **No code here.**
 
-## Rules consulted (read on demand from `pack/.claude/rules/`)
-`core.md` is already loaded. Pull these via `Read` when shaping the plan:
+## Rules consulted (read on demand from `.claude/rules/`)
+**Step 0:** Read `.claude/rules/core.md` first. DevRites skills Read `.claude/rules/core.md`
+as their first step; the other rule files load on demand. Pull these via `Read` when shaping
+the plan:
 - `development-workflow.md` — small batches, trunk-always-green, definition of done.
 - `documentation.md` — record plan-time decisions and rationale.
 
@@ -25,6 +27,7 @@ nothing gets missed in one batch. **No code here.**
 - Prefer existing conventions; ask before adding a dependency or a second design system.
 
 ## Workflow
+0. **Read `.claude/rules/core.md`** — the always-on operating rules and anti-rationalizations.
 1. **Read the spec** — `spec.md` (objective, requirements, acceptance, **placement**,
    design references, gaps/decisions), plus `references.md`, `decisions.md`,
    `assumptions.md`. If a blocking `[NEEDS CLARIFICATION]` remains, stop → `/rite-spec`.
@@ -53,7 +56,10 @@ nothing gets missed in one batch. **No code here.**
 6. **Write** `plan.md` + `tasks.md`; update `state.md` (phase: plan → next `/rite-build`).
 7. **Readiness gate** (bottom of plan-template): every acceptance criterion covered by a
    slice, dependency order acyclic + risk-first, no unjustified deviation, rollback for
-   every destructive/migration step. **Stop and confirm** before code.
+   every destructive/migration step. **Stop and confirm** before code. When the human
+   confirms the plan, write `Plan approved: <iso>` to `state.md` (see
+   [state-workspace](../rite-spec/reference/state-workspace.md)); `/rite-build` checks
+   this exists before building.
 
 ## tasks.md slice format
 ```markdown

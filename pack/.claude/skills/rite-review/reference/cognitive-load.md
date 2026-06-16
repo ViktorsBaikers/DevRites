@@ -75,7 +75,7 @@ Treat each as a finding when present; classify by load type so the fix is obviou
 ## The cheap-fix test
 
 If a finding would take more than 30 minutes to fix, classify it (token gap /
-component miss / flow misalignment per `rite-polish/normalize-polish.md`) and
+component miss / flow misalignment per `rite-polish/reference/ui.md`) and
 route to the appropriate bucket. Cognitive-load review surfaces problems; it
 doesn't decide the rewrite strategy.
 

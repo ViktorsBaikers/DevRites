@@ -1,7 +1,11 @@
 # Five-axis review
 
-Review the diff across these axes. Tests first — always. Label every finding
-(Critical / Important / Suggestion / Nit / FYI).
+The axes the dispatched `devrites-code-reviewer` applies to the diff (tests first
+— always), under one severity scale (Critical / Important / Suggestion / Nit / FYI).
+The `/rite-review` inline lead **reconciles** the returned report against the Spec
+axis — it does not re-run these axes itself. This file is the shared definition of
+what "full code-review discipline" covers; use it to judge whether the agent's report
+is complete, and to scope anything the agent could not (e.g. UI-only lenses below).
 
 ## 0. Tests (first)
 - Do tests exist for the changed behavior, and do they prove the acceptance criteria?

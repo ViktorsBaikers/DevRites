@@ -32,7 +32,9 @@ Async — the human reviews when they get to it, but the loop does not stall.
 **Behavior:** in HITL mode, `/rite-build` pauses on this gate and writes
 `Awaiting human` to `state.md`. In AFK mode with `allow_gates: [advisory, validating]`,
 `/rite-build` builds the slice but marks it `built (pending review)` and writes the
-validating question; the slice does not advance to `proven` until resolved.
+validating question; the feature does not seal until the entry is resolved. An open
+`gate: validating` entry is **merge-blocking by definition** — a slice marked
+`built (pending review)` is not done, and seal is a NO-GO while it stands open.
 
 **Example:** "Schema migration adds a non-null column with a default. Backfill plan is
 recorded; reviewer should confirm the default is the right one for archived rows."
@@ -117,7 +119,7 @@ defaults and the always-pause rules:
 
 \* but **never** for destructive migrations, auth/authz boundary changes, public API
 breaks, or red tests/types/lint — those always pause. See
-[`pack/.claude/rules/afk-hitl.md`](../../../rules/afk-hitl.md) for the irreversible-risk
+[`.claude/rules/afk-hitl.md`](../../../rules/afk-hitl.md) for the irreversible-risk
 list.
 
 `escalating` is never in `allow_gates` — specialist routing is not something AFK can

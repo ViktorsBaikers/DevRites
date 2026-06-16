@@ -35,6 +35,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | `review [scope]` | `/rite-review` | multi-axis feature review |
 | `seal` | `/rite-seal` | final GO / NO-GO + type-GO |
 | `status [slug]` | `/rite-status` | active feature, next action, evidence |
+| `use <slug>` | (inline) | switch the active feature — re-point `.devrites/ACTIVE` |
 | `resolve <qid> "<answer>"` | `/rite-resolve` | answer a HITL gate |
 | `prototype [question]` | `/rite-prototype` | throwaway prototype |
 | `handoff [focus]` | `/rite-handoff` | compact chat → handoff doc |
@@ -42,6 +43,11 @@ F=.claude/skills/rite-$V/SKILL.md
 | `pressure-test` | `/rite-pressure-test` | diverge → converge on a rough idea |
 
 The `/rite-<verb>` standalones remain user-invocable as direct shortcuts; both forms hit the same skill. Use whichever reads more naturally — the menu form (`/rite spec`) for discovery, the shortcut (`/rite-spec`) for muscle memory.
+
+`use <slug>` is handled **inline** — there is no `rite-use` skill. Confirm
+`.devrites/work/<slug>/` exists, then re-point `.devrites/ACTIVE` to `<slug>` and report
+the now-active feature. It is cheap context-switching only — no re-spec, no phase run. If
+the workspace is missing, list the slugs under `.devrites/work/` and stop.
 
 Specialist triggers (model-invoked inside the above):
 `devrites-frontend-craft` (UI) · `devrites-browser-proof` (UI verify) ·
@@ -72,14 +78,15 @@ POLISH        /rite polish             ≡    /rite-polish      code polish alwa
 REVIEW        /rite review             ≡    /rite-review      feature-scoped multi-axis review
 SEAL          /rite seal               ≡    /rite-seal        final GO / NO-GO senior review
 STATUS        /rite status             ≡    /rite-status      active feature, next action, evidence, risks
+SWITCH        /rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 RESUME        /rite resolve ...        ≡    /rite-resolve     answer a HITL checkpoint
 UTILITY       /rite prototype | handoff | zoom-out | pressure-test  (or direct /rite-* shortcuts)
 ```
 
 ## Core operating rules (every DevRites skill enforces)
 
-The minimal version (always-on) lives in `.claude/rules/core.md` and is
-autoloaded by Claude Code at session start. The rule list:
+The minimal version lives in `.claude/rules/core.md`; DevRites skills Read it as
+their first step, and the other rule files load on demand. The rule list:
 
 1. **Right step, right time** — smallest relevant workflow; don't load everything.
 2. **No silent assumptions** — surface material assumptions; ask when the

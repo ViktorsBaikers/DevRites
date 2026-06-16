@@ -1,7 +1,7 @@
 # Reuse first — frontend application
 
 Frontend-specific application of the canonical reuse rule in
-[`pack/.claude/rules/coding-style.md`](../../../rules/coding-style.md#reuse-before-you-write)
+[`.claude/rules/coding-style.md`](../../../rules/coding-style.md#reuse-before-you-write)
 (and the slightly longer treatment in `rules/patterns.md`). Same principle —
 **reuse → extend → build new**, with the AHA caveat. This file walks it through for
 components, styles, tokens, icons, hooks, utils, and helpers in a UI feature.

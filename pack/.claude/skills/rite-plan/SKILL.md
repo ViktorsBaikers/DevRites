@@ -11,8 +11,8 @@ Reshape the plan when reality and the plan disagree. **Read the active workspace
 first.** If `.devrites/ACTIVE` is empty or its workspace is missing, stop and tell the
 user to run `/rite-spec <feature>`.
 
-## Rules consulted (read on demand from `pack/.claude/rules/`)
-`core.md` is already loaded. Pull `development-workflow.md` via `Read` when
+## Rules consulted (read on demand from `.claude/rules/`)
+Read `.claude/rules/core.md` first. Pull `development-workflow.md` via `Read` when
 reshaping slice cadence or DoD criteria.
 
 ## Operating rules
@@ -22,6 +22,7 @@ reshaping slice cadence or DoD criteria.
 - Keep each slice small enough for one focused build → prove cycle.
 
 ## Workflow
+0. Read `.claude/rules/core.md` (operating rules) before reshaping anything.
 1. Read `spec.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`, and the current
    `git diff` (if a repo). Read `decisions.md` and `assumptions.md`. If a code-intelligence
    index is available — `codegraph` (`.codegraph/` / `codegraph_*` tools) or `graphify`

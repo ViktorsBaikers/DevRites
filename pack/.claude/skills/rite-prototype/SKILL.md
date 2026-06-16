@@ -10,6 +10,11 @@ argument-hint: "[the question the prototype is answering]"
 A prototype is **throwaway code that answers exactly one question**. The question
 chooses the shape — get the shape wrong and the whole prototype wastes the user's time.
 
+## 0. Read core rules
+
+Read `.claude/rules/core.md` first — the operating rules and the "capture the answer"
+persistence discipline apply even to throwaway code. The other rule files load on demand.
+
 ## 1. Name the question
 
 If the user did not give the question explicitly, ask **one** short question to pin it

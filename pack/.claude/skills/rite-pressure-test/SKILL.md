@@ -9,6 +9,9 @@ user-invocable: true
 Use when the *idea* (not just the requirements) is rough. Generate options, then commit
 to one — so `/rite-spec` has a real direction to specify.
 
+Read `.claude/rules/core.md` first — its operating rules (no silent assumptions, prefer
+existing conventions) shape the divergence. The other rule files load on demand.
+
 ## Diverge (widen)
 - Generate 3–5 genuinely different approaches to the underlying goal, not variations of
   one. Cover at least: the obvious approach, a simpler/smaller approach, and a

@@ -9,13 +9,15 @@ user-invocable: false
 
 Dispatch one read-only review subagent against the active feature's workspace + diff. The subagent runs in **fresh context** (no author anchoring) and returns labeled findings. The caller (`/rite-polish` Phase 1, `/rite-review`, or the user) acts on them — this skill returns the subagent's report verbatim.
 
+This is the **inline single-axis pass** used during build / polish — one axis at a time, on demand, where a quick read keeps a slice honest. It is intentionally distinct from the seal/review **gate**, where the reviewer agents fan out in parallel across all relevant axes in their own fresh contexts (see `/rite-seal`). Same agents, different role: the audit is a cheap mid-flight check; the seal fan-out is the blocking gate. Both reading the same agent disciplines is the point, not a divergence.
+
 Why a subagent rather than inline: an adversarial reviewer with no author context is more likely to find what's wrong. Anthropic bug [#49559](https://github.com/anthropics/claude-code/issues/49559) leaves `context: fork` silently inline under plugin install, so `Task` dispatch is the reliable path under both plugin and bash installs.
 
 ## Axis selection
 
 `$ARGUMENTS` picks the axis. If the caller did not pass one, infer from intent and confirm with the user before dispatch.
 
-| Axis | Subagent (`pack/.claude/agents/`) | Discipline |
+| Axis | Subagent (`.claude/agents/`) | Discipline |
 |---|---|---|
 | `security` | `devrites-security-auditor` | OWASP Top 10; three-tier trust boundary (untrusted → boundary → trusted); secrets handling; dependency risk. A real auth-bypass / data-exposure / injection is **Critical → NO-GO** at seal. |
 | `perf` | `devrites-performance-reviewer` | Measure-first: no claim without a number or a specified measurement. N+1s, hot-path work, payload/bundle size, Core Web Vitals risks. Breach of a stated `spec.md` budget is **Important/Critical**. |
@@ -50,7 +52,7 @@ reconciles.
 
 Rules for the dispatch:
 
-- **One subagent per call.** This skill is not a fan-out; multi-axis fan-out is `/rite-seal`'s job (see `pack/.claude/skills/rite-seal/reference/parallel-dispatch.md`).
+- **One subagent per call.** This skill is not a fan-out; multi-axis fan-out is `/rite-seal`'s job (see `.claude/skills/rite-seal/reference/parallel-dispatch.md`).
 - **No author context.** Do not pass the caller's analysis or framing of the change to the subagent — fresh, adversarial read is the point.
 - **No cross-pollination.** If the caller wants more than one axis, dispatch each axis in its own `Task` call in a single message so the runtime parallelizes; each subagent gets only its own brief.
 
@@ -60,7 +62,7 @@ Pass the subagent's findings report back to the caller **verbatim**. Do not re-l
 
 ## Fallback
 
-If the `Task` tool is unavailable in the current environment, fall back to a read-only inline audit using the discipline documented in the corresponding agent file (`pack/.claude/agents/devrites-{security-auditor,performance-reviewer,simplifier-reviewer}.md`). **Flag clearly that this was an inline fallback**, not an independent review. The seal weighs the fallback differently — see [`rite-seal/reference/risk-and-rollback.md`](../rite-seal/reference/risk-and-rollback.md).
+If the `Task` tool is unavailable in the current environment, fall back to a read-only inline audit using the discipline documented in the corresponding agent file (`.claude/agents/devrites-{security-auditor,performance-reviewer,simplifier-reviewer}.md`). **Flag clearly that this was an inline fallback**, not an independent review. The seal weighs the fallback differently — see [`rite-seal/reference/risk-and-rollback.md`](../rite-seal/reference/risk-and-rollback.md).
 
 ## Scope reminders
 

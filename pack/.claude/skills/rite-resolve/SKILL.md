@@ -15,12 +15,11 @@ command.
 
 It is **deliberately small**: one verb, one source of truth (`questions.md`), one cursor
 (`state.md`). The full AFK / HITL contract lives in
-[`pack/.claude/rules/afk-hitl.md`](../../rules/afk-hitl.md).
+[`afk-hitl.md`](../../rules/afk-hitl.md).
 
-## Rules consulted (read on demand from `pack/.claude/rules/`)
+## Rules consulted (read on demand from `.claude/rules/`)
 
-`core.md` is autoloaded from `.claude/rules/core.md` at session start. Pull these via `Read` when shaping the
-resolve:
+Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the resolve:
 
 - `afk-hitl.md` — gate taxonomy, `questions.md` schema, AFK exception rules.
 - `documentation.md` — record decisions and rationale where the answer changes scope.
@@ -43,6 +42,8 @@ resolve:
 
 ## Workflow
 
+0. **Read `.claude/rules/core.md`** (operating rules + persistence discipline) before
+   touching the workspace.
 1. **Parse arguments.** `$ARGUMENTS` is one of:
    - `<qid> "<answer>"` — answer the single open question.
    - `--drop <qid>` (optional `"<reason>"`) — mark the question `dropped`; record
@@ -57,13 +58,17 @@ resolve:
 3. **Render preview.** Echo the qid, the question, the proposed answer (if any), the
    user's answer, and which slice unblocks. Stop here and ask `confirm? (y/N)` **unless**
    the answer was provided non-interactively via `--batch`.
-4. **Mutate.** Run `bash pack/.claude/skills/rite-resolve/scripts/resolve.sh` (or
-   `.claude/skills/rite-resolve/scripts/resolve.sh` after install) with the same
-   arguments. The script:
+4. **Mutate.** Run `bash .claude/skills/rite-resolve/scripts/resolve.sh` (resolves both
+   pre-install and post-install layouts) with the same arguments. The script:
    - flips the qid's `status` to `answered` / `dropped` and stamps `answered_at` + `answer`;
    - if the qid is in `state.md`'s `Awaiting human` block (single-question pause), clears
      that block and sets `Status: running`;
    - appends a `Log` line to `state.md`.
+
+   On resume, also clear or update the unblocked slice's `Slice mode` in `state.md`: if
+   the answer lets the slice proceed, drop the pause-time `Slice mode` so `/rite-build`
+   re-derives it on the next selection; if the answer re-shapes how the slice should be
+   built, set `Slice mode` to match.
 5. **Post-resolve hand-off.** If the answer changes product behavior or acceptance →
    recommend `/rite-plan repair`. Otherwise → recommend the slice's natural next action
    (typically `/rite-build` for the slice that was awaiting).

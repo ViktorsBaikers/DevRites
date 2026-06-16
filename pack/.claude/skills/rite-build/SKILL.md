@@ -10,9 +10,10 @@ user-invocable: true
 Build the next single slice, leave it working and proven, then **stop**. **Read the
 active workspace first**; if none, tell the user to run `/rite-spec <feature>`.
 
-## Rules consulted (read on demand from `pack/.claude/rules/`)
-`core.md` is autoloaded from `.claude/rules/core.md` at session start. Pull these via the `Read` tool when the
-slice work needs them:
+## Rules consulted (read on demand from `.claude/rules/`)
+DevRites skills Read `.claude/rules/core.md` as their first step (workflow step 0); the
+other rule files load on demand. Pull these via the `Read` tool when the slice work needs
+them:
 - `coding-style.md` — naming, function shape, guard clauses, comments, reuse-first.
 - `error-handling.md` — fail fast, no silent catches, fail closed.
 - `testing.md` — pyramid, behaviour over implementation, see-it-fail-first.
@@ -34,10 +35,15 @@ slice work needs them:
   would write, in its idiom. Polish catches what slips; build prevents.
 
 ## Workflow ([one-slice-cycle](reference/one-slice-cycle.md))
-0. **AFK / awaiting check.** Read `state.md`. If `Status == awaiting_human` → **STOP**,
-   tell the user to run `/rite-resolve <qid> "<answer>"`. If `.devrites/AFK` exists with
-   `max_slices: 0` → **STOP** (forced HITL stop; reset the cap or remove the sentinel to
-   continue). See [`reference/afk-discipline.md`](reference/afk-discipline.md).
+0. **Rules + AFK + readiness check.** Read `.claude/rules/core.md` first. Then read
+   `state.md`. If `Status == awaiting_human` → **STOP**, tell the user to run
+   `/rite-resolve <qid> "<answer>"`. If `state.md` has no `Plan approved: <iso>` field
+   → **STOP**, tell the user the plan isn't approved yet (`/rite-define` writes it when
+   the human confirms). If `.devrites/AFK` is present, re-derive the remaining AFK budget
+   from `state.md`'s `AFK slices remaining: <n>` field (initialized from `.devrites/AFK`
+   `max_slices` on the first AFK build); if it is `0` → **STOP** (forced HITL stop; raise
+   the count in `state.md` or remove the sentinel to continue). See
+   [`reference/afk-discipline.md`](reference/afk-discipline.md).
 1. Read `spec.md`, `plan.md`, `tasks.md`, `state.md`, `assumptions.md`, `drift.md`,
    `questions.md`.
    If a **blocking `[NEEDS CLARIFICATION]`** remains or the spec/plan readiness gates
@@ -45,7 +51,9 @@ slice work needs them:
    on an unresolved spec.
 2. Select the next pending slice (or the one in `$ARGUMENTS`). **Restate its goal,
    acceptance criteria, and scope boundary** in one short block. Confirm it's still the
-   right next slice.
+   right next slice. Write the slice's `Mode` to `state.md` as `Slice mode: <HITL|AFK>` on
+   **every** selection (not only on the HITL pause path); `/rite-resolve` clears or updates
+   it on resume.
 2a. **HITL gate (pre-action pause).** Read the slice's `Mode`. If `HITL` → render the
     checkpoint per [`reference/checkpoint-protocol.md`](reference/checkpoint-protocol.md):
     append a `questions.md` entry with the slice's `Checkpoint:` + `Gate:` + `SLA:`,
@@ -74,7 +82,11 @@ slice work needs them:
     `Next step: /rite-plan unblock` until resolved.
 11. Update `state.md`, `evidence.md`, `touched-files.md` (and `browser-evidence.md` for
     UI). Capture per [evidence-standard](reference/evidence-standard.md). If
-    `.devrites/AFK` defines `max_slices`, decrement it.
+    `.devrites/AFK` is present, decrement the budget by running
+    `bash .claude/skills/rite-build/scripts/tick-afk.sh <state.md path>` — it decrements
+    `state.md`'s `AFK slices remaining` field, prints the new value, and exits `3` when it
+    hits 0. **Exit 3 → STOP** (forced HITL stop; the cap is exhausted). Never rewrite
+    `.devrites/AFK` `max_slices` in place — it is read-only initial budget.
 12. **STOP.** Report and recommend the next step.
 
 > **Mid-flight discipline.** When tempted to do two slices, skip TDD, skip `devrites-doubt`, add a defensive check, or wander outside `touched-files.md` — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.

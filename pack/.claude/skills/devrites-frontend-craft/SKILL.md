@@ -1,6 +1,6 @@
 ---
 name: devrites-frontend-craft
-description: Implement frontend at senior designer-engineer quality — design-system discovery, shape-before-code, every state, a11y + WCAG 2.2 AA, anti-AI-slop, 2026 CWV bar, fullstack via contract-first slices. Use when the user says "build the UI", "ship-quality frontend", "design system", "a11y", or `/rite-build` detects UI. Not for polishing a built feature or design exploration.
+description: Implement frontend at senior designer-engineer quality — every state covered, anti-AI-slop, WCAG 2.2 AA. Use when the user says "build the UI", "ship-quality frontend", "design system", "a11y", or `/rite-build` detects UI. Not for polishing a built feature or design exploration.
 user-invocable: false
 ---
 
@@ -19,14 +19,11 @@ import a new one. (Detail: `reference/design-references.md`.)
   (pull Figma context if a Figma integration is available). A reference that conflicts
   with the design system is a question for the user, not a silent choice.
 
-## Reuse first — search before you build ([reference/reuse-first.md](reference/reuse-first.md))
-Before creating any new **component, style, token, icon, hook, util, or helper**, **search
-the project** for an existing one that fits — using the code-intelligence index
-(`codegraph` / `graphify`) or grep over `components/`, design tokens, `hooks/`, `utils/`,
-`lib/`. **Reuse → extend → build new** (in that order). Don't fork an existing component
-into the feature folder. **AHA caveat:** don't force reuse on a wrong shape — duplication
-is cheaper than the wrong abstraction. Record per slice what was reused / extended /
-created new (so the seal can see the consistency story).
+## Reuse first — search before you build
+Before creating any new component, style, token, icon, hook, util, or helper, search the
+project for an existing one and **reuse → extend → build new** — see
+[reference/reuse-first.md](reference/reuse-first.md) for the search targets, the AHA
+caveat, and the per-slice reuse record.
 
 ## 2. Register detection
 - **Brand surface** — landing, marketing, portfolio, campaign: expressive type, larger
@@ -41,8 +38,7 @@ requirements · interaction model. **Ask before coding if the visual direction o
 flow is ambiguous.**
 
 ## 4. Build ([reference/craft.md](reference/craft.md))
-- **Reuse first** — apply [reuse-first](reference/reuse-first.md) before reaching for new
-  code. Compose from existing components/tokens; extend only if it fits without distortion.
+- Compose from existing components/tokens (reuse-first, above) before reaching for new code.
 - Build the **smallest UI** the current slice needs — don't pre-build screens.
 - Don't add a second component library or icon set without asking.
 - Cover the states you shaped, not just the happy path.
@@ -61,7 +57,9 @@ flow is ambiguous.**
   its verification gate (no console errors, no axe violations, all states).
 - Verify in the browser (`devrites-browser-proof`) — screenshots opened and described,
   console clean, responsive + keyboard checked.
-- Record design decisions in `design-brief.md` and evidence in `browser-evidence.md`.
+- Record design decisions in `.devrites/work/<slug>/design-brief.md` (the design-contract
+  artifact this skill owns — `/rite-polish` reads it in its UI phase and `/rite-seal`
+  includes it in its artifact read list) and evidence in `browser-evidence.md`.
 
 ## Fullstack (frontend + backend in one feature)
 When the feature needs both sides, follow [reference/fullstack.md](reference/fullstack.md):
