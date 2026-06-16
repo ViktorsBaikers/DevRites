@@ -10,7 +10,7 @@
       "name": "devrites",
       "source": "./",
       "description": "Spec → plan → build → prove → polish → review → seal workflow with persistent state, drift guard, browser-proof ladder, and anti-AI-slop guardrails.",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "license": "personal-use-or-by-approval",
       "keywords": [
         "workflow",
