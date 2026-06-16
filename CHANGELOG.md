@@ -2,6 +2,19 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.4...v1.0.5) (2026-06-16)
+
+### Bug Fixes
+
+* **installer:** round-trip rules-only flags, cover update.sh ([0e82a76](https://github.com/ViktorsBaikers/DevRites/commit/0e82a76389ad9787c8f7a776fabffb01de6c49f8))
+* **rules:** per-skill core load, dedupe table, validating-gate teeth ([007096e](https://github.com/ViktorsBaikers/DevRites/commit/007096e1f001ac80e1ca6e990afd134d4a8a80cd))
+* **scripts:** correct gate tally, add AFK cap + qid scripts ([f2e46e5](https://github.com/ViktorsBaikers/DevRites/commit/f2e46e5155f7ac43dabf28f6db0a34bca84f0b2c))
+* **skills:** workspace state, AFK budget, evidence + reviewer scope ([a8e9e75](https://github.com/ViktorsBaikers/DevRites/commit/a8e9e7567ae12b8a5cece961786c196323c1847b))
+
+### Documentation
+
+* **docs:** reconcile counts, fix phantom names and loading model ([f29241e](https://github.com/ViktorsBaikers/DevRites/commit/f29241e9aebd026afdd570d88bba500e9aee8b29))
+
 ## [1.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.3...v1.0.4) (2026-05-28)
 
 ### Bug Fixes
