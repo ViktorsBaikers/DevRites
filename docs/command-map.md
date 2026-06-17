@@ -12,9 +12,10 @@ what it writes, and how the pieces interact.
 `devrites-` is a **namespace prefix** chosen for collision avoidance against
 bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`,
 …). It does **not** signal "internal" — visibility is governed by the
-`user-invocable:` flag in each `SKILL.md`. All four public utilities use the
+`user-invocable:` flag in each `SKILL.md`. All five public utilities use the
 `rite-*` prefix (`rite-zoom-out`, `rite-prototype`, `rite-handoff`,
-`rite-pressure-test`); every `devrites-*` skill is model-invoked.
+`rite-pressure-test`, `rite-autocomplete`); every `devrites-*` skill is
+model-invoked.
 
 ## Public commands (`user-invocable: true`)
 
@@ -28,7 +29,9 @@ bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`,
 | [`/rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | prove | `[scope]` | Tests + build + runtime + browser proof of the completed feature. | workspace + diff | `evidence.md`, `browser-evidence.md`, `state.md` |
 | [`/rite-polish`](../pack/.claude/skills/rite-polish/SKILL.md) | polish | `[target \| mode]` | Orchestrator. Reads `reference/code.md` always (Phase 1 + 2); reads `reference/ui.md` when UI is touched (Phase 3 + 4). Mode tokens: `bolder \| quieter \| distill \| harden \| normalize-only`. | workspace + design system + diff | `polish-report.md`, `browser-evidence.md` |
 | [`/rite-review`](../pack/.claude/skills/rite-review/SKILL.md) | review | `[scope]` | Feature-scoped multi-axis review. Parallel Spec + Standards sub-agents (`devrites-spec-reviewer`, `devrites-code-reviewer`). | workspace + diff | `review.md`, `evidence.md`, `state.md` |
-| [`/rite-seal`](../pack/.claude/skills/rite-seal/SKILL.md) | seal | — | Final GO / NO-GO. Walks acceptance, fans out reviewers, type-`GO` before irreversible git. | all artifacts + diff | `seal.md` |
+| [`/rite-seal`](../pack/.claude/skills/rite-seal/SKILL.md) | seal | — | GO / NO-GO **decision**, hands off to `/rite-ship`. Walks acceptance vs evidence, fans out reviewers, writes the verdict. Runs no git; on GO sets `state.md` `Next step: /rite-ship`. Triggers: "GO / NO-GO", "is it safe to merge", "decide if we can ship". | all artifacts + diff | `seal.md`, `state.md` |
+| [`/rite-ship`](../pack/.claude/skills/rite-ship/SKILL.md) | ship | `[slug]` | Final phase. Requires a GO in `seal.md` → renders type-`GO` + runs the irreversible git ladder (commit → push → tag/PR) + closes the task (archive workspace → `.devrites/archive/<slug>/`, clear `ACTIVE`, phase `done`). Triggers: "ship it", "ship this", "push it out", "close the task". | `seal.md` + all artifacts + diff | `ship.md`, `state.md`, archive |
+| [`/rite-autocomplete`](../pack/.claude/skills/rite-autocomplete/SKILL.md) | (orchestrator) | `[idea] [--ship\|--yolo] [--max-slices N]` | Full unattended lifecycle (spec → … → seal → ship), best option at each soft gate, rationale to `decisions.md`. Vague prompt → up-front interview; pauses on hard-risk / blocking / escalating / open-validating / NO-GO / budget-exhausted. Default stops at the final type-`GO`; `--ship` flag (alias `--yolo`) auto-confirms it. Triggers: "autocomplete", "do the whole thing". | idea + workspace | whole workspace (drives every phase) |
 | [`/rite-status`](../pack/.claude/skills/rite-status/SKILL.md) | status | `[slug]` | Active feature: phase, run mode (AFK/HITL), status, next action, evidence, open questions by gate, risks, handoff readiness. Reads via `scripts/load-state.sh` (portable). | workspace + `.devrites/AFK` | — |
 | [`/rite-resolve`](../pack/.claude/skills/rite-resolve/SKILL.md) | resume | `<qid> "<answer>"` \| `--drop <qid>` \| `--batch <file>` | Answer / drop / batch-resolve open `questions.md` entries; clears `state.md` `Awaiting human` and sets `Status: running`. Canonical writer for `status: open → answered`. | `questions.md` + `state.md` | `questions.md`, `state.md` |
 | [`/rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | utility | — | One-pass structural map of an unfamiliar area (modules, in-callers, out-calls, decisions) in project vocabulary. Prefers codegraph/graphify. | codebase + ADRs/CONTEXT.md | — |
@@ -106,11 +109,13 @@ when available, falling back to file reads otherwise:
 See [`flow.md`](flow.md) for the Mermaid diagrams. The text path:
 
 ```
-/rite-spec → /rite-define → /rite-build ×N → /rite-prove → /rite-polish → /rite-review → /rite-seal
-   │            │                │  ▲              │                          │
+/rite-spec → /rite-define → /rite-build ×N → /rite-prove → /rite-polish → /rite-review → /rite-seal → /rite-ship
+   │            │                │  ▲              │                          │             (decide)   (execute+close)
    │            │                │  └ Spec Drift Guard → /rite-plan repair ────┘
    │            │                └ devrites-frontend-craft / source-driven / doubt
    └ (no workspace) → summary    devrites-* internal skills fire on triggers above
+
+/rite-autocomplete drives the entire sequence above unattended (best option per soft gate; --ship auto-confirms ship).
 ```
 
 - Every phase **reads the active workspace first**; if none, it stops and tells
@@ -119,4 +124,8 @@ See [`flow.md`](flow.md) for the Mermaid diagrams. The text path:
   stop, record in `drift.md`, classify, ask the user if product behavior
   changes, then `/rite-plan repair` before resuming.
 - `/rite-seal` fans out to `.claude/agents/devrites-*` reviewers **in
-  parallel** for independent, fresh-context judgment.
+  parallel** for independent, fresh-context judgment, then writes the GO /
+  NO-GO verdict — it runs no git. On GO it hands off to `/rite-ship`, which
+  renders type-`GO`, runs the irreversible git ladder, and closes the task by
+  archiving the workspace to `.devrites/archive/<slug>/` and clearing
+  `.devrites/ACTIVE`.

@@ -1,6 +1,6 @@
-# All 23 skills
+# All 25 skills
 
-The pack ships **23 skills total** — 15 user-invocable `rite-*` workflow + utility skills, 8 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other rule files on demand (no carrier skill, no session-start autoload).
+The pack ships **25 skills total** — 17 user-invocable `rite-*` workflow + utility skills, 8 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other rule files on demand (no carrier skill, no session-start autoload).
 
 **Naming convention.** `rite-*` is the user-facing slash-command surface (lifecycle phases plus utilities — `rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`). `devrites-*` is internal (model-invoked, hidden from the menu) and collision-avoiding against bundled Claude Code skill names. Visibility is governed by each skill's `user-invocable:` flag; the prefix mirrors it.
 
@@ -20,7 +20,9 @@ Every user-invocable skill responds to **both** `/rite <verb>` (menu form — ty
 | `/rite prove` | `/rite-prove` | prove | Tests + build + runtime + browser evidence for the current scope. |
 | `/rite polish` | `/rite-polish` | polish | Code polish always; UI normalize + polish if UI in scope. Modes: `bolder / quieter / distill / harden / normalize-only`. |
 | `/rite review` | `/rite-review` | review | Feature-scoped multi-axis review (parallel Spec + Standards axes). |
-| `/rite seal` | `/rite-seal` | seal | Final GO / NO-GO senior review. |
+| `/rite seal` | `/rite-seal` | seal | Final GO / NO-GO decision gate — walks acceptance vs evidence, fans out reviewers, writes the verdict to `seal.md`. Decides only; hands off to `/rite-ship`. |
+| `/rite ship` | `/rite-ship` | ship | Final phase. Requires a GO in `seal.md` → renders type-`GO`, runs the irreversible git ladder (commit → push → tag/PR), writes `ship.md`, then closes the task (archives the workspace, clears `ACTIVE`). |
+| `/rite autocomplete` | `/rite-autocomplete` | (orchestrator) | Runs the whole lifecycle unattended (spec → … → seal → ship), choosing the best option at each soft gate. `--ship` / `--yolo` auto-confirms the final type-`GO`. |
 | `/rite status` | `/rite-status` | status | Where the active feature stands. |
 | `/rite resolve <qid> "<answer>"` | `/rite-resolve <qid> "<answer>"` | resume | Answer a HITL checkpoint (or `--drop <qid>` / `--batch <file>`); clears `state.md` `Awaiting human` and resumes. |
 | `/rite zoom-out` | `/rite-zoom-out` | utility | Step up an abstraction layer when stuck — returns a map of the area (modules, callers, decisions) in the project's vocabulary. |
@@ -28,7 +30,7 @@ Every user-invocable skill responds to **both** `/rite <verb>` (menu form — ty
 | `/rite handoff` | `/rite-handoff` | utility | Compact the chat session into a handoff doc a fresh agent can pick up — syncs to the workspace, references existing artifacts by path. |
 | `/rite pressure-test` | `/rite-pressure-test` | utility | Diverge → converge on a rough idea before specifying. |
 
-The 8 model-invoked internal specialists (hidden from the menu): `devrites-interview`, `-source-driven`, `-doubt`, `-frontend-craft`, `-browser-proof`, `-debug-recovery`, `-api-interface`, `-audit` (security / perf / simplify). The `/rite` menu carries the routing, the four user-invocable utilities all use the `rite-*` prefix (`rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`), and the `/rite-polish` phases live as references inside the same skill rather than as `rite-polish-code` / `rite-polish-ui`. Triggers and interactions are documented in [`command-map.md`](command-map.md); diagrams in [`flow.md`](flow.md).
+The 8 model-invoked internal specialists (hidden from the menu): `devrites-interview`, `-source-driven`, `-doubt`, `-frontend-craft`, `-browser-proof`, `-debug-recovery`, `-api-interface`, `-audit` (security / perf / simplify). The `/rite` menu carries the routing, the five user-invocable utilities all use the `rite-*` prefix (`rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`, `rite-autocomplete`), and the `/rite-polish` phases live as references inside the same skill rather than as `rite-polish-code` / `rite-polish-ui`. Triggers and interactions are documented in [`command-map.md`](command-map.md); diagrams in [`flow.md`](flow.md).
 
 ---
 
@@ -88,16 +90,23 @@ The 8 model-invoked internal specialists (hidden from the menu): `devrites-inter
 | [`devrites-doubt`](../pack/.claude/skills/devrites-doubt/SKILL.md) | In-flight adversarial review of risky decisions — branching logic, boundaries, data/auth/API changes, migrations. | About to stand a "this is safe / scales / matches spec" claim. |
 | [`devrites-audit`](../pack/.claude/skills/devrites-audit/SKILL.md) | Read-only audit dispatch — picks the right reviewer subagent on the requested axis (`security` / `perf` / `simplify`). Single-axis only; multi-axis parallel fan-out lives inline in `/rite-seal` (see `rite-seal/reference/parallel-dispatch.md`). | Polish Phase 1 (`simplify`); review involves user input / auth / data / external integrations / secrets / permissions (`security`); performance is relevant or regression risk visible (`perf`). |
 
-### Seal — GO / NO-GO
+### Seal — GO / NO-GO decision
 
 | Skill | What It Does | Use When |
 |---|---|---|
-| [`rite-seal`](../pack/.claude/skills/rite-seal/SKILL.md) | Final senior GO / NO-GO. Interactive type-`GO` confirmation before commit / push / tag. | Review is clean; ready to ship. |
+| [`rite-seal`](../pack/.claude/skills/rite-seal/SKILL.md) | Pure decision gate. Walks acceptance vs evidence, fans out reviewers, writes the GO / NO-GO verdict to `seal.md`. Decides only — no git; on GO it sets `state.md` `Next step: /rite-ship`. | Review is clean; you ask "GO / NO-GO", "is it safe to merge", "decide if we can ship". |
+
+### Ship — Execute + close the task
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-ship`](../pack/.claude/skills/rite-ship/SKILL.md) | Final phase. Requires a GO in `seal.md` → renders type-`GO`, runs the irreversible git ladder (commit → push → tag/PR per project convention), writes `ship.md`, then closes the task: sets phase `done`, archives `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` (all `.md` preserved), clears `.devrites/ACTIVE`. | Seal returned GO; you say "ship it", "ship this", "push it out", "close the task". |
 
 ### Utility — Stand-alone helpers
 
 | Skill | What It Does | Use When |
 |---|---|---|
+| [`rite-autocomplete`](../pack/.claude/skills/rite-autocomplete/SKILL.md) | Runs the whole lifecycle unattended (spec → … → seal → ship), choosing the best option at each soft gate and recording the rationale in `decisions.md`. A vague prompt triggers an up-front `devrites-interview`; after that it runs without per-phase iteration, pausing only on hard irreversible-risk / blocking / escalating gates, an open validating gate, NO-GO, or budget exhaustion. Default stops at the final type-`GO`; `--ship` (alias `--yolo`) auto-confirms it. | "Autocomplete", "do the whole thing", "run the full cycle", "one-shot this feature". |
 | [`rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | Map an unfamiliar area — modules, callers, callees, decisions — in the project's domain glossary. | You say "zoom out", "I don't know this area", "map this area", "bigger picture". |
 | [`rite-prototype`](../pack/.claude/skills/rite-prototype/SKILL.md) | Throwaway code answering ONE design question — logic harness OR 2–4 UI variations on one route. | "Prototype this", "let me play with it", "try a few designs", question is undecidable on paper. |
 | [`rite-handoff`](../pack/.claude/skills/rite-handoff/SKILL.md) | Compact chat session → handoff doc. References existing `.devrites/work/<slug>/` artifacts by path. | "Handoff", "summarize this session", before `/clear`, fresh agent will continue. |

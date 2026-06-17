@@ -5,7 +5,8 @@
 **Per-feature workspace on disk.** Every feature gets its own `.devrites/work/<slug>/`
 directory with `spec.md` → `plan.md` → `tasks.md` → `state.md` → `evidence.md` (plus
 `decisions.md`, `assumptions.md`, `drift.md`, `questions.md`, `review.md`, `seal.md`,
-`handoff.md`, and `references/`). When you `/clear`, the next agent picks up from those
+`ship.md`, `handoff.md`, and `references/`). When the task ships it is archived intact to
+`.devrites/archive/<slug>/`. When you `/clear`, the next agent picks up from those
 files — no chat-context summary required. **Spec Drift Guard** catches the wrong turn
 before it costs you a day. **AFK mode** runs unattended without silently accepting
 destructive migrations, auth changes, or red tests. **`type-GO`** demands a literal
@@ -19,7 +20,8 @@ typed confirmation before any irreversible commit / push / tag.
     brief.md  spec.md  plan.md  tasks.md  state.md  evidence.md
     decisions.md  assumptions.md  drift.md  questions.md
     references/  browser-evidence.md  touched-files.md
-    polish-report.md  review.md  seal.md  handoff.md
+    polish-report.md  review.md  seal.md  ship.md  handoff.md
+  archive/<slug>/             # shipped task, moved here intact (all .md preserved)
 ```
 
 **Stop your AI from shipping half-baked code.** DevRites turns Claude Code into a
@@ -53,7 +55,8 @@ memory). Both hit the same skill — `/rite spec foo` ≡ `/rite-spec foo`.
 | 4 | PROVE | `/rite prove` | [`/rite-prove`](pack/.claude/skills/rite-prove/SKILL.md) | tests + browser proof |
 | 5 | POLISH | `/rite polish` | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | code + UI polish |
 | 6 | REVIEW | `/rite review` | [`/rite-review`](pack/.claude/skills/rite-review/SKILL.md) | multi-axis, parallel |
-| 7 | SEAL | `/rite seal` | [`/rite-seal`](pack/.claude/skills/rite-seal/SKILL.md) | GO / NO-GO + type-GO |
+| 7 | SEAL | `/rite seal` | [`/rite-seal`](pack/.claude/skills/rite-seal/SKILL.md) | GO / NO-GO decision (no git) |
+| 8 | SHIP | `/rite ship` | [`/rite-ship`](pack/.claude/skills/rite-ship/SKILL.md) | type-GO + commit/push/tag, then archive + close |
 | — | RESUME | `/rite resolve` | [`/rite-resolve`](pack/.claude/skills/rite-resolve/SKILL.md) | answer a HITL gate, clears `Awaiting human`, resumes |
 
 If implementation reveals the plan is wrong, the **Spec Drift Guard** stops
@@ -64,14 +67,15 @@ before resuming.
 ```mermaid
 flowchart LR
     S[/rite-spec/] --> D[/rite-define/] --> B[/rite-build ×N/] --> P[/rite-prove/] --> Po[/rite-polish/] --> R[/rite-review/] --> Sl[/rite-seal/]
-    Sl -->|GO + type-GO| Ship([ship: commit · push · tag])
+    Sl -->|GO| Sh[/rite-ship/]
+    Sh -->|type-GO| Ship([ship: commit · push · tag])
     B -.->|Spec Drift Guard| Re[/rite-plan repair/]
     Re --> B
 
     classDef phase fill:#1f2937,stroke:#60a5fa,color:#f9fafb
     classDef ship fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef repair fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
-    class S,D,B,P,Po,R,Sl phase
+    class S,D,B,P,Po,R,Sl,Sh phase
     class Ship ship
     class Re repair
 ```
@@ -88,7 +92,7 @@ rules carrier, workspace state, namespace map) →
 - [Modes — HITL & AFK](#modes--hitl--afk)
 - [Install](#install) — [bash (A, recommended)](#option-a-bash-installer-recommended-full-install) · [plugin (B, partial)](#option-b-claude-code-plugin-partial--skills--agents-only)
 - [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · browser-harness
-- [Skills](#skills) — 23 total · full catalogue in [`docs/skills.md`](docs/skills.md)
+- [Skills](#skills) — 25 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
 - [Engineering rules](#engineering-rules) · [Browser proof ladder](#browser-proof-ladder) · [Frontend & fullstack](#frontend--fullstack)
 - [Safety & scope](#safety--scope) · [Security model](#security-model)
@@ -107,8 +111,10 @@ rules carrier, workspace state, namespace map) →
 
 A single command that does everything loads every phase's instructions at once, creates
 constant context pressure, and hides the intent of each step. DevRites splits the
-lifecycle into 15 small public skills (`rite-*`) that each own one phase and load only
-what that phase needs, plus internal specialists (`devrites-*`) that fire on triggers.
+lifecycle into 17 small public skills (`rite-*`) that each own one phase and load only
+what that phase needs — including [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md),
+the unattended orchestrator that drives the full cycle end-to-end — plus internal
+specialists (`devrites-*`) that fire on triggers.
 
 **Naming:** the `devrites-` prefix is a **namespace** for collision avoidance against
 bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`, …) —
@@ -280,7 +286,7 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **23 skills total** — 15 user-invocable `rite-*` workflow + utility skills, 8 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
+The pack ships **25 skills total** — 17 user-invocable `rite-*` workflow + utility skills, 8 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
 
 **Two invocation forms.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
@@ -297,13 +303,13 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 
 ### Full skill + agent inventory
 
-**Public `rite-*` skills (15)** — slash-command surface:
+**Public `rite-*` skills (17)** — slash-command surface:
 
 | Group | Skills |
 |---|---|
-| Lifecycle (7) | `rite-spec` · `rite-define` · `rite-build` · `rite-prove` · `rite-polish` · `rite-review` · `rite-seal` |
+| Lifecycle (8) | `rite-spec` · `rite-define` · `rite-build` · `rite-prove` · `rite-polish` · `rite-review` · `rite-seal` · `rite-ship` |
 | Resume / replan | `rite-resolve` · `rite-plan` |
-| Utility | `rite-status` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` |
+| Utility | `rite-status` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
 | Menu | `rite` |
 
 **Internal `devrites-*` specialists (8)** — model-invoked, hidden from menu:
@@ -397,7 +403,11 @@ drop the sentinel for the bulk stretch. Always cap iterations. Full contract:
 # finish
 /rite-polish                  # code polish always + UI normalize/polish if UI in scope
 /rite-review                  # feature-scoped multi-axis (parallel Spec + Standards)
-/rite-seal                    # GO / NO-GO + type-GO before commit/push/tag
+/rite-seal                    # GO / NO-GO decision → writes seal.md (no git)
+/rite-ship                    # on GO: type-GO + commit/push/tag, then archive + close the task
+
+# or run the whole cycle unattended
+/rite-autocomplete            # spec → … → seal → ship with no per-phase iteration (--ship to push)
 
 # check in any time
 /rite                         # menu + next command (no state read)
@@ -468,7 +478,7 @@ devrites/
   install.sh  uninstall.sh  update.sh
   scripts/             # install-lib · validate · validate-frontmatter · run-evals · eval-runner.py
                        # devrites-detect · check-no-global-writes · sync-version · build-release-tarball
-  pack/.claude/        # skills/  23 skills — 15 public + 8 model-invoked    ─┐
+  pack/.claude/        # skills/  25 skills — 17 public + 8 model-invoked    ─┐
                        # agents/  8 fresh-context reviewers                    ├─ the pack
                        # rules/   16 rule files + README index                 ┘
   evals/               # trigger evals (20 queries per public skill)
@@ -497,7 +507,7 @@ settings, lives in [`SECURITY.md`](SECURITY.md). Highlights: **project-local onl
 skills (no remote code execution); **`!` shell injection removed** from `/rite` and
 `/rite-status` (state loaded via a `Bash`-invoked script that reads only DevRites' own
 state under `.devrites/`); **auto-trigger** is a deliberate design choice mitigated by
-body discipline + readiness gates + the interactive `type-GO` confirmation in `/rite-seal`
+body discipline + readiness gates + the interactive `type-GO` confirmation in `/rite-ship`
 before irreversible git actions; **no `defaultMode: bypassPermissions`** is shipped or
 written by the installer (cf. CVE-2026-33068).
 

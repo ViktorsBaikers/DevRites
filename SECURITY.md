@@ -74,8 +74,9 @@ match the user's intent. This is a conscious DevRites design choice (see
   before acting; phases out of order refuse to run.
 - **Spec Drift Guard**: any deviation from the spec halts and routes to
   `rite-plan`.
-- **Interactive type-GO confirmation** in `rite-seal` before irreversible
-  git actions (commit, push, tag) — present even with auto-trigger.
+- **Interactive type-GO confirmation** in `rite-ship` before irreversible
+  git actions (commit, push, tag) — present even with auto-trigger; `rite-seal`
+  only decides GO/NO-GO.
 
 If you prefer explicit-only invocation in a given project, add a Claude Code
 `permissions` rule disabling `Skill(rite-*)` auto-invocation in that

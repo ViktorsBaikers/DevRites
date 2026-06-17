@@ -33,6 +33,12 @@ survives compaction and new sessions:
 | `polish-report.md` | `/rite-polish` | Phase 1-4 findings + fixes |
 | `review.md` | `/rite-review` | Spec + Standards axes, severity-labelled findings |
 | `seal.md` | `/rite-seal` | GO/NO-GO verdict + acceptance walk + blockers |
+| `ship.md` | `/rite-ship` | what shipped — commit SHA(s), branch, tag/PR, acceptance summary, follow-ups |
+
+When `/rite-ship` closes the task it **archives** the whole workspace —
+`.devrites/work/<slug>/` → `.devrites/archive/<slug>/` (every `.md` above is
+preserved, never deleted) — and clears `.devrites/ACTIVE`. The audit trail lives
+on under `.devrites/archive/<slug>/`.
 
 Project-root sentinel (outside the workspace):
 
@@ -72,10 +78,13 @@ You: I want some kind of reporting thing for admins.
 /rite-prove                  # ONCE all slices built: full tests + browser proof
 /rite-polish                 # code polish (always) + UI normalize+polish (if UI)
 /rite-review                 # feature-scoped multi-axis review (Spec + Standards in parallel)
-/rite-seal                   # GO / NO-GO
+/rite-seal                   # GO / NO-GO decision (no git) → on GO, points at /rite-ship
+/rite-ship                   # type-GO + irreversible git ladder + close the task (archive + clear ACTIVE)
 ```
 
 `/rite-build` never auto-advances — you decide when the next slice runs.
+`/rite-seal` **decides**; `/rite-ship` **executes + closes**. To run the whole
+sequence unattended, see `/rite-autocomplete` (§11).
 
 ## 3) Spec drift mid-build
 
@@ -131,6 +140,7 @@ You: 2
 
 /rite-review
 /rite-seal
+/rite-ship
 ```
 
 If no browser tooling is available, proof is recorded as **pending (manual)**
@@ -145,7 +155,8 @@ with exact steps — the seal then weighs the UI risk.
 /rite-prove                  # targeted tests + build/typecheck; runtime check of the limiter
 /rite-polish                 # reference/code.md only (no UI scope detected)
 /rite-review                 # devrites-audit security fires (auth/abuse surface), measure-first perf
-/rite-seal                   # checks rollback for any config/migration change
+/rite-seal                   # checks rollback for any config/migration change → GO/NO-GO
+/rite-ship                   # type-GO + commit/push/tag + close the task
 ```
 
 ## 6) UI-direction prompt — refinement modes
@@ -254,6 +265,30 @@ writes a blocking question and stops regardless of `allow_gates`. AFK never
 silently accepts irreversible risk; see
 [`pack/.claude/rules/afk-hitl.md`](../pack/.claude/rules/afk-hitl.md) for the
 full list.
+
+## 11) Full unattended lifecycle — `/rite-autocomplete`
+
+```text
+/rite-autocomplete "add CSV export for admins" --max-slices 8
+  → vague idea → runs devrites-interview once, up front (the only interactive
+    window), to ~95% confidence
+  → arms AFK, then drives every phase in order: /rite-spec → /rite-define →
+    /rite-build ×N → /rite-prove → /rite-polish → /rite-review → /rite-seal
+  → at each soft gate, picks the option the relevant specialist/reviewer
+    favours and records the rationale in decisions.md (never silently)
+  → seal returns GO → renders the final type-GO prompt and STOPS for the human
+
+You: GO
+
+/rite-ship                     # the human confirmed → ship + close
+```
+
+Add `--ship` (alias `--yolo`) to auto-confirm the final type-`GO` for a
+zero-touch push — autocomplete then proceeds straight to `/rite-ship`. It still
+pauses on hard irreversible-risk (auth / migration / public-API / red tests),
+blocking / escalating gates, an open `gate: validating`, a NO-GO, exhausted
+`max_slices`, or low confidence — writing `state.md` and surfacing *why* before
+it stops. Args: `[idea] [--ship|--yolo] [--max-slices N]`.
 
 ## Checking in
 

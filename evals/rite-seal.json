@@ -17,10 +17,10 @@
     {"text": "Polish before review.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
     {"text": "Multi-axis review of the diff.", "expected": "should_not_trigger", "rationale": "/rite-review."},
     {"text": "Status check.", "expected": "should_not_trigger", "rationale": "/rite-status."},
-    {"text": "Push the branch.", "expected": "should_not_trigger", "rationale": "Out of scope; rite-seal runs the GO/NO-GO, not the push (push is gated inside the skill)."},
-    {"text": "Tag a release.", "expected": "should_not_trigger", "rationale": "Same — release tagging is downstream."},
+    {"text": "Push the branch.", "expected": "should_not_trigger", "rationale": "→ /rite-ship — the irreversible git push lives in /rite-ship, not /rite-seal."},
+    {"text": "Tag a release.", "expected": "should_not_trigger", "rationale": "→ /rite-ship — release tagging is part of /rite-ship's irreversible git ladder."},
+    {"text": "Ship it and close the task.", "expected": "should_not_trigger", "rationale": "→ /rite-ship — shipping + closing/archiving the task is /rite-ship; /rite-seal only decides GO/NO-GO."},
     {"text": "Why did test X fail?", "expected": "should_not_trigger", "rationale": "Debugging."},
-    {"text": "Generate a changelog entry.", "expected": "should_not_trigger", "rationale": "Off-topic; manual CHANGELOG."},
     {"text": "What's the time in Tokyo?", "expected": "should_not_trigger", "rationale": "Off-topic Q."}
   ]
 }
