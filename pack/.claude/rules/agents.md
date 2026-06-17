@@ -1,8 +1,10 @@
 # Agent orchestration
 
 DevRites uses **project-local** agents under `.claude/agents/` (never a global location).
-It separates **specialist skills** (model-invoked disciplines that run inline) from
-**review subagents** (fresh-context reviewers spawned for independent judgment).
+It separates three roles: **specialist skills** (model-invoked disciplines that run inline),
+**review subagents** (fresh-context, **read-only** reviewers spawned for independent judgment),
+and the **executor subagent** (`devrites-slice-wright` — fresh-context but **write-capable**,
+the one agent that produces code).
 
 ## Review subagents — `.claude/agents/`
 Fresh-context, read-only reviewers. Each is given the active feature workspace path
@@ -17,6 +19,24 @@ Fresh-context, read-only reviewers. Each is given the active feature workspace p
 | `devrites-security-auditor` | Untrusted input, trust boundaries, secrets, deps | `/rite-seal` when input/auth/data in scope |
 | `devrites-performance-reviewer` | Measure-first perf (N+1, hot paths, payload size) | `/rite-seal` when perf relevant |
 | `devrites-doubt-reviewer` | Adversarial check of a single claim/decision | `devrites-doubt` loop; risky decisions |
+
+## The executor subagent — `.claude/agents/devrites-slice-wright.md`
+
+The system's one **write-capable** agent, and the mirror of the reviewers: where a reviewer
+reads a finished diff in a fresh context, the wright **writes** one slice in a fresh context.
+
+| Agent | Purpose | When |
+|-------|---------|------|
+| `devrites-slice-wright` | Turn ONE fully-specified slice contract into the smallest complete, idiomatic, proven implementation — orient → TDD → verify, anti-AI-slop, feature scope only | `/rite-build` — the build-core dispatch step |
+
+`/rite-build` is the orchestrator: it owns the gates and the workspace, dispatches the wright
+for the implementation, then doubts, gates, and records the return. Tools:
+`Read, Edit, Write, Bash, Glob, Grep` (+ a code-intelligence index when present). It writes
+**code and tests only** — never the `.devrites/` bookkeeping files; it returns that data and
+the orchestrator persists it, so there is exactly one canonical writer of workspace state and
+the HITL/AFK contract stays intact. **Single-threaded: one wright per slice, never a parallel
+fan-out of writers** (concurrent writers make conflicting implicit decisions). Contract + return
+shape + fallback: `.claude/skills/rite-build/reference/wright-dispatch.md`.
 
 ## Namespaces — `rite-*` is the user surface; `devrites-*` is internal
 
@@ -58,7 +78,11 @@ prefix is a naming convention that matches it.
 ## Rules
 - Run independent reviewers **in parallel** at the seal, then reconcile; surface
   disagreements explicitly rather than averaging them away.
-- Agents are **read-only** and return labeled findings (Critical / Important /
+- **Reviewer** agents are **read-only** and return labeled findings (Critical / Important /
   Suggestion / Nit / FYI). Keep review **feature-scoped**.
-- Give each reviewer the contract (workspace + diff) without the author's reasoning —
-  fresh, adversarial context is the point.
+- The **executor** agent (`devrites-slice-wright`) is the one **write-capable** agent: it writes
+  code + tests for a single slice and returns a structured artifact, but it never writes the
+  `.devrites/` workspace files (the orchestrator does) and never runs in parallel with another
+  writer.
+- Give each agent the contract (workspace + diff for a reviewer; the slice contract for the
+  wright) without the author's reasoning — fresh, undirected context is the point.

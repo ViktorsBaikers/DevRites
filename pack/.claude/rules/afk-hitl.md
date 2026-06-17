@@ -172,7 +172,8 @@ AFK shifts the boundary between automatic and "ask"; nothing else.
 
 - Skill: `/rite-resolve` (`.claude/skills/rite-resolve/SKILL.md`).
 - Workflow integration: `/rite-build` (`.claude/skills/rite-build/SKILL.md`),
-  workflow steps 0 + 2a + 10.
+  workflow steps 0 + 2a (readiness / HITL pre-flight) and steps 4–6 (doubt / fail-on-red /
+  record) on the wright's return.
 - Render contract: `.claude/skills/rite-build/reference/checkpoint-protocol.md`.
 - Loop discipline: `.claude/skills/rite-build/reference/afk-discipline.md`.
 - Gate taxonomy: `.claude/skills/rite-define/reference/gates.md`.

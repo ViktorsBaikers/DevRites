@@ -40,8 +40,8 @@ into HITL.
 
 ## Iteration cap
 
-`/rite-build` step 11 decrements `state.md`'s `AFK slices remaining` by 1 each time a
-slice is marked `built`, by running
+`/rite-build`'s **record step** (workflow step 6) decrements `state.md`'s `AFK slices
+remaining` by 1 each time a slice is marked `built`, by running
 `bash .claude/skills/rite-build/scripts/tick-afk.sh <state.md path>`. The script reads the
 field, decrements, writes it back, prints the new value, and **exits `3` when it hits 0**.
 The cap is enforced by `tick-afk.sh`, not by prose — when it exits 3:
@@ -61,8 +61,8 @@ the default for a job you haven't observed running once HITL.
 
 ## Fail-on-red
 
-Step 10 of the workflow refuses to mark a slice `built` if targeted tests / types / lint
-are red. The reasoning:
+The **fail-on-red step** (workflow step 5) refuses to mark a slice `built` if targeted tests /
+types / lint are red. The reasoning:
 
 - A red signal means either the slice's contract is wrong or the failing code is. Neither
   is something AFK can resolve.
