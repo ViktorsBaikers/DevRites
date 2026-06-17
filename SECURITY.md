@@ -96,9 +96,9 @@ shell rc files, fetch remote code, or alter Claude Code settings.
 
 When installed via `claude plugin install devrites@devrites-marketplace`,
 the plugin runtime owns file placement. DevRites does not ship a post-install
-hook that modifies user files. Engineering rules (`pack/.claude/rules/*.md`)
-are delivered via the `devrites-rules` loader skill rather than written into
-the user's `~/.claude/CLAUDE.md`.
+hook that modifies user files. The plugin manifest ships only skills and agents —
+the engineering rules are not delivered by the plugin and are never written into
+the user's `~/.claude/CLAUDE.md` (add them with a `--rules-only` bash install).
 
 ### Recommended Claude Code permissions for managed deployments
 
