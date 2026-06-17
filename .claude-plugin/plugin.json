@@ -35,6 +35,7 @@
     "./pack/.claude/agents/devrites-simplifier-reviewer.md",
     "./pack/.claude/agents/devrites-slice-wright.md",
     "./pack/.claude/agents/devrites-spec-reviewer.md",
+    "./pack/.claude/agents/devrites-strategy-reviewer.md",
     "./pack/.claude/agents/devrites-test-analyst.md"
   ]
 }

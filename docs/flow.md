@@ -283,10 +283,11 @@ skills (`prototype`, `handoff`, `triage`, `diagnose`). Visibility is the
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true) — 17 skills"]
+    subgraph Public["Public (user-invocable: true) — 18 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
+        RT[/rite-temper/]
         R3[/rite-define/]
         R4[/rite-plan/]
         R5[/rite-build/]

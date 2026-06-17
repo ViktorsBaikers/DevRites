@@ -1,6 +1,6 @@
 ---
 name: rite-autocomplete
-description: Run the entire DevRites lifecycle end-to-end with no per-phase human iteration — spec → define → build×N → prove → polish → review → seal → ship — choosing the best option at every soft gate and recording the rationale. A vague prompt triggers an up-front clarifying interview; after that it runs unattended, pausing only on hard irreversible-risk gates (auth / migration / public-API / red tests), blocking or escalating gates, or a NO-GO. Default stops at the final type-GO; `--ship` (alias `--yolo`) auto-confirms it for a zero-touch push. Use when the user says "autocomplete", "do the whole thing", "run the full cycle", "build this end to end", "one-shot this feature", or "ship it autonomously". Not for a single phase (use the specific /rite-* skill) or when the user wants to drive each step.
+description: Run the entire DevRites lifecycle end-to-end with no per-phase human iteration — spec → temper → define → build×N → prove → polish → review → seal → ship — choosing the best option at every soft gate and recording the rationale. A vague prompt triggers an up-front clarifying interview; after that it runs unattended, pausing only on hard irreversible-risk gates (auth / migration / public-API / red tests), blocking or escalating gates, or a NO-GO. Default stops at the final type-GO; `--ship` (alias `--yolo`) auto-confirms it for a zero-touch push. Use when the user says "autocomplete", "do the whole thing", "run the full cycle", "build this end to end", "one-shot this feature", or "ship it autonomously". Not for a single phase (use the specific /rite-* skill) or when the user wants to drive each step.
 argument-hint: "[idea] [--ship|--yolo] [--max-slices N]"
 user-invocable: true
 ---
@@ -30,6 +30,11 @@ blocking / escalating gates, and any NO-GO still pause.
   (= planned slices), so a runaway is still bounded.
 - **Best option, recorded.** For each discretionary choice, pick the option the relevant
   specialist / reviewer favours and record the rationale. Never silently coin-flip.
+- **Strategic review runs, but never auto-grows scope.** After `/rite-spec`, run `/rite-temper`
+  (significance-gated — it skips low-stakes specs in one line). Unattended it auto-applies only
+  `hold-rigor` + `reduce-to-MVP` (these never grow acceptance); **any `expand` is a blocking
+  pause**, and irreversible-risk findings always pause. Autocomplete hardens and may *prune* the
+  spec on its own; it never *expands* the build's scope without the human.
 
 ## Workflow
 1. **Parse args.** The idea + flags: `--ship` / `--yolo` (auto-confirm the final
@@ -42,10 +47,10 @@ blocking / escalating gates, and any NO-GO still pause.
    ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
    irreversible-risk still pause.
 4. **Drive the phases** ([reference/loop.md](reference/loop.md)): `/rite-spec` →
-   `/rite-define` → `/rite-build` (loop until all slices built; `tick-afk.sh` each) →
-   `/rite-prove` → `/rite-polish` → `/rite-review` → `/rite-seal`. Run each by Reading
-   its `SKILL.md` and executing its workflow; state is carried by the workspace files,
-   not chat.
+   **`/rite-temper`** → `/rite-define` → `/rite-build` (loop until all slices built;
+   `tick-afk.sh` each) → `/rite-prove` → `/rite-polish` → `/rite-review` → `/rite-seal`. Run
+   each by Reading its `SKILL.md` and executing its workflow; state is carried by the workspace
+   files, not chat.
 5. **Apply stop conditions at every gate** ([reference/stop-conditions.md](reference/stop-conditions.md)):
    on hard-risk / blocking / escalating / NO-GO / budget-exhausted / still-low-confidence
    → write `state.md` (`Status`, `Next step`), surface *why*, and **STOP**.
@@ -60,7 +65,7 @@ blocking / escalating gates, and any NO-GO still pause.
 A phase-by-phase progress log, then the final status:
 ```
 Autocomplete: <slug>
-spec ✓  define ✓  build ✓ (N slices)  prove ✓  polish ✓  review ✓  seal: GO
+spec ✓  temper ✓ (mode <m> | skipped)  define ✓  build ✓ (N slices)  prove ✓  polish ✓  review ✓  seal: GO
 → SHIPPED  <sha> on <branch>            (--ship)
    — or —
 → STOPPED — awaiting human at <phase>: <reason>

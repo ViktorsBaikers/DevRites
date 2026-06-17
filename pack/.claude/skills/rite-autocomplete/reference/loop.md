@@ -34,13 +34,14 @@ the last left off — there is nothing to thread through chat.
 | Step | Phase | Loop / gate |
 |---|---|---|
 | 1 | `/rite-spec` | feed the interview answers; write `spec.md` |
-| 2 | `/rite-define` | `plan.md` + `tasks.md`; record `Plan approved` |
-| 3 | `/rite-build` ×N | **loop** while any slice is `pending`; build one, then run `bash .claude/skills/rite-build/scripts/tick-afk.sh state.md` — exit 3 (budget hit) ⇒ STOP |
-| 4 | `/rite-prove` | once all slices `built`; on failure → `devrites-debug-recovery` within scope |
-| 5 | `/rite-polish` | re-verify after code edits (evidence must stay fresh) |
-| 6 | `/rite-review` | apply in-scope fixes; re-prove if code changed |
-| 7 | `/rite-seal` | GO/NO-GO decision (no git here) |
-| 8 | `/rite-ship` | only if seal GO; `--ship` auto-confirms type-GO, else stop for human |
+| 2 | `/rite-temper` | significance-gated strategic review; harden spec + write `strategy.md`. Skip low-stakes specs in one line. AFK: `hold-rigor` / `reduce-to-MVP` auto-apply; **any `expand` pauses (blocking)**; irreversible-risk pauses |
+| 3 | `/rite-define` | reads `strategy.md`; `plan.md` + `tasks.md`; record `Plan approved` |
+| 4 | `/rite-build` ×N | **loop** while any slice is `pending`; build one, then run `bash .claude/skills/rite-build/scripts/tick-afk.sh state.md` — exit 3 (budget hit) ⇒ STOP |
+| 5 | `/rite-prove` | once all slices `built`; on failure → `devrites-debug-recovery` within scope |
+| 6 | `/rite-polish` | re-verify after code edits (evidence must stay fresh) |
+| 7 | `/rite-review` | apply in-scope fixes; re-prove if code changed |
+| 8 | `/rite-seal` | GO/NO-GO decision (no git here) |
+| 9 | `/rite-ship` | only if seal GO; `--ship` auto-confirms type-GO, else stop for human |
 
 ## Between phases
 

@@ -35,9 +35,12 @@ the plan:
 0. **Read `.claude/rules/core.md`** — the always-on operating rules and anti-rationalizations.
 1. **Read the spec** — `spec.md` (objective, requirements, acceptance, **placement**,
    design references, gaps/decisions), plus `references.md`, `decisions.md`,
-   `assumptions.md`, and **`design-brief.md` if the feature touches UI** (the UX/UI
-   contract `/rite-spec` shaped — its key states + interaction model drive how UI slices
-   are cut). If a blocking `[NEEDS CLARIFICATION]` remains, stop → `/rite-spec`.
+   `assumptions.md`, **`strategy.md` if present** (the scope mode, deferred / out-of-scope
+   register, and pre-mortem risks from `/rite-temper` — cut slices to mitigate the top risks
+   and respect the IN/OUT line; map coverage against the **hardened** spec), and
+   **`design-brief.md` if the feature touches UI** (the UX/UI contract `/rite-spec` shaped —
+   its key states + interaction model drive how UI slices are cut). If a blocking
+   `[NEEDS CLARIFICATION]` remains, stop → `/rite-spec`.
 2. **Decide the approach + architecture** (the HOW the spec deliberately omitted): the
    strategy, key technical decisions + rationale, and the tech the slices will use. Use a
    code-intelligence index (`codegraph` / `graphify`) for structure/impact. Record in
@@ -112,6 +115,7 @@ Planned: <slug>
 Approach: <one line>
 Slices: N (slice 1: <name>)   Fullstack/UI slices: <which>
 Coverage: <all acceptance criteria mapped? yes/no>
+Strategy: honored (mode <m>; <n> pre-mortem risks → mitigation slices) | none (no strategy.md)
 Next: confirm, then /rite-build   (or /rite-plan to reshape the slices)
 ↻ Hygiene: /clear after user confirms (plan.md + tasks.md + decisions.md + state.md captured). See rules/context-hygiene.md.
 ```

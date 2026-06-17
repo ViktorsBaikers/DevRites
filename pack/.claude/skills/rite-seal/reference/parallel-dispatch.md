@@ -2,7 +2,7 @@
 
 How `/rite-review` and `/rite-seal` fan out the fresh-context review subagents under `.claude/agents/`. Loaded on demand by the calling skill — not a skill itself.
 
-DevRites ships eight fresh-context review subagents under `.claude/agents/`. The seal and the multi-axis review need most of them running **at the same time**, on the same workspace + diff, so the verdicts don't contaminate each other.
+DevRites ships nine fresh-context review subagents under `.claude/agents/` (plus the write-capable `devrites-slice-wright`, which is not a reviewer). Eight are post-build reviewers used at the seal / multi-axis review; the ninth, `devrites-strategy-reviewer`, is **pre-plan** — it judges the spec for `/rite-temper` and is *not* part of the seal fan-out. The seal and the multi-axis review need most of the post-build reviewers running **at the same time**, on the same workspace + diff, so the verdicts don't contaminate each other.
 
 Pattern: delegate to specialized agents with isolated context, brief each one precisely, run them concurrently, reconcile on return.
 

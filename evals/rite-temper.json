@@ -1,0 +1,26 @@
+{
+  "skill": "rite-temper",
+  "description": "Trigger evals for /rite-temper — strategic review of a readied spec (scope mode + pre-mortem), folds decisions back into the spec before /rite-define.",
+  "queries": [
+    {"text": "/rite-temper", "expected": "should_trigger", "rationale": "Direct slash invocation."},
+    {"text": "Temper this spec before we plan it.", "expected": "should_trigger", "rationale": "Direct 'temper' verb."},
+    {"text": "Do a strategy review of this feature.", "expected": "should_trigger", "rationale": "Strategy review = temper."},
+    {"text": "Is this spec ambitious enough? Should we think bigger?", "expected": "should_trigger", "rationale": "Think-bigger / ambition framing."},
+    {"text": "Run a pre-mortem on the spec before building.", "expected": "should_trigger", "rationale": "Pre-mortem is a temper pass."},
+    {"text": "Scope check — are we over-building or under-building this?", "expected": "should_trigger", "rationale": "Scope-mode framing."},
+    {"text": "Is this the right thing to build, at the right scope?", "expected": "should_trigger", "rationale": "Strategic 'right thing' review of the spec."},
+    {"text": "Big auth-touching feature — strategically review the spec before defining.", "expected": "should_trigger", "rationale": "Significant feature → strategic review before define."},
+    {"text": "Harden and de-risk the spec, then we'll plan.", "expected": "should_trigger", "rationale": "Harden the spec = temper."},
+    {"text": "Reduce this over-scoped spec to an MVP.", "expected": "should_trigger", "rationale": "Reduce-to-MVP scope mode."},
+    {"text": "I have a vague idea, let's explore a few directions.", "expected": "should_not_trigger", "rationale": "Rough idea, pre-spec → /rite-pressure-test."},
+    {"text": "Double-check this one architectural decision before I commit it.", "expected": "should_not_trigger", "rationale": "Single decision mid-build → devrites-doubt."},
+    {"text": "Investigate this feature and write the spec.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
+    {"text": "Break the approved spec into plan and slices.", "expected": "should_not_trigger", "rationale": "/rite-define."},
+    {"text": "Review the diff for correctness and security.", "expected": "should_not_trigger", "rationale": "Code-diff review → /rite-review."},
+    {"text": "Final seal — GO or NO-GO on the built feature?", "expected": "should_not_trigger", "rationale": "Final gate on built+proven feature → /rite-seal."},
+    {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "/rite-build."},
+    {"text": "Prove the feature works end to end.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
+    {"text": "Fix the bug in the date parser.", "expected": "should_not_trigger", "rationale": "Bug fix, not a spec review."},
+    {"text": "Explain how Postgres MVCC works.", "expected": "should_not_trigger", "rationale": "Off-topic."}
+  ]
+}

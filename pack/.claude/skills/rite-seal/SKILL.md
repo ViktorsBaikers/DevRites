@@ -41,7 +41,7 @@ Read `review.md` and the latest reviewer outputs.
 1. Read all artifacts: `brief.md`, `spec.md`, `plan.md`, `tasks.md`, `state.md`,
    `decisions.md`, `assumptions.md`, `questions.md`, `drift.md`, `evidence.md`,
    `browser-evidence.md`, `polish-report.md`, `review.md`, `design-brief.md` (if UI),
-   and the **final diff**. If a code-intelligence index (`codegraph` / `graphify`) is
+   `strategy.md` (if present), and the **final diff**. If a code-intelligence index (`codegraph` / `graphify`) is
    available, use it for blast-radius checks on the final diff in step 5.
 2. Check **acceptance criteria one by one** — [final-evidence](reference/final-evidence.md).
    Each gets a checkbox + the evidence that proves it (or "unproven").
@@ -52,7 +52,10 @@ Read `review.md` and the latest reviewer outputs.
    is a NO-GO regardless of behavior impact** (an open validating gate is merge-blocking by
    definition); a slice marked `built (pending review)` is not done.
 5. Check **security, data, migration, rollback** risk —
-   [risk-and-rollback](reference/risk-and-rollback.md).
+   [risk-and-rollback](reference/risk-and-rollback.md). If `strategy.md` exists (from
+   `/rite-temper`), confirm its **top pre-mortem risks are mitigated** in the diff/evidence and
+   that no **Non-goal / deferred item crept into the diff** (scope creep) — either is a finding
+   (an unmitigated top risk or smuggled-in out-of-scope work).
 6. Check **frontend polish** if UI is involved (states, a11y, responsive, design-system,
    browser evidence).
 7. **Independent review** — seal is the final gate, not a re-run of `/rite-review`.

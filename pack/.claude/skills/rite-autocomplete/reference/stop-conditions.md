@@ -21,6 +21,14 @@ Regardless of `allow_gates` or `--ship`:
 - Any `questions.md` entry with `gate: validating` and `status: open` → pause (it is a
   seal NO-GO by definition; don't sail into a guaranteed NO-GO).
 
+## Stop on strategic-review scope expansion (`/rite-temper`)
+
+- `/rite-temper` choosing scope mode `expand` — or otherwise **adding** any acceptance
+  criterion to `spec.md` — → synchronous pause, regardless of `allow_gates` / `--ship`.
+  Autocomplete may auto-apply only `hold-rigor` and `reduce-to-MVP` (they harden / prune and
+  never grow the build's scope); **growing scope unattended is never automatic**. A low-stakes
+  spec that temper skips, or a `hold-rigor` / `reduce-to-MVP` run, does **not** pause.
+
 ## Stop on workflow state
 
 - **NO-GO at seal** → stop; surface every blocker with `file:line` and the fix
