@@ -274,13 +274,13 @@ full list.
     window), to ~95% confidence
   → arms AFK, then drives every phase in order: /rite-spec → /rite-define →
     /rite-build ×N → /rite-prove → /rite-polish → /rite-review → /rite-seal
+    (→ /rite-ship too when --ship is set)
   → at each soft gate, picks the option the relevant specialist/reviewer
     favours and records the rationale in decisions.md (never silently)
-  → seal returns GO → renders the final type-GO prompt and STOPS for the human
+  → seal returns GO → autocomplete STOPS (default) and hands off to /rite-ship
 
-You: GO
-
-/rite-ship                     # the human confirmed → ship + close
+/rite-ship                     # human runs it → renders the type-GO prompt
+You: GO                        # → commit · push · tag, then archive + clear ACTIVE
 ```
 
 Add `--ship` (alias `--yolo`) to auto-confirm the final type-`GO` for a
