@@ -102,7 +102,7 @@ To try your changes inside a real project:
 
 A quick map — the [README "Layout" section](README.md#layout) has the full version.
 
-- `pack/.claude/skills/` — 23 skills (15 workflow + 8 specialists).
+- `pack/.claude/skills/` — 25 skills (17 workflow + 8 specialists).
 - `pack/.claude/agents/` — 8 review agents (fresh-context, read-only).
 - `pack/.claude/rules/` — 16 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
 - `evals/` — trigger evals (20 queries per public skill).

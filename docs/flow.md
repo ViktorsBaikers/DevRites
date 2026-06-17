@@ -24,7 +24,8 @@ flowchart LR
     Prove -->|evidence captured| Polish[/rite-polish/]
     Polish -->|polish-report.md| Review[/rite-review/]
     Review -->|review.md<br/>Critical == 0| Seal[/rite-seal/]
-    Seal -->|GO + type-GO| Ship([commit · push · tag])
+    Seal -->|GO| Ship2[/rite-ship/]
+    Ship2 -->|type-GO| Shipped([commit · push · tag · archive])
     Seal -->|NO-GO| Repair[/rite-plan repair/]
     Repair --> Build
 
@@ -37,8 +38,8 @@ flowchart LR
     classDef done fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef repair fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef gate fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
-    class Spec,Define,Build,Prove,Polish,Review,Seal phase
-    class Ship done
+    class Spec,Define,Build,Prove,Polish,Review,Seal,Ship2 phase
+    class Shipped done
     class Repair repair
     class Await gate
 ```
@@ -98,8 +99,10 @@ flowchart LR
 ## 4. `/rite-seal` fan-out
 
 The seal fans out **all** relevant reviewers in parallel and reconciles their
-findings. The advisory `/20` score has been removed — the gate is severity +
-acceptance + drift.
+findings, then **decides** GO / NO-GO and stops. It no longer runs git — on GO
+it hands off to `/rite-ship`, which renders the type-GO prompt and runs the
+irreversible commit · push · tag · archive. The advisory `/20` score has been
+removed — the gate is severity + acceptance + drift.
 
 ```mermaid
 flowchart TB
@@ -122,9 +125,7 @@ flowchart TB
     Gate -->|no| NoGo[NO-GO]
     YN -->|y| Go
     YN -->|N| NoGo
-    Go[GO] -->|before any commit/push/tag| TypeGO{type-GO<br/>prompt}
-    TypeGO -->|GO exactly| Ship([git commit · push · tag])
-    TypeGO -->|anything else| Cancel([cancel, record in seal.md])
+    Go[GO: write seal.md<br/>Next step: /rite-ship] -->|hand off, type-GO + git live in ship| Ship([/rite-ship/])
 
     classDef phase fill:#1f2937,stroke:#60a5fa,color:#f9fafb
     classDef agent fill:#7c2d12,stroke:#fb923c,color:#fff7ed
@@ -133,9 +134,9 @@ flowchart TB
     classDef stop fill:#7f1d1d,stroke:#f87171,color:#fee2e2
     class Seal,Walk phase
     class SpecRev,CodeRev,TestRev,FERev,SecRev,PerfRev agent
-    class Gate,YN,TypeGO gate
+    class Gate,YN gate
     class Go,Ship ship
-    class NoGo,Cancel stop
+    class NoGo stop
 ```
 
 ## 5. `devrites-debug-recovery` six-phase loop
@@ -198,14 +199,15 @@ flowchart TD
     Review -.->|pulls| S
     Review -.->|pulls| P
     Seal[/rite-seal/] -.->|pulls| Ag
-    Seal -.->|pulls| Gw
+    Seal -.->|pulls| CR
+    Ship[/rite-ship/] -.->|pulls| Gw
 
     classDef carrier fill:#312e81,stroke:#818cf8,color:#eef2ff
     classDef rule fill:#1f2937,stroke:#9ca3af,color:#f9fafb
     classDef phase fill:#064e3b,stroke:#34d399,color:#ecfdf5
     class R carrier
-    class Core,CS,EH,T,CR,S,P,Pat,Gw,Hk,Doc,Wf,Ag,CH,Afk,AP rule
-    class Build,Polish,Review,Seal phase
+    class Core,CS,EH,T,CR,S,P,Pat,Gw,Hk,Doc,DWf,Ag,CH,Afk,AP rule
+    class Build,Polish,Review,Seal,Ship phase
 ```
 
 ## 7. Workspace state model
@@ -236,6 +238,7 @@ erDiagram
     WORKSPACE ||--o| polish-report : "has (from /rite-polish)"
     WORKSPACE ||--o| review : "has (from /rite-review)"
     WORKSPACE ||--o| seal : "has (from /rite-seal)"
+    WORKSPACE ||--o| ship : "has (from /rite-ship; archived on close)"
 
     ACTIVE {
         string slug "names the current workspace"
@@ -250,7 +253,7 @@ erDiagram
         string slug PK ".devrites/work/<slug>/"
     }
     state {
-        string phase "spec | plan | build | prove | polish | review | seal | done"
+        string phase "spec | plan | build | prove | polish | review | seal | ship | done"
         string status "running | awaiting_human | blocked | done"
         string active_slice "N — name"
         int afk_slices_remaining "from .devrites/AFK max_slices on first AFK build"
@@ -275,7 +278,7 @@ skills (`prototype`, `handoff`, `triage`, `diagnose`). Visibility is the
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true) — 15 skills"]
+    subgraph Public["Public (user-invocable: true) — 17 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
@@ -286,6 +289,8 @@ flowchart TB
         R7[/rite-polish/]
         R8[/rite-review/]
         R9[/rite-seal/]
+        R12[/rite-ship/]
+        R13[/rite-autocomplete/]
         R10[/rite-status/]
         R11[/rite-resolve/]
         IPT[/rite-pressure-test/]
@@ -307,7 +312,7 @@ flowchart TB
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
-    class R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11,IPT,D1,D2,D3 pub
+    class R1,R2,R3,R4,R5,R6,R7,R8,R9,R12,R13,R10,R11,IPT,D1,D2,D3 pub
     class I1,I2,I3,I4,I5,I6,I7,I8 int
 ```
 
@@ -328,7 +333,7 @@ stateDiagram-v2
     awaiting_human --> running: /rite-resolve --drop qid
     awaiting_human --> blocked: /rite-plan repair (scope change)
     blocked --> running: plan repaired
-    running --> done: all slices proven + sealed
+    running --> done: sealed GO + /rite-ship<br/>(type-GO → commit · push · tag · archive)
     done --> [*]
 
     note right of awaiting_human

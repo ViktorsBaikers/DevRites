@@ -2,22 +2,32 @@
 
 DevRites is a **distributed but coordinated** set of project-local Claude Code skills
 that make an AI coding agent behave like a disciplined senior engineer: clarify →
-spec+plan → build one verified slice → prove with evidence → polish → review → seal.
+spec+plan → build one verified slice → prove with evidence → polish → review → seal →
+ship.
 
 ## Layers
 
 1. **Public workflow skills** — `.claude/skills/rite-*`, `user-invocable: true`. Each
    owns exactly one phase and reads/writes the `.devrites/` workspace.
    Sequence: `rite-spec`, `rite-define`, `rite-plan`, `rite-build`,
-   `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`, plus the
-   read-only `rite-status`, the resume verb `rite-resolve` (answer a HITL
-   gate and clear `Awaiting human`), and the thin `/rite` menu.
+   `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`, `rite-ship`,
+   plus the read-only `rite-status`, the resume verb `rite-resolve` (answer
+   a HITL gate and clear `Awaiting human`), and the thin `/rite` menu.
+   `/rite-seal` **decides** GO/NO-GO and writes the verdict to `seal.md`;
+   `/rite-ship` is the eighth lifecycle phase that **executes** the
+   irreversible git ladder and **closes** the task (archives the workspace,
+   clears `ACTIVE`). Keeping the decision and the irreversible action as two
+   separately-auditable steps is the point.
 2. **Public utility skills** — `.claude/skills/rite-zoom-out`,
-   `rite-prototype`, `rite-handoff`, and `rite-pressure-test` —
-   public commands. The `devrites-` prefix is **namespace** (collision
-   avoidance against bundled Claude Code skill names like `prototype`,
-   `handoff`, `triage`, `diagnose`), not a visibility marker;
-   `rite-pressure-test` carries no prefix because it doesn't collide.
+   `rite-prototype`, `rite-handoff`, `rite-pressure-test`, and
+   `rite-autocomplete` — public commands. `rite-autocomplete` is the
+   unattended orchestrator: it drives the whole lifecycle (spec → … → seal →
+   ship) end-to-end, choosing the best option at each soft gate, pausing only
+   on hard irreversible-risk / blocking / escalating gates or a NO-GO. The
+   `devrites-` prefix is **namespace** (collision avoidance against bundled
+   Claude Code skill names like `prototype`, `handoff`, `triage`, `diagnose`),
+   not a visibility marker; `rite-pressure-test` carries no prefix because it
+   doesn't collide.
 3. **Internal specialist skills** — `.claude/skills/devrites-*` with
    `user-invocable: false`: `devrites-interview`, `-source-driven`,
    `-doubt`, `-frontend-craft`, `-browser-proof`, `-debug-recovery`,
@@ -116,6 +126,32 @@ Normalization remains the entry gate of UI polish — polishing UI that hasn't
 been aligned to the project's design system is "decoration on drift," and
 the UI reference refuses to run Phase 4 before Phase 3.
 
+### Why seal and ship are separate phases (`/rite-seal`, `/rite-ship`)
+Deciding "is this safe to ship" and *actually shipping* are different acts with
+different blast radii. `/rite-seal` is a **pure decision gate**: it walks acceptance
+against evidence, fans out the fresh-context reviewers, and writes the GO / NO-GO
+verdict to `seal.md` — it runs no git. On GO it sets `state.md` `Next step:
+/rite-ship` and stops. `/rite-ship` is the eighth lifecycle phase: it refuses to run
+without a GO recorded in `seal.md`, renders the type-`GO` prompt, runs the irreversible
+git ladder (commit → push → tag/PR per the project's convention), writes `ship.md`,
+then **closes the task** — sets phase `done` and archives `.devrites/work/<slug>/` →
+`.devrites/archive/<slug>/` (every `.md` preserved, never deleted) and clears
+`.devrites/ACTIVE`. A GO seal is a verdict, not an authorization to push; keeping the
+decision and the irreversible action as two separately-auditable steps is the point.
+
+### Why `/rite-autocomplete` exists (the unattended orchestrator)
+Some features are routine enough to run end-to-end without per-phase human iteration.
+`/rite-autocomplete` drives the whole lifecycle (spec → define → build×N → prove →
+polish → review → seal → ship) by reading each phase's `SKILL.md` and executing its
+workflow, carrying state through the workspace files rather than chat. A vague prompt
+triggers an up-front `devrites-interview` — the only interactive window — after which it
+runs unattended, choosing the best option at each soft gate and recording the rationale
+in `decisions.md`. It does **not** weaken the safety gates: hard irreversible-risk
+(auth / migration / public-API / red tests), blocking / escalating gates, an open
+`gate: validating`, a NO-GO, exhausted `max_slices`, or low confidence all still pause.
+By default it stops at the final type-`GO`; the `--ship` flag (alias `--yolo`)
+auto-confirms it for a zero-touch push.
+
 ### Why persistent `.devrites/` state
 Long features outlive a single context window. Durable Markdown (spec/plan/tasks/
 state/evidence/drift/decisions) lets any phase — in any session, after any compaction
@@ -151,15 +187,17 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 15 public `rite-*` skills — the thin `/rite` menu (carries the
-  routing) + 8 lifecycle phases (`rite-spec`, `rite-define`, `rite-plan`,
-  `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`) +
-  `rite-status` + the `rite-resolve` resume verb + 4 utilities
-  (`rite-zoom-out`, `rite-prototype`, `rite-handoff`, `rite-pressure-test`) —
-  plus 8 internal model-invoked `devrites-*` specialists, not one
-  mega-command. The `devrites-` prefix is a namespace (collision avoidance),
-  not a public/internal marker — `user-invocable:` is. All `devrites-*`
-  skills are model-invoked.
+- **Surface**: 17 public `rite-*` skills (25 total) — the thin `/rite` menu
+  (carries the routing) + 8 lifecycle phases (`rite-spec`, `rite-define`,
+  `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
+  `rite-ship` — seal **decides**, ship **executes + closes**) + `rite-status` +
+  the `rite-plan` replan verb + the `rite-resolve` resume verb + 5 utilities
+  (`rite-zoom-out`, `rite-prototype`, `rite-handoff`, `rite-pressure-test`,
+  `rite-autocomplete` — the unattended full-lifecycle orchestrator) — plus 8
+  internal model-invoked `devrites-*` specialists, not one mega-command. The
+  `devrites-` prefix is a namespace (collision avoidance), not a
+  public/internal marker — `user-invocable:` is. All `devrites-*` skills are
+  model-invoked.
 - **Selection**: the `/rite` menu skill carries the routing table; every
   workflow skill enforces a "right skill, right time" rule in its body.
 - **State**: durable `.devrites/` Markdown that survives compaction and new sessions.
@@ -173,7 +211,9 @@ contract.
 - **Design**: `devrites-frontend-craft` + a four-phase `/rite-polish` orchestrator (code + backend always; UI normalize + polish when UI is in scope).
 - **Review**: **feature-scoped** five-axis review with severity labels + fresh-context
   subagents at the seal.
-- **Scope**: clarify → seal; git/CI stay with the project and Claude Code's built-ins.
+- **Scope**: clarify → seal (decide) → ship (the irreversible git ladder —
+  commit → push → tag/PR — per the project's own convention) → close; the CI
+  pipeline stays with the project.
 - **Install**: project-local, manifest-managed; ships DevRites' own engineering rules.
 
 ## Deviations from the original build brief (and why)

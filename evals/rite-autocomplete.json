@@ -1,0 +1,26 @@
+{
+  "skill": "rite-autocomplete",
+  "description": "Trigger evals for /rite-autocomplete — runs the whole DevRites lifecycle unattended (spec→…→seal→ship), choosing the best option at each soft gate and pausing only on hard-risk / blocking gates / NO-GO.",
+  "queries": [
+    {"text": "/rite-autocomplete", "expected": "should_trigger", "rationale": "Direct slash invocation."},
+    {"text": "Autocomplete this feature.", "expected": "should_trigger", "rationale": "Direct autocomplete verb."},
+    {"text": "Do the whole thing end to end.", "expected": "should_trigger", "rationale": "Whole-lifecycle, end-to-end = /rite-autocomplete."},
+    {"text": "Run the full cycle unattended.", "expected": "should_trigger", "rationale": "Full unattended cycle is autocomplete's purpose."},
+    {"text": "One-shot this feature.", "expected": "should_trigger", "rationale": "One-shot = drive every phase in one go."},
+    {"text": "Build and ship this autonomously.", "expected": "should_trigger", "rationale": "Autonomous build→ship across phases = /rite-autocomplete."},
+    {"text": "Run all the rite phases automatically.", "expected": "should_trigger", "rationale": "Driving all phases automatically is the orchestrator."},
+    {"text": "Just take this idea to done.", "expected": "should_trigger", "rationale": "Idea→done unattended = /rite-autocomplete."},
+    {"text": "Full auto, ship it with --ship.", "expected": "should_trigger", "rationale": "Full-auto with the --ship flag is autocomplete's zero-touch mode."},
+    {"text": "No hand-holding, do everything.", "expected": "should_trigger", "rationale": "No-per-phase-iteration run = /rite-autocomplete."},
+    {"text": "Spec this out.", "expected": "should_not_trigger", "rationale": "Single phase → /rite-spec, not the whole lifecycle."},
+    {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "Single phase → /rite-build."},
+    {"text": "Seal it.", "expected": "should_not_trigger", "rationale": "Single phase → /rite-seal."},
+    {"text": "Ship it.", "expected": "should_not_trigger", "rationale": "Single phase → /rite-ship, not the full unattended cycle."},
+    {"text": "Review my diff.", "expected": "should_not_trigger", "rationale": "Single phase → /rite-review."},
+    {"text": "Status check.", "expected": "should_not_trigger", "rationale": "→ /rite-status."},
+    {"text": "Answer that question.", "expected": "should_not_trigger", "rationale": "→ /rite-resolve."},
+    {"text": "Why did the build break?", "expected": "should_not_trigger", "rationale": "Debugging."},
+    {"text": "Translate this to French.", "expected": "should_not_trigger", "rationale": "Off-topic Q."},
+    {"text": "What's the weather?", "expected": "should_not_trigger", "rationale": "Off-topic Q."}
+  ]
+}
