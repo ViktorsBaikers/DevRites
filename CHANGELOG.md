@@ -2,6 +2,17 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.1.1](https://github.com/ViktorsBaikers/DevRites/compare/v1.1.0...v1.1.1) (2026-06-17)
+
+### Bug Fixes
+
+* **skills:** slice count is always derived, never user-forced ([07eb724](https://github.com/ViktorsBaikers/DevRites/commit/07eb724a785793dd3d38ab4889b202d22d4ca2ef))
+
+### Documentation
+
+* **docs:** /rite-ship in manifest descriptions + autocomplete example ([7d3dfce](https://github.com/ViktorsBaikers/DevRites/commit/7d3dfcee6a9ae99f6ac8d05a6573501c7c8713da))
+* **docs:** list /rite-autocomplete in README table, fix /ship alias ([b5613fa](https://github.com/ViktorsBaikers/DevRites/commit/b5613fa922d2c51cc03149d840d316cc12770a76))
+
 ## [1.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.5...v1.1.0) (2026-06-17)
 
 ### Features
