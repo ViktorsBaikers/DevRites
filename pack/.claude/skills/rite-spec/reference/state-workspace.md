@@ -28,8 +28,11 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
       design-brief.md             # if UI is involved
       polish-report.md            # normalize+polish output
       review.md                   # review findings + decisions
-      seal.md                     # final GO / NO-GO
+      seal.md                     # final GO / NO-GO decision (from /rite-seal)
+      ship.md                     # ship record: commit/tag, acceptance, follow-ups (from /rite-ship)
       handoff.md                  # human/next-agent-facing handoff summary (overwritten each handoff)
+  archive/
+    <feature-slug>/               # closed features (moved here by /rite-ship close-out; all .md preserved)
 ```
 
 ## Rules
@@ -42,15 +45,19 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
   `state.md`. Other skills read the active workspace; none create a new one.
 - Each phase **updates `state.md`** and the relevant evidence files.
 - Don't create `evidence.md` / `browser-evidence.md` / `design-brief.md` /
-  `polish-report.md` / `review.md` / `seal.md` / `handoff.md` until the producing phase
-  runs — absence is meaningful (it means "not done yet"). `handoff.md` is written by
-  `/rite-handoff` and overwritten each handoff (latest snapshot, not a log).
+  `polish-report.md` / `review.md` / `seal.md` / `ship.md` / `handoff.md` until the
+  producing phase runs — absence is meaningful (it means "not done yet"). `handoff.md` is
+  written by `/rite-handoff` and overwritten each handoff (latest snapshot, not a log).
+- **`/rite-ship` closes the feature**: it writes `ship.md`, sets `state.md` phase `done`,
+  then archives `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` (every `.md`
+  preserved) and clears `.devrites/ACTIVE`. Closing **relocates** the audit trail; it
+  never deletes it. Re-open by moving the dir back and re-pointing `ACTIVE`.
 
 ## `state.md` template
 ```markdown
 # State: <slug>
 
-- Phase: spec | plan | build | prove | polish | review | seal | done
+- Phase: spec | plan | build | prove | polish | review | seal | ship | done
 - Status: running | awaiting_human | blocked | done
 - Active slice: <N — name> | none
 - Slice mode: AFK | HITL | none

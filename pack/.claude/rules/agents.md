@@ -25,8 +25,11 @@ The prefix mirrors visibility:
 - **`rite-*`** = user-invocable (`user-invocable: true`). The public slash-command
   surface — lifecycle phases plus utilities. `rite`, `rite-spec`, `rite-define`,
   `rite-plan`, `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
-  `rite-status`, `rite-resolve`, `rite-prototype`, `rite-handoff`, `rite-zoom-out`,
-  `rite-pressure-test`.
+  `rite-ship`, `rite-autocomplete`, `rite-status`, `rite-resolve`, `rite-prototype`,
+  `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`. `/rite-seal` **decides**
+  GO/NO-GO and writes the verdict; `/rite-ship` **executes** the irreversible git
+  ladder and **closes** the task (archives the workspace, clears `.devrites/ACTIVE`).
+  `/rite-autocomplete` drives the whole lifecycle unattended.
 - **`devrites-*`** = model-invoked (`user-invocable: false`, no slash command).
   Internal specialists that fire on trigger from the `rite-*` skills or auto-select.
   `devrites-interview`, `devrites-source-driven`, `devrites-doubt`,
