@@ -20,6 +20,10 @@ reshaping slice cadence or DoD criteria.
 - If a change alters product behavior, scope, architecture, data model, UX, security,
   or migration risk → **ask the user first** (use the Spec Drift Guard question format).
 - Keep each slice small enough for one focused build → prove cycle.
+- **Slice count is derived, never dictated** — reslice when a slice fails the sizing rule
+  (multiple "and"s, can't build+prove in one cycle), not to hit a user-named tally. A
+  requested count is a hint at most; slice logically and explain if it differs. See
+  [`reference/slicing.md`](reference/slicing.md) ("How many slices?").
 
 ## Workflow
 0. Read `.claude/rules/core.md` (operating rules) before reshaping anything.

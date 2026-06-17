@@ -6,13 +6,20 @@ its own — the phases do the work; autocomplete sequences them and enforces sto
 
 ## Arm AFK
 
-Write `.devrites/AFK` once, up front:
+Arm the gate policy up front; set the slice budget once the plan's count is known:
 
 ```yaml
-max_slices: <N>                # from --max-slices, default 12; the hard loop cap
 allow_gates: [advisory]        # only advisory auto-handles; validating+ pause
 # notify: "<cmd>"              # optional — fired on any awaiting_human pause
+# max_slices: <N>              # the slice BUDGET — set from the plan's count after
+# /rite-define (or an explicit --max-slices). NOT a target decomposition; it only
+# caps how many run unattended (default = all the plan's slices).
 ```
+
+The budget is the plan's own slice count, not a fixed number — so the loop builds exactly
+the task's slices and stops when they're done; `--max-slices N` only *lowers* it for a
+partial run. Arm the gate policy at step 3; write `max_slices` / `AFK slices remaining`
+after `/rite-define` produces `tasks.md` (when the count is known).
 
 `allow_gates: [advisory]` is deliberate: an open `gate: validating` is merge-blocking
 at seal (`afk-hitl.md`), so autocomplete must *pause* on it rather than queue it and

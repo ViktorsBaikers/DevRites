@@ -27,7 +27,10 @@ Regardless of `allow_gates` or `--ship`:
   direction. Do not round NO-GO up to GO.
 - **Spec Drift Guard fires** (`/rite-build` finds the plan is wrong and the change
   alters product behaviour) → stop; route through `/rite-plan repair`.
-- **`max_slices` exhausted** (`tick-afk.sh` exit 3) → stop; report slices remaining.
+- **Budget exhausted with slices still pending** — `tick-afk.sh` exit 3 while `tasks.md`
+  still has unbuilt slices (only when an explicit `--max-slices` capped the run below the
+  plan's count) → stop; report slices remaining. Exhausting the default budget = all
+  planned slices built = normal completion → continue to `/rite-prove`, don't pause.
 - **Still low-confidence after the interview** — the idea can't be pinned to testable
   acceptance criteria → stop and ask, rather than guessing the product.
 - **Repeated failure** — a phase fails, `devrites-debug-recovery` can't fix it within
