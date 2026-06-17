@@ -44,7 +44,10 @@ when capturing significant spec decisions (why-not-what, ADR-style notes in `dec
    at a time, **best guess attached**, structured options + escape hatch. (Vague ask →
    `devrites-interview`; rough idea → `rite-pressure-test`; ladders in
    [interview-patterns](reference/interview-patterns.md) / [question-protocol](reference/question-protocol.md).)
-   Aim for **zero blocking gaps**. *If a gap is genuinely undecidable on paper (state
+   For a vague ask, **map the decision tree** and resolve each branch depth-first; **cover
+   every dimension** (objective · scope · data model · UX · integration · non-functional ·
+   acceptance) — resolved or explicitly deferred — and **stop when answers converge** or you
+   can predict them (don't interrogate). Aim for **zero blocking gaps**. *If a gap is genuinely undecidable on paper (state
    machine that may deadlock, data shape ambiguity, "which UX wins") → suggest a
    scoped detour to `/rite-prototype` to answer that ONE question before
    continuing.*

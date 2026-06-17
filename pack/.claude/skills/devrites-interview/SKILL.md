@@ -26,14 +26,33 @@ before a plan, spec, or code exists.
   Always include the escape hatch; mark your recommendation.
 
 ## Stop condition
-Stop when you can **predict the user's answer** (~95% confidence) — when remaining
-unknowns are reversible details that don't change the spec. Don't interrogate; depth on
-the few that matter, not breadth for its own sake.
+Stop when **any** holds — don't interrogate past the point of value:
+- **Confidence** — you can predict the next answer (~95%); remaining unknowns are
+  reversible details that don't change the spec.
+- **Convergence** — the last 2–3 answers only rubber-stamped your guesses and didn't
+  move the spec.
+- **Soft cap** — after ~8 material questions, proceed with your best-guess answers logged
+  in `assumptions.md` rather than asking more (hard-stop sooner if the ask is small).
+
+Depth on the few that matter, not breadth for its own sake. If answers stop converging —
+you keep circling one area without progress — **reframe once** (below) instead of asking
+another question.
 
 ## Don't ask
 - Things the codebase answers (read it first).
 - Reversible implementation details (decide, log as an assumption).
 - Everything at once "to be thorough."
+
+## When the ask is vague — map the decision tree first
+For a one-line or fuzzy ask (`"design a contact page"`), don't fire isolated questions.
+First sketch the **decision tree** — the branches the answer splits into — and resolve
+each branch **depth-first** with the protocol above. Domain branches per area:
+`rite-spec/reference/interview-patterns.md`.
+
+## Reframe (once, when stuck)
+If the interview isn't converging, spend **one** turn challenging the premise rather than
+refining it — *"is a form even the right answer here, or a mailto / booking link?"* A good
+reframe collapses several open branches. Use it sparingly, then resume the protocol.
 
 ## Output
 A short summary the caller can use: objective in one sentence, confirmed decisions,

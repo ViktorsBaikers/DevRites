@@ -27,10 +27,29 @@ the most downstream work.
 ```
 Always include the escape hatch (#4). Mark your recommended option.
 
-## Confidence stop
-Stop when you can **predict the user's answer** to the next question — that's ~95%
-confidence. Signs you should stop: you're asking about reversible details, the user is
-rubber-stamping your guesses, or the remaining unknowns don't change the spec.
+## Stop conditions (any one)
+- **Confidence** — you can predict the user's answer to the next question (~95%).
+- **Convergence** — the last 2–3 answers only rubber-stamped your guesses; the spec
+  stopped moving.
+- **Soft cap** — after ~8 material questions, proceed with best-guess answers logged as
+  assumptions (hard-stop sooner if the ask is small).
+
+If you keep circling one area without progress, **reframe once** — challenge the premise
+rather than asking again.
+
+## Coverage gate — am I done asking?
+Before declaring the interview complete, each dimension is **resolved** or **explicitly
+deferred** (logged, non-blocking) — never silently skipped:
+- [ ] **Objective** — one-sentence success + the real problem behind it.
+- [ ] **Scope** — what's in vs explicitly out for v1.
+- [ ] **Data model** — core entities + relationships (or "none").
+- [ ] **UX / flow** — happy path + empty / loading / error / permission states (or "no UI").
+- [ ] **Integration** — external systems / APIs / contracts (or "none").
+- [ ] **Non-functional** — auth, sensitive data, latency / scale (or "n/a").
+- [ ] **Acceptance** — how each requirement is *proven* (test / observation).
+
+A blocking gap in any dimension keeps the interview open; a deferred one goes to
+`questions.md` and doesn't block. This feeds the `/rite-spec` readiness gate.
 
 ## What NOT to ask
 - Things the codebase answers (read it first).

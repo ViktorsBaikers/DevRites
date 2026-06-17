@@ -108,6 +108,7 @@ List every open marker; blocking ones must be zero at the gate.
 - [ ] No blocking `[NEEDS CLARIFICATION]` markers remain (deferred ones are non-blocking)
 - [ ] **Placement decided** — where it lives + integration points are known
 - [ ] All material gaps/issues have a recorded decision
+- [ ] **Every spec dimension resolved or explicitly deferred** — objective · scope · data model · UX · integration · non-functional · acceptance (see question-protocol.md "Coverage gate")
 - [ ] Design references gathered + saved (if the human supplied any)
 - [ ] Requirements are testable and unambiguous
 - [ ] Success criteria are measurable and technology-agnostic
