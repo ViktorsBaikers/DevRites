@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.2.0...v1.3.0) (2026-06-17)
+
+### Features
+
+* **agents:** add devrites-slice-wright write-capable executor ([66a7c14](https://github.com/ViktorsBaikers/DevRites/commit/66a7c1418b727da181f8294e3bf6fdd632fa5711))
+
 ## [1.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.1.1...v1.2.0) (2026-06-17)
 
 ### Features

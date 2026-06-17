@@ -1,6 +1,6 @@
 {
   "name": "devrites",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Disciplined senior-engineer workflow skills pack — spec/plan/build/prove/polish/review/seal/ship with persistent .devrites/ Markdown state, Spec Drift Guard, browser-proof ladder, fullstack contract-first slicing, and anti-AI-slop guardrails.",
   "author": {
     "name": "Viktors Baikers",
