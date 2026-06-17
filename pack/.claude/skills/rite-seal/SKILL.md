@@ -1,21 +1,22 @@
 ---
 name: rite-seal
-description: Final GO / NO-GO gate — walk `spec.md` acceptance against `evidence.md`, fan out reviewers in parallel, block on Critical, ask y/N on Important, demand type-GO before irreversible git. Use when the user says "seal this", "ship it", "GO / NO-GO", "is it safe to merge", "final gate". Not for inline review or unpolished features.
+description: Final GO / NO-GO decision gate — walk `spec.md` acceptance against `evidence.md`, fan out reviewers in parallel, block on Critical, ask y/N on Important, write the verdict to seal.md. Use when the user says "seal this", "GO / NO-GO", "is it safe to merge", "final gate", "decide if we can ship". Hands off to /rite-ship for the actual commit/push/close. Not for the irreversible ship itself (use /rite-ship), inline review, or unpolished features.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
 # /rite-seal — GO / NO-GO
 
-The last gate before shipping. **Read the active workspace first**; if none, tell the
-user to run `/rite-spec <feature>`. Produces `seal.md` with a clear verdict.
+The decision gate before shipping. **Read the active workspace first**; if none, tell
+the user to run `/rite-spec <feature>`. Produces `seal.md` with a clear verdict.
+`/rite-seal` **decides**; the irreversible git commit/push/tag and the task close-out
+live in `/rite-ship`, which refuses to run without a GO recorded here.
 
 ## Rules consulted (read on demand from `.claude/rules/`)
 **Step 0:** Read `.claude/rules/core.md` first. The other rule files load on demand —
 pull these via `Read` before sealing:
 - `agents.md` — review-subagent fan-out at seal.
 - `code-review.md` — severity labels (Critical / Important / Suggestion / Nit / FYI).
-- `git-workflow.md` — Conventional Commits, atomic commits, the never-commit list.
 - `documentation.md` — record decisions in `decisions.md` before sealing.
 
 ## Operating rules
@@ -82,50 +83,26 @@ Read `review.md` and the latest reviewer outputs.
 Loaded on demand from [`reference/seal-template.md`](reference/seal-template.md). Fill in
 each section + write to `.devrites/work/<slug>/seal.md` as the durable record.
 
-> **Mid-flight discipline.** When tempted to round NO-GO up to GO, bypass the y/N or type-GO prompt, average reviewer disagreements, or seal with unresolved drift — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
+> **Mid-flight discipline.** When tempted to round NO-GO up to GO, bypass the y/N prompt, average reviewer disagreements, or seal with unresolved drift — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 
-## Before any irreversible action (type-GO)
+## On GO → hand off to /rite-ship
 
-`/rite-seal` may proceed into downstream actions that cannot be undone
-silently — `git commit`, `git push`, `git tag`, publishing, deploying. The
-seal verdict alone is **not** authorization to run those. (See
-`.claude/rules/hooks.md` when configuring repo hooks for the commit/push path.)
+`/rite-seal` makes the **decision** and stops. It does **not** run `git commit`,
+`git push`, `git tag`, publish, or deploy — those moved to `/rite-ship`, which renders
+the type-GO prompt and refuses to run without a GO recorded here. Keeping the decision
+and the irreversible action as two separately-auditable steps is the point: a GO seal
+is a verdict, not an authorization to push.
 
-Before invoking any irreversible action, **render this prompt verbatim and
-wait for the user**:
-
-```
-About to: <git commit + git push + git tag vX.Y.Z>
-Verdict: GO
-Critical findings: 0
-Important findings unresolved: <n>
-Acceptance criteria proven: <n / total>
-
-Type "GO" exactly to proceed. Anything else cancels.
-```
-
-Rules for the prompt:
-
-- Render it **every time**, even with auto-trigger enabled (this is the
-  last safety net).
-- Only the literal string `GO` (no quotes) proceeds. `y`, `yes`, `go`
-  (lowercase), `OK`, `sure`, `do it`, or anything else → cancel and record
-  the cancel in `seal.md` as "user declined irreversible step at <ts>".
-- If the user cancels, do **not** roll back the verdict — the seal still
-  reads GO; only the downstream action did not run. The user can re-run
-  the action manually.
-- Type-GO does not bypass the severity gate. `Critical > 0` is still
-  NO-GO; this prompt cannot fire in that branch.
-
-This pairs with the `Important > 0` interactive y/N earlier in the gate.
-The two prompts together (`y/N` for "proceed to seal despite Important
-findings"; `type GO` for "proceed to irreversible action") give the user
-two real off-ramps before anything ships.
+On **GO**: write `seal.md`, set `state.md` `Next step: /rite-ship`, and tell the user
+the feature is cleared to ship. Do **not** set phase `done` — `/rite-ship` marks done
+after the task is shipped and archived. The `Important > 0` interactive y/N earlier in
+the gate is the one off-ramp seal still owns; the type-GO off-ramp now lives in ship.
 
 ## Output
 State the verdict first, then the blockers (if NO-GO) or the follow-ups (if GO), then
-the path to `seal.md`. Update `state.md` phase to `done` only on GO. If the
-user declined the type-GO prompt for a downstream action, note the decline
-in `seal.md` and stop — do not retry without the user explicitly asking.
+the path to `seal.md`. On GO the next command is `/rite-ship`; on NO-GO it is the fix
+path (`/rite-plan repair`, `/rite-build`, …).
 
-End with a one-line `↻ Hygiene:` advisory — `/clear` after GO (seal.md is the durable record); `/compact` (seal blockers) after NO-GO if fixing in this session, else `/clear`. See rules/context-hygiene.md.
+End with a one-line `↻ Hygiene:` advisory — `/clear` after GO (seal.md is the durable
+record; ship reads the workspace fresh); `/compact` (seal blockers) after NO-GO if
+fixing in this session, else `/clear`. See `.claude/rules/context-hygiene.md`.

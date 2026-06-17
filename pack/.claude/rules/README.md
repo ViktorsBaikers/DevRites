@@ -32,8 +32,8 @@ phase that needs them.
 | `security.md` | Untrusted input, least privilege, secrets, three-tier trust boundary, fail closed. | When input / auth / data / integrations are in scope. |
 | `performance.md` | Measure first, common pitfalls, prove the win. | When perf is in scope. |
 | `patterns.md` | SOLID, composition, loose coupling, avoid over-engineering. | `/rite-build`, simplification audit. |
-| `git-workflow.md` | Conventional Commits, atomic commits, small PRs. | `/rite-seal`, commit / push steps. |
-| `hooks.md` | Stage checks by cost, fast local hooks, secret scanning. | When configuring hooks; `/rite-seal` commit/git step points here. |
+| `git-workflow.md` | Conventional Commits, atomic commits, small PRs. | `/rite-ship` commit / push / tag steps. |
+| `hooks.md` | Stage checks by cost, fast local hooks, secret scanning. | When configuring hooks; `/rite-ship` commit/git step points here. |
 | `documentation.md` | Explain why, keep current, record decisions. | `/rite-spec`, `/rite-define`, `/rite-seal`. |
 | `development-workflow.md` | Small batches, trunk-always-green, definition of done. | `/rite-define`, `/rite-plan`. |
 | `agents.md` | DevRites review subagents + specialist skills, when to fan out. | `/rite-review`, `/rite-seal`. |
