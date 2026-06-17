@@ -13,11 +13,13 @@ tells. Integrated into the feature slice, not a separate design project.
 Framework, routing, components, tokens, CSS methodology, icon set, existing UI patterns,
 and any `PRODUCT.md` / `DESIGN.md` / design docs. Use the project's system — don't
 import a new one. (Detail: `reference/design-references.md`.)
-- **Load the design references the spec gathered** — `.devrites/work/<slug>/references.md`
-  + the saved files in `references/` (screenshots, Figma, video, links). When present they
-  are the **build target**: match the layout, spacing, states, and behavior they show
-  (pull Figma context if a Figma integration is available). A reference that conflicts
-  with the design system is a question for the user, not a silent choice.
+- **Load the design brief + references the spec gathered** —
+  `.devrites/work/<slug>/design-brief.md` (the UX/UI contract from `devrites-ux-shape` — the
+  primary build target) plus `references.md` + the saved files in `references/`
+  (screenshots, Figma, video, links). When present they are the **build target**: match the
+  direction, layout, spacing, states, and behavior they show (pull Figma context if a Figma
+  integration is available). A reference that conflicts with the design system is a question
+  for the user, not a silent choice.
 
 ## Reuse first — search before you build
 Before creating any new component, style, token, icon, hook, util, or helper, search the
@@ -31,11 +33,15 @@ caveat, and the per-slice reuse record.
 - **Product surface** — dashboard, admin, settings, app UI, tools: system fonts
   legitimate, one family often enough, fixed rem scale, tight ratio, density is fine.
 
-## 3. Shape before code ([reference/shape.md](reference/shape.md))
-User goal · primary action · information hierarchy · **all states** (default, loading,
-empty, error, success, disabled, long-content) · responsive behavior · accessibility
-requirements · interaction model. **Ask before coding if the visual direction or UX
-flow is ambiguous.**
+## 3. Shape before code — build to the brief ([reference/shape.md](reference/shape.md))
+The feature's **`design-brief.md`** is your target — `/rite-spec` shaped it up front
+(`devrites-ux-shape`): design direction, key states, interaction model, the visual-direction
+probe. **Read it first and refine it for this slice's surface; don't re-derive the design
+from scratch.** Confirm the slice covers the brief's states for this surface (default,
+loading, empty, error, success, disabled, long-content), its information hierarchy +
+primary action, responsive behavior, a11y, and interaction model. **If a UI slice has no
+`design-brief.md`** (a spec written before shaping), shape it now via `devrites-ux-shape`
+before coding. **Ask before coding if the visual direction or UX flow is still ambiguous.**
 
 ## 4. Build ([reference/craft.md](reference/craft.md))
 - Compose from existing components/tokens (reuse-first, above) before reaching for new code.
@@ -57,9 +63,11 @@ flow is ambiguous.**
   its verification gate (no console errors, no axe violations, all states).
 - Verify in the browser (`devrites-browser-proof`) — screenshots opened and described,
   console clean, responsive + keyboard checked.
-- Record design decisions in `.devrites/work/<slug>/design-brief.md` (the design-contract
-  artifact this skill owns — `/rite-polish` reads it in its UI phase and `/rite-seal`
-  includes it in its artifact read list) and evidence in `browser-evidence.md`.
+- **Append build-time refinements** to `.devrites/work/<slug>/design-brief.md` — the
+  design-contract artifact `devrites-ux-shape` produced at spec; this skill refines it per
+  slice (the "Build-time refinements" section), it does not own or recreate it. `/rite-polish`
+  reads it in its UI phase and `/rite-seal` includes it in its artifact read list. Record
+  runtime evidence in `browser-evidence.md`.
 
 ## Fullstack (frontend + backend in one feature)
 When the feature needs both sides, follow [reference/fullstack.md](reference/fullstack.md):

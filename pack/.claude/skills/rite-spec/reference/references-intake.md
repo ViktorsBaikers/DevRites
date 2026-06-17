@@ -40,9 +40,12 @@ original; copy it. For remote-only refs (a live Figma/URL), record the link in t
 | R4 | link | https://example.com | tone + density to match | craft |
 ```
 
-## Feed them into the spec
-- Use references to sharpen `spec.md` (UI impact, success/acceptance — e.g. "matches R1")
-  and the `design-brief.md` when UI is involved.
+## Feed them into the spec + the design brief
+- Use references to sharpen `spec.md` (UI impact, success/acceptance — e.g. "matches R1").
+- When the feature touches UI, these references are the primary input to **`devrites-ux-shape`**
+  (spec step 3a): they anchor the design direction and can seed the visual-direction probe
+  (a Figma link → pulled design context; reference sites → screenshots). The resulting
+  `design-brief.md` cites them by R-id.
 - A reference can *resolve a gap* ("which layout?") — record that in the gaps table.
 - If a reference **conflicts** with the existing design system, that's an issue to raise
   with the human (match the system, or adopt the reference — their call).

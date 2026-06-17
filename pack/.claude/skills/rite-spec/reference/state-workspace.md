@@ -25,7 +25,7 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
       touched-files.md            # files changed or intentionally inspected
       evidence.md                 # commands run + results
       browser-evidence.md         # screenshots, routes, console, viewport checks
-      design-brief.md             # if UI is involved
+      design-brief.md             # UX/UI contract — if UI involved (from /rite-spec via devrites-ux-shape; refined per slice in /rite-build)
       polish-report.md            # normalize+polish output
       review.md                   # review findings + decisions
       seal.md                     # final GO / NO-GO decision (from /rite-seal)
@@ -40,7 +40,8 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
 - All artifacts are **human-readable Markdown** — they must survive context compaction
   and a fresh session. (`references/` also holds binary assets the human supplied.)
 - **`/rite-spec` creates the workspace** and writes `spec.md` (+ `references/`,
-  `references.md`, `brief.md`, `questions.md`, `decisions.md`, `assumptions.md`) and sets
+  `references.md`, `brief.md`, `questions.md`, `decisions.md`, `assumptions.md`; **plus
+  `design-brief.md` when the feature touches UI**, via `devrites-ux-shape`) and sets
   `ACTIVE`. **`/rite-define` reads `spec.md`** and adds `plan.md` + `tasks.md` and updates
   `state.md`. Other skills read the active workspace; none create a new one.
 - Each phase **updates `state.md`** and the relevant evidence files.

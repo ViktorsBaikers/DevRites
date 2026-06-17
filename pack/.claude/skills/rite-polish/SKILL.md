@@ -38,8 +38,9 @@ don't load both up front.
    (code polish)**; if backend was touched, continue into **Phase 2 (backend
    polish)** from the same file.
 4. **If UI scope detected** read [`reference/ui.md`](reference/ui.md), and read
-   `design-brief.md` if `devrites-frontend-craft` wrote one (it records the design
-   decisions the build phase made) so the polish honors them. Then run
+   `design-brief.md` if present (the UX/UI contract `devrites-ux-shape` shaped at spec and
+   `devrites-frontend-craft` refined while building) so the polish honors the agreed
+   direction + states. Then run
    **Phase 3 (normalize)** → **Phase 4 (UI polish)**. Honor argument modes:
    - `bolder | quieter | distill | harden` — passed to Phase 4 as the
      emphasis dial.

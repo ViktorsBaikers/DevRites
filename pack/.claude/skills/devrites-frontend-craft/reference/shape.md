@@ -3,6 +3,14 @@
 Decide what the UI *is* before how it looks. Aesthetics follow structure; structure
 follows the user's goal. Skipping this is how you get pretty UI that doesn't work.
 
+**The feature-level shape already exists.** `/rite-spec` ran `devrites-ux-shape` and wrote
+`design-brief.md` (design direction, key states, interaction model). In `/rite-build` this
+is a **per-slice refinement of that brief for the surface you're about to code** — confirm
+the answers below against the brief and fill any slice-specific gaps; don't re-derive the
+design. **Only shape from scratch here** when a UI slice has no `design-brief.md` (a spec
+written before shaping) — then run `devrites-ux-shape` first, or answer these and write the
+brief inline.
+
 ## Answer these before writing markup
 1. **User goal** — what is the user here to accomplish? One sentence.
 2. **Primary action** — the single most important thing on this surface. It must be
@@ -29,8 +37,11 @@ spec, ask the user (show 2–3 concrete options) before building. Guessing a flo
 expensive to undo once coded.
 
 ## Output
-A short shape note in `design-brief.md`: goal, primary action, hierarchy, the state
-list, responsive plan, a11y notes. This drives the build and the polish checklist.
+The answers live in the feature's `design-brief.md` (shaped at spec by `devrites-ux-shape`).
+In build, append any slice-specific refinement to its **Build-time refinements** section;
+if you shaped from scratch (no brief existed), write the brief now per
+`../../devrites-ux-shape/reference/brief-template.md`. This drives the build and the polish
+checklist.
 
 ## NEVER (shape)
 

@@ -53,6 +53,17 @@ Examples:
 Run the sentence, not the category. When the user supplies the brief, paraphrase the
 sentence back to them as confirmation before designing.
 
+## Named anchor references — steer with specifics, not adjectives
+After the scene sentence, name **2-3 specific anchors** the surface should feel like —
+real products, brands, or objects ("Linear's command bar", "a Teenage Engineering device",
+"the Stripe dashboard"), **not adjectives** ("modern", "clean", "premium"). Adjectives are
+unfalsifiable; a named anchor is checkable — you can hold the built UI next to it and ask
+"does it read like that?" Anchors steer *direction*, not pixel-copying: take the relevant
+trait (density, type voice, restraint), not the literal layout, and never the parts that
+clash with this project's register or design system. The supplied `references/` files are
+themselves anchors — name what trait each contributes. Record the anchors in
+`design-brief.md`'s **Design direction** so build, polish, and seal share the same target.
+
 ## NEVER (design references)
 
 - Never default to **Inter / DM Sans / Plus Jakarta / Fraunces / Newsreader**

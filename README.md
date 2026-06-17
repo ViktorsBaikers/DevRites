@@ -93,7 +93,7 @@ rules carrier, workspace state, namespace map) →
 - [Modes — HITL & AFK](#modes--hitl--afk)
 - [Install](#install) — [bash (A, recommended)](#option-a-bash-installer-recommended-full-install) · [plugin (B, partial)](#option-b-claude-code-plugin-partial--skills--agents-only)
 - [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · browser-harness
-- [Skills](#skills) — 25 total · full catalogue in [`docs/skills.md`](docs/skills.md)
+- [Skills](#skills) — 26 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
 - [Engineering rules](#engineering-rules) · [Browser proof ladder](#browser-proof-ladder) · [Frontend & fullstack](#frontend--fullstack)
 - [Safety & scope](#safety--scope) · [Security model](#security-model)
@@ -313,11 +313,12 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 | Utility | `rite-status` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
 | Menu | `rite` |
 
-**Internal `devrites-*` specialists (8)** — model-invoked, hidden from menu:
+**Internal `devrites-*` specialists (9)** — model-invoked, hidden from menu:
 
 `devrites-interview` · `devrites-source-driven` · `devrites-doubt` ·
-`devrites-frontend-craft` · `devrites-browser-proof` · `devrites-debug-recovery` ·
-`devrites-api-interface` · `devrites-audit` (axes: `security` · `perf` · `simplify`).
+`devrites-ux-shape` · `devrites-frontend-craft` · `devrites-browser-proof` ·
+`devrites-debug-recovery` · `devrites-api-interface` ·
+`devrites-audit` (axes: `security` · `perf` · `simplify`).
 
 **Review agents (8)** — fresh-context reviewers under `.claude/agents/`:
 
@@ -449,11 +450,18 @@ until it's opened and described.
 
 ## Frontend & fullstack
 
-UI work runs through `devrites-frontend-craft`: detect the surface register (brand vs
-product), **shape before code** (all states — default / loading / empty / error / success
-/ disabled), build from the existing design system, avoid generic-AI tells, and meet the
-**2026 quality bar** — Core Web Vitals (LCP ≤ 2.5 s / INP ≤ 200 ms / CLS ≤ 0.1) and WCAG
-2.2 AA. **Fullstack features** go **contract-first**: define the API/data contract, build
+UI work is **planned before it's coded**. When `/rite-spec` detects UI, `devrites-ux-shape`
+turns the request + any references (screenshots, Figma, video) into a feature-level
+**`design-brief.md`** — design direction (color strategy · scene sentence · named anchor
+references), key states, interaction model, and an optional Figma/image **visual-direction
+probe** — and pauses for you to confirm the direction (HITL) or asserts a best guess (AFK).
+That brief is the **build target**, woven into spec → define → build, not a separate phase.
+
+Then `devrites-frontend-craft` builds **to** the brief: detect the surface register (brand
+vs product), refine the brief per slice (all states — default / loading / empty / error /
+success / disabled), build from the existing design system, avoid generic-AI tells, and
+meet the **2026 quality bar** — Core Web Vitals (LCP ≤ 2.5 s / INP ≤ 200 ms / CLS ≤ 0.1)
+and WCAG 2.2 AA. **Fullstack features** go **contract-first**: define the API/data contract, build
 one **vertical slice** through the layers (DB → service → API → UI), apply the
 engineering rules to the backend and the craft to the UI, map every contract error to a
 real UI state, and **prove both layers** (contract tests + browser proof).
@@ -479,7 +487,7 @@ devrites/
   install.sh  uninstall.sh  update.sh
   scripts/             # install-lib · validate · validate-frontmatter · run-evals · eval-runner.py
                        # devrites-detect · check-no-global-writes · sync-version · build-release-tarball
-  pack/.claude/        # skills/  25 skills — 17 public + 8 model-invoked    ─┐
+  pack/.claude/        # skills/  26 skills — 17 public + 9 model-invoked    ─┐
                        # agents/  8 fresh-context reviewers                    ├─ the pack
                        # rules/   16 rule files + README index                 ┘
   evals/               # trigger evals (20 queries per public skill)
