@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.5.1](https://github.com/ViktorsBaikers/DevRites/compare/v1.5.0...v1.5.1) (2026-06-17)
+
+### Refactors
+
+* **skills:** vet every plan at scaled depth, never skip ([ba61859](https://github.com/ViktorsBaikers/DevRites/commit/ba61859dc84871ebe9951dd1dfc68037e58fcb4f))
+
 ## [1.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.4.0...v1.5.0) (2026-06-17)
 
 ### Features
