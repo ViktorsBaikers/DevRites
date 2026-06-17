@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.3.0...v1.4.0) (2026-06-17)
+
+### Features
+
+* **skills:** add /rite-temper strategic spec review ([aa95d4d](https://github.com/ViktorsBaikers/DevRites/commit/aa95d4d27735c654a5bea8daf31fb6bc2dfa1767))
+
 ## [1.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.2.0...v1.3.0) (2026-06-17)
 
 ### Features
