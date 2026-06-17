@@ -1,6 +1,6 @@
 ---
 name: rite-vet
-description: Engineering review of a defined plan before any code — challenge implementation scope (reuse-vs-rebuild, minimum diff, complexity smell), review architecture / plan code-quality / test-coverage design / performance through senior-engineer lenses, confidence-band every finding behind a quote-the-source verification gate, then harden `plan.md` / `tasks.md` and write `eng-review.md` + the build-readable `test-plan.md` (spec-level gaps fold back via the Spec Drift Guard). Optional `--cross-model` adds a different-model second opinion. Use when the user says "vet the plan", "engineering review", "review the architecture", "lock in the plan", "check the implementation plan", or before building a big / risky feature. Significance-gated; always invoked (auto-skips low-stakes plans) inside `/rite-autocomplete`. Not for the spec's strategy (`/rite-temper`), one mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
+description: Engineering review of a defined plan before any code — challenge implementation scope (reuse-vs-rebuild, minimum diff, complexity smell), review architecture / plan code-quality / test-coverage design / performance through senior-engineer lenses, confidence-band every finding behind a quote-the-source verification gate, then harden `plan.md` / `tasks.md` and write `eng-review.md` + the build-readable `test-plan.md` (spec-level gaps fold back via the Spec Drift Guard). Optional `--cross-model` adds a different-model second opinion. Use when the user says "vet the plan", "engineering review", "review the architecture", "lock in the plan", "check the implementation plan", or before building any feature. Runs on every plan — depth scales to stakes (light pass on simple plans, full rigor on big/risky), never skipped; always part of `/rite-autocomplete`. Not for the spec's strategy (`/rite-temper`), one mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
 argument-hint: "[slug] [--cross-model] [--full]"
 user-invocable: true
 ---
@@ -52,10 +52,12 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    `assumptions.md`, `design-brief.md` (if UI), `state.md`. Require a `plan.md` whose
    Readiness gate passes (or `Plan approved`) — else STOP → `/rite-define`. Prefer the
    code-intelligence index (codegraph / graphify) for placement / blast-radius / reuse checks.
-1. **Significance test** — [`reference/significance.md`](reference/significance.md). Low-stakes /
-   single-module / reversible plan → write the one-line `skipped — low stakes (<trigger>)`
-   verdict to `eng-review.md`, set `state.md` `Next step: /rite-build`, recommend it. `--full`
-   forces the full pass. Otherwise fire the full pass below.
+1. **Calibrate depth — never skip** — [`reference/depth.md`](reference/depth.md). Every plan is
+   vetted; what scales is the *depth*. A simple, single-module, reversible plan with no
+   irreversible-risk / data-model / new-pattern trigger → **light pass** (brief scope check + a
+   one-line scan per axis + the acceptance→test map). Any full-pass trigger (or `--full`) → the
+   **full pass** below. There is no skip: every feature leaves a recorded engineering verdict and
+   a `test-plan.md` coverage map.
 2. **Scope Challenge (blocking gate)** — [`reference/review-axes.md`](reference/review-axes.md)
    §0. What already exists that solves a sub-problem (reuse vs rebuild)? The minimum diff for the
    stated acceptance? Complexity smell (the plan touches **>8 files** or adds **>2 new
@@ -69,7 +71,7 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    `[severity] (confidence: N/10) <ref> — finding`. **Walk findings WITH the human, one at a
    time** via `AskUserQuestion` (best-guess + why + options with effort/risk/maintenance, mapped
    to a rule) — the artifact is the *output* of the review, not a substitute for it. (AFK ceiling
-   single-sourced in [`reference/significance.md`](reference/significance.md): hardening /
+   single-sourced in [`reference/depth.md`](reference/depth.md): hardening /
    coverage-increasing findings auto-apply; **anything that grows scope or changes acceptance is a
    blocking pause**; irreversible-risk always pauses.)
 4. **Required outputs** — the test-coverage diagram + per-gap test requirements (the **regression
@@ -83,10 +85,12 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    `decisions.md` (one ADR per material call) and `assumptions.md`. Update `state.md`:
    `Phase: vet`, `Next step: /rite-build`; on a blocking pause write the `Awaiting human` block +
    `Status: awaiting_human` before stopping.
-6. **Adversarial verification loop** — dispatch [`devrites-plan-reviewer`](../../agents/devrites-plan-reviewer.md)
+6. **Adversarial verification loop (full pass)** — dispatch [`devrites-plan-reviewer`](../../agents/devrites-plan-reviewer.md)
    (fresh context, **only** `plan.md` + `tasks.md` + `spec.md` + the rubric — no authoring
    reasoning). Resolve actionable findings, re-dispatch; **cap ≤3 iterations**. An axis still
-   below bar after 3 → blocking question (HITL) or AFK gate-ceiling entry. With `--cross-model`,
+   below bar after 3 → blocking question (HITL) or AFK gate-ceiling entry. On a **light pass**
+   the fresh-context loop is skipped — the per-axis scan + the `test-plan.md` coverage map are the
+   verdict (escalate to this loop if the light scan surfaces a real finding). With `--cross-model`,
    add one genuinely different-model pass — [`reference/cross-model.md`](reference/cross-model.md)
    (informational until the human approves each finding). If sub-agents are unavailable, do the
    independent rubric pass yourself in a separate read, discarding the authoring reasoning (a
@@ -102,7 +106,7 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
 ## Output
 ```
 Vetted: <slug>
-Significance: full | skipped — low stakes (<trigger>)
+Depth: light | full (<trigger that escalated it>)
 Scope: reuse <n found> / minimum-diff <ok|trimmed N> / complexity <ok|smell: N files, M new services → asked>
 Axes (floor → verdict):  Architecture <band> · Code-quality <band> · Tests <band> · Performance <band>
 Findings: <Critical n / Important n / Suggestion n>   (suppressed low-confidence: n)

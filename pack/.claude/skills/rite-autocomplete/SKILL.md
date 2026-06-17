@@ -35,12 +35,13 @@ blocking / escalating gates, and any NO-GO still pause.
   `hold-rigor` + `reduce-to-MVP` (these never grow acceptance); **any `expand` is a blocking
   pause**, and irreversible-risk findings always pause. Autocomplete hardens and may *prune* the
   spec on its own; it never *expands* the build's scope without the human.
-- **Engineering review runs, but never auto-grows scope.** After `/rite-define`, run `/rite-vet`
-  (significance-gated — it skips low-stakes plans in one line). Unattended it auto-applies only
-  *hardening* findings — added test requirements, error-handling / failure-mode coverage, tightened
-  scope, reuse-over-rebuild, ordering / parallel-lane fixes (these never grow acceptance); **any
-  finding that grows scope, adds a slice, or changes acceptance is a blocking pause**, and
-  irreversible-risk findings always pause. Cross-model is off unless `--cross-model` was armed.
+- **Engineering review runs on every plan, but never auto-grows scope.** After `/rite-define`,
+  run `/rite-vet` on **every** feature (depth scales — a light pass on simple plans, full rigor on
+  big/risky; never skipped). Unattended it auto-applies only *hardening* findings — added test
+  requirements, error-handling / failure-mode coverage, tightened scope, reuse-over-rebuild,
+  ordering / parallel-lane fixes (these never grow acceptance); **any finding that grows scope,
+  adds a slice, or changes acceptance is a blocking pause**, and irreversible-risk findings always
+  pause. Cross-model is off unless `--cross-model` was armed.
 
 ## Workflow
 1. **Parse args.** The idea + flags: `--ship` / `--yolo` (auto-confirm the final
@@ -71,7 +72,7 @@ blocking / escalating gates, and any NO-GO still pause.
 A phase-by-phase progress log, then the final status:
 ```
 Autocomplete: <slug>
-spec ✓  temper ✓ (mode <m> | skipped)  define ✓  vet ✓ (floor <band> | skipped)  build ✓ (N slices)  prove ✓  polish ✓  review ✓  seal: GO
+spec ✓  temper ✓ (mode <m> | skipped)  define ✓  vet ✓ (depth <light|full>, floor <band>)  build ✓ (N slices)  prove ✓  polish ✓  review ✓  seal: GO
 → SHIPPED  <sha> on <branch>            (--ship)
    — or —
 → STOPPED — awaiting human at <phase>: <reason>

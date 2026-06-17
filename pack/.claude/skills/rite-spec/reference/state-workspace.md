@@ -18,7 +18,7 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
       strategy.md                 # strategic review: scope mode + pre-mortem + dimension scores (from /rite-temper; optional — always invoked, significance-gated, in /rite-autocomplete)
       plan.md                     # how to build it (from /rite-define)
       tasks.md                    # ordered vertical slices (from /rite-define)
-      eng-review.md               # engineering plan review: scope challenge + axis findings + failure modes + parallelization (from /rite-vet; optional — always invoked, significance-gated, in /rite-autocomplete)
+      eng-review.md               # engineering plan review: scope challenge + axis findings + failure modes + parallelization (from /rite-vet — run on every plan; depth scales light/full, never skipped; always in /rite-autocomplete)
       test-plan.md                # build-readable coverage target: coverage diagram + per-gap test requirements + acceptance→test map (from /rite-vet; read by /rite-build + /rite-prove)
       state.md                    # phase, active slice, risk, next step
       questions.md                # asked questions + answers
