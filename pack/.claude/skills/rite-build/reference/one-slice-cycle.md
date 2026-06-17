@@ -4,16 +4,20 @@ The discipline that makes large features manageable: build one thin slice, leave
 working and proven, stop. Never implement the whole feature in one pass.
 
 ## The cycle
+The orchestrator (`/rite-build`) gates and records; the **wright** writes. See
+[`wright-dispatch.md`](wright-dispatch.md).
 ```
-SELECT  → restate slice goal + acceptance + scope boundary
-LOAD    → only the files this slice touches
-(SHAPE) → if UI: devrites-frontend-craft before code
-(RED)   → if behavior change: write the failing test first
-IMPLEMENT → smallest complete version; match conventions
-(DOUBT) → before standing a non-trivial decision: devrites-doubt
-PROVE   → targeted tests + browser proof for UI
-RECORD  → state.md, evidence.md, touched-files.md
-STOP    → report + recommend next; do not start slice N+1
+SELECT    → orchestrator: restate slice goal + acceptance + scope boundary; HITL gate (pause pre-code)
+(SHAPE)   → orchestrator: if UI and no design-brief.md, shape it (devrites-ux-shape) before dispatch
+DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). Inside the wright:
+   ORIENT    → load only the files this slice touches; learn the project's idiom; reuse-first
+   (RED)     → if behavior change: write the failing test first
+   IMPLEMENT → smallest complete version; match conventions; devrites-frontend-craft for UI
+   VERIFY    → targeted tests (+ types/lint/build); fail-on-red; return artifact — code + tests only
+(DOUBT)   → orchestrator, on return: devrites-doubt each non-trivial decision the wright stood up
+PROVE     → orchestrator: fail-on-red check on the wright's gates; browser proof for UI
+RECORD    → orchestrator: state.md, evidence.md, touched-files.md (the canonical writer)
+STOP      → report + recommend next; do not start slice N+1
 ```
 
 ## Why stop after one slice

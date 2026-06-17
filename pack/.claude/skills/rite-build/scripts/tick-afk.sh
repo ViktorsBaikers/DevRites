@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Decrement the AFK slice budget in state.md — called by /rite-build step 11
-# after a slice is built under AFK. The mutable remaining count lives in
+# Decrement the AFK slice budget in state.md — called by /rite-build's record
+# step (workflow step 6) after a slice is built under AFK. The mutable remaining count lives in
 # state.md (`AFK slices remaining: <n>`); `.devrites/AFK`'s `max_slices` is the
 # read-only initial budget and is never rewritten in place.
 #

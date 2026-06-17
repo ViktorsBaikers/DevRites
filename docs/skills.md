@@ -16,7 +16,7 @@ Every user-invocable skill responds to **both** `/rite <verb>` (menu form — ty
 | `/rite spec <feature>` | `/rite-spec <feature>` | spec | **Start here.** Deep investigation → writes `spec.md`: understands the ask fully, decides **placement** (where it lives), names what it resolves, closes gaps with you (questions with options), and gathers any design references you optionally attach (screenshots / Figma / links / video — there may be none). |
 | `/rite define` | `/rite-define` | plan | Turns the approved spec into `plan.md` + vertical task slices + state. |
 | `/rite plan` | `/rite-plan` | re-plan | Decompose / reslice / repair an active plan. |
-| `/rite build` | `/rite-build` | build | Implement **exactly one** vertical slice, then stop. |
+| `/rite build` | `/rite-build` | build | Implement **exactly one** vertical slice, then stop — dispatches a fresh-context `devrites-slice-wright` to write it; gates and records the result. |
 | `/rite prove` | `/rite-prove` | prove | Tests + build + runtime + browser evidence for the current scope. |
 | `/rite polish` | `/rite-polish` | polish | Code polish always; UI normalize + polish if UI in scope. Modes: `bolder / quieter / distill / harden / normalize-only`. |
 | `/rite review` | `/rite-review` | review | Feature-scoped multi-axis review (parallel Spec + Standards axes). |
@@ -64,7 +64,7 @@ The 8 model-invoked internal specialists (hidden from the menu): `devrites-inter
 
 | Skill | What It Does | Use When |
 |---|---|---|
-| [`rite-build`](../pack/.claude/skills/rite-build/SKILL.md) | Implements **exactly one** vertical slice, then stops with evidence. | A plan exists and the next slice is ready. |
+| [`rite-build`](../pack/.claude/skills/rite-build/SKILL.md) | Orchestrates **exactly one** vertical slice: pre-flight gates, then dispatches a fresh-context [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) for the build core, then doubts / gates / records with evidence. | A plan exists and the next slice is ready. |
 | [`devrites-source-driven`](../pack/.claude/skills/devrites-source-driven/SKILL.md) | Consult official docs / source before relying on framework behavior; record the source. | API, config, or framework behavior is assumed rather than known. |
 | [`devrites-api-interface`](../pack/.claude/skills/devrites-api-interface/SKILL.md) | Design stable API / interface contracts — REST/GraphQL, module boundaries, type contracts, FE/BE split. | A slice crosses a boundary or defines a public interface. |
 | [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | Reproduce → ranked hypotheses → instrument → fix in scope → regression-test. Stops guess-and-retry. | Tests, builds, or runtime checks fail. |
@@ -136,6 +136,18 @@ Spawned by `/rite-review` and `/rite-seal` for independent judgment. Read-only; 
 | [`devrites-simplifier-reviewer`](../pack/.claude/agents/devrites-simplifier-reviewer.md) | Independent simplification judgment (called by `devrites-audit simplify`). |
 
 Seal fan-out diagram: [`flow.md` § /rite-seal fan-out](flow.md#4-rite-seal-fan-out).
+
+---
+
+## Executor agent — Fresh-context writer
+
+The system's one **write-capable** agent — the mirror of the read-only reviewers above. Dispatched by `/rite-build` for the build core, in a clean context, with only the slice contract.
+
+| Agent | Purpose |
+|---|---|
+| [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) | Turn ONE slice contract into the smallest complete, idiomatic, proven implementation — orient → TDD → verify, anti-AI-slop, feature scope only. Writes code + tests; returns a structured artifact for the orchestrator to doubt, gate, and record. Writes no `.devrites/` bookkeeping; single-threaded (one per slice). |
+
+Dispatch contract + return shape + fallback: [`rite-build/reference/wright-dispatch.md`](../pack/.claude/skills/rite-build/reference/wright-dispatch.md).
 
 ---
 

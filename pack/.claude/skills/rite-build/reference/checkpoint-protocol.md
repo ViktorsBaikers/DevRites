@@ -97,10 +97,10 @@ If `.devrites/AFK` exists and the slice's `Gate` is in `allow_gates`, `/rite-bui
 **not** invoke the checkpoint protocol. Instead:
 
 - For `advisory`: log a `gate: advisory` entry to `questions.md`, record the trade-off in
-  `decisions.md`, and continue building the slice.
-- For `validating` (only when `allow_gates` includes it): build the slice, write a
-  `gate: validating` entry to `questions.md`, mark the slice `built (pending review)` in
-  `state.md`, and continue. A slice's only states are `pending` and `built` —
+  `decisions.md`, and **dispatch the wright** to build the slice (workflow step 3).
+- For `validating` (only when `allow_gates` includes it): **dispatch the wright** (step 3); on
+  return, write a `gate: validating` entry to `questions.md`, mark the slice
+  `built (pending review)` in `state.md`, and continue. A slice's only states are `pending` and `built` —
   acceptance is proven at the **feature** level by `/rite-prove` (recorded in
   `evidence.md`), not per slice. The `built (pending review)` slice is not done until the
   open `validating` gate resolves via `/rite-resolve`; an open `validating` gate is a

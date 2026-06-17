@@ -327,6 +327,10 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 `devrites-performance-reviewer` · `devrites-doubt-reviewer` ·
 `devrites-simplifier-reviewer`.
 
+**Executor agent (1)** — fresh-context, **write-capable** writer under `.claude/agents/`:
+
+`devrites-slice-wright` — dispatched by `/rite-build` to write one slice (orient → TDD → verify, anti-AI-slop, project idiom); the write-side mirror of the read-only reviewers.
+
 Full catalogue with per-phase tables and interactions → [`docs/skills.md`](docs/skills.md). Trigger phrases + interactions → [`docs/command-map.md`](docs/command-map.md). Diagrams (polish orchestrator, review fan-out, seal fan-out, namespace map) → [`docs/flow.md`](docs/flow.md).
 
 ## Modes — HITL & AFK
@@ -488,7 +492,7 @@ devrites/
   scripts/             # install-lib · validate · validate-frontmatter · run-evals · eval-runner.py
                        # devrites-detect · check-no-global-writes · sync-version · build-release-tarball
   pack/.claude/        # skills/  26 skills — 17 public + 9 model-invoked    ─┐
-                       # agents/  8 fresh-context reviewers                    ├─ the pack
+                       # agents/  8 reviewers + 1 writer (slice-wright)        ├─ the pack
                        # rules/   16 rule files + README index                 ┘
   evals/               # trigger evals (20 queries per public skill)
   docs/                # architecture · skills · command-map · usage · flow · release

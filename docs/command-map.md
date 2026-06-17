@@ -56,10 +56,13 @@ model-invoked.
 | [`devrites-audit perf`](../pack/.claude/skills/devrites-audit/SKILL.md) | perf relevant or regression risk | Measure-first, CWV targets | dispatches `devrites-performance-reviewer` |
 | [`reference/parallel-dispatch.md`](../pack/.claude/skills/rite-seal/reference/parallel-dispatch.md) (sibling in `rite-review/reference/`) | loaded inline by `/rite-seal` and `/rite-review` | Reference doc — dispatch shape + reconciliation rules for the parallel reviewer fan-out via the `Task` tool | not a skill — a reference file |
 
-## Agents (`.claude/agents/devrites-*`, fresh-context reviewers)
+## Agents (`.claude/agents/devrites-*`, fresh-context subagents)
+
+Eight **read-only reviewers** plus one **write-capable** executor (`devrites-slice-wright`).
 
 | Agent | Spawned by | Purpose |
 |---|---|---|
+| [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) | `/rite-build` (the build core) | **Write-capable** — turn one slice contract into clean, idiomatic, proven code (orient → TDD → verify, anti-slop); returns a structured artifact, writes no bookkeeping |
 | [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | `/rite-review` Spec axis; `/rite-seal` | Does the diff implement the spec? Missing/partial/wrong criteria; scope creep |
 | [`devrites-code-reviewer`](../pack/.claude/agents/devrites-code-reviewer.md) | `/rite-review` Standards axis; `/rite-seal` | Correctness / readability / architecture / maintainability |
 | [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | `/rite-seal` | Do the tests actually prove the acceptance criteria? |
