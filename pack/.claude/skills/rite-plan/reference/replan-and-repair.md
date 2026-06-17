@@ -8,8 +8,9 @@ First (or fresh) breakdown into vertical slices. Use `task-breakdown.md` +
 
 ## reslice
 A slice proved too large (couldn't build+prove in one cycle, or its goal has multiple
-"and"s). Split into thinner end-to-end slices, preserving acceptance coverage. Update
-`tasks.md`; renumber; fix dependency edges.
+"and"s). Split into thinner end-to-end slices, preserving acceptance coverage — split
+**by the sizing rule, not to a target count**. Update `tasks.md`; renumber; fix
+dependency edges.
 
 ## repair (after Spec Drift Guard)
 A drift event stopped the build. Steps:

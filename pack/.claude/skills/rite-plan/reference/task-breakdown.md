@@ -30,3 +30,5 @@ Evidence required:          # what /rite-prove must capture
 - Don't pre-write code in the task — describe the outcome, not the implementation.
 - Don't bundle "while we're here" work into a slice. That's scope creep; log it as a
   follow-up instead.
+- Don't slice to a target number — the count comes from the capabilities + the sizing
+  rule (`slicing.md`), not a figure anyone named.

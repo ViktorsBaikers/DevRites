@@ -23,16 +23,22 @@ blocking / escalating gates, and any NO-GO still pause.
   auth-authz change / public-API break / external-contract change / red tests; blocking
   and escalating gates and any open `gate: validating` always pause. `--ship` auto-confirms
   the **final** type-GO only — nothing else.
-- **Cap the loop.** Always set `max_slices` (default 12); stop when exhausted.
+- **Loop budget = the plan's own slice count, not a fixed number.** After `/rite-define`,
+  set the AFK budget to however many slices the plan has, so the loop builds exactly the
+  task's slices and stops when they're done. `--max-slices N` is an OPTIONAL *lower* safety
+  cap (partial / babysat run); omit it to run the whole plan. The budget is finite
+  (= planned slices), so a runaway is still bounded.
 - **Best option, recorded.** For each discretionary choice, pick the option the relevant
   specialist / reviewer favours and record the rationale. Never silently coin-flip.
 
 ## Workflow
 1. **Parse args.** The idea + flags: `--ship` / `--yolo` (auto-confirm the final
-   type-GO), `--max-slices N` (build-loop cap, default 12).
+   type-GO), `--max-slices N` (OPTIONAL *lower* safety cap for a partial run; default =
+   the plan's slice count, i.e. run all planned slices).
 2. **Clarify up front.** If the idea is underspecified, run `devrites-interview` to
    ~95% confidence — the only interactive window. If already clear, skip.
-3. **Arm AFK.** Write `.devrites/AFK` with `max_slices` and `allow_gates: [advisory]`
+3. **Arm AFK.** Write `.devrites/AFK` with `allow_gates: [advisory]`; set the slice budget
+   from the plan's count after `/rite-define` (or from an explicit `--max-slices`)
    ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
    irreversible-risk still pause.
 4. **Drive the phases** ([reference/loop.md](reference/loop.md)): `/rite-spec` →

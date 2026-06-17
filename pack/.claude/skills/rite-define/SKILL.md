@@ -25,6 +25,11 @@ the plan:
   the user to run `/rite-spec <feature>` first. **DO NOT plan from a missing or
   unreadied spec.**
 - Prefer existing conventions; ask before adding a dependency or a second design system.
+- **Slice count is derived, never dictated.** The number of slices falls out of the work
+  — one per independently-shippable increment, sized by `slicing.md`, every acceptance
+  criterion mapped to ≥1 slice. A user-named count is a hint at most: slice logically and,
+  if your honest count differs, present it and why. Never pad or compress to hit a figure.
+  (`.devrites/AFK` `max_slices` is a separate AFK iteration budget, not the decomposition.)
 
 ## Workflow
 0. **Read `.claude/rules/core.md`** — the always-on operating rules and anti-rationalizations.
@@ -43,8 +48,9 @@ the plan:
    modules they want unit-tested in isolation (this informs the slice's "Tests to
    write/run" field).
 3. **Slice into vertical tasks** — each delivers one observable capability end-to-end and
-   is verifiable on its own; first slice = thinnest useful end-to-end path; order by
-   dependency (risk-first within a tier). Use `rite-plan/reference/slicing.md` and
+   is verifiable on its own; the **count emerges from the work, not a target number**;
+   first slice = thinnest useful end-to-end path; order by dependency (risk-first within a
+   tier). Use `rite-plan/reference/slicing.md` and
    `rite-plan/reference/task-breakdown.md`. Mark per slice: **Frontend craft required**
    and **Browser proof required** (UI), and whether it's **fullstack** (FE+BE → contract
    first, see `devrites-frontend-craft/reference/fullstack.md`).
