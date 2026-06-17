@@ -11,8 +11,12 @@ A slice is **frontend/UI** if it touches or plans to touch any of:
 - browser behavior, responsive behavior, accessibility, frontend performance.
 
 ## When triggered
-- `/rite-build` applies **`devrites-frontend-craft`** (register detection, shape before
-  code, existing design system, all states, anti-AI-slop) before/while implementing.
+- `/rite-spec` applies **`devrites-ux-shape`** (spec step 3a) to write the feature-level
+  **`design-brief.md`** before any code — design direction, key states, interaction model,
+  optional Figma/image visual-direction probe.
+- `/rite-build` applies **`devrites-frontend-craft`**, building **to** that `design-brief.md`
+  (register detection, refine the brief per slice, existing design system, all states,
+  anti-AI-slop) before/while implementing.
 - `/rite-prove` applies **`devrites-browser-proof`** (proof ladder + evidence schema).
 - `/rite-polish` runs the full **normalize + polish** workflow.
 - `/rite-review` and `/rite-seal` include frontend UX / a11y / responsive / design-

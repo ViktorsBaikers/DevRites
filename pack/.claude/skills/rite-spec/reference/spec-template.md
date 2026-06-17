@@ -50,6 +50,13 @@ The screenshots / mockups / Figma / video / links that define the target look & 
 from references.md. Name what each shows and which scenarios it governs.
 - R1 — references/<file> or <url> — <what it shows> → governs <scenario/FR>
 
+## UX/UI design brief   *(if the feature touches UI, else "n/a")*
+When UI is involved, `devrites-ux-shape` writes the feature-level **`design-brief.md`** here
+(design direction, key states, interaction model, visual-direction probe) — the target
+`/rite-build` builds to. Summarize its direction in one line; the full brief lives in
+`design-brief.md`.
+- Direction: <color strategy> · "<scene sentence>" · anchors: <ref A, ref B>
+
 ## Success criteria  *(measurable AND technology-agnostic)*
 Observable outcomes that mean "this worked". Numbers where possible. No tech names.
 - Good: "A user exports 10k rows and receives a complete file in under 5s."
@@ -110,6 +117,7 @@ List every open marker; blocking ones must be zero at the gate.
 - [ ] All material gaps/issues have a recorded decision
 - [ ] **Every spec dimension resolved or explicitly deferred** — objective · scope · data model · UX · integration · non-functional · acceptance (see question-protocol.md "Coverage gate")
 - [ ] Design references gathered + saved (if the human supplied any)
+- [ ] **UX/UI shaped into `design-brief.md`** (if the feature touches UI) — direction, key states, interaction model decided
 - [ ] Requirements are testable and unambiguous
 - [ ] Success criteria are measurable and technology-agnostic
 ```

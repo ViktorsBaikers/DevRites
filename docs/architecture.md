@@ -30,7 +30,8 @@ ship.
    doesn't collide.
 3. **Internal specialist skills** — `.claude/skills/devrites-*` with
    `user-invocable: false`: `devrites-interview`, `-source-driven`,
-   `-doubt`, `-frontend-craft`, `-browser-proof`, `-debug-recovery`,
+   `-doubt`, `-ux-shape` (plans UX/UI into `design-brief.md` at `/rite-spec`),
+   `-frontend-craft`, `-browser-proof`, `-debug-recovery`,
    `-api-interface`, `-audit` (dispatches the security / perf / simplify
    reviewer subagent on an axis argument). Model-invoked by public skills
    or Claude's auto-selection; not menu noise. Whether a skill is public or

@@ -1,0 +1,114 @@
+---
+name: devrites-ux-shape
+description: Plan the UX/UI before any code — produce the feature-level `design-brief.md` (design direction, key states, interaction model, visual-direction probe) the build then targets. Use when `/rite-spec` detects UI, or the user says "shape the UX", "plan the UI before coding", "design direction", "what should this look like", or a UI feature needs its look & flow decided up front. Woven into spec/build, not a separate phase. Not for building (use `devrites-frontend-craft`), polishing a built UI (use `/rite-polish`), or throwaway exploration (use `/rite-prototype`).
+user-invocable: false
+---
+
+# devrites-ux-shape — plan the UX/UI before code
+
+Decide what the UI *is* and how it should look and behave **before** code, and write it to
+the feature's `design-brief.md` — the contract the build (`devrites-frontend-craft`),
+polish, and seal all check against. This is "shape before code" raised to a **feature-level
+artifact**: produced once at spec time, refined per slice. It is **woven into the
+lifecycle** (`/rite-spec` calls it when UI is detected; `/rite-build` refines it), not a
+separate phase the user runs.
+
+## When it runs
+- `/rite-spec` invokes it after references-intake when the feature touches UI
+  (`../rite-build/reference/frontend-trigger.md`). Output: `design-brief.md` + a
+  confirmation pause.
+- `/rite-build` / `devrites-frontend-craft` read the brief as the **build target** and
+  refine it for the slice's surface — they don't re-derive it.
+- Skip entirely for backend / data / CLI / infra-only features.
+
+## 1. Foundation — discover, don't impose
+Reuse what's there first. Read the design system + register and any references the spec
+gathered:
+- Design system + register (tokens, components, type, spacing, neighbors; brand-vs-product)
+  → `../devrites-frontend-craft/reference/design-references.md`.
+- `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` if present — anchors that reduce questions.
+- `references.md` + `references/` — the screenshots / Figma / video / links the human
+  supplied. When present they are the **build target**, not inspiration.
+
+## 2. Discovery — one round, assert-then-confirm
+Understand the feature deeply enough to make excellent design calls — **no code, no
+markup**. Use the `devrites-interview` cadence: 2-3 questions per round, best-guess
+attached, stop when answers converge. One round is the default; add a second only for
+material gaps. When `PRODUCT.md` + the spec already pin an answer, **assert it and ask to
+confirm** ("reads as Restrained — confirm?"), don't offer a four-option menu. Cover:
+- **Purpose & user** — who, in what state of mind (rushed / exploring / anxious / focused).
+- **Content & data** — realistic ranges (0 / typical / many), dynamic content, real
+  media/assets the surface needs.
+- **Anti-goals** — what this must NOT be; the biggest risk of getting it wrong.
+
+## 3. Design direction — the triad (commit, don't hedge)
+One deliberate visual decision on three fronts, each anchored in an existing reference so
+the call is checkable, not taste:
+- **Scene sentence** — who / where / ambient light / mood, per
+  `../devrites-frontend-craft/reference/design-references.md`. Forces dark-vs-light and
+  tone from the scene, not the category.
+- **Color strategy** — Restrained / Committed / Multi-role / Saturated, per the
+  color-commitment table in `../devrites-frontend-craft/reference/quality-standards.md`.
+  Pick from the scene; register doesn't decide it.
+- **Named anchor references** — 2-3 *specific* products / brands / objects to steer toward
+  (not adjectives like "modern" or "clean"), plus the saved `references/` files.
+
+Respect the existing identity (default, ~90%); depart only on an explicit signal.
+
+## 4. Scope — task-scoped, never persisted
+Name the output target so sketch-vs-ship isn't guessed: **fidelity** (sketch / mid-fi /
+high-fi / production — DevRites default is production), **breadth** (one screen / a flow /
+a surface), **interactivity**, **time intent**. These ride in the brief only; they do not
+change the project's design system, and never get written to `PRODUCT.md` / `DESIGN.md`.
+
+## 5. Key states + interaction model
+List every state the feature needs and what the user must see/feel in each (default,
+loading initial+subsequent, empty→next-action, error→recovery, success, disabled/
+no-permission, long-content/overflow), the information hierarchy (what's seen 1st / 2nd /
+3rd; primary action unmistakable), responsive reflow, a11y must-haves, and the interaction
+model (inline vs navigated vs — rarely — modal; optimistic vs pending; feedback). Canonical
+state list: `../devrites-frontend-craft/reference/shape.md`.
+
+## 6. Visual-direction probe — capability-gated
+When the work is net-new or directionally ambiguous and fidelity ≥ mid-fi, pressure-test
+the lane with something concrete instead of words — pull Figma context, generate image
+probes, screenshot reference sites, or route a code-fidelity question to `/rite-prototype`.
+**Capability-gated**: announce the skip in one line if no tool is available. Flow:
+[reference/visual-direction-probe.md](reference/visual-direction-probe.md).
+
+## 7. AI-slop pre-check
+Run the two-altitude category-reflex check (`../rite-polish/reference/anti-ai-slop.md`) on
+the chosen direction *before* writing the brief — if the palette/theme is guessable from
+the category, rework the scene sentence and color strategy. Cheaper to catch the slop in
+the brief than in the build.
+
+## 8. Write the brief + gate
+Write `design-brief.md` ([reference/brief-template.md](reference/brief-template.md)) —
+**compact** (3-5 bullets) when discovery was crisp, **full** when the surface is ambiguous
+or multi-screen. Don't pad a clear brief to look thorough; don't skip the pause to look
+fast. Then honor the run mode (`../../rules/afk-hitl.md`):
+- **HITL** — present the brief and **STOP for explicit confirmation**. The pause is the
+  point: shape ends at the user's "go", not at your own certainty. Disagreement → revisit
+  the relevant discovery question.
+- **AFK** — assert the best-guess direction, record it in `decisions.md` + an advisory
+  `questions.md` entry, and proceed. A direction touching the irreversible-risk list still
+  pauses.
+
+## Output
+```
+UX/UI shaped: <slug>
+Direction: <color strategy> · "<scene sentence>" · anchors: <ref A, ref B>
+States: <n listed>   Probe: <figma | images | prototype | skipped — no tool>
+Brief: design-brief.md (<compact | full>)
+Gate: <confirmed | awaiting confirmation | AFK-asserted>
+Next: /rite-define (UI slices map to the brief's states) — or /rite-build refines it per slice
+```
+
+## NEVER (ux-shape)
+- Never write code, markup, or a component here — produce the thinking, not the UI.
+- Never finalize the brief without naming the **primary action** and the **full state set**
+  (not just the happy path).
+- Never decide visual direction by taste when the project has a system — discover first.
+- Never skip the HITL confirmation pause "because the brief is obviously right" — ask once,
+  wait.
+- Never re-derive the brief from scratch in `/rite-build` — refine the existing one.

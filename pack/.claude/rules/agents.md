@@ -33,9 +33,10 @@ The prefix mirrors visibility:
 - **`devrites-*`** = model-invoked (`user-invocable: false`, no slash command).
   Internal specialists that fire on trigger from the `rite-*` skills or auto-select.
   `devrites-interview`, `devrites-source-driven`, `devrites-doubt`,
-  `devrites-frontend-craft`, `devrites-browser-proof`, `devrites-debug-recovery`,
-  `devrites-api-interface`, `devrites-audit` (dispatches the security / perf /
-  simplify reviewer subagent on an axis argument).
+  `devrites-ux-shape` (plans UX/UI into `design-brief.md` at `/rite-spec` when UI is
+  detected — the build target), `devrites-frontend-craft`, `devrites-browser-proof`,
+  `devrites-debug-recovery`, `devrites-api-interface`, `devrites-audit` (dispatches the
+  security / perf / simplify reviewer subagent on an axis argument).
   The `devrites-` prefix avoids collisions with bundled Claude Code skill
   names (`prototype`, `handoff`, `diagnose`, etc.) — peer skill packs may
   collide on the bare names internally even though these never appear in the

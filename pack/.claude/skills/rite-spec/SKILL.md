@@ -40,6 +40,14 @@ when capturing significant spec decisions (why-not-what, ADR-style notes in `dec
    **none at all** (perfectly normal; skip this step then). If any are given: **view/fetch**
    them, **save local files** into `.devrites/work/<slug>/references/`, and index them in
    `references.md`. They become the target later phases verify against.
+3a. **Shape the UX/UI before code (if the feature touches UI)** — when this feature is
+   frontend ([frontend-trigger](../rite-build/reference/frontend-trigger.md)), apply
+   `devrites-ux-shape` **now**, woven into the spec — not as a separate phase. It turns the
+   references + the spec into a feature-level **`design-brief.md`** (design direction, key
+   states, interaction model, optional Figma/image visual-direction probe) that `/rite-build`
+   targets so the UI is built to plan, not guessed. In HITL it pauses for the human to
+   confirm the direction; in AFK it asserts the best guess and logs it. Pure
+   backend/data/CLI features skip this.
 4. **Close the gaps with the human.** Turn each material gap/issue into a question — one
    at a time, **best guess attached**, structured options + escape hatch. (Vague ask →
    `devrites-interview`; rough idea → `rite-pressure-test`; ladders in
@@ -57,11 +65,13 @@ when capturing significant spec decisions (why-not-what, ADR-style notes in `dec
    **Placement & integration**, **Design references**, **Gaps/issues/decisions**, and
    measurable acceptance ([acceptance-criteria](reference/acceptance-criteria.md)). Also
    write `brief.md`, `references.md`, `questions.md`, `decisions.md`, `assumptions.md`,
-   and an initial `state.md` (phase: spec).
+   and an initial `state.md` (phase: spec). When the feature touches UI, `design-brief.md`
+   is written here too (by `devrites-ux-shape`, step 3a).
 6. **Run the spec readiness gate** (bottom of spec-template): no blocking
    `[NEEDS CLARIFICATION]`, placement decided, all material gaps resolved, any design
-   references provided are saved, requirements testable, success criteria measurable.
-   When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when it passes.
+   references provided are saved, **UX/UI shaped into `design-brief.md` if the feature is
+   UI**, requirements testable, success criteria measurable. When it passes, write
+   `Spec gate: passed <iso>` to `state.md`. **Stop** when it passes.
 
 > **Mid-flight discipline.** When tempted to skip investigation depth, gap-closing, or placement decisions — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 
@@ -71,6 +81,7 @@ Spec ready: <slug>
 Objective: <one sentence>   Placement: <where it lives>
 Resolves: <value>
 References: <n saved | none provided>
+Design brief: <design-brief.md shaped (compact|full) | n/a — not UI>
 Gaps closed: <n>   Open (non-blocking): <n>
 Next: /rite-define   (turns this spec into plan + tasks + state)
 ↻ Hygiene: /clear before /rite-define (spec.md + references/ + decisions.md + assumptions.md + questions.md captured); /rite-handoff if away > a few hours. See rules/context-hygiene.md.

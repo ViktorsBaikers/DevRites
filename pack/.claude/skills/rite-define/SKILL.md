@@ -35,7 +35,9 @@ the plan:
 0. **Read `.claude/rules/core.md`** — the always-on operating rules and anti-rationalizations.
 1. **Read the spec** — `spec.md` (objective, requirements, acceptance, **placement**,
    design references, gaps/decisions), plus `references.md`, `decisions.md`,
-   `assumptions.md`. If a blocking `[NEEDS CLARIFICATION]` remains, stop → `/rite-spec`.
+   `assumptions.md`, and **`design-brief.md` if the feature touches UI** (the UX/UI
+   contract `/rite-spec` shaped — its key states + interaction model drive how UI slices
+   are cut). If a blocking `[NEEDS CLARIFICATION]` remains, stop → `/rite-spec`.
 2. **Decide the approach + architecture** (the HOW the spec deliberately omitted): the
    strategy, key technical decisions + rationale, and the tech the slices will use. Use a
    code-intelligence index (`codegraph` / `graphify`) for structure/impact. Record in
@@ -53,7 +55,9 @@ the plan:
    tier). Use `rite-plan/reference/slicing.md` and
    `rite-plan/reference/task-breakdown.md`. Mark per slice: **Frontend craft required**
    and **Browser proof required** (UI), and whether it's **fullstack** (FE+BE → contract
-   first, see `devrites-frontend-craft/reference/fullstack.md`).
+   first, see `devrites-frontend-craft/reference/fullstack.md`). **For UI slices, name which
+   of `design-brief.md`'s key states + interaction the slice delivers** — so the brief's
+   state coverage maps onto slices, not just acceptance criteria.
 4. **Map coverage** — every spec acceptance criterion maps to ≥1 slice
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
    criterion.
@@ -84,6 +88,7 @@ Files likely touched:       # from the spec's Placement & integration
 Tests to write/run:
 Browser proof required: yes/no
 Frontend craft required: yes/no
+Design brief states:        # UI slices only — which design-brief.md states/interaction this slice delivers (default/empty/error/…)
 Fullstack (FE+BE): yes/no
 Dependencies:               # external deps (libs, services), NOT slice ordering
 Existing to reuse / extend:   # what already exists (components / utils / hooks) the slice should use

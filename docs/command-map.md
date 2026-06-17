@@ -46,7 +46,8 @@ model-invoked.
 | [`devrites-interview`](../pack/.claude/skills/devrites-interview/SKILL.md) | `/rite-spec`, underspecified ask | One-Q-at-a-time protocol | best-guess + confidence stop |
 | [`devrites-source-driven`](../pack/.claude/skills/devrites-source-driven/SKILL.md) | uncertain framework/library fact | Consult docs/source, record citation | writes `evidence.md` / `decisions.md` |
 | [`devrites-doubt`](../pack/.claude/skills/devrites-doubt/SKILL.md) | non-trivial decision in build/review | CLAIM → EXTRACT → DOUBT → RECONCILE → STOP | adversarial; ask user if uncertain |
-| [`devrites-frontend-craft`](../pack/.claude/skills/devrites-frontend-craft/SKILL.md) | UI detected in build/polish | Register detection, shape-before-code, states, anti-slop | refs: shape/craft/design-references |
+| [`devrites-ux-shape`](../pack/.claude/skills/devrites-ux-shape/SKILL.md) | UI detected in `/rite-spec` | Plan UX/UI before code → `design-brief.md` (direction, states, interaction, visual-direction probe) | the build target; refs: brief-template/visual-direction-probe |
+| [`devrites-frontend-craft`](../pack/.claude/skills/devrites-frontend-craft/SKILL.md) | UI detected in build/polish | Build **to** `design-brief.md`: register, refine-per-slice, states, anti-slop | refs: shape/craft/design-references |
 | [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | UI in prove/polish | Browser proof ladder + evidence schema | harness preferred |
 | [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | failing tests/build/runtime | 6-phase: loop → reproduce → hypotheses → instrument → fix → cleanup | references split per phase |
 | [`devrites-api-interface`](../pack/.claude/skills/devrites-api-interface/SKILL.md) | cross-boundary slice | Stable API/contract design | FE/BE split |
@@ -82,7 +83,7 @@ first step (step 0); the rest are referenced on demand. Full index in
 
 | Trigger | Routes to |
 |---|---|
-| Frontend/UI detected (TSX/JSX/Vue/Svelte/Astro/Angular/ERB, CSS/Tailwind/tokens, components/forms/states) | `devrites-frontend-craft` in build, `devrites-browser-proof` in prove, `rite-polish` Phase 3 + 4 (`reference/ui.md`) in polish, UX/a11y axes at review/seal |
+| Frontend/UI detected (TSX/JSX/Vue/Svelte/Astro/Angular/ERB, CSS/Tailwind/tokens, components/forms/states) | `devrites-ux-shape` in spec (writes `design-brief.md`), `devrites-frontend-craft` in build (builds to it), `devrites-browser-proof` in prove, `rite-polish` Phase 3 + 4 (`reference/ui.md`) in polish, UX/a11y axes at review/seal |
 | Uncertain library / framework behavior | `devrites-source-driven` |
 | Non-trivial decision (boundary, data model, auth, public API, migration, "this scales/safe") | `devrites-doubt` (+ `devrites-doubt-reviewer`) |
 | User input / auth / storage / external integration / secrets / permissions | `devrites-audit security` (+ `devrites-security-auditor`) |

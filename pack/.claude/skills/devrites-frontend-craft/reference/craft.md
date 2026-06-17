@@ -35,7 +35,8 @@ Don't reach for the banned defaults (`rite-polish/reference/anti-ai-slop.md`). I
 project genuinely uses one, follow the project — consistency wins.
 
 ## Record
-Design decisions → `design-brief.md`. Then verify in the browser
+Append slice build-time refinements → `design-brief.md` (the brief `devrites-ux-shape`
+produced at spec; refine it, don't recreate it). Then verify in the browser
 (`devrites-browser-proof`) and record evidence before claiming the UI works.
 
 ## NEVER (craft)

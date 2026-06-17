@@ -62,7 +62,11 @@ them:
     when the user runs `/rite-resolve <qid> "<answer>"`.
 3. Load only the files this slice touches (use `touched-files.md` + codebase search). Prefer a code-intelligence index — `codegraph` (`.codegraph/` / `codegraph_*`) or `graphify` (`graphify-out/`) — for placement/callers/impact instead of broad file reads; fall back to file reads.
 4. **Frontend?** If the slice touches UI ([frontend-trigger](reference/frontend-trigger.md)),
-   apply `devrites-frontend-craft` (shape before code, existing design system, states).
+   apply `devrites-frontend-craft`, **building to `design-brief.md`** — the UX/UI contract
+   `/rite-spec` shaped (`devrites-ux-shape`). Read it as the target (direction, the slice's
+   key states, interaction model) and refine it for this surface; don't re-derive the design
+   from scratch. If the slice is UI but no `design-brief.md` exists (e.g. a spec written
+   before shaping), shape it now via `devrites-ux-shape` before coding.
 5. **Uncertain framework/library fact?** Apply `devrites-source-driven` and record the
    source in `decisions.md` / `evidence.md`.
 6. **Changing behavior?** Use TDD / the Prove-It pattern when feasible —

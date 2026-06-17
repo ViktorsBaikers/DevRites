@@ -15,6 +15,8 @@ HITL slices pause before code is written; `/rite-resolve` is the resume verb.
 ```mermaid
 flowchart LR
     Start([user has an idea]) --> Spec[/rite-spec/]
+    Spec -.->|UI detected| Shape[devrites-ux-shape<br/>plan UX/UI → design-brief.md]
+    Shape -.->|brief confirmed| Spec
     Spec -->|spec.md ready| Define[/rite-define/]
     Define -->|plan.md + tasks.md<br/>each slice tagged AFK/HITL| Build[/rite-build/]
     Build -->|one slice done<br/>+ evidence| Build
@@ -38,10 +40,12 @@ flowchart LR
     classDef done fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef repair fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef gate fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
+    classDef internal fill:#0f172a,stroke:#9ca3af,color:#f9fafb
     class Spec,Define,Build,Prove,Polish,Review,Seal,Ship2 phase
     class Shipped done
     class Repair repair
     class Await gate
+    class Shape internal
 ```
 
 ## 2. `/rite-polish` orchestrator
@@ -228,6 +232,7 @@ erDiagram
     WORKSPACE ||--|| plan : "has (from /rite-define)"
     WORKSPACE ||--|| tasks : "has — slices tagged Mode + Gate"
     WORKSPACE ||--o{ references : "has (design refs)"
+    WORKSPACE ||--o| design-brief : "has (UI features — from /rite-spec via devrites-ux-shape; the build target)"
     WORKSPACE ||--|| questions : "has — qid, gate, status (open/answered/dropped)"
     WORKSPACE ||--|| decisions : has
     WORKSPACE ||--|| assumptions : has
@@ -298,7 +303,7 @@ flowchart TB
         D2[/rite-prototype/]
         D3[/rite-handoff/]
     end
-    subgraph Internal["Internal (user-invocable: false) — 8 skills, model-invoked"]
+    subgraph Internal["Internal (user-invocable: false) — 9 skills, model-invoked"]
         direction TB
         I1[devrites-api-interface]
         I2[devrites-audit<br/>security · perf · simplify]
@@ -308,12 +313,13 @@ flowchart TB
         I6[devrites-frontend-craft]
         I7[devrites-interview]
         I8[devrites-source-driven]
+        I9[devrites-ux-shape]
     end
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
     class R1,R2,R3,R4,R5,R6,R7,R8,R9,R12,R13,R10,R11,IPT,D1,D2,D3 pub
-    class I1,I2,I3,I4,I5,I6,I7,I8 int
+    class I1,I2,I3,I4,I5,I6,I7,I8,I9 int
 ```
 
 ## 9. AFK & HITL state machine
