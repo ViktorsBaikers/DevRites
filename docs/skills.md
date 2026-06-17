@@ -1,6 +1,6 @@
-# All 27 skills
+# All 28 skills
 
-The pack ships **27 skills total** — 18 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other rule files on demand (no carrier skill, no session-start autoload).
+The pack ships **28 skills total** — 19 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other rule files on demand (no carrier skill, no session-start autoload).
 
 **Naming convention.** `rite-*` is the user-facing slash-command surface (lifecycle phases plus utilities — `rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`). `devrites-*` is internal (model-invoked, hidden from the menu) and collision-avoiding against bundled Claude Code skill names. Visibility is governed by each skill's `user-invocable:` flag; the prefix mirrors it.
 
@@ -16,6 +16,7 @@ Every user-invocable skill responds to **both** `/rite <verb>` (menu form — ty
 | `/rite spec <feature>` | `/rite-spec <feature>` | spec | **Start here.** Deep investigation → writes `spec.md`: understands the ask fully, decides **placement** (where it lives), names what it resolves, closes gaps with you (questions with options), and gathers any design references you optionally attach (screenshots / Figma / links / video — there may be none). |
 | `/rite temper` | `/rite-temper` | temper | **Optional, before define.** Strategic review of the readied spec — pick a scope mode (expand / selective / hold-rigor / reduce-to-MVP), run a pre-mortem, harden the spec, write `strategy.md`, and fold the decisions back via the Spec Drift Guard. Significance-gated (skips small work); **mandatory inside `/rite-autocomplete`**. |
 | `/rite define` | `/rite-define` | plan | Turns the approved spec into `plan.md` + vertical task slices + state. |
+| `/rite vet` | `/rite-vet` | vet | **Optional, before build.** Engineering review of the defined plan — scope challenge (reuse / minimum-diff / complexity smell), then architecture / plan code-quality / test-coverage design / performance through senior-engineer lenses, every finding confidence-banded with a quote-the-source verification gate. Maps failure modes + parallel lanes, hardens `plan.md` / `tasks.md`, writes the build-readable `test-plan.md`; acceptance-changing deltas fold back via the Spec Drift Guard. `--cross-model` adds a different-model second opinion. Significance-gated (skips small work); **mandatory inside `/rite-autocomplete`**. |
 | `/rite plan` | `/rite-plan` | re-plan | Decompose / reslice / repair an active plan. |
 | `/rite build` | `/rite-build` | build | Implement **exactly one** vertical slice, then stop — dispatches a fresh-context `devrites-slice-wright` to write it; gates and records the result. |
 | `/rite prove` | `/rite-prove` | prove | Tests + build + runtime + browser evidence for the current scope. |
@@ -66,6 +67,12 @@ The 9 model-invoked internal specialists (hidden from the menu): `devrites-inter
 |---|---|---|
 | [`rite-define`](../pack/.claude/skills/rite-define/SKILL.md) | Approved spec → `plan.md` + vertical task slices + `state.md`. | `spec.md` exists and is approved. |
 | [`rite-plan`](../pack/.claude/skills/rite-plan/SKILL.md) | Decompose / reslice / repair an active plan after drift. | Spec Drift Guard fires, or you need to repair an existing plan. |
+
+### Vet — Lock in the engineering plan before building
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-vet`](../pack/.claude/skills/rite-vet/SKILL.md) | Engineering review of `plan.md` + `tasks.md`: scope challenge (reuse / minimum-diff / complexity smell), then architecture / plan code-quality / test-coverage design / performance through senior-engineer lenses, every finding confidence-banded with a quote-the-source verification gate. Maps failure modes + parallel lanes, hardens the plan, writes the build-readable `test-plan.md`; acceptance-changing deltas fold back via the Spec Drift Guard. Adversarial fresh-context loop via [`devrites-plan-reviewer`](../pack/.claude/agents/devrites-plan-reviewer.md); optional `--cross-model` second opinion. | A big / risky plan (migration · auth · public API · data model · multi-slice · >8 files · new dependency), or you say "engineering review" / "lock in the plan" / "test coverage check". Skips low-stakes plans in one line; mandatory in `/rite-autocomplete`. |
 
 ### Build — One verified slice at a time
 
@@ -129,11 +136,12 @@ The 9 model-invoked internal specialists (hidden from the menu): `devrites-inter
 
 ## Review agents — Fresh-context reviewers
 
-Spawned by `/rite-review`, `/rite-seal` (post-build), and `/rite-temper` (pre-plan) for independent judgment. Read-only; given only the artifact + rubric, never the author's reasoning.
+Spawned by `/rite-review`, `/rite-seal` (post-build), `/rite-temper` (pre-plan), and `/rite-vet` (pre-build) for independent judgment. Read-only; given only the artifact + rubric, never the author's reasoning.
 
 | Agent | Purpose |
 |---|---|
 | [`devrites-strategy-reviewer`](../pack/.claude/agents/devrites-strategy-reviewer.md) | **Pre-plan** spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention) — via `/rite-temper`, not the seal fan-out. |
+| [`devrites-plan-reviewer`](../pack/.claude/agents/devrites-plan-reviewer.md) | **Pre-build** plan-vs-rubric engineering review (architecture / scope-reuse / plan code-quality / test-coverage design / performance / reversibility / failure-mode coverage), confidence-banded with a quote-the-source verification gate — via `/rite-vet`, not the seal fan-out. |
 | [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | Does the diff implement the spec? Missing / partial / wrong criteria; scope creep. |
 | [`devrites-code-reviewer`](../pack/.claude/agents/devrites-code-reviewer.md) | Correctness / readability / architecture / maintainability. |
 | [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | Do the tests actually prove the acceptance criteria? |

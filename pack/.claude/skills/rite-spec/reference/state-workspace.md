@@ -18,6 +18,8 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
       strategy.md                 # strategic review: scope mode + pre-mortem + dimension scores (from /rite-temper; optional — always invoked, significance-gated, in /rite-autocomplete)
       plan.md                     # how to build it (from /rite-define)
       tasks.md                    # ordered vertical slices (from /rite-define)
+      eng-review.md               # engineering plan review: scope challenge + axis findings + failure modes + parallelization (from /rite-vet; optional — always invoked, significance-gated, in /rite-autocomplete)
+      test-plan.md                # build-readable coverage target: coverage diagram + per-gap test requirements + acceptance→test map (from /rite-vet; read by /rite-build + /rite-prove)
       state.md                    # phase, active slice, risk, next step
       questions.md                # asked questions + answers
       decisions.md                # decisions + rationale
@@ -46,12 +48,15 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
   `ACTIVE`. **`/rite-define` reads `spec.md`** and adds `plan.md` + `tasks.md` and updates
   `state.md`. Other skills read the active workspace; none create a new one.
 - Each phase **updates `state.md`** and the relevant evidence files.
-- Don't create `strategy.md` / `evidence.md` / `browser-evidence.md` / `design-brief.md` /
-  `polish-report.md` / `review.md` / `seal.md` / `ship.md` / `handoff.md` until the
-  producing phase runs — absence is meaningful (it means "not done yet"). `strategy.md` is
-  written by `/rite-temper` (which may also edit `spec.md` / `decisions.md` / `assumptions.md`
-  via the Spec Drift Guard); its absence means the spec was planned without a strategic review. `handoff.md` is
-  written by `/rite-handoff` and overwritten each handoff (latest snapshot, not a log).
+- Don't create `strategy.md` / `eng-review.md` / `test-plan.md` / `evidence.md` /
+  `browser-evidence.md` / `design-brief.md` / `polish-report.md` / `review.md` / `seal.md` /
+  `ship.md` / `handoff.md` until the producing phase runs — absence is meaningful (it means
+  "not done yet"). `strategy.md` is written by `/rite-temper` (which may also edit `spec.md` /
+  `decisions.md` / `assumptions.md` via the Spec Drift Guard); its absence means the spec was
+  planned without a strategic review. `eng-review.md` + `test-plan.md` are written by `/rite-vet`
+  (which also hardens `plan.md` / `tasks.md`, and routes acceptance-changing deltas via the Spec
+  Drift Guard); their absence means the plan was built without an engineering review. `handoff.md`
+  is written by `/rite-handoff` and overwritten each handoff (latest snapshot, not a log).
 - **`/rite-ship` closes the feature**: it writes `ship.md`, sets `state.md` phase `done`,
   then archives `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` (every `.md`
   preserved) and clears `.devrites/ACTIVE`. Closing **relocates** the audit trail; it
@@ -61,7 +66,7 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
 ```markdown
 # State: <slug>
 
-- Phase: spec | temper | plan | build | prove | polish | review | seal | ship | done   # `temper` only when /rite-temper ran (optional); spec→plan directly otherwise
+- Phase: spec | temper | plan | vet | build | prove | polish | review | seal | ship | done   # `temper` (pre-plan) + `vet` (post-plan, pre-build) only when those optional reviews ran; spec→plan→build directly otherwise
 - Status: running | awaiting_human | blocked | done
 - Active slice: <N — name> | none
 - Slice mode: AFK | HITL | none

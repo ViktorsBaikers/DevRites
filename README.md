@@ -52,6 +52,7 @@ memory). Both hit the same skill — `/rite spec foo` ≡ `/rite-spec foo`.
 | 1 | SPEC | `/rite spec` | [`/rite-spec`](pack/.claude/skills/rite-spec/SKILL.md) | investigate + write spec.md |
 | — | TEMPER | `/rite temper` | [`/rite-temper`](pack/.claude/skills/rite-temper/SKILL.md) | _optional, big features_ — strategic review: scope mode + pre-mortem, hardens the spec (mandatory in autocomplete) |
 | 2 | PLAN | `/rite define` | [`/rite-define`](pack/.claude/skills/rite-define/SKILL.md) | spec → plan + slices (each tagged AFK \| HITL + gate) |
+| — | VET | `/rite vet` | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | _optional, big features_ — engineering plan review: scope · architecture · tests · perf, hardens the plan + writes `test-plan.md` (mandatory in autocomplete) |
 | 3 | BUILD ×N | `/rite build` | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | one slice, then stop (HITL slices pause pre-code) |
 | 4 | PROVE | `/rite prove` | [`/rite-prove`](pack/.claude/skills/rite-prove/SKILL.md) | tests + browser proof |
 | 5 | POLISH | `/rite polish` | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | code + UI polish |
@@ -70,6 +71,7 @@ before resuming.
 flowchart LR
     S[/rite-spec/] --> D[/rite-define/] --> B[/rite-build ×N/] --> P[/rite-prove/] --> Po[/rite-polish/] --> R[/rite-review/] --> Sl[/rite-seal/]
     S -.->|big feature| T[/rite-temper/] -.-> D
+    D -.->|big feature| V[/rite-vet/] -.-> B
     Sl -->|GO| Sh[/rite-ship/]
     Sh -->|type-GO| Ship([ship: commit · push · tag])
     B -.->|Spec Drift Guard| Re[/rite-plan repair/]
@@ -95,7 +97,7 @@ rules carrier, workspace state, namespace map) →
 - [Modes — HITL & AFK](#modes--hitl--afk)
 - [Install](#install) — [bash (A, recommended)](#option-a-bash-installer-recommended-full-install) · [plugin (B, partial)](#option-b-claude-code-plugin-partial--skills--agents-only)
 - [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · browser-harness
-- [Skills](#skills) — 27 total · full catalogue in [`docs/skills.md`](docs/skills.md)
+- [Skills](#skills) — 28 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
 - [Engineering rules](#engineering-rules) · [Browser proof ladder](#browser-proof-ladder) · [Frontend & fullstack](#frontend--fullstack)
 - [Safety & scope](#safety--scope) · [Security model](#security-model)
@@ -114,7 +116,7 @@ rules carrier, workspace state, namespace map) →
 
 A single command that does everything loads every phase's instructions at once, creates
 constant context pressure, and hides the intent of each step. DevRites splits the
-lifecycle into 18 small public skills (`rite-*`) that each own one phase and load only
+lifecycle into 19 small public skills (`rite-*`) that each own one phase and load only
 what that phase needs — including [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md),
 the unattended orchestrator that drives the full cycle end-to-end — plus internal
 specialists (`devrites-*`) that fire on triggers.
@@ -289,7 +291,7 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **27 skills total** — 18 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
+The pack ships **28 skills total** — 19 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
 
 **Two invocation forms.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
@@ -306,12 +308,13 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 
 ### Full skill + agent inventory
 
-**Public `rite-*` skills (18)** — slash-command surface:
+**Public `rite-*` skills (19)** — slash-command surface:
 
 | Group | Skills |
 |---|---|
 | Lifecycle (8) | `rite-spec` · `rite-define` · `rite-build` · `rite-prove` · `rite-polish` · `rite-review` · `rite-seal` · `rite-ship` |
 | Strategic (optional) | `rite-temper` — strategic spec review between spec and define; mandatory in `rite-autocomplete` |
+| Engineering (optional) | `rite-vet` — engineering plan review between define and build; mandatory in `rite-autocomplete` |
 | Resume / replan | `rite-resolve` · `rite-plan` |
 | Utility | `rite-status` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
 | Menu | `rite` |
@@ -323,9 +326,10 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 `devrites-debug-recovery` · `devrites-api-interface` ·
 `devrites-audit` (axes: `security` · `perf` · `simplify`).
 
-**Review agents (9)** — fresh-context reviewers under `.claude/agents/`:
+**Review agents (10)** — fresh-context reviewers under `.claude/agents/`:
 
-`devrites-strategy-reviewer` (pre-plan, via `/rite-temper`) · `devrites-spec-reviewer` ·
+`devrites-strategy-reviewer` (pre-plan, via `/rite-temper`) ·
+`devrites-plan-reviewer` (pre-build, via `/rite-vet`) · `devrites-spec-reviewer` ·
 `devrites-code-reviewer` · `devrites-test-analyst` · `devrites-frontend-reviewer` ·
 `devrites-security-auditor` · `devrites-performance-reviewer` ·
 `devrites-doubt-reviewer` · `devrites-simplifier-reviewer`.
@@ -494,8 +498,8 @@ devrites/
   install.sh  uninstall.sh  update.sh
   scripts/             # install-lib · validate · validate-frontmatter · run-evals · eval-runner.py
                        # devrites-detect · check-no-global-writes · sync-version · build-release-tarball
-  pack/.claude/        # skills/  27 skills — 18 public + 9 model-invoked    ─┐
-                       # agents/  9 reviewers + 1 writer (slice-wright)        ├─ the pack
+  pack/.claude/        # skills/  28 skills — 19 public + 9 model-invoked    ─┐
+                       # agents/  10 reviewers + 1 writer (slice-wright)       ├─ the pack
                        # rules/   16 rule files + README index                 ┘
   evals/               # trigger evals (20 queries per public skill)
   docs/                # architecture · skills · command-map · usage · flow · release
