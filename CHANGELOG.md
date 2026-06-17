@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.4.0...v1.5.0) (2026-06-17)
+
+### Features
+
+* **skills:** add /rite-vet engineering plan review before build ([8c22b6a](https://github.com/ViktorsBaikers/DevRites/commit/8c22b6af4558540f70853e2d56688f49d528dffa))
+
 ## [1.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.3.0...v1.4.0) (2026-06-17)
 
 ### Features
