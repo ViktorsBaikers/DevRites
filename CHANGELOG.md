@@ -2,6 +2,23 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.5...v1.1.0) (2026-06-17)
+
+### Features
+
+* **skills:** add /rite-autocomplete — unattended full lifecycle ([acad7e5](https://github.com/ViktorsBaikers/DevRites/commit/acad7e555c4f188665c9a7a5db4dd3dbb4264375))
+* **skills:** add /rite-ship — execute the ship + close the task ([cc7db95](https://github.com/ViktorsBaikers/DevRites/commit/cc7db95f079de8da824187a482451a34aa02b852))
+* **skills:** sharpen the rite-spec interview loop + coverage gate ([72994ea](https://github.com/ViktorsBaikers/DevRites/commit/72994eab298661b39724af955d5988f47035df03))
+
+### Refactors
+
+* **skills:** seal decides only; git ladder moves to /rite-ship ([80f0fbf](https://github.com/ViktorsBaikers/DevRites/commit/80f0fbfae0a77417283ed35efa4f3c8eae921aa7))
+
+### Documentation
+
+* **docs:** reflect ship/autocomplete + seal-decides split ([e9d4a7e](https://github.com/ViktorsBaikers/DevRites/commit/e9d4a7e64ed8cc4b8b0c742dea055e647d112c57))
+* **repo:** fix stale skill count + phantom devrites-rules refs ([3793e1b](https://github.com/ViktorsBaikers/DevRites/commit/3793e1bdf2fecd0c21999c003f5ff09d5b48aef0))
+
 ## [1.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.4...v1.0.5) (2026-06-16)
 
 ### Bug Fixes
