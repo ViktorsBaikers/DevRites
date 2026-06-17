@@ -83,7 +83,9 @@ Resolves: <value>
 References: <n saved | none provided>
 Design brief: <design-brief.md shaped (compact|full) | n/a — not UI>
 Gaps closed: <n>   Open (non-blocking): <n>
-Next: /rite-define   (turns this spec into plan + tasks + state)
+Next: big / risky feature (auth · data model · public API · migration · multi-slice · ambiguous scope)?
+      → /rite-temper   (strategic review: scope mode + pre-mortem, hardens the spec) — then /rite-define.
+      Small / reversible / unambiguous? → /rite-define directly.
 ↻ Hygiene: /clear before /rite-define (spec.md + references/ + decisions.md + assumptions.md + questions.md captured); /rite-handoff if away > a few hours. See rules/context-hygiene.md.
 ```
 If a workspace with the slug already exists, update its spec rather than overwriting blindly.

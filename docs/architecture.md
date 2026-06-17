@@ -46,12 +46,13 @@ ship.
 4. **Supporting references** — `reference/*.md` inside each skill. Long checklists,
    templates, and anti-rationalization tables loaded on demand (progressive
    disclosure) so `SKILL.md` bodies stay small.
-5. **Agents** — `.claude/agents/devrites-*` fresh-context subagents. Eight **read-only
-   reviewers** used by `/rite-seal` and the doubt loop: `devrites-spec-reviewer`,
-   `-code-reviewer`, `-test-analyst`, `-frontend-reviewer`, `-security-auditor`,
-   `-performance-reviewer`, `-doubt-reviewer`, `-simplifier-reviewer`. Plus one
-   **write-capable** executor, `devrites-slice-wright`, dispatched by `/rite-build`
-   to write one slice in a clean context (the write-side mirror of the reviewers).
+5. **Agents** — `.claude/agents/devrites-*` fresh-context subagents. Nine **read-only
+   reviewers**: the post-build set used by `/rite-seal` and the doubt loop
+   (`devrites-spec-reviewer`, `-code-reviewer`, `-test-analyst`, `-frontend-reviewer`,
+   `-security-auditor`, `-performance-reviewer`, `-doubt-reviewer`, `-simplifier-reviewer`),
+   plus the **pre-plan** `devrites-strategy-reviewer` used by `/rite-temper`. Plus one
+   **write-capable** executor, `devrites-slice-wright`, dispatched by `/rite-build` to write
+   one slice in a clean context (the write-side mirror of the reviewers).
 6. **Engineering rules** — DevRites' own stack-agnostic rules installed to
    `.claude/rules/`. Each `rite-*` skill Reads `core.md` as its first step
    (step 0); 15 on-demand files load by the phase that needs them:
@@ -190,7 +191,7 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 17 public `rite-*` skills (25 total) — the thin `/rite` menu
+- **Surface**: 18 public `rite-*` skills (27 total) — the thin `/rite` menu
   (carries the routing) + 8 lifecycle phases (`rite-spec`, `rite-define`,
   `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
   `rite-ship` — seal **decides**, ship **executes + closes**) + `rite-status` +

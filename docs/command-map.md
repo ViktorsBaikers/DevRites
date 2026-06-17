@@ -23,7 +23,8 @@ model-invoked.
 |---|---|---|---|---|---|
 | [`/rite`](../pack/.claude/skills/rite/SKILL.md) | menu | `[subcommand]` | Compact menu + suggested next command. Pure router; does **not** read state — that's `/rite-status`. | — | — |
 | [`/rite-spec`](../pack/.claude/skills/rite-spec/SKILL.md) | spec | `<feature>` | **Start here.** Deep investigation → writes `spec.md` (placement, what-it-resolves, gaps closed with options, design references). Creates the workspace. | codebase + codegraph/graphify | `spec.md`, `references/`, `references.md`, `brief.md`, `questions.md`, `decisions.md`, `assumptions.md`, `state.md` |
-| [`/rite-define`](../pack/.claude/skills/rite-define/SKILL.md) | plan | `[slug]` | Turns the approved `spec.md` into plan + vertical task slices + state. | `spec.md` + references | `plan.md`, `tasks.md`, `state.md`, `decisions.md` |
+| [`/rite-temper`](../pack/.claude/skills/rite-temper/SKILL.md) | temper | `[slug] [--mode]` | **Optional, before define.** Strategic review of the readied spec: scope mode (expand / selective / hold-rigor / reduce-to-MVP) + pre-mortem + 9-dimension floor-gate; folds decisions into the spec via the Spec Drift Guard. Significance-gated; **mandatory in `/rite-autocomplete`**. Reviewer: `devrites-strategy-reviewer`. | `spec.md` + decisions/assumptions + design-brief | `strategy.md`, `spec.md`, `decisions.md`, `assumptions.md` |
+| [`/rite-define`](../pack/.claude/skills/rite-define/SKILL.md) | plan | `[slug]` | Turns the approved `spec.md` into plan + vertical task slices + state. Reads `strategy.md` if present. | `spec.md` (+ `strategy.md`) + references | `plan.md`, `tasks.md`, `state.md`, `decisions.md` |
 | [`/rite-plan`](../pack/.claude/skills/rite-plan/SKILL.md) | plan | `[mode]` | Decompose / reslice / repair / re-order / split / unblock an active plan. | spec/plan/tasks/state/drift + diff | `plan.md`, `tasks.md`, `state.md`, `decisions.md` |
 | [`/rite-build`](../pack/.claude/skills/rite-build/SKILL.md) | build | `[slice]` | Implement **exactly one** vertical slice, then stop. | workspace + diff | code + `state.md`, `evidence.md`, `touched-files.md` |
 | [`/rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | prove | `[scope]` | Tests + build + runtime + browser proof of the completed feature. | workspace + diff | `evidence.md`, `browser-evidence.md`, `state.md` |
@@ -58,11 +59,12 @@ model-invoked.
 
 ## Agents (`.claude/agents/devrites-*`, fresh-context subagents)
 
-Eight **read-only reviewers** plus one **write-capable** executor (`devrites-slice-wright`).
+Nine **read-only reviewers** plus one **write-capable** executor (`devrites-slice-wright`).
 
 | Agent | Spawned by | Purpose |
 |---|---|---|
 | [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) | `/rite-build` (the build core) | **Write-capable** — turn one slice contract into clean, idiomatic, proven code (orient → TDD → verify, anti-slop); returns a structured artifact, writes no bookkeeping |
+| [`devrites-strategy-reviewer`](../pack/.claude/agents/devrites-strategy-reviewer.md) | `/rite-temper` (pre-plan) | Spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention); read-only; **not** part of the seal fan-out |
 | [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | `/rite-review` Spec axis; `/rite-seal` | Does the diff implement the spec? Missing/partial/wrong criteria; scope creep |
 | [`devrites-code-reviewer`](../pack/.claude/agents/devrites-code-reviewer.md) | `/rite-review` Standards axis; `/rite-seal` | Correctness / readability / architecture / maintainability |
 | [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | `/rite-seal` | Do the tests actually prove the acceptance criteria? |

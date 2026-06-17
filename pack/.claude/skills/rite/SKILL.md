@@ -27,6 +27,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | Verb | Equivalent shortcut | Skill |
 |---|---|---|
 | `spec [feature]` | `/rite-spec` | start a feature — investigate + write spec.md |
+| `temper [--mode]` | `/rite-temper` | optional strategic spec review (scope mode + pre-mortem) before define |
 | `define` | `/rite-define` | turn the spec into plan + task slices |
 | `plan [mode]` | `/rite-plan` | reshape / reslice / repair an active plan |
 | `build [slice]` | `/rite-build` | implement exactly one vertical slice, then stop |
@@ -72,6 +73,7 @@ inline in `/rite-seal` (see its `reference/parallel-dispatch.md`).
 DevRites — disciplined senior-engineer workflow
                               menu form           direct shortcut
 SPEC          /rite spec               ≡    /rite-spec        investigate deeply → write spec.md
+TEMPER        /rite temper             ≡    /rite-temper      optional — strategic review: scope mode + pre-mortem, harden the spec
 PLAN          /rite define             ≡    /rite-define      turn the spec into plan + task slices + state
 REPLAN        /rite plan               ≡    /rite-plan        decompose / reslice / repair an active plan
 BUILD         /rite build              ≡    /rite-build       implement exactly one verified vertical slice, then stop
