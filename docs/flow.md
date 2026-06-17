@@ -232,7 +232,7 @@ erDiagram
     WORKSPACE ||--o| strategy : "has (optional — from /rite-temper)"
     WORKSPACE ||--|| plan : "has (from /rite-define)"
     WORKSPACE ||--|| tasks : "has — slices tagged Mode + Gate"
-    WORKSPACE ||--o| eng-review : "has (optional — from /rite-vet)"
+    WORKSPACE ||--o| eng-review : "has (from /rite-vet — every plan, light or full)"
     WORKSPACE ||--o| test-plan : "has (from /rite-vet; build + prove read it)"
     WORKSPACE ||--o{ references : "has (design refs)"
     WORKSPACE ||--o| design-brief : "has (UI features — from /rite-spec via devrites-ux-shape; the build target)"

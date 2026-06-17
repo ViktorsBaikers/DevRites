@@ -52,7 +52,7 @@ memory). Both hit the same skill — `/rite spec foo` ≡ `/rite-spec foo`.
 | 1 | SPEC | `/rite spec` | [`/rite-spec`](pack/.claude/skills/rite-spec/SKILL.md) | investigate + write spec.md |
 | — | TEMPER | `/rite temper` | [`/rite-temper`](pack/.claude/skills/rite-temper/SKILL.md) | _optional, big features_ — strategic review: scope mode + pre-mortem, hardens the spec (mandatory in autocomplete) |
 | 2 | PLAN | `/rite define` | [`/rite-define`](pack/.claude/skills/rite-define/SKILL.md) | spec → plan + slices (each tagged AFK \| HITL + gate) |
-| — | VET | `/rite vet` | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | _optional, big features_ — engineering plan review: scope · architecture · tests · perf, hardens the plan + writes `test-plan.md` (mandatory in autocomplete) |
+| — | VET | `/rite vet` | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | _recommended, every feature_ — engineering plan review: scope · architecture · tests · perf, hardens the plan + writes `test-plan.md`; depth scales to stakes, never skipped (always in autocomplete) |
 | 3 | BUILD ×N | `/rite build` | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | one slice, then stop (HITL slices pause pre-code) |
 | 4 | PROVE | `/rite prove` | [`/rite-prove`](pack/.claude/skills/rite-prove/SKILL.md) | tests + browser proof |
 | 5 | POLISH | `/rite polish` | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | code + UI polish |
@@ -71,7 +71,7 @@ before resuming.
 flowchart LR
     S[/rite-spec/] --> D[/rite-define/] --> B[/rite-build ×N/] --> P[/rite-prove/] --> Po[/rite-polish/] --> R[/rite-review/] --> Sl[/rite-seal/]
     S -.->|big feature| T[/rite-temper/] -.-> D
-    D -.->|big feature| V[/rite-vet/] -.-> B
+    D -.->|every feature| V[/rite-vet/] -.-> B
     Sl -->|GO| Sh[/rite-ship/]
     Sh -->|type-GO| Ship([ship: commit · push · tag])
     B -.->|Spec Drift Guard| Re[/rite-plan repair/]
@@ -314,7 +314,7 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 |---|---|
 | Lifecycle (8) | `rite-spec` · `rite-define` · `rite-build` · `rite-prove` · `rite-polish` · `rite-review` · `rite-seal` · `rite-ship` |
 | Strategic (optional) | `rite-temper` — strategic spec review between spec and define; mandatory in `rite-autocomplete` |
-| Engineering (optional) | `rite-vet` — engineering plan review between define and build; mandatory in `rite-autocomplete` |
+| Engineering (every feature) | `rite-vet` — engineering plan review between define and build; depth scales to stakes, never skipped; always in `rite-autocomplete` |
 | Resume / replan | `rite-resolve` · `rite-plan` |
 | Utility | `rite-status` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
 | Menu | `rite` |

@@ -13,8 +13,8 @@ clobber.
 # Eng review: <slug>
 Vetted: <iso>   Cross-model: ran (codex) | off
 
-## 1. Significance
-full | skipped — low stakes (<trigger>)        # if skipped, stop here (see significance.md)
+## 1. Depth
+light | full (<trigger that escalated it>)     # every plan is vetted — light or full, never skipped (see depth.md)
 
 ## 2. Scope challenge
 - What already exists (reuse vs rebuild): <findings — each reuse the plan should adopt>

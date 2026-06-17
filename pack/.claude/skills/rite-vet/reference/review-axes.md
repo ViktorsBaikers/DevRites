@@ -49,7 +49,7 @@ If the smell does not trip, present the §0 findings and proceed to Axis 1.
 
 For each axis: evaluate, then **walk each finding WITH the human** via `AskUserQuestion` (one
 issue per call — see "How to ask" below). HITL pauses on each material finding; AFK auto-applies
-within the gate ceiling (`significance.md`). If an axis genuinely has no issue, say "No issues,
+within the gate ceiling (`depth.md`). If an axis genuinely has no issue, say "No issues,
 moving on" and continue — don't manufacture findings.
 
 ### 1. Architecture
