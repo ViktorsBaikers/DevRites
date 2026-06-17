@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.1.1...v1.2.0) (2026-06-17)
+
+### Features
+
+* **skills:** plan UX/UI before code via devrites-ux-shape ([e4a45f2](https://github.com/ViktorsBaikers/DevRites/commit/e4a45f27346dc4ab22c5fb7acf215105e947e0a7))
+
 ## [1.1.1](https://github.com/ViktorsBaikers/DevRites/compare/v1.1.0...v1.1.1) (2026-06-17)
 
 ### Bug Fixes
