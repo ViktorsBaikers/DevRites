@@ -53,7 +53,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    the count in `state.md` or remove the sentinel to continue). See
    [`reference/afk-discipline.md`](reference/afk-discipline.md).
 1. Read `spec.md`, `plan.md`, `tasks.md`, `state.md`, `assumptions.md`, `drift.md`,
-   `questions.md`.
+   `questions.md`, and `test-plan.md` if present (the vetted coverage target from
+   `/rite-vet` — the slice's tests come from here when it exists).
    If a **blocking `[NEEDS CLARIFICATION]`** remains or the spec/plan readiness gates
    don't pass, stop → `/rite-spec` (to resolve) or `/rite-plan` (to repair). Don't build
    on an unresolved spec.
@@ -72,7 +73,9 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    Assemble the slice contract and send it per
    [`reference/wright-dispatch.md`](reference/wright-dispatch.md): the slice goal, acceptance
    criteria, and **scope boundary**; the paths it may touch (`touched-files.md`); the context
-   paths to read (`spec.md`, `plan.md`, `decisions.md`, `assumptions.md`, plus `design-brief.md`
+   paths to read (`spec.md`, `plan.md`, `decisions.md`, `assumptions.md`, plus `test-plan.md`
+   when present — its per-gap test requirements + regression-criticals for this slice are the
+   coverage the wright must write — and `design-brief.md`
    when the slice touches UI per [frontend-trigger](reference/frontend-trigger.md)); and the
    `.claude/rules/` files in scope. The wright **orients** on the project's idiom (preferring a
    code-intelligence index — `codegraph` (`.codegraph/` / `codegraph_*`) or `graphify`

@@ -31,6 +31,7 @@
     "./pack/.claude/agents/devrites-doubt-reviewer.md",
     "./pack/.claude/agents/devrites-frontend-reviewer.md",
     "./pack/.claude/agents/devrites-performance-reviewer.md",
+    "./pack/.claude/agents/devrites-plan-reviewer.md",
     "./pack/.claude/agents/devrites-security-auditor.md",
     "./pack/.claude/agents/devrites-simplifier-reviewer.md",
     "./pack/.claude/agents/devrites-slice-wright.md",

@@ -20,6 +20,7 @@ Fresh-context, read-only reviewers. Each is given the active feature workspace p
 | `devrites-performance-reviewer` | Measure-first perf (N+1, hot paths, payload size) | `/rite-seal` when perf relevant |
 | `devrites-doubt-reviewer` | Adversarial check of a single claim/decision | `devrites-doubt` loop; risky decisions |
 | `devrites-strategy-reviewer` | Spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention) — **before** any plan or code | `/rite-temper` loop (pre-plan) |
+| `devrites-plan-reviewer` | Plan-vs-rubric engineering review (architecture / scope-reuse / plan code-quality / test-coverage design / performance / reversibility / failure-mode coverage), confidence-banded with a quote-the-source verification gate — **after define, before build** | `/rite-vet` loop (pre-build) |
 
 ## The executor subagent — `.claude/agents/devrites-slice-wright.md`
 
@@ -44,7 +45,8 @@ shape + fallback: `.claude/skills/rite-build/reference/wright-dispatch.md`.
 The prefix mirrors visibility:
 
 - **`rite-*`** = user-invocable (`user-invocable: true`). The public slash-command
-  surface — lifecycle phases plus utilities. `rite`, `rite-spec`, `rite-define`,
+  surface — lifecycle phases plus utilities. `rite`, `rite-spec`, `rite-temper`,
+  `rite-define`, `rite-vet`,
   `rite-plan`, `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
   `rite-ship`, `rite-autocomplete`, `rite-status`, `rite-resolve`, `rite-prototype`,
   `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`. `/rite-seal` **decides**

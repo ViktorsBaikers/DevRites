@@ -116,6 +116,6 @@ Approach: <one line>
 Slices: N (slice 1: <name>)   Fullstack/UI slices: <which>
 Coverage: <all acceptance criteria mapped? yes/no>
 Strategy: honored (mode <m>; <n> pre-mortem risks → mitigation slices) | none (no strategy.md)
-Next: confirm, then /rite-build   (or /rite-plan to reshape the slices)
+Next: confirm, then /rite-build   (big / risky plan? /rite-vet first to lock in the engineering plan; or /rite-plan to reshape the slices)
 ↻ Hygiene: /clear after user confirms (plan.md + tasks.md + decisions.md + state.md captured). See rules/context-hygiene.md.
 ```

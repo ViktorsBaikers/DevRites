@@ -191,13 +191,15 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 18 public `rite-*` skills (27 total) — the thin `/rite` menu
+- **Surface**: 19 public `rite-*` skills (28 total) — the thin `/rite` menu
   (carries the routing) + 8 lifecycle phases (`rite-spec`, `rite-define`,
   `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
-  `rite-ship` — seal **decides**, ship **executes + closes**) + `rite-status` +
+  `rite-ship` — seal **decides**, ship **executes + closes**) + the optional
+  `rite-temper` (strategic) and `rite-vet` (engineering) plan reviews +
+  `rite-status` +
   the `rite-plan` replan verb + the `rite-resolve` resume verb + 5 utilities
   (`rite-zoom-out`, `rite-prototype`, `rite-handoff`, `rite-pressure-test`,
-  `rite-autocomplete` — the unattended full-lifecycle orchestrator) — plus 8
+  `rite-autocomplete` — the unattended full-lifecycle orchestrator) — plus 9
   internal model-invoked `devrites-*` specialists, not one mega-command. The
   `devrites-` prefix is a namespace (collision avoidance), not a
   public/internal marker — `user-invocable:` is. All `devrites-*` skills are

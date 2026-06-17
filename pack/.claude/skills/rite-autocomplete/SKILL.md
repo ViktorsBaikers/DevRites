@@ -35,6 +35,12 @@ blocking / escalating gates, and any NO-GO still pause.
   `hold-rigor` + `reduce-to-MVP` (these never grow acceptance); **any `expand` is a blocking
   pause**, and irreversible-risk findings always pause. Autocomplete hardens and may *prune* the
   spec on its own; it never *expands* the build's scope without the human.
+- **Engineering review runs, but never auto-grows scope.** After `/rite-define`, run `/rite-vet`
+  (significance-gated — it skips low-stakes plans in one line). Unattended it auto-applies only
+  *hardening* findings — added test requirements, error-handling / failure-mode coverage, tightened
+  scope, reuse-over-rebuild, ordering / parallel-lane fixes (these never grow acceptance); **any
+  finding that grows scope, adds a slice, or changes acceptance is a blocking pause**, and
+  irreversible-risk findings always pause. Cross-model is off unless `--cross-model` was armed.
 
 ## Workflow
 1. **Parse args.** The idea + flags: `--ship` / `--yolo` (auto-confirm the final
@@ -47,10 +53,10 @@ blocking / escalating gates, and any NO-GO still pause.
    ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
    irreversible-risk still pause.
 4. **Drive the phases** ([reference/loop.md](reference/loop.md)): `/rite-spec` →
-   **`/rite-temper`** → `/rite-define` → `/rite-build` (loop until all slices built;
-   `tick-afk.sh` each) → `/rite-prove` → `/rite-polish` → `/rite-review` → `/rite-seal`. Run
-   each by Reading its `SKILL.md` and executing its workflow; state is carried by the workspace
-   files, not chat.
+   **`/rite-temper`** → `/rite-define` → **`/rite-vet`** → `/rite-build` (loop until all slices
+   built; `tick-afk.sh` each) → `/rite-prove` → `/rite-polish` → `/rite-review` → `/rite-seal`.
+   Run each by Reading its `SKILL.md` and executing its workflow; state is carried by the
+   workspace files, not chat.
 5. **Apply stop conditions at every gate** ([reference/stop-conditions.md](reference/stop-conditions.md)):
    on hard-risk / blocking / escalating / NO-GO / budget-exhausted / still-low-confidence
    → write `state.md` (`Status`, `Next step`), surface *why*, and **STOP**.
@@ -65,7 +71,7 @@ blocking / escalating gates, and any NO-GO still pause.
 A phase-by-phase progress log, then the final status:
 ```
 Autocomplete: <slug>
-spec ✓  temper ✓ (mode <m> | skipped)  define ✓  build ✓ (N slices)  prove ✓  polish ✓  review ✓  seal: GO
+spec ✓  temper ✓ (mode <m> | skipped)  define ✓  vet ✓ (floor <band> | skipped)  build ✓ (N slices)  prove ✓  polish ✓  review ✓  seal: GO
 → SHIPPED  <sha> on <branch>            (--ship)
    — or —
 → STOPPED — awaiting human at <phase>: <reason>

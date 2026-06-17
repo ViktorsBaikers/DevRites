@@ -20,8 +20,11 @@ survives compaction and new sessions:
 | `brief.md` | `/rite-spec` | one-line objective + definition of done |
 | `spec.md` | `/rite-spec` | what to build + why, placement, acceptance, gaps/decisions |
 | `references/` + `references.md` | `/rite-spec` | saved design refs — screenshots, Figma, video, links |
+| `strategy.md` | `/rite-temper` | strategic spec review (optional): scope mode, pre-mortem, dimension scores |
 | `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback |
 | `tasks.md` | `/rite-define` | ordered vertical slices, each tagged `Mode: AFK \| HITL` + `Gate` / `SLA` / `Checkpoint` when HITL |
+| `eng-review.md` | `/rite-vet` | engineering plan review (optional): scope challenge, axis findings, failure modes, parallelization |
+| `test-plan.md` | `/rite-vet` | build-readable coverage target: coverage diagram, per-gap test requirements, acceptance→test map (read by `/rite-build` + `/rite-prove`) |
 | `state.md` | every phase | phase, status, active slice + slice mode, risk, next step (the cursor); plus `Awaiting human` block when paused (run mode is derived from `.devrites/AFK`, not stored here) |
 | `questions.md` | every phase | append-only Q&A — qid, slice, gate, status (`open` / `answered` / `dropped`), proposed answer, raised/answered timestamps |
 | `decisions.md` / `assumptions.md` | every phase | running logs |
@@ -272,9 +275,9 @@ full list.
 /rite-autocomplete "add CSV export for admins" --max-slices 8
   → vague idea → runs devrites-interview once, up front (the only interactive
     window), to ~95% confidence
-  → arms AFK, then drives every phase in order: /rite-spec → /rite-define →
-    /rite-build ×N → /rite-prove → /rite-polish → /rite-review → /rite-seal
-    (→ /rite-ship too when --ship is set)
+  → arms AFK, then drives every phase in order: /rite-spec → /rite-temper →
+    /rite-define → /rite-vet → /rite-build ×N → /rite-prove → /rite-polish →
+    /rite-review → /rite-seal (→ /rite-ship too when --ship is set)
   → at each soft gate, picks the option the relevant specialist/reviewer
     favours and records the rationale in decisions.md (never silently)
   → seal returns GO → autocomplete STOPS (default) and hands off to /rite-ship

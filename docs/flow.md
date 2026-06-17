@@ -229,8 +229,11 @@ erDiagram
     WORKSPACE ||--|| state : has
     WORKSPACE ||--|| brief : has
     WORKSPACE ||--|| spec : has
+    WORKSPACE ||--o| strategy : "has (optional — from /rite-temper)"
     WORKSPACE ||--|| plan : "has (from /rite-define)"
     WORKSPACE ||--|| tasks : "has — slices tagged Mode + Gate"
+    WORKSPACE ||--o| eng-review : "has (optional — from /rite-vet)"
+    WORKSPACE ||--o| test-plan : "has (from /rite-vet; build + prove read it)"
     WORKSPACE ||--o{ references : "has (design refs)"
     WORKSPACE ||--o| design-brief : "has (UI features — from /rite-spec via devrites-ux-shape; the build target)"
     WORKSPACE ||--|| questions : "has — qid, gate, status (open/answered/dropped)"
@@ -283,12 +286,13 @@ skills (`prototype`, `handoff`, `triage`, `diagnose`). Visibility is the
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true) — 18 skills"]
+    subgraph Public["Public (user-invocable: true) — 19 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
         RT[/rite-temper/]
         R3[/rite-define/]
+        RV[/rite-vet/]
         R4[/rite-plan/]
         R5[/rite-build/]
         R6[/rite-prove/]
@@ -319,7 +323,7 @@ flowchart TB
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
-    class R1,R2,R3,R4,R5,R6,R7,R8,R9,R12,R13,R10,R11,IPT,D1,D2,D3 pub
+    class R1,R2,RT,R3,RV,R4,R5,R6,R7,R8,R9,R12,R13,R10,R11,IPT,D1,D2,D3 pub
     class I1,I2,I3,I4,I5,I6,I7,I8,I9 int
 ```
 

@@ -48,7 +48,8 @@ pull these via `Read` when relevant:
 0. Read `.claude/rules/core.md` first (the always-on operating rules); pull the
    on-demand rules above when relevant.
 1. **Confirm the gate** (all slices built). Read `spec.md` (acceptance criteria +
-   "Commands discovered"), `tasks.md`, `state.md`, and the full `git diff`.
+   "Commands discovered"), `tasks.md`, `state.md`, `test-plan.md` if present (the vetted
+   coverage target from `/rite-vet`), and the full `git diff`.
 2. **Discover commands** if not recorded —
    [test-command-discovery](reference/test-command-discovery.md): README, package
    scripts, Makefile, CI configs, Gemfile/Rakefile, pyproject, go.mod, Cargo.toml.
@@ -59,7 +60,9 @@ pull these via `Read` when relevant:
    (`devrites-browser-proof`): routes, viewports, screenshots (opened + described),
    console, network, interaction paths, and design-reference match if references exist.
 5. **Map results to acceptance** — walk `spec.md` acceptance criteria; note which are now
-   proven and which aren't.
+   proven and which aren't. If `test-plan.md` exists, also walk its acceptance→test map and
+   per-gap requirements — a planned test (especially a regression-Critical) with no covering
+   result is an unproven gap, not a pass.
 6. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. Reproduce → isolate → fix within scope → re-run; if a fix
    would exceed scope, record a blocker.
