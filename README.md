@@ -58,6 +58,7 @@ memory). Both hit the same skill — `/rite spec foo` ≡ `/rite-spec foo`.
 | 7 | SEAL | `/rite seal` | [`/rite-seal`](pack/.claude/skills/rite-seal/SKILL.md) | GO / NO-GO decision (no git) |
 | 8 | SHIP | `/rite ship` | [`/rite-ship`](pack/.claude/skills/rite-ship/SKILL.md) | type-GO + commit/push/tag, then archive + close |
 | — | RESUME | `/rite resolve` | [`/rite-resolve`](pack/.claude/skills/rite-resolve/SKILL.md) | answer a HITL gate, clears `Awaiting human`, resumes |
+| — | AUTO | `/rite autocomplete` | [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md) | run the whole lifecycle unattended (`--ship` to push) |
 
 If implementation reveals the plan is wrong, the **Spec Drift Guard** stops
 the build, records the drift, asks you when product behavior changes, and
@@ -290,11 +291,11 @@ The pack ships **25 skills total** — 17 user-invocable `rite-*` workflow + uti
 
 **Two invocation forms.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
-**Custom pinned aliases** (optional). Add your own one-word shortcuts to any `rite-*` skill at runtime with `scripts/pin.sh` — useful for muscle-memory commands like `/b` → `/rite-build` or `/ship` → `/rite-seal`. The wrapper is a thin delegate (same shape the installer uses for `--short-aliases=all`); pinned aliases are manifest-tracked so `./uninstall.sh` cleans them up.
+**Custom pinned aliases** (optional). Add your own one-word shortcuts to any `rite-*` skill at runtime with `scripts/pin.sh` — useful for muscle-memory commands like `/b` → `/rite-build` or `/ship` → `/rite-ship`. The wrapper is a thin delegate (same shape the installer uses for `--short-aliases=all`); pinned aliases are manifest-tracked so `./uninstall.sh` cleans them up.
 
 ```bash
 ./scripts/pin.sh add b rite-build      # /b == /rite-build
-./scripts/pin.sh add ship rite-seal    # /ship == /rite-seal
+./scripts/pin.sh add ship rite-ship    # /ship == /rite-ship
 ./scripts/pin.sh list                  # show currently-pinned aliases
 ./scripts/pin.sh remove b              # drop the alias
 ```
