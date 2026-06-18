@@ -1,0 +1,26 @@
+{
+  "skill": "rite-vet",
+  "description": "Trigger eval for /rite-vet — the engineering review of a defined plan before build (scope challenge + architecture/code-quality/test-coverage/performance lenses). Must fire on plan-review intent; must NOT fire for the spec's strategy (rite-temper), one mid-build decision (devrites-doubt), a code diff (rite-review), the final gate (rite-seal), or initial planning (rite-define).",
+  "queries": [
+    {"text": "/rite-vet", "expected": "should_trigger", "rationale": "Direct slash-command invocation."},
+    {"text": "/rite vet", "expected": "should_trigger", "rationale": "Menu form of the same skill."},
+    {"text": "vet the plan before we build", "expected": "should_trigger", "rationale": "Canonical trigger phrase from the description."},
+    {"text": "do an engineering review of this plan", "expected": "should_trigger", "rationale": "Engineering-review intent on a plan."},
+    {"text": "review the architecture in the plan before I start coding", "expected": "should_trigger", "rationale": "Architecture review of the plan, pre-build."},
+    {"text": "lock in the implementation plan", "expected": "should_trigger", "rationale": "Lock-in-the-plan trigger."},
+    {"text": "is this plan over-engineered, can we reuse instead of rebuild?", "expected": "should_trigger", "rationale": "Scope challenge / reuse-vs-rebuild is rite-vet's §0."},
+    {"text": "check the test coverage design of the plan before building", "expected": "should_trigger", "rationale": "Test-coverage-design axis, pre-build."},
+    {"text": "any performance or failure-mode risks in this plan?", "expected": "should_trigger", "rationale": "Performance + failure-mode axes of the plan review."},
+    {"text": "we have plan.md and tasks.md — sanity-check the engineering before /rite-build", "expected": "should_trigger", "rationale": "Plan exists; engineering check before build is exactly rite-vet."},
+    {"text": "get a different-model second opinion on the plan", "expected": "should_trigger", "rationale": "rite-vet --cross-model adds a different-model pass."},
+    {"text": "the plan is defined, what's the right way to build it?", "expected": "should_trigger", "rationale": "\"Right way to build it\" is vet's job (vs temper's \"right thing\")."},
+    {"text": "is this the right, ambitious-enough thing to build?", "expected": "should_not_trigger", "rationale": "Strategy/ambition on the spec is /rite-temper, not vet."},
+    {"text": "are we sure this one auth decision in the slice is safe?", "expected": "should_not_trigger", "rationale": "One mid-build decision is devrites-doubt, not a plan review."},
+    {"text": "review my diff before I seal", "expected": "should_not_trigger", "rationale": "Reviewing written code is /rite-review, not the plan."},
+    {"text": "GO or NO-GO — is it safe to ship?", "expected": "should_not_trigger", "rationale": "Final gate is /rite-seal."},
+    {"text": "break the approved spec into task slices", "expected": "should_not_trigger", "rationale": "Initial planning is /rite-define; vet runs after."},
+    {"text": "spec this new feature out", "expected": "should_not_trigger", "rationale": "Spec authoring is /rite-spec."},
+    {"text": "what's the weather in Riga today?", "expected": "should_not_trigger", "rationale": "Unrelated; no DevRites skill should fire."},
+    {"text": "rename this variable across the file", "expected": "should_not_trigger", "rationale": "A trivial edit, not a plan review."}
+  ]
+}

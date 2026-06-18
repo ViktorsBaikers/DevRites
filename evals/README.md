@@ -15,9 +15,10 @@ The methodology mirrors Anthropic's `skill-creator` 2.0:
 
 **Two CI paths:**
 
-- **`ci.yml`** runs `scripts/run-evals.sh` on every PR — schema + shape
-  validation only, no API key required. Catches broken JSON, wrong query
-  counts, and missing required keys.
+- **`ci.yml`** runs `scripts/run-evals.sh` (trigger-eval schema + shape) **and**
+  `scripts/run-outcome-evals.sh` (the deterministic outcome grader on the golden
+  fixtures) on every PR — no API key required. Catches broken JSON, wrong query
+  counts, missing keys, and a golden workspace that no longer grades as expected.
 - **`evals.yml`** runs `scripts/eval-runner.py` against the live Anthropic
   API on a nightly schedule (and on PRs that carry the `run-evals` label).
   Requires the repo secret `ANTHROPIC_API_KEY`. For each query, the runner
@@ -41,6 +42,26 @@ CLAUDE_API_KEY=sk-... python3 scripts/eval-runner.py \
 
 Override the model with `DEVRITES_EVAL_MODEL=claude-...`. Pass
 `--summary-file out.jsonl` to dump a machine-readable per-skill report.
+
+## Outcome evals (deterministic grader)
+
+Trigger evals test whether the right skill *fires*. They do **not** test whether
+a finished run reached a *shippable* state — the product claim ("won't claim done
+without proof"). `scripts/grade-feature.sh` is a deterministic grader that reads
+only the committed Markdown artifacts of a workspace and checks the GO invariants
+from `rite-seal/reference/{seal-template,go-no-go,final-evidence}.md`: sealed GO,
+every acceptance criterion checked, no blockers, evidence present, review present,
+no open `gate: validating`, and a shippable `state.md` phase/status.
+
+Two golden fixtures pin it — `evals/golden/shippable-feature/` (must grade GO) and
+`evals/golden/blocked-feature/` (must grade NO-GO, see-it-fail-first):
+
+```bash
+scripts/run-outcome-evals.sh
+```
+
+No API key required; runs in CI. (Live evidence-freshness by mtime is a separate
+runtime gate: `pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh`.)
 
 ## File schema
 
