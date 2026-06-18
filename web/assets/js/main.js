@@ -36,17 +36,20 @@
     reveals.forEach(function (el) { io.observe(el); });
   }
 
-  /* ---- copy button ---- */
-  var copyBtn = document.getElementById("copyBtn");
-  if (copyBtn && navigator.clipboard) {
-    var cmd = document.getElementById("installCmd");
-    var label = copyBtn.querySelector("span");
-    copyBtn.addEventListener("click", function () {
-      navigator.clipboard.writeText(cmd.innerText.trim()).then(function () {
-        copyBtn.classList.add("copied");
-        var prev = label.textContent;
-        label.textContent = "copied";
-        setTimeout(function () { copyBtn.classList.remove("copied"); label.textContent = prev; }, 1800);
+  /* ---- copy buttons (hero + install; data-copy wins, else #installCmd text) ---- */
+  if (navigator.clipboard) {
+    document.querySelectorAll(".copybtn").forEach(function (btn) {
+      var label = btn.querySelector("span");
+      btn.addEventListener("click", function () {
+        var text = btn.getAttribute("data-copy");
+        if (!text) { var cmd = document.getElementById("installCmd"); text = cmd ? cmd.innerText.trim() : ""; }
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(function () {
+          btn.classList.add("copied");
+          var prev = label ? label.textContent : "";
+          if (label) label.textContent = "copied";
+          setTimeout(function () { btn.classList.remove("copied"); if (label) label.textContent = prev; }, 1800);
+        });
       });
     });
   }
@@ -55,7 +58,7 @@
   var console_ = document.getElementById("console");
   var fill = document.getElementById("railFill");
   var nodes = console_ ? console_.querySelectorAll(".node") : [];
-  var current = 2; // build = index 2 (3/5)
+  var current = 4; // build = index 4 in the 10-phase rail (spec·temper·define·vet·build…)
   var cmdEl = document.getElementById("termCmd");
   var cursor = document.getElementById("termCursor");
   var out = document.getElementById("termOut");
@@ -115,7 +118,7 @@
   }
 
   /* ---- pipeline rail: interactive hover on workflow phases ---- */
-  document.querySelectorAll('[data-rail="static"] .node').forEach(function (node, idx) {
+  document.querySelectorAll('[data-rail="static"] .node').forEach(function (node) {
     node.tabIndex = 0;
   });
 
