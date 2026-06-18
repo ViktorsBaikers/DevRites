@@ -2,6 +2,17 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.6.0...v1.7.0) (2026-06-18)
+
+### Features
+
+* **scripts:** add outcome grader and MCP server ([6b7263c](https://github.com/ViktorsBaikers/DevRites/commit/6b7263cf220508dcb567a7db6f79f619ea185249))
+* **skills:** add state gates, devrites CLI, and Gotchas sections ([25eaa49](https://github.com/ViktorsBaikers/DevRites/commit/25eaa49e55fce2b22734e8c977dd3a59db73c0d1))
+
+### Documentation
+
+* **docs:** sync README, CONTRIBUTING, SECURITY with changes ([cc89594](https://github.com/ViktorsBaikers/DevRites/commit/cc895942a2a12bcff056ca44c957bf39349f00ca))
+
 ## [1.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.5.1...v1.6.0) (2026-06-18)
 
 ### Features
