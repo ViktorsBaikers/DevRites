@@ -40,6 +40,9 @@ jobs:
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
 
+      - name: Validate outcome evals (deterministic grader)
+        run: bash scripts/run-outcome-evals.sh
+
       - name: Anti-slop detector (advisory)
         run: bash scripts/devrites-detect.sh || true
 
