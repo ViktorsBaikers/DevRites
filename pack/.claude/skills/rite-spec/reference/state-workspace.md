@@ -101,7 +101,7 @@ level in `evidence.md` (recorded by `/rite-prove`), not per slice — there is n
 Presence of the file `.devrites/AFK` puts DevRites into **AFK mode**: skills that would
 normally pause for the user instead log to `questions.md` (when the gate severity allows
 it — see [`.claude/rules/afk-hitl.md`](../../../rules/afk-hitl.md)) and continue.
-`.devrites/AFK` presence is the **single source of truth** for run mode (`load-state.sh`
+`.devrites/AFK` presence is the **single source of truth** for run mode (the shared preamble
 derives it); skills re-read the sentinel at decision time rather than trusting a mirrored
 `state.md` field. The file content is optional YAML configuring loop discipline:
 

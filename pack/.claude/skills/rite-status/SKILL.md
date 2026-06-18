@@ -12,16 +12,19 @@ Read-only. Report where the active feature stands. **Do not run any phase.**
 
 ## Load state
 
-Run this snippet (one canonical command — resolves both pre-install and
-post-install layouts; default slug = `.devrites/ACTIVE`):
+Run this snippet (the shared DevRites preamble — one canonical command that
+resolves the install layouts: installed `.claude/` → plugin via `${CLAUDE_SKILL_DIR}`
+→ repo `pack/`, with a graceful fallback to reading `state.md`; default slug =
+`.devrites/ACTIVE`):
 
 ```bash
-S=.claude/skills/rite-status/scripts/load-state.sh
-[ -f "$S" ] || S=pack/.claude/skills/rite-status/scripts/load-state.sh
-bash "$S" [feature-slug]
+P=.claude/skills/devrites-lib/scripts/preamble.sh
+[ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+[ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+[ -f "$P" ] && bash "$P" [feature-slug] || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
 ```
 
-The script prints the active workspace's `state.md` and the list of artifacts
+The preamble prints the active workspace's `state.md` and the list of artifacts
 present. The `!`-prefix dynamic-context-injection idiom is **not** used here so
 the skill stays portable across harnesses; the script is the cross-harness
 mechanism.
@@ -34,7 +37,7 @@ Otherwise summarize from the loaded state, concisely:
 
 1. **Feature** + one-line objective (from `brief.md`).
 2. **Phase**, **active slice** + its slice mode (from `state.md`). **Run mode**
-   (`afk` / `hitl`) is derived from `.devrites/AFK` presence (the load-state.sh script
+   (`afk` / `hitl`) is derived from `.devrites/AFK` presence (the preamble
    already does this), not from a `state.md` field — present = `afk`, absent = `hitl`.
 3. **Status** — `running` / `awaiting_human` / `blocked` / `done`. If
    `awaiting_human`, render the `Awaiting human` block from `state.md` (qid, gate,

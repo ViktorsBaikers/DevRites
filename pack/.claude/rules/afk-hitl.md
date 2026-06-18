@@ -15,7 +15,7 @@ The contract is intentionally small: one sentinel, one queue, one verb.
   in `questions.md` instead of blocking, subject to the gate ceiling.
 
 `.devrites/AFK` presence is authoritative for run mode; gate-deciding skills re-read the
-sentinel at decision time (`load-state.sh` derives the mode from it). There is no
+sentinel at decision time (the shared preamble derives the mode from it). There is no
 `state.md` run-mode field to drift out of sync.
 
 ## The sentinel — `.devrites/AFK`

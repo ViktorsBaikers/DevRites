@@ -2,7 +2,7 @@
 
 `/rite-resolve` is the single canonical writer for `questions.md` `status` flips and
 `state.md` `Awaiting human` clearance. This file is the reference for the three input
-shapes, the batch file format, and the rules the underlying `scripts/resolve.sh` obeys.
+shapes, the batch file format, and the rules the underlying `devrites-lib/scripts/resolve.sh` obeys.
 
 ## Three input shapes
 

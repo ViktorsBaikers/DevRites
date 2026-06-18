@@ -33,7 +33,16 @@ invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md
   the spec edits); the reviewer agent is read-only.
 
 ## Workflow
-0. **Read `.claude/rules/core.md`**, then the workspace: `spec.md` (+ `decisions.md`,
+0. **Read `.claude/rules/core.md`**. Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
+   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
+   instead of re-deriving state from raw Markdown:
+   ```bash
+   P=.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   ```
+   Then read the workspace: `spec.md` (+ `decisions.md`,
    `assumptions.md`, `design-brief.md` if UI), `state.md`. Require `Spec gate: passed` — else
    STOP → `/rite-spec`. If a plan already exists, scope changes route through `/rite-plan
    repair` (record in `drift.md`), not a blind spec edit.
