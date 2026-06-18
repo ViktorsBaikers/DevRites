@@ -72,6 +72,25 @@ per-skill catalog with triggers + I/O.
 
 ## Design rationale
 
+### Why a shared orientation preamble (`devrites-lib`)
+Every workspace-operating skill's first move is the same: orient on the active feature —
+slug, phase, artifacts present, run mode, open-question tally — before acting. Re-deriving
+that from raw Markdown in each skill was duplicated (step-0 prose across ~15 skills),
+token-heavy (counting open gates meant re-reading the append-only `questions.md`, which
+only grows), and error-prone (a missed AFK sentinel or a miscounted gate changes behavior).
+So orientation is computed once by one read-only script, `devrites-lib/scripts/preamble.sh`,
+which prints a compact digest each skill reads at step 0. `devrites-lib` is an internal
+library skill (`user-invocable: false`, not a command) that houses the cross-cutting
+scripts — the preamble plus the state mutators `tick-afk.sh` / `resolve.sh` /
+`close-out.sh` — *inside* `skills/` so they ship on both the bash-installer and plugin
+channels. Skills resolve them with a three-layout snippet (installed `.claude/` → plugin
+`${CLAUDE_SKILL_DIR}` → repo `pack/`). Bundled-script execution is reliable on the
+bash-installer channel (CWD-relative `.claude/`); Claude Code does **not** expose a stable
+script path to skill-invoked bash on the plugin channel (only to hooks — confirmed against
+`anthropics/claude-code` issues #48230 / #38699), so there the preamble is best-effort via
+`${CLAUDE_SKILL_DIR}` and degrades gracefully to reading `state.md` directly. The preamble is read-only; all mutation stays in
+the dedicated scripts.
+
 ### Why `/engine` was rejected
 A single `/engine` (or `/devrites`) mega-command would load every phase's instructions
 into one context, creating constant context pressure and hiding the intent of each
