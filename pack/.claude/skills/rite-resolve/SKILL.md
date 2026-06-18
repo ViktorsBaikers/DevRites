@@ -37,13 +37,22 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
   through the Spec Drift Guard (`/rite-plan repair`) **after** writing the answer — do
   not modify `spec.md` / `plan.md` inside this skill.
 - **The script is the source of truth.** Always invoke
-  `scripts/resolve.sh` — it keeps `questions.md` + `state.md` consistent and emits the
+  `devrites-lib/scripts/resolve.sh` — it keeps `questions.md` + `state.md` consistent and emits the
   next-action recommendation. Manual edits are allowed but not by this skill.
 
 ## Workflow
 
 0. **Read `.claude/rules/core.md`** (operating rules + persistence discipline) before
    touching the workspace.
+   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
+   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
+   instead of re-deriving state from raw Markdown:
+   ```bash
+   P=.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   ```
 1. **Parse arguments.** `$ARGUMENTS` is one of:
    - `<qid> "<answer>"` — answer the single open question.
    - `--drop <qid>` (optional `"<reason>"`) — mark the question `dropped`; record
@@ -58,8 +67,8 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
 3. **Render preview.** Echo the qid, the question, the proposed answer (if any), the
    user's answer, and which slice unblocks. Stop here and ask `confirm? (y/N)` **unless**
    the answer was provided non-interactively via `--batch`.
-4. **Mutate.** Run `bash .claude/skills/rite-resolve/scripts/resolve.sh` (resolves both
-   pre-install and post-install layouts) with the same arguments. The script:
+4. **Mutate.** Run `bash .claude/skills/devrites-lib/scripts/resolve.sh` with the same
+   arguments. The script:
    - flips the qid's `status` to `answered` / `dropped` and stamps `answered_at` + `answer`;
    - if the qid is in `state.md`'s `Awaiting human` block (single-question pause), clears
      that block and sets `Status: running`;

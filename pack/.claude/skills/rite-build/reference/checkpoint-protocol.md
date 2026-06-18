@@ -86,7 +86,7 @@ In one atomic write (one `state.md` rewrite + one `questions.md` append):
 
 Format: `q-YYYY-MM-DD-NNN`, where `NNN` is the next sequential integer for that date in
 `questions.md`. For the write side, call
-`bash .claude/skills/rite-resolve/scripts/resolve.sh next-qid <questions.md path>` — it
+`bash .claude/skills/devrites-lib/scripts/resolve.sh next-qid <questions.md path>` — it
 counts existing `## q-YYYY-MM-DD-` headers for today, prints the next zero-padded id, and
 refuses to print an id whose header already exists. Use that id verbatim so each qid is
 unique within the date.

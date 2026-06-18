@@ -47,6 +47,15 @@ pull these via `Read` when relevant:
 ## Workflow
 0. Read `.claude/rules/core.md` first (the always-on operating rules); pull the
    on-demand rules above when relevant.
+   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
+   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
+   instead of re-deriving state from raw Markdown:
+   ```bash
+   P=.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   ```
 1. **Confirm the gate** (all slices built). Read `spec.md` (acceptance criteria +
    "Commands discovered"), `tasks.md`, `state.md`, `test-plan.md` if present (the vetted
    coverage target from `/rite-vet`), and the full `git diff`.

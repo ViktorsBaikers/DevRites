@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# load-state-questions.sh — assert load-state.sh tallies open questions correctly
+# load-state-questions.sh — assert the shared preamble tallies open questions correctly
 # when question blocks are adjacent (back-to-back `## q-` headers with no blank
 # section between them). The earlier awk dropped every open question except the
 # last in a run of adjacent blocks; this test pins the regression.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-LOADER="$ROOT/pack/.claude/skills/rite-status/scripts/load-state.sh"
+LOADER="$ROOT/pack/.claude/skills/devrites-lib/scripts/preamble.sh"
 fail=0
 ok() { printf '  ok: %s\n' "$*"; }
 no() { printf '  FAIL: %s\n' "$*"; fail=1; }
@@ -61,7 +61,7 @@ proposed: none
 raised_at: 2026-06-17T00:04:00Z
 EOF
 
-# load-state.sh resolves paths relative to CWD (.devrites/ACTIVE), so run inside TMP.
+# preamble.sh resolves paths relative to CWD (.devrites/ACTIVE), so run inside TMP.
 out="$(cd "$TMP" && bash "$LOADER")"
 
 line="$(printf '%s\n' "$out" | grep 'open:')"

@@ -27,6 +27,15 @@ reshaping slice cadence or DoD criteria.
 
 ## Workflow
 0. Read `.claude/rules/core.md` (operating rules) before reshaping anything.
+   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
+   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
+   instead of re-deriving state from raw Markdown:
+   ```bash
+   P=.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   ```
 1. Read `spec.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`, and the current
    `git diff` (if a repo). Read `decisions.md` and `assumptions.md`. If a code-intelligence
    index is available — `codegraph` (`.codegraph/` / `codegraph_*` tools) or `graphify`

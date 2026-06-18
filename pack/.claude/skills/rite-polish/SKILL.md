@@ -26,6 +26,15 @@ don't load both up front.
 0. **Read** `.claude/rules/core.md` first (the always-on operating rules). The
    per-phase rule files (`coding-style.md`, `error-handling.md`, …) load on demand
    from `reference/code.md` / `reference/ui.md` when their phase runs.
+   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
+   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
+   instead of re-deriving state from raw Markdown:
+   ```bash
+   P=.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   ```
 1. **Read** `state.md`, `touched-files.md`, and the `git diff` for the active
    workspace (or `$ARGUMENTS` if a target was given).
 2. **Detect UI scope** — UI is touched if the diff or `touched-files.md`

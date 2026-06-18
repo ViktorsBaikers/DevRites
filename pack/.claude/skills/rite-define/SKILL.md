@@ -33,6 +33,17 @@ the plan:
 
 ## Workflow
 0. **Read `.claude/rules/core.md`** — the always-on operating rules and anti-rationalizations.
+   Then **run the shared orientation preamble** — it confirms the active feature and which
+   artifacts exist (it prints `state.md`, the artifacts present, the run mode, and the
+   open-question tally):
+   ```bash
+   P=.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   ```
+   If there is no active workspace, no `spec.md`, or its readiness gate hasn't passed →
+   **STOP** and tell the user to run `/rite-spec <feature>` first.
 1. **Read the spec** — `spec.md` (objective, requirements, acceptance, **placement**,
    design references, gaps/decisions), plus `references.md`, `decisions.md`,
    `assumptions.md`, **`strategy.md` if present** (the scope mode, deferred / out-of-scope

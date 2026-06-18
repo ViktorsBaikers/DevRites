@@ -29,7 +29,16 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
   the `.md` files.
 
 ## Workflow
-1. Read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`. Confirm
+1. **Run the shared orientation preamble** — it prints `state.md`, the artifacts present,
+   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
+   instead of re-deriving state from raw Markdown:
+   ```bash
+   P=.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   ```
+   Then read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`. Confirm
    the verdict is **GO** and the evidence is fresh. If not GO or evidence is stale →
    stop with the single resume command.
 2. Build the git plan from `git-workflow.md` + the project's own convention: the
@@ -46,7 +55,7 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    follow-ups.
 6. **Close the task** ([reference/close-out.md](reference/close-out.md)): set
    `state.md` phase `done`, then run
-   `bash .claude/skills/rite-ship/scripts/close-out.sh <slug>` to archive
+   `bash .claude/skills/devrites-lib/scripts/close-out.sh <slug>` to archive
    `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` and clear `.devrites/ACTIVE`.
    Every `.md` is preserved in the archive.
 
