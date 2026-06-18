@@ -47,7 +47,17 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
   the weakest finding, not an average. Record every call's *why*.
 
 ## Workflow
-0. **Read `.claude/rules/core.md`**, then the workspace: `plan.md`, `tasks.md`, `spec.md`
+0. **Read `.claude/rules/core.md`** first.
+   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
+   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
+   instead of re-deriving state from raw Markdown:
+   ```bash
+   P=.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   ```
+   Then the workspace: `plan.md`, `tasks.md`, `spec.md`
    (for intent + acceptance), `strategy.md` (if `/rite-temper` ran), `decisions.md`,
    `assumptions.md`, `design-brief.md` (if UI), `state.md`. Require a `plan.md` whose
    Readiness gate passes (or `Plan approved`) — else STOP → `/rite-define`. Prefer the

@@ -15,6 +15,16 @@ the same user after `/clear` — can pick the work up without re-reading the tra
 Read `.claude/rules/core.md` first — its "Persistence before stopping" discipline is
 exactly what this skill executes. The other rule files load on demand.
 
+Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
+the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
+instead of re-deriving state from raw Markdown:
+```bash
+P=.claude/skills/devrites-lib/scripts/preamble.sh
+[ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+[ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+[ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+```
+
 ## Where to write
 
 - **Active feature exists** → `.devrites/work/<slug>/handoff.md` (overwrites the previous

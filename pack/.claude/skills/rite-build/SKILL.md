@@ -43,8 +43,16 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   prevents.
 
 ## Workflow ([one-slice-cycle](reference/one-slice-cycle.md))
-0. **Rules + AFK + readiness check.** Read `.claude/rules/core.md` first. Then read
-   `state.md`. If `Status == awaiting_human` → **STOP**, tell the user to run
+0. **Rules + AFK + readiness check.** Read `.claude/rules/core.md` first. Then **run the
+   shared orientation preamble** — it prints `state.md`, the artifacts present, the run
+   mode (HITL/AFK), and the open-question tally by gate, deterministically:
+   ```bash
+   P=.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   ```
+   Orient from its digest. If `Status == awaiting_human` → **STOP**, tell the user to run
    `/rite-resolve <qid> "<answer>"`. If `state.md` has no `Plan approved: <iso>` field
    → **STOP**, tell the user the plan isn't approved yet (`/rite-define` writes it when
    the human confirms). If `.devrites/AFK` is present, re-derive the remaining AFK budget
@@ -52,9 +60,11 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    `max_slices` on the first AFK build); if it is `0` → **STOP** (forced HITL stop; raise
    the count in `state.md` or remove the sentinel to continue). See
    [`reference/afk-discipline.md`](reference/afk-discipline.md).
-1. Read `spec.md`, `plan.md`, `tasks.md`, `state.md`, `assumptions.md`, `drift.md`,
-   `questions.md`, and `test-plan.md` if present (the vetted coverage target from
-   `/rite-vet` — the slice's tests come from here when it exists).
+1. Read `spec.md`, `plan.md`, `tasks.md`, `assumptions.md`, `drift.md`, and `test-plan.md`
+   if present (the vetted coverage target from `/rite-vet` — the slice's tests come from
+   here when it exists). `state.md` and the open-`questions.md` tally are already in the
+   preamble digest from step 0 — re-read `questions.md` only for the full text of a flagged
+   blocking question.
    If a **blocking `[NEEDS CLARIFICATION]`** remains or the spec/plan readiness gates
    don't pass, stop → `/rite-spec` (to resolve) or `/rite-plan` (to repair). Don't build
    on an unresolved spec.
@@ -109,7 +119,7 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). **Evidence is the
    wright's real command output, not its say-so.** Capture per
    [evidence-standard](reference/evidence-standard.md). If `.devrites/AFK` is present, decrement
-   the budget by running `bash .claude/skills/rite-build/scripts/tick-afk.sh <state.md path>` —
+   the budget by running `bash .claude/skills/devrites-lib/scripts/tick-afk.sh <state.md path>` —
    it decrements `state.md`'s `AFK slices remaining` field, prints the new value, and exits `3`
    when it hits 0. **Exit 3 → STOP** (forced HITL stop; the cap is exhausted). Never rewrite
    `.devrites/AFK` `max_slices` in place — it is read-only initial budget.

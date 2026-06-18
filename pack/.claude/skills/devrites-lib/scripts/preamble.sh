@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
-# Print the active DevRites feature's state — used by /rite-status.
+# DevRites orientation preamble — print the active feature's workspace state.
+# Run first (step 0) by every workspace-operating rite-* skill via the standard
+# resolution snippet. Read-only; never mutates workspace files.
 # Portable across harnesses (no Claude-Code-specific `!`-prefix syntax in SKILL.md).
 #
-# Usage: load-state.sh [slug]
+# Usage: preamble.sh [slug]
 #   slug — optional override; defaults to .devrites/ACTIVE
 #
-# Output: structured plain text the SKILL.md asks the model to summarize.
+# Paths resolve relative to CWD (the project root), matching the rest of the
+# pack; do not anchor to the git root here — callers/tests run it with CWD set
+# to the workspace root, which is not always a git repo.
+#
+# Output: structured plain text the SKILL.md asks the model to orient from.
 
 set -u
 slug="${1:-$(cat .devrites/ACTIVE 2>/dev/null)}"
@@ -24,7 +30,7 @@ fi
 
 echo
 echo "### artifacts present"
-for f in brief spec plan tasks questions decisions assumptions drift touched-files evidence browser-evidence design-brief polish-report review seal; do
+for f in brief spec references strategy plan tasks eng-review test-plan questions decisions assumptions drift touched-files evidence browser-evidence design-brief polish-report review seal ship handoff; do
   if [ -f "$d/$f.md" ]; then
     echo "  ✓ $f.md"
   fi

@@ -44,7 +44,16 @@ blocking / escalating gates, and any NO-GO still pause.
   pause. Cross-model is off unless `--cross-model` was armed.
 
 ## Workflow
-1. **Parse args.** The idea + flags: `--ship` / `--yolo` (auto-confirm the final
+1. **Orient + parse args.** Run the shared orientation preamble — it prints `state.md`, the artifacts present,
+the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
+instead of re-deriving state from raw Markdown:
+```bash
+P=.claude/skills/devrites-lib/scripts/preamble.sh
+[ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
+[ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
+[ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+```
+   The idea + flags: `--ship` / `--yolo` (auto-confirm the final
    type-GO), `--max-slices N` (OPTIONAL *lower* safety cap for a partial run; default =
    the plan's slice count, i.e. run all planned slices).
 2. **Clarify up front.** If the idea is underspecified, run `devrites-interview` to
