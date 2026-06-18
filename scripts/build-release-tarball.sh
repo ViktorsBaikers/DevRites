@@ -29,6 +29,7 @@ PAYLOAD=(
   pack
   .claude-plugin
   scripts
+  mcp
   docs
   install.sh
   uninstall.sh

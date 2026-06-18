@@ -12,14 +12,14 @@ section() { printf '\n=== %s ===\n' "$1"; }
 bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
 good() { printf 'ok: %s\n' "$*"; }
 
-PUBLIC="rite rite-spec rite-define rite-plan rite-build rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-resolve rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
+PUBLIC="rite rite-spec rite-temper rite-define rite-vet rite-plan rite-build rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-resolve rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
 INTERNAL="devrites-interview devrites-source-driven devrites-doubt devrites-ux-shape devrites-frontend-craft devrites-browser-proof devrites-debug-recovery devrites-api-interface devrites-audit"
-AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst devrites-frontend-reviewer devrites-security-auditor devrites-performance-reviewer devrites-doubt-reviewer devrites-simplifier-reviewer"
+AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst devrites-frontend-reviewer devrites-security-auditor devrites-performance-reviewer devrites-doubt-reviewer devrites-simplifier-reviewer devrites-strategy-reviewer devrites-plan-reviewer devrites-slice-wright"
 
 # ---- 1. bash -n on every shell script ------------------------------------
 section "bash syntax (bash -n)"
 SH_LIST="$ROOT/install.sh $ROOT/uninstall.sh"
-for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh; do [ -f "$f" ] && SH_LIST="$SH_LIST $f"; done
+for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do [ -f "$f" ] && SH_LIST="$SH_LIST $f"; done
 for f in $SH_LIST; do
   if bash -n "$f" 2>/tmp/dr_synerr; then good "syntax ${f#$ROOT/}"; else bad "syntax ${f#$ROOT/}: $(cat /tmp/dr_synerr)"; fi
 done
@@ -34,6 +34,19 @@ if command -v python3 >/dev/null 2>&1; then
   done
 else
   echo "skip: python3 not found"
+fi
+
+# ---- 2b. MCP server syntax (node --check) --------------------------------
+section "mcp server syntax (node --check)"
+if command -v node >/dev/null 2>&1; then
+  found=0
+  for f in "$ROOT"/mcp/*.mjs; do
+    [ -f "$f" ] || continue; found=1
+    if node --check "$f" 2>/tmp/dr_mjs; then good "node --check ${f#$ROOT/}"; else bad "node --check ${f#$ROOT/}: $(cat /tmp/dr_mjs)"; fi
+  done
+  [ "$found" -eq 0 ] && echo "skip: no mcp/*.mjs"
+else
+  echo "skip: node not found"
 fi
 
 # ---- 3. required skills exist, each with SKILL.md ------------------------
