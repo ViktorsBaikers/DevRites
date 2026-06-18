@@ -37,3 +37,9 @@ contract. Neither side blocks on the other.
 Before standing the interface, run `devrites-doubt` — boundary decisions are exactly the
 non-trivial kind worth an adversarial check. Record the contract + rationale in
 `decisions.md`.
+
+## Gotchas
+- Be conservative — you can add to a contract later, but removing or changing a field breaks every consumer.
+- Validate at the boundary; never trust caller-supplied IDs, roles, or prices.
+- A breaking change to an existing consumer is a user decision (and a `drift.md` event if unplanned), not a silent edit.
+- Match the project's existing endpoint/module conventions; a competing convention is a tax, not a design.

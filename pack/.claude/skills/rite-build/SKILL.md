@@ -52,6 +52,17 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
    [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
    ```
+   Then **run the readiness gate** — it enforces the step-0 stop conditions by exit code,
+   not by memory:
+   ```bash
+   G=.claude/skills/devrites-lib/scripts/readiness.sh
+   [ -f "$G" ] || G="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/readiness.sh"
+   [ -f "$G" ] || G=pack/.claude/skills/devrites-lib/scripts/readiness.sh
+   [ -f "$G" ] && { bash "$G"; echo "readiness rc=$?"; } || echo "(readiness gate unavailable — apply the prose checks below)"
+   ```
+   A non-zero `rc` is a hard STOP: `2` → `/rite-define` (plan not approved), `3` →
+   `/rite-resolve` (awaiting human), `4` → `/rite-plan` (blocked). The prose below is the
+   same gate for installs without the script.
    Orient from its digest. If `Status == awaiting_human` → **STOP**, tell the user to run
    `/rite-resolve <qid> "<answer>"`. If `state.md` has no `Plan approved: <iso>` field
    → **STOP**, tell the user the plan isn't approved yet (`/rite-define` writes it when

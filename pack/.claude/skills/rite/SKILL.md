@@ -68,6 +68,11 @@ inline in `/rite-seal` (see its `reference/parallel-dispatch.md`).
 3. **Unrecognized first token** → tell the user the known verbs and stop. Don't guess.
 4. **No active feature** and the user asked "where am I" or named no verb → point at `/rite spec <feature>` (or `/rite-spec`). Don't summarize state yourself — `/rite status` (or `/rite-status`) owns that.
 
+## Gotchas
+- No args → render the menu and stop. Don't execute a phase, read `state.md`, or summarize status — that's `/rite-status`.
+- Unrecognized first token → list the known verbs and stop; never guess which phase the user meant.
+- Pure pass-through: dispatch to the `rite-<verb>` skill and let it own the output; don't do the phase's work in the router.
+
 ## Menu
 
 ```

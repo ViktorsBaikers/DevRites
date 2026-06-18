@@ -10,6 +10,15 @@ Walk `spec.md` → "Acceptance criteria" one by one. For each:
 - A criterion "proven" only by reading the code is **not proven** — require a runtime/
   test artifact, or downgrade it.
 
+Tag each criterion `[ACn]` in `spec.md` and carry the same id onto its checked line in
+`seal.md`, then grade coverage deterministically — every spec criterion id must be checked:
+```bash
+A=.claude/skills/devrites-lib/scripts/check-acceptance.sh
+[ -f "$A" ] || A="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/check-acceptance.sh"
+[ -f "$A" ] || A=pack/.claude/skills/devrites-lib/scripts/check-acceptance.sh
+[ -f "$A" ] && bash "$A" .devrites/work/<slug>   # exit 1 = a criterion is uncovered/unproven → NO-GO
+```
+
 ## Cross-check the artifacts
 - `tasks.md`: are all slices in scope `built` AND is feature acceptance proven
   (`evidence.md`)? Acceptance proof lives at the feature level, not per slice — a slice
@@ -32,6 +41,14 @@ review-phase edit landed after `/rite-prove`), a fresh `/rite-prove` run is **RE
 before GO** — stale evidence is not proof. Compare the evidence timestamps against the
 touched-files mtimes; if any code edit is newer, the proof is stale and this is a NO-GO
 until re-proven. Record the fresh result.
+
+Run the deterministic check rather than eyeballing mtimes:
+```bash
+E=.claude/skills/devrites-lib/scripts/evidence-fresh.sh
+[ -f "$E" ] || E="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/evidence-fresh.sh"
+[ -f "$E" ] || E=pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh
+[ -f "$E" ] && bash "$E"   # exit 3 = STALE proof → NO-GO until /rite-prove re-runs
+```
 
 ## Output into seal.md
 The "Acceptance Criteria" and "Verification Evidence" sections of `seal.md` come
