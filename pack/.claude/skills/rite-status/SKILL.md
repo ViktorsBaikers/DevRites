@@ -77,6 +77,11 @@ or a future session should be able to pick the work up from the workspace
 If any item above fails, suggest `/rite-handoff` to compact chat-only
 context into the workspace before the session ends.
 
+## Gotchas
+- Read-only — never advance a phase or write to the workspace; that's the phase skills' job.
+- Report from the `.devrites/` files, not chat memory (it's gone after `/clear`).
+- Give the single next command, not a menu of options — an ambiguous next-action fails the handoff check.
+
 ## Output format
 
 ```

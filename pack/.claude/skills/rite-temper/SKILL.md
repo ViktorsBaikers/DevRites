@@ -1,6 +1,6 @@
 ---
 name: rite-temper
-description: Strategic review of a readied `spec.md` before planning — pick a scope mode (expand / selective / hold-rigor / reduce-to-MVP), run a pre-mortem, harden the spec, and fold the decisions back into `spec.md` / `decisions.md` / `assumptions.md` via the Spec Drift Guard, plus a persistent `strategy.md`. Use when the user says "temper this", "strategy review", "think bigger", "is this the right / ambitious-enough thing", "pre-mortem the spec", "scope check", "are we over/under-building", or before defining a big or risky feature. Optional for small work; always invoked (significance-gated — auto-skips low-stakes specs) inside `/rite-autocomplete`. Not for a rough idea (use `/rite-pressure-test`), one decision mid-build (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
+description: Strategic review of a readied `spec.md` before planning — pick a scope mode (expand / selective / hold-rigor / reduce-to-MVP), run a pre-mortem, harden the spec, and fold decisions back via the Spec Drift Guard plus a persistent `strategy.md`. Use when the user says "temper this", "strategy review", "think bigger", "scope check", "pre-mortem the spec", "are we over/under-building", or before defining a big or risky feature. Not for a rough idea (`/rite-pressure-test`), a mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
 argument-hint: "[feature-slug] [--mode expand|selective|hold|reduce]"
 user-invocable: true
 ---
@@ -10,8 +10,10 @@ user-invocable: true
 Take a readied spec and **temper** it: heat it (raise ambition on the *outcome*), then
 quench it (pre-mortem + prune the *solution surface*) — stronger and less brittle. The one
 DevRites step that decides scope/ambition on a written spec and folds the result into the
-canonical contract, so `/rite-define` plans the **hardened** spec. **Read the active
-workspace first**; if there's no readied `spec.md`, tell the user to run `/rite-spec`.
+canonical contract, so `/rite-define` plans the **hardened** spec. Optional for small work
+(significance-gated — auto-skips low-stakes specs), but always invoked inside
+`/rite-autocomplete`. **Read the active workspace first**; if there's no readied
+`spec.md`, tell the user to run `/rite-spec`.
 
 ## Rules consulted (read on demand from `.claude/rules/`)
 **Step 0:** Read `.claude/rules/core.md` first. Pull on demand: `patterns.md` +

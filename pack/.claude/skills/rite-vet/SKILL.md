@@ -1,6 +1,6 @@
 ---
 name: rite-vet
-description: Engineering review of a defined plan before any code — challenge implementation scope (reuse-vs-rebuild, minimum diff, complexity smell), review architecture / plan code-quality / test-coverage design / performance through senior-engineer lenses, confidence-band every finding behind a quote-the-source verification gate, then harden `plan.md` / `tasks.md` and write `eng-review.md` + the build-readable `test-plan.md` (spec-level gaps fold back via the Spec Drift Guard). Optional `--cross-model` adds a different-model second opinion. Use when the user says "vet the plan", "engineering review", "review the architecture", "lock in the plan", "check the implementation plan", or before building any feature. Runs on every plan — depth scales to stakes (light pass on simple plans, full rigor on big/risky), never skipped; always part of `/rite-autocomplete`. Not for the spec's strategy (`/rite-temper`), one mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
+description: Engineering review of a defined plan before any code — challenge implementation scope, then review architecture / code-quality / test-coverage / performance through senior-engineer lenses, confidence-banding each finding; harden `plan.md` / `tasks.md` and write `eng-review.md` + the build-readable `test-plan.md`. Use when the user says "vet the plan", "engineering review", "review the architecture", "lock in the plan", or before building a feature. Not for the spec's strategy (`/rite-temper`), a mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
 argument-hint: "[slug] [--cross-model] [--full]"
 user-invocable: true
 ---
@@ -13,8 +13,10 @@ calibrate every finding by confidence (and refuse to emit one you can't trace to
 line), design the test coverage the build will target, and map the failure modes and
 parallel lanes — *before* `/rite-build` writes a line. The one DevRites step that hardens
 the **implementation plan** at the engineering level and folds the result into the canonical
-contract, so the build follows a reviewed plan. **Read the active workspace first**; if
-there's no `plan.md`, tell the user to run `/rite-define`.
+contract, so the build follows a reviewed plan. Runs on **every** plan (depth scales to
+stakes; never skipped) and is always part of `/rite-autocomplete`; `--cross-model` adds a
+different-model second opinion. **Read the active workspace first**; if there's no
+`plan.md`, tell the user to run `/rite-define`.
 
 This is the engineering counterpart to `/rite-temper` (which is strategic, on the *spec*).
 Temper decides *the right thing*; vet decides *the right way to build it*.
