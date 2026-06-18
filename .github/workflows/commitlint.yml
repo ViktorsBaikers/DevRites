@@ -1,0 +1,112 @@
+name: commitlint
+
+# PR-only by design: commit messages are linted when a PR is opened/updated,
+# never on push to main (semantic-release's own `chore(release):` commits and
+# already-merged history must not be re-linted).
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  commitlint:
+    name: commitlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm deps
+        run: npm install --no-audit --no-fund
+
+      - name: Lint commit messages
+        id: lint
+        run: |
+          set +e
+          OUT="$(npx --no-install commitlint \
+            --from "${{ github.event.pull_request.base.sha }}" \
+            --to   "${{ github.event.pull_request.head.sha }}" \
+            --verbose 2>&1)"
+          STATUS=$?
+          printf '%s\n' "$OUT"
+          {
+            echo 'output<<COMMITLINT_EOF'
+            printf '%s\n' "$OUT"
+            echo 'COMMITLINT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Build sticky comment body
+        id: body
+        if: always()
+        env:
+          LINT_OUTPUT: ${{ steps.lint.outputs.output }}
+          LINT_STATUS: ${{ steps.lint.outputs.status }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          {
+            echo 'body<<COMMENT_EOF'
+            if [ "$LINT_STATUS" = "0" ]; then
+              echo '### commitlint — all commits valid'
+              echo ''
+              echo 'Every commit in this PR matches the DevRites Conventional Commit policy.'
+            else
+              echo '### commitlint — one or more commits need a rewrite'
+              echo ''
+              echo 'Raw output:'
+              echo ''
+              echo '```'
+              printf '%s\n' "$LINT_OUTPUT"
+              echo '```'
+              echo ''
+              echo '#### Suggested format'
+              echo ''
+              echo '```'
+              echo 'type(scope): subject'
+              echo ''
+              echo '<optional body, wrapped at 100 chars>'
+              echo '```'
+              echo ''
+              echo '- `type` ∈ feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert'
+              echo '- `scope` ∈ skills, rite, devrites, agents, rules, installer, uninstall, scripts, docs, tests, deps, release, repo, ci'
+              echo '- `subject` imperative, lower-case, no trailing period; header 12–72 chars'
+              echo '- body lines ≤ 100 chars, leading blank line'
+              echo ''
+              echo '#### Rewrite locally'
+              echo ''
+              echo '```bash'
+              echo '# most recent commit'
+              echo 'git commit --amend'
+              echo ''
+              echo '# older commits in this PR'
+              echo "git rebase -i origin/${BASE_REF}"
+              echo ''
+              echo '# then'
+              echo 'git push --force-with-lease'
+              echo '```'
+            fi
+            echo 'COMMENT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post / update sticky PR comment
+        if: always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: commitlint
+          message: ${{ steps.body.outputs.body }}
+
+      - name: Fail job if lint failed
+        if: steps.lint.outputs.status != '0'
+        run: |
+          echo "commitlint failed — see PR comment for details" >&2
+          exit 1
