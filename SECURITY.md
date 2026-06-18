@@ -39,27 +39,35 @@ Once a `1.0` release ships, the latest two minor lines will be supported.
 
 DevRites is a Claude Code **skills pack**: Markdown skill files, a few helper
 shell scripts, a bash installer, and (in plugin form) a `.claude-plugin/`
-manifest. It does **not** ship a binary, a daemon, or a network service. The
-attack surface is the content of the skill files plus the installer.
+manifest. It ships **no binary and no network service**. The only server is an
+**optional, opt-in MCP stdio server** (`mcp/devrites-mcp.mjs`) that speaks
+JSON-RPC over stdin/stdout (no port, no socket), is not installed or registered
+by default, and only shells out to the local `devrites` CLI — read/gate ops over
+`.devrites/` plus a single `ACTIVE`-pointer write. The attack surface is the
+content of the skill files plus the installer.
 
-### Dynamic context (`!` shell injection in skill bodies)
+### State loading (project-local script, no `!` injection)
 
-One skill (`/rite` and `/rite-status`) uses Claude Code's
-preprocessing-only `` !`<command>` `` injection to read its **own** state:
+`/rite`, `/rite-status`, and every workspace-operating skill load state by running
+a **read-only shell script via the `Bash` tool** — *not* Claude Code's
+preprocessing-only `` !`<command>` `` dynamic-context injection, which DevRites
+**removed** for cross-harness portability:
 
-```markdown
-!`cat .devrites/ACTIVE 2>/dev/null || echo "(none — run /rite-spec <feature>)"`
+```bash
+P=.claude/skills/devrites-lib/scripts/preamble.sh
+[ -f "$P" ] && bash "$P" || echo "(unavailable — read state.md directly)"
 ```
 
-This is a project-local read of the active-feature pointer DevRites itself
-manages. No user input is concatenated into the command, no network access,
-no write side effects. The same pattern is documented in Anthropic's hooks
-reference.
+`preamble.sh` is a project-local read of DevRites' own `.devrites/` state: no user
+input is concatenated into a command, no network access, no write side effects.
+The gate scripts (`readiness.sh`, `evidence-fresh.sh`, `check-acceptance.sh`) are
+likewise read-only; only the explicit mutators (`resolve.sh`, `tick-afk.sh`,
+`close-out.sh`, and the CLI's `use`) write, and only under `.devrites/`.
 
-If your organization disallows dynamic-context shell execution, set
-`disableSkillShellExecution: true` in your Claude Code settings. DevRites
-continues to function — the dynamic injection in `/rite` and `/rite-status`
-becomes a no-op and the rest of the pack is unaffected.
+If your environment disallows skill-initiated shell execution, the scripts simply
+don't run — each skill degrades gracefully to reading `state.md` directly (the
+`|| echo "(… unavailable …)"` fallback above), and the rest of the pack is
+unaffected.
 
 ### Auto-trigger is deliberate
 

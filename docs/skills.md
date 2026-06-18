@@ -1,10 +1,33 @@
 # All 28 skills
 
-The pack ships **28 skills total** — 19 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other rule files on demand (no carrier skill, no session-start autoload). A 29th directory — the internal `devrites-lib` library skill (`user-invocable: false`, not a command) — ships the cross-cutting scripts the workflow skills run: the read-only orientation preamble plus the `tick-afk` / `resolve` / `close-out` state mutators.
+The pack ships **28 skills total** — 19 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other rule files on demand (no carrier skill, no session-start autoload). A 29th directory — the internal `devrites-lib` library skill (`user-invocable: false`, not a command) — ships the cross-cutting scripts the workflow skills run: the read-only orientation preamble and the `readiness` / `evidence-fresh` / `acceptance` gate scripts, plus the `tick-afk` / `resolve` / `close-out` state mutators. A unified `devrites` CLI and an MCP server expose those ops to any tool (see [`cli-mcp.md`](cli-mcp.md)).
 
 **Naming convention.** `rite-*` is the user-facing slash-command surface (lifecycle phases plus utilities — `rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`). `devrites-*` is internal (model-invoked, hidden from the menu) and collision-avoiding against bundled Claude Code skill names. Visibility is governed by each skill's `user-invocable:` flag; the prefix mirrors it.
 
 ---
+
+## Failure-mode section convention
+
+Every skill carries a **failure-mode section** — the highest-signal content for keeping
+the model honest in that phase (per Anthropic's skill-authoring guidance: capture the
+model's actual failure points and grow the list over time). The canonical heading is
+**`## Gotchas`**. Existing skills express the same intent under equivalent headings, all
+of which satisfy the convention:
+
+- **Lifecycle skills** → a `> **Mid-flight discipline.**` blockquote pointing at
+  `reference/anti-patterns.md` (rite-spec, -temper, -define, -vet, -build, -prove,
+  -polish, -review, -seal, -ship, -plan, -resolve, -autocomplete).
+- **Specialists / utilities** → `## Hard rules` (browser-proof, debug-recovery),
+  `## NEVER` (ux-shape), `## Rules` (doubt, source-driven), `## Boundaries`
+  (pressure-test), `## Don't ask` (interview), `## When NOT to use` (zoom-out),
+  `## What NOT to include` (handoff), `## Scope reminders` (audit), `## Anti-AI-slop`
+  (frontend-craft), the numbered rule list (prototype), and `## Gotchas`
+  (api-interface, rite, status).
+
+**New skills SHOULD use `## Gotchas`** — 2–3 traps the model most reaches for in that
+phase (the rationalizations in `pack/.claude/rules/anti-patterns.md`, specialized), not a
+restatement of the positive steps. A mechanical rename of the equivalents above to a
+single `## Gotchas` heading is a possible future normalization; the content already holds.
 
 ## Commands quick reference
 

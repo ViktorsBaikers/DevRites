@@ -3,9 +3,11 @@
 </p>
 
 **Per-feature workspace on disk.** Every feature gets its own `.devrites/work/<slug>/`
-directory with `spec.md` → `plan.md` → `tasks.md` → `state.md` → `evidence.md` (plus
-`decisions.md`, `assumptions.md`, `drift.md`, `questions.md`, `review.md`, `seal.md`,
-`ship.md`, `handoff.md`, and `references/`). When the task ships it is archived intact to
+directory: `spec.md` → (`strategy.md`) → `plan.md` + `tasks.md` → (`eng-review.md` +
+`test-plan.md`) → `state.md` → `evidence.md` (plus `decisions.md`, `assumptions.md`,
+`drift.md`, `questions.md`, `touched-files.md`, `design-brief.md`, `review.md`, `seal.md`,
+`ship.md`, `handoff.md`, and `references/`; `strategy.md` is from the optional `/rite-temper`,
+`eng-review.md` + `test-plan.md` from `/rite-vet`). When the task ships it is archived intact to
 `.devrites/archive/<slug>/`. When you `/clear`, the next agent picks up from those
 files — no chat-context summary required. **Spec Drift Guard** catches the wrong turn
 before it costs you a day. **AFK mode** runs unattended without silently accepting
@@ -17,9 +19,12 @@ typed confirmation before any irreversible commit / push / tag.
   ACTIVE                    # which feature is active
   AFK                       # presence = AFK mode; YAML body sets max_slices / notify / allow_gates
   work/<slug>/
-    brief.md  spec.md  plan.md  tasks.md  state.md  evidence.md
-    decisions.md  assumptions.md  drift.md  questions.md
-    references/  browser-evidence.md  touched-files.md
+    brief.md  spec.md  references.md  references/        # spec
+    strategy.md                                          # temper (optional)
+    plan.md  tasks.md                                    # define
+    eng-review.md  test-plan.md                          # vet
+    state.md  questions.md  decisions.md  assumptions.md  drift.md
+    touched-files.md  evidence.md  browser-evidence.md  design-brief.md
     polish-report.md  review.md  seal.md  ship.md  handoff.md
   archive/<slug>/             # shipped task, moved here intact (all .md preserved)
 ```
@@ -497,12 +502,14 @@ devrites/
   .releaserc.json      # semantic-release config (CHANGELOG, version sync, tarball, GitHub Release)
   install.sh  uninstall.sh  update.sh
   scripts/             # install-lib · validate · validate-frontmatter · run-evals · eval-runner.py
-                       # devrites-detect · check-no-global-writes · sync-version · build-release-tarball
+                       # grade-feature · run-outcome-evals · devrites-detect · check-no-global-writes
+                       # sync-version · build-release-tarball
+  mcp/                 # devrites-mcp.mjs — MCP stdio server over the devrites CLI
   pack/.claude/        # skills/  28 skills — 19 public + 9 model-invoked    ─┐
                        # agents/  10 reviewers + 1 writer (slice-wright)       ├─ the pack
                        # rules/   16 rule files + README index                 ┘
-  evals/               # trigger evals (20 queries per public skill)
-  docs/                # architecture · skills · command-map · usage · flow · release
+  evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures
+  docs/                # architecture · skills · command-map · usage · flow · release · cli-mcp
     internal/          # research, development notes (gitignored)
   tests/               # install/uninstall smoke · install fixture · pack validation
   dist/                # release tarballs built by semantic-release (gitignored)
@@ -516,6 +523,7 @@ Cross-links: [architecture](docs/architecture.md) ·
 [flow diagrams](docs/flow.md) ·
 [usage](docs/usage.md) ·
 [release pipeline](docs/release.md) ·
+[CLI & MCP](docs/cli-mcp.md) ·
 [engineering rules](pack/.claude/rules/README.md).
 
 ## Security model

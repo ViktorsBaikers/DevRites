@@ -57,7 +57,7 @@ of the above.
 | Review agent | `pack/.claude/agents/<agent>.md` | Read-only, fresh-context, severity-labeled output. |
 | Engineering rule | `pack/.claude/rules/<rule>.md` | Stack-agnostic. Project conventions always win. |
 | Docs | `docs/` or `README.md` | Keep cross-links current. |
-| Eval query | `evals/<skill>.yaml` | Trigger phrasing that should/shouldn't load the skill. |
+| Eval query | `evals/<skill>.json` | Trigger phrasing that should/shouldn't load the skill (20 per public skill). |
 | Installer / scripts | `install.sh`, `scripts/*` | Must respect "project-local only" — refuses `~/.claude`. |
 
 If you're not sure where a change belongs, open a discussion or draft issue
@@ -102,12 +102,13 @@ To try your changes inside a real project:
 
 A quick map — the [README "Layout" section](README.md#layout) has the full version.
 
-- `pack/.claude/skills/` — 25 skills (17 workflow + 8 specialists).
-- `pack/.claude/agents/` — 8 review agents (fresh-context, read-only).
+- `pack/.claude/skills/` — 28 skills (19 user-invocable `rite-*` + 9 model-invoked `devrites-*`), plus the internal `devrites-lib` script library.
+- `pack/.claude/agents/` — 11 agents: 10 fresh-context read-only reviewers + 1 writer (`devrites-slice-wright`).
 - `pack/.claude/rules/` — 16 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
-- `evals/` — trigger evals (20 queries per public skill).
-- `scripts/` — install lib, validators, eval runner, release tooling.
-- `docs/` — architecture, command map, flow diagrams, usage examples.
+- `evals/` — trigger evals (20 queries per public skill) + `golden/` fixtures for the deterministic outcome grader.
+- `scripts/` — install lib, validators, eval runner, the outcome grader (`grade-feature.sh` / `run-outcome-evals.sh`), release tooling.
+- `mcp/` — `devrites-mcp.mjs`, an MCP stdio server over the `devrites` CLI.
+- `docs/` — architecture, skills, command map, flow diagrams, usage, release, `cli-mcp`.
 - `tests/` — install/uninstall smoke + fixture install + pack validation.
 
 ## Authoring guidelines
@@ -116,15 +117,19 @@ A quick map — the [README "Layout" section](README.md#layout) has the full ver
 
 Every skill **must** have:
 
-- YAML frontmatter with `name`, `description`, `user-invocable` (true/false),
-  and a one-line `when-to-use` hint.
+- YAML frontmatter with `name`, `description` (the trigger — fold the *Use when* /
+  *Not for* phrasing into it; there is **no** separate `when-to-use` field), and
+  `user-invocable` (true/false). Optional: `argument-hint`, `disable-model-invocation`.
 - A short body — operating rules, anti-rationalization tables where useful,
   red flags. **Body discipline:** if it doesn't change the model's behavior
   for this phase, it doesn't belong in the body.
+- A **failure-mode section** — a `## Gotchas` (or an equivalent `Hard rules` /
+  `NEVER` / `Mid-flight discipline` pointer). Convention: [`docs/skills.md`](docs/skills.md).
 - A matching eval file under `evals/` with positive + negative trigger
-  phrasings (the validator enforces ≥20 queries for public skills).
+  phrasings (the validator enforces exactly 20 queries for public skills).
 
-Run `scripts/validate-frontmatter.sh` and `scripts/validate.sh` before pushing.
+Run `python3 scripts/validate-frontmatter.py <files>` (or `npm run validate`) and
+`scripts/validate.sh` before pushing.
 
 ### Review agents (`pack/.claude/agents/<name>.md`)
 

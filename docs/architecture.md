@@ -81,9 +81,10 @@ only grows), and error-prone (a missed AFK sentinel or a miscounted gate changes
 So orientation is computed once by one read-only script, `devrites-lib/scripts/preamble.sh`,
 which prints a compact digest each skill reads at step 0. `devrites-lib` is an internal
 library skill (`user-invocable: false`, not a command) that houses the cross-cutting
-scripts — the preamble plus the state mutators `tick-afk.sh` / `resolve.sh` /
-`close-out.sh` — *inside* `skills/` so they ship on both the bash-installer and plugin
-channels. Skills resolve them with a three-layout snippet (installed `.claude/` → plugin
+scripts — the preamble, the read-only gate scripts (`readiness.sh` / `evidence-fresh.sh` /
+`check-acceptance.sh`), the state mutators (`tick-afk.sh` / `resolve.sh` / `close-out.sh`),
+and the unified `devrites.sh` CLI that dispatches to all of them — *inside* `skills/` so
+they ship on both the bash-installer and plugin channels. Skills resolve them with a three-layout snippet (installed `.claude/` → plugin
 `${CLAUDE_SKILL_DIR}` → repo `pack/`). Bundled-script execution is reliable on the
 bash-installer channel (CWD-relative `.claude/`); Claude Code does **not** expose a stable
 script path to skill-invoked bash on the plugin channel (only to hooks — confirmed against
