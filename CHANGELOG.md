@@ -2,6 +2,22 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.10.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.9.0...v1.10.0) (2026-06-19)
+
+### Features
+
+* **installer:** auto-approve read-only scripts + orient hooks ([3807883](https://github.com/ViktorsBaikers/DevRites/commit/38078838d2f4eeb9303c35c42812bbcb9bd9f5fc))
+* **skills:** gate orchestrator out of source edits (A1) ([c64a4a0](https://github.com/ViktorsBaikers/DevRites/commit/c64a4a0f2722089fa938b5291de64eca9e4648c7))
+
+### Bug Fixes
+
+* **skills:** resolve skills-audit findings across pack, evals, and CI ([1499ce2](https://github.com/ViktorsBaikers/DevRites/commit/1499ce274f714544f4983c8e6fc6a11ebe36ee25))
+* **tests:** tolerate preserved settings.json in uninstall smoke ([1d1b3d5](https://github.com/ViktorsBaikers/DevRites/commit/1d1b3d56a0b348d8181fa9fae55e70b4f9e51fd9))
+
+### Refactors
+
+* **skills:** fold attempts, drop lanes note, signpost quick ([02180b5](https://github.com/ViktorsBaikers/DevRites/commit/02180b52dfa9254597b3ae0040690f556f40f5f2))
+
 ## [1.9.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.8.0...v1.9.0) (2026-06-19)
 
 ### Features
