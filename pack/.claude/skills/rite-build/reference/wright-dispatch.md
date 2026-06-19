@@ -100,3 +100,16 @@ legitimately the writer, so write `.devrites/work/<slug>/.reconcile-inline` befo
 reconcile gate (step 4) skips when that sentinel is present. Mirrors the reviewer-dispatch
 fallback in
 [`../../rite-seal/reference/parallel-dispatch.md`](../../rite-seal/reference/parallel-dispatch.md).
+
+## Optional pre-block hook (defense in depth)
+`reconcile.sh` is the **post-hoc** gate — it always runs and catches an A1 breach at record time.
+A companion **pre-block** hook, `.claude/hooks/devrites-a1-guard.sh` (a `PreToolUse` matcher on
+`Edit|Write|MultiEdit`), stops the breach *before* the write lands. It is armed only inside the
+mid-build window (between `reconcile.sh snapshot` and a clean `check`, keyed on `.reconcile-base`),
+allows the wright (subagent calls carry `agent_id`), the inline fallback (`.reconcile-inline`),
+and any `.devrites/` write — so it never touches `/rite-polish`, `/rite-quick`, or ordinary
+manual edits. It ships **observe-only** (logs would-be blocks to `.a1-guard.log`, never blocks);
+flip to enforce with `DEVRITES_A1_HOOK=enforce` or a `.devrites/work/<slug>/.a1-enforce` file once
+the log confirms it never flags the wright's own edits (older Claude Code builds may not populate
+`agent_id` — the log is the proof before you enforce). The post-hoc gate stands on its own; the
+hook is belt-and-suspenders.
