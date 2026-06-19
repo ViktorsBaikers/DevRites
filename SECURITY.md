@@ -128,6 +128,29 @@ The first three lines surface a confirmation prompt before any irreversible
 git action; the last disables the `/rite` and `/rite-status` dynamic-state
 read described above (DevRites still works).
 
+### Hooks (auto-approve scope + orientation)
+
+DevRites ships two `Bash`-matched hooks (`pack/.claude/hooks/`, wired via the
+plugin's `hooks.json` or a seeded `.claude/settings.json`):
+
+- **`devrites-allow.sh` (PreToolUse)** — auto-approves *only* the five **read-only**
+  helper scripts (`preamble.sh`, `progress.sh`, `readiness.sh`, `evidence-fresh.sh`,
+  `check-acceptance.sh`) so they stop prompting on every skill run. It is **fail-open**:
+  it never denies, parses the command, and emits an `allow` *only* when the command runs
+  one of those five scripts **and** contains no dangerous/exfiltration tokens
+  (`rm`, `>`/redirects, `curl`/`wget`, `sudo`, `chmod`, `$(...)`/backticks, `eval`,
+  package managers, `git push/commit/reset`, …). Mutating scripts (`resolve.sh`,
+  `tick-afk.sh`, `close-out.sh`) are **deliberately excluded** and still prompt. On any
+  parse failure or non-match it emits nothing — Claude Code's normal permission flow is
+  untouched. It widens approval for read-only orientation; it never widens it for anything
+  that writes, deletes, or reaches the network.
+- **`devrites-orient.sh` (SessionStart)** — read-only; injects the active feature's
+  `preamble.sh` digest as session context, and stays silent when no `.devrites/` workspace
+  is active. No tool approval, no writes.
+
+Delete `.claude/settings.json` (or disable the plugin) to remove both. The seeded
+settings file is never overwritten on update, so your own permission rules are safe.
+
 ### Third-party trust
 
 DevRites vendors no third-party code (see `NOTICE.md`). It depends on Claude

@@ -1,0 +1,20 @@
+{
+  "$comment": "DevRites hooks — auto-approve the read-only orientation/gate scripts (no more per-run permission prompts) and inject the active feature's orientation at session start. The bash installer SEEDS this file only when .claude/settings.json is absent; it is never overwritten on update, so your own settings are safe to add here. Plugin installs get the same hooks via pack/.claude/hooks/hooks.json instead.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-allow.sh\"" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-orient.sh\"" }
+        ]
+      }
+    ]
+  }
+}

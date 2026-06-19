@@ -26,6 +26,7 @@
     "devrites"
   ],
   "skills": "./pack/.claude/skills",
+  "hooks": "./pack/.claude/hooks/hooks.json",
   "agents": [
     "./pack/.claude/agents/devrites-code-reviewer.md",
     "./pack/.claude/agents/devrites-doubt-reviewer.md",
