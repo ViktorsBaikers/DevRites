@@ -98,6 +98,11 @@ QUICK         /rite quick <change>     ≡    /rite-quick       express lane —
 UTILITY       /rite prototype | handoff | zoom-out | pressure-test  (or direct /rite-* shortcuts)
 ```
 
+> **Small one-off change?** A typo, copy tweak, config bump, or one-function fix → **`/rite-quick`**
+> (express lane: one contract → build → prove → ship, no full workspace). It escalates to
+> `/rite-spec` the instant the change grows past small / reversible / unambiguous. The full
+> lifecycle above is for real features — don't pay its ceremony for a one-off.
+
 ## Core operating rules (every DevRites skill enforces)
 
 The minimal version lives in `.claude/rules/core.md`; DevRites skills Read it as

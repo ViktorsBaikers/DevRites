@@ -127,9 +127,9 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    `questions.md` (gate=blocking, slice's SLA) + set `Status: awaiting_human`; HITL → pause as a
    blocking gate. Either way, `Next step: /rite-plan unblock` until resolved.
 6. **Record — you are the canonical writer.** From the wright's artifact, update `state.md`,
-   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI; and `attempts.md` if
-   the wright reported an approach it tried and backed out of — record what failed and why so a
-   retry or the next agent doesn't repeat the dead end). **Evidence is the
+   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). If the wright reported
+   an approach it tried and backed out of, record it under a `## Dead ends` section in
+   `decisions.md` so a retry or the next agent doesn't repeat it. **Evidence is the
    wright's real command output, not its say-so.** Capture per
    [evidence-standard](reference/evidence-standard.md). If `.devrites/AFK` is present, decrement
    the budget by running `bash .claude/skills/devrites-lib/scripts/tick-afk.sh <state.md path>` —
@@ -150,8 +150,6 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    phase is complete, the next phase is `/rite-prove` — don't leave completion implicit.
 
 > **Mid-flight discipline.** The wright (or you, in the inline fallback) must resist doing two slices, skipping TDD, adding a defensive check, or wandering outside `touched-files.md`; you must resist skipping the post-return `devrites-doubt` because the wright "seems confident" — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
-
-> **Parallel lanes (advanced).** `/rite-build` builds **one slice per invocation** — that rule stands. When `/rite-vet` mapped **independent lanes** (the `eng-review.md` §5 parallelization table — no shared files, no ordering dependency), those lanes may be built **concurrently in separate git worktrees**: one fresh `/rite-build` session (one wright) per lane, then merge. This is parallelism *across sessions/worktrees*, **never two wrights in one context** (concurrent writers make conflicting implicit decisions — the single-wright rule is intact). Only the lanes vet flagged conflict-free; sequence or coordinate anything that shares a path.
 
 ## Output
 

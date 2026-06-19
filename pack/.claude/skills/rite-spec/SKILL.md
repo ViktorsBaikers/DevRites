@@ -12,6 +12,12 @@ The spec phase. Turn a request (even a vague one) into a **fully-covered, correc
 `/rite-define` can plan it and nothing is missed. **No plan, tasks, or code here** — those
 are `/rite-define` and `/rite-build`.
 
+> **Too small to spec? Use `/rite-quick`.** A typo, copy tweak, config bump, or one-function
+> fix does **not** need a full workspace + lifecycle. Stop and run `/rite-quick <change>` — its
+> express lane (one contract → TDD build → scoped prove → ship) escalates back here the moment
+> the change turns out to touch auth / data / a migration / a public API / more than one slice.
+> Spec is for real features; don't pay its ceremony for a one-off.
+
 ## Rules consulted (read on demand from `.claude/rules/`)
 **Step 0:** Read `.claude/rules/core.md` first. DevRites skills Read `.claude/rules/core.md`
 as their first step; the other rule files load on demand. Pull `documentation.md` via `Read`

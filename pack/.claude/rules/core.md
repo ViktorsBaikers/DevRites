@@ -80,10 +80,9 @@ Before any `rite-*` skill stops:
 - Open question? → `questions.md` (with `status`, `gate`, `slice`, `proposed`,
   `raised_at`). Decision discussed? → `decisions.md`.
 - Assumption made? → `assumptions.md`. Drift raised? → `drift.md`.
-- Approach tried that **failed**? → `attempts.md` (what you tried, why it failed, what
-  it rules out). Compaction and the next agent must not repeat a dead end — an
-  invalidated approach is load-bearing context (research: ~65% of long-run agent
-  failures are context drift, and good compaction preserves "which approaches failed").
+- Approach tried that **failed**? → a `## Dead ends` section in `decisions.md` (what you
+  tried, why it failed, what it rules out). Compaction and the next agent must not repeat a
+  dead end — an invalidated approach is load-bearing context.
 - Next-action ambiguous? → resolve to one command in `state.md`.
 - HITL pause? → write the `Awaiting human` block to `state.md` and set
   `Status: awaiting_human` before stopping; resume via `/rite-resolve <qid> "<answer>"`.

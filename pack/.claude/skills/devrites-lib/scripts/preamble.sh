@@ -30,7 +30,7 @@ fi
 
 echo
 echo "### artifacts present"
-for f in brief spec references strategy plan tasks eng-review test-plan questions decisions assumptions drift attempts touched-files evidence browser-evidence design-brief polish-report review seal ship handoff; do
+for f in brief spec references strategy plan tasks eng-review test-plan questions decisions assumptions drift touched-files evidence browser-evidence design-brief polish-report review seal ship handoff; do
   if [ -f "$d/$f.md" ]; then
     echo "  ✓ $f.md"
   fi
