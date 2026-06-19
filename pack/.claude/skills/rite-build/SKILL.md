@@ -134,20 +134,51 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    it decrements `state.md`'s `AFK slices remaining` field, prints the new value, and exits `3`
    when it hits 0. **Exit 3 → STOP** (forced HITL stop; the cap is exhausted). Never rewrite
    `.devrites/AFK` `max_slices` in place — it is read-only initial budget.
-7. **STOP.** Report and recommend the next step.
+7. **STOP.** Render the progress footer, then report and recommend the next step. Run the
+   shared footer (mirror of the step-0 preamble) so the slice meter + flow ribbon are
+   deterministic, not model-typed:
+   ```bash
+   PR=.claude/skills/devrites-lib/scripts/progress.sh
+   [ -f "$PR" ] || PR="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/progress.sh"
+   [ -f "$PR" ] || PR=pack/.claude/skills/devrites-lib/scripts/progress.sh
+   [ -f "$PR" ] && bash "$PR" || echo "(progress footer unavailable on this install)"
+   ```
+   It reads `state.md` (already updated in step 6), so the meter reflects the slice you
+   just built. **When every slice is built** (`✅ ALL BUILT`) say so explicitly — the build
+   phase is complete, the next phase is `/rite-prove` — don't leave completion implicit.
 
 > **Mid-flight discipline.** The wright (or you, in the inline fallback) must resist doing two slices, skipping TDD, adding a defensive check, or wandering outside `touched-files.md`; you must resist skipping the post-return `devrites-doubt` because the wright "seems confident" — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 
 ## Output
+
+The `progress.sh` footer (step 7) prints the first three lines — the header rule, the
+**slice meter** (how many of N are built), and the **flow ribbon**. Your fact lines sit
+under it. Two shapes:
+
+**Slices still pending:**
 ```
-Built slice <N — name>
-Built by: devrites-slice-wright (fresh context) | inline fallback
-Acceptance: <met/partial + evidence>
-Tests: <command → pass/fail>
-Browser proof: <summary | n/a>
-Drift: <none | recorded + how handled>
-Next: slices still pending → /rite-build (slice <N+1>);
-      ALL slices built → /rite-prove (prove the completed feature)
-↻ Hygiene: /clear between slices (state.md + touched-files.md + evidence.md carry forward); /rite-handoff if away > a few hours. See rules/context-hygiene.md.
+── rite-build ──────────────────────────────
+Slice 3/5  ██████░░░░  csv-streaming ✓
+Flow   spec ✓ define ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○
+Built     slice 3 — csv-streaming   (by devrites-slice-wright | inline fallback)
+Acceptance ✓ met · Tests <cmd → pass> · Browser <summary | n/a> · Drift <none | handled>
+Next  ▸ /rite-build  (slice 4 — pagination)
+↻ Hygiene  /clear between slices (state.md + touched-files.md + evidence.md carry forward); /rite-handoff if away > a few hours.
 ```
-**DO NOT continue to the next slice automatically.**
+
+**All slices built (build phase complete — say it):**
+```
+── rite-build ──────────────────────────────
+Slices 5/5  ██████████  ✅ ALL BUILT
+Flow   spec ✓ define ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○
+Built     slice 5 — error-states   (by devrites-slice-wright | inline fallback)
+Acceptance ✓ met · Tests <cmd → pass> · Browser <summary | n/a> · Drift <none | handled>
+✅ Feature implemented — every slice built. Build phase done.
+Next  ▸ /rite-prove  (prove the completed feature)
+↻ Hygiene  /clear (state.md + evidence.md captured); /rite-handoff if away > a few hours.
+```
+
+Keep fact lines terse — one `key value` per fact, `·` between, no prose. The meter, the
+`✅ ALL BUILT` marker, and the ribbon carry the progress; don't restate them in words.
+
+**DO NOT continue to the next slice automatically** — even at `✅ ALL BUILT`, `/rite-prove` is the user's call.

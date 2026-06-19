@@ -84,6 +84,7 @@ context into the workspace before the session ends.
 
 ## Output format
 
+**Footer first** — `/rite-status` *is* the status meter: render it by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`). The slice meter + flow ribbon answer "where am I / how much is left". Then the handoff-readiness check:
 ```
 Ready for handoff: yes / partial (n gaps) / no
 

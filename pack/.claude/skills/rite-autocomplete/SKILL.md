@@ -78,7 +78,11 @@ P=.claude/skills/devrites-lib/scripts/preamble.sh
 > Autonomy is for the routine path; the gates exist for everything else.
 
 ## Output
-A phase-by-phase progress log, then the final status:
+A phase-by-phase progress log, then the final status. **End with the progress footer** —
+run `progress.sh` (resolved like the step-0 preamble — canonical snippet in
+`devrites-lib/SKILL.md`) as the last lines so the final slice meter + flow ribbon match the
+rest of the lifecycle (it reads the lifecycle position the run reached, e.g. `ship ✓` or the
+phase it stopped at):
 ```
 Autocomplete: <slug>
 spec ✓  temper ✓ (mode <m> | skipped)  define ✓  vet ✓ (depth <light|full>, floor <band>)  build ✓ (N slices)  prove ✓  polish ✓  review ✓  seal: GO

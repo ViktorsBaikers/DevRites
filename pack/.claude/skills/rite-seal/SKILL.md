@@ -111,6 +111,12 @@ after the task is shipped and archived. The `Important > 0` interactive y/N earl
 the gate is the one off-ramp seal still owns; the type-GO off-ramp now lives in ship.
 
 ## Output
+
+**Footer first** — render the flow ribbon by running the progress footer (`progress.sh`,
+resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); at seal
+it shows `seal ◉` with every prior phase `✓` and the slice meter at `✅ ALL BUILT`. Then
+state the verdict.
+
 State the verdict first, then the blockers (if NO-GO) or the follow-ups (if GO), then
 the path to `seal.md`. On GO the next command is `/rite-ship`; on NO-GO it is the fix
 path (`/rite-plan repair`, `/rite-build`, …).
