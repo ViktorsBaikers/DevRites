@@ -1,8 +1,8 @@
 # Spec Drift Guard (build phase)
 
 Active throughout `/rite-build`. The spec is living, not sacred — but you may not
-silently code against a plan you know is wrong. Canonical version:
-`rite-define/reference/spec-drift-guard.md`.
+silently code against a plan you know is wrong. This is the canonical Spec Drift Guard;
+other phases reference it here.
 
 ## Drift has occurred when
 - the spec says X but the code makes X impossible/wrong;

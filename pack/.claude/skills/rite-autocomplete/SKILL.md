@@ -1,6 +1,6 @@
 ---
 name: rite-autocomplete
-description: Run the entire DevRites lifecycle end-to-end with no per-phase human iteration — spec → temper → define → build×N → prove → polish → review → seal → ship — picking the best option at each soft gate and recording why. A vague prompt triggers an up-front interview, then it runs unattended, pausing only on hard irreversible-risk / blocking / escalating gates or a NO-GO; `--ship` (alias `--yolo`) auto-confirms the final type-GO. Use when the user says "autocomplete", "do the whole thing", "run the full cycle", "one-shot this feature", or "ship it autonomously". Not for a single phase (use the specific `/rite-*` skill) or when the user wants to drive each step.
+description: Run the entire DevRites lifecycle end-to-end with no per-phase human iteration — spec → temper → define → vet → build×N → prove → polish → review → seal → ship — picking the best option at each soft gate and recording why. A vague prompt triggers an up-front interview, then it runs unattended, pausing only on hard irreversible-risk / blocking / escalating gates or a NO-GO; `--ship` (alias `--yolo`) auto-confirms the final type-GO. Use when the user says "autocomplete", "do the whole thing", "run the full cycle", "one-shot this feature", or "ship it autonomously". Not for a single phase (use the specific `/rite-*` skill) or when the user wants to drive each step.
 argument-hint: "[idea] [--ship|--yolo] [--max-slices N]"
 user-invocable: true
 ---
@@ -23,7 +23,8 @@ blocking / escalating gates, and any NO-GO still pause.
   auth-authz change / public-API break / external-contract change / red tests; blocking
   and escalating gates and any open `gate: validating` always pause. `--ship` auto-confirms
   the **final** type-GO only — nothing else.
-- **Loop budget = the plan's own slice count, not a fixed number.** After `/rite-define`,
+- **Loop budget = the plan's own slice count, not a fixed number.** After `/rite-vet`
+  (not `/rite-define` — vet may split or add slices, so the count isn't final until then),
   set the AFK budget to however many slices the plan has, so the loop builds exactly the
   task's slices and stops when they're done. `--max-slices N` is an OPTIONAL *lower* safety
   cap (partial / babysat run); omit it to run the whole plan. The budget is finite
@@ -59,8 +60,8 @@ P=.claude/skills/devrites-lib/scripts/preamble.sh
 2. **Clarify up front.** If the idea is underspecified, run `devrites-interview` to
    ~95% confidence — the only interactive window. If already clear, skip.
 3. **Arm AFK.** Write `.devrites/AFK` with `allow_gates: [advisory]`; set the slice budget
-   from the plan's count after `/rite-define` (or from an explicit `--max-slices`)
-   ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
+   from the plan's count after `/rite-vet` (the slice count is only final post-vet), or from
+   an explicit `--max-slices` ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
    irreversible-risk still pause.
 4. **Drive the phases** ([reference/loop.md](reference/loop.md)): `/rite-spec` →
    **`/rite-temper`** → `/rite-define` → **`/rite-vet`** → `/rite-build` (loop until all slices

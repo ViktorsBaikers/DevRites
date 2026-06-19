@@ -6,10 +6,10 @@ How to turn a spec into ordered, vertical slices in `tasks.md`.
 ```markdown
 ## Slice N: <name>
 Goal:                       # single observable capability
-Acceptance criteria:        # binary, evidence-backed (see acceptance-criteria.md)
+Acceptance criteria:        # binary, evidence-backed (see ../../rite-spec/reference/acceptance-criteria.md)
 Files likely touched:       # real paths from codebase inspection
 Tests to write/run:         # the command(s) that prove it
-Browser proof required:     # yes/no (yes if UI — see frontend-trigger.md)
+Browser proof required:     # yes/no (yes if UI — see ../../rite-build/reference/frontend-trigger.md)
 Frontend craft required:    # yes/no
 Dependencies:               # slice numbers that must land first
 Rollback notes:             # how to back this slice out

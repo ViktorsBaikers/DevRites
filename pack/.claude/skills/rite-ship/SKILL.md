@@ -21,8 +21,9 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 ## Operating rules
 - **Seal GO is a precondition.** No GO in `seal.md` → stop, point at `/rite-seal`.
 - **Evidence must be fresh.** If any file in `touched-files.md` changed after
-  `evidence.md` was written, the proof is stale → stop, point at `/rite-prove`
-  (see `.claude/rules/development-workflow.md`).
+  `evidence.md` was written, the proof is stale → stop, point at `/rite-prove`. Enforced
+  deterministically by `evidence-fresh.sh` in step 1 (exit 3 = STALE), not by eyeballing
+  mtimes (see `.claude/rules/development-workflow.md`).
 - **type-GO before anything irreversible.** Render the prompt verbatim and wait for
   the literal `GO`. Last safety net — render it every time, even under auto-trigger.
 - **Never delete the audit trail.** Closing *archives* the workspace; it never erases
@@ -39,8 +40,16 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
    ```
    Then read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`. Confirm
-   the verdict is **GO** and the evidence is fresh. If not GO or evidence is stale →
-   stop with the single resume command.
+   the verdict is **GO**, then run the deterministic evidence-freshness gate rather than
+   eyeballing mtimes (mirrors `/rite-seal`):
+   ```bash
+   E=.claude/skills/devrites-lib/scripts/evidence-fresh.sh
+   [ -f "$E" ] || E="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/evidence-fresh.sh"
+   [ -f "$E" ] || E=pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh
+   [ -f "$E" ] && { bash "$E"; echo "evidence-fresh rc=$?"; } || echo "(evidence-fresh gate unavailable — compare mtimes by hand)"
+   ```
+   **Exit 3 → STALE proof: STOP**, point at `/rite-prove` (a polish/review edit made after
+   `/rite-prove` invalidates the proof). Not GO → stop with the single resume command.
 2. Build the git plan from `git-workflow.md` + the project's own convention: the
    Conventional-Commit message(s), the target branch, and whether a tag / PR applies.
    Scope the commit to `touched-files.md`; never stage secrets or out-of-scope files.

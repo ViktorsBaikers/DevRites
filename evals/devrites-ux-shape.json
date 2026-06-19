@@ -1,0 +1,26 @@
+{
+  "skill": "devrites-ux-shape",
+  "description": "Trigger evals for devrites-ux-shape — model-invoked specialist that plans UX/UI into design-brief.md (direction, key states, interaction model) BEFORE any code; adversarial near-misses route to build/polish/prototype/review siblings and bundled skills.",
+  "queries": [
+    {"text": "Let's shape the UX before we write any code.", "expected": "should_trigger", "rationale": "Description names 'shape the UX' verbatim."},
+    {"text": "Plan the UI before coding this feature.", "expected": "should_trigger", "rationale": "Description names 'plan the UI before coding' verbatim."},
+    {"text": "What should this settings page look like?", "expected": "should_trigger", "rationale": "Description names 'what should this look like' as a trigger."},
+    {"text": "Decide the design direction for the new dashboard first.", "expected": "should_trigger", "rationale": "Description names 'design direction' as a trigger."},
+    {"text": "Figure out the look and flow before I start building.", "expected": "should_trigger", "rationale": "A UI feature needs its look & flow decided up front."},
+    {"text": "Before we build the checkout, let's nail the key states and interaction model.", "expected": "should_trigger", "rationale": "Key states + interaction model are the brief's core deliverable."},
+    {"text": "Write the design brief for this feature.", "expected": "should_trigger", "rationale": "design-brief.md is exactly what this skill produces."},
+    {"text": "We've got a new screen — let's get its visual direction sorted up front.", "expected": "should_trigger", "rationale": "Visual-direction probe decided up front is this skill's job."},
+    {"text": "Map out the UX for the onboarding flow before any markup.", "expected": "should_trigger", "rationale": "Plan UX with no code/markup = shape before code."},
+    {"text": "I'm not sure how this profile editor should flow — let's decide its shape before coding.", "expected": "should_trigger", "rationale": "Oblique but clear: deciding look & flow ahead of build."},
+    {"text": "What states does this form need and how should each one feel?", "expected": "should_trigger", "rationale": "Enumerating key states is part of shaping the brief."},
+    {"text": "Let's settle what this feature is and how it behaves before touching code.", "expected": "should_trigger", "rationale": "Deciding what the UI is before code is the skill's premise."},
+    {"text": "Now build the ship-quality UI for the brief we agreed on.", "expected": "should_not_trigger", "rationale": "Building the UI belongs to devrites-frontend-craft, not shaping."},
+    {"text": "Polish the dashboard UI that's already built before review.", "expected": "should_not_trigger", "rationale": "Polishing a built UI belongs to /rite-polish."},
+    {"text": "Mock up three throwaway UI directions so I can click around and pick one.", "expected": "should_not_trigger", "rationale": "Throwaway exploration belongs to /rite-prototype."},
+    {"text": "Grill me on this design plan until every branch is resolved.", "expected": "should_not_trigger", "rationale": "Relentless plan interrogation belongs to grill-me."},
+    {"text": "Review the UI diff I just pushed for correctness bugs.", "expected": "should_not_trigger", "rationale": "Reviewing a diff belongs to code-review."},
+    {"text": "Build this form component test-first with red-green-refactor.", "expected": "should_not_trigger", "rationale": "Test-first implementation belongs to tdd."},
+    {"text": "The modal renders blank — diagnose why it's broken.", "expected": "should_not_trigger", "rationale": "Debugging a broken render belongs to diagnose."},
+    {"text": "Compact this conversation into a handoff doc for the next agent.", "expected": "should_not_trigger", "rationale": "Conversation compaction belongs to handoff."}
+  ]
+}

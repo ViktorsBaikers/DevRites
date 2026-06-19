@@ -77,7 +77,9 @@ Read `review.md` and the latest reviewer outputs.
    If subagents are available, fan out to the chosen DevRites
    reviewers (`.claude/agents/devrites-*`) **in parallel** (one `Task` block,
    multiple tool calls; see `.claude/rules/agents.md` — "Run independent
-   reviewers in parallel"): `devrites-spec-reviewer` (does the diff implement
+   reviewers in parallel", and [`reference/parallel-dispatch.md`](reference/parallel-dispatch.md)
+   for the full dispatch shape + reconciliation procedure):
+   `devrites-spec-reviewer` (does the diff implement
    the spec?), `devrites-test-analyst` (do the tests prove acceptance?),
    `devrites-code-reviewer`, `devrites-frontend-reviewer` (UI features),
    `devrites-security-auditor` (input/auth/data/integrations), and

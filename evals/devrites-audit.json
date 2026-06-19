@@ -1,0 +1,106 @@
+{
+  "skill": "devrites-audit",
+  "description": "Trigger routing for read-only single-axis audit dispatch (security / perf / simplify) on the active feature, vs sibling rite-* phases and bundled debug/review/interview/tdd/prototype/handoff skills.",
+  "queries": [
+    {
+      "text": "Can you run a security review on this feature before we polish it?",
+      "expected": "should_trigger",
+      "rationale": "\"security review\" is a verbatim security-axis trigger phrase."
+    },
+    {
+      "text": "Is this change safe to ship? I'm worried about the auth path.",
+      "expected": "should_trigger",
+      "rationale": "\"is this safe\" plus an auth concern is the security axis."
+    },
+    {
+      "text": "Check the diff for injection risks or any secrets that might be leaking.",
+      "expected": "should_trigger",
+      "rationale": "OWASP injection and secrets handling are the security auditor's discipline."
+    },
+    {
+      "text": "Give the trust boundary on this feature an adversarial fresh-eyes read.",
+      "expected": "should_trigger",
+      "rationale": "Three-tier trust-boundary check via a no-author-context reviewer is the security axis."
+    },
+    {
+      "text": "Is this fast enough to ship, or are we breaking the perf budget?",
+      "expected": "should_trigger",
+      "rationale": "\"is this fast enough\" plus a spec perf budget is the perf axis."
+    },
+    {
+      "text": "Do a perf check on the active feature.",
+      "expected": "should_trigger",
+      "rationale": "\"perf check\" is a verbatim perf-axis trigger phrase."
+    },
+    {
+      "text": "I think there's an N+1 query in here — can you audit it?",
+      "expected": "should_trigger",
+      "rationale": "\"N+1\" is a verbatim perf-axis trigger phrase."
+    },
+    {
+      "text": "Are there any hot-path or payload-size problems in this slice?",
+      "expected": "should_trigger",
+      "rationale": "Hot-path work and payload size are measure-first perf reviewer concerns."
+    },
+    {
+      "text": "Simplify this — it feels more complicated than it needs to be.",
+      "expected": "should_trigger",
+      "rationale": "\"simplify this\" is a verbatim simplify-axis trigger phrase."
+    },
+    {
+      "text": "Is there a Chesterton's Fence here, or can we safely delete some of this code?",
+      "expected": "should_trigger",
+      "rationale": "\"Chesterton's Fence\" and the deletion test are the simplify axis."
+    },
+    {
+      "text": "Get a fresh reviewer to flag behavior-preserving simplifications in the diff.",
+      "expected": "should_trigger",
+      "rationale": "Suggestion-only behavior-preserving simplification is exactly the simplify axis."
+    },
+    {
+      "text": "Can this slice be cleaned up without changing behavior?",
+      "expected": "should_trigger",
+      "rationale": "Oblique but clear request for the behavior-preserving simplify audit."
+    },
+    {
+      "text": "The build is red and the tests are throwing — debug why it's failing.",
+      "expected": "should_not_trigger",
+      "rationale": "Failing build/tests belong to diagnose (devrites-debug-recovery), not a read-only audit."
+    },
+    {
+      "text": "Grill me on this plan until we've resolved every open branch of the design.",
+      "expected": "should_not_trigger",
+      "rationale": "Interviewing a plan belongs to grill-me / devrites-interview."
+    },
+    {
+      "text": "Review my diff for correctness bugs and post the findings as inline PR comments.",
+      "expected": "should_not_trigger",
+      "rationale": "General correctness-bug diff review belongs to code-review, not a single-axis audit."
+    },
+    {
+      "text": "Let's build this feature test-first with a red-green-refactor loop.",
+      "expected": "should_not_trigger",
+      "rationale": "Test-first red-green-refactor development belongs to tdd."
+    },
+    {
+      "text": "Mock up a few radically different UI variations so I can play with them.",
+      "expected": "should_not_trigger",
+      "rationale": "Throwaway UI exploration belongs to prototype / rite-prototype."
+    },
+    {
+      "text": "Compact this session into a handoff doc the next agent can pick up cold.",
+      "expected": "should_not_trigger",
+      "rationale": "Compacting context into a handoff belongs to handoff / rite-handoff."
+    },
+    {
+      "text": "Implement the next vertical slice and write the code for it.",
+      "expected": "should_not_trigger",
+      "rationale": "Writing a slice is a write action owned by rite-build, not a read-only audit."
+    },
+    {
+      "text": "Polish this feature to ship-quality and normalize the UI before review.",
+      "expected": "should_not_trigger",
+      "rationale": "Polishing and applying changes belongs to rite-polish, not a read-only audit."
+    }
+  ]
+}

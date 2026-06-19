@@ -76,7 +76,7 @@ Both pass = the surface looks like *this product*, not "an app in this category"
   (see `coding-style.md`, `patterns.md`).
 - **Convention-blind** code — ignores the repo's naming, file layout, error patterns,
   validation style. "Generic good code" beats the project's idiom; reuse first (see
-  `reuse-first.md`).
+  `coding-style.md`).
 - **Going beyond the spec** — features/options/configs/flags the spec didn't ask for.
   Implement exactly what was specified; flag extras as follow-ups.
 - **Sycophant / fake-helpful comments** — `// helper function`, `// increment i by 1`,
@@ -102,7 +102,7 @@ or correctness review. They're cargo-cult, not craft.
   reserve modals for focused interrupting tasks.
 - **Code**: validate at trust boundaries (don't sprinkle null checks); catch narrow,
   recover or rethrow; one clear name per concept; one responsibility per function;
-  reuse before write (`reuse-first.md`); implement exactly the spec; let inherent
+  reuse before write (`coding-style.md`); implement exactly the spec; let inherent
   complexity be — don't pad with ceremony.
 - If the project **does** use one of these intentionally, follow the project. Consistency
   beats the rule.

@@ -1,8 +1,19 @@
 # Trigger evals
 
-Each public DevRites skill has a `<skill-name>.json` eval file in this
-directory. Each file contains **20 queries** — a mix of `should_trigger`
-and `should_not_trigger` — that exercise the skill's `description` field.
+Every DevRites skill has a `<skill-name>.json` eval file in this directory —
+the 20 user-invocable `rite-*` phases **and** the 9 model-invoked `devrites-*`
+specialists (29 files). Each contains **20 queries** — a mix of `should_trigger`
+and `should_not_trigger` — that exercise the skill's `description` field. The
+`devrites-*` evals lean on adversarial `should_not_trigger` cases against the
+sibling skills and bundled globals (`diagnose`, `grill-me`, `code-review`, `tdd`,
+`prototype`, `handoff`) their trigger surfaces collide with.
+
+**Coverage boundary.** These are *routing* evals (which skill fires) plus the
+outcome grader below (did a finished run reach a shippable state). What they do
+**not** yet cover: running the `.claude/agents/` subagents end-to-end (the wright
++ reviewers) — that needs a live model and is exercised on the `evals.yml` API
+path, not in the no-key CI gate. Per-phase *contract* behavior (e.g. build's
+stop-after-one-slice) beyond the seal outcome remains a scoped follow-up.
 
 The methodology mirrors Anthropic's `skill-creator` 2.0:
 

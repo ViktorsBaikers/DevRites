@@ -20,7 +20,8 @@ Project conventions always win where they exist; these rules fill gaps.
 4. **Spec is living, not sacred** — change spec / plan only through the
    Spec Drift Guard; never code against a known-wrong plan.
 5. **One slice at a time** — build a single vertical slice, leave it working +
-   proven, then stop. Don't auto-continue.
+   proven, then stop. Don't auto-continue (HITL default; under AFK the loop runs to
+   its slice budget — see [`afk-hitl.md`](afk-hitl.md)).
 6. **Evidence over confidence** — tests, builds, runtime, screenshots beat
    assertions; record commands and output.
 7. **Feature scope only** — review / simplify / polish / security stay within
