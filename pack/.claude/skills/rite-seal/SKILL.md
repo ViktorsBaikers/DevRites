@@ -88,6 +88,13 @@ Read `review.md` and the latest reviewer outputs.
    GATE; `devrites-audit` is the inline single-axis pass run during build/polish.
    The two paths are intentional, not divergent — the inline audit catches issues
    early; the fresh-context agents are the independent gate before ship.
+7a. **Reconcile findings — confidence over volume.** Band each reviewer finding by confidence
+   (1–10); a low-confidence (≤4) finding that can't be verified against the diff is **suppressed**
+   to a `Suppressed (low-confidence): n` line, not a blocker. Every Critical/Important must cite
+   the `file:line` (or spec line) that proves it. Surface genuine cross-reviewer disagreement
+   **explicitly** rather than averaging it away, and don't let a pile of low-confidence nits
+   inflate the verdict — the gate is `Critical == 0` + acceptance + drift, not "few findings".
+   (A seal that fires noise teaches the next one to be ignored.)
 8. Decide GO / NO-GO — [go-no-go](reference/go-no-go.md) — and write `seal.md`.
 
 ## `seal.md` template

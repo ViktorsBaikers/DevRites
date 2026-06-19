@@ -43,7 +43,9 @@ when capturing significant spec decisions (why-not-what, ADR-style notes in `dec
    index — `codegraph` (`.codegraph/` / `codegraph_*`) or `graphify` (`graphify-out/`) —
    for placement/callers/impact instead of broad file reads; fall back to reading files.
    Also discover the project's **test / build/typecheck/lint** commands and the
-   frontend/backend systems; read `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` if present.
+   frontend/backend systems; read `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` / `AGENTS.md` if
+   present (`AGENTS.md` is the cross-tool agent-conventions standard — treat it as project
+   conventions the build must follow, same standing as `CLAUDE.md`).
 3. **Gather design references (optional)** — [references-intake](reference/references-intake.md).
    The human **may** attach screenshots, mockups, a Figma link, a video, or links — or
    **none at all** (perfectly normal; skip this step then). If any are given: **view/fetch**
@@ -99,4 +101,8 @@ Next: big / risky feature (auth · data model · public API · migration · mult
       Small / reversible / unambiguous? → /rite-define directly.
 ↻ Hygiene: /clear before /rite-define (spec.md + references/ + decisions.md + assumptions.md + questions.md captured); /rite-handoff if away > a few hours. See rules/context-hygiene.md.
 ```
-If a workspace with the slug already exists, update its spec rather than overwriting blindly.
+If a workspace with the slug already exists, update its spec rather than overwriting blindly —
+and **show the human a short diff of what changed** in `spec.md` (acceptance criteria added /
+removed / reworded) before proceeding. A spec edit reviewed as a diff catches silent scope
+drift that a full re-read buries; this is the spec-review view (`/rite-spec --review` renders
+just the diff + the open-question delta, no re-investigation).
