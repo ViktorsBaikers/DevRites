@@ -63,6 +63,11 @@ before coding. **Ask before coding if the visual direction or UX flow is still a
   its verification gate (no console errors, no axe violations, all states).
 - Verify in the browser (`devrites-browser-proof`) — screenshots opened and described,
   console clean, responsive + keyboard checked.
+- **Every interactive element has an asserting test at the right level** — each field,
+  checkbox, radio, select, toggle, button, and actionable link gets a unit/component test for
+  what it *does* (validation, toggle, options, enabled/disabled, handler); critical journeys
+  get one E2E. Browser proof shows it renders; the asserting test proves it works. No element
+  ships unverified — `rules/testing.md` "Completeness"; inventory in `test-plan.md`.
 - **Append build-time refinements** to `.devrites/work/<slug>/design-brief.md` — the
   design-contract artifact `devrites-ux-shape` produced at spec; this skill refines it per
   slice (the "Build-time refinements" section), it does not own or recreate it. `/rite-polish`

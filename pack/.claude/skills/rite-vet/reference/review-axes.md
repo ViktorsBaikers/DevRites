@@ -78,6 +78,12 @@ The differentiator: design the tests *before* the code, so the build writes them
 - **Tool per path** — unit (pure logic, single function, edge cases), integration/E2E (a user
   flow spanning 3+ components, an auth/payment/data-loss path, a mock-hides-failure boundary),
   eval (an LLM/prompt change that needs a quality bar).
+- **Interaction inventory (UI slices) — enumerate every interactive element + flow.** List each
+  input field, checkbox, radio, select, toggle, button, and actionable link, plus each user
+  flow; assign each ≥1 asserting test **at the right level** — elements/fields → unit/component,
+  critical journeys → one E2E (never one-per-field). Every element/flow with no asserting test
+  is a GAP; no element ships unverified. Write the inventory to `test-plan.md` (table in
+  `artifacts.md`). This is `testing.md` "Completeness" made concrete for the plan.
 - **Regression rule (mandatory, no question):** when the plan modifies existing behavior and the
   current suite doesn't cover the changed path, a regression test is added to the plan as a
   **Critical** requirement — no `AskUserQuestion`, no skipping. Regressions are the highest-priority
