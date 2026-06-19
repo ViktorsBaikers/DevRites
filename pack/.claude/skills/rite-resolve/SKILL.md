@@ -7,11 +7,13 @@ user-invocable: true
 
 # /rite-resolve — answer the human gate
 
-`/rite-resolve` is the **canonical resume verb** for DevRites. When `/rite-build` pauses
-at a HITL checkpoint, or when AFK left blocking questions in `questions.md`, this skill
-takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
-`state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next
-command.
+`/rite-resolve` is the canonical resume verb for **async** human gates — a checkpoint that
+already paused and **stopped the session** (an AFK blocking/escalating/irreversible queue, or a
+HITL pause the human walked away from), plus `--batch`. When `/rite-build` asks a gap **inline**
+via `AskUserQuestion` and the human is present, that pick resolves the gate **in place** through
+the same `resolve.sh` writer — you don't type `/rite-resolve` for it. For the async case this
+skill takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
+`state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next command.
 
 It is **deliberately small**: one verb, one source of truth (`questions.md`), one cursor
 (`state.md`). The full AFK / HITL contract lives in
