@@ -45,6 +45,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | `zoom-out` | `/rite-zoom-out` | structural map of unfamiliar code |
 | `pressure-test` | `/rite-pressure-test` | diverge → converge on a rough idea |
 | `autocomplete [idea] [--ship]` | `/rite-autocomplete` | run the whole lifecycle unattended |
+| `quick [change]` | `/rite-quick` | express lane — one small reversible change, build → prove → ship |
 
 The `/rite-<verb>` standalones remain user-invocable as direct shortcuts; both forms hit the same skill. Use whichever reads more naturally — the menu form (`/rite spec`) for discovery, the shortcut (`/rite-spec`) for muscle memory.
 
@@ -93,6 +94,7 @@ STATUS        /rite status             ≡    /rite-status      active feature, 
 SWITCH        /rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 RESUME        /rite resolve ...        ≡    /rite-resolve     answer a HITL checkpoint
 AUTO          /rite autocomplete ...   ≡    /rite-autocomplete  run the whole lifecycle unattended (--ship to push)
+QUICK         /rite quick <change>     ≡    /rite-quick       express lane — one small reversible change (escalates if it grows)
 UTILITY       /rite prototype | handoff | zoom-out | pressure-test  (or direct /rite-* shortcuts)
 ```
 

@@ -25,6 +25,7 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
       decisions.md                # decisions + rationale
       assumptions.md              # explicit assumptions still standing
       drift.md                    # spec/plan drift observations + resolutions
+      attempts.md                 # dead ends: approaches tried that failed + why (so retries don't repeat them)
       touched-files.md            # files changed or intentionally inspected
       evidence.md                 # commands run + results
       browser-evidence.md         # screenshots, routes, console, viewport checks

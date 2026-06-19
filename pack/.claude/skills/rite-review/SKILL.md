@@ -102,6 +102,18 @@ pull these via `Read` when the diff demands them:
 - **Nit** — trivial/style.
 - **FYI** — context, no action implied.
 
+## Confidence + signal-to-noise
+Borrow `/rite-vet`'s discipline so review stays **trusted, not noisy** — a reviewer that posts
+18 comments per PR teaches the team to ignore every one (below ~10% false-positive rate devs
+investigate each finding; past ~30% they label the tool noisy and skip it):
+- **Confidence-band each finding** (1–10) and state the band. A low-confidence finding (≤4)
+  you can't verify against the code is **suppressed** — roll it into one `Suppressed
+  (low-confidence): n` line, never raised as Critical/Important.
+- **Verify before you escalate.** Every Critical/Important quotes the spec line or cites the
+  `file:line` that proves it — no unverified blockers.
+- **Budget the noise.** Roll up trivia ("N style nits") into a single line; tooling already
+  catches style. Review's job is correctness + spec fidelity, not a lint dump.
+
 ## Severity orientation (labels, not score)
 
 After labeling, summarize findings as `Critical / Important / Suggestion / Nit /

@@ -1,0 +1,20 @@
+{
+  "skill": "rite-quick",
+  "description": "Trigger evals for /rite-quick — express lane for a SMALL, reversible change (one short artifact → build → prove → ship), escalating to /rite-spec the moment scope/risk/ambiguity grows.",
+  "queries": [
+    {"text": "/rite-quick", "expected": "should_trigger", "rationale": "Direct slash invocation."},
+    {"text": "Quick fix: the footer copyright year is wrong.", "expected": "should_trigger", "rationale": "Quick fix of a tiny, reversible change."},
+    {"text": "Small change — rename this one helper for clarity.", "expected": "should_trigger", "rationale": "Small single-file change."},
+    {"text": "Tiny tweak to the button label, just do it.", "expected": "should_trigger", "rationale": "Tiny copy tweak, low-risk."},
+    {"text": "Fix this typo in the error message.", "expected": "should_trigger", "rationale": "Typo = express lane."},
+    {"text": "Bump the timeout config from 30s to 60s.", "expected": "should_trigger", "rationale": "Small reversible config change."},
+    {"text": "Just change the default page size to 50.", "expected": "should_trigger", "rationale": "One-line reversible change."},
+    {"text": "Add a whole new authentication system with OAuth and sessions.", "expected": "should_not_trigger", "rationale": "Auth + multi-slice + risky → /rite-spec full lifecycle."},
+    {"text": "Spec out a new CSV export feature.", "expected": "should_not_trigger", "rationale": "New feature spec = /rite-spec."},
+    {"text": "Build the next vertical slice of the active feature.", "expected": "should_not_trigger", "rationale": "Slice build = /rite-build."},
+    {"text": "Run the whole lifecycle end-to-end and ship it.", "expected": "should_not_trigger", "rationale": "Full unattended lifecycle = /rite-autocomplete."},
+    {"text": "Migrate the users table — drop the legacy column.", "expected": "should_not_trigger", "rationale": "Destructive migration is irreversible-risk → full lifecycle, never express."},
+    {"text": "Change our public API response shape for /orders.", "expected": "should_not_trigger", "rationale": "Public-API break is irreversible-risk → /rite-spec, not express."},
+    {"text": "Redesign the dashboard with a new design system.", "expected": "should_not_trigger", "rationale": "Ambiguous + second design system → full lifecycle."}
+  ]
+}
