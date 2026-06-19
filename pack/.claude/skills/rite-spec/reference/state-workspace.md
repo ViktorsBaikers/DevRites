@@ -22,10 +22,9 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
       test-plan.md                # build-readable coverage target: coverage diagram + per-gap test requirements + acceptance→test map (from /rite-vet; read by /rite-build + /rite-prove)
       state.md                    # phase, active slice, risk, next step
       questions.md                # asked questions + answers
-      decisions.md                # decisions + rationale
+      decisions.md                # decisions + rationale (+ a `## Dead ends` section: approaches tried that failed + why, so retries don't repeat them)
       assumptions.md              # explicit assumptions still standing
       drift.md                    # spec/plan drift observations + resolutions
-      attempts.md                 # dead ends: approaches tried that failed + why (so retries don't repeat them)
       touched-files.md            # files changed or intentionally inspected
       evidence.md                 # commands run + results
       browser-evidence.md         # screenshots, routes, console, viewport checks
