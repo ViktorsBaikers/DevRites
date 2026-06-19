@@ -74,6 +74,7 @@ the mode table.
 
 ## Output → `polish-report.md`
 
+**Footer first (to chat, not into the report file)** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`). Then write the report:
 ```
 Target: <slug | path/route/component>
 Phase 1 (code polish): findings → fixes (technique + why behavior preserved)

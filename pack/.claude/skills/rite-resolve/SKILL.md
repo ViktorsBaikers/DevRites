@@ -91,6 +91,7 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
 
 ## Output
 
+**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Resolved: <qid> (<gate>, slice <N>)
 Answer:   <one-line summary>

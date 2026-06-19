@@ -121,6 +121,8 @@ Evidence required:
 > **Mid-flight discipline.** When tempted to skip vertical slicing, coverage mapping, or dependency-order discipline — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 
 ## Output
+
+**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Planned: <slug>
 Approach: <one line>

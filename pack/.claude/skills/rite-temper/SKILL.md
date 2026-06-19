@@ -97,6 +97,8 @@ invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md
 > score before citing evidence — see [`reference/anti-patterns.md`](reference/anti-patterns.md).
 
 ## Output
+
+**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Tempered: <slug>
 Significance: full | skipped — low stakes (<trigger>)

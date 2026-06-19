@@ -22,6 +22,7 @@ devrites — drive the .devrites/ workflow from any tool (run at the project roo
 
   orient [slug]          orientation digest for the active feature (read-only)
   status [slug]          alias for orient
+  progress [slug]        progress footer — slice meter + flow ribbon (read-only)
   ready [slug]           build-readiness gate    (0 ready · 2 no-plan · 3 awaiting · 4 blocked · 5 none)
   evidence-fresh [slug]  evidence-freshness gate (0 fresh · 3 stale)
   acceptance [slug|dir]  acceptance-criteria gate (0 all proven · 1 gap)
@@ -42,6 +43,7 @@ cmd="${1:-help}"; [ $# -gt 0 ] && shift || true
 
 case "$cmd" in
   orient|status)  exec bash "$HERE/preamble.sh" "$@" ;;
+  progress)       exec bash "$HERE/progress.sh" "$@" ;;
   ready)          exec bash "$HERE/readiness.sh" "$@" ;;
   evidence-fresh) exec bash "$HERE/evidence-fresh.sh" "$@" ;;
   acceptance)

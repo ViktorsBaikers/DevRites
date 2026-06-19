@@ -112,6 +112,8 @@ the labels do the work.
 > **Mid-flight discipline.** When tempted to demote a Critical, hide a finding, fix without re-verification, or wander out of scope — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 
 ## Output → `review.md`
+
+**Footer first (to chat, not into the report file)** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`). Then write the report:
 ```
 Reviewed: <slice N | feature>
 Tests: <adequate? gaps>

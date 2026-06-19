@@ -85,6 +85,8 @@ when capturing significant spec decisions (why-not-what, ADR-style notes in `dec
 > **Mid-flight discipline.** When tempted to skip investigation depth, gap-closing, or placement decisions — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 
 ## Output
+
+**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Spec ready: <slug>
 Objective: <one sentence>   Placement: <where it lives>

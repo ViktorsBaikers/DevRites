@@ -65,6 +65,8 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 > failure mode the ask misses.
 
 ## Output
+
+**Footer first** — render the flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); at ship it reads `ship ✓` across the spine. Keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Shipped: <feature>
 Commit:  <sha> on <branch>    Tag/PR: <ref | none>
