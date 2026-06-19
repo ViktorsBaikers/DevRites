@@ -252,6 +252,23 @@ if [ "$WITH_RULES" -eq 1 ]; then
   install_tree "$PACK_SRC/rules" ".claude/rules"
 fi
 
+# 4b) hooks — auto-approve the read-only orientation/gate scripts (no per-run permission
+# prompts) + a SessionStart orientation injector. Ship the scripts (manifest-managed, updated
+# on reinstall); SEED .claude/settings.json only when absent and never record it in the
+# manifest, so it is preserved on uninstall/update and the user's own settings stay safe.
+if [ "$WITH_SKILLS" -eq 1 ] && [ -d "$PACK_SRC/hooks" ]; then
+  install_tree "$PACK_SRC/hooks" ".claude/hooks"
+  if [ ! -e "$TARGET/.claude/settings.json" ]; then
+    if [ "$DRYRUN" -eq 1 ]; then
+      dr_say "  [seed] .claude/settings.json ${DR_Y}(DevRites hooks — preserved on uninstall/update)${DR_R}"
+    else
+      mkdir -p "$TARGET/.claude"; cp "$PACK_SRC/settings.json" "$TARGET/.claude/settings.json"
+    fi
+  else
+    dr_warn "skip .claude/settings.json (exists) — to silence the per-run script prompts, add the \"hooks\" block from $PACK_SRC/settings.json to your settings, or run /hooks"
+  fi
+fi
+
 # 5) .devrites seed (README always managed; ACTIVE seeded but never manifest-managed)
 DEV_README="$TMP_GEN_DIR/devrites-readme.md"
 cat > "$DEV_README" <<'EOF'
