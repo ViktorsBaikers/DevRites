@@ -9,12 +9,18 @@
     {"text": "Fix this typo in the error message.", "expected": "should_trigger", "rationale": "Typo = express lane."},
     {"text": "Bump the timeout config from 30s to 60s.", "expected": "should_trigger", "rationale": "Small reversible config change."},
     {"text": "Just change the default page size to 50.", "expected": "should_trigger", "rationale": "One-line reversible change."},
+    {"text": "Increase the API rate-limit constant from 100 to 200.", "expected": "should_trigger", "rationale": "Single constant bump, reversible."},
+    {"text": "Reword this validation error message to be clearer.", "expected": "should_trigger", "rationale": "Copy tweak, low-risk."},
+    {"text": "Rename this local variable for readability.", "expected": "should_trigger", "rationale": "Single-scope rename, unambiguous."},
+    {"text": "Flip the feature flag default to off.", "expected": "should_trigger", "rationale": "One-line reversible toggle."},
+    {"text": "Fix the broken link in the README.", "expected": "should_trigger", "rationale": "Tiny doc fix, reversible."},
     {"text": "Add a whole new authentication system with OAuth and sessions.", "expected": "should_not_trigger", "rationale": "Auth + multi-slice + risky → /rite-spec full lifecycle."},
     {"text": "Spec out a new CSV export feature.", "expected": "should_not_trigger", "rationale": "New feature spec = /rite-spec."},
     {"text": "Build the next vertical slice of the active feature.", "expected": "should_not_trigger", "rationale": "Slice build = /rite-build."},
     {"text": "Run the whole lifecycle end-to-end and ship it.", "expected": "should_not_trigger", "rationale": "Full unattended lifecycle = /rite-autocomplete."},
     {"text": "Migrate the users table — drop the legacy column.", "expected": "should_not_trigger", "rationale": "Destructive migration is irreversible-risk → full lifecycle, never express."},
     {"text": "Change our public API response shape for /orders.", "expected": "should_not_trigger", "rationale": "Public-API break is irreversible-risk → /rite-spec, not express."},
-    {"text": "Redesign the dashboard with a new design system.", "expected": "should_not_trigger", "rationale": "Ambiguous + second design system → full lifecycle."}
+    {"text": "Redesign the dashboard with a new design system.", "expected": "should_not_trigger", "rationale": "Ambiguous + second design system → full lifecycle."},
+    {"text": "Refactor the payments module across several files.", "expected": "should_not_trigger", "rationale": "Multi-file refactor → not the express lane."}
   ]
 }

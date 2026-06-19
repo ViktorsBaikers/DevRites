@@ -132,12 +132,18 @@ status: open | answered | dropped
 slice: 03-list-endpoint              # which slice raised it (or "spec" / "plan")
 gate: advisory | validating | blocking | escalating
 question: <one crisp sentence the human can answer>
-proposed: <agent's tentative answer, or "none">
+options: |                           # ranked option set, recommended FIRST
+  1. <recommended> (Recommended) — <dimension-tagged rationale + trade-off>
+  2. <alternative> — <rationale + trade-off>
+  3. Something else — describe it
+proposed: <the recommended option restated — the HITL default + AFK auto-pick>
 raised_at: 2026-05-28T17:30:00Z
 answered_at: <iso when status flips to answered>
-answer: <human's reply, verbatim>
+answer: <chosen option / human's reply, verbatim>
+supersedes: <q-... if this replaces an answered entry, else omit>
 ```
 
+Canonical schema + rules (gate taxonomy, option-set contract): [`.claude/rules/afk-hitl.md`](../../../rules/afk-hitl.md).
 `/rite-resolve <qid> "<answer>"` is the canonical mutator — manual edits work but the
 skill keeps `state.md` and `questions.md` consistent.
 

@@ -40,7 +40,9 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
   not modify `spec.md` / `plan.md` inside this skill.
 - **The script is the source of truth.** Always invoke
   `devrites-lib/scripts/resolve.sh` — it keeps `questions.md` + `state.md` consistent and emits the
-  next-action recommendation. Manual edits are allowed but not by this skill.
+  next-action recommendation. The one `state.md` field this skill may write by hand is the
+  unblocked slice's `Slice mode` (step 4, the named exception); everything else goes through
+  the script, never by hand.
 
 ## Workflow
 

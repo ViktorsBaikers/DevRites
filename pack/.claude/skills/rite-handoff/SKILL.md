@@ -80,3 +80,11 @@ when no active feature).
 
 After writing, **print the absolute path** of the handoff file so the user (or the next
 agent) can open it without searching.
+
+## Session hygiene
+Close with the one-line hygiene advisory + the single resume command — this skill *is* the
+pre-`/clear` bridge, so it's where the advisory matters most (`context-hygiene.md`):
+```
+↻ Hygiene: /clear — handoff written; all chat-only context is now on disk, safe to /clear
+or close the session. Resume next session with: <the single next command from state.md>
+```

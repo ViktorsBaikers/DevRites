@@ -58,7 +58,9 @@ and nothing else.
 
 ## Ready for handoff?
 
-After items 1–6, render an explicit handoff readiness section. A fresh agent
+After the summary items (1–8), render the handoff readiness section (item 9 above) last —
+the canonical output order is: progress footer → summary items 1–8 → handoff readiness.
+A fresh agent
 or a future session should be able to pick the work up from the workspace
 **alone**, with zero chat context. Check:
 

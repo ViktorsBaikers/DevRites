@@ -1,0 +1,26 @@
+{
+  "skill": "devrites-interview",
+  "description": "Trigger evals for devrites-interview — model-invoked one-question-at-a-time intent extraction (best-guess + structured options, stop at ~95% confidence) when the ask is underspecified, before any spec/plan/code exists.",
+  "queries": [
+    {"text": "interview me about what I actually want before we start", "expected": "should_trigger", "rationale": "Description names 'interview me'."},
+    {"text": "grill me on this so I can figure out what I'm really asking for", "expected": "should_trigger", "rationale": "Description names 'grill me'; framing is intent extraction, not stress-testing a formed plan."},
+    {"text": "honestly I'm not sure what I want here — help me pull it out", "expected": "should_trigger", "rationale": "Description names 'I'm not sure what I want'."},
+    {"text": "ask me one question at a time until you understand the requirement", "expected": "should_trigger", "rationale": "One-question-per-turn protocol is this skill's core."},
+    {"text": "this feature request is way underspecified — pin down what I mean before we spec it", "expected": "should_trigger", "rationale": "Underspecified ask flagged before /rite-spec routes here."},
+    {"text": "the ask is too fuzzy to plan — extract the real requirement from me first", "expected": "should_trigger", "rationale": "Underspecified ask flagged before /rite-define routes here."},
+    {"text": "give me your best guess plus options on each decision, one by one, until you've got it", "expected": "should_trigger", "rationale": "Best-guess + structured-options protocol matches exactly."},
+    {"text": "keep questioning me until you're about 95% sure what I mean", "expected": "should_trigger", "rationale": "Names the ~95% confidence stop condition."},
+    {"text": "I described a contact page but never decided the details — draw them out of me", "expected": "should_trigger", "rationale": "Vague one-line ask = decision-tree mapping via interview."},
+    {"text": "close the gap between what I said and what I actually want before any code exists", "expected": "should_trigger", "rationale": "Restates the skill's own purpose — extract intent at the cheapest moment."},
+    {"text": "I keep flip-flopping on requirements — interrogate me until it's nailed down", "expected": "should_trigger", "rationale": "Oblique but clear request to extract settled intent."},
+    {"text": "drag the actual spec out of my head with targeted questions before we plan anything", "expected": "should_trigger", "rationale": "Oblique pre-plan intent extraction is interview's lane."},
+    {"text": "ideate with me — give me 3-5 radically different options for this rough idea", "expected": "should_not_trigger", "rationale": "Ideation/divergence is rite-pressure-test, the skill's explicit Not-for."},
+    {"text": "build the next slice of the active feature", "expected": "should_not_trigger", "rationale": "Implementing a slice is /rite-build, not intent extraction."},
+    {"text": "review this pull request for correctness bugs and risks", "expected": "should_not_trigger", "rationale": "Reviewing a diff is code-review (and /rite-review), not interviewing."},
+    {"text": "debug why the build is suddenly red", "expected": "should_not_trigger", "rationale": "Diagnosing a failure is diagnose (and devrites-debug-recovery)."},
+    {"text": "I have a finished design — grill me relentlessly to find the holes in it", "expected": "should_not_trigger", "rationale": "Stress-testing an already-formed plan is grill-me, not unknown-intent extraction."},
+    {"text": "build this feature test-first with red-green-refactor", "expected": "should_not_trigger", "rationale": "Test-first implementation is tdd."},
+    {"text": "prototype a throwaway UI so I can play with a few designs", "expected": "should_not_trigger", "rationale": "Throwaway prototyping is prototype (and /rite-prototype)."},
+    {"text": "compact this conversation into a handoff doc for the next agent", "expected": "should_not_trigger", "rationale": "Conversation handoff is handoff (and /rite-handoff)."}
+  ]
+}

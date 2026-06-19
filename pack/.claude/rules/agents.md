@@ -18,6 +18,7 @@ Fresh-context, read-only reviewers. Each is given the active feature workspace p
 | `devrites-frontend-reviewer` | UX flow, a11y, responsive, design-system, anti-AI-slop | `/rite-seal` on UI features |
 | `devrites-security-auditor` | Untrusted input, trust boundaries, secrets, deps | `/rite-seal` when input/auth/data in scope |
 | `devrites-performance-reviewer` | Measure-first perf (N+1, hot paths, payload size) | `/rite-seal` when perf relevant |
+| `devrites-simplifier-reviewer` | Behavior-preserving simplification (Chesterton's Fence, deletion test) — Suggestion-only by design | `/rite-polish` Phase 1; `devrites-audit simplify` |
 | `devrites-doubt-reviewer` | Adversarial check of a single claim/decision | `devrites-doubt` loop; risky decisions |
 | `devrites-strategy-reviewer` | Spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention) — **before** any plan or code | `/rite-temper` loop (pre-plan) |
 | `devrites-plan-reviewer` | Plan-vs-rubric engineering review (architecture / scope-reuse / plan code-quality / test-coverage design / performance / reversibility / failure-mode coverage), confidence-banded with a quote-the-source verification gate — **after define, before build** | `/rite-vet` loop (pre-build) |

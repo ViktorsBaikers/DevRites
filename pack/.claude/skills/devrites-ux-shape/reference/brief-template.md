@@ -67,7 +67,7 @@ SVG-CSS / icon library / accepted omission).
 
 ## 9. Responsive & a11y
 Reflow 320→1440 (what stacks / collapses / scrolls); focus order, labels, contrast,
-keyboard, target size. Floor: `../devrites-frontend-craft/reference/quality-standards.md`.
+keyboard, target size. Floor: `../../devrites-frontend-craft/reference/quality-standards.md`.
 
 ## 10. Visual-direction probe
 Which probe ran (figma / images / prototype / skipped — no tool), which direction won, what
