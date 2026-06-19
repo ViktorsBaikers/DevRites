@@ -32,15 +32,16 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   drive-by refactors.
 - Surface material assumptions; ask before adding dependencies or a second design
   system. The [Spec Drift Guard](reference/spec-drift-guard.md) is active throughout.
-- **Avoid AI slop while writing** (canonical list in
-  `rite-polish/reference/anti-ai-slop.md`). `devrites-slice-wright` enforces this **at the
-  source** — its anti-slop charter is the same list: no over-defensive null/length checks, no
-  blanket `catch`es that swallow errors, no useless wrappers, no over-engineered abstractions
-  before two real callers, no generic AI naming, no tutorial-style comments, **don't go beyond
-  the spec**, **reuse before you write**
-  (`devrites-frontend-craft/reference/reuse-first.md`). It writes the code the *project* would
-  write, in its idiom; you verify the charter held on return. Polish catches what slips; build
-  prevents.
+- **Avoid AI slop while writing.** `devrites-slice-wright` enforces the anti-slop charter **at
+  the source** — the canonical do-not list is `rite-polish/reference/anti-ai-slop.md` (the
+  wright reads it; don't restate it here). It writes the code the *project* would write, in its
+  idiom, reusing before building; **you verify the charter held on return** — you do not re-list
+  it and you do not fix slop by editing source. Polish catches what slips; build prevents.
+- **You never edit source — the wright is the only writer of code + tests.** You write only
+  `.devrites/` bookkeeping. On any red gate, doubt finding, or coverage gap your only remedies
+  are **continue the same wright once** (it fixes in its own context) or **stop + escalate** —
+  never patch the code yourself. The `reconcile.sh` gate (step 6) enforces this by exit code:
+  any source file changed outside the wright's claimed set is a hard STOP.
 
 ## Workflow ([one-slice-cycle](reference/one-slice-cycle.md))
 0. **Rules + AFK + readiness check.** Read `.claude/rules/core.md` first. Then **run the
@@ -90,8 +91,16 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
     write the `Awaiting human` block to `state.md`, set `Status: awaiting_human`, run
     the `notify:` hook if `.devrites/AFK` defines one, then **STOP**. Resume happens
     when the user runs `/rite-resolve <qid> "<answer>"`.
-3. **Dispatch the build core to `devrites-slice-wright`** — one `Task` call, fresh context.
-   Assemble the slice contract and send it per
+3. **Snapshot the tree, then dispatch the build core to `devrites-slice-wright`** — one `Task`
+   call, fresh context. **First**, capture the pre-dispatch tree so the reconcile gate (step 6)
+   can prove you never touched source — run this immediately before the `Task` call:
+   ```bash
+   RC=.claude/skills/devrites-lib/scripts/reconcile.sh
+   [ -f "$RC" ] || RC="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/reconcile.sh"
+   [ -f "$RC" ] || RC=pack/.claude/skills/devrites-lib/scripts/reconcile.sh
+   [ -f "$RC" ] && bash "$RC" snapshot || echo "(reconcile gate unavailable — verify by hand that only the wright wrote source)"
+   ```
+   Then assemble the slice contract and send it per
    [`reference/wright-dispatch.md`](reference/wright-dispatch.md): the slice goal, acceptance
    criteria, and **scope boundary**; the paths it may touch (`touched-files.md`); the context
    paths to read (`spec.md`, `plan.md`, `decisions.md`, `assumptions.md`, plus `test-plan.md`
@@ -108,7 +117,9 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    — **code + tests only; it does not write the workspace files.** If the slice is UI but no `design-brief.md` exists (e.g. a spec written before
    shaping), shape it via `devrites-ux-shape` before the wright codes. If the `Task` tool is
    unavailable, run the wright's discipline **inline** as a flagged fallback (see the reference)
-   — same one-slice cycle, no isolation.
+   — same one-slice cycle, no isolation; in that case write
+   `.devrites/work/<slug>/.reconcile-inline` so the reconcile gate skips (you are legitimately
+   the writer in this fallback).
 4. **Doubt the decisions it stood up.** For each entry in the wright's `Decisions stood`
    (branching, boundary crossing, data model, auth, public API, migration, user-flow change,
    "this is safe/scales") apply `devrites-doubt` **before accepting the slice** — the writer
@@ -123,10 +134,26 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    **not** doubt-and-accept it. (The wright's return is the not-yet-load-bearing moment — the
    slice isn't `built` or merged yet — so this post-return doubt is still pre-commit.)
 5. **Fail-on-red.** If the wright's `Gates` were red (targeted tests / types / lint) or it
-   couldn't verify: do **not** mark the slice `built`. AFK → append a blocking question to
-   `questions.md` (gate=blocking, slice's SLA) + set `Status: awaiting_human`; HITL → pause as a
-   blocking gate. Either way, `Next step: /rite-plan unblock` until resolved.
-6. **Record — you are the canonical writer.** From the wright's artifact, update `state.md`,
+   couldn't verify: do **not** mark the slice `built`, and **do not fix the code yourself**.
+   First remedy — **continue the same wright once** (`SendMessage` to it, carrying the failing
+   gate + its real output) so it fixes in its own context. This retry is for **objective
+   failures only** — red gate / type / lint / missing test coverage / UI browser-proof fail —
+   never a contested decision (that routes to `/rite-plan repair`). **Still red after the one
+   retry** → escalate: AFK → append a blocking question to `questions.md` (gate=blocking,
+   slice's SLA) + set `Status: awaiting_human`; HITL → pause as a blocking gate. Either way,
+   `Next step: /rite-plan unblock` until resolved.
+6. **Record — you are the canonical writer.** **First, run the reconcile gate (A1):** write the
+   wright's reported `Files changed` paths (one per line) to
+   `.devrites/work/<slug>/.reconcile-claimed`, then:
+   ```bash
+   RC=.claude/skills/devrites-lib/scripts/reconcile.sh
+   [ -f "$RC" ] || RC="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/reconcile.sh"
+   [ -f "$RC" ] || RC=pack/.claude/skills/devrites-lib/scripts/reconcile.sh
+   [ -f "$RC" ] && { bash "$RC" check; echo "reconcile rc=$?"; } || echo "(reconcile gate unavailable — confirm by hand only the wright wrote source)"
+   ```
+   **Exit 5 → hard STOP:** a source file changed outside the wright's claimed set — code was
+   edited by something other than the wright (A1 breach). Revert it and re-dispatch the wright;
+   do **not** mark the slice `built`. Then, from the wright's artifact, update `state.md`,
    `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). If the wright reported
    an approach it tried and backed out of, record it under a `## Dead ends` section in
    `decisions.md` so a retry or the next agent doesn't repeat it. **Evidence is the

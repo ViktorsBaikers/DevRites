@@ -58,6 +58,12 @@ Rules:
   underspecified one is the main cause of drift.
 
 ## On return — the orchestrator's job (don't delegate these)
+**You never edit source here.** The wright is the only writer of code + tests; you write only
+`.devrites/` bookkeeping. Every remedy below is **continue the same wright once** or **stop +
+escalate** — never an inline patch. You snapshotted the tree before dispatch (`reconcile.sh
+snapshot`); the reconcile check in step 4 proves no source changed outside the wright's claimed
+set.
+
 1. **Doubt the surfaced decisions.** For each entry in the wright's `Decisions stood`, apply
    `devrites-doubt` (→ `devrites-doubt-reviewer`) before accepting — the writer must not grade
    its own decisions. The wright's return is the not-yet-load-bearing moment (slice not `built`,
@@ -69,19 +75,28 @@ Rules:
    `questions.md` entry + `state.md` `Awaiting human` (blocking gate), or route a scope change
    through `/rite-plan repair` (Spec Drift Guard). You are the canonical writer of these files.
 3. **Fail-on-red.** If `Gates` show red (or the wright couldn't verify), the slice is **not
-   built** — blocking question (AFK) or blocking gate (HITL); `Next: /rite-plan unblock`.
+   built** — and you do **not** fix the code. First remedy: **continue the same wright once**
+   (`SendMessage`, carrying the failing gate + real output) so it fixes in its own context —
+   objective failures only (red gate / type / lint / missing coverage / UI browser-proof fail),
+   never a contested decision. Still red after that one retry → blocking question (AFK) or
+   blocking gate (HITL); `Next: /rite-plan unblock`.
    An interactive element or user flow in the slice's test-plan interaction inventory left with
    **no asserting test** has the same standing as red: an unverified-element gap blocks the
-   slice (don't mark it built). Re-dispatch the wright to cover it, or record a blocker.
-4. **Record.** Persist the wright's artifact to `state.md`, `evidence.md`, `touched-files.md`
-   (and `browser-evidence.md` for UI) per [`evidence-standard.md`](evidence-standard.md).
-   Evidence is the wright's real command output, not its say-so. Then tick AFK if `.devrites/AFK`
-   is present (`tick-afk.sh`; exit 3 → STOP).
+   slice (don't mark it built). Continue the same wright to cover it, or record a blocker.
+4. **Reconcile, then record.** First prove A1 held: write the wright's `Files changed` paths
+   (one per line) to `.devrites/work/<slug>/.reconcile-claimed` and run `reconcile.sh check`.
+   **Exit 5 → STOP** — a source file changed outside the wright's claimed set (A1 breach); revert
+   it and re-dispatch, don't mark the slice built. Then persist the wright's artifact to
+   `state.md`, `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI) per
+   [`evidence-standard.md`](evidence-standard.md). Evidence is the wright's real command output,
+   not its say-so. Then tick AFK if `.devrites/AFK` is present (`tick-afk.sh`; exit 3 → STOP).
 
 ## Fallback
 If the `Task` tool / sub-agent dispatch is unavailable, `/rite-build` runs the wright's
 discipline **inline** in its own context and flags it as a fallback (no clean-context benefit).
 The slice still gets the full one-slice cycle — orient → RED → implement → verify — under the
-same anti-slop charter; it just doesn't get the isolation. Mirrors the reviewer-dispatch
+same anti-slop charter; it just doesn't get the isolation. In this path the orchestrator is
+legitimately the writer, so write `.devrites/work/<slug>/.reconcile-inline` before editing — the
+reconcile gate (step 4) skips when that sentinel is present. Mirrors the reviewer-dispatch
 fallback in
 [`../../rite-seal/reference/parallel-dispatch.md`](../../rite-seal/reference/parallel-dispatch.md).
