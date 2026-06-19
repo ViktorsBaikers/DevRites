@@ -49,6 +49,9 @@ jobs:
       - name: Evidence-freshness gate test
         run: bash tests/evidence-fresh-test.sh
 
+      - name: A1 pre-block hook test
+        run: bash tests/a1-guard-test.sh
+
       - name: Anti-slop detector (advisory)
         run: bash scripts/devrites-detect.sh || true
 
