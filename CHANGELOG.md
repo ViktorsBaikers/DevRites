@@ -2,6 +2,14 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.9.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.8.0...v1.9.0) (2026-06-19)
+
+### Features
+
+* **skills:** enforce test completeness + assertion strength ([4f825a1](https://github.com/ViktorsBaikers/DevRites/commit/4f825a1d1956138a6db778f8b54d7dcafb3876a8))
+* **skills:** present gaps as ranked option sets with inline resolve ([db70a21](https://github.com/ViktorsBaikers/DevRites/commit/db70a21511ad3ebc17b32e32afed8b02dcd47a22))
+* **skills:** research-driven workflow improvements ([83cb2e0](https://github.com/ViktorsBaikers/DevRites/commit/83cb2e00fb95cdbf974440f098e397ae7c9cde76))
+
 ## [1.8.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.7.0...v1.8.0) (2026-06-19)
 
 ### Features
