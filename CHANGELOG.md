@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.11.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.10.0...v1.11.0) (2026-06-19)
+
+### Features
+
+* **skills:** add A1 pre-block hook, observe by default ([b7e76d5](https://github.com/ViktorsBaikers/DevRites/commit/b7e76d58f214076a7bd860b7fc3588c2476f5ed5))
+
 ## [1.10.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.9.0...v1.10.0) (2026-06-19)
 
 ### Features
