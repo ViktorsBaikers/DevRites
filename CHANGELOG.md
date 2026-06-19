@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.8.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.7.0...v1.8.0) (2026-06-19)
+
+### Features
+
+* **skills:** add progress footer to all rite-* lifecycle commands ([6b5eda0](https://github.com/ViktorsBaikers/DevRites/commit/6b5eda051ddc86c0a4d67a42d147cf4e9b7fbd17))
+
 ## [1.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.6.0...v1.7.0) (2026-06-18)
 
 ### Features
