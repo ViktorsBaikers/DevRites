@@ -17,13 +17,16 @@ before a plan, spec, or code exists.
   can fix the premise.
 - **Highest-value question first** — order by how much the answer changes the build. A
   question that moves the data model or acceptance criteria beats a cosmetic one.
-- **Structured options** when the space is enumerable:
+- **Structured options** when the space is enumerable — present them as the standard ranked
+  **option set** (`rules/afk-hitl.md` → "Option set"): recommended **first**, labelled
+  `(Recommended)`, each with a dimension-tagged rationale (`logic · infra · business ·
+  architecture`, + `security`/`UX`/`risk` when in scope), plus the escape hatch. Render via
+  `AskUserQuestion` when the harness has it:
   ```
-  1. <option> — <implication>
-  2. <option> — <implication>
+  1. <recommended> (Recommended) — logic: … · infra: … · business: … · architecture: …
+  2. <alternative> — <rationale + the trade-off it accepts>
   3. Something else — I'll describe it
   ```
-  Always include the escape hatch; mark your recommendation.
 
 ## Stop condition
 Stop when **any** holds — don't interrogate past the point of value:
