@@ -71,7 +71,19 @@ pull these via `Read` when relevant:
 5. **Map results to acceptance** — walk `spec.md` acceptance criteria; note which are now
    proven and which aren't. If `test-plan.md` exists, also walk its acceptance→test map and
    per-gap requirements — a planned test (especially a regression-Critical) with no covering
-   result is an unproven gap, not a pass.
+   result is an unproven gap, not a pass. **Also walk the test-plan interaction inventory**
+   (every interactive element + user flow): each must have a passing asserting test. An
+   element/flow with no asserting result is an **unproven gap = blocker** — a NO-GO at
+   `/rite-seal`, the same standing as an unproven acceptance criterion (`testing.md`
+   "Completeness"). For UI, the browser proof (step 4) demonstrates the flows; the asserting
+   tests prove the elements.
+5a. **Assertion-strength spot check (critical paths).** For each regression-Critical /
+   irreversible / data-loss path, confirm the covering test actually *can* fail: reject
+   tautological assertions (`toBeDefined`-only, asserting the mock), and **fault-inject** —
+   break the code on purpose (flip a comparison, drop a guard) and confirm the test goes red,
+   then revert. Run the project's mutation-testing tool over the touched criticals if it has
+   one. A test that stays green on deliberately broken code is an unproven gap, not a pass
+   (`testing.md` "Assertion strength"). Record what was fault-checked in `evidence.md`.
 6. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. Reproduce → isolate → fix within scope → re-run; if a fix
    would exceed scope, record a blocker.

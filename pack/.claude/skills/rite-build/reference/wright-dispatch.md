@@ -38,6 +38,11 @@ Targets (stay inside these — from touched-files.md): <paths>
 Interfaces / signatures to match: <if any>
 Read yourself: spec.md, plan.md, decisions.md, assumptions.md, rite-polish/reference/anti-ai-slop.md<, design-brief.md if UI>
 Rules in scope (.claude/rules/): coding-style, error-handling, testing, patterns<, security if input/auth/data><, performance if hot path / query / large payload>
+Test completeness: write ≥1 asserting test for EVERY interactive element + user flow in this
+  slice's test-plan.md interaction inventory, each at the right level (fields/elements →
+  unit/component; critical journeys → one E2E; never one-per-field). No element ships
+  unverified — testing.md "Completeness". If the slice has no test-plan inventory, derive the
+  element/flow list from the slice's own UI surface and cover it the same way.
 
 Apply your documented discipline (orient → RED → implement smallest complete → verify →
 return). Frontend slice → build to design-brief.md with devrites-frontend-craft. Uncertain
@@ -65,6 +70,9 @@ Rules:
    through `/rite-plan repair` (Spec Drift Guard). You are the canonical writer of these files.
 3. **Fail-on-red.** If `Gates` show red (or the wright couldn't verify), the slice is **not
    built** — blocking question (AFK) or blocking gate (HITL); `Next: /rite-plan unblock`.
+   An interactive element or user flow in the slice's test-plan interaction inventory left with
+   **no asserting test** has the same standing as red: an unverified-element gap blocks the
+   slice (don't mark it built). Re-dispatch the wright to cover it, or record a blocker.
 4. **Record.** Persist the wright's artifact to `state.md`, `evidence.md`, `touched-files.md`
    (and `browser-evidence.md` for UI) per [`evidence-standard.md`](evidence-standard.md).
    Evidence is the wright's real command output, not its say-so. Then tick AFK if `.devrites/AFK`
