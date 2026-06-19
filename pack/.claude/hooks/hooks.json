@@ -6,6 +6,12 @@
         "hooks": [
           { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-allow.sh\"" }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-a1-guard.sh\"" }
+        ]
       }
     ],
     "SessionStart": [

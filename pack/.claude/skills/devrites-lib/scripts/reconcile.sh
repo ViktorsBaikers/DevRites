@@ -9,7 +9,10 @@
 # Two phases, both called by /rite-build:
 #   snapshot — step 3, right BEFORE dispatching the wright. Captures the working
 #              tree (tracked + untracked, .gitignore honored) as a git tree
-#              object, without touching the user's real index/staging.
+#              object, without touching the user's real index/staging. The base
+#              file doubles as the "mid-build window" marker: while it exists the
+#              optional pre-block hook (devrites-a1-guard.sh) is armed; a clean
+#              check removes it (a violation keeps it hot until re-dispatch).
 #   check    — step 6 (record), AFTER the wright returns and the orchestrator has
 #              written the wright's reported `Files changed` paths (one per line)
 #              to .devrites/work/<slug>/.reconcile-claimed. Diffs the tree against
@@ -62,10 +65,15 @@ worktree_tree() {
   printf '%s\n' "$tree"
 }
 
+# Close the mid-build window: drop the base (disarms the a1-guard hook) and the
+# per-slice manifest/sentinel. Called only when the slice is accepted clean or
+# was the inline fallback — a violation deliberately leaves the window hot.
+close_window() { rm -f "$base" "$claimed" "$inline"; }
+
 case "$mode" in
   snapshot)
-    rm -f "$inline"            # clear any stale inline-fallback sentinel
-    worktree_tree > "$base"
+    rm -f "$inline" "$claimed"   # clear any stale sentinel / prior-slice manifest
+    worktree_tree > "$base"      # base present == mid-build window open
     printf 'reconcile: snapshot captured for %s.\n' "$slug"
     exit 0 ;;
   check)
@@ -73,6 +81,7 @@ case "$mode" in
     # (no wright was dispatched), so the gate does not apply.
     if [ -f "$inline" ]; then
       printf 'reconcile: inline-fallback run (no wright dispatched) — gate skipped.\n' >&2
+      close_window
       exit 0
     fi
     if [ ! -f "$base" ]; then
@@ -105,6 +114,7 @@ case "$mode" in
       printf 'The orchestrator must NOT edit source. Re-dispatch the wright (continue it once) or revert these.\n' >&2
       exit 5
     fi
+    close_window
     printf "reconcile: OK — every source change is the wright's; orchestrator touched only bookkeeping.\n"
     exit 0 ;;
   *)
