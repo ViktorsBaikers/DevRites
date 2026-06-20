@@ -4,7 +4,7 @@
 #
 # Safety model: FAIL-OPEN. This hook never denies and never blocks. It only ever EMITS an
 # `allow` for a command that (a) runs one of five known read-only DevRites scripts AND
-# (b) contains no dangerous/exfiltration tokens. On any doubt it prints nothing and exits 0,
+# (b) contains no dangerous/exfiltration tokens. On any doubt it prints nothing and exits 0, pack-scan-ignore: describes the hook's own exfil filter, not a payload
 # which leaves Claude Code's normal permission flow untouched. Mutating DevRites scripts
 # (resolve.sh / tick-afk.sh / close-out.sh) are intentionally NOT covered — they still prompt.
 set -u

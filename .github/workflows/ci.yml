@@ -40,6 +40,12 @@ jobs:
       - name: Check cross-references (no dead pointers)
         run: python3 scripts/check-cross-refs.py
 
+      - name: Pack security scan (injection + hidden unicode — BLOCKING)
+        run: python3 scripts/scan-pack-security.py pack/.claude
+
+      - name: Pack security scanner tests
+        run: bash tests/scan-pack-security-test.sh
+
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
 

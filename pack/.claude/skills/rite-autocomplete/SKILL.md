@@ -9,7 +9,7 @@ user-invocable: true
 
 Drives every DevRites phase in order without stopping for discretionary input. The
 prompt may be vague — autocomplete asks its clarifying questions **up front**, then
-runs to completion. It does **not** disable the safety gates: hard irreversible-risk,
+runs to completion. It does **not** disable the safety gates: hard irreversible-risk,<!-- pack-scan-ignore: negated statement — gates are NOT disabled -->
 blocking / escalating gates, and any NO-GO still pause.
 
 ## Rules consulted (read on demand from `.claude/rules/`)
