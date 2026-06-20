@@ -55,6 +55,12 @@ jobs:
       - name: Doctor health diagnose
         run: bash tests/doctor-test.sh
 
+      - name: Workflow security (SHA-pinned actions + scoped permissions — BLOCKING)
+        run: python3 scripts/validate-workflow-security.py
+
+      - name: Workflow security validator tests
+        run: bash tests/workflow-security-test.sh
+
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
 
