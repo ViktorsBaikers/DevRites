@@ -67,6 +67,9 @@ jobs:
       - name: Supply-chain IOC scanner tests
         run: bash tests/supply-chain-iocs-test.sh
 
+      - name: Fan-out footprint collector
+        run: bash tests/footprint-test.sh
+
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
 

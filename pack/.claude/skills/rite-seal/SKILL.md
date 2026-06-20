@@ -90,6 +90,10 @@ Read `review.md` and the latest reviewer outputs.
    GATE; `devrites-audit` is the inline single-axis pass run during build/polish.
    The two paths are intentional, not divergent — the inline audit catches issues
    early; the fresh-context agents are the independent gate before ship.
+   **Footprint:** for each reviewer you dispatch here, append a record —
+   `bash "$FP" log <slug> reviewer <name>` (resolve `$FP` to
+   `.claude/skills/devrites-lib/scripts/footprint.sh` as in `/rite-build`) — so the seal can
+   report the run's fan-out.
 7a. **Reconcile findings — confidence over volume.** Band each reviewer finding by confidence
    (1–10); a low-confidence (≤4) finding that can't be verified against the diff is **suppressed**
    to a `Suppressed (low-confidence): n` line, not a blocker. Every Critical/Important must cite
@@ -97,7 +101,16 @@ Read `review.md` and the latest reviewer outputs.
    **explicitly** rather than averaging it away, and don't let a pile of low-confidence nits
    inflate the verdict — the gate is `Critical == 0` + acceptance + drift, not "few findings".
    (A seal that fires noise teaches the next one to be ignored.)
-8. Decide GO / NO-GO — [go-no-go](reference/go-no-go.md) — and write `seal.md`.
+8. Decide GO / NO-GO — [go-no-go](reference/go-no-go.md) — and write `seal.md`. Then render the
+   **fan-out footprint** into `seal.md` and the output — deterministic run-weight (subagents
+   dispatched · slices · wall-clock), **never a token or dollar figure** (DevRites can't
+   truthfully source one):
+   ```bash
+   FP=.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] || FP="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/footprint.sh"
+   [ -f "$FP" ] || FP=pack/.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] && bash "$FP" render <slug> || true
+   ```
 9. **On GO only — record proven conventions** to the local ledger
    (`.devrites/conventions.md`) so later slices stop re-deriving this project's idioms:
    the durable, *evidence-proven* commands / idioms / placement / gotchas this feature
