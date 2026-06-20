@@ -156,7 +156,20 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    do **not** mark the slice `built`. Then, from the wright's artifact, update `state.md`,
    `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). If the wright reported
    an approach it tried and backed out of, record it under a `## Dead ends` section in
-   `decisions.md` so a retry or the next agent doesn't repeat it. **Evidence is the
+   `decisions.md` so a retry or the next agent doesn't repeat it.
+   **If the wright's `Conventions` field reports a contradiction** (the live code now
+   disagrees with a held convention), record the drift — you own this bookkeeping:
+   ```bash
+   C=.claude/skills/devrites-lib/scripts/conventions.py
+   [ -f "$C" ] || C="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/conventions.py"
+   [ -f "$C" ] || C=pack/.claude/skills/devrites-lib/scripts/conventions.py
+   command -v python3 >/dev/null 2>&1 && [ -f "$C" ] && \
+     python3 "$C" contradict --key <key> --slug <slug> --evidence "<what the live code does>" \
+       --drift-file .devrites/work/<slug>/drift.md || true
+   ```
+   It lowers the convention's band (or retires it) and appends a `convention-drift` entry to
+   `drift.md`. The ledger is **promoted only at `/rite-seal` on GO** — build only records
+   contradictions, never new conventions. **Evidence is the
    wright's real command output, not its say-so.** Capture per
    [evidence-standard](reference/evidence-standard.md). If `.devrites/AFK` is present, decrement
    the budget by running `bash .claude/skills/devrites-lib/scripts/tick-afk.sh <state.md path>` —
