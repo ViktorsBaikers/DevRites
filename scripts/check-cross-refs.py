@@ -21,13 +21,15 @@ import sys
 ROOT = os.path.join("pack", ".claude")
 SKILLS_ROOT = os.path.join(ROOT, "skills")
 
-# Runtime workspace artifacts live in .devrites/work/<slug>/, not in the pack.
-# References to them by bare filename are legitimate, not dead refs.
+# Runtime artifacts live under .devrites/ (per-feature work/<slug>/ files, plus the
+# project-level conventions ledger), not in the pack. References to them by filename are
+# legitimate, not dead refs.
 WORKSPACE_ARTIFACTS = {
     "spec.md", "plan.md", "tasks.md", "state.md", "decisions.md", "assumptions.md",
     "questions.md", "drift.md", "evidence.md", "browser-evidence.md", "touched-files.md",
     "review.md", "seal.md", "ship.md", "brief.md", "design-brief.md", "strategy.md",
     "polish-report.md", "handoff.md", "eng-review.md", "test-plan.md", "references.md",
+    "conventions.md",
 }
 
 # Files the skills legitimately tell Claude to read in the USER's project / the repo,

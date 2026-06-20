@@ -46,6 +46,9 @@ jobs:
       - name: Pack security scanner tests
         run: bash tests/scan-pack-security-test.sh
 
+      - name: Injection-resistance baseline present in agents
+        run: bash tests/injection-baseline-present.sh
+
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
 
