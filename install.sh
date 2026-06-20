@@ -286,6 +286,11 @@ sessions — it's the durable memory of in-flight work.
   `allow_gates`. Full contract: `.claude/rules/afk-hitl.md`.
   **Gitignore `AFK` unless your team agrees on shared AFK defaults** — it's a
   local toggle, not project state.
+- `conventions.md` (optional) — the conventions ledger: facts a sealed slice proved
+  about this codebase (commands, idioms, placement, gotchas), written on a GO seal and
+  read at orient so the wright stops re-deriving them. The band is earned from how many
+  slices corroborated each entry. **Gitignore `conventions.md`** — it's local, per-clone
+  learning, not shared project state.
 
 Safe to commit `work/` so the team and future sessions share feature state.
 Delete a feature's folder when it's shipped and you no longer need the trail.

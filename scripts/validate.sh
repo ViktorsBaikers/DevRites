@@ -200,7 +200,7 @@ section "no literal pack/.claude/ paths in shipped skill prose"
 # Exclude the intentional resolution-snippet fallback (`... || P=pack/.claude/...`): the
 # preamble snippet tries the installed `.claude/` path first, then `${CLAUDE_SKILL_DIR}`
 # (plugin, best-effort), then the repo `pack/.claude/...` for DevRites self-development.
-PACKPATH_HITS="$(grep -rn -e 'pack/\.claude/rules/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
+PACKPATH_HITS="$(grep -rnI -e 'pack/\.claude/rules/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
 if [ -n "$PACKPATH_HITS" ]; then
   bad "literal pack/.claude/ path in shipped skill prose (strips to .claude/ on install):"
   printf '%s\n' "$PACKPATH_HITS" | sed "s|$ROOT/||"

@@ -49,6 +49,9 @@ jobs:
       - name: Injection-resistance baseline present in agents
         run: bash tests/injection-baseline-present.sh
 
+      - name: Conventions ledger (scorer + store)
+        run: bash tests/conventions-ledger-test.sh
+
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
 
