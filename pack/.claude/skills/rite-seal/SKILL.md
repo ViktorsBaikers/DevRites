@@ -98,6 +98,12 @@ Read `review.md` and the latest reviewer outputs.
    inflate the verdict — the gate is `Critical == 0` + acceptance + drift, not "few findings".
    (A seal that fires noise teaches the next one to be ignored.)
 8. Decide GO / NO-GO — [go-no-go](reference/go-no-go.md) — and write `seal.md`.
+9. **On GO only — record proven conventions** to the local ledger
+   (`.devrites/conventions.md`) so later slices stop re-deriving this project's idioms:
+   the durable, *evidence-proven* commands / idioms / placement / gotchas this feature
+   established. Evidence-gated like the seal itself; the band is earned, not guessed; the
+   step degrades gracefully when unavailable. Full contract + command:
+   [conventions-ledger](reference/conventions-ledger.md). (Skip entirely on NO-GO.)
 
 ## `seal.md` template
 
