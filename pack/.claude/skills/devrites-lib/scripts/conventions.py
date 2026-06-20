@@ -144,6 +144,30 @@ def cmd_read(root):
     return 0
 
 
+def cmd_orient(root, min_band):
+    """Print a compact digest of ACTIVE conventions for the wright's ORIENT step.
+
+    These are priors, not law: high-band entries are followed unless the slice contract
+    says otherwise, and a fresh observation of the live code always overrides a stale one.
+    Retired entries are omitted. Empty output (exit 0) means no priors to apply.
+    """
+    entries = _load(root)
+    rows = []
+    for key, e in entries.items():
+        b = band(e["corroborations"], e["contradictions"])
+        if b is None or b < min_band:
+            continue
+        rows.append((b, key, e))
+    if not rows:
+        return 0
+    rows.sort(key=lambda r: (-r[0], r[1]))
+    print("# Conventions ledger — proven priors (live code always overrides)")
+    for b, key, e in rows:
+        kind = (" (%s)" % e["kind"]) if e["kind"] else ""
+        print("- [%.2f] %s%s: %s" % (b, key, kind, e["statement"]))
+    return 0
+
+
 def cmd_promote(root, key, statement, kind, slug, evidence, date):
     entries = _load(root)
     e = entries.get(key)
@@ -169,7 +193,7 @@ def cmd_promote(root, key, statement, kind, slug, evidence, date):
     return 0
 
 
-def cmd_contradict(root, key, slug, evidence, date):
+def cmd_contradict(root, key, slug, evidence, date, drift_file):
     entries = _load(root)
     e = entries.get(key)
     if e is None:
@@ -180,7 +204,16 @@ def cmd_contradict(root, key, slug, evidence, date):
     _save(root, entries)
     b = band(e["corroborations"], e["contradictions"])
     state = "retired" if b is None else "band %.2f" % b
-    # Caller (orient, B2) routes this line into the feature's drift.md.
+    when = _today(date)
+    # The orchestrator (rite-build) is the single writer of .devrites bookkeeping; it passes
+    # --drift-file so the contradiction is logged to the feature's drift.md atomically here.
+    if drift_file:
+        os.makedirs(os.path.dirname(os.path.abspath(drift_file)), exist_ok=True)
+        with open(drift_file, "a", encoding="utf-8") as fh:
+            fh.write(
+                "\n## convention-drift: %s\n"
+                "- slice: %s\n- contradicted_by: %s\n- now: %s\n- at: %s\n"
+                % (key, slug, evidence, state, when))
     print("DRIFT: convention '%s' contradicted by %s — now %s" % (key, slug, state))
     return 0
 
@@ -195,6 +228,10 @@ def main(argv):
 
     pr = sub.add_parser("read")
     pr.add_argument("--root", default=".")
+
+    po = sub.add_parser("orient")
+    po.add_argument("--root", default=".")
+    po.add_argument("--min-band", type=float, default=0.0)
 
     pp = sub.add_parser("promote")
     pp.add_argument("--key", required=True)
@@ -211,6 +248,7 @@ def main(argv):
     pc.add_argument("--evidence", required=True)
     pc.add_argument("--date", default=None)
     pc.add_argument("--root", default=".")
+    pc.add_argument("--drift-file", default=None)
 
     args = p.parse_args(argv[1:])
     if args.cmd == "band":
@@ -219,11 +257,14 @@ def main(argv):
         return 0
     if args.cmd == "read":
         return cmd_read(args.root)
+    if args.cmd == "orient":
+        return cmd_orient(args.root, args.min_band)
     if args.cmd == "promote":
         return cmd_promote(args.root, args.key, args.statement, args.kind,
                            args.slug, args.evidence, args.date)
     if args.cmd == "contradict":
-        return cmd_contradict(args.root, args.key, args.slug, args.evidence, args.date)
+        return cmd_contradict(args.root, args.key, args.slug, args.evidence, args.date,
+                              args.drift_file)
     p.print_usage(sys.stderr)
     return 2
 
