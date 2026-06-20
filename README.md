@@ -121,7 +121,7 @@ rules carrier, workspace state, namespace map) →
 
 A single command that does everything loads every phase's instructions at once, creates
 constant context pressure, and hides the intent of each step. DevRites splits the
-lifecycle into 19 small public skills (`rite-*`) that each own one phase and load only
+lifecycle into 20 small public skills (`rite-*`) that each own one phase and load only
 what that phase needs — including [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md),
 the unattended orchestrator that drives the full cycle end-to-end — plus internal
 specialists (`devrites-*`) that fire on triggers.
@@ -296,7 +296,7 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **28 skills total** — 19 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
+The pack ships **29 skills total** — 20 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
 
 **Two invocation forms.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
@@ -313,11 +313,12 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 
 ### Full skill + agent inventory
 
-**Public `rite-*` skills (19)** — slash-command surface:
+**Public `rite-*` skills (20)** — slash-command surface:
 
 | Group | Skills |
 |---|---|
 | Lifecycle (8) | `rite-spec` · `rite-define` · `rite-build` · `rite-prove` · `rite-polish` · `rite-review` · `rite-seal` · `rite-ship` |
+| On-ramp (optional) | `rite-adopt` — onboard an existing codebase: reverse-derive `spec.md` + seed the conventions ledger, then hand off to the lifecycle |
 | Strategic (optional) | `rite-temper` — strategic spec review between spec and define; mandatory in `rite-autocomplete` |
 | Engineering (every feature) | `rite-vet` — engineering plan review between define and build; depth scales to stakes, never skipped; always in `rite-autocomplete` |
 | Resume / replan | `rite-resolve` · `rite-plan` |
@@ -505,7 +506,7 @@ devrites/
                        # grade-feature · run-outcome-evals · devrites-detect · check-no-global-writes
                        # sync-version · build-release-tarball
   mcp/                 # devrites-mcp.mjs — MCP stdio server over the devrites CLI
-  pack/.claude/        # skills/  28 skills — 19 public + 9 model-invoked    ─┐
+  pack/.claude/        # skills/  29 skills — 20 public + 9 model-invoked    ─┐
                        # agents/  10 reviewers + 1 writer (slice-wright)       ├─ the pack
                        # rules/   16 rule files + README index                 ┘
   evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures

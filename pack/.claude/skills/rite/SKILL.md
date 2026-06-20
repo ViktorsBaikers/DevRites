@@ -27,6 +27,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | Verb | Equivalent shortcut | Skill |
 |---|---|---|
 | `spec [feature]` | `/rite-spec` | start a feature — investigate + write spec.md |
+| `adopt [area]` | `/rite-adopt` | onboard an existing codebase — reverse-derive spec.md + seed conventions |
 | `temper [--mode]` | `/rite-temper` | optional strategic spec review (scope mode + pre-mortem) before define |
 | `define` | `/rite-define` | turn the spec into plan + task slices |
 | `vet [--cross-model]` | `/rite-vet` | optional engineering plan review (scope · architecture · tests · perf) before build |
@@ -80,6 +81,7 @@ inline in `/rite-seal` (see its `reference/parallel-dispatch.md`).
 DevRites — disciplined senior-engineer workflow
                               menu form           direct shortcut
 SPEC          /rite spec               ≡    /rite-spec        investigate deeply → write spec.md
+ADOPT         /rite adopt              ≡    /rite-adopt       onboard existing code → reverse-derive spec.md + seed conventions
 TEMPER        /rite temper             ≡    /rite-temper      optional — strategic review: scope mode + pre-mortem, harden the spec
 PLAN          /rite define             ≡    /rite-define      turn the spec into plan + task slices + state
 VET           /rite vet                ≡    /rite-vet         optional — engineering plan review: scope · architecture · tests · perf, harden the plan

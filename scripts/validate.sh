@@ -12,7 +12,7 @@ section() { printf '\n=== %s ===\n' "$1"; }
 bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
 good() { printf 'ok: %s\n' "$*"; }
 
-PUBLIC="rite rite-spec rite-temper rite-define rite-vet rite-plan rite-build rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-resolve rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
+PUBLIC="rite rite-spec rite-adopt rite-temper rite-define rite-vet rite-plan rite-build rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-resolve rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
 INTERNAL="devrites-interview devrites-source-driven devrites-doubt devrites-ux-shape devrites-frontend-craft devrites-browser-proof devrites-debug-recovery devrites-api-interface devrites-audit"
 AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst devrites-frontend-reviewer devrites-security-auditor devrites-performance-reviewer devrites-doubt-reviewer devrites-simplifier-reviewer devrites-strategy-reviewer devrites-plan-reviewer devrites-slice-wright"
 
