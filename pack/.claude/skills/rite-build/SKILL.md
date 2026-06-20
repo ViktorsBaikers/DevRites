@@ -171,7 +171,15 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    `drift.md`. The ledger is **promoted only at `/rite-seal` on GO** — build only records
    contradictions, never new conventions. **Evidence is the
    wright's real command output, not its say-so.** Capture per
-   [evidence-standard](reference/evidence-standard.md). If `.devrites/AFK` is present, decrement
+   [evidence-standard](reference/evidence-standard.md). Append a footprint record for this
+   slice's wright dispatch (deterministic run-weight bookkeeping the seal reports):
+   ```bash
+   FP=.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] || FP="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/footprint.sh"
+   [ -f "$FP" ] || FP=pack/.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] && bash "$FP" log <slug> wright "<slice id>" || true
+   ```
+   If `.devrites/AFK` is present, decrement
    the budget by running `bash .claude/skills/devrites-lib/scripts/tick-afk.sh <state.md path>` —
    it decrements `state.md`'s `AFK slices remaining` field, prints the new value, and exits `3`
    when it hits 0. **Exit 3 → STOP** (forced HITL stop; the cap is exhausted). Never rewrite

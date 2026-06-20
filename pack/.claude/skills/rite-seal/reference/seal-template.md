@@ -30,4 +30,7 @@ Verdict: GO / NO-GO
 
 ## Final Decision
 <one paragraph: verdict + why>
+
+## Footprint
+<deterministic fan-out from footprint.sh — subagents · slices · wall-clock; never tokens/cost>
 ```
