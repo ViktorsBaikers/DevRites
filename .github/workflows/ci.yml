@@ -52,6 +52,9 @@ jobs:
       - name: Conventions ledger (scorer + store)
         run: bash tests/conventions-ledger-test.sh
 
+      - name: Doctor health diagnose
+        run: bash tests/doctor-test.sh
+
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
 
