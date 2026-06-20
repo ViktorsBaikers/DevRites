@@ -39,6 +39,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | `seal` | `/rite-seal` | final GO / NO-GO decision |
 | `ship` | `/rite-ship` | type-GO + commit/push/tag, then archive the task |
 | `status [slug]` | `/rite-status` | active feature, next action, evidence |
+| `doctor` | `/rite-doctor` | health check — install integrity, stale ACTIVE, orphaned gates, hook wiring |
 | `use <slug>` | (inline) | switch the active feature — re-point `.devrites/ACTIVE` |
 | `resolve <qid> "<answer>"` | `/rite-resolve` | answer a HITL gate |
 | `prototype [question]` | `/rite-prototype` | throwaway prototype |
@@ -93,6 +94,7 @@ REVIEW        /rite review             ≡    /rite-review      feature-scoped m
 SEAL          /rite seal               ≡    /rite-seal        final GO / NO-GO decision (no git)
 SHIP          /rite ship               ≡    /rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
 STATUS        /rite status             ≡    /rite-status      active feature, next action, evidence, risks
+DOCTOR        /rite doctor             ≡    /rite-doctor      health check — install · stale ACTIVE · orphaned gates · hook wiring
 SWITCH        /rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 RESUME        /rite resolve ...        ≡    /rite-resolve     answer a HITL checkpoint
 AUTO          /rite autocomplete ...   ≡    /rite-autocomplete  run the whole lifecycle unattended (--ship to push)

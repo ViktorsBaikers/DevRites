@@ -50,6 +50,16 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    ```
    **Exit 3 → STALE proof: STOP**, point at `/rite-prove` (a polish/review edit made after
    `/rite-prove` invalidates the proof). Not GO → stop with the single resume command.
+1a. **Health re-check (advisory).** Run the DevRites doctor before the irreversible ladder —
+   a stale `ACTIVE` or corrupt workspace here risks shipping or closing the wrong feature.
+   Advisory: surface issues, don't block.
+   ```bash
+   D=.claude/skills/devrites-lib/scripts/doctor.sh
+   [ -f "$D" ] || D="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/doctor.sh"
+   [ -f "$D" ] || D=pack/.claude/skills/devrites-lib/scripts/doctor.sh
+   [ -f "$D" ] && { bash "$D"; echo "doctor rc=$?"; } || true
+   ```
+   If it flags the active feature, confirm you're shipping the intended slug before proceeding.
 2. Build the git plan from `git-workflow.md` + the project's own convention: the
    Conventional-Commit message(s), the target branch, and whether a tag / PR applies.
    Scope the commit to `touched-files.md`; never stage secrets or out-of-scope files.
