@@ -46,6 +46,26 @@ by default, and only shells out to the local `devrites` CLI — read/gate ops ov
 `.devrites/` plus a single `ACTIVE`-pointer write. The attack surface is the
 content of the skill files plus the installer.
 
+### Supply-chain self-scan (shipped pack)
+
+Because the skill files **are** the attack surface, CI scans the shipped pack
+(`pack/.claude/`) on every PR and fails the build (blocking, not advisory) on:
+
+- **Prompt-injection patterns** — the "ignore previous instructions" family,
+  system-prompt overrides, permission-escalation, and data-exfiltration phrasing.
+- **Hidden unicode** — bidi controls, zero-width characters, and homoglyph
+  confusables (a word mixing ASCII with look-alike Cyrillic/Greek letters) that a
+  human reviewer can't see in a diff.
+
+Run it locally with `python3 scripts/scan-pack-security.py pack/.claude`. A
+finding prints as `FINDING <file>:<line>: <class>: <excerpt>`. If the match is
+DevRites' own *defensive* content (e.g. a rule that quotes an attack string, or a
+QA checklist that demonstrates an adversarial character), add an auditable
+suppression on the line — `<!-- pack-scan-ignore: <reason> -->` — or opt a whole
+file out of one class with `<!-- pack-scan-ignore-file: injection -->`.
+Suppressions live in the file, so every exception is visible in the diff and
+reviewable; never suppress a hidden-unicode finding you can't explain.
+
 ### State loading (project-local script, no `!` injection)
 
 `/rite`, `/rite-status`, and every workspace-operating skill load state by running
