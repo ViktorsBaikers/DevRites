@@ -61,6 +61,12 @@ jobs:
       - name: Workflow security validator tests
         run: bash tests/workflow-security-test.sh
 
+      - name: Supply-chain IOC scan (npm lockfile — BLOCKING)
+        run: python3 scripts/scan-supply-chain-iocs.py package-lock.json
+
+      - name: Supply-chain IOC scanner tests
+        run: bash tests/supply-chain-iocs-test.sh
+
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
 
