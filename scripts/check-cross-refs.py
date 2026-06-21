@@ -29,7 +29,9 @@ WORKSPACE_ARTIFACTS = {
     "questions.md", "drift.md", "evidence.md", "browser-evidence.md", "touched-files.md",
     "review.md", "seal.md", "ship.md", "brief.md", "design-brief.md", "strategy.md",
     "polish-report.md", "handoff.md", "eng-review.md", "test-plan.md", "references.md",
-    "conventions.md",
+    "conventions.md", "coverage.md", "analysis.md", "learnings.md",
+    # spec-quality checklists (.devrites/work/<slug>/checklists/<domain>.md)
+    "functional.md", "data-model.md", "interaction.md", "non-functional.md", "edge-cases.md",
 }
 
 # Files the skills legitimately tell Claude to read in the USER's project / the repo,
@@ -37,6 +39,7 @@ WORKSPACE_ARTIFACTS = {
 PROJECT_DOCS = {
     "CLAUDE.md", "AGENTS.md", "DESIGN.md", "PRODUCT.md", "CONTEXT.md", "NOTES.md",
     "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "cli-mcp.md",
+    "ADR-NNN.md",  # generated per-decision ADR in the user repo (docs/adr/), promoted at /rite-ship
 }
 
 

@@ -14,7 +14,7 @@ tool="${parsed%%$'\001'*}"; cmd="${parsed#*$'\001'}"
 [ "$tool" = "Bash" ] || exit 0
 [ -n "$cmd" ] || exit 0
 
-# Mutating / exfiltration tokens — reviewers only ever need read-only inspection.
+# Mutating / exfiltration tokens — reviewers only ever need read-only inspection. pack-scan-ignore: this is the hook's own defensive deny-list, not a payload.
 printf '%s' "$cmd" | grep -qE '>>|[^0-9 ]>[^>&]|[[:space:]]-i([[:space:]]|$)|sed[[:space:]]+-i|\brm\b|\bmv\b|\btee\b|\btruncate\b|\bdd\b|chmod|chown|git[[:space:]]+(add|commit|push|reset|checkout|rm|mv|stash|tag|apply)|npm[[:space:]]+(install|i|publish|run)|pnpm[[:space:]]+(install|add)|yarn[[:space:]]+add|pip[[:space:]]+install|curl[[:space:]].*[[:space:]]-o\b|\bwget\b|\bscp\b|\bssh\b|\bnc\b' || exit 0
 
 mode="${DEVRITES_REVIEWER_RO:-observe}"
