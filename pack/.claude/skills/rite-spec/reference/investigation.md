@@ -6,9 +6,10 @@ requirement **completely**, decide **where it correctly belongs**, name what it
 the user so the spec ships fully-covered and correctly-placed. A gap found here is cheap;
 a gap found in `/rite-build` is a drift event.
 
-Use a code-intelligence index (`codegraph` / `graphify`) for the structural parts below —
-it answers "where does this live / what calls it / what would it break" far more
-cheaply and accurately than reading files.
+Use a code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
+(see `../../../rules/tooling.md`) — for the structural parts below; it answers "where does this
+live / what calls it / what would it break" far more cheaply and accurately than reading files.
+With none present, fall back to Read/Grep/Glob.
 
 ## Produce these findings (write into spec.md)
 1. **The real ask** — restate the goal and the *problem behind the request* (people ask

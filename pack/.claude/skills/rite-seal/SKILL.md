@@ -50,8 +50,10 @@ Read `review.md` and the latest reviewer outputs.
    Then read all artifacts: `brief.md`, `spec.md`, `plan.md`, `tasks.md`, `state.md`,
    `decisions.md`, `assumptions.md`, `questions.md`, `drift.md`, `evidence.md`,
    `browser-evidence.md`, `polish-report.md`, `review.md`, `design-brief.md` (if UI),
-   `strategy.md` (if present), and the **final diff**. If a code-intelligence index (`codegraph` / `graphify`) is
-   available, use it for blast-radius checks on the final diff in step 5.
+   `strategy.md` (if present), and the **final diff**. If a code-intelligence index is available
+   (codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods LSP / Read/Grep/Glob — see `.claude/rules/tooling.md`), use it for
+   blast-radius checks on the final diff in step 5; context7 if available can confirm a current
+   external-API signature a reviewer flags.
 2. Check **acceptance criteria one by one** — [final-evidence](reference/final-evidence.md).
    Each gets a checkbox + the evidence that proves it (or "unproven"). Verify each criterion
    **independently against the evidence artifact** — the slice report or the build narrative is not

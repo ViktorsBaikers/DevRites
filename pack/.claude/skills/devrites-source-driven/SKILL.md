@@ -20,7 +20,8 @@ matters and isn't certain, check the source of truth.
 1. **Find the version** the project actually uses (lockfile, manifest) — behavior is
    version-specific.
 2. **Consult the source of truth**, in order: the installed package's own source/types
-   in `node_modules`/gem/site-packages; official docs for *that version*; the project's
+   in `node_modules`/gem/site-packages; context7 if available (`resolve-library-id` →
+   `query-docs`) for current upstream docs; official docs for *that version*; the project's
    existing usage of the same API.
 3. **Confirm the specific fact** — the signature, the default, the edge behavior — not a
    general impression.

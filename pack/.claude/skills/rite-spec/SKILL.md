@@ -46,8 +46,12 @@ when capturing significant spec decisions (why-not-what, ADR-style notes in `dec
    file/component should own it, the seam, patterns to reuse, and integration points —
    callers, dependents, data, APIs/events); **what it resolves**; **issues**
    (conflicts/constraints); **gaps** (unknowns); **blast radius**. Use a code-intelligence
-   index — `codegraph` (`.codegraph/` / `codegraph_*`) or `graphify` (`graphify-out/`) —
-   for placement/callers/impact instead of broad file reads; fall back to reading files.
+   index **if available** — `codebase-memory-mcp` first, cross-checked with `codegraph`
+   (`.codegraph/` / `codegraph_*`) + `graphify` (`graphify-out/`), else standard methods
+   (LSP / `Read`/`Grep`/`Glob`); see `.claude/rules/tooling.md` —
+   for placement/callers/impact instead of broad file reads; fall back to reading files. For
+   uncertain external library/framework facts that bear on placement or feasibility, consult
+   context7 if available.
    Also discover the project's **test / build/typecheck/lint** commands and the
    frontend/backend systems; read `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` / `AGENTS.md` if
    present (`AGENTS.md` is the cross-tool agent-conventions standard — treat it as project

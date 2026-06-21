@@ -42,9 +42,12 @@ reshaping slice cadence or DoD criteria.
    ```
 1. Read `spec.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`, and the current
    `git diff` (if a repo). Read `decisions.md` and `assumptions.md`. If a code-intelligence
-   index is available — `codegraph` (`.codegraph/` / `codegraph_*` tools) or `graphify`
-   (`graphify-out/`) — prefer it for structural questions (what calls X, what would
-   changing Y break) over reading whole files, to keep planning context lean.
+   index is available — `codebase-memory-mcp` first, cross-checked with `codegraph`
+   (`.codegraph/` / `codegraph_*` tools) + `graphify` (`graphify-out/`), else standard methods
+   (LSP / `Read`/`Grep`/`Glob`); see `.claude/rules/tooling.md` —
+   prefer it for structural questions (what calls X, what would
+   changing Y break) over reading whole files, to keep planning context lean. For an external
+   dependency's current API surface, consult context7 if available.
 2. **Pick the mode** (`$ARGUMENTS` or infer):
    - **decompose** — first/again break the feature into vertical slices.
    - **reslice** — a slice is too large; split into thinner end-to-end slices.

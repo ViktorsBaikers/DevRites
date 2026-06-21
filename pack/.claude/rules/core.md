@@ -12,7 +12,9 @@ Project conventions always win where they exist; these rules fill gaps.
 1. **Right step, right time** — use the smallest relevant workflow; don't load
    everything. When you read, parallelize independent reads and speculatively batch the
    files a step is likely to need; aim for comprehensive coverage of the relevant code,
-   not the first match (codegraph already indexes structure — this is for raw file reads).
+   not the first match (a code-intelligence index, **if one is available**, answers
+   structural questions faster than raw reads — see [`tooling.md`](tooling.md); this rule
+   is for the raw reads, the fallback when none is).
 2. **No silent assumptions** — surface material assumptions; ask when the answer
    changes scope, architecture, data model, UX, security, migration risk, or
    acceptance.
@@ -35,7 +37,8 @@ Project conventions always win where they exist; these rules fill gaps.
    components, tokens, tests, and commands; ask before adding a dependency or a
    second design system.
 9. **Verify uncertain facts at the source** — when framework / library
-   behaviour matters and isn't certain, check the docs or source and record it.
+   behaviour matters and isn't certain, check the installed source or docs (context7 for
+   current upstream docs, **if available** — see [`tooling.md`](tooling.md)) and record it.
 
 ## Universal anti-rationalizations
 

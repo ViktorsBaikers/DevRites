@@ -19,8 +19,8 @@ A workspace path (`.devrites/work/<slug>/`). Read **only**: `plan.md` (approach,
 decisions, dependency graph, complexity gate, rollback, scope boundaries), `tasks.md` (the
 vertical slices + their gates), and `spec.md` (objective + acceptance criteria — the bar the
 plan must meet). Read `strategy.md` / `decisions.md` / `assumptions.md` only to check a claim.
-Use a code-intelligence index (`codegraph` / `graphify`) if available to sanity-check
-blast-radius, placement, and reuse claims. Do **not** read the author's chat reasoning — you
+Use a code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
+(see `.claude/rules/tooling.md`) — to sanity-check blast-radius, placement, and reuse claims. Do **not** read the author's chat reasoning — you
 weren't given it on purpose.
 
 ## Score the seven dimensions

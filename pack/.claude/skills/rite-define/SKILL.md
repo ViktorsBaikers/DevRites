@@ -54,8 +54,10 @@ the plan:
    `[NEEDS CLARIFICATION]` remains, stop → `/rite-spec`.
 2. **Decide the approach + architecture** (the HOW the spec deliberately omitted): the
    strategy, key technical decisions + rationale, and the tech the slices will use. Use a
-   code-intelligence index (`codegraph` / `graphify`) for structure/impact. Record in
-   `plan.md` ([plan-template](reference/plan-template.md)) and `decisions.md`.
+   code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
+   (see `.claude/rules/tooling.md`) — for structure/impact; for the current API or behaviour of
+   an external library/framework the architecture will rely on, consult context7 if available.
+   Record in `plan.md` ([plan-template](reference/plan-template.md)) and `decisions.md`.
    **Deep-modules check** — while sketching the major modules, look for opportunities
    to extract a **deep module**: a small, stable interface that hides a meaningful chunk
    of behavior, and is therefore independently testable. A *shallow* module — interface

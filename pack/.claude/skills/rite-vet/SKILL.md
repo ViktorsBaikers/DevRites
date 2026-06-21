@@ -62,8 +62,9 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    Then the workspace: `plan.md`, `tasks.md`, `spec.md`
    (for intent + acceptance), `strategy.md` (if `/rite-temper` ran), `decisions.md`,
    `assumptions.md`, `design-brief.md` (if UI), `state.md`. Require a `plan.md` whose
-   Readiness gate passes (or `Plan approved`) — else STOP → `/rite-define`. Prefer the
-   code-intelligence index (codegraph / graphify) for placement / blast-radius / reuse checks.
+   Readiness gate passes (or `Plan approved`) — else STOP → `/rite-define`. Prefer a
+   code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
+   (see `.claude/rules/tooling.md`) — for placement / blast-radius / reuse checks.
 1. **Calibrate depth — never skip** — [`reference/depth.md`](reference/depth.md). Every plan is
    vetted; what scales is the *depth*. A simple, single-module, reversible plan with no
    irreversible-risk / data-model / new-pattern trigger → **light pass** (brief scope check + a

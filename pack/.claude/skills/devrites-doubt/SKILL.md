@@ -33,9 +33,11 @@ complexity, deletion would smear it)?* Pass-throughs that fail the test get down
 to "not yet" — wait for the second real caller before standing the seam.
 
 ## Rules
-- For "where does this claim reach / what would change with it" questions, prefer
-  `codegraph` (`codegraph_impact` / `codegraph_callers`) or `graphify` over file
-  reads — they answer impact in one call without polluting context.
+- For "where does this claim reach / what would change with it" questions, prefer a
+  code-intelligence index if available — codebase-memory-mcp (`detect_changes` / `trace_path`)
+  first, cross-checked with codegraph (`codegraph_impact` / `codegraph_callers`) + graphify,
+  else standard methods (LSP / Read/Grep/Glob); see `.claude/rules/tooling.md` — over file
+  reads; they answer impact in one call without polluting context.
 - The reviewer prompt must be adversarial — its job is to break the claim, not to agree.
 - Strip your own justification before review; reasoning anchors the reviewer toward
   agreement.
