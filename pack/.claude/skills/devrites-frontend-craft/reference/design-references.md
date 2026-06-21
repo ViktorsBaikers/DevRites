@@ -30,7 +30,9 @@ What to read in the project before designing, and how register changes the rules
 ## The rule
 Match what exists. A new token, font, or component library is a decision the user makes,
 not a default you reach for. When the system is ambiguous, ask — don't invent the
-project's intent.
+project's intent. When a project `DESIGN.md` is present it is the **rolled-up design
+memory** earlier features sealed (`../../rite-ship/reference/design-memory.md`) — the
+inherited system to build *to*, ahead of re-deriving direction from scratch.
 
 ## Scene-sentence — commit before choosing theme / direction
 Dark vs light is not a default, and neither is "playful", "serious", or "editorial".
@@ -63,6 +65,38 @@ trait (density, type voice, restraint), not the literal layout, and never the pa
 clash with this project's register or design system. The supplied `references/` files are
 themselves anchors — name what trait each contributes. Record the anchors in
 `design-brief.md`'s **Design direction** so build, polish, and seal share the same target.
+
+## Building to a supplied reference (Figma / screenshot / image)
+When the spec gathered a Figma frame, screenshot, or image and the brief names it the
+**build target** (not just inspiration), the reference *is* the art direction and the code
+is the implementation layer. This is the build-time counterpart to the shape-time
+visual-direction probe (`../../devrites-ux-shape/reference/visual-direction-probe.md`):
+the probe *chose* a lane; here you *match* the chosen target.
+
+**Extract before you write** — read the reference deliberately, don't eyeball it:
+- **Type** — family, the size steps actually used, weights, line-height, letter-spacing,
+  the heading→body ratio. Map each to the project's type scale (or flag a missing step).
+- **Spacing & rhythm** — padding, gaps, section spacing; infer the underlying step and
+  round to the project's 4 pt scale rather than hard-coding the measured pixel.
+- **Color** — the roles in play (surface / text / accent / border), not raw hex; bind to
+  existing tokens, propose a token only where one is genuinely missing.
+- **Layout & hierarchy** — grid, what's seen 1st / 2nd / 3rd, the density and motion the
+  reference implies (cross-check against the brief's Calibration).
+- **Component behavior** — the states the reference shows (and the ones it can't: hover,
+  focus, loading, empty, error — design those from the brief, the reference won't have them).
+
+Then implement to match, in the project's system:
+- **Match the target, fill the gaps from the brief.** A static reference shows one state;
+  ship the full state set (`quality-standards.md` — Focus & states).
+- **A reference that conflicts with the design system is a question for the user**, not a
+  silent override — name the conflict (token, font, spacing, a second system) and ask.
+- **Don't crop a multi-section reference into pieces** to "extract" a section — work from
+  the cleanest whole frame; if a region is unreadable, ask for a clearer asset rather than
+  guessing.
+- **Fidelity is faithfulness, not pixel-tracing** — carry the reference's hierarchy, rhythm,
+  and voice; never copy a layout that clashes with this project's register or a11y floor.
+- Record what the reference dictated (and any deviation + why) in the brief's
+  **Build-time refinements**, so polish and seal check the build against the same target.
 
 ## NEVER (design references)
 

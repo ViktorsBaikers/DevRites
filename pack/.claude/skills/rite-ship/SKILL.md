@@ -39,8 +39,9 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
    [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
    ```
-   Then read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`. Confirm
-   the verdict is **GO**, then run the deterministic evidence-freshness gate rather than
+   Then read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`, and
+   `design-brief.md` (if the feature is UI — the design-memory rollup in step 2a reads it).
+   Confirm the verdict is **GO**, then run the deterministic evidence-freshness gate rather than
    eyeballing mtimes (mirrors `/rite-seal`):
    ```bash
    E=.claude/skills/devrites-lib/scripts/evidence-fresh.sh
@@ -63,6 +64,13 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 2. Build the git plan from `git-workflow.md` + the project's own convention: the
    Conventional-Commit message(s), the target branch, and whether a tag / PR applies.
    Scope the commit to `touched-files.md`; never stage secrets or out-of-scope files.
+2a. **Design memory (optional, UI features only).** If the feature shipped UI, offer to roll
+   its *proven* design language up into a project-level `DESIGN.md` so the next feature
+   inherits the system instead of re-discovering it
+   ([reference/design-memory.md](reference/design-memory.md)). **Opt-in and confirmed** —
+   present the option set (default **skip**; persisting beyond feature scope is the user's
+   call), and on yes append `DESIGN.md` to `touched-files.md` so it ships *in this commit*.
+   Skip silently when there's no UI. Record the outcome in `ship.md`.
 3. **Render the type-GO prompt** ([reference/git-ship.md](reference/git-ship.md)) and
    wait. Only the literal `GO` proceeds; anything else cancels — record the cancel in
    `ship.md` and stop (do not retry without the user asking).

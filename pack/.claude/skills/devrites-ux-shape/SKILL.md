@@ -27,6 +27,9 @@ gathered:
 - Design system + register (tokens, components, type, spacing, neighbors; brand-vs-product)
   → `../devrites-frontend-craft/reference/design-references.md`.
 - `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` if present — anchors that reduce questions.
+  `DESIGN.md` is the project's **rolled-up design memory** (tokens, calibration baseline,
+  proven component behaviors) earlier features sealed via `../rite-ship/reference/design-memory.md`;
+  treat it as the inherited system — read it before re-discovering, depart only on signal.
 - `references.md` + `references/` — the screenshots / Figma / video / links the human
   supplied. When present they are the **build target**, not inspiration.
 
@@ -41,8 +44,8 @@ confirm** ("reads as Restrained — confirm?"), don't offer a four-option menu. 
   media/assets the surface needs.
 - **Anti-goals** — what this must NOT be; the biggest risk of getting it wrong.
 
-## 3. Design direction — the triad (commit, don't hedge)
-One deliberate visual decision on three fronts, each anchored in an existing reference so
+## 3. Design direction — the direction set (commit, don't hedge)
+One deliberate visual decision on four fronts, each anchored in an existing reference so
 the call is checkable, not taste:
 - **Scene sentence** — who / where / ambient light / mood, per
   `../devrites-frontend-craft/reference/design-references.md`. Forces dark-vs-light and
@@ -50,6 +53,10 @@ the call is checkable, not taste:
 - **Color strategy** — Restrained / Committed / Multi-role / Saturated, per the
   color-commitment table in `../devrites-frontend-craft/reference/quality-standards.md`.
   Pick from the scene; register doesn't decide it.
+- **Calibration** — density (Airy / Balanced / Dense) and motion (Minimal / Standard /
+  Expressive), per the calibration table in the same quality-standards file. Set both from
+  the scene so the build targets a calibration, not a guess (a 2am SRE → Dense + Minimal; a
+  launch hero → Airy + Expressive).
 - **Named anchor references** — 2-3 *specific* products / brands / objects to steer toward
   (not adjectives like "modern" or "clean"), plus the saved `references/` files.
 
@@ -97,7 +104,7 @@ fast. Then honor the run mode (`../../rules/afk-hitl.md`):
 ## Output
 ```
 UX/UI shaped: <slug>
-Direction: <color strategy> · "<scene sentence>" · anchors: <ref A, ref B>
+Direction: <color strategy> · density <airy|balanced|dense>/motion <minimal|standard|expressive> · "<scene sentence>" · anchors: <ref A, ref B>
 States: <n listed>   Probe: <figma | images | prototype | skipped — no tool>
 Brief: design-brief.md (<compact | full>)
 Gate: <confirmed | awaiting confirmation | AFK-asserted>

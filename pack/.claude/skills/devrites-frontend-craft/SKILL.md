@@ -18,8 +18,10 @@ import a new one. (Detail: `reference/design-references.md`.)
   primary build target) plus `references.md` + the saved files in `references/`
   (screenshots, Figma, video, links). When present they are the **build target**: match the
   direction, layout, spacing, states, and behavior they show (pull Figma context if a Figma
-  integration is available). A reference that conflicts with the design system is a question
-  for the user, not a silent choice.
+  integration is available) — extract type / spacing / color-roles / layout / component
+  behavior to it deliberately, don't eyeball it
+  (`reference/design-references.md` — *Building to a supplied reference*). A reference that
+  conflicts with the design system is a question for the user, not a silent choice.
 
 ## Reuse first — search before you build
 Before creating any new component, style, token, icon, hook, util, or helper, search the
