@@ -137,6 +137,9 @@ On **GO**: write `seal.md`, set `state.md` `Next step: /rite-ship`, and tell the
 the feature is cleared to ship. Do **not** set phase `done` — `/rite-ship` marks done
 after the task is shipped and archived. The `Important > 0` interactive y/N earlier in
 the gate is the one off-ramp seal still owns; the type-GO off-ramp now lives in ship.
+For a **UI feature**, note in the hand-off that `/rite-ship` offers an optional
+**design-memory** rollup — persist this feature's proven design language into a project
+`DESIGN.md` so later features inherit it (`../rite-ship/reference/design-memory.md`).
 
 ## Output
 

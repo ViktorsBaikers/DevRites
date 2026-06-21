@@ -91,7 +91,7 @@ first step (step 0); the rest are referenced on demand. Full index in
 
 | Trigger | Routes to |
 |---|---|
-| Frontend/UI detected (TSX/JSX/Vue/Svelte/Astro/Angular/ERB, CSS/Tailwind/tokens, components/forms/states) | `devrites-ux-shape` in spec (writes `design-brief.md`), `devrites-frontend-craft` in build (builds to it), `devrites-browser-proof` in prove, `rite-polish` Phase 3 + 4 (`reference/ui.md`) in polish, UX/a11y axes at review/seal |
+| Frontend/UI detected (TSX/JSX/Vue/Svelte/Astro/Angular/ERB, CSS/Tailwind/tokens, components/forms/states) | `devrites-ux-shape` in spec (writes `design-brief.md` — direction, **calibration** density/motion, states), `devrites-frontend-craft` in build (builds to it; extracts to a supplied Figma/image target), `devrites-browser-proof` in prove, `rite-polish` Phase 3 + 4 (`reference/ui.md`) in polish, UX/a11y axes at review/seal, optional **design-memory** rollup → project `DESIGN.md` at ship |
 | Uncertain library / framework behavior | `devrites-source-driven` |
 | Non-trivial decision (boundary, data model, auth, public API, migration, "this scales/safe") | `devrites-doubt` (+ `devrites-doubt-reviewer`) |
 | User input / auth / storage / external integration / secrets / permissions | `devrites-audit security` (+ `devrites-security-auditor`) |

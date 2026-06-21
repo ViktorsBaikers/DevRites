@@ -15,7 +15,7 @@ step. Don't pad a clear brief into a long one to look thorough.
 Slug: <kebab>   Shaped: <iso>   Register: brand | product   Fidelity: <sketch|mid-fi|high-fi|production>
 
 - **Building**: <one line — what + who it's for + the primary action>
-- **Direction**: <color strategy> · "<scene sentence>" · anchors: <ref A, ref B>  (+ references/<file> R-ids)
+- **Direction**: <color strategy> · density <airy|balanced|dense>/motion <minimal|standard|expressive> · "<scene sentence>" · anchors: <ref A, ref B>  (+ references/<file> R-ids)
 - **States**: <the states this surface needs, comma-listed>
 - **Interaction**: <inline / navigated / modal · feedback · entry→completion in a phrase>
 - **Confirm or override?** <the one or two things you still want the user to confirm>
@@ -34,6 +34,7 @@ The single most important thing the user does or understands here. Everything el
 
 ## 3. Design direction
 - Color strategy: Restrained | Committed | Multi-role | Saturated — why (from the scene, not the category).
+- Calibration: density Airy | Balanced | Dense · motion Minimal | Standard | Expressive — from the scene (`../../devrites-frontend-craft/reference/quality-standards.md` — Calibration).
 - Scene sentence: "<who uses it, where, under what light, in what mood>".
 - Named anchors: <2-3 specific products / brands / objects> + saved references (R-ids → references/<file>).
 - Departure: default (preserve identity) | departing because <explicit signal>.
