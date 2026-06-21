@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.15.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.14.0...v1.15.0) (2026-06-21)
+
+### Features
+
+* **skills:** test-integrity gates, enforcement hooks, learning loop ([32d5102](https://github.com/ViktorsBaikers/DevRites/commit/32d5102f1e82313d939632a416a5df3b00a2a675))
+
 ## [1.14.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.13.0...v1.14.0) (2026-06-21)
 
 ### Features
