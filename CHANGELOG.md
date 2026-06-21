@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.13.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.12.0...v1.13.0) (2026-06-21)
+
+### Features
+
+* **skills:** add ui-taste enrichments + optional design-memory rollup ([316e7aa](https://github.com/ViktorsBaikers/DevRites/commit/316e7aa042d86ae173b7fa061437ced5af931b1f))
+
 ## [1.12.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.11.0...v1.12.0) (2026-06-21)
 
 ### Features
