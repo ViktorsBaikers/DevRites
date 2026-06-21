@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.16.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.15.0...v1.16.0) (2026-06-21)
+
+### Features
+
+* **skills:** make code-intelligence tools optional and add context7 ([d8f95f7](https://github.com/ViktorsBaikers/DevRites/commit/d8f95f7333dd0c35fa75d4e190a05db86e82ba92))
+
 ## [1.15.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.14.0...v1.15.0) (2026-06-21)
 
 ### Features
