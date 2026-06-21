@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.14.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.13.0...v1.14.0) (2026-06-21)
+
+### Features
+
+* **skills:** add prose-craft skill and sharpen anti-slop code charter ([8a9e7e1](https://github.com/ViktorsBaikers/DevRites/commit/8a9e7e159487a53c89b46975a54f84ed875e409d))
+
 ## [1.13.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.12.0...v1.13.0) (2026-06-21)
 
 ### Features
