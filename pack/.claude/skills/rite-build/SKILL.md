@@ -37,6 +37,9 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   wright reads it; don't restate it here). It writes the code the *project* would write, in its
   idiom, reusing before building; **you verify the charter held on return** — you do not re-list
   it and you do not fix slop by editing source. Polish catches what slips; build prevents.
+  The **prose you write yourself** — `evidence.md`, `decisions.md`, the slice report — follows
+  the human-voice charter (`.claude/rules/prose-style.md`; depth in `devrites-prose-craft`): no
+  filler openers, no marketing adjectives, exact commands and identifiers kept verbatim.
 - **You never edit source — the wright is the only writer of code + tests.** You write only
   `.devrites/` bookkeeping. On any red gate, doubt finding, or coverage gap your only remedies
   are **continue the same wright once** (it fixes in its own context) or **stop + escalate** —
