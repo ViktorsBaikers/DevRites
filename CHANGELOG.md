@@ -2,6 +2,20 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.12.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.11.0...v1.12.0) (2026-06-21)
+
+### Features
+
+* **agents:** add prompt-injection-resistance baseline ([f260fc7](https://github.com/ViktorsBaikers/DevRites/commit/f260fc7b719c8049cb5ecd42b70649f17204080a)), closes [#14](https://github.com/ViktorsBaikers/DevRites/issues/14)
+* **ci:** blocking pack security scan — injection + hidden unicode ([89a8838](https://github.com/ViktorsBaikers/DevRites/commit/89a88383150afd6803ba405198ffc732e1e8a323)), closes [#13](https://github.com/ViktorsBaikers/DevRites/issues/13)
+* **ci:** supply-chain IOC scanner for npm lockfile ([ac9d079](https://github.com/ViktorsBaikers/DevRites/commit/ac9d07976707c45cb8503531b297f9049f314ea2)), closes [#16](https://github.com/ViktorsBaikers/DevRites/issues/16)
+* **ci:** workflow-security validator + pin third-party actions ([4c060c9](https://github.com/ViktorsBaikers/DevRites/commit/4c060c9f3d293b4b43919e7583dfc1f058fab21e)), closes [#15](https://github.com/ViktorsBaikers/DevRites/issues/15)
+* **skills:** add fan-out footprint at seal ([093b366](https://github.com/ViktorsBaikers/DevRites/commit/093b366b22f89a4e6851237c1aa458638a5aa910)), closes [#19](https://github.com/ViktorsBaikers/DevRites/issues/19)
+* **skills:** add rite-adopt brownfield on-ramp skill ([c86b770](https://github.com/ViktorsBaikers/DevRites/commit/c86b7702bf4c8c77736689d369b49375e677a927)), closes [#21](https://github.com/ViktorsBaikers/DevRites/issues/21)
+* **skills:** add rite-doctor health check (two-tier) ([71d2c7b](https://github.com/ViktorsBaikers/DevRites/commit/71d2c7b99fb48cc97de4dfeddf9469af521f180f)), closes [#18](https://github.com/ViktorsBaikers/DevRites/issues/18)
+* **skills:** conventions ledger with write-at-seal ([5de1464](https://github.com/ViktorsBaikers/DevRites/commit/5de1464a5a1d1a0a453aee84d5a515d616a929db)), closes [#17](https://github.com/ViktorsBaikers/DevRites/issues/17)
+* **skills:** ledger read-at-orient with fresh-observation-wins ([2abe806](https://github.com/ViktorsBaikers/DevRites/commit/2abe806f69cdbae78bd90b2431e6009fd6121aa0)), closes [#20](https://github.com/ViktorsBaikers/DevRites/issues/20)
+
 ## [1.11.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.10.0...v1.11.0) (2026-06-19)
 
 ### Features
