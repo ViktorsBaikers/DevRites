@@ -46,6 +46,22 @@ implementation is theatre — and it's the shape AI reaches for by default. Reje
   the test goes **red**. A test never seen failing against broken code is unproven — this is
   "see it fail first" extended past the happy path. Use the project's **mutation-testing** runner
   to automate it where one exists; otherwise spot-check the criticals by hand.
+- **Don't mirror the implementation.** A test whose assertions restate the code under test
+  (same constant, same formula, same branch) stays green even when the logic is wrong. Assert
+  an **independently-derived** expected value — reasoned from the spec, not copied from the code.
+- **Coverage says "ran"; mutation says "checked".** Line coverage proves a line executed, not
+  that a test would catch it breaking. Where the project has a mutation runner, the changed-files
+  mutation gate (`mutation-gate.sh`) certifies the suite would fail on a wrong implementation; a
+  surviving mutant is a behaviour no test actually checks.
+
+## Never weaken a failing test (test integrity)
+A failing test is a signal, not an obstacle. Never delete it, skip it (`it.skip`, `xit`,
+`@pytest.mark.skip`, `t.Skip`, `#[ignore]`), mark it `xfail`, narrow the run with `.only`, or
+loosen its assertions to turn the suite green. A red test means one of two things: the code is
+wrong (fix the code) or the test is wrong (surface it as a blocking question and get the change
+agreed) — never quietly make the red go away. A test weakened to clear a gate is a **Critical**
+finding; `test-integrity.sh` diffs the test files against the slice base and exits non-zero when
+one is deleted, skipped, or loses assertions.
 
 ## Test behavior, not implementation
 - Assert on observable behavior and public interfaces, not private internals — so a

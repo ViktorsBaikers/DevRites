@@ -77,6 +77,21 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    against a built-in (dispatch `devrites-source-driven`); completeness check (with AI, full
    coverage is ~100× cheaper than the human-hours saved by a shortcut — prefer complete); and a
    distribution check for any new artifact.
+2a. **Cross-artifact analyze gate + charter/conventions gate.** Before the axes, run one read-only
+   consistency+coverage pass over `spec.md` + `plan.md` + `tasks.md` (+ `coverage.md` if present);
+   any **CRITICAL** — an acceptance criterion with no slice, a slice satisfying no criterion, a
+   contradiction across artifacts — **blocks `/rite-build`** until resolved. Then score the anti-slop
+   charter (`coding-style.md` + `prose-style.md`) and the conventions ledger
+   (`.devrites/conventions.md`) as an explicit **pass/fail** on the planned approach — a plan that
+   bakes in a god-module, a speculative abstraction with no second caller, or a dependency where an
+   in-repo option exists is a **top-severity** violation, walked first. **Re-check both after the
+   axes harden the plan** (post-design). Write the result to `analysis.md`.
+   ```bash
+   A=.claude/skills/devrites-lib/scripts/analyze.sh
+   [ -f "$A" ] || A="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/analyze.sh"
+   [ -f "$A" ] || A=pack/.claude/skills/devrites-lib/scripts/analyze.sh
+   [ -f "$A" ] && { bash "$A"; echo "analyze rc=$?"; } || echo "(analyze.sh unavailable — do the cross-artifact pass by hand: every AC↔slice mapped, no contradiction across spec/plan/tasks)"
+   ```
 3. **Four-axis review** — [`reference/review-axes.md`](reference/review-axes.md), through the
    senior-engineer lenses in [`reference/eng-lenses.md`](reference/eng-lenses.md): **Architecture
    → Plan code-quality → Test-coverage design → Performance**, ≤8 findings per axis, each
@@ -89,6 +104,10 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
 4. **Required outputs** — the test-coverage diagram + per-gap test requirements (the **regression
    rule** is mandatory, no question), failure-mode table, "NOT in scope", "What already exists",
    and the worktree parallelization strategy. Shapes in [`reference/review-axes.md`](reference/review-axes.md).
+   Also a **PRP one-pass-implementable check** per slice brief (the build's pre-flight): confirm each
+   slice's Consumes/Produces, Known-Gotchas, validation commands, and reuse targets are present and
+   concrete — a brief that can't be built in one pass is a finding; harden the slice until it clears,
+   before `/rite-build`.
 5. **Write `eng-review.md` + `test-plan.md`, fold back** — [`reference/artifacts.md`](reference/artifacts.md).
    `eng-review.md` is the durable record; `test-plan.md` is the build-readable coverage target
    (`/rite-build` and `/rite-prove` read it). Harden `plan.md` / `tasks.md` directly for

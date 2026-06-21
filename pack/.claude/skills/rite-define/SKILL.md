@@ -20,10 +20,10 @@ the plan:
 - `documentation.md` — record plan-time decisions and rationale.
 
 ## Operating rules
-- **Requires a spec.** Read the active workspace first; if `.devrites/ACTIVE` is empty,
-  the workspace has no `spec.md`, or its readiness gate hasn't passed → **STOP** and tell
-  the user to run `/rite-spec <feature>` first. **DO NOT plan from a missing or
-  unreadied spec.**
+- **Requires a readied spec.** Read the active workspace first; if `.devrites/ACTIVE` is empty,
+  the workspace has no `spec.md`, its readiness gate hasn't passed, or any spec-quality
+  `checklists/<domain>.md` has an open CRITICAL → **STOP** and tell the user to run
+  `/rite-spec <feature>` first. **DO NOT plan from a missing or unreadied spec.**
 - Prefer existing conventions; ask before adding a dependency or a second design system.
 - **Slice count is derived, never dictated.** The number of slices falls out of the work
   — one per independently-shippable increment, sized by `slicing.md`, every acceptance
@@ -75,6 +75,17 @@ the plan:
 4. **Map coverage** — every spec acceptance criterion maps to ≥1 slice
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
    criterion.
+4a. **Persist the traceability matrix** — write `coverage.md` (`AC-id → slice(s) → test →
+   evidence-status`), the living map `/rite-prove` and `/rite-seal` walk. Generate it with
+   `coverage.sh` (it reads `spec.md` acceptance + the `tasks.md` `Satisfies:` lines), or write the
+   table by hand from the same inputs if the script is absent:
+   ```bash
+   C=.claude/skills/devrites-lib/scripts/coverage.sh
+   [ -f "$C" ] || C="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/coverage.sh"
+   [ -f "$C" ] || C=pack/.claude/skills/devrites-lib/scripts/coverage.sh
+   S="$(cat .devrites/ACTIVE 2>/dev/null)"
+   [ -f "$C" ] && bash "$C" "$S" > ".devrites/work/$S/coverage.md" || echo "(coverage.sh unavailable — write coverage.md by hand from spec AC + tasks Satisfies:)"
+   ```
 5. **Complexity & deviations gate** — justify anything off DevRites defaults (new dep,
    extra abstraction, second design system) in the plan; if you can't justify it, simplify.
 6. **Write** `plan.md` + `tasks.md`; update `state.md` (phase: plan → next `/rite-build`).
@@ -89,7 +100,9 @@ the plan:
 ```markdown
 ## Slice N: <name>
 Goal:
+Satisfies: AC-n[, AC-m]     # reverse traceability — which spec acceptance criteria this slice satisfies
 Acceptance criteria:        # which spec FR/criteria this satisfies
+Complexity: N/5 — <reason>  # 1=trivial … 5=hairy; >3 triggers a reslice unless the reason justifies it
 Mode: AFK | HITL            # AFK = implementable + mergeable without human gating;
                             # HITL = needs a human decision mid-slice (design call,
                             # architectural choice, destructive migration sign-off).
@@ -98,6 +111,11 @@ Gate: advisory | validating | blocking | escalating   # required when Mode=HITL;
 SLA: 15m | 4h | 24h | none                            # required when Mode=HITL; matches the gate
 Checkpoint: <one crisp question>                       # required when Mode=HITL; what the human must decide
 Blocked by: Slice M, Slice K  # other slices that must complete first ("None" if free)
+depends_on: [Slice M, Slice K]  # machine-readable mirror of Blocked by (same set) — coverage.sh + /rite-status read it
+Consumes / Produces:        # interfaces this slice reads (types/endpoints/events from prior slices) and exposes for later ones
+Known-Gotchas:              # sharp edges / ordering hazards / framework footguns the wright must avoid (keeps the slice one-pass)
+Validation commands:        # exact runnable commands that prove the slice green (test / build / typecheck / lint)
+Prior-slice learnings:      # (filled forward) what an earlier slice discovered that this one must honor — starts empty
 Files likely touched:       # from the spec's Placement & integration
 Tests to write/run:
 Browser proof required: yes/no
@@ -116,7 +134,10 @@ Evidence required:
 > [`reference/gates.md`](reference/gates.md) for the four-gate taxonomy:
 > advisory / validating / blocking / escalating). `Blocked by` makes the dependency
 > graph explicit so re-planning (`/rite-plan reorder`) doesn't break acceptance-criteria
-> coverage. Keep `Blocked by` cycle-free.
+> coverage. Keep `Blocked by` cycle-free. `depends_on` is the machine-readable mirror tools read
+> to pick the next *buildable* slice; `Complexity` (>3 → reslice) sizes it; `Satisfies` +
+> `Consumes/Produces` + `Known-Gotchas` + `Validation commands` make each slice a self-contained,
+> one-pass-implementable brief (the PRP target `/rite-vet` checks).
 
 > **Mid-flight discipline.** When tempted to skip vertical slicing, coverage mapping, or dependency-order discipline — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 

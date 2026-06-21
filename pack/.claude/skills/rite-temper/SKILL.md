@@ -33,6 +33,12 @@ invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md
 - **Honest verdict.** Never round "needs work" up to "ready"; record every scope call's *why*.
 - **You write; the reviewer judges.** You are the single canonical writer (`strategy.md` +
   the spec edits); the reviewer agent is read-only.
+- **Demand the spec-quality checklists for big features.** `/rite-temper` only fires on
+  significant specs — exactly where vague requirement prose is most expensive. Before hardening,
+  confirm `checklists/<domain>.md` exist and pass (`rite-spec/reference/spec-checklists.md`); a
+  scope expansion you fold in **adds its own** rows (new Success/Acceptance criteria get
+  "unit-tested for English" too). A folded expansion with an unquantified criterion is a CRITICAL
+  fail that re-opens the readiness gate.
 
 ## Workflow
 0. **Read `.claude/rules/core.md`**. Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,

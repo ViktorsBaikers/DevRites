@@ -43,6 +43,12 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
   next-action recommendation. The one `state.md` field this skill may write by hand is the
   unblocked slice's `Slice mode` (step 4, the named exception); everything else goes through
   the script, never by hand.
+- **Human gates are for human-only decisions, not the agent's work.** A `questions.md` entry the
+  human must answer is a genuine *decision* (a scope / design / risk call only the human can make)
+  — not a task the agent can do itself. If a question is really agent-doable ("should I write the
+  test?", "go implement X"), don't record a human answer that punts the agent's own job back to it:
+  flag the mis-tag and route it to the right skill (`/rite-build`, `/rite-plan unblock`,
+  `devrites-debug-recovery`). The human resolves decisions; the agent does the work.
 
 ## Workflow
 

@@ -21,7 +21,7 @@ Why a subagent rather than inline: an adversarial reviewer with no author contex
 |---|---|---|
 | `security` | `devrites-security-auditor` | OWASP Top 10; three-tier trust boundary (untrusted → boundary → trusted); secrets handling; dependency risk. A real auth-bypass / data-exposure / injection is **Critical → NO-GO** at seal. |
 | `perf` | `devrites-performance-reviewer` | Measure-first: no claim without a number or a specified measurement. N+1s, hot-path work, payload/bundle size, Core Web Vitals risks. Breach of a stated `spec.md` budget is **Important/Critical**. |
-| `simplify` | `devrites-simplifier-reviewer` | Behavior-preserving simplification: guard clauses, Extract Method, simplify conditionals, the deletion-test heuristic, Chesterton's Fence. Findings are **Suggestion / Nit / FYI** — no behavior change. |
+| `simplify` | `devrites-simplifier-reviewer` | Behavior-preserving simplification: guard clauses, Extract Method, simplify conditionals, the deletion-test heuristic, Chesterton's Fence; plus the AI-codegen over-engineering smells — single-use factory / needless indirection, defensive try-catch bloat + redundant logging, dependency creep where an in-repo option exists, a 100-line function where 20 would do. Findings are **Suggestion / Nit / FYI** — no behavior change. |
 
 ## Gather
 

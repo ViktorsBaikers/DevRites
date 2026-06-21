@@ -40,6 +40,7 @@ model-invoked.
 | [`/rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | utility | — | One-pass structural map of an unfamiliar area (modules, in-callers, out-calls, decisions) in project vocabulary. Prefers codegraph/graphify. | codebase + ADRs/CONTEXT.md | — |
 | [`/rite-prototype`](../pack/.claude/skills/rite-prototype/SKILL.md) | utility | `[question]` | Throwaway code answering ONE design question. Logic harness OR 2–4 UI variations on one route. Captures verdict to `decisions.md`. | spec / surrounding code | prototype scratch + `decisions.md` |
 | [`/rite-handoff`](../pack/.claude/skills/rite-handoff/SKILL.md) | utility | `[next-session-focus]` | Compacts the chat into a handoff doc. Syncs chat-only context into workspace canonical files. References existing artifacts by path. | chat + workspace | `handoff.md` + sync into canonical files |
+| [`/rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | utility | `[--mine \| "<lesson>"]` | Mine archived features for recurring mistakes / dismissed-finding classes; propose project-local lessons into `.devrites/learnings.md` (loaded by the review skills before a fan-out). | archive + workspace | `.devrites/learnings.md` |
 | [`/rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | utility | `[idea]` | Pressure-test a rough idea: 3–5 genuinely different options → converge on one with trade-off + hinge. | spec / surrounding code | `decisions.md` (optional) |
 
 ## Internal skills (`user-invocable: false`, model-invoked)

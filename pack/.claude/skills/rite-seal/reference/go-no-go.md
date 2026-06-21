@@ -13,6 +13,11 @@ list beats a hopeful GO.
 - Any `questions.md` entry with `gate: validating` and `status: open` — **NO-GO
   regardless of behavior impact** (an open validating gate is merge-blocking by
   definition). A slice marked `built (pending review)` is not done.
+- A **test was weakened to go green** (`test-integrity.sh` exit 3 — a test deleted, skipped,
+  `xfail`-ed, or de-asserted since the slice base). A suite that passes on a lowered bar is not
+  proof; this is a Critical NO-GO.
+- Under `DEVRITES_MUTATION=enforce`, a **mutation score below threshold** (`mutation-gate.sh`
+  exit 3 — survived mutants are behaviours no test actually checks).
 
 ## GO requires
 - Every critical acceptance criterion checked with evidence attached.

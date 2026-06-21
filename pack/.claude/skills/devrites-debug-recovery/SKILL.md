@@ -44,6 +44,7 @@ move is unclear.
 - **Do NOT loosen / delete a failing assertion** to get green — check whether
   it's drift first (route via `/rite-plan repair`).
 - **Do NOT hide flakiness** with sleeps / retries — characterize it.
-- **3 failed attempts on the same root cause → escalate**: re-hypothesize from
-  scratch, invoke `devrites-doubt`, or ask the user. Don't keep trying
-  variations of a wrong idea.
+- **3 failed attempts on the same root cause → escalate**: record the wrong idea and *why it
+  failed* under `## Dead ends` in `decisions.md` (so a retry or the next agent doesn't repeat it),
+  then re-hypothesize from **scratch** — fresh context, carrying those dead-ends as ruled-out —
+  invoke `devrites-doubt`, or ask the user. Don't keep trying variations of a wrong idea.
