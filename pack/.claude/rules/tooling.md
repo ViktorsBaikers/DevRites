@@ -34,6 +34,17 @@ Use whatever subset is installed: codebase-memory-mcp alone is fine; codebase-me
 one of the others still cross-verifies; none present → standard methods. The fallback path is a
 first-class path — never block a phase on a missing index.
 
+### Keeping the indexes fresh
+
+An index only helps if it matches the live code; after edits, a stale graph manufactures the
+very index-disagreement step 2 treats as a signal. DevRites keeps the three mechanical indexes
+current automatically — the [`devrites-refresh-indexes`](../skills/devrites-refresh-indexes/SKILL.md)
+Stop hook incrementally reindexes whichever of codebase-memory-mcp, codegraph, and graphify
+track the repo, at end of turn, in a detached process. It self-guards on changes, no-ops when no
+index is present, and is disabled by `DEVRITES_REFRESH_INDEXES=off`. Force a synchronous refresh
+— or re-run graphify's semantic pass after **doc** changes (`/graphify --update`) — via that
+skill. Still trust a fresh read of the live code over any index when they disagree.
+
 ## Up-to-date library / framework docs — context7
 
 When implementing against, choosing, or verifying an **external** library/framework whose
