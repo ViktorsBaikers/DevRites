@@ -102,7 +102,7 @@ rules carrier, workspace state, namespace map) →
 - [Modes — HITL & AFK](#modes--hitl--afk)
 - [Install](#install) — [bash (A, recommended)](#option-a-bash-installer-recommended-full-install) · [plugin (B, partial)](#option-b-claude-code-plugin-partial--skills--agents-only)
 - [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · browser-harness
-- [Skills](#skills) — 28 total · full catalogue in [`docs/skills.md`](docs/skills.md)
+- [Skills](#skills) — 31 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
 - [Engineering rules](#engineering-rules) · [Browser proof ladder](#browser-proof-ladder) · [Frontend & fullstack](#frontend--fullstack)
 - [Safety & scope](#safety--scope) · [Security model](#security-model)
@@ -296,7 +296,7 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **30 skills total** — 21 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
+The pack ships **31 skills total** — 22 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
 
 **Two invocation forms.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
@@ -313,7 +313,7 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 
 ### Full skill + agent inventory
 
-**Public `rite-*` skills (21)** — slash-command surface:
+**Public `rite-*` skills (22)** — slash-command surface:
 
 | Group | Skills |
 |---|---|
@@ -323,6 +323,7 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 | Engineering (every feature) | `rite-vet` — engineering plan review between define and build; depth scales to stakes, never skipped; always in `rite-autocomplete` |
 | Resume / replan | `rite-resolve` · `rite-plan` |
 | Utility | `rite-status` · `rite-doctor` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
+| Learning (optional) | `rite-learn` — cross-feature learning loop: mine shipped features for recurring mistakes + dismissed-finding classes, propose project-local lessons into `.devrites/learnings.md` |
 | Menu | `rite` |
 
 **Internal `devrites-*` specialists (9)** — model-invoked, hidden from menu:
@@ -506,7 +507,7 @@ devrites/
                        # grade-feature · run-outcome-evals · devrites-detect · check-no-global-writes
                        # sync-version · build-release-tarball
   mcp/                 # devrites-mcp.mjs — MCP stdio server over the devrites CLI
-  pack/.claude/        # skills/  30 skills — 21 public + 9 model-invoked    ─┐
+  pack/.claude/        # skills/  31 skills — 22 public + 9 model-invoked    ─┐
                        # agents/  10 reviewers + 1 writer (slice-wright)       ├─ the pack
                        # rules/   16 rule files + README index                 ┘
   evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures

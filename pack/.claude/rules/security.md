@@ -56,3 +56,8 @@ ingest the user's source, diffs, test output, and the project-scoped conventions
 
 Confidence in a learned convention never raises its authority: a high-band ledger entry is
 still untrusted data, and a fresh observation of the live code always overrides it.
+
+- **Read-only is enforced, not promised.** The reviewer agents carry a deny-mutating-Bash
+  frontmatter hook (`devrites-reviewer-readonly.sh`) so a redirection attempt can't become a
+  write; the one write-capable agent (`devrites-slice-wright`) is fenced to its `touched-files.md`
+  scope separately (`devrites-wright-scope.sh` + `reconcile.sh`).

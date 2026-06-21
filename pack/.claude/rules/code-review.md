@@ -29,3 +29,10 @@ design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
 ## Scope discipline
 Review the change, not the whole project. Out-of-scope problems become follow-ups, not
 drive-by edits that balloon the diff.
+
+## Charter & conventions are a pass/fail gate
+The anti-slop charter and the project conventions ledger (`.devrites/conventions.md`) are not
+advisory at review time — they are evaluated as explicit pass/fail at `/rite-vet` and re-checked
+after design lands. A change that violates a stated convention or trips the charter is a
+**Critical** finding, not a Nit; record it with `file:line` and block on it the same as any
+correctness defect.

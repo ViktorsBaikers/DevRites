@@ -21,6 +21,14 @@ It is **read-only**: it never edits the workspace, never advances a phase, never
    [ -f "$D" ] || D=pack/.claude/skills/devrites-lib/scripts/doctor.sh
    [ -f "$D" ] && bash "$D" --verbose; echo "doctor rc=$?"
    ```
+1a. **Surface the learnings nudge** — point the user at `/rite-learn` when a pattern recurs across
+   shipped features (read-only; silent when there's nothing to say):
+   ```bash
+   L=.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] || L="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/learnings.sh"
+   [ -f "$L" ] || L=pack/.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] && bash "$L" nudge || true
+   ```
 2. Report the result. **rc=0** → "DevRites healthy" + the `ok:` checks. **rc=1** → list each
    `issue:` line with the fix it names, then the single command that resolves the most urgent
    one (a stale ACTIVE → `rite use <slug>` or `/rite-status`; an orphaned gate →
@@ -37,5 +45,6 @@ It is **read-only**: it never edits the workspace, never advances a phase, never
 ```
 DevRites health: OK | N issue(s)
 <for each issue: the problem + its fix>
+Learnings: <n recurring pattern(s) across features → /rite-learn | none>
 Next: <single command for the most urgent issue, or "nothing to do">
 ```

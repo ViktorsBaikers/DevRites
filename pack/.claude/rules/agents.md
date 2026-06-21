@@ -84,6 +84,10 @@ prefix is a naming convention that matches it.
 ## Rules
 - Run independent reviewers **in parallel** at the seal, then reconcile; surface
   disagreements explicitly rather than averaging them away.
+- Reviewer read-only is **enforced at the tool layer**, not just promised: each reviewer
+  carries a shared deny-mutating-Bash frontmatter hook (`devrites-reviewer-readonly.sh`). A
+  fresh-context reviewer reads untrusted source — a silent write path would be a prompt-injection
+  surface.
 - **Reviewer** agents are **read-only** and return labeled findings (Critical / Important /
   Suggestion / Nit / FYI). Keep review **feature-scoped**.
 - The **executor** agent (`devrites-slice-wright`) is the one **write-capable** agent: it writes

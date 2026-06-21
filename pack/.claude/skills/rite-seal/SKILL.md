@@ -53,7 +53,10 @@ Read `review.md` and the latest reviewer outputs.
    `strategy.md` (if present), and the **final diff**. If a code-intelligence index (`codegraph` / `graphify`) is
    available, use it for blast-radius checks on the final diff in step 5.
 2. Check **acceptance criteria one by one** — [final-evidence](reference/final-evidence.md).
-   Each gets a checkbox + the evidence that proves it (or "unproven").
+   Each gets a checkbox + the evidence that proves it (or "unproven"). Verify each criterion
+   **independently against the evidence artifact** — the slice report or the build narrative is not
+   proof; the `devrites-spec-reviewer` + `devrites-test-analyst` fan-out in step 7 is the
+   independent cross-check (a verifier that never saw the optimistic narrative).
 3. Verify tests, build/typecheck/lint, and browser proof are present and green for the
    scope. Re-run if cheap and in doubt.
 4. Check unresolved **questions** and **drift** — any open item that changes product
@@ -111,12 +114,33 @@ Read `review.md` and the latest reviewer outputs.
    [ -f "$FP" ] || FP=pack/.claude/skills/devrites-lib/scripts/footprint.sh
    [ -f "$FP" ] && bash "$FP" render <slug> || true
    ```
+   Also emit a machine-readable verdict block into `seal.md` (so `/rite-autocomplete` can gate
+   without parsing prose):
+   ```json
+   { "feature": "<slug>", "verdict": "GO | NO-GO | CONDITIONAL-GO", "criticals": 0, "important": 0,
+     "acceptance": "<proven>/<total>", "test_integrity": "ok | weakened", "mutation": "<score | n/a>",
+     "blockers": ["<one line each, empty on GO>"] }
+   ```
 9. **On GO only — record proven conventions** to the local ledger
    (`.devrites/conventions.md`) so later slices stop re-deriving this project's idioms:
    the durable, *evidence-proven* commands / idioms / placement / gotchas this feature
    established. Evidence-gated like the seal itself; the band is earned, not guessed; the
    step degrades gracefully when unavailable. Full contract + command:
    [conventions-ledger](reference/conventions-ledger.md). (Skip entirely on NO-GO.)
+9a. **On GO only — auto-capture learnings** (`.devrites/learnings.md`). Learning is automatic, not a
+   command anyone must remember: append this feature's durable signal so the **next** feature's
+   review starts warmer — (a) any reviewer finding the gate **dismissed as intentional here** (a
+   "don't re-flag X in this project" class, tag `dismiss`); (b) a recurring correction or dead-end
+   worth not repeating (tag `note`). The review skills load this ledger **before** they fan out, so a
+   dismissed-finding class stops recurring. It is an untrusted prior — live code always overrides
+   (`.claude/rules/security.md`). Promotion of a recurring lesson to a *project rule* stays the
+   human's call (`/rite-learn` — propose, don't impose). Skip on NO-GO.
+   ```bash
+   L=.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] || L="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/learnings.sh"
+   [ -f "$L" ] || L=pack/.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] && bash "$L" add "<slug>" "<dismissed-as-intentional class or dead-end>" dismiss || true
+   ```
 
 ## `seal.md` template
 

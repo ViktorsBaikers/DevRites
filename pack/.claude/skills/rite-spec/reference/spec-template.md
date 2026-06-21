@@ -120,4 +120,5 @@ List every open marker; blocking ones must be zero at the gate.
 - [ ] **UX/UI shaped into `design-brief.md`** (if the feature touches UI) — direction, key states, interaction model decided
 - [ ] Requirements are testable and unambiguous
 - [ ] Success criteria are measurable and technology-agnostic
+- [ ] **Spec-quality checklists pass** — every `checklists/<domain>.md` reaches `Verdict: pass` (zero CRITICAL "unit-tests-for-English" fails; see [spec-checklists.md](spec-checklists.md))
 ```

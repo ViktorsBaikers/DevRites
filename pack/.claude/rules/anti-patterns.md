@@ -22,6 +22,7 @@ byte-identical to the matching rows below); read this file for the full set.
 | "It's faster to skip the small step." | Process shortcuts pay back later as drift, missed criteria, or unrecorded decisions. The step is the point. |
 | "I observed it pass; recording is bureaucracy." | Un-recorded pass = unproven. The next phase reads `evidence.md`, not your memory. |
 | "User clearly wants this, so I'll bypass the gate." | Gates exist for the failure modes asks miss. Honor the gate; the gate exists *because* of the ask. |
+| "The test is failing — I'll just skip it / loosen the assertion to get green." | Faking green is reward-hacking, not progress. Never delete / skip / `xfail` / `.only` / loosen a failing test — a red test means fix the code or agree the change. A weakened test is a Critical finding (`test-integrity.sh`). |
 
 ## Pack-wide red flags
 
@@ -31,6 +32,7 @@ These show up at any phase and are equally damning regardless:
 - A finding / decision / assumption recorded only in chat, not in the workspace files (it dies on `/clear`).
 - Catching the broadest possible error and continuing past it.
 - A test that asserts the implementation, not the behavior.
+- A failing test deleted, skipped, `xfail`-ed, `.only`-narrowed, or loosened to make the suite pass.
 - Commenting out code instead of deleting it.
 - A `// TODO` left in shipped code.
 - Adding a dependency or a second design system without rationale in `decisions.md`.

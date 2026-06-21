@@ -10,7 +10,9 @@ Project conventions always win where they exist; these rules fill gaps.
 ## Operating rules (every phase)
 
 1. **Right step, right time** — use the smallest relevant workflow; don't load
-   everything.
+   everything. When you read, parallelize independent reads and speculatively batch the
+   files a step is likely to need; aim for comprehensive coverage of the relevant code,
+   not the first match (codegraph already indexes structure — this is for raw file reads).
 2. **No silent assumptions** — surface material assumptions; ask when the answer
    changes scope, architecture, data model, UX, security, migration risk, or
    acceptance.
@@ -26,7 +28,9 @@ Project conventions always win where they exist; these rules fill gaps.
    assertions; record commands and output.
 7. **Feature scope only** — review / simplify / polish / security stay within
    the active feature and touched files. No project-wide refactor, no drive-by
-   cleanup.
+   cleanup. Some work is out of scope by nature — creating accounts, provisioning prod
+   infrastructure, managing credentials / secrets, testing against production — refuse it
+   and route to the human.
 8. **Prefer existing conventions** — follow the project's architecture,
    components, tokens, tests, and commands; ask before adding a dependency or a
    second design system.

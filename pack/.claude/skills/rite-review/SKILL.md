@@ -68,7 +68,13 @@ pull these via `Read` when the diff demands them:
      - **Code-review axis** → `devrites-code-reviewer`: "Apply your full documented
        discipline (tests-first, correctness, readability, architecture, maintainability,
        standards) on the active feature workspace + diff. Cite file:line per finding;
-       skip what tooling already enforces."
+       skip what tooling already enforces. Also flag the AI-codegen smells (silent/empty
+       catch, defensive try-catch bloat + redundant logging, single-use factory / needless
+       indirection, dependency creep where an in-repo option exists, a 100-line function
+       where 20 would do) and the silent-failure bugs (a missing value coerced to 0/''/[],
+       a dropped Result/err return, off-by-one / boundary, logic that contradicts the
+       comment/docstring/name). Per hunk, check whether working code was deleted that the
+       task did not ask to remove."
    - **Do NOT merge or re-rank** their findings. Present them under separate
      `## Spec` and `## Code review` sub-sections in `review.md`. Surface contradictions
      between the axes explicitly (e.g. "Spec axis says complete, Code-review axis says
@@ -102,6 +108,11 @@ pull these via `Read` when the diff demands them:
 - **Nit** — trivial/style.
 - **FYI** — context, no action implied.
 
+**Action decoration (orthogonal to severity).** Also tag each finding with how to act on it:
+`blocking` (fix before seal), `non-blocking` (fix when convenient), or `if-minor` (fix only if the
+change is already small — a pure noise-economics lever). Only a **`blocking` Critical** gates the
+seal; a `non-blocking` / `if-minor` finding is recorded, not a stop.
+
 ## Confidence + signal-to-noise
 Borrow `/rite-vet`'s discipline so review stays **trusted, not noisy** — a reviewer that posts
 18 comments per PR teaches the team to ignore every one (below ~10% false-positive rate devs
@@ -129,6 +140,7 @@ the labels do the work.
 ```
 Reviewed: <slice N | feature>
 Tests: <adequate? gaps>
+Kept (≤1, specific): <one concrete decision worth protecting from later churn | omit>
 
 ## Spec   (from devrites-spec-reviewer sub-agent, verbatim)
 - <quoted spec line> — <missing / partial / wrong / scope-creep> — <where>

@@ -14,6 +14,9 @@ P=".claude/skills/devrites-lib/scripts/preamble.sh"
 D=".claude/skills/devrites-lib/scripts/doctor.sh"
 [ -f "$D" ] || D="${CLAUDE_PLUGIN_ROOT:-}/pack/.claude/skills/devrites-lib/scripts/doctor.sh"
 [ -f "$D" ] || D="pack/.claude/skills/devrites-lib/scripts/doctor.sh"
+L=".claude/skills/devrites-lib/scripts/learnings.sh"
+[ -f "$L" ] || L="${CLAUDE_PLUGIN_ROOT:-}/pack/.claude/skills/devrites-lib/scripts/learnings.sh"
+[ -f "$L" ] || L="pack/.claude/skills/devrites-lib/scripts/learnings.sh"
 
 # Not a DevRites project -> stay silent.
 [ -d ".devrites" ] || exit 0
@@ -31,12 +34,17 @@ if [ -f "$P" ]; then
   fi
 fi
 
+# 3. Learnings nudge — silent unless a pattern recurs across shipped features (snoozes after review).
+nudge=""
+[ -f "$L" ] && nudge="$(bash "$L" nudge 2>/dev/null)"
+
 # Nothing to say -> stay silent.
-[ -z "$health" ] && [ -z "$digest" ] && exit 0
+[ -z "$health" ] && [ -z "$digest" ] && [ -z "$nudge" ] && exit 0
 
 ctx=""
 [ -n "$health" ] && ctx="⚠ DevRites health — issues found at session start (advisory; run /rite-doctor for the full report):"$'\n'"$health"$'\n\n'
 [ -n "$digest" ] && ctx="${ctx}DevRites workflow active — live workspace orientation (from preamble.sh):"$'\n\n'"$digest"$'\n\n'"This is the current state; a /rite-* command will re-run its own step-0 preamble."
+[ -n "$nudge" ] && ctx="${ctx}"$'\n\n'"$nudge"
 
 # Emit as additionalContext, JSON-encoded via node (skip if node is absent — each skill's
 # own step-0 preamble still orients, and the health block degrades to nothing).

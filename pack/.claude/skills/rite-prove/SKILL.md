@@ -84,6 +84,19 @@ pull these via `Read` when relevant:
    then revert. Run the project's mutation-testing tool over the touched criticals if it has
    one. A test that stays green on deliberately broken code is an unproven gap, not a pass
    (`testing.md` "Assertion strength"). Record what was fault-checked in `evidence.md`.
+   Run the deterministic gates rather than eyeballing:
+   ```bash
+   D=.claude/skills/devrites-lib/scripts
+   [ -d "$D" ] || D="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts"
+   [ -d "$D" ] || D=pack/.claude/skills/devrites-lib/scripts
+   [ -f "$D/test-integrity.sh" ] && { bash "$D/test-integrity.sh"; echo "test-integrity rc=$?"; } || true   # exit 3 = a test was weakened to pass → NO-GO
+   [ -f "$D/mutation-gate.sh" ]  && bash "$D/mutation-gate.sh" || true                                      # changed-files mutation score → band the seal verdict
+   ```
+   For a parser / serializer / encoder / auth-token / pure-transform criterion, add a **round-trip
+   or metamorphic property** check (`decode(encode(x))==x`, `parse∘print==id`) over generated inputs —
+   example tests miss the edge cases these explore. If the same unit regenerated from a paraphrased
+   spec (or a second sample) **diverges in behaviour on shared inputs**, treat that as a low-confidence
+   signal: under AFK it blocks an auto-GO and routes to HITL.
 6. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. Reproduce → isolate → fix within scope → re-run; if a fix
    would exceed scope, record a blocker.

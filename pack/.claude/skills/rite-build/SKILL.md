@@ -103,6 +103,14 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    [ -f "$RC" ] || RC=pack/.claude/skills/devrites-lib/scripts/reconcile.sh
    [ -f "$RC" ] && bash "$RC" snapshot || echo "(reconcile gate unavailable — verify by hand that only the wright wrote source)"
    ```
+   Then log the dispatch so the stuck-loop detector can catch a slice that keeps being
+   re-dispatched without progress (it pauses the build even under AFK):
+   ```bash
+   ST=.claude/skills/devrites-lib/scripts/stuck.sh
+   [ -f "$ST" ] || ST="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/stuck.sh"
+   [ -f "$ST" ] || ST=pack/.claude/skills/devrites-lib/scripts/stuck.sh
+   [ -f "$ST" ] && bash "$ST" log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>" || true
+   ```
    Then assemble the slice contract and send it per
    [`reference/wright-dispatch.md`](reference/wright-dispatch.md): the slice goal, acceptance
    criteria, and **scope boundary**; the paths it may touch (`touched-files.md`); the context
@@ -156,7 +164,21 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    ```
    **Exit 5 → hard STOP:** a source file changed outside the wright's claimed set — code was
    edited by something other than the wright (A1 breach). Revert it and re-dispatch the wright;
-   do **not** mark the slice `built`. Then, from the wright's artifact, update `state.md`,
+   do **not** mark the slice `built`.
+
+   **Then run the test-integrity gate (anti-reward-hacking)** — prove the slice didn't reach
+   green by weakening its tests:
+   ```bash
+   TI=.claude/skills/devrites-lib/scripts/test-integrity.sh
+   [ -f "$TI" ] || TI="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/test-integrity.sh"
+   [ -f "$TI" ] || TI=pack/.claude/skills/devrites-lib/scripts/test-integrity.sh
+   [ -f "$TI" ] && { bash "$TI"; echo "test-integrity rc=$?"; } || echo "(test-integrity gate unavailable — confirm by hand no test was deleted/skipped/loosened)"
+   ```
+   **Exit 3 → hard STOP:** a test was deleted, skipped, or de-asserted since the slice base — the
+   slice went green by weakening its tests, a Critical protocol violation. Revert the weakening and
+   re-dispatch the wright; do **not** mark the slice `built`.
+
+   Then, from the wright's artifact, update `state.md`,
    `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). If the wright reported
    an approach it tried and backed out of, record it under a `## Dead ends` section in
    `decisions.md` so a retry or the next agent doesn't repeat it.

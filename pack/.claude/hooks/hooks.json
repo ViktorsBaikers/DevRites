@@ -14,6 +14,28 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-redwatch.sh\"" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-stop-gate.sh\"" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-cursor.sh\"" }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [

@@ -1,7 +1,7 @@
 ---
 name: rite-plan
-description: Reshape an active plan — decompose / reslice / repair / reorder / split FE-BE / unblock — without changing product behavior unless asked. Use when the user says "replan", "reslice", "repair the plan", "drift", "unblock", or `/rite-build` flags Spec Drift. Not for the initial plan (use `/rite-define`).
-argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock]"
+description: Reshape an active plan — decompose / reslice / repair / reorder / split FE-BE / unblock / course-correct — without changing product behavior unless asked. Use when the user says "replan", "reslice", "repair the plan", "drift", "unblock", "change of plan", "we're pivoting", or `/rite-build` flags Spec Drift. Not for the initial plan (use `/rite-define`).
+argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct]"
 user-invocable: true
 ---
 
@@ -24,6 +24,10 @@ reshaping slice cadence or DoD criteria.
   (multiple "and"s, can't build+prove in one cycle), not to hit a user-named tally. A
   requested count is a hint at most; slice logically and explain if it differs. See
   [`reference/slicing.md`](reference/slicing.md) ("How many slices?").
+- **Size by complexity, order by dependency.** A slice carries a `Complexity: N/5` score (from
+  `/rite-define`); a slice scoring **>3** is a reslice trigger unless its inline reason justifies
+  the irreducible complexity. Honor each slice's `depends_on:` — the next *buildable* slice is the
+  lowest pending one whose dependencies are all built (keeps one-slice-at-a-time correct, not parallel).
 
 ## Workflow
 0. Read `.claude/rules/core.md` (operating rules) before reshaping anything.
@@ -48,6 +52,10 @@ reshaping slice cadence or DoD criteria.
    - **reorder** — fix the dependency order.
    - **split** — separate backend/frontend contracts (see `devrites-api-interface`).
    - **unblock** — a verification failed; re-route around the blocker.
+   - **course-correct** — a deliberate mid-build *pivot* (the user changed their mind), distinct
+     from accidental drift: classify the change, assess its impact across the remaining slices,
+     decide rollback vs forward-fix, and update `spec.md` + `plan.md` + `tasks.md` + `decisions.md`
+     atomically. An acceptance/behavior change still goes through the user first.
    See [replan-and-repair](reference/replan-and-repair.md) for each mode's steps.
 3. Reason about dependencies — [dependency-graph](reference/dependency-graph.md).
 4. Re-slice using vertical-slice rules — [slicing](reference/slicing.md) and

@@ -41,3 +41,15 @@ existing one. **Reuse → extend → build new**, in that order. Don't re-implem
 project (or stdlib) already provides. If forcing reuse would distort the existing thing's
 shape, build a sibling and consolidate later — duplication is cheaper than the wrong
 abstraction (AHA).
+
+## Edit reliably, change only what's asked
+- **No elision.** Never write `// ... rest unchanged` / `# ... existing code` in place of an
+  edit — emit the whole coherent function. Don't anchor an edit on line numbers; match on the
+  surrounding code. If an edit fails to apply, **re-read the file before retrying** — it may
+  have changed under you.
+- **Do what's asked, no more — and no less.** Don't improve, comment, or refactor code unrelated
+  to the task while you're in the file (feature scope). And never leave a comment describing code
+  you didn't write — implement it.
+- **Never hand-edit a manifest or lockfile.** Add / update / remove dependencies through the
+  package manager (`npm install`, `pip install`, `go get`, `cargo add`) so the lockfile stays
+  consistent — don't paste a version into `package.json` / `requirements.txt` by hand.

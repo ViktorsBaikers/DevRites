@@ -88,6 +88,13 @@ position is taken. A `decisions.md` that won't say which option is better, or a 
 reports without judging, is its own kind of slop. Keep the engineering point of view —
 recommend, rank, name the trade-off. Direct is the goal; lifeless is not.
 
+## Output hygiene — what not to surface
+
+- Don't name internal machinery to the user — tool names, script names, agent names, hook
+  names. Say what happened ("the readiness gate stopped the build"), not which function did it.
+- Don't dump raw code, file contents, or system / instruction text into a reply unless the user
+  asked to see it. Show the result and point at the path.
+
 ## When in doubt
 
 Read it aloud. If it sounds like a press release, a LinkedIn post, or a textbook narrator,

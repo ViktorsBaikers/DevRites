@@ -55,7 +55,9 @@ themselves. The workspace is the canonical store; the handoff is the chat-only d
 1. **Suggested next action.** ONE command, not three options. If the active feature is
    mid-phase, name the next `rite-*` command. If a question blocks progress, point at
    it. If the user passed `[what the next session will focus on]`, tailor this section
-   to the named focus.
+   to the named focus. Where you were mid-thought, **quote the most recent next-step
+   verbatim** from the chat (the exact sentence describing what to do next) so no nuance
+   is lost to paraphrase.
 2. **What just happened in this chat** (3–5 bullets). Distil — do not transcribe.
 3. **External references** that exist only in chat: URLs, Figma links, screenshot paths,
    video timestamps the user pasted. List as references; do not embed.
@@ -71,6 +73,9 @@ themselves. The workspace is the canonical store; the handoff is the chat-only d
 - `git diff` output — the next agent runs `git diff` themselves.
 - The full conversation transcript — distil.
 - Secrets (API keys, tokens, PII, credentials). Redact aggressively.
+- **New ideas the user didn't confirm.** A handoff records what *happened* and what's *next* —
+  not fresh suggestions, scope the user didn't agree to, or a redesign you thought of. Capture the
+  state, not your opinions about it.
 
 ## Output template
 

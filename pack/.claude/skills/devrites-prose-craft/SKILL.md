@@ -66,6 +66,25 @@ kills filler; in technical writing it keeps the precise list.
 8. **Active voice, varied rhythm.** Named actor at the front; mix sentence lengths; don't
    stack staccato fragments for drama.
 
+## Strong verbs (technical register)
+Weak verb + adverb → one precise verb. The swap kills filler and sharpens the claim:
+
+| Weak | Strong |
+|---|---|
+| "helps with" / "works to" | powers · enforces · gates · blocks |
+| "makes use of" / "utilizes" | uses |
+| "is responsible for" | owns · writes · renders |
+| "in order to" | to |
+| "has the ability to" | can |
+| "provides support for" | supports |
+| "a number of" / "a variety of" | the actual count |
+
+**Signal, not verdict.** The cut-list flags *signals* of LLM prose, not proof — a precise technical
+list, an exact identifier, or a numbered acceptance criterion can trip a "tell" pattern and still be
+correct. When a flagged construct carries real information (a genuine three-item list, a real
+contrast the spec needs), keep it. Over-correcting precise spec structure into smooth prose is its
+own slop (this is the same calibration as the two registers above).
+
 ## Quick check before delivering prose
 - Filler opener or recap of what you just said? Cut it.
 - "Not X, it's Y" anywhere? Rewrite to state Y.

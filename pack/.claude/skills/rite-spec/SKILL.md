@@ -84,11 +84,18 @@ when capturing significant spec decisions (why-not-what, ADR-style notes in `dec
    write `brief.md`, `references.md`, `questions.md`, `decisions.md`, `assumptions.md`,
    and an initial `state.md` (phase: spec). When the feature touches UI, `design-brief.md`
    is written here too (by `devrites-ux-shape`, step 3a).
+5a. **Score the spec prose — "unit tests for English"** ([spec-checklists](reference/spec-checklists.md)).
+   Emit `.devrites/work/<slug>/checklists/<domain>.md` (one per requirement domain the spec covers:
+   functional · data-model · interaction · non-functional · edge-cases). Each tests the *requirement
+   prose* for completeness / clarity / measurability — "is 'prominent' quantified?", "is every
+   enumeration closed?" — **not** the implementation. Fix each CRITICAL fail by editing the spec
+   (not by softening the question); minor fails are logged. The checklists feed the readiness gate.
 6. **Run the spec readiness gate** (bottom of spec-template): no blocking
    `[NEEDS CLARIFICATION]`, placement decided, all material gaps resolved, any design
    references provided are saved, **UX/UI shaped into `design-brief.md` if the feature is
-   UI**, requirements testable, success criteria measurable. When it passes, write
-   `Spec gate: passed <iso>` to `state.md`. **Stop** when it passes.
+   UI**, requirements testable, success criteria measurable, **every `checklists/<domain>.md` at
+   `Verdict: pass`**. When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when
+   it passes.
 
 > **Mid-flight discipline.** When tempted to skip investigation depth, gap-closing, or placement decisions — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 
@@ -102,6 +109,7 @@ Resolves: <value>
 References: <n saved | none provided>
 Design brief: <design-brief.md shaped (compact|full) | n/a — not UI>
 Gaps closed: <n>   Open (non-blocking): <n>
+Checklists: <n domains scored — all pass | BLOCKED: n CRITICAL open>
 Next: big / risky feature (auth · data model · public API · migration · multi-slice · ambiguous scope)?
       → /rite-temper   (strategic review: scope mode + pre-mortem, hardens the spec) — then /rite-define.
       Small / reversible / unambiguous? → /rite-define directly.

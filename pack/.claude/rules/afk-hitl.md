@@ -203,6 +203,22 @@ When `/rite-resolve` does resume a stopped session, the skill does **not** auto-
 The loop limits of the calling skill still apply — after the limit, the unresolved
 doubt becomes a blocking question regardless of AFK config.
 
+## Retry cap, stuck loops, and self-resolve
+
+- **Cap retries.** At most **3 attempts** on the same failing check (test, lint, type, build).
+  On the third failure, stop guessing and convert it to a `gate: blocking` question — a fourth
+  identical attempt is thrash, not progress.
+- **Stuck loops pause even in AFK.** A detected loop — the same action repeating, or an
+  action↔error ping-pong — pauses regardless of `allow_gates` (`stuck.sh`), the same standing as
+  the irreversible-risk list. AFK widens what's automatic, never what's looping.
+- **Bias to self-resolve.** Before raising a question, try to answer it from the code, the docs,
+  or `decisions.md`. Communicate only for a blocked environment, a deliverable to hand over,
+  critical info you genuinely can't access, or a credential / permission you lack. This narrows
+  needless pauses and never weakens the blocking / escalating / irreversible gates.
+- **Human time is for human-only work.** A `human_intervention` pause is for what the agent
+  literally cannot do (create a cloud account, click a console button) — never for writing code,
+  writing tests, or reviewing. Punting the agent's own job to the human is not a valid gate.
+
 ## What the rule does NOT cover
 
 This contract is about **human pauses**. It does not weaken or replace:

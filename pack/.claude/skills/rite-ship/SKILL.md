@@ -77,6 +77,18 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 4. On `GO`: run the git ladder — commit → push → tag / PR as applicable
    ([reference/git-ship.md](reference/git-ship.md)). Capture the commit SHA(s),
    branch, and tag/PR URL.
+4a. **When opening a PR, render a structured body** — not just the commit message:
+   **Summary** (what shipped + acceptance n/total) · **Risk & rollback** (the migration /
+   destructive / auth touches + how to revert, from `seal.md`'s risk scan) · **What to scrutinize**
+   (point reviewers at the highest-blast-radius hunks) · **Evidence** (a condensed `evidence.md` +
+   the seal's reconciled reviewer-verdict digest, linking the full `.devrites/archive/<slug>/`
+   bundle). **Delete any N/A section** — an empty Risk block is noise.
+4b. **Promote architecturally-significant decisions to ADRs.** For each `decisions.md` ADR that
+   records a *durable* architecture / interface choice (not a slice-local call), append it to a
+   persistent `docs/adr/ADR-NNN.md` — Nygard shape (Context · Decision · Status `accepted` ·
+   Consequences), **append-only**, never rewritten; supersede with a new ADR that links the old.
+   The per-feature `decisions.md` is archived with the workspace; the ADR keeps the load-bearing
+   *why* discoverable in the repo. Skip if the project keeps no `docs/adr/` and the user doesn't want one.
 5. Write `ship.md` ([reference/ship-template.md](reference/ship-template.md)): what
    shipped, SHA(s), branch, tag/PR, acceptance summary (n/total), link to `seal.md`,
    follow-ups.
