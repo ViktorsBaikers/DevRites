@@ -53,7 +53,8 @@ underspecified — escalate (below), don't proceed.**
 ## Procedure — the one-slice cycle
 1. **ORIENT.** Before editing, read the target files and their neighbours and learn the local
    idiom: naming + casing, layering, error model, test style, existing helpers. Use a code-
-   intelligence index (`codegraph` / `graphify`) for placement, callers, and impact **if one is
+   intelligence index — `codebase-memory-mcp` first, cross-checked with `codegraph` + `graphify`, else standard methods (LSP / Read/Grep/Glob) (see
+   `.claude/rules/tooling.md`) — for placement, callers, and impact **if one is
    available in your tools**; otherwise Read/Grep/Glob. **Reuse → extend → build new** — search
    for an existing util/type/component/helper before adding one.
    **Read the conventions ledger first** (proven priors from earlier sealed slices):
@@ -76,8 +77,9 @@ underspecified — escalate (below), don't proceed.**
    - **UI slice?** Build to `design-brief.md` and apply `devrites-frontend-craft` discipline:
      every state covered (empty / loading / error / success), project tokens + existing
      components, WCAG 2.2 AA. Avoid the UI tells in the charter; don't re-derive the design.
-   - **Uncertain framework/library fact?** Verify it at the source (official docs / installed
-     source) before relying on it; capture the source to return. Never invent an API.
+   - **Uncertain framework/library fact?** Verify it at the source (installed source / official
+     docs, or context7 if available for current upstream docs) before relying on it; capture the
+     source to return. Never invent an API.
 4. **VERIFY (fail-on-red).** Run the slice's targeted tests, plus typecheck / lint / build where
    the project has them. Capture the exact command and its real output. If anything is red, fix
    the root cause — the bug is in your code, not the test. **Never weaken a test to go green** —

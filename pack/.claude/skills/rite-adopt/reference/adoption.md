@@ -10,7 +10,8 @@ Document the **durable shape** of the project, not a line-by-line tour:
 - **Current behavior** — what the adopted area does today, from the user's perspective.
 - **Architecture + placement** — the layers and seams; where each kind of thing lives
   (where endpoints / components / models / migrations / tests go). Prefer a code-intelligence
-  index (`codegraph` / `graphify`) for structure, callers, and impact.
+  index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob) (see
+  `../../../rules/tooling.md`) — for structure, callers, and impact.
 - **Commands** — the real test / build / typecheck / lint commands (run or read them; don't
   guess). Verify uncertain framework facts at the source.
 - **Idioms** — naming + casing, layering, the error model, the result/exception style, the

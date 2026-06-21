@@ -42,8 +42,10 @@ the adoption decisions (why-not-what) in `decisions.md`.
    is missing, ask once (it shapes the spec's acceptance); if the area is ambiguous, confirm
    before investigating the whole tree.
 2. **Reverse-investigate the existing code** — the durable shape of the project. Use a
-   code-intelligence index (`codegraph` / `graphify`) for structure, callers, and impact;
-   fall back to Read/Grep/Glob. Capture, per [adoption](reference/adoption.md): **current
+   code-intelligence index if available — codebase-memory-mcp first (its `get_architecture`
+   gives a fast overview), cross-checked with codegraph + graphify, else standard methods
+   (LSP / Read/Grep/Glob); see `.claude/rules/tooling.md` — for
+   structure, callers, and impact. Capture, per [adoption](reference/adoption.md): **current
    behavior**, **architecture + placement** (layers, seams, where each kind of thing lives),
    the **commands** (test / build / typecheck / lint), and the **idioms** (naming, layering,
    error model, test style) + recurring **gotchas**. Read `PRODUCT.md` / `DESIGN.md` /

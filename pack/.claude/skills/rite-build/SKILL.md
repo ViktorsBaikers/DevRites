@@ -118,12 +118,14 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    when present — its per-gap test requirements + regression-criticals for this slice are the
    coverage the wright must write — and `design-brief.md`
    when the slice touches UI per [frontend-trigger](reference/frontend-trigger.md)); and the
-   `.claude/rules/` files in scope. The wright **orients** on the project's idiom (preferring a
-   code-intelligence index — `codegraph` (`.codegraph/` / `codegraph_*`) or `graphify`
-   (`graphify-out/`) — for placement/callers/impact), writes the **failing test first** when
+   `.claude/rules/` files in scope. The wright **orients** on the project's idiom (using a
+   code-intelligence index **if available** — `codebase-memory-mcp` first, cross-checked with
+   `codegraph` (`.codegraph/` / `codegraph_*`) + `graphify` (`graphify-out/`), else standard
+   methods (LSP / `Read`/`Grep`/`Glob`); see `.claude/rules/tooling.md` — for
+   placement/callers/impact), writes the **failing test first** when
    behaviour changes ([tdd](reference/tdd.md)), implements the **smallest complete** version in
    the project's style (applying `devrites-frontend-craft` to `design-brief.md` for UI, and
-   `devrites-source-driven` for uncertain framework facts), runs the slice's **targeted tests**
+   `devrites-source-driven` — with context7 if available — for uncertain framework facts), runs the slice's **targeted tests**
    (plus typecheck / lint / build where the project has them), and returns a structured artifact
    — **code + tests only; it does not write the workspace files.** If the slice is UI but no `design-brief.md` exists (e.g. a spec written before
    shaping), shape it via `devrites-ux-shape` before the wright codes. If the `Task` tool is

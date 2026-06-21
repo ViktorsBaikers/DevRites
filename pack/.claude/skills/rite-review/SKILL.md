@@ -49,8 +49,11 @@ pull these via `Read` when the diff demands them:
    ```
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`, `evidence.md`,
    `touched-files.md`, and the `git diff`. For "what would this change break"
-   questions, prefer `codegraph` / `graphify` over file reads — they answer
-   impact/callers in one call.
+   questions, prefer a code-intelligence index if available — codebase-memory-mcp first,
+   cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob); see
+   `.claude/rules/tooling.md` — over file reads;
+   they answer impact/callers in one call. When a finding hinges on an external library's
+   current API, context7 if available can confirm the signature.
 2. **Review tests first** — do they actually prove the acceptance criteria? Missing,
    weak, or wrong tests are the first findings.
 3. **Spec ↔ Code-review split (parallel sub-agents, fresh context).** A change can pass

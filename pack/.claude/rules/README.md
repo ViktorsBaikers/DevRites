@@ -11,8 +11,8 @@ prefers what's already there).
 ## Loading model — progressive disclosure
 
 To keep context lean, the rules follow Claude's progressive-disclosure pattern. There
-are 17 rule files (plus this README index): each DevRites `rite-*` skill Reads
-`.claude/rules/core.md` as its first step; the other 16 rule files load on demand by the
+are 18 rule files (plus this README index): each DevRites `rite-*` skill Reads
+`.claude/rules/core.md` as its first step; the other 17 rule files load on demand by the
 phase that needs them.
 
 ### Always-on (read by each `rite-*` skill as step 0)
@@ -41,6 +41,7 @@ phase that needs them.
 | `context-hygiene.md` | `/clear` vs `/compact`, lost-in-the-middle, phase-aware hygiene footer. | Phase-end hygiene footer; choosing `/clear` vs `/compact`. |
 | `anti-patterns.md` | Pack-wide rationalizations + red flags the agent reaches for. | Loaded by each `rite-*/reference/anti-patterns.md`; loaded directly when reluctance is broader than the active phase. |
 | `afk-hitl.md` | AFK vs HITL contract: `.devrites/AFK` sentinel format, `questions.md` schema, four-gate taxonomy (advisory / validating / blocking / escalating), AFK-never-silently-accepts boundaries. | `/rite-build`, `/rite-status`, `/rite-resolve`, `devrites-doubt`; anywhere a pause-or-proceed decision happens. |
+| `tooling.md` | Optional external tools — code intelligence (codebase-memory-mcp first → cross-verify with codegraph + graphify → standard methods LSP / `Read`/`Grep`/`Glob`), up-to-date library docs (context7), architecture/ADR memory. Recommended, not required. | Any phase doing structural lookups (callers / impact / placement) or relying on external library/framework facts. |
 
 How they're used: DevRites skills follow these rules; you and Claude can reference them
 directly. They are guidance, not enforced gates — the enforced gates live in the
