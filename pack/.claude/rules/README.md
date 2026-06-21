@@ -11,8 +11,8 @@ prefers what's already there).
 ## Loading model — progressive disclosure
 
 To keep context lean, the rules follow Claude's progressive-disclosure pattern. There
-are 16 rule files (plus this README index): each DevRites `rite-*` skill Reads
-`.claude/rules/core.md` as its first step; the other 15 rule files load on demand by the
+are 17 rule files (plus this README index): each DevRites `rite-*` skill Reads
+`.claude/rules/core.md` as its first step; the other 16 rule files load on demand by the
 phase that needs them.
 
 ### Always-on (read by each `rite-*` skill as step 0)
@@ -26,6 +26,7 @@ phase that needs them.
 | Rule | Covers | Typical phase |
 |---|---|---|
 | `coding-style.md` | Naming, function shape, guard clauses, comments, simplicity, reuse-first. | `/rite-build`, `/rite-polish` Phase 1. |
+| `prose-style.md` | Human-voice writing for artifacts + replies; two registers (prose vs technical); the LLM-tell cut-list. Depth in the `devrites-prose-craft` skill. | Any phase that writes prose — `/rite-spec`, `/rite-define`, `/rite-review`, `/rite-seal`, `/rite-ship`; `/rite-polish` Phase 1 as the catch. |
 | `error-handling.md` | Fail fast, no silent catches, meaningful messages, fail closed. | `/rite-build`, `/rite-polish` (backend), `/rite-review`. |
 | `testing.md` | Pyramid, behavior over implementation, determinism. | `/rite-build`, `/rite-prove`, `/rite-review`. |
 | `code-review.md` | Small PRs, severity labels, what to check, actionable feedback. | `/rite-review`, `/rite-seal`. |

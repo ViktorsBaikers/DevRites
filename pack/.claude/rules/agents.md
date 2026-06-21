@@ -58,7 +58,9 @@ The prefix mirrors visibility:
   Internal specialists that fire on trigger from the `rite-*` skills or auto-select.
   `devrites-interview`, `devrites-source-driven`, `devrites-doubt`,
   `devrites-ux-shape` (plans UX/UI into `design-brief.md` at `/rite-spec` when UI is
-  detected — the build target), `devrites-frontend-craft`, `devrites-browser-proof`,
+  detected — the build target), `devrites-frontend-craft`, `devrites-prose-craft`
+  (human-voice prose for artifacts + replies; the catch pass in `/rite-polish`),
+  `devrites-browser-proof`,
   `devrites-debug-recovery`, `devrites-api-interface`, `devrites-audit` (dispatches the
   security / perf / simplify reviewer subagent on an axis argument).
   The `devrites-` prefix avoids collisions with bundled Claude Code skill

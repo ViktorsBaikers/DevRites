@@ -114,6 +114,10 @@ hold the anti-slop charter.
   `rite-polish/reference/anti-ai-slop.md`.
 - **Don't re-implement what the project or stdlib already provides**, and never add a
   dependency / second design system / novel pattern on your own — those are an **escalation**.
+- **No hallucinated imports or APIs, no placeholder bodies.** Every import resolves to a
+  declared dependency; every unfamiliar method/param exists at the source (verify, never
+  invent). No `pass` / `...` / `NotImplementedError` / constant-return body posing as a finished
+  implementation.
 When in doubt, match the neighbours. A "robust" check or shiny abstraction you can't justify in
 one sentence is slop — delete it.
 
