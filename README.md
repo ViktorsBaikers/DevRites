@@ -100,7 +100,7 @@ rules carrier, workspace state, namespace map) →
 
 - [Why distributed skills](#why-distributed-skills-not-one-engine)
 - [Modes — HITL & AFK](#modes--hitl--afk)
-- [Install](#install) — [bash (A, recommended)](#option-a-bash-installer-recommended-full-install) · [plugin (B, partial)](#option-b-claude-code-plugin-partial--skills--agents-only)
+- [Install](#install) — [npx / bash (A, recommended)](#option-a-npx--bash-installer-recommended-full-install) · [plugin (B, partial)](#option-b-claude-code-plugin-partial--skills--agents-only)
 - [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · browser-harness
 - [Skills](#skills) — 31 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
@@ -141,7 +141,7 @@ DevRites installs **into a project** (project-local only — it never writes to
 
 | Path | Ships | When to use |
 |---|---|---|
-| **A. bash installer** *(recommended)* | skills, agents, **rules**, aliases | full DevRites — any Claude Code version |
+| **A. `npx` or bash installer** *(recommended)* | skills, agents, **rules**, aliases | full DevRites — `npx devrites@latest`, or `curl \| bash` on any Claude Code version |
 | B. Claude Code plugin | skills, agents *(no rules)* | Claude Code 2.1+ if you want plugin-managed updates and don't need the engineering rules |
 
 > **Heads-up:** the Claude Code plugin manifest only ships `skills/` and
@@ -149,9 +149,30 @@ DevRites installs **into a project** (project-local only — it never writes to
 > If you install via the plugin you'll need a follow-up `--rules-only` bash
 > run to drop the rules into `.claude/rules/` (see Option B below).
 
-### Option A: bash installer (recommended, full install)
+### Option A: npx / bash installer (recommended, full install)
 
-**One-liner over the network** — no `git clone` required:
+**Fastest — `npx` (Node 18+):**
+
+```bash
+# Install the full pack into the current project
+npx devrites@latest
+
+# Into a specific project, or preview first
+npx devrites@latest --target /path/to/your/project
+npx devrites@latest --dry-run
+
+# Upgrade or remove later
+npx devrites@latest update
+npx devrites@latest uninstall
+```
+
+`npx devrites` is a thin wrapper over the same installer below — the pack is bundled in the
+package, so the install runs **offline** and is **pinned** to the version you request
+(`@latest`, `@1.18.0`, …). It accepts every flag the bash installer does and is still
+project-local (it never writes to `~/.claude`). Requires `bash` — built in on macOS/Linux;
+on Windows run it inside Git Bash or WSL, or use the `curl | bash` one-liner below.
+
+**One-liner over the network** — no `git clone` or Node required:
 
 ```bash
 # Install latest release into the current directory
