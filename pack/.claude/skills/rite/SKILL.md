@@ -48,6 +48,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | `pressure-test` | `/rite-pressure-test` | diverge → converge on a rough idea |
 | `autocomplete [idea] [--ship]` | `/rite-autocomplete` | run the whole lifecycle unattended |
 | `quick [change]` | `/rite-quick` | express lane — one small reversible change, build → prove → ship |
+| `frame [task]` | `/rite-frame` | pre-flight goal-reframe + four-failure-mode self-audit for ad-hoc / express work |
 
 The `/rite-<verb>` standalones remain user-invocable as direct shortcuts; both forms hit the same skill. Use whichever reads more naturally — the menu form (`/rite spec`) for discovery, the shortcut (`/rite-spec`) for muscle memory.
 
@@ -99,7 +100,7 @@ SWITCH        /rite use <slug>                                re-point .devrites
 RESUME        /rite resolve ...        ≡    /rite-resolve     answer a HITL checkpoint
 AUTO          /rite autocomplete ...   ≡    /rite-autocomplete  run the whole lifecycle unattended (--ship to push)
 QUICK         /rite quick <change>     ≡    /rite-quick       express lane — one small reversible change (escalates if it grows)
-UTILITY       /rite prototype | handoff | zoom-out | pressure-test  (or direct /rite-* shortcuts)
+UTILITY       /rite frame | prototype | handoff | zoom-out | pressure-test  (or direct /rite-* shortcuts)
 ```
 
 > **Small one-off change?** A typo, copy tweak, config bump, or one-function fix → **`/rite-quick`**
