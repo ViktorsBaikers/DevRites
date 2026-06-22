@@ -42,7 +42,10 @@ Read `.claude/rules/core.md` first. Then the small set this lane actually needs:
 2. **One-line contract.** Restate in 1–3 lines: the change, its **acceptance** (how you'll
    know it works), and the **scope boundary** (what you will NOT touch). This is the entire
    "spec + plan" for a quick change — keep it in the chat; optionally drop a `brief.md` +
-   `evidence.md` under `.devrites/work/<slug>/` if the user wants a record.
+   `evidence.md` under `.devrites/work/<slug>/` if the user wants a record. This is the
+   `/rite-frame` FRAME move: if the acceptance won't reduce to a check that could be *false*,
+   the ask is ambiguous → escalate per the significance gate. Its AUDIT pass is the diff
+   self-review in step 5.
 3. **Build with TDD.** Failing test first when behavior changes (see it fail for the right
    reason) → smallest complete change in the **project's idiom** (reuse before you write,
    anti-AI-slop) → cover every touched behavior / interactive element with a **real**
