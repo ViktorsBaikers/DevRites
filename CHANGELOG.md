@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [1.18.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.17.0...v1.18.0) (2026-06-22)
+
+### Features
+
+* **skills:** add rite-frame goal-reframe + failure-mode self-audit ([ca181ee](https://github.com/ViktorsBaikers/DevRites/commit/ca181eee47c4c47c19ea8069cb650e38a7a26c87))
+
 ## [1.17.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.16.0...v1.17.0) (2026-06-22)
 
 ### Features
