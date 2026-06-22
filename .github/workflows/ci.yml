@@ -97,8 +97,16 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
       - name: install smoke
         run: bash tests/install-smoke.sh
+
+      - name: cli (npx entry point) smoke
+        run: bash tests/cli-smoke.sh
 
       - name: uninstall smoke
         run: bash tests/uninstall-smoke.sh

@@ -1,0 +1,8 @@
+# Keep the published package clean. The "files" allowlist in package.json already
+# scopes what ships; these patterns strip junk that lives inside allowed dirs
+# (mirrors the cleanup in scripts/build-release-tarball.sh).
+__pycache__/
+*.pyc
+.DS_Store
+scripts/.cache/
+docs/internal/
