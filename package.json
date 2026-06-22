@@ -33,7 +33,6 @@
     "install.sh",
     "uninstall.sh",
     "update.sh",
-    ".claude-plugin/",
     "mcp/",
     "docs/",
     "README.md",

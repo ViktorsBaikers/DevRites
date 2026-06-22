@@ -11,7 +11,7 @@ Dispatch one read-only review subagent against the active feature's workspace + 
 
 This is the **inline single-axis pass** used during build / polish — one axis at a time, on demand, where a quick read keeps a slice honest. It is intentionally distinct from the seal/review **gate**, where the reviewer agents fan out in parallel across all relevant axes in their own fresh contexts (see `/rite-seal`). Same agents, different role: the audit is a cheap mid-flight check; the seal fan-out is the blocking gate. Both reading the same agent disciplines is the point, not a divergence.
 
-Why a subagent rather than inline: an adversarial reviewer with no author context is more likely to find what's wrong. Anthropic bug [#49559](https://github.com/anthropics/claude-code/issues/49559) leaves `context: fork` silently inline under plugin install, so `Task` dispatch is the reliable path under both plugin and bash installs.
+Why a subagent rather than inline: an adversarial reviewer with no author context is more likely to find what's wrong. Anthropic bug [#49559](https://github.com/anthropics/claude-code/issues/49559) can leave `context: fork` silently inline, so `Task` dispatch is the reliable path.
 
 ## Axis selection
 

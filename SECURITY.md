@@ -38,8 +38,8 @@ Once a `1.0` release ships, the latest two minor lines will be supported.
 ### Scope
 
 DevRites is a Claude Code **skills pack**: Markdown skill files, a few helper
-shell scripts, a bash installer, and (in plugin form) a `.claude-plugin/`
-manifest. It ships **no binary and no network service**. The only server is an
+shell scripts, a bash installer, and a thin `npx` CLI wrapper (`bin/devrites.mjs`)
+that shells out to that installer. It ships **no binary and no network service**. The only server is an
 **optional, opt-in MCP stdio server** (`mcp/devrites-mcp.mjs`) that speaks
 JSON-RPC over stdin/stdout (no port, no socket), is not installed or registered
 by default, and only shells out to the local `devrites` CLI — read/gate ops over
@@ -121,13 +121,13 @@ uninstall.
 The installer touches no global state. It does not invoke `sudo`, modify
 shell rc files, fetch remote code, or alter Claude Code settings.
 
-### Plugin install path
+### npx install path
 
-When installed via `claude plugin install devrites@devrites-marketplace`,
-the plugin runtime owns file placement. DevRites does not ship a post-install
-hook that modifies user files. The plugin manifest ships only skills and agents —
-the engineering rules are not delivered by the plugin and are never written into
-the user's `~/.claude/CLAUDE.md` (add them with a `--rules-only` bash install).
+When installed via `npx devrites@latest`, the CLI (`bin/devrites.mjs`) is a thin
+shim that runs the **bundled** `install.sh` against the pack shipped inside the npm
+package — no remote code is fetched at install time, and the install is pinned to
+the requested package version. It has no runtime npm dependencies and makes no
+global writes; the same project-local guarantees as the bash installer apply.
 
 ### Recommended Claude Code permissions for managed deployments
 

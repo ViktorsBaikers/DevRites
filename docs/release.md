@@ -3,10 +3,11 @@
 Releases are **fully automated** via [semantic-release](https://semantic-release.gitbook.io/): every push to `main` is analyzed; if the merged commits carry a `feat:`, `fix:`, `perf:`, `refactor:`, `build:`, `docs(README):` (or a `BREAKING CHANGE:` footer) the `.github/workflows/release.yml` job determines the next SemVer version and:
 
 1. Runs `scripts/validate.sh` + install / uninstall smoke tests.
-2. Syncs the new version into `package.json`, `.claude-plugin/plugin.json`, and `.claude-plugin/marketplace.json` (`scripts/sync-version.sh`).
-3. Builds a `dist/devrites-v<version>.tar.gz` release artifact via `scripts/build-release-tarball.sh` — the extractable bundle end-users get if they don't install via the plugin marketplace.
+2. Syncs the new version into `package.json` and the README status line (`scripts/sync-version.sh`).
+3. Builds a `dist/devrites-v<version>.tar.gz` release artifact via `scripts/build-release-tarball.sh` — the extractable bundle end-users get from the `curl | bash` installer.
 4. Regenerates `CHANGELOG.md` from the commits.
-5. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates a git tag `v<version>`, and publishes a GitHub Release with the tarball attached.
+5. Publishes the `devrites` package to the npm registry (`@semantic-release/npm`, needs the `NPM_TOKEN` secret) — this is what `npx devrites@latest` resolves.
+6. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates a git tag `v<version>`, and publishes a GitHub Release with the tarball attached.
 
 Local dry-run: `npm run release:dry` (shows the version bump + draft notes without publishing). The release job is gated by passing CI — a broken `main` won't ship.
 
