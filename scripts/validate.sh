@@ -65,29 +65,6 @@ for a in $AGENT_FILES; do
   if [ -f "$AGENTS/$a.md" ]; then good "$a"; else bad "missing agent: $a"; fi
 done
 
-section "plugin manifest agents list matches pack/.claude/agents"
-PLUGIN_JSON="$ROOT/.claude-plugin/plugin.json"
-if [ -r "$PLUGIN_JSON" ] && command -v python3 >/dev/null 2>&1; then
-  manifest_list="$(python3 -c '
-import json, sys
-m = json.load(open(sys.argv[1]))
-a = m.get("agents", [])
-if isinstance(a, str):
-    a = [a]
-for p in a:
-    print(p.lstrip("./"))
-' "$PLUGIN_JSON" | sort -u)"
-  disk_list="$(cd "$ROOT" && ls pack/.claude/agents/*.md 2>/dev/null | sort -u)"
-  if [ "$manifest_list" = "$disk_list" ]; then
-    good "plugin.json agents array matches pack/.claude/agents/*.md"
-  else
-    bad "plugin.json agents array out of sync with pack/.claude/agents/*.md"
-    diff <(printf '%s\n' "$manifest_list") <(printf '%s\n' "$disk_list") || true
-  fi
-else
-  echo "skip: cannot validate manifest sync (missing python3 or plugin.json)"
-fi
-
 # ---- 5. frontmatter validation ------------------------------------------
 section "frontmatter"
 if command -v python3 >/dev/null 2>&1; then
@@ -169,30 +146,7 @@ else
   bad "rule-uniqueness check failed (see scripts/check-rule-uniqueness.sh)"
 fi
 
-# ---- 12. version lockstep across manifests -------------------------------
-section "version lockstep (package.json == plugin.json == marketplace.json)"
-if command -v python3 >/dev/null 2>&1; then
-  if python3 - "$ROOT" <<'PY'
-import json, sys, os
-root = sys.argv[1]
-pkg  = json.load(open(os.path.join(root, "package.json")))["version"]
-plug = json.load(open(os.path.join(root, ".claude-plugin/plugin.json")))["version"]
-mkt  = json.load(open(os.path.join(root, ".claude-plugin/marketplace.json")))
-mver = next((p.get("version") for p in mkt.get("plugins", []) if p.get("name") == "devrites"), None)
-print("  package.json     %s" % pkg)
-print("  plugin.json      %s" % plug)
-print("  marketplace.json %s" % mver)
-if pkg == plug == mver and mver is not None:
-    sys.exit(0)
-print("FAIL: version mismatch across manifests")
-sys.exit(1)
-PY
-  then good "versions match across package.json / plugin.json / marketplace.json"; else bad "version mismatch across manifests (run scripts/sync-version.sh)"; fi
-else
-  echo "skip: python3 not found"
-fi
-
-# ---- 13. no runtime-broken pack/.claude/ path in installed prose ---------
+# ---- 12. no runtime-broken pack/.claude/ path in installed prose ---------
 # After install the leading pack/ is stripped, so any literal pack/.claude/rules/
 # or pack/.claude/skills/ in shipped SKILL.md / reference prose is a dead path
 # at runtime. (Repo README/docs links are out of scope — they're GitHub links.)

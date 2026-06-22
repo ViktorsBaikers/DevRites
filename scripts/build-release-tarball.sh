@@ -27,7 +27,6 @@ mkdir -p "$STAGE"
 # Files and directories shipped to end-users.
 PAYLOAD=(
   pack
-  .claude-plugin
   scripts
   mcp
   docs

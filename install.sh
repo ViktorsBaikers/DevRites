@@ -8,8 +8,6 @@
 #   ./install.sh --no-agents          skip the review subagents
 #   ./install.sh --no-rules           skip the DevRites engineering rules
 #   ./install.sh --rules-only         install only the engineering rules
-#                                     (use after `claude plugin install devrites`
-#                                      to add the rules the plugin can't ship)
 #   ./install.sh --short-aliases=all  install /define /build /prove /seal aliases
 #
 # Network install (no git clone needed):
@@ -308,10 +306,12 @@ fi
 
 # ---- detect installed version + flags (recorded in manifest header) -----
 DR_INSTALLED_VERSION="unknown"
-_plugin_json="$SELF_DIR/.claude-plugin/plugin.json"
-if [ -r "$_plugin_json" ]; then
+_pkg_json="$SELF_DIR/package.json"
+if [ -r "$_pkg_json" ]; then
   # Best-effort: extract the top-level "version" field without depending on jq.
-  DR_INSTALLED_VERSION="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$_plugin_json" | head -n1)"
+  # package.json's first "version" key is the top-level one (devDependency keys
+  # are package names, not "version"), so head -n1 is safe.
+  DR_INSTALLED_VERSION="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$_pkg_json" | head -n1)"
   [ -n "$DR_INSTALLED_VERSION" ] || DR_INSTALLED_VERSION="unknown"
 fi
 

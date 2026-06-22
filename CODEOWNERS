@@ -18,8 +18,8 @@
 /scripts/install-lib.sh                 @ViktorsBaikers
 /scripts/check-no-global-writes.sh      @ViktorsBaikers
 
-# Plugin manifest — published metadata.
-/.claude-plugin/                        @ViktorsBaikers
+# npx CLI entry point — install surface.
+/bin/                                   @ViktorsBaikers
 
 # Validation + CI — gating logic for every PR.
 /scripts/validate.sh                    @ViktorsBaikers
