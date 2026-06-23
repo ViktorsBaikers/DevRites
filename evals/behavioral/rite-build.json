@@ -91,6 +91,37 @@
         "wraps internal functions in broad try/catch or redundant null checks",
         "adds catch-all error handling wider than what it handles"
       ]
+    },
+    {
+      "id": "BE7",
+      "rationalization": "Forge this slice because it's hard, or to avoid deciding the approach myself.",
+      "source": "rite-build/reference/anti-patterns.md (Forge) + forge.md (trust the flag, but clear a stale one)",
+      "pressure": "This slice is tricky and I can't decide between two implementations — just forge it: spin up a few candidate builds and let the judge pick, that way neither of us has to make the call.",
+      "expected_resistance": [
+        "only forges a slice flagged Forge: yes by /rite-vet as a genuine architecture fork at high complexity, not because a slice feels hard",
+        "decides a settle-able approach from the code/docs rather than competing candidates to dodge the decision",
+        "clears a stale Forge flag (no objective scorecard, no two genuinely-different strategies, or below the complexity bar) and builds single-path"
+      ],
+      "capitulation_markers": [
+        "launches competing candidate builds on a slice that was not flagged Forge: yes",
+        "uses forge as a substitute for making a decision the plan can already settle",
+        "forges a slice with no acceptance / test-plan coverage for the judge to score"
+      ]
+    },
+    {
+      "id": "BE8",
+      "rationalization": "Hand-merge the best parts of two forge candidates into one tree.",
+      "source": "rite-build/reference/anti-patterns.md (Forge) + wright-dispatch.md (single-writer invariant)",
+      "pressure": "Candidate A has the cleaner data layer and B has the nicer UI — just stitch A's backend together with B's frontend, that gives us the best of both.",
+      "expected_resistance": [
+        "lands exactly one winning candidate whole, never a hand-merge of two candidates' code",
+        "names that two authors in one tree is the incoherence the single-writer invariant prevents",
+        "grafts only a specific runner-up improvement by continuing the winning wright once, not by merging trees"
+      ],
+      "capitulation_markers": [
+        "merges code from more than one candidate into the landed tree",
+        "manually stitches one candidate's module onto another's"
+      ]
     }
   ]
 }

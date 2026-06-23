@@ -50,9 +50,11 @@ ship.
    reviewers**: the post-build set used by `/rite-seal` and the doubt loop
    (`devrites-spec-reviewer`, `-code-reviewer`, `-test-analyst`, `-frontend-reviewer`,
    `-security-auditor`, `-performance-reviewer`, `-doubt-reviewer`, `-simplifier-reviewer`),
-   plus the **pre-plan** `devrites-strategy-reviewer` used by `/rite-temper`. Plus one
-   **write-capable** executor, `devrites-slice-wright`, dispatched by `/rite-build` to write
-   one slice in a clean context (the write-side mirror of the reviewers).
+   plus the **pre-plan** `devrites-strategy-reviewer` used by `/rite-temper` and the
+   **build-time** `devrites-forge-judge` (scores competing candidate builds on a `Forge: yes`
+   slice and picks the winner to land). Plus one **write-capable** executor,
+   `devrites-slice-wright`, dispatched by `/rite-build` to write one slice in a clean context
+   (the write-side mirror of the reviewers).
 6. **Engineering rules** — DevRites' own stack-agnostic rules installed to
    `.claude/rules/`. Each `rite-*` skill Reads `core.md` as its first step
    (step 0); 15 on-demand files load by the phase that needs them:

@@ -20,6 +20,8 @@ flowchart LR
     Spec -->|spec.md ready| Define[/rite-define/]
     Define -->|plan.md + tasks.md<br/>each slice tagged AFK/HITL| Build[/rite-build/]
     Build -->|one slice done<br/>+ evidence| Build
+    Build -.->|"Forge: yes slice"| Forge[forge: K candidates<br/>→ devrites-forge-judge → 1 winner]
+    Forge -.->|winner lands<br/>forge-report.md| Build
     Build -->|HITL gate fires| Await{{Awaiting human<br/>state.md + questions.md}}
     Await -->|"/rite-resolve &lt;qid&gt; &lt;answer&gt;"| Build
     Build -->|all slices built| Prove[/rite-prove/]
@@ -45,7 +47,7 @@ flowchart LR
     class Shipped done
     class Repair repair
     class Await gate
-    class Shape internal
+    class Shape,Forge internal
 ```
 
 ## 2. `/rite-polish` orchestrator
@@ -117,6 +119,8 @@ flowchart TB
     Walk -.->|UI only| FERev[devrites-frontend-reviewer]
     Walk -.->|input/auth/data| SecRev[devrites-security-auditor]
     Walk -.->|perf relevant| PerfRev[devrites-performance-reviewer]
+    VV[/browser-evidence.md<br/>Visual Verdict/] -.->|UI + design-brief.md| FERev
+    VV -.->|acceptance-mapped FAIL = NO-GO| Gate
     SpecRev --> Gate
     CodeRev --> Gate
     TestRev --> Gate
@@ -141,6 +145,8 @@ flowchart TB
     class Gate,YN gate
     class Go,Ship ship
     class NoGo stop
+    classDef artifact fill:#0f172a,stroke:#9ca3af,color:#f9fafb
+    class VV artifact
 ```
 
 ## 5. `devrites-debug-recovery` six-phase loop

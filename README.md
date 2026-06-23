@@ -29,6 +29,7 @@ recorded-exception escape hatch instead of silent work-arounds.
     strategy.md                                          # temper (optional)
     plan.md  tasks.md                                    # define
     eng-review.md  test-plan.md                          # vet
+    forge-report.md                                      # build (only a Forge: yes slice — competed candidates → winner)
     state.md  questions.md  decisions.md  assumptions.md  drift.md
     touched-files.md  evidence.md  browser-evidence.md  design-brief.md
     polish-report.md  review.md  seal.md  ship.md  handoff.md
@@ -318,14 +319,15 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 `devrites-debug-recovery` · `devrites-api-interface` ·
 `devrites-audit` (axes: `security` · `perf` · `simplify`).
 
-**Review agents (11)** — fresh-context reviewers under `.claude/agents/`:
+**Review agents (12)** — fresh-context reviewers under `.claude/agents/`:
 
 `devrites-strategy-reviewer` (pre-plan, via `/rite-temper`) ·
 `devrites-plan-reviewer` (pre-build, via `/rite-vet`) · `devrites-spec-reviewer` ·
 `devrites-code-reviewer` · `devrites-test-analyst` · `devrites-frontend-reviewer` ·
 `devrites-security-auditor` · `devrites-performance-reviewer` ·
 `devrites-devex-reviewer` (developer-facing surface, predict at `/rite-vet` + measure-the-boomerang at `/rite-seal`) ·
-`devrites-doubt-reviewer` · `devrites-simplifier-reviewer`.
+`devrites-doubt-reviewer` · `devrites-simplifier-reviewer` ·
+`devrites-forge-judge` (build-time, via `/rite-build` — scores competing candidate builds on a `Forge: yes` slice, picks the winner).
 
 **Cross-feature analyst (1)** — fresh-context, read-only, scope is the archive not a diff:
 
@@ -498,7 +500,7 @@ devrites/
                        # sync-version · build-release-tarball
   mcp/                 # devrites-mcp.mjs — MCP stdio server over the devrites CLI
   pack/.claude/        # skills/  31 skills — 22 public + 9 model-invoked      ─┐
-                       # agents/  12 read-only + 1 writer (slice-wright)         ├─ the pack
+                       # agents/  13 read-only + 1 writer (slice-wright)         ├─ the pack
                        # rules/   23 rule files + README index                   ┘
   evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures
   docs/                # architecture · skills · command-map · usage · flow · release · cli-mcp

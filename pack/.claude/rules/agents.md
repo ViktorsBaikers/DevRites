@@ -23,6 +23,7 @@ Fresh-context, read-only reviewers. Each is given the active feature workspace p
 | `devrites-doubt-reviewer` | Adversarial check of a single claim/decision | `devrites-doubt` loop; risky decisions |
 | `devrites-strategy-reviewer` | Spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention) — **before** any plan or code | `/rite-temper` loop (pre-plan) |
 | `devrites-plan-reviewer` | Plan-vs-rubric engineering review (architecture / scope-reuse / plan code-quality / test-coverage design / performance / reversibility / failure-mode coverage), confidence-banded with a quote-the-source verification gate — **after define, before build** | `/rite-vet` loop (pre-build) |
+| `devrites-forge-judge` | Comparative judge of K=2–3 competing candidate implementations of one slice (acceptance / test strength / principle fit / simplicity / reuse / anti-slop) — picks the single winner to land, names grafts | `/rite-build` forge step, on a `Forge: yes` slice |
 
 ## The executor subagent — `.claude/agents/devrites-slice-wright.md`
 
@@ -39,8 +40,12 @@ for the implementation, then doubts, gates, and records the return. Tools:
 **code and tests only** — never the `.devrites/` bookkeeping files; it returns that data and
 the orchestrator persists it, so there is exactly one canonical writer of workspace state and
 the HITL/AFK contract stays intact. **Single-threaded: one wright per slice, never a parallel
-fan-out of writers** (concurrent writers make conflicting implicit decisions). Contract + return
-shape + fallback: `.claude/skills/rite-build/reference/wright-dispatch.md`.
+fan-out of writers *sharing a tree*** (concurrent writers on one tree make conflicting implicit
+decisions). The one sanctioned exception is a **forge** slice (`Forge: yes`, flagged by
+`/rite-vet`): K=2–3 candidate wrights build the slice on distinct strategies in **isolated**
+worktrees, `devrites-forge-judge` scores them, and exactly **one** winner's diff lands — no tree
+ever has two authors, so the invariant holds. Contract + return shape + fallback + forge:
+`.claude/skills/rite-build/reference/wright-dispatch.md`, `.../reference/forge.md`.
 
 ## The cross-feature analyst — `.claude/agents/devrites-retrospector.md`
 
