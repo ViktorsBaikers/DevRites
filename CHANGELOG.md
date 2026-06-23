@@ -2,6 +2,24 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [2.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.18.0...v2.0.0) (2026-06-23)
+
+### ⚠ BREAKING CHANGES
+
+* **installer:** drop the Claude Code plugin install path
+
+### Added
+
+* **installer:** add npx devrites full-pack installer + npm publishing ([316a0d3](https://github.com/ViktorsBaikers/DevRites/commit/316a0d372dad1afe2fade08f0045370fd5b3d801))
+
+### Changed
+
+* **release:** group changelog by Added/Changed/Removed ([ea5772a](https://github.com/ViktorsBaikers/DevRites/commit/ea5772abca3d44ee1da496f3d904bcbe3b9ccc21))
+
+### Removed
+
+* **installer:** drop the Claude Code plugin install path ([beb825f](https://github.com/ViktorsBaikers/DevRites/commit/beb825fcb0738d4b03b32dce056871c80616ab49))
+
 ## [1.18.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.17.0...v1.18.0) (2026-06-22)
 
 ### Features
