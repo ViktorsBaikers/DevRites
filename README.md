@@ -109,7 +109,7 @@ rules carrier, workspace state, namespace map) →
 - [Modes — HITL & AFK](#modes--hitl--afk)
 - [Install](#install) — [npx / bash](#installing) · [upgrade](#upgrading-an-existing-install)
 - [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · browser-harness
-- [Skills](#skills) — 31 total · full catalogue in [`docs/skills.md`](docs/skills.md)
+- [Skills](#skills) — 36 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
 - [Engineering rules](#engineering-rules) · [Browser proof ladder](#browser-proof-ladder) · [Frontend & fullstack](#frontend--fullstack)
 - [Safety & scope](#safety--scope) · [Security model](#security-model)
@@ -282,7 +282,7 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **31 skills total** — 22 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
+The pack ships **36 skills total** — 24 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library (scripts the workflow skills run, not a command). **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 22 rule files load on demand.
 
 **Two invocation forms.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
@@ -437,15 +437,15 @@ browser-harness, backend-only, polish modes, zoom-out, mid-flight handoff):
 ## Engineering rules
 
 DevRites ships its own stack-agnostic engineering rules and installs them to
-`.claude/rules/` — 21 rule files plus a README index. They're **common** by design
+`.claude/rules/` — 23 rule files plus a README index. They're **common** by design
 (no language assumptions); a project's own conventions always win where they exist, and a
 project's own **principles** (`.devrites/principles.md`) outrank both. Skip them with
 `--no-rules`. Loading model: each `rite-*` skill Reads `.claude/rules/core.md` as its first
-step; the other 20 rule files load on demand via `Read` from the skill body that needs them.
+step; the other 22 rule files load on demand via `Read` from the skill body that needs them.
 
 | Always-on | On-demand |
 |---|---|
-| `core.md` | `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `code-review.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `anti-patterns.md` · `tooling.md` |
+| `core.md` | `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `anti-patterns.md` · `tooling.md` |
 
 Full index with phase mapping: [`pack/.claude/rules/README.md`](pack/.claude/rules/README.md);
 diagram: [`docs/flow.md` § Engineering-rules loading](docs/flow.md#6-engineering-rules-carrier).
@@ -499,7 +499,7 @@ devrites/
                        # grade-feature · run-outcome-evals · devrites-detect · check-no-global-writes
                        # sync-version · build-release-tarball
   mcp/                 # devrites-mcp.mjs — MCP stdio server over the devrites CLI
-  pack/.claude/        # skills/  31 skills — 22 public + 9 model-invoked      ─┐
+  pack/.claude/        # skills/  36 skills — 24 public + 12 internal          ─┐
                        # agents/  13 read-only + 1 writer (slice-wright)         ├─ the pack
                        # rules/   23 rule files + README index                   ┘
   evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures
