@@ -22,9 +22,13 @@ devrites — drive the .devrites/ workflow from any tool (run at the project roo
 
   orient [slug]          orientation digest for the active feature (read-only)
   status [slug]          alias for orient
+  progress [slug]        progress footer — slice meter + flow ribbon (read-only)
   ready [slug]           build-readiness gate    (0 ready · 2 no-plan · 3 awaiting · 4 blocked · 5 none)
   evidence-fresh [slug]  evidence-freshness gate (0 fresh · 3 stale)
   acceptance [slug|dir]  acceptance-criteria gate (0 all proven · 1 gap)
+  spec-validate [slug|dir|file]
+                         spec-grammar gate — lint structured Requirement/Scenario blocks
+                         (0 valid or flat form · 1 grammar violation · 5 no spec.md)
   tick-afk [slug]        decrement the AFK slice budget (3 = exhausted)
   resolve <args...>      answer / --drop / --batch a questions.md entry
   close [slug]           archive the workspace + clear ACTIVE
@@ -42,6 +46,7 @@ cmd="${1:-help}"; [ $# -gt 0 ] && shift || true
 
 case "$cmd" in
   orient|status)  exec bash "$HERE/preamble.sh" "$@" ;;
+  progress)       exec bash "$HERE/progress.sh" "$@" ;;
   ready)          exec bash "$HERE/readiness.sh" "$@" ;;
   evidence-fresh) exec bash "$HERE/evidence-fresh.sh" "$@" ;;
   acceptance)
@@ -49,6 +54,11 @@ case "$cmd" in
     if [ -n "$a" ] && [ -d "$a" ]; then d="$a"
     else s="$(resolve_slug "${a:-}")"; [ -n "$s" ] || { echo "devrites: no active feature" >&2; exit 5; }; d=".devrites/work/$s"; fi
     exec bash "$HERE/check-acceptance.sh" "$d" ;;
+  spec-validate)
+    a="${1:-}"
+    if [ -n "$a" ] && { [ -d "$a" ] || [ -f "$a" ]; }; then t="$a"
+    else s="$(resolve_slug "${a:-}")"; [ -n "$s" ] || { echo "devrites: no active feature" >&2; exit 5; }; t=".devrites/work/$s"; fi
+    exec bash "$HERE/spec-validate.sh" "$t" ;;
   tick-afk)
     s="$(resolve_slug "${1:-}")"; [ -n "$s" ] || { echo "devrites: no active feature" >&2; exit 5; }
     exec bash "$HERE/tick-afk.sh" ".devrites/work/$s/state.md" ;;

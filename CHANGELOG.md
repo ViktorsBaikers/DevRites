@@ -2,6 +2,148 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [2.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.1.0...v2.2.0) (2026-06-23)
+
+### Added
+
+* **rules:** add observability + deprecation rules, OWASP LLM Top 10 ([0c29760](https://github.com/ViktorsBaikers/DevRites/commit/0c29760e504c22c18d7ca2c5e1986746ba95a07d))
+
+### Fixed
+
+* **release:** drop duplicate 2.1.0 changelog block ([0a7b510](https://github.com/ViktorsBaikers/DevRites/commit/0a7b5101ecd05e4c0b4d3812cefc68c0f92f1626))
+
+## [2.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.0.0...v2.1.0) (2026-06-23)
+
+### Added
+
+* **agents:** code reviewer gets structural-depth lenses ([b37c9d2](https://github.com/ViktorsBaikers/DevRites/commit/b37c9d259b99613b971269fac2943977dedbea6d))
+* **agents:** perf reviewer gets Source/Measured CWV modes ([be82b20](https://github.com/ViktorsBaikers/DevRites/commit/be82b20b37252a9f55d77e0f71659ec58a213ca6))
+
+## [2.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.18.0...v2.0.0) (2026-06-23)
+
+### ⚠ BREAKING CHANGES
+
+* **installer:** drop the Claude Code plugin install path
+
+### Added
+
+* **installer:** add npx devrites full-pack installer + npm publishing ([316a0d3](https://github.com/ViktorsBaikers/DevRites/commit/316a0d372dad1afe2fade08f0045370fd5b3d801))
+
+### Changed
+
+* **release:** group changelog by Added/Changed/Removed ([ea5772a](https://github.com/ViktorsBaikers/DevRites/commit/ea5772abca3d44ee1da496f3d904bcbe3b9ccc21))
+
+### Removed
+
+* **installer:** drop the Claude Code plugin install path ([beb825f](https://github.com/ViktorsBaikers/DevRites/commit/beb825fcb0738d4b03b32dce056871c80616ab49))
+
+## [1.18.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.17.0...v1.18.0) (2026-06-22)
+
+### Features
+
+* **skills:** add rite-frame goal-reframe + failure-mode self-audit ([ca181ee](https://github.com/ViktorsBaikers/DevRites/commit/ca181eee47c4c47c19ea8069cb650e38a7a26c87))
+
+## [1.17.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.16.0...v1.17.0) (2026-06-22)
+
+### Features
+
+* **skills:** auto-refresh code-intelligence indexes after edits ([6cdfa6c](https://github.com/ViktorsBaikers/DevRites/commit/6cdfa6cc5291955f5c6362970bcbda15589bc050))
+
+## [1.16.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.15.0...v1.16.0) (2026-06-21)
+
+### Features
+
+* **skills:** make code-intelligence tools optional and add context7 ([d8f95f7](https://github.com/ViktorsBaikers/DevRites/commit/d8f95f7333dd0c35fa75d4e190a05db86e82ba92))
+
+## [1.15.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.14.0...v1.15.0) (2026-06-21)
+
+### Features
+
+* **skills:** make code-intelligence tools optional and add context7 ([d8f95f7](https://github.com/ViktorsBaikers/DevRites/commit/d8f95f7333dd0c35fa75d4e190a05db86e82ba92))
+* **skills:** test-integrity gates, enforcement hooks, learning loop ([32d5102](https://github.com/ViktorsBaikers/DevRites/commit/32d5102f1e82313d939632a416a5df3b00a2a675))
+
+### Bug Fixes
+
+* **ci:** allowlist new runtime artifacts; mark defensive deny-list ([eec1440](https://github.com/ViktorsBaikers/DevRites/commit/eec14403a827d98283c0641ae1c71087b24fe311))
+
+## [1.15.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.14.0...v1.15.0) (2026-06-21)
+
+### Features
+
+* **skills:** test-integrity gates, enforcement hooks, learning loop ([32d5102](https://github.com/ViktorsBaikers/DevRites/commit/32d5102f1e82313d939632a416a5df3b00a2a675))
+
+### Bug Fixes
+
+* **ci:** allowlist new runtime artifacts; mark defensive deny-list ([eec1440](https://github.com/ViktorsBaikers/DevRites/commit/eec14403a827d98283c0641ae1c71087b24fe311))
+
+## [1.15.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.14.0...v1.15.0) (2026-06-21)
+
+### Features
+
+* **skills:** test-integrity gates, enforcement hooks, learning loop ([32d5102](https://github.com/ViktorsBaikers/DevRites/commit/32d5102f1e82313d939632a416a5df3b00a2a675))
+
+## [1.14.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.13.0...v1.14.0) (2026-06-21)
+
+### Features
+
+* **skills:** add prose-craft skill and sharpen anti-slop code charter ([8a9e7e1](https://github.com/ViktorsBaikers/DevRites/commit/8a9e7e159487a53c89b46975a54f84ed875e409d))
+
+## [1.13.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.12.0...v1.13.0) (2026-06-21)
+
+### Features
+
+* **skills:** add ui-taste enrichments + optional design-memory rollup ([316e7aa](https://github.com/ViktorsBaikers/DevRites/commit/316e7aa042d86ae173b7fa061437ced5af931b1f))
+
+## [1.12.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.11.0...v1.12.0) (2026-06-21)
+
+### Features
+
+* **agents:** add prompt-injection-resistance baseline ([f260fc7](https://github.com/ViktorsBaikers/DevRites/commit/f260fc7b719c8049cb5ecd42b70649f17204080a)), closes [#14](https://github.com/ViktorsBaikers/DevRites/issues/14)
+* **ci:** blocking pack security scan — injection + hidden unicode ([89a8838](https://github.com/ViktorsBaikers/DevRites/commit/89a88383150afd6803ba405198ffc732e1e8a323)), closes [#13](https://github.com/ViktorsBaikers/DevRites/issues/13)
+* **ci:** supply-chain IOC scanner for npm lockfile ([ac9d079](https://github.com/ViktorsBaikers/DevRites/commit/ac9d07976707c45cb8503531b297f9049f314ea2)), closes [#16](https://github.com/ViktorsBaikers/DevRites/issues/16)
+* **ci:** workflow-security validator + pin third-party actions ([4c060c9](https://github.com/ViktorsBaikers/DevRites/commit/4c060c9f3d293b4b43919e7583dfc1f058fab21e)), closes [#15](https://github.com/ViktorsBaikers/DevRites/issues/15)
+* **skills:** add fan-out footprint at seal ([093b366](https://github.com/ViktorsBaikers/DevRites/commit/093b366b22f89a4e6851237c1aa458638a5aa910)), closes [#19](https://github.com/ViktorsBaikers/DevRites/issues/19)
+* **skills:** add rite-adopt brownfield on-ramp skill ([c86b770](https://github.com/ViktorsBaikers/DevRites/commit/c86b7702bf4c8c77736689d369b49375e677a927)), closes [#21](https://github.com/ViktorsBaikers/DevRites/issues/21)
+* **skills:** add rite-doctor health check (two-tier) ([71d2c7b](https://github.com/ViktorsBaikers/DevRites/commit/71d2c7b99fb48cc97de4dfeddf9469af521f180f)), closes [#18](https://github.com/ViktorsBaikers/DevRites/issues/18)
+* **skills:** conventions ledger with write-at-seal ([5de1464](https://github.com/ViktorsBaikers/DevRites/commit/5de1464a5a1d1a0a453aee84d5a515d616a929db)), closes [#17](https://github.com/ViktorsBaikers/DevRites/issues/17)
+* **skills:** ledger read-at-orient with fresh-observation-wins ([2abe806](https://github.com/ViktorsBaikers/DevRites/commit/2abe806f69cdbae78bd90b2431e6009fd6121aa0)), closes [#20](https://github.com/ViktorsBaikers/DevRites/issues/20)
+
+## [1.11.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.10.0...v1.11.0) (2026-06-19)
+
+### Features
+
+* **skills:** add A1 pre-block hook, observe by default ([b7e76d5](https://github.com/ViktorsBaikers/DevRites/commit/b7e76d58f214076a7bd860b7fc3588c2476f5ed5))
+
+## [1.10.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.9.0...v1.10.0) (2026-06-19)
+
+### Features
+
+* **installer:** auto-approve read-only scripts + orient hooks ([3807883](https://github.com/ViktorsBaikers/DevRites/commit/38078838d2f4eeb9303c35c42812bbcb9bd9f5fc))
+* **skills:** gate orchestrator out of source edits (A1) ([c64a4a0](https://github.com/ViktorsBaikers/DevRites/commit/c64a4a0f2722089fa938b5291de64eca9e4648c7))
+
+### Bug Fixes
+
+* **skills:** resolve skills-audit findings across pack, evals, and CI ([1499ce2](https://github.com/ViktorsBaikers/DevRites/commit/1499ce274f714544f4983c8e6fc6a11ebe36ee25))
+* **tests:** tolerate preserved settings.json in uninstall smoke ([1d1b3d5](https://github.com/ViktorsBaikers/DevRites/commit/1d1b3d56a0b348d8181fa9fae55e70b4f9e51fd9))
+
+### Refactors
+
+* **skills:** fold attempts, drop lanes note, signpost quick ([02180b5](https://github.com/ViktorsBaikers/DevRites/commit/02180b52dfa9254597b3ae0040690f556f40f5f2))
+
+## [1.9.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.8.0...v1.9.0) (2026-06-19)
+
+### Features
+
+* **skills:** enforce test completeness + assertion strength ([4f825a1](https://github.com/ViktorsBaikers/DevRites/commit/4f825a1d1956138a6db778f8b54d7dcafb3876a8))
+* **skills:** present gaps as ranked option sets with inline resolve ([db70a21](https://github.com/ViktorsBaikers/DevRites/commit/db70a21511ad3ebc17b32e32afed8b02dcd47a22))
+* **skills:** research-driven workflow improvements ([83cb2e0](https://github.com/ViktorsBaikers/DevRites/commit/83cb2e00fb95cdbf974440f098e397ae7c9cde76))
+
+## [1.8.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.7.0...v1.8.0) (2026-06-19)
+
+### Features
+
+* **skills:** add progress footer to all rite-* lifecycle commands ([6b5eda0](https://github.com/ViktorsBaikers/DevRites/commit/6b5eda051ddc86c0a4d67a42d147cf4e9b7fbd17))
+
 ## [1.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.6.0...v1.7.0) (2026-06-18)
 
 ### Features

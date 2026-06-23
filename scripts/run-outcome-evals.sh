@@ -11,6 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GRADER="$ROOT/scripts/grade-feature.sh"
 good="$ROOT/evals/golden/shippable-feature"
 bad="$ROOT/evals/golden/blocked-feature"
+nearmiss="$ROOT/evals/golden/near-miss-unproven-ac"
 fail=0
 
 echo "== grade golden/shippable-feature (expect GO) =="
@@ -26,6 +27,17 @@ if bash "$GRADER" "$bad"; then
   echo "  FAIL — a known-blocked workspace should NOT grade GO"; fail=1
 else
   echo "  PASS — correctly graded NO-GO"
+fi
+
+echo
+echo "== grade golden/near-miss-unproven-ac (expect NO-GO on ONE invariant) =="
+# Isolates invariant 2 (every acceptance criterion proven): identical to the
+# shippable fixture except a single AC is left unchecked. Proves that gate fails
+# independently — not only when six invariants trip at once.
+if bash "$GRADER" "$nearmiss"; then
+  echo "  FAIL — an unproven acceptance criterion must grade NO-GO"; fail=1
+else
+  echo "  PASS — correctly graded NO-GO on the lone unchecked AC"
 fi
 
 echo

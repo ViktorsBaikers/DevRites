@@ -29,6 +29,13 @@ of those live in chat memory.
 The summary the model can carry is *not* a substitute for the workspace; the workspace
 is the source of truth.
 
+**Compaction-preservation directive.** When the harness summarizes or compacts mid-feature,
+always preserve these four — they are the cursor, and losing them to a summary forces the next
+agent to re-derive state the workspace already holds: the `.devrites/ACTIVE` slug, `state.md`'s
+`Next step`, every open `questions.md` gate, and `decisions.md`'s `Dead ends`. (The SessionStart
+orientation and the UserPromptSubmit cursor re-inject this each session and turn; this directive
+is the fallback for involuntary mid-session compaction, where no hook fires.)
+
 ## `/clear` vs `/compact`
 
 | Use `/clear` (default) when | Use `/compact` when |

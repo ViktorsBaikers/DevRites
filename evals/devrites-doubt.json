@@ -1,0 +1,26 @@
+{
+  "skill": "devrites-doubt",
+  "description": "Trigger eval for devrites-doubt — the model-invoked CLAIM→EXTRACT→DOUBT→RECONCILE→STOP pre-mortem on a SINGLE non-trivial decision about to commit (boundary / data-model / auth / public-API / migration / load-bearing-abstraction). Must fire on 'are we sure / double-check / what could go wrong' intent on one imminent decision; must NOT fire for building (tdd/rite-build), reviewing a finished diff (code-review/rite-review), polishing (rite-polish), proving (rite-prove), debugging (diagnose), interviewing (grill-me), prototyping (prototype), or handoff.",
+  "queries": [
+    {"text": "are we sure this is the right call before I commit it?", "expected": "should_trigger", "rationale": "Canonical 'are we sure' doubt on an imminent decision."},
+    {"text": "double-check this decision before I commit", "expected": "should_trigger", "rationale": "Canonical 'double-check this' trigger phrase."},
+    {"text": "what could go wrong with this approach?", "expected": "should_trigger", "rationale": "Canonical 'what could go wrong' pre-mortem trigger."},
+    {"text": "I'm about to change the auth boundary — stress-test this one decision before it lands", "expected": "should_trigger", "rationale": "Auth/authz change about to commit is a doubt trigger surface."},
+    {"text": "this migration drops a column — are we confident it's safe before it lands?", "expected": "should_trigger", "rationale": "Migration + 'is this safe' on an imminent irreversible change."},
+    {"text": "I'm changing the response shape of a public API endpoint, sanity-check this single choice", "expected": "should_trigger", "rationale": "Public-API change is a named doubt surface."},
+    {"text": "double-check this single data-model choice before it becomes load-bearing", "expected": "should_trigger", "rationale": "Data-model change on one decision, doubt's exact framing."},
+    {"text": "I claim this scales — poke holes in that before we rely on it", "expected": "should_trigger", "rationale": "A 'this scales' claim is explicitly something doubt stress-tests."},
+    {"text": "does this really match the spec? I want an adversarial second look at the claim", "expected": "should_trigger", "rationale": "A 'this matches the spec' claim plus adversarial-reviewer intent."},
+    {"text": "is this new wrapper abstraction actually worth standing up, or should we wait for a second caller?", "expected": "should_trigger", "rationale": "Deletion-test lens for a load-bearing-abstraction doubt."},
+    {"text": "I'm crossing a service boundary here and I'm not 100% sure — get a fresh independent take on whether it's wrong", "expected": "should_trigger", "rationale": "Boundary crossing + independent doubt-reviewer is doubt's core."},
+    {"text": "this assumption isn't covered by any test — challenge it before I build on it", "expected": "should_trigger", "rationale": "Relying on an assumption tests can't prove is a named doubt trigger."},
+    {"text": "the build is red — debug why these tests are failing", "expected": "should_not_trigger", "rationale": "Failing build/tests is diagnose (devrites-debug-recovery), not a decision pre-mortem."},
+    {"text": "grill me relentlessly on my whole plan until we reach shared understanding", "expected": "should_not_trigger", "rationale": "Relentless plan interrogation is grill-me (devrites-interview)."},
+    {"text": "review the current PR diff for correctness bugs and post comments", "expected": "should_not_trigger", "rationale": "Reviewing a finished diff is code-review, and post-merge review is outside doubt's boundary."},
+    {"text": "build this feature test-first with the red-green-refactor loop", "expected": "should_not_trigger", "rationale": "Test-first feature building is tdd (rite-build), not a single-decision doubt."},
+    {"text": "mock up a few different UI variations so I can play with them", "expected": "should_not_trigger", "rationale": "Throwaway design exploration is prototype (rite-prototype)."},
+    {"text": "compact this conversation into a handoff doc for the next agent", "expected": "should_not_trigger", "rationale": "Conversation compaction is handoff (rite-handoff)."},
+    {"text": "polish this feature to ship quality before review", "expected": "should_not_trigger", "rationale": "Pre-review polish is rite-polish, a different phase."},
+    {"text": "prove the whole feature end-to-end with the full test suite", "expected": "should_not_trigger", "rationale": "Feature-wide end-to-end proof is rite-prove, not a single-decision doubt."}
+  ]
+}

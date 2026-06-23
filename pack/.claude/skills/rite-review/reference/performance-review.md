@@ -17,6 +17,10 @@ a hunch.
   unnecessary re-renders.
 - **General**: accidental quadratic loops, repeated work in hot paths, large allocations.
 
+The agent runs **Source mode** (static scan, findings tagged `potential` + the verify
+command) or **Measured mode** (real CWV numbers → a source-labeled scorecard). Baseline
+checks + measurement commands: [`performance-checklist.md`](performance-checklist.md).
+
 ## Optimize responsibly
 - Fix the measured bottleneck, then **re-measure** to prove the win (before/after in
   `evidence.md`). An optimization with no measured improvement is just added complexity.

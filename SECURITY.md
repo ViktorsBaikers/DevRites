@@ -38,13 +38,33 @@ Once a `1.0` release ships, the latest two minor lines will be supported.
 ### Scope
 
 DevRites is a Claude Code **skills pack**: Markdown skill files, a few helper
-shell scripts, a bash installer, and (in plugin form) a `.claude-plugin/`
-manifest. It ships **no binary and no network service**. The only server is an
+shell scripts, a bash installer, and a thin `npx` CLI wrapper (`bin/devrites.mjs`)
+that shells out to that installer. It ships **no binary and no network service**. The only server is an
 **optional, opt-in MCP stdio server** (`mcp/devrites-mcp.mjs`) that speaks
 JSON-RPC over stdin/stdout (no port, no socket), is not installed or registered
 by default, and only shells out to the local `devrites` CLI — read/gate ops over
 `.devrites/` plus a single `ACTIVE`-pointer write. The attack surface is the
 content of the skill files plus the installer.
+
+### Supply-chain self-scan (shipped pack)
+
+Because the skill files **are** the attack surface, CI scans the shipped pack
+(`pack/.claude/`) on every PR and fails the build (blocking, not advisory) on:
+
+- **Prompt-injection patterns** — the "ignore previous instructions" family,
+  system-prompt overrides, permission-escalation, and data-exfiltration phrasing.
+- **Hidden unicode** — bidi controls, zero-width characters, and homoglyph
+  confusables (a word mixing ASCII with look-alike Cyrillic/Greek letters) that a
+  human reviewer can't see in a diff.
+
+Run it locally with `python3 scripts/scan-pack-security.py pack/.claude`. A
+finding prints as `FINDING <file>:<line>: <class>: <excerpt>`. If the match is
+DevRites' own *defensive* content (e.g. a rule that quotes an attack string, or a
+QA checklist that demonstrates an adversarial character), add an auditable
+suppression on the line — `<!-- pack-scan-ignore: <reason> -->` — or opt a whole
+file out of one class with `<!-- pack-scan-ignore-file: injection -->`.
+Suppressions live in the file, so every exception is visible in the diff and
+reviewable; never suppress a hidden-unicode finding you can't explain.
 
 ### State loading (project-local script, no `!` injection)
 
@@ -101,13 +121,13 @@ uninstall.
 The installer touches no global state. It does not invoke `sudo`, modify
 shell rc files, fetch remote code, or alter Claude Code settings.
 
-### Plugin install path
+### npx install path
 
-When installed via `claude plugin install devrites@devrites-marketplace`,
-the plugin runtime owns file placement. DevRites does not ship a post-install
-hook that modifies user files. The plugin manifest ships only skills and agents —
-the engineering rules are not delivered by the plugin and are never written into
-the user's `~/.claude/CLAUDE.md` (add them with a `--rules-only` bash install).
+When installed via `npx devrites@latest`, the CLI (`bin/devrites.mjs`) is a thin
+shim that runs the **bundled** `install.sh` against the pack shipped inside the npm
+package — no remote code is fetched at install time, and the install is pinned to
+the requested package version. It has no runtime npm dependencies and makes no
+global writes; the same project-local guarantees as the bash installer apply.
 
 ### Recommended Claude Code permissions for managed deployments
 
@@ -127,6 +147,29 @@ For organizations evaluating DevRites under a managed Claude Code policy:
 The first three lines surface a confirmation prompt before any irreversible
 git action; the last disables the `/rite` and `/rite-status` dynamic-state
 read described above (DevRites still works).
+
+### Hooks (auto-approve scope + orientation)
+
+DevRites ships two `Bash`-matched hooks (`pack/.claude/hooks/`, wired via the
+plugin's `hooks.json` or a seeded `.claude/settings.json`):
+
+- **`devrites-allow.sh` (PreToolUse)** — auto-approves *only* the five **read-only**
+  helper scripts (`preamble.sh`, `progress.sh`, `readiness.sh`, `evidence-fresh.sh`,
+  `check-acceptance.sh`) so they stop prompting on every skill run. It is **fail-open**:
+  it never denies, parses the command, and emits an `allow` *only* when the command runs
+  one of those five scripts **and** contains no dangerous/exfiltration tokens
+  (`rm`, `>`/redirects, `curl`/`wget`, `sudo`, `chmod`, `$(...)`/backticks, `eval`,
+  package managers, `git push/commit/reset`, …). Mutating scripts (`resolve.sh`,
+  `tick-afk.sh`, `close-out.sh`) are **deliberately excluded** and still prompt. On any
+  parse failure or non-match it emits nothing — Claude Code's normal permission flow is
+  untouched. It widens approval for read-only orientation; it never widens it for anything
+  that writes, deletes, or reaches the network.
+- **`devrites-orient.sh` (SessionStart)** — read-only; injects the active feature's
+  `preamble.sh` digest as session context, and stays silent when no `.devrites/` workspace
+  is active. No tool approval, no writes.
+
+Delete `.claude/settings.json` (or disable the plugin) to remove both. The seeded
+settings file is never overwritten on update, so your own permission rules are safe.
 
 ### Third-party trust
 

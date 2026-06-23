@@ -1,8 +1,19 @@
 # Trigger evals
 
-Each public DevRites skill has a `<skill-name>.json` eval file in this
-directory. Each file contains **20 queries** — a mix of `should_trigger`
-and `should_not_trigger` — that exercise the skill's `description` field.
+Every DevRites skill has a `<skill-name>.json` eval file in this directory —
+the 20 user-invocable `rite-*` phases **and** the 9 model-invoked `devrites-*`
+specialists (29 files). Each contains **20 queries** — a mix of `should_trigger`
+and `should_not_trigger` — that exercise the skill's `description` field. The
+`devrites-*` evals lean on adversarial `should_not_trigger` cases against the
+sibling skills and bundled globals (`diagnose`, `grill-me`, `code-review`, `tdd`,
+`prototype`, `handoff`) their trigger surfaces collide with.
+
+**Coverage boundary.** These are *routing* evals (which skill fires) plus the
+outcome grader below (did a finished run reach a shippable state). What they do
+**not** yet cover: running the `.claude/agents/` subagents end-to-end (the wright
++ reviewers) — that needs a live model and is exercised on the `evals.yml` API
+path, not in the no-key CI gate. Per-phase *contract* behavior (e.g. build's
+stop-after-one-slice) beyond the seal outcome remains a scoped follow-up.
 
 The methodology mirrors Anthropic's `skill-creator` 2.0:
 
@@ -62,6 +73,28 @@ scripts/run-outcome-evals.sh
 
 No API key required; runs in CI. (Live evidence-freshness by mtime is a separate
 runtime gate: `pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh`.)
+
+## Behavioral evals (discipline under pressure)
+
+Trigger evals test *which skill fires*; outcome evals test *did a run reach a shippable
+state*. Behavioral evals test the third thing: *does a gating skill's discipline hold when
+the user pushes it toward the exact shortcut the skill exists to prevent* — claim a pass it
+didn't observe, ship past a Critical, skip the doubt loop, defer a test. Each scenario turns
+a row from `../pack/.claude/rules/anti-patterns.md` (asserted in prose) into a graded case:
+a pressure prompt plus the resistance a holding response shows and the capitulation a failed
+one shows.
+
+They live in [`behavioral/`](behavioral/) and are **opt-in** — earned by gating rites
+(`rite-prove`, `rite-build`, `rite-seal`, `rite-vet`, peers), never required of every skill.
+The deterministic shape gate runs in `ci.yml` with no API key:
+
+```bash
+scripts/run-behavioral-evals.sh
+```
+
+Live execution (does the skill actually resist?) is the same API-gated rung as the live
+trigger evals. Full schema, methodology, and the grading contract:
+[`behavioral/README.md`](behavioral/README.md).
 
 ## File schema
 

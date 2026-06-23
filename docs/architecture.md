@@ -46,22 +46,27 @@ ship.
 4. **Supporting references** — `reference/*.md` inside each skill. Long checklists,
    templates, and anti-rationalization tables loaded on demand (progressive
    disclosure) so `SKILL.md` bodies stay small.
-5. **Agents** — `.claude/agents/devrites-*` fresh-context subagents. Nine **read-only
-   reviewers**: the post-build set used by `/rite-seal` and the doubt loop
-   (`devrites-spec-reviewer`, `-code-reviewer`, `-test-analyst`, `-frontend-reviewer`,
-   `-security-auditor`, `-performance-reviewer`, `-doubt-reviewer`, `-simplifier-reviewer`),
-   plus the **pre-plan** `devrites-strategy-reviewer` used by `/rite-temper`. Plus one
-   **write-capable** executor, `devrites-slice-wright`, dispatched by `/rite-build` to write
-   one slice in a clean context (the write-side mirror of the reviewers).
+5. **Agents** — `.claude/agents/devrites-*` fresh-context subagents: **13 read-only + 1
+   write-capable**. The read-only set is twelve reviewers — the post-build fan-out used by
+   `/rite-seal` and the doubt loop (`devrites-spec-reviewer`, `-code-reviewer`, `-test-analyst`,
+   `-frontend-reviewer`, `-security-auditor`, `-performance-reviewer`, `-devex-reviewer`,
+   `-doubt-reviewer`, `-simplifier-reviewer`), the **pre-plan** `devrites-strategy-reviewer`
+   (`/rite-temper`), the **pre-build** `devrites-plan-reviewer` (`/rite-vet`), and the
+   **build-time** `devrites-forge-judge` (scores competing candidate builds on a `Forge: yes`
+   slice) — plus the cross-feature `devrites-retrospector` (mines the shipped archive at
+   `/rite-ship` close). The one **write-capable** executor, `devrites-slice-wright`, is
+   dispatched by `/rite-build` to write one slice in a clean context (the write-side mirror of
+   the reviewers).
 6. **Engineering rules** — DevRites' own stack-agnostic rules installed to
    `.claude/rules/`. Each `rite-*` skill Reads `core.md` as its first step
-   (step 0); 15 on-demand files load by the phase that needs them:
-   - **Craft:** `coding-style.md` · `patterns.md` · `error-handling.md` ·
-     `testing.md` · `documentation.md`.
-   - **Quality / safety:** `code-review.md` · `security.md` ·
-     `performance.md` · `anti-patterns.md`.
+   (step 0); 22 on-demand files load by the phase that needs them:
+   - **Craft:** `coding-style.md` · `prose-style.md` · `patterns.md` · `error-handling.md` ·
+     `testing.md` · `spec-grammar.md` · `documentation.md`.
+   - **Quality / safety:** `code-review.md` · `principles.md` · `security.md` ·
+     `performance.md` · `observability.md` · `developer-experience.md` · `deprecation.md` ·
+     `anti-patterns.md`.
    - **Workflow / ops:** `development-workflow.md` · `git-workflow.md` ·
-     `hooks.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md`.
+     `hooks.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `tooling.md`.
    - **Index:** `README.md` (phase mapping, loading model).
 
 State lives in `.devrites/` as human-readable Markdown so it survives context
@@ -75,7 +80,7 @@ per-skill catalog with triggers + I/O.
 ### Why a shared orientation preamble (`devrites-lib`)
 Every workspace-operating skill's first move is the same: orient on the active feature —
 slug, phase, artifacts present, run mode, open-question tally — before acting. Re-deriving
-that from raw Markdown in each skill was duplicated (step-0 prose across ~15 skills),
+that from raw Markdown in each skill was duplicated (step-0 prose across ~20 skills),
 token-heavy (counting open gates meant re-reading the append-only `questions.md`, which
 only grows), and error-prone (a missed AFK sentinel or a miscounted gate changes behavior).
 So orientation is computed once by one read-only script, `devrites-lib/scripts/preamble.sh`,
@@ -211,20 +216,21 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 19 public `rite-*` skills (28 total) — the thin `/rite` menu
+- **Surface**: 24 public `rite-*` skills (36 total) — the thin `/rite` menu
   (carries the routing) + 8 lifecycle phases (`rite-spec`, `rite-define`,
   `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
   `rite-ship` — seal **decides**, ship **executes + closes**) + the
   `rite-temper` (strategic, optional) and `rite-vet` (engineering, every plan)
-  reviews +
-  `rite-status` +
-  the `rite-plan` replan verb + the `rite-resolve` resume verb + 5 utilities
-  (`rite-zoom-out`, `rite-prototype`, `rite-handoff`, `rite-pressure-test`,
-  `rite-autocomplete` — the unattended full-lifecycle orchestrator) — plus 9
-  internal model-invoked `devrites-*` specialists, not one mega-command. The
-  `devrites-` prefix is a namespace (collision avoidance), not a
-  public/internal marker — `user-invocable:` is. All `devrites-*` skills are
-  model-invoked.
+  reviews + the `rite-quick` express lane and `rite-frame` pre-flight/self-audit
+  lens + `rite-adopt` (onboard an existing codebase) + `rite-learn` (cross-feature
+  lessons) + `rite-status` + `rite-doctor` (install health) +
+  the `rite-plan` replan verb + the `rite-resolve` resume verb + 4 ideation /
+  handoff utilities (`rite-zoom-out`, `rite-prototype`, `rite-handoff`,
+  `rite-pressure-test`) + `rite-autocomplete` (the unattended full-lifecycle
+  orchestrator) — plus 11 internal model-invoked `devrites-*` specialists and the
+  `devrites-lib` library, not one mega-command. The `devrites-` prefix is a
+  namespace (collision avoidance), not a public/internal marker —
+  `user-invocable:` is. All `devrites-*` skills are model-invoked.
 - **Selection**: the `/rite` menu skill carries the routing table; every
   workflow skill enforces a "right skill, right time" rule in its body.
 - **State**: durable `.devrites/` Markdown that survives compaction and new sessions.

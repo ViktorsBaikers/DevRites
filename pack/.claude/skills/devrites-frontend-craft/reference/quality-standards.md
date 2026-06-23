@@ -74,6 +74,37 @@ Two corollaries:
   surfaces aren't always Saturated, product surfaces aren't always
   Restrained. Pick from the scene, not the category.
 
+### Calibration — density & motion
+Colour commitment fixes *how much colour*; two more axes fix *how much space* and
+*how much movement*. Set one position on each — from the **scene sentence**, the same
+way colour is picked — and carry both in `design-brief.md` so the build targets a
+calibration instead of re-deciding it per slice.
+
+**Density** — information per viewport; drives which spacing steps dominate:
+
+| Position | Feels like | Spacing steps that dominate | Use for |
+|---|---|---|---|
+| **Airy** | gallery / calm / room to breathe | `32 / 48 / 64 / 80 / 96` | brand pages, onboarding, focus moments, low-data surfaces |
+| **Balanced** | most product UI | `16 / 20 / 24 / 32` | dashboards, forms, settings — the default |
+| **Dense** | cockpit / data-rich / power tool | `4 / 8 / 12 / 16` | tables, monitors, terminals, pro tools lived in all day |
+
+**Motion** — how much the surface moves; drives which motion classes (table below) are in play:
+
+| Position | Feels like | Motion classes in play | Use for |
+|---|---|---|---|
+| **Minimal** | crisp, almost still | Instant + State | dense tools, regulated/trust surfaces, reduced-motion-leaning |
+| **Standard** | responsive, purposeful | Instant + State + Layout | most product + brand UI — the default |
+| **Expressive** | choreographed, scroll-aware | + Entrance, deliberate sequencing | brand heroes, launch/campaign moments, story scroll |
+
+Corollaries (same shape as colour commitment):
+- Pick from the **scene sentence**, not the category — "an on-call SRE at 2am" → Dense +
+  Minimal; "a launch hero in afternoon light" → Airy + Expressive. Register doesn't decide
+  it by itself.
+- `prefers-reduced-motion` overrides Motion **downward at runtime** regardless of position —
+  an Expressive surface still ships a Minimal path.
+- The position is a target, not a straitjacket: a surface may break density locally for
+  emphasis — name the exception in the brief, don't let the whole page drift off it.
+
 ### Spacing
 - **4pt base scale** (`4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48 / 64 / 80 /
   96`). Project tokens may use a multiplier; never hardcode in-between
@@ -140,6 +171,26 @@ floor:
 | Toast | `400` |
 | System dialog / debug overlay | `500` |
 
+### Materiality (elevation & surface)
+Depth is earned, not defaulted. Reach **down** this ladder in order; stop at the first
+rung that carries the structure.
+- **Hairline first.** A **1 px border / divider** (a hairline in a near-neutral token)
+  defines structure before any shadow does. Borders separate; shadows lift. Most "cards"
+  want a hairline, not elevation.
+- **Elevation is a token scale, not an ad-hoc value.** When a surface genuinely lifts
+  (menu, popover, dragged item), use a **small shadow set from the design system** with one
+  consistent light source — never a one-off `box-shadow`. The elevation step and the
+  semantic z-index role move together.
+- **Texture needs contrast.** Grain / noise / pattern earns its place only when it reads
+  against the surface. Invisible texture is bytes with no signal — drop it.
+- **Asset-led material.** Rich material (photographic grain, real product imagery,
+  generated art) comes from a **real raster / generated asset**, not an SVG/CSS
+  approximation of one. Don't fake a photo with gradients; ship the asset or use a flat
+  token.
+- **No decorative glass.** `backdrop-filter: blur(...)` is for a fixed/sticky surface over
+  moving content (a sticky header, a sheet over scroll), never a default panel look
+  (`rite-polish/reference/anti-ai-slop.md`).
+
 ### NEVER (UI numerical bar)
 - Never ship a pure `#000` or `#fff` raw value.
 - Never hard-code a spacing value the 4 pt scale or project tokens cover.
@@ -149,6 +200,9 @@ floor:
 - Never use viewport queries for component-internal reflows when the
   component is reused at different widths.
 - Never ship dark mode as a flat token invert (compensate three axes).
+- Never reach for a shadow where a 1 px hairline carries the structure.
+- Never invent a one-off `box-shadow` outside the elevation token set.
+- Never ship texture / grain that doesn't read against its surface.
 
 ## Verification gate (a UI slice isn't done until all pass)
 - [ ] Renders with **no console errors/warnings**

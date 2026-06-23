@@ -21,7 +21,7 @@ code · claiming "this is safe", "this scales", or "this matches the spec".
 - [ ] **2. EXTRACT** — isolate the smallest reviewable artifact + its contract; strip your reasoning so the reviewer sees only the code/decision.
 - [ ] **3. DOUBT** — invoke a fresh-context reviewer with an ADVERSARIAL prompt: *"find what's wrong; do not validate."* Prefer a real subagent (`.claude/agents/devrites-doubt-reviewer`) so it has no anchoring context.
 - [ ] **4. RECONCILE** — classify EVERY finding: contract misread | valid & actionable | valid trade-off | noise.
-- [ ] **5. STOP** — met a stop condition (only trivial findings, 3 cycles done, or user override).
+- [ ] **5. STOP** — met a stop condition (only trivial findings, 3 cycles done, or user override). Emit a **binary gate verdict** the orchestrator must clear: **accept** (no valid-&-actionable findings remain) or **reject + the specific required changes**. On reject, the orchestrator loops the wright on those changes before the slice is accepted; still reject after the 3-cycle cap → escalate to the user.
 
 ## Deletion-test lens (for "is this abstraction load-bearing?" doubts)
 
@@ -33,9 +33,11 @@ complexity, deletion would smear it)?* Pass-throughs that fail the test get down
 to "not yet" — wait for the second real caller before standing the seam.
 
 ## Rules
-- For "where does this claim reach / what would change with it" questions, prefer
-  `codegraph` (`codegraph_impact` / `codegraph_callers`) or `graphify` over file
-  reads — they answer impact in one call without polluting context.
+- For "where does this claim reach / what would change with it" questions, prefer a
+  code-intelligence index if available — codebase-memory-mcp (`detect_changes` / `trace_path`)
+  first, cross-checked with codegraph (`codegraph_impact` / `codegraph_callers`) + graphify,
+  else standard methods (LSP / Read/Grep/Glob); see `.claude/rules/tooling.md` — over file
+  reads; they answer impact in one call without polluting context.
 - The reviewer prompt must be adversarial — its job is to break the claim, not to agree.
 - Strip your own justification before review; reasoning anchors the reviewer toward
   agreement.
@@ -66,6 +68,7 @@ the unresolved doubt becomes a blocking question regardless of AFK config.
 ## Output
 ```
 Claim: ...
+Gate: accept | reject — <the specific required changes, if reject>
 Verdict: holds | revised | escalated to user
 Actionable findings handled: ...
 Trade-offs accepted (→ decisions.md): ...

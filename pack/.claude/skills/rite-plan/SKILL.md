@@ -1,7 +1,7 @@
 ---
 name: rite-plan
-description: Reshape an active plan — decompose / reslice / repair / reorder / split FE-BE / unblock — without changing product behavior unless asked. Use when the user says "replan", "reslice", "repair the plan", "drift", "unblock", or `/rite-build` flags Spec Drift. Not for the initial plan (use `/rite-define`).
-argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock]"
+description: Reshape an active plan — decompose / reslice / repair / reorder / split FE-BE / unblock / course-correct — without changing product behavior unless asked. Use when the user says "replan", "reslice", "repair the plan", "drift", "unblock", "change of plan", "we're pivoting", or `/rite-build` flags Spec Drift. Not for the initial plan (use `/rite-define`).
+argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct]"
 user-invocable: true
 ---
 
@@ -24,6 +24,10 @@ reshaping slice cadence or DoD criteria.
   (multiple "and"s, can't build+prove in one cycle), not to hit a user-named tally. A
   requested count is a hint at most; slice logically and explain if it differs. See
   [`reference/slicing.md`](reference/slicing.md) ("How many slices?").
+- **Size by complexity, order by dependency.** A slice carries a `Complexity: N/5` score (from
+  `/rite-define`); a slice scoring **>3** is a reslice trigger unless its inline reason justifies
+  the irreducible complexity. Honor each slice's `depends_on:` — the next *buildable* slice is the
+  lowest pending one whose dependencies are all built (keeps one-slice-at-a-time correct, not parallel).
 
 ## Workflow
 0. Read `.claude/rules/core.md` (operating rules) before reshaping anything.
@@ -38,9 +42,12 @@ reshaping slice cadence or DoD criteria.
    ```
 1. Read `spec.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`, and the current
    `git diff` (if a repo). Read `decisions.md` and `assumptions.md`. If a code-intelligence
-   index is available — `codegraph` (`.codegraph/` / `codegraph_*` tools) or `graphify`
-   (`graphify-out/`) — prefer it for structural questions (what calls X, what would
-   changing Y break) over reading whole files, to keep planning context lean.
+   index is available — `codebase-memory-mcp` first, cross-checked with `codegraph`
+   (`.codegraph/` / `codegraph_*` tools) + `graphify` (`graphify-out/`), else standard methods
+   (LSP / `Read`/`Grep`/`Glob`); see `.claude/rules/tooling.md` —
+   prefer it for structural questions (what calls X, what would
+   changing Y break) over reading whole files, to keep planning context lean. For an external
+   dependency's current API surface, consult context7 if available.
 2. **Pick the mode** (`$ARGUMENTS` or infer):
    - **decompose** — first/again break the feature into vertical slices.
    - **reslice** — a slice is too large; split into thinner end-to-end slices.
@@ -48,6 +55,10 @@ reshaping slice cadence or DoD criteria.
    - **reorder** — fix the dependency order.
    - **split** — separate backend/frontend contracts (see `devrites-api-interface`).
    - **unblock** — a verification failed; re-route around the blocker.
+   - **course-correct** — a deliberate mid-build *pivot* (the user changed their mind), distinct
+     from accidental drift: classify the change, assess its impact across the remaining slices,
+     decide rollback vs forward-fix, and update `spec.md` + `plan.md` + `tasks.md` + `decisions.md`
+     atomically. An acceptance/behavior change still goes through the user first.
    See [replan-and-repair](reference/replan-and-repair.md) for each mode's steps.
 3. Reason about dependencies — [dependency-graph](reference/dependency-graph.md).
 4. Re-slice using vertical-slice rules — [slicing](reference/slicing.md) and
@@ -59,6 +70,8 @@ reshaping slice cadence or DoD criteria.
 > **Mid-flight discipline.** When tempted to change product behavior without asking, absorb drift silently, or skip the user — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 
 ## Output
+
+**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Re-planned <slug> — mode: <mode>
 Changes: <what moved/split/repaired>

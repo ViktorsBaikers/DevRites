@@ -28,6 +28,16 @@ first, then `${CLAUDE_SKILL_DIR}`, then the repo `pack/` source).
   open-question tally by gate. Run first (step 0) by every workspace-operating
   `rite-*` skill so the model orients deterministically instead of re-deriving
   state from raw Markdown.
+- `scripts/progress.sh` — progress footer; the mirror of `preamble.sh` (which runs
+  first). Run **last** (output step) by every lifecycle `rite-*` skill to render — from
+  `state.md`, with zero model drift — the `── rite-<phase> ──` header rule, the **slice
+  meter** (`Slice 3/5  ██████░░░░  <last-built> ✓`, or `Slices 5/5  ██████████  ✅ ALL
+  BUILT` at completion), and the **flow ribbon** (`spec ✓ define ✓ build ◉ … ship ○`).
+  The meter answers "how many slices left"; the `✅ ALL BUILT` marker answers "is the
+  build done". The skill prints its own what-was-done / next-step / hygiene lines beneath
+  it. Read-only; silent (exit 0) when there is no active workspace. Not for the workspace-less
+  utilities (`/rite-prototype`, `/rite-zoom-out`, `/rite-pressure-test`, `/rite-handoff`,
+  the `/rite` menu) — they have no phase/slice state to render.
 - `scripts/readiness.sh` — build-readiness gate. Exits non-zero on `/rite-build`'s
   step-0 stop conditions so they hold by exit code, not by prose the model must
   remember: `2` no `Plan approved` (→ `/rite-define`), `3` `awaiting_human`
@@ -38,6 +48,12 @@ first, then `${CLAUDE_SKILL_DIR}`, then the repo `pack/` source).
 - `scripts/check-acceptance.sh` — executable acceptance gate. Compiles `spec.md`'s
   `[ACn]`-tagged criteria and exits `1` unless every one is checked (proven) in `seal.md`;
   used by `/rite-seal` and by the outcome grader.
+- `scripts/spec-validate.sh` — spec-grammar gate (the spec-side mirror of
+  `check-acceptance.sh`). Lints `spec.md`'s structured `### Requirement:` / `#### Scenario:`
+  blocks (SHALL/MUST present, ≥1 scenario each, every scenario has WHEN + THEN, headers
+  unique). Exits `1` on a grammar violation, `0` when valid **or** when the spec uses the flat
+  `[ACn]`-bullet form (no structured blocks — nothing to lint, never a failure). Used by
+  `/rite-spec`'s readiness gate; see [`rules/spec-grammar.md`](../../rules/spec-grammar.md).
 
 **State mutators — write `state.md` / `questions.md` under one contract:**
 
@@ -45,10 +61,23 @@ first, then `${CLAUDE_SKILL_DIR}`, then the repo `pack/` source).
 - `scripts/resolve.sh` — backs the `/rite-resolve` contract (answer / drop / batch).
 - `scripts/close-out.sh` — archive the workspace + clear `ACTIVE` on `/rite-ship`.
 
+### Canonical footer snippet
+
+Every lifecycle `rite-*` skill prints this as the **first lines of its output**, then its
+own fact lines below. Same three-layout resolver as the step-0 preamble:
+
+```bash
+PR=.claude/skills/devrites-lib/scripts/progress.sh
+[ -f "$PR" ] || PR="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/progress.sh"
+[ -f "$PR" ] || PR=pack/.claude/skills/devrites-lib/scripts/progress.sh
+[ -f "$PR" ] && bash "$PR" || true
+```
+
 **Unified entrypoint (tool-agnostic):**
 
 - `scripts/devrites.sh` — one CLI dispatching to all of the above (`orient` / `ready` /
-  `evidence-fresh` / `acceptance` / `tick-afk` / `resolve` / `close` / `active` / `list` /
-  `use`), so any agent or human can drive `.devrites/` without the skill prose. The MCP
+  `evidence-fresh` / `acceptance` / `spec-validate` / `tick-afk` / `resolve` / `close` /
+  `active` / `list` / `use`), so any agent or human can drive `.devrites/` without the skill
+  prose. The MCP
   wrapper `mcp/devrites-mcp.mjs` exposes the read/gate ops as MCP tools. See
   [`docs/cli-mcp.md`](../../../../docs/cli-mcp.md).

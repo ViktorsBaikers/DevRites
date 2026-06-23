@@ -8,8 +8,6 @@
 #   ./install.sh --no-agents          skip the review subagents
 #   ./install.sh --no-rules           skip the DevRites engineering rules
 #   ./install.sh --rules-only         install only the engineering rules
-#                                     (use after `claude plugin install devrites`
-#                                      to add the rules the plugin can't ship)
 #   ./install.sh --short-aliases=all  install /define /build /prove /seal aliases
 #
 # Network install (no git clone needed):
@@ -252,6 +250,23 @@ if [ "$WITH_RULES" -eq 1 ]; then
   install_tree "$PACK_SRC/rules" ".claude/rules"
 fi
 
+# 4b) hooks — auto-approve the read-only orientation/gate scripts (no per-run permission
+# prompts) + a SessionStart orientation injector. Ship the scripts (manifest-managed, updated
+# on reinstall); SEED .claude/settings.json only when absent and never record it in the
+# manifest, so it is preserved on uninstall/update and the user's own settings stay safe.
+if [ "$WITH_SKILLS" -eq 1 ] && [ -d "$PACK_SRC/hooks" ]; then
+  install_tree "$PACK_SRC/hooks" ".claude/hooks"
+  if [ ! -e "$TARGET/.claude/settings.json" ]; then
+    if [ "$DRYRUN" -eq 1 ]; then
+      dr_say "  [seed] .claude/settings.json ${DR_Y}(DevRites hooks — preserved on uninstall/update)${DR_R}"
+    else
+      mkdir -p "$TARGET/.claude"; cp "$PACK_SRC/settings.json" "$TARGET/.claude/settings.json"
+    fi
+  else
+    dr_warn "skip .claude/settings.json (exists) — to silence the per-run script prompts, add the \"hooks\" block from $PACK_SRC/settings.json to your settings, or run /hooks"
+  fi
+fi
+
 # 5) .devrites seed (README always managed; ACTIVE seeded but never manifest-managed)
 DEV_README="$TMP_GEN_DIR/devrites-readme.md"
 cat > "$DEV_README" <<'EOF'
@@ -269,6 +284,11 @@ sessions — it's the durable memory of in-flight work.
   `allow_gates`. Full contract: `.claude/rules/afk-hitl.md`.
   **Gitignore `AFK` unless your team agrees on shared AFK defaults** — it's a
   local toggle, not project state.
+- `conventions.md` (optional) — the conventions ledger: facts a sealed slice proved
+  about this codebase (commands, idioms, placement, gotchas), written on a GO seal and
+  read at orient so the wright stops re-deriving them. The band is earned from how many
+  slices corroborated each entry. **Gitignore `conventions.md`** — it's local, per-clone
+  learning, not shared project state.
 
 Safe to commit `work/` so the team and future sessions share feature state.
 Delete a feature's folder when it's shipped and you no longer need the trail.
@@ -286,10 +306,12 @@ fi
 
 # ---- detect installed version + flags (recorded in manifest header) -----
 DR_INSTALLED_VERSION="unknown"
-_plugin_json="$SELF_DIR/.claude-plugin/plugin.json"
-if [ -r "$_plugin_json" ]; then
+_pkg_json="$SELF_DIR/package.json"
+if [ -r "$_pkg_json" ]; then
   # Best-effort: extract the top-level "version" field without depending on jq.
-  DR_INSTALLED_VERSION="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$_plugin_json" | head -n1)"
+  # package.json's first "version" key is the top-level one (devDependency keys
+  # are package names, not "version"), so head -n1 is safe.
+  DR_INSTALLED_VERSION="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$_pkg_json" | head -n1)"
   [ -n "$DR_INSTALLED_VERSION" ] || DR_INSTALLED_VERSION="unknown"
 fi
 

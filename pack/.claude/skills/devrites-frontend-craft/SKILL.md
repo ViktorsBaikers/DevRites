@@ -18,8 +18,10 @@ import a new one. (Detail: `reference/design-references.md`.)
   primary build target) plus `references.md` + the saved files in `references/`
   (screenshots, Figma, video, links). When present they are the **build target**: match the
   direction, layout, spacing, states, and behavior they show (pull Figma context if a Figma
-  integration is available). A reference that conflicts with the design system is a question
-  for the user, not a silent choice.
+  integration is available) — extract type / spacing / color-roles / layout / component
+  behavior to it deliberately, don't eyeball it
+  (`reference/design-references.md` — *Building to a supplied reference*). A reference that
+  conflicts with the design system is a question for the user, not a silent choice.
 
 ## Reuse first — search before you build
 Before creating any new component, style, token, icon, hook, util, or helper, search the
@@ -63,6 +65,11 @@ before coding. **Ask before coding if the visual direction or UX flow is still a
   its verification gate (no console errors, no axe violations, all states).
 - Verify in the browser (`devrites-browser-proof`) — screenshots opened and described,
   console clean, responsive + keyboard checked.
+- **Every interactive element has an asserting test at the right level** — each field,
+  checkbox, radio, select, toggle, button, and actionable link gets a unit/component test for
+  what it *does* (validation, toggle, options, enabled/disabled, handler); critical journeys
+  get one E2E. Browser proof shows it renders; the asserting test proves it works. No element
+  ships unverified — `rules/testing.md` "Completeness"; inventory in `test-plan.md`.
 - **Append build-time refinements** to `.devrites/work/<slug>/design-brief.md` — the
   design-contract artifact `devrites-ux-shape` produced at spec; this skill refines it per
   slice (the "Build-time refinements" section), it does not own or recreate it. `/rite-polish`

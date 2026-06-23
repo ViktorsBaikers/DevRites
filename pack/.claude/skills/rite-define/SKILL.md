@@ -17,13 +17,14 @@ nothing gets missed in one batch. **No code here.**
 as their first step; the other rule files load on demand. Pull these via `Read` when shaping
 the plan:
 - `development-workflow.md` — small batches, trunk-always-green, definition of done.
+- `principles.md` — the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
 - `documentation.md` — record plan-time decisions and rationale.
 
 ## Operating rules
-- **Requires a spec.** Read the active workspace first; if `.devrites/ACTIVE` is empty,
-  the workspace has no `spec.md`, or its readiness gate hasn't passed → **STOP** and tell
-  the user to run `/rite-spec <feature>` first. **DO NOT plan from a missing or
-  unreadied spec.**
+- **Requires a readied spec.** Read the active workspace first; if `.devrites/ACTIVE` is empty,
+  the workspace has no `spec.md`, its readiness gate hasn't passed, or any spec-quality
+  `checklists/<domain>.md` has an open CRITICAL → **STOP** and tell the user to run
+  `/rite-spec <feature>` first. **DO NOT plan from a missing or unreadied spec.**
 - Prefer existing conventions; ask before adding a dependency or a second design system.
 - **Slice count is derived, never dictated.** The number of slices falls out of the work
   — one per independently-shippable increment, sized by `slicing.md`, every acceptance
@@ -54,8 +55,10 @@ the plan:
    `[NEEDS CLARIFICATION]` remains, stop → `/rite-spec`.
 2. **Decide the approach + architecture** (the HOW the spec deliberately omitted): the
    strategy, key technical decisions + rationale, and the tech the slices will use. Use a
-   code-intelligence index (`codegraph` / `graphify`) for structure/impact. Record in
-   `plan.md` ([plan-template](reference/plan-template.md)) and `decisions.md`.
+   code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
+   (see `.claude/rules/tooling.md`) — for structure/impact; for the current API or behaviour of
+   an external library/framework the architecture will rely on, consult context7 if available.
+   Record in `plan.md` ([plan-template](reference/plan-template.md)) and `decisions.md`.
    **Deep-modules check** — while sketching the major modules, look for opportunities
    to extract a **deep module**: a small, stable interface that hides a meaningful chunk
    of behavior, and is therefore independently testable. A *shallow* module — interface
@@ -75,8 +78,25 @@ the plan:
 4. **Map coverage** — every spec acceptance criterion maps to ≥1 slice
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
    criterion.
+4a. **Persist the traceability matrix** — write `coverage.md` (`AC-id → slice(s) → test →
+   evidence-status`), the living map `/rite-prove` and `/rite-seal` walk. Generate it with
+   `coverage.sh` (it reads `spec.md` acceptance + the `tasks.md` `Satisfies:` lines), or write the
+   table by hand from the same inputs if the script is absent:
+   ```bash
+   C=.claude/skills/devrites-lib/scripts/coverage.sh
+   [ -f "$C" ] || C="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/coverage.sh"
+   [ -f "$C" ] || C=pack/.claude/skills/devrites-lib/scripts/coverage.sh
+   S="$(cat .devrites/ACTIVE 2>/dev/null)"
+   [ -f "$C" ] && bash "$C" "$S" > ".devrites/work/$S/coverage.md" || echo "(coverage.sh unavailable — write coverage.md by hand from spec AC + tasks Satisfies:)"
+   ```
 5. **Complexity & deviations gate** — justify anything off DevRites defaults (new dep,
    extra abstraction, second design system) in the plan; if you can't justify it, simplify.
+   **Principles conformance:** read `.devrites/principles.md` (if present) and confirm the
+   approach honors every declared invariant. A plan that conflicts with one is not "a deviation
+   to justify away" — either reshape the approach to conform, or, when the conflict is genuine and
+   intended, route it through the Spec Drift Guard plus a recorded decision and a scoped principle
+   exception a human approves. Never ready a plan that silently violates an invariant. (Re-scored
+   as a blocking gate at `/rite-vet`; no file → none declared → nothing to check.)
 6. **Write** `plan.md` + `tasks.md`; update `state.md` (phase: plan → next `/rite-build`).
 7. **Readiness gate** (bottom of plan-template): every acceptance criterion covered by a
    slice, dependency order acyclic + risk-first, no unjustified deviation, rollback for
@@ -89,7 +109,12 @@ the plan:
 ```markdown
 ## Slice N: <name>
 Goal:
+Satisfies: AC-n[, AC-m]     # reverse traceability — which spec acceptance criteria this slice satisfies
 Acceptance criteria:        # which spec FR/criteria this satisfies
+Complexity: N/5 — <reason>  # 1=trivial … 5=hairy; >3 triggers a reslice unless the reason justifies it
+Forge: no | yes — <reason>  # default no. Propose yes ONLY when Complexity ≥4 AND the slice has ≥2 genuinely-viable
+                            # approaches with no clear winner (an architecture fork, not just "hard"). /rite-vet confirms
+                            # or clears it; /rite-build then competes K isolated candidates and keeps one. See rite-build/reference/forge.md.
 Mode: AFK | HITL            # AFK = implementable + mergeable without human gating;
                             # HITL = needs a human decision mid-slice (design call,
                             # architectural choice, destructive migration sign-off).
@@ -98,6 +123,11 @@ Gate: advisory | validating | blocking | escalating   # required when Mode=HITL;
 SLA: 15m | 4h | 24h | none                            # required when Mode=HITL; matches the gate
 Checkpoint: <one crisp question>                       # required when Mode=HITL; what the human must decide
 Blocked by: Slice M, Slice K  # other slices that must complete first ("None" if free)
+depends_on: [Slice M, Slice K]  # machine-readable mirror of Blocked by (same set) — coverage.sh + /rite-status read it
+Consumes / Produces:        # interfaces this slice reads (types/endpoints/events from prior slices) and exposes for later ones
+Known-Gotchas:              # sharp edges / ordering hazards / framework footguns the wright must avoid (keeps the slice one-pass)
+Validation commands:        # exact runnable commands that prove the slice green (test / build / typecheck / lint)
+Prior-slice learnings:      # (filled forward) what an earlier slice discovered that this one must honor — starts empty
 Files likely touched:       # from the spec's Placement & integration
 Tests to write/run:
 Browser proof required: yes/no
@@ -116,11 +146,19 @@ Evidence required:
 > [`reference/gates.md`](reference/gates.md) for the four-gate taxonomy:
 > advisory / validating / blocking / escalating). `Blocked by` makes the dependency
 > graph explicit so re-planning (`/rite-plan reorder`) doesn't break acceptance-criteria
-> coverage. Keep `Blocked by` cycle-free.
+> coverage. Keep `Blocked by` cycle-free. `depends_on` is the machine-readable mirror tools read
+> to pick the next *buildable* slice; `Complexity` (>3 → reslice) sizes it; `Satisfies` +
+> `Consumes/Produces` + `Known-Gotchas` + `Validation commands` make each slice a self-contained,
+> one-pass-implementable brief (the PRP target `/rite-vet` checks). `Forge` flags the rare slice
+> worth *competing* — a genuine architecture fork at high complexity, not a slice that is merely
+> hard. Define only proposes it; `/rite-vet` confirms or clears it and `/rite-build` acts on it.
+> The bulk of slices stay `no` (single-path is cheaper and the default).
 
 > **Mid-flight discipline.** When tempted to skip vertical slicing, coverage mapping, or dependency-order discipline — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 
 ## Output
+
+**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Planned: <slug>
 Approach: <one line>

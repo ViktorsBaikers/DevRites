@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Sync the semantic-release-determined version across every DevRites manifest
-# so plugin.json, marketplace.json and package.json stay in lockstep.
+# Sync the semantic-release-determined version into package.json and the README
+# status line so the published version stays in step with the released tag.
 #
 # Usage: sync-version.sh <version>
 set -euo pipefail
@@ -23,8 +23,6 @@ const version = process.argv[2];
 
 const updates = [
   { file: 'package.json',                       set: (j) => { j.version = version; } },
-  { file: '.claude-plugin/plugin.json',         set: (j) => { j.version = version; } },
-  { file: '.claude-plugin/marketplace.json',    set: (j) => { j.plugins.forEach(p => { if (p.name === 'devrites') p.version = version; }); } },
 ];
 
 for (const u of updates) {

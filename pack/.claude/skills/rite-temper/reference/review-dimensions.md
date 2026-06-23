@@ -22,7 +22,8 @@ one never compensates for collapse in another, so the gate is the **floor**, not
    up to an unbounded ideal. Vague adjectives ("fast/robust/intuitive") and "handles X
    gracefully" are flagged.
 7. **Irreversibility & blast radius** — are auth / migration / public-API / data-model touches
-   treated with conservatism + rollback, and is the codegraph blast radius understood?
+   treated with conservatism + rollback, and is the blast radius understood (from a
+   code-intelligence index if available)?
 8. **Cross-cutting coverage** — security/trust-boundary, data & migration, observability, and
    modifiability each explicitly addressed **or explicitly N/A** — no silent omission.
 9. **Convention fit & placement realism** — does the ambition fit the codebase's existing seams

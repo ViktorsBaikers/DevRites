@@ -49,7 +49,9 @@ Otherwise summarize from the loaded state, concisely:
 6. **Open questions** — count by gate (from `questions.md`:
    `n open: x blocking · y validating · z advisory`) + the blocking qids by id and one-line question.
 7. **Unresolved drift** (`drift.md`).
-8. **Risks** (from `state.md` / `spec.md`).
+8. **Risks** (from `state.md` / `spec.md`); if `.devrites/principles.md` exists, note the count
+   of declared invariants and flag any exception in its register that is past its review/removal
+   trigger (a stale exception is a standing risk). Omit if there's no principles file.
 9. **Ready for handoff?** — see section below.
 
 Flag anything blocking: unresolved drift, failing evidence, `Status: awaiting_human`,
@@ -58,7 +60,9 @@ and nothing else.
 
 ## Ready for handoff?
 
-After items 1–6, render an explicit handoff readiness section. A fresh agent
+After the summary items (1–8), render the handoff readiness section (item 9 above) last —
+the canonical output order is: progress footer → summary items 1–8 → handoff readiness.
+A fresh agent
 or a future session should be able to pick the work up from the workspace
 **alone**, with zero chat context. Check:
 
@@ -84,6 +88,7 @@ context into the workspace before the session ends.
 
 ## Output format
 
+**Footer first** — `/rite-status` *is* the status meter: render it by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`). The slice meter + flow ribbon answer "where am I / how much is left". Then the handoff-readiness check:
 ```
 Ready for handoff: yes / partial (n gaps) / no
 

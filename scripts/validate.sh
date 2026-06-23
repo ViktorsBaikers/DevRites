@@ -12,14 +12,14 @@ section() { printf '\n=== %s ===\n' "$1"; }
 bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
 good() { printf 'ok: %s\n' "$*"; }
 
-PUBLIC="rite rite-spec rite-temper rite-define rite-vet rite-plan rite-build rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-resolve rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
+PUBLIC="rite rite-spec rite-adopt rite-temper rite-define rite-vet rite-plan rite-build rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-doctor rite-resolve rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
 INTERNAL="devrites-interview devrites-source-driven devrites-doubt devrites-ux-shape devrites-frontend-craft devrites-browser-proof devrites-debug-recovery devrites-api-interface devrites-audit"
-AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst devrites-frontend-reviewer devrites-security-auditor devrites-performance-reviewer devrites-doubt-reviewer devrites-simplifier-reviewer devrites-strategy-reviewer devrites-plan-reviewer devrites-slice-wright"
+AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst devrites-frontend-reviewer devrites-security-auditor devrites-performance-reviewer devrites-devex-reviewer devrites-doubt-reviewer devrites-simplifier-reviewer devrites-strategy-reviewer devrites-plan-reviewer devrites-retrospector devrites-slice-wright"
 
 # ---- 1. bash -n on every shell script ------------------------------------
 section "bash syntax (bash -n)"
-SH_LIST="$ROOT/install.sh $ROOT/uninstall.sh"
-for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do [ -f "$f" ] && SH_LIST="$SH_LIST $f"; done
+SH_LIST="$ROOT/install.sh $ROOT/uninstall.sh $ROOT/update.sh"
+for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/hooks/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do [ -f "$f" ] && SH_LIST="$SH_LIST $f"; done
 for f in $SH_LIST; do
   if bash -n "$f" 2>/tmp/dr_synerr; then good "syntax ${f#$ROOT/}"; else bad "syntax ${f#$ROOT/}: $(cat /tmp/dr_synerr)"; fi
 done
@@ -64,29 +64,6 @@ section "agents present"
 for a in $AGENT_FILES; do
   if [ -f "$AGENTS/$a.md" ]; then good "$a"; else bad "missing agent: $a"; fi
 done
-
-section "plugin manifest agents list matches pack/.claude/agents"
-PLUGIN_JSON="$ROOT/.claude-plugin/plugin.json"
-if [ -r "$PLUGIN_JSON" ] && command -v python3 >/dev/null 2>&1; then
-  manifest_list="$(python3 -c '
-import json, sys
-m = json.load(open(sys.argv[1]))
-a = m.get("agents", [])
-if isinstance(a, str):
-    a = [a]
-for p in a:
-    print(p.lstrip("./"))
-' "$PLUGIN_JSON" | sort -u)"
-  disk_list="$(cd "$ROOT" && ls pack/.claude/agents/*.md 2>/dev/null | sort -u)"
-  if [ "$manifest_list" = "$disk_list" ]; then
-    good "plugin.json agents array matches pack/.claude/agents/*.md"
-  else
-    bad "plugin.json agents array out of sync with pack/.claude/agents/*.md"
-    diff <(printf '%s\n' "$manifest_list") <(printf '%s\n' "$disk_list") || true
-  fi
-else
-  echo "skip: cannot validate manifest sync (missing python3 or plugin.json)"
-fi
 
 # ---- 5. frontmatter validation ------------------------------------------
 section "frontmatter"
@@ -169,30 +146,7 @@ else
   bad "rule-uniqueness check failed (see scripts/check-rule-uniqueness.sh)"
 fi
 
-# ---- 12. version lockstep across manifests -------------------------------
-section "version lockstep (package.json == plugin.json == marketplace.json)"
-if command -v python3 >/dev/null 2>&1; then
-  if python3 - "$ROOT" <<'PY'
-import json, sys, os
-root = sys.argv[1]
-pkg  = json.load(open(os.path.join(root, "package.json")))["version"]
-plug = json.load(open(os.path.join(root, ".claude-plugin/plugin.json")))["version"]
-mkt  = json.load(open(os.path.join(root, ".claude-plugin/marketplace.json")))
-mver = next((p.get("version") for p in mkt.get("plugins", []) if p.get("name") == "devrites"), None)
-print("  package.json     %s" % pkg)
-print("  plugin.json      %s" % plug)
-print("  marketplace.json %s" % mver)
-if pkg == plug == mver and mver is not None:
-    sys.exit(0)
-print("FAIL: version mismatch across manifests")
-sys.exit(1)
-PY
-  then good "versions match across package.json / plugin.json / marketplace.json"; else bad "version mismatch across manifests (run scripts/sync-version.sh)"; fi
-else
-  echo "skip: python3 not found"
-fi
-
-# ---- 13. no runtime-broken pack/.claude/ path in installed prose ---------
+# ---- 12. no runtime-broken pack/.claude/ path in installed prose ---------
 # After install the leading pack/ is stripped, so any literal pack/.claude/rules/
 # or pack/.claude/skills/ in shipped SKILL.md / reference prose is a dead path
 # at runtime. (Repo README/docs links are out of scope — they're GitHub links.)
@@ -200,7 +154,7 @@ section "no literal pack/.claude/ paths in shipped skill prose"
 # Exclude the intentional resolution-snippet fallback (`... || P=pack/.claude/...`): the
 # preamble snippet tries the installed `.claude/` path first, then `${CLAUDE_SKILL_DIR}`
 # (plugin, best-effort), then the repo `pack/.claude/...` for DevRites self-development.
-PACKPATH_HITS="$(grep -rn -e 'pack/\.claude/rules/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
+PACKPATH_HITS="$(grep -rnI -e 'pack/\.claude/rules/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
 if [ -n "$PACKPATH_HITS" ]; then
   bad "literal pack/.claude/ path in shipped skill prose (strips to .claude/ on install):"
   printf '%s\n' "$PACKPATH_HITS" | sed "s|$ROOT/||"
@@ -220,12 +174,21 @@ else
   good "no false session-start autoload claim in pack/ docs/ README.md"
 fi
 
-# ---- 15. shellcheck (advisory) -------------------------------------------
-section "shellcheck (advisory)"
+# ---- 15. shellcheck (error = blocking, warning = advisory) ---------------
+# CI runners ship shellcheck, so the error-level gate is enforced on every PR.
+# Locally it self-skips when shellcheck is absent (the gate is non-blocking only
+# where the tool isn't installed — never silently downgraded where it is).
+section "shellcheck (-S error blocking · -S warning advisory)"
 if command -v shellcheck >/dev/null 2>&1; then
-  for f in $SH_LIST; do shellcheck -S warning "$f" || echo "  (shellcheck advisory only — not failing the build)"; done
+  for f in $SH_LIST; do
+    if shellcheck -S error "$f"; then good "shellcheck ${f#"$ROOT"/}"; else bad "shellcheck (error) ${f#"$ROOT"/}"; fi
+  done
+  # warning-level is informational — surfaced per file, never fails the build.
+  for f in $SH_LIST; do
+    shellcheck -S warning "$f" >/dev/null 2>&1 || echo "  advisory (warning-level): ${f#"$ROOT"/}"
+  done
 else
-  echo "skip: shellcheck not installed (optional)"
+  echo "skip: shellcheck not installed locally (optional — CI enforces the error-level gate)"
 fi
 
 # ---- summary -------------------------------------------------------------

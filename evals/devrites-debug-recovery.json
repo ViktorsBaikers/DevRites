@@ -1,0 +1,26 @@
+{
+  "skill": "devrites-debug-recovery",
+  "description": "Trigger evals for devrites-debug-recovery — systematic recovery when tests/build/typecheck/runtime/browser checks go red, vs sibling phases and bundled debug/review/interview/tdd/prototype/handoff skills.",
+  "queries": [
+    {"text": "Debug this — the tests just started failing.", "expected": "should_trigger", "rationale": "Direct 'debug this' + failing tests is the core trigger."},
+    {"text": "Why is this failing all of a sudden?", "expected": "should_trigger", "rationale": "'why is it failing' trigger phrase."},
+    {"text": "It broke after my last commit — find out what happened.", "expected": "should_trigger", "rationale": "'it broke' trigger phrase."},
+    {"text": "The build is red, figure out what's wrong.", "expected": "should_trigger", "rationale": "'the build is red' trigger phrase."},
+    {"text": "The tests fail now and I don't know why.", "expected": "should_trigger", "rationale": "'the tests fail' trigger phrase."},
+    {"text": "CI went red after the merge — track down the cause and fix it.", "expected": "should_trigger", "rationale": "Paraphrase of a red check needing root-cause recovery."},
+    {"text": "The typecheck is throwing errors I can't explain.", "expected": "should_trigger", "rationale": "Typecheck failure is an in-scope red check."},
+    {"text": "The page throws an exception in the browser at runtime — find the root cause.", "expected": "should_trigger", "rationale": "Runtime/browser check failure, in-scope."},
+    {"text": "Give me a few ranked hypotheses for why this keeps erroring, then fix the real cause.", "expected": "should_trigger", "rationale": "Oblique but matches the ranked-hypotheses + root-cause method."},
+    {"text": "Reproduce this failure and get to the root cause instead of patching the symptom.", "expected": "should_trigger", "rationale": "Reproduce + fix root cause is the skill's cycle."},
+    {"text": "Something's broken in the build — can you debug it?", "expected": "should_trigger", "rationale": "Direct ask: broken build + debug."},
+    {"text": "The slice's tests went red on completion; I need a systematic debug, not shotgun edits.", "expected": "should_trigger", "rationale": "Build/prove failure context demanding disciplined recovery."},
+    {"text": "Build the next vertical slice of this feature.", "expected": "should_not_trigger", "rationale": "/rite-build owns implementing a slice."},
+    {"text": "Run the full test suite and prove the feature works end-to-end.", "expected": "should_not_trigger", "rationale": "/rite-prove owns running the full suite for evidence."},
+    {"text": "This query got 5x slower after the upgrade — diagnose the performance regression.", "expected": "should_not_trigger", "rationale": "diagnose owns performance regressions, not a red-check failure."},
+    {"text": "Grill me on my fix plan before I touch the code.", "expected": "should_not_trigger", "rationale": "grill-me owns stress-testing a plan via interview."},
+    {"text": "Give my pull request a code review.", "expected": "should_not_trigger", "rationale": "code-review owns reviewing a diff for bugs and cleanups."},
+    {"text": "Build this feature test-first using red-green-refactor.", "expected": "should_not_trigger", "rationale": "tdd owns the red-green-refactor build loop."},
+    {"text": "Mock up a few throwaway UI designs so I can play with them.", "expected": "should_not_trigger", "rationale": "prototype owns throwaway design exploration."},
+    {"text": "Compact our conversation into a handoff doc for the next agent.", "expected": "should_not_trigger", "rationale": "handoff owns conversation compaction for handoff."}
+  ]
+}

@@ -20,6 +20,8 @@ flowchart LR
     Spec -->|spec.md ready| Define[/rite-define/]
     Define -->|plan.md + tasks.md<br/>each slice tagged AFK/HITL| Build[/rite-build/]
     Build -->|one slice done<br/>+ evidence| Build
+    Build -.->|"Forge: yes slice"| Forge[forge: K candidates<br/>→ devrites-forge-judge → 1 winner]
+    Forge -.->|winner lands<br/>forge-report.md| Build
     Build -->|HITL gate fires| Await{{Awaiting human<br/>state.md + questions.md}}
     Await -->|"/rite-resolve &lt;qid&gt; &lt;answer&gt;"| Build
     Build -->|all slices built| Prove[/rite-prove/]
@@ -45,7 +47,7 @@ flowchart LR
     class Shipped done
     class Repair repair
     class Await gate
-    class Shape internal
+    class Shape,Forge internal
 ```
 
 ## 2. `/rite-polish` orchestrator
@@ -117,6 +119,8 @@ flowchart TB
     Walk -.->|UI only| FERev[devrites-frontend-reviewer]
     Walk -.->|input/auth/data| SecRev[devrites-security-auditor]
     Walk -.->|perf relevant| PerfRev[devrites-performance-reviewer]
+    VV[/browser-evidence.md<br/>Visual Verdict/] -.->|UI + design-brief.md| FERev
+    VV -.->|acceptance-mapped FAIL = NO-GO| Gate
     SpecRev --> Gate
     CodeRev --> Gate
     TestRev --> Gate
@@ -141,6 +145,8 @@ flowchart TB
     class Gate,YN gate
     class Go,Ship ship
     class NoGo stop
+    classDef artifact fill:#0f172a,stroke:#9ca3af,color:#f9fafb
+    class VV artifact
 ```
 
 ## 5. `devrites-debug-recovery` six-phase loop
@@ -177,7 +183,7 @@ demands. No carrier skill, no session-start autoload.
 ```mermaid
 flowchart TD
     R[rite-* skill<br/>step 0] -->|always-on| Core[.claude/rules/core.md]
-    R -->|on demand index| Idx[(.claude/rules/README.md<br/>15 specialist rule files)]
+    R -->|on demand index| Idx[(.claude/rules/README.md<br/>19 specialist rule files)]
     Idx --> CS[coding-style.md]
     Idx --> EH[error-handling.md]
     Idx --> T[testing.md]
@@ -286,7 +292,7 @@ skills (`prototype`, `handoff`, `triage`, `diagnose`). Visibility is the
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true) — 19 skills"]
+    subgraph Public["Public (user-invocable: true) — 24 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
@@ -303,12 +309,17 @@ flowchart TB
         R13[/rite-autocomplete/]
         R10[/rite-status/]
         R11[/rite-resolve/]
+        RQ[/rite-quick/]
+        RF[/rite-frame/]
+        RA[/rite-adopt/]
+        RL[/rite-learn/]
+        RD[/rite-doctor/]
         IPT[/rite-pressure-test/]
         D1[/rite-zoom-out/]
         D2[/rite-prototype/]
         D3[/rite-handoff/]
     end
-    subgraph Internal["Internal (user-invocable: false) — 9 skills, model-invoked"]
+    subgraph Internal["Internal (user-invocable: false) — 12 skills (11 specialists + devrites-lib library)"]
         direction TB
         I1[devrites-api-interface]
         I2[devrites-audit<br/>security · perf · simplify]
@@ -319,12 +330,15 @@ flowchart TB
         I7[devrites-interview]
         I8[devrites-source-driven]
         I9[devrites-ux-shape]
+        I10[devrites-prose-craft]
+        I11[devrites-refresh-indexes]
+        I12[devrites-lib<br/>library scripts]
     end
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
-    class R1,R2,RT,R3,RV,R4,R5,R6,R7,R8,R9,R12,R13,R10,R11,IPT,D1,D2,D3 pub
-    class I1,I2,I3,I4,I5,I6,I7,I8,I9 int
+    class R1,R2,RT,R3,RV,R4,R5,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,IPT,D1,D2,D3 pub
+    class I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11,I12 int
 ```
 
 ## 9. AFK & HITL state machine

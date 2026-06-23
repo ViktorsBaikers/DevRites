@@ -36,7 +36,14 @@ the affected criteria/routes to refresh proof before `/rite-seal`.
 **Step 0:** Read `.claude/rules/core.md` first. The other rule files load on demand;
 pull these via `Read` when relevant:
 - `testing.md` — pyramid, determinism, no-flake discipline.
+- `spec-grammar.md` — when the spec uses structured `### Requirement:` / `#### Scenario:`
+  blocks, each scenario (WHEN/THEN) is one observable behavior to walk and prove.
 - `performance.md` — measure first when perf is in scope.
+- `observability.md` — when the change has a runtime surface (endpoint, job, integration,
+  user flow): telemetry must be present **and observed to emit**, not assumed.
+- `developer-experience.md` — when the change ships a developer-facing surface (API / CLI / SDK /
+  webhook / config / error messages / getting-started): **measure** the DX scorecard (run the flow,
+  time time-to-hello-world, capture the verbatim error text), don't assert it.
 
 ## Operating rules
 - Evidence over confidence. Feature scope only — fix within the feature or record a
@@ -69,9 +76,64 @@ pull these via `Read` when relevant:
    (`devrites-browser-proof`): routes, viewports, screenshots (opened + described),
    console, network, interaction paths, and design-reference match if references exist.
 5. **Map results to acceptance** — walk `spec.md` acceptance criteria; note which are now
-   proven and which aren't. If `test-plan.md` exists, also walk its acceptance→test map and
+   proven and which aren't. **If the spec uses the structured grammar** (`### Requirement:` /
+   `#### Scenario:` blocks — `spec-grammar.md`), walk it **per scenario**: each `#### Scenario:`
+   WHEN/THEN is one observable behavior that needs a passing asserting test (the WHEN is the
+   arrange, the THEN the assert). A scenario with no covering result is an unproven gap =
+   blocker, the same standing as an uncovered acceptance criterion. Re-run the grammar gate
+   first so a requirement hand-edited to malformed since `/rite-spec` can't masquerade as proven:
+   ```bash
+   SV=.claude/skills/devrites-lib/scripts/spec-validate.sh
+   [ -f "$SV" ] || SV="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/spec-validate.sh"
+   [ -f "$SV" ] || SV=pack/.claude/skills/devrites-lib/scripts/spec-validate.sh
+   [ -f "$SV" ] && { bash "$SV" ".devrites/work/<slug>"; echo "spec-validate rc=$?"; } || true
+   ```
+   If `test-plan.md` exists, also walk its acceptance→test map and
    per-gap requirements — a planned test (especially a regression-Critical) with no covering
-   result is an unproven gap, not a pass.
+   result is an unproven gap, not a pass. **Also walk the test-plan interaction inventory**
+   (every interactive element + user flow): each must have a passing asserting test. An
+   element/flow with no asserting result is an **unproven gap = blocker** — a NO-GO at
+   `/rite-seal`, the same standing as an unproven acceptance criterion (`testing.md`
+   "Completeness"). For UI, the browser proof (step 4) demonstrates the flows; the asserting
+   tests prove the elements.
+5a. **Assertion-strength spot check (critical paths).** For each regression-Critical /
+   irreversible / data-loss path, confirm the covering test actually *can* fail: reject
+   tautological assertions (`toBeDefined`-only, asserting the mock), and **fault-inject** —
+   break the code on purpose (flip a comparison, drop a guard) and confirm the test goes red,
+   then revert. Run the project's mutation-testing tool over the touched criticals if it has
+   one. A test that stays green on deliberately broken code is an unproven gap, not a pass
+   (`testing.md` "Assertion strength"). Record what was fault-checked in `evidence.md`.
+   Run the deterministic gates rather than eyeballing:
+   ```bash
+   D=.claude/skills/devrites-lib/scripts
+   [ -d "$D" ] || D="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts"
+   [ -d "$D" ] || D=pack/.claude/skills/devrites-lib/scripts
+   [ -f "$D/test-integrity.sh" ] && { bash "$D/test-integrity.sh"; echo "test-integrity rc=$?"; } || true   # exit 3 = a test was weakened to pass → NO-GO
+   [ -f "$D/mutation-gate.sh" ]  && bash "$D/mutation-gate.sh" || true                                      # changed-files mutation score → band the seal verdict
+   ```
+   For a parser / serializer / encoder / auth-token / pure-transform criterion, add a **round-trip
+   or metamorphic property** check (`decode(encode(x))==x`, `parse∘print==id`) over generated inputs —
+   example tests miss the edge cases these explore. If the same unit regenerated from a paraphrased
+   spec (or a second sample) **diverges in behaviour on shared inputs**, treat that as a low-confidence
+   signal: under AFK it blocks an auto-GO and routes to HITL.
+5b. **Observability check (runtime surface only).** If the feature added an endpoint, job,
+   queue consumer, external integration, user-facing flow, or a new error path, apply the
+   on-call test (`observability.md`): are the signals needed to debug a prod failure present —
+   structured logs on the failure path, a metric/counter on errors, a trace id across any
+   boundary? Then **observe them fire**: trigger the path and confirm the log line / metric /
+   span actually emits, and record that observation in `evidence.md`. Instrumentation never seen
+   emitting is unproven, not done. Skip entirely for pure-internal / docs / config / type-only
+   changes — don't instrument a typo fix.
+5c. **Developer-experience measure (developer-facing surface only).** If the feature ships a public
+   API, CLI, SDK/library, webhook, config/env contract, error/exit path, or the getting-started flow
+   (`developer-experience.md`), **exercise it** rather than reading it: run the getting-started steps
+   on a clean state and **time time-to-hello-world**; invoke the CLI `--help` / call the endpoint /
+   import the package; trigger the failure path and capture the **verbatim** error text. For a docs or
+   quickstart page, capture it through the browser-proof ladder (`devrites-browser-proof`) and describe
+   the screenshot. Write the **measured** scorecard to `devex.md` (beside the `/rite-vet` prediction the
+   boomerang reconciles at `/rite-seal`) and the headline numbers + error strings to `evidence.md`. A
+   scorecard from "the code looks fine" is Source mode, not proof. Skip entirely when no developer-facing
+   surface is in scope — don't DX-measure an internal refactor.
 6. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. Reproduce → isolate → fix within scope → re-run; if a fix
    would exceed scope, record a blocker.
@@ -80,12 +142,16 @@ pull these via `Read` when relevant:
 > **Mid-flight discipline.** When tempted to claim an un-observed pass, skip a rung of the browser-proof ladder, or proceed with slices pending — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 
 ## Output
+
+**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Proved: <feature>
 Acceptance criteria proven: <n / total>
+Scenarios proven: <n / total | n/a (flat acceptance)>
 Tests:  <cmd → pass/fail (counts)>
 Build:  <cmd → pass/fail>   Lint: <cmd → pass/fail>
 Browser: <ladder rung used + summary | n/a>
+DevEx:  <measured TTHW + getting-started/error-message verdict → devex.md | n/a (no dev-facing surface)>
 Unresolved failures / blockers: <none | list>
 Next: /rite-polish   (finish the feature → /rite-review → /rite-seal)
 ↻ Hygiene: /clear before /rite-polish (evidence.md + browser-evidence.md captured; debug trails noisy). See rules/context-hygiene.md.

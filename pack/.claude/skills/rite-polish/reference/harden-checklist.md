@@ -14,13 +14,13 @@ Walk every text-bearing surface in the feature with deliberately hostile data:
   longer than the viewport. Check truncation, wrapping, ellipsis, overflow.
 - **Very short / empty text** — single-char names, empty strings, names that are
   whitespace only. Check whether layout collapses or filters fail.
-- **Unicode** — emoji (`👨‍👩‍👧‍👦` — note grapheme clusters in count limits),
+- **Unicode** — emoji (`👨‍👩‍👧‍👦` — note grapheme clusters in count limits),<!-- pack-scan-ignore: intentional ZWJ in emoji edge-case example -->
   zero-width joiners, RTL text (`مرحبا`), combining accents (`café` vs `café`).
 - **Numerics at scale** — `0`, negative numbers, `1.000.000`, `1234567890`, very
   large currency. Check column width, formatter behaviour, locale separators.
 - **List sizes** — empty list, 1 item, 50 items, 1000+ items. Check pagination,
   virtualisation, empty state, loading-state-then-empty.
-- **Adversarial input** — strings with `<script>`, `‮` (RTL override),
+- **Adversarial input** — strings with `<script>`, `‮` (RTL override),<!-- pack-scan-ignore: intentional RTL-override example in adversarial-input checklist -->
   trailing whitespace, leading zeros. Confirm escaping at render time (not just
   on submit).
 

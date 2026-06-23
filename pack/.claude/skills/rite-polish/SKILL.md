@@ -49,7 +49,9 @@ don't load both up front.
 4. **If UI scope detected** read [`reference/ui.md`](reference/ui.md), and read
    `design-brief.md` if present (the UX/UI contract `devrites-ux-shape` shaped at spec and
    `devrites-frontend-craft` refined while building) so the polish honors the agreed
-   direction + states. Then run
+   direction + states. **Read the `## Visual Verdict` table in `browser-evidence.md` if present:
+   its `FAIL` and `PARTIAL` rows are the normalize/quality-bar worklist** — fix the root cause of
+   each (a missing state, an off-token CTA, an anti-slop hit), don't decorate around it. Then run
    **Phase 3 (normalize)** → **Phase 4 (UI polish)**. Honor argument modes:
    - `bolder | quieter | distill | harden` — passed to Phase 4 as the
      emphasis dial.
@@ -74,6 +76,7 @@ the mode table.
 
 ## Output → `polish-report.md`
 
+**Footer first (to chat, not into the report file)** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`). Then write the report:
 ```
 Target: <slug | path/route/component>
 Phase 1 (code polish): findings → fixes (technique + why behavior preserved)

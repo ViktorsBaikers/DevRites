@@ -22,11 +22,16 @@ This is the engineering counterpart to `/rite-temper` (which is strategic, on th
 Temper decides *the right thing*; vet decides *the right way to build it*.
 
 ## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. Pull on demand: `patterns.md` +
+**Step 0:** Read `.claude/rules/core.md` first. Pull on demand: `principles.md` (the project
+invariants gate — how `.devrites/principles.md` is scored pass/fail), `patterns.md` +
 `coding-style.md` (the over-engineering / reuse-first / YAGNI rubric — reuse the pack's
-standard), `testing.md` (the test-coverage axis), `performance.md` (the perf axis),
+standard), `testing.md` (the test-coverage axis) + `spec-grammar.md` (when the spec uses
+structured Requirement/Scenario blocks, each scenario is a coverage unit `test-plan.md` must
+map), `performance.md` (the perf axis),
 `error-handling.md` (failure-mode coverage), `development-workflow.md` (parallel lanes,
-definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
+definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling),
+`developer-experience.md` (when the plan ships a developer-facing surface — API / CLI / SDK /
+webhook / config / error messages / getting-started — predict the DX scorecard here).
 
 ## Operating rules
 - **Review the plan, not the spec's ambition.** The spec's scope/ambition is `/rite-temper`'s
@@ -62,8 +67,9 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    Then the workspace: `plan.md`, `tasks.md`, `spec.md`
    (for intent + acceptance), `strategy.md` (if `/rite-temper` ran), `decisions.md`,
    `assumptions.md`, `design-brief.md` (if UI), `state.md`. Require a `plan.md` whose
-   Readiness gate passes (or `Plan approved`) — else STOP → `/rite-define`. Prefer the
-   code-intelligence index (codegraph / graphify) for placement / blast-radius / reuse checks.
+   Readiness gate passes (or `Plan approved`) — else STOP → `/rite-define`. Prefer a
+   code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
+   (see `.claude/rules/tooling.md`) — for placement / blast-radius / reuse checks.
 1. **Calibrate depth — never skip** — [`reference/depth.md`](reference/depth.md). Every plan is
    vetted; what scales is the *depth*. A simple, single-module, reversible plan with no
    irreversible-risk / data-model / new-pattern trigger → **light pass** (brief scope check + a
@@ -77,6 +83,28 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    against a built-in (dispatch `devrites-source-driven`); completeness check (with AI, full
    coverage is ~100× cheaper than the human-hours saved by a shortcut — prefer complete); and a
    distribution check for any new artifact.
+2a. **Cross-artifact analyze gate + principles / charter / conventions gate.** Before the axes, run
+   one read-only consistency+coverage pass over `spec.md` + `plan.md` + `tasks.md` (+ `coverage.md`
+   if present); any **CRITICAL** — an acceptance criterion with no slice, a slice satisfying no
+   criterion, a contradiction across artifacts — **blocks `/rite-build`** until resolved. Then score
+   the three project gates as explicit **pass/fail** on the planned approach:
+   - **Principles** (`.devrites/principles.md`, rubric in [`principles.md`](../../rules/principles.md))
+     — the authored invariants the project will not break. A plan that bakes in a violation of a
+     declared principle with **no recorded, human-approved exception** is a **top-severity** finding,
+     walked **first**, and **blocks `/rite-build`**. Absent or empty file → none declared → passes;
+     **never block for the absence of principles**. A genuine need to break one routes to a scoped,
+     dated exception in the principles register — never a silent work-around (adding the exception is
+     an irreversible-risk decision: it always pauses for a human, even in AFK).
+   - **The anti-slop charter** (`coding-style.md` + `prose-style.md`) and **the conventions ledger**
+     (`.devrites/conventions.md`) — a plan that bakes in a god-module, a speculative abstraction with
+     no second caller, or a dependency where an in-repo option exists is a **top-severity** violation.
+   **Re-check all three after the axes harden the plan** (post-design). Write the result to `analysis.md`.
+   ```bash
+   A=.claude/skills/devrites-lib/scripts/analyze.sh
+   [ -f "$A" ] || A="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/analyze.sh"
+   [ -f "$A" ] || A=pack/.claude/skills/devrites-lib/scripts/analyze.sh
+   [ -f "$A" ] && { bash "$A"; echo "analyze rc=$?"; } || echo "(analyze.sh unavailable — do the cross-artifact pass by hand: every AC↔slice mapped, no contradiction across spec/plan/tasks)"
+   ```
 3. **Four-axis review** — [`reference/review-axes.md`](reference/review-axes.md), through the
    senior-engineer lenses in [`reference/eng-lenses.md`](reference/eng-lenses.md): **Architecture
    → Plan code-quality → Test-coverage design → Performance**, ≤8 findings per axis, each
@@ -87,8 +115,31 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    coverage-increasing findings auto-apply; **anything that grows scope or changes acceptance is a
    blocking pause**; irreversible-risk always pauses.)
 4. **Required outputs** — the test-coverage diagram + per-gap test requirements (the **regression
-   rule** is mandatory, no question), failure-mode table, "NOT in scope", "What already exists",
+   rule** is mandatory, no question). When the spec uses the structured grammar
+   (`spec-grammar.md`), the diagram maps **each `#### Scenario:` (WHEN/THEN) to ≥1 planned
+   test** — an unmapped scenario is a coverage gap the build must close. Then the failure-mode
+   table, "NOT in scope", "What already exists",
    and the worktree parallelization strategy. Shapes in [`reference/review-axes.md`](reference/review-axes.md).
+   **Developer-facing surface?** If the plan ships one (`developer-experience.md` — API / CLI / SDK /
+   webhook / config / error messages / getting-started), predict the DX scorecard: the time-to-hello-world
+   estimate plus the getting-started, error-message, and ergonomics friction the plan bakes in. Write it
+   to `devex.md` as the **prediction the boomerang measures against** at `/rite-prove` / `/rite-seal`.
+   Absent surface → skip, no `devex.md` (greenfield no-op, like the principles gate).
+   Also a **PRP one-pass-implementable check** per slice brief (the build's pre-flight): confirm each
+   slice's Consumes/Produces, Known-Gotchas, validation commands, and reuse targets are present and
+   concrete — a brief that can't be built in one pass is a finding; harden the slice until it clears,
+   before `/rite-build`.
+4a. **Forge gate (rare — confirm or clear).** For each slice carrying `Forge: yes` (proposed by
+   `/rite-define`), and any slice the architecture axis showed has **≥2 genuinely-viable approaches
+   with no clear winner at Complexity ≥4**, confirm the flag: name the 2–3 candidate strategies that
+   actually differ (different data shape, different seam, reuse-vs-build — not variations of one), and
+   confirm the slice's acceptance + `test-plan.md` give the judge an objective scorecard. **Clear**
+   `Forge: yes` back to `no` when the review settled on one approach, the slice is below the complexity
+   bar, or you can't name two real strategies — competing a decided or trivial slice burns K× the build
+   for nothing. Forge is a **build-cost** decision, not an irreversible one: it never bypasses a gate,
+   and under AFK its K candidates count against the slice budget. Record the confirmed strategies in
+   the slice brief so `/rite-build` competes them
+   ([`rite-build/reference/forge.md`](../rite-build/reference/forge.md)). No flagged slice → nothing to do.
 5. **Write `eng-review.md` + `test-plan.md`, fold back** — [`reference/artifacts.md`](reference/artifacts.md).
    `eng-review.md` is the durable record; `test-plan.md` is the build-readable coverage target
    (`/rite-build` and `/rite-prove` read it). Harden `plan.md` / `tasks.md` directly for
@@ -116,15 +167,18 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
 > [`reference/anti-patterns.md`](reference/anti-patterns.md).
 
 ## Output
+
+**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Vetted: <slug>
 Depth: light | full (<trigger that escalated it>)
 Scope: reuse <n found> / minimum-diff <ok|trimmed N> / complexity <ok|smell: N files, M new services → asked>
 Axes (floor → verdict):  Architecture <band> · Code-quality <band> · Tests <band> · Performance <band>
 Findings: <Critical n / Important n / Suggestion n>   (suppressed low-confidence: n)
-Coverage: <x/y paths> planned · GAPS closed <n> · regressions flagged <n>  → test-plan.md
+Coverage: <x/y paths> planned (<s/t scenarios mapped | n/a>) · GAPS closed <n> · regressions flagged <n>  → test-plan.md
 Failure modes: <n> mapped (<n critical: no test + no handling + silent>)
 Parallelization: <n lanes — n parallel / n sequential> | sequential (no opportunity)
+Forge: <n slices flagged — strategies named | none>   (competed candidate builds at /rite-build)
 Reviewer loop: <n> iter · cross-model: ran (codex) | off
 Plan: hardened in place | <n> deltas routed via Spec Drift Guard → /rite-plan repair
 Next: /rite-build   (builds the vetted plan)

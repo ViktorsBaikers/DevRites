@@ -1,6 +1,6 @@
 ---
 name: rite-autocomplete
-description: Run the entire DevRites lifecycle end-to-end with no per-phase human iteration — spec → temper → define → build×N → prove → polish → review → seal → ship — picking the best option at each soft gate and recording why. A vague prompt triggers an up-front interview, then it runs unattended, pausing only on hard irreversible-risk / blocking / escalating gates or a NO-GO; `--ship` (alias `--yolo`) auto-confirms the final type-GO. Use when the user says "autocomplete", "do the whole thing", "run the full cycle", "one-shot this feature", or "ship it autonomously". Not for a single phase (use the specific `/rite-*` skill) or when the user wants to drive each step.
+description: Run the entire DevRites lifecycle end-to-end with no per-phase human iteration — spec → temper → define → vet → build×N → prove → polish → review → seal → ship — picking the best option at each soft gate and recording why. A vague prompt triggers an up-front interview, then it runs unattended, pausing only on hard irreversible-risk / blocking / escalating gates or a NO-GO; `--ship` (alias `--yolo`) auto-confirms the final type-GO. Use when the user says "autocomplete", "do the whole thing", "run the full cycle", "one-shot this feature", or "ship it autonomously". Not for a single phase (use the specific `/rite-*` skill) or when the user wants to drive each step.
 argument-hint: "[idea] [--ship|--yolo] [--max-slices N]"
 user-invocable: true
 ---
@@ -9,7 +9,7 @@ user-invocable: true
 
 Drives every DevRites phase in order without stopping for discretionary input. The
 prompt may be vague — autocomplete asks its clarifying questions **up front**, then
-runs to completion. It does **not** disable the safety gates: hard irreversible-risk,
+runs to completion. It does **not** disable the safety gates: hard irreversible-risk,<!-- pack-scan-ignore: negated statement — gates are NOT disabled -->
 blocking / escalating gates, and any NO-GO still pause.
 
 ## Rules consulted (read on demand from `.claude/rules/`)
@@ -22,8 +22,11 @@ blocking / escalating gates, and any NO-GO still pause.
 - **Safety gates are not bypassable.** AFK never auto-passes destructive migration /
   auth-authz change / public-API break / external-contract change / red tests; blocking
   and escalating gates and any open `gate: validating` always pause. `--ship` auto-confirms
-  the **final** type-GO only — nothing else.
-- **Loop budget = the plan's own slice count, not a fixed number.** After `/rite-define`,
+  the **final** type-GO only — nothing else. A change that violates a declared project
+  principle (`.devrites/principles.md`) with no recorded exception pauses too — autocomplete
+  never grants a principle exception on its own (`principles.md`: that's a human decision).
+- **Loop budget = the plan's own slice count, not a fixed number.** After `/rite-vet`
+  (not `/rite-define` — vet may split or add slices, so the count isn't final until then),
   set the AFK budget to however many slices the plan has, so the loop builds exactly the
   task's slices and stops when they're done. `--max-slices N` is an OPTIONAL *lower* safety
   cap (partial / babysat run); omit it to run the whole plan. The budget is finite
@@ -59,8 +62,8 @@ P=.claude/skills/devrites-lib/scripts/preamble.sh
 2. **Clarify up front.** If the idea is underspecified, run `devrites-interview` to
    ~95% confidence — the only interactive window. If already clear, skip.
 3. **Arm AFK.** Write `.devrites/AFK` with `allow_gates: [advisory]`; set the slice budget
-   from the plan's count after `/rite-define` (or from an explicit `--max-slices`)
-   ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
+   from the plan's count after `/rite-vet` (the slice count is only final post-vet), or from
+   an explicit `--max-slices` ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
    irreversible-risk still pause.
 4. **Drive the phases** ([reference/loop.md](reference/loop.md)): `/rite-spec` →
    **`/rite-temper`** → `/rite-define` → **`/rite-vet`** → `/rite-build` (loop until all slices
@@ -78,7 +81,11 @@ P=.claude/skills/devrites-lib/scripts/preamble.sh
 > Autonomy is for the routine path; the gates exist for everything else.
 
 ## Output
-A phase-by-phase progress log, then the final status:
+A phase-by-phase progress log, then the final status. **End with the progress footer** —
+run `progress.sh` (resolved like the step-0 preamble — canonical snippet in
+`devrites-lib/SKILL.md`) as the last lines so the final slice meter + flow ribbon match the
+rest of the lifecycle (it reads the lifecycle position the run reached, e.g. `ship ✓` or the
+phase it stopped at):
 ```
 Autocomplete: <slug>
 spec ✓  temper ✓ (mode <m> | skipped)  define ✓  vet ✓ (depth <light|full>, floor <band>)  build ✓ (N slices)  prove ✓  polish ✓  review ✓  seal: GO

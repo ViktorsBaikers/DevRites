@@ -1,0 +1,26 @@
+{
+  "skill": "rite-learn",
+  "description": "Trigger evals for /rite-learn — the cross-feature learning loop: mine archived drift / dismissed findings / dead ends across features, cluster the repeats, propose project-local rules + conventions-ledger entries, and maintain .devrites/learnings.md. Adversarial cases route to rite-status (one-feature progress), rite-doctor (install health), rite-adopt (seed initial ledger), and rite-review (single-feature review).",
+  "queries": [
+    {"text": "/rite-learn", "expected": "should_trigger", "rationale": "Direct slash invocation."},
+    {"text": "What keeps going wrong across our last few features?", "expected": "should_trigger", "rationale": "\"what keeps going wrong\" is a verbatim trigger — cross-feature recurring-correction mining."},
+    {"text": "Mine the learnings from the archived features.", "expected": "should_trigger", "rationale": "\"mine the learnings\" is a verbatim trigger phrase."},
+    {"text": "Update the learnings ledger.", "expected": "should_trigger", "rationale": "\"update the learnings ledger\" maps to maintaining .devrites/learnings.md."},
+    {"text": "Why do reviews keep flagging the same thing?", "expected": "should_trigger", "rationale": "\"why do reviews keep flagging this\" is the review-noise-class learning the loop suppresses."},
+    {"text": "Cluster the repeated corrections and propose some project rules.", "expected": "should_trigger", "rationale": "Clustering repeats into proposed project-local rules is the skill's core loop."},
+    {"text": "We dismissed this finding three features running — turn it into a rule so reviewers stop raising it.", "expected": "should_trigger", "rationale": "A dismissed finding recurring across features → a suppress learning; the explicit ≥2-feature corroboration case."},
+    {"text": "Learn from the last 5 sealed features.", "expected": "should_trigger", "rationale": "\"learn from the last few features\" with a --since cutoff is the cross-feature mine."},
+    {"text": "What patterns recur in our drift and dead ends?", "expected": "should_trigger", "rationale": "Mining drift.md events and decisions.md dead ends for recurring classes is the miner's input."},
+    {"text": "Fold this seal's accept/dismiss tally into the learnings.", "expected": "should_trigger", "rationale": "The per-seal accept/dismiss tally feeds the ledger — a named rite-learn input."},
+    {"text": "Set up a compound learning loop so the same mistake stops recurring.", "expected": "should_trigger", "rationale": "The compound-engineering cross-feature learning loop is exactly this skill."},
+    {"text": "Which corrections show up in more than one feature?", "expected": "should_trigger", "rationale": "Cross-feature corroboration query — the ≥2-independent-feature clustering bar."},
+    {"text": "Where am I in the active feature and what's next?", "expected": "should_not_trigger", "rationale": "One active feature's progress / next action belongs to /rite-status, not cross-feature mining."},
+    {"text": "Is my DevRites install healthy — check the hooks and ACTIVE pointer.", "expected": "should_not_trigger", "rationale": "Install / workspace health is /rite-doctor; rite-learn assumes a healthy install and mines its history."},
+    {"text": "Adopt this existing codebase and seed the conventions ledger from its idioms.", "expected": "should_not_trigger", "rationale": "Seeding the INITIAL ledger from a codebase being onboarded is /rite-adopt; rite-learn grows it from observed corrections."},
+    {"text": "Review this feature's diff against the spec.", "expected": "should_not_trigger", "rationale": "Single-feature multi-axis review is /rite-review, not the cross-feature learning loop."},
+    {"text": "Seal this feature — GO or NO-GO?", "expected": "should_not_trigger", "rationale": "The GO/NO-GO decision gate is /rite-seal."},
+    {"text": "Debug why these tests keep failing.", "expected": "should_not_trigger", "rationale": "Failing tests belong to devrites-debug-recovery, not a learning-mining pass."},
+    {"text": "Answer question q-2026-06-21-003 with \"use the cursor pagination\".", "expected": "should_not_trigger", "rationale": "Resolving an open question is /rite-resolve."},
+    {"text": "What's the weather in Berlin right now?", "expected": "should_not_trigger", "rationale": "Off-topic; no DevRites skill should fire."}
+  ]
+}

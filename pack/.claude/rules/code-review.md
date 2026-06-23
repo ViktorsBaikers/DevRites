@@ -29,3 +29,20 @@ design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
 ## Scope discipline
 Review the change, not the whole project. Out-of-scope problems become follow-ups, not
 drive-by edits that balloon the diff.
+
+## Principles, charter & conventions are pass/fail gates
+Three project layers are evaluated as explicit pass/fail at `/rite-vet`, re-checked after design
+lands, and re-checked against the diff at `/rite-review` / `/rite-seal` — none are advisory:
+
+1. **Project principles** (`.devrites/principles.md`) — the authored invariants the project will
+   not break ([`principles.md`](principles.md)). A change that violates one with **no recorded,
+   human-approved exception** is a **Critical** finding and a **NO-GO** at seal, the same standing
+   as an unproven acceptance criterion. Check the diff against each principle's scope; an absent
+   or empty file means none are declared (gate passes).
+2. **The anti-slop charter** (`coding-style.md` + `prose-style.md`) — the AI-tells do-not list.
+3. **The conventions ledger** (`.devrites/conventions.md`) — proven project idioms (an untrusted
+   prior; a fresh read of the live code overrides it).
+
+A change that violates a stated convention or trips the charter is a **Critical** finding, not a
+Nit. Record every gate failure with `file:line` and block on it the same as any correctness
+defect.

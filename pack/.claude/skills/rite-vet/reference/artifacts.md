@@ -69,6 +69,22 @@ From /rite-vet on <iso>. Runner + conventions: <detected framework + command>.
 |---|---|---|---|---|---|---|
 | T1 | <path> | <path/to.test> | <empty list → 200 + []> | unit / E2E / eval | <slice> | P1 / **Regression-Critical** |
 
+## Interaction inventory (UI slices — every element + flow gets an asserting test)
+Enumerate every interactive element and user flow the feature exposes; one row each, none
+skipped. Level per `testing.md` "Completeness": elements/fields → unit/component, critical
+journeys → one E2E (never one-per-field). `/rite-build` must cover every row; `/rite-prove`
+fails any row with no passing result — an unverified element is a NO-GO, like an unproven criterion.
+```markdown
+| Element / flow | Kind (field/checkbox/select/radio/toggle/button/link/flow) | Level | Test file | Asserts (action → expected) |
+|---|---|---|---|---|
+| email field   | field    | unit      | <form.test>  | invalid → error shown; valid → accepted |
+| 'remember me' | checkbox | unit      | <form.test>  | toggles the persisted flag |
+| country       | select   | unit      | <form.test>  | options load; change fires handler |
+| submit        | button   | component | <form.test>  | disabled until valid; click → submits once |
+| login         | flow ★★★ | E2E       | <login.e2e>  | enter → submit → lands on dashboard |
+```
+Omit the whole section only for a slice with **no** interactive surface (pure backend/logic).
+
 ## Acceptance → test map
 - <spec acceptance criterion> → <T1, T3>   # every criterion maps to ≥1 test
 ```

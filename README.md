@@ -12,17 +12,24 @@ directory: `spec.md` → (`strategy.md`) → `plan.md` + `tasks.md` → (`eng-re
 files — no chat-context summary required. **Spec Drift Guard** catches the wrong turn
 before it costs you a day. **AFK mode** runs unattended without silently accepting
 destructive migrations, auth changes, or red tests. **`type-GO`** demands a literal
-typed confirmation before any irreversible commit / push / tag.
+typed confirmation before any irreversible commit / push / tag. **Project principles**
+(`.devrites/principles.md`) — the invariants you declare once ("money in integer cents",
+"no PII in logs", "never break the v1 API") — then gate every plan, build, and seal, with a
+recorded-exception escape hatch instead of silent work-arounds.
 
 ```
 .devrites/
   ACTIVE                    # which feature is active
   AFK                       # presence = AFK mode; YAML body sets max_slices / notify / allow_gates
+  principles.md             # project invariants — authored, prescriptive, GATING (the 4th knowledge layer)
+  conventions.md            # learned project idioms — descriptive, an untrusted prior
+  learnings.md              # dismissed-finding classes + dead ends — suppresses recurring false positives
   work/<slug>/
     brief.md  spec.md  references.md  references/        # spec
     strategy.md                                          # temper (optional)
     plan.md  tasks.md                                    # define
     eng-review.md  test-plan.md                          # vet
+    forge-report.md                                      # build (only a Forge: yes slice — competed candidates → winner)
     state.md  questions.md  decisions.md  assumptions.md  drift.md
     touched-files.md  evidence.md  browser-evidence.md  design-brief.md
     polish-report.md  review.md  seal.md  ship.md  handoff.md
@@ -94,15 +101,15 @@ Full diagram set (lifecycle, polish orchestrator, review fan-out, debug loop,
 rules carrier, workspace state, namespace map) →
 [`docs/flow.md`](docs/flow.md).
 
-**Status:** [`v1.7.0`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v1.7.0) — see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+**Status:** [`v2.2.0`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v2.2.0) — see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
 ## Contents
 
 - [Why distributed skills](#why-distributed-skills-not-one-engine)
 - [Modes — HITL & AFK](#modes--hitl--afk)
-- [Install](#install) — [bash (A, recommended)](#option-a-bash-installer-recommended-full-install) · [plugin (B, partial)](#option-b-claude-code-plugin-partial--skills--agents-only)
+- [Install](#install) — [npx / bash](#installing) · [upgrade](#upgrading-an-existing-install)
 - [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · browser-harness
-- [Skills](#skills) — 28 total · full catalogue in [`docs/skills.md`](docs/skills.md)
+- [Skills](#skills) — 36 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
 - [Engineering rules](#engineering-rules) · [Browser proof ladder](#browser-proof-ladder) · [Frontend & fullstack](#frontend--fullstack)
 - [Safety & scope](#safety--scope) · [Security model](#security-model)
@@ -113,6 +120,7 @@ rules carrier, workspace state, namespace map) →
 [skills catalogue](docs/skills.md) ·
 [command map](docs/command-map.md) ·
 [flow diagrams](docs/flow.md) ·
+[orchestration](docs/orchestration.md) ·
 [usage examples](docs/usage.md) ·
 [release pipeline](docs/release.md) ·
 [engineering rules](pack/.claude/rules/README.md)
@@ -121,7 +129,7 @@ rules carrier, workspace state, namespace map) →
 
 A single command that does everything loads every phase's instructions at once, creates
 constant context pressure, and hides the intent of each step. DevRites splits the
-lifecycle into 19 small public skills (`rite-*`) that each own one phase and load only
+lifecycle into 21 small public skills (`rite-*`) that each own one phase and load only
 what that phase needs — including [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md),
 the unattended orchestrator that drives the full cycle end-to-end — plus internal
 specialists (`devrites-*`) that fire on triggers.
@@ -137,21 +145,33 @@ Full rationale: [`docs/architecture.md`](docs/architecture.md).
 ## Install
 
 DevRites installs **into a project** (project-local only — it never writes to
-`~/.claude`). Two install paths are supported:
+`~/.claude`). Install with `npx` (recommended) or the `curl | bash` one-liner —
+both run the same installer and ship skills, agents, **rules**, and aliases.
 
-| Path | Ships | When to use |
-|---|---|---|
-| **A. bash installer** *(recommended)* | skills, agents, **rules**, aliases | full DevRites — any Claude Code version |
-| B. Claude Code plugin | skills, agents *(no rules)* | Claude Code 2.1+ if you want plugin-managed updates and don't need the engineering rules |
+### Installing
 
-> **Heads-up:** the Claude Code plugin manifest only ships `skills/` and
-> `agents/` — there is no plugin field for the DevRites engineering rules.
-> If you install via the plugin you'll need a follow-up `--rules-only` bash
-> run to drop the rules into `.claude/rules/` (see Option B below).
+**Fastest — `npx` (Node 18+):**
 
-### Option A: bash installer (recommended, full install)
+```bash
+# Install the full pack into the current project
+npx devrites@latest
 
-**One-liner over the network** — no `git clone` required:
+# Into a specific project, or preview first
+npx devrites@latest --target /path/to/your/project
+npx devrites@latest --dry-run
+
+# Upgrade or remove later
+npx devrites@latest update
+npx devrites@latest uninstall
+```
+
+`npx devrites` is a thin wrapper over the same installer below — the pack is bundled in the
+package, so the install runs **offline** and is **pinned** to the version you request
+(`@latest`, `@1.18.0`, …). It accepts every flag the bash installer does and is still
+project-local (it never writes to `~/.claude`). Requires `bash` — built in on macOS/Linux;
+on Windows run it inside Git Bash or WSL, or use the `curl | bash` one-liner below.
+
+**One-liner over the network** — no `git clone` or Node required:
 
 ```bash
 # Install latest release into the current directory
@@ -188,47 +208,13 @@ Common flags:
 | `--force` | Overwrite existing non-DevRites files |
 | `--no-rules` | Skip the engineering rules |
 | `--no-agents` | Skip the review subagents |
-| `--rules-only` | Install only the engineering rules — pair with Option B below |
+| `--rules-only` | Install only the engineering rules |
 | `--short-aliases=all` | Add `/define`, `/build`, `/prove`, `/seal` short aliases (off by default) |
 
 Every installed file is recorded in `.claude/devrites.manifest` (with the installed
 version and the original install flags in the header). `./uninstall.sh` removes
 exactly those files (and prunes empty dirs) — your feature data in
 `.devrites/work/` and `.devrites/ACTIVE` is preserved.
-
-### Option B: Claude Code plugin (partial — skills + agents only)
-
-```bash
-claude plugin marketplace add ViktorsBaikers/DevRites
-claude plugin install devrites@devrites-marketplace
-```
-
-The plugin runtime places **skills + agents** in their canonical Claude Code
-locations and lets you manage updates with `claude plugin update devrites`.
-Uninstall with `claude plugin uninstall devrites`.
-
-**The plugin does not install the DevRites engineering rules.** The Claude
-Code plugin manifest has no `rules` field — `core.md`, `afk-hitl.md`,
-`coding-style.md`, `testing.md`, `security.md`, and the rest of
-`.claude/rules/` won't be present. Many skills (`/rite-build`, `/rite-prove`,
-`/rite-polish`, …) cite those rules at runtime and degrade noticeably without
-them.
-
-To add the rules after a plugin install, run the bash installer in
-`--rules-only` mode:
-
-```bash
-# Drop only the engineering rules into the current project's .claude/rules/
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash -s -- --rules-only
-
-# Or target a specific project
-curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash -s -- --target /path/to/your/project --rules-only
-```
-
-This writes nothing outside `.claude/rules/` and records the rule files in
-`.claude/devrites.manifest`. Running `./uninstall.sh` later removes only
-what's in the manifest (just the rules in this case) — the plugin's own
-skills + agents are managed by `claude plugin uninstall devrites`.
 
 ### Upgrading an existing install
 
@@ -296,7 +282,7 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **28 skills total** — 19 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 15 rule files load on demand.
+The pack ships **36 skills total** — 24 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library (scripts the workflow skills run, not a command). **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 22 rule files load on demand.
 
 **Two invocation forms.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
@@ -313,15 +299,17 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 
 ### Full skill + agent inventory
 
-**Public `rite-*` skills (19)** — slash-command surface:
+**Public `rite-*` skills (22)** — slash-command surface:
 
 | Group | Skills |
 |---|---|
 | Lifecycle (8) | `rite-spec` · `rite-define` · `rite-build` · `rite-prove` · `rite-polish` · `rite-review` · `rite-seal` · `rite-ship` |
+| On-ramp (optional) | `rite-adopt` — onboard an existing codebase: reverse-derive `spec.md`, seed the conventions ledger + propose project principles, then hand off to the lifecycle |
 | Strategic (optional) | `rite-temper` — strategic spec review between spec and define; mandatory in `rite-autocomplete` |
 | Engineering (every feature) | `rite-vet` — engineering plan review between define and build; depth scales to stakes, never skipped; always in `rite-autocomplete` |
 | Resume / replan | `rite-resolve` · `rite-plan` |
-| Utility | `rite-status` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
+| Utility | `rite-status` · `rite-doctor` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
+| Learning (optional) | `rite-learn` — cross-feature learning loop: mine shipped features for recurring mistakes + dismissed-finding classes, propose project-local lessons into `.devrites/learnings.md`, and promote recurring invariants to `.devrites/principles.md` |
 | Menu | `rite` |
 
 **Internal `devrites-*` specialists (9)** — model-invoked, hidden from menu:
@@ -331,13 +319,19 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 `devrites-debug-recovery` · `devrites-api-interface` ·
 `devrites-audit` (axes: `security` · `perf` · `simplify`).
 
-**Review agents (10)** — fresh-context reviewers under `.claude/agents/`:
+**Review agents (12)** — fresh-context reviewers under `.claude/agents/`:
 
 `devrites-strategy-reviewer` (pre-plan, via `/rite-temper`) ·
 `devrites-plan-reviewer` (pre-build, via `/rite-vet`) · `devrites-spec-reviewer` ·
 `devrites-code-reviewer` · `devrites-test-analyst` · `devrites-frontend-reviewer` ·
 `devrites-security-auditor` · `devrites-performance-reviewer` ·
-`devrites-doubt-reviewer` · `devrites-simplifier-reviewer`.
+`devrites-devex-reviewer` (developer-facing surface, predict at `/rite-vet` + measure-the-boomerang at `/rite-seal`) ·
+`devrites-doubt-reviewer` · `devrites-simplifier-reviewer` ·
+`devrites-forge-judge` (build-time, via `/rite-build` — scores competing candidate builds on a `Forge: yes` slice, picks the winner).
+
+**Cross-feature analyst (1)** — fresh-context, read-only, scope is the archive not a diff:
+
+`devrites-retrospector` — dispatched at `/rite-ship` close (cadence-gated) to mine shipped features for recurring patterns + trends and **draft** graduation candidates for `/rite-learn`; proposes, never imposes.
 
 **Executor agent (1)** — fresh-context, **write-capable** writer under `.claude/agents/`:
 
@@ -443,15 +437,15 @@ browser-harness, backend-only, polish modes, zoom-out, mid-flight handoff):
 ## Engineering rules
 
 DevRites ships its own stack-agnostic engineering rules and installs them to
-`.claude/rules/` — 16 rule files plus a README index. They're **common** by design
-(no language assumptions); a project's own conventions always win where they exist.
-Skip them with `--no-rules`. Loading model: each `rite-*` skill Reads
-`.claude/rules/core.md` as its first step; the other 15 rule files load on
-demand via `Read` from the skill body that needs them.
+`.claude/rules/` — 23 rule files plus a README index. They're **common** by design
+(no language assumptions); a project's own conventions always win where they exist, and a
+project's own **principles** (`.devrites/principles.md`) outrank both. Skip them with
+`--no-rules`. Loading model: each `rite-*` skill Reads `.claude/rules/core.md` as its first
+step; the other 22 rule files load on demand via `Read` from the skill body that needs them.
 
 | Always-on | On-demand |
 |---|---|
-| `core.md` | `coding-style.md` · `error-handling.md` · `testing.md` · `code-review.md` · `security.md` · `performance.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `anti-patterns.md` |
+| `core.md` | `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `anti-patterns.md` · `tooling.md` |
 
 Full index with phase mapping: [`pack/.claude/rules/README.md`](pack/.claude/rules/README.md);
 diagram: [`docs/flow.md` § Engineering-rules loading](docs/flow.md#6-engineering-rules-carrier).
@@ -496,7 +490,7 @@ real UI state, and **prove both layers** (contract tests + browser proof).
 
 ```
 devrites/
-  .claude-plugin/      # plugin.json + marketplace.json (claude plugin install path)
+  bin/                 # devrites.mjs — npx CLI entry point (wraps install.sh)
   .github/             # workflows/ (ci, release, dependabot-auto-merge) + dependabot.yml
   .husky/              # commit-msg hook (Conventional Commits via commitlint)
   .releaserc.json      # semantic-release config (CHANGELOG, version sync, tarball, GitHub Release)
@@ -505,9 +499,9 @@ devrites/
                        # grade-feature · run-outcome-evals · devrites-detect · check-no-global-writes
                        # sync-version · build-release-tarball
   mcp/                 # devrites-mcp.mjs — MCP stdio server over the devrites CLI
-  pack/.claude/        # skills/  28 skills — 19 public + 9 model-invoked    ─┐
-                       # agents/  10 reviewers + 1 writer (slice-wright)       ├─ the pack
-                       # rules/   16 rule files + README index                 ┘
+  pack/.claude/        # skills/  36 skills — 24 public + 12 internal          ─┐
+                       # agents/  13 read-only + 1 writer (slice-wright)         ├─ the pack
+                       # rules/   23 rule files + README index                   ┘
   evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures
   docs/                # architecture · skills · command-map · usage · flow · release · cli-mcp
     internal/          # research, development notes (gitignored)
@@ -543,7 +537,7 @@ written by the installer (cf. CVE-2026-33068).
 
 - **Changelog:** [`CHANGELOG.md`](CHANGELOG.md) — Keep-a-Changelog + SemVer, regenerated by semantic-release on every release.
 - **Code of conduct:** [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) (Contributor Covenant 2.1).
-- **Code owners:** [`CODEOWNERS`](CODEOWNERS) — review required on `pack/`, `scripts/`, `install.sh`, `uninstall.sh`, `.claude-plugin/`.
+- **Code owners:** [`CODEOWNERS`](CODEOWNERS) — review required on `pack/`, `scripts/`, `install.sh`, `uninstall.sh`, `bin/`.
 - **Notices:** [`NOTICE.md`](NOTICE.md).
 - **CI:** GitHub Actions runs `scripts/validate.sh`, install/uninstall smoke, fixture install, commitlint, and the eval suite on every PR.
 - **Commits:** Conventional Commits enforced via husky + commitlint.
@@ -552,7 +546,7 @@ written by the installer (cf. CVE-2026-33068).
 ## License
 
 **Free to use, with approval gating redistribution.** Personal use and *listing this
-repository in plugin marketplaces* are permitted without approval. Any other use —
+repository in package registries or plugin marketplaces* are permitted without approval. Any other use —
 distributing it, distributing modified versions, mirroring as a fork, or commercial /
 organizational use — requires **approval on request** (ask via
 [the repo](https://github.com/ViktorsBaikers/DevRites)). Source-available. See

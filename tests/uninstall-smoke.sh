@@ -22,7 +22,17 @@ bash "$ROOT/uninstall.sh" --target "$T" --dry-run >/dev/null 2>&1
 # real uninstall
 bash "$ROOT/uninstall.sh" --target "$T" >/dev/null 2>&1 || no "uninstall exited non-zero"
 [ -e "$T/.claude/devrites.manifest" ] && no "manifest not removed" || ok "manifest removed"
-[ -d "$T/.claude" ] && no ".claude not pruned (should be empty/gone)" || ok ".claude pruned"
+# .claude is pruned of all manifest-managed DevRites content. The seeded
+# settings.json is intentionally NOT manifested (install.sh seeds it once and
+# preserves it on uninstall/update so the user's hooks survive), so tolerate it
+# as the only legitimate survivor — anything else left is a prune leak.
+if [ -d "$T/.claude" ]; then
+  leftover="$(find "$T/.claude" -mindepth 1 ! -path "$T/.claude/settings.json")"
+  [ -z "$leftover" ] && ok ".claude pruned (seeded settings.json preserved)" \
+    || no ".claude has leftover DevRites content: $leftover"
+else
+  ok ".claude fully pruned"
+fi
 # runtime state preserved
 [ -f "$T/.devrites/ACTIVE" ] && ok "ACTIVE preserved" || no "ACTIVE wrongly removed"
 [ -f "$T/.devrites/work/demo/state.md" ] && ok "work/ feature data preserved" || no "work/ wrongly removed"

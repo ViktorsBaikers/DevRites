@@ -17,7 +17,11 @@ live in `/rite-ship`, which refuses to run without a GO recorded here.
 pull these via `Read` before sealing:
 - `agents.md` — review-subagent fan-out at seal.
 - `code-review.md` — severity labels (Critical / Important / Suggestion / Nit / FYI).
+- `principles.md` — declared project invariants (`.devrites/principles.md`) are a pass/fail gate; a diff that violates one with no recorded, human-approved exception is a NO-GO.
 - `documentation.md` — record decisions in `decisions.md` before sealing.
+- `observability.md` — a runtime surface that ships blind is an Important finding.
+- `deprecation.md` — when the diff removes / migrates code, API, or data (read with the
+  risk-and-rollback step below).
 
 ## Operating rules
 - Evidence over confidence — a criterion is met only if evidence proves it.
@@ -34,6 +38,8 @@ Read `review.md` and the latest reviewer outputs.
 | `Critical == 0` and `Important > 0` and acceptance proven and drift resolved | Render interactive prompt: *"`Important > 0` open. Proceed to seal? [y/N]"*. Default **N**. If the user types `y`, GO; otherwise NO-GO with the open Important findings listed as blockers-by-policy. |
 | `Critical > 0` | **NO-GO**, no exceptions. List every Critical with `file:line` and fix direction. |
 | Any acceptance criterion unproven | **NO-GO**, list the unproven criteria. |
+| Visual Verdict `FAIL` on an acceptance-mapped UI criterion (`browser-evidence.md`) | **NO-GO** — an unmet acceptance criterion. A declared-state `FAIL` is Important (the `Important > 0` row). UI build with a `design-brief.md` but no Visual Verdict → Important evidence gap. No brief → not applicable. |
+| Diff violates a declared project principle (`.devrites/principles.md`) with no recorded, human-approved exception | **NO-GO**, list each violated principle with `file:line`. Same standing as an unproven criterion (absent / empty file → none declared → not a blocker). |
 | Unresolved drift in `drift.md` | **NO-GO**, route through `/rite-plan` first. |
 | Any `questions.md` entry with `gate: validating` and `status: open` | **NO-GO** regardless of behavior impact — an open validating gate is merge-blocking by definition. A slice marked `built (pending review)` is not done. |
 
@@ -50,12 +56,21 @@ Read `review.md` and the latest reviewer outputs.
    Then read all artifacts: `brief.md`, `spec.md`, `plan.md`, `tasks.md`, `state.md`,
    `decisions.md`, `assumptions.md`, `questions.md`, `drift.md`, `evidence.md`,
    `browser-evidence.md`, `polish-report.md`, `review.md`, `design-brief.md` (if UI),
-   `strategy.md` (if present), and the **final diff**. If a code-intelligence index (`codegraph` / `graphify`) is
-   available, use it for blast-radius checks on the final diff in step 5.
+   `devex.md` (if a developer-facing surface), `strategy.md` (if present), and the **final diff**. If a code-intelligence index is available
+   (codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods LSP / Read/Grep/Glob — see `.claude/rules/tooling.md`), use it for
+   blast-radius checks on the final diff in step 5; context7 if available can confirm a current
+   external-API signature a reviewer flags.
 2. Check **acceptance criteria one by one** — [final-evidence](reference/final-evidence.md).
-   Each gets a checkbox + the evidence that proves it (or "unproven").
+   Each gets a checkbox + the evidence that proves it (or "unproven"). Verify each criterion
+   **independently against the evidence artifact** — the slice report or the build narrative is not
+   proof; the `devrites-spec-reviewer` + `devrites-test-analyst` fan-out in step 7 is the
+   independent cross-check (a verifier that never saw the optimistic narrative).
 3. Verify tests, build/typecheck/lint, and browser proof are present and green for the
-   scope. Re-run if cheap and in doubt.
+   scope. Re-run if cheap and in doubt. **For a UI feature with a `design-brief.md`**, read the
+   `## Visual Verdict` table in `browser-evidence.md`: a `FAIL` on an **acceptance-mapped**
+   criterion is an unmet acceptance criterion (NO-GO, per the severity gate), a declared-state
+   `FAIL` is **Important**, and a UI build whose brief exists but whose verdict is **absent** is an
+   Important evidence gap (the scorecard should have been emitted at browser-proof).
 4. Check unresolved **questions** and **drift** — any open item that changes product
    behavior blocks. **Any `questions.md` entry with `gate: validating` and `status: open`
    is a NO-GO regardless of behavior impact** (an open validating gate is merge-blocking by
@@ -65,6 +80,23 @@ Read `review.md` and the latest reviewer outputs.
    `/rite-temper`), confirm its **top pre-mortem risks are mitigated** in the diff/evidence and
    that no **Non-goal / deferred item crept into the diff** (scope creep) — either is a finding
    (an unmitigated top risk or smuggled-in out-of-scope work).
+   - **Principles** (`principles.md`): score the final diff against each declared invariant in
+     `.devrites/principles.md`. A violation with no matching, human-approved exception in the
+     register is a **Critical** finding and a NO-GO; an exception that is stale (past its review
+     trigger) or wider than its stated scope is itself a finding. No file / no principles → skip.
+   - **Observability** (`observability.md`): if the diff added a runtime surface (endpoint,
+     job, integration, user flow, error path), a feature shipping with no way to debug it in
+     prod is an **Important** finding, not a pass — `evidence.md` should show telemetry observed
+     to emit (`/rite-prove` step 5b).
+   - **Developer experience** (`developer-experience.md`): if the diff ships a developer-facing
+     surface, reconcile `devex.md` (the `/rite-vet` predicted scorecard vs the `/rite-prove`
+     measured one — the boomerang). A broken public dev contract (a documented command that errors,
+     a getting-started flow that can't complete) or an unexplained measured DX regression is
+     **Important** — **Critical** on a frozen public surface (`principles.md`). No surface → skip.
+   - **Removal / migration** (`deprecation.md`): if the diff deletes or migrates code, an API,
+     or data, confirm it followed expand→contract, proved the old path unused before removing it,
+     and carries a rollback for every destructive step. A surprise deletion or a one-shot
+     breaking migration is a finding (and trips the irreversible-risk gate, `afk-hitl.md`).
 6. Check **frontend polish** if UI is involved (states, a11y, responsive, design-system,
    browser evidence).
 7. **Independent review** — seal is the final gate, not a re-run of `/rite-review`.
@@ -77,18 +109,69 @@ Read `review.md` and the latest reviewer outputs.
    If subagents are available, fan out to the chosen DevRites
    reviewers (`.claude/agents/devrites-*`) **in parallel** (one `Task` block,
    multiple tool calls; see `.claude/rules/agents.md` — "Run independent
-   reviewers in parallel"): `devrites-spec-reviewer` (does the diff implement
+   reviewers in parallel", and [`reference/parallel-dispatch.md`](reference/parallel-dispatch.md)
+   for the full dispatch shape + reconciliation procedure):
+   `devrites-spec-reviewer` (does the diff implement
    the spec?), `devrites-test-analyst` (do the tests prove acceptance?),
    `devrites-code-reviewer`, `devrites-frontend-reviewer` (UI features),
-   `devrites-security-auditor` (input/auth/data/integrations), and
-   `devrites-performance-reviewer` (perf-relevant). Give each the workspace
+   `devrites-security-auditor` (input/auth/data/integrations),
+   `devrites-performance-reviewer` (perf-relevant), and `devrites-devex-reviewer`
+   (developer-facing surface — measure mode: grade the measured DX scorecard and reconcile
+   the boomerang against the `/rite-vet` prediction). Give each the workspace
    path + diff *without the author's reasoning*. If subagents are unavailable,
    run the equivalent reviews sequentially yourself.
    The reviewer **AGENTS** here (fresh context, no author reasoning) are the seal
    GATE; `devrites-audit` is the inline single-axis pass run during build/polish.
    The two paths are intentional, not divergent — the inline audit catches issues
    early; the fresh-context agents are the independent gate before ship.
-8. Decide GO / NO-GO — [go-no-go](reference/go-no-go.md) — and write `seal.md`.
+   **Footprint:** for each reviewer you dispatch here, append a record —
+   `bash "$FP" log <slug> reviewer <name>` (resolve `$FP` to
+   `.claude/skills/devrites-lib/scripts/footprint.sh` as in `/rite-build`) — so the seal can
+   report the run's fan-out.
+7a. **Reconcile findings — confidence over volume.** Band each reviewer finding by confidence
+   (1–10); a low-confidence (≤4) finding that can't be verified against the diff is **suppressed**
+   to a `Suppressed (low-confidence): n` line, not a blocker. Every Critical/Important must cite
+   the `file:line` (or spec line) that proves it. Surface genuine cross-reviewer disagreement
+   **explicitly** rather than averaging it away, and don't let a pile of low-confidence nits
+   inflate the verdict — the gate is `Critical == 0` + acceptance + drift, not "few findings".
+   (A seal that fires noise teaches the next one to be ignored.)
+8. Decide GO / NO-GO — [go-no-go](reference/go-no-go.md) — and write `seal.md`. Then render the
+   **fan-out footprint** into `seal.md` and the output — deterministic run-weight (subagents
+   dispatched · slices · wall-clock), **never a token or dollar figure** (DevRites can't
+   truthfully source one):
+   ```bash
+   FP=.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] || FP="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/footprint.sh"
+   [ -f "$FP" ] || FP=pack/.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] && bash "$FP" render <slug> || true
+   ```
+   Also emit a machine-readable verdict block into `seal.md` (so `/rite-autocomplete` can gate
+   without parsing prose):
+   ```json
+   { "feature": "<slug>", "verdict": "GO | NO-GO | CONDITIONAL-GO", "criticals": 0, "important": 0,
+     "acceptance": "<proven>/<total>", "test_integrity": "ok | weakened", "mutation": "<score | n/a>",
+     "blockers": ["<one line each, empty on GO>"] }
+   ```
+9. **On GO only — record proven conventions** to the local ledger
+   (`.devrites/conventions.md`) so later slices stop re-deriving this project's idioms:
+   the durable, *evidence-proven* commands / idioms / placement / gotchas this feature
+   established. Evidence-gated like the seal itself; the band is earned, not guessed; the
+   step degrades gracefully when unavailable. Full contract + command:
+   [conventions-ledger](reference/conventions-ledger.md). (Skip entirely on NO-GO.)
+9a. **On GO only — auto-capture learnings** (`.devrites/learnings.md`). Learning is automatic, not a
+   command anyone must remember: append this feature's durable signal so the **next** feature's
+   review starts warmer — (a) any reviewer finding the gate **dismissed as intentional here** (a
+   "don't re-flag X in this project" class, tag `dismiss`); (b) a recurring correction or dead-end
+   worth not repeating (tag `note`). The review skills load this ledger **before** they fan out, so a
+   dismissed-finding class stops recurring. It is an untrusted prior — live code always overrides
+   (`.claude/rules/security.md`). Promotion of a recurring lesson to a *project rule* stays the
+   human's call (`/rite-learn` — propose, don't impose). Skip on NO-GO.
+   ```bash
+   L=.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] || L="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/learnings.sh"
+   [ -f "$L" ] || L=pack/.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] && bash "$L" add "<slug>" "<dismissed-as-intentional class or dead-end>" dismiss || true
+   ```
 
 ## `seal.md` template
 
@@ -109,8 +192,17 @@ On **GO**: write `seal.md`, set `state.md` `Next step: /rite-ship`, and tell the
 the feature is cleared to ship. Do **not** set phase `done` — `/rite-ship` marks done
 after the task is shipped and archived. The `Important > 0` interactive y/N earlier in
 the gate is the one off-ramp seal still owns; the type-GO off-ramp now lives in ship.
+For a **UI feature**, note in the hand-off that `/rite-ship` offers an optional
+**design-memory** rollup — persist this feature's proven design language into a project
+`DESIGN.md` so later features inherit it (`../rite-ship/reference/design-memory.md`).
 
 ## Output
+
+**Footer first** — render the flow ribbon by running the progress footer (`progress.sh`,
+resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); at seal
+it shows `seal ◉` with every prior phase `✓` and the slice meter at `✅ ALL BUILT`. Then
+state the verdict.
+
 State the verdict first, then the blockers (if NO-GO) or the follow-ups (if GO), then
 the path to `seal.md`. On GO the next command is `/rite-ship`; on NO-GO it is the fix
 path (`/rite-plan repair`, `/rite-build`, …).

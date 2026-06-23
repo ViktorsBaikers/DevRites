@@ -22,6 +22,8 @@ byte-identical to the matching rows below); read this file for the full set.
 | "It's faster to skip the small step." | Process shortcuts pay back later as drift, missed criteria, or unrecorded decisions. The step is the point. |
 | "I observed it pass; recording is bureaucracy." | Un-recorded pass = unproven. The next phase reads `evidence.md`, not your memory. |
 | "User clearly wants this, so I'll bypass the gate." | Gates exist for the failure modes asks miss. Honor the gate; the gate exists *because* of the ask. |
+| "The test is failing — I'll just skip it / loosen the assertion to get green." | Faking green is reward-hacking, not progress. Never delete / skip / `xfail` / `.only` / loosen a failing test — a red test means fix the code or agree the change. A weakened test is a Critical finding (`test-integrity.sh`). |
+| "This project principle doesn't really apply to my case." | A declared invariant (`.devrites/principles.md`) is not advisory. Either it genuinely needs relaxing — record a scoped, dated exception a human approves — or it applies and the change is wrong. Silently routing around a principle is the defect the gate exists to catch (`principles.md`). |
 
 ## Pack-wide red flags
 
@@ -31,9 +33,11 @@ These show up at any phase and are equally damning regardless:
 - A finding / decision / assumption recorded only in chat, not in the workspace files (it dies on `/clear`).
 - Catching the broadest possible error and continuing past it.
 - A test that asserts the implementation, not the behavior.
+- A failing test deleted, skipped, `xfail`-ed, `.only`-narrowed, or loosened to make the suite pass.
 - Commenting out code instead of deleting it.
 - A `// TODO` left in shipped code.
 - Adding a dependency or a second design system without rationale in `decisions.md`.
+- A change that violates a declared project principle (`.devrites/principles.md`) with no recorded, human-approved exception.
 - "I'll fix it in a follow-up PR" with no follow-up actually opened.
 
 ## Where this gets loaded
@@ -44,3 +48,12 @@ from the per-phase reference file), then lists only the **phase-specific**
 rationalizations + red flags that don't fit here. When the agent is
 reluctant, it reads the phase file first, then this file if the reluctance
 is broader than the phase.
+
+## These rows are graded, not just asserted
+
+A row here is a prediction: *the agent will reach for this excuse, so resist it.* For a
+gating rite, that prediction is turned into a graded scenario — a behavioral eval under
+`evals/behavioral/<skill>.json` pairs the excuse with a pressure prompt and checks the
+skill holds the line instead of rationalizing past it. When you add or sharpen a row for a
+gating skill, add or update the matching behavioral eval so the discipline is tested, not
+just documented (the repo's `scripts/run-behavioral-evals.sh` shape-gates them in CI).

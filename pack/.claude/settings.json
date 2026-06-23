@@ -1,0 +1,53 @@
+{
+  "$comment": "DevRites hooks — auto-approve the read-only orientation/gate scripts (no more per-run permission prompts), inject the active feature's orientation at session start + a live cursor each turn, arm the A1 pre-block guard on Edit/Write, drop a fail-on-red sentinel on test/build Bash output (devrites-redwatch.sh), and refuse to end a turn while the workspace is provably inconsistent (devrites-stop-gate.sh, Stop). All new gates are OBSERVE-only by default (they log but never block); enable enforcement per gate: DEVRITES_A1_HOOK=enforce (or a .a1-enforce file), DEVRITES_STOP_GATE=enforce — each only after its log confirms no false positives. The wright-scope and reviewer-readonly guards are wired from subagent frontmatter, not here. The bash installer SEEDS this file only when .claude/settings.json is absent; it is never overwritten on update, so your own settings are safe to add here. Plugin installs get the same hooks via pack/.claude/hooks/hooks.json instead.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-allow.sh\"" }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-a1-guard.sh\"" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-redwatch.sh\"" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-stop-gate.sh\"" }
+        ]
+      },
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-refresh-indexes.sh\"" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-cursor.sh\"" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-orient.sh\"" }
+        ]
+      }
+    ]
+  }
+}

@@ -17,13 +17,20 @@ before a plan, spec, or code exists.
   can fix the premise.
 - **Highest-value question first** — order by how much the answer changes the build. A
   question that moves the data model or acceptance criteria beats a cosmetic one.
-- **Structured options** when the space is enumerable:
+- **Impact-priority + bounded blocking.** Order unknowns **scope > security/privacy > UX >
+  technical**, and cap **blocking** questions at **≤3** per pass — ask the few that actually gate
+  the spec; **default-and-record** the rest in `assumptions.md` (best-guess + why). A reversible
+  detail never earns a blocking question.
+- **Structured options** when the space is enumerable — present them as the standard ranked
+  **option set** (`rules/afk-hitl.md` → "Option set"): recommended **first**, labelled
+  `(Recommended)`, each with a dimension-tagged rationale (`logic · infra · business ·
+  architecture`, + `security`/`UX`/`risk` when in scope), plus the escape hatch. Render via
+  `AskUserQuestion` when the harness has it:
   ```
-  1. <option> — <implication>
-  2. <option> — <implication>
+  1. <recommended> (Recommended) — logic: … · infra: … · business: … · architecture: …
+  2. <alternative> — <rationale + the trade-off it accepts>
   3. Something else — I'll describe it
   ```
-  Always include the escape hatch; mark your recommendation.
 
 ## Stop condition
 Stop when **any** holds — don't interrogate past the point of value:
@@ -53,6 +60,17 @@ each branch **depth-first** with the protocol above. Domain branches per area:
 If the interview isn't converging, spend **one** turn challenging the premise rather than
 refining it — *"is a form even the right answer here, or a mailto / booking link?"* A good
 reframe collapses several open branches. Use it sparingly, then resume the protocol.
+
+## /clarify mode — coverage scan of an existing spec
+When invoked to clarify a written spec (not extract intent from scratch), scan it against the fixed
+taxonomy and mark each **Clear / Partial / Missing**: Functional scope · Data model · Interaction
+(API / UI states) · Non-functional (auth / latency / scale / compliance) · Edge cases (empty /
+boundary / invalid / concurrent / failure). Then ask **≤5 prioritized questions** (impact order
+above), targeting Missing before Partial, one per turn with a best-guess attached. **Integrate each
+answer into the right spec section** as it lands — not just a Q&A log — and append a dated
+**`## Clarifications`** block to `spec.md` (Q + resolution) for durable provenance. Re-run the scan
+after answers; stop when every area is Clear or explicitly deferred, then re-score the affected
+`checklists/<domain>.md`.
 
 ## Output
 A short summary the caller can use: objective in one sentence, confirmed decisions,

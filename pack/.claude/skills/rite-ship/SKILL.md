@@ -21,8 +21,9 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 ## Operating rules
 - **Seal GO is a precondition.** No GO in `seal.md` → stop, point at `/rite-seal`.
 - **Evidence must be fresh.** If any file in `touched-files.md` changed after
-  `evidence.md` was written, the proof is stale → stop, point at `/rite-prove`
-  (see `.claude/rules/development-workflow.md`).
+  `evidence.md` was written, the proof is stale → stop, point at `/rite-prove`. Enforced
+  deterministically by `evidence-fresh.sh` in step 1 (exit 3 = STALE), not by eyeballing
+  mtimes (see `.claude/rules/development-workflow.md`).
 - **type-GO before anything irreversible.** Render the prompt verbatim and wait for
   the literal `GO`. Last safety net — render it every time, even under auto-trigger.
 - **Never delete the audit trail.** Closing *archives* the workspace; it never erases
@@ -38,18 +39,56 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
    [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
    ```
-   Then read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`. Confirm
-   the verdict is **GO** and the evidence is fresh. If not GO or evidence is stale →
-   stop with the single resume command.
+   Then read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`, and
+   `design-brief.md` (if the feature is UI — the design-memory rollup in step 2a reads it).
+   Confirm the verdict is **GO**, then run the deterministic evidence-freshness gate rather than
+   eyeballing mtimes (mirrors `/rite-seal`):
+   ```bash
+   E=.claude/skills/devrites-lib/scripts/evidence-fresh.sh
+   [ -f "$E" ] || E="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/evidence-fresh.sh"
+   [ -f "$E" ] || E=pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh
+   [ -f "$E" ] && { bash "$E"; echo "evidence-fresh rc=$?"; } || echo "(evidence-fresh gate unavailable — compare mtimes by hand)"
+   ```
+   **Exit 3 → STALE proof: STOP**, point at `/rite-prove` (a polish/review edit made after
+   `/rite-prove` invalidates the proof). Not GO → stop with the single resume command.
+1a. **Health re-check (advisory).** Run the DevRites doctor before the irreversible ladder —
+   a stale `ACTIVE` or corrupt workspace here risks shipping or closing the wrong feature.
+   Advisory: surface issues, don't block.
+   ```bash
+   D=.claude/skills/devrites-lib/scripts/doctor.sh
+   [ -f "$D" ] || D="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/doctor.sh"
+   [ -f "$D" ] || D=pack/.claude/skills/devrites-lib/scripts/doctor.sh
+   [ -f "$D" ] && { bash "$D"; echo "doctor rc=$?"; } || true
+   ```
+   If it flags the active feature, confirm you're shipping the intended slug before proceeding.
 2. Build the git plan from `git-workflow.md` + the project's own convention: the
    Conventional-Commit message(s), the target branch, and whether a tag / PR applies.
    Scope the commit to `touched-files.md`; never stage secrets or out-of-scope files.
+2a. **Design memory (optional, UI features only).** If the feature shipped UI, offer to roll
+   its *proven* design language up into a project-level `DESIGN.md` so the next feature
+   inherits the system instead of re-discovering it
+   ([reference/design-memory.md](reference/design-memory.md)). **Opt-in and confirmed** —
+   present the option set (default **skip**; persisting beyond feature scope is the user's
+   call), and on yes append `DESIGN.md` to `touched-files.md` so it ships *in this commit*.
+   Skip silently when there's no UI. Record the outcome in `ship.md`.
 3. **Render the type-GO prompt** ([reference/git-ship.md](reference/git-ship.md)) and
    wait. Only the literal `GO` proceeds; anything else cancels — record the cancel in
    `ship.md` and stop (do not retry without the user asking).
 4. On `GO`: run the git ladder — commit → push → tag / PR as applicable
    ([reference/git-ship.md](reference/git-ship.md)). Capture the commit SHA(s),
    branch, and tag/PR URL.
+4a. **When opening a PR, render a structured body** — not just the commit message:
+   **Summary** (what shipped + acceptance n/total) · **Risk & rollback** (the migration /
+   destructive / auth touches + how to revert, from `seal.md`'s risk scan) · **What to scrutinize**
+   (point reviewers at the highest-blast-radius hunks) · **Evidence** (a condensed `evidence.md` +
+   the seal's reconciled reviewer-verdict digest, linking the full `.devrites/archive/<slug>/`
+   bundle). **Delete any N/A section** — an empty Risk block is noise.
+4b. **Promote architecturally-significant decisions to ADRs.** For each `decisions.md` ADR that
+   records a *durable* architecture / interface choice (not a slice-local call), append it to a
+   persistent `docs/adr/ADR-NNN.md` — Nygard shape (Context · Decision · Status `accepted` ·
+   Consequences), **append-only**, never rewritten; supersede with a new ADR that links the old.
+   The per-feature `decisions.md` is archived with the workspace; the ADR keeps the load-bearing
+   *why* discoverable in the repo. Skip if the project keeps no `docs/adr/` and the user doesn't want one.
 5. Write `ship.md` ([reference/ship-template.md](reference/ship-template.md)): what
    shipped, SHA(s), branch, tag/PR, acceptance summary (n/total), link to `seal.md`,
    follow-ups.
@@ -58,6 +97,26 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    `bash .claude/skills/devrites-lib/scripts/close-out.sh <slug>` to archive
    `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` and clear `.devrites/ACTIVE`.
    Every `.md` is preserved in the archive.
+6a. **Cross-feature retro (automatic, cadence-gated, advisory).** The just-shipped feature is now in
+   the archive, so this is where the **cross-feature** learning loop closes on its own — the synthesis
+   that otherwise waits for a human to run `/rite-learn`. Run the cheap cadence gate first; it stays
+   silent unless a finding/drift class recurs across **>=2 shipped features** with new signal since the
+   last review (so it never fires on an early or one-off ship):
+   ```bash
+   L=.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] || L="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/learnings.sh"
+   [ -f "$L" ] || L=pack/.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] && bash "$L" nudge || true
+   ```
+   **If the nudge emits** (a recurring pattern crossed the threshold), dispatch the read-only
+   `devrites-retrospector` (`.claude/agents/`) over `.devrites/archive/` for the cross-feature
+   synthesis. Persist its digest to `.devrites/retro.md` (append a dated entry — the project-level
+   retro ledger, never rewritten) and surface the **graduation candidates** with a one-line pointer
+   to `/rite-learn`, which is where the human confirms a promotion to a rule / principle / convention.
+   **Propose, never impose:** retro **drafts**; it never auto-writes a rule or principle (a principle
+   is a gate, amended deliberately and dated — `principles.md` governance), and it never blocks the
+   ship, which has already happened. If the nudge is silent, skip — no retro this close. Then `touch
+   .devrites/.learnings-reviewed` only when the human acts on it via `/rite-learn`, not here.
 
 > **Mid-flight discipline.** When tempted to ship without a GO seal, skip the type-GO,
 > stage files outside `touched-files.md`, or delete the workspace instead of archiving
@@ -65,12 +124,15 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 > failure mode the ask misses.
 
 ## Output
+
+**Footer first** — render the flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); at ship it reads `ship ✓` across the spine. Keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Shipped: <feature>
 Commit:  <sha> on <branch>    Tag/PR: <ref | none>
 Acceptance: <n/total> proven
 Archived: .devrites/archive/<slug>/    ·    ACTIVE cleared
 ship.md:  .devrites/archive/<slug>/ship.md
+Retro:    <n graduation candidates drafted → .devrites/retro.md · promote with /rite-learn | quiet (no cross-feature signal yet)>
 ```
 If the user declined type-GO: state that nothing shipped, the seal still reads GO, and
 the resume command (`/rite-ship`).

@@ -1,7 +1,10 @@
 # Craft — build the UI
 
 With the shape decided and the system discovered, build the smallest correct UI for the
-slice. Quality is in the details and the states, not in novelty.
+slice. Quality is in the details and the states, not in novelty. If the brief names a
+supplied Figma / screenshot / image as the build target, extract to it first — type,
+spacing, color roles, layout, component behavior (`design-references.md` — *Building to a
+supplied reference*).
 
 ## Build order
 1. **Structure** — semantic markup that expresses the hierarchy from the shape note.

@@ -30,12 +30,13 @@ A **map, not an essay**. One pass should answer:
 - **Smallest sensible change-scope** — where a fix would naturally land, so the next
   step doesn't drift into a project-wide refactor.
 
-## Prefer the code-intelligence index
+## Prefer a code-intelligence index (if available)
 
-If the project has `codegraph` (`.codegraph/`) or `graphify` (`graphify-out/`), use it.
-`codegraph_context` + one `codegraph_explore` return the map in two calls — vastly
-cheaper than a file-walk and more accurate for callers/callees. Fall back to
-`Grep` + `Read` only when no index is available.
+If the project has them — `codebase-memory-mcp` (`get_architecture` / `search_graph`) first,
+cross-checked with `codegraph` (`.codegraph/`) and `graphify` (`graphify-out/`) — use them. For
+codegraph, `codegraph_context` + one `codegraph_explore` return the map in two calls — vastly
+cheaper than a file-walk and more accurate for callers/callees. Fall back to standard methods
+(LSP, then `Grep` + `Read`) when no index is available. See `.claude/rules/tooling.md`.
 
 ## Vocabulary discipline
 

@@ -21,6 +21,7 @@ if none, tell the user to run `/rite-spec <feature>`.
 **Step 0:** Read `.claude/rules/core.md` first. The other rule files load on demand;
 pull these via `Read` when the diff demands them:
 - `code-review.md` — small PRs, severity labels, tests-first review focus.
+- `principles.md` — declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
 - `testing.md` — confirm the tests prove the spec, not just pass.
 - `agents.md` — when to fan out to which review subagent.
 - `security.md` — when input / auth / data / integrations / secrets are in scope.
@@ -48,9 +49,13 @@ pull these via `Read` when the diff demands them:
    [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
    ```
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`, `evidence.md`,
-   `touched-files.md`, and the `git diff`. For "what would this change break"
-   questions, prefer `codegraph` / `graphify` over file reads — they answer
-   impact/callers in one call.
+   `touched-files.md`, `.devrites/principles.md` (if present — the binding invariants to score
+   the diff against), and the `git diff`. For "what would this change break"
+   questions, prefer a code-intelligence index if available — codebase-memory-mcp first,
+   cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob); see
+   `.claude/rules/tooling.md` — over file reads;
+   they answer impact/callers in one call. When a finding hinges on an external library's
+   current API, context7 if available can confirm the signature.
 2. **Review tests first** — do they actually prove the acceptance criteria? Missing,
    weak, or wrong tests are the first findings.
 3. **Spec ↔ Code-review split (parallel sub-agents, fresh context).** A change can pass
@@ -68,7 +73,14 @@ pull these via `Read` when the diff demands them:
      - **Code-review axis** → `devrites-code-reviewer`: "Apply your full documented
        discipline (tests-first, correctness, readability, architecture, maintainability,
        standards) on the active feature workspace + diff. Cite file:line per finding;
-       skip what tooling already enforces."
+       skip what tooling already enforces. Also flag the AI-codegen smells (silent/empty
+       catch, defensive try-catch bloat + redundant logging, single-use factory / needless
+       indirection, dependency creep where an in-repo option exists, a 100-line function
+       where 20 would do) and the silent-failure bugs (a missing value coerced to 0/''/[],
+       a dropped Result/err return, off-by-one / boundary, logic that contradicts the
+       comment/docstring/name). Per hunk, check whether working code was deleted that the
+       task did not ask to remove. Score the diff against `.devrites/principles.md` — a change
+       that breaks a declared invariant with no recorded, human-approved exception is a Critical."
    - **Do NOT merge or re-rank** their findings. Present them under separate
      `## Spec` and `## Code review` sub-sections in `review.md`. Surface contradictions
      between the axes explicitly (e.g. "Spec axis says complete, Code-review axis says
@@ -102,6 +114,23 @@ pull these via `Read` when the diff demands them:
 - **Nit** — trivial/style.
 - **FYI** — context, no action implied.
 
+**Action decoration (orthogonal to severity).** Also tag each finding with how to act on it:
+`blocking` (fix before seal), `non-blocking` (fix when convenient), or `if-minor` (fix only if the
+change is already small — a pure noise-economics lever). Only a **`blocking` Critical** gates the
+seal; a `non-blocking` / `if-minor` finding is recorded, not a stop.
+
+## Confidence + signal-to-noise
+Borrow `/rite-vet`'s discipline so review stays **trusted, not noisy** — a reviewer that posts
+18 comments per PR teaches the team to ignore every one (below ~10% false-positive rate devs
+investigate each finding; past ~30% they label the tool noisy and skip it):
+- **Confidence-band each finding** (1–10) and state the band. A low-confidence finding (≤4)
+  you can't verify against the code is **suppressed** — roll it into one `Suppressed
+  (low-confidence): n` line, never raised as Critical/Important.
+- **Verify before you escalate.** Every Critical/Important quotes the spec line or cites the
+  `file:line` that proves it — no unverified blockers.
+- **Budget the noise.** Roll up trivia ("N style nits") into a single line; tooling already
+  catches style. Review's job is correctness + spec fidelity, not a lint dump.
+
 ## Severity orientation (labels, not score)
 
 After labeling, summarize findings as `Critical / Important / Suggestion / Nit /
@@ -112,9 +141,12 @@ the labels do the work.
 > **Mid-flight discipline.** When tempted to demote a Critical, hide a finding, fix without re-verification, or wander out of scope — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 
 ## Output → `review.md`
+
+**Footer first (to chat, not into the report file)** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`). Then write the report:
 ```
 Reviewed: <slice N | feature>
 Tests: <adequate? gaps>
+Kept (≤1, specific): <one concrete decision worth protecting from later churn | omit>
 
 ## Spec   (from devrites-spec-reviewer sub-agent, verbatim)
 - <quoted spec line> — <missing / partial / wrong / scope-creep> — <where>

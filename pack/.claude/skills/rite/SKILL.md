@@ -27,6 +27,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | Verb | Equivalent shortcut | Skill |
 |---|---|---|
 | `spec [feature]` | `/rite-spec` | start a feature — investigate + write spec.md |
+| `adopt [area]` | `/rite-adopt` | onboard an existing codebase — reverse-derive spec.md + seed conventions |
 | `temper [--mode]` | `/rite-temper` | optional strategic spec review (scope mode + pre-mortem) before define |
 | `define` | `/rite-define` | turn the spec into plan + task slices |
 | `vet [--cross-model]` | `/rite-vet` | optional engineering plan review (scope · architecture · tests · perf) before build |
@@ -38,6 +39,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | `seal` | `/rite-seal` | final GO / NO-GO decision |
 | `ship` | `/rite-ship` | type-GO + commit/push/tag, then archive the task |
 | `status [slug]` | `/rite-status` | active feature, next action, evidence |
+| `doctor` | `/rite-doctor` | health check — install integrity, stale ACTIVE, orphaned gates, hook wiring |
 | `use <slug>` | (inline) | switch the active feature — re-point `.devrites/ACTIVE` |
 | `resolve <qid> "<answer>"` | `/rite-resolve` | answer a HITL gate |
 | `prototype [question]` | `/rite-prototype` | throwaway prototype |
@@ -45,6 +47,8 @@ F=.claude/skills/rite-$V/SKILL.md
 | `zoom-out` | `/rite-zoom-out` | structural map of unfamiliar code |
 | `pressure-test` | `/rite-pressure-test` | diverge → converge on a rough idea |
 | `autocomplete [idea] [--ship]` | `/rite-autocomplete` | run the whole lifecycle unattended |
+| `quick [change]` | `/rite-quick` | express lane — one small reversible change, build → prove → ship |
+| `frame [task]` | `/rite-frame` | pre-flight goal-reframe + four-failure-mode self-audit for ad-hoc / express work |
 
 The `/rite-<verb>` standalones remain user-invocable as direct shortcuts; both forms hit the same skill. Use whichever reads more naturally — the menu form (`/rite spec`) for discovery, the shortcut (`/rite-spec`) for muscle memory.
 
@@ -79,6 +83,7 @@ inline in `/rite-seal` (see its `reference/parallel-dispatch.md`).
 DevRites — disciplined senior-engineer workflow
                               menu form           direct shortcut
 SPEC          /rite spec               ≡    /rite-spec        investigate deeply → write spec.md
+ADOPT         /rite adopt              ≡    /rite-adopt       onboard existing code → reverse-derive spec.md + seed conventions
 TEMPER        /rite temper             ≡    /rite-temper      optional — strategic review: scope mode + pre-mortem, harden the spec
 PLAN          /rite define             ≡    /rite-define      turn the spec into plan + task slices + state
 VET           /rite vet                ≡    /rite-vet         optional — engineering plan review: scope · architecture · tests · perf, harden the plan
@@ -90,11 +95,18 @@ REVIEW        /rite review             ≡    /rite-review      feature-scoped m
 SEAL          /rite seal               ≡    /rite-seal        final GO / NO-GO decision (no git)
 SHIP          /rite ship               ≡    /rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
 STATUS        /rite status             ≡    /rite-status      active feature, next action, evidence, risks
+DOCTOR        /rite doctor             ≡    /rite-doctor      health check — install · stale ACTIVE · orphaned gates · hook wiring
 SWITCH        /rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 RESUME        /rite resolve ...        ≡    /rite-resolve     answer a HITL checkpoint
 AUTO          /rite autocomplete ...   ≡    /rite-autocomplete  run the whole lifecycle unattended (--ship to push)
-UTILITY       /rite prototype | handoff | zoom-out | pressure-test  (or direct /rite-* shortcuts)
+QUICK         /rite quick <change>     ≡    /rite-quick       express lane — one small reversible change (escalates if it grows)
+UTILITY       /rite frame | prototype | handoff | zoom-out | pressure-test  (or direct /rite-* shortcuts)
 ```
+
+> **Small one-off change?** A typo, copy tweak, config bump, or one-function fix → **`/rite-quick`**
+> (express lane: one contract → build → prove → ship, no full workspace). It escalates to
+> `/rite-spec` the instant the change grows past small / reversible / unambiguous. The full
+> lifecycle above is for real features — don't pay its ceremony for a one-off.
 
 ## Core operating rules (every DevRites skill enforces)
 

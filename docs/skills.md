@@ -1,8 +1,8 @@
-# All 28 skills
+# All 36 skills
 
-The pack ships **28 skills total** — 19 user-invocable `rite-*` workflow + utility skills, 9 model-invoked `devrites-*` specialists. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other rule files on demand (no carrier skill, no session-start autoload). A 29th directory — the internal `devrites-lib` library skill (`user-invocable: false`, not a command) — ships the cross-cutting scripts the workflow skills run: the read-only orientation preamble and the `readiness` / `evidence-fresh` / `acceptance` gate scripts, plus the `tick-afk` / `resolve` / `close-out` state mutators. A unified `devrites` CLI and an MCP server expose those ops to any tool (see [`cli-mcp.md`](cli-mcp.md)).
+The pack ships **36 skills total** — 24 user-invocable `rite-*` workflow + utility skills and 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library skill (`user-invocable: false`, not a command) that ships the cross-cutting scripts the workflow skills run: the read-only orientation preamble and the `readiness` / `evidence-fresh` / `acceptance` gate scripts, plus the `tick-afk` / `resolve` / `close-out` state mutators. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other 22 rule files on demand (no carrier skill, no session-start autoload). A unified `devrites` CLI and an MCP server expose the `devrites-lib` ops to any tool (see [`cli-mcp.md`](cli-mcp.md)).
 
-**Naming convention.** `rite-*` is the user-facing slash-command surface (lifecycle phases plus utilities — `rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`). `devrites-*` is internal (model-invoked, hidden from the menu) and collision-avoiding against bundled Claude Code skill names. Visibility is governed by each skill's `user-invocable:` flag; the prefix mirrors it.
+**Naming convention.** `rite-*` is the user-facing slash-command surface (lifecycle phases plus utilities — `rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`, `rite-doctor`, `rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`). `devrites-*` is internal (model-invoked, hidden from the menu) and collision-avoiding against bundled Claude Code skill names. Visibility is governed by each skill's `user-invocable:` flag; the prefix mirrors it.
 
 ---
 
@@ -54,8 +54,13 @@ Every user-invocable skill responds to **both** `/rite <verb>` (menu form — ty
 | `/rite prototype` | `/rite-prototype` | utility | Throwaway code that answers ONE design question before committing — routes between a Logic harness (state/data model) and 2–4 radically different UI variations on one route. |
 | `/rite handoff` | `/rite-handoff` | utility | Compact the chat session into a handoff doc a fresh agent can pick up — syncs to the workspace, references existing artifacts by path. |
 | `/rite pressure-test` | `/rite-pressure-test` | utility | Diverge → converge on a rough idea before specifying. |
+| `/rite quick` | `/rite-quick` | express | Express lane for a **small, reversible, unambiguous** change — one-line contract → TDD build → scoped prove → review-lite → ship, no full artifact tree. Significance gate first: auth / migration / public-API / destructive / multi-slice / ambiguous → escalates to `/rite-spec`. |
+| `/rite frame` | `/rite-frame` | lens | Pre-flight + self-audit lens for ad-hoc work the lifecycle's gates never see — converts an imperative ask into a falsifiable success criterion + verify command (FRAME), then audits a raw diff against the four LLM coding failure modes (AUDIT). |
+| `/rite adopt` | `/rite-adopt` | onboard | Bring an EXISTING codebase under DevRites — reverse-derive a `spec.md` of current behavior + placement + architecture, and seed the conventions ledger from the idioms the code already follows. |
+| `/rite learn` | `/rite-learn` | utility | Cross-feature learning loop — mine shipped features for recurring mistakes + dismissed-finding classes, propose project-local lessons into `.devrites/learnings.md` (and graduate a recurring invariant to a project principle, human-gated). |
+| `/rite doctor` | `/rite-doctor` | diagnostic | Diagnose DevRites install + workspace health — install integrity, a stale `.devrites/ACTIVE`, a corrupt workspace, orphaned gates, broken hook wiring. |
 
-The 9 model-invoked internal specialists (hidden from the menu): `devrites-interview`, `-source-driven`, `-doubt`, `-ux-shape`, `-frontend-craft`, `-browser-proof`, `-debug-recovery`, `-api-interface`, `-audit` (security / perf / simplify). The `/rite` menu carries the routing, the five user-invocable utilities all use the `rite-*` prefix (`rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`, `rite-autocomplete`), and the `/rite-polish` phases live as references inside the same skill rather than as `rite-polish-code` / `rite-polish-ui`. Triggers and interactions are documented in [`command-map.md`](command-map.md); diagrams in [`flow.md`](flow.md).
+The 11 model-invoked internal specialists (hidden from the menu): `devrites-interview`, `-source-driven`, `-doubt`, `-ux-shape`, `-frontend-craft`, `-prose-craft`, `-browser-proof`, `-debug-recovery`, `-api-interface`, `-audit` (security / perf / simplify), `-refresh-indexes`. Plus the `devrites-lib` library skill (scripts, not a command). The `/rite` menu carries the routing, the user-invocable utilities all use the `rite-*` prefix (`rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`, `rite-doctor`, `rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`, `rite-autocomplete`), and the `/rite-polish` phases live as references inside the same skill rather than as `rite-polish-code` / `rite-polish-ui`. Triggers and interactions are documented in [`command-map.md`](command-map.md); diagrams in [`flow.md`](flow.md).
 
 ---
 
@@ -68,6 +73,15 @@ The 9 model-invoked internal specialists (hidden from the menu): `devrites-inter
 | [`rite`](../pack/.claude/skills/rite/SKILL.md) | Compact menu + active-feature status + suggested next command. Does not run a workflow. | You type `/rite`, ask "what DevRites commands exist", or "where am I". |
 | [`rite-status`](../pack/.claude/skills/rite-status/SKILL.md) | Read-only report: phase, run mode (AFK/HITL), status, active slice, next action, evidence, open questions by gate, drift, risks. | You ask "where am I", "what's the status", "what's next". |
 | [`rite-resolve`](../pack/.claude/skills/rite-resolve/SKILL.md) | Answer / drop / batch-resolve open `questions.md` entries; clears `state.md` `Awaiting human` and resumes the workflow. | A HITL checkpoint is open or AFK left blocking questions; you type `/rite-resolve <qid> "<answer>"`. |
+| [`rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | Diagnose DevRites install + workspace health — install integrity, stale `.devrites/ACTIVE`, corrupt workspace, orphaned gates, broken hook wiring. Read-only report. | "rite doctor", "is DevRites healthy", "why isn't the workflow picking up my feature". |
+
+### Express & ad-hoc — small or unguarded work
+
+| Skill | What It Does | Use When |
+|---|---|---|
+| [`rite-quick`](../pack/.claude/skills/rite-quick/SKILL.md) | Express lane for a **small, reversible, unambiguous** change — one-line contract → TDD build → scoped prove → review-lite → ship, collapsing the full lifecycle into one pass. Significance gate first: auth / migration / public-API / destructive / multi-slice / ambiguous **escalates to `/rite-spec`**. | "quick fix", "small change", "tiny tweak", "just do X" on a low-risk change. |
+| [`rite-frame`](../pack/.claude/skills/rite-frame/SKILL.md) | Pre-flight + self-audit lens for ad-hoc work the lifecycle gates never see — FRAME converts an imperative ask into a falsifiable success criterion + verify command before code; AUDIT checks a raw diff against the four LLM coding failure modes (silent assumption / overcomplication / out-of-scope edit / unverifiable goal). | Top of `/rite-quick`, before a plain "just do X" edit, or to self-review a raw diff. |
+| [`rite-adopt`](../pack/.claude/skills/rite-adopt/SKILL.md) | Bring an EXISTING codebase under DevRites — reverse-derive a `spec.md` of current behavior + placement + architecture, and seed the conventions ledger from the idioms the code already follows, then hand off to the lifecycle. | "adopt this project", "onboard this codebase", "we already have code", "reverse-engineer a spec from the existing app". |
 
 ### Spec — Understand the ask before any code
 
@@ -101,17 +115,18 @@ The 9 model-invoked internal specialists (hidden from the menu): `devrites-inter
 
 | Skill | What It Does | Use When |
 |---|---|---|
-| [`rite-build`](../pack/.claude/skills/rite-build/SKILL.md) | Orchestrates **exactly one** vertical slice: pre-flight gates, then dispatches a fresh-context [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) for the build core, then doubts / gates / records with evidence. | A plan exists and the next slice is ready. |
+| [`rite-build`](../pack/.claude/skills/rite-build/SKILL.md) | Orchestrates **exactly one** vertical slice: pre-flight gates, then dispatches a fresh-context [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) for the build core, then doubts / gates / records with evidence. A slice `/rite-vet` flagged `Forge: yes` competes K=2–3 isolated candidate builds judged by [`devrites-forge-judge`](../pack/.claude/agents/devrites-forge-judge.md), landing one winner (`forge-report.md`). | A plan exists and the next slice is ready. |
 | [`devrites-source-driven`](../pack/.claude/skills/devrites-source-driven/SKILL.md) | Consult official docs / source before relying on framework behavior; record the source. | API, config, or framework behavior is assumed rather than known. |
 | [`devrites-api-interface`](../pack/.claude/skills/devrites-api-interface/SKILL.md) | Design stable API / interface contracts — REST/GraphQL, module boundaries, type contracts, FE/BE split. | A slice crosses a boundary or defines a public interface. |
 | [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | Reproduce → ranked hypotheses → instrument → fix in scope → regression-test. Stops guess-and-retry. | Tests, builds, or runtime checks fail. |
+| [`devrites-refresh-indexes`](../pack/.claude/skills/devrites-refresh-indexes/SKILL.md) | Keep the optional code-intelligence indexes (codebase-memory-mcp, codegraph, graphify) current so the next structural lookup reads live code, not a stale graph. The Stop hook runs it automatically; this skill is the manual force. | Index looks stale, after a large change before a structural query, or "reindex" / "the graph is stale". |
 
 ### Prove — Real evidence, including the browser
 
 | Skill | What It Does | Use When |
 |---|---|---|
 | [`rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | Tests + build + runtime + browser evidence for the current scope. | All slices built; ready for full verification. |
-| [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | Browser proof ladder: browser-harness → Chrome DevTools MCP → `/run`+`/verify` → project E2E → manual. | Scope touches UI. |
+| [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | Browser proof ladder: browser-harness → Chrome DevTools MCP → `/run`+`/verify` → project E2E → manual. Auto-emits the structured **Visual Verdict** (per-criterion PASS/FAIL vs `design-brief.md`) for UI slices — consumed by `devrites-frontend-reviewer` and gated at `/rite-seal`. | Scope touches UI. |
 
 ### Polish — Normalize, then ship-quality detail pass
 
@@ -119,6 +134,7 @@ The 9 model-invoked internal specialists (hidden from the menu): `devrites-inter
 |---|---|---|
 | [`rite-polish`](../pack/.claude/skills/rite-polish/SKILL.md) | Orchestrator. Always runs code polish (`reference/code.md`); detects UI scope and runs UI normalize + polish (`reference/ui.md`) when needed. Accepts mode tokens (`bolder`, `quieter`, `distill`, `harden`, `normalize-only`). | All slices proven; ready to finish. |
 | [`devrites-frontend-craft`](../pack/.claude/skills/devrites-frontend-craft/SKILL.md) | Senior frontend craft — register, shape-before-code, all states, design system, anti-AI-slop, Core Web Vitals + WCAG 2.2. | A slice touches UI. |
+| [`devrites-prose-craft`](../pack/.claude/skills/devrites-prose-craft/SKILL.md) | Human-voice writing for artifacts + replies — strips the LLM tells (filler openers, false contrasts, fake profundity, em-dash tics, hedging) while keeping precise lists, exact terms, and spec structure. The catch pass in `/rite-polish` Phase 1. | A phase writes prose (spec / plan / decisions / review / seal / commit / PR bodies) or a user-facing reply. |
 
 ### Review — Adversarial, scoped to the feature
 
@@ -148,31 +164,40 @@ The 9 model-invoked internal specialists (hidden from the menu): `devrites-inter
 | [`rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | Map an unfamiliar area — modules, callers, callees, decisions — in the project's domain glossary. | You say "zoom out", "I don't know this area", "map this area", "bigger picture". |
 | [`rite-prototype`](../pack/.claude/skills/rite-prototype/SKILL.md) | Throwaway code answering ONE design question — logic harness OR 2–4 UI variations on one route. | "Prototype this", "let me play with it", "try a few designs", question is undecidable on paper. |
 | [`rite-handoff`](../pack/.claude/skills/rite-handoff/SKILL.md) | Compact chat session → handoff doc. References existing `.devrites/work/<slug>/` artifacts by path. | "Handoff", "summarize this session", before `/clear`, fresh agent will continue. |
+| [`rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | Cross-feature learning loop — mine shipped features for recurring mistakes + dismissed-finding classes (`learnings.sh mine`), propose project-local lessons into `.devrites/learnings.md` (loaded by the review skills before a fan-out). | After several features ship; "what have we learned", "harvest lessons", "why does this keep coming up". |
 
 ### Foundation — Engineering rules
 
 | Skill | What It Does | Use When |
 |---|---|---|
-| (engineering rules) | Live at `.claude/rules/` post-install — each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0); the other 15 rule files (`coding-style.md`, `error-handling.md`, `testing.md`, `code-review.md`, `security.md`, `performance.md`, `patterns.md`, `git-workflow.md`, `hooks.md`, `documentation.md`, `development-workflow.md`, `agents.md`, `context-hygiene.md`, `afk-hitl.md`, `anti-patterns.md`) load on demand per skill body. No carrier skill, no session-start autoload. | n/a — step-0 core / on-demand by path. |
+| (engineering rules) | Live at `.claude/rules/` post-install — each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0); the other 22 rule files (`coding-style.md`, `prose-style.md`, `error-handling.md`, `testing.md`, `spec-grammar.md`, `code-review.md`, `principles.md`, `security.md`, `performance.md`, `observability.md`, `developer-experience.md`, `patterns.md`, `git-workflow.md`, `hooks.md`, `documentation.md`, `development-workflow.md`, `deprecation.md`, `agents.md`, `context-hygiene.md`, `anti-patterns.md`, `afk-hitl.md`, `tooling.md`) load on demand per skill body. No carrier skill, no session-start autoload. | n/a — step-0 core / on-demand by path. |
 
 ---
 
 ## Review agents — Fresh-context reviewers
 
-Spawned by `/rite-review`, `/rite-seal` (post-build), `/rite-temper` (pre-plan), and `/rite-vet` (pre-build) for independent judgment. Read-only; given only the artifact + rubric, never the author's reasoning.
+Spawned by `/rite-review`, `/rite-seal` (post-build), `/rite-temper` (pre-plan), `/rite-vet` (pre-build), and `/rite-build` (the forge judge, on a `Forge: yes` slice) for independent judgment. Read-only; given only the artifact + rubric, never the author's reasoning. **13 read-only** in all (12 reviewers + the cross-feature `devrites-retrospector`); plus the one **write-capable** `devrites-slice-wright` below.
 
 | Agent | Purpose |
 |---|---|
 | [`devrites-strategy-reviewer`](../pack/.claude/agents/devrites-strategy-reviewer.md) | **Pre-plan** spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention) — via `/rite-temper`, not the seal fan-out. |
 | [`devrites-plan-reviewer`](../pack/.claude/agents/devrites-plan-reviewer.md) | **Pre-build** plan-vs-rubric engineering review (architecture / scope-reuse / plan code-quality / test-coverage design / performance / reversibility / failure-mode coverage), confidence-banded with a quote-the-source verification gate — via `/rite-vet`, not the seal fan-out. |
+| [`devrites-forge-judge`](../pack/.claude/agents/devrites-forge-judge.md) | **Build-time** comparative judge of K=2–3 competing candidate builds of one slice (acceptance / test strength / principle fit / simplicity / reuse / anti-slop) — via `/rite-build` on a `Forge: yes` slice; picks the single winner to land, names grafts. |
 | [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | Does the diff implement the spec? Missing / partial / wrong criteria; scope creep. |
 | [`devrites-code-reviewer`](../pack/.claude/agents/devrites-code-reviewer.md) | Correctness / readability / architecture / maintainability. |
 | [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | Do the tests actually prove the acceptance criteria? |
 | [`devrites-frontend-reviewer`](../pack/.claude/agents/devrites-frontend-reviewer.md) | UX, a11y, responsive, design-system, anti-AI-slop. |
 | [`devrites-security-auditor`](../pack/.claude/agents/devrites-security-auditor.md) | OWASP Top 10, trust boundary, secrets, deps. |
 | [`devrites-performance-reviewer`](../pack/.claude/agents/devrites-performance-reviewer.md) | N+1s, hot paths, payload size. |
+| [`devrites-devex-reviewer`](../pack/.claude/agents/devrites-devex-reviewer.md) | Developer-experience scorecard + the predict-vs-measure boomerang (TTHW, getting-started, error-message quality, ergonomics, docs) — predicts at `/rite-vet`, measures + reconciles at `/rite-seal`, when a developer-facing surface (API / CLI / SDK / webhook / config / errors / getting-started) is in scope. |
 | [`devrites-doubt-reviewer`](../pack/.claude/agents/devrites-doubt-reviewer.md) | Adversarial check of a single claim/decision. |
 | [`devrites-simplifier-reviewer`](../pack/.claude/agents/devrites-simplifier-reviewer.md) | Independent simplification judgment (called by `devrites-audit simplify`). |
+
+**Cross-feature analyst** (read-only, scope is the archive not a diff):
+
+| Agent | Purpose |
+|---|---|
+| [`devrites-retrospector`](../pack/.claude/agents/devrites-retrospector.md) | Mine the shipped `.devrites/archive/<slug>/` workspaces for recurring patterns + trends (repeated review findings, recurring drift, dead-ends, GO/NO-GO + rework signal) and **draft** graduation candidates for `/rite-learn`. Proposes, never imposes. Dispatched at `/rite-ship` close, cadence-gated. |
 
 Seal fan-out diagram: [`flow.md` § /rite-seal fan-out](flow.md#4-rite-seal-fan-out).
 

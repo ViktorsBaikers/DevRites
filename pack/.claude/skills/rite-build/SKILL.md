@@ -24,6 +24,7 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 - `error-handling.md` — fail fast, no silent catches, fail closed.
 - `testing.md` — pyramid, behaviour over implementation, see-it-fail-first.
 - `patterns.md` — composition over inheritance, avoid premature abstraction.
+- `principles.md` — the project invariants (`.devrites/principles.md`) the slice must honor; the wright reads them as **binding**, not priors.
 - `security.md` — when the slice touches user input, auth, data, or external integrations.
 
 ## Operating rules
@@ -32,15 +33,31 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   drive-by refactors.
 - Surface material assumptions; ask before adding dependencies or a second design
   system. The [Spec Drift Guard](reference/spec-drift-guard.md) is active throughout.
-- **Avoid AI slop while writing** (canonical list in
-  `rite-polish/reference/anti-ai-slop.md`). `devrites-slice-wright` enforces this **at the
-  source** — its anti-slop charter is the same list: no over-defensive null/length checks, no
-  blanket `catch`es that swallow errors, no useless wrappers, no over-engineered abstractions
-  before two real callers, no generic AI naming, no tutorial-style comments, **don't go beyond
-  the spec**, **reuse before you write**
-  (`devrites-frontend-craft/reference/reuse-first.md`). It writes the code the *project* would
-  write, in its idiom; you verify the charter held on return. Polish catches what slips; build
-  prevents.
+- **Avoid AI slop while writing.** `devrites-slice-wright` enforces the anti-slop charter **at
+  the source** — the canonical do-not list is `rite-polish/reference/anti-ai-slop.md` (the
+  wright reads it; don't restate it here). It writes the code the *project* would write, in its
+  idiom, reusing before building; **you verify the charter held on return** — you do not re-list
+  it and you do not fix slop by editing source. Polish catches what slips; build prevents.
+  The **prose you write yourself** — `evidence.md`, `decisions.md`, the slice report — follows
+  the human-voice charter (`.claude/rules/prose-style.md`; depth in `devrites-prose-craft`): no
+  filler openers, no marketing adjectives, exact commands and identifiers kept verbatim.
+- **Honor declared project principles.** The wright reads `.devrites/principles.md` and treats
+  each invariant as **binding** (not a prior to weigh like a convention) — a slice it cannot build
+  without breaking one is an **Escalation**, not a silent violation. On return **you verify no
+  principle was broken**; a fresh violation is handled like any irreversible-risk item — a
+  human-approved, scoped exception in the register or a stop, never folded into the slice. No
+  `.devrites/principles.md` → none declared → nothing to honor.
+- **You never edit source — the wright is the only writer of code + tests.** You write only
+  `.devrites/` bookkeeping. On any red gate, doubt finding, or coverage gap your only remedies
+  are **continue the same wright once** (it fixes in its own context) or **stop + escalate** —
+  never patch the code yourself. The `reconcile.sh` gate (step 6) enforces this by exit code:
+  any source file changed outside the wright's claimed set is a hard STOP.
+- **A `Forge: yes` slice competes candidates — one author still lands.** When `/rite-vet`
+  flagged the slice a genuine architecture fork, step 3 runs K=2–3 candidate wrights in
+  **isolated worktrees** and lands exactly one winner's diff; the single-writer invariant holds
+  because no tree ever has two authors and only the winner reaches the working tree. You still
+  never edit source, and reconcile runs against the winner's claimed set. The default slice is
+  single-path — forge is the rare exception ([`reference/forge.md`](reference/forge.md)).
 
 ## Workflow ([one-slice-cycle](reference/one-slice-cycle.md))
 0. **Rules + AFK + readiness check.** Read `.claude/rules/core.md` first. Then **run the
@@ -90,25 +107,60 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
     write the `Awaiting human` block to `state.md`, set `Status: awaiting_human`, run
     the `notify:` hook if `.devrites/AFK` defines one, then **STOP**. Resume happens
     when the user runs `/rite-resolve <qid> "<answer>"`.
-3. **Dispatch the build core to `devrites-slice-wright`** — one `Task` call, fresh context.
-   Assemble the slice contract and send it per
+3. **Snapshot the tree, then dispatch the build core to `devrites-slice-wright`** — one `Task`
+   call, fresh context. **First**, capture the pre-dispatch tree so the reconcile gate (step 6)
+   can prove you never touched source — run this immediately before the `Task` call:
+   ```bash
+   RC=.claude/skills/devrites-lib/scripts/reconcile.sh
+   [ -f "$RC" ] || RC="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/reconcile.sh"
+   [ -f "$RC" ] || RC=pack/.claude/skills/devrites-lib/scripts/reconcile.sh
+   [ -f "$RC" ] && bash "$RC" snapshot || echo "(reconcile gate unavailable — verify by hand that only the wright wrote source)"
+   ```
+   Then log the dispatch so the stuck-loop detector can catch a slice that keeps being
+   re-dispatched without progress (it pauses the build even under AFK):
+   ```bash
+   ST=.claude/skills/devrites-lib/scripts/stuck.sh
+   [ -f "$ST" ] || ST="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/stuck.sh"
+   [ -f "$ST" ] || ST=pack/.claude/skills/devrites-lib/scripts/stuck.sh
+   [ -f "$ST" ] && bash "$ST" log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>" || true
+   ```
+   **Forge branch — only if the selected slice is `Forge: yes`.** Instead of the single dispatch
+   below, run the competitive build per [`reference/forge.md`](reference/forge.md): K=2–3 candidate
+   wrights, each in an **isolated git worktree** on the distinct strategy `/rite-vet` named, then a
+   fresh-context [`devrites-forge-judge`](../../agents/devrites-forge-judge.md) scores them against
+   acceptance + `test-plan.md` + `.devrites/principles.md` + the anti-slop charter, and you land
+   exactly **one** winner's diff in the working tree, graft any cheap runner-up improvement by
+   continuing the winning wright once, and write `forge-report.md`. Forge returns the **same shape**
+   a single wright does (one structured artifact, for the winner), so steps 4–7 (doubt, fail-on-red,
+   reconcile against the winner's claimed set, record, stop) run **unchanged**. If you cannot give
+   the judge an objective scorecard (the slice lacks acceptance / `test-plan.md` coverage) or cannot
+   name two genuinely different strategies, the flag is stale — clear it and build single-path. The
+   single-writer invariant is intact: each candidate owns its own tree, exactly one author's diff
+   lands. Then **stop** here for this slice; the steps below are the default single-path dispatch.
+
+   Then assemble the slice contract and send it per
    [`reference/wright-dispatch.md`](reference/wright-dispatch.md): the slice goal, acceptance
    criteria, and **scope boundary**; the paths it may touch (`touched-files.md`); the context
-   paths to read (`spec.md`, `plan.md`, `decisions.md`, `assumptions.md`, plus `test-plan.md`
+   paths to read (`spec.md`, `plan.md`, `decisions.md`, `assumptions.md`, `.devrites/principles.md`
+   when present — the binding invariants the slice must honor — plus `test-plan.md`
    when present — its per-gap test requirements + regression-criticals for this slice are the
    coverage the wright must write — and `design-brief.md`
    when the slice touches UI per [frontend-trigger](reference/frontend-trigger.md)); and the
-   `.claude/rules/` files in scope. The wright **orients** on the project's idiom (preferring a
-   code-intelligence index — `codegraph` (`.codegraph/` / `codegraph_*`) or `graphify`
-   (`graphify-out/`) — for placement/callers/impact), writes the **failing test first** when
+   `.claude/rules/` files in scope. The wright **orients** on the project's idiom (using a
+   code-intelligence index **if available** — `codebase-memory-mcp` first, cross-checked with
+   `codegraph` (`.codegraph/` / `codegraph_*`) + `graphify` (`graphify-out/`), else standard
+   methods (LSP / `Read`/`Grep`/`Glob`); see `.claude/rules/tooling.md` — for
+   placement/callers/impact), writes the **failing test first** when
    behaviour changes ([tdd](reference/tdd.md)), implements the **smallest complete** version in
    the project's style (applying `devrites-frontend-craft` to `design-brief.md` for UI, and
-   `devrites-source-driven` for uncertain framework facts), runs the slice's **targeted tests**
+   `devrites-source-driven` — with context7 if available — for uncertain framework facts), runs the slice's **targeted tests**
    (plus typecheck / lint / build where the project has them), and returns a structured artifact
    — **code + tests only; it does not write the workspace files.** If the slice is UI but no `design-brief.md` exists (e.g. a spec written before
    shaping), shape it via `devrites-ux-shape` before the wright codes. If the `Task` tool is
    unavailable, run the wright's discipline **inline** as a flagged fallback (see the reference)
-   — same one-slice cycle, no isolation.
+   — same one-slice cycle, no isolation; in that case write
+   `.devrites/work/<slug>/.reconcile-inline` so the reconcile gate skips (you are legitimately
+   the writer in this fallback).
 4. **Doubt the decisions it stood up.** For each entry in the wright's `Decisions stood`
    (branching, boundary crossing, data model, auth, public API, migration, user-flow change,
    "this is safe/scales") apply `devrites-doubt` **before accepting the slice** — the writer
@@ -122,32 +174,123 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    blocking protocol violation — pause and re-dispatch with the item flagged out-of-bounds, do
    **not** doubt-and-accept it. (The wright's return is the not-yet-load-bearing moment — the
    slice isn't `built` or merged yet — so this post-return doubt is still pre-commit.)
+   **Principle check (same standing):** a wright return that breaks a declared principle
+   (reported in its `Principles` field, or that you detect against `.devrites/principles.md`) is
+   handled here like an irreversible-risk item — block, route to a human-approved scoped
+   exception in the register or stop; never doubt-and-accept a principle violation into the slice.
 5. **Fail-on-red.** If the wright's `Gates` were red (targeted tests / types / lint) or it
-   couldn't verify: do **not** mark the slice `built`. AFK → append a blocking question to
-   `questions.md` (gate=blocking, slice's SLA) + set `Status: awaiting_human`; HITL → pause as a
-   blocking gate. Either way, `Next step: /rite-plan unblock` until resolved.
-6. **Record — you are the canonical writer.** From the wright's artifact, update `state.md`,
-   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). **Evidence is the
+   couldn't verify: do **not** mark the slice `built`, and **do not fix the code yourself**.
+   First remedy — **continue the same wright once** (`SendMessage` to it, carrying the failing
+   gate + its real output) so it fixes in its own context. This retry is for **objective
+   failures only** — red gate / type / lint / missing test coverage / UI browser-proof fail —
+   never a contested decision (that routes to `/rite-plan repair`). **Still red after the one
+   retry** → escalate: AFK → append a blocking question to `questions.md` (gate=blocking,
+   slice's SLA) + set `Status: awaiting_human`; HITL → pause as a blocking gate. Either way,
+   `Next step: /rite-plan unblock` until resolved.
+6. **Record — you are the canonical writer.** **First, run the reconcile gate (A1):** write the
+   wright's reported `Files changed` paths (one per line) to
+   `.devrites/work/<slug>/.reconcile-claimed`, then:
+   ```bash
+   RC=.claude/skills/devrites-lib/scripts/reconcile.sh
+   [ -f "$RC" ] || RC="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/reconcile.sh"
+   [ -f "$RC" ] || RC=pack/.claude/skills/devrites-lib/scripts/reconcile.sh
+   [ -f "$RC" ] && { bash "$RC" check; echo "reconcile rc=$?"; } || echo "(reconcile gate unavailable — confirm by hand only the wright wrote source)"
+   ```
+   **Exit 5 → hard STOP:** a source file changed outside the wright's claimed set — code was
+   edited by something other than the wright (A1 breach). Revert it and re-dispatch the wright;
+   do **not** mark the slice `built`.
+
+   **Then run the test-integrity gate (anti-reward-hacking)** — prove the slice didn't reach
+   green by weakening its tests:
+   ```bash
+   TI=.claude/skills/devrites-lib/scripts/test-integrity.sh
+   [ -f "$TI" ] || TI="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/test-integrity.sh"
+   [ -f "$TI" ] || TI=pack/.claude/skills/devrites-lib/scripts/test-integrity.sh
+   [ -f "$TI" ] && { bash "$TI"; echo "test-integrity rc=$?"; } || echo "(test-integrity gate unavailable — confirm by hand no test was deleted/skipped/loosened)"
+   ```
+   **Exit 3 → hard STOP:** a test was deleted, skipped, or de-asserted since the slice base — the
+   slice went green by weakening its tests, a Critical protocol violation. Revert the weakening and
+   re-dispatch the wright; do **not** mark the slice `built`.
+
+   Then, from the wright's artifact, update `state.md`,
+   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). If the wright reported
+   an approach it tried and backed out of, record it under a `## Dead ends` section in
+   `decisions.md` so a retry or the next agent doesn't repeat it.
+   **If the wright's `Conventions` field reports a contradiction** (the live code now
+   disagrees with a held convention), record the drift — you own this bookkeeping:
+   ```bash
+   C=.claude/skills/devrites-lib/scripts/conventions.py
+   [ -f "$C" ] || C="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/conventions.py"
+   [ -f "$C" ] || C=pack/.claude/skills/devrites-lib/scripts/conventions.py
+   command -v python3 >/dev/null 2>&1 && [ -f "$C" ] && \
+     python3 "$C" contradict --key <key> --slug <slug> --evidence "<what the live code does>" \
+       --drift-file .devrites/work/<slug>/drift.md || true
+   ```
+   It lowers the convention's band (or retires it) and appends a `convention-drift` entry to
+   `drift.md`. The ledger is **promoted only at `/rite-seal` on GO** — build only records
+   contradictions, never new conventions. **Evidence is the
    wright's real command output, not its say-so.** Capture per
-   [evidence-standard](reference/evidence-standard.md). If `.devrites/AFK` is present, decrement
+   [evidence-standard](reference/evidence-standard.md). Append a footprint record for this
+   slice's wright dispatch (deterministic run-weight bookkeeping the seal reports):
+   ```bash
+   FP=.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] || FP="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/footprint.sh"
+   [ -f "$FP" ] || FP=pack/.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] && bash "$FP" log <slug> wright "<slice id>" || true
+   ```
+   If `.devrites/AFK` is present, decrement
    the budget by running `bash .claude/skills/devrites-lib/scripts/tick-afk.sh <state.md path>` —
    it decrements `state.md`'s `AFK slices remaining` field, prints the new value, and exits `3`
    when it hits 0. **Exit 3 → STOP** (forced HITL stop; the cap is exhausted). Never rewrite
    `.devrites/AFK` `max_slices` in place — it is read-only initial budget.
-7. **STOP.** Report and recommend the next step.
+7. **STOP.** Render the progress footer, then report and recommend the next step. Run the
+   shared footer (mirror of the step-0 preamble) so the slice meter + flow ribbon are
+   deterministic, not model-typed:
+   ```bash
+   PR=.claude/skills/devrites-lib/scripts/progress.sh
+   [ -f "$PR" ] || PR="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/progress.sh"
+   [ -f "$PR" ] || PR=pack/.claude/skills/devrites-lib/scripts/progress.sh
+   [ -f "$PR" ] && bash "$PR" || echo "(progress footer unavailable on this install)"
+   ```
+   It reads `state.md` (already updated in step 6), so the meter reflects the slice you
+   just built. **When every slice is built** (`✅ ALL BUILT`) say so explicitly — the build
+   phase is complete, the next phase is `/rite-prove` — don't leave completion implicit.
 
 > **Mid-flight discipline.** The wright (or you, in the inline fallback) must resist doing two slices, skipping TDD, adding a defensive check, or wandering outside `touched-files.md`; you must resist skipping the post-return `devrites-doubt` because the wright "seems confident" — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 
 ## Output
+
+The `progress.sh` footer (step 7) prints the first three lines — the header rule, the
+**slice meter** (how many of N are built), and the **flow ribbon**. Your fact lines sit
+under it. Two shapes:
+
+**Slices still pending:**
 ```
-Built slice <N — name>
-Built by: devrites-slice-wright (fresh context) | inline fallback
-Acceptance: <met/partial + evidence>
-Tests: <command → pass/fail>
-Browser proof: <summary | n/a>
-Drift: <none | recorded + how handled>
-Next: slices still pending → /rite-build (slice <N+1>);
-      ALL slices built → /rite-prove (prove the completed feature)
-↻ Hygiene: /clear between slices (state.md + touched-files.md + evidence.md carry forward); /rite-handoff if away > a few hours. See rules/context-hygiene.md.
+── rite-build ──────────────────────────────
+Slice 3/5  ██████░░░░  csv-streaming ✓
+Flow   spec ✓ define ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○
+Built     slice 3 — csv-streaming   (by devrites-slice-wright | inline fallback)
+Acceptance ✓ met · Tests <cmd → pass> · Browser <summary | n/a> · Drift <none | handled>
+Next  ▸ /rite-build  (slice 4 — pagination)
+↻ Hygiene  /clear between slices (state.md + touched-files.md + evidence.md carry forward); /rite-handoff if away > a few hours.
 ```
-**DO NOT continue to the next slice automatically.**
+
+**All slices built (build phase complete — say it):**
+```
+── rite-build ──────────────────────────────
+Slices 5/5  ██████████  ✅ ALL BUILT
+Flow   spec ✓ define ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○
+Built     slice 5 — error-states   (by devrites-slice-wright | inline fallback)
+Acceptance ✓ met · Tests <cmd → pass> · Browser <summary | n/a> · Drift <none | handled>
+✅ Feature implemented — every slice built. Build phase done.
+Next  ▸ /rite-prove  (prove the completed feature)
+↻ Hygiene  /clear (state.md + evidence.md captured); /rite-handoff if away > a few hours.
+```
+
+Keep fact lines terse — one `key value` per fact, `·` between, no prose. The meter, the
+`✅ ALL BUILT` marker, and the ribbon carry the progress; don't restate them in words.
+
+For a **forged slice**, the `Built` line names the competition and points at the record, e.g.
+`Built  slice 3 — csv-streaming   (forged: 3 candidates → winner B; forge-report.md)`.
+
+**DO NOT continue to the next slice automatically** — even at `✅ ALL BUILT`, `/rite-prove` is the user's call.

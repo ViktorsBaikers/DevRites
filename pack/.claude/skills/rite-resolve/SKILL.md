@@ -7,11 +7,13 @@ user-invocable: true
 
 # /rite-resolve — answer the human gate
 
-`/rite-resolve` is the **canonical resume verb** for DevRites. When `/rite-build` pauses
-at a HITL checkpoint, or when AFK left blocking questions in `questions.md`, this skill
-takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
-`state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next
-command.
+`/rite-resolve` is the canonical resume verb for **async** human gates — a checkpoint that
+already paused and **stopped the session** (an AFK blocking/escalating/irreversible queue, or a
+HITL pause the human walked away from), plus `--batch`. When `/rite-build` asks a gap **inline**
+via `AskUserQuestion` and the human is present, that pick resolves the gate **in place** through
+the same `resolve.sh` writer — you don't type `/rite-resolve` for it. For the async case this
+skill takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
+`state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next command.
 
 It is **deliberately small**: one verb, one source of truth (`questions.md`), one cursor
 (`state.md`). The full AFK / HITL contract lives in
@@ -38,7 +40,15 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
   not modify `spec.md` / `plan.md` inside this skill.
 - **The script is the source of truth.** Always invoke
   `devrites-lib/scripts/resolve.sh` — it keeps `questions.md` + `state.md` consistent and emits the
-  next-action recommendation. Manual edits are allowed but not by this skill.
+  next-action recommendation. The one `state.md` field this skill may write by hand is the
+  unblocked slice's `Slice mode` (step 4, the named exception); everything else goes through
+  the script, never by hand.
+- **Human gates are for human-only decisions, not the agent's work.** A `questions.md` entry the
+  human must answer is a genuine *decision* (a scope / design / risk call only the human can make)
+  — not a task the agent can do itself. If a question is really agent-doable ("should I write the
+  test?", "go implement X"), don't record a human answer that punts the agent's own job back to it:
+  flag the mis-tag and route it to the right skill (`/rite-build`, `/rite-plan unblock`,
+  `devrites-debug-recovery`). The human resolves decisions; the agent does the work.
 
 ## Workflow
 
@@ -91,6 +101,7 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
 
 ## Output
 
+**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
 ```
 Resolved: <qid> (<gate>, slice <N>)
 Answer:   <one-line summary>
