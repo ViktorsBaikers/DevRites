@@ -11,8 +11,8 @@ prefers what's already there).
 ## Loading model — progressive disclosure
 
 To keep context lean, the rules follow Claude's progressive-disclosure pattern. There
-are 20 rule files (plus this README index): each DevRites `rite-*` skill Reads
-`.claude/rules/core.md` as its first step; the other 19 rule files load on demand by the
+are 21 rule files (plus this README index): each DevRites `rite-*` skill Reads
+`.claude/rules/core.md` as its first step; the other 20 rule files load on demand by the
 phase that needs them.
 
 ### Always-on (read by each `rite-*` skill as step 0)
@@ -38,6 +38,7 @@ phase that needs them.
 | `hooks.md` | Stage checks by cost, fast local hooks, secret scanning. | Reference-only — read when setting up the project's git hooks; not auto-loaded by any phase. |
 | `documentation.md` | Explain why, keep current, record decisions. | `/rite-spec`, `/rite-define`, `/rite-seal`. |
 | `development-workflow.md` | Small batches, trunk-always-green, definition of done. | `/rite-define`, `/rite-plan`. |
+| `principles.md` | The four knowledge layers; project invariants (`.devrites/principles.md`) as a *trusted, gating* pass/fail (vs conventions' untrusted prior); justified-exception register; dated-amendment governance. | `/rite-define`, `/rite-vet`, `/rite-build`, `/rite-review`, `/rite-seal`; seeded by `/rite-adopt`, grown by `/rite-learn`. |
 | `deprecation.md` | Code-as-liability, Hyrum's law, prove-unused-before-remove, expand→contract, deprecate-before-delete. The safe path behind the irreversible-migration gate. | When removing / replacing / migrating code, a feature, an API, or data. |
 | `agents.md` | DevRites review subagents + specialist skills, when to fan out. | `/rite-review`, `/rite-seal`. |
 | `context-hygiene.md` | `/clear` vs `/compact`, lost-in-the-middle, phase-aware hygiene footer. | Phase-end hygiene footer; choosing `/clear` vs `/compact`. |

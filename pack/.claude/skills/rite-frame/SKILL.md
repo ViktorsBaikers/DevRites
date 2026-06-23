@@ -77,6 +77,9 @@ map + worked examples: [`reference/failure-modes.md`](reference/failure-modes.md
 - [ ] **4 · Unverifiable goal** — is there a command that proves this, run, with output? Or am
       I asserting "it works"? Tautological test that can't fail? → run the FRAME verify command;
       record command + output (`testing.md`, evidence-over-confidence).
+- [ ] **Principle check** — if `.devrites/principles.md` exists, does the change break a declared
+      invariant? A violation with no recorded, human-approved exception is a **Critical** — the
+      express lane is not a way around a project gate; escalate it, don't ship it (`principles.md`).
 
 The test for each changed line: **it traces directly to the criterion, and the criterion can
 be proven false.** A line that fails either is a finding.
@@ -85,8 +88,10 @@ be proven false.** A line that fails either is a finding.
 
 If FRAME can't produce a falsifiable criterion, or AUDIT surfaces a mode-1 / mode-3 issue that
 is actually a hidden design decision (new dependency, data model, second design system, an
-auth/migration/public-API touch) → **STOP and route to `/rite-spec`**. Same drift guard the
-express lane enforces — don't quietly grow an unframed ask into unreviewed work.
+auth/migration/public-API touch), or a **declared-principle violation** with no recorded
+exception → **STOP and route to `/rite-spec`** (a needed exception is a human-approved decision,
+not an inline call). Same drift guard the express lane enforces — don't quietly grow an unframed
+ask into unreviewed work.
 
 ## Rules
 - Self-applied and inline. No subagent, no `.devrites/` workspace required. For an adversarial

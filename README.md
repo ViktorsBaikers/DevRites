@@ -12,12 +12,18 @@ directory: `spec.md` → (`strategy.md`) → `plan.md` + `tasks.md` → (`eng-re
 files — no chat-context summary required. **Spec Drift Guard** catches the wrong turn
 before it costs you a day. **AFK mode** runs unattended without silently accepting
 destructive migrations, auth changes, or red tests. **`type-GO`** demands a literal
-typed confirmation before any irreversible commit / push / tag.
+typed confirmation before any irreversible commit / push / tag. **Project principles**
+(`.devrites/principles.md`) — the invariants you declare once ("money in integer cents",
+"no PII in logs", "never break the v1 API") — then gate every plan, build, and seal, with a
+recorded-exception escape hatch instead of silent work-arounds.
 
 ```
 .devrites/
   ACTIVE                    # which feature is active
   AFK                       # presence = AFK mode; YAML body sets max_slices / notify / allow_gates
+  principles.md             # project invariants — authored, prescriptive, GATING (the 4th knowledge layer)
+  conventions.md            # learned project idioms — descriptive, an untrusted prior
+  learnings.md              # dismissed-finding classes + dead ends — suppresses recurring false positives
   work/<slug>/
     brief.md  spec.md  references.md  references/        # spec
     strategy.md                                          # temper (optional)
@@ -297,12 +303,12 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 | Group | Skills |
 |---|---|
 | Lifecycle (8) | `rite-spec` · `rite-define` · `rite-build` · `rite-prove` · `rite-polish` · `rite-review` · `rite-seal` · `rite-ship` |
-| On-ramp (optional) | `rite-adopt` — onboard an existing codebase: reverse-derive `spec.md` + seed the conventions ledger, then hand off to the lifecycle |
+| On-ramp (optional) | `rite-adopt` — onboard an existing codebase: reverse-derive `spec.md`, seed the conventions ledger + propose project principles, then hand off to the lifecycle |
 | Strategic (optional) | `rite-temper` — strategic spec review between spec and define; mandatory in `rite-autocomplete` |
 | Engineering (every feature) | `rite-vet` — engineering plan review between define and build; depth scales to stakes, never skipped; always in `rite-autocomplete` |
 | Resume / replan | `rite-resolve` · `rite-plan` |
 | Utility | `rite-status` · `rite-doctor` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
-| Learning (optional) | `rite-learn` — cross-feature learning loop: mine shipped features for recurring mistakes + dismissed-finding classes, propose project-local lessons into `.devrites/learnings.md` |
+| Learning (optional) | `rite-learn` — cross-feature learning loop: mine shipped features for recurring mistakes + dismissed-finding classes, propose project-local lessons into `.devrites/learnings.md`, and promote recurring invariants to `.devrites/principles.md` |
 | Menu | `rite` |
 
 **Internal `devrites-*` specialists (9)** — model-invoked, hidden from menu:
@@ -424,15 +430,15 @@ browser-harness, backend-only, polish modes, zoom-out, mid-flight handoff):
 ## Engineering rules
 
 DevRites ships its own stack-agnostic engineering rules and installs them to
-`.claude/rules/` — 16 rule files plus a README index. They're **common** by design
-(no language assumptions); a project's own conventions always win where they exist.
-Skip them with `--no-rules`. Loading model: each `rite-*` skill Reads
-`.claude/rules/core.md` as its first step; the other 15 rule files load on
-demand via `Read` from the skill body that needs them.
+`.claude/rules/` — 21 rule files plus a README index. They're **common** by design
+(no language assumptions); a project's own conventions always win where they exist, and a
+project's own **principles** (`.devrites/principles.md`) outrank both. Skip them with
+`--no-rules`. Loading model: each `rite-*` skill Reads `.claude/rules/core.md` as its first
+step; the other 20 rule files load on demand via `Read` from the skill body that needs them.
 
 | Always-on | On-demand |
 |---|---|
-| `core.md` | `coding-style.md` · `error-handling.md` · `testing.md` · `code-review.md` · `security.md` · `performance.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `anti-patterns.md` |
+| `core.md` | `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `code-review.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `anti-patterns.md` · `tooling.md` |
 
 Full index with phase mapping: [`pack/.claude/rules/README.md`](pack/.claude/rules/README.md);
 diagram: [`docs/flow.md` § Engineering-rules loading](docs/flow.md#6-engineering-rules-carrier).

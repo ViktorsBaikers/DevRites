@@ -17,6 +17,7 @@ live in `/rite-ship`, which refuses to run without a GO recorded here.
 pull these via `Read` before sealing:
 - `agents.md` — review-subagent fan-out at seal.
 - `code-review.md` — severity labels (Critical / Important / Suggestion / Nit / FYI).
+- `principles.md` — declared project invariants (`.devrites/principles.md`) are a pass/fail gate; a diff that violates one with no recorded, human-approved exception is a NO-GO.
 - `documentation.md` — record decisions in `decisions.md` before sealing.
 - `observability.md` — a runtime surface that ships blind is an Important finding.
 - `deprecation.md` — when the diff removes / migrates code, API, or data (read with the
@@ -37,6 +38,7 @@ Read `review.md` and the latest reviewer outputs.
 | `Critical == 0` and `Important > 0` and acceptance proven and drift resolved | Render interactive prompt: *"`Important > 0` open. Proceed to seal? [y/N]"*. Default **N**. If the user types `y`, GO; otherwise NO-GO with the open Important findings listed as blockers-by-policy. |
 | `Critical > 0` | **NO-GO**, no exceptions. List every Critical with `file:line` and fix direction. |
 | Any acceptance criterion unproven | **NO-GO**, list the unproven criteria. |
+| Diff violates a declared project principle (`.devrites/principles.md`) with no recorded, human-approved exception | **NO-GO**, list each violated principle with `file:line`. Same standing as an unproven criterion (absent / empty file → none declared → not a blocker). |
 | Unresolved drift in `drift.md` | **NO-GO**, route through `/rite-plan` first. |
 | Any `questions.md` entry with `gate: validating` and `status: open` | **NO-GO** regardless of behavior impact — an open validating gate is merge-blocking by definition. A slice marked `built (pending review)` is not done. |
 
@@ -73,6 +75,10 @@ Read `review.md` and the latest reviewer outputs.
    `/rite-temper`), confirm its **top pre-mortem risks are mitigated** in the diff/evidence and
    that no **Non-goal / deferred item crept into the diff** (scope creep) — either is a finding
    (an unmitigated top risk or smuggled-in out-of-scope work).
+   - **Principles** (`principles.md`): score the final diff against each declared invariant in
+     `.devrites/principles.md`. A violation with no matching, human-approved exception in the
+     register is a **Critical** finding and a NO-GO; an exception that is stale (past its review
+     trigger) or wider than its stated scope is itself a finding. No file / no principles → skip.
    - **Observability** (`observability.md`): if the diff added a runtime surface (endpoint,
      job, integration, user flow, error path), a feature shipping with no way to debug it in
      prod is an **Important** finding, not a pass — `evidence.md` should show telemetry observed

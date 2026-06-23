@@ -23,6 +23,7 @@ byte-identical to the matching rows below); read this file for the full set.
 | "I observed it pass; recording is bureaucracy." | Un-recorded pass = unproven. The next phase reads `evidence.md`, not your memory. |
 | "User clearly wants this, so I'll bypass the gate." | Gates exist for the failure modes asks miss. Honor the gate; the gate exists *because* of the ask. |
 | "The test is failing — I'll just skip it / loosen the assertion to get green." | Faking green is reward-hacking, not progress. Never delete / skip / `xfail` / `.only` / loosen a failing test — a red test means fix the code or agree the change. A weakened test is a Critical finding (`test-integrity.sh`). |
+| "This project principle doesn't really apply to my case." | A declared invariant (`.devrites/principles.md`) is not advisory. Either it genuinely needs relaxing — record a scoped, dated exception a human approves — or it applies and the change is wrong. Silently routing around a principle is the defect the gate exists to catch (`principles.md`). |
 
 ## Pack-wide red flags
 
@@ -36,6 +37,7 @@ These show up at any phase and are equally damning regardless:
 - Commenting out code instead of deleting it.
 - A `// TODO` left in shipped code.
 - Adding a dependency or a second design system without rationale in `decisions.md`.
+- A change that violates a declared project principle (`.devrites/principles.md`) with no recorded, human-approved exception.
 - "I'll fix it in a follow-up PR" with no follow-up actually opened.
 
 ## Where this gets loaded

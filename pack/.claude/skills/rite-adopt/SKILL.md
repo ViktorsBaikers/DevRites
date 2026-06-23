@@ -22,7 +22,8 @@ lifecycle (`/rite-temper` → `/rite-define` → `/rite-build` …) takes over.
 
 ## Rules consulted (read on demand from `.claude/rules/`)
 **Step 0:** Read `.claude/rules/core.md` first. Pull `documentation.md` when recording
-the adoption decisions (why-not-what) in `decisions.md`.
+the adoption decisions (why-not-what) in `decisions.md`; pull `principles.md` when the code
+upholds invariants worth proposing as project principles (step 4a).
 
 ## Operating rules (DevRites core)
 - No silent assumptions · prefer the project's existing conventions (you are *documenting*
@@ -61,6 +62,16 @@ the adoption decisions (why-not-what) in `decisions.md`.
    evidence-gated promotion: the seeds start at the base band and are provenance-tagged as
    onboarding observations, not sealed-slice proofs, so real slices later corroborate or
    (fresh-wins) contradict them.
+4a. **Propose candidate principles** (human-ratified; optional). Where the investigation found an
+   invariant the code *consistently and deliberately* upholds — money always in integer cents, PII
+   always redacted from logs, every v1 endpoint preserved — surface it as a **candidate
+   principle**, not a seeded convention. Principles are prescriptive and gating, so they are
+   **ratified by the human, never auto-seeded** the way conventions are: present the candidates via
+   `AskUserQuestion` with the evidence (where the code upholds it), and write the ones the human
+   ratifies to `.devrites/principles.md` with a dated Governance entry
+   ([`principles.md`](../../rules/principles.md)). Propose, don't impose — an unratified candidate
+   stays a convention, not a gate. Skip cleanly when nothing rises to an invariant (common — a
+   fresh adopt may declare zero principles, and that's valid).
 5. **Hand off.** The project is now in the lifecycle with a spec and a head-start ledger.
    Point the user at `/rite-temper` (big/risky) or `/rite-define` (straightforward) — do not
    plan or build here.
@@ -78,6 +89,7 @@ Adopted: <slug>
 Baseline: <one-line summary of current behavior>   Placement: <where it lives>
 Next objective: <what we'll build on top>
 Conventions seeded: <n> (commands · idioms · placement · gotchas)
+Principles proposed: <n ratified → .devrites/principles.md | none rose to an invariant>
 Next: big / risky? → /rite-temper   ·   straightforward? → /rite-define
 ↻ Hygiene: /clear before the next phase (spec.md + decisions.md + the seeded ledger captured). See rules/context-hygiene.md.
 ```

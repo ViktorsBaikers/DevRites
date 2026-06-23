@@ -1,7 +1,7 @@
 # DevRites core rules — always-on
 
 The minimal always-on subset of the DevRites engineering rules. DevRites
-`rite-*` skills Read `.claude/rules/core.md` as their first step; the other 19
+`rite-*` skills Read `.claude/rules/core.md` as their first step; the other 20
 rule files in this directory load on demand by the phase that needs them (see
 `README.md` for the index).
 
@@ -114,6 +114,15 @@ phase-by-phase guidance: [`context-hygiene.md`](context-hygiene.md).
 
 ## Precedence
 
-Project conventions > DevRites rules. The rules fill gaps; they don't
-overwrite the project's choices. When the project's own conventions disagree
-with these rules, **project wins**.
+**Project principles > project conventions > DevRites rules.** The rules fill
+gaps; they don't overwrite the project's choices. When the project's own
+conventions disagree with these rules, **project wins**.
+
+Two of those layers carry **opposite** authority, and the difference is
+load-bearing:
+- **Project principles** (`.devrites/principles.md`) — authored, prescriptive
+  invariants the project will not break. *Trusted and gating*: a change that
+  violates one is a defect, not a prior to weigh — a top-severity, blocking
+  finding (absent file = none declared = gate passes). → [`principles.md`](principles.md)
+- **Conventions** (`.devrites/conventions.md`) — learned, *descriptive* idioms.
+  An *untrusted prior*: a fresh read of the live code overrides a convention.

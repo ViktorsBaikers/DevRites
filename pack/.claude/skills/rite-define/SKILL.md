@@ -17,6 +17,7 @@ nothing gets missed in one batch. **No code here.**
 as their first step; the other rule files load on demand. Pull these via `Read` when shaping
 the plan:
 - `development-workflow.md` — small batches, trunk-always-green, definition of done.
+- `principles.md` — the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
 - `documentation.md` — record plan-time decisions and rationale.
 
 ## Operating rules
@@ -90,6 +91,12 @@ the plan:
    ```
 5. **Complexity & deviations gate** — justify anything off DevRites defaults (new dep,
    extra abstraction, second design system) in the plan; if you can't justify it, simplify.
+   **Principles conformance:** read `.devrites/principles.md` (if present) and confirm the
+   approach honors every declared invariant. A plan that conflicts with one is not "a deviation
+   to justify away" — either reshape the approach to conform, or, when the conflict is genuine and
+   intended, route it through the Spec Drift Guard plus a recorded decision and a scoped principle
+   exception a human approves. Never ready a plan that silently violates an invariant. (Re-scored
+   as a blocking gate at `/rite-vet`; no file → none declared → nothing to check.)
 6. **Write** `plan.md` + `tasks.md`; update `state.md` (phase: plan → next `/rite-build`).
 7. **Readiness gate** (bottom of plan-template): every acceptance criterion covered by a
    slice, dependency order acyclic + risk-first, no unjustified deviation, rollback for
