@@ -303,6 +303,12 @@ code, kbd, samp { font-family: var(--font-mono); }
 @keyframes blink { 50% { opacity: 0; } }
 .term__out { font-family: var(--font-mono); font-size: var(--fs-mono); color: var(--ink-muted); margin-top: 0.8rem; line-height: 1.7; }
 .term__out .ok { color: var(--go); } .term__out .dim { color: var(--ink-faint); }
+.term__row { line-height: 1.7; }
+.term__checks { display: flex; flex-wrap: wrap; gap: 0.2rem 0.85rem; margin: 0.25rem 0; }
+.term__checks .chk { white-space: nowrap; }
+/* the hero console is a narrow widget — nudge its terminal type down so the
+   output lines sit on their intended rows instead of wrapping mid-phrase. */
+#console .term__line, #console .term__out { font-size: 0.8rem; }
 
 /* ============================== PIPELINE RAIL ============================== */
 .rail { position: relative; }
