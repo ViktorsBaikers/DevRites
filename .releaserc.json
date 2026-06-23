@@ -9,6 +9,9 @@
         { "type": "refactor", "release": "patch" },
         { "type": "perf", "release": "patch" },
         { "type": "build", "release": "patch" },
+        { "type": "remove", "release": "minor" },
+        { "breaking": true, "release": "major" },
+        { "revert": true, "release": "patch" },
         { "scope": "no-release", "release": false }
       ]
     }],
@@ -16,12 +19,13 @@
       "preset": "conventionalcommits",
       "presetConfig": {
         "types": [
-          { "type": "feat", "section": "Features" },
-          { "type": "fix", "section": "Bug Fixes" },
-          { "type": "perf", "section": "Performance" },
-          { "type": "refactor", "section": "Refactors" },
+          { "type": "feat", "section": "Added" },
+          { "type": "perf", "section": "Changed" },
+          { "type": "refactor", "section": "Changed" },
+          { "type": "build", "section": "Changed" },
+          { "type": "remove", "section": "Removed" },
+          { "type": "fix", "section": "Fixed" },
           { "type": "docs", "section": "Documentation" },
-          { "type": "build", "section": "Build" },
           { "type": "ci", "section": "CI", "hidden": true },
           { "type": "chore", "section": "Chores", "hidden": true },
           { "type": "test", "section": "Tests", "hidden": true }

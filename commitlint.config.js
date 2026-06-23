@@ -11,7 +11,11 @@
  * Examples (valid):
  *   feat(skills): add rite-prove browser proof ladder
  *   fix(installer): match first rule pack with leading-space guard
+ *   remove(installer): drop the Claude Code plugin install path
  *   docs(rules): adapt common/agents.md for DevRites agents
+ *
+ * Changelog grouping (Keep a Changelog): feat -> Added, remove -> Removed,
+ * fix -> Fixed, perf/refactor/build -> Changed, docs -> Documentation.
  *
  * Refs: https://www.conventionalcommits.org  ·  https://commitlint.js.org
  */
@@ -25,7 +29,7 @@ module.exports = {
     'type-enum': [
       2,
       'always',
-      ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'build', 'ci', 'chore', 'revert'],
+      ['feat', 'fix', 'remove', 'docs', 'style', 'refactor', 'perf', 'test', 'build', 'ci', 'chore', 'revert'],
     ],
     'type-case': [2, 'always', 'lower-case'],
     'type-empty': [2, 'never'],
