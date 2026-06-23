@@ -30,6 +30,8 @@ WORKSPACE_ARTIFACTS = {
     "review.md", "seal.md", "ship.md", "brief.md", "design-brief.md", "strategy.md",
     "polish-report.md", "handoff.md", "eng-review.md", "test-plan.md", "references.md",
     "conventions.md", "coverage.md", "analysis.md", "learnings.md",
+    # developer-experience scorecard (work/<slug>/devex.md) + project-level retro ledger (.devrites/retro.md)
+    "devex.md", "retro.md",
     # spec-quality checklists (.devrites/work/<slug>/checklists/<domain>.md)
     "functional.md", "data-model.md", "interaction.md", "non-functional.md", "edge-cases.md",
 }

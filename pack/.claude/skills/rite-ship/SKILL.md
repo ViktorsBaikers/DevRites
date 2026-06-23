@@ -97,6 +97,26 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    `bash .claude/skills/devrites-lib/scripts/close-out.sh <slug>` to archive
    `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` and clear `.devrites/ACTIVE`.
    Every `.md` is preserved in the archive.
+6a. **Cross-feature retro (automatic, cadence-gated, advisory).** The just-shipped feature is now in
+   the archive, so this is where the **cross-feature** learning loop closes on its own — the synthesis
+   that otherwise waits for a human to run `/rite-learn`. Run the cheap cadence gate first; it stays
+   silent unless a finding/drift class recurs across **>=2 shipped features** with new signal since the
+   last review (so it never fires on an early or one-off ship):
+   ```bash
+   L=.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] || L="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/learnings.sh"
+   [ -f "$L" ] || L=pack/.claude/skills/devrites-lib/scripts/learnings.sh
+   [ -f "$L" ] && bash "$L" nudge || true
+   ```
+   **If the nudge emits** (a recurring pattern crossed the threshold), dispatch the read-only
+   `devrites-retrospector` (`.claude/agents/`) over `.devrites/archive/` for the cross-feature
+   synthesis. Persist its digest to `.devrites/retro.md` (append a dated entry — the project-level
+   retro ledger, never rewritten) and surface the **graduation candidates** with a one-line pointer
+   to `/rite-learn`, which is where the human confirms a promotion to a rule / principle / convention.
+   **Propose, never impose:** retro **drafts**; it never auto-writes a rule or principle (a principle
+   is a gate, amended deliberately and dated — `principles.md` governance), and it never blocks the
+   ship, which has already happened. If the nudge is silent, skip — no retro this close. Then `touch
+   .devrites/.learnings-reviewed` only when the human acts on it via `/rite-learn`, not here.
 
 > **Mid-flight discipline.** When tempted to ship without a GO seal, skip the type-GO,
 > stage files outside `touched-files.md`, or delete the workspace instead of archiving
@@ -112,6 +132,7 @@ Commit:  <sha> on <branch>    Tag/PR: <ref | none>
 Acceptance: <n/total> proven
 Archived: .devrites/archive/<slug>/    ·    ACTIVE cleared
 ship.md:  .devrites/archive/<slug>/ship.md
+Retro:    <n graduation candidates drafted → .devrites/retro.md · promote with /rite-learn | quiet (no cross-feature signal yet)>
 ```
 If the user declined type-GO: state that nothing shipped, the seal still reads GO, and
 the resume command (`/rite-ship`).

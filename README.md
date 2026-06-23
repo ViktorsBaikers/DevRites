@@ -318,13 +318,18 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `ri
 `devrites-debug-recovery` · `devrites-api-interface` ·
 `devrites-audit` (axes: `security` · `perf` · `simplify`).
 
-**Review agents (10)** — fresh-context reviewers under `.claude/agents/`:
+**Review agents (11)** — fresh-context reviewers under `.claude/agents/`:
 
 `devrites-strategy-reviewer` (pre-plan, via `/rite-temper`) ·
 `devrites-plan-reviewer` (pre-build, via `/rite-vet`) · `devrites-spec-reviewer` ·
 `devrites-code-reviewer` · `devrites-test-analyst` · `devrites-frontend-reviewer` ·
 `devrites-security-auditor` · `devrites-performance-reviewer` ·
+`devrites-devex-reviewer` (developer-facing surface, predict at `/rite-vet` + measure-the-boomerang at `/rite-seal`) ·
 `devrites-doubt-reviewer` · `devrites-simplifier-reviewer`.
+
+**Cross-feature analyst (1)** — fresh-context, read-only, scope is the archive not a diff:
+
+`devrites-retrospector` — dispatched at `/rite-ship` close (cadence-gated) to mine shipped features for recurring patterns + trends and **draft** graduation candidates for `/rite-learn`; proposes, never imposes.
 
 **Executor agent (1)** — fresh-context, **write-capable** writer under `.claude/agents/`:
 
@@ -492,9 +497,9 @@ devrites/
                        # grade-feature · run-outcome-evals · devrites-detect · check-no-global-writes
                        # sync-version · build-release-tarball
   mcp/                 # devrites-mcp.mjs — MCP stdio server over the devrites CLI
-  pack/.claude/        # skills/  31 skills — 22 public + 9 model-invoked    ─┐
-                       # agents/  10 reviewers + 1 writer (slice-wright)       ├─ the pack
-                       # rules/   16 rule files + README index                 ┘
+  pack/.claude/        # skills/  31 skills — 22 public + 9 model-invoked      ─┐
+                       # agents/  12 read-only + 1 writer (slice-wright)         ├─ the pack
+                       # rules/   23 rule files + README index                   ┘
   evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures
   docs/                # architecture · skills · command-map · usage · flow · release · cli-mcp
     internal/          # research, development notes (gitignored)

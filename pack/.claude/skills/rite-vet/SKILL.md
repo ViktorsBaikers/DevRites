@@ -29,7 +29,9 @@ standard), `testing.md` (the test-coverage axis) + `spec-grammar.md` (when the s
 structured Requirement/Scenario blocks, each scenario is a coverage unit `test-plan.md` must
 map), `performance.md` (the perf axis),
 `error-handling.md` (failure-mode coverage), `development-workflow.md` (parallel lanes,
-definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
+definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling),
+`developer-experience.md` (when the plan ships a developer-facing surface — API / CLI / SDK /
+webhook / config / error messages / getting-started — predict the DX scorecard here).
 
 ## Operating rules
 - **Review the plan, not the spec's ambition.** The spec's scope/ambition is `/rite-temper`'s
@@ -118,6 +120,11 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    test** — an unmapped scenario is a coverage gap the build must close. Then the failure-mode
    table, "NOT in scope", "What already exists",
    and the worktree parallelization strategy. Shapes in [`reference/review-axes.md`](reference/review-axes.md).
+   **Developer-facing surface?** If the plan ships one (`developer-experience.md` — API / CLI / SDK /
+   webhook / config / error messages / getting-started), predict the DX scorecard: the time-to-hello-world
+   estimate plus the getting-started, error-message, and ergonomics friction the plan bakes in. Write it
+   to `devex.md` as the **prediction the boomerang measures against** at `/rite-prove` / `/rite-seal`.
+   Absent surface → skip, no `devex.md` (greenfield no-op, like the principles gate).
    Also a **PRP one-pass-implementable check** per slice brief (the build's pre-flight): confirm each
    slice's Consumes/Produces, Known-Gotchas, validation commands, and reuse targets are present and
    concrete — a brief that can't be built in one pass is a finding; harden the slice until it clears,

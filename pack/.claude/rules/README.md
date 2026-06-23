@@ -11,8 +11,8 @@ prefers what's already there).
 ## Loading model — progressive disclosure
 
 To keep context lean, the rules follow Claude's progressive-disclosure pattern. There
-are 22 rule files (plus this README index): each DevRites `rite-*` skill Reads
-`.claude/rules/core.md` as its first step; the other 21 rule files load on demand by the
+are 23 rule files (plus this README index): each DevRites `rite-*` skill Reads
+`.claude/rules/core.md` as its first step; the other 22 rule files load on demand by the
 phase that needs them.
 
 ### Always-on (read by each `rite-*` skill as step 0)
@@ -34,6 +34,7 @@ phase that needs them.
 | `security.md` | Untrusted input, least privilege, secrets, three-tier trust boundary, fail closed. | When input / auth / data / integrations are in scope. |
 | `performance.md` | Measure first, common pitfalls, prove the win. | When perf is in scope. |
 | `observability.md` | Structured logs, metrics/SLIs, traces, symptom-based alerts, verify-the-telemetry-fires — proof a feature works in prod. | When the change has a runtime surface (endpoint, job, integration, user flow); `/rite-prove`, `/rite-seal`. |
+| `developer-experience.md` | DX as a measured axis — the predict-at-vet / measure-at-prove / reconcile-at-seal boomerang; scorecard (TTHW, getting-started, error-message quality, ergonomics, docs); severity by who-pays. Conditional + greenfield no-op. | When a developer-facing surface is in scope (public API, CLI, SDK/library, webhook, config, error messages, getting-started); `/rite-vet`, `/rite-prove`, `/rite-seal`. |
 | `patterns.md` | SOLID, composition, loose coupling, avoid over-engineering. | `/rite-build`, simplification audit. |
 | `git-workflow.md` | Conventional Commits, atomic commits, small PRs. | `/rite-ship` commit / push / tag steps. |
 | `hooks.md` | Stage checks by cost, fast local hooks, secret scanning. | Reference-only — read when setting up the project's git hooks; not auto-loaded by any phase. |

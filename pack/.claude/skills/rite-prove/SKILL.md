@@ -41,6 +41,9 @@ pull these via `Read` when relevant:
 - `performance.md` — measure first when perf is in scope.
 - `observability.md` — when the change has a runtime surface (endpoint, job, integration,
   user flow): telemetry must be present **and observed to emit**, not assumed.
+- `developer-experience.md` — when the change ships a developer-facing surface (API / CLI / SDK /
+  webhook / config / error messages / getting-started): **measure** the DX scorecard (run the flow,
+  time time-to-hello-world, capture the verbatim error text), don't assert it.
 
 ## Operating rules
 - Evidence over confidence. Feature scope only — fix within the feature or record a
@@ -121,6 +124,16 @@ pull these via `Read` when relevant:
    span actually emits, and record that observation in `evidence.md`. Instrumentation never seen
    emitting is unproven, not done. Skip entirely for pure-internal / docs / config / type-only
    changes — don't instrument a typo fix.
+5c. **Developer-experience measure (developer-facing surface only).** If the feature ships a public
+   API, CLI, SDK/library, webhook, config/env contract, error/exit path, or the getting-started flow
+   (`developer-experience.md`), **exercise it** rather than reading it: run the getting-started steps
+   on a clean state and **time time-to-hello-world**; invoke the CLI `--help` / call the endpoint /
+   import the package; trigger the failure path and capture the **verbatim** error text. For a docs or
+   quickstart page, capture it through the browser-proof ladder (`devrites-browser-proof`) and describe
+   the screenshot. Write the **measured** scorecard to `devex.md` (beside the `/rite-vet` prediction the
+   boomerang reconciles at `/rite-seal`) and the headline numbers + error strings to `evidence.md`. A
+   scorecard from "the code looks fine" is Source mode, not proof. Skip entirely when no developer-facing
+   surface is in scope — don't DX-measure an internal refactor.
 6. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. Reproduce → isolate → fix within scope → re-run; if a fix
    would exceed scope, record a blocker.
@@ -138,6 +151,7 @@ Scenarios proven: <n / total | n/a (flat acceptance)>
 Tests:  <cmd → pass/fail (counts)>
 Build:  <cmd → pass/fail>   Lint: <cmd → pass/fail>
 Browser: <ladder rung used + summary | n/a>
+DevEx:  <measured TTHW + getting-started/error-message verdict → devex.md | n/a (no dev-facing surface)>
 Unresolved failures / blockers: <none | list>
 Next: /rite-polish   (finish the feature → /rite-review → /rite-seal)
 ↻ Hygiene: /clear before /rite-polish (evidence.md + browser-evidence.md captured; debug trails noisy). See rules/context-hygiene.md.
