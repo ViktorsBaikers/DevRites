@@ -9,6 +9,10 @@ user-invocable: false
 Screenshots and runtime observations beat "it should render fine." Use the highest rung
 of the ladder that's available; record which one.
 
+The same ladder captures a **developer-facing docs / getting-started page** for the DX measure step
+(`/rite-prove` 5c, `developer-experience.md`): screenshot the quickstart, confirm the documented
+commands match what actually runs, and note the result in `browser-evidence.md` / `devex.md`.
+
 ## Ladder (top-down)
 1. **browser-harness** — detect `command -v browser-harness`. Connects to the user's
    Chrome over CDP. Pattern: `new_tab(url)` → `wait_for_load()` → `capture_screenshot()`

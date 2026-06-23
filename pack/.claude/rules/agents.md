@@ -18,6 +18,7 @@ Fresh-context, read-only reviewers. Each is given the active feature workspace p
 | `devrites-frontend-reviewer` | UX flow, a11y, responsive, design-system, anti-AI-slop | `/rite-seal` on UI features |
 | `devrites-security-auditor` | Untrusted input, trust boundaries, secrets, deps | `/rite-seal` when input/auth/data in scope |
 | `devrites-performance-reviewer` | Measure-first perf (N+1, hot paths, payload size) | `/rite-seal` when perf relevant |
+| `devrites-devex-reviewer` | Developer-experience scorecard + the predict-vs-measure boomerang (TTHW, getting-started, error-message quality, ergonomics, docs) | `/rite-vet` (predict) + `/rite-seal` when a developer-facing surface (API / CLI / SDK / webhook / config / errors / getting-started) is in scope |
 | `devrites-simplifier-reviewer` | Behavior-preserving simplification (Chesterton's Fence, deletion test) — Suggestion-only by design | `/rite-polish` Phase 1; `devrites-audit simplify` |
 | `devrites-doubt-reviewer` | Adversarial check of a single claim/decision | `devrites-doubt` loop; risky decisions |
 | `devrites-strategy-reviewer` | Spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention) — **before** any plan or code | `/rite-temper` loop (pre-plan) |
@@ -40,6 +41,23 @@ the orchestrator persists it, so there is exactly one canonical writer of worksp
 the HITL/AFK contract stays intact. **Single-threaded: one wright per slice, never a parallel
 fan-out of writers** (concurrent writers make conflicting implicit decisions). Contract + return
 shape + fallback: `.claude/skills/rite-build/reference/wright-dispatch.md`.
+
+## The cross-feature analyst — `.claude/agents/devrites-retrospector.md`
+
+A read-only agent like the reviewers, but its scope is the **archive, not a diff**: it reads the
+shipped `.devrites/archive/<slug>/` workspaces and reports the patterns one feature can't show —
+a finding class reviewers keep raising, recurring drift, dead-ends, the GO/NO-GO and rework trend.
+
+| Agent | Purpose | When |
+|-------|---------|------|
+| `devrites-retrospector` | Cross-feature retrospective synthesis — mine recurring patterns + trends across shipped features, **draft** graduation candidates (rule / principle / convention / dismiss) | `/rite-ship` close, cadence-gated by `learnings.sh nudge` (fires only with enough cross-feature signal) |
+
+It **proposes, never imposes**: it writes nothing itself — the caller (`/rite-ship`) persists the
+digest to `.devrites/retro.md` and routes any promotion through `/rite-learn`, where the human
+confirms. This makes the cross-feature learning that otherwise waits for someone to run `/rite-learn`
+fire automatically at close, while keeping rule/principle promotion a deliberate human amendment
+(`principles.md` governance). The capture half is already automatic (`/rite-seal` step 9a); this is
+the synthesis half.
 
 ## Namespaces — `rite-*` is the user surface; `devrites-*` is internal
 
@@ -80,6 +98,11 @@ prefix is a naming convention that matches it.
 2. Sealing a feature → fan out to the relevant reviewers above.
 3. A UI feature at seal → include `devrites-frontend-reviewer`.
 4. Input/auth/data/integration in scope → include `devrites-security-auditor`.
+5. A developer-facing surface in scope (public API / CLI / SDK / webhook / config / error messages /
+   getting-started path) → `devrites-devex-reviewer`, at `/rite-vet` to **predict** and at `/rite-seal`
+   to **measure + reconcile the boomerang** (`developer-experience.md`).
+6. Closing a feature at `/rite-ship`, cadence-gated → `devrites-retrospector` (below). Not a per-diff
+   reviewer: it fires only when there's enough cross-feature signal to mine.
 
 ## Rules
 - Run independent reviewers **in parallel** at the seal, then reconcile; surface

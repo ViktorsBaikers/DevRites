@@ -55,7 +55,7 @@ Read `review.md` and the latest reviewer outputs.
    Then read all artifacts: `brief.md`, `spec.md`, `plan.md`, `tasks.md`, `state.md`,
    `decisions.md`, `assumptions.md`, `questions.md`, `drift.md`, `evidence.md`,
    `browser-evidence.md`, `polish-report.md`, `review.md`, `design-brief.md` (if UI),
-   `strategy.md` (if present), and the **final diff**. If a code-intelligence index is available
+   `devex.md` (if a developer-facing surface), `strategy.md` (if present), and the **final diff**. If a code-intelligence index is available
    (codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods LSP / Read/Grep/Glob — see `.claude/rules/tooling.md`), use it for
    blast-radius checks on the final diff in step 5; context7 if available can confirm a current
    external-API signature a reviewer flags.
@@ -83,6 +83,11 @@ Read `review.md` and the latest reviewer outputs.
      job, integration, user flow, error path), a feature shipping with no way to debug it in
      prod is an **Important** finding, not a pass — `evidence.md` should show telemetry observed
      to emit (`/rite-prove` step 5b).
+   - **Developer experience** (`developer-experience.md`): if the diff ships a developer-facing
+     surface, reconcile `devex.md` (the `/rite-vet` predicted scorecard vs the `/rite-prove`
+     measured one — the boomerang). A broken public dev contract (a documented command that errors,
+     a getting-started flow that can't complete) or an unexplained measured DX regression is
+     **Important** — **Critical** on a frozen public surface (`principles.md`). No surface → skip.
    - **Removal / migration** (`deprecation.md`): if the diff deletes or migrates code, an API,
      or data, confirm it followed expand→contract, proved the old path unused before removing it,
      and carries a rollback for every destructive step. A surprise deletion or a one-shot
@@ -104,8 +109,10 @@ Read `review.md` and the latest reviewer outputs.
    `devrites-spec-reviewer` (does the diff implement
    the spec?), `devrites-test-analyst` (do the tests prove acceptance?),
    `devrites-code-reviewer`, `devrites-frontend-reviewer` (UI features),
-   `devrites-security-auditor` (input/auth/data/integrations), and
-   `devrites-performance-reviewer` (perf-relevant). Give each the workspace
+   `devrites-security-auditor` (input/auth/data/integrations),
+   `devrites-performance-reviewer` (perf-relevant), and `devrites-devex-reviewer`
+   (developer-facing surface — measure mode: grade the measured DX scorecard and reconcile
+   the boomerang against the `/rite-vet` prediction). Give each the workspace
    path + diff *without the author's reasoning*. If subagents are unavailable,
    run the equivalent reviews sequentially yourself.
    The reviewer **AGENTS** here (fresh context, no author reasoning) are the seal
