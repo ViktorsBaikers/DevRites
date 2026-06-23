@@ -2,6 +2,24 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [2.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.2.0...v2.3.0) (2026-06-23)
+
+### Added
+
+* **agents:** auto-firing devex-reviewer + retrospector ([425c582](https://github.com/ViktorsBaikers/DevRites/commit/425c582802b5efb18a463a31174420dfb96838fe))
+* **rules:** add project invariants as a trusted gating layer ([e569d7e](https://github.com/ViktorsBaikers/DevRites/commit/e569d7e065d1baf4e974c274d921431cc3c6e26e))
+* **skills:** add spec-grammar validator + scenario hooks ([765430c](https://github.com/ViktorsBaikers/DevRites/commit/765430c3f21bd9f139d9de9ecc4d73e292970505))
+* **skills:** competitive forge builds + structured visual verdict ([c509519](https://github.com/ViktorsBaikers/DevRites/commit/c50951957525a5cbf673ee52d3fa573838092959))
+* **tests:** behavioral evals for gating-skill discipline ([9cfde94](https://github.com/ViktorsBaikers/DevRites/commit/9cfde942cd6fa12d2f08d0cb4f8e3c11354b9355))
+
+### Fixed
+
+* **scripts:** allow forge-report.md as a runtime workspace artifact ([e01bd50](https://github.com/ViktorsBaikers/DevRites/commit/e01bd50dcc2d5767d8abd3a1f527ec762dc83583))
+
+### Documentation
+
+* **skills:** sync skill/agent/rule counts + catalogue with current pack ([57ea677](https://github.com/ViktorsBaikers/DevRites/commit/57ea6771b2040382b80848cd5c866952b46355c9))
+
 ## [2.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.1.0...v2.2.0) (2026-06-23)
 
 ### Added
