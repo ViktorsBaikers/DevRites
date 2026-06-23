@@ -1,14 +1,15 @@
 {
   // DevRites website + install/update/uninstall endpoints.
-  // Static assets in web/ are served directly; a small worker (worker.js) runs
-  // only for the script paths below, handing install/update/uninstall scripts
-  // to CLI clients and the website to browsers.
-  // Production branch on Cloudflare: site/web.
+  // The site is a Next.js static export (see site/) built to site/out/ by the
+  // Cloudflare build command `cd site && npm ci && npm run build`. A small worker
+  // (worker.js) runs only for the script paths below, handing install/update/
+  // uninstall scripts to CLI clients and the website to browsers.
+  // Production branch on Cloudflare: site/web. Deploy: see site/DEPLOY.md.
   "name": "devrites",
   "main": "worker.js",
   "compatibility_date": "2026-05-29",
   "assets": {
-    "directory": "./web",
+    "directory": "./site/out",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",

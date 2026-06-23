@@ -1,0 +1,368 @@
+@import "tailwindcss";
+
+/* ============================================================
+   DevRites — Operator's Console, Cinematic
+   Deep-navy drench + cyan->blue "blade" gradient signal.
+   OKLCH throughout. WCAG 2.2 AA on body copy.
+   ============================================================ */
+
+@theme {
+  /* ground + surfaces */
+  --color-bg: oklch(0.15 0.052 264);
+  --color-bg-deep: oklch(0.11 0.045 264);
+  --color-surface: oklch(0.214 0.05 264);
+  --color-surface-2: oklch(0.262 0.045 264);
+  --color-line: oklch(0.34 0.04 264);
+  --color-line-bright: oklch(0.47 0.05 264);
+
+  /* ink */
+  --color-ink: oklch(0.975 0.008 250);
+  --color-ink-muted: oklch(0.808 0.018 250);
+  --color-ink-faint: oklch(0.66 0.02 250);
+
+  /* signal */
+  --color-accent: oklch(0.82 0.14 213); /* blade cyan */
+  --color-accent-blue: oklch(0.6 0.19 252); /* blade blue */
+  --color-go: oklch(0.8 0.16 158); /* sealed / GO emerald */
+  --color-warn: oklch(0.82 0.13 78); /* paused amber */
+  --color-danger: oklch(0.66 0.2 25); /* blocked red */
+
+  /* radii */
+  --radius-card: 1.25rem;
+  --radius-tile: 1rem;
+
+  /* fluid type ramp */
+  --text-display: clamp(2.6rem, 7vw, 5.75rem);
+  --text-h2: clamp(2rem, 4.4vw, 3.25rem);
+  --text-lead: clamp(1.05rem, 1.4vw, 1.3rem);
+
+  /* easing */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@theme inline {
+  --font-sans: var(--font-schibsted);
+  --font-mono: var(--font-jbmono);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--color-accent) 35%, transparent);
+    color: var(--color-ink);
+  }
+
+  /* visible focus everywhere — keyboard a11y */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg-deep);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border-radius: 99px;
+    border: 3px solid var(--color-bg-deep);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-line-bright);
+  }
+}
+
+/* ============================================================
+   Bespoke utilities
+   ============================================================ */
+
+/* the blade gradient — the brand's core device. shapes/fills only. */
+.blade {
+  background-image: linear-gradient(
+    105deg,
+    var(--color-accent) 0%,
+    var(--color-accent-blue) 100%
+  );
+}
+.blade-soft {
+  background-image: linear-gradient(
+    105deg,
+    color-mix(in oklch, var(--color-accent) 22%, transparent) 0%,
+    color-mix(in oklch, var(--color-accent-blue) 22%, transparent) 100%
+  );
+}
+
+/* glass panels — high opacity so they read on navy (a11y) */
+.glass {
+  background-color: color-mix(in oklch, var(--color-surface) 78%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  border: 1px solid var(--color-line);
+}
+
+/* hairline gradient borders for premium tiles */
+.tile {
+  position: relative;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(
+        140deg,
+        var(--color-line-bright),
+        var(--color-line) 40%,
+        transparent 75%
+      )
+      border-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-tile);
+}
+.tile--lit {
+  background:
+    linear-gradient(
+        var(--color-surface),
+        color-mix(in oklch, var(--color-surface-2) 60%, var(--color-surface))
+      )
+      padding-box,
+    linear-gradient(
+        140deg,
+        color-mix(in oklch, var(--color-accent) 70%, var(--color-line-bright)),
+        var(--color-line) 55%,
+        transparent 85%
+      )
+      border-box;
+  border: 1px solid transparent;
+}
+
+/* bento tiles light up when their group wrapper is hovered */
+.bento-tile {
+  transition:
+    background 0.35s var(--ease-out-soft),
+    box-shadow 0.35s var(--ease-out-soft),
+    transform 0.2s var(--ease-out-soft);
+}
+.group:hover .bento-tile {
+  background:
+    linear-gradient(
+        var(--color-surface),
+        color-mix(in oklch, var(--color-surface-2) 60%, var(--color-surface))
+      )
+      padding-box,
+    linear-gradient(
+        140deg,
+        color-mix(in oklch, var(--color-accent) 70%, var(--color-line-bright)),
+        var(--color-line) 55%,
+        transparent 85%
+      )
+      border-box;
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--color-accent) 20%, transparent),
+    0 24px 70px -34px color-mix(in oklch, var(--color-accent) 55%, transparent);
+}
+
+/* soft glow used behind hero / lit tiles */
+.glow-accent {
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--color-accent) 20%, transparent),
+    0 24px 70px -30px color-mix(in oklch, var(--color-accent) 55%, transparent);
+}
+
+/* dotted grid backdrop */
+.grid-field {
+  background-image: radial-gradient(
+    color-mix(in oklch, var(--color-line-bright) 55%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 30px 30px;
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 0%,
+    #000 0%,
+    transparent 75%
+  );
+  mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 0%,
+    #000 0%,
+    transparent 75%
+  );
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* status chips — never colour-only, each pairs with text + icon */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.32rem 0.62rem;
+  border-radius: 99px;
+  border: 1px solid var(--color-line);
+  background: color-mix(in oklch, var(--color-surface-2) 70%, transparent);
+  color: var(--color-ink-muted);
+}
+.chip .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: currentColor;
+}
+.chip--run {
+  color: var(--color-accent);
+  border-color: color-mix(in oklch, var(--color-accent) 45%, var(--color-line));
+}
+.chip--go {
+  color: var(--color-go);
+  border-color: color-mix(in oklch, var(--color-go) 45%, var(--color-line));
+}
+.chip--warn {
+  color: var(--color-warn);
+  border-color: color-mix(in oklch, var(--color-warn) 45%, var(--color-line));
+}
+.chip--danger {
+  color: var(--color-danger);
+  border-color: color-mix(in oklch, var(--color-danger) 45%, var(--color-line));
+}
+
+/* the running pulse */
+.pulse-dot {
+  position: relative;
+}
+.pulse-dot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 99px;
+  background: currentColor;
+  opacity: 0.5;
+  animation: pulse-ring 2s var(--ease-out-soft) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.caret {
+  display: inline-block;
+  width: 0.6ch;
+  background: var(--color-accent);
+  animation: blink 1.05s step-end infinite;
+}
+
+@keyframes sheen {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -16px, 0);
+  }
+}
+.float-slow {
+  animation: float-slow 12s ease-in-out infinite;
+}
+
+/* shared section wrapper */
+.wrap {
+  width: 100%;
+  max-width: 75rem;
+  margin-inline: auto;
+  padding-inline: clamp(1.1rem, 4vw, 2.2rem);
+}
+
+/* artifact key (inline file/command token) */
+.k {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  padding: 0.08em 0.4em;
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--color-surface-2) 80%, transparent);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink);
+}
+.k--accent {
+  color: var(--color-accent);
+  border-color: color-mix(in oklch, var(--color-accent) 40%, var(--color-line));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .float-slow {
+    animation: none !important;
+  }
+}
