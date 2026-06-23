@@ -104,7 +104,7 @@ A quick map — the [README "Layout" section](README.md#layout) has the full ver
 
 - `pack/.claude/skills/` — 28 skills (19 user-invocable `rite-*` + 9 model-invoked `devrites-*`), plus the internal `devrites-lib` script library.
 - `pack/.claude/agents/` — 11 agents: 10 fresh-context read-only reviewers + 1 writer (`devrites-slice-wright`).
-- `pack/.claude/rules/` — 16 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
+- `pack/.claude/rules/` — 20 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
 - `evals/` — trigger evals (20 queries per public skill) + `golden/` fixtures for the deterministic outcome grader.
 - `scripts/` — install lib, validators, eval runner, the outcome grader (`grade-feature.sh` / `run-outcome-evals.sh`), release tooling.
 - `mcp/` — `devrites-mcp.mjs`, an MCP stdio server over the `devrites` CLI.

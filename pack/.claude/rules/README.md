@@ -11,8 +11,8 @@ prefers what's already there).
 ## Loading model — progressive disclosure
 
 To keep context lean, the rules follow Claude's progressive-disclosure pattern. There
-are 18 rule files (plus this README index): each DevRites `rite-*` skill Reads
-`.claude/rules/core.md` as its first step; the other 17 rule files load on demand by the
+are 20 rule files (plus this README index): each DevRites `rite-*` skill Reads
+`.claude/rules/core.md` as its first step; the other 19 rule files load on demand by the
 phase that needs them.
 
 ### Always-on (read by each `rite-*` skill as step 0)
@@ -32,11 +32,13 @@ phase that needs them.
 | `code-review.md` | Small PRs, severity labels, what to check, actionable feedback. | `/rite-review`, `/rite-seal`. |
 | `security.md` | Untrusted input, least privilege, secrets, three-tier trust boundary, fail closed. | When input / auth / data / integrations are in scope. |
 | `performance.md` | Measure first, common pitfalls, prove the win. | When perf is in scope. |
+| `observability.md` | Structured logs, metrics/SLIs, traces, symptom-based alerts, verify-the-telemetry-fires — proof a feature works in prod. | When the change has a runtime surface (endpoint, job, integration, user flow); `/rite-prove`, `/rite-seal`. |
 | `patterns.md` | SOLID, composition, loose coupling, avoid over-engineering. | `/rite-build`, simplification audit. |
 | `git-workflow.md` | Conventional Commits, atomic commits, small PRs. | `/rite-ship` commit / push / tag steps. |
 | `hooks.md` | Stage checks by cost, fast local hooks, secret scanning. | Reference-only — read when setting up the project's git hooks; not auto-loaded by any phase. |
 | `documentation.md` | Explain why, keep current, record decisions. | `/rite-spec`, `/rite-define`, `/rite-seal`. |
 | `development-workflow.md` | Small batches, trunk-always-green, definition of done. | `/rite-define`, `/rite-plan`. |
+| `deprecation.md` | Code-as-liability, Hyrum's law, prove-unused-before-remove, expand→contract, deprecate-before-delete. The safe path behind the irreversible-migration gate. | When removing / replacing / migrating code, a feature, an API, or data. |
 | `agents.md` | DevRites review subagents + specialist skills, when to fan out. | `/rite-review`, `/rite-seal`. |
 | `context-hygiene.md` | `/clear` vs `/compact`, lost-in-the-middle, phase-aware hygiene footer. | Phase-end hygiene footer; choosing `/clear` vs `/compact`. |
 | `anti-patterns.md` | Pack-wide rationalizations + red flags the agent reaches for. | Loaded by each `rite-*/reference/anti-patterns.md`; loaded directly when reluctance is broader than the active phase. |

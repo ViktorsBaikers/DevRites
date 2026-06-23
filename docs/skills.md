@@ -154,7 +154,7 @@ The 9 model-invoked internal specialists (hidden from the menu): `devrites-inter
 
 | Skill | What It Does | Use When |
 |---|---|---|
-| (engineering rules) | Live at `.claude/rules/` post-install — each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0); the other 15 rule files (`coding-style.md`, `error-handling.md`, `testing.md`, `code-review.md`, `security.md`, `performance.md`, `patterns.md`, `git-workflow.md`, `hooks.md`, `documentation.md`, `development-workflow.md`, `agents.md`, `context-hygiene.md`, `afk-hitl.md`, `anti-patterns.md`) load on demand per skill body. No carrier skill, no session-start autoload. | n/a — step-0 core / on-demand by path. |
+| (engineering rules) | Live at `.claude/rules/` post-install — each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0); the other 19 rule files (`coding-style.md`, `prose-style.md`, `error-handling.md`, `testing.md`, `code-review.md`, `security.md`, `performance.md`, `observability.md`, `patterns.md`, `git-workflow.md`, `hooks.md`, `documentation.md`, `development-workflow.md`, `deprecation.md`, `agents.md`, `context-hygiene.md`, `anti-patterns.md`, `afk-hitl.md`, `tooling.md`) load on demand per skill body. No carrier skill, no session-start autoload. | n/a — step-0 core / on-demand by path. |
 
 ---
 

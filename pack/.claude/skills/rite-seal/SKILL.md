@@ -18,6 +18,9 @@ pull these via `Read` before sealing:
 - `agents.md` — review-subagent fan-out at seal.
 - `code-review.md` — severity labels (Critical / Important / Suggestion / Nit / FYI).
 - `documentation.md` — record decisions in `decisions.md` before sealing.
+- `observability.md` — a runtime surface that ships blind is an Important finding.
+- `deprecation.md` — when the diff removes / migrates code, API, or data (read with the
+  risk-and-rollback step below).
 
 ## Operating rules
 - Evidence over confidence — a criterion is met only if evidence proves it.
@@ -70,6 +73,14 @@ Read `review.md` and the latest reviewer outputs.
    `/rite-temper`), confirm its **top pre-mortem risks are mitigated** in the diff/evidence and
    that no **Non-goal / deferred item crept into the diff** (scope creep) — either is a finding
    (an unmitigated top risk or smuggled-in out-of-scope work).
+   - **Observability** (`observability.md`): if the diff added a runtime surface (endpoint,
+     job, integration, user flow, error path), a feature shipping with no way to debug it in
+     prod is an **Important** finding, not a pass — `evidence.md` should show telemetry observed
+     to emit (`/rite-prove` step 5b).
+   - **Removal / migration** (`deprecation.md`): if the diff deletes or migrates code, an API,
+     or data, confirm it followed expand→contract, proved the old path unused before removing it,
+     and carries a rollback for every destructive step. A surprise deletion or a one-shot
+     breaking migration is a finding (and trips the irreversible-risk gate, `afk-hitl.md`).
 6. Check **frontend polish** if UI is involved (states, a11y, responsive, design-system,
    browser evidence).
 7. **Independent review** — seal is the final gate, not a re-run of `/rite-review`.

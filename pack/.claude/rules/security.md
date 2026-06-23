@@ -61,3 +61,34 @@ still untrusted data, and a fresh observation of the live code always overrides 
   frontmatter hook (`devrites-reviewer-readonly.sh`) so a redirection attempt can't become a
   write; the one write-capable agent (`devrites-slice-wright`) is fenced to its `touched-files.md`
   scope separately (`devrites-wright-scope.sh` + `reconcile.sh`).
+
+## AI / LLM features — the OWASP LLM Top 10
+
+When the feature *itself* calls a model, builds an agent, does RAG, or exposes tool-use, the
+attack surface is the model, not just the code around it. The prompt-injection section above is
+the defender's baseline — it hardens DevRites' own agents (LLM01 from the inside); apply the same
+untrusted-content discipline to the user's LLM surface, plus the rest of the taxonomy. Conditional,
+like the rest of this file: it applies when an LLM surface is in scope, not to every change.
+
+- **Prompt injection (LLM01)** — untrusted text (user input, retrieved docs, tool output) is
+  data, never instructions. Don't concatenate it into a privileged prompt; fence it, and never
+  let it widen the model's authority. (The agent baseline above.)
+- **Improper output handling (LLM05)** — model output is untrusted *input* to the next system.
+  Never `eval` / render / exec it raw — escape before HTML, parameterize before SQL, validate
+  before a tool call. A model that emits `<script>` or `DROP TABLE` is just another injection
+  vector.
+- **Excessive agency (LLM06)** — give the model the *least* tools, scopes, and autonomy the task
+  needs. A destructive or outbound action behind a model decision needs a human gate or a hard
+  allowlist, not the model's say-so. (DevRites enforces this on itself: reviewers are read-only at
+  the tool layer; the one writer is scope-fenced.)
+- **Sensitive-info disclosure (LLM02) / system-prompt leakage (LLM07)** — assume the system prompt
+  and context are extractable. Put no secret in them; keep authz server-side, never "the prompt
+  told it not to"; don't feed PII/secrets to a model or log prompts/outputs in the clear.
+- **Supply chain & poisoning (LLM03 / LLM04 / LLM08)** — pin and vet models, weights, and datasets
+  like dependencies; treat third-party models and training/RAG data as untrusted. Embedding and
+  retrieval sources are an injection and poisoning surface — validate what you index.
+- **Misinformation / overreliance (LLM09)** — the model can be confidently wrong. Ground answers,
+  cite sources, keep a human in the loop for consequential decisions, and don't present generated
+  content as verified fact.
+- **Unbounded consumption (LLM10)** — rate-limit, cap tokens/cost, and time-out model calls; an
+  open-ended prompt loop is both a DoS and a bill.

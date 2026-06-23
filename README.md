@@ -113,6 +113,7 @@ rules carrier, workspace state, namespace map) →
 [skills catalogue](docs/skills.md) ·
 [command map](docs/command-map.md) ·
 [flow diagrams](docs/flow.md) ·
+[orchestration](docs/orchestration.md) ·
 [usage examples](docs/usage.md) ·
 [release pipeline](docs/release.md) ·
 [engineering rules](pack/.claude/rules/README.md)

@@ -1,6 +1,6 @@
 ---
 name: devrites-security-auditor
-description: Fresh-context security auditor for /rite-seal. Use to independently audit a DevRites feature diff for OWASP Top 10 issues, trust-boundary violations, secrets, and dependency risk. Adversarial — assumes input is hostile.
+description: Fresh-context security auditor for /rite-seal. Use to independently audit a DevRites feature diff for OWASP Top 10 issues, trust-boundary violations, secrets, dependency risk, and — when the feature has an AI/LLM surface (model calls, agents, RAG, tool-use) — the OWASP LLM Top 10. Adversarial — assumes input is hostile.
 tools: Read, Grep, Glob, Bash
 hooks:
   PreToolUse:
@@ -31,6 +31,25 @@ Workspace `.devrites/work/<slug>/`: read `spec.md` (data model / API / affected 
 - **Dependencies** — new/updated packages free of known-vuln versions.
 - **Deserialization** of untrusted data.
 
+## AI / LLM surface (only when the feature calls a model / builds an agent / does RAG / exposes tool-use)
+Apply the OWASP LLM Top 10 (`.claude/rules/security.md` § AI / LLM features):
+- **Prompt injection (LLM01)** — untrusted text fenced as data, not concatenated into a
+  privileged prompt; no authority-widening.
+- **Improper output handling (LLM05)** — model output treated as untrusted input: escaped /
+  parameterized / validated before HTML, SQL, shell, or a tool call. Never `eval`/render/exec raw.
+- **Excessive agency (LLM06)** — least tools/scopes/autonomy; destructive or outbound actions
+  behind a model decision gated or allowlisted, not taken on the model's say-so.
+- **Disclosure / prompt leakage (LLM02 / LLM07)** — no secret in the system prompt or context;
+  authz server-side, not prompt-enforced; PII/secrets not fed to the model or logged.
+- **Supply chain & poisoning (LLM03 / LLM04 / LLM08)** — models, weights, datasets, and RAG/
+  embedding sources pinned, vetted, and treated as untrusted.
+- **Overreliance (LLM09)** / **unbounded consumption (LLM10)** — grounded + human-in-loop for
+  consequential calls; rate/token/cost/time limits on model calls.
+
+When the diff touches DevRites' own agent surface (new agent, hook, or tool grant), apply the same
+lens to the pack itself: confirm least agency (read-only at the tool layer where it should be),
+no secret in any prompt, and model/tool output not trusted as instructions.
+
 ## Trust boundary
 Apply the three-tier discipline per `.claude/rules/security.md`. Flag any value
 reaching the trusted tier without crossing the boundary.
@@ -49,5 +68,6 @@ Security audit (<slug>) — independent
 [Important]/[Suggestion]/[Nit]/[FYI] ...
 Boundary check: <skips? | clean>
 Dependencies: <audited; issues?>
+LLM surface: <n/a | audited; issues?>
 Verdict: <GO-able / NO-GO — blockers>
 ```

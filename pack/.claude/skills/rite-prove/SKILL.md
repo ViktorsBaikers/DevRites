@@ -37,6 +37,8 @@ the affected criteria/routes to refresh proof before `/rite-seal`.
 pull these via `Read` when relevant:
 - `testing.md` — pyramid, determinism, no-flake discipline.
 - `performance.md` — measure first when perf is in scope.
+- `observability.md` — when the change has a runtime surface (endpoint, job, integration,
+  user flow): telemetry must be present **and observed to emit**, not assumed.
 
 ## Operating rules
 - Evidence over confidence. Feature scope only — fix within the feature or record a
@@ -97,6 +99,14 @@ pull these via `Read` when relevant:
    example tests miss the edge cases these explore. If the same unit regenerated from a paraphrased
    spec (or a second sample) **diverges in behaviour on shared inputs**, treat that as a low-confidence
    signal: under AFK it blocks an auto-GO and routes to HITL.
+5b. **Observability check (runtime surface only).** If the feature added an endpoint, job,
+   queue consumer, external integration, user-facing flow, or a new error path, apply the
+   on-call test (`observability.md`): are the signals needed to debug a prod failure present —
+   structured logs on the failure path, a metric/counter on errors, a trace id across any
+   boundary? Then **observe them fire**: trigger the path and confirm the log line / metric /
+   span actually emits, and record that observation in `evidence.md`. Instrumentation never seen
+   emitting is unproven, not done. Skip entirely for pure-internal / docs / config / type-only
+   changes — don't instrument a typo fix.
 6. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. Reproduce → isolate → fix within scope → re-run; if a fix
    would exceed scope, record a blocker.
