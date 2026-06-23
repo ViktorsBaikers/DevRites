@@ -20,10 +20,21 @@ is complete, and to scope anything the agent could not (e.g. UI-only lenses belo
 ## 2. Readability
 - Can the next engineer understand it without the author? Naming, function length,
   nesting depth, comments that explain *why* not *what*.
+- Structural smells: a conditional **bolted onto an unrelated flow** (wants its own
+  helper/state/policy — a design smell, not a nit); **repeated conditionals on the same
+  shape** (a missing model or dispatcher).
 
 ## 3. Architecture
 - Right seam/boundary? Coupling and cohesion. Does it fit existing patterns or
   introduce a competing one? Is the abstraction earned (not premature)?
+- Does a refactor **reduce** complexity or just **relocate** it? Count the concepts a
+  reader must hold; a "cleaner" version that leaves that count unchanged isn't cleaner.
+- Is feature-specific logic **leaking into a shared module** instead of its owning layer?
+  Is a **type boundary** left implicit by a gratuitous `any`/cast or a silent fallback?
+- **Name the remedy, not just the smell** — replace a conditional chain with a typed
+  dispatcher, separate orchestration from business logic, move feature logic to its owning
+  package, delete a pass-through wrapper, split a large file. Prefer the move that removes
+  moving pieces over one that re-centralizes the same complexity.
 
 ## 4. Security
 - Trust boundaries, input validation, authz checks, secrets handling. Hand off to
@@ -43,4 +54,7 @@ is complete, and to scope anything the agent could not (e.g. UI-only lenses belo
 
 ## Sizing & speed
 Prefer reviewing roughly one slice / ~100 lines of meaningful change at a time. Larger
-diffs hide defects — recommend splitting rather than rubber-stamping.
+diffs hide defects — recommend splitting rather than rubber-stamping. Watch **file size,
+not just diff size**: a small diff that pushes an already-large file further past a healthy
+boundary wants decomposition (extract helpers / split modules) *first* — decompose, then
+add.
