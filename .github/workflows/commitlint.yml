@@ -11,6 +11,11 @@ permissions:
   contents: read
   pull-requests: write
 
+# Cancel an in-flight run when the PR gets a new push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   commitlint:
     name: commitlint
@@ -24,6 +29,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '22'
+          cache: 'npm'
 
       - name: Install npm deps
         run: npm install --no-audit --no-fund
