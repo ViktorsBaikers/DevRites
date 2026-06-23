@@ -308,7 +308,9 @@ code, kbd, samp { font-family: var(--font-mono); }
 .rail { position: relative; }
 .rail__acts { display: grid; grid-auto-flow: column; gap: 0.4rem; margin-bottom: 0.6rem; }
 .rail__act { font-family: var(--font-mono); font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); grid-column: span var(--span); border-top: 1px solid var(--line); padding-top: 0.4rem; }
-.rail__track { position: relative; display: grid; grid-template-columns: repeat(var(--nodes), 1fr); padding: 0.4rem 0 1.4rem; }
+/* equal columns regardless of node count — repeat(var(--nodes),…) is invalid CSS,
+   so auto-flow column + 1fr auto-columns distributes the nodes evenly instead. */
+.rail__track { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 0.4rem 0 1.4rem; }
 .rail__line { position: absolute; top: 0.9rem; left: 0; right: 0; height: 2px; background: var(--line); border-radius: 2px; }
 .rail__fill { position: absolute; top: 0.9rem; left: 0; height: 2px; width: 100%; background: var(--blade-135); border-radius: 2px; box-shadow: 0 0 10px -1px var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 1.1s var(--ease); }
 .node { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
@@ -319,6 +321,10 @@ code, kbd, samp { font-family: var(--font-mono); }
 .node.is-current .node__dot { background: var(--bg-deep); border-color: var(--accent); color: var(--accent); box-shadow: var(--glow); }
 .node.is-current .node__name { color: var(--accent); }
 .node__here { position: absolute; top: -1.5rem; font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); white-space: nowrap; }
+/* compact console rail: dots carry the 1-10 sequence; only the active phase is labelled
+   (the full named rail lives in the workflow section, where there's room for all ten). */
+#console .node__name { display: none; }
+#console .node.is-current .node__name { display: block; position: absolute; top: calc(100% + 0.15rem); left: 50%; transform: translateX(-50%); white-space: nowrap; }
 [data-rail="static"] .node { cursor: pointer; }
 [data-rail="static"] .node:hover .node__dot, [data-rail="static"] .node:focus-visible .node__dot { border-color: var(--accent); box-shadow: var(--glow); }
 [data-rail="static"] .node:hover .node__name { color: var(--ink); }
