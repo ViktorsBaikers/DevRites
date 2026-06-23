@@ -65,7 +65,16 @@ Observable outcomes that mean "this worked". Numbers where possible. No tech nam
 
 ## Acceptance criteria
 Binary, evidence-backed checklist; each maps to a scenario/FR. See acceptance-criteria.md.
-- [ ] <criterion> (FR-00x)
+- [ ] [AC1] <criterion> (FR-00x)
+
+For a behavioral / high-risk requirement (auth, data model, state machine, public API, money,
+migration), write it as a structured Requirement/Scenario block instead — testable by
+construction and lint-checked by spec-validate.sh (see spec-grammar.md). Keep the [ACn] id
+inside the scenario so the seal still grades it; routine criteria stay flat bullets above.
+### Requirement: <name>
+The system SHALL <core observable behavior>.
+#### Scenario: <name>
+- [ ] [AC2] **WHEN** <trigger> **THEN** <observable outcome>  (**AND** <extra condition>)
 
 ## Non-goals
 Explicitly out of scope for this version.
@@ -119,6 +128,7 @@ List every open marker; blocking ones must be zero at the gate.
 - [ ] Design references gathered + saved (if the human supplied any)
 - [ ] **UX/UI shaped into `design-brief.md`** (if the feature touches UI) — direction, key states, interaction model decided
 - [ ] Requirements are testable and unambiguous
+- [ ] **Structured requirements are grammar-valid** (if any) — `### Requirement:` / `#### Scenario:` blocks pass `spec-validate.sh` (SHALL + WHEN/THEN, unique headers); flat `[ACn]` bullets need no check (see spec-grammar.md)
 - [ ] Success criteria are measurable and technology-agnostic
 - [ ] **Spec-quality checklists pass** — every `checklists/<domain>.md` reaches `Verdict: pass` (zero CRITICAL "unit-tests-for-English" fails; see [spec-checklists.md](spec-checklists.md))
 ```

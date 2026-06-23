@@ -11,8 +11,8 @@ prefers what's already there).
 ## Loading model — progressive disclosure
 
 To keep context lean, the rules follow Claude's progressive-disclosure pattern. There
-are 21 rule files (plus this README index): each DevRites `rite-*` skill Reads
-`.claude/rules/core.md` as its first step; the other 20 rule files load on demand by the
+are 22 rule files (plus this README index): each DevRites `rite-*` skill Reads
+`.claude/rules/core.md` as its first step; the other 21 rule files load on demand by the
 phase that needs them.
 
 ### Always-on (read by each `rite-*` skill as step 0)
@@ -29,6 +29,7 @@ phase that needs them.
 | `prose-style.md` | Human-voice writing for artifacts + replies; two registers (prose vs technical); the LLM-tell cut-list. Depth in the `devrites-prose-craft` skill. | Any phase that writes prose — `/rite-spec`, `/rite-define`, `/rite-review`, `/rite-seal`, `/rite-ship`; `/rite-polish` Phase 1 as the catch. |
 | `error-handling.md` | Fail fast, no silent catches, meaningful messages, fail closed. | `/rite-build`, `/rite-polish` (backend), `/rite-review`. |
 | `testing.md` | Pyramid, behavior over implementation, determinism. | `/rite-build`, `/rite-prove`, `/rite-review`. |
+| `spec-grammar.md` | Optional, recommended structure for behavioral acceptance — `### Requirement:` (SHALL/MUST) + `#### Scenario:` (WHEN/THEN), validated deterministically by `spec-validate.sh`. Progressive rigor; flat `[ACn]` bullets stay valid. | `/rite-spec` readiness gate; `/rite-prove`, `/rite-review` consume the scenario hooks. |
 | `code-review.md` | Small PRs, severity labels, what to check, actionable feedback. | `/rite-review`, `/rite-seal`. |
 | `security.md` | Untrusted input, least privilege, secrets, three-tier trust boundary, fail closed. | When input / auth / data / integrations are in scope. |
 | `performance.md` | Measure first, common pitfalls, prove the win. | When perf is in scope. |
