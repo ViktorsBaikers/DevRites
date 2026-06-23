@@ -8,14 +8,6 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 
 * **agents:** code reviewer gets structural-depth lenses ([b37c9d2](https://github.com/ViktorsBaikers/DevRites/commit/b37c9d259b99613b971269fac2943977dedbea6d))
 * **agents:** perf reviewer gets Source/Measured CWV modes ([be82b20](https://github.com/ViktorsBaikers/DevRites/commit/be82b20b37252a9f55d77e0f71659ec58a213ca6))
-* **rules:** add observability + deprecation rules, OWASP LLM Top 10 ([0c29760](https://github.com/ViktorsBaikers/DevRites/commit/0c29760e504c22c18d7ca2c5e1986746ba95a07d))
-
-## [2.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.0.0...v2.1.0) (2026-06-23)
-
-### Added
-
-* **agents:** code reviewer gets structural-depth lenses ([b37c9d2](https://github.com/ViktorsBaikers/DevRites/commit/b37c9d259b99613b971269fac2943977dedbea6d))
-* **agents:** perf reviewer gets Source/Measured CWV modes ([be82b20](https://github.com/ViktorsBaikers/DevRites/commit/be82b20b37252a9f55d77e0f71659ec58a213ca6))
 
 ## [2.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.18.0...v2.0.0) (2026-06-23)
 
