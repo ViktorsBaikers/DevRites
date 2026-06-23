@@ -38,6 +38,7 @@ Read `review.md` and the latest reviewer outputs.
 | `Critical == 0` and `Important > 0` and acceptance proven and drift resolved | Render interactive prompt: *"`Important > 0` open. Proceed to seal? [y/N]"*. Default **N**. If the user types `y`, GO; otherwise NO-GO with the open Important findings listed as blockers-by-policy. |
 | `Critical > 0` | **NO-GO**, no exceptions. List every Critical with `file:line` and fix direction. |
 | Any acceptance criterion unproven | **NO-GO**, list the unproven criteria. |
+| Visual Verdict `FAIL` on an acceptance-mapped UI criterion (`browser-evidence.md`) | **NO-GO** — an unmet acceptance criterion. A declared-state `FAIL` is Important (the `Important > 0` row). UI build with a `design-brief.md` but no Visual Verdict → Important evidence gap. No brief → not applicable. |
 | Diff violates a declared project principle (`.devrites/principles.md`) with no recorded, human-approved exception | **NO-GO**, list each violated principle with `file:line`. Same standing as an unproven criterion (absent / empty file → none declared → not a blocker). |
 | Unresolved drift in `drift.md` | **NO-GO**, route through `/rite-plan` first. |
 | Any `questions.md` entry with `gate: validating` and `status: open` | **NO-GO** regardless of behavior impact — an open validating gate is merge-blocking by definition. A slice marked `built (pending review)` is not done. |
@@ -65,7 +66,11 @@ Read `review.md` and the latest reviewer outputs.
    proof; the `devrites-spec-reviewer` + `devrites-test-analyst` fan-out in step 7 is the
    independent cross-check (a verifier that never saw the optimistic narrative).
 3. Verify tests, build/typecheck/lint, and browser proof are present and green for the
-   scope. Re-run if cheap and in doubt.
+   scope. Re-run if cheap and in doubt. **For a UI feature with a `design-brief.md`**, read the
+   `## Visual Verdict` table in `browser-evidence.md`: a `FAIL` on an **acceptance-mapped**
+   criterion is an unmet acceptance criterion (NO-GO, per the severity gate), a declared-state
+   `FAIL` is **Important**, and a UI build whose brief exists but whose verdict is **absent** is an
+   Important evidence gap (the scorecard should have been emitted at browser-proof).
 4. Check unresolved **questions** and **drift** — any open item that changes product
    behavior blocks. **Any `questions.md` entry with `gate: validating` and `status: open`
    is a NO-GO regardless of behavior impact** (an open validating gate is merge-blocking by

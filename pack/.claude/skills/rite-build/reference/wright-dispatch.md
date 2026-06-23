@@ -16,8 +16,11 @@ The orchestrator's window is full of spec investigation, planning, prior slices,
 output — the exact "lost-in-the-middle" load that degrades instruction-following and pulls the
 model toward generic code. The wright starts clean and sees only the contract, so it holds the
 slice boundary strictly and writes to the *project's* idiom instead of drifting. Single-threaded
-by design: **one** wright per slice, never a parallel fan-out of writers — concurrent writers
-make conflicting implicit decisions and produce incoherent code.
+by design: **one** wright per slice, never a parallel fan-out of writers *sharing a tree* —
+concurrent writers on one working tree make conflicting implicit decisions and produce incoherent
+code. The one sanctioned exception is a **forge** slice, which competes K candidates in *isolated*
+worktrees and lands exactly one — no tree ever has two authors, so the invariant holds (see
+[Forge](#forge--competing-candidates-the-deliberate-exception)).
 
 ## The contract `/rite-build` sends
 One `Task` call to `devrites-slice-wright` carrying everything the writer needs and nothing it
@@ -90,6 +93,23 @@ set.
    `state.md`, `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI) per
    [`evidence-standard.md`](evidence-standard.md). Evidence is the wright's real command output,
    not its say-so. Then tick AFK if `.devrites/AFK` is present (`tick-afk.sh`; exit 3 → STOP).
+
+## Forge — competing candidates (the deliberate exception)
+
+The single-writer rule forbids parallel writers **sharing one tree**. A `Forge: yes` slice
+(flagged by `/rite-vet` as a genuine architecture fork at Complexity ≥4) is the one sanctioned
+fan-out, and it keeps the rule intact by **isolation**: each candidate wright works in its own
+`git worktree`, sees the identical slice contract plus one **distinct strategy**, and never
+touches another candidate's tree. A read-only [`devrites-forge-judge`](../../../agents/devrites-forge-judge.md)
+then scores the finished candidates against acceptance + `test-plan.md` + `.devrites/principles.md`
++ the anti-slop charter, and the orchestrator lands **exactly one** winner's diff in the working
+tree. No tree ever has two authors; exactly one author's work ships. Everything downstream (doubt,
+fail-on-red, reconcile against the winner's claimed set, record) runs on the winner as if a single
+wright had built it.
+
+Full mechanics — strategy derivation, worktree setup, the judge contract, landing + grafting the
+winner, `forge-report.md`, AFK budgeting, and the worktree-unavailable fallback — live in
+[`forge.md`](forge.md).
 
 ## Fallback
 If the `Task` tool / sub-agent dispatch is unavailable, `/rite-build` runs the wright's

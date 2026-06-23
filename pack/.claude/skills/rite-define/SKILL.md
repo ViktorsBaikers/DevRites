@@ -112,6 +112,9 @@ Goal:
 Satisfies: AC-n[, AC-m]     # reverse traceability — which spec acceptance criteria this slice satisfies
 Acceptance criteria:        # which spec FR/criteria this satisfies
 Complexity: N/5 — <reason>  # 1=trivial … 5=hairy; >3 triggers a reslice unless the reason justifies it
+Forge: no | yes — <reason>  # default no. Propose yes ONLY when Complexity ≥4 AND the slice has ≥2 genuinely-viable
+                            # approaches with no clear winner (an architecture fork, not just "hard"). /rite-vet confirms
+                            # or clears it; /rite-build then competes K isolated candidates and keeps one. See rite-build/reference/forge.md.
 Mode: AFK | HITL            # AFK = implementable + mergeable without human gating;
                             # HITL = needs a human decision mid-slice (design call,
                             # architectural choice, destructive migration sign-off).
@@ -146,7 +149,10 @@ Evidence required:
 > coverage. Keep `Blocked by` cycle-free. `depends_on` is the machine-readable mirror tools read
 > to pick the next *buildable* slice; `Complexity` (>3 → reslice) sizes it; `Satisfies` +
 > `Consumes/Produces` + `Known-Gotchas` + `Validation commands` make each slice a self-contained,
-> one-pass-implementable brief (the PRP target `/rite-vet` checks).
+> one-pass-implementable brief (the PRP target `/rite-vet` checks). `Forge` flags the rare slice
+> worth *competing* — a genuine architecture fork at high complexity, not a slice that is merely
+> hard. Define only proposes it; `/rite-vet` confirms or clears it and `/rite-build` acts on it.
+> The bulk of slices stay `no` (single-path is cheaper and the default).
 
 > **Mid-flight discipline.** When tempted to skip vertical slicing, coverage mapping, or dependency-order discipline — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 

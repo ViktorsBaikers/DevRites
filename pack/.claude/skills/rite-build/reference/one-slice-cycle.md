@@ -9,6 +9,8 @@ The orchestrator (`/rite-build`) gates and records; the **wright** writes. See
 ```
 SELECT    → orchestrator: restate slice goal + acceptance + scope boundary; HITL gate (pause pre-code)
 (SHAPE)   → orchestrator: if UI and no design-brief.md, shape it (devrites-ux-shape) before dispatch
+(FORGE)   → orchestrator: if slice is Forge: yes, compete K=2–3 isolated candidate wrights →
+            devrites-forge-judge → land one winner → forge-report.md, then continue at DOUBT (forge.md)
 DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). Inside the wright:
    ORIENT    → load only the files this slice touches; learn the project's idiom; reuse-first
    (RED)     → if behavior change: write the failing test first

@@ -129,6 +129,17 @@ webhook / config / error messages / getting-started — predict the DX scorecard
    slice's Consumes/Produces, Known-Gotchas, validation commands, and reuse targets are present and
    concrete — a brief that can't be built in one pass is a finding; harden the slice until it clears,
    before `/rite-build`.
+4a. **Forge gate (rare — confirm or clear).** For each slice carrying `Forge: yes` (proposed by
+   `/rite-define`), and any slice the architecture axis showed has **≥2 genuinely-viable approaches
+   with no clear winner at Complexity ≥4**, confirm the flag: name the 2–3 candidate strategies that
+   actually differ (different data shape, different seam, reuse-vs-build — not variations of one), and
+   confirm the slice's acceptance + `test-plan.md` give the judge an objective scorecard. **Clear**
+   `Forge: yes` back to `no` when the review settled on one approach, the slice is below the complexity
+   bar, or you can't name two real strategies — competing a decided or trivial slice burns K× the build
+   for nothing. Forge is a **build-cost** decision, not an irreversible one: it never bypasses a gate,
+   and under AFK its K candidates count against the slice budget. Record the confirmed strategies in
+   the slice brief so `/rite-build` competes them
+   ([`rite-build/reference/forge.md`](../rite-build/reference/forge.md)). No flagged slice → nothing to do.
 5. **Write `eng-review.md` + `test-plan.md`, fold back** — [`reference/artifacts.md`](reference/artifacts.md).
    `eng-review.md` is the durable record; `test-plan.md` is the build-readable coverage target
    (`/rite-build` and `/rite-prove` read it). Harden `plan.md` / `tasks.md` directly for
@@ -167,6 +178,7 @@ Findings: <Critical n / Important n / Suggestion n>   (suppressed low-confidence
 Coverage: <x/y paths> planned (<s/t scenarios mapped | n/a>) · GAPS closed <n> · regressions flagged <n>  → test-plan.md
 Failure modes: <n> mapped (<n critical: no test + no handling + silent>)
 Parallelization: <n lanes — n parallel / n sequential> | sequential (no opportunity)
+Forge: <n slices flagged — strategies named | none>   (competed candidate builds at /rite-build)
 Reviewer loop: <n> iter · cross-model: ran (codex) | off
 Plan: hardened in place | <n> deltas routed via Spec Drift Guard → /rite-plan repair
 Next: /rite-build   (builds the vetted plan)

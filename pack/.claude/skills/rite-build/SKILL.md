@@ -52,6 +52,12 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   are **continue the same wright once** (it fixes in its own context) or **stop + escalate** —
   never patch the code yourself. The `reconcile.sh` gate (step 6) enforces this by exit code:
   any source file changed outside the wright's claimed set is a hard STOP.
+- **A `Forge: yes` slice competes candidates — one author still lands.** When `/rite-vet`
+  flagged the slice a genuine architecture fork, step 3 runs K=2–3 candidate wrights in
+  **isolated worktrees** and lands exactly one winner's diff; the single-writer invariant holds
+  because no tree ever has two authors and only the winner reaches the working tree. You still
+  never edit source, and reconcile runs against the winner's claimed set. The default slice is
+  single-path — forge is the rare exception ([`reference/forge.md`](reference/forge.md)).
 
 ## Workflow ([one-slice-cycle](reference/one-slice-cycle.md))
 0. **Rules + AFK + readiness check.** Read `.claude/rules/core.md` first. Then **run the
@@ -118,6 +124,20 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    [ -f "$ST" ] || ST=pack/.claude/skills/devrites-lib/scripts/stuck.sh
    [ -f "$ST" ] && bash "$ST" log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>" || true
    ```
+   **Forge branch — only if the selected slice is `Forge: yes`.** Instead of the single dispatch
+   below, run the competitive build per [`reference/forge.md`](reference/forge.md): K=2–3 candidate
+   wrights, each in an **isolated git worktree** on the distinct strategy `/rite-vet` named, then a
+   fresh-context [`devrites-forge-judge`](../../agents/devrites-forge-judge.md) scores them against
+   acceptance + `test-plan.md` + `.devrites/principles.md` + the anti-slop charter, and you land
+   exactly **one** winner's diff in the working tree, graft any cheap runner-up improvement by
+   continuing the winning wright once, and write `forge-report.md`. Forge returns the **same shape**
+   a single wright does (one structured artifact, for the winner), so steps 4–7 (doubt, fail-on-red,
+   reconcile against the winner's claimed set, record, stop) run **unchanged**. If you cannot give
+   the judge an objective scorecard (the slice lacks acceptance / `test-plan.md` coverage) or cannot
+   name two genuinely different strategies, the flag is stale — clear it and build single-path. The
+   single-writer invariant is intact: each candidate owns its own tree, exactly one author's diff
+   lands. Then **stop** here for this slice; the steps below are the default single-path dispatch.
+
    Then assemble the slice contract and send it per
    [`reference/wright-dispatch.md`](reference/wright-dispatch.md): the slice goal, acceptance
    criteria, and **scope boundary**; the paths it may touch (`touched-files.md`); the context
@@ -269,5 +289,8 @@ Next  ▸ /rite-prove  (prove the completed feature)
 
 Keep fact lines terse — one `key value` per fact, `·` between, no prose. The meter, the
 `✅ ALL BUILT` marker, and the ribbon carry the progress; don't restate them in words.
+
+For a **forged slice**, the `Built` line names the competition and points at the record, e.g.
+`Built  slice 3 — csv-streaming   (forged: 3 candidates → winner B; forge-report.md)`.
 
 **DO NOT continue to the next slice automatically** — even at `✅ ALL BUILT`, `/rite-prove` is the user's call.
