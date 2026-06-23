@@ -18,8 +18,8 @@ AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst
 
 # ---- 1. bash -n on every shell script ------------------------------------
 section "bash syntax (bash -n)"
-SH_LIST="$ROOT/install.sh $ROOT/uninstall.sh"
-for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do [ -f "$f" ] && SH_LIST="$SH_LIST $f"; done
+SH_LIST="$ROOT/install.sh $ROOT/uninstall.sh $ROOT/update.sh"
+for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/hooks/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do [ -f "$f" ] && SH_LIST="$SH_LIST $f"; done
 for f in $SH_LIST; do
   if bash -n "$f" 2>/tmp/dr_synerr; then good "syntax ${f#$ROOT/}"; else bad "syntax ${f#$ROOT/}: $(cat /tmp/dr_synerr)"; fi
 done
@@ -174,12 +174,21 @@ else
   good "no false session-start autoload claim in pack/ docs/ README.md"
 fi
 
-# ---- 15. shellcheck (advisory) -------------------------------------------
-section "shellcheck (advisory)"
+# ---- 15. shellcheck (error = blocking, warning = advisory) ---------------
+# CI runners ship shellcheck, so the error-level gate is enforced on every PR.
+# Locally it self-skips when shellcheck is absent (the gate is non-blocking only
+# where the tool isn't installed — never silently downgraded where it is).
+section "shellcheck (-S error blocking · -S warning advisory)"
 if command -v shellcheck >/dev/null 2>&1; then
-  for f in $SH_LIST; do shellcheck -S warning "$f" || echo "  (shellcheck advisory only — not failing the build)"; done
+  for f in $SH_LIST; do
+    if shellcheck -S error "$f"; then good "shellcheck ${f#"$ROOT"/}"; else bad "shellcheck (error) ${f#"$ROOT"/}"; fi
+  done
+  # warning-level is informational — surfaced per file, never fails the build.
+  for f in $SH_LIST; do
+    shellcheck -S warning "$f" >/dev/null 2>&1 || echo "  advisory (warning-level): ${f#"$ROOT"/}"
+  done
 else
-  echo "skip: shellcheck not installed (optional)"
+  echo "skip: shellcheck not installed locally (optional — CI enforces the error-level gate)"
 fi
 
 # ---- summary -------------------------------------------------------------
