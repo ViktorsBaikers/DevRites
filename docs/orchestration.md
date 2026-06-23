@@ -29,7 +29,12 @@ its judgment is independent.
    the orchestrator reconciles — banding by confidence and surfacing genuine disagreement explicitly
    rather than averaging it away.
 3. **Single writer.** Exactly one `devrites-slice-wright` per slice, never a parallel fan-out of
-   writers — concurrent writers make conflicting implicit decisions that corrupt a coherent design.
+   writers *sharing a tree* — concurrent writers on one tree make conflicting implicit decisions
+   that corrupt a coherent design. The one sanctioned exception is a **forge** slice
+   (`Forge: yes`, flagged by `/rite-vet`): K=2–3 candidate wrights build it on distinct strategies
+   in **isolated** worktrees, `devrites-forge-judge` scores them, and exactly one winner's diff
+   lands — no tree ever has two authors, so the invariant holds
+   ([`rite-build/reference/forge.md`](../pack/.claude/skills/rite-build/reference/forge.md)).
 4. **Lifecycle as user-driven verbs.** Each verb performs one mutation and stops; chaining is
    explicit (the user types the next command), so there are no hidden side effects between phases.
    `/rite-autocomplete` is the one deliberate exception — an opt-in unattended driver.
@@ -41,7 +46,8 @@ its judgment is independent.
 - **A persona that paraphrases another.** Passing one agent's summary to the next is lossy telephone;
   reviewers read the raw diff and contract, not a digest of the author's reasoning.
 - **Parallel writers.** See single-writer above — two agents editing the same feature concurrently
-  is a merge of conflicting decisions, not a speed-up.
+  is a merge of conflicting decisions, not a speed-up. (Forge is *not* this: its candidates write in
+  **isolated** worktrees and exactly one lands, so no tree is ever co-authored.)
 - **A router that does the work.** `/rite` is a *thin dispatcher* — it renders the menu, resolves a
   verb to a skill, and gets out of the way. It holds no phase logic and produces no artifact itself.
   (This is the distinction that makes a router fine: the anti-pattern is a "meta-orchestrator"
@@ -57,11 +63,15 @@ Two Claude Code capabilities sit adjacent to DevRites' model; the stance on each
   plus fresh-context read-only fan-out already give independent context per agent without the
   coordination overhead, and the lifecycle is intentionally single-slice / single-writer. Reach for
   Agent Teams for work *outside* that discipline — competing-hypothesis debugging, or exploring
-  several genuinely different approaches in parallel — not to parallelise a DevRites build.
-- **Worktree isolation.** Orthogonal to DevRites. A single feature is single-writer on one branch by
-  design, so DevRites doesn't spawn worktrees itself — but you can run DevRites *inside* a git
-  worktree to drive two features in parallel without them colliding. The `.devrites/ACTIVE` sentinel
-  is per-working-tree, so each worktree carries its own active feature.
+  several genuinely different approaches in parallel — not to parallelise a DevRites build. The one
+  in-lifecycle form of "compete several approaches" is **forge** (a `Forge: yes` slice), and it is
+  deliberately bounded: vet-gated, K≤3, isolated, winner-takes-all.
+- **Worktree isolation.** A single feature is single-writer on one branch by design, so DevRites
+  doesn't spawn worktrees for ordinary builds — but you can run DevRites *inside* a git worktree to
+  drive two features in parallel without them colliding (the `.devrites/ACTIVE` sentinel is
+  per-working-tree, so each carries its own active feature). The one place DevRites spawns worktrees
+  itself is a **forge** slice: each candidate build gets an ephemeral worktree, auto-removed after
+  the winner lands.
 
 ## See also
 
