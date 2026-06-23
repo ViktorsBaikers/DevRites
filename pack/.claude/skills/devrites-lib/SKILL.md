@@ -48,6 +48,12 @@ first, then `${CLAUDE_SKILL_DIR}`, then the repo `pack/` source).
 - `scripts/check-acceptance.sh` — executable acceptance gate. Compiles `spec.md`'s
   `[ACn]`-tagged criteria and exits `1` unless every one is checked (proven) in `seal.md`;
   used by `/rite-seal` and by the outcome grader.
+- `scripts/spec-validate.sh` — spec-grammar gate (the spec-side mirror of
+  `check-acceptance.sh`). Lints `spec.md`'s structured `### Requirement:` / `#### Scenario:`
+  blocks (SHALL/MUST present, ≥1 scenario each, every scenario has WHEN + THEN, headers
+  unique). Exits `1` on a grammar violation, `0` when valid **or** when the spec uses the flat
+  `[ACn]`-bullet form (no structured blocks — nothing to lint, never a failure). Used by
+  `/rite-spec`'s readiness gate; see [`rules/spec-grammar.md`](../../rules/spec-grammar.md).
 
 **State mutators — write `state.md` / `questions.md` under one contract:**
 
@@ -70,7 +76,8 @@ PR=.claude/skills/devrites-lib/scripts/progress.sh
 **Unified entrypoint (tool-agnostic):**
 
 - `scripts/devrites.sh` — one CLI dispatching to all of the above (`orient` / `ready` /
-  `evidence-fresh` / `acceptance` / `tick-afk` / `resolve` / `close` / `active` / `list` /
-  `use`), so any agent or human can drive `.devrites/` without the skill prose. The MCP
+  `evidence-fresh` / `acceptance` / `spec-validate` / `tick-afk` / `resolve` / `close` /
+  `active` / `list` / `use`), so any agent or human can drive `.devrites/` without the skill
+  prose. The MCP
   wrapper `mcp/devrites-mcp.mjs` exposes the read/gate ops as MCP tools. See
   [`docs/cli-mcp.md`](../../../../docs/cli-mcp.md).

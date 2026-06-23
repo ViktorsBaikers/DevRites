@@ -36,6 +36,8 @@ the affected criteria/routes to refresh proof before `/rite-seal`.
 **Step 0:** Read `.claude/rules/core.md` first. The other rule files load on demand;
 pull these via `Read` when relevant:
 - `testing.md` — pyramid, determinism, no-flake discipline.
+- `spec-grammar.md` — when the spec uses structured `### Requirement:` / `#### Scenario:`
+  blocks, each scenario (WHEN/THEN) is one observable behavior to walk and prove.
 - `performance.md` — measure first when perf is in scope.
 - `observability.md` — when the change has a runtime surface (endpoint, job, integration,
   user flow): telemetry must be present **and observed to emit**, not assumed.
@@ -71,7 +73,19 @@ pull these via `Read` when relevant:
    (`devrites-browser-proof`): routes, viewports, screenshots (opened + described),
    console, network, interaction paths, and design-reference match if references exist.
 5. **Map results to acceptance** — walk `spec.md` acceptance criteria; note which are now
-   proven and which aren't. If `test-plan.md` exists, also walk its acceptance→test map and
+   proven and which aren't. **If the spec uses the structured grammar** (`### Requirement:` /
+   `#### Scenario:` blocks — `spec-grammar.md`), walk it **per scenario**: each `#### Scenario:`
+   WHEN/THEN is one observable behavior that needs a passing asserting test (the WHEN is the
+   arrange, the THEN the assert). A scenario with no covering result is an unproven gap =
+   blocker, the same standing as an uncovered acceptance criterion. Re-run the grammar gate
+   first so a requirement hand-edited to malformed since `/rite-spec` can't masquerade as proven:
+   ```bash
+   SV=.claude/skills/devrites-lib/scripts/spec-validate.sh
+   [ -f "$SV" ] || SV="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/spec-validate.sh"
+   [ -f "$SV" ] || SV=pack/.claude/skills/devrites-lib/scripts/spec-validate.sh
+   [ -f "$SV" ] && { bash "$SV" ".devrites/work/<slug>"; echo "spec-validate rc=$?"; } || true
+   ```
+   If `test-plan.md` exists, also walk its acceptance→test map and
    per-gap requirements — a planned test (especially a regression-Critical) with no covering
    result is an unproven gap, not a pass. **Also walk the test-plan interaction inventory**
    (every interactive element + user flow): each must have a passing asserting test. An
@@ -120,6 +134,7 @@ pull these via `Read` when relevant:
 ```
 Proved: <feature>
 Acceptance criteria proven: <n / total>
+Scenarios proven: <n / total | n/a (flat acceptance)>
 Tests:  <cmd → pass/fail (counts)>
 Build:  <cmd → pass/fail>   Lint: <cmd → pass/fail>
 Browser: <ladder rung used + summary | n/a>

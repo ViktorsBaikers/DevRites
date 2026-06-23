@@ -24,6 +24,10 @@ as their first step; the other rule files load on demand. Pull `documentation.md
 when capturing significant spec decisions (why-not-what, ADR-style notes in `decisions.md`);
 pull `principles.md` when the project has declared invariants (`.devrites/principles.md`) — a
 new spec must respect them, and a requirement that can only be met by breaking one is a blocking gap.
+Pull `spec-grammar.md` when writing acceptance for a behavioral / high-risk requirement (auth,
+data model, state machine, public API, money, migration) — the structured `### Requirement:` /
+`#### Scenario:` (SHALL · WHEN/THEN) form, lint-checked by `spec-validate.sh`. Simple criteria
+stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
 
 ## Operating rules (DevRites core)
 - No silent assumptions · no guessing through confusion · prefer existing conventions ·
@@ -90,7 +94,11 @@ new spec must respect them, and a requirement that can only be met by breaking o
    ([state-workspace](reference/state-workspace.md)). Write `spec.md`
    ([spec-template](reference/spec-template.md)) — WHAT/WHY, technology-agnostic, with
    **Placement & integration**, **Design references**, **Gaps/issues/decisions**, and
-   measurable acceptance ([acceptance-criteria](reference/acceptance-criteria.md)). Also
+   measurable acceptance ([acceptance-criteria](reference/acceptance-criteria.md)). For a
+   behavioral / high-risk requirement, write the acceptance as a structured
+   `### Requirement:` (SHALL) + `#### Scenario:` (WHEN/THEN) block per
+   [`spec-grammar.md`](../../rules/spec-grammar.md), nesting the `[ACn]` id inside each scenario
+   so `/rite-seal` still grades it; routine criteria stay flat `[ACn]` bullets. Also
    write `brief.md`, `references.md`, `questions.md`, `decisions.md`, `assumptions.md`,
    and an initial `state.md` (phase: spec). When the feature touches UI, `design-brief.md`
    is written here too (by `devrites-ux-shape`, step 3a).
@@ -104,7 +112,16 @@ new spec must respect them, and a requirement that can only be met by breaking o
    `[NEEDS CLARIFICATION]`, placement decided, all material gaps resolved, any design
    references provided are saved, **UX/UI shaped into `design-brief.md` if the feature is
    UI**, requirements testable, success criteria measurable, **every `checklists/<domain>.md` at
-   `Verdict: pass`**. When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when
+   `Verdict: pass`**, and **any structured requirement blocks are grammar-valid** — run
+   `spec-validate.sh` (resolved like the step-0 preamble), a non-zero exit is a blocking
+   failure to fix, not soften:
+   ```bash
+   SV=.claude/skills/devrites-lib/scripts/spec-validate.sh
+   [ -f "$SV" ] || SV="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/spec-validate.sh"
+   [ -f "$SV" ] || SV=pack/.claude/skills/devrites-lib/scripts/spec-validate.sh
+   [ -f "$SV" ] && bash "$SV" ".devrites/work/<slug>" || echo "(spec-grammar validator unavailable — eyeball the Requirement/Scenario blocks)"
+   ```
+   When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when
    it passes.
 
 > **Mid-flight discipline.** When tempted to skip investigation depth, gap-closing, or placement decisions — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
@@ -120,6 +137,7 @@ References: <n saved | none provided>
 Design brief: <design-brief.md shaped (compact|full) | n/a — not UI>
 Gaps closed: <n>   Open (non-blocking): <n>
 Checklists: <n domains scored — all pass | BLOCKED: n CRITICAL open>
+Grammar: <n requirements / m scenarios — valid | n/a (flat acceptance)>
 Next: big / risky feature (auth · data model · public API · migration · multi-slice · ambiguous scope)?
       → /rite-temper   (strategic review: scope mode + pre-mortem, hardens the spec) — then /rite-define.
       Small / reversible / unambiguous? → /rite-define directly.

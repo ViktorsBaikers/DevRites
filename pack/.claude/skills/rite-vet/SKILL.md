@@ -25,7 +25,9 @@ Temper decides *the right thing*; vet decides *the right way to build it*.
 **Step 0:** Read `.claude/rules/core.md` first. Pull on demand: `principles.md` (the project
 invariants gate — how `.devrites/principles.md` is scored pass/fail), `patterns.md` +
 `coding-style.md` (the over-engineering / reuse-first / YAGNI rubric — reuse the pack's
-standard), `testing.md` (the test-coverage axis), `performance.md` (the perf axis),
+standard), `testing.md` (the test-coverage axis) + `spec-grammar.md` (when the spec uses
+structured Requirement/Scenario blocks, each scenario is a coverage unit `test-plan.md` must
+map), `performance.md` (the perf axis),
 `error-handling.md` (failure-mode coverage), `development-workflow.md` (parallel lanes,
 definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
 
@@ -111,7 +113,10 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    coverage-increasing findings auto-apply; **anything that grows scope or changes acceptance is a
    blocking pause**; irreversible-risk always pauses.)
 4. **Required outputs** — the test-coverage diagram + per-gap test requirements (the **regression
-   rule** is mandatory, no question), failure-mode table, "NOT in scope", "What already exists",
+   rule** is mandatory, no question). When the spec uses the structured grammar
+   (`spec-grammar.md`), the diagram maps **each `#### Scenario:` (WHEN/THEN) to ≥1 planned
+   test** — an unmapped scenario is a coverage gap the build must close. Then the failure-mode
+   table, "NOT in scope", "What already exists",
    and the worktree parallelization strategy. Shapes in [`reference/review-axes.md`](reference/review-axes.md).
    Also a **PRP one-pass-implementable check** per slice brief (the build's pre-flight): confirm each
    slice's Consumes/Produces, Known-Gotchas, validation commands, and reuse targets are present and
@@ -152,7 +157,7 @@ Depth: light | full (<trigger that escalated it>)
 Scope: reuse <n found> / minimum-diff <ok|trimmed N> / complexity <ok|smell: N files, M new services → asked>
 Axes (floor → verdict):  Architecture <band> · Code-quality <band> · Tests <band> · Performance <band>
 Findings: <Critical n / Important n / Suggestion n>   (suppressed low-confidence: n)
-Coverage: <x/y paths> planned · GAPS closed <n> · regressions flagged <n>  → test-plan.md
+Coverage: <x/y paths> planned (<s/t scenarios mapped | n/a>) · GAPS closed <n> · regressions flagged <n>  → test-plan.md
 Failure modes: <n> mapped (<n critical: no test + no handling + silent>)
 Parallelization: <n lanes — n parallel / n sequential> | sequential (no opportunity)
 Reviewer loop: <n> iter · cross-model: ran (codex) | off
