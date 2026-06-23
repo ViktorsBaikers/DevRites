@@ -309,6 +309,12 @@ code, kbd, samp { font-family: var(--font-mono); }
 /* the hero console is a narrow widget — nudge its terminal type down so the
    output lines sit on their intended rows instead of wrapping mid-phrase. */
 #console .term__line, #console .term__out { font-size: 0.8rem; }
+/* output streams in line by line after the command finishes typing, instead
+   of the whole block popping in at once. opacity/transform only (no layout). */
+#console .term__out > * { opacity: 0; transform: translateY(6px); }
+#console .term__out.is-revealed > * { opacity: 1; transform: none; transition: opacity .3s var(--ease), transform .3s var(--ease); }
+#console .term__out.is-revealed > *:nth-child(2) { transition-delay: .12s; }
+#console .term__out.is-revealed > *:nth-child(3) { transition-delay: .24s; }
 
 /* ============================== PIPELINE RAIL ============================== */
 .rail { position: relative; }
@@ -491,6 +497,7 @@ code, kbd, samp { font-family: var(--font-mono); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
   .js .reveal { opacity: 1; transform: none; }
+  #console .term__out > * { opacity: 1; transform: none; }
   .cursor { animation: none; opacity: 1; }
   .hero__canvas { display: none; }
 }

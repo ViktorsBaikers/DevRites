@@ -93,6 +93,13 @@ const cursor = $("#termCursor");
 const out = $("#termOut");
 const FULL = "/rite-build refresh-token";
 
+// reveal the result block; CSS staggers its lines in (instant under reduced-motion)
+function revealOut() {
+  if (!out) return;
+  out.hidden = false;
+  requestAnimationFrame(() => out.classList.add("is-revealed"));
+}
+
 function consoleFinal() {
   nodes.forEach((n, i) => {
     n.classList.remove("is-done", "is-current");
@@ -102,7 +109,7 @@ function consoleFinal() {
   if (railFill) railFill.style.transform = `scaleX(${railTarget})`;
   if (cmdEl) cmdEl.textContent = FULL;
   if (cursor) cursor.style.display = "none";
-  if (out) out.hidden = false;
+  revealOut();
 }
 
 function typeCommand(done) {
@@ -111,7 +118,7 @@ function typeCommand(done) {
     if (cmdEl) cmdEl.textContent = FULL.slice(0, ++i);
     if (i >= FULL.length) {
       clearInterval(t);
-      setTimeout(() => { if (cursor) cursor.style.display = "none"; if (out) out.hidden = false; done && done(); }, 360);
+      setTimeout(() => { if (cursor) cursor.style.display = "none"; revealOut(); done && done(); }, 360);
     }
   }, 42);
 }
