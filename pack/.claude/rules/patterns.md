@@ -26,6 +26,9 @@ makes the design simpler to reason about, not to show it's there.
   cost you pay forever for a benefit you may never get.
 - Don't force a pattern everywhere; not every problem needs one.
 - Watch the cost: misused patterns add memory/indirection/overhead and obscure intent.
+- A refactor must **reduce** complexity, not just **relocate** it. Count the concepts a
+  reader must hold; if a "cleaner" version leaves that count unchanged it isn't cleaner —
+  prefer the restructuring that makes whole branches/modes/layers disappear.
 
 ## Anti-patterns to name and avoid
 - God object / god function doing everything; tight coupling across layers.
