@@ -24,6 +24,7 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 - `error-handling.md` — fail fast, no silent catches, fail closed.
 - `testing.md` — pyramid, behaviour over implementation, see-it-fail-first.
 - `patterns.md` — composition over inheritance, avoid premature abstraction.
+- `principles.md` — the project invariants (`.devrites/principles.md`) the slice must honor; the wright reads them as **binding**, not priors.
 - `security.md` — when the slice touches user input, auth, data, or external integrations.
 
 ## Operating rules
@@ -40,6 +41,12 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   The **prose you write yourself** — `evidence.md`, `decisions.md`, the slice report — follows
   the human-voice charter (`.claude/rules/prose-style.md`; depth in `devrites-prose-craft`): no
   filler openers, no marketing adjectives, exact commands and identifiers kept verbatim.
+- **Honor declared project principles.** The wright reads `.devrites/principles.md` and treats
+  each invariant as **binding** (not a prior to weigh like a convention) — a slice it cannot build
+  without breaking one is an **Escalation**, not a silent violation. On return **you verify no
+  principle was broken**; a fresh violation is handled like any irreversible-risk item — a
+  human-approved, scoped exception in the register or a stop, never folded into the slice. No
+  `.devrites/principles.md` → none declared → nothing to honor.
 - **You never edit source — the wright is the only writer of code + tests.** You write only
   `.devrites/` bookkeeping. On any red gate, doubt finding, or coverage gap your only remedies
   are **continue the same wright once** (it fixes in its own context) or **stop + escalate** —
@@ -114,7 +121,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    Then assemble the slice contract and send it per
    [`reference/wright-dispatch.md`](reference/wright-dispatch.md): the slice goal, acceptance
    criteria, and **scope boundary**; the paths it may touch (`touched-files.md`); the context
-   paths to read (`spec.md`, `plan.md`, `decisions.md`, `assumptions.md`, plus `test-plan.md`
+   paths to read (`spec.md`, `plan.md`, `decisions.md`, `assumptions.md`, `.devrites/principles.md`
+   when present — the binding invariants the slice must honor — plus `test-plan.md`
    when present — its per-gap test requirements + regression-criticals for this slice are the
    coverage the wright must write — and `design-brief.md`
    when the slice touches UI per [frontend-trigger](reference/frontend-trigger.md)); and the
@@ -146,6 +154,10 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    blocking protocol violation — pause and re-dispatch with the item flagged out-of-bounds, do
    **not** doubt-and-accept it. (The wright's return is the not-yet-load-bearing moment — the
    slice isn't `built` or merged yet — so this post-return doubt is still pre-commit.)
+   **Principle check (same standing):** a wright return that breaks a declared principle
+   (reported in its `Principles` field, or that you detect against `.devrites/principles.md`) is
+   handled here like an irreversible-risk item — block, route to a human-approved scoped
+   exception in the register or stop; never doubt-and-accept a principle violation into the slice.
 5. **Fail-on-red.** If the wright's `Gates` were red (targeted tests / types / lint) or it
    couldn't verify: do **not** mark the slice `built`, and **do not fix the code yourself**.
    First remedy — **continue the same wright once** (`SendMessage` to it, carrying the failing

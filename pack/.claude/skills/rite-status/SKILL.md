@@ -49,7 +49,9 @@ Otherwise summarize from the loaded state, concisely:
 6. **Open questions** — count by gate (from `questions.md`:
    `n open: x blocking · y validating · z advisory`) + the blocking qids by id and one-line question.
 7. **Unresolved drift** (`drift.md`).
-8. **Risks** (from `state.md` / `spec.md`).
+8. **Risks** (from `state.md` / `spec.md`); if `.devrites/principles.md` exists, note the count
+   of declared invariants and flag any exception in its register that is past its review/removal
+   trigger (a stale exception is a standing risk). Omit if there's no principles file.
 9. **Ready for handoff?** — see section below.
 
 Flag anything blocking: unresolved drift, failing evidence, `Status: awaiting_human`,

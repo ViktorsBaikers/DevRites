@@ -21,6 +21,7 @@ if none, tell the user to run `/rite-spec <feature>`.
 **Step 0:** Read `.claude/rules/core.md` first. The other rule files load on demand;
 pull these via `Read` when the diff demands them:
 - `code-review.md` — small PRs, severity labels, tests-first review focus.
+- `principles.md` — declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
 - `testing.md` — confirm the tests prove the spec, not just pass.
 - `agents.md` — when to fan out to which review subagent.
 - `security.md` — when input / auth / data / integrations / secrets are in scope.
@@ -48,7 +49,8 @@ pull these via `Read` when the diff demands them:
    [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
    ```
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`, `evidence.md`,
-   `touched-files.md`, and the `git diff`. For "what would this change break"
+   `touched-files.md`, `.devrites/principles.md` (if present — the binding invariants to score
+   the diff against), and the `git diff`. For "what would this change break"
    questions, prefer a code-intelligence index if available — codebase-memory-mcp first,
    cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob); see
    `.claude/rules/tooling.md` — over file reads;
@@ -77,7 +79,8 @@ pull these via `Read` when the diff demands them:
        where 20 would do) and the silent-failure bugs (a missing value coerced to 0/''/[],
        a dropped Result/err return, off-by-one / boundary, logic that contradicts the
        comment/docstring/name). Per hunk, check whether working code was deleted that the
-       task did not ask to remove."
+       task did not ask to remove. Score the diff against `.devrites/principles.md` — a change
+       that breaks a declared invariant with no recorded, human-approved exception is a Critical."
    - **Do NOT merge or re-rank** their findings. Present them under separate
      `## Spec` and `## Code review` sub-sections in `review.md`. Surface contradictions
      between the axes explicitly (e.g. "Spec axis says complete, Code-review axis says

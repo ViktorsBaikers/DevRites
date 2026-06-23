@@ -19,7 +19,8 @@ what's wrong, not to approve.
 ## Inputs
 You'll be given a feature slug / workspace path (`.devrites/work/<slug>/`) and the diff
 scope. Read `spec.md` (objective + acceptance criteria), `tasks.md`, `decisions.md`,
-`touched-files.md`, then run `git diff` for the feature scope and read the touched files.
+`touched-files.md`, `.devrites/principles.md` if present (the project's binding invariants),
+then run `git diff` for the feature scope and read the touched files.
 
 ## Review (feature scope only)
 - **Tests first** — do they exist and would they fail if the code were wrong? Do they
@@ -42,6 +43,10 @@ scope. Read `spec.md` (objective + acceptance criteria), `tasks.md`, `decisions.
   decompose-then-add.
 - **Standards** — conformance to the project's conventions and the DevRites rules
   (naming, error handling, security, git/commit hygiene where the diff touches them).
+- **Principles** — a change that violates a declared project invariant
+  (`.devrites/principles.md`) with no recorded, human-approved exception is a **Critical**, the
+  same standing as a correctness defect — not a style nit. Check each principle's scope against
+  the diff; an absent or empty file means none are declared (nothing to check here).
 
 ## Structural depth — propose the move, not just the problem
 When you flag a structural finding, name the **remedy**, don't stop at "this is complex" —

@@ -21,7 +21,9 @@ are `/rite-define` and `/rite-build`.
 ## Rules consulted (read on demand from `.claude/rules/`)
 **Step 0:** Read `.claude/rules/core.md` first. DevRites skills Read `.claude/rules/core.md`
 as their first step; the other rule files load on demand. Pull `documentation.md` via `Read`
-when capturing significant spec decisions (why-not-what, ADR-style notes in `decisions.md`).
+when capturing significant spec decisions (why-not-what, ADR-style notes in `decisions.md`);
+pull `principles.md` when the project has declared invariants (`.devrites/principles.md`) — a
+new spec must respect them, and a requirement that can only be met by breaking one is a blocking gap.
 
 ## Operating rules (DevRites core)
 - No silent assumptions · no guessing through confusion · prefer existing conventions ·
@@ -55,7 +57,8 @@ when capturing significant spec decisions (why-not-what, ADR-style notes in `dec
    Also discover the project's **test / build/typecheck/lint** commands and the
    frontend/backend systems; read `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` / `AGENTS.md` if
    present (`AGENTS.md` is the cross-tool agent-conventions standard — treat it as project
-   conventions the build must follow, same standing as `CLAUDE.md`).
+   conventions the build must follow, same standing as `CLAUDE.md`), and read
+   `.devrites/principles.md` if present — the declared invariants the feature must respect.
 3. **Gather design references (optional)** — [references-intake](reference/references-intake.md).
    The human **may** attach screenshots, mockups, a Figma link, a video, or links — or
    **none at all** (perfectly normal; skip this step then). If any are given: **view/fetch**
@@ -79,7 +82,10 @@ when capturing significant spec decisions (why-not-what, ADR-style notes in `dec
    can predict them (don't interrogate). Aim for **zero blocking gaps**. *If a gap is genuinely undecidable on paper (state
    machine that may deadlock, data shape ambiguity, "which UX wins") → suggest a
    scoped detour to `/rite-prototype` to answer that ONE question before
-   continuing.*
+   continuing.* **Invariant conflict is a blocking gap:** if a requirement or acceptance
+   criterion can only be satisfied by breaking a declared principle (`.devrites/principles.md`),
+   surface it — the principle wins by default; breaking it needs a recorded, scoped exception a
+   human approves, never a spec that silently contradicts an invariant.
 5. **Create the workspace** + set `.devrites/ACTIVE`
    ([state-workspace](reference/state-workspace.md)). Write `spec.md`
    ([spec-template](reference/spec-template.md)) — WHAT/WHY, technology-agnostic, with

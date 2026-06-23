@@ -22,7 +22,8 @@ This is the engineering counterpart to `/rite-temper` (which is strategic, on th
 Temper decides *the right thing*; vet decides *the right way to build it*.
 
 ## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. Pull on demand: `patterns.md` +
+**Step 0:** Read `.claude/rules/core.md` first. Pull on demand: `principles.md` (the project
+invariants gate — how `.devrites/principles.md` is scored pass/fail), `patterns.md` +
 `coding-style.md` (the over-engineering / reuse-first / YAGNI rubric — reuse the pack's
 standard), `testing.md` (the test-coverage axis), `performance.md` (the perf axis),
 `error-handling.md` (failure-mode coverage), `development-workflow.md` (parallel lanes,
@@ -78,15 +79,22 @@ definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling).
    against a built-in (dispatch `devrites-source-driven`); completeness check (with AI, full
    coverage is ~100× cheaper than the human-hours saved by a shortcut — prefer complete); and a
    distribution check for any new artifact.
-2a. **Cross-artifact analyze gate + charter/conventions gate.** Before the axes, run one read-only
-   consistency+coverage pass over `spec.md` + `plan.md` + `tasks.md` (+ `coverage.md` if present);
-   any **CRITICAL** — an acceptance criterion with no slice, a slice satisfying no criterion, a
-   contradiction across artifacts — **blocks `/rite-build`** until resolved. Then score the anti-slop
-   charter (`coding-style.md` + `prose-style.md`) and the conventions ledger
-   (`.devrites/conventions.md`) as an explicit **pass/fail** on the planned approach — a plan that
-   bakes in a god-module, a speculative abstraction with no second caller, or a dependency where an
-   in-repo option exists is a **top-severity** violation, walked first. **Re-check both after the
-   axes harden the plan** (post-design). Write the result to `analysis.md`.
+2a. **Cross-artifact analyze gate + principles / charter / conventions gate.** Before the axes, run
+   one read-only consistency+coverage pass over `spec.md` + `plan.md` + `tasks.md` (+ `coverage.md`
+   if present); any **CRITICAL** — an acceptance criterion with no slice, a slice satisfying no
+   criterion, a contradiction across artifacts — **blocks `/rite-build`** until resolved. Then score
+   the three project gates as explicit **pass/fail** on the planned approach:
+   - **Principles** (`.devrites/principles.md`, rubric in [`principles.md`](../../rules/principles.md))
+     — the authored invariants the project will not break. A plan that bakes in a violation of a
+     declared principle with **no recorded, human-approved exception** is a **top-severity** finding,
+     walked **first**, and **blocks `/rite-build`**. Absent or empty file → none declared → passes;
+     **never block for the absence of principles**. A genuine need to break one routes to a scoped,
+     dated exception in the principles register — never a silent work-around (adding the exception is
+     an irreversible-risk decision: it always pauses for a human, even in AFK).
+   - **The anti-slop charter** (`coding-style.md` + `prose-style.md`) and **the conventions ledger**
+     (`.devrites/conventions.md`) — a plan that bakes in a god-module, a speculative abstraction with
+     no second caller, or a dependency where an in-repo option exists is a **top-severity** violation.
+   **Re-check all three after the axes harden the plan** (post-design). Write the result to `analysis.md`.
    ```bash
    A=.claude/skills/devrites-lib/scripts/analyze.sh
    [ -f "$A" ] || A="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/analyze.sh"

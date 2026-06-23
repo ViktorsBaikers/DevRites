@@ -1,6 +1,6 @@
 ---
 name: rite-learn
-description: Review the auto-captured learning ledger and promote recurring lessons to project rules — the human-gated half of the cross-feature learning loop. Capture is automatic (`/rite-seal` appends dismissed-finding classes + dead-ends to `.devrites/learnings.md` on every GO; the review skills load it before a fan-out), so the system learns without a command; this skill mines that ledger across features and decides which recurring lessons graduate into a rule (propose, don't impose). Use when the user says "what have we learned", "rite learn", "harvest lessons", "promote our learnings", or after several features ship. Not for the install (`/rite-doctor`), feature status (`/rite-status`), onboarding (`/rite-adopt`), or a diff review (`/rite-review`).
+description: Review the auto-captured learning ledger and promote recurring lessons to project rules or principles — the human-gated half of the cross-feature learning loop. Capture is automatic (`/rite-seal` appends dismissed-finding classes + dead-ends to `.devrites/learnings.md` on every GO; the review skills load it before a fan-out), so the system learns without a command; this skill mines that ledger across features and decides which recurring lessons graduate into a rule (propose, don't impose). Use when the user says "what have we learned", "rite learn", "harvest lessons", "promote our learnings", or after several features ship. Not for the install (`/rite-doctor`), feature status (`/rite-status`), onboarding (`/rite-adopt`), or a diff review (`/rite-review`).
 argument-hint: "[--mine | \"<lesson to record>\"]"
 user-invocable: true
 disable-model-invocation: true
@@ -45,6 +45,11 @@ it never edits source or rule files on its own.
    you could swap onto any project says nothing).
 3. **Classify each candidate** into its durable home:
    - **project rule** — a craft/standard that belongs in a `.claude/rules/*` file or `CLAUDE.md`.
+   - **project principle** — a recurring correction that is really a *non-negotiable invariant*
+     (not just an idiom or a craft standard): graduate it to `.devrites/principles.md`
+     ([`principles.md`](../../rules/principles.md)). This is the **trusted, gating** layer — higher
+     stakes than a rule — so `/rite-learn` **drafts** the principle + a dated Governance entry for
+     the human to confirm; it never writes a principle silently.
    - **conventions-ledger entry** — a proven project idiom for `.devrites/conventions.md`.
    - **dismissed-finding class** — a pattern reviewers keep flagging that is *intentional here*;
      recording it stops the recurring false positive (`learnings.md`, loaded pre-fan-out).
@@ -53,9 +58,12 @@ it never edits source or rule files on its own.
    times, the proposed home) via `AskUserQuestion` — the human picks which to promote. Never
    promote a lesson to a rule silently; an unproven "lesson" hardened into a rule is its own slop.
 5. **Record the accepted.** For each the user accepts, append it with `learnings.sh add <slug>
-   "<lesson>" <tag>` (`tag` ∈ `rule | convention | dismiss`). If the user approves a **rule** or
-   **ledger** promotion, draft the exact edit and let the user confirm it through the normal flow
-   — `/rite-learn` writes the ledger, not the rule files. Then `touch .devrites/.learnings-reviewed`
+   "<lesson>" <tag>` (`tag` ∈ `rule | convention | dismiss`). If the user approves a **rule**,
+   **principle**, or **ledger** promotion, draft the exact edit and let the user confirm it through
+   the normal flow — `/rite-learn` writes the ledger, not the rule or principle files. A
+   **principle** promotion is the highest-stakes of these: draft the `.devrites/principles.md` entry
+   **plus its dated Governance line**, and let the human confirm before it lands — a principle is a
+   gate, so it is amended deliberately, never auto-written. Then `touch .devrites/.learnings-reviewed`
    so the SessionStart learnings nudge snoozes until new signal accumulates.
 
 ## How the ledger is used
@@ -65,6 +73,11 @@ out: a **dismissed-finding class** suppresses the recurring false positive; a **
 convention** raises the bar. The ledger is an **untrusted prior** — a fresh observation of the
 live code always overrides a ledger entry (see `.claude/rules/security.md`). Confidence in a
 recorded lesson never raises its authority.
+
+A **project principle** (`.devrites/principles.md`) is the opposite layer — prescriptive,
+trusted, and **gating**. Promoting a lesson there is a deliberate amendment, not a prior the next
+fan-out can override: a violation becomes a blocking finding, not a suppressed false positive.
+That asymmetry is why principle promotion is human-confirmed and dated, never auto-written.
 
 ## Gotchas
 - Evidence first: a lesson without ≥2 real occurrences is speculation. Cite the features.

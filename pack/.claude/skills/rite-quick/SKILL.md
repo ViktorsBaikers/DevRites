@@ -23,6 +23,9 @@ express lane:**
 - **Ambiguous scope** — you'd have to guess what "done" means, or the ask hides a design
   decision (data model, new dependency, second design system).
 - Security-sensitive input handling, or a measurable performance-critical path.
+- Would **break a declared project principle** (`.devrites/principles.md`) with no recorded,
+  human-approved exception — the express lane never relaxes a project gate; a needed exception is
+  a deliberate human decision, so route it to `/rite-spec`.
 
 If none hold, the change is small + reversible + unambiguous → proceed. **When in doubt,
 escalate** — the cost of the full lifecycle on a small change is minutes; the cost of the
@@ -34,6 +37,7 @@ Read `.claude/rules/core.md` first. Then the small set this lane actually needs:
 - `testing.md` — TDD, **completeness** (every touched behavior/element asserted) +
   **assertion strength** (no tautological tests; see it fail first), scaled to the change.
 - `error-handling.md` / `security.md` — only if the change touches input/errors.
+- `principles.md` — when `.devrites/principles.md` exists; a change that breaks an invariant is a gate, not a quick fix.
 
 ## Workflow
 0. **Orient.** Read `core.md`. If a `.devrites/` workspace is active, run the preamble to
@@ -53,10 +57,11 @@ Read `.claude/rules/core.md` first. Then the small set this lane actually needs:
 4. **Prove (scoped).** Run the **targeted** tests + typecheck / lint for what changed (not
    the whole suite) → green. Record the command + output. A tautological test that can't
    fail is not proof.
-5. **Review-lite + ship.** Self-review the diff (correctness, scope, idiom — one pass, no
-   subagent fan-out). Show the diff, then on the user's confirm commit it (Conventional
-   Commits, atomic) — or hand to `/rite-ship` if a workspace is active. **Never push without
-   the user asking.**
+5. **Review-lite + ship.** Self-review the diff (correctness, scope, idiom, and — if
+   `.devrites/principles.md` exists — no declared invariant broken; this is `/rite-frame`'s AUDIT
+   pass — one pass, no subagent fan-out). Show the diff, then on the user's confirm commit it
+   (Conventional Commits, atomic) — or hand to `/rite-ship` if a workspace is active. **Never push
+   without the user asking.**
 
 ## Escalation (mid-flight) — the Spec Drift Guard still applies
 If the "small" change turns out to be not small — a second slice appears, a real design

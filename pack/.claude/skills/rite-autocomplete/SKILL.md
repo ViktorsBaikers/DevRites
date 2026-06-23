@@ -22,7 +22,9 @@ blocking / escalating gates, and any NO-GO still pause.
 - **Safety gates are not bypassable.** AFK never auto-passes destructive migration /
   auth-authz change / public-API break / external-contract change / red tests; blocking
   and escalating gates and any open `gate: validating` always pause. `--ship` auto-confirms
-  the **final** type-GO only — nothing else.
+  the **final** type-GO only — nothing else. A change that violates a declared project
+  principle (`.devrites/principles.md`) with no recorded exception pauses too — autocomplete
+  never grants a principle exception on its own (`principles.md`: that's a human decision).
 - **Loop budget = the plan's own slice count, not a fixed number.** After `/rite-vet`
   (not `/rite-define` — vet may split or add slices, so the count isn't final until then),
   set the AFK budget to however many slices the plan has, so the loop builds exactly the
