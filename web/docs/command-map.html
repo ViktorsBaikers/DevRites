@@ -27,9 +27,9 @@
   <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/mark-64.png" />
   <link rel="preload" href="/assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/assets/css/fonts.css?v=3" />
-  <link rel="stylesheet" href="/assets/css/style.css?v=3" />
-  <link rel="stylesheet" href="/assets/css/docs.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/fonts.css?v=4" />
+  <link rel="stylesheet" href="/assets/css/style.css?v=4" />
+  <link rel="stylesheet" href="/assets/css/docs.css?v=4" />
   <script type="application/ld+json">
   {"@context": "https://schema.org", "@graph": [
     {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "DevRites", "item": "https://devrites.com/"}, {"@type": "ListItem", "position": 2, "name": "Docs", "item": "https://devrites.com/docs/"}, {"@type": "ListItem", "position": 3, "name": "Command map", "item": "https://devrites.com/docs/command-map.html"}]},
@@ -41,7 +41,7 @@
 
 <header class="nav" id="nav">
   <div class="wrap nav__in">
-    <a class="brand" href="/" aria-label="DevRites home"><img src="/assets/img/mark-64.png" width="28" height="28" alt="" /><b>DevRites</b><span class="v js-version">v1.7.0</span></a>
+    <a class="brand" href="/" aria-label="DevRites home"><img src="/assets/img/mark-64.png" width="28" height="28" alt="" /><b>DevRites</b><span class="v js-version">v2.3.0</span></a>
     <nav class="nav__links" aria-label="Primary">
       <a href="/#workflow">Workflow</a><a href="/#proof">Proof</a><a href="/#anywhere">Drive anywhere</a><a href="/#faq">FAQ</a><a href="/docs/" aria-current="page">Docs</a>
     </nav>
@@ -82,12 +82,13 @@
         <thead><tr><th>Command</th><th>Phase</th><th>What it does</th></tr></thead>
         <tbody>
           <tr><td><code>/rite</code></td><td>menu</td><td>Compact menu and suggested next command. Pure router.</td></tr>
+          <tr><td><code>/rite-adopt</code></td><td>adopt</td><td>Brownfield on-ramp: reads an existing codebase and seeds DevRites before the first feature.</td></tr>
           <tr><td><code>/rite-spec</code></td><td>spec</td><td><strong>Start here.</strong> Deep investigation, then writes <code>spec.md</code> and creates the workspace.</td></tr>
           <tr><td><code>/rite-temper</code></td><td>temper</td><td>Strategic review of the spec before planning: scope mode, pre-mortem, harden the contract.</td></tr>
           <tr><td><code>/rite-define</code></td><td>define</td><td>Turns the approved spec into a plan and vertical task slices.</td></tr>
           <tr><td><code>/rite-vet</code></td><td>vet</td><td>Engineering review of the plan before code; writes the build-readable <code>test-plan.md</code>.</td></tr>
           <tr><td><code>/rite-plan</code></td><td>plan</td><td>Decompose, reslice, repair, re-order, split, or unblock an active plan.</td></tr>
-          <tr><td><code>/rite-build</code></td><td>build</td><td>Implement <strong>exactly one</strong> vertical slice, test-first, then stop with evidence.</td></tr>
+          <tr><td><code>/rite-build</code></td><td>build</td><td>Implement <strong>exactly one</strong> vertical slice, test-first, then stop with evidence. Optional forge mode builds two or three rival versions in isolation, then a judge scores them against the acceptance criteria and picks the winner.</td></tr>
           <tr><td><code>/rite-prove</code></td><td>prove</td><td>Tests, build, runtime, and browser proof of the finished feature.</td></tr>
           <tr><td><code>/rite-polish</code></td><td>polish</td><td>Behavior-preserving cleanup, then UI polish against the design system.</td></tr>
           <tr><td><code>/rite-review</code></td><td>review</td><td>Feature-scoped multi-axis review with parallel reviewers.</td></tr>
@@ -100,6 +101,9 @@
           <tr><td><code>/rite-prototype</code></td><td>utility</td><td>Throwaway code answering one design question. Logic harness or UI variations.</td></tr>
           <tr><td><code>/rite-handoff</code></td><td>utility</td><td>Compacts the chat into a handoff doc; syncs context into workspace files.</td></tr>
           <tr><td><code>/rite-pressure-test</code></td><td>utility</td><td>Pressure-test a rough idea: diverge into options, converge on one.</td></tr>
+          <tr><td><code>/rite-frame</code></td><td>utility</td><td>Goal reframe plus failure-mode self-audit before committing to an approach.</td></tr>
+          <tr><td><code>/rite-learn</code></td><td>utility</td><td>Promote a learned convention from the ledger into a project rule the lifecycle enforces.</td></tr>
+          <tr><td><code>/rite-doctor</code></td><td>utility</td><td>Two-tier health check of the install and the active workspace.</td></tr>
         </tbody>
       </table>
     </div>
@@ -133,12 +137,15 @@
           <tr><td><code>devrites-code-reviewer</code></td><td>Correctness, readability, architecture, maintainability.</td></tr>
           <tr><td><code>devrites-test-analyst</code></td><td>Do the tests actually prove the acceptance criteria?</td></tr>
           <tr><td><code>devrites-frontend-reviewer</code></td><td>UX, accessibility, responsive behavior, design system, anti-AI-slop.</td></tr>
-          <tr><td><code>devrites-security-auditor</code></td><td>OWASP Top 10, trust boundaries, secrets, dependencies.</td></tr>
+          <tr><td><code>devrites-security-auditor</code></td><td>OWASP Top 10 (and the OWASP LLM Top 10 on AI surfaces), trust boundaries, secrets, dependencies.</td></tr>
           <tr><td><code>devrites-performance-reviewer</code></td><td>N+1 queries, hot paths, payload size.</td></tr>
           <tr><td><code>devrites-doubt-reviewer</code></td><td>Adversarial check of a single claim or decision.</td></tr>
           <tr><td><code>devrites-simplifier-reviewer</code></td><td>Independent simplification judgment under Chesterton's Fence.</td></tr>
           <tr><td><code>devrites-strategy-reviewer</code></td><td>Spec-vs-rubric strategic review at <code>/rite-temper</code>: ambition, scope, premise, pre-mortem, YAGNI.</td></tr>
           <tr><td><code>devrites-plan-reviewer</code></td><td>Plan-vs-rubric engineering review at <code>/rite-vet</code>: architecture, reuse, test design, reversibility.</td></tr>
+          <tr><td><code>devrites-devex-reviewer</code></td><td>Developer-experience review at <code>/rite-vet</code> and <code>/rite-seal</code> for public APIs, CLIs, SDKs, and the getting-started path.</td></tr>
+          <tr><td><code>devrites-forge-judge</code></td><td>Scores the rival candidates from a forge build at <code>/rite-build</code> and names the winner.</td></tr>
+          <tr><td><code>devrites-retrospector</code></td><td>Reads across archived features at <code>/rite-ship</code> for recurring drift and findings, then drafts rule candidates for you to promote.</td></tr>
         </tbody>
       </table>
     </div>
@@ -150,7 +157,7 @@
       <table class="doc__t">
         <thead><tr><th>Surface</th><th>What it exposes</th></tr></thead>
         <tbody>
-          <tr><td><code>devrites</code> CLI</td><td><code>orient</code>, <code>ready</code>, <code>evidence-fresh</code>, <code>acceptance</code>, <code>active</code>, <code>list</code>, <code>use</code>, <code>resolve</code> — scriptable in any agent loop or a pre-merge CI step.</td></tr>
+          <tr><td><code>devrites</code> CLI</td><td><code>orient</code>, <code>ready</code>, <code>evidence-fresh</code>, <code>acceptance</code>, <code>active</code>, <code>list</code>, <code>use</code>, <code>resolve</code>. Scriptable in any agent loop or a pre-merge CI step.</td></tr>
           <tr><td>MCP server</td><td>A dependency-free stdio server exposing <code>devrites_ready</code>, <code>devrites_acceptance</code>, <code>devrites_orient</code>, and the rest as MCP tools. Register it in a project's <code>.mcp.json</code>.</td></tr>
         </tbody>
       </table>
@@ -159,7 +166,7 @@
 
     <div class="callout">
       <span class="lbl">Naming</span>
-      The <b>devrites-</b> prefix is a namespace for collision avoidance against bundled Claude Code skills. It does not mean "internal" — visibility is set by the <code>user-invocable</code> flag in each skill.
+      The <b>devrites-</b> prefix is a namespace for collision avoidance against bundled Claude Code skills. It does not mean "internal": visibility is set by the <code>user-invocable</code> flag in each skill.
     </div>
   </article>
 </main>
@@ -167,12 +174,12 @@
 <footer class="foot">
   <div class="wrap">
     <div class="foot__legal" style="margin-top:0;border-top:0;padding-top:0">
-      <span>© 2026 Viktors Baikers · DevRites <span class="js-version">v1.7.0</span></span>
+      <span>© 2026 Viktors Baikers · DevRites <span class="js-version">v2.3.0</span></span>
       <span><a href="https://github.com/ViktorsBaikers/DevRites" rel="noopener" style="color:var(--ink-muted)">GitHub</a></span>
     </div>
   </div>
 </footer>
 
-<script src="/assets/js/main.js?v=3" defer></script>
+<script type="module" src="/assets/js/main.js?v=4"></script>
 </body>
 </html>

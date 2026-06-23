@@ -8,7 +8,7 @@
   <link rel="canonical" href="https://devrites.com/" />
   <meta name="robots" content="index, follow, max-image-preview:large" />
   <meta name="author" content="Viktors Baikers" />
-  <meta name="keywords" content="Claude Code, AI coding agent, spec-driven development, agentic workflow, AI pair programming, Claude Code skills, slash commands, MCP server, spec kit alternative, AI code review, test-driven AI" />
+  <meta name="keywords" content="Claude Code, AI coding agent, spec-driven development, agentic workflow, AI pair programming, Claude Code skills, slash commands, MCP server, spec kit alternative, AI code review, test-driven AI, competitive AI builds, parallel AI code review, OWASP LLM Top 10, brownfield AI onboarding" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#0c1330" />
 
@@ -34,8 +34,8 @@
 
   <link rel="preload" href="/assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/assets/css/fonts.css?v=3" />
-  <link rel="stylesheet" href="/assets/css/style.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/fonts.css?v=4" />
+  <link rel="stylesheet" href="/assets/css/style.css?v=4" />
 
   <script type="application/ld+json">
   {
@@ -58,9 +58,9 @@
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "AI coding workflow",
         "operatingSystem": "macOS, Linux, Windows",
-        "softwareVersion": "1.7.0",
+        "softwareVersion": "2.3.0",
         "description": "A project-local pack of Claude Code skills that runs a disciplined senior-engineer workflow: spec, build one verified slice, prove with evidence, review, seal, ship. State lives on disk so a fresh agent resumes where the last one stopped. A tool-agnostic CLI and MCP server expose the deterministic gates to any agent.",
-        "featureList": "Spec-driven lifecycle, Spec Drift Guard, type-GO confirmation, parallel reviewer fan-out, on-disk feature state, HITL and AFK run modes, tool-agnostic CLI and MCP server, deterministic readiness gates",
+        "featureList": "Spec-driven lifecycle, Spec Drift Guard, type-GO confirmation, parallel reviewer fan-out, competitive forge builds judged by an independent agent, security audit covering OWASP Top 10 and OWASP LLM Top 10, conventions ledger and cross-feature retrospective, on-disk feature state, HITL and AFK run modes, tool-agnostic CLI and MCP server, deterministic readiness gates, npx and curl installers, brownfield adoption",
         "license": "https://github.com/ViktorsBaikers/DevRites/blob/main/LICENSE",
         "downloadUrl": "https://devrites.com/",
         "installUrl": "https://devrites.com/",
@@ -118,7 +118,12 @@
           {
             "@type": "Question",
             "name": "How do I install and uninstall DevRites?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Install into a project with: curl -fsSL https://devrites.com | bash. Preview first with --dry-run. Uninstall with: curl -fsSL https://devrites.com/remove | bash. Uninstall removes only the files DevRites installed and preserves your .devrites/work/ feature data." }
+            "acceptedAnswer": { "@type": "Answer", "text": "Run npx devrites@latest in your project, or curl -fsSL https://devrites.com | bash. The npx path installs offline and pins to the version you ask for. Preview either with --dry-run. Uninstall with npx devrites@latest uninstall or curl -fsSL https://devrites.com/remove | bash. Uninstall removes only the files DevRites installed and preserves your .devrites/work/ feature data." }
+          },
+          {
+            "@type": "Question",
+            "name": "Has the pack itself been hardened against prompt injection?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Yes. The agents run on a prompt-injection-resistant baseline, and CI scans the pack on every change for injection strings, hidden unicode, and supply-chain indicators in the npm lockfile, with third-party actions pinned. At seal, a security auditor reviews the diff for the OWASP Top 10, and for the OWASP LLM Top 10 when the feature has an AI surface." }
           }
         ]
       }
@@ -128,6 +133,10 @@
 </head>
 <body>
 
+<!-- ambient field + scroll progress -->
+<div class="backdrop" aria-hidden="true"></div>
+<div class="scrollrail" aria-hidden="true"><div class="scrollrail__fill" id="scrollFill"></div></div>
+
 <a class="skip" href="#main">Skip to content</a>
 
 <!-- ============ NAV ============ -->
@@ -136,7 +145,7 @@
     <a class="brand" href="/" aria-label="DevRites home">
       <img src="/assets/img/mark-64.png" width="28" height="28" alt="" />
       <b>DevRites</b>
-      <span class="v js-version">v1.7.0</span>
+      <span class="v js-version">v2.3.0</span>
     </a>
     <nav class="nav__links" aria-label="Primary">
       <a href="#workflow">Workflow</a>
@@ -161,6 +170,11 @@
 <main id="main">
 <!-- ============ HERO ============ -->
 <section class="hero">
+  <div class="hero__stage" aria-hidden="true">
+    <canvas class="hero__canvas" id="shader"></canvas>
+    <span class="orb orb--1"></span>
+    <span class="orb orb--2"></span>
+  </div>
   <div class="wrap hero__grid">
     <div class="hero__copy">
       <div class="hero__chips">
@@ -186,6 +200,10 @@
         </a>
         <a class="btn btn--ghost" href="/docs/">Read the docs</a>
       </div>
+      <a class="starpill" id="starPill" href="https://github.com/ViktorsBaikers/DevRites" rel="noopener" hidden>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 18.6 6.1 21.3l1.2-6.6L2.5 9.5l6.6-.9z"/></svg>
+        <b id="starCount"></b><span>stars on GitHub</span>
+      </a>
       <p class="hero__note">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Free and open source (MIT). Installs into one project, never touches <span class="k">~/.claude</span>.</span>
@@ -295,7 +313,7 @@
       </div>
       <div class="rail__track" style="--nodes:10">
         <div class="rail__line"></div>
-        <div class="rail__fill" style="width:100%"></div>
+        <div class="rail__fill" id="workflowFill"></div>
         <div class="node is-done"><span class="node__dot">1</span><span class="node__name">spec</span></div>
         <div class="node is-done"><span class="node__dot">2</span><span class="node__name">temper</span></div>
         <div class="node is-done"><span class="node__dot">3</span><span class="node__name">define</span></div>
@@ -337,7 +355,7 @@
       <div class="phase">
         <span class="phase__n">05 · build</span>
         <h3>One slice, then stop</h3>
-        <p>A fresh-context wright implements exactly one vertical slice, test-first, and stops with evidence. The Spec Drift Guard catches a wrong plan mid-build.</p>
+        <p>A fresh-context wright builds exactly one vertical slice, test-first, and stops with evidence. Turn on forge and it builds two or three rival versions in isolation, then an independent judge scores them against the acceptance criteria and picks the strongest. The Spec Drift Guard catches a wrong plan mid-build.</p>
         <p class="phase__cmd"><b>/rite-build</b> → code, evidence.md</p>
       </div>
       <div class="phase">
@@ -373,7 +391,7 @@
     </div>
 
     <p class="flow__foot reveal" data-d="2">
-      In a hurry? <span class="k k--accent">/rite-autocomplete</span> drives the whole lifecycle unattended, pausing only at irreversible gates. Lost? <span class="k">/rite-status</span> shows where the active feature stands; <span class="k">/rite</span> opens the menu.
+      In a hurry? <span class="k k--accent">/rite-autocomplete</span> drives the whole lifecycle unattended, pausing only at irreversible gates. Lost? <span class="k">/rite-status</span> shows where the active feature stands; <span class="k">/rite</span> opens the menu. Dropping into an existing codebase? <span class="k">/rite-adopt</span> reads it first, and <span class="k">/rite-doctor</span> checks the install is healthy.
     </p>
   </div>
 </section>
@@ -457,11 +475,62 @@
       <div class="guard reveal" data-d="3">
         <svg class="guard__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><rect x="14" y="15" width="7" height="6" rx="1.5"/></svg>
         <h3>Reviewer fan-out</h3>
-        <p>At seal, independent fresh-context reviewers read the diff in parallel. None of them is the agent that wrote the code, so none inherits its blind spots.</p>
+        <p>At seal a panel of independent fresh-context reviewers reads the diff in parallel, each on its own axis. None of them wrote the code, so none inherits its blind spots.</p>
         <div class="fanout">
           <span class="tag">spec</span><span class="tag">code</span><span class="tag">tests</span>
-          <span class="tag">frontend</span><span class="tag">security</span><span class="tag">perf</span>
+          <span class="tag">frontend</span><span class="tag">security</span><span class="tag">perf</span><span class="tag">devex</span>
         </div>
+      </div>
+
+      <div class="guard reveal" data-d="4">
+        <svg class="guard__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6l7-3Z" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>Security audit</h3>
+        <p>At seal a security auditor reads the diff for the OWASP Top 10, and the OWASP LLM Top 10 when the feature calls a model or drives an agent. The pack itself ships injection-resistant and is scanned in CI for hidden unicode and supply-chain tampering.</p>
+        <div class="fanout">
+          <span class="tag">OWASP Top 10</span><span class="tag">LLM Top 10</span>
+          <span class="tag">secrets</span><span class="tag">supply chain</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="blade-rule wrap" />
+
+<!-- ============ LEARNS RULES ============ -->
+<section class="section" id="learn">
+  <div class="wrap install__grid">
+    <div>
+      <div class="section-head reveal">
+        <span class="eyebrow">Gets sharper</span>
+        <h2>It learns your codebase's rules.</h2>
+      </div>
+      <p class="prose reveal" data-d="1">
+        At seal, DevRites writes the conventions it just saw into a ledger. The next feature reads
+        that ledger at orient, so the agent follows your patterns instead of guessing them again. A
+        fresh observation always beats a stale note, so the ledger tracks the code as it moves.
+      </p>
+      <p class="prose reveal" data-d="2" style="margin-top:1rem">
+        When you ship, a retrospective analyst reads back across your archived features for what keeps
+        going wrong: the same review finding, the same drift, the same dead end. It drafts rule
+        candidates and hands them to you. You promote the ones worth keeping with
+        <span class="k k--accent">/rite-learn</span>. It proposes; you decide.
+      </p>
+    </div>
+
+    <div class="panel reveal" data-d="2">
+      <div class="panel__bar">
+        <span class="panel__dots"><i></i><i></i><i></i></span>
+        <span class="panel__title">.devrites/<b>conventions.md</b> · the ledger</span>
+      </div>
+      <div class="panel__body">
+        <div class="cli">
+          <div class="cli__row"><span class="cli__cmd">errors return Result, never throw</span><span class="cli__note ok">seen 6×</span></div>
+          <div class="cli__row"><span class="cli__cmd">one behaviour per test case</span><span class="cli__note ok">seen 4×</span></div>
+          <div class="cli__row"><span class="cli__cmd">json fields are snake_case</span><span class="cli__note dim">fresh wins</span></div>
+          <div class="cli__row"><span class="cli__cmd">imports absolute from src/</span><span class="cli__note ok">promoted</span></div>
+        </div>
+        <p class="anywhere__p"><span class="k">/rite-learn</span> promotes a ledger entry to a project rule the whole lifecycle then enforces.</p>
       </div>
     </div>
   </div>
@@ -593,7 +662,11 @@
       </details>
       <details class="faq__item">
         <summary>How do I install and uninstall?</summary>
-        <div class="faq__a"><p>Install with <span class="k">curl -fsSL https://devrites.com | bash</span> (preview first with <span class="k">--dry-run</span>). Uninstall with <span class="k">curl -fsSL https://devrites.com/remove | bash</span>. It removes only what DevRites installed and preserves your feature data.</p></div>
+        <div class="faq__a"><p>Run <span class="k">npx devrites@latest</span> in your project, or <span class="k">curl -fsSL https://devrites.com | bash</span>. The npx path installs offline and pins to the version you ask for; preview either with <span class="k">--dry-run</span>. Uninstall with <span class="k">npx devrites@latest uninstall</span> or <span class="k">curl -fsSL https://devrites.com/remove | bash</span>. It removes only what DevRites installed and preserves your feature data.</p></div>
+      </details>
+      <details class="faq__item">
+        <summary>Has the pack itself been hardened against prompt injection?</summary>
+        <div class="faq__a"><p>Yes. The agents run on a prompt-injection-resistant baseline, and CI scans the pack on every change for injection strings, hidden unicode, and supply-chain indicators in the lockfile, with third-party actions pinned. At seal a security auditor reads the diff for the OWASP Top 10, and the OWASP LLM Top 10 when the feature has an AI surface.</p></div>
       </details>
     </div>
   </div>
@@ -618,10 +691,9 @@
           </button>
         </div>
         <p class="install__alt">
-          Prefer the Claude Code plugin? Skills and agents install via the
-          <a href="https://github.com/ViktorsBaikers/DevRites#option-b-claude-code-plugin-partial--skills--agents-only" rel="noopener">plugin marketplace</a>;
-          add the engineering rules with <span class="k">install.sh --rules-only</span>.
-          Then run <span class="k k--accent">/rite-spec &lt;feature&gt;</span> to begin.
+          Prefer npm? <span class="k">npx devrites@latest</span> runs the same installer offline, pinned to the
+          version you ask for. Want only the engineering rules? Add <span class="k">--rules-only</span>.
+          Either way, run <span class="k k--accent">/rite-spec &lt;feature&gt;</span> to begin.
         </p>
         <p class="install__alt" style="margin-top:0.6rem">
           Update with <span class="k">curl -fsSL https://devrites.com/update | bash</span> · remove with <span class="k">/remove</span>.
@@ -632,7 +704,7 @@
         <li><span class="n">→</span><span><b>No global writes, ever.</b> Installs into the target project; <span class="k">~/.claude</span> is refused.</span></li>
         <li><span class="n">→</span><span><b>Every file is recorded</b> in <span class="k">.claude/devrites.manifest</span>. Uninstall removes exactly those.</span></li>
         <li><span class="n">→</span><span><b>Your work is preserved.</b> Feature data in <span class="k">.devrites/work/</span> is never touched by uninstall.</span></li>
-        <li><span class="n">→</span><span><b>Preview first</b> with <span class="k">--dry-run</span>. Pin a release with <span class="k">DEVRITES_REF=v1.7.0</span>.</span></li>
+        <li><span class="n">→</span><span><b>Preview first</b> with <span class="k">--dry-run</span>. Pin a release with <span class="k">DEVRITES_REF=v2.3.0</span>.</span></li>
       </ul>
     </div>
   </div>
@@ -644,7 +716,7 @@
   <div class="wrap">
     <div class="foot__grid">
       <div class="foot__brand">
-        <a class="brand" href="/"><img src="/assets/img/mark-64.png" width="28" height="28" alt="" /><b>DevRites</b></a>
+        <a class="brand" href="/"><img src="/assets/img/mark-64.png" width="28" height="28" alt="" loading="lazy" decoding="async" /><b>DevRites</b></a>
         <p>A disciplined senior-engineer workflow for Claude Code. Spec, build, prove, seal, ship, with the receipts on disk.</p>
       </div>
       <div class="foot__cols">
@@ -652,6 +724,7 @@
           <h4>Product</h4>
           <a href="#workflow">Workflow</a>
           <a href="#proof">Paper trail</a>
+          <a href="#learn">Learns rules</a>
           <a href="#anywhere">Drive anywhere</a>
           <a href="#faq">FAQ</a>
           <a href="#install">Install</a>
@@ -672,12 +745,12 @@
       </div>
     </div>
     <div class="foot__legal">
-      <span>© 2026 Viktors Baikers · DevRites <span class="js-version">v1.7.0</span></span>
+      <span>© 2026 Viktors Baikers · DevRites <span class="js-version">v2.3.0</span></span>
       <span>spec → build → prove → seal → ship</span>
     </div>
   </div>
 </footer>
 
-<script src="/assets/js/main.js?v=3" defer></script>
+<script type="module" src="/assets/js/main.js?v=4"></script>
 </body>
 </html>

@@ -27,9 +27,9 @@
   <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/mark-64.png" />
   <link rel="preload" href="/assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/assets/css/fonts.css?v=3" />
-  <link rel="stylesheet" href="/assets/css/style.css?v=3" />
-  <link rel="stylesheet" href="/assets/css/docs.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/fonts.css?v=4" />
+  <link rel="stylesheet" href="/assets/css/style.css?v=4" />
+  <link rel="stylesheet" href="/assets/css/docs.css?v=4" />
   <script type="application/ld+json">
   {"@context": "https://schema.org", "@graph": [
     {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "DevRites", "item": "https://devrites.com/"}, {"@type": "ListItem", "position": 2, "name": "Docs", "item": "https://devrites.com/docs/"}, {"@type": "ListItem", "position": 3, "name": "Architecture", "item": "https://devrites.com/docs/architecture.html"}]},
@@ -41,7 +41,7 @@
 
 <header class="nav" id="nav">
   <div class="wrap nav__in">
-    <a class="brand" href="/" aria-label="DevRites home"><img src="/assets/img/mark-64.png" width="28" height="28" alt="" /><b>DevRites</b><span class="v js-version">v1.7.0</span></a>
+    <a class="brand" href="/" aria-label="DevRites home"><img src="/assets/img/mark-64.png" width="28" height="28" alt="" /><b>DevRites</b><span class="v js-version">v2.3.0</span></a>
     <nav class="nav__links" aria-label="Primary">
       <a href="/#workflow">Workflow</a><a href="/#proof">Proof</a><a href="/#anywhere">Drive anywhere</a><a href="/#faq">FAQ</a><a href="/docs/" aria-current="page">Docs</a>
     </nav>
@@ -81,7 +81,7 @@
         <tbody>
           <tr><td><strong>Phase commands</strong><br><code>rite-*</code></td><td>The ten workflow phases plus utilities, each a public, independently invokable skill.</td></tr>
           <tr><td><strong>Internal specialists</strong><br><code>devrites-*</code></td><td>Model-invoked skills (interview, source-driven, doubt, frontend-craft, browser-proof, debug-recovery, api-interface, ux-shape, audit) that fire when a phase needs them.</td></tr>
-          <tr><td><strong>Review agents</strong></td><td>Ten fresh-context reviewers spawned by <code>/rite-review</code>, <code>/rite-seal</code>, <code>/rite-temper</code>, and <code>/rite-vet</code>, plus the one write-capable executor, <code>devrites-slice-wright</code>. Each reads its input cold.</td></tr>
+          <tr><td><strong>Review agents</strong></td><td>Thirteen fresh-context reviewers and judges spawned across <code>/rite-temper</code>, <code>/rite-vet</code>, <code>/rite-build</code>, <code>/rite-review</code>, <code>/rite-seal</code>, and <code>/rite-ship</code>, plus the one write-capable executor, <code>devrites-slice-wright</code>. Each reads its input cold.</td></tr>
           <tr><td><strong>Persistent state</strong><br><code>.devrites/</code></td><td>The per-feature Markdown workspace. The single source of truth between phases and across cleared contexts.</td></tr>
           <tr><td><strong>Tool-agnostic core</strong><br><code>devrites</code> CLI · MCP</td><td>A portable CLI and a dependency-free MCP server expose the deterministic gates (<code>ready</code>, <code>evidence-fresh</code>, <code>acceptance</code>) to Cursor, Codex, Gemini CLI, CI, or a human. The exit code is the verdict.</td></tr>
           <tr><td><strong>Engineering rules</strong><br><code>.claude/rules/</code></td><td>Stack-agnostic rules: one always-on <code>core.md</code> plus fifteen on-demand files loaded by the phase that needs them (style, patterns, error handling, testing, code review, security, perf, and more).</td></tr>
@@ -96,7 +96,7 @@
     <p>A single mega-command would load everything on every call and hide the workflow behind one opaque entry point. Separate phase skills stay small, stay discoverable from <code>/rite</code>, and each loads only the rules and references it actually needs. The workflow is legible because the commands map to it one to one.</p>
 
     <h3>Why <code>rite-*</code> names</h3>
-    <p>Short, memorable, and brand-aligned — "rites" are disciplined, ordered steps. They are also collision-free: built-in and bundled Claude Code commands include <code>/plan</code>, <code>/review</code>, <code>/run</code>, <code>/verify</code>, <code>/init</code>, <code>/compact</code>, and <code>/debug</code>. The <code>rite-</code> prefix avoids all of them.</p>
+    <p>Short, memorable, and brand-aligned: "rites" are disciplined, ordered steps. They are also collision-free: built-in and bundled Claude Code commands include <code>/plan</code>, <code>/review</code>, <code>/run</code>, <code>/verify</code>, <code>/init</code>, <code>/compact</code>, and <code>/debug</code>. The <code>rite-</code> prefix avoids all of them.</p>
 
     <h3>Why a thin menu skill, not a mega-router</h3>
     <p><code>/rite</code> is a pure router: it shows the menu and suggests the next command, but it does not execute a phase or read state. That keeps every phase skill independently invokable by muscle memory (<code>/rite-build</code>) without forcing everything through one dispatcher.</p>
@@ -117,12 +117,12 @@
 <footer class="foot">
   <div class="wrap">
     <div class="foot__legal" style="margin-top:0;border-top:0;padding-top:0">
-      <span>© 2026 Viktors Baikers · DevRites <span class="js-version">v1.7.0</span></span>
+      <span>© 2026 Viktors Baikers · DevRites <span class="js-version">v2.3.0</span></span>
       <span><a href="https://github.com/ViktorsBaikers/DevRites" rel="noopener" style="color:var(--ink-muted)">GitHub</a></span>
     </div>
   </div>
 </footer>
 
-<script src="/assets/js/main.js?v=3" defer></script>
+<script type="module" src="/assets/js/main.js?v=4"></script>
 </body>
 </html>

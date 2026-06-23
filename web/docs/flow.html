@@ -27,9 +27,9 @@
   <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/mark-64.png" />
   <link rel="preload" href="/assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/assets/css/fonts.css?v=3" />
-  <link rel="stylesheet" href="/assets/css/style.css?v=3" />
-  <link rel="stylesheet" href="/assets/css/docs.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/fonts.css?v=4" />
+  <link rel="stylesheet" href="/assets/css/style.css?v=4" />
+  <link rel="stylesheet" href="/assets/css/docs.css?v=4" />
   <script type="application/ld+json">
   {"@context": "https://schema.org", "@graph": [
     {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "DevRites", "item": "https://devrites.com/"}, {"@type": "ListItem", "position": 2, "name": "Docs", "item": "https://devrites.com/docs/"}, {"@type": "ListItem", "position": 3, "name": "Flow", "item": "https://devrites.com/docs/flow.html"}]},
@@ -41,7 +41,7 @@
 
 <header class="nav" id="nav">
   <div class="wrap nav__in">
-    <a class="brand" href="/" aria-label="DevRites home"><img src="/assets/img/mark-64.png" width="28" height="28" alt="" /><b>DevRites</b><span class="v js-version">v1.7.0</span></a>
+    <a class="brand" href="/" aria-label="DevRites home"><img src="/assets/img/mark-64.png" width="28" height="28" alt="" /><b>DevRites</b><span class="v js-version">v2.3.0</span></a>
     <nav class="nav__links" aria-label="Primary">
       <a href="/#workflow">Workflow</a><a href="/#proof">Proof</a><a href="/#anywhere">Drive anywhere</a><a href="/#faq">FAQ</a><a href="/docs/" aria-current="page">Docs</a>
     </nav>
@@ -96,7 +96,7 @@
       <li><b>Temper</b>Strategic review of the spec before planning: pick a scope mode, run a pre-mortem, and harden the contract so you build the right thing. <span class="cmd"><b>/rite-temper</b> → strategy.md</span></li>
       <li><b>Define</b>The approved spec becomes a plan and vertical task slices, each tagged HITL or AFK with a checkpoint gate. <span class="cmd"><b>/rite-define</b> → plan.md, tasks.md, state.md</span></li>
       <li><b>Vet</b>Engineering review of the plan before any code: architecture, scope, and test coverage, confidence-banded. Writes the test plan the build must satisfy. <span class="cmd"><b>/rite-vet</b> → eng-review.md, test-plan.md</span></li>
-      <li><b>Build</b>Implement exactly one vertical slice, test-first, then stop with evidence. HITL slices pause before code is written. <span class="cmd"><b>/rite-build</b> → code, evidence.md, touched-files.md</span></li>
+      <li><b>Build</b>Implement exactly one vertical slice, test-first, then stop with evidence. Optional forge mode builds two or three rival versions and an independent judge picks the winner. HITL slices pause before code is written. <span class="cmd"><b>/rite-build</b> → code, evidence.md, touched-files.md</span></li>
       <li><b>Prove</b>Tests, build, runtime, and browser proof of the finished feature. Claims get backed by output. <span class="cmd"><b>/rite-prove</b> → evidence.md, browser-evidence.md</span></li>
       <li><b>Polish</b>Behavior-preserving cleanup first, then UI polish against the design system. <span class="cmd"><b>/rite-polish</b> → polish-report.md</span></li>
       <li><b>Review</b>Independent fresh-context reviewers check the diff against the spec and the standards, in parallel. <span class="cmd"><b>/rite-review</b> → review.md</span></li>
@@ -120,9 +120,9 @@
 
     <h2 id="modes">Run modes</h2>
     <p>Same workflow, two postures. Slices are tagged per mode, so you decide how much the agent does on its own.</p>
-    <h3>HITL — human in the loop</h3>
+    <h3>HITL: human in the loop</h3>
     <p>Default. Risky slices pause <strong>before</strong> code is written, at a typed checkpoint that escalates through advisory, validating, blocking, and escalating. Answer once with <code>/rite-resolve &lt;qid&gt; "&lt;answer&gt;"</code> and the build resumes.</p>
-    <h3>AFK — away from keyboard</h3>
+    <h3>AFK: away from keyboard</h3>
     <p>Drop a <code>.devrites/AFK</code> file in the project. AFK slices run unattended; discretionary pauses downgrade to advisory notes in <code>questions.md</code> so the loop keeps moving.</p>
     <div class="callout">
       <span class="lbl">AFK never silently accepts risk</span>
@@ -134,12 +134,12 @@
 <footer class="foot">
   <div class="wrap">
     <div class="foot__legal" style="margin-top:0;border-top:0;padding-top:0">
-      <span>© 2026 Viktors Baikers · DevRites <span class="js-version">v1.7.0</span></span>
+      <span>© 2026 Viktors Baikers · DevRites <span class="js-version">v2.3.0</span></span>
       <span><a href="https://github.com/ViktorsBaikers/DevRites" rel="noopener" style="color:var(--ink-muted)">GitHub</a></span>
     </div>
   </div>
 </footer>
 
-<script src="/assets/js/main.js?v=3" defer></script>
+<script type="module" src="/assets/js/main.js?v=4"></script>
 </body>
 </html>
