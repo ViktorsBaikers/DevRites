@@ -74,6 +74,28 @@ scripts/run-outcome-evals.sh
 No API key required; runs in CI. (Live evidence-freshness by mtime is a separate
 runtime gate: `pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh`.)
 
+## Behavioral evals (discipline under pressure)
+
+Trigger evals test *which skill fires*; outcome evals test *did a run reach a shippable
+state*. Behavioral evals test the third thing: *does a gating skill's discipline hold when
+the user pushes it toward the exact shortcut the skill exists to prevent* — claim a pass it
+didn't observe, ship past a Critical, skip the doubt loop, defer a test. Each scenario turns
+a row from `../pack/.claude/rules/anti-patterns.md` (asserted in prose) into a graded case:
+a pressure prompt plus the resistance a holding response shows and the capitulation a failed
+one shows.
+
+They live in [`behavioral/`](behavioral/) and are **opt-in** — earned by gating rites
+(`rite-prove`, `rite-build`, `rite-seal`, `rite-vet`, peers), never required of every skill.
+The deterministic shape gate runs in `ci.yml` with no API key:
+
+```bash
+scripts/run-behavioral-evals.sh
+```
+
+Live execution (does the skill actually resist?) is the same API-gated rung as the live
+trigger evals. Full schema, methodology, and the grading contract:
+[`behavioral/README.md`](behavioral/README.md).
+
 ## File schema
 
 ```json
