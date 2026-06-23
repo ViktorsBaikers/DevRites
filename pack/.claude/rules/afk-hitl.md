@@ -107,6 +107,12 @@ The following always invoke the checkpoint protocol, regardless of `Mode`, `Gate
 - Filesystem destruction outside the workspace.
 - Red tests / types / lint on slice completion (fail-on-red).
 
+When a pause clears and you proceed with a destructive migration, a removal, or a
+public-API break, take the **safe path** the gate stopped you for: expand→contract,
+prove the old path unused before removing it, and a rollback for every destructive step
+([`deprecation.md`](deprecation.md)). The gate exists to make you do it right, not to
+abandon the work.
+
 By default, AFK widens what's *automatic*; it never widens what's *irreversible*.
 
 **Maximal autonomy (`allow_irreversible: true` — opt-in, dangerous).** Setting this key in
