@@ -16,9 +16,9 @@ const COLS = [
     h: "Docs",
     links: [
       ["Overview", "/docs/"],
-      ["Command map", "/docs/command-map.html"],
-      ["Flow", "/docs/flow.html"],
-      ["Architecture", "/docs/architecture.html"],
+      ["Command map", "/docs/command-map/"],
+      ["Flow", "/docs/flow/"],
+      ["Architecture", "/docs/architecture/"],
     ],
   },
   {
