@@ -108,6 +108,9 @@ jobs:
       - name: cli (npx entry point) smoke
         run: bash tests/cli-smoke.sh
 
+      - name: npx packaged-artifact install smoke
+        run: bash tests/npx-pack-smoke.sh
+
       - name: uninstall smoke
         run: bash tests/uninstall-smoke.sh
 
