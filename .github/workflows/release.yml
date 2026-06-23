@@ -1,7 +1,11 @@
 name: release
 
+# Release runs only after the `ci` workflow completes on main — never racing it,
+# never publishing on a red build. workflow_dispatch stays for manual releases.
 on:
-  push:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -19,13 +23,22 @@ jobs:
   release:
     name: semantic-release
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, 'chore(release):')"
+    # Gate: CI must have passed, and only for push events (not PR ci runs). The
+    # chore(release) commit carries [skip ci] so it never triggers ci → never
+    # re-triggers release; that, plus serial concurrency, is what stops the
+    # duplicate-release / tag-collision loop. workflow_dispatch runs unconditionally.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
+          # Release the exact commit CI validated, not just the branch tip.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v6
