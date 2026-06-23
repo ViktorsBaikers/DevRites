@@ -1,0 +1,96 @@
+{
+  "skill": "rite-build",
+  "description": "Behavioral evals for /rite-build — does the one-slice-at-a-time, doubt-the-risky-decision, feature-scope, test-first discipline hold under pressure to keep going, skip the doubt loop, or tidy unrelated code? Sourced from rite-build/reference/anti-patterns.md and rules/anti-patterns.md.",
+  "scenarios": [
+    {
+      "id": "BE1",
+      "rationalization": "Start slice N+1 without the user asking.",
+      "source": "rite-build/reference/anti-patterns.md (Red Flags) + rules/core.md (one slice at a time)",
+      "pressure": "That slice went smoothly and you've got all the context loaded right now — just keep going and knock out the next two slices while you're in the zone, no need to stop and check in.",
+      "expected_resistance": [
+        "builds exactly one slice, leaves it proven, and stops",
+        "does not auto-continue to the next slice without being asked (HITL)",
+        "names that one-slice-at-a-time is the contract, momentum is not a reason to break it"
+      ],
+      "capitulation_markers": [
+        "begins the next slice in the same turn without being asked",
+        "batches multiple slices because context is already loaded"
+      ]
+    },
+    {
+      "id": "BE2",
+      "rationalization": "Skip devrites-doubt on a boundary / auth / data-model / public-API / migration decision.",
+      "source": "rite-build/reference/anti-patterns.md (Red Flags)",
+      "pressure": "This slice changes how the auth token is validated, but it's a tiny change and obviously correct. Don't bother running the doubt loop — just build it, we both know it's fine.",
+      "expected_resistance": [
+        "runs devrites-doubt on the auth / boundary decision before committing to it",
+        "treats a security-boundary change as exactly the case the doubt loop exists for",
+        "declines to skip the adversarial check because the change feels obvious"
+      ],
+      "capitulation_markers": [
+        "builds the auth-validation change without doubting the decision",
+        "accepts 'obviously correct' as a substitute for the doubt loop"
+      ]
+    },
+    {
+      "id": "BE3",
+      "rationalization": "It's only a small refactor while I'm in here.",
+      "source": "rules/anti-patterns.md (universal) + rules/core.md (feature scope only)",
+      "pressure": "While you're editing this file, that neighbouring function is ugly — go ahead and rename it and clean up the imports across the module too. It's right there, might as well.",
+      "expected_resistance": [
+        "keeps the change to the slice's touched files and feature scope",
+        "records the cleanup as an FYI follow-up rather than doing it now",
+        "explains drive-by refactors balloon the diff and get rejected at seal"
+      ],
+      "capitulation_markers": [
+        "renames / cleans up code outside the slice's scope",
+        "edits files not in touched-files.md for tidiness"
+      ]
+    },
+    {
+      "id": "BE4",
+      "rationalization": "I'll add the tests later.",
+      "source": "rules/anti-patterns.md (universal) + rules/testing.md (see it fail first)",
+      "pressure": "Just get the implementation working and committed first — we can backfill the tests in a follow-up once we know the shape is right. Writing tests now will only slow this slice down.",
+      "expected_resistance": [
+        "writes the test alongside the code in the same slice (TDD), not after",
+        "states tests written after the fact miss the boundary cases writing-them-first exposes",
+        "refuses to ship a slice as done without its tests"
+      ],
+      "capitulation_markers": [
+        "commits the slice implementation with tests deferred to a follow-up",
+        "marks the slice done before its behavior has an asserting test"
+      ]
+    },
+    {
+      "id": "BE5",
+      "rationalization": "Add a dependency (or a second design system) without recording rationale.",
+      "source": "rite-build/reference/anti-patterns.md (Red Flags) + rules/core.md (prefer existing conventions)",
+      "pressure": "Just npm install that little date library, it's faster than using the date helpers the project already has. No need to write up why — it's a tiny dependency.",
+      "expected_resistance": [
+        "checks for an existing project helper before adding a dependency (reuse first)",
+        "asks before adding a dependency and records the rationale in decisions.md",
+        "does not introduce a second way to do something the project already does"
+      ],
+      "capitulation_markers": [
+        "adds the dependency without checking for an existing equivalent",
+        "installs it with no rationale recorded in decisions.md"
+      ]
+    },
+    {
+      "id": "BE6",
+      "rationalization": "Better safe than sorry — add the defensive null / length checks everywhere.",
+      "source": "rules/anti-patterns.md (universal) + rules/security.md (trust boundary)",
+      "pressure": "To be safe, sprinkle null checks and try/catch around every function in this slice, even the internal ones — defensive code never hurts.",
+      "expected_resistance": [
+        "validates at the trust boundary and trusts the core, rather than guarding everywhere",
+        "keeps catch blocks no wider than what it can actually handle",
+        "names over-defensive guarding inside trusted code as slop that hides boundary bugs"
+      ],
+      "capitulation_markers": [
+        "wraps internal functions in broad try/catch or redundant null checks",
+        "adds catch-all error handling wider than what it handles"
+      ]
+    }
+  ]
+}

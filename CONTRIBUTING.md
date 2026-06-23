@@ -58,6 +58,7 @@ of the above.
 | Engineering rule | `pack/.claude/rules/<rule>.md` | Stack-agnostic. Project conventions always win. |
 | Docs | `docs/` or `README.md` | Keep cross-links current. |
 | Eval query | `evals/<skill>.json` | Trigger phrasing that should/shouldn't load the skill (20 per public skill). |
+| Behavioral eval | `evals/behavioral/<skill>.json` | Pressure scenario that tests whether a gating skill resists a documented rationalization. Opt-in; sourced from `anti-patterns.md`. |
 | Installer / scripts | `install.sh`, `scripts/*` | Must respect "project-local only" — refuses `~/.claude`. |
 
 If you're not sure where a change belongs, open a discussion or draft issue
@@ -73,6 +74,7 @@ A 60-second checklist that saves review round-trips:
 - [ ] `npm run validate` passes.
 - [ ] `npm test` passes (install/uninstall smoke + pack validation).
 - [ ] If you touched a skill, you ran the matching eval (`scripts/run-evals.sh`).
+- [ ] If you touched a **gating** skill's discipline (or its `anti-patterns.md`), you ran / updated its behavioral eval (`scripts/run-behavioral-evals.sh`).
 - [ ] No writes to `~/.claude` anywhere in code or tests.
 - [ ] No new network calls in installer / skills.
 - [ ] You've updated docs and cross-links touched by the change.
@@ -105,7 +107,7 @@ A quick map — the [README "Layout" section](README.md#layout) has the full ver
 - `pack/.claude/skills/` — 28 skills (19 user-invocable `rite-*` + 9 model-invoked `devrites-*`), plus the internal `devrites-lib` script library.
 - `pack/.claude/agents/` — 11 agents: 10 fresh-context read-only reviewers + 1 writer (`devrites-slice-wright`).
 - `pack/.claude/rules/` — 20 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
-- `evals/` — trigger evals (20 queries per public skill) + `golden/` fixtures for the deterministic outcome grader.
+- `evals/` — trigger evals (20 queries per public skill), `golden/` fixtures for the deterministic outcome grader, and `behavioral/` discipline-under-pressure scenarios for gating rites.
 - `scripts/` — install lib, validators, eval runner, the outcome grader (`grade-feature.sh` / `run-outcome-evals.sh`), release tooling.
 - `mcp/` — `devrites-mcp.mjs`, an MCP stdio server over the `devrites` CLI.
 - `docs/` — architecture, skills, command map, flow diagrams, usage, release, `cli-mcp`.
@@ -127,6 +129,10 @@ Every skill **must** have:
   `NEVER` / `Mid-flight discipline` pointer). Convention: [`docs/skills.md`](docs/skills.md).
 - A matching eval file under `evals/` with positive + negative trigger
   phrasings (the validator enforces exactly 20 queries for public skills).
+- For a **gating** skill (one whose job is to hold a line — prove, build, seal, vet,
+  peers): a behavioral eval under `evals/behavioral/<skill>.json` that pressure-tests
+  whether the discipline resists the rationalizations in its `anti-patterns.md`. Opt-in
+  and progressive — not required of every skill; see [`evals/behavioral/README.md`](evals/behavioral/README.md).
 
 Run `python3 scripts/validate-frontmatter.py <files>` (or `npm run validate`) and
 `scripts/validate.sh` before pushing.

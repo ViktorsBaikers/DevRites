@@ -85,6 +85,12 @@ jobs:
       - name: Validate outcome evals (deterministic grader)
         run: bash scripts/run-outcome-evals.sh
 
+      - name: Validate behavioral evals (shape gate)
+        run: bash scripts/run-behavioral-evals.sh
+
+      - name: Behavioral eval validator tests
+        run: bash tests/behavioral-evals-test.sh
+
       - name: Evidence-freshness gate test
         run: bash tests/evidence-fresh-test.sh
 

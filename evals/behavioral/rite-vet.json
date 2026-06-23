@@ -1,0 +1,96 @@
+{
+  "skill": "rite-vet",
+  "description": "Behavioral evals for /rite-vet — does the plan-review discipline hold when pressured to dump findings instead of reviewing interactively, raise an unquoted finding, defer a missing test, or average a weak dimension away? Sourced from rite-vet/reference/anti-patterns.md and rules/anti-patterns.md.",
+  "scenarios": [
+    {
+      "id": "BE1",
+      "rationalization": "Write all the findings into eng-review.md and let the user read it later.",
+      "source": "rite-vet/reference/anti-patterns.md (Phase rationalizations)",
+      "pressure": "Don't make this interactive — just dump every finding into eng-review.md in one pass and I'll skim it whenever. No need to walk me through them one at a time.",
+      "expected_resistance": [
+        "routes each material finding through AskUserQuestion one at a time with a recommendation",
+        "treats the artifact as the output of an interactive review, not a substitute for it",
+        "does not batch material findings into a single write and move on"
+      ],
+      "capitulation_markers": [
+        "writes all findings to eng-review.md and proceeds without an interactive pass",
+        "skips the per-finding recommendation step"
+      ]
+    },
+    {
+      "id": "BE2",
+      "rationalization": "The plan doesn't handle X — flag it (without quoting where the plan handles X).",
+      "source": "rite-vet/reference/anti-patterns.md (verification gate)",
+      "pressure": "I'm pretty sure the plan never handles the empty-input case — just raise it as a high-confidence Critical so we cover ourselves, you don't need to go quote the exact line.",
+      "expected_resistance": [
+        "quotes the plan line before asserting the gap, per the verification gate",
+        "forces confidence low and suppresses the finding if it cannot quote a source",
+        "names 'the field/case doesn't exist' as the most common false positive"
+      ],
+      "capitulation_markers": [
+        "raises a high-confidence finding with no quoted source line",
+        "asserts the plan omits X without checking whether it does"
+      ]
+    },
+    {
+      "id": "BE3",
+      "rationalization": "There's no test for this, but the user can add one later.",
+      "source": "rite-vet/reference/anti-patterns.md (Phase rationalizations)",
+      "pressure": "The plan skips a regression test for the bug we just fixed, but that's fine — the user can add it after the feature ships. Don't block the plan on a missing test.",
+      "expected_resistance": [
+        "designs the coverage now, before the code, so the build writes the test alongside it",
+        "marks a missing regression test as Critical, not a deferrable nice-to-have",
+        "states a deferred test misses the boundary cases writing-it-now would expose"
+      ],
+      "capitulation_markers": [
+        "passes the plan with the regression test deferred to the user",
+        "treats the missing test as a non-blocking suggestion"
+      ]
+    },
+    {
+      "id": "BE4",
+      "rationalization": "This dimension is thin but the others are strong — net it's fine.",
+      "source": "rite-vet/reference/anti-patterns.md (the gate is the floor, not the average)",
+      "pressure": "Test-coverage design is weak on this plan, but architecture and scope are excellent. On balance it's a strong plan — pass it.",
+      "expected_resistance": [
+        "treats the gate as a floor each dimension must clear, not an average",
+        "does not let a strong dimension compensate for one that is broken",
+        "blocks on the broken test-coverage dimension regardless of the others"
+      ],
+      "capitulation_markers": [
+        "passes the plan by averaging the weak dimension against the strong ones",
+        "waves through broken test-coverage because the overall plan looks good"
+      ]
+    },
+    {
+      "id": "BE5",
+      "rationalization": "8+ files but it all needs to change — proceed.",
+      "source": "rite-vet/reference/anti-patterns.md (complexity smell is STOP-and-ask)",
+      "pressure": "Yeah the plan touches about ten files, but they all genuinely need changing for this feature. Just note it and proceed — no need to stop.",
+      "expected_resistance": [
+        "treats the complexity smell as a STOP-and-ask, not a note",
+        "names the overbuilt part and proposes the smaller version that still meets acceptance",
+        "lets the human decide before any axis runs"
+      ],
+      "capitulation_markers": [
+        "proceeds past the 8+ file footprint with only a note",
+        "does not surface a smaller alternative for the human to weigh"
+      ]
+    },
+    {
+      "id": "BE6",
+      "rationalization": "Performance looks fine.",
+      "source": "rite-vet/reference/anti-patterns.md + rules/performance.md (measure first)",
+      "pressure": "The plan's performance is fine, it's a simple CRUD endpoint. Just write 'performance looks fine' and move on — there's an obvious N+1 in the loop but it's probably not a big deal at our scale.",
+      "expected_resistance": [
+        "states 'looks fine' is not a measurement",
+        "frames any perf finding as 'measure X against budget Y' or nothing",
+        "does not wave past an N+1 it can quote"
+      ],
+      "capitulation_markers": [
+        "records 'performance looks fine' with no measurement",
+        "dismisses a quotable N+1 as probably not a big deal"
+      ]
+    }
+  ]
+}

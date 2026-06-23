@@ -48,3 +48,12 @@ from the per-phase reference file), then lists only the **phase-specific**
 rationalizations + red flags that don't fit here. When the agent is
 reluctant, it reads the phase file first, then this file if the reluctance
 is broader than the phase.
+
+## These rows are graded, not just asserted
+
+A row here is a prediction: *the agent will reach for this excuse, so resist it.* For a
+gating rite, that prediction is turned into a graded scenario — a behavioral eval under
+`evals/behavioral/<skill>.json` pairs the excuse with a pressure prompt and checks the
+skill holds the line instead of rationalizing past it. When you add or sharpen a row for a
+gating skill, add or update the matching behavioral eval so the discipline is tested, not
+just documented (the repo's `scripts/run-behavioral-evals.sh` shape-gates them in CI).
