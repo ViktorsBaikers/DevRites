@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [2.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.1.0...v2.2.0) (2026-06-23)
+
+### Added
+
+* **rules:** add observability + deprecation rules, OWASP LLM Top 10 ([0c29760](https://github.com/ViktorsBaikers/DevRites/commit/0c29760e504c22c18d7ca2c5e1986746ba95a07d))
+
+### Fixed
+
+* **release:** drop duplicate 2.1.0 changelog block ([0a7b510](https://github.com/ViktorsBaikers/DevRites/commit/0a7b5101ecd05e4c0b4d3812cefc68c0f92f1626))
+
 ## [2.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.0.0...v2.1.0) (2026-06-23)
 
 ### Added
