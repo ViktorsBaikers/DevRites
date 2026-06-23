@@ -29,6 +29,8 @@ WORKSPACE_ARTIFACTS = {
     "questions.md", "drift.md", "evidence.md", "browser-evidence.md", "touched-files.md",
     "review.md", "seal.md", "ship.md", "brief.md", "design-brief.md", "strategy.md",
     "polish-report.md", "handoff.md", "eng-review.md", "test-plan.md", "references.md",
+    # forge competition record (work/<slug>/forge-report.md) — written when a Forge: yes slice competes candidates
+    "forge-report.md",
     "conventions.md", "coverage.md", "analysis.md", "learnings.md",
     # developer-experience scorecard (work/<slug>/devex.md) + project-level retro ledger (.devrites/retro.md)
     "devex.md", "retro.md",
