@@ -23,7 +23,6 @@ export default function Contrast() {
   return (
     <section id="why" className="wrap py-20 sm:py-28">
       <SectionHead
-        center
         eyebrow="Plausible is not correct"
         title="The difference shows up on the first feature."
         lead="A wrong turn three steps back costs you a day. DevRites makes the agent work like a careful engineer: one slice at a time, with decisions recorded and receipts on disk."
@@ -72,7 +71,7 @@ export default function Contrast() {
 
 /* render inline /commands and .files in mono */
 function render(text: string) {
-  return text.split(/(\/clear|\.devrites\/|auth)/g).map((part, i) =>
+  return text.split(/(\/clear|\.devrites\/)/g).map((part, i) =>
     part === "/clear" || part === ".devrites/" ? (
       <code key={i} className="k">
         {part}

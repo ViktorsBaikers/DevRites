@@ -12,7 +12,7 @@ export default function Faq() {
 
   return (
     <section id="faq" className="wrap py-20 sm:py-28">
-      <SectionHead center eyebrow="Questions" title="The skeptical-engineer FAQ." />
+      <SectionHead center title="The skeptical-engineer FAQ." />
 
       <div className="mx-auto mt-10 max-w-3xl space-y-3">
         {FAQ.map((item, i) => {
@@ -36,13 +36,14 @@ export default function Faq() {
                 <AnimatePresence initial={false}>
                   {isOpen && (
                     <motion.div
-                      initial={reduce ? false : { height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={reduce ? undefined : { height: 0, opacity: 0 }}
+                      initial={reduce ? false : { gridTemplateRows: "0fr", opacity: 0 }}
+                      animate={{ gridTemplateRows: "1fr", opacity: 1 }}
+                      exit={reduce ? undefined : { gridTemplateRows: "0fr", opacity: 0 }}
                       transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-                      className="overflow-hidden"
+                      className="grid"
+                      style={{ gridTemplateRows: reduce ? "1fr" : undefined }}
                     >
-                      <p className="px-5 pb-5 text-[0.94rem] leading-relaxed text-ink-muted">
+                      <p className="overflow-hidden px-5 pb-5 text-[0.94rem] leading-relaxed text-ink-muted">
                         {item.a}
                       </p>
                     </motion.div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import { CopyButton, Reveal, GithubMark } from "./ui";
+import { CopyButton, Reveal, GithubMark, MagneticLink } from "./ui";
 import { INSTALL_CMD, REPO } from "@/lib/site";
 
 const POINTS = [
@@ -16,15 +16,12 @@ export default function Install() {
     <section id="install" className="relative overflow-hidden py-24 sm:py-32">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="grid-field absolute inset-0 rotate-180 opacity-50" />
-        <div className="absolute left-1/2 top-10 size-[40rem] -translate-x-1/2 rounded-full bg-accent/10 blur-[140px]" />
+        <div className="absolute left-1/2 top-10 size-[40rem] -translate-x-1/2 rounded-full bg-accent/[0.07] blur-[150px]" />
       </div>
 
       <div className="wrap text-center">
         <Reveal>
-          <span className="mono text-xs uppercase tracking-[0.16em] text-accent">Install</span>
-        </Reveal>
-        <Reveal delay={0.06}>
-          <h2 className="mx-auto mt-3 max-w-2xl font-black [font-size:var(--text-h2)]">
+          <h2 className="mx-auto mt-3 max-w-2xl font-bold [font-size:var(--text-h2)]">
             One command. One project. Zero babysitting.
           </h2>
         </Reveal>
@@ -46,19 +43,12 @@ export default function Install() {
 
         <Reveal delay={0.24}>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a
-              href={REPO}
-              rel="noopener"
-              className="blade group inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold text-bg-deep shadow-lg shadow-accent/20 transition-transform duration-200 hover:scale-[1.03]"
-            >
+            <MagneticLink href={REPO} rel="noopener" className="btn btn-primary group px-6 py-3">
               <GithubMark className="size-4" />
               Star it on GitHub
               <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-1" />
-            </a>
-            <a
-              href="/docs/"
-              className="inline-flex items-center gap-2 rounded-xl border border-line-bright px-6 py-3 font-medium text-ink transition-colors duration-200 hover:bg-surface-2/60"
-            >
+            </MagneticLink>
+            <a href="/docs/" className="btn btn-ghost px-6 py-3 font-medium">
               Read the docs
             </a>
           </div>

@@ -1,14 +1,6 @@
 "use client";
 
 import {
-  motion,
-  useMotionValue,
-  useSpring,
-  useTransform,
-  useReducedMotion,
-} from "framer-motion";
-import type { PointerEvent } from "react";
-import {
   Files,
   ShieldAlert,
   KeyRound,
@@ -48,8 +40,6 @@ export default function Bento() {
   return (
     <section id="mechanisms" className="wrap py-20 sm:py-28">
       <SectionHead
-        center
-        eyebrow="Proof, not promises"
         title="Every guarantee is a real mechanism."
         lead="No vibes. Each one is a named gate you can read in the repo. It's the reason an unattended agent won't do the expensive, irreversible thing on its own."
       />
@@ -64,37 +54,12 @@ export default function Bento() {
 }
 
 function Tile({ m, index }: { m: Mechanism; index: number }) {
-  const reduce = useReducedMotion() ?? false;
   const Icon = ICONS[m.key] ?? Files;
 
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const rx = useSpring(useTransform(my, [-0.5, 0.5], [6, -6]), { stiffness: 200, damping: 18 });
-  const ry = useSpring(useTransform(mx, [-0.5, 0.5], [-6, 6]), { stiffness: 200, damping: 18 });
-
-  function onMove(e: PointerEvent<HTMLDivElement>) {
-    if (reduce) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    mx.set((e.clientX - r.left) / r.width - 0.5);
-    my.set((e.clientY - r.top) / r.height - 0.5);
-  }
-  function onLeave() {
-    mx.set(0);
-    my.set(0);
-  }
-
   return (
-    <Reveal
-      delay={Math.min(index * 0.06, 0.3)}
-      className={`${SPAN[m.span]} group`}
-    >
-      <motion.div
-        onPointerMove={onMove}
-        onPointerLeave={onLeave}
-        style={reduce ? undefined : { rotateX: rx, rotateY: ry, transformPerspective: 900 }}
-        className="tile bento-tile relative flex h-full flex-col gap-3 overflow-hidden p-6"
-      >
-        {/* hover wash */}
+    <Reveal delay={Math.min(index * 0.06, 0.3)} className={`${SPAN[m.span]} group`}>
+      <div className="tile bento-tile relative flex h-full flex-col gap-3 overflow-hidden p-6">
+        {/* hover wash — the only motion left on the tile; the CSS lift handles the rest */}
         <div className="blade-soft pointer-events-none absolute -right-16 -top-16 size-40 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
         <div className={`flex size-11 items-center justify-center rounded-xl border border-line bg-surface-2/60 ${TONE[m.tone]}`}>
@@ -122,7 +87,7 @@ function Tile({ m, index }: { m: Mechanism; index: number }) {
             {m.demo}
           </div>
         )}
-      </motion.div>
+      </div>
     </Reveal>
   );
 }

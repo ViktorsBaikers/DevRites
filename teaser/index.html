@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* Schibsted Grotesk — brand display face (variable 400–900). JetBrains Mono is auto-embedded. */
+      @font-face {
+        font-family: "Schibsted Grotesk";
+        font-style: normal;
+        font-weight: 400 900;
+        font-display: swap;
+        src: url(fonts/schibsted-grotesk-latin.woff2) format("woff2");
+      }
+
+      /* DevRites blade palette — from site DESIGN.md */
+      :root {
+        --bg: #141826;
+        --deep: #0e1119;
+        --abyss: #0a0c12;
+        --surface: #1c2031;
+        --raised: #252a3a;
+        --line: #373c4d;
+        --line-bright: #4d5468;
+        --ink: #f4f6fa;
+        --ink-muted: #b4bbc7;
+        --ink-faint: #878e9d;
+        --accent: #3ccfe0;
+        --accent-blue: #3a6ae6;
+        --go: #3fd89b;
+        --warn: #e0b53c;
+        --danger: #e5563f;
+      }
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--abyss);
+        font-family: "Schibsted Grotesk", sans-serif;
+        color: var(--ink);
+      }
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #s1 {
+        z-index: 1;
+      }
+      #s2 {
+        z-index: 2;
+        opacity: 0;
+        background: var(--deep);
+      }
+      #s3 {
+        z-index: 3;
+        opacity: 0;
+        background: var(--bg);
+      }
+      #s4 {
+        z-index: 4;
+        opacity: 0;
+        background: var(--deep);
+      }
+      #s5 {
+        z-index: 5;
+        opacity: 0;
+        background: var(--abyss);
+      }
+      .scene-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        padding: 150px 96px;
+        box-sizing: border-box;
+      }
+
+      /* decoratives */
+      .glow {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(120px);
+        z-index: 1;
+        pointer-events: none;
+      }
+      .grid {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background-image: radial-gradient(var(--line-bright) 1.5px, transparent 1.5px);
+        background-size: 46px 46px;
+        opacity: 0.12;
+        -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, #000, transparent 75%);
+        mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, #000, transparent 75%);
+      }
+      .ghost {
+        position: absolute;
+        z-index: 1;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        color: var(--line);
+        opacity: 0.5;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .reg {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+      .rule {
+        height: 2px;
+        background: var(--line);
+        transform-origin: left center;
+      }
+      .blade {
+        background-image: linear-gradient(105deg, var(--accent), var(--accent-blue));
+      }
+
+      /* S1 hook */
+      #s1 .scene-content {
+        justify-content: center;
+        gap: 20px;
+      }
+      .hook {
+        font-weight: 900;
+        font-size: 132px;
+        line-height: 1;
+        letter-spacing: -0.045em;
+      }
+      .hook--accent {
+        position: relative;
+        width: max-content;
+      }
+      .hook .ul {
+        position: absolute;
+        left: 0;
+        bottom: 16px;
+        height: 16px;
+        width: 100%;
+        border-radius: 99px;
+        transform-origin: left center;
+      }
+      #s1 .reg {
+        margin-bottom: 40px;
+      }
+      .hook-cap {
+        margin-top: 44px;
+        max-width: 760px;
+        font-size: 34px;
+        line-height: 1.4;
+        color: var(--ink-muted);
+      }
+
+      /* S2 command */
+      #s2 .scene-content {
+        justify-content: center;
+        align-items: flex-start;
+        gap: 40px;
+      }
+      .card {
+        width: 100%;
+        border-radius: 26px;
+        background: color-mix(in oklch, var(--surface) 92%, transparent);
+        border: 2px solid var(--line);
+        overflow: hidden;
+        box-shadow: 0 40px 120px -50px rgba(60, 207, 224, 0.4);
+      }
+      .card-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 26px 34px;
+        border-bottom: 2px solid var(--line);
+        background: rgba(37, 42, 58, 0.4);
+      }
+      .tdot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+      }
+      .card-bar .lbl {
+        margin-left: 14px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        color: var(--ink-muted);
+      }
+      .card-body {
+        padding: 48px 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+      }
+      .cmdrow {
+        display: flex;
+        align-items: center;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 46px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .cmdrow .pr {
+        color: var(--accent);
+        margin-right: 20px;
+      }
+      .clip {
+        clip-path: inset(0 100% 0 0);
+      }
+      .npx {
+        color: var(--accent);
+      }
+      .caret {
+        display: inline-block;
+        width: 22px;
+        height: 50px;
+        margin-left: 8px;
+        background: var(--accent);
+        vertical-align: middle;
+      }
+
+      /* S3 proof */
+      #s3 .scene-content {
+        justify-content: center;
+        gap: 30px;
+      }
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        font-size: 76px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--go);
+      }
+      .check .mk {
+        font-size: 60px;
+      }
+      .verdict {
+        margin-top: 26px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 38px;
+        color: var(--ink-faint);
+      }
+      .stopped {
+        display: inline-block;
+        font-weight: 700;
+        color: var(--warn);
+      }
+
+      /* S4 stat */
+      #s4 .scene-content {
+        justify-content: center;
+        gap: 60px;
+      }
+      .bignum {
+        font-weight: 900;
+        font-size: 480px;
+        line-height: 1.08;
+        letter-spacing: -0.05em;
+        color: var(--ink);
+        font-variant-numeric: tabular-nums;
+      }
+      .biglabel {
+        font-weight: 800;
+        font-size: 120px;
+        letter-spacing: 0.02em;
+        line-height: 0.9;
+        color: var(--accent);
+      }
+      .bigsub {
+        margin-top: 30px;
+        font-size: 40px;
+        color: var(--ink-muted);
+      }
+      .statrow {
+        margin-top: 56px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 30px;
+        letter-spacing: 0.04em;
+        color: var(--ink-faint);
+      }
+      .statrow b {
+        color: var(--ink);
+      }
+
+      /* S5 sting */
+      #s5 .scene-content {
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        gap: 0;
+      }
+      .mark {
+        width: 156px;
+        height: 156px;
+        border-radius: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        font-size: 96px;
+        color: var(--deep);
+        box-shadow: 0 30px 90px -30px rgba(60, 207, 224, 0.6);
+      }
+      .wordmark {
+        margin-top: 48px;
+        font-weight: 900;
+        font-size: 168px;
+        letter-spacing: -0.045em;
+      }
+      .tagline {
+        margin-top: 24px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 36px;
+        letter-spacing: 0.04em;
+        color: var(--accent);
+      }
+      .cta {
+        margin-top: 64px;
+        padding: 30px 56px;
+        border-radius: 20px;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        font-size: 44px;
+        color: var(--deep);
+      }
+      .foss {
+        margin-top: 40px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 28px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-width="1080"
+      data-height="1920"
+      data-start="0"
+      data-duration="12.2"
+    >
+      <!-- ===================== SCENE 1 — HOOK ===================== -->
+      <div id="s1" class="scene">
+        <div class="glow" data-layout-ignore id="s1-glow" style="top: -200px; left: -160px; width: 760px; height: 760px; background: rgba(60, 207, 224, 0.22);"></div>
+        <div class="glow" data-layout-ignore id="s1-glow2" style="bottom: -260px; right: -200px; width: 680px; height: 680px; background: rgba(58, 106, 230, 0.2);"></div>
+        <div class="grid" id="s1-grid"></div>
+        <div class="ghost" id="s1-ghost" data-layout-allow-overflow style="bottom: 120px; left: -40px; font-size: 360px;">babysit</div>
+        <div class="scene-content">
+          <div class="reg" id="s1-reg">DevRites // unattended, not unsupervised</div>
+          <div class="hook" id="s1-l1">STOP</div>
+          <div class="hook hook--accent" id="s1-l2" data-layout-allow-overflow>
+            BABYSITTING
+            <span class="ul blade" id="s1-ul"></span>
+          </div>
+          <div class="hook" id="s1-l3">AI&nbsp;CODE.</div>
+          <div class="rule" id="s1-rule" style="margin-top: 50px; width: 560px;"></div>
+          <div class="hook-cap" id="s1-cap">
+            An agent that ships one verified slice at a time, then stops at the gate.
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== SCENE 2 — COMMAND ===================== -->
+      <div id="s2" class="scene">
+        <div class="glow" data-layout-ignore id="s2-glow" style="top: 40%; left: 50%; width: 820px; height: 820px; transform: translate(-50%, -50%); background: rgba(58, 106, 230, 0.18);"></div>
+        <div class="grid"></div>
+        <div class="scene-content">
+          <div class="reg" id="s2-reg" style="margin-bottom: 10px;">One command</div>
+          <div class="card" id="s2-card">
+            <div class="card-bar" id="s2-bar">
+              <span class="tdot" style="background: var(--danger);"></span>
+              <span class="tdot" style="background: var(--warn);"></span>
+              <span class="tdot" style="background: var(--go);"></span>
+              <span class="lbl">auth-tokens · .devrites/work</span>
+            </div>
+            <div class="card-body">
+              <div class="cmdrow">
+                <span class="pr">›</span>
+                <span class="clip" id="s2-cmd1"><span class="npx">npx</span> devrites@latest</span>
+              </div>
+              <div class="cmdrow">
+                <span class="pr">›</span>
+                <span class="clip" id="s2-cmd2"><span class="npx">/rite-build</span></span
+                ><span class="caret" id="s2-caret"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== SCENE 3 — PROOF ===================== -->
+      <div id="s3" class="scene">
+        <div class="glow" data-layout-ignore id="s3-glow" style="top: -180px; right: -160px; width: 720px; height: 720px; background: rgba(63, 216, 155, 0.16);"></div>
+        <div class="grid"></div>
+        <div class="ghost" id="s3-ghost" data-layout-allow-overflow style="top: 60px; right: 40px; font-size: 520px; color: var(--go); opacity: 0.08;">✓</div>
+        <div class="scene-content">
+          <div class="reg" id="s3-reg" style="margin-bottom: 50px;">Proof on disk</div>
+          <div class="check" id="s3-c1"><span class="mk">✓</span> 14 tests green</div>
+          <div class="check" id="s3-c2"><span class="mk">✓</span> types</div>
+          <div class="check" id="s3-c3"><span class="mk">✓</span> build</div>
+          <div class="rule" id="s3-rule" style="margin-top: 40px; width: 500px;"></div>
+          <div class="verdict" id="s3-verdict">
+            → evidence.md written. <span class="stopped">stopped.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== SCENE 4 — STAT ===================== -->
+      <div id="s4" class="scene">
+        <div class="glow" data-layout-ignore id="s4-glow" style="top: 50%; left: 50%; width: 900px; height: 900px; transform: translate(-50%, -50%); background: rgba(60, 207, 224, 0.16);"></div>
+        <div class="grid"></div>
+        <div class="ghost" id="s4-ghost" data-layout-allow-overflow style="top: 480px; left: 50%; transform: translateX(-50%); font-size: 900px; opacity: 0.06;">10</div>
+        <div class="scene-content">
+          <div class="reg" id="s4-reg" style="margin-bottom: 30px;">The discipline</div>
+          <div class="bignum" id="s4-num">0</div>
+          <div class="biglabel" id="s4-label">PHASES</div>
+          <div class="bigsub" id="s4-sub">one verified slice at a time.</div>
+          <div class="statrow" id="s4-row">
+            <b>7</b> reviewers fan out · <b>0</b> files written outside your project
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== SCENE 5 — STING ===================== -->
+      <div id="s5" class="scene">
+        <div class="glow" data-layout-ignore id="s5-glow" style="top: 50%; left: 50%; width: 980px; height: 980px; transform: translate(-50%, -50%); background: rgba(60, 207, 224, 0.2);"></div>
+        <div class="grid" id="s5-grid"></div>
+        <div class="scene-content">
+          <div class="mark blade" id="s5-mark">›</div>
+          <div class="wordmark" id="s5-word">DevRites</div>
+          <div class="tagline mono" id="s5-tag">spec → build → prove → seal → ship</div>
+          <div class="cta blade mono" id="s5-cta">npx devrites@latest</div>
+          <div class="foss" id="s5-foss">Free &amp; open source · MIT</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      var T1 = 2.5,
+        T2 = 4.8,
+        T3 = 7.1,
+        T4 = 9.2;
+
+      /* ---------- SCENE 1 — HOOK (visible by default) ---------- */
+      tl.fromTo("#s1-glow", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 0);
+      tl.fromTo("#s1-glow2", { opacity: 0 }, { opacity: 1, duration: 0.7, ease: "power2.out" }, 0.1);
+      tl.to("#s1-glow", { scale: 1.1, duration: 1.3, yoyo: true, repeat: 1, ease: "sine.inOut" }, 0.3);
+      tl.fromTo("#s1-grid", { opacity: 0 }, { opacity: 0.12, duration: 0.8, ease: "power1.out" }, 0.1);
+      tl.fromTo("#s1-ghost", { opacity: 0 }, { opacity: 0.5, duration: 0.9, ease: "power1.out" }, 0.15);
+      tl.fromTo("#s1-reg", { opacity: 0, y: -28 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0.15);
+      tl.fromTo("#s1-l1", { opacity: 0, x: -150 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.22);
+      tl.fromTo("#s1-l2", { opacity: 0, x: 150 }, { opacity: 1, x: 0, duration: 0.55, ease: "power4.out" }, 0.36);
+      tl.fromTo("#s1-l3", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.52);
+      tl.fromTo("#s1-ul", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 0.66);
+      tl.fromTo("#s1-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.inOut" }, 0.5);
+      tl.fromTo("#s1-cap", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.55, ease: "sine.out" }, 0.72);
+
+      /* ---------- SCENE 2 — COMMAND ---------- */
+      tl.fromTo("#s2", { opacity: 0 }, { opacity: 1, duration: 0.16, ease: "expo.inOut" }, T1);
+      tl.fromTo("#s2 .scene-content", { scale: 1.06 }, { scale: 1, duration: 0.45, ease: "expo.out" }, T1);
+      tl.fromTo("#s2-glow", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, T1 + 0.05);
+      tl.to("#s2-glow", { scale: 1.08, duration: 1.2, yoyo: true, repeat: 1, ease: "sine.inOut" }, T1 + 0.3);
+      tl.fromTo("#s2-reg", { opacity: 0, y: -26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, T1 + 0.12);
+      tl.fromTo("#s2-card", { opacity: 0, y: 90 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, T1 + 0.1);
+      tl.fromTo("#s2-bar .tdot", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, stagger: 0.06, ease: "back.out(2)" }, T1 + 0.3);
+      tl.fromTo("#s2-cmd1", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.6, ease: "steps(16)" }, T1 + 0.42);
+      tl.fromTo("#s2-cmd2", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.4, ease: "steps(10)" }, T1 + 1.15);
+      tl.fromTo("#s2-caret", { opacity: 1 }, { opacity: 0, duration: 0.3, yoyo: true, repeat: 6, ease: "steps(1)" }, T1 + 1.0);
+
+      /* ---------- SCENE 3 — PROOF ---------- */
+      tl.fromTo("#s3", { opacity: 0 }, { opacity: 1, duration: 0.16, ease: "expo.inOut" }, T2);
+      tl.fromTo("#s3 .scene-content", { scale: 1.06 }, { scale: 1, duration: 0.45, ease: "expo.out" }, T2);
+      tl.fromTo("#s3-glow", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, T2 + 0.05);
+      tl.fromTo("#s3-ghost", { opacity: 0 }, { opacity: 0.08, duration: 0.8, ease: "power1.out" }, T2 + 0.05);
+      tl.to("#s3-ghost", { rotation: 8, duration: 1.6, yoyo: true, repeat: 1, ease: "sine.inOut" }, T2 + 0.3);
+      tl.fromTo("#s3-reg", { opacity: 0, y: -26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, T2 + 0.12);
+      tl.fromTo("#s3-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.inOut" }, T2 + 0.2);
+      tl.fromTo("#s3-c1", { opacity: 0, x: -90 }, { opacity: 1, x: 0, duration: 0.42, ease: "power3.out" }, T2 + 0.18);
+      tl.fromTo("#s3-c2", { opacity: 0, x: -90 }, { opacity: 1, x: 0, duration: 0.42, ease: "back.out(1.6)" }, T2 + 0.3);
+      tl.fromTo("#s3-c3", { opacity: 0, x: -90 }, { opacity: 1, x: 0, duration: 0.42, ease: "expo.out" }, T2 + 0.42);
+      tl.fromTo("#s3-verdict", { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.5, ease: "sine.out" }, T2 + 0.6);
+      tl.fromTo("#s3-verdict .stopped", { scale: 1.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "power4.out" }, T2 + 0.75);
+
+      /* ---------- SCENE 4 — STAT ---------- */
+      tl.fromTo("#s4", { opacity: 0 }, { opacity: 1, duration: 0.16, ease: "expo.inOut" }, T3);
+      tl.fromTo("#s4 .scene-content", { scale: 1.06 }, { scale: 1, duration: 0.45, ease: "expo.out" }, T3);
+      tl.fromTo("#s4-glow", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, T3 + 0.05);
+      tl.to("#s4-glow", { scale: 1.1, duration: 1.4, yoyo: true, repeat: 1, ease: "sine.inOut" }, T3 + 0.3);
+      tl.fromTo("#s4-ghost", { opacity: 0 }, { opacity: 0.06, duration: 0.8, ease: "power1.out" }, T3 + 0.05);
+      tl.fromTo("#s4-reg", { opacity: 0, y: -26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, T3 + 0.12);
+      tl.fromTo("#s4-num", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" }, T3 + 0.15);
+      var p4 = { v: 0 };
+      tl.to(p4, {
+        v: 10,
+        duration: 0.85,
+        ease: "power2.out",
+        onUpdate: function () {
+          document.getElementById("s4-num").textContent = Math.round(p4.v);
+        },
+      }, T3 + 0.2);
+      tl.fromTo("#s4-label", { opacity: 0, y: 44 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, T3 + 0.5);
+      tl.fromTo("#s4-sub", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "sine.out" }, T3 + 0.68);
+      tl.fromTo("#s4-row", { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, T3 + 0.84);
+
+      /* ---------- SCENE 5 — STING (final) ---------- */
+      tl.fromTo("#s5", { opacity: 0 }, { opacity: 1, duration: 0.16, ease: "expo.inOut" }, T4);
+      tl.fromTo("#s5 .scene-content", { scale: 1.06 }, { scale: 1, duration: 0.45, ease: "expo.out" }, T4);
+      tl.fromTo("#s5-glow", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, T4 + 0.05);
+      tl.to("#s5-glow", { scale: 1.12, duration: 1.5, yoyo: true, repeat: 1, ease: "sine.inOut" }, T4 + 0.4);
+      tl.fromTo("#s5-grid", { opacity: 0 }, { opacity: 0.12, duration: 0.8, ease: "power1.out" }, T4 + 0.05);
+      tl.fromTo("#s5-mark", { opacity: 0, scale: 0.6, rotation: -28 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)" }, T4 + 0.1);
+      tl.fromTo("#s5-word", { opacity: 0, y: 54 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, T4 + 0.35);
+      tl.fromTo("#s5-tag", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "sine.out" }, T4 + 0.6);
+      tl.fromTo("#s5-cta", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.42, ease: "power2.out" }, T4 + 0.8);
+      tl.fromTo("#s5-foss", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.out" }, T4 + 1.0);
+
+      /* hard-kill each covered scene after its successor fully covers it
+         (deterministic, not an animated exit) — keeps the DOM clean for capture */
+      tl.set("#s1", { visibility: "hidden" }, T1 + 0.2);
+      tl.set("#s2", { visibility: "hidden" }, T2 + 0.2);
+      tl.set("#s3", { visibility: "hidden" }, T3 + 0.2);
+      tl.set("#s4", { visibility: "hidden" }, T4 + 0.2);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

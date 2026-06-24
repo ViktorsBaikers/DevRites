@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { Reveal, SectionHead } from "./ui";
 import { PHASES } from "@/lib/site";
+import { gsap, useGSAP } from "@/lib/gsap";
 
 const ACTS = [
   { key: "shape", label: "shape", span: 4, tone: "text-accent" },
@@ -11,25 +12,75 @@ const ACTS = [
   { key: "ship", label: "ship", span: 2, tone: "text-go" },
 ] as const;
 
+// the lit state a node tweens into as the scrubbed rail passes it
+const LIT = {
+  borderColor: "#3ccfe0",
+  backgroundColor: "rgba(60, 207, 224, 0.15)",
+  color: "#3ccfe0",
+  scale: 1.12,
+};
+
 export default function Pipeline() {
+  const sectionRef = useRef<HTMLElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion() ?? false;
-  const { scrollYProgress } = useScroll({
-    target: railRef,
-    offset: ["start 80%", "end 40%"],
-  });
-  const fill = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+
+  useGSAP(
+    () => {
+      if (reduce) {
+        gsap.set(".pl-fill", { scaleX: 1 });
+        gsap.set(".pl-dot", LIT);
+        return;
+      }
+      const dots = gsap.utils.toArray<HTMLElement>(".pl-dot");
+      const mm = gsap.matchMedia();
+
+      // tablet/desktop: pin the rail, scrub the fill + light nodes in sequence
+      mm.add("(min-width: 768px)", () => {
+        const tl = gsap.timeline({
+          defaults: { ease: "none" },
+          scrollTrigger: {
+            trigger: railRef.current,
+            start: "center 65%",
+            end: "+=85%",
+            pin: true,
+            scrub: 0.5,
+          },
+        });
+        tl.to(".pl-fill", { scaleX: 1, duration: 1 }, 0);
+        dots.forEach((d, i) => {
+          tl.to(d, { ...LIT, duration: 0.4, ease: "power2.out" }, (i / dots.length) * 0.9);
+        });
+      });
+
+      // mobile: same choreography, no pin
+      mm.add("(max-width: 767px)", () => {
+        const tl = gsap.timeline({
+          defaults: { ease: "none" },
+          scrollTrigger: {
+            trigger: railRef.current,
+            start: "top 80%",
+            end: "bottom 45%",
+            scrub: 0.5,
+          },
+        });
+        tl.to(".pl-fill", { scaleX: 1, duration: 1 }, 0);
+        dots.forEach((d, i) => {
+          tl.to(d, { ...LIT, duration: 0.4, ease: "power2.out" }, (i / dots.length) * 0.9);
+        });
+      });
+    },
+    { dependencies: [reduce], scope: sectionRef },
+  );
 
   return (
-    <section id="workflow" className="wrap py-20 sm:py-28">
+    <section ref={sectionRef} id="workflow" className="wrap py-20 sm:py-28">
       <SectionHead
-        center
-        eyebrow="The workflow"
         title="Ten phases. One verified slice at a time."
         lead="Every feature walks the same path, grouped into three acts. Each phase reads the last one's files and writes its own, so nothing important lives only in a chat window you can lose."
       />
 
-      {/* the rail */}
+      {/* the rail — pins and scrubs as you scroll through it */}
       <div ref={railRef} className="relative mt-14">
         {/* act labels */}
         <div className="mb-3 hidden grid-cols-10 sm:grid">
@@ -46,9 +97,9 @@ export default function Pipeline() {
 
         {/* track */}
         <div className="relative h-1.5 rounded-full bg-line/60">
-          <motion.div
-            className="blade absolute inset-y-0 left-0 rounded-full"
-            style={{ width: reduce ? "100%" : fill }}
+          <div
+            className="pl-fill blade absolute inset-y-0 left-0 w-full origin-left rounded-full"
+            style={{ transform: "scaleX(0)" }}
           />
         </div>
 
@@ -60,7 +111,7 @@ export default function Pipeline() {
               delay={Math.min(i * 0.04, 0.3)}
               className="flex flex-col items-center gap-1.5 text-center"
             >
-              <span className="flex size-7 items-center justify-center rounded-full border border-line bg-surface text-[0.65rem] font-bold text-ink-muted">
+              <span className="pl-dot flex size-7 items-center justify-center rounded-full border border-line bg-surface text-[0.65rem] font-bold text-ink-muted">
                 {i + 1}
               </span>
               <span className="mono text-[0.65rem] text-ink-faint">{p.name}</span>

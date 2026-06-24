@@ -19,7 +19,6 @@ export default function Anywhere() {
   return (
     <section id="anywhere" className="wrap py-20 sm:py-28">
       <SectionHead
-        center
         eyebrow="Tool-agnostic core"
         title="The discipline lives in files, not in one harness."
         lead="A portable CLI and a dependency-free MCP server expose the same deterministic gates to any agent, CI job, or human. One verdict, everywhere."
@@ -86,7 +85,7 @@ export default function Anywhere() {
       </div>
 
       <Reveal delay={0.15}>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+        <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="mono text-xs uppercase tracking-[0.16em] text-ink-faint">
             same files, same gates, from
           </span>

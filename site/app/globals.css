@@ -32,7 +32,7 @@
   --radius-tile: 1rem;
 
   /* fluid type ramp */
-  --text-display: clamp(2.6rem, 7vw, 5.75rem);
+  --text-display: clamp(2.5rem, 5.3vw, 4.6rem);
   --text-h2: clamp(2rem, 4.4vw, 3.25rem);
   --text-lead: clamp(1.05rem, 1.4vw, 1.3rem);
 
@@ -132,6 +132,43 @@
   );
 }
 
+/* buttons — flat, press-translate feedback, ground-tinted shadow.
+   No accent glow, no hover-scale (DESIGN.md §5/§8). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 0.18s var(--ease-out-soft),
+    background-color 0.2s var(--ease-out-soft),
+    border-color 0.2s var(--ease-out-soft),
+    color 0.2s var(--ease-out-soft);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn-primary {
+  background-image: linear-gradient(
+    105deg,
+    var(--color-accent),
+    var(--color-accent-blue)
+  );
+  color: var(--color-bg-deep);
+  box-shadow: 0 14px 40px -26px oklch(0.08 0.04 264 / 0.9);
+}
+.btn-ghost {
+  border: 1px solid var(--color-line-bright);
+  color: var(--color-ink);
+}
+.btn-ghost:hover {
+  background-color: color-mix(in oklch, var(--color-surface-2) 55%, transparent);
+}
+
 /* glass panels — high opacity so they read on navy (a11y) */
 .glass {
   background-color: color-mix(in oklch, var(--color-surface) 78%, transparent);
@@ -193,15 +230,15 @@
       )
       border-box;
   box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--color-accent) 20%, transparent),
-    0 24px 70px -34px color-mix(in oklch, var(--color-accent) 55%, transparent);
+    0 0 0 1px color-mix(in oklch, var(--color-accent) 13%, transparent),
+    0 20px 50px -38px color-mix(in oklch, var(--color-accent) 28%, transparent);
 }
 
-/* soft glow used behind hero / lit tiles */
+/* the single signal glow — reserved for the hero console only */
 .glow-accent {
   box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--color-accent) 20%, transparent),
-    0 24px 70px -30px color-mix(in oklch, var(--color-accent) 55%, transparent);
+    0 0 0 1px color-mix(in oklch, var(--color-accent) 15%, transparent),
+    0 24px 60px -34px color-mix(in oklch, var(--color-accent) 34%, transparent);
 }
 
 /* dotted grid backdrop */

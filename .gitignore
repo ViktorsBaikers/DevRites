@@ -27,3 +27,9 @@ dist/
 # Copy `.mcp.example.json` to `.mcp.json` and fill in keys locally.
 .mcp.json
 .mcp.local.json
+
+/.claude/
+/.wrangler/
+/DESIGN.md
+/PRODUCT.md
+/.agents

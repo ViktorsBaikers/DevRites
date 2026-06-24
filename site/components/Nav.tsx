@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useScroll, useMotionValueEvent } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { GithubMark } from "./ui";
+import { GithubMark, MagneticLink } from "./ui";
 import { REPO, VERSION } from "@/lib/site";
 
 const LINKS = [
@@ -18,12 +19,9 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  // Motion's useScroll instead of a raw window scroll listener (no per-frame work)
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (y) => setScrolled(y > 12));
 
   return (
     <header className="fixed inset-x-0 top-0 z-30 flex justify-center px-3 pt-3">
@@ -60,12 +58,9 @@ export default function Nav() {
           >
             <GithubMark className="size-4" /> GitHub
           </a>
-          <a
-            href="#install"
-            className="blade rounded-xl px-3.5 py-1.5 text-sm font-semibold text-bg-deep shadow-sm transition-transform duration-200 hover:scale-[1.03]"
-          >
+          <MagneticLink href="#install" className="btn btn-primary px-3.5 py-1.5 text-sm">
             Install
-          </a>
+          </MagneticLink>
           <button
             type="button"
             className="ml-1 cursor-pointer rounded-lg border border-line p-1.5 text-ink-muted md:hidden"

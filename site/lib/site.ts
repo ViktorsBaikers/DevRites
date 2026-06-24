@@ -65,6 +65,7 @@ export const MECHANISMS: Mechanism[] = [
     body: "Every feature gets a folder under .devrites/work/. When the context window fills and you clear it, the next agent reads these files and resumes exactly where the last one stopped. No summary, no re-explaining, no lost decisions.",
     span: "wide",
     tone: "accent",
+    demo: ".devrites/work/auth-tokens/ → next agent resumes cold",
   },
   {
     key: "drift",
@@ -104,6 +105,7 @@ export const MECHANISMS: Mechanism[] = [
     body: "At seal, DevRites writes the conventions it just saw into a ledger. The next feature reads it at the start, so the agent follows your patterns instead of guessing them again. You promote the keepers with /rite-learn.",
     span: "wide",
     tone: "go",
+    demo: "seal → conventions.md · promote with /rite-learn",
   },
   {
     key: "afk",
@@ -111,6 +113,7 @@ export const MECHANISMS: Mechanism[] = [
     body: "Drop a .devrites/AFK file and it runs unattended. But destructive migrations, auth changes, public-API breaks, and red tests always pause, and it pings your phone when it needs you.",
     span: "std",
     tone: "accent",
+    demo: ".devrites/AFK · pauses + pings on risk",
   },
 ];
 
