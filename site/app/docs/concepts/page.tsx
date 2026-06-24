@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Reveal } from "@/components/ui";
 import DocsHeader from "@/components/docs/DocsHeader";
 import { H2, P, Panel, Row } from "@/components/docs/DocsBits";
+import { PhaseLoop, ProofLadder } from "@/components/docs/Diagrams";
 import { CONCEPTS, WORKSPACE_FILES } from "@/lib/docs";
 
 export const metadata: Metadata = {
@@ -27,6 +28,10 @@ export default function Concepts() {
         and the same files can be driven by Claude Code, another agent, a CI job, or a human.
       </P>
 
+      <div className="mt-6">
+        <PhaseLoop />
+      </div>
+
       <H2 id="core">Core concepts</H2>
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {CONCEPTS.map((c, i) => (
@@ -37,6 +42,15 @@ export default function Concepts() {
             </div>
           </Reveal>
         ))}
+      </div>
+
+      <H2 id="proof">The evidence ladder</H2>
+      <P>
+        Every claim is backed by proof, ranked from strongest to weakest. DevRites climbs as high as your
+        tooling allows and records exactly which rung it reached.
+      </P>
+      <div className="mt-5">
+        <ProofLadder />
       </div>
 
       <H2 id="workspace">The workspace, file by file</H2>

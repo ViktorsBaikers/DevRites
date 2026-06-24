@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Reveal } from "@/components/ui";
 import DocsHeader from "@/components/docs/DocsHeader";
+import { StackDiagram } from "@/components/docs/Diagrams";
 import { LAYERS, RATIONALE, SAFETY, RULES_ON_DEMAND } from "@/lib/docs";
 import { REPO } from "@/lib/site";
 
@@ -18,6 +19,10 @@ export default function Architecture() {
         title="Architecture"
         lead="DevRites is a distributed but coordinated set of project-local Claude Code skills. Each phase is its own skill; none is a monolith. The pieces share one thing: state on disk under .devrites/."
       />
+
+      <div className="mb-12">
+        <StackDiagram />
+      </div>
 
       <Reveal>
         <h2 className="text-2xl font-bold">Layers</h2>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Check } from "lucide-react";
 import { Reveal } from "@/components/ui";
 import DocsHeader from "@/components/docs/DocsHeader";
+import { PipelineDiagram, DriftLoop } from "@/components/docs/Diagrams";
 import { PHASES } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -22,6 +23,9 @@ export default function Flow() {
       <Reveal>
         <h2 className="text-2xl font-bold">Feature lifecycle</h2>
       </Reveal>
+      <div className="mt-6">
+        <PipelineDiagram />
+      </div>
       <ol className="mt-6 space-y-3">
         {PHASES.map((p, i) => (
           <Reveal as="li" key={p.name} delay={Math.min(i * 0.03, 0.2)}>
@@ -63,6 +67,9 @@ export default function Flow() {
           <span className="text-ink">/rite-build</span>{"  "}<span className="text-ink-faint"># resume from the repaired plan</span>
         </pre>
       </Reveal>
+      <div className="mt-5">
+        <DriftLoop />
+      </div>
       <Reveal delay={0.12}>
         <div className="tile--lit mt-5 rounded-tile p-5">
           <h3 className="font-bold text-ink">The point</h3>

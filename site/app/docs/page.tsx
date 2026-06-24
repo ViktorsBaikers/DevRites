@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Reveal, CopyButton } from "@/components/ui";
 import DocsHeader from "@/components/docs/DocsHeader";
+import { PipelineDiagram } from "@/components/docs/Diagrams";
 import { INSTALL_CMD } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -36,6 +37,18 @@ export default function DocsOverview() {
         title="Documentation"
         lead="DevRites is a project-local pack of Claude Code skills that runs a disciplined senior-engineer workflow: spec and temper the idea, plan and vet it, build one verified slice, prove it, polish, review, seal, and ship. Every phase reads the last one's files and writes its own, so your state lives on disk instead of in a chat window."
       />
+
+      <Reveal>
+        <h2 className="text-2xl font-bold">The lifecycle at a glance</h2>
+      </Reveal>
+      <Reveal delay={0.05}>
+        <p className="mt-3 text-ink-muted leading-relaxed">
+          Ten phases in three acts. Shape the idea, build it one verified slice at a time, then ship.
+        </p>
+      </Reveal>
+      <div className="mt-5 mb-14">
+        <PipelineDiagram />
+      </div>
 
       <Reveal>
         <h2 className="text-2xl font-bold">Quick start</h2>
