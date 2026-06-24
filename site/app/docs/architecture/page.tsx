@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Reveal } from "@/components/ui";
 import DocsHeader from "@/components/docs/DocsHeader";
-import { LAYERS, RATIONALE } from "@/lib/docs";
+import { LAYERS, RATIONALE, SAFETY, RULES_ON_DEMAND } from "@/lib/docs";
 import { REPO } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -53,7 +53,69 @@ export default function Architecture() {
       </div>
 
       <Reveal>
-        <div className="tile--lit mt-8 rounded-tile p-6">
+        <h2 className="mt-14 text-2xl font-bold">Engineering rules</h2>
+      </Reveal>
+      <Reveal delay={0.05}>
+        <p className="mt-3 text-ink-muted leading-relaxed">
+          DevRites ships its own stack-agnostic rules to <code className="k">.claude/rules/</code>. Each
+          phase reads <code className="k">core.md</code> first; the rest load on demand. A project&rsquo;s
+          own conventions win where they exist, and its <code className="k">.devrites/principles.md</code>{" "}
+          outranks both.
+        </p>
+      </Reveal>
+      <Reveal delay={0.1}>
+        <div className="mt-5 rounded-tile border border-line p-5">
+          <div className="flex items-center gap-2">
+            <code className="mono rounded border border-accent/40 bg-accent/10 px-1.5 py-0.5 text-[0.7rem] text-accent">
+              core.md
+            </code>
+            <span className="text-sm text-ink-muted">always on</span>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {RULES_ON_DEMAND.map((r) => (
+              <span key={r} className="mono rounded-md border border-line bg-surface-2/50 px-2 py-1 text-[0.7rem] text-ink-muted">
+                {r}
+              </span>
+            ))}
+          </div>
+        </div>
+      </Reveal>
+
+      <Reveal>
+        <h2 className="mt-14 text-2xl font-bold">Safety &amp; scope</h2>
+      </Reveal>
+      <div className="mt-5 space-y-3">
+        {SAFETY.map((s, i) => (
+          <Reveal key={s.h} delay={Math.min(i * 0.04, 0.2)}>
+            <div className="tile flex gap-3 p-5">
+              <span className="mono mt-0.5 text-accent">→</span>
+              <p className="text-[0.9rem] leading-relaxed text-ink-muted">
+                <b className="text-ink">{s.h}.</b> {s.b}
+              </p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+
+      <Reveal>
+        <h2 className="mt-14 text-2xl font-bold">Security model</h2>
+      </Reveal>
+      <Reveal delay={0.05}>
+        <p className="mt-3 text-ink-muted leading-relaxed">
+          DevRites is auditable Markdown and a small set of shell scripts. It is project-local only (the
+          installer refuses any target under <code className="k">~/.claude</code>), makes no network calls
+          in the installer or skills, and ships no{" "}
+          <code className="k">defaultMode: bypassPermissions</code>. Irreversible git actions sit behind the
+          interactive <code className="k">type-GO</code> confirmation. Full policy and private reporting:{" "}
+          <a href={`${REPO}/blob/main/SECURITY.md`} rel="noopener" className="text-accent underline-offset-2 hover:underline">
+            SECURITY.md
+          </a>
+          .
+        </p>
+      </Reveal>
+
+      <Reveal>
+        <div className="tile--lit mt-10 rounded-tile p-6">
           <h3 className="font-bold text-ink">Read the source</h3>
           <p className="mt-2 text-[0.9rem] leading-relaxed text-ink-muted">
             Every skill, agent, and rule ships in the repo as plain Markdown. See the{" "}

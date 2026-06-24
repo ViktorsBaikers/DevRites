@@ -23,9 +23,9 @@ const TREE = `.devrites/
     polish-report.md  review.md  seal.md  ship.md  handoff.md`;
 
 const NEXT = [
-  { href: "/docs/command-map/", title: "Command map", body: "Every public command and internal skill, what it reads and what it writes." },
-  { href: "/docs/flow/", title: "Flow", body: "The feature lifecycle, the Spec Drift Guard loop, and the two run modes." },
-  { href: "/docs/architecture/", title: "Architecture", body: "The layers, the naming convention, and the design rationale." },
+  { href: "/docs/getting-started/", title: "Getting started", body: "Install, set up the optional tooling, and ship your first feature." },
+  { href: "/docs/concepts/", title: "Concepts", body: "The mental model: slices, gates, evidence, drift, and the on-disk workspace." },
+  { href: "/docs/usage/", title: "Usage & examples", body: "Worked workflows: the build loop, drift, HITL gates, and AFK runs." },
 ];
 
 export default function DocsOverview() {

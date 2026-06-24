@@ -51,44 +51,52 @@ export default function DocsShell({ children }: { children: ReactNode }) {
       <div className="wrap grid gap-10 py-10 lg:grid-cols-[210px_1fr] lg:gap-14">
         {/* sidebar */}
         <aside className="lg:sticky lg:top-24 lg:h-max">
-          <nav aria-label="Docs">
-            <span className="mono text-[0.62rem] uppercase tracking-[0.16em] text-ink-faint">Docs</span>
-            <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible">
-              {DOCS_NAV.map((l) => {
-                const active = pathname === norm(l.href);
-                return (
-                  <li key={l.href} className="shrink-0">
-                    <Link
-                      href={l.href}
-                      aria-current={active ? "page" : undefined}
-                      className={`block whitespace-nowrap rounded-lg px-3 py-2 text-sm transition-colors ${
-                        active
-                          ? "bg-surface-2/70 font-medium text-ink"
-                          : "text-ink-muted hover:bg-surface/50 hover:text-ink"
-                      }`}
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+          <nav aria-label="Docs" className="flex flex-col gap-6">
+            {DOCS_NAV.map((g) => (
+              <div key={g.group}>
+                <span className="mono text-[0.62rem] uppercase tracking-[0.16em] text-ink-faint">
+                  {g.group}
+                </span>
+                <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible">
+                  {g.items.map((l) => {
+                    const active = pathname === norm(l.href);
+                    return (
+                      <li key={l.href} className="shrink-0">
+                        <Link
+                          href={l.href}
+                          aria-current={active ? "page" : undefined}
+                          className={`block whitespace-nowrap rounded-lg px-3 py-2 text-sm transition-colors ${
+                            active
+                              ? "bg-surface-2/70 font-medium text-ink"
+                              : "text-ink-muted hover:bg-surface/50 hover:text-ink"
+                          }`}
+                        >
+                          {l.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
 
-            <span className="mono mt-7 hidden text-[0.62rem] uppercase tracking-[0.16em] text-ink-faint lg:block">
-              Source
-            </span>
-            <ul className="mt-3 hidden lg:block">
-              <li>
-                <a href={REPO} rel="noopener" className="block rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:text-ink">
-                  GitHub repo
-                </a>
-              </li>
-              <li>
-                <a href={`${REPO}#readme`} rel="noopener" className="block rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:text-ink">
-                  README
-                </a>
-              </li>
-            </ul>
+            <div className="hidden lg:block">
+              <span className="mono text-[0.62rem] uppercase tracking-[0.16em] text-ink-faint">
+                Source
+              </span>
+              <ul className="mt-3">
+                <li>
+                  <a href={REPO} rel="noopener" className="block rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:text-ink">
+                    GitHub repo
+                  </a>
+                </li>
+                <li>
+                  <a href={`${REPO}#readme`} rel="noopener" className="block rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:text-ink">
+                    README
+                  </a>
+                </li>
+              </ul>
+            </div>
           </nav>
         </aside>
 

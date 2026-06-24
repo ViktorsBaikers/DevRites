@@ -2,11 +2,27 @@
 // Mirrors the shipped pack (v2.3): 10 phases, internal skills, review agents, core.
 
 export const DOCS_NAV = [
-  { href: "/docs/", label: "Overview" },
-  { href: "/docs/command-map/", label: "Command map" },
-  { href: "/docs/flow/", label: "Flow" },
-  { href: "/docs/architecture/", label: "Architecture" },
+  {
+    group: "Start",
+    items: [
+      { href: "/docs/", label: "Overview" },
+      { href: "/docs/getting-started/", label: "Getting started" },
+      { href: "/docs/concepts/", label: "Concepts" },
+      { href: "/docs/usage/", label: "Usage & examples" },
+    ],
+  },
+  {
+    group: "Reference",
+    items: [
+      { href: "/docs/command-map/", label: "Command map" },
+      { href: "/docs/flow/", label: "Flow" },
+      { href: "/docs/cli-mcp/", label: "CLI & MCP" },
+      { href: "/docs/architecture/", label: "Architecture" },
+    ],
+  },
 ];
+
+export const DOCS_LINKS = DOCS_NAV.flatMap((g) => g.items);
 
 export type Cmd = { cmd: string; phase: string; desc: string };
 
@@ -83,3 +99,78 @@ export const RATIONALE: { q: string; a: string }[] = [
 ];
 
 export const CLI_GATES = ["orient", "ready", "evidence-fresh", "acceptance", "active", "list", "use", "resolve"];
+
+export const WORKSPACE_FILES: { file: string; by: string; holds: string }[] = [
+  { file: "brief.md", by: "/rite-spec", holds: "One-line objective and the definition of done." },
+  { file: "spec.md", by: "/rite-spec", holds: "What to build and why: placement, acceptance criteria, gaps and decisions." },
+  { file: "references/", by: "/rite-spec", holds: "Saved design references: screenshots, Figma, video, links." },
+  { file: "strategy.md", by: "/rite-temper", holds: "Strategic spec review (optional): scope mode, pre-mortem, dimension scores." },
+  { file: "plan.md", by: "/rite-define", holds: "Approach, dependency graph, checkpoints, rollback." },
+  { file: "tasks.md", by: "/rite-define", holds: "Ordered vertical slices, each tagged Mode (AFK / HITL) with a gate." },
+  { file: "eng-review.md", by: "/rite-vet", holds: "Engineering plan review (optional): scope challenge, findings, failure modes." },
+  { file: "test-plan.md", by: "/rite-vet", holds: "Build-readable coverage target: per-gap test requirements, acceptance-to-test map." },
+  { file: "state.md", by: "every phase", holds: "The cursor: phase, status, active slice, risk, next step, plus any 'awaiting human' block." },
+  { file: "questions.md", by: "every phase", holds: "Append-only Q&A: qid, slice, gate, status (open / answered / dropped)." },
+  { file: "decisions.md · assumptions.md", by: "every phase", holds: "Running logs of the reasoning." },
+  { file: "drift.md", by: "Spec Drift Guard", holds: "Drift events and how each was resolved." },
+  { file: "touched-files.md", by: "/rite-build", holds: "Which files this feature touched." },
+  { file: "evidence.md", by: "/rite-build · /rite-prove", holds: "Recorded commands and their output." },
+  { file: "browser-evidence.md", by: "/rite-prove · /rite-polish", holds: "Screenshots, console, network, viewport runs." },
+  { file: "design-brief.md", by: "devrites-frontend-craft", holds: "Shape, states, and the design-references match for UI." },
+  { file: "polish-report.md", by: "/rite-polish", holds: "Cleanup and UI-polish findings and fixes." },
+  { file: "review.md", by: "/rite-review", holds: "Spec and Standards axes, severity-labelled findings." },
+  { file: "seal.md", by: "/rite-seal", holds: "GO / NO-GO verdict, acceptance walk, blockers." },
+  { file: "ship.md", by: "/rite-ship", holds: "What shipped: commit SHAs, branch, tag/PR, acceptance summary, follow-ups." },
+];
+
+export const INSTALL_FLAGS: { flag: string; effect: string }[] = [
+  { flag: "--target DIR", effect: "Install into DIR (default: the current directory)." },
+  { flag: "--dry-run", effect: "Show the planned file operations and exit, changing nothing." },
+  { flag: "--force", effect: "Overwrite existing non-DevRites files." },
+  { flag: "--no-rules", effect: "Skip the engineering rules." },
+  { flag: "--no-agents", effect: "Skip the review subagents." },
+  { flag: "--rules-only", effect: "Install only the engineering rules." },
+  { flag: "--short-aliases=all", effect: "Add /define, /build, /prove, /seal short aliases (off by default)." },
+];
+
+export const SETUP_TOOLS: { tool: string; gives: string }[] = [
+  { tool: "codegraph", gives: "A code-intelligence index. spec, define, and plan use it to understand structure, placement, callers, and impact cheaply, for deeper specs at a fraction of the tokens." },
+  { tool: "graphify", gives: "A codebase-to-knowledge-graph for 'where is X, what calls Y, what would Z break'." },
+  { tool: "browser-harness", gives: "Drives your real browser so prove and polish capture real UI evidence: screenshots, console, network, responsive. It is the top rung of the proof ladder." },
+];
+
+export const CONCEPTS: { term: string; body: string }[] = [
+  { term: "Vertical slice", body: "The unit of work. One slice cuts through every layer it needs (DB to service to API to UI) and ends in something verifiable. /rite-build implements exactly one, then stops with evidence. You decide when the next runs." },
+  { term: "Gate / checkpoint", body: "A point where the build pauses for a decision. HITL gates escalate through advisory, validating, blocking, and escalating. The exit code of the CLI gates (ready, evidence-fresh, acceptance) is the machine-readable version of the same idea." },
+  { term: "Evidence ladder", body: "Claims need proof, ranked top-down: real browser runs, then Chrome DevTools, then /run + /verify, then project E2E, then a manual fallback. A screenshot path counts as unproven until it is opened and described." },
+  { term: "Spec Drift Guard", body: "When the build reveals the plan is wrong, it stops, records the drift in drift.md, asks you when product behavior changes, and routes through plan repair before resuming. A wrong turn never compounds." },
+  { term: "Forge", body: "An optional build mode. Two or three rival versions of a slice are built in isolation, then devrites-forge-judge scores them against the acceptance criteria and names the winner." },
+  { term: "The workspace", body: "Every feature gets .devrites/work/<slug>/, human-readable Markdown that survives compaction and new sessions. When you /clear, the next agent reads it and resumes. On ship, it is archived, never deleted." },
+  { term: "Conventions & principles", body: "At seal, DevRites records the conventions it saw into a ledger the next feature reads. /rite-learn promotes recurring ones into project rules (.devrites/principles.md) that outrank the shipped engineering rules." },
+  { term: "Run modes", body: "HITL (default) pauses risky slices before code, at a typed checkpoint. AFK runs unattended once you drop a .devrites/AFK file, but always pauses on destructive migrations, auth changes, public-API breaks, and red tests." },
+];
+
+export const CLI_COMMANDS: { cmd: string; note: string; exit?: string }[] = [
+  { cmd: "devrites orient", note: "Workspace digest for the active feature (read-only)." },
+  { cmd: "devrites ready", note: "Build-readiness gate.", exit: "0 ready · 2/3/4/5 not" },
+  { cmd: "devrites evidence-fresh", note: "Evidence-freshness gate.", exit: "0 fresh · 3 stale" },
+  { cmd: "devrites acceptance", note: "Acceptance-criteria gate.", exit: "0 proven · 1 gap" },
+  { cmd: "devrites active | list | use <slug>", note: "Inspect or switch the active feature." },
+  { cmd: 'devrites resolve <qid> "<answer>"', note: "Answer a HITL gate from the command line." },
+];
+
+export const RULES_ON_DEMAND = [
+  "coding-style", "prose-style", "error-handling", "testing", "spec-grammar",
+  "code-review", "principles", "security", "performance", "observability",
+  "developer-experience", "patterns", "git-workflow", "hooks", "documentation",
+  "development-workflow", "deprecation", "agents", "context-hygiene", "afk-hitl",
+  "anti-patterns", "tooling",
+];
+
+export const SAFETY = [
+  { h: "Project-local only", b: "Never writes to ~/.claude. Install and uninstall are manifest-managed." },
+  { h: "Feature scope only", b: "Review, simplify, polish, and security stay within the active feature and touched files. No project-wide refactors or drive-by cleanup." },
+  { h: "One slice at a time", b: "/rite-build stops after a single verified slice." },
+  { h: "Evidence over confidence", b: "Claims need recorded commands, output, or screenshots." },
+  { h: "Ask before danger", b: "Material assumptions, dependency additions, a second design system, destructive operations, and product-behavior changes are surfaced, not assumed." },
+];
