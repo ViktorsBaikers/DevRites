@@ -111,7 +111,7 @@ export default function Hero() {
           className="mt-8 flex items-center gap-2 rounded-xl border border-line bg-surface/70 py-2 pl-4 pr-2 backdrop-blur"
         >
           <code className="mono text-sm text-ink sm:text-[0.95rem]">
-            <span className="text-accent">curl</span> -fsSL https://devrites.com | bash
+            <span className="text-accent">npx</span> devrites@latest
           </code>
           <CopyButton text={INSTALL_CMD} />
         </motion.div>

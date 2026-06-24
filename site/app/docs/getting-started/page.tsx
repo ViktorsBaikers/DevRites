@@ -3,7 +3,7 @@ import { CopyButton } from "@/components/ui";
 import DocsHeader from "@/components/docs/DocsHeader";
 import { H2, P, Panel, Row, Code, Callout } from "@/components/docs/DocsBits";
 import { INSTALL_FLAGS, SETUP_TOOLS } from "@/lib/docs";
-import { INSTALL_CMD } from "@/lib/site";
+import { INSTALL_CMD, CURL_CMD } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Getting started",
@@ -28,6 +28,7 @@ export default function GettingStarted() {
       <Panel>
         <div className="flex items-center justify-between gap-3 border-b border-line bg-surface-2/40 px-4 py-2.5">
           <span className="mono text-xs text-ink-faint">npx · pinned and offline</span>
+          <CopyButton text={INSTALL_CMD} />
         </div>
         <div className="mono space-y-1 p-4 text-sm">
           <div><span className="text-go">npx</span> devrites@latest</div>
@@ -39,7 +40,7 @@ export default function GettingStarted() {
       <Panel>
         <div className="flex items-center justify-between gap-3 border-b border-line bg-surface-2/40 px-4 py-2.5">
           <span className="mono text-xs text-ink-faint">curl · no Node required</span>
-          <CopyButton text={INSTALL_CMD} />
+          <CopyButton text={CURL_CMD} />
         </div>
         <pre className="mono overflow-x-auto p-4 text-sm leading-relaxed text-ink">
           <span className="text-accent">curl</span> -fsSL https://devrites.com | bash{"\n"}

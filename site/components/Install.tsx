@@ -38,7 +38,7 @@ export default function Install() {
         <Reveal delay={0.18}>
           <div className="mx-auto mt-8 flex max-w-xl items-center gap-2 rounded-xl border border-line-bright bg-surface/80 py-3 pl-5 pr-3 backdrop-blur">
             <code className="mono flex-1 text-left text-sm text-ink sm:text-[0.95rem]">
-              <span className="text-accent">curl</span> -fsSL https://devrites.com | bash
+              <span className="text-accent">npx</span> devrites@latest
             </code>
             <CopyButton text={INSTALL_CMD} />
           </div>
@@ -66,8 +66,8 @@ export default function Install() {
 
         <Reveal delay={0.3}>
           <p className="mt-6 text-sm text-ink-faint">
-            Prefer npm? <code className="k">npx devrites@latest</code> runs the same installer
-            offline. Then run <code className="k k--accent">/rite-spec &lt;feature&gt;</code> to begin.
+            No Node? <code className="k">curl -fsSL https://devrites.com | bash</code> runs the same
+            installer. Then run <code className="k k--accent">/rite-spec &lt;feature&gt;</code> to begin.
           </p>
         </Reveal>
 

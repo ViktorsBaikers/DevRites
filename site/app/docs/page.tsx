@@ -53,7 +53,7 @@ export default function DocsOverview() {
             <CopyButton text={INSTALL_CMD} />
           </div>
           <pre className="mono overflow-x-auto px-4 py-3.5 text-sm leading-relaxed text-ink">
-            <span className="text-accent">curl</span> -fsSL https://devrites.com | bash{"\n"}
+            <span className="text-accent">npx</span> devrites@latest{"\n"}
             <span className="text-ink-faint"># then, inside Claude Code:</span>
             {"\n"}
             <span className="text-go">/rite-spec</span> &quot;add refresh-token rotation&quot;

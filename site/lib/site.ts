@@ -4,7 +4,8 @@
 export const SITE_URL = "https://devrites.com";
 export const VERSION = "2.3.0";
 export const REPO = "https://github.com/ViktorsBaikers/DevRites";
-export const INSTALL_CMD = "curl -fsSL https://devrites.com | bash";
+export const INSTALL_CMD = "npx devrites@latest";
+export const CURL_CMD = "curl -fsSL https://devrites.com | bash";
 
 export type Stat = { value: number; suffix?: string; prefix?: string; label: string };
 
