@@ -42,6 +42,7 @@ Read `review.md` and the latest reviewer outputs.
 | Diff violates a declared project principle (`.devrites/principles.md`) with no recorded, human-approved exception | **NO-GO**, list each violated principle with `file:line`. Same standing as an unproven criterion (absent / empty file → none declared → not a blocker). |
 | Unresolved drift in `drift.md` | **NO-GO**, route through `/rite-plan` first. |
 | Any `questions.md` entry with `gate: validating` and `status: open` | **NO-GO** regardless of behavior impact — an open validating gate is merge-blocking by definition. A slice marked `built (pending review)` is not done. |
+| `doubt-coverage` rc=1, or a stood decision (boundary / data-model / auth / public-API / migration / branching) recorded in `decisions.md` with no `devrites-doubt` verdict | **Important** — and **NO-GO** when the undoubted decision is an irreversible-risk class (auth / public-API / migration), the same standing as an unproven acceptance criterion. `/rite-build` step 4 records the verdict + logs a `doubt` footprint; absence here means doubt was skipped. Genuinely-empty `Decisions stood` on every slice is a valid pass — confirm, don't assume. |
 
 ## Workflow
 1. **Run the shared orientation preamble** — it prints `state.md`, the artifacts present,
@@ -75,6 +76,22 @@ Read `review.md` and the latest reviewer outputs.
    behavior blocks. **Any `questions.md` entry with `gate: validating` and `status: open`
    is a NO-GO regardless of behavior impact** (an open validating gate is merge-blocking by
    definition); a slice marked `built (pending review)` is not done.
+4a. **Doubt coverage — every stood decision was independently doubted.** Run the deterministic
+   check, then judge it against `decisions.md`:
+   ```bash
+   DC=.claude/skills/devrites-lib/scripts/doubt-coverage.sh
+   [ -f "$DC" ] || DC="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/doubt-coverage.sh"
+   [ -f "$DC" ] || DC=pack/.claude/skills/devrites-lib/scripts/doubt-coverage.sh
+   [ -f "$DC" ] && { bash "$DC" <slug>; echo "doubt-coverage rc=$?"; } || echo "(doubt-coverage gate unavailable — confirm by hand each stood decision carries a devrites-doubt verdict)"
+   ```
+   The script proves the **footprint half** (a `doubt` dispatch was logged per `/rite-build`
+   step 4); you prove the **verdict half**: every decision in `decisions.md` that crosses a doubt
+   trigger (boundary / data-model / auth / public-API / migration / branching / "safe" / "scales")
+   must carry a recorded `devrites-doubt` verdict — `accept`, or a `reject` whose required changes
+   were resolved. Per the severity gate: **rc=1 or a triggering decision with no verdict is an
+   Important finding**, escalating to **NO-GO** when the undoubted decision is irreversible-risk
+   (auth / public-API / migration). A genuinely-empty `Decisions stood` across every slice passes —
+   confirm it against `decisions.md`, don't assume it.
 5. Check **security, data, migration, rollback** risk —
    [risk-and-rollback](reference/risk-and-rollback.md). If `strategy.md` exists (from
    `/rite-temper`), confirm its **top pre-mortem risks are mitigated** in the diff/evidence and
