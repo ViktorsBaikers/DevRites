@@ -164,7 +164,21 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 4. **Doubt the decisions it stood up.** For each entry in the wright's `Decisions stood`
    (branching, boundary crossing, data model, auth, public API, migration, user-flow change,
    "this is safe/scales") apply `devrites-doubt` **before accepting the slice** — the writer
-   doesn't grade its own decisions. The doubt loop honours `.devrites/AFK` (see its AFK
+   doesn't grade its own decisions. Each `devrites-doubt` invocation **dispatches the
+   `devrites-doubt-reviewer` subagent** (doing the adversarial pass inline is the writer grading
+   itself — the thing this step exists to forbid). **Completion criterion (checkable):** step 4
+   is done only when **every** `Decisions stood` entry carries a recorded `devrites-doubt`
+   verdict — `accept`, or `reject` + the required changes — in `decisions.md` (accepted
+   trade-offs) / `questions.md` (open gates). A `Decisions stood` entry with **no verdict on
+   record** means doubt did not run for it: **do not enter step 5 and do not mark the slice
+   `built`.** Log each dispatch so the seal can prove doubt ran (the footprint already counts a
+   `doubt` kind):
+   ```bash
+   FP=.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] || FP="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/footprint.sh"
+   [ -f "$FP" ] || FP=pack/.claude/skills/devrites-lib/scripts/footprint.sh
+   [ -f "$FP" ] && bash "$FP" log <slug> doubt "<decision id>" || true
+   ``` The doubt loop honours `.devrites/AFK` (see its AFK
    exception): findings below the slice's gate ceiling become advisory entries in `questions.md`;
    destructive / auth / public-API concerns always pause regardless. A non-empty `Escalation` in
    the artifact is handled here too: irreversible-risk / blockers → blocking question + set
