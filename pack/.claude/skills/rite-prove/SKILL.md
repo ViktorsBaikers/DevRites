@@ -14,7 +14,7 @@ workspace first; if none, run `/rite-spec <feature>`.
 > single change; `/run` launches the app. `/rite-prove` is feature-scoped:
 > it walks `spec.md` acceptance criteria one-by-one, runs the full relevant
 > test suite + build/typecheck/lint, ascends the browser-proof ladder
-> (browser-harness → DevTools MCP → `/run`+`/verify` → project E2E →
+> (Playwright MCP → DevTools MCP → `/run`+`/verify` → project E2E →
 > manual), and writes `evidence.md` + `browser-evidence.md` keyed to the
 > active `.devrites/work/<slug>/`. Use `/verify` or `/run` on their own
 > when there is no DevRites feature workspace.

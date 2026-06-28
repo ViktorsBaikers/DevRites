@@ -115,7 +115,7 @@ You: 2
 /rite-build          # resumes on the corrected plan
 ```
 
-## 4) UI feature with browser-harness
+## 4) UI feature with Playwright MCP
 
 ```text
 /rite-spec settings-theme-toggle
@@ -133,7 +133,7 @@ You: 2
     anti-AI-slop
 
 /rite-prove
-  → devrites-browser-proof: browser-harness detected → new_tab(route),
+  → devrites-browser-proof: Playwright MCP detected → browser_navigate(route),
     screenshot at 375 + 1280, exercise the toggle, check console clean,
     **compare to references/**, record to browser-evidence.md
 

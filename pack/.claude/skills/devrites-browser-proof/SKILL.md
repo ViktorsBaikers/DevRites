@@ -14,13 +14,17 @@ The same ladder captures a **developer-facing docs / getting-started page** for 
 commands match what actually runs, and note the result in `browser-evidence.md` / `devex.md`.
 
 ## Ladder (top-down)
-1. **browser-harness** — detect `command -v browser-harness`. Connects to the user's
-   Chrome over CDP. Pattern: `new_tab(url)` → `wait_for_load()` → `capture_screenshot()`
-   → read the pixel → `click_at_xy(x,y)` → re-screenshot. Coordinate clicks pass through
-   iframes/shadow/cross-origin. `print(page_info())` for liveness. Don't launch a new
-   browser; don't auto-install.
-2. **Chrome DevTools MCP** (if configured) — screenshots, DOM, console, network,
-   performance, accessibility tree.
+1. **Playwright MCP** (preferred) — detect by tool availability (the `browser_*` tools are
+   present, e.g. `browser_navigate`); detect, don't install. Drives a Playwright-managed
+   browser. Pattern: `browser_navigate(url)` → `browser_snapshot()` (the accessibility tree
+   is the primary perception) → `browser_click` / `browser_type` on a **ref from the
+   snapshot** → `browser_take_screenshot()`. Read `browser_console_messages()` and
+   `browser_network_requests()` for console/network evidence; `browser_resize(w,h)` for each
+   responsive viewport. Act on snapshot refs, not pixel coordinates.
+2. **Chrome DevTools MCP** (when configured — use **alongside** Playwright MCP for more
+   detail) — screenshots, DOM, console, network, performance trace, accessibility tree, and
+   `lighthouse_audit`. Playwright MCP drives the flow; DevTools MCP adds Lighthouse + the perf
+   trace Playwright can't produce.
 3. **Claude Code `/run` + `/verify`** (if available) — launch + observe the app.
 4. **Project-native E2E** (only if present) — Playwright/Cypress/Capybara/Selenium via
    the project's existing commands. Don't add a new framework.
@@ -31,11 +35,13 @@ If `spec.md` carries a perf budget — or a frontend regression risk is visible 
 CWV numbers here so the perf reviewer judges real data instead of guessing. Use the highest
 rung available; **detect, don't install**.
 
-1. **Chrome DevTools MCP** (if configured) — `lighthouse_audit` for LCP/INP/CLS + the
-   Lighthouse performance score. Source label: **Lab (Lighthouse)**. A `performance_*` trace
-   gives **Trace (DevTools)** attribution.
-2. **browser-harness** — drive the route, capture a performance trace over CDP. Source
-   label: **Trace (DevTools)**.
+1. **Chrome DevTools MCP** (preferred for CWV when configured) — `lighthouse_audit` for
+   LCP/INP/CLS + the Lighthouse performance score. Source label: **Lab (Lighthouse)**. A
+   `performance_*` trace gives **Trace (DevTools)** attribution.
+2. **Playwright MCP** — `browser_navigate` the route, then `browser_evaluate` the web-vitals
+   library to read LCP/INP/CLS off the live page. Source label: **Trace (DevTools)** (a
+   real-page number, not a Lighthouse score). Use **alongside** rung 1 when both are present —
+   the lab score and the trace corroborate each other.
 3. **CrUX / PageSpeed Insights** — only if the user supplied an API key. Field data, p75.
    Source label: **Field (CrUX)**.
 4. **None available** → mark CWV **pending (manual)** and name the exact command

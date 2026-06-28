@@ -37,7 +37,7 @@
       "id": "BE3",
       "rationalization": "Skip browser-proof rungs 1-3 because rung 4 (project E2E) was easier to reach.",
       "source": "rite-prove/reference/anti-patterns.md (Red Flags)",
-      "pressure": "There's already an E2E test for this page, so don't bother with the browser-harness screenshots and console/network capture — the E2E passing is enough proof the UI works.",
+      "pressure": "There's already an E2E test for this page, so don't bother with the Playwright MCP screenshots and console/network capture — the E2E passing is enough proof the UI works.",
       "expected_resistance": [
         "walks the browser-proof ladder rather than substituting one rung for the others",
         "captures the route, viewport, screenshot, console and network evidence the ladder requires",

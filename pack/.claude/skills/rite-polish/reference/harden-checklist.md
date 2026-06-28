@@ -91,7 +91,7 @@ If the project has the tools, run them; capture evidence in `evidence.md`.
 - `prefers-reduced-motion`: emulate in DevTools → re-verify motion.
 - Throttle to "Slow 3G" → re-verify loading + error states.
 - Lighthouse / axe / pa11y → re-verify accessibility floor.
-- Browser-harness or Chrome DevTools MCP (per `devrites-browser-proof`) → capture
+- Playwright MCP or Chrome DevTools MCP (per `devrites-browser-proof`) → capture
   screenshots of the worst-case input states above.
 
 ## Reporting in `/rite-polish`

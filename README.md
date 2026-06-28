@@ -108,7 +108,7 @@ rules carrier, workspace state, namespace map) →
 - [Why distributed skills](#why-distributed-skills-not-one-engine)
 - [Modes — HITL & AFK](#modes--hitl--afk)
 - [Install](#install) — [npx / bash](#installing) · [upgrade](#upgrading-an-existing-install)
-- [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · browser-harness
+- [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · Playwright MCP
 - [Skills](#skills) — 36 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
 - [Engineering rules](#engineering-rules) · [Browser proof ladder](#browser-proof-ladder) · [Frontend & fullstack](#frontend--fullstack)
@@ -274,7 +274,7 @@ one and **degrades gracefully** when it's absent.
 |---|---|---|
 | **codegraph** | A code-intelligence index. `/rite-spec`, `/rite-define`, and `/rite-plan` use it to understand structure, **placement**, callers, and **impact** cheaply — deeper investigation and sharper specs, at a fraction of the tokens of reading files. | Build the index in your project (e.g. `codegraph init`) so its `codegraph_*` tools / a `.codegraph/` are present. |
 | **graphify** | A codebase → knowledge-graph (`graphify-out/`) — same benefit for "where is X / what calls Y / what would Z break". | Generate it for your project (the `/graphify` skill). |
-| **[browser-harness](https://github.com/browser-use/browser-harness)** | Drives your real browser so `/rite-prove` and `/rite-polish` capture **real UI evidence** — screenshots, console, network, responsive — the top rung of the proof ladder. | Install it, connect it to your Chrome, and verify with its doctor. |
+| **[Playwright MCP](https://github.com/microsoft/playwright-mcp)** | Drives a real browser so `/rite-prove` and `/rite-polish` capture **real UI evidence** — screenshots, console, network, responsive — the top rung of the proof ladder (paired with **Chrome DevTools MCP** for Lighthouse / perf trace). | Configure the Playwright MCP server in Claude Code; DevRites detects it, never installs it. |
 
 Without them, DevRites reads files instead of a code graph and uses Claude Code's built-in
 `/run`+`/verify` (or documented manual steps) instead of a browser. With them: deeper
@@ -431,7 +431,7 @@ the build, records the drift in `drift.md`, asks you when product behavior
 changes, and routes through `/rite-plan repair` before resuming.
 
 Worked examples (spec-then-plan, mid-build drift, UI feature with
-browser-harness, backend-only, polish modes, zoom-out, mid-flight handoff):
+Playwright MCP, backend-only, polish modes, zoom-out, mid-flight handoff):
 **[docs/usage.md](docs/usage.md)**.
 
 ## Engineering rules
@@ -452,9 +452,10 @@ diagram: [`docs/flow.md` § Engineering-rules loading](docs/flow.md#6-engineerin
 
 ## Browser proof ladder
 
-For UI work DevRites prefers real runtime evidence, top-down: **browser-harness** (if
-installed) → **Chrome DevTools MCP** → Claude Code **`/run`+`/verify`** → **project-native
-E2E** (Playwright / Cypress / Capybara) → **manual fallback**. It detects tooling but
+For UI work DevRites prefers real runtime evidence, top-down: **Playwright MCP** (if
+configured, paired with **Chrome DevTools MCP** for Lighthouse / perf trace) → Claude Code
+**`/run`+`/verify`** → **project-native E2E** (Playwright / Cypress / Capybara) → **manual
+fallback**. It detects tooling but
 never installs it, stops at auth walls, and treats a screenshot **path** as unproven
 until it's opened and described.
 
