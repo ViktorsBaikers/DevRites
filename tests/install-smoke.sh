@@ -28,8 +28,8 @@ for f in \
   ".claude/skills/rite-polish/reference/ui.md" \
   ".claude/skills/rite-pressure-test/SKILL.md" \
   ".claude/skills/devrites-doubt/SKILL.md" \
-  ".claude/skills/rite-review/reference/parallel-dispatch.md" \
-  ".claude/skills/rite-seal/reference/parallel-dispatch.md" \
+  ".claude/skills/devrites-lib/reference/parallel-dispatch.md" \
+  ".claude/skills/devrites-lib/scripts/rites.sh" \
   ".claude/skills/devrites-frontend-craft/reference/shape.md" \
   ".claude/skills/devrites-debug-recovery/reference/build-the-loop.md" \
   ".claude/agents/devrites-code-reviewer.md" \
