@@ -42,7 +42,7 @@ Read `review.md` and the latest reviewer outputs.
 | Diff violates a declared project principle (`.devrites/principles.md`) with no recorded, human-approved exception | **NO-GO**, list each violated principle with `file:line`. Same standing as an unproven criterion (absent / empty file → none declared → not a blocker). |
 | Unresolved drift in `drift.md` | **NO-GO**, route through `/rite-plan` first. |
 | Any `questions.md` entry with `gate: validating` and `status: open` | **NO-GO** regardless of behavior impact — an open validating gate is merge-blocking by definition. A slice marked `built (pending review)` is not done. |
-| `doubt-coverage` rc=1, or a stood decision (boundary / data-model / auth / public-API / migration / branching) recorded in `decisions.md` with no `devrites-doubt` verdict | **Important** — and **NO-GO** when the undoubted decision is an irreversible-risk class (auth / public-API / migration), the same standing as an unproven acceptance criterion. `/rite-build` step 4 records the verdict + logs a `doubt` footprint; absence here means doubt was skipped. Genuinely-empty `Decisions stood` on every slice is a valid pass — confirm, don't assume. |
+| A stood decision (boundary / data-model / auth / public-API / migration / branching) in the `decisions.md` `## Decisions stood` ledger with no recorded `devrites-doubt` verdict — `doubt: MISSING` / `doubt-coverage` rc=3 | **Important** — **NO-GO** when the undoubted decision is irreversible-risk (auth / public-API / migration), the same standing as an unproven acceptance criterion. Severity rides the unverified **decision**, not the exit code: `doubt-coverage` rc=1 (zero doubt dispatched) is a **prompt to verify**, not itself a finding — confirm against the ledger, where every-slice-trivial (`- none`) passes and a skipped triggering decision is the finding. |
 
 ## Workflow
 1. **Run the shared orientation preamble** — it prints `state.md`, the artifacts present,
@@ -84,14 +84,20 @@ Read `review.md` and the latest reviewer outputs.
    [ -f "$DC" ] || DC=pack/.claude/skills/devrites-lib/scripts/doubt-coverage.sh
    [ -f "$DC" ] && { bash "$DC" <slug>; echo "doubt-coverage rc=$?"; } || echo "(doubt-coverage gate unavailable — confirm by hand each stood decision carries a devrites-doubt verdict)"
    ```
-   The script proves the **footprint half** (a `doubt` dispatch was logged per `/rite-build`
-   step 4); you prove the **verdict half**: every decision in `decisions.md` that crosses a doubt
-   trigger (boundary / data-model / auth / public-API / migration / branching / "safe" / "scales")
-   must carry a recorded `devrites-doubt` verdict — `accept`, or a `reject` whose required changes
-   were resolved. Per the severity gate: **rc=1 or a triggering decision with no verdict is an
-   Important finding**, escalating to **NO-GO** when the undoubted decision is irreversible-risk
-   (auth / public-API / migration). A genuinely-empty `Decisions stood` across every slice passes —
-   confirm it against `decisions.md`, don't assume it.
+   The script reads two records `/rite-build` writes — the `## Decisions stood` ledger in
+   `decisions.md` (each entry ends `— doubt: <accept | reject-resolved | MISSING>`) and the `doubt`
+   footprint. Read the exit code:
+   - **rc=3** — the ledger records a stood decision with `doubt: MISSING`: doubt was definitively
+     skipped for a decision on record. **Important**; **NO-GO** when that decision is irreversible-risk
+     (auth / public-API / migration). This is the per-slice skip the footprint count alone can't catch.
+   - **rc=1** — zero doubt dispatched across the build. A **prompt to verify, not a finding**: confirm
+     against the ledger — an every-slice-trivial feature (`- none`) is a valid pass; a stood triggering
+     decision (boundary / data-model / auth / public-API / migration / branching) with no verdict is
+     the finding, same severity as rc=3.
+   - **rc=0** — covered, or not assessable (an inline build logs no dispatch — verify the ledger's
+     verdicts by hand).
+   Either way, walk the `## Decisions stood` ledger yourself: severity rides the unverified
+   **decision**, never the exit code alone.
 5. Check **security, data, migration, rollback** risk —
    [risk-and-rollback](reference/risk-and-rollback.md). If `strategy.md` exists (from
    `/rite-temper`), confirm its **top pre-mortem risks are mitigated** in the diff/evidence and
