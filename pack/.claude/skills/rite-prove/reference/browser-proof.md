@@ -5,7 +5,7 @@ What `browser-evidence.md` must capture for a UI slice. Delegates to
 
 ```markdown
 ## Slice <N> — <name>  (<date>)
-- Tooling: browser-harness | devtools-mcp | /run+/verify | <e2e> | manual
+- Tooling: playwright-mcp | devtools-mcp | /run+/verify | <e2e> | manual
 - Route(s): <url(s) exercised>
 - Viewports: 375 / 768 / 1280  (note which were checked)
 - Screenshots: <path(s)>  — described: <what is actually visible>

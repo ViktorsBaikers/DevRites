@@ -126,7 +126,7 @@ The 11 model-invoked internal specialists (hidden from the menu): `devrites-inte
 | Skill | What It Does | Use When |
 |---|---|---|
 | [`rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | Tests + build + runtime + browser evidence for the current scope. | All slices built; ready for full verification. |
-| [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | Browser proof ladder: browser-harness → Chrome DevTools MCP → `/run`+`/verify` → project E2E → manual. Auto-emits the structured **Visual Verdict** (per-criterion PASS/FAIL vs `design-brief.md`) for UI slices — consumed by `devrites-frontend-reviewer` and gated at `/rite-seal`. | Scope touches UI. |
+| [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | Browser proof ladder: Playwright MCP → Chrome DevTools MCP → `/run`+`/verify` → project E2E → manual. Auto-emits the structured **Visual Verdict** (per-criterion PASS/FAIL vs `design-brief.md`) for UI slices — consumed by `devrites-frontend-reviewer` and gated at `/rite-seal`. | Scope touches UI. |
 
 ### Polish — Normalize, then ship-quality detail pass
 

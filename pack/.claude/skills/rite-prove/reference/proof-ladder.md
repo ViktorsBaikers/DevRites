@@ -3,12 +3,14 @@
 Prefer real runtime evidence. For UI/browser work, try tools top-down and record which
 rung you used. Detect, don't install — browser tooling setup is the user's call.
 
-1. **browser-harness** (preferred when installed & connected)
-   - Detect: `command -v browser-harness`. Use its doctor/connection check only when
-     safe. Capabilities: navigation, screenshots, coordinate clicks, console logs, DOM
-     reads, network, raw CDP. Connects to the user's Chrome — don't launch a new browser.
-2. **Chrome DevTools MCP** (if configured) — screenshots, DOM, console, network,
-   performance, accessibility tree.
+1. **Playwright MCP** (preferred when configured)
+   - Detect: the Playwright MCP `browser_*` tools are available (e.g. `browser_navigate`).
+     Capabilities: navigation, accessibility-tree snapshots, screenshots, ref-based
+     clicks/typing, console messages, network requests, `browser_evaluate`. Drives a
+     Playwright-managed browser; detect, don't install.
+2. **Chrome DevTools MCP** (when configured — pairs with Playwright MCP for Lighthouse, the
+   perf trace, and deeper DOM) — screenshots, DOM, console, network, performance,
+   accessibility tree.
 3. **Claude Code `/run` and `/verify`** (if available) — launch and observe the app;
    prefer a project-specific run/verify skill if one exists.
 4. **Project-native E2E** (only if already present) — Playwright, Cypress, Capybara,

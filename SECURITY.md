@@ -175,7 +175,7 @@ settings file is never overwritten on update, so your own permission rules are s
 
 DevRites vendors no third-party code (see `NOTICE.md`). It depends on Claude
 Code itself and, optionally and at the user's choice, on codegraph /
-graphify / browser-harness — each of which is invoked through its own
+graphify / Playwright MCP — each of which is invoked through its own
 documented interface, not bundled.
 
 ### Known non-issues
