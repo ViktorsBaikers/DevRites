@@ -1,6 +1,6 @@
 ---
 name: devrites-doubt
-description: Stress-test a single non-trivial decision via CLAIM → EXTRACT → DOUBT → RECONCILE → STOP with `devrites-doubt-reviewer` for an independent take. Use when the user says "are we sure", "double-check this", "what could go wrong", or a boundary / data-model / auth / public-API / migration change is about to commit. Not for post-merge review or trivial choices.
+description: Stress-test a single non-trivial decision with an adversarial `devrites-doubt-reviewer` for an independent take. Use when the user says "are we sure", "double-check this", "what could go wrong", or a boundary / data-model / auth / public-API / migration change is about to commit. Not for post-merge review or trivial choices.
 user-invocable: false
 ---
 

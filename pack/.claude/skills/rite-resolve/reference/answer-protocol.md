@@ -25,8 +25,9 @@ shapes, the batch file format, and the rules the underlying `devrites-lib/script
 - A drop is **not** an answer — it removes the question from the active queue without
   recording a decision. Use it when the question is obsolete, a duplicate, or absorbed
   by a re-plan.
-- The reason is required as a single trailing string. "obsolete" / "duplicate" /
-  "absorbed by Slice N" are sufficient — but never blank.
+- The reason is an optional single trailing string, **strongly recommended** for the
+  audit trail. "obsolete" / "duplicate" / "absorbed by Slice N" are sufficient; if omitted,
+  `resolve.sh` records the reason as `dropped`.
 
 ### 3. Batch
 

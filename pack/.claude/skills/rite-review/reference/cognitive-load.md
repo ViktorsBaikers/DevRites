@@ -81,8 +81,10 @@ doesn't decide the rewrite strategy.
 
 ## What this lens **doesn't** cover
 
-- **Accessibility** — separate axis (WCAG 2.2; see `quality-standards.md`).
-- **Performance** — separate axis (Core Web Vitals; see `quality-standards.md`).
+- **Accessibility** — separate axis (WCAG 2.2; see
+  [`devrites-frontend-craft/reference/quality-standards.md`](../../devrites-frontend-craft/reference/quality-standards.md)).
+- **Performance** — separate axis (Core Web Vitals; see
+  [`performance-checklist.md`](performance-checklist.md)).
 - **Code quality** — covered by the simplification audit
   (`devrites-audit simplify`).
 - **Security** — covered by the security audit (`devrites-audit security`).

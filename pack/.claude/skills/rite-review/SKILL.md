@@ -1,6 +1,6 @@
 ---
 name: rite-review
-description: Feature-scoped multi-axis review of the polished diff — Spec + Code-review axes fan out as parallel subagents; findings under one severity scale. Use when the user says "review this", "audit my diff", "final review before seal", "check this against the spec". Not for whole-project refactors or single-slice review.
+description: Review the polished diff at feature scope across Spec + Code-review axes. Use when the user says "review this", "audit my diff", "final review before seal", "check this against the spec". Not for whole-project refactors or single-slice review.
 argument-hint: "[scope: slice N | feature]"
 user-invocable: true
 ---
@@ -13,7 +13,7 @@ if none, tell the user to run `/rite-spec <feature>`.
 > **Differs from built-in `/code-review` in:** `/code-review` is a generic
 > diff review with no workspace context. `/rite-review` reads
 > `.devrites/work/<slug>/spec.md` first, runs Spec ↔ Code-review axes as
-> parallel subagents (see [`reference/parallel-dispatch.md`](reference/parallel-dispatch.md)), and gates feeding
+> parallel subagents (see [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)), and gates feeding
 > into `/rite-seal`. Use `/code-review` for a one-off diff; use
 > `/rite-review` for a DevRites feature where the spec is the contract.
 
@@ -86,11 +86,11 @@ pull these via `Read` when the diff demands them:
      between the axes explicitly (e.g. "Spec axis says complete, Code-review axis says
      untestable") — `/rite-seal` decides what blocks.
 4. **Reconcile, don't re-review.** With the two parallel reports in hand, the inline
-   lead reconciles — it does **not** re-run a five-axis pass over correctness /
+   lead reconciles — it does **not** re-run the code-review axes over correctness /
    readability / architecture / maintainability that `devrites-code-reviewer` already
    covered. Stay in scope ([feature-scoped-review](reference/feature-scoped-review.md)).
    Add only what the dispatched agents could not, then resolve overlaps and
-   contradictions before labeling. ([five-axis-review](reference/five-axis-review.md)
+   contradictions before labeling. ([five-axis-review.md](reference/five-axis-review.md)
    documents the axes the code-review agent applies.)
    - **UI feature?** Apply the **UX rubric**
      ([nielsen-heuristics](reference/nielsen-heuristics.md)) and the

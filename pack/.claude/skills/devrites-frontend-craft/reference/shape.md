@@ -25,7 +25,7 @@ brief inline.
    - success
    - disabled / read-only / no-permission
    - long content / overflow / many items
-5. **Responsive** — how it reflows from small (375) to large (1280). What collapses,
+5. **Responsive** — how it reflows from small (320) to large (1440). What collapses,
    stacks, hides, or scrolls.
 6. **Accessibility** — focus order, labels, contrast, keyboard operability, semantics.
 7. **Interaction model** — what's inline vs. navigated vs. (rarely) a modal; optimistic

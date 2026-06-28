@@ -4,6 +4,11 @@ Apply when the feature involves user input, auth/authz, data storage, external
 integrations, secrets, or permissions. Delegates to `devrites-audit security`.
 
 ## OWASP-Top-10-oriented checks
+
+This is the **single-sourced OWASP-web checklist** both `/rite-review` and the
+`devrites-security-auditor` agent apply (trust-boundary + the OWASP **LLM** Top 10 live in
+[`rules/security.md`](../../../rules/security.md)). Keep the enumeration here; don't restate it.
+
 - **Injection** — parameterized queries; no string-built SQL/shell/HTML; validate &
   encode at boundaries.
 - **Broken access control** — every sensitive action checks authz server-side; no

@@ -1,6 +1,6 @@
 ---
 name: devrites-interview
-description: One-question-at-a-time interview to extract what the user wants — each question carries a best-guess + structured options; stop at ~95% confidence. Use when the user says "interview me", "grill me", "I'm not sure what I want", or `/rite-spec` / `/rite-define` flags the ask as underspecified. Not for casual clarification or ideation (use `rite-pressure-test`).
+description: Interview the user one question at a time to extract what they want. Use when the user says "interview me", "I'm not sure what I want", or `/rite-spec` / `/rite-define` flags the ask as underspecified. Not for casual clarification or ideation (use `/rite-pressure-test`).
 user-invocable: false
 ---
 

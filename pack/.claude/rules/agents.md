@@ -90,8 +90,9 @@ The prefix mirrors visibility:
   names (`prototype`, `handoff`, `diagnose`, etc.) — peer skill packs may
   collide on the bare names internally even though these never appear in the
   user's slash menu. Parallel reviewer fan-out at `/rite-seal` is no longer
-  a skill — it lives as a reference file
-  (`.claude/skills/rite-seal/reference/parallel-dispatch.md`).
+  a skill — it lives as a shared reference file
+  (`.claude/skills/devrites-lib/reference/parallel-dispatch.md`), pointed at by both
+  `/rite-review` and `/rite-seal`.
 
 The `/rite` menu carries the routing previously held by `devrites-selector`, which
 has been removed. `user-invocable:` in each `SKILL.md` is the source of truth; the

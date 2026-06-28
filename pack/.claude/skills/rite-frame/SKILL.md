@@ -1,6 +1,6 @@
 ---
 name: rite-frame
-description: Pre-flight + self-audit lens that applies the four classic LLM coding failure modes — silent assumption, overcomplication, out-of-scope edit, unverifiable goal — to ad-hoc and express-lane work the full lifecycle's gates never see. FRAME converts an imperative ask into a falsifiable success criterion + verify command before any code; AUDIT checks the resulting diff against the four modes, each mapped to its DevRites cure. Use at the top of `/rite-quick`, before a plain "just do X" / "quick fix" edit, or to self-review a raw diff for assumptions, bloat, scope creep, or a missing success criterion. Not a replacement for the lifecycle gates (`/rite-seal`, `/rite-review`), the adversarial subagent pre-mortem (`devrites-doubt`), or the fresh-context axis audit (`devrites-audit`) — it is the lightweight inline reflex for work that skips those.
+description: Frame an ad-hoc ask into a falsifiable success criterion before coding, then audit the diff against the four classic LLM failure modes — silent assumption, overcomplication, out-of-scope edit, unverifiable goal. Use to reframe an underspecified imperative ask, to self-audit a raw diff, or at the top of `/rite-quick`. Not a replacement for the lifecycle gates (`/rite-seal`, `/rite-review`), the adversarial pre-mortem (`devrites-doubt`), or the fresh-context axis audit (`devrites-audit`) — it is the lightweight inline reflex for work that skips those.
 argument-hint: "[task to frame | diff to audit]"
 user-invocable: true
 ---

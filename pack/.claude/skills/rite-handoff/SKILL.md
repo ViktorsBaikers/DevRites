@@ -1,6 +1,6 @@
 ---
 name: rite-handoff
-description: Compact the current chat into a handoff doc a fresh agent can pick up cold — syncs chat-only context into the canonical `.devrites/` files, references artifacts by path. Use when the user says "handoff", "prep for tomorrow", "I'm leaving for a while", "summarize for the next agent". Not for routine `/clear` between phases.
+description: Compact the current chat into a handoff doc a fresh agent can pick up cold — syncs chat-only context into the canonical `.devrites/` files, references artifacts by path. Use when the user says "handoff", "prep for tomorrow", or "summarize for the next agent". Not for routine `/clear` between phases.
 user-invocable: true
 argument-hint: "[what the next session will focus on]"
 ---
@@ -73,9 +73,9 @@ themselves. The workspace is the canonical store; the handoff is the chat-only d
 - `git diff` output — the next agent runs `git diff` themselves.
 - The full conversation transcript — distil.
 - Secrets (API keys, tokens, PII, credentials). Redact aggressively.
-- **New ideas the user didn't confirm.** A handoff records what *happened* and what's *next* —
-  not fresh suggestions, scope the user didn't agree to, or a redesign you thought of. Capture the
-  state, not your opinions about it.
+- **New ideas the user didn't confirm.** A handoff records what *happened* and what's *next*.
+  Leave out fresh suggestions, scope the user didn't agree to, and redesigns you thought of. Capture
+  the state, not your opinions about it.
 
 ## Output template
 

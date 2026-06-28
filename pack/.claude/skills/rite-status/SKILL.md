@@ -1,6 +1,6 @@
 ---
 name: rite-status
-description: Read-only report on the active feature — phase, active slice, next action, evidence, open questions, drift, risks, handoff readiness. Use when the user says "where am I", "what's next", "status", "is this ready to ship", "show the active feature". Not for invoking phases or for the menu (use `/rite`).
+description: Read-only report on the active feature — phase, active slice, next action, evidence, open questions, drift, risks, and handoff readiness. Not for invoking phases or for the menu (use `/rite`).
 argument-hint: "[feature-slug]"
 user-invocable: true
 disable-model-invocation: true

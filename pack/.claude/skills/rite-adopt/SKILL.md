@@ -1,6 +1,6 @@
 ---
 name: rite-adopt
-description: Bring an EXISTING codebase under DevRites — reverse-derive a `spec.md` of current behavior, placement, and architecture, and seed the project conventions ledger from the idioms the code already follows, then hand off to the lifecycle. Use when the user says "adopt this project", "onboard this codebase", "we already have code", "bring this repo into DevRites", or "reverse-engineer a spec from the existing app". Not for a brand-new feature or idea (use `/rite-spec`), planning an approved spec (`/rite-define`), or just mapping unfamiliar code without onboarding it (`/rite-zoom-out`).
+description: Bring an EXISTING codebase under DevRites — reverse-derive a `spec.md` of current behavior, placement, and architecture, and seed the project conventions ledger from the idioms the code already follows, then hand off to the lifecycle. Use when the user says "adopt this project" or "reverse-engineer a spec from the existing app". Not for a brand-new feature or idea (use `/rite-spec`), planning an approved spec (`/rite-define`), or just mapping unfamiliar code without onboarding it (`/rite-zoom-out`).
 argument-hint: "[path or area to adopt] [+ what you want to build next]"
 user-invocable: true
 ---

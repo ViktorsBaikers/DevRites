@@ -1,6 +1,6 @@
 ---
 name: devrites-refresh-indexes
-description: Keep the optional code-intelligence indexes — codebase-memory-mcp, codegraph, graphify — current after code changes so the next structural lookup reads live code, not a stale graph. Use when the index looks stale (a structural lookup disagrees with the live code), after a large change before a structural query, or the user says "reindex" / "the graph is stale" / "refresh the index". The Stop hook does this automatically; this skill is the manual force + the reference for it. Not for agentmemory (a separate, judgment-based store).
+description: Keep the optional code-intelligence indexes — codebase-memory-mcp, codegraph, graphify — current after code changes so the next structural lookup reads live code. Use when a structural lookup disagrees with the live code, after a large change before a structural query, or the user says "reindex". The Stop hook does this automatically; this skill is the manual force + the reference for it. Not for agentmemory (a separate, judgment-based store).
 user-invocable: false
 ---
 

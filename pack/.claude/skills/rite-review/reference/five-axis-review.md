@@ -1,4 +1,4 @@
-# Five-axis review
+# Code-review axes
 
 The axes the dispatched `devrites-code-reviewer` applies to the diff (tests first
 — always), under one severity scale (Critical / Important / Suggestion / Nit / FYI).

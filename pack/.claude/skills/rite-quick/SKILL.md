@@ -1,6 +1,6 @@
 ---
 name: rite-quick
-description: Express lane for a SMALL, reversible change — one short artifact, then build → prove → ship, collapsing the full spec → define → vet → build → prove → review → seal lifecycle into one pass. Use when the user says "quick fix", "small change", "tiny tweak", "just do X", or for a typo / copy / config / single-function / one-file change that is low-risk and unambiguous. Escalates to `/rite-spec` (full lifecycle) the moment scope, risk, or ambiguity grows. Not for auth / data-model / migration / public-API / multi-slice / ambiguous work — those need the full lifecycle.
+description: Express lane for a SMALL, reversible change. Use when the user says "quick fix" or "just do X", or for a typo / copy / config / single-function / one-file change that is low-risk and unambiguous. Escalates to `/rite-spec` (full lifecycle) the moment scope, risk, or ambiguity grows. Not for auth / data-model / migration / public-API / multi-slice / ambiguous work — those need the full lifecycle.
 argument-hint: "<what to change>"
 user-invocable: true
 ---

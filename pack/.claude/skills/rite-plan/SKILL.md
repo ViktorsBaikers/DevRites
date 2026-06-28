@@ -1,6 +1,6 @@
 ---
 name: rite-plan
-description: Reshape an active plan — decompose / reslice / repair / reorder / split FE-BE / unblock / course-correct — without changing product behavior unless asked. Use when the user says "replan", "reslice", "repair the plan", "drift", "unblock", "change of plan", "we're pivoting", or `/rite-build` flags Spec Drift. Not for the initial plan (use `/rite-define`).
+description: Reshape an active plan — decompose / reslice / repair / reorder / split FE-BE / unblock / course-correct — without changing product behavior unless asked. Use when the user says "replan", "reslice", "repair the plan", "unblock", "we're pivoting", or `/rite-build` flags Spec Drift. Not for the initial plan (use `/rite-define`).
 argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct]"
 user-invocable: true
 ---
@@ -66,6 +66,10 @@ reshaping slice cadence or DoD criteria.
 5. Update `plan.md`, `tasks.md`, `state.md`, and append rationale to `decisions.md`.
    If you stopped for drift, mark the `drift.md` entry resolved.
 6. If product behavior/acceptance criteria change, confirm with the user before writing.
+7. **Done when** — every slice is sized (builds + proves in one cycle; no slice scoring >3
+   left unjustified), the dependency order is acyclic, every `drift.md` entry you stopped for
+   is marked resolved, and behavior-change-vs-not is confirmed (`no`, or asked + answered).
+   If any check fails, loop back — don't hand off a half-reshaped plan.
 
 > **Mid-flight discipline.** When tempted to change product behavior without asking, absorb drift silently, or skip the user — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 

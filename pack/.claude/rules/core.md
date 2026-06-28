@@ -1,7 +1,7 @@
 # DevRites core rules — always-on
 
 The minimal always-on subset of the DevRites engineering rules. DevRites
-`rite-*` skills Read `.claude/rules/core.md` as their first step; the other 20
+`rite-*` skills Read `.claude/rules/core.md` as their first step; the other 22
 rule files in this directory load on demand by the phase that needs them (see
 `README.md` for the index).
 

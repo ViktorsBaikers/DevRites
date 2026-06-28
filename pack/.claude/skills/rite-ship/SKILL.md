@@ -1,6 +1,6 @@
 ---
 name: rite-ship
-description: Ship the sealed feature and close the task — render type-GO, run the irreversible git commit/push/tag (or open the PR), write ship.md, then archive the workspace and clear .devrites/ACTIVE. Use when the user says "ship it", "ship this", "push it out", "close the task", "finish and archive", or right after /rite-seal returns GO. Not for the GO/NO-GO decision itself (use /rite-seal) or an unsealed feature.
+description: Ship the sealed feature and close the task. Use when the user says "ship it" or "close the task", or right after /rite-seal returns GO. Not for the GO/NO-GO decision itself (use /rite-seal) or an unsealed feature.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---

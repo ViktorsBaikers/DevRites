@@ -1,6 +1,6 @@
 ---
 name: devrites-prose-craft
-description: Write the artifacts and chat replies a senior engineer would — direct, specific, human voice — not the default LLM tells (filler openers, false contrasts, fake profundity, em-dash tics, hedging). Use when a DevRites phase writes prose (spec.md, plan.md, decisions.md, review.md, seal.md, commit/PR bodies) or composes a user-facing reply, and as the catch pass in /rite-polish. Calibrated for technical writing — keeps precise lists, exact terms, and spec structure. Not for code comments and naming (the build-time anti-slop charter covers those) or UI craft (use devrites-frontend-craft).
+description: Write the artifacts and chat replies a senior engineer would — direct, specific, human voice, with the default LLM tells stripped. Use when a DevRites phase writes prose (spec.md, plan.md, decisions.md, review.md, seal.md, commit/PR bodies) or a user-facing reply, and as the catch pass in /rite-polish. Not for code comments and naming (the build-time anti-slop charter covers those) or UI craft (use devrites-frontend-craft).
 user-invocable: false
 ---
 
