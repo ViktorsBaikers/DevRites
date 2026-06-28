@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [2.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.3.0...v2.4.0) (2026-06-28)
+
+### Added
+
+* **devrites:** enforce the doubt gate from invocation through seal ([6ff29d0](https://github.com/ViktorsBaikers/DevRites/commit/6ff29d0caa3384d6ba85f480369d0fb01d80fad1))
+
+### Fixed
+
+* **devrites:** calibrate doubt-coverage and close per-slice skip ([5bc09eb](https://github.com/ViktorsBaikers/DevRites/commit/5bc09eb94062f728bd855a2a581784e4e1197522))
+
 ## [2.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.2.0...v2.3.0) (2026-06-23)
 
 ### Added
