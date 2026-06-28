@@ -105,12 +105,23 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    right next slice. Write the slice's `Mode` to `state.md` as `Slice mode: <HITL|AFK>` on
    **every** selection (not only on the HITL pause path); `/rite-resolve` clears or updates
    it on resume.
-2a. **HITL gate (pre-action pause).** Read the slice's `Mode`. If `HITL` → render the
-    checkpoint per [`reference/checkpoint-protocol.md`](reference/checkpoint-protocol.md):
-    append a `questions.md` entry with the slice's `Checkpoint:` + `Gate:` + `SLA:`,
-    write the `Awaiting human` block to `state.md`, set `Status: awaiting_human`, run
-    the `notify:` hook if `.devrites/AFK` defines one, then **STOP**. Resume happens
-    when the user runs `/rite-resolve <qid> "<answer>"`.
+2a. **HITL gate (pre-action pause).** Read the slice's `Mode`. If `HITL`, surface the
+    checkpoint as a ranked **option set** and resolve it **before** any code lands, per
+    [`reference/checkpoint-protocol.md`](reference/checkpoint-protocol.md). Branch on whether
+    a human is here:
+    - **Human present (interactive — no `.devrites/AFK`) → ask inline via `AskUserQuestion`.**
+      This is the default for an interactive build. Render 2–4 options, the recommended one
+      **first and labelled `(Recommended)`**, each with its dimension-tagged rationale + the
+      trade-off it accepts, plus the `Something else — I'll describe it` escape hatch. The
+      human picks; record the pick to `questions.md` (`answered`) + `decisions.md` (through the
+      `resolve.sh` writer), clear the gate, and **continue to step 3 in place** — do **not**
+      STOP, do **not** route through `/rite-resolve`.
+    - **Human absent / AFK (`.devrites/AFK` present) → auto-pick or persist + STOP.** For a gate
+      in `allow_gates`, auto-pick the recommended option (option 1) and proceed; otherwise
+      append the `questions.md` entry, write the `Awaiting human` block to `state.md`, set
+      `Status: awaiting_human`, fire the `notify:` hook, then **STOP** — resume when the user
+      runs `/rite-resolve <qid> "<answer>"`. `blocking` / `escalating` / irreversible-risk gates
+      always take this stop path, never the AFK auto-pick.
 3. **Snapshot the tree, then dispatch the build core to `devrites-slice-wright`** — one `Task`
    call, fresh context. **First**, capture the pre-dispatch tree so the reconcile gate (step 6)
    can prove you never touched source — run this immediately before the `Task` call:
