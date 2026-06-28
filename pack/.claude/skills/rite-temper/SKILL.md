@@ -1,6 +1,6 @@
 ---
 name: rite-temper
-description: Strategic review of a readied `spec.md` before planning — pick a scope mode (expand / selective / hold-rigor / reduce-to-MVP), run a pre-mortem, harden the spec, and fold decisions back via the Spec Drift Guard plus a persistent `strategy.md`. Use when the user says "temper this", "strategy review", "think bigger", "scope check", "pre-mortem the spec", "are we over/under-building", or before defining a big or risky feature. Not for a rough idea (`/rite-pressure-test`), a mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
+description: Temper a readied `spec.md` before planning. Use when the user says "temper this", "strategy review", "pre-mortem the spec", "are we over/under-building", or before defining a big or risky feature. Not for a rough idea (`/rite-pressure-test`), a mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
 argument-hint: "[feature-slug] [--mode expand|selective|hold|reduce]"
 user-invocable: true
 ---

@@ -1,6 +1,6 @@
 ---
 name: rite-autocomplete
-description: Run the entire DevRites lifecycle end-to-end with no per-phase human iteration — spec → temper → define → vet → build×N → prove → polish → review → seal → ship — picking the best option at each soft gate and recording why. A vague prompt triggers an up-front interview, then it runs unattended, pausing only on hard irreversible-risk / blocking / escalating gates or a NO-GO; `--ship` (alias `--yolo`) auto-confirms the final type-GO. Use when the user says "autocomplete", "do the whole thing", "run the full cycle", "one-shot this feature", or "ship it autonomously". Not for a single phase (use the specific `/rite-*` skill) or when the user wants to drive each step.
+description: Run the entire DevRites lifecycle end-to-end, unattended — no per-phase human iteration; `--ship` auto-confirms the final gate. Use when the user says "autocomplete", "one-shot this feature", or "ship it autonomously". Not for a single phase (use the specific `/rite-*` skill) or when the user wants to drive each step.
 argument-hint: "[idea] [--ship|--yolo] [--max-slices N]"
 user-invocable: true
 ---

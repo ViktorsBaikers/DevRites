@@ -3,7 +3,7 @@
 How `/rite-build` hands the **build core** of one slice to `devrites-slice-wright` — the
 fresh-context, **write-capable** executor under `.claude/agents/`. Loaded on demand by
 `/rite-build`; not a skill itself. Sibling of
-[`../../rite-seal/reference/parallel-dispatch.md`](../../rite-seal/reference/parallel-dispatch.md)
+[`../../devrites-lib/reference/parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md)
 (the read-only reviewer fan-out) — same isolation principle, opposite direction: this one
 **writes**.
 
@@ -123,7 +123,7 @@ same anti-slop charter; it just doesn't get the isolation. In this path the orch
 legitimately the writer, so write `.devrites/work/<slug>/.reconcile-inline` before editing — the
 reconcile gate (step 4) skips when that sentinel is present. Mirrors the reviewer-dispatch
 fallback in
-[`../../rite-seal/reference/parallel-dispatch.md`](../../rite-seal/reference/parallel-dispatch.md).
+[`../../devrites-lib/reference/parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md).
 
 ## Optional pre-block hook (defense in depth)
 `reconcile.sh` is the **post-hoc** gate — it always runs and catches an A1 breach at record time.

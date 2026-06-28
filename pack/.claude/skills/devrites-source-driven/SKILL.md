@@ -1,6 +1,6 @@
 ---
 name: devrites-source-driven
-description: Verify uncertain framework or library behavior against official docs or installed source before relying on it, then record the source in `evidence.md` / `decisions.md`. Use when the user says "check the docs", "is this still the API", "don't guess", "cite the source", "verify this assumption", or build encounters an unfamiliar framework call. Not for project-internal code or trivial stdlib calls.
+description: Verify uncertain framework or library behavior against official docs or installed source before relying on it, then record the source in `evidence.md` / `decisions.md`. Use when the user says "check the docs", "verify this assumption", or build hits an unfamiliar framework call. Not for project-internal code or trivial stdlib calls.
 user-invocable: false
 ---
 

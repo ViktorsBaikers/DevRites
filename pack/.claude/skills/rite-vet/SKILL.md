@@ -1,6 +1,6 @@
 ---
 name: rite-vet
-description: Engineering review of a defined plan before any code — challenge implementation scope, then review architecture / code-quality / test-coverage / performance through senior-engineer lenses, confidence-banding each finding; harden `plan.md` / `tasks.md` and write `eng-review.md` + the build-readable `test-plan.md`. Use when the user says "vet the plan", "engineering review", "review the architecture", "lock in the plan", or before building a feature. Not for the spec's strategy (`/rite-temper`), a mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
+description: Vet a defined plan before any code with a senior-engineer plan review. Use when the user says "vet the plan", "engineering review", "lock in the plan", or before building a feature. Not for the spec's strategy (`/rite-temper`), a mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
 argument-hint: "[slug] [--cross-model] [--full]"
 user-invocable: true
 ---

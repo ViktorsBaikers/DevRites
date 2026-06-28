@@ -1,6 +1,6 @@
 ---
 name: rite-seal
-description: Final GO / NO-GO decision gate — walk `spec.md` acceptance against `evidence.md`, fan out reviewers in parallel, block on Critical, ask y/N on Important, write the verdict to seal.md. Use when the user says "seal this", "GO / NO-GO", "is it safe to merge", "final gate", "decide if we can ship". Hands off to /rite-ship for the actual commit/push/close. Not for the irreversible ship itself (use /rite-ship), inline review, or unpolished features.
+description: Decide GO / NO-GO on the active feature. Use when the user says "seal this" or "GO / NO-GO". Hands off to /rite-ship for the actual commit/push/close. Not for the irreversible ship itself (use /rite-ship), inline review, or unpolished features.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---
@@ -125,14 +125,14 @@ Read `review.md` and the latest reviewer outputs.
 7. **Independent review** — seal is the final gate, not a re-run of `/rite-review`.
    It **always re-spawns** the axes `/rite-review` did not cover: `devrites-test-analyst`,
    `devrites-security-auditor`, `devrites-performance-reviewer`, and
-   `devrites-frontend-reviewer` (UI). It **only re-runs the Spec and Code axes**
+   `devrites-frontend-reviewer` (UI). It **only re-runs the Spec and Code-review axes**
    (`devrites-spec-reviewer`, `devrites-code-reviewer`) when the diff changed since
    `/rite-review` ran (compare against `review.md`); if the diff is unchanged, carry
    review's verdicts on those axes forward rather than re-litigating them.
    If subagents are available, fan out to the chosen DevRites
    reviewers (`.claude/agents/devrites-*`) **in parallel** (one `Task` block,
    multiple tool calls; see `.claude/rules/agents.md` — "Run independent
-   reviewers in parallel", and [`reference/parallel-dispatch.md`](reference/parallel-dispatch.md)
+   reviewers in parallel", and [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)
    for the full dispatch shape + reconciliation procedure):
    `devrites-spec-reviewer` (does the diff implement
    the spec?), `devrites-test-analyst` (do the tests prove acceptance?),

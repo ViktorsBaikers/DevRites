@@ -1,10 +1,11 @@
 ---
 name: rite-pressure-test
-description: Pressure-test a rough idea — diverge into 3-5 genuinely different options, then converge on one with the trade-off and decision hinge. Use when the user says "ideate", "refine this idea", "stress-test my plan", "I have a vague idea", or `/rite-spec` flags the concept as rough. Not for writing the spec (use `/rite-spec`).
+description: Pressure-test a rough idea — diverge into 3-5 genuinely different options, then converge on one with the trade-off and decision hinge. Use when the user says "ideate", "stress-test my plan", "I have a vague idea", or `/rite-spec` flags the concept as rough. Not for writing the spec (use `/rite-spec`).
+argument-hint: "[rough idea or plan to stress-test]"
 user-invocable: true
 ---
 
-# rite-pressure-test — diverge then converge
+# /rite-pressure-test — diverge then converge
 
 Use when the *idea* (not just the requirements) is rough. Generate options, then commit
 to one — so `/rite-spec` has a real direction to specify.

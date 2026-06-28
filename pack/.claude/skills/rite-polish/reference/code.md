@@ -52,6 +52,10 @@ feature only.
   cleverness that's shorter but harder to read is not simpler.
 - **Cleanup**: remove TODOs, `console.log`s, commented-out code, unused
   imports/vars; tighten naming and comments in code this feature touched.
+- **Done when** — every anti-slop charter item in the touched code is cleared
+  (the AI-tells do-not list — [anti-ai-slop.md](anti-ai-slop.md) Code section,
+  `coding-style.md`) **and** the feature's targeted tests + build re-run green.
+  An open charter item or a red check means Phase 1 isn't done.
 
 ## Phase 2 — Backend polish *(if BE touched)*
 

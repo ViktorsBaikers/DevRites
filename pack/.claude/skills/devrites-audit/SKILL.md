@@ -1,6 +1,6 @@
 ---
 name: devrites-audit
-description: Read-only audit dispatch for the active feature on the requested axis — security (OWASP, trust boundary, secrets), perf (measure-first, N+1, CWV), or simplify (Chesterton's Fence, deletion test). Use when the user says "security review", "is this safe", "is this fast enough", "perf check", "N+1", "simplify this", "Chesterton's Fence". Not for write actions or whole-project audits.
+description: Audit the active feature read-only on one axis — security (OWASP, trust boundary, secrets), perf (measure-first, N+1, CWV), or simplify (Chesterton's Fence, deletion test). Use when the user says "security review", "perf check", or "simplify this". Not for write actions or whole-project audits.
 argument-hint: "<security | perf | simplify>"
 user-invocable: false
 ---
@@ -52,7 +52,7 @@ reconciles.
 
 Rules for the dispatch:
 
-- **One subagent per call.** This skill is not a fan-out; multi-axis fan-out is `/rite-seal`'s job (see `.claude/skills/rite-seal/reference/parallel-dispatch.md`).
+- **One subagent per call.** This skill is not a fan-out; multi-axis fan-out is `/rite-seal`'s job (see `.claude/skills/devrites-lib/reference/parallel-dispatch.md`).
 - **No author context.** Do not pass the caller's analysis or framing of the change to the subagent — fresh, adversarial read is the point.
 - **No cross-pollination.** If the caller wants more than one axis, dispatch each axis in its own `Task` call in a single message so the runtime parallelizes; each subagent gets only its own brief.
 

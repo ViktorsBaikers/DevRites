@@ -1,6 +1,6 @@
 ---
 name: rite-spec
-description: Investigate a new feature and write `spec.md` (placement, gaps, design refs, measurable acceptance) under `.devrites/work/<slug>/`. Use when the user says "new feature", "spec this out", "start a project", "I have an idea". Not for planning approved specs (use `/rite-define`) or replanning (use `/rite-plan`).
+description: Investigate a new feature and write `spec.md` (placement, gaps, design refs, measurable acceptance) under `.devrites/work/<slug>/`. Use when the user says "spec out a new feature" or "I have an idea". Not for planning approved specs (use `/rite-define`) or replanning (use `/rite-plan`).
 argument-hint: "<feature or idea>"
 user-invocable: true
 ---
@@ -45,6 +45,25 @@ stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
    [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
    [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
    ```
+0a. **Brownfield check — onboard before speccing onto un-adopted existing code.** If this is an
+   **existing codebase** (real source predating DevRites) that has **never been adopted** — no
+   `.devrites/conventions.md`, no prior `.devrites/work` or `.devrites/archive` — the build has no
+   conventions ledger to follow and the first slice would guess the project's idioms. Route
+   through `/rite-adopt` **first**, carrying `$ARGUMENTS` as its *next objective*: adopt
+   reverse-derives the baseline `spec.md`, **seeds the conventions ledger**, and proposes
+   principles, so this feature is specced on top of an onboarded project (adopt owns the
+   onboarding; `/rite-spec` only detects and routes — no duplicated logic). In **HITL** present a
+   ranked option (recommended: *adopt first, then spec this on top*; escape hatch: *spec-only, skip
+   onboarding*); in **AFK** (adoption allowed) run `/rite-adopt` first automatically. **Greenfield
+   (no pre-existing source) or an already-onboarded project → skip silently** — never block a spec
+   for the absence of adoption (the same no-op discipline as the principles gate). Cheap probe:
+   ```bash
+   if [ ! -f .devrites/conventions.md ] && [ ! -d .devrites/archive ] \
+      && [ -z "$(ls .devrites/work 2>/dev/null)" ] \
+      && [ -n "$(git ls-files 2>/dev/null | grep -vE '^\.(devrites|claude)/' | head -1)" ]; then
+     echo "brownfield, not yet adopted → recommend /rite-adopt first (carry this idea as its next objective)"
+   else echo "greenfield or already onboarded → continue spec"; fi
+   ```
 1. **Understand the request** (`$ARGUMENTS`). Restate the goal and the *real problem
    behind it* in a sentence or two.
 2. **Investigate deeply** — [investigation](reference/investigation.md). Produce, and
@@ -78,7 +97,7 @@ stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
    backend/data/CLI features skip this.
 4. **Close the gaps with the human.** Turn each material gap/issue into a question — one
    at a time, **best guess attached**, structured options + escape hatch. (Vague ask →
-   `devrites-interview`; rough idea → `rite-pressure-test`; ladders in
+   `devrites-interview`; rough idea → `/rite-pressure-test`; ladders in
    [interview-patterns](reference/interview-patterns.md) / [question-protocol](reference/question-protocol.md).)
    For a vague ask, **map the decision tree** and resolve each branch depth-first; **cover
    every dimension** (objective · scope · data model · UX · integration · non-functional ·

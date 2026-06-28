@@ -1,6 +1,6 @@
 ---
 name: rite-learn
-description: Review the auto-captured learning ledger and promote recurring lessons to project rules or principles — the human-gated half of the cross-feature learning loop. Capture is automatic (`/rite-seal` appends dismissed-finding classes + dead-ends to `.devrites/learnings.md` on every GO; the review skills load it before a fan-out), so the system learns without a command; this skill mines that ledger across features and decides which recurring lessons graduate into a rule (propose, don't impose). Use when the user says "what have we learned", "rite learn", "harvest lessons", "promote our learnings", or after several features ship. Not for the install (`/rite-doctor`), feature status (`/rite-status`), onboarding (`/rite-adopt`), or a diff review (`/rite-review`).
+description: Review the auto-captured learning ledger and promote recurring lessons to project rules or principles — the human-gated half of the cross-feature learning loop. Not for the install (`/rite-doctor`), feature status (`/rite-status`), onboarding (`/rite-adopt`), or a diff review (`/rite-review`).
 argument-hint: "[--mine | \"<lesson to record>\"]"
 user-invocable: true
 disable-model-invocation: true

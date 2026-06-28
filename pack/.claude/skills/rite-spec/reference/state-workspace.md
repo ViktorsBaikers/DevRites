@@ -13,6 +13,7 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
     <feature-slug>/
       brief.md                    # short user-facing objective
       spec.md                     # what to build + why (from /rite-spec)
+      checklists/                 # spec-quality checklists — "unit tests for English", one <domain>.md per requirement domain (from /rite-spec; gated at spec readiness)
       references/                 # saved design/reference assets (screenshots, exports, video)
       references.md               # index of design references (saved files + links)
       strategy.md                 # strategic review: scope mode + pre-mortem + dimension scores (from /rite-temper; optional — always invoked, significance-gated, in /rite-autocomplete)
@@ -20,6 +21,8 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
       tasks.md                    # ordered vertical slices (from /rite-define)
       eng-review.md               # engineering plan review: scope challenge + axis findings + failure modes + parallelization (from /rite-vet — run on every plan; depth scales light/full, never skipped; always in /rite-autocomplete)
       test-plan.md                # build-readable coverage target: coverage diagram + per-gap test requirements + acceptance→test map (from /rite-vet; read by /rite-build + /rite-prove)
+      coverage.md                 # traceability matrix: AC-id → slice(s) → test (from /rite-define; walked by /rite-prove + /rite-seal)
+      devex.md                    # developer-experience scorecard — predicted (/rite-vet) → measured (/rite-prove) → reconciled (/rite-seal); only when a developer-facing surface is in scope
       state.md                    # phase, active slice, risk, next step
       questions.md                # asked questions + answers
       decisions.md                # decisions + rationale (+ a `## Dead ends` section: approaches tried that failed + why, so retries don't repeat them)
@@ -27,6 +30,7 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
       drift.md                    # spec/plan drift observations + resolutions
       touched-files.md            # files changed or intentionally inspected
       evidence.md                 # commands run + results
+      forge-report.md             # competitive-build record: K candidates → winner + grafts (from /rite-build on a `Forge: yes` slice; rare)
       browser-evidence.md         # screenshots, routes, console, viewport checks
       design-brief.md             # UX/UI contract — if UI involved (from /rite-spec via devrites-ux-shape; refined per slice in /rite-build)
       polish-report.md            # normalize+polish output
@@ -48,10 +52,14 @@ workspace first; if none exists, it stops and tells the user to run `/rite-spec 
   `ACTIVE`. **`/rite-define` reads `spec.md`** and adds `plan.md` + `tasks.md` and updates
   `state.md`. Other skills read the active workspace; none create a new one.
 - Each phase **updates `state.md`** and the relevant evidence files.
-- Don't create `strategy.md` / `eng-review.md` / `test-plan.md` / `evidence.md` /
-  `browser-evidence.md` / `design-brief.md` / `polish-report.md` / `review.md` / `seal.md` /
-  `ship.md` / `handoff.md` until the producing phase runs — absence is meaningful (it means
-  "not done yet"). `strategy.md` is written by `/rite-temper` (which may also edit `spec.md` /
+- Don't create `checklists/` / `strategy.md` / `eng-review.md` / `test-plan.md` /
+  `coverage.md` / `devex.md` / `evidence.md` / `forge-report.md` / `browser-evidence.md` /
+  `design-brief.md` / `polish-report.md` / `review.md` / `seal.md` / `ship.md` / `handoff.md`
+  until the producing phase runs — absence is meaningful (it means "not done yet").
+  `coverage.md` is the `/rite-define` traceability matrix; `devex.md` is the conditional DX
+  scorecard (only when a developer-facing surface is in scope — greenfield no-op otherwise);
+  `forge-report.md` records a competitive `Forge: yes` build and is absent on the common
+  single-path slice. `strategy.md` is written by `/rite-temper` (which may also edit `spec.md` /
   `decisions.md` / `assumptions.md` via the Spec Drift Guard); its absence means the spec was
   planned without a strategic review. `eng-review.md` + `test-plan.md` are written by `/rite-vet`
   (which also hardens `plan.md` / `tasks.md`, and routes acceptance-changing deltas via the Spec

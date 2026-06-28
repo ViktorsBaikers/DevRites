@@ -1,6 +1,6 @@
 ---
 name: rite-prototype
-description: Throwaway prototype answering ONE design question — either a runnable Logic harness or 2–4 radically different UI variations on one route — then delete or absorb. Use when the user says "prototype this", "sanity-check the data model", "try a few UI designs", "let me play with it", "mock it up". Not for production code.
+description: Throwaway prototype answering ONE design question — either a runnable Logic harness or 2–4 radically different UI variations on one route — then delete or absorb. Use when the user says "prototype this", "sanity-check the data model", or "try a few UI designs". Not for production code.
 user-invocable: true
 argument-hint: "[the question the prototype is answering]"
 ---
@@ -71,8 +71,10 @@ one of:
   with the question and the answer.
 - A `NOTES.md` next to the prototype if no active feature exists.
 
-If the user is around, this is a quick conversation. If they're AFK, leave a placeholder
-("VERDICT: ___") so the next pass fills it in before the prototype is deleted.
+If the user is around, this is a quick conversation. If they're AFK, the prototype is
+complete only once the verdict is actually filled in — a blank `VERDICT: ___` is not an
+answer. Leave it marked **not yet complete** and queue the open question so a later pass
+fills the verdict before the prototype is deleted.
 
 ## Where this slots in
 

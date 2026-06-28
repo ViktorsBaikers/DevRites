@@ -35,11 +35,10 @@ contract. Neither side blocks on the other.
 
 ## Doubt the contract
 Before standing the interface, run `devrites-doubt` — boundary decisions are exactly the
-non-trivial kind worth an adversarial check. Record the contract + rationale in
-`decisions.md`.
+non-trivial kind worth an adversarial check.
 
-## Gotchas
-- Be conservative — you can add to a contract later, but removing or changing a field breaks every consumer.
-- Validate at the boundary; never trust caller-supplied IDs, roles, or prices.
-- A breaking change to an existing consumer is a user decision (and a `drift.md` event if unplanned), not a silent edit.
-- Match the project's existing endpoint/module conventions; a competing convention is a tax, not a design.
+## Done when
+The contract is complete only when **every** field carries a type + optionality + unit,
+**every** success and error status code is enumerated with its error-body shape, the
+`devrites-doubt` verdict is accept, and the contract + rationale are recorded in
+`decisions.md`. A contract that pins only the happy-path shape is not done.

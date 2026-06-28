@@ -40,6 +40,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | `ship` | `/rite-ship` | type-GO + commit/push/tag, then archive the task |
 | `status [slug]` | `/rite-status` | active feature, next action, evidence |
 | `doctor` | `/rite-doctor` | health check — install integrity, stale ACTIVE, orphaned gates, hook wiring |
+| `learn [--mine \| "<lesson>"]` | `/rite-learn` | review the captured learning ledger → promote recurring lessons to project rules / principles |
 | `use <slug>` | (inline) | switch the active feature — re-point `.devrites/ACTIVE` |
 | `resolve <qid> "<answer>"` | `/rite-resolve` | answer a HITL gate |
 | `prototype [question]` | `/rite-prototype` | throwaway prototype |
@@ -62,8 +63,8 @@ Specialist triggers (model-invoked inside the above):
 `devrites-source-driven` (uncertain library) · `devrites-doubt` (non-trivial
 decision) · `devrites-api-interface` (cross-boundary) ·
 `devrites-audit <security|perf|simplify>` (single-axis review/polish pass) ·
-`devrites-debug-recovery` (failures). Parallel reviewer fan-out at seal lives
-inline in `/rite-seal` (see its `reference/parallel-dispatch.md`).
+`devrites-debug-recovery` (failures). Parallel reviewer fan-out at seal is a shared
+reference (see [`devrites-lib/reference/parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)).
 
 ## What to output
 
@@ -96,6 +97,7 @@ SEAL          /rite seal               ≡    /rite-seal        final GO / NO-GO
 SHIP          /rite ship               ≡    /rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
 STATUS        /rite status             ≡    /rite-status      active feature, next action, evidence, risks
 DOCTOR        /rite doctor             ≡    /rite-doctor      health check — install · stale ACTIVE · orphaned gates · hook wiring
+LEARN         /rite learn ...          ≡    /rite-learn       review captured lessons → promote to project rules / principles
 SWITCH        /rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 RESUME        /rite resolve ...        ≡    /rite-resolve     answer a HITL checkpoint
 AUTO          /rite autocomplete ...   ≡    /rite-autocomplete  run the whole lifecycle unattended (--ship to push)
@@ -110,26 +112,6 @@ UTILITY       /rite frame | prototype | handoff | zoom-out | pressure-test  (or 
 
 ## Core operating rules (every DevRites skill enforces)
 
-The minimal version lives in `.claude/rules/core.md`; DevRites skills Read it as
-their first step, and the other rule files load on demand. The rule list:
-
-1. **Right step, right time** — smallest relevant workflow; don't load everything.
-2. **No silent assumptions** — surface material assumptions; ask when the
-   answer changes scope, architecture, data model, UX, security, migration
-   risk, or acceptance.
-3. **No guessing through confusion** — if requirements / code / tests / docs
-   conflict, stop, name the conflict, present options, wait for resolution
-   when the answer changes the product.
-4. **Spec is living, not sacred** — change spec/plan only through the
-   Spec Drift Guard; never code against a known-wrong plan.
-5. **One slice at a time** — `/rite-build` does one slice then stops.
-6. **Evidence over confidence** — tests, builds, runtime, screenshots beat
-   assertions; record commands and output.
-7. **Feature scope only** — review / simplify / polish / security stay within
-   the active feature and touched files.
-8. **Prefer existing conventions** — follow the project's architecture,
-   components, tokens, tests, and commands.
-9. **Verify uncertain facts at the source** — when framework / library
-   behaviour matters and isn't certain, check the docs or source and record it.
-
-Detail in [reference/menu.md](reference/menu.md) when needed.
+The operating rules live in `.claude/rules/core.md`; DevRites skills Read it as
+their first step, and the other rule files load on demand. See
+[`.claude/rules/README.md`](../../rules/README.md) for the full index.

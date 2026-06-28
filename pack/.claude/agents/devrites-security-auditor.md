@@ -20,16 +20,12 @@ Workspace `.devrites/work/<slug>/`: read `spec.md` (data model / API / affected 
 `decisions.md`, `touched-files.md`. Run `git diff` and read the touched files.
 
 ## Audit (feature scope, OWASP-oriented)
-- **Injection** — parameterized queries; no string-built SQL/shell/HTML; output encoding.
-- **Access control** — server-side authz on every sensitive action; no trusting
-  client-supplied IDs/roles; no IDOR.
-- **Auth / session / secrets** — secure handling; nothing sensitive in code, logs, or
-  responses.
-- **Sensitive data** — least exposure; encryption where required; PII not logged.
-- **SSRF / outbound** — URL allowlist/validation; timeouts; no untrusted reflection.
-- **Misconfiguration** — safe defaults, debug off, CORS scoped, headers per project.
-- **Dependencies** — new/updated packages free of known-vuln versions.
-- **Deserialization** of untrusted data.
+Walk the **single-sourced OWASP-web checklist** — injection, access control / IDOR, auth /
+session / secrets, sensitive-data exposure, SSRF / outbound, misconfiguration, vulnerable
+dependencies, unsafe deserialization — in
+[`../skills/rite-review/reference/security-review.md`](../skills/rite-review/reference/security-review.md).
+Apply each against the diff adversarially; the checklist is the *what*, this agent is the
+independent *who*.
 
 ## AI / LLM surface (only when the feature calls a model / builds an agent / does RAG / exposes tool-use)
 Apply the OWASP LLM Top 10 (`.claude/rules/security.md` § AI / LLM features):

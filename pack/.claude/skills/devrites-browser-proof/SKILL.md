@@ -1,6 +1,6 @@
 ---
 name: devrites-browser-proof
-description: Prove UI behavior via the browser-proof ladder — browser-harness → Chrome DevTools MCP → `/run`+`/verify` → project E2E → manual — recording routes, viewports, screenshots, console, network, interactions, design-reference match to `browser-evidence.md`. Use when the user says "check the UI in browser", "screenshot this", "prove it renders". Not for backend-only features.
+description: Prove UI behavior in a real browser, capturing screenshots, console, network, interactions, and Core Web Vitals to `browser-evidence.md`. Use when the user says "check the UI in browser", "screenshot this", "prove it renders", or a Core Web Vital / perf budget needs measuring. Not for backend-only features.
 user-invocable: false
 ---
 
@@ -46,7 +46,7 @@ reads it in Measured mode) and note the tool + route in `browser-evidence.md`. N
 a lab value as a field value or vice versa.
 
 ## Evidence schema → `browser-evidence.md`
-Tooling used · route(s) · viewports (375/768/1280) · screenshot paths **opened and
+Tooling used · route(s) · viewports (320/768/1024/1440 — the canonical responsive set; see [`devrites-frontend-craft/reference/quality-standards.md`](../devrites-frontend-craft/reference/quality-standards.md)) · screenshot paths **opened and
 described** · console errors/warnings · network failures · interaction path tested ·
 accessibility basics · responsive checks · **CWV capture** (tool + route + each
 source-labeled value, or `pending (manual)` + the command) · **Visual Verdict** (the
@@ -67,7 +67,7 @@ error / success / disabled / long-content), plus key **design-reference** diffs 
 not the markup:
 
 ```markdown
-## Visual Verdict — <route / component>   (viewport: 375 / 1280)
+## Visual Verdict — <route / component>   (viewport: 320 / 1440)
 | Criterion (source) | Expected | Observed (screenshot) | Verdict | Severity |
 |---|---|---|---|---|
 | empty state (brief) | welcoming copy + primary action | renders, copy present | PASS | — |

@@ -1,6 +1,6 @@
 ---
 name: rite-prove
-description: Prove the completed feature — full tests + build + typecheck + lint + browser-proof ladder — walking `spec.md` acceptance criteria one by one. Use when the user says "prove this", "run the full tests", "is this feature really done", "check it end-to-end". Not for single-slice or pre-completion proof.
+description: Prove the completed feature against its `spec.md` acceptance criteria. Use when the user says "prove this", "run the full tests", or "check it end-to-end". Not for single-slice or pre-completion proof.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---

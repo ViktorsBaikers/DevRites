@@ -1,6 +1,6 @@
 ---
 name: rite-build
-description: Implement exactly ONE vertical slice of the active feature, then stop with evidence. A fresh-context `devrites-slice-wright` writes the slice (orient → TDD → verify, anti-slop, project idiom); this skill gates it (readiness, HITL/AFK, doubt loop, Spec Drift Guard) and records the evidence. Use when the user says "build the next slice", "implement slice N", "continue", "code this slice". Not for bug fixes, prototypes, refactors outside scope, or two slices in a row.
+description: Implement exactly ONE vertical slice of the active feature, then stop with evidence. Use when the user says "build the next slice", "implement slice N", "continue the build", "code this slice". Not for bug fixes, prototypes, refactors outside scope, or two slices in a row.
 argument-hint: "[slice number or name]"
 user-invocable: true
 ---
@@ -60,22 +60,26 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   single-path — forge is the rare exception ([`reference/forge.md`](reference/forge.md)).
 
 ## Workflow ([one-slice-cycle](reference/one-slice-cycle.md))
+
+> **Running the gate helpers.** Each gated `bash` block resolves the shared runner `rites.sh` into
+> `$R` (self-contained — blocks don't share shell state), then calls a named helper:
+> `bash "$R" <helper> [args]` runs
+> `devrites-lib/scripts/<helper>.sh`, **propagates its exit code** (so the `rc=$?` checks below
+> still hold) and degrades to a printed note if the lib is absent. One locator, many helpers —
+> see [`devrites-lib/scripts/rites.sh`](../devrites-lib/scripts/rites.sh).
+
 0. **Rules + AFK + readiness check.** Read `.claude/rules/core.md` first. Then **run the
    shared orientation preamble** — it prints `state.md`, the artifacts present, the run
    mode (HITL/AFK), and the open-question tally by gate, deterministically:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && bash "$R" preamble || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
    ```
    Then **run the readiness gate** — it enforces the step-0 stop conditions by exit code,
    not by memory:
    ```bash
-   G=.claude/skills/devrites-lib/scripts/readiness.sh
-   [ -f "$G" ] || G="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/readiness.sh"
-   [ -f "$G" ] || G=pack/.claude/skills/devrites-lib/scripts/readiness.sh
-   [ -f "$G" ] && { bash "$G"; echo "readiness rc=$?"; } || echo "(readiness gate unavailable — apply the prose checks below)"
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && { bash "$R" readiness; echo "readiness rc=$?"; } || echo "(readiness gate unavailable — apply the prose checks below)"
    ```
    A non-zero `rc` is a hard STOP: `2` → `/rite-define` (plan not approved), `3` →
    `/rite-resolve` (awaiting human), `4` → `/rite-plan` (blocked). The prose below is the
@@ -111,18 +115,14 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    call, fresh context. **First**, capture the pre-dispatch tree so the reconcile gate (step 6)
    can prove you never touched source — run this immediately before the `Task` call:
    ```bash
-   RC=.claude/skills/devrites-lib/scripts/reconcile.sh
-   [ -f "$RC" ] || RC="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/reconcile.sh"
-   [ -f "$RC" ] || RC=pack/.claude/skills/devrites-lib/scripts/reconcile.sh
-   [ -f "$RC" ] && bash "$RC" snapshot || echo "(reconcile gate unavailable — verify by hand that only the wright wrote source)"
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && bash "$R" reconcile snapshot || echo "(reconcile gate unavailable — verify by hand that only the wright wrote source)"
    ```
    Then log the dispatch so the stuck-loop detector can catch a slice that keeps being
    re-dispatched without progress (it pauses the build even under AFK):
    ```bash
-   ST=.claude/skills/devrites-lib/scripts/stuck.sh
-   [ -f "$ST" ] || ST="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/stuck.sh"
-   [ -f "$ST" ] || ST=pack/.claude/skills/devrites-lib/scripts/stuck.sh
-   [ -f "$ST" ] && bash "$ST" log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>" || true
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && bash "$R" stuck log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>" || true
    ```
    **Forge branch — only if the selected slice is `Forge: yes`.** Instead of the single dispatch
    below, run the competitive build per [`reference/forge.md`](reference/forge.md): K=2–3 candidate
@@ -174,10 +174,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    `built`.** Log each dispatch so the seal can prove doubt ran (the footprint already counts a
    `doubt` kind):
    ```bash
-   FP=.claude/skills/devrites-lib/scripts/footprint.sh
-   [ -f "$FP" ] || FP="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/footprint.sh"
-   [ -f "$FP" ] || FP=pack/.claude/skills/devrites-lib/scripts/footprint.sh
-   [ -f "$FP" ] && bash "$FP" log <slug> doubt "<decision id>" || true
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && bash "$R" footprint log <slug> doubt "<decision id>" || true
    ``` The doubt loop honours `.devrites/AFK` (see its AFK
    exception): findings below the slice's gate ceiling become advisory entries in `questions.md`;
    destructive / auth / public-API concerns always pause regardless. A non-empty `Escalation` in
@@ -205,10 +203,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    wright's reported `Files changed` paths (one per line) to
    `.devrites/work/<slug>/.reconcile-claimed`, then:
    ```bash
-   RC=.claude/skills/devrites-lib/scripts/reconcile.sh
-   [ -f "$RC" ] || RC="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/reconcile.sh"
-   [ -f "$RC" ] || RC=pack/.claude/skills/devrites-lib/scripts/reconcile.sh
-   [ -f "$RC" ] && { bash "$RC" check; echo "reconcile rc=$?"; } || echo "(reconcile gate unavailable — confirm by hand only the wright wrote source)"
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && { bash "$R" reconcile check; echo "reconcile rc=$?"; } || echo "(reconcile gate unavailable — confirm by hand only the wright wrote source)"
    ```
    **Exit 5 → hard STOP:** a source file changed outside the wright's claimed set — code was
    edited by something other than the wright (A1 breach). Revert it and re-dispatch the wright;
@@ -217,10 +213,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    **Then run the test-integrity gate (anti-reward-hacking)** — prove the slice didn't reach
    green by weakening its tests:
    ```bash
-   TI=.claude/skills/devrites-lib/scripts/test-integrity.sh
-   [ -f "$TI" ] || TI="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/test-integrity.sh"
-   [ -f "$TI" ] || TI=pack/.claude/skills/devrites-lib/scripts/test-integrity.sh
-   [ -f "$TI" ] && { bash "$TI"; echo "test-integrity rc=$?"; } || echo "(test-integrity gate unavailable — confirm by hand no test was deleted/skipped/loosened)"
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && { bash "$R" test-integrity; echo "test-integrity rc=$?"; } || echo "(test-integrity gate unavailable — confirm by hand no test was deleted/skipped/loosened)"
    ```
    **Exit 3 → hard STOP:** a test was deleted, skipped, or de-asserted since the slice base — the
    slice went green by weakening its tests, a Critical protocol violation. Revert the weakening and
@@ -241,12 +235,9 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    **If the wright's `Conventions` field reports a contradiction** (the live code now
    disagrees with a held convention), record the drift — you own this bookkeeping:
    ```bash
-   C=.claude/skills/devrites-lib/scripts/conventions.py
-   [ -f "$C" ] || C="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/conventions.py"
-   [ -f "$C" ] || C=pack/.claude/skills/devrites-lib/scripts/conventions.py
-   command -v python3 >/dev/null 2>&1 && [ -f "$C" ] && \
-     python3 "$C" contradict --key <key> --slug <slug> --evidence "<what the live code does>" \
-       --drift-file .devrites/work/<slug>/drift.md || true
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && bash "$R" conventions contradict --key <key> --slug <slug> \
+     --evidence "<what the live code does>" --drift-file .devrites/work/<slug>/drift.md || true
    ```
    It lowers the convention's band (or retires it) and appends a `convention-drift` entry to
    `drift.md`. The ledger is **promoted only at `/rite-seal` on GO** — build only records
@@ -255,10 +246,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    [evidence-standard](reference/evidence-standard.md). Append a footprint record for this
    slice's wright dispatch (deterministic run-weight bookkeeping the seal reports):
    ```bash
-   FP=.claude/skills/devrites-lib/scripts/footprint.sh
-   [ -f "$FP" ] || FP="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/footprint.sh"
-   [ -f "$FP" ] || FP=pack/.claude/skills/devrites-lib/scripts/footprint.sh
-   [ -f "$FP" ] && bash "$FP" log <slug> wright "<slice id>" || true
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && bash "$R" footprint log <slug> wright "<slice id>" || true
    ```
    If `.devrites/AFK` is present, decrement
    the budget by running `bash .claude/skills/devrites-lib/scripts/tick-afk.sh <state.md path>` —
@@ -269,10 +258,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    shared footer (mirror of the step-0 preamble) so the slice meter + flow ribbon are
    deterministic, not model-typed:
    ```bash
-   PR=.claude/skills/devrites-lib/scripts/progress.sh
-   [ -f "$PR" ] || PR="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/progress.sh"
-   [ -f "$PR" ] || PR=pack/.claude/skills/devrites-lib/scripts/progress.sh
-   [ -f "$PR" ] && bash "$PR" || echo "(progress footer unavailable on this install)"
+   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
+   [ -f "$R" ] && bash "$R" progress || echo "(progress footer unavailable on this install)"
    ```
    It reads `state.md` (already updated in step 6), so the meter reflects the slice you
    just built. **When every slice is built** (`✅ ALL BUILT`) say so explicitly — the build

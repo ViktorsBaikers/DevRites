@@ -1,6 +1,7 @@
 ---
 name: rite-zoom-out
-description: Zoom out one abstraction layer in unfamiliar code — return a structural map (modules, callers, callees, ADR/decisions touching the area) in the project's vocabulary. Use when the user says "zoom out", "map this", "bigger picture", "I don't know this area", "what calls this". Not for implementing changes (read-only) or one-symbol lookups (use grep).
+description: Zoom out one abstraction layer in unfamiliar code — return a structural map (modules, callers, callees, ADR/decisions touching the area) in the project's vocabulary. Use when the user says "zoom out", "map this", or "what calls this". Not for implementing changes (read-only) or one-symbol lookups (use grep).
+argument-hint: "[symbol | file | area to map]"
 user-invocable: true
 ---
 
@@ -16,7 +17,7 @@ on demand.
 
 ## What this skill returns
 
-A **map, not an essay**. One pass should answer:
+A **structural map** — terse. One pass should answer:
 
 - **The area** — what this code is for, in one sentence, using the project's own
   vocabulary.
