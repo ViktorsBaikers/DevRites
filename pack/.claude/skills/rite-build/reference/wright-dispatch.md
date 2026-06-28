@@ -92,7 +92,11 @@ set.
    it and re-dispatch, don't mark the slice built. Then persist the wright's artifact to
    `state.md`, `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI) per
    [`evidence-standard.md`](evidence-standard.md). Evidence is the wright's real command output,
-   not its say-so. Then tick AFK if `.devrites/AFK` is present (`tick-afk.sh`; exit 3 → STOP).
+   not its say-so. **Persist every `Decisions stood` entry to a `## Decisions stood` section in
+   `decisions.md`, one line each ending `— doubt: <accept | reject-resolved | MISSING>`** —
+   independent of the doubt step (step 1 above), so a skipped decision still lands on record for
+   the seal's doubt-coverage cross-check (`- none` when the wright stood nothing). Then tick AFK if
+   `.devrites/AFK` is present (`tick-afk.sh`; exit 3 → STOP).
 
 ## Forge — competing candidates (the deliberate exception)
 

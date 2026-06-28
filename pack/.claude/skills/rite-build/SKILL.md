@@ -227,7 +227,15 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    re-dispatch the wright; do **not** mark the slice `built`.
 
    Then, from the wright's artifact, update `state.md`,
-   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). If the wright reported
+   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). **Persist every
+   `Decisions stood` entry from the wright's artifact to a `## Decisions stood` section in
+   `decisions.md`, one line each ending `— doubt: <accept | reject-resolved | MISSING>`** — the
+   verdict from step 4, or `MISSING` if step 4 was skipped for that entry. Write this ledger at
+   record-time **independent of the doubt step**, so a stood decision lands on disk even when it
+   was never doubted: `/rite-seal` cross-checks the ledger, and a `doubt: MISSING` entry is the
+   skipped-doubt finding that would otherwise leave no trace (the per-slice skip the footprint
+   count alone can't catch). If the wright stood no decisions, write `## Decisions stood` with
+   `- none` so the absence is recorded, not assumed. If the wright reported
    an approach it tried and backed out of, record it under a `## Dead ends` section in
    `decisions.md` so a retry or the next agent doesn't repeat it.
    **If the wright's `Conventions` field reports a contradiction** (the live code now
