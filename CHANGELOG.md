@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [2.5.1](https://github.com/ViktorsBaikers/DevRites/compare/v2.5.0...v2.5.1) (2026-06-28)
+
+### Fixed
+
+* **rite:** ask HITL build gaps inline instead of deferring to resolve ([33266f1](https://github.com/ViktorsBaikers/DevRites/commit/33266f19d9ad30f53fc8ef267f486a5562be61c7))
+
 ## [2.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.4.0...v2.5.0) (2026-06-28)
 
 ### Added
