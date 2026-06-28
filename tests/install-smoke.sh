@@ -78,6 +78,20 @@ out="$(bash "$ROOT/install.sh" --target "$T" 2>&1)"
 echo "$out" | grep -q 'installed: 0' && ok "reinstall installs 0 new (idempotent)" || no "reinstall not idempotent"
 echo "$out" | grep -q 'skipped(conflict): 0' && ok "reinstall skips 0 (all managed)" || no "reinstall reported conflicts"
 
+# 5b) prune: a managed file dropped from the pack is removed on reinstall/update,
+#     while .devrites/ runtime state is never touched (this is the path update.sh runs).
+mkdir -p "$T/.claude/skills/_gone/reference"
+echo stale > "$T/.claude/skills/_gone/reference/dropped.md"
+printf '.claude/skills/_gone/reference/dropped.md\n' >> "$T/.claude/devrites.manifest"
+echo keep > "$T/.devrites/should-survive"
+printf '.devrites/should-survive\n' >> "$T/.claude/devrites.manifest"   # even if mis-listed, must NOT be pruned
+out="$(bash "$ROOT/install.sh" --target "$T" --force 2>&1)"
+[ -f "$T/.claude/skills/_gone/reference/dropped.md" ] && no "dropped managed file not pruned" || ok "dropped managed file pruned"
+[ -d "$T/.claude/skills/_gone" ] && no "emptied dir left behind after prune" || ok "emptied dir tidied after prune"
+[ -f "$T/.devrites/should-survive" ] && ok ".devrites/ runtime state preserved across prune" || no ".devrites/ state pruned — DANGER"
+echo "$out" | grep -q 'pruned: 1' && ok "prune count reported (1 managed; .devrites entry skipped)" || no "prune count not reported"
+rm -f "$T/.devrites/should-survive"
+
 # 6) --no-agents
 T2="$(mktemp -d)"; bash "$ROOT/install.sh" --target "$T2" --no-agents >/dev/null 2>&1
 [ -d "$T2/.claude/agents" ] && no "--no-agents still installed agents" || ok "--no-agents skipped agents"
