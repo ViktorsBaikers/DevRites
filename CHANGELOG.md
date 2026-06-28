@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [2.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.4.0...v2.5.0) (2026-06-28)
+
+### Added
+
+* **installer:** prune files dropped from the pack on update ([830352a](https://github.com/ViktorsBaikers/DevRites/commit/830352ae19b2726cadd627ab7ca4f12b1b85c7fc))
+
+### Fixed
+
+* **devrites:** close skill-pack SSOT drift + consolidate review dispatch ([649db40](https://github.com/ViktorsBaikers/DevRites/commit/649db4040a120d04c35e91b8f69d51f610df9a5f))
+
 ## [2.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.3.0...v2.4.0) (2026-06-28)
 
 ### Added
