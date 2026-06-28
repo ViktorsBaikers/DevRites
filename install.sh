@@ -162,7 +162,7 @@ mkdir -p "$TMP_GEN_DIR"
 cleanup() { rm -f "$MANIFEST_TMP"; rm -rf "$TMP_GEN_DIR"; }
 trap cleanup EXIT
 
-N_INSTALL=0; N_OVERWRITE=0; N_SKIP=0
+N_INSTALL=0; N_OVERWRITE=0; N_SKIP=0; N_PRUNE=0
 
 # install_file SRC RELDEST — copy one file, honoring conflict + manifest rules.
 install_file() {
@@ -325,6 +325,35 @@ case "$ALIAS_MODE" in
 esac
 DR_INSTALL_FLAGS="$(printf '%s' "$DR_INSTALL_FLAGS" | sed 's/^ //')"
 
+# ---- prune files dropped since the previous install ----------------------
+# install_file only adds/overwrites; a file the prior manifest tracked but the
+# current pack no longer ships would orphan on an in-place update (the path
+# update.sh takes: download release → re-run install.sh --force). Remove
+# exactly those: managed paths only (listed in the OLD manifest, absent from the
+# new one), never unmanaged user files and never .devrites/ runtime state.
+if [ -f "$PREV_MANIFEST" ]; then
+  while IFS= read -r _rel; do
+    case "$_rel" in ''|\#*) continue ;; esac           # skip comments + blank lines
+    case "$_rel" in .devrites/*) continue ;; esac       # never touch runtime state
+    grep -Fxq -- "$_rel" "$MANIFEST_TMP" && continue    # still shipped → keep
+    _dead="$TARGET/$_rel"
+    [ -e "$_dead" ] || continue                         # already gone
+    if [ "$DRYRUN" -eq 1 ]; then
+      dr_say "  [prune] $_rel ${DR_Y}(dropped from pack)${DR_R}"
+    else
+      rm -f "$_dead"
+      # tidy now-empty parent dirs, bounded strictly below .claude/
+      _d="$(dirname "$_dead")"
+      while [ "$_d" != "$TARGET/.claude" ] && [ "$_d" != "$TARGET" ] && [ "$_d" != "/" ]; do
+        rmdir "$_d" 2>/dev/null || break
+        _d="$(dirname "$_d")"
+      done
+      dr_say "  [prune] $_rel"
+    fi
+    N_PRUNE=$((N_PRUNE+1))
+  done < "$PREV_MANIFEST"
+fi
+
 # ---- write manifest ------------------------------------------------------
 if [ "$DRYRUN" -eq 0 ]; then
   mkdir -p "$TARGET/.claude"
@@ -340,7 +369,7 @@ fi
 # ---- summary -------------------------------------------------------------
 dr_say ""
 dr_ok "DevRites $([ "$DRYRUN" -eq 1 ] && echo 'plan complete (dry run)' || echo installed)"
-dr_say "  installed: $N_INSTALL   overwritten: $N_OVERWRITE   skipped(conflict): $N_SKIP"
+dr_say "  installed: $N_INSTALL   overwritten: $N_OVERWRITE   skipped(conflict): $N_SKIP   pruned: $N_PRUNE"
 dr_say ""
 dr_say "${DR_B}Commands:${DR_R} /rite  /rite-spec  /rite-define  /rite-plan  /rite-build  /rite-prove  /rite-polish  /rite-review  /rite-seal  /rite-status"
 dr_say "${DR_B}Utilities:${DR_R} /rite-pressure-test  /rite-zoom-out  /rite-prototype  /rite-handoff"
