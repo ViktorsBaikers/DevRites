@@ -47,8 +47,15 @@ mkdir -p "$D/.devrites/work/demo"; echo "phase: build" > "$D/.devrites/work/demo
 printf 'demo\n' > "$D/.devrites/ACTIVE"
 run_update "$D" || no "update --force (default) exited non-zero"
 [ -f "$D/.claude/skills/rite-build/SKILL.md" ] && ok "default: skills survive update" || no "default: skills missing after update"
+[ -f "$D/.agents/skills/rite-build/SKILL.md" ] && ok "default: Codex skills survive update" || no "default: Codex skills missing after update"
 [ -f "$D/.claude/rules/security.md" ]          && ok "default: rules survive update"  || no "default: rules missing after update"
+[ -f "$D/.agents/devrites/rules/security.md" ] && ok "default: Codex rules mirror survives update" || no "default: Codex rules mirror missing after update"
 [ -d "$D/.claude/agents" ]                      && ok "default: agents survive update" || no "default: agents missing after update"
+[ -d "$D/.codex/agents" ]                       && ok "default: Codex agents survive update" || no "default: Codex agents missing after update"
+[ -f "$D/.codex/config.toml" ]                   && ok "default: Codex config survives update" || no "default: Codex config missing after update"
+[ -f "$D/.codex/hooks.json" ]                   && ok "default: Codex hooks survive update" || no "default: Codex hooks missing after update"
+[ -f "$D/.codex/mcp/devrites-mcp.mjs" ]          && ok "default: Codex MCP server survives update" || no "default: Codex MCP server missing after update"
+[ -f "$D/AGENTS.md" ]                           && ok "default: AGENTS bridge survives update" || no "default: AGENTS bridge missing after update"
 [ -f "$D/.devrites/work/demo/state.md" ]        && ok "default: feature state preserved" || no "default: feature state lost"
 grep -q '^phase: build$' "$D/.devrites/work/demo/state.md" && ok "default: state.md contents intact" || no "default: state.md content clobbered"
 [ "$(cat "$D/.devrites/ACTIVE")" = "demo" ]     && ok "default: ACTIVE cursor preserved" || no "default: ACTIVE clobbered"
@@ -67,6 +74,9 @@ run_update "$R" || no "update --force (rules-only) exited non-zero — flag repl
 [ -f "$R/.claude/rules/security.md" ] && ok "rules-only: rules survive update" || no "rules-only: rules missing after update"
 [ -d "$R/.claude/skills" ] && no "rules-only: update wrongly installed skills" || ok "rules-only: still no skills (flags honored)"
 [ -d "$R/.claude/agents" ] && no "rules-only: update wrongly installed agents" || ok "rules-only: still no agents (flags honored)"
+[ -d "$R/.agents" ] && no "rules-only: update wrongly installed Codex skills" || ok "rules-only: still no Codex skills (flags honored)"
+[ -d "$R/.codex" ] && no "rules-only: update wrongly installed Codex agents" || ok "rules-only: still no Codex agents (flags honored)"
+[ -f "$R/AGENTS.md" ] && no "rules-only: update wrongly installed AGENTS bridge" || ok "rules-only: still no AGENTS bridge (flags honored)"
 [ -f "$R/.devrites/work/demo/state.md" ] && ok "rules-only: feature state preserved" || no "rules-only: feature state lost"
 
 # ---- case 3: direct flag-replay unit test through install.sh's parser ---
@@ -77,6 +87,7 @@ P="$T/parser"; mkdir -p "$P"
 for flags in \
   "--no-skills --no-agents --no-short-aliases" \
   "--no-agents" \
+  "--no-codex" \
   "--no-rules" \
   "--no-short-aliases" \
   "--short-aliases=all" ; do

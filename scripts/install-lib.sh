@@ -48,7 +48,7 @@ dr_manifest_contains() {
 # ---- misc ----------------------------------------------------------------
 dr_lc() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
-# Is $1 (canonical) equal to, or inside, the user's global ~/.claude?
+# Is $1 (canonical) equal to, or inside, a global agent home?
 # Used to refuse global writes. No write verbs here — read-only comparison.
 dr_is_global_claude() {
   _t="$1"
@@ -56,6 +56,16 @@ dr_is_global_claude() {
   [ "$_t" = "$_home_claude" ] && return 0
   case "$_t/" in
     "$_home_claude"/*) return 0 ;;
+  esac
+  return 1
+}
+
+dr_is_global_codex() {
+  _t="$1"
+  _home_codex="$HOME/.codex"
+  [ "$_t" = "$_home_codex" ] && return 0
+  case "$_t/" in
+    "$_home_codex"/*) return 0 ;;
   esac
   return 1
 }

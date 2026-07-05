@@ -10,8 +10,10 @@
 # package.json "files", an over-broad .npmignore, a broken prepack, or a bad
 # bin/shebang — each of which silently breaks real `npx devrites`.
 #
-# Packs committed HEAD into a throwaway tree, so prepack's `rm -rf` runs there and
-# never mutates your working copy. Fully offline (the package has no runtime deps).
+# Packs a throwaway tree, so prepack's `rm -rf` runs there and never mutates your
+# working copy. By default it copies the current tracked working tree so local
+# changes are tested before commit; set DEVRITES_NPX_PACK_FROM_HEAD=1 for a
+# deterministic committed-HEAD release check. Fully offline (no runtime deps).
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
@@ -27,10 +29,14 @@ trap cleanup EXIT
 
 echo "== npx-pack-smoke =="
 
-# 1) Export committed HEAD to a clean tree (deterministic + non-destructive), pack it.
-if git -C "$ROOT" rev-parse HEAD >/dev/null 2>&1; then
+# 1) Export to a clean tree (non-destructive), pack it.
+if [ "${DEVRITES_NPX_PACK_FROM_HEAD:-0}" = "1" ] && git -C "$ROOT" rev-parse HEAD >/dev/null 2>&1; then
   git -C "$ROOT" archive --format=tar HEAD | tar -x -C "$WORK" && ok "exported HEAD to a clean tree" \
     || { no "git archive failed"; echo "npx-pack-smoke: FAIL"; exit 1; }
+elif git -C "$ROOT" rev-parse --show-toplevel >/dev/null 2>&1; then
+  (cd "$ROOT" && git ls-files -z | tar --null -T - -cf -) | tar -x -C "$WORK" \
+    && ok "exported current tracked working tree to a clean tree" \
+    || { no "working-tree export failed"; echo "npx-pack-smoke: FAIL"; exit 1; }
 else
   cp -R "$ROOT"/. "$WORK"/ 2>/dev/null && ok "no git HEAD — copied working tree"
 fi
@@ -71,20 +77,30 @@ got="$("$BIN" --version 2>/dev/null)"
 # 5) dry-run writes nothing
 "$BIN" --target "$TARGET" --dry-run >/dev/null 2>&1 || no "dry-run exited non-zero"
 [ -e "$TARGET/.claude" ] && no "dry-run created .claude" || ok "dry-run changed nothing"
+[ -e "$TARGET/.agents" ] && no "dry-run created .agents" || true
+[ -e "$TARGET/.codex" ] && no "dry-run created .codex" || true
 
 # 6) real install, driven entirely by the packaged artifact
 "$BIN" --target "$TARGET" >/dev/null 2>&1 || no "install from the packaged artifact exited non-zero"
 for f in \
   ".claude/devrites.manifest" \
   ".claude/skills/rite/SKILL.md" \
+  ".agents/skills/rite/SKILL.md" \
+  ".agents/devrites/rules/security.md" \
   ".claude/agents/devrites-code-reviewer.md" \
+  ".codex/agents/devrites-code-reviewer.toml" \
+  ".codex/config.toml" \
+  ".codex/hooks.json" \
+  ".codex/mcp/devrites-mcp.mjs" \
   ".claude/rules/security.md" \
+  "AGENTS.md" \
   ".devrites/ACTIVE" ; do
   [ -f "$TARGET/$f" ] && ok "installed: $f" || no "missing after install: $f"
 done
 
 # 7) project-local guarantee holds through the packaged path
 [ -e "$HOME/.claude/skills/rite" ] && no "wrote to ~/.claude !!" || ok "~/.claude untouched"
+[ -e "$HOME/.codex/agents/devrites-code-reviewer.toml" ] && no "wrote to ~/.codex !!" || ok "~/.codex untouched"
 
 echo ""
 [ "$fail" -eq 0 ] && echo "npx-pack-smoke: PASS" || echo "npx-pack-smoke: FAIL"

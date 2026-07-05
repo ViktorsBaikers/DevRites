@@ -86,10 +86,70 @@ PRUNE_TMP="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/devrites-prune.$$")"
 : > "$PRUNE_TMP"
 trap 'rm -f "$PRUNE_TMP"' EXIT
 
+# If DevRites was merged into a pre-existing AGENTS.md, remove only the managed
+# marker block. Fresh AGENTS.md files created by DevRites are still removed
+# below through the ordinary manifest entry.
+if [ -f "$TARGET/.claude/devrites.agents-merge" ] && [ -f "$TARGET/AGENTS.md" ]; then
+  if [ "$DRYRUN" -eq 1 ]; then
+    dr_say "  [merge-remove] AGENTS.md DevRites block"
+  else
+    tmp_agents="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/devrites-agents.$$")"
+    awk '
+      $0 == "<!-- BEGIN DEVRITES CODEX -->" { in_block = 1; next }
+      $0 == "<!-- END DEVRITES CODEX -->" { in_block = 0; next }
+      in_block { next }
+      { print }
+    ' "$TARGET/AGENTS.md" > "$tmp_agents" && cp "$tmp_agents" "$TARGET/AGENTS.md"
+    rm -f "$tmp_agents"
+    grep -q '[^[:space:]]' "$TARGET/AGENTS.md" 2>/dev/null || rm -f "$TARGET/AGENTS.md"
+  fi
+fi
+
+if [ -f "$TARGET/.claude/devrites.codex-config-merge" ] && [ -f "$TARGET/.codex/config.toml" ]; then
+  if [ "$DRYRUN" -eq 1 ]; then
+    dr_say "  [merge-remove] .codex/config.toml DevRites MCP block"
+  else
+    tmp_codex_config="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/devrites-codex-config.$$")"
+    awk '
+      $0 == "# BEGIN DEVRITES CODEX MCP" { in_block = 1; next }
+      $0 == "# END DEVRITES CODEX MCP" { in_block = 0; next }
+      in_block { next }
+      { print }
+    ' "$TARGET/.codex/config.toml" > "$tmp_codex_config" && cp "$tmp_codex_config" "$TARGET/.codex/config.toml"
+    rm -f "$tmp_codex_config"
+    grep -q '[^[:space:]]' "$TARGET/.codex/config.toml" 2>/dev/null || rm -f "$TARGET/.codex/config.toml"
+  fi
+fi
+
+if [ -f "$TARGET/.claude/devrites.codex-hooks-merge" ] && [ -f "$TARGET/.codex/hooks.json" ]; then
+  if [ "$DRYRUN" -eq 1 ]; then
+    dr_say "  [merge-remove] .codex/hooks.json DevRites hooks"
+  else
+    if grep -q 'DevRites hooks for Codex' "$TARGET/.codex/hooks.json" 2>/dev/null \
+      && ! grep '"command"[[:space:]]*:' "$TARGET/.codex/hooks.json" 2>/dev/null | grep -vq 'devrites-\|DEVRITES_\|DevRites:'; then
+      rm -f "$TARGET/.codex/hooks.json" || dr_die "cannot remove .codex/hooks.json"
+    else
+      command -v node >/dev/null 2>&1 || dr_die "node is required to remove DevRites hooks from .codex/hooks.json"
+      tmp_codex_hooks="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/devrites-codex-hooks.$$")"
+      node "$SELF_DIR/scripts/merge-codex-hooks.mjs" strip "$TARGET/.codex/hooks.json" "$tmp_codex_hooks" \
+        || dr_die "cannot remove DevRites hooks from .codex/hooks.json"
+      cp "$tmp_codex_hooks" "$TARGET/.codex/hooks.json" || dr_die "cannot write .codex/hooks.json"
+      rm -f "$tmp_codex_hooks"
+      [ "$(tr -d '[:space:]' < "$TARGET/.codex/hooks.json" 2>/dev/null)" != "{}" ] || rm -f "$TARGET/.codex/hooks.json"
+    fi
+    [ -e "$TARGET/.codex/hooks.json" ] || printf '%s\n' "$TARGET/.codex" >> "$PRUNE_TMP"
+  fi
+fi
+
 # Remove each manifest-listed file.
 while IFS= read -r rel; do
   case "$rel" in ''|\#*) continue ;; esac          # skip blanks/comments
   case "$rel" in /*|*..*) dr_warn "ignoring suspicious manifest entry: $rel"; continue ;; esac
+  case "$rel" in
+    AGENTS.md) [ -f "$TARGET/.claude/devrites.agents-merge" ] && continue ;;
+    .codex/config.toml) [ -f "$TARGET/.claude/devrites.codex-config-merge" ] && continue ;;
+    .codex/hooks.json) [ -f "$TARGET/.claude/devrites.codex-hooks-merge" ] && continue ;;
+  esac
   dest="$TARGET/$rel"
   if [ -e "$dest" ] || [ -L "$dest" ]; then
     if [ "$DRYRUN" -eq 1 ]; then

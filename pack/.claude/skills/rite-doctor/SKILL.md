@@ -1,6 +1,6 @@
 ---
 name: rite-doctor
-description: Diagnose DevRites install + workspace health on demand and print a full report — install integrity, a stale `.devrites/ACTIVE` pointer, a corrupt workspace, orphaned gates, and broken hook wiring. Use when the user says "rite doctor", "check my DevRites install", or "why isn't the workflow picking up my feature". Not for debugging the user's own code (use `devrites-debug-recovery`) or for feature progress / next-action (use `/rite-status`).
+description: Diagnose DevRites install + workspace health on demand and print a full report — install integrity, Codex/Claude hook wiring, Codex support mirrors, a stale `.devrites/ACTIVE` pointer, a corrupt workspace, and orphaned gates. Use when the user says "rite doctor", "check my DevRites install", or "why isn't the workflow picking up my feature". Not for debugging the user's own code (use `devrites-debug-recovery`) or for feature progress / next-action (use `/rite-status`).
 argument-hint: ""
 user-invocable: true
 ---
@@ -10,6 +10,7 @@ user-invocable: true
 The on-demand deep report. The same checks run **silently at session start** (the orient
 hook surfaces issues only when there are any); `/rite-doctor` runs them **verbosely** —
 printing every check, pass or fail — so you can inspect health even when nothing is broken.
+It covers both Claude Code wiring and optional Codex mirrors/hooks when those files are present.
 
 It is **read-only**: it never edits the workspace, never advances a phase, never blocks.
 

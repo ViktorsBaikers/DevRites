@@ -36,7 +36,7 @@ recorded-exception escape hatch instead of silent work-arounds.
   archive/<slug>/             # shipped task, moved here intact (all .md preserved)
 ```
 
-**Stop your AI from shipping half-baked code.** DevRites turns Claude Code into a
+**Stop your AI from shipping half-baked code.** DevRites turns Claude Code or Codex into a
 disciplined senior engineer — one that asks the right questions before writing a line,
 ships features you can actually trust, and refuses to claim "done" without proof.
 
@@ -145,8 +145,9 @@ Full rationale: [`docs/architecture.md`](docs/architecture.md).
 ## Install
 
 DevRites installs **into a project** (project-local only — it never writes to
-`~/.claude`). Install with `npx` (recommended) or the `curl | bash` one-liner —
-both run the same installer and ship skills, agents, **rules**, and aliases.
+`~/.claude` or `~/.codex`). Install with `npx` (recommended) or the `curl | bash`
+one-liner — both run the same installer and ship Claude Code skills, Codex skills,
+agents, **rules**, and aliases.
 
 ### Installing
 
@@ -168,7 +169,7 @@ npx devrites@latest uninstall
 `npx devrites` is a thin wrapper over the same installer below — the pack is bundled in the
 package, so the install runs **offline** and is **pinned** to the version you request
 (`@latest`, `@1.18.0`, …). It accepts every flag the bash installer does and is still
-project-local (it never writes to `~/.claude`). Requires `bash` — built in on macOS/Linux;
+project-local (it never writes to `~/.claude` or `~/.codex`). Requires `bash` — built in on macOS/Linux;
 on Windows run it inside Git Bash or WSL, or use the `curl | bash` one-liner below.
 
 **One-liner over the network** — no `git clone` or Node required:
@@ -189,7 +190,7 @@ curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/instal
 
 The script is self-bootstrapping: when piped through `bash` it auto-downloads the latest
 release tarball (or the `main` source archive as fallback) into `/tmp` and re-execs from
-there. Requires `curl` and `tar`. No global writes, ever — `~/.claude` is refused.
+there. Requires `curl` and `tar`. No global writes, ever — global agent homes are refused.
 
 **From a local checkout** (same script, no network needed):
 
@@ -208,6 +209,7 @@ Common flags:
 | `--force` | Overwrite existing non-DevRites files |
 | `--no-rules` | Skip the engineering rules |
 | `--no-agents` | Skip the review subagents |
+| `--no-codex` | Skip Codex support files (`.agents/skills`, `.codex/agents`, `AGENTS.md`) |
 | `--rules-only` | Install only the engineering rules |
 | `--short-aliases=all` | Add `/define`, `/build`, `/prove`, `/seal` short aliases (off by default) |
 
@@ -261,7 +263,8 @@ curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/uninst
 ./uninstall.sh --dry-run             # preview, change nothing
 ```
 
-Removes only files listed in `.claude/devrites.manifest` and prunes empty dirs.
+Removes only files listed in `.claude/devrites.manifest` and prunes empty dirs,
+including Codex mirrors when they were installed.
 `.devrites/work/` (your feature data) is always preserved.
 
 ## Recommended setup (optional, but DevRites is much sharper with it)
@@ -282,9 +285,15 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **36 skills total** — 24 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library (scripts the workflow skills run, not a command). **Prefix convention:** `rite-*` is the user-facing slash-command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 22 rule files load on demand.
+The pack ships **36 skills total** — 24 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library (scripts the workflow skills run, not a command). **Prefix convention:** `rite-*` is the user-facing command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 22 rule files load on demand.
 
-**Two invocation forms.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
+**Claude Code invocation.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
+
+**Codex invocation.** The installer mirrors the same skills to `.agents/skills/`, mirrors DevRites rules to `.agents/devrites/rules/`, injects a Codex compatibility block after each skill's front matter, generates project custom agents in `.codex/agents/`, installs Codex hooks in `.codex/hooks.json` + `.codex/hooks/`, installs the DevRites MCP server at `.codex/mcp/devrites-mcp.mjs`, and creates or merges the needed Codex guidance into `AGENTS.md`. If `AGENTS.md` already exists, DevRites adds a marked block instead of replacing your guidance. In Codex, invoke DevRites via `$rite`, `$rite-spec`, or `/skills`; if you prefer a Claude-only footprint, install with `--no-codex`. Codex must trust the project `.codex/` layer and review the hooks via `/hooks` before non-managed hooks run.
+
+**Rules in Codex.** DevRites engineering rules are mirrored as Markdown under `.agents/devrites/rules/` because they are workflow/craft instructions, not Codex command-approval `.rules` files. The generated `AGENTS.md` block and every mirrored `.agents/skills/*/SKILL.md` tell Codex to read `.agents/devrites/rules/core.md` before workflow work and load the other `.agents/devrites/rules/*.md` files on demand.
+
+**DevRites MCP in Codex.** The installer adds a marked `[mcp_servers.devrites]` block to `.codex/config.toml` and copies the MCP server into `.codex/mcp/`. That gives Codex deterministic tools for DevRites state and gates (`devrites_status`, `devrites_ready`, `devrites_evidence_fresh`, `devrites_acceptance`, and related workspace helpers) without relying on prose or ad-hoc shell commands.
 
 **Custom pinned aliases** (optional). Add your own one-word shortcuts to any `rite-*` skill at runtime with `scripts/pin.sh` — useful for muscle-memory commands like `/b` → `/rite-build` or `/ship` → `/rite-ship`. The wrapper is a thin delegate (same shape the installer uses for `--short-aliases=all`); pinned aliases are manifest-tracked so `./uninstall.sh` cleans them up.
 
@@ -295,7 +304,7 @@ The pack ships **36 skills total** — 24 user-invocable `rite-*` workflow + uti
 ./scripts/pin.sh remove b              # drop the alias
 ```
 
-Pinned aliases live at `.claude/skills/<alias>/SKILL.md`. The script refuses `rite-*` names, unknown targets, and writes to `~/.claude`.
+Pinned aliases live at `.claude/skills/<alias>/SKILL.md` and mirror to `.agents/skills/<alias>/SKILL.md` when Codex support is installed. The script refuses `rite-*` names, unknown targets, and global agent homes.
 
 ### Full skill + agent inventory
 
@@ -479,7 +488,7 @@ real UI state, and **prove both layers** (contract tests + browser proof).
 
 ## Safety & scope
 
-- **Project-local only.** Never writes to `~/.claude`. Manifest-managed install/uninstall.
+- **Project-local only.** Never writes to `~/.claude` or `~/.codex`. Manifest-managed install/uninstall.
 - **Feature scope only.** Review/simplify/polish/security stay within the active feature
   and touched files — no project-wide refactors, no drive-by cleanup.
 - **One slice at a time.** `/rite-build` stops after a single verified slice.
@@ -503,6 +512,8 @@ devrites/
   pack/.claude/        # skills/  36 skills — 24 public + 12 internal          ─┐
                        # agents/  13 read-only + 1 writer (slice-wright)         ├─ the pack
                        # rules/   23 rule files + README index                   ┘
+  installed projects   # .claude/ runtime assets; .agents/skills + .codex/agents
+                       # + .codex/hooks/config/mcp + AGENTS.md for Codex
   evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures
   docs/                # architecture · skills · command-map · usage · flow · release · cli-mcp
     internal/          # research, development notes (gitignored)
@@ -526,7 +537,7 @@ Cross-links: [architecture](docs/architecture.md) ·
 DevRites is auditable Markdown + a small set of shell scripts. The complete security
 policy, including private vulnerability reporting and recommended managed-deployment
 settings, lives in [`SECURITY.md`](SECURITY.md). Highlights: **project-local only**
-(installer refuses any target under `~/.claude`); **no network access** in installer or
+(installer refuses global Claude/Codex agent homes); **no network access** in installer or
 skills (no remote code execution); **`!` shell injection removed** from `/rite` and
 `/rite-status` (state loaded via a `Bash`-invoked script that reads only DevRites' own
 state under `.devrites/`); **auto-trigger** is a deliberate design choice mitigated by
@@ -551,4 +562,4 @@ repository in package registries or plugin marketplaces* are permitted without a
 distributing it, distributing modified versions, mirroring as a fork, or commercial /
 organizational use — requires **approval on request** (ask via
 [the repo](https://github.com/ViktorsBaikers/DevRites)). Source-available. See
-[`LICENSE`](LICENSE). DevRites is independent software for use with Claude Code.
+[`LICENSE`](LICENSE). DevRites is independent software for use with Claude Code and Codex.

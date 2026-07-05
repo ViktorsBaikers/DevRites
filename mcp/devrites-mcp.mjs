@@ -68,6 +68,8 @@ function handle(msg) {
         protocolVersion: (params && params.protocolVersion) || '2024-11-05',
         capabilities: { tools: {} },
         serverInfo: { name: 'devrites', version: '1.0.0' },
+        instructions:
+          'DevRites exposes deterministic workflow state and gates for the current repo. Use devrites_status/orient to inspect the active feature, devrites_ready before build work, devrites_evidence_fresh and devrites_acceptance before seal/ship, and devrites_use only when the user asks to switch the active feature.',
       });
     case 'notifications/initialized':
     case 'initialized':

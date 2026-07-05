@@ -16,9 +16,16 @@ echo "== fixture-install (stack-agnostic) =="
 # 1) empty project: a clean install has skills, rules, agents
 bash "$ROOT/install.sh" --target "$EMPTY" >/dev/null 2>&1 || no "empty install failed"
 [ -f "$EMPTY/.claude/skills/rite-define/SKILL.md" ] && ok "skills installed" || no "skills missing"
+[ -f "$EMPTY/.agents/skills/rite-define/SKILL.md" ] && ok "Codex skills installed" || no "Codex skills missing"
 [ -f "$EMPTY/.claude/rules/README.md" ] && ok "rules installed" || no "rules missing"
 [ -f "$EMPTY/.claude/rules/security.md" ] && ok "security rule present" || no "security rule missing"
+[ -f "$EMPTY/.agents/devrites/rules/security.md" ] && ok "Codex rules mirror installed" || no "Codex rules mirror missing"
 [ -d "$EMPTY/.claude/agents" ] && ok "agents installed" || no "agents missing"
+[ -d "$EMPTY/.codex/agents" ] && ok "Codex agents installed" || no "Codex agents missing"
+[ -f "$EMPTY/.codex/config.toml" ] && ok "Codex config installed" || no "Codex config missing"
+[ -f "$EMPTY/.codex/hooks.json" ] && ok "Codex hooks installed" || no "Codex hooks missing"
+[ -f "$EMPTY/.codex/mcp/devrites-mcp.mjs" ] && ok "Codex MCP server installed" || no "Codex MCP server missing"
+[ -f "$EMPTY/AGENTS.md" ] && ok "Codex AGENTS bridge installed" || no "Codex AGENTS bridge missing"
 
 # 2) different stacks: rails-shaped and react-shaped projects
 printf "source 'https://rubygems.org'\ngem 'rails'\n" > "$RAILS/Gemfile"; mkdir -p "$RAILS/app/views"
