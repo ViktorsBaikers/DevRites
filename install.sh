@@ -551,7 +551,6 @@ gen_codex_hooks_json() {
   _out="$1"
   cat > "$_out" <<'EOF'
 {
-  "$comment": "DevRites hooks for Codex. Project hooks load only after the project .codex layer is trusted; use /hooks in Codex to review and trust these non-managed hooks. Commands resolve the git root first so hooks work when Codex starts from a subdirectory.",
   "hooks": {
     "PreToolUse": [
       {

@@ -118,6 +118,7 @@ json.loads(pathlib.Path("$T/.codex/hooks.json").read_text())
 tomllib.loads(pathlib.Path("$T/.codex/config.toml").read_text())
 PY
 [ "$?" -eq 0 ] && ok "generated Codex TOML/JSON config parses" || no "generated Codex TOML/JSON config invalid"
+grep -q '"\$comment"' "$T/.codex/hooks.json" && no "generated Codex hooks include unsupported top-level comment" || ok "generated Codex hooks omit unsupported top-level comment"
 grep -q 'DEVRITES_WRIGHT_AGENT_REQUIRED=1 bash.*devrites-wright-scope.sh' "$T/.codex/hooks.json" \
   && ok "Codex wright-scope hook is scoped to slice-wright agent" \
   || no "Codex wright-scope hook missing agent-required guard"
@@ -223,6 +224,7 @@ grep -q '^\.codex/config.toml$' "$T8/.claude/devrites.manifest" && no "existing 
 grep -q '^\.claude/devrites\.codex-config-merge$' "$T8/.claude/devrites.manifest" && ok "Codex config merge marker managed" || no "Codex config merge marker missing"
 grep -q 'echo user-stop' "$T8/.codex/hooks.json" && ok "existing .codex/hooks.json content preserved" || no "existing .codex/hooks.json content lost"
 grep -q 'devrites-stop-gate.sh' "$T8/.codex/hooks.json" && ok "DevRites hooks merged into .codex/hooks.json" || no "DevRites hooks not merged"
+grep -q '"\$comment"' "$T8/.codex/hooks.json" && no "merged Codex hooks include unsupported top-level comment" || ok "merged Codex hooks omit unsupported top-level comment"
 grep -q '^\.codex/hooks.json$' "$T8/.claude/devrites.manifest" && no "existing .codex/hooks.json wrongly file-managed" || ok "existing .codex/hooks.json not file-managed"
 grep -q '^\.claude/devrites\.codex-hooks-merge$' "$T8/.claude/devrites.manifest" && ok "Codex hooks merge marker managed" || no "Codex hooks merge marker missing"
 bash "$ROOT/install.sh" --target "$T8" >/dev/null 2>&1 || no "reinstall with existing AGENTS.md failed"
