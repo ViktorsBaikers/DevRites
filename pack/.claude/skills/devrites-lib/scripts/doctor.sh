@@ -3,7 +3,7 @@
 #
 # Checks install integrity + the active .devrites/ workspace for the inconsistencies that
 # silently waste a session: a stale ACTIVE pointer, a corrupt workspace, an orphaned gate,
-# or broken hook wiring. Two surfaces wrap this one core:
+# or broken hook wiring across Claude Code and Codex. Two surfaces wrap this one core:
 #   - the SessionStart orient hook calls it and surfaces issues only when there are any
 #     (silent-when-healthy);
 #   - the /rite-doctor skill calls it with --verbose for a full report on demand.
@@ -52,16 +52,80 @@ else
   ok "devrites-lib core scripts present"
 fi
 
-# 2. Broken hook wiring — every devrites hook referenced in settings.json must exist on disk.
+# 2. Broken Claude hook wiring — every devrites hook referenced in settings.json must exist on disk.
 SET="$ROOT/.claude/settings.json"
 if [ -f "$SET" ]; then
   for h in $(grep -oE 'devrites-[a-z-]+\.sh' "$SET" 2>/dev/null | sort -u); do
     [ -f "$ROOT/.claude/hooks/$h" ] || issue "settings.json wires missing hook: .claude/hooks/$h — reinstall or remove the hook entry"
   done
-  ok "hook wiring checked"
+  ok "Claude hook wiring checked"
 fi
 
-# 3. ACTIVE pointer — if set, it must name a real workspace.
+# 3. Codex support is optional. Only diagnose the Codex surface when DevRites
+# manages it, so unrelated project AGENTS.md/.codex files and --no-codex installs
+# do not produce false failures.
+MF="$ROOT/.claude/devrites.manifest"
+DR_FLAGS=""
+[ -f "$MF" ] && DR_FLAGS="$(sed -n 's/^# devrites-flags:[[:space:]]*//p' "$MF" 2>/dev/null | head -n1)"
+has_flag() {
+  case " $DR_FLAGS " in *" $1 "*) return 0 ;; *) return 1 ;; esac
+}
+manifest_has() {
+  [ -f "$MF" ] && grep -Eq -- "$1" "$MF" 2>/dev/null
+}
+
+codex_managed=0
+if manifest_has '^(\.agents/|\.codex/|AGENTS\.md$|\.claude/devrites\.(agents|codex-config)-merge$)'; then
+  codex_managed=1
+fi
+has_flag --no-codex && codex_managed=0
+
+if [ "$codex_managed" -eq 1 ]; then
+  if ! has_flag --no-skills && manifest_has '^\.agents/skills/'; then
+    [ -f "$ROOT/.agents/skills/rite/SKILL.md" ] \
+      || issue "Codex skill mirror incomplete — missing .agents/skills/rite/SKILL.md — reinstall DevRites"
+  fi
+  if ! has_flag --no-rules && manifest_has '^\.agents/devrites/rules/'; then
+    [ -f "$ROOT/.agents/devrites/rules/core.md" ] \
+      || issue "Codex rules mirror incomplete — missing .agents/devrites/rules/core.md — reinstall DevRites"
+  fi
+  if ! has_flag --no-agents && manifest_has '^\.codex/agents/'; then
+    [ -f "$ROOT/.codex/agents/devrites-code-reviewer.toml" ] \
+      || issue "Codex custom agents incomplete — missing .codex/agents/devrites-code-reviewer.toml — reinstall DevRites"
+  fi
+  if manifest_has '^\.codex/hooks\.json$|^\.codex/hooks/|^\.claude/devrites\.codex-hooks-merge$'; then
+    [ -f "$ROOT/.codex/hooks.json" ] \
+      || issue "Codex hooks incomplete — missing .codex/hooks.json — reinstall DevRites or install with --no-codex"
+    if [ -f "$ROOT/.codex/hooks.json" ]; then
+      grep -q 'devrites-' "$ROOT/.codex/hooks.json" 2>/dev/null \
+        || issue "Codex hooks incomplete — .codex/hooks.json does not reference DevRites hooks — reinstall DevRites"
+      for h in $(grep -oE 'devrites-[a-z-]+\.sh' "$ROOT/.codex/hooks.json" 2>/dev/null | sort -u); do
+        [ -f "$ROOT/.codex/hooks/$h" ] || issue "Codex hooks.json wires missing hook: .codex/hooks/$h — reinstall DevRites"
+      done
+    fi
+  fi
+  if manifest_has '^\.codex/mcp/|^\.codex/config\.toml$|^\.claude/devrites\.codex-config-merge$'; then
+    [ -f "$ROOT/.codex/mcp/devrites-mcp.mjs" ] \
+      || issue "Codex MCP incomplete — missing .codex/mcp/devrites-mcp.mjs — reinstall DevRites or install with --no-codex"
+    if [ -f "$ROOT/.codex/config.toml" ]; then
+      grep -q 'mcp_servers.devrites' "$ROOT/.codex/config.toml" 2>/dev/null \
+        || issue "Codex MCP config missing DevRites server — merge the DevRites block into .codex/config.toml or reinstall DevRites"
+    else
+      issue "Codex config incomplete — missing .codex/config.toml with DevRites MCP server — reinstall DevRites or install with --no-codex"
+    fi
+  fi
+  if manifest_has '^AGENTS\.md$|^\.claude/devrites\.agents-merge$'; then
+    if [ -f "$ROOT/AGENTS.md" ]; then
+      grep -q 'DevRites' "$ROOT/AGENTS.md" 2>/dev/null \
+        || issue "AGENTS.md does not include the DevRites Codex bridge — reinstall with --force or merge the DevRites AGENTS.md guidance"
+    else
+      issue "Codex guidance incomplete — missing AGENTS.md bridge — reinstall DevRites"
+    fi
+  fi
+  ok "Codex support wiring checked"
+fi
+
+# 4. ACTIVE pointer — if set, it must name a real workspace.
 slug="$(cat "$DR/ACTIVE" 2>/dev/null | tr -d '[:space:]')"
 if [ -z "$slug" ]; then
   ok "no active feature (ACTIVE empty)"

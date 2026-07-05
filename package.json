@@ -1,7 +1,7 @@
 {
   "name": "devrites",
   "version": "2.5.2",
-  "description": "DevRites — disciplined senior-engineer workflow skills pack for Claude Code",
+  "description": "DevRites — disciplined senior-engineer workflow skills pack for Claude Code and Codex",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://github.com/ViktorsBaikers/DevRites#readme",
   "repository": {
@@ -13,6 +13,7 @@
   },
   "keywords": [
     "claude-code",
+    "codex",
     "skills",
     "agent-skills",
     "workflow",

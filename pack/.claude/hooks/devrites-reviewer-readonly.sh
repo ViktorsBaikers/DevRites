@@ -8,9 +8,18 @@ set -u
 input="$(cat)"
 case "$input" in *'"tool_name"'*) : ;; *) exit 0 ;; esac
 command -v node >/dev/null 2>&1 || exit 0
-parsed="$(printf '%s' "$input" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);const ti=j.tool_input||{};process.stdout.write((j.tool_name||"")+""+(ti.command||""))}catch(e){}})' 2>/dev/null)"
+parsed="$(printf '%s' "$input" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);const ti=j.tool_input||{};process.stdout.write([j.tool_name||"",ti.command||"",j.agent_type||""].join("\u0001"))}catch(e){}})' 2>/dev/null)"
 [ -n "$parsed" ] || exit 0
-tool="${parsed%%$'\001'*}"; cmd="${parsed#*$'\001'}"
+IFS=$'\001' read -r tool cmd agent_type <<EOF
+$parsed
+EOF
+if [ "${DEVRITES_REVIEWER_AGENT_REQUIRED:-0}" = "1" ]; then
+  case "$agent_type" in
+    devrites-slice-wright|"") exit 0 ;;
+    devrites-*) : ;;
+    *) exit 0 ;;
+  esac
+fi
 [ "$tool" = "Bash" ] || exit 0
 [ -n "$cmd" ] || exit 0
 

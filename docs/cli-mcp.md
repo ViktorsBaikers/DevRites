@@ -27,14 +27,19 @@ any agent's loop or a pre-merge CI step. `devrites help` lists them all.
 
 ## The MCP server
 
-`mcp/devrites-mcp.mjs` (in the DevRites source) is a dependency-free MCP **stdio** server
-that exposes the read/gate operations as MCP tools (`devrites_orient`, `devrites_ready`,
+`mcp/devrites-mcp.mjs` is a dependency-free MCP **stdio** server that exposes the
+read/gate operations as MCP tools (`devrites_orient`, `devrites_ready`,
 `devrites_evidence_fresh`, `devrites_acceptance`, `devrites_status`, `devrites_active`,
 `devrites_list`, `devrites_use`). It shells out to the CLI, so it stays a thin surface over
 the same scripts — no SDK, no dependencies.
 
-Register it in a project's `.mcp.json`, running from the project root (it auto-finds the
-installed CLI; override the path with the `DEVRITES_CLI` env var):
+For Codex installs, DevRites copies the server to `.codex/mcp/devrites-mcp.mjs` and
+adds a marked `[mcp_servers.devrites]` block to `.codex/config.toml`. After the project
+`.codex/` layer is trusted, Codex can use those MCP tools directly.
+
+For other MCP clients, register the source server in a project's `.mcp.json`, running
+from the project root (it auto-finds the installed CLI; override the path with the
+`DEVRITES_CLI` env var):
 
 ```json
 {

@@ -31,7 +31,11 @@ denies() { printf '%s' "$1" | grep -q '"permissionDecision":"deny"'; }
 
 main_src='{"tool_name":"Edit","tool_input":{"file_path":"'"$T"'/src/a.ts"},"cwd":"'"$T"'"}'
 sub_src='{"tool_name":"Edit","tool_input":{"file_path":"'"$T"'/src/a.ts"},"agent_id":"wright-123","agent_type":"devrites-slice-wright"}'
+codex_sub_src='{"tool_name":"Edit","tool_input":{"file_path":"'"$T"'/src/a.ts"},"agent_type":"devrites-slice-wright"}'
 book='{"tool_name":"Write","tool_input":{"file_path":"'"$T"'/.devrites/work/demo/state.md"}}'
+patch_src='{"tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: src/a.ts\n@@\n-old\n+new\n*** End Patch\n"}}'
+patch_book='{"tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: .devrites/work/demo/state.md\n@@\n-old\n+new\n*** End Patch\n"}}'
+patch_move_src='{"tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: .devrites/work/demo/state.md\n*** Move to: src/moved.ts\n@@\n-old\n+new\n*** End Patch\n"}}'
 
 # 1) No window open yet → allow even a main-thread source edit.
 out="$(run "$main_src")"; denies "$out" && no "blocked with no window open" || ok "no window → allow"
@@ -47,11 +51,17 @@ denies "$out" && no "observe mode denied (should only log)" || ok "observe → a
 # 3) Window + main-thread source edit, ENFORCE → deny.
 out="$(run "$main_src" enforce)"; denies "$out" && ok "enforce → deny main-thread source edit" || no "enforce did not deny"
 
+# 3b) Codex apply_patch source edit, ENFORCE → deny.
+out="$(run "$patch_src" enforce)"; denies "$out" && ok "enforce → deny Codex apply_patch source edit" || no "enforce did not deny Codex apply_patch"
+out="$(run "$patch_move_src" enforce)"; denies "$out" && ok "enforce → deny Codex apply_patch move to source" || no "enforce did not deny Codex apply_patch move to source"
+
 # 4) Window + SUBAGENT (wright) source edit, ENFORCE → allow (agent_id present).
 out="$(run "$sub_src" enforce)"; denies "$out" && no "blocked the wright subagent!" || ok "subagent (agent_id) → allow"
+out="$(run "$codex_sub_src" enforce)"; denies "$out" && no "blocked the Codex wright subagent!" || ok "subagent (agent_type) → allow"
 
 # 5) Window + .devrites bookkeeping write, ENFORCE → allow.
 out="$(run "$book" enforce)"; denies "$out" && no "blocked a .devrites bookkeeping write" || ok ".devrites path → allow"
+out="$(run "$patch_book" enforce)"; denies "$out" && no "blocked a .devrites apply_patch" || ok ".devrites apply_patch → allow"
 
 # 6) Window + inline fallback sentinel + main-thread source edit, ENFORCE → allow.
 : > "$D/.reconcile-inline"

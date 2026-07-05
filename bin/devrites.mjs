@@ -44,13 +44,14 @@ Common flags (passed straight through to the installer):
   --dry-run             Show the plan, change nothing
   --force               Overwrite existing non-DevRites files
   --rules-only          Install only the engineering rules
+  --no-codex            Skip Codex support files (.agents, .codex, AGENTS.md)
   --short-aliases=all   Also install /define /build /prove /seal
   --no-agents           Skip the review subagents
 
   --version             Print the devrites version
   --help                Show this help (use "<subcommand> --help" for installer-level detail)
 
-DevRites is project-local — it never writes to ~/.claude.
+DevRites is project-local — it never writes to ~/.claude or ~/.codex.
 Requires bash (Git Bash or WSL on Windows). No-Node fallback:
   curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash
 `);

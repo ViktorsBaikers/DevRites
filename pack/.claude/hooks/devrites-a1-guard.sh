@@ -6,13 +6,13 @@
 #
 # Safety model: FAIL-OPEN, and OBSERVE by default.
 #   - It NEVER blocks unless ALL hold: a build window is open, the edit is to a source file,
-#     it came from the MAIN thread (no agent_id), and enforce mode is on.
+#     it came from the MAIN thread (no agent_id/agent_type), and enforce mode is on.
 #   - On any doubt — no active workspace, no open window, no node, unparseable payload, a
 #     subagent caller, a .devrites/ path, the inline fallback — it exits 0 and stays silent.
 #   - Default mode is "observe": it LOGS what it would block (to .a1-guard.log) and allows.
 #     Flip to enforce only AFTER confirming the log never flags the wright's own edits — that
-#     confirms this Claude Code build populates agent_id for subagents (older builds may not;
-#     if the log flags wright edits, agent_id is unavailable here — stay in observe).
+#     confirms this agent surface populates agent_id/agent_type for subagents (older builds may not;
+#     if the log flags wright edits, subagent identity is unavailable here — stay in observe).
 #
 # Enable enforce (either one):
 #   export DEVRITES_A1_HOOK=enforce          # session-wide
@@ -47,24 +47,42 @@ d="$root/.devrites/work/$slug"
 
 # Parse with node (ships with Claude Code). No node or a parse failure → fail open.
 command -v node >/dev/null 2>&1 || exit 0
-parsed="$(printf '%s' "$input" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);const ti=j.tool_input||{};const fp=ti.file_path||ti.path||"";process.stdout.write([j.tool_name||"",fp,j.agent_id||""].join("\t"))}catch(e){}})' 2>/dev/null)"
-[ -n "$parsed" ] || exit 0
-IFS=$'\t' read -r tool fpath agent <<EOF
-$parsed
-EOF
+tool="$(printf '%s' "$input" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).tool_name||"")}catch(e){}})' 2>/dev/null)"
+fpath="$(printf '%s' "$input" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const ti=JSON.parse(s).tool_input||{};process.stdout.write(ti.file_path||ti.path||"")}catch(e){}})' 2>/dev/null)"
+agent="$(printf '%s' "$input" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const p=JSON.parse(s);process.stdout.write(p.agent_id||p.agent_type||"")}catch(e){}})' 2>/dev/null)"
+[ -n "$tool" ] || exit 0
 
 # Only Edit-family writes can touch source.
-case "$tool" in Edit|Write|MultiEdit|NotebookEdit) : ;; *) exit 0 ;; esac
+case "$tool" in Edit|Write|MultiEdit|NotebookEdit|apply_patch) : ;; *) exit 0 ;; esac
 
-# Subagent caller (the wright) → allow. agent_id is present only inside a subagent.
+# Subagent caller (the wright) → allow. Claude uses agent_id; Codex uses agent_type.
 [ -n "$agent" ] && exit 0
 
-# Can't tell the path → fail open.
-[ -n "$fpath" ] || exit 0
-case "$fpath" in /*) abs="$fpath" ;; *) abs="$root/$fpath" ;; esac
-
-# Bookkeeping under .devrites/ is the orchestrator's own legit target → allow.
-case "$abs" in "$root/.devrites/"*) exit 0 ;; esac
+# Can't tell the path or patch target → fail open.
+if [ "$tool" = "apply_patch" ]; then
+  source_patch="$(printf '%s' "$input" | ROOT="$root" node -e '
+    let s=""; process.stdin.on("data", d => s += d).on("end", () => {
+      try {
+        const root = process.env.ROOT || "";
+        const cmd = (JSON.parse(s).tool_input || {}).command || "";
+        const paths = [...cmd.matchAll(/^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+)$/gm)].map(m => m[1]);
+        if (!paths.length) return;
+        const source = paths.some(p => {
+          const abs = p.startsWith("/") ? p : `${root}/${p}`;
+          return !abs.startsWith(`${root}/.devrites/`);
+        });
+        process.stdout.write(source ? "1" : "0");
+      } catch {}
+    });
+  ' 2>/dev/null)"
+  [ "$source_patch" = "1" ] || exit 0
+  abs="apply_patch"
+else
+  [ -n "$fpath" ] || exit 0
+  case "$fpath" in /*) abs="$fpath" ;; *) abs="$root/$fpath" ;; esac
+  # Bookkeeping under .devrites/ is the orchestrator's own legit target → allow.
+  case "$abs" in "$root/.devrites/"*) exit 0 ;; esac
+fi
 
 # Reaching here = the MAIN thread is about to edit a SOURCE file mid-build. That is the A1
 # breach. Observe (default) logs and allows; enforce denies.
