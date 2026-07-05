@@ -125,8 +125,8 @@ if [ -f "$TARGET/.claude/devrites.codex-hooks-merge" ] && [ -f "$TARGET/.codex/h
   if [ "$DRYRUN" -eq 1 ]; then
     dr_say "  [merge-remove] .codex/hooks.json DevRites hooks"
   else
-    if grep -q 'DevRites hooks for Codex' "$TARGET/.codex/hooks.json" 2>/dev/null \
-      && ! grep '"command"[[:space:]]*:' "$TARGET/.codex/hooks.json" 2>/dev/null | grep -vq 'devrites-\|DEVRITES_\|DevRites:'; then
+    if grep -q '"command"[[:space:]]*:.*\(devrites-\|DEVRITES_\|DevRites:\)' "$TARGET/.codex/hooks.json" 2>/dev/null \
+      && ! grep '"command"[[:space:]]*:' "$TARGET/.codex/hooks.json" 2>/dev/null | grep -vq 'devrites-\|DEVRITES_\|printf.*DevRites:'; then
       rm -f "$TARGET/.codex/hooks.json" || dr_die "cannot remove .codex/hooks.json"
     else
       command -v node >/dev/null 2>&1 || dr_die "node is required to remove DevRites hooks from .codex/hooks.json"
