@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/devrites/devrites/internal/gate"
 	"github.com/devrites/devrites/internal/harness"
@@ -78,6 +82,123 @@ func hookStopGate(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) 
 	}
 	fmt.Fprintln(stdout, out)
 	return exitOK
+}
+
+// reviewerReadonlyDenyReason is the exact denial message
+// devrites-reviewer-readonly.sh emits. It must stay byte-identical to keep the
+// parity oracle green.
+const reviewerReadonlyDenyReason = "DevRites: reviewers are read-only. This Bash command can mutate or exfiltrate; inspect with Read/Grep/Glob and return findings — do not modify the tree or reach the network. (devrites-reviewer-readonly)"
+
+// reviewerMutateRe matches a Bash command that could mutate the tree or reach the
+// network — the deny-list ported verbatim from devrites-reviewer-readonly.sh. A
+// fresh-context reviewer reads untrusted source, so a silent write/exfil path is
+// a prompt-injection surface (standards/security.md). pack-scan-ignore: this is
+// the hook's own defensive deny-list, not a payload.
+//
+// The pattern is byte-identical to the bash `grep -E`. ONE deliberate divergence:
+// this matches against the WHOLE command, while the bash hook's
+// `read -r tool cmd agent_type` truncates the command at its first newline and so
+// only ever scans line 1. A reviewer running a multi-line Bash whose later lines
+// mutate (e.g. `cat x\nsed -i …`) slips past the bash hook but is denied here —
+// intentional hardening of a latent bash bug, not a parity regression. (RE2's
+// `[[:space:]]` already matches `\n`, so no `(?m)` flag is needed for the `-i$`
+// alternative to fire at an interior line break.)
+var reviewerMutateRe = regexp.MustCompile(`>>|[^0-9 ]>[^>&]|[[:space:]]-i([[:space:]]|$)|sed[[:space:]]+-i|\brm\b|\bmv\b|\btee\b|\btruncate\b|\bdd\b|chmod|chown|git[[:space:]]+(add|commit|push|reset|checkout|rm|mv|stash|tag|apply)|npm[[:space:]]+(install|i|publish|run)|pnpm[[:space:]]+(install|add)|yarn[[:space:]]+add|pip[[:space:]]+install|curl[[:space:]].*[[:space:]]-o\b|\bwget\b|\bscp\b|\bssh\b|\bnc\b`)
+
+// hookReviewerReadonly keeps the read-only reviewer subagents read-only: it denies
+// a Bash command that could mutate the tree or exfiltrate. It mirrors
+// devrites-reviewer-readonly.sh: OBSERVE by default (logs a would-block, allows),
+// blocking only when DEVRITES_REVIEWER_RO=enforce; fully fail-open.
+func hookReviewerReadonly(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) int {
+	data, err := io.ReadAll(stdin)
+	if err != nil {
+		return exitOK
+	}
+	// Fast path: a payload with no tool call is not ours — mirrors the script's
+	// `case "$input" in *'"tool_name"'*`.
+	if !bytes.Contains(data, []byte(`"tool_name"`)) {
+		return exitOK
+	}
+	in := h.ParsePreToolInput(bytes.NewReader(data))
+
+	// When the surface guarantees subagent identity, scope to devrites reviewers:
+	// the slice-wright is a sanctioned writer and the main thread / other agents
+	// are not our concern.
+	if os.Getenv("DEVRITES_REVIEWER_AGENT_REQUIRED") == "1" {
+		switch {
+		case in.AgentType == "" || in.AgentType == "devrites-slice-wright":
+			return exitOK
+		case !strings.HasPrefix(in.AgentType, "devrites-"):
+			return exitOK
+		}
+	}
+	if in.ToolName != "Bash" || in.Command == "" {
+		return exitOK
+	}
+	if !reviewerMutateRe.MatchString(in.Command) {
+		return exitOK
+	}
+
+	if os.Getenv("DEVRITES_REVIEWER_RO") == "enforce" {
+		out, err := h.PreToolDeny(reviewerReadonlyDenyReason)
+		if err != nil {
+			debugf(stderr, "reviewer-readonly: %v", err)
+			return exitOK
+		}
+		fmt.Fprintln(stdout, out)
+		return exitOK
+	}
+
+	// Observe mode: record the would-block to the active feature's append-only log
+	// (new-schema features/<slug>/, mirroring the stop-gate's log convention), then
+	// allow. The append is O_APPEND-atomic across the concurrent processes DevRites
+	// spawns.
+	if root, err := orient.ResolveRoot(os.Getenv("DEVRITES_ROOT")); err == nil {
+		if slug, _ := orient.ActiveSlug(root); slug != "" {
+			logPath := filepath.Join(root, "features", slug, ".reviewer-ro.log")
+			if err := state.AppendLog(logPath, "WOULD-BLOCK\t"+head80(in.Command)); err != nil {
+				debugf(stderr, "reviewer-readonly log: %v", err)
+			}
+		}
+	}
+	return exitOK
+}
+
+// subagentOrientContext is the fixed discipline injected into a spawned
+// devrites-* subagent. It is embedded verbatim from the same text
+// devrites-subagent-orient.sh emits, so the two stay byte-identical for the
+// parity oracle (the file is the single source both read).
+//
+//go:embed subagent_orient_context.txt
+var subagentOrientContext string
+
+// hookSubagentOrient injects the DevRites discipline into every devrites-* subagent
+// at spawn: a spawned subagent starts in a fresh context and neither auto-loads the
+// rite-* framework nor discovers skills the way the main thread does. It mirrors
+// devrites-subagent-orient.sh — fire only for devrites-* agents, emit a fixed
+// context envelope, stay silent + fail-open otherwise.
+func hookSubagentOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) int {
+	agentType := h.SubagentAgentType(stdin)
+	if !strings.HasPrefix(agentType, "devrites-") {
+		return exitOK // not a DevRites subagent (or no identity) — silent no-op
+	}
+	out, err := h.SubagentStartContext(subagentOrientContext)
+	if err != nil {
+		debugf(stderr, "subagent-orient: %v", err)
+		return exitOK
+	}
+	// No trailing newline — matches the script's `node ... process.stdout.write`.
+	fmt.Fprint(stdout, out)
+	return exitOK
+}
+
+// head80 returns at most the first 80 bytes of s, mirroring the shell guards'
+// `head -c 80` truncation of a logged command.
+func head80(s string) string {
+	if len(s) > 80 {
+		return s[:80]
+	}
+	return s
 }
 
 // debugf writes an operational diagnostic only when DEVRITES_DEBUG is set, so a
