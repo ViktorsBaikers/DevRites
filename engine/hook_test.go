@@ -116,3 +116,182 @@ func TestHookMissingHarnessExitsUsage(t *testing.T) {
 		t.Fatalf("exit = %d, want 2 when --harness is absent", code)
 	}
 }
+
+// --- issue 09: reviewer-readonly guard ---
+
+// parsePermissionDecision decodes a PreToolUse decision envelope and returns the
+// permissionDecision + reason, failing if the shape is wrong.
+func parsePermissionDecision(t *testing.T, stdout string) (decision, reason string) {
+	t.Helper()
+	var env struct {
+		HookSpecificOutput struct {
+			HookEventName            string `json:"hookEventName"`
+			PermissionDecision       string `json:"permissionDecision"`
+			PermissionDecisionReason string `json:"permissionDecisionReason"`
+		} `json:"hookSpecificOutput"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &env); err != nil {
+		t.Fatalf("stdout is not a valid PreToolUse decision: %v\n%s", err, stdout)
+	}
+	if env.HookSpecificOutput.HookEventName != "PreToolUse" {
+		t.Errorf("hookEventName = %q, want PreToolUse", env.HookSpecificOutput.HookEventName)
+	}
+	return env.HookSpecificOutput.PermissionDecision, env.HookSpecificOutput.PermissionDecisionReason
+}
+
+func TestHookReviewerReadonlyEnforceDeniesMutatingBash(t *testing.T) {
+	for _, h := range []string{"claude", "codex"} {
+		h := h
+		t.Run(h, func(t *testing.T) {
+			root := newWorkspace(t)
+			in := `{"tool_name":"Bash","tool_input":{"command":"rm -rf build"}}`
+			out, errOut, code := runDevritesIO(t, root, in, []string{"DEVRITES_REVIEWER_RO=enforce"},
+				"hook", "reviewer-readonly", "--harness="+h)
+			if code != 0 {
+				t.Fatalf("exit = %d, want 0 (stderr: %s)", code, errOut)
+			}
+			decision, reason := parsePermissionDecision(t, out)
+			if decision != "deny" {
+				t.Errorf("permissionDecision = %q, want deny", decision)
+			}
+			if !strings.Contains(reason, "reviewers are read-only") {
+				t.Errorf("reason %q missing the read-only explanation", reason)
+			}
+		})
+	}
+}
+
+func TestHookReviewerReadonlyAllowsSafeBash(t *testing.T) {
+	root := newWorkspace(t)
+	in := `{"tool_name":"Bash","tool_input":{"command":"grep -rn foo ."}}`
+	out, _, code := runDevritesIO(t, root, in, []string{"DEVRITES_REVIEWER_RO=enforce"},
+		"hook", "reviewer-readonly", "--harness=claude")
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0", code)
+	}
+	if strings.TrimSpace(out) != "" {
+		t.Errorf("stdout = %q, want silent for a read-only command", out)
+	}
+}
+
+func TestHookReviewerReadonlyNonBashIsSilent(t *testing.T) {
+	root := newWorkspace(t)
+	in := `{"tool_name":"Read","tool_input":{"file_path":"secret.txt"}}`
+	out, _, code := runDevritesIO(t, root, in, []string{"DEVRITES_REVIEWER_RO=enforce"},
+		"hook", "reviewer-readonly", "--harness=claude")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Errorf("want silent exit 0 for a non-Bash tool; got exit=%d out=%q", code, out)
+	}
+}
+
+// In observe mode (the default) a mutating command is allowed but recorded, so the
+// invariant is visible without gating in-progress work.
+func TestHookReviewerReadonlyObserveLogsWouldBlock(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	in := `{"tool_name":"Bash","tool_input":{"command":"git push origin main"}}`
+	out, _, code := runDevritesIO(t, root, in, nil, // no enforce env → observe
+		"hook", "reviewer-readonly", "--harness=claude")
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0", code)
+	}
+	if strings.TrimSpace(out) != "" {
+		t.Errorf("stdout = %q, want silent in observe mode", out)
+	}
+	logPath := filepath.Join(root, "features", "auth-tokens", ".reviewer-ro.log")
+	raw, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("observe mode did not write the would-block log: %v", err)
+	}
+	if !strings.Contains(string(raw), "WOULD-BLOCK") || !strings.Contains(string(raw), "git push") {
+		t.Errorf("log = %q, want a WOULD-BLOCK record naming the command", raw)
+	}
+}
+
+// The bash hook's `read -r tool cmd agent_type` truncates the command at its
+// first newline, so it only ever scans line 1 — a latent bug. The Go port scans
+// the whole command, so a mutating LATER line is denied. This asserts the
+// deliberate hardening (documented on reviewerMutateRe); it is a Go-only test, not
+// a parity case, because it is where the two are meant to diverge.
+func TestHookReviewerReadonlyScansWholeMultilineCommand(t *testing.T) {
+	root := newWorkspace(t)
+	in := "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cat notes.txt\\nsed -i s/a/b/ f\"}}"
+	out, errOut, code := runDevritesIO(t, root, in, []string{"DEVRITES_REVIEWER_RO=enforce"},
+		"hook", "reviewer-readonly", "--harness=claude")
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0 (stderr: %s)", code, errOut)
+	}
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Errorf("a multi-line command whose 2nd line mutates was not denied; decision = %q", decision)
+	}
+}
+
+// The agent-required gate reads agent_type ONLY (matching the bash node parse), so
+// a payload that carries the subagent name under subagent_type but not agent_type
+// has no identity and is allowed — no false deny from the aliases.
+func TestHookReviewerReadonlyAgentRequiredIgnoresSubagentTypeAlias(t *testing.T) {
+	root := newWorkspace(t)
+	in := `{"tool_name":"Bash","tool_input":{"command":"rm -rf x"},"subagent_type":"devrites-code-reviewer"}`
+	out, _, code := runDevritesIO(t, root, in,
+		[]string{"DEVRITES_REVIEWER_RO=enforce", "DEVRITES_REVIEWER_AGENT_REQUIRED=1"},
+		"hook", "reviewer-readonly", "--harness=claude")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Errorf("want silent allow (no agent_type identity); got exit=%d out=%q", code, out)
+	}
+}
+
+func TestHookReviewerReadonlyAgentRequiredSkipsNonDevrites(t *testing.T) {
+	root := newWorkspace(t)
+	// A mutating command from a non-devrites agent is not the reviewer hook's
+	// concern when agent identity is required.
+	in := `{"tool_name":"Bash","tool_input":{"command":"rm -rf x"},"agent_type":"Explore"}`
+	out, _, code := runDevritesIO(t, root, in,
+		[]string{"DEVRITES_REVIEWER_RO=enforce", "DEVRITES_REVIEWER_AGENT_REQUIRED=1"},
+		"hook", "reviewer-readonly", "--harness=claude")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Errorf("want silent exit 0 for a non-devrites agent; got exit=%d out=%q", code, out)
+	}
+}
+
+// --- issue 09: subagent-orient ---
+
+func TestHookSubagentOrientInjectsDisciplineForDevritesAgent(t *testing.T) {
+	for _, h := range []string{"claude", "codex"} {
+		h := h
+		t.Run(h, func(t *testing.T) {
+			root := newWorkspace(t)
+			in := `{"agent_type":"devrites-code-reviewer"}`
+			out, errOut, code := runDevritesIO(t, root, in, nil, "hook", "subagent-orient", "--harness="+h)
+			if code != 0 {
+				t.Fatalf("exit = %d, want 0 (stderr: %s)", code, errOut)
+			}
+			var env struct {
+				HookSpecificOutput struct {
+					HookEventName     string `json:"hookEventName"`
+					AdditionalContext string `json:"additionalContext"`
+				} `json:"hookSpecificOutput"`
+			}
+			if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &env); err != nil {
+				t.Fatalf("stdout is not a valid SubagentStart envelope: %v\n%s", err, out)
+			}
+			if env.HookSpecificOutput.HookEventName != "SubagentStart" {
+				t.Errorf("hookEventName = %q, want SubagentStart", env.HookSpecificOutput.HookEventName)
+			}
+			for _, want := range []string{"DevRites subagent", "Operating rules", "orchestration depth"} {
+				if !strings.Contains(env.HookSpecificOutput.AdditionalContext, want) {
+					t.Errorf("additionalContext missing %q", want)
+				}
+			}
+		})
+	}
+}
+
+func TestHookSubagentOrientSilentForNonDevritesAgent(t *testing.T) {
+	root := newWorkspace(t)
+	for _, in := range []string{`{"agent_type":"Explore"}`, `{"agent_type":""}`, `not json`, ``} {
+		out, _, code := runDevritesIO(t, root, in, nil, "hook", "subagent-orient", "--harness=claude")
+		if code != 0 || strings.TrimSpace(out) != "" {
+			t.Errorf("want silent exit 0 for payload %q; got exit=%d out=%q", in, code, out)
+		}
+	}
+}

@@ -7,6 +7,7 @@
 package harness
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -109,4 +110,128 @@ func (h Harness) ParseStopInput(r io.Reader) StopInput {
 	}
 	_ = json.Unmarshal(data, &in) // best-effort; zero value on failure
 	return in
+}
+
+// PreToolInput is the subset of a PreToolUse hook's stdin the reviewer-readonly
+// guard reads: which tool is about to run, its command, and — for the optional
+// agent-scoping gate — the calling subagent's name. Every field is best-effort:
+// a hook that can't identify the tool simply falls through to its silent no-op.
+type PreToolInput struct {
+	ToolName  string
+	Command   string
+	AgentType string // the calling subagent's name; empty on the main thread
+}
+
+// ParsePreToolInput decodes a PreToolUse payload. Like ParseStopInput it never
+// errors: an empty or malformed payload decodes to the zero value so a guard hook
+// stays fail-open. AgentType reads `agent_type` ONLY — matching
+// devrites-reviewer-readonly.sh's node parse exactly (it does not consult the
+// subagent_type / agentType aliases; SubagentAgentType does, for the subagent
+// hook that needs them).
+func (h Harness) ParsePreToolInput(r io.Reader) PreToolInput {
+	var raw struct {
+		ToolName  string `json:"tool_name"`
+		ToolInput struct {
+			Command string `json:"command"`
+		} `json:"tool_input"`
+		AgentType string `json:"agent_type"`
+	}
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return PreToolInput{}
+	}
+	_ = json.Unmarshal(data, &raw) // best-effort; zero value on failure
+
+	return PreToolInput{
+		ToolName:  raw.ToolName,
+		Command:   raw.ToolInput.Command,
+		AgentType: raw.AgentType,
+	}
+}
+
+// SubagentAgentType decodes just the spawned subagent's name from a SubagentStart
+// payload, reading whichever of agent_type / subagent_type / agentType the harness
+// populates (Claude and Codex differ) — the exact 3-way fallback
+// devrites-subagent-orient.sh uses. Never errors: bad stdin yields "".
+func (h Harness) SubagentAgentType(r io.Reader) string {
+	var raw struct {
+		AgentType    string `json:"agent_type"`
+		SubagentType string `json:"subagent_type"`
+		AgentTypeAlt string `json:"agentType"`
+	}
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return ""
+	}
+	_ = json.Unmarshal(data, &raw) // best-effort; "" on failure
+	return firstNonEmpty(raw.AgentType, raw.SubagentType, raw.AgentTypeAlt)
+}
+
+// PreToolDeny returns the hook stdout that denies a tool call with a
+// human-readable reason. Both harnesses honour the hookSpecificOutput envelope
+// the legacy PreToolUse guards emit; the seam lets one diverge later.
+func (h Harness) PreToolDeny(reason string) (string, error) {
+	switch h {
+	case Claude, Codex:
+		var env preToolEnvelope
+		env.HookSpecificOutput.HookEventName = "PreToolUse"
+		env.HookSpecificOutput.PermissionDecision = "deny"
+		env.HookSpecificOutput.PermissionDecisionReason = reason
+		return marshalCompact(env)
+	default:
+		return "", fmt.Errorf("unsupported harness %q", h)
+	}
+}
+
+type preToolEnvelope struct {
+	HookSpecificOutput struct {
+		HookEventName            string `json:"hookEventName"`
+		PermissionDecision       string `json:"permissionDecision"`
+		PermissionDecisionReason string `json:"permissionDecisionReason"`
+	} `json:"hookSpecificOutput"`
+}
+
+// SubagentStartContext returns the hook stdout that injects text as
+// SubagentStart orientation for a spawned subagent.
+func (h Harness) SubagentStartContext(text string) (string, error) {
+	switch h {
+	case Claude, Codex:
+		var env additionalContextEnvelope
+		env.HookSpecificOutput.HookEventName = "SubagentStart"
+		env.HookSpecificOutput.AdditionalContext = text
+		return marshalCompact(env)
+	default:
+		return "", fmt.Errorf("unsupported harness %q", h)
+	}
+}
+
+type additionalContextEnvelope struct {
+	HookSpecificOutput struct {
+		HookEventName     string `json:"hookEventName"`
+		AdditionalContext string `json:"additionalContext"`
+	} `json:"hookSpecificOutput"`
+}
+
+// marshalCompact encodes v as compact JSON WITHOUT Go's default HTML escaping
+// (`<`, `>`, `&` → `<` …). The legacy shell hooks emit their JSON via
+// node's JSON.stringify, which does not HTML-escape; matching that is what keeps
+// a ported hook byte-parity with the script it replaces. The trailing newline
+// json.Encoder appends is trimmed so the caller controls line termination.
+func marshalCompact(v any) (string, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return "", err
+	}
+	return strings.TrimRight(buf.String(), "\n"), nil
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
