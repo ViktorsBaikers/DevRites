@@ -1,0 +1,9 @@
+feature: auth-tokens
+phase: build
+  spec       present  required
+  plan       present  required
+  decisions  present  required
+  tasks      empty    required
+  proof      empty
+  status     present
+result: incomplete (missing: tasks)
