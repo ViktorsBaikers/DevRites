@@ -1,0 +1,10 @@
+# Built binary (default `go build` output) and cross-compile artifacts
+/devrites
+/dist/
+
+# Derived SQLite index — disposable, rebuilt by `devrites reindex`. Never
+# tracked, including the copy a manual reindex may drop under the fixture.
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
