@@ -69,6 +69,10 @@ no-findings justification catches the silent false negative. `devrites-engine re
 checks the account is present (a `No-findings:` line on any axis section that raised nothing), not
 its quality — the same honesty contract as `doubt-coverage` and the footprint roster.
 
+After `review.md` is written, run `devrites-engine review-fingerprints --write <slug>` to record
+stable IDs for findings. Those IDs make recurring findings and later dismissals correlate cleanly
+without weakening the review-integrity gate.
+
 ## Scope discipline
 Review the change, not the whole project. Out-of-scope problems become follow-ups, not
 drive-by edits that balloon the diff.

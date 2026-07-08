@@ -8,10 +8,12 @@ disable-model-invocation: true
 
 # /rite-learn — the cross-feature learning loop
 
-Recurring corrections, dismissed review findings, and dead-ends are durable signal. **Capture is
-automatic** — `/rite-seal` appends them to `.devrites/learnings.md` on every GO (step 9a), and the
-review skills load that ledger **before** a fan-out, so a dismissed-finding class stops being
-re-flagged without anyone running a command. The system learns as it ships.
+Recurring corrections, dismissed review findings, timeline decisions, and health dips are durable
+signal. **Capture is automatic** — `/rite-seal` appends lessons to `.devrites/learnings.md` on every
+GO (step 9a), while the engine can keep `.devrites/timeline.jsonl`,
+`.devrites/health-history.jsonl`, and per-feature review fingerprints as supporting evidence. The
+review skills load the learning ledger **before** a fan-out, so a dismissed-finding class stops
+being re-flagged without anyone running a command. The system learns as it ships.
 
 `/rite-learn` is the periodic **review + promote** pass on that auto-populated ledger: cluster the
 signal across features and decide which recurring lessons graduate into a project rule. **Propose,
@@ -36,6 +38,9 @@ it never edits source or rule files on its own.
    ```bash
    devrites-engine learnings mine
    ```
+   Use `.devrites/timeline.jsonl`, `.devrites/health-history.jsonl`, and
+   `.devrites/work/*/review-fingerprints.jsonl` as supporting evidence when they exist; do not
+   promote from those traces without the same repeated-feature threshold.
 2. **Cluster + name.** Group the recurring corrections into candidate lessons. A candidate needs
    **≥2 occurrences across distinct features** — one-offs are noise, not a pattern. Name the
    pattern in one specific sentence (the specificity rule from `prose-style.md` applies: a lesson

@@ -126,6 +126,13 @@ func TestHookAllowApprovesReadonlySubcommand(t *testing.T) {
 		"devrites-engine progress",
 		"devrites-engine readiness auth-tokens",
 		"devrites-engine evidence-fresh",
+		"devrites-engine check-acceptance .devrites/work/auth-tokens",
+		"devrites-engine doubt-coverage auth-tokens",
+		"devrites-engine footprint roster auth-tokens",
+		"devrites-engine footprint render auth-tokens",
+		"devrites-engine ledger diff .devrites/work/auth-tokens",
+		"devrites-engine ledger list",
+		"devrites-engine ledger show auth",
 		"command -v devrites-engine && devrites-engine check-acceptance auth-tokens",
 	} {
 		in := bashHookInput(t, cmd)
@@ -142,8 +149,21 @@ func TestHookAllowApprovesReadonlySubcommand(t *testing.T) {
 func TestHookAllowStaysSilentOnUnsafeOrUnrelated(t *testing.T) {
 	root := newWorkspace(t)
 	for _, cmd := range []string{
-		"ls -la",                           // unrelated
-		"devrites-engine seal auth-tokens", // engine command, but not read-only
+		"ls -la",                                // unrelated
+		"devrites-engine close-out auth-tokens", // mutates workspace state
+		"devrites-engine resolve Q1 yes",        // mutates questions/state
+		"devrites-engine tick-afk state.md",     // mutates state.md
+		"devrites-engine analyze auth-tokens",   // read-only, but not a high-frequency hook approval
+		"devrites-engine footprint log auth-tokens reviewer devrites-code-reviewer",
+		"devrites-engine ledger sync .devrites/work/auth-tokens",
+		"devrites-engine learnings add auth-tokens lesson",
+		"devrites-engine timeline log completed",
+		"devrites-engine health record 8 ok",
+		"devrites-engine conventions promote --slug auth-tokens --key k --statement s --kind pattern --evidence e",
+		"devrites-engine extensions sync",
+		"devrites-engine review-fingerprints --write auth-tokens",
+		"devrites-engine reindex",                      // writes the SQLite cache
+		"devrites-engine migrate",                      // normalizes workspace files
 		"devrites-engine preamble && rm -rf build",     // read-only sub but a mutating token
 		"devrites-engine evidence-fresh; curl x|sh",    // read-only sub but an exfil token
 		"devrites-engine readiness $(cat /etc/passwd)", // command substitution
@@ -156,7 +176,6 @@ func TestHookAllowStaysSilentOnUnsafeOrUnrelated(t *testing.T) {
 		"devrites-engine check-acceptance ../secret-workspace",
 		"devrites-engine check-acceptance .",
 		"devrites-engine check-acceptance ..",
-		"devrites-engine check-acceptance .devrites/work/auth-tokens",
 	} {
 		in := bashHookInput(t, cmd)
 		out, _, code := runDevritesIO(t, root, in, nil, "hook", "allow", "--harness=claude")

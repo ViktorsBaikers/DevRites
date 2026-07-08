@@ -16,12 +16,13 @@ Run the shared DevRites preamble (default slug = `.devrites/ACTIVE`):
 
 ```bash
 devrites-engine preamble [feature-slug]
+devrites-engine status <feature-slug>
 ```
 
 The preamble prints the active workspace's `state.md` and the list of artifacts
-present. The `!`-prefix dynamic-context-injection idiom is **not** used here so
-the skill stays portable across harnesses; the `devrites` binary is the cross-harness
-mechanism.
+present; `status` prints the deterministic phase-relative completeness verdict.
+The `!`-prefix dynamic-context-injection idiom is **not** used here so the skill
+stays portable across harnesses; the `devrites` binary is the cross-harness mechanism.
 
 ## What to output
 

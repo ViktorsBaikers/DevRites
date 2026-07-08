@@ -57,8 +57,9 @@ the plan:
    open-question tally):
    ```bash
    devrites-engine preamble
+   devrites-engine spec-skeleton ".devrites/work/$(cat .devrites/ACTIVE 2>/dev/null)"
    ```
-   If there is no active workspace, no `spec.md`, or its readiness gate hasn't passed →
+   If there is no active workspace, no `spec.md`, `spec-skeleton` blocks, or its readiness gate hasn't passed →
    **STOP** and tell the user to run `$rite-spec <feature>` first.
 1. **Read the spec** — `spec.md` (objective, requirements, acceptance, **placement**,
    design references, gaps/decisions), plus `references.md`, `decisions.md`,
