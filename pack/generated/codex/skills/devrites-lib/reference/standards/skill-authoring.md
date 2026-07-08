@@ -2,6 +2,22 @@
 
 Use this when creating or editing DevRites skills.
 
+## Distribution
+
+DevRites is installed through the npm package (`npx devrites ...`). Claude Code
+and Codex files are generated host artifacts copied by that installer, not
+plugin-store surfaces. Edit canonical sources under `pack/.claude/`, rebuild
+host artifacts, then validate.
+
+## Surface lifecycle
+
+- **Promoted** — shipped in `pack/`, documented in `docs/skills.md` and
+  `docs/command-map.md`, and covered by validation.
+- **Draft** — local/research material outside the shipped pack.
+- **Deprecated** — shipped only as a compatibility bridge with a replacement and
+  removal note.
+- **Research** — notes under `docs/research/`; never installed.
+
 ## Description
 
 The description is an invocation pointer, not documentation.
@@ -15,6 +31,25 @@ The description is an invocation pointer, not documentation.
 - Put ordered work as steps, each ending in a checkable completion criterion.
 - Move branch-only reference behind a direct file pointer.
 - Keep one meaning in one place; prefer a shared reference over repeated prose.
+
+## Router and docs
+
+- Public `rite-*` skills must appear in the `$rite` router, `docs/skills.md`,
+  and `docs/command-map.md`.
+- Internal `devrites-*` skills must stay out of the public command menu unless
+  named as implementation detail.
+- A public skill's docs card states purpose, when to invoke, where it fits, and
+  what evidence proves completion. Do not copy the full `SKILL.md` process into
+  docs.
+
+## Source intake
+
+External skill packs, articles, and examples are references, not authority.
+
+- Record source, commit/date, and files read in `docs/research/`.
+- Adopt the DevRites principle, not foreign names or workflow chains.
+- Name rejected ideas so future maintainers do not re-litigate them.
+- Add a validator or eval when the adoption creates a durable product contract.
 
 ## Pruning
 

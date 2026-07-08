@@ -53,8 +53,8 @@ end; don't try to fix it here.
   `Grep`.
 - You need to design or change something — that's `/rite-spec` (new feature) or
   `/rite-define` (plan an approved spec).
-- You want a project-wide architecture audit — that's `improve-codebase-architecture`,
-  out of DevRites' feature-scoped remit.
+- You want a project-wide architecture audit — use the project's normal architecture
+  review process; this skill is a read-only feature-area map.
 
 ## Output shape
 Reply-contract exception: read-only mapping utility. It skips `devrites-engine progress` when

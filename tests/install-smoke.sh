@@ -67,7 +67,6 @@ for f in \
   ".claude/skills/rite-polish-code/SKILL.md" \
   ".claude/skills/rite-polish-ui/SKILL.md" \
   ".claude/skills/devrites-context-pack/SKILL.md" \
-  ".claude/skills/devrites-selector/SKILL.md" \
   ".claude/skills/devrites-idea-refine/SKILL.md" \
   ".claude/skills/idea-pressure-test/SKILL.md" \
   ".claude/skills/devrites-prototype/SKILL.md" \

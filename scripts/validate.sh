@@ -137,6 +137,15 @@ for d in "$SKILLS"/*/; do
 done
 echo "ok: size advisory complete"
 
+# ---- 8b. skill pruning audit (advisory) ----------------------------------
+section "skill pruning audit (advisory)"
+if command -v node >/dev/null 2>&1; then
+  node "$ROOT/scripts/skill-pruning-audit.mjs" || true
+  good "skill pruning audit complete"
+else
+  echo "skip: node not found"
+fi
+
 # ---- 9. DevRites engineering rules present -------------------------------
 section "DevRites rules present"
 if [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/README.md" ] && [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/security.md" ]; then
