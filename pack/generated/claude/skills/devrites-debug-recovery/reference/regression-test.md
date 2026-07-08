@@ -14,9 +14,8 @@ Note it in `evidence.md` and append a follow-up in the active feature's
 `decisions.md` (or open a `/rite-plan` repair item if the spec is affected): the
 codebase architecture is preventing this class of failure from being locked
 down. Frame it as a *deepening opportunity* — "this module needs a seam at <X>
-so failures here can be regression-tested" — so the next refactor (or an
-`improve-codebase-architecture` pass at the project level) has a concrete
-target.
+so this failure can be regression-tested" — so the next `/rite-plan` repair or
+architecture cleanup pass has a concrete target.
 
 Do **not** invent an artificial seam just to host a test: a shallow seam that
 doesn't exercise the real call chain gives false confidence and is worse than

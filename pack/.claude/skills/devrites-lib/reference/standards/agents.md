@@ -100,9 +100,8 @@ The prefix mirrors visibility:
   (`.claude/skills/devrites-lib/reference/parallel-dispatch.md`), pointed at by both
   `/rite-review` and `/rite-seal`.
 
-The `/rite` menu carries the routing previously held by `devrites-selector`, which
-has been removed. `user-invocable:` in each `SKILL.md` is the source of truth; the
-prefix is a naming convention that matches it.
+The `/rite` menu carries user-facing routing. `user-invocable:` in each
+`SKILL.md` is the source of truth; the prefix is a naming convention that matches it.
 
 ## When to bring in a reviewer (no prompt needed)
 The seal/review fan-out is **roster-driven**: sealing a feature dispatches every roster reviewer

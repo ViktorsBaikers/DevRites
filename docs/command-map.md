@@ -3,6 +3,10 @@
 Reference for every shipped skill and agent — what triggers it, what it reads,
 what it writes, and how the pieces interact.
 
+DevRites ships through npm (`npx devrites ...`). Claude Code and Codex support
+comes from generated host artifacts copied by the npm installer; DevRites is not
+distributed as a Claude or Codex plugin.
+
 - **Workflow diagram** (top-level flow) → [`flow.md`](flow.md).
 - **Architecture rationale** → [`architecture.md`](architecture.md).
 - **Worked examples** → [`usage.md`](usage.md).
@@ -15,8 +19,18 @@ bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`,
 `user-invocable:` flag in each `SKILL.md`. All public utilities use the
 `rite-*` prefix (`rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`,
 `rite-doctor`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
-`rite-pressure-test`, `rite-autocomplete`); every `devrites-*` skill is
+`rite-pressure-test`, `rite-autocomplete`, `rite-explain`); every `devrites-*` skill is
 model-invoked.
+
+## Surface lifecycle
+
+- **Promoted:** shipped `rite-*`, `devrites-*`, generated host artifacts, and docs
+  in this map.
+- **Draft:** research or local experiments that are not copied into `pack/`.
+- **Deprecated:** compatibility shims with a removal note and a replacement path.
+- **Research:** source-intake notes under `docs/research/`; not installed.
+
+Only promoted surfaces are shipped by the npm package.
 
 ## Public commands (`user-invocable: true`)
 

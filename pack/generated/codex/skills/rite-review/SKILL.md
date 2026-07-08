@@ -77,7 +77,8 @@ pull these via `Read` when the diff demands them:
        the active feature workspace + diff. Report (a) criteria the spec asked for that
        are missing or partial, (b) behaviour in the diff the spec did not ask for
        (scope creep / drift), (c) criteria implemented incorrectly. Quote the spec
-       line per finding."
+       line per finding. If the spec is missing or unreadable, report `Review gap:
+       missing spec` and do not infer requirements from the diff."
      - **Code-review axis** → `devrites-code-reviewer`: "Apply your full documented
        discipline (tests-first, correctness, readability, architecture, maintainability,
        standards) on the active feature workspace + diff. Cite file:line per finding;
@@ -88,7 +89,9 @@ pull these via `Read` when the diff demands them:
        a dropped Result/err return, off-by-one / boundary, logic that contradicts the
        comment/docstring/name). Per hunk, check whether working code was deleted that the
        task did not ask to remove. Score the diff against `.devrites/principles.md` — a change
-       that breaks a declared invariant with no recorded, human-approved exception is a Critical."
+       that breaks a declared invariant with no recorded, human-approved exception is a Critical.
+       Distinguish hard documented-standard violations from baseline smells; smells are judgment
+       calls unless a DevRites or project standard makes them binding."
    - **Do NOT merge or re-rank** their findings. Present them under separate
      `## Spec` and `## Code review` sub-sections in `review.md`. Surface contradictions
      between the axes explicitly (e.g. "Spec axis says complete, Code-review axis says

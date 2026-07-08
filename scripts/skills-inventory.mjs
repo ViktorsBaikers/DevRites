@@ -6,6 +6,7 @@ import { basename, join, relative } from 'node:path';
 const root = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const skillsDir = join(root, 'pack', '.claude', 'skills');
 const docsSkills = join(root, 'docs', 'skills.md');
+const docsCommandMap = join(root, 'docs', 'command-map.md');
 const readme = join(root, 'README.md');
 const arch = join(root, 'docs', 'architecture.md');
 const DESCRIPTION_WORD_LIMITS = {
@@ -13,6 +14,7 @@ const DESCRIPTION_WORD_LIMITS = {
   internal: 75,
   library: 60,
 };
+const COMPLETION_RE = /\b(Done when|Completion|Stop when|Verify|Verification|Evidence:|Output|Default success shape|Next:|Record:)\b/i;
 
 function fail(message) {
   console.error(`FAIL: ${message}`);
@@ -81,6 +83,9 @@ for (const entry of readdirSync(skillsDir).sort()) {
     fail(`${relative(root, file)}: devrites-lib must set disable-model-invocation: true`);
   }
   if (lines > 500) fail(`${relative(root, file)}: SKILL.md has ${lines} lines (max 500)`);
+  if (invocable === 'true' && !COMPLETION_RE.test(text)) {
+    fail(`${relative(root, file)}: public skill needs a checkable completion/output/evidence criterion`);
+  }
   skills.push({ name: entry, invocable, lines, description });
 }
 
@@ -97,13 +102,27 @@ function assertDocContains(path, expected, label) {
   }
 }
 
+function assertPublicSkillLinks(path, label) {
+  const text = readFileSync(path, 'utf8');
+  for (const skill of skills.filter((s) => s.invocable === 'true')) {
+    const link = `../pack/.claude/skills/${skill.name}/SKILL.md`;
+    if (!text.includes(link)) {
+      fail(`${relative(root, path)}: missing ${label} link for ${skill.name}: ${link}`);
+    }
+  }
+}
+
 assertDocContains(docsSkills, `# All ${total} skills`, 'total skill heading');
 assertDocContains(docsSkills, `**${total} skills total**`, 'total skill prose');
 assertDocContains(docsSkills, `${publicRiteCount} user-invocable \`rite-*\``, 'public rite-* count');
 assertDocContains(docsSkills, `${modelInvokedInternalCount} model-invoked \`devrites-*\` specialists`, 'model-invoked internal count');
+assertDocContains(docsSkills, 'npx devrites', 'npx distribution contract');
+assertDocContains(docsCommandMap, 'npx devrites', 'npx distribution contract');
 assertDocContains(readme, `**${total} skills total**`, 'README total skill prose');
 assertDocContains(readme, `# skills/  ${total} skills`, 'README layout total count');
 assertDocContains(arch, `${publicRiteCount} public \`rite-*\` skills (${total} total)`, 'architecture surface count');
+assertPublicSkillLinks(docsSkills, 'skills catalogue');
+assertPublicSkillLinks(docsCommandMap, 'command map');
 
 console.log(`skills total: ${total}`);
 console.log(`public skills: ${publicCount}`);
