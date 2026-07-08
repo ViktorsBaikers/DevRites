@@ -1,4 +1,4 @@
-// Command devrites is the DevRites control-plane engine: a single static,
+// Command devrites-engine is the DevRites control-plane engine: a single static,
 // pure-Go binary that owns the deterministic workflow state (phases, gates,
 // completeness) over a project's .devrites/ directory. It makes zero model or
 // network calls — the in-session LLM remains the judgment data plane.
@@ -17,6 +17,7 @@ import (
 	"github.com/devrites/devrites/internal/gate"
 	"github.com/devrites/devrites/internal/harness"
 	"github.com/devrites/devrites/internal/index"
+	"github.com/devrites/devrites/internal/install"
 	"github.com/devrites/devrites/internal/iohooks"
 	"github.com/devrites/devrites/internal/lib"
 	"github.com/devrites/devrites/internal/state"
@@ -26,6 +27,9 @@ import (
 const usage = `devrites — DevRites control-plane engine
 
 Usage:
+  devrites-engine install [flags]          Install DevRites skills/agents/hooks into a project
+  devrites-engine update [flags]           Update an existing DevRites install in place
+  devrites-engine uninstall [flags]        Remove a DevRites install, preserving runtime state
   devrites-engine status <slug>            Print a feature's phase and per-section completeness
   devrites-engine reindex                  Rebuild the SQLite index from the .devrites files
   devrites-engine readiness <slug>         Gate: are the sections required to leave this phase complete?
@@ -118,6 +122,12 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	switch args[0] {
+	case "install":
+		return install.Run(args[1:], stdout, stderr, install.ModeInstall)
+	case "update":
+		return install.Run(args[1:], stdout, stderr, install.ModeUpdate)
+	case "uninstall":
+		return install.Run(args[1:], stdout, stderr, install.ModeUninstall)
 	case "status":
 		rest, j := extractFlag(args[1:], "--json")
 		return jsonWrap("status", j, stdout, stderr, func(o, e io.Writer) int { return cmdStatus(rest, o, e) })

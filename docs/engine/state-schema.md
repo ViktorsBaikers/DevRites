@@ -1,6 +1,6 @@
 # `.devrites/` state schema (v1)
 
-The `devrites` engine reads a project's workflow state from plain files under
+The `devrites-engine` binary reads a project's workflow state from plain files under
 `.devrites/`. Those files are the source of truth and are hand-editable — a
 human edit always wins. (A derived SQLite index is added in issue 02 purely as a
 disposable navigator; it never overrides the files.)
@@ -103,7 +103,7 @@ phase) never blocks.
 | `seal`  | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` |
 | `ship`  | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` |
 
-## `devrites status <slug>`
+## `devrites-engine status <slug>`
 
 Prints the feature's phase and, for each section, its present/empty state and
 whether the current phase requires it, then a completeness verdict computed over
@@ -135,9 +135,9 @@ The files are the source of truth. `state.db` — a pure-Go SQLite database (WAL
 mode) written under the `.devrites/` root — is a **disposable, gitignored
 navigator** over them, never an authority.
 
-- **`devrites reindex`** drops `state.db` and rebuilds it from the files,
+- **`devrites-engine reindex`** drops `state.db` and rebuilds it from the files,
   reporting how many features were indexed. Deleting `state.db` costs nothing.
-- **`devrites status`** serves from the index. Before answering it
+- **`devrites-engine status`** serves from the index. Before answering it
   staleness-checks the feature: each of its files is fingerprinted by name,
   size, mtime, and content hash, and any change (edit, add, remove) re-indexes
   that feature first — so a **hand-edit always wins** without an explicit

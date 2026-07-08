@@ -109,8 +109,7 @@ A quick map — the [README "Layout" section](README.md#layout) has the full ver
 - `pack/.claude/skills/devrites-lib/reference/standards/` — 20 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
 - `evals/` — trigger evals (20 queries per public skill), `golden/` fixtures for the deterministic outcome grader, and `behavioral/` discipline-under-pressure scenarios for gating rites.
 - `scripts/` — install lib, validators, eval runner, the outcome grader (`grade-feature.sh` / `run-outcome-evals.sh`), release tooling.
-- `mcp/` — `devrites-mcp.mjs`, an MCP stdio server over the `devrites` CLI.
-- `docs/` — architecture, skills, command map, flow diagrams, usage, release, `cli-mcp`.
+- `docs/` — architecture, skills, command map, flow diagrams, usage, release, CLI.
 - `tests/` — install/uninstall smoke + fixture install + pack validation.
 
 ## Authoring guidelines

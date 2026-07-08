@@ -37,14 +37,11 @@ Once a `1.0` release ships, the latest two minor lines will be supported.
 
 ### Scope
 
-DevRites is a Claude Code **skills pack**: Markdown skill files, a few helper
-shell scripts, a bash installer, and a thin `npx` CLI wrapper (`bin/devrites.mjs`)
-that shells out to that installer. It ships **no binary and no network service**. The only server is an
-**optional, opt-in MCP stdio server** (`mcp/devrites-mcp.mjs`) that speaks
-JSON-RPC over stdin/stdout (no port, no socket), is not installed or registered
-by default, and only shells out to the local `devrites-engine` binary — read/gate ops over
-`.devrites/` plus a single `ACTIVE`-pointer write. The attack surface is the
-content of the skill files plus the installer.
+DevRites is a skills pack plus the local `devrites-engine` control-plane binary:
+Markdown skill files, helper scripts, a bash installer, and a thin `npx` CLI
+wrapper (`bin/devrites.mjs`) that bootstraps or proxies the engine. It ships no
+network service. The attack surface is the content of the skill files, the
+installer, generated host artifacts, hooks, and the local engine binary.
 
 ### Supply-chain self-scan (shipped pack)
 

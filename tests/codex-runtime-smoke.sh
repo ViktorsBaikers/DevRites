@@ -7,6 +7,7 @@
 # Set DEVRITES_CODEX_SUBAGENT_SMOKE=1 to run a real custom-subagent spawn
 # assertion from the Codex JSON event stream; that path consumes more tokens.
 set -u
+export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
 ok() { printf '  ok: %s\n' "$*"; }
@@ -16,7 +17,14 @@ command -v codex >/dev/null 2>&1 || { echo "codex-runtime-smoke: SKIP (codex CLI
 command -v python3 >/dev/null 2>&1 || { echo "codex-runtime-smoke: SKIP (python3 not found)"; exit 0; }
 
 T="$(mktemp -d)"
-trap 'rm -rf "$T"' EXIT
+GEN=""
+trap 'rm -rf "$T"; [ -n "$GEN" ] && rm -rf "$GEN"' EXIT
+if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
+  GEN="$(mktemp -d)"
+  DEVRITES_HOST_ARTIFACT_DIR="$GEN" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
+    || { echo "  FAIL: could not build host artifacts"; exit 1; }
+  export DEVRITES_HOST_ARTIFACT_DIR="$GEN"
+fi
 PROJECT="$T/project"
 mkdir -p "$PROJECT" "$T/home" "$T/codex-home"
 
@@ -50,41 +58,8 @@ else
   no "Codex prompt input missing DevRites guidance"
 fi
 
-printf '%s\n%s\n' \
-  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
-  '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-  | (cd "$PROJECT" && node .codex/mcp/devrites-mcp.mjs) > "$T/mcp.jsonl" 2> "$T/mcp.err"
-if grep -q 'devrites_status' "$T/mcp.jsonl" && grep -q 'DevRites exposes deterministic workflow state' "$T/mcp.jsonl"; then
-  ok "DevRites MCP server initializes and lists tools"
-else
-  no "DevRites MCP server did not initialize/list tools"
-  sed -n '1,80p' "$T/mcp.err"
-  sed -n '1,80p' "$T/mcp.jsonl"
-fi
-
-FAKEBIN="$T/fakebin"
-mkdir -p "$FAKEBIN"
-cat > "$FAKEBIN/devrites-engine" <<'SH'
-#!/usr/bin/env bash
-printf '%s\n' "$*" > "$DEVRITES_FAKE_ARGS"
-case "$1" in
-  build-readiness) printf 'readiness: OK %s\n' "${2:-}" ;;
-  *) printf 'unexpected command: %s\n' "$*" >&2; exit 9 ;;
-esac
-SH
-chmod +x "$FAKEBIN/devrites-engine"
-printf '%s\n%s\n' \
-  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
-  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"devrites_ready","arguments":{"slug":"alpha"}}}' \
-  | (cd "$PROJECT" && PATH="$FAKEBIN:$PATH" DEVRITES_FAKE_ARGS="$T/mcp.args" node .codex/mcp/devrites-mcp.mjs) > "$T/mcp-call.jsonl" 2> "$T/mcp-call.err"
-if grep -q 'readiness: OK alpha' "$T/mcp-call.jsonl" && [ "$(cat "$T/mcp.args" 2>/dev/null)" = "build-readiness alpha" ]; then
-  ok "DevRites MCP tools/call invokes the engine binary"
-else
-  no "DevRites MCP tools/call did not invoke the engine binary"
-  sed -n '1,80p' "$T/mcp-call.err"
-  sed -n '1,80p' "$T/mcp-call.jsonl"
-  [ -f "$T/mcp.args" ] && sed -n '1,20p' "$T/mcp.args"
-fi
+[ -e "$PROJECT/.codex/mcp" ] && no "DevRites MCP directory installed" || ok "DevRites MCP directory not installed"
+[ -e "$PROJECT/.codex/config.toml" ] && no "DevRites Codex MCP config installed" || ok "DevRites Codex MCP config not installed"
 
 MODEL_HOME="${DEVRITES_CODEX_MODEL_HOME:-${HOME:-}}"
 MODEL_CODEX_HOME="${DEVRITES_CODEX_MODEL_CODEX_HOME:-${CODEX_HOME:-}}"

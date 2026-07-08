@@ -1,0 +1,125 @@
+# Parallel review dispatch
+
+How `/rite-review` and `/rite-seal` fan out the fresh-context review subagents under
+`.claude/agents/`. The **single source** for the dispatch + reconciliation contract — loaded on
+demand by the calling skill (each points here); not a skill itself.
+
+The seal/review fan-out **roster** is the seven post-build reviewers in the table below — this
+file is the single source of which reviewer fires when. The seal and the multi-axis review need
+them running **at the same time**, on the same workspace + diff, so the verdicts don't
+contaminate each other. Every other agent under `.claude/agents/` fires from its own phase, not
+here — the roster table below names them under **Not in this fan-out** so the set is unambiguous.
+
+Pattern: delegate to specialized agents with isolated context, brief each one precisely, run
+them concurrently, reconcile on return.
+
+## The roster — every reviewer the fan-out accounts for
+
+These seven are the **roster**. `/rite-seal` accounts for **all** of them — the always-on three
+plus each conditional, either dispatched or skip-recorded; `/rite-review` runs the two always-on
+axes. Each trigger is a *checkable signal*, not a judgement call, so a conditional reviewer is
+either fired or consciously skipped — never silently dropped.
+
+| Reviewer | Fires | Trigger — the checkable signal |
+|---|---|---|
+| `devrites-spec-reviewer` | always | `/rite-review` Spec axis; `/rite-seal` (carry review's verdict forward only if the diff is unchanged) |
+| `devrites-code-reviewer` | always | `/rite-review` Code-review axis; `/rite-seal` (carry forward only if the diff is unchanged) |
+| `devrites-test-analyst` | always | at `/rite-seal` |
+| `devrites-frontend-reviewer` | conditional | the diff touches a UI file — component / template / stylesheet, per the project's UI paths |
+| `devrites-security-auditor` | conditional | the diff touches input handling, auth / authz, data storage or access, an external integration, or a secret |
+| `devrites-performance-reviewer` | conditional | `spec.md` states a perf budget, **OR** the diff adds a query / a loop over a growing set / hot-path or render work |
+| `devrites-devex-reviewer` | conditional | the diff changes a developer-facing surface — public API, CLI, SDK/library export, webhook, config/env contract, error message, or getting-started path |
+
+**Not in this fan-out** (named so the roster is unambiguous): `devrites-simplifier-reviewer` fires
+at `/rite-polish` Phase 1 (via `devrites-audit simplify`) and `devrites-doubt-reviewer` fires from
+`devrites-doubt` when a decision is stood up — neither is a seal reviewer, so neither is part of
+the seal accounting. `devrites-strategy-reviewer` (pre-plan, `/rite-temper`), `devrites-plan-reviewer`
+(pre-build, `/rite-vet`), `devrites-forge-judge` (`/rite-build` forge), and `devrites-retrospector`
+(`/rite-ship` close) are single-agent, phase-locked gates — they fire iff their phase runs, not here.
+
+One entity, one name: the `devrites-code-reviewer`'s axis is the **Code-review axis** everywhere
+(at both `/rite-review` and `/rite-seal`) — don't rename it per caller.
+
+## Dispatch shape
+
+For each chosen subagent, the caller uses the `Task` tool with this prompt shape:
+
+```
+Audit the active DevRites feature.
+
+Workspace: .devrites/work/<slug>/
+Read (yourself, fresh context):
+  - spec.md  (+ acceptance criteria)
+  - touched-files.md
+  - the git diff
+  - <any axis-specific files: decisions.md, evidence.md, references/...>
+
+Before judging the diff, derive the expected behaviour from the spec
+yourself, then compare it against what the code does. Anchor every finding
+to file:line plus the spec criterion or command output that proves it —
+an unanchored finding is a Suggestion at most. The order or length of the
+diff is not evidence.
+
+Apply your documented discipline. Return labeled findings (Critical /
+Important / Suggestion / Nit / FYI) using your documented output format,
+ONE FINDING PER LINE, cite file:line.
+
+Feature scope only. No edits. Do not summarize or re-rank — the caller
+reconciles.
+```
+
+Rules:
+
+- **One Task call per subagent.** Send them in a single message with multiple `Task` invocations so the runtime dispatches concurrently.
+- **No cross-pollination.** Each subagent gets only its narrow brief and the workspace path. Do not pass another subagent's findings into a sibling's prompt — that recreates the masking problem.
+- **No author context.** Do not include the caller's analysis or the user's framing of the change; the point is a fresh, adversarial read.
+- **Feature scope only.** Each subagent must stay inside `touched-files.md` + the diff.
+
+## Account for every reviewer — the roster gate
+
+The fan-out is done only when **every roster reviewer is accounted for** — dispatched, or
+consciously skipped with a one-line reason. A conditional reviewer that genuinely does not apply
+(no UI in the diff → `frontend-reviewer`) is a *recorded* skip, not a silent no-op. That record
+is the difference between "reviewed" and "declared done after firing three of seven" — the silent
+skip is exactly how a needed reviewer never runs.
+
+Record each decision to the footprint as you make it (via `devrites-engine footprint`, as in `/rite-build`). Log the reviewer's
+**exact agent name** — the `.claude/agents/` stem, e.g. `devrites-frontend-reviewer`; the `roster`
+gate matches on it (stripping the `devrites-` prefix), so a freehand label like `frontend` or
+`Spec axis` will not match and the gate reads that reviewer as unaccounted:
+
+- dispatched → `devrites-engine footprint log <slug> reviewer devrites-<x>-reviewer`  (the dispatch record itself)
+- skipped → `devrites-engine footprint log <slug> skip devrites-<x>-reviewer`  # e.g. `skip devrites-frontend-reviewer` — no UI in the diff
+
+Then, **before the verdict**, prove the roster is complete:
+
+```bash
+devrites-engine footprint roster <slug>   # rc=0 complete · rc=3 a reviewer was neither dispatched nor skipped · rc=1 an always-on reviewer was skipped
+```
+
+`rc=3` is the silent omission the gate exists to catch: resolve it by dispatching the reviewer or
+recording why it does not apply — never by proceeding with it unaccounted. `rc=1` means an
+always-on axis (Spec / Code-review) was skip-recorded; that is legitimate only as a carry-forward
+of `/rite-review`'s verdict on an **unchanged** diff — confirm that, don't wave it through.
+
+## Reconciliation
+
+When the subagents return:
+
+1. **Quote verbatim.** Place each subagent's findings under its own `## <axis>` heading in `review.md` / `seal.md`. Do not merge, re-rank, or summarize. `devrites-code-reviewer` runs its **full** documented discipline (tests-first, correctness, readability, architecture, maintainability, standards); the inline lead **reconciles** the returned reports — it does not re-run those same axes itself.
+2. **Surface contradictions explicitly.** "Spec axis says complete, Code-review axis says untestable" is a finding, not noise. The caller decides at the gate.
+3. **Severity is the gate, not a score.** Sum the labels (`Critical / Important / Suggestion / Nit / FYI`) and apply the caller's gate (`/rite-seal` blocks on `Critical == 0`; `/rite-review` reports counts).
+4. **One scale.** All subagents use the same five-label scale (Critical / Important / Suggestion / Nit / FYI). Reject any subagent output that invents its own. **Exception:** `devrites-simplifier-reviewer` deliberately emits only Suggestion / Nit / FYI (it is non-blocking by design) — that is a valid subset of the scale, not an invented one; do not reject it during reconciliation.
+5. **Consensus roll-up (after the verbatim per-axis record).** Keep every axis's findings verbatim under its `## <axis>` heading (above), then add one deduped roll-up the gate reads: where **≥2 axes flag the same `file:line`**, raise it to the top and mark it *consensus* — independent corroboration raises confidence. A lone low-confidence finding with no `file:line` or evidence anchor drops out of the roll-up (it stays in its per-axis section). The roll-up reduces noise without hiding any axis — the verbatim sections are the audit trail; the roll-up is the actionable summary the gate acts on.
+
+## Model tier
+
+Every reviewer in this fan-out runs at **ceiling tier** — the orchestrator's own model, inherited
+by declaring no `model:` in the agent definition (see
+[`model-tiers.md`](model-tiers.md)). Adversarial review is exactly where a cheaper model costs the
+most: a missed Critical is far more expensive than the tokens saved. Do not downgrade a reviewer to
+save cost. Extraction-tier savings belong to scouts (archive-search, footprint), not to the panel.
+
+## Fallback
+
+If the `Task` tool is unavailable in the current environment, the caller runs the relevant subagent discipline **inline** in its own context and flags the result as a fallback (not an independent review). The seal weighs the fallback differently — see [`../../rite-seal/reference/risk-and-rollback.md`](../../rite-seal/reference/risk-and-rollback.md). This is the [`model-tiers.md`](model-tiers.md) degradation rule applied to the review panel: no subagent primitive → run inline under the same discipline and budget.

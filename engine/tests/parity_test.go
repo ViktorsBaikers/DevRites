@@ -1,6 +1,6 @@
 package main_test
 
-// Golden CLI harness: run `devrites <args>` against a fixture and compare its
+// Golden CLI harness: run `devrites-engine <args>` against a fixture and compare its
 // stdout + exit code to a recorded snapshot under testdata/golden/. The snapshots
 // were captured from the commands once they were proven correct, so a later change
 // that alters observable behaviour fails here. Regenerate them deliberately with
@@ -20,12 +20,12 @@ import (
 	"testing"
 )
 
-// parityCase describes one fixture run of the devrites binary.
+// parityCase describes one fixture run of the devrites-engine binary.
 type parityCase struct {
 	workdir string   // cwd the command runs in
 	env     []string // extra environment
 	stdin   string   // payload piped to stdin (hooks read stdin)
-	goArgs  []string // args to the built devrites binary (binPath is prepended)
+	goArgs  []string // args to the built devrites-engine binary (binPath is prepended)
 }
 
 // assertEqual runs the command and compares its stdout + exit code to the golden

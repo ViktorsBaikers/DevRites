@@ -67,7 +67,7 @@ func AppendLog(path, record string) error {
 }
 
 // WithFeatureLock runs fn while holding an exclusive, advisory, per-feature lock,
-// serializing read-modify-write across concurrent devrites processes so two
+// serializing read-modify-write across concurrent devrites-engine processes so two
 // writers never corrupt a feature's files. On unix the lock is flock-based and
 // is released automatically even if the process dies mid-operation (crash-safe);
 // see lock_unix.go / lock_other.go.

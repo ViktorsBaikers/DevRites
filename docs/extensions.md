@@ -60,9 +60,9 @@ devrites-engine extensions sync        # mirror valid extensions into .claude/ s
 ### Harness scope
 
 `sync` targets the **Claude** layout (`.claude/skills`, `.claude/agents`), which the harness
-auto-discovers. Codex mirroring — the `.md` → `.codex/agents/*.toml` conversion and the skills-list
-description stubbing — remains the installer's job; re-run the installer to propagate an extension to
-the Codex mirror.
+auto-discovers. It does not generate Codex mirrors. The `.md` → `.codex/agents/*.toml` conversion,
+path rewriting, hook/config blocks, and skills-list description stubbing are deliberately limited to
+the generated shipped pack artifacts so extension sync does not become a second Codex generator.
 
 ---
 

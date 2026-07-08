@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -204,10 +205,10 @@ func mapLegacyPhase(word string) (state.Phase, bool) {
 // a timestamped, gitignored backup directory under root before any change.
 func backupWorkspace(root string) (string, error) {
 	backup := filepath.Join(root, fmt.Sprintf(".migrate-backup-%d", time.Now().UnixNano()))
-	if err := copyTree(filepath.Join(root, "work"), filepath.Join(backup, "work")); err != nil {
+	if err := fsutil.CopyTree(filepath.Join(root, "work"), filepath.Join(backup, "work")); err != nil {
 		return "", err
 	}
-	if err := copyTree(filepath.Join(root, "features"), filepath.Join(backup, "features")); err != nil {
+	if err := fsutil.CopyTree(filepath.Join(root, "features"), filepath.Join(backup, "features")); err != nil {
 		return "", err
 	}
 	// The ACTIVE pointer is a single small file; copy it if present.
@@ -220,38 +221,4 @@ func backupWorkspace(root string) (string, error) {
 		}
 	}
 	return backup, nil
-}
-
-// copyTree recursively copies src into dst. A missing src is not an error.
-func copyTree(src, dst string) error {
-	info, err := os.Stat(src)
-	if os.IsNotExist(err) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if !info.IsDir() {
-		data, err := os.ReadFile(src)
-		if err != nil {
-			return err
-		}
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			return err
-		}
-		return os.WriteFile(dst, data, 0o644)
-	}
-	entries, err := os.ReadDir(src)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(dst, 0o755); err != nil {
-		return err
-	}
-	for _, e := range entries {
-		if err := copyTree(filepath.Join(src, e.Name()), filepath.Join(dst, e.Name())); err != nil {
-			return err
-		}
-	}
-	return nil
 }

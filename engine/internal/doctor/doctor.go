@@ -62,7 +62,7 @@ func Diagnose(projectDir, root string) (*Report, error) {
 		r.Verdict = fmt.Sprintf("REFUSE: state schema v%d is newer than this binary supports (v%d) — update devrites",
 			r.StateSchema, r.BinarySchema)
 	case r.packSkew():
-		r.Verdict = fmt.Sprintf("WARN: binary %s is older than the installed pack %s — update the devrites binary",
+		r.Verdict = fmt.Sprintf("WARN: binary %s is older than the installed pack %s — update the devrites-engine binary",
 			r.Binary, r.Pack)
 	default:
 		r.Verdict = "ok: binary, pack, and state schema are compatible"

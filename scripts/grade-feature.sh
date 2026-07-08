@@ -103,7 +103,7 @@ run_acceptance_check() {
     ( cd "$ROOT/engine" && go run . check-acceptance "$ws" )
     return $?
   fi
-  printf 'check-acceptance: devrites engine unavailable (install devrites or run from a checkout with Go)\n' >&2
+  printf 'check-acceptance: devrites-engine unavailable (install devrites or run from a checkout with Go)\n' >&2
   return 127
 }
 

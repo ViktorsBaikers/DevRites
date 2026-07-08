@@ -13,7 +13,7 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DIST="$ROOT/dist"
+DIST="${DEVRITES_RELEASE_DIST_DIR:-$ROOT/dist}"
 NAME="devrites-v${VERSION}"
 STAGE="$DIST/$NAME"
 
@@ -27,6 +27,7 @@ mkdir -p "$STAGE"
 # Files and directories shipped to end-users.
 PAYLOAD=(
   pack
+  engine
   scripts
   mcp
   docs
@@ -48,6 +49,9 @@ for item in "${PAYLOAD[@]}"; do
     cp -R "$item" "$STAGE/"
   fi
 done
+
+# Ship the same prebuilt host-native artifacts that npm pack includes.
+DEVRITES_HOST_ARTIFACT_DIR="$STAGE/pack/generated" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null
 
 # Drop dev-only artifacts that may have been copied transitively.
 rm -rf "$STAGE/docs/internal" "$STAGE/scripts/.cache" 2>/dev/null || true

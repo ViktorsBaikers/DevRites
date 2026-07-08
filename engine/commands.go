@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/doctor"
 	"github.com/devrites/devrites/internal/migrate"
 	"github.com/devrites/devrites/internal/state"
@@ -24,7 +25,7 @@ func resolveRootLenient() string {
 	if err != nil {
 		return ".devrites"
 	}
-	return filepath.Join(cwd, ".devrites")
+	return filepath.Join(cwd, devritespaths.DevritesRootName)
 }
 
 // cmdDoctor reports the binary / pack / state-schema version triangle and its

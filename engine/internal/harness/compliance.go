@@ -57,7 +57,7 @@ type Surface struct {
 }
 
 // complianceMatrix is grounded in the shipped wiring: pack/.claude/settings.json
-// for Claude, the installer's gen_codex_hooks_json + AGENTS.md merge for Codex.
+// for Claude, generated host artifacts + AGENTS.md merge for Codex.
 // Change a cell only when that wiring changes.
 var complianceMatrix = []Surface{
 	{"SessionStart orientation", Native, Native, "Both wire the orient hook; identical additionalContext envelope."},

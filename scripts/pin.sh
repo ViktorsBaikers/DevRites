@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # scripts/pin.sh — manage user-pinned slash aliases for DevRites.
 #
-# Adopts the same "thin wrapper SKILL.md that delegates" pattern as install.sh
-# uses for --short-aliases=all, but exposes it as a runtime verb so users can
-# add / remove arbitrary aliases against any rite-* skill without re-running
-# the installer.
+# Adopts the same "thin wrapper SKILL.md that delegates" pattern as the engine
+# installer uses for --short-aliases=all, but exposes it as a runtime verb so
+# users can add / remove arbitrary aliases against any rite-* skill without
+# re-running the installer.
 #
 # Usage:
 #   scripts/pin.sh add    <alias> <target>      # /alias → /target (target = rite-spec | rite-build | ...)

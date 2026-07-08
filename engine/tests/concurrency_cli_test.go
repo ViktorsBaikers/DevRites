@@ -2,7 +2,7 @@ package main_test
 
 // Issue 07: multi-process concurrency. DevRites fans out reviewer subagents that
 // each spawn the binary, so the real contention is between short-lived
-// processes, not goroutines. This spawns many concurrent devrites processes
+// processes, not goroutines. This spawns many concurrent devrites-engine processes
 // against ONE workspace and asserts they all succeed with consistent output —
 // exercising WAL + busy_timeout so SQLITE_BUSY never surfaces as a hard failure.
 
