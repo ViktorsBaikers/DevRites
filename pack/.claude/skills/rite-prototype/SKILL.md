@@ -12,7 +12,7 @@ chooses the shape — get the shape wrong and the whole prototype wastes the use
 
 ## 0. Read core rules
 
-Read `.claude/rules/core.md` first — the operating rules and the "capture the answer"
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first — the operating rules and the "capture the answer"
 persistence discipline apply even to throwaway code. The other rule files load on demand.
 
 ## 1. Name the question
@@ -87,3 +87,20 @@ fills the verdict before the prototype is deleted.
 
 After the prototype answers the question and the answer is recorded, return to the
 calling phase. The prototype itself does **not** ship.
+
+## Output
+
+Reply-contract exception: scoped prototype detour. Run `devrites-engine progress` only when
+an active workspace exists; otherwise skip it. Use the compact labels from the shared
+completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+
+```
+Done: prototype answered <question>.
+Changed: <prototype path | deleted after absorption>; decisions.md or NOTES.md
+Evidence: run command <cmd -> result>; verdict <one line>
+Open: <none | awaiting human verdict | delete/absorb remaining>
+Next: <single command returning to the calling phase>
+Record: <.devrites/work/<slug>/decisions.md | NOTES.md path>
+↻ Hygiene: /clear after the answer is recorded; delete or absorb throwaway code before shipping
+```

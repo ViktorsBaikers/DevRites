@@ -10,7 +10,6 @@
 /pack/                                  @ViktorsBaikers
 /pack/.claude/skills/                   @ViktorsBaikers
 /pack/.claude/agents/                   @ViktorsBaikers
-/pack/.claude/rules/                    @ViktorsBaikers
 
 # Install / uninstall surface — safety-critical.
 /install.sh                             @ViktorsBaikers

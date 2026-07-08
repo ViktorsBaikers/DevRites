@@ -33,6 +33,7 @@ F=.claude/skills/rite-$V/SKILL.md
 | `vet [--cross-model]` | `/rite-vet` | optional engineering plan review (scope · architecture · tests · perf) before build |
 | `plan [mode]` | `/rite-plan` | reshape / reslice / repair an active plan |
 | `build [slice]` | `/rite-build` | implement exactly one vertical slice, then stop |
+| `converge [slug]` | `/rite-converge` | recovery — assess live code vs intent, append remaining work as new slices |
 | `prove` | `/rite-prove` | full tests + browser proof |
 | `polish [mode]` | `/rite-polish` | code + UI polish |
 | `review [scope]` | `/rite-review` | multi-axis feature review |
@@ -67,6 +68,10 @@ decision) · `devrites-api-interface` (cross-boundary) ·
 reference (see [`devrites-lib/reference/parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)).
 
 ## What to output
+
+Reply-contract exception: `/rite` is the menu/router, not a workspace completion step.
+Called phase skills own the shared completion reply contract
+([`reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 
 1. **Verb in `$ARGUMENTS`** → dispatch per the table above. The called skill owns the response.
 2. **No args** → render the menu below, then stop.
@@ -112,6 +117,6 @@ UTILITY       /rite frame | prototype | handoff | zoom-out | pressure-test  (or 
 
 ## Core operating rules (every DevRites skill enforces)
 
-The operating rules live in `.claude/rules/core.md`; DevRites skills Read it as
+The operating rules live in `.claude/skills/devrites-lib/reference/standards/core.md`; DevRites skills Read it as
 their first step, and the other rule files load on demand. See
-[`.claude/rules/README.md`](../../rules/README.md) for the full index.
+[`.claude/skills/devrites-lib/reference/standards/README.md`](../devrites-lib/reference/standards/README.md) for the full index.

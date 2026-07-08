@@ -171,11 +171,21 @@ func (h Harness) SubagentAgentType(r io.Reader) string {
 // human-readable reason. Both harnesses honour the hookSpecificOutput envelope
 // the legacy PreToolUse guards emit; the seam lets one diverge later.
 func (h Harness) PreToolDeny(reason string) (string, error) {
+	return h.preToolDecision("deny", reason)
+}
+
+// PreToolAllow returns the hook stdout that auto-approves a tool call, bypassing
+// the normal permission prompt.
+func (h Harness) PreToolAllow(reason string) (string, error) {
+	return h.preToolDecision("allow", reason)
+}
+
+func (h Harness) preToolDecision(decision, reason string) (string, error) {
 	switch h {
 	case Claude, Codex:
 		var env preToolEnvelope
 		env.HookSpecificOutput.HookEventName = "PreToolUse"
-		env.HookSpecificOutput.PermissionDecision = "deny"
+		env.HookSpecificOutput.PermissionDecision = decision
 		env.HookSpecificOutput.PermissionDecisionReason = reason
 		return marshalCompact(env)
 	default:
@@ -189,6 +199,73 @@ type preToolEnvelope struct {
 		PermissionDecision       string `json:"permissionDecision"`
 		PermissionDecisionReason string `json:"permissionDecisionReason"`
 	} `json:"hookSpecificOutput"`
+}
+
+// GuardInput is the fuller PreToolUse / PostToolUse payload the write-guards read:
+// the tool + its command / target path, the calling subagent's identity (both the
+// agent_id Claude sends and the agent_type Codex sends), and the tool's response
+// text (for the post-hooks that inspect output). Best-effort — bad stdin yields
+// the zero value so a guard stays fail-open.
+type GuardInput struct {
+	ToolName     string
+	Command      string
+	FilePath     string
+	AgentType    string
+	AgentID      string
+	ToolResponse string
+}
+
+// ParseGuardInput decodes a guard hook's stdin. tool_response may arrive as a
+// string or a structured object; an object is rendered as its compact JSON, the
+// way the shell hooks' `JSON.stringify` node parse does.
+func (h Harness) ParseGuardInput(r io.Reader) GuardInput {
+	var raw struct {
+		ToolName  string `json:"tool_name"`
+		ToolInput struct {
+			Command  string `json:"command"`
+			FilePath string `json:"file_path"`
+			Path     string `json:"path"`
+		} `json:"tool_input"`
+		AgentType    string          `json:"agent_type"`
+		AgentID      string          `json:"agent_id"`
+		ToolResponse json.RawMessage `json:"tool_response"`
+	}
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return GuardInput{}
+	}
+	_ = json.Unmarshal(data, &raw)
+
+	resp := ""
+	if len(raw.ToolResponse) > 0 {
+		if raw.ToolResponse[0] == '"' {
+			_ = json.Unmarshal(raw.ToolResponse, &resp) // JSON string → its value
+		} else {
+			resp = string(raw.ToolResponse) // object/array/number → raw JSON text
+		}
+	}
+	return GuardInput{
+		ToolName:     raw.ToolName,
+		Command:      raw.ToolInput.Command,
+		FilePath:     firstNonEmpty(raw.ToolInput.FilePath, raw.ToolInput.Path),
+		AgentType:    raw.AgentType,
+		AgentID:      raw.AgentID,
+		ToolResponse: resp,
+	}
+}
+
+// PostToolContext returns the hook stdout that injects text as PostToolUse
+// additionalContext (e.g. the fail-on-red notice).
+func (h Harness) PostToolContext(text string) (string, error) {
+	switch h {
+	case Claude, Codex:
+		var env additionalContextEnvelope
+		env.HookSpecificOutput.HookEventName = "PostToolUse"
+		env.HookSpecificOutput.AdditionalContext = text
+		return marshalCompact(env)
+	default:
+		return "", fmt.Errorf("unsupported harness %q", h)
+	}
 }
 
 // SubagentStartContext returns the hook stdout that injects text as

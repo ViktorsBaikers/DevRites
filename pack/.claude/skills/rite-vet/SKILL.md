@@ -21,8 +21,8 @@ different-model second opinion. **Read the active workspace first**; if there's 
 This is the engineering counterpart to `/rite-temper` (which is strategic, on the *spec*).
 Temper decides *the right thing*; vet decides *the right way to build it*.
 
-## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. Pull on demand: `principles.md` (the project
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Pull on demand: `principles.md` (the project
 invariants gate — how `.devrites/principles.md` is scored pass/fail), `patterns.md` +
 `coding-style.md` (the over-engineering / reuse-first / YAGNI rubric — reuse the pack's
 standard), `testing.md` (the test-coverage axis) + `spec-grammar.md` (when the spec uses
@@ -31,7 +31,10 @@ map), `performance.md` (the perf axis),
 `error-handling.md` (failure-mode coverage), `development-workflow.md` (parallel lanes,
 definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling),
 `developer-experience.md` (when the plan ships a developer-facing surface — API / CLI / SDK /
-webhook / config / error messages / getting-started — predict the DX scorecard here).
+webhook / config / error messages / getting-started — predict the DX scorecard here),
+`elicitation.md` (the move-set to deepen an axis finding or a risky design choice — selected by
+the section's risk: Tournament for two viable designs, Delphi for a shaky estimate, Assumption
+Audit for a plan resting on unstated beliefs).
 
 ## Operating rules
 - **Review the plan, not the spec's ambition.** The spec's scope/ambition is `/rite-temper`'s
@@ -54,22 +57,19 @@ webhook / config / error messages / getting-started — predict the DX scorecard
   the weakest finding, not an average. Record every call's *why*.
 
 ## Workflow
-0. **Read `.claude/rules/core.md`** first.
+0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`** first.
    Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
    Then the workspace: `plan.md`, `tasks.md`, `spec.md`
    (for intent + acceptance), `strategy.md` (if `/rite-temper` ran), `decisions.md`,
    `assumptions.md`, `design-brief.md` (if UI), `state.md`. Require a `plan.md` whose
    Readiness gate passes (or `Plan approved`) — else STOP → `/rite-define`. Prefer a
    code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
-   (see `.claude/rules/tooling.md`) — for placement / blast-radius / reuse checks.
+   (see `.claude/skills/devrites-lib/reference/standards/tooling.md`) — for placement / blast-radius / reuse checks.
 1. **Calibrate depth — never skip** — [`reference/depth.md`](reference/depth.md). Every plan is
    vetted; what scales is the *depth*. A simple, single-module, reversible plan with no
    irreversible-risk / data-model / new-pattern trigger → **light pass** (brief scope check + a
@@ -84,11 +84,11 @@ webhook / config / error messages / getting-started — predict the DX scorecard
    coverage is ~100× cheaper than the human-hours saved by a shortcut — prefer complete); and a
    distribution check for any new artifact.
 2a. **Cross-artifact analyze gate + principles / charter / conventions gate.** Before the axes, run
-   one read-only consistency+coverage pass over `spec.md` + `plan.md` + `tasks.md` (+ `coverage.md`
+   one read-only consistency+coverage pass over `spec.md` + `plan.md` + `tasks.md` (+ `traceability.md`
    if present); any **CRITICAL** — an acceptance criterion with no slice, a slice satisfying no
    criterion, a contradiction across artifacts — **blocks `/rite-build`** until resolved. Then score
    the three project gates as explicit **pass/fail** on the planned approach:
-   - **Principles** (`.devrites/principles.md`, rubric in [`principles.md`](../../rules/principles.md))
+   - **Principles** (`.devrites/principles.md`, rubric in [`principles.md`](../devrites-lib/reference/standards/principles.md))
      — the authored invariants the project will not break. A plan that bakes in a violation of a
      declared principle with **no recorded, human-approved exception** is a **top-severity** finding,
      walked **first**, and **blocks `/rite-build`**. Absent or empty file → none declared → passes;
@@ -100,17 +100,18 @@ webhook / config / error messages / getting-started — predict the DX scorecard
      no second caller, or a dependency where an in-repo option exists is a **top-severity** violation.
    **Re-check all three after the axes harden the plan** (post-design). Write the result to `analysis.md`.
    ```bash
-   A=.claude/skills/devrites-lib/scripts/analyze.sh
-   [ -f "$A" ] || A="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/analyze.sh"
-   [ -f "$A" ] || A=pack/.claude/skills/devrites-lib/scripts/analyze.sh
-   [ -f "$A" ] && { bash "$A"; echo "analyze rc=$?"; } || echo "(analyze.sh unavailable — do the cross-artifact pass by hand: every AC↔slice mapped, no contradiction across spec/plan/tasks)"
+   devrites-engine analyze; echo "analyze rc=$?"
    ```
 3. **Four-axis review** — [`reference/review-axes.md`](reference/review-axes.md), through the
    senior-engineer lenses in [`reference/eng-lenses.md`](reference/eng-lenses.md): **Architecture
    → Plan code-quality → Test-coverage design → Performance**, ≤8 findings per axis, each
    `[severity] (confidence: N/10) <ref> — finding`. **Walk findings WITH the human, one at a
    time** via `AskUserQuestion` (best-guess + why + options with effort/risk/maintenance, mapped
-   to a rule) — the artifact is the *output* of the review, not a substitute for it. (AFK ceiling
+   to a rule) — the artifact is the *output* of the review, not a substitute for it.
+   When an axis finding hinges on a genuinely open design choice or a shaky estimate, deepen that
+   one finding with a fitting technique from
+   [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) (Tournament for two viable
+   designs, Delphi for the estimate, Assumption Audit for unstated beliefs) before you band it. (AFK ceiling
    single-sourced in [`reference/depth.md`](reference/depth.md): hardening /
    coverage-increasing findings auto-apply; **anything that grows scope or changes acceptance is a
    blocking pause**; irreversible-risk always pauses.)
@@ -121,10 +122,13 @@ webhook / config / error messages / getting-started — predict the DX scorecard
    table, "NOT in scope", "What already exists",
    and the worktree parallelization strategy. Shapes in [`reference/review-axes.md`](reference/review-axes.md).
    **Developer-facing surface?** If the plan ships one (`developer-experience.md` — API / CLI / SDK /
-   webhook / config / error messages / getting-started), predict the DX scorecard: the time-to-hello-world
-   estimate plus the getting-started, error-message, and ergonomics friction the plan bakes in. Write it
-   to `devex.md` as the **prediction the boomerang measures against** at `/rite-prove` / `/rite-seal`.
-   Absent surface → skip, no `devex.md` (greenfield no-op, like the principles gate).
+   webhook / config / error messages / getting-started), the DX scorecard is **predicted by a
+   fresh-context `devrites-devex-reviewer` in predict mode** (dispatched in step 6 alongside the
+   plan-reviewer): it scores the *planned* surface — time-to-hello-world estimate plus the
+   getting-started, error-message, and ergonomics friction the plan bakes in — and writes `devex.md`,
+   the **prediction the boomerang measures against** at `/rite-prove` / `/rite-seal`. If subagents are
+   unavailable, score it inline as a flagged fallback. Absent surface → skip, no `devex.md`
+   (greenfield no-op, like the principles gate).
    Also a **PRP one-pass-implementable check** per slice brief (the build's pre-flight): confirm each
    slice's Consumes/Produces, Known-Gotchas, validation commands, and reuse targets are present and
    concrete — a brief that can't be built in one pass is a finding; harden the slice until it clears,
@@ -150,7 +154,11 @@ webhook / config / error messages / getting-started — predict the DX scorecard
    `Status: awaiting_human` before stopping.
 6. **Adversarial verification loop (full pass)** — dispatch [`devrites-plan-reviewer`](../../agents/devrites-plan-reviewer.md)
    (fresh context, **only** `plan.md` + `tasks.md` + `spec.md` + the rubric — no authoring
-   reasoning). Resolve actionable findings, re-dispatch; **cap ≤3 iterations**. An axis still
+   reasoning). **When the plan ships a developer-facing surface** (`developer-experience.md`),
+   dispatch [`devrites-devex-reviewer`](../../agents/devrites-devex-reviewer.md) in **predict mode**
+   in the same parallel pass — it scores the *planned* surface and writes the predicted `devex.md`
+   (Source mode); a single predict pass suffices pre-build, so it sits outside the plan-rubric
+   iteration. Resolve actionable findings, re-dispatch the plan-reviewer; **cap ≤3 iterations**. An axis still
    below bar after 3 → blocking question (HITL) or AFK gate-ceiling entry. On a **light pass**
    the fresh-context loop is skipped — the per-axis scan + the `test-plan.md` coverage map are the
    verdict (escalate to this loop if the light scan surfaces a real finding). With `--cross-model`,
@@ -168,20 +176,16 @@ webhook / config / error messages / getting-started — predict the DX scorecard
 
 ## Output
 
-**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
+**Progress first** — run `devrites-engine progress`, then use the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Vetted: <slug>
-Depth: light | full (<trigger that escalated it>)
-Scope: reuse <n found> / minimum-diff <ok|trimmed N> / complexity <ok|smell: N files, M new services → asked>
-Axes (floor → verdict):  Architecture <band> · Code-quality <band> · Tests <band> · Performance <band>
-Findings: <Critical n / Important n / Suggestion n>   (suppressed low-confidence: n)
-Coverage: <x/y paths> planned (<s/t scenarios mapped | n/a>) · GAPS closed <n> · regressions flagged <n>  → test-plan.md
-Failure modes: <n> mapped (<n critical: no test + no handling + silent>)
-Parallelization: <n lanes — n parallel / n sequential> | sequential (no opportunity)
-Forge: <n slices flagged — strategies named | none>   (competed candidate builds at /rite-build)
-Reviewer loop: <n> iter · cross-model: ran (codex) | off
-Plan: hardened in place | <n> deltas routed via Spec Drift Guard → /rite-plan repair
-Next: /rite-build   (builds the vetted plan)
-↻ Hygiene: /clear before /rite-build (eng-review.md + test-plan.md + plan edits + decisions.md captured). See rules/context-hygiene.md.
+Done: plan vetted for <slug>; depth <light|full> with axis floor <band>.
+Changed: eng-review.md, test-plan.md, plan.md, decisions.md
+Evidence: coverage <x/y> planned; findings Critical <n> / Important <n> / Suggestion <n>; reviewer loop <n>
+Open: <none | blockers | plan deltas routed via Spec Drift Guard>
+Next: /rite-build
+Record: .devrites/work/<slug>/eng-review.md
+↻ Hygiene: /clear before /rite-build
 ```
 **DO NOT write code, slice, or run the build here** — that's `/rite-build`. Vet reviews and hardens the plan; it never implements.

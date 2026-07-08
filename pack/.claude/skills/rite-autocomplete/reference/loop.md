@@ -38,7 +38,7 @@ the last left off — there is nothing to thread through chat.
 | 2 | `/rite-temper` | significance-gated strategic review; harden spec + write `strategy.md`. Skip low-stakes specs in one line. AFK: `hold-rigor` / `reduce-to-MVP` auto-apply; **any `expand` pauses (blocking)**; irreversible-risk pauses |
 | 3 | `/rite-define` | reads `strategy.md`; `plan.md` + `tasks.md`; record `Plan approved` |
 | 4 | `/rite-vet` | engineering plan review on **every** plan (light pass on simple plans, full on big/risky; never skipped); harden `plan.md` / `tasks.md` + write `eng-review.md` + `test-plan.md`. AFK: hardening / coverage findings auto-apply; **any scope-growing / acceptance-changing finding pauses (blocking)**; irreversible-risk pauses. Set the slice budget after this (vet may split a slice) |
-| 5 | `/rite-build` ×N | **loop** while any slice is `pending`; build one (the slice-wright reads `test-plan.md` for coverage), then run `bash .claude/skills/devrites-lib/scripts/tick-afk.sh state.md` — exit 3 (budget hit) ⇒ STOP |
+| 5 | `/rite-build` ×N | **loop** while any slice is `pending`; build one (the slice-wright reads `test-plan.md` for coverage), then run `devrites-engine tick-afk state.md` — exit 3 (budget hit) ⇒ STOP |
 | 6 | `/rite-prove` | once all slices `built`; walks `test-plan.md`; on failure → `devrites-debug-recovery` within scope |
 | 7 | `/rite-polish` | re-verify after code edits (evidence must stay fresh) |
 | 8 | `/rite-review` | apply in-scope fixes; re-prove if code changed |
@@ -50,5 +50,5 @@ the last left off — there is nothing to thread through chat.
 - Re-read the active workspace before each phase (don't trust chat memory).
 - After a phase that edits code (build, polish, review), evidence may be stale — let
   the next gate re-prove rather than carrying a stale pass (see
-  `.claude/rules/development-workflow.md`).
+  `.claude/skills/devrites-lib/reference/standards/development-workflow.md`).
 - Check [stop-conditions.md](stop-conditions.md) at every gate **before** advancing.

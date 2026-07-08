@@ -9,7 +9,7 @@ deleted. DevRites keeps the full audit trail; it just moves out of the live path
    of `/rite-spec <next feature>`.
 2. **Archive.** Run the deterministic script:
    ```bash
-   bash .claude/skills/devrites-lib/scripts/close-out.sh <slug>
+   devrites-engine close-out <slug>
    ```
    It moves `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` (every `.md`
    intact) and clears `.devrites/ACTIVE` **only if** ACTIVE still points at `<slug>`.

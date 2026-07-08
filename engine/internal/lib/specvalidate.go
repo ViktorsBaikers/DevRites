@@ -1,7 +1,8 @@
-// Package lib holds the Go ports of the devrites-lib shell helpers — the
-// deterministic, zero-token workflow checks that used to be individual .sh
-// scripts. Each exported function is byte-parity (stdout + exit code) with the
-// bash script it replaces, proven by the parity oracle in the CLI test suite.
+// Package lib holds native Go implementations of the deterministic, zero-token
+// workflow checks DevRites used to run as individual .sh helpers. Each exported
+// function owns its logic outright — it does not shell out — and reproduces the
+// legacy behavior (stdout + exit code) exactly, verified in the CLI test suite
+// by golden assertions or, transitionally, a bash-parity comparison.
 package lib
 
 import (
@@ -9,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -31,28 +33,16 @@ var (
 )
 
 // SpecValidate lints the structured grammar in a spec.md. arg is a workspace dir
-// (its spec.md is linted) or a direct spec.md path. cwd relativizes the printed
+// (its spec.md is linted) or a direct spec.md path. against, when non-empty, is a
+// capability-ledger root (`.devrites/specs`) the spec's delta sections are
+// cross-checked against (an ADDED requirement must not already exist in its
+// capability's ledger; a MODIFIED/REMOVED one must). cwd relativizes the printed
 // path, matching the bash ${spec#"$PWD"/}. It writes to stdout/stderr and returns
 // the process exit code.
-func SpecValidate(arg, cwd string, stdout, stderr io.Writer) int {
-	if arg == "" {
-		fmt.Fprintln(stderr, "usage: devrites spec-validate <workspace-dir | spec.md path>")
-		return 2
-	}
-
-	var spec string
-	switch {
-	case isDir(arg):
-		spec = arg + "/spec.md" // string concat, not filepath.Join — preserve the exact path bytes
-	case isFile(arg):
-		spec = arg
-	default:
-		fmt.Fprintf(stderr, "spec-validate: no such workspace or file: %s\n", arg)
-		return 2
-	}
-	if !isFile(spec) {
-		fmt.Fprintf(stderr, "spec-validate: no spec.md at %s\n", spec)
-		return 5
+func SpecValidate(arg, against, cwd string, stdout, stderr io.Writer) int {
+	spec, code, ok := resolveSpecPath("spec-validate", arg, stderr)
+	if !ok {
+		return code
 	}
 
 	reqs, scens, findings, err := lintSpec(spec)
@@ -66,6 +56,13 @@ func SpecValidate(arg, cwd string, stdout, stderr io.Writer) int {
 	if reqs == 0 {
 		fmt.Fprintf(stdout, "spec-validate: %s uses the simple acceptance form (no \"### Requirement:\" blocks) — nothing to lint\n", rel)
 		return 0
+	}
+
+	// Delta cross-check (opt-in via --against): a spec written as deltas against a
+	// living ledger must classify each requirement correctly. Skipped for a flat
+	// snapshot (no delta sections) — there is nothing to reconcile.
+	if against != "" {
+		findings = append(findings, checkAgainstLedger(spec, against, defaultCapability(arg))...)
 	}
 
 	if len(findings) > 0 {
@@ -207,6 +204,84 @@ func newLineScanner(r io.Reader) *bufio.Scanner {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 64*1024), maxScanLine)
 	return sc
+}
+
+func resolveSpecPath(command, arg string, stderr io.Writer) (string, int, bool) {
+	if arg == "" {
+		fmt.Fprintf(stderr, "usage: devrites-engine %s <workspace-dir | spec.md path>\n", command)
+		return "", 2, false
+	}
+
+	var spec string
+	switch {
+	case isDir(arg):
+		spec = arg + "/spec.md" // string concat, not filepath.Join — preserve the exact path bytes
+	case isFile(arg):
+		spec = arg
+	default:
+		fmt.Fprintf(stderr, "%s: no such workspace or file: %s\n", command, arg)
+		return "", 2, false
+	}
+	if !isFile(spec) {
+		fmt.Fprintf(stderr, "%s: no spec.md at %s\n", command, spec)
+		return "", 5, false
+	}
+	return spec, 0, true
+}
+
+// checkAgainstLedger cross-checks a delta spec's requirements against the
+// capability ledger rooted at ledgerRoot (`.devrites/specs`). For each requirement
+// carrying a delta kind it resolves the capability (the section tag, or defaultCap
+// when untagged) and confirms presence matches kind: ADDED must be absent from that
+// capability's ledger spec, MODIFIED/REMOVED must be present. Flat requirements (no
+// delta kind) are ignored. An unseeded capability reads as an empty key set, so the
+// first ADDED against a brand-new capability passes cleanly.
+func checkAgainstLedger(spec, ledgerRoot, defaultCap string) []string {
+	doc, err := ParseSpec(spec)
+	if err != nil || !doc.HasDelta {
+		return nil
+	}
+	cache := map[string]map[string]bool{}
+	keysFor := func(capability string) map[string]bool {
+		if k, ok := cache[capability]; ok {
+			return k
+		}
+		k := requirementKeys(ledgerRoot + "/" + capability + "/spec.md")
+		cache[capability] = k
+		return k
+	}
+	var findings []string
+	for _, r := range doc.Requirements {
+		if r.Kind == "" {
+			continue
+		}
+		capability := r.Capability
+		if capability == "" {
+			capability = defaultCap
+		}
+		exists := keysFor(capability)[r.Key]
+		switch r.Kind {
+		case DeltaAdded:
+			if exists {
+				findings = append(findings, fmt.Sprintf("ERROR:%s: Requirement %q (line %d) is marked ADDED but already exists in ledger capability %q — use MODIFIED, or drop the delta", spec, r.Name, r.HeaderLine, capability))
+			}
+		case DeltaModified, DeltaRemoved:
+			if !exists {
+				findings = append(findings, fmt.Sprintf("ERROR:%s: Requirement %q (line %d) is marked %s but is absent from ledger capability %q — use ADDED, or fix the capability tag", spec, r.Name, r.HeaderLine, strings.ToUpper(r.Kind), capability))
+			}
+		}
+	}
+	return findings
+}
+
+// defaultCapability derives the fallback capability for an untagged delta section:
+// the workspace slug — the basename of the workspace dir, or of the spec.md's
+// parent directory when a bare file path was given.
+func defaultCapability(arg string) string {
+	if isDir(arg) {
+		return filepath.Base(arg)
+	}
+	return filepath.Base(filepath.Dir(arg))
 }
 
 func isDir(p string) bool {

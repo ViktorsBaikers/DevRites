@@ -12,17 +12,14 @@ persist (spec, plan, tasks, decisions, evidence, drift, review). This skill capt
 what the **chat** is holding that is **not** in the workspace, so a fresh agent — or
 the same user after `/clear` — can pick the work up without re-reading the transcript.
 
-Read `.claude/rules/core.md` first — its "Persistence before stopping" discipline is
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first — its "Persistence before stopping" discipline is
 exactly what this skill executes. The other rule files load on demand.
 
 Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
 the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
 instead of re-deriving state from raw Markdown:
 ```bash
-P=.claude/skills/devrites-lib/scripts/preamble.sh
-[ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-[ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-[ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+devrites-engine preamble
 ```
 
 ## Where to write
@@ -80,16 +77,25 @@ themselves. The workspace is the canonical store; the handoff is the chat-only d
 ## Output template
 
 Loaded on demand from [`reference/handoff-template.md`](reference/handoff-template.md).
-Fill in each section + write to `.devrites/work/<slug>/handoff.md` (or to a temp file
-when no active feature).
+Fill in each section and write to `.devrites/work/<slug>/handoff.md` (or to a temp
+file when no active feature). Then use the compact reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)):
 
-After writing, **print the absolute path** of the handoff file so the user (or the next
-agent) can open it without searching.
+```
+Done: handoff written for <slug | session>.
+Changed: handoff.md plus synced workspace artifacts <n>
+Evidence: not applicable; chat-only context persisted
+Open: <none | unsynced caveats>
+Next: <single resume command>
+Record: <absolute path to handoff.md>
+↻ Hygiene: /clear
+```
+
+Print the absolute path in `Record:` so the user or next agent can open it without searching.
 
 ## Session hygiene
 Close with the one-line hygiene advisory + the single resume command — this skill *is* the
 pre-`/clear` bridge, so it's where the advisory matters most (`context-hygiene.md`):
 ```
-↻ Hygiene: /clear — handoff written; all chat-only context is now on disk, safe to /clear
-or close the session. Resume next session with: <the single next command from state.md>
+↻ Hygiene: /clear
 ```

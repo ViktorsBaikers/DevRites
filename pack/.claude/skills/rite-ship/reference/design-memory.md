@@ -16,8 +16,8 @@ language → feature N+1 builds to it.
 - **At ship, GO sealed, after the git plan, before type-GO** (step 2a) — so the user sees
   the full staged change set (code + `DESIGN.md`) under the single type-GO that ships it.
 - **Opt-in and confirmed.** Persisting to a project-wide artifact is outside feature scope
-  (`rules/core.md` rule 7) — so it is *never silent*. Present a ranked option set
-  (`rules/afk-hitl.md` — Option set); **default is skip**. The user opts to persist.
+  (`standards/core.md` rule 7) — so it is *never silent*. Present a ranked option set
+  (`standards/afk-hitl.md` — Option set); **default is skip**. The user opts to persist.
 - **AFK**: first-time `DESIGN.md` *creation* is treated as a `validating` gate (a new
   persistent project artifact) — propose + queue, don't auto-create. An *append* to an
   existing `DESIGN.md` is `advisory` and may auto-proceed when `allow_gates` permits, since

@@ -13,7 +13,7 @@ Before reviewing *how* the plan builds, challenge *whether it should build this 
 implementation-scope discipline (the spec's ambition is settled — that was `/rite-temper`).
 
 1. **What already exists?** For each sub-problem in the plan, find the existing code/flow that
-   already solves it (use a code-intelligence index if available — see `../../../rules/tooling.md`).
+   already solves it (use a code-intelligence index if available — see `../../devrites-lib/reference/standards/tooling.md`).
    Can the plan **capture outputs from an existing
    flow** instead of building a parallel one? Reuse → extend → build new, in that order
    (`coding-style.md`). List every reuse opportunity the plan misses.

@@ -1,6 +1,6 @@
 # /rite-adopt — anti-patterns
 
-Start with the universal table in [`../../../rules/anti-patterns.md`](../../../rules/anti-patterns.md).
+Start with the universal table in [`../../devrites-lib/reference/standards/anti-patterns.md`](../../devrites-lib/reference/standards/anti-patterns.md).
 Below are the rationalizations specific to onboarding an existing codebase.
 
 ## Adoption-specific rationalizations

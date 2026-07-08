@@ -55,7 +55,7 @@ Snapshot the working tree first (the winner's landing is reconciled against it l
 each candidate its own isolated tree. **Prefer parallel isolated worktrees** when the harness can
 dispatch a sub-agent with worktree isolation; the **always-available** path is one throwaway git
 branch per candidate, built sequentially (slower, universally works — the
-[`tooling.md`](../../../rules/tooling.md) "fallback is first-class" discipline):
+[`tooling.md`](../../devrites-lib/reference/standards/tooling.md) "fallback is first-class" discipline):
 
 ```bash
 SLUG="$(cat .devrites/ACTIVE 2>/dev/null)"
@@ -148,14 +148,14 @@ approach forge already rejected.
 ## AFK & budget
 
 - **Cost.** Forge multiplies the build by K. Under `.devrites/AFK`, each candidate counts against
-  the slice budget (`tick-afk.sh` once per candidate dispatched), so a forge slice can exhaust the
+  the slice budget (`devrites-engine tick-afk` once per candidate dispatched), so a forge slice can exhaust the
   cap faster — that is intended back-pressure, not a bug.
 - **Gates are unchanged.** Forge changes *how many candidates build*, never *what pauses*. An
   irreversible-risk item, a blocking/escalating gate, or a red-on-completion in **any** candidate
-  pauses per [`afk-hitl.md`](../../../rules/afk-hitl.md) exactly as single-path. AFK widens what is
+  pauses per [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) exactly as single-path. AFK widens what is
   automatic, never what is irreversible — forge included.
 - **Stuck loop still applies.** Re-dispatching the same candidate without progress trips
-  `stuck.sh` the same as a single wright.
+  `devrites-engine stuck` the same as a single wright.
 
 ## When isolation is impossible
 

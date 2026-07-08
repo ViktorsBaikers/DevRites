@@ -1,7 +1,7 @@
 # /rite-temper — anti-patterns
 
 Universal rationalizations + red flags live in
-[`../../../rules/anti-patterns.md`](../../../rules/anti-patterns.md) — read it when the
+[`../../devrites-lib/reference/standards/anti-patterns.md`](../../devrites-lib/reference/standards/anti-patterns.md) — read it when the
 reluctance is broader than this phase. Below are the temper-specific ones.
 
 ## Phase rationalizations

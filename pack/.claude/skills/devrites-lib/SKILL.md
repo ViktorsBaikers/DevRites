@@ -1,34 +1,29 @@
 ---
 name: devrites-lib
-description: Internal shared-script library for DevRites — not a user command and not model-invocable. It exists only to ship DevRites' cross-cutting helper scripts (notably the read-only orientation preamble that every workspace-operating rite-* skill runs at step 0) on both the bash-installer and plugin channels. No workflow; do not invoke.
+description: Internal shared helper library for DevRites — not a user command and not model-invocable. It documents DevRites' cross-cutting helper commands, run via the global `devrites` binary (notably the read-only orientation preamble that every workspace-operating rite-* skill runs at step 0). No workflow; do not invoke.
 user-invocable: false
 disable-model-invocation: true
 ---
 
-# devrites-lib — internal shared scripts (not a command)
+# devrites-lib — internal shared helpers (not a command)
 
-This is **not** a skill you run. It is a library directory housing DevRites'
-cross-cutting helper scripts under `scripts/`, placed inside `skills/` so they
-install on **both** distribution channels (the bash installer copies the pack's
-`skills/` tree into the project's `.claude/`; the plugin ships the `skills/`
-tree). Skills resolve these scripts with the standard three-layout snippet:
-the installed `.claude/` path first, then the plugin cache via
-`${CLAUDE_SKILL_DIR}` (best-effort — Claude Code doesn't expose a stable script path to skill-invoked bash on the plugin channel, so the preamble degrades to reading `state.md` there), then the repo source tree for DevRites
-self-development.
+This is **not** a skill you run. It is the manifest for DevRites'
+cross-cutting helper operations, each exposed as a subcommand of the global
+`devrites` binary. A skill invokes one as `devrites <op>` — the same call from
+any workspace, with no install layout or script path to resolve.
 
-## Scripts
+## Operations
 
-All resolve with the standard three-layout snippet (installed `.claude/` path
-first, then `${CLAUDE_SKILL_DIR}`, then the repo `pack/` source).
+Each is a subcommand of the global `devrites` binary, run as `devrites <op>`.
 
 **Read-only — orient / gate (never mutate the workspace):**
 
-- `scripts/preamble.sh` — orientation digest for the active `.devrites/` feature:
+- `devrites-engine preamble` — orientation digest for the active `.devrites/` feature:
   prints `state.md`, the artifacts present, the run mode (HITL/AFK), and the
   open-question tally by gate. Run first (step 0) by every workspace-operating
   `rite-*` skill so the model orients deterministically instead of re-deriving
   state from raw Markdown.
-- `scripts/progress.sh` — progress footer; the mirror of `preamble.sh` (which runs
+- `devrites-engine progress` — progress footer; the mirror of `devrites-engine preamble` (which runs
   first). Run **last** (output step) by every lifecycle `rite-*` skill to render — from
   `state.md`, with zero model drift — the `── rite-<phase> ──` header rule, the **slice
   meter** (`Slice 3/5  ██████░░░░  <last-built> ✓`, or `Slices 5/5  ██████████  ✅ ALL
@@ -38,44 +33,50 @@ first, then `${CLAUDE_SKILL_DIR}`, then the repo `pack/` source).
   it. Read-only; silent (exit 0) when there is no active workspace. Not for the workspace-less
   utilities (`/rite-prototype`, `/rite-zoom-out`, `/rite-pressure-test`, `/rite-handoff`,
   the `/rite` menu) — they have no phase/slice state to render.
-- `scripts/readiness.sh` — build-readiness gate. Exits non-zero on `/rite-build`'s
+- `reference/reply-contract.md` — the shared user-facing completion reply contract. It
+  standardizes the compact chat lines printed below `devrites-engine progress` for success,
+  awaiting-human, stopped/blocked, GO, NO-GO, and shipped states. The chat reply is a
+  status summary; durable detail stays in the workspace artifacts.
+- `reference/model-tiers.md` — the dispatch-by-task-shape contract (extraction / generation /
+  ceiling). A skill names a **tier** by the shape of the work and never hardcodes a model name;
+  reviewers are ceiling on purpose. Carries the degradation rule for harnesses that cannot pick
+  models per agent. Loaded on demand by any skill that dispatches subagents.
+- `devrites-engine build-readiness` — build-readiness gate. Exits non-zero on `/rite-build`'s
   step-0 stop conditions so they hold by exit code, not by prose the model must
   remember: `2` no `Plan approved` (→ `/rite-define`), `3` `awaiting_human`
   (→ `/rite-resolve`), `4` `blocked` (→ `/rite-plan`), `5` no workspace, `0` ready.
-- `scripts/evidence-fresh.sh` — evidence-freshness gate for `/rite-seal`. Exits `3`
+- `devrites-engine evidence-fresh` — evidence-freshness gate for `/rite-seal`. Exits `3`
   when any file in `touched-files.md` is newer than `evidence.md` /
   `browser-evidence.md` (stale proof = NO-GO until re-proven), `0` when fresh.
-- `scripts/check-acceptance.sh` — executable acceptance gate. Compiles `spec.md`'s
-  `[ACn]`-tagged criteria and exits `1` unless every one is checked (proven) in `seal.md`;
-  used by `/rite-seal` and by the outcome grader.
-- `scripts/spec-validate.sh` — spec-grammar gate (the spec-side mirror of
-  `check-acceptance.sh`). Lints `spec.md`'s structured `### Requirement:` / `#### Scenario:`
+- `devrites-engine check-acceptance` — executable acceptance gate. Compiles `spec.md`'s
+  acceptance IDs and exits `1` unless every one is checked (proven) in `seal.md`;
+  new workspaces use `AC-###`, while legacy archives may still carry old `[ACn]`
+  ids. Used by `/rite-seal` and by the outcome grader.
+- `devrites-engine spec-validate` — spec-grammar gate (the spec-side mirror of
+  `devrites-engine check-acceptance`). Lints `spec.md`'s structured `### Requirement:` / `#### Scenario:`
   blocks (SHALL/MUST present, ≥1 scenario each, every scenario has WHEN + THEN, headers
   unique). Exits `1` on a grammar violation, `0` when valid **or** when the spec uses the flat
-  `[ACn]`-bullet form (no structured blocks — nothing to lint, never a failure). Used by
-  `/rite-spec`'s readiness gate; see [`rules/spec-grammar.md`](../../rules/spec-grammar.md).
+  `AC-###` flat-bullet form (no structured blocks — nothing to lint, never a failure). Used by
+  `/rite-spec`'s readiness gate; see [`standards/spec-grammar.md`](reference/standards/spec-grammar.md).
 
 **State mutators — write `state.md` / `questions.md` under one contract:**
 
-- `scripts/tick-afk.sh` — decrement the AFK slice budget; exits `3` at 0 (forced HITL stop).
-- `scripts/resolve.sh` — backs the `/rite-resolve` contract (answer / drop / batch).
-- `scripts/close-out.sh` — archive the workspace + clear `ACTIVE` on `/rite-ship`.
+- `devrites-engine tick-afk` — decrement the AFK slice budget; exits `3` at 0 (forced HITL stop).
+- `devrites-engine resolve` — backs the `/rite-resolve` contract (answer / drop / batch).
+- `devrites-engine close-out` — archive the workspace + clear `ACTIVE` on `/rite-ship`.
 
 ### Canonical footer snippet
 
 Every lifecycle `rite-*` skill prints this as the **first lines of its output**, then its
-own fact lines below. Same three-layout resolver as the step-0 preamble:
+own compact fact lines below per [`reply-contract.md`](reference/reply-contract.md):
 
 ```bash
-PR=.claude/skills/devrites-lib/scripts/progress.sh
-[ -f "$PR" ] || PR="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/progress.sh"
-[ -f "$PR" ] || PR=pack/.claude/skills/devrites-lib/scripts/progress.sh
-[ -f "$PR" ] && bash "$PR" || true
+devrites-engine progress
 ```
 
 **Unified entrypoint (tool-agnostic):**
 
-- `scripts/devrites.sh` — one CLI dispatching to all of the above (`orient` / `ready` /
+- The `devrites` binary is that unified CLI, dispatching to all of the above (`orient` / `ready` /
   `evidence-fresh` / `acceptance` / `spec-validate` / `tick-afk` / `resolve` / `close` /
   `active` / `list` / `use`), so any agent or human can drive `.devrites/` without the skill
   prose. The MCP

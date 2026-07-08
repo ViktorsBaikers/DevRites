@@ -59,11 +59,13 @@ fi
 
 TARGET="$PWD"
 DRYRUN=0
+KEEP_BINARY=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --target) shift; [ $# -gt 0 ] || dr_die "--target needs a directory"; TARGET="$1" ;;
     --target=*) TARGET="${1#*=}" ;;
     --dry-run) DRYRUN=1 ;;
+    --keep-binary) KEEP_BINARY=1 ;;            # leave the global devrites-engine binary in place
     -h|--help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) dr_die "unknown option: $1 (try --help)" ;;
   esac
@@ -125,8 +127,8 @@ if [ -f "$TARGET/.claude/devrites.codex-hooks-merge" ] && [ -f "$TARGET/.codex/h
   if [ "$DRYRUN" -eq 1 ]; then
     dr_say "  [merge-remove] .codex/hooks.json DevRites hooks"
   else
-    if grep -q '"command"[[:space:]]*:.*\(devrites-\|DEVRITES_\|DevRites:\)' "$TARGET/.codex/hooks.json" 2>/dev/null \
-      && ! grep '"command"[[:space:]]*:' "$TARGET/.codex/hooks.json" 2>/dev/null | grep -vq 'devrites-\|DEVRITES_\|printf.*DevRites:'; then
+    if grep -q '"command"[[:space:]]*:.*\(devrites-engine hook \|devrites-\|DEVRITES_\|DevRites:\)' "$TARGET/.codex/hooks.json" 2>/dev/null \
+      && ! grep '"command"[[:space:]]*:' "$TARGET/.codex/hooks.json" 2>/dev/null | grep -vq 'devrites-engine hook \|devrites-\|DEVRITES_\|printf.*DevRites:'; then
       rm -f "$TARGET/.codex/hooks.json" || dr_die "cannot remove .codex/hooks.json"
     else
       command -v node >/dev/null 2>&1 || dr_die "node is required to remove DevRites hooks from .codex/hooks.json"
@@ -187,6 +189,35 @@ if [ "$DRYRUN" -eq 0 ]; then
     pass=$((pass+1))
   done
 fi
+
+# ---- engine binary -------------------------------------------------------
+# The global devrites-engine binary is shared across projects (no refcount);
+# uninstall removes it by default. GUARD:no-global — only the sanctioned
+# `devrites-engine` leaf
+# under /usr/local/bin or ~/.local/bin, addressed through variables.
+remove_binary() {
+  [ "$KEEP_BINARY" -eq 1 ] && { dr_say "  ${DR_Y}kept${DR_R} the global devrites-engine binary (--keep-binary)."; return 0; }
+  _sys="/usr/local/bin/devrites-engine"       # GUARD:no-global — sanctioned bin path
+  _usr="$HOME/.local/bin/devrites-engine"     # GUARD:no-global — sanctioned bin path
+  _override=""
+  [ -n "${DEVRITES_BIN_DIR:-}" ] && _override="$DEVRITES_BIN_DIR/devrites-engine"
+  for _b in "$_override" "$_usr" "$_sys"; do
+    [ -n "$_b" ] || continue
+    [ -e "$_b" ] || [ -L "$_b" ] || continue
+    if [ "$DRYRUN" -eq 1 ]; then
+      dr_say "  [remove] $_b (global engine binary)"
+      continue
+    fi
+    if rm -f "$_b" 2>/dev/null; then
+      dr_say "  [remove] $_b"
+    elif command -v sudo >/dev/null 2>&1 && [ -t 0 ] && sudo rm -f "$_b" 2>/dev/null; then
+      dr_say "  [remove] $_b (sudo)"
+    else
+      dr_warn "could not remove $_b — remove it by hand (rm -f \"$_b\")."
+    fi
+  done
+}
+remove_binary
 
 dr_say ""
 dr_ok "DevRites $([ "$DRYRUN" -eq 1 ] && echo 'uninstall plan complete (dry run)' || echo uninstalled)"

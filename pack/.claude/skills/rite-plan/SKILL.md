@@ -11,8 +11,8 @@ Reshape the plan when reality and the plan disagree. **Read the active workspace
 first.** If `.devrites/ACTIVE` is empty or its workspace is missing, stop and tell the
 user to run `/rite-spec <feature>`.
 
-## Rules consulted (read on demand from `.claude/rules/`)
-Read `.claude/rules/core.md` first. Pull `development-workflow.md` via `Read` when
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Pull `development-workflow.md` via `Read` when
 reshaping slice cadence or DoD criteria.
 
 ## Operating rules
@@ -30,21 +30,18 @@ reshaping slice cadence or DoD criteria.
   lowest pending one whose dependencies are all built (keeps one-slice-at-a-time correct, not parallel).
 
 ## Workflow
-0. Read `.claude/rules/core.md` (operating rules) before reshaping anything.
+0. Read `.claude/skills/devrites-lib/reference/standards/core.md` (operating rules) before reshaping anything.
    Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
 1. Read `spec.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`, and the current
    `git diff` (if a repo). Read `decisions.md` and `assumptions.md`. If a code-intelligence
    index is available — `codebase-memory-mcp` first, cross-checked with `codegraph`
    (`.codegraph/` / `codegraph_*` tools) + `graphify` (`graphify-out/`), else standard methods
-   (LSP / `Read`/`Grep`/`Glob`); see `.claude/rules/tooling.md` —
+   (LSP / `Read`/`Grep`/`Glob`); see `.claude/skills/devrites-lib/reference/standards/tooling.md` —
    prefer it for structural questions (what calls X, what would
    changing Y break) over reading whole files, to keep planning context lean. For an external
    dependency's current API surface, consult context7 if available.
@@ -75,12 +72,15 @@ reshaping slice cadence or DoD criteria.
 
 ## Output
 
-**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
+**Progress first** — run `devrites-engine progress`, then use the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Re-planned <slug> — mode: <mode>
-Changes: <what moved/split/repaired>
-Slices now: N (next: slice <N — name>)
-Behavior change? <no | asked + answer>
-Next: /rite-build   (or /rite-prove if a built slice needs re-verification)
-↻ Hygiene: /clear if reshape was big or unwound a drift; keep session for small reorders. See rules/context-hygiene.md.
+Done: plan repaired for <slug> in <mode> mode.
+Changed: plan.md, tasks.md, traceability.md, decisions.md, state.md
+Evidence: not applicable; slice map now <n> slices and next slice is <name>
+Open: <none | behavior question answered | Alternative: /rite-prove if all built slices need re-verification>
+Next: /rite-build
+Record: .devrites/work/<slug>/plan.md
+↻ Hygiene: /clear if the repair was large; keep session for small reorder-only repairs
 ```

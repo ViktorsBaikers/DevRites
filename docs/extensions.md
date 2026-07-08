@@ -1,0 +1,99 @@
+# Extending DevRites — project extensions & reviewer overrides
+
+DevRites ships a fixed, authored pack of rites, reviewers, and standards. Two project-local
+surfaces let a team tune it **without forking the pack** — both live in the data plane
+(`.devrites/`), both are git-diffable, and both are held to the same contracts the shipped pack is.
+
+They answer two different questions:
+
+| Surface | Question it answers | Lives in |
+|---|---|---|
+| **Extensions** | "Add a *new* rite or reviewer / domain." | `.devrites/extensions/<name>/` |
+| **Overrides** | "Reshape a *shipped* reviewer's emphasis." | `.devrites/overrides/<agent>.md` |
+
+The guiding invariant for both: **a shipped gate is never weakened by a customization.** An
+extension earns parity by passing the same validator as the pack; an override may raise the bar,
+never lower it. The deterministic engine gates (`seal`, `review-integrity`, `check-acceptance`, …)
+do not read either surface — they stay authoritative regardless of what a project adds.
+
+---
+
+## Extensions — add a rite or reviewer
+
+A project extension is a directory under `.devrites/extensions/`:
+
+```
+.devrites/extensions/<name>/
+  skill/SKILL.md      (optional) a user rite/skill — needs name + description frontmatter
+  agent.md            (optional) a user reviewer agent — needs name + description frontmatter
+  extension.yaml      (optional) metadata: aliases (prior names, so a rename doesn't orphan)
+```
+
+An extension provides a skill, an agent, or both. It is held to the same schema as the shipped
+pack — a malformed extension is refused, not silently half-installed.
+
+### Commands
+
+```bash
+devrites-engine extensions list       # enumerate extensions and what each provides
+devrites-engine extensions validate   # schema-check every extension (exit 1 on a violation)
+devrites-engine extensions sync        # mirror valid extensions into .claude/ so the harness finds them
+```
+
+- **`validate`** checks each declared skill/agent carries `name:` + `description:` frontmatter, that
+  an extension provides at least one artifact, and that no two extensions claim the same skill/agent
+  name. A name using a reserved pack prefix (`rite-`, `devrites-`) is a collision **warning** — the
+  pack owns those namespaces.
+- **`sync`** validates first, then mirrors `skill/` → `.claude/skills/<name>/` and `agent.md` →
+  `.claude/agents/<name>.md`, where the Claude harness discovers them. Idempotent. It refuses to
+  sync a set that fails validation.
+- **`aliases`** (in `extension.yaml`) carry an extension's prior names forward across a rename, so a
+  project's references don't orphan.
+
+### Workflow
+
+1. Author the extension under `.devrites/extensions/<name>/`.
+2. `devrites-engine extensions validate` until clean.
+3. `devrites-engine extensions sync` to mirror it into `.claude/`.
+4. `/rite-doctor` validates extensions on every health check and hands you the fix if one regresses.
+
+### Harness scope
+
+`sync` targets the **Claude** layout (`.claude/skills`, `.claude/agents`), which the harness
+auto-discovers. Codex mirroring — the `.md` → `.codex/agents/*.toml` conversion and the skills-list
+description stubbing — remains the installer's job; re-run the installer to propagate an extension to
+the Codex mirror.
+
+---
+
+## Overrides — reshape a shipped reviewer
+
+An override is a single Markdown file named for the agent it targets:
+
+```
+.devrites/overrides/devrites-code-reviewer.md
+.devrites/overrides/devrites-security-auditor.md
+```
+
+Each shipped reviewer, after loading its governing standards, reads
+`.devrites/overrides/<its-name>.md` if present and applies it as **project overrides** — extra
+emphasis or house rules this project wants enforced. For example, a `devrites-code-reviewer.md`
+override that says "always flag any use of the deprecated `legacyClient` as Important."
+
+### The one rule
+
+An override may **add** checks or **raise** weight. It may **never** relax a gate, waive a standard,
+or lower a severity floor — a Critical stays a Critical. Overrides are reviewer *input*, not
+permission. The engine gates don't read them at all, so an override literally cannot disable a gate;
+the linter exists to catch one that *tries to talk a reviewer into it*.
+
+### Commands
+
+```bash
+devrites-engine overrides list       # enumerate override files and the agent each targets
+devrites-engine overrides validate   # flag empty overrides and any that read like a gate waiver (exit 1)
+```
+
+`validate` trips on subversion phrasing ("ignore the gate", "treat any Critical as a Suggestion",
+"waive review") and on an override targeting an agent that isn't installed (an orphan warning).
+`/rite-doctor` runs it on every health check.

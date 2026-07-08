@@ -187,8 +187,11 @@ chmod +x "$EXTRACTED/install.sh" "$EXTRACTED"/scripts/*.sh 2>/dev/null || true
 
 # ---- re-run installer with the original flags + --force -----------------
 info "running installer (with --force) — preserving .devrites/ feature state …"
+# DEVRITES_REF pins the engine-binary download to the SAME release as the pack, so
+# install_binary installs the matching version (and its downgrade guard sees the
+# right target) instead of independently resolving "latest".
 # shellcheck disable=SC2086
-bash "$EXTRACTED/install.sh" --target "$TARGET" --force $INSTALL_FLAGS \
+DEVRITES_REF="$LATEST_TAG" bash "$EXTRACTED/install.sh" --target "$TARGET" --force $INSTALL_FLAGS \
   || die "installer failed; the previous install is still in place."
 
 ok "DevRites upgraded: $INSTALLED_VERSION → $LATEST_VERSION"

@@ -26,9 +26,24 @@ Rules for the prompt:
 
 ## The git ladder
 
-Follow `.claude/rules/git-workflow.md` and the project's own convention. Do not invent
+Follow `.claude/skills/devrites-lib/reference/standards/git-workflow.md` and the project's own convention. Do not invent
 a release flow the project doesn't use.
 
+0. **Collapse checkpoints** (only if checkpoint mode ran — see
+   [rite-build/reference/checkpoint.md](../../rite-build/reference/checkpoint.md)). Local
+   `WIP(<slug>)` commits are scratch; fold them into the working tree so the ship is one
+   atomic feature commit. `reset --soft` moves only the branch pointer — index and worktree
+   are untouched, so no change is ever lost:
+   ```bash
+   base=$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null) || base=main
+   mb=$(git merge-base HEAD "$base" 2>/dev/null)
+   if [ -n "$mb" ] && git log --format='%s' "$mb..HEAD" | grep -q '^WIP('; then
+     git log --format='%s' "$mb..HEAD" | grep -qv '^WIP(' \
+       && echo "history since $base mixes WIP + real commits — surface and confirm before collapsing" \
+       || git reset --soft "$mb"   # fold every WIP commit since the branch point → staged
+   fi
+   ```
+   No WIP commits (checkpoint mode was off) → this is a silent no-op.
 1. **Stage** only the files in `touched-files.md`. Never `git add -A`; never stage
    secrets, `.env`, or out-of-scope files (see the never-commit list in `git-workflow.md`).
 2. **Commit** with a Conventional Commit message derived from the feature (`feat(scope):

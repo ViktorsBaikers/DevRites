@@ -7,7 +7,7 @@ integrations, secrets, or permissions. Delegates to `devrites-audit security`.
 
 This is the **single-sourced OWASP-web checklist** both `/rite-review` and the
 `devrites-security-auditor` agent apply (trust-boundary + the OWASP **LLM** Top 10 live in
-[`rules/security.md`](../../../rules/security.md)). Keep the enumeration here; don't restate it.
+[`standards/security.md`](../../devrites-lib/reference/standards/security.md)). Keep the enumeration here; don't restate it.
 
 - **Injection** — parameterized queries; no string-built SQL/shell/HTML; validate &
   encode at boundaries.
@@ -26,7 +26,7 @@ This is the **single-sourced OWASP-web checklist** both `/rite-review` and the
 
 ## Trust boundary
 Apply the three-tier discipline (untrusted → boundary → trusted) per the canonical rule
-in [`rules/security.md`](../../../rules/security.md#trust-boundary-three-tiers). A value
+in [`standards/security.md`](../../devrites-lib/reference/standards/security.md#trust-boundary-three-tiers). A value
 that skips the boundary tier is a finding.
 
 ## Rules

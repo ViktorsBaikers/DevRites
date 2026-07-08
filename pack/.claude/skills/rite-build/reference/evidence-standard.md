@@ -15,14 +15,14 @@ Evidence beats confidence. A slice isn't built until there's a record that prove
 - "No type errors" as proof that a *feature* works (it proves types, not behavior).
 - A screenshot path you didn't open.
 
-## Record format (`evidence.md`, append-only)
+## Record format (`evidence.md`)
 ```markdown
-## Slice <N> — <name>  (<date>)
-- cmd: <command>
-  result: <pass/fail + key output line>
-- observation: <what you saw at runtime>
-- browser: see browser-evidence.md (if UI)
-- gaps: <what remains unproven, if anything>
+# Evidence
+
+## Evidence log
+| Evidence ID | Command / action | Result | Timestamp | Related IDs | Limitation |
+| --- | --- | --- | --- | --- | --- |
+| EVID-001 | <command/action> | <pass/fail + key output line> | <iso if available> | AC-001, SLICE-001 | <what remains unproven, or none> |
 ```
 
 ## Honesty rules
@@ -30,3 +30,6 @@ Evidence beats confidence. A slice isn't built until there's a record that prove
 - If a step was skipped (no browser available, command not found), say so and record
   the manual verification steps instead.
 - Unproven acceptance criteria stay unchecked. The seal will catch them.
+- Every evidence row uses `EVID-###` and names the related `AC-###` and `SLICE-###`.
+- UI/browser proof goes in `browser-evidence.md`; `evidence.md` links to its `EVID-###`
+  instead of copying screenshot notes.

@@ -11,7 +11,7 @@ Document the **durable shape** of the project, not a line-by-line tour:
 - **Architecture + placement** — the layers and seams; where each kind of thing lives
   (where endpoints / components / models / migrations / tests go). Prefer a code-intelligence
   index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob) (see
-  `../../../rules/tooling.md`) — for structure, callers, and impact.
+  `../../devrites-lib/reference/standards/tooling.md`) — for structure, callers, and impact.
 - **Commands** — the real test / build / typecheck / lint commands (run or read them; don't
   guess). Verify uncertain framework facts at the source.
 - **Idioms** — naming + casing, layering, the error model, the result/exception style, the
@@ -35,24 +35,21 @@ existing code** so the first slice isn't blind. Keep the seeds honest:
   (raising the band) or, per fresh-observation-wins, contradict it.
 
 ```bash
-C=.claude/skills/devrites-lib/scripts/conventions.py
-[ -f "$C" ] || C="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/conventions.py"
-[ -f "$C" ] || C=pack/.claude/skills/devrites-lib/scripts/conventions.py
 SLUG="$(cat .devrites/ACTIVE 2>/dev/null | tr -d '[:space:]')"
-if command -v python3 >/dev/null 2>&1 && [ -f "$C" ]; then
-  python3 "$C" promote --slug "${SLUG}-adopt" \
+if command -v devrites-engine >/dev/null 2>&1; then
+  devrites-engine conventions promote --slug "${SLUG}-adopt" \
     --key test-runner --kind test \
     --statement "tests run with <runner>, <file layout>" \
     --evidence "observed during /rite-adopt onboarding (not yet slice-proven)"
   # …one promote per durable convention the investigation actually observed
   # (test-runner, build-cmd, error-model, http-client, endpoint-placement, …).
 else
-  echo "(conventions ledger unavailable — python3 or script missing; skipping seed)"
+  echo "(conventions ledger unavailable — devrites-engine missing; skipping seed)"
 fi
 ```
 
 The `-adopt` suffix on the slug marks the provenance as onboarding. Because the ledger is
 read at orient as a *prior* and the live code always overrides it
-([`.claude/rules/security.md`](../../../rules/security.md) § Prompt-injection resistance),
+([`.claude/skills/devrites-lib/reference/standards/security.md`](../../devrites-lib/reference/standards/security.md) § Prompt-injection resistance),
 an over-eager seed is self-correcting — but seed conservatively anyway; a wrong seed costs a
 needless contradiction later.

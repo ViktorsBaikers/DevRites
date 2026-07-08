@@ -7,9 +7,26 @@ the user so the spec ships fully-covered and correctly-placed. A gap found here 
 a gap found in `/rite-build` is a drift event.
 
 Use a code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
-(see `../../../rules/tooling.md`) — for the structural parts below; it answers "where does this
+(see `../../devrites-lib/reference/standards/tooling.md`) — for the structural parts below; it answers "where does this
 live / what calls it / what would it break" far more cheaply and accurately than reading files.
-With none present, fall back to Read/Grep/Glob.
+With none present, fall back to Read/Grep/Glob. When a gap turns on a fact the codebase can't
+answer — a standard, a prevailing UX pattern, how comparable products solve it — **search the
+web if available** (brave MCP preferred; `../../devrites-lib/reference/standards/tooling.md`) and cite the finding in
+the option you present, so the human's pick is informed rather than guessed.
+
+## Prior art — check our own archive first (cheap, silent when empty)
+Before investigating outward, check whether we already shipped this. Grep the shipped
+archive for the feature's key nouns — a hit means an extension, a conflict, or a re-spec of
+solved work, and you inherit its decisions instead of re-deriving them:
+```bash
+devrites-engine archive-search "<key nouns>" 2>/dev/null \
+  || grep -rliE '<noun1>|<noun2>' .devrites/archive/*/spec.md 2>/dev/null
+```
+- **Overlap found** → read the overlapping `spec.md` + its `decisions.md`, then put it to
+  the human as a ranked option — *extend the shipped feature* · *this supersedes it* ·
+  *genuinely distinct* — same option-set contract as a gap.
+- **No archive / no hit** → skip silently; never block a spec on absent history (the
+  brownfield / principles no-op discipline).
 
 ## Produce these findings (write into spec.md)
 1. **The real ask** — restate the goal and the *problem behind the request* (people ask
@@ -41,24 +58,27 @@ State the **present state** and the **desired state**; the delta is the work, an
 **unknowns in the delta are the gaps**. Drive the count of open gaps toward zero before
 handing off to `/rite-define`. Mark each gap inline with `[NEEDS CLARIFICATION: question]`.
 
-## Turn gaps & issues into questions WITH options
+## Turn gaps & issues into questions WITH options — you recommend, the human decides
 For each material gap/issue (one that changes scope, placement, data model, UX, security,
-migration risk, or acceptance), ask the user — one question at a time, **best guess
-attached**, with structured options and an escape hatch:
+migration risk, or acceptance), **put it to the human** — one gap at a time, as a ranked
+option set with the recommended option **first and marked `(Recommended)`** plus an escape
+hatch (via `AskUserQuestion` in HITL):
 ```
 <gap/issue stated in one line>. Why it matters: <...>
-1. <option A> — <implication / where it places the work>
-2. <option B> — <implication>
-3. <option C> — <implication>
+1. <recommended option> (Recommended) — <implication / where it places the work; cite any web/docs finding>
+2. <alternative> — <implication>
+3. <alternative> — <implication>
 4. Something else — I'll describe it
-   (My best guess: #2, because <reason>.)
 ```
-Resolve material gaps before finalizing the spec. Reversible, low-impact gaps: decide,
-record in `assumptions.md`, and move on — don't interrogate.
+Investigate and recommend; don't settle a material decision yourself. Confidence in the answer
+lowers the *cost* of the question (a one-pick confirm), not its owner — present the set anyway.
+Only a **genuinely reversible, low-impact** gap is decided and recorded in `assumptions.md`
+without asking. Full render contract + AFK behaviour: [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md).
 
 ## Done when
+- The shipped archive was checked for prior art; any overlap was surfaced to the human.
 - The real problem, current behavior, placement, and what-it-resolves are written down.
-- Every issue has a disposition; every material gap is resolved (or explicitly deferred
-  as non-blocking).
+- Every issue has a disposition; every material gap is resolved **by a human pick** from its
+  option set (or explicitly deferred as non-blocking) — not settled silently on your confidence.
 - No blocking `[NEEDS CLARIFICATION]` remains — the spec is **fully covered and correctly
   placed**. This is the `/rite-spec` readiness gate before `/rite-define` plans it.

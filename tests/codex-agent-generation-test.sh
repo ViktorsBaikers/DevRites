@@ -54,8 +54,8 @@ for src in src_agents:
     instructions = data.get("developer_instructions", "")
     report("You are the Codex custom-agent version" in instructions, f"{name}: Codex wrapper present")
     report(".claude/agents" not in instructions, f"{name}: no .claude/agents runtime path")
-    report(".claude/rules" not in instructions, f"{name}: no .claude/rules runtime path")
-    report(".agents/devrites/rules/" in instructions or name == "devrites-slice-wright", f"{name}: uses mirrored rules path when rules are referenced")
+    report(".claude/skills/devrites-lib/reference/standards" not in instructions, f"{name}: no .claude/skills/devrites-lib/reference/standards runtime path")
+    report(".agents/skills/devrites-lib/reference/standards/" in instructions or name == "devrites-slice-wright", f"{name}: uses mirrored rules path when rules are referenced")
 
     if name == "devrites-slice-wright":
         report(data.get("sandbox_mode") != "read-only", f"{name}: write-capable")

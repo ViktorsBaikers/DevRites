@@ -18,21 +18,35 @@ Order by how much the answer changes the build. A question that changes the data
 or acceptance criteria beats a cosmetic one. If two are equal, ask the one that unblocks
 the most downstream work.
 
-## Structured options when the space is enumerable
+## Ranked option set — you recommend, the human decides
+A material decision is **put to the human**, never settled for them. Render it as a ranked
+option set — recommended option **first** and marked `(Recommended)`:
 ```
-1. <option> — <what it implies for build/scope>
-2. <option> — <implication>
-3. <option> — <implication>
+1. <recommended option> (Recommended) — <rationale + trade-off, tagged by dimension>
+2. <alternative> — <implication>
+3. <alternative> — <implication>
 4. Something else — I'll describe it
 ```
-Always include the escape hatch (#4). Mark your recommended option.
+2–4 real options, always the escape hatch (#4). In HITL render it via `AskUserQuestion`; full
+render contract + AFK auto-pick behaviour: the **Option set** section of
+[`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md). Fold any web-search / docs finding into the
+rationale as a cited source (`.claude/skills/devrites-lib/reference/standards/tooling.md`).
 
-## Stop conditions (any one)
-- **Confidence** — you can predict the user's answer to the next question (~95%).
-- **Convergence** — the last 2–3 answers only rubber-stamped your guesses; the spec
-  stopped moving.
-- **Soft cap** — after ~8 material questions, proceed with best-guess answers logged as
-  assumptions (hard-stop sooner if the ask is small).
+## Confidence changes the question's cost, not its owner
+Being near-certain of the answer does **not** convert a material decision into one you make
+silently. You still present the set — high confidence just means the human confirms your
+`(Recommended)` option in a single pick instead of deliberating. The stop conditions below
+govern when to stop **opening new lines of questioning**; they never license deciding a
+material gap (scope · placement · data model · UX · security · migration · acceptance)
+yourself. When unsure whether a gap is material, ask.
+
+## Stop conditions — when to stop opening NEW questions (any one)
+- **Convergence** — the last 2–3 picks only rubber-stamped your recommended option; the spec
+  stopped moving. Remaining material gaps still get their option set (a fast one-pick confirm),
+  but stop *hunting* for new ones.
+- **Soft cap** — after ~8 material questions, put the remaining low-stakes gaps as
+  best-guess assumptions logged to `assumptions.md` (hard-stop sooner if the ask is small).
+  A genuinely material, irreversible gap is **not** capped away — it stays a blocking question.
 
 If you keep circling one area without progress, **reframe once** — challenge the premise
 rather than asking again.

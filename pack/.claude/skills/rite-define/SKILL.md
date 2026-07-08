@@ -1,24 +1,26 @@
 ---
 name: rite-define
-description: Decompose an approved `spec.md` into `plan.md` + vertical task slices + `state.md`; every acceptance criterion maps to ≥1 slice. Use when the user says "plan this" or "break this into slices". Not for writing code or repairing an existing plan (use `/rite-plan`).
+description: Decompose an approved `spec.md` into `architecture.md`, `plan.md`, `tasks.md`, `traceability.md`, and `state.md`; every acceptance criterion maps to ≥1 slice. Use when the user says "plan this" or "break this into slices". Not for writing code or repairing an existing plan (use `/rite-plan`).
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
 # /rite-define — plan from the spec
 
-Read the active feature's `spec.md` and turn it into a buildable plan: the approach, a
-dependency-ordered set of **vertical slices**, and the state cursor. The spec is the WHAT/
-WHY (from `/rite-spec`); this is the **HOW**. Splitting spec and plan keeps each focused so
-nothing gets missed in one batch. **No code here.**
+Read the active feature's `spec.md` and turn it into a buildable workspace: feature
+architecture, approach, a dependency-ordered set of **vertical slices**, traceability, and
+the state cursor. The spec is the WHAT/WHY (from `/rite-spec`); this is the HOW. Splitting
+spec, architecture, plan, tasks, and traceability keeps each file small and phase-owned.
+**No code here.**
 
-## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. DevRites skills Read `.claude/rules/core.md`
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. DevRites skills Read `.claude/skills/devrites-lib/reference/standards/core.md`
 as their first step; the other rule files load on demand. Pull these via `Read` when shaping
 the plan:
 - `development-workflow.md` — small batches, trunk-always-green, definition of done.
 - `principles.md` — the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
 - `documentation.md` — record plan-time decisions and rationale.
+- `../workspace-artifact-schema.md` — artifact purposes, budgets, IDs, and read triggers.
 
 ## Operating rules
 - **Requires a readied spec.** Read the active workspace first; if `.devrites/ACTIVE` is empty,
@@ -26,6 +28,11 @@ the plan:
   `checklists/<domain>.md` has an open CRITICAL → **STOP** and tell the user to run
   `/rite-spec <feature>` first. **DO NOT plan from a missing or unreadied spec.**
 - Prefer existing conventions; ask before adding a dependency or a second design system.
+- **Author section by section, not in one dump.** Write `architecture.md` / `plan.md` one section
+  at a time and pause after each; a section resting on an open design choice or a shaky estimate can
+  be deepened right there with a technique from
+  [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) (Tournament for two viable
+  designs, Delphi for the estimate) before it hardens into slices.
 - **Slice count is derived, never dictated.** The number of slices falls out of the work
   — one per independently-shippable increment, sized by `slicing.md`, every acceptance
   criterion mapped to ≥1 slice. A user-named count is a hint at most: slice logically and,
@@ -33,15 +40,12 @@ the plan:
   (`.devrites/AFK` `max_slices` is a separate AFK iteration budget, not the decomposition.)
 
 ## Workflow
-0. **Read `.claude/rules/core.md`** — the always-on operating rules and anti-rationalizations.
+0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`** — the always-on operating rules and anti-rationalizations.
    Then **run the shared orientation preamble** — it confirms the active feature and which
    artifacts exist (it prints `state.md`, the artifacts present, the run mode, and the
    open-question tally):
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
    If there is no active workspace, no `spec.md`, or its readiness gate hasn't passed →
    **STOP** and tell the user to run `/rite-spec <feature>` first.
@@ -53,12 +57,14 @@ the plan:
    **`design-brief.md` if the feature touches UI** (the UX/UI contract `/rite-spec` shaped —
    its key states + interaction model drive how UI slices are cut). If a blocking
    `[NEEDS CLARIFICATION]` remains, stop → `/rite-spec`.
-2. **Decide the approach + architecture** (the HOW the spec deliberately omitted): the
-   strategy, key technical decisions + rationale, and the tech the slices will use. Use a
+2. **Decide the architecture + approach** (the HOW the spec deliberately omitted): write
+   `architecture.md` for owning layer, boundaries, integration points, data/API/events,
+   dependencies, risks, and affected areas; write only the build strategy in `plan.md`.
+   Use a
    code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
-   (see `.claude/rules/tooling.md`) — for structure/impact; for the current API or behaviour of
+   (see `.claude/skills/devrites-lib/reference/standards/tooling.md`) — for structure/impact; for the current API or behaviour of
    an external library/framework the architecture will rely on, consult context7 if available.
-   Record in `plan.md` ([plan-template](reference/plan-template.md)) and `decisions.md`.
+   Record significant options in `decisions.md` as `DEC-###` ADR entries.
    **Deep-modules check** — while sketching the major modules, look for opportunities
    to extract a **deep module**: a small, stable interface that hides a meaningful chunk
    of behavior, and is therefore independently testable. A *shallow* module — interface
@@ -75,19 +81,17 @@ the plan:
    first, see `devrites-frontend-craft/reference/fullstack.md`). **For UI slices, name which
    of `design-brief.md`'s key states + interaction the slice delivers** — so the brief's
    state coverage maps onto slices, not just acceptance criteria.
-4. **Map coverage** — every spec acceptance criterion maps to ≥1 slice
+4. **Map coverage** — every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
    criterion.
-4a. **Persist the traceability matrix** — write `coverage.md` (`AC-id → slice(s) → test →
-   evidence-status`), the living map `/rite-prove` and `/rite-seal` walk. Generate it with
-   `coverage.sh` (it reads `spec.md` acceptance + the `tasks.md` `Satisfies:` lines), or write the
-   table by hand from the same inputs if the script is absent:
+4a. **Persist the traceability matrix** — write `traceability.md` (`AC/REQ ID → slice(s) →
+   test/proof → evidence ID → touched files → status`), the living map `/rite-prove` and
+   `/rite-seal` walk. Generate it with `devrites-engine coverage` when available, then save/rename
+   the output as `traceability.md`, or write the table by hand from the same inputs if the
+   script is absent:
    ```bash
-   C=.claude/skills/devrites-lib/scripts/coverage.sh
-   [ -f "$C" ] || C="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/coverage.sh"
-   [ -f "$C" ] || C=pack/.claude/skills/devrites-lib/scripts/coverage.sh
    S="$(cat .devrites/ACTIVE 2>/dev/null)"
-   [ -f "$C" ] && bash "$C" "$S" > ".devrites/work/$S/coverage.md" || echo "(coverage.sh unavailable — write coverage.md by hand from spec AC + tasks Satisfies:)"
+   devrites-engine coverage "$S" > ".devrites/work/$S/traceability.md"
    ```
 5. **Complexity & deviations gate** — justify anything off DevRites defaults (new dep,
    extra abstraction, second design system) in the plan; if you can't justify it, simplify.
@@ -97,7 +101,8 @@ the plan:
    intended, route it through the Spec Drift Guard plus a recorded decision and a scoped principle
    exception a human approves. Never ready a plan that silently violates an invariant. (Re-scored
    as a blocking gate at `/rite-vet`; no file → none declared → nothing to check.)
-6. **Write** `plan.md` + `tasks.md`; update `state.md` (phase: plan → next `/rite-build`).
+6. **Write** `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md`; update
+   `state.md` (phase: plan → next `/rite-vet`).
 7. **Readiness gate** (bottom of plan-template): every acceptance criterion covered by a
    slice, dependency order acyclic + risk-first, no unjustified deviation, rollback for
    every destructive/migration step. **Stop and confirm** before code. When the human
@@ -107,10 +112,10 @@ the plan:
 
 ## tasks.md slice format
 ```markdown
-## Slice N: <name>
+## SLICE-001 <name>
 Goal:
-Satisfies: AC-n[, AC-m]     # reverse traceability — which spec acceptance criteria this slice satisfies
-Acceptance criteria:        # which spec FR/criteria this satisfies
+Satisfies: AC-001[, AC-002] # reverse traceability — which spec acceptance criteria this slice satisfies
+Acceptance criteria:        # which spec REQ/AC criteria this satisfies
 Complexity: N/5 — <reason>  # 1=trivial … 5=hairy; >3 triggers a reslice unless the reason justifies it
 Forge: no | yes — <reason>  # default no. Propose yes ONLY when Complexity ≥4 AND the slice has ≥2 genuinely-viable
                             # approaches with no clear winner (an architecture fork, not just "hard"). /rite-vet confirms
@@ -122,8 +127,8 @@ Mode: AFK | HITL            # AFK = implementable + mergeable without human gati
 Gate: advisory | validating | blocking | escalating   # required when Mode=HITL; see reference/gates.md
 SLA: 15m | 4h | 24h | none                            # required when Mode=HITL; matches the gate
 Checkpoint: <one crisp question>                       # required when Mode=HITL; what the human must decide
-Blocked by: Slice M, Slice K  # other slices that must complete first ("None" if free)
-depends_on: [Slice M, Slice K]  # machine-readable mirror of Blocked by (same set) — coverage.sh + /rite-status read it
+Blocked by: SLICE-001, SLICE-002  # other slices that must complete first ("None" if free)
+depends_on: [SLICE-001, SLICE-002]  # machine-readable mirror of Blocked by (same set)
 Consumes / Produces:        # interfaces this slice reads (types/endpoints/events from prior slices) and exposes for later ones
 Known-Gotchas:              # sharp edges / ordering hazards / framework footguns the wright must avoid (keeps the slice one-pass)
 Validation commands:        # exact runnable commands that prove the slice green (test / build / typecheck / lint)
@@ -158,13 +163,15 @@ Evidence required:
 
 ## Output
 
-**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
+**Progress first** — run `devrites-engine progress`, then use the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Planned: <slug>
-Approach: <one line>
-Slices: N (slice 1: <name>)   Fullstack/UI slices: <which>
-Coverage: <all acceptance criteria mapped? yes/no>
-Strategy: honored (mode <m>; <n> pre-mortem risks → mitigation slices) | none (no strategy.md)
-Next: confirm, then /rite-vet to lock in the engineering plan (every feature — light or full per stakes), then /rite-build   (or /rite-plan to reshape the slices)
-↻ Hygiene: /clear after user confirms (plan.md + tasks.md + decisions.md + state.md captured). See rules/context-hygiene.md.
+Done: plan written for <slug>; <n> vertical slices defined.
+Changed: architecture.md, plan.md, tasks.md, traceability.md, decisions.md, state.md
+Evidence: not applicable; acceptance coverage <x/y> mapped in traceability.md
+Open: <none | plan questions | Alternative: /rite-plan to reshape slices>
+Next: /rite-vet
+Record: .devrites/work/<slug>/plan.md
+↻ Hygiene: /clear after user confirms the plan
 ```

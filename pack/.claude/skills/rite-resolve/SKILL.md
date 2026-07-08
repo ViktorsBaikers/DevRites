@@ -11,17 +11,17 @@ user-invocable: true
 already paused and **stopped the session** (an AFK blocking/escalating/irreversible queue, or a
 HITL pause the human walked away from), plus `--batch`. When `/rite-build` asks a gap **inline**
 via `AskUserQuestion` and the human is present, that pick resolves the gate **in place** through
-the same `resolve.sh` writer — you don't type `/rite-resolve` for it. For the async case this
+the same `devrites-engine resolve` writer — you don't type `/rite-resolve` for it. For the async case this
 skill takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
 `state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next command.
 
 It is **deliberately small**: one verb, one source of truth (`questions.md`), one cursor
 (`state.md`). The full AFK / HITL contract lives in
-[`afk-hitl.md`](../../rules/afk-hitl.md).
+[`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md).
 
-## Rules consulted (read on demand from `.claude/rules/`)
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 
-Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the resolve:
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Then pull these via `Read` when shaping the resolve:
 
 - `afk-hitl.md` — gate taxonomy, `questions.md` schema, AFK exception rules.
 - `documentation.md` — record decisions and rationale where the answer changes scope.
@@ -39,7 +39,7 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
   through the Spec Drift Guard (`/rite-plan repair`) **after** writing the answer — do
   not modify `spec.md` / `plan.md` inside this skill.
 - **The script is the source of truth.** Always invoke
-  `devrites-lib/scripts/resolve.sh` — it keeps `questions.md` + `state.md` consistent and emits the
+  `devrites-engine resolve` — it keeps `questions.md` + `state.md` consistent and emits the
   next-action recommendation. The one `state.md` field this skill may write by hand is the
   unblocked slice's `Slice mode` (step 4, the named exception); everything else goes through
   the script, never by hand.
@@ -52,16 +52,13 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
 
 ## Workflow
 
-0. **Read `.claude/rules/core.md`** (operating rules + persistence discipline) before
+0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`** (operating rules + persistence discipline) before
    touching the workspace.
    Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
 1. **Parse arguments.** `$ARGUMENTS` is one of:
    - `<qid> "<answer>"` — answer the single open question.
@@ -77,7 +74,7 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
 3. **Render preview.** Echo the qid, the question, the proposed answer (if any), the
    user's answer, and which slice unblocks. Stop here and ask `confirm? (y/N)` **unless**
    the answer was provided non-interactively via `--batch`.
-4. **Mutate.** Run `bash .claude/skills/devrites-lib/scripts/resolve.sh` with the same
+4. **Mutate.** Run `devrites-engine resolve` with the same
    arguments. The script:
    - flips the qid's `status` to `answered` / `dropped` and stamps `answered_at` + `answer`;
    - if the qid is in `state.md`'s `Awaiting human` block (single-question pause), clears
@@ -101,13 +98,15 @@ Read `.claude/rules/core.md` first. Then pull these via `Read` when shaping the 
 
 ## Output
 
-**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
+**Progress first** — run `devrites-engine progress`, then use the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Resolved: <qid> (<gate>, slice <N>)
-Answer:   <one-line summary>
-Workspace updates:
-  - questions.md: q-... status open → answered
-  - state.md:     Awaiting human cleared; Status running
-Next: <recommended command — usually /rite-build or /rite-plan repair>
-↻ Hygiene: no /clear needed (read-only on code; the answer is now persisted).
+Done: resolved <qid> for <gate> at <slice/phase>.
+Changed: questions.md, state.md, decisions.md <updated|n/a>
+Evidence: not applicable; answer persisted before resume
+Open: <none | remaining questions | plan repair needed>
+Next: <single recommended command>
+Record: .devrites/work/<slug>/questions.md
+↻ Hygiene: no /clear needed; the answer is persisted
 ```

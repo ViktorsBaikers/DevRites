@@ -23,7 +23,7 @@ anything, never blocks. Same incremental shape for all three; no LLM needed for 
 
 ## Automatic (already wired — no action needed)
 
-The `Stop` hook `devrites-refresh-indexes.sh` runs at end of turn. It self-guards: exits
+The `Stop` hook `devrites-engine hook refresh-indexes` runs at end of turn. It self-guards: exits
 instantly unless an index tracks the repo, exits instantly if no source file changed since the
 last refresh, else stamps + locks and spawns a **detached** worker so the turn never blocks.
 ON by default; disable with `DEVRITES_REFRESH_INDEXES=off`.
@@ -33,10 +33,7 @@ ON by default; disable with `DEVRITES_REFRESH_INDEXES=off`.
 Force a synchronous refresh now and print the report — resolve the hook across install layouts:
 
 ```bash
-H=".claude/hooks/devrites-refresh-indexes.sh"
-[ -f "$H" ] || H="${CLAUDE_PLUGIN_ROOT:-}/pack/.claude/hooks/devrites-refresh-indexes.sh"
-[ -f "$H" ] || H="pack/.claude/hooks/devrites-refresh-indexes.sh"
-bash "$H" --force .
+devrites-engine hook refresh-indexes --force .
 ```
 
 Then the one case the hook can't cover:

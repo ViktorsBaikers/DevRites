@@ -27,7 +27,7 @@ allow_gates: [advisory, validating]  # gate severities AFK may auto-handle
 
 `.devrites/AFK` is **read-only config** — never rewritten in place. `max_slices` is the
 initial budget; the mutable remaining count lives in `state.md` as `AFK slices remaining:
-<n>`, seeded from `max_slices` on the first AFK build and decremented by `tick-afk.sh`
+<n>`, seeded from `max_slices` on the first AFK build and decremented by `devrites-engine tick-afk`
 (see "Iteration cap").
 
 Defaults when keys are omitted:
@@ -42,9 +42,9 @@ into HITL.
 
 `/rite-build`'s **record step** (workflow step 6) decrements `state.md`'s `AFK slices
 remaining` by 1 each time a slice is marked `built`, by running
-`bash .claude/skills/devrites-lib/scripts/tick-afk.sh <state.md path>`. The script reads the
+`devrites-engine tick-afk <state.md path>`. The script reads the
 field, decrements, writes it back, prints the new value, and **exits `3` when it hits 0**.
-The cap is enforced by `tick-afk.sh`, not by prose — when it exits 3:
+The cap is enforced by `devrites-engine tick-afk`, not by prose — when it exits 3:
 
 - `/rite-build` treats exit 3 as a forced HITL stop:
   ```

@@ -49,75 +49,119 @@ type Feature struct {
 	Present map[Section]bool
 }
 
-// featureDir is where per-feature state lives under the root.
+// featureDir is where per-feature state lives under the root. work/ is the
+// canonical layout; features/ remains readable as a compatibility alias.
 func featureDir(root, slug string) string {
-	return filepath.Join(root, "features", slug)
+	work := filepath.Join(root, "work", slug)
+	if _, err := os.Stat(work); err == nil {
+		return work
+	}
+	features := filepath.Join(root, "features", slug)
+	if _, err := os.Stat(features); err == nil {
+		return features
+	}
+	return work
 }
 
-// ListFeatures returns the slugs of every feature under root — directories
-// under features/ that contain a feature.md — sorted. A root with no features/
-// directory yields an empty list, not an error.
+// ListFeatures returns the slugs of every feature under root — directories under
+// canonical work/ plus compatibility features/ recognized as a feature — sorted.
+// A directory is a feature if it has a manifest (feature.md) OR the working-state
+// ledger (state.md), so a live workspace the pack created without a manifest
+// still lists. Missing layout directories yield an empty list, not an error.
 func ListFeatures(root string) ([]string, error) {
-	entries, err := os.ReadDir(filepath.Join(root, "features"))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	var slugs []string
-	for _, e := range entries {
-		if !e.IsDir() {
+	seen := map[string]bool{}
+	for _, layout := range []string{"work", "features"} {
+		entries, err := os.ReadDir(filepath.Join(root, layout))
+		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(root, "features", e.Name(), "feature.md")); err == nil {
-			slugs = append(slugs, e.Name())
+		if err != nil {
+			return nil, err
 		}
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+			if isFeatureDir(filepath.Join(root, layout, e.Name())) {
+				seen[e.Name()] = true
+			}
+		}
+	}
+	slugs := make([]string, 0, len(seen))
+	for slug := range seen {
+		slugs = append(slugs, slug)
 	}
 	sort.Strings(slugs)
 	return slugs, nil
 }
 
+// isFeatureDir reports whether dir is a recognized feature: it carries a manifest
+// or the working-state ledger. Either is a sufficient phase source for LoadFeature.
+func isFeatureDir(dir string) bool {
+	return regularFileExists(filepath.Join(dir, "feature.md")) ||
+		regularFileExists(filepath.Join(dir, LedgerFile))
+}
+
+func regularFileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
 // CandidateFiles returns the paths that make up feature <slug>: its feature.md
-// index plus every section file, in a stable order. Not all need exist; callers
-// that fingerprint the feature stat and hash the ones that do.
+// manifest plus every file that can satisfy a section (canonical names and the
+// transitional aliases), in a stable order. Not all need exist; callers that
+// fingerprint the feature stat and hash the ones that do, so including the alias
+// names means a change to either the canonical or the alias file is detected.
 func CandidateFiles(root, slug string) []string {
 	dir := featureDir(root, slug)
 	files := []string{filepath.Join(dir, "feature.md")}
 	for _, s := range Sections {
-		files = append(files, filepath.Join(dir, string(s)+".md"))
+		for _, name := range sectionFiles[s] {
+			files = append(files, filepath.Join(dir, name))
+		}
 	}
 	return files
 }
 
-// LoadFeature reads feature <slug> under root. The feature's index file
-// (feature.md) carries the phase in its frontmatter; the six section files
-// carry the content. A missing feature.md means the feature does not exist.
+// LoadFeature reads feature <slug> under root. The phase comes from the manifest
+// (feature.md) frontmatter when present, otherwise from the working-state ledger
+// (state.md, a "- Phase: <p>" line) the live pack writes. A feature with neither a
+// manifest nor a ledger does not exist. Section content is read from the canonical
+// section files or their transitional aliases (see sectionFiles).
 func LoadFeature(root, slug string) (*Feature, error) {
 	dir := featureDir(root, slug)
-	raw, err := os.ReadFile(filepath.Join(dir, "feature.md"))
-	if errors.Is(err, os.ErrNotExist) {
+
+	manifest, mErr := os.ReadFile(filepath.Join(dir, "feature.md"))
+	if mErr != nil && !errors.Is(mErr, os.ErrNotExist) {
+		return nil, mErr
+	}
+	hasManifest := mErr == nil
+	hasLedger := regularFileExists(filepath.Join(dir, LedgerFile))
+	if !hasManifest && !hasLedger {
 		return nil, fmt.Errorf("feature %q not found", slug)
 	}
-	if err != nil {
-		return nil, err
-	}
 
-	fm, _ := splitFrontmatter(raw)
-
-	if v := strings.TrimSpace(fm["schemaVersion"]); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return nil, fmt.Errorf("feature %q: invalid schemaVersion %q", slug, v)
+	var phase Phase
+	if hasManifest {
+		fm, _ := splitFrontmatter(manifest)
+		if v := strings.TrimSpace(fm["schemaVersion"]); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				return nil, fmt.Errorf("feature %q: invalid schemaVersion %q", slug, v)
+			}
+			if n > SchemaVersion {
+				return nil, fmt.Errorf("feature %q: schemaVersion %d is newer than this engine supports (%d); upgrade devrites", slug, n, SchemaVersion)
+			}
 		}
-		if n > SchemaVersion {
-			return nil, fmt.Errorf("feature %q: schemaVersion %d is newer than this engine supports (%d); upgrade devrites", slug, n, SchemaVersion)
-		}
+		phase = Phase(strings.TrimSpace(fm["phase"]))
 	}
-
-	phase := Phase(strings.TrimSpace(fm["phase"]))
+	// Ledger fallback: only when the manifest did not declare a phase, so a manifest
+	// with an explicit-but-unknown phase still surfaces as that error below.
 	if phase == "" {
-		return nil, fmt.Errorf("feature %q: feature.md is missing a phase in its frontmatter", slug)
+		phase = PhaseFromLedger(filepath.Join(dir, LedgerFile))
+	}
+	if phase == "" {
+		return nil, fmt.Errorf("feature %q: no phase in feature.md frontmatter or %s ledger", slug, LedgerFile)
 	}
 	if !KnownPhase(phase) {
 		return nil, fmt.Errorf("feature %q: unknown phase %q", slug, phase)
@@ -125,9 +169,47 @@ func LoadFeature(root, slug string) (*Feature, error) {
 
 	present := make(map[Section]bool, len(Sections))
 	for _, s := range Sections {
-		present[s] = sectionPresent(filepath.Join(dir, string(s)+".md"))
+		present[s] = sectionPresentAny(dir, s)
 	}
 	return &Feature{Slug: slug, Phase: phase, Present: present}, nil
+}
+
+// sectionPresentAny reports whether any file that can satisfy section s has real
+// content — the canonical name or a transitional alias.
+func sectionPresentAny(dir string, s Section) bool {
+	for _, name := range sectionFiles[s] {
+		if sectionPresent(filepath.Join(dir, name)) {
+			return true
+		}
+	}
+	return false
+}
+
+// PhaseFromLedger reads a phase from the working-state ledger: the value of a
+// "- Phase: <p>" line (leading list markers tolerated), taking the first token
+// and accepting it only if it is a phase the engine understands. Returns "" when
+// the file is absent or declares no recognized phase. Unlike migrate's tolerant
+// legacy mapping, this accepts only canonical phase words — the live pack's form.
+func PhaseFromLedger(path string) Phase {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(raw), "\n") {
+		t := strings.TrimLeft(strings.TrimSpace(line), "-*+ \t")
+		key, val, ok := strings.Cut(t, ":")
+		if !ok || !strings.EqualFold(strings.TrimSpace(key), "phase") {
+			continue
+		}
+		word := strings.ToLower(strings.TrimSpace(val))
+		if i := strings.IndexAny(word, " \t"); i > 0 {
+			word = word[:i]
+		}
+		if p := Phase(word); KnownPhase(p) {
+			return p
+		}
+	}
+	return ""
 }
 
 // ReadDeclaredSchemaVersion returns the schemaVersion declared in a feature's

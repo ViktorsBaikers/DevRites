@@ -12,8 +12,8 @@ the user to run `/rite-spec <feature>`. Produces `seal.md` with a clear verdict.
 `/rite-seal` **decides**; the irreversible git commit/push/tag and the task close-out
 live in `/rite-ship`, which refuses to run without a GO recorded here.
 
-## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. The other rule files load on demand —
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. The other rule files load on demand —
 pull these via `Read` before sealing:
 - `agents.md` — review-subagent fan-out at seal.
 - `code-review.md` — severity labels (Critical / Important / Suggestion / Nit / FYI).
@@ -38,6 +38,8 @@ Read `review.md` and the latest reviewer outputs.
 | `Critical == 0` and `Important > 0` and acceptance proven and drift resolved | Render interactive prompt: *"`Important > 0` open. Proceed to seal? [y/N]"*. Default **N**. If the user types `y`, GO; otherwise NO-GO with the open Important findings listed as blockers-by-policy. |
 | `Critical > 0` | **NO-GO**, no exceptions. List every Critical with `file:line` and fix direction. |
 | Any acceptance criterion unproven | **NO-GO**, list the unproven criteria. |
+| Fan-out roster incomplete — `devrites-engine footprint roster` rc=3 (a reviewer neither dispatched nor skip-recorded) | **NO-GO** on the review's *completeness*, not a verdict on the diff: dispatch the missing reviewer or record a justified skip, then re-seal. Same standing as an unproven criterion. |
+| Silent review axis — `devrites-engine review-integrity` rc=1 (an adversarial axis in `review.md` reported nothing and justified nothing) | **Important** — a suspected rubber-stamp, on the review's *completeness* not the diff. Re-run that axis or record its `No-findings:` justification (`code-review.md` § Zero findings is suspicious), then re-seal. |
 | Visual Verdict `FAIL` on an acceptance-mapped UI criterion (`browser-evidence.md`) | **NO-GO** — an unmet acceptance criterion. A declared-state `FAIL` is Important (the `Important > 0` row). UI build with a `design-brief.md` but no Visual Verdict → Important evidence gap. No brief → not applicable. |
 | Diff violates a declared project principle (`.devrites/principles.md`) with no recorded, human-approved exception | **NO-GO**, list each violated principle with `file:line`. Same standing as an unproven criterion (absent / empty file → none declared → not a blocker). |
 | Unresolved drift in `drift.md` | **NO-GO**, route through `/rite-plan` first. |
@@ -49,16 +51,13 @@ Read `review.md` and the latest reviewer outputs.
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
    Then read all artifacts: `brief.md`, `spec.md`, `plan.md`, `tasks.md`, `state.md`,
    `decisions.md`, `assumptions.md`, `questions.md`, `drift.md`, `evidence.md`,
    `browser-evidence.md`, `polish-report.md`, `review.md`, `design-brief.md` (if UI),
    `devex.md` (if a developer-facing surface), `strategy.md` (if present), and the **final diff**. If a code-intelligence index is available
-   (codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods LSP / Read/Grep/Glob — see `.claude/rules/tooling.md`), use it for
+   (codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods LSP / Read/Grep/Glob — see `.claude/skills/devrites-lib/reference/standards/tooling.md`), use it for
    blast-radius checks on the final diff in step 5; context7 if available can confirm a current
    external-API signature a reviewer flags.
 2. Check **acceptance criteria one by one** — [final-evidence](reference/final-evidence.md).
@@ -79,10 +78,7 @@ Read `review.md` and the latest reviewer outputs.
 4a. **Doubt coverage — every stood decision was independently doubted.** Run the deterministic
    check, then judge it against `decisions.md`:
    ```bash
-   DC=.claude/skills/devrites-lib/scripts/doubt-coverage.sh
-   [ -f "$DC" ] || DC="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/doubt-coverage.sh"
-   [ -f "$DC" ] || DC=pack/.claude/skills/devrites-lib/scripts/doubt-coverage.sh
-   [ -f "$DC" ] && { bash "$DC" <slug>; echo "doubt-coverage rc=$?"; } || echo "(doubt-coverage gate unavailable — confirm by hand each stood decision carries a devrites-doubt verdict)"
+   devrites-engine doubt-coverage <slug>; echo "doubt-coverage rc=$?"
    ```
    The script reads two records `/rite-build` writes — the `## Decisions stood` ledger in
    `decisions.md` (each entry ends `— doubt: <accept | reject-resolved | MISSING>`) and the `doubt`
@@ -129,28 +125,26 @@ Read `review.md` and the latest reviewer outputs.
    (`devrites-spec-reviewer`, `devrites-code-reviewer`) when the diff changed since
    `/rite-review` ran (compare against `review.md`); if the diff is unchanged, carry
    review's verdicts on those axes forward rather than re-litigating them.
-   If subagents are available, fan out to the chosen DevRites
-   reviewers (`.claude/agents/devrites-*`) **in parallel** (one `Task` block,
-   multiple tool calls; see `.claude/rules/agents.md` — "Run independent
-   reviewers in parallel", and [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)
-   for the full dispatch shape + reconciliation procedure):
-   `devrites-spec-reviewer` (does the diff implement
-   the spec?), `devrites-test-analyst` (do the tests prove acceptance?),
-   `devrites-code-reviewer`, `devrites-frontend-reviewer` (UI features),
-   `devrites-security-auditor` (input/auth/data/integrations),
-   `devrites-performance-reviewer` (perf-relevant), and `devrites-devex-reviewer`
-   (developer-facing surface — measure mode: grade the measured DX scorecard and reconcile
-   the boomerang against the `/rite-vet` prediction). Give each the workspace
-   path + diff *without the author's reasoning*. If subagents are unavailable,
-   run the equivalent reviews sequentially yourself.
+   If subagents are available, fan out **in parallel** (one `Task` block, multiple tool
+   calls) to the **roster** — the seven reviewers and their checkable triggers are the single
+   source in [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md) (dispatch
+   shape + reconciliation there too; `.claude/skills/devrites-lib/reference/standards/agents.md` — "Run independent reviewers in
+   parallel"). Dispatch every always-on reviewer and every conditional whose trigger the diff
+   meets; `devrites-devex-reviewer` runs in **measure mode** — grade the measured DX scorecard
+   and reconcile the boomerang against the `/rite-vet` prediction. Give each the workspace path +
+   diff *without the author's reasoning*. If subagents are unavailable, run the equivalent
+   reviews sequentially yourself and flag each as a fallback.
    The reviewer **AGENTS** here (fresh context, no author reasoning) are the seal
    GATE; `devrites-audit` is the inline single-axis pass run during build/polish.
    The two paths are intentional, not divergent — the inline audit catches issues
    early; the fresh-context agents are the independent gate before ship.
-   **Footprint:** for each reviewer you dispatch here, append a record —
-   `bash "$FP" log <slug> reviewer <name>` (resolve `$FP` to
-   `.claude/skills/devrites-lib/scripts/footprint.sh` as in `/rite-build`) — so the seal can
-   report the run's fan-out.
+   **Footprint — account for the whole roster.** For each reviewer you dispatch, append
+   `devrites-engine footprint log <slug> reviewer devrites-<x>-reviewer` (the reviewer's **exact agent name** —
+   the roster gate matches on it, so a freehand label like `spec` will read as unaccounted); for
+   each roster reviewer you consciously do **not** dispatch, append
+   `devrites-engine footprint log <slug> skip devrites-<x>-reviewer` and note the one-line reason in `seal.md`.
+   A conditional reviewer that does not apply is a *recorded skip*, never a silent omission — step 7b
+   proves the roster complete before the verdict.
 7a. **Reconcile findings — confidence over volume.** Band each reviewer finding by confidence
    (1–10); a low-confidence (≤4) finding that can't be verified against the diff is **suppressed**
    to a `Suppressed (low-confidence): n` line, not a blocker. Every Critical/Important must cite
@@ -158,15 +152,34 @@ Read `review.md` and the latest reviewer outputs.
    **explicitly** rather than averaging it away, and don't let a pile of low-confidence nits
    inflate the verdict — the gate is `Critical == 0` + acceptance + drift, not "few findings".
    (A seal that fires noise teaches the next one to be ignored.)
+7b. **Account for the roster — no reviewer silently skipped.** Before the verdict, prove every
+   roster reviewer carries a decision (dispatched or skip-recorded in step 7's footprint):
+   ```bash
+   devrites-engine footprint roster <slug>; echo "roster rc=$?"
+   ```
+   - **rc=3** — a roster reviewer was neither dispatched nor skip-recorded: the silent omission
+     this gate exists to catch. **NO-GO** on the review's *completeness* (not the diff) — dispatch
+     the missing reviewer or record a justified skip, then re-run. Same standing as an unproven
+     criterion (severity gate).
+   - **rc=1** — an always-on axis (Spec / Code-review) was skip-recorded: legitimate **only** as a
+     carry-forward of `/rite-review`'s verdict on an **unchanged** diff (step 7). Confirm that;
+     otherwise dispatch it.
+   - **rc=0** — every reviewer accounted for; proceed.
+7c. **No silent reviewer — a zero-findings axis is justified, not assumed.** Confirm no adversarial
+   axis rubber-stamped: an axis that reported nothing must carry a `No-findings:` justification.
+   ```bash
+   devrites-engine review-integrity <slug>; echo "review-integrity rc=$?"
+   ```
+   - **rc=1** — an axis in `review.md` is silent (no finding, no justification): **Important** on the
+     review's completeness. Re-run that axis or record its `No-findings:` account, then re-seal.
+   - **rc=0** — every axis has findings or a justified clean bill; proceed. (No `review.md`, or a
+     freeform one, is a clean pass — the gate keys on per-axis sections.)
 8. Decide GO / NO-GO — [go-no-go](reference/go-no-go.md) — and write `seal.md`. Then render the
    **fan-out footprint** into `seal.md` and the output — deterministic run-weight (subagents
    dispatched · slices · wall-clock), **never a token or dollar figure** (DevRites can't
    truthfully source one):
    ```bash
-   FP=.claude/skills/devrites-lib/scripts/footprint.sh
-   [ -f "$FP" ] || FP="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/footprint.sh"
-   [ -f "$FP" ] || FP=pack/.claude/skills/devrites-lib/scripts/footprint.sh
-   [ -f "$FP" ] && bash "$FP" render <slug> || true
+   devrites-engine footprint render <slug>
    ```
    Also emit a machine-readable verdict block into `seal.md` (so `/rite-autocomplete` can gate
    without parsing prose):
@@ -187,13 +200,10 @@ Read `review.md` and the latest reviewer outputs.
    "don't re-flag X in this project" class, tag `dismiss`); (b) a recurring correction or dead-end
    worth not repeating (tag `note`). The review skills load this ledger **before** they fan out, so a
    dismissed-finding class stops recurring. It is an untrusted prior — live code always overrides
-   (`.claude/rules/security.md`). Promotion of a recurring lesson to a *project rule* stays the
+   (`.claude/skills/devrites-lib/reference/standards/security.md`). Promotion of a recurring lesson to a *project rule* stays the
    human's call (`/rite-learn` — propose, don't impose). Skip on NO-GO.
    ```bash
-   L=.claude/skills/devrites-lib/scripts/learnings.sh
-   [ -f "$L" ] || L="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/learnings.sh"
-   [ -f "$L" ] || L=pack/.claude/skills/devrites-lib/scripts/learnings.sh
-   [ -f "$L" ] && bash "$L" add "<slug>" "<dismissed-as-intentional class or dead-end>" dismiss || true
+   devrites-engine learnings add "<slug>" "<dismissed-as-intentional class or dead-end>" dismiss
    ```
 
 ## `seal.md` template
@@ -221,15 +231,26 @@ For a **UI feature**, note in the hand-off that `/rite-ship` offers an optional
 
 ## Output
 
-**Footer first** — render the flow ribbon by running the progress footer (`progress.sh`,
-resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); at seal
-it shows `seal ◉` with every prior phase `✓` and the slice meter at `✅ ALL BUILT`. Then
-state the verdict.
+**Progress first** — run `devrites-engine progress`, then use the GO or NO-GO typed template
+from the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 
-State the verdict first, then the blockers (if NO-GO) or the follow-ups (if GO), then
-the path to `seal.md`. On GO the next command is `/rite-ship`; on NO-GO it is the fix
-path (`/rite-plan repair`, `/rite-build`, …).
+GO shape:
+```
+GO: feature cleared to ship
+Follow-ups: <none | non-blocking count>
+Next: /rite-ship
+Record: .devrites/work/<slug>/seal.md
+↻ Hygiene: /clear before /rite-ship
+```
 
-End with a one-line `↻ Hygiene:` advisory — `/clear` after GO (seal.md is the durable
-record; ship reads the workspace fresh); `/compact` (seal blockers) after NO-GO if
-fixing in this session, else `/clear`. See `.claude/rules/context-hygiene.md`.
+NO-GO shape:
+```
+NO-GO: <short verdict>
+Blockers: <count + top 1-3 blockers>
+Fix: <single next command>
+Record: .devrites/work/<slug>/seal.md
+↻ Hygiene: /compact (seal blockers) if fixing now; /clear if stopping
+```
+
+Do not imply anything shipped. `/rite-seal` decides only; `/rite-ship` executes.

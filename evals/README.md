@@ -71,8 +71,8 @@ Two golden fixtures pin it — `evals/golden/shippable-feature/` (must grade GO)
 scripts/run-outcome-evals.sh
 ```
 
-No API key required; runs in CI. (Live evidence-freshness by mtime is a separate
-runtime gate: `pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh`.)
+No API key required; runs in CI. Live evidence-freshness by mtime is a separate
+runtime gate exposed as `devrites-engine evidence-fresh`.
 
 ## Behavioral evals (discipline under pressure)
 
@@ -80,7 +80,7 @@ Trigger evals test *which skill fires*; outcome evals test *did a run reach a sh
 state*. Behavioral evals test the third thing: *does a gating skill's discipline hold when
 the user pushes it toward the exact shortcut the skill exists to prevent* — claim a pass it
 didn't observe, ship past a Critical, skip the doubt loop, defer a test. Each scenario turns
-a row from `../pack/.claude/rules/anti-patterns.md` (asserted in prose) into a graded case:
+a row from `../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md` (asserted in prose) into a graded case:
 a pressure prompt plus the resistance a holding response shows and the capitulation a failed
 one shows.
 

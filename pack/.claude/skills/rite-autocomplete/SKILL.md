@@ -12,8 +12,8 @@ prompt may be vague — autocomplete asks its clarifying questions **up front**,
 runs to completion. It does **not** disable the safety gates: hard irreversible-risk,<!-- pack-scan-ignore: negated statement — gates are NOT disabled -->
 blocking / escalating gates, and any NO-GO still pause.
 
-## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` and `.claude/rules/afk-hitl.md` first.
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` and `.claude/skills/devrites-lib/reference/standards/afk-hitl.md` first.
 
 ## Operating rules
 - **One human window.** Clarifying questions are batched up front via
@@ -51,10 +51,7 @@ blocking / escalating gates, and any NO-GO still pause.
 the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
 instead of re-deriving state from raw Markdown:
 ```bash
-P=.claude/skills/devrites-lib/scripts/preamble.sh
-[ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-[ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-[ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+devrites-engine preamble
 ```
    The idea + flags: `--ship` / `--yolo` (auto-confirm the final
    type-GO), `--max-slices N` (OPTIONAL *lower* safety cap for a partial run; default =
@@ -64,10 +61,13 @@ P=.claude/skills/devrites-lib/scripts/preamble.sh
 3. **Arm AFK.** Write `.devrites/AFK` with `allow_gates: [advisory]`; set the slice budget
    from the plan's count after `/rite-vet` (the slice count is only final post-vet), or from
    an explicit `--max-slices` ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
-   irreversible-risk still pause.
+   irreversible-risk still pause. Also `touch .devrites/CHECKPOINT` — an unattended run is the
+   case checkpoint mode earns its keep, so each proven slice is committed local-only as
+   crash-survivable `WIP` ([rite-build/reference/checkpoint.md](../rite-build/reference/checkpoint.md));
+   `/rite-ship` collapses them into the one feature commit.
 4. **Drive the phases** ([reference/loop.md](reference/loop.md)): `/rite-spec` →
    **`/rite-temper`** → `/rite-define` → **`/rite-vet`** → `/rite-build` (loop until all slices
-   built; `tick-afk.sh` each) → `/rite-prove` → `/rite-polish` → `/rite-review` → `/rite-seal`.
+   built; `devrites-engine tick-afk` each) → `/rite-prove` → `/rite-polish` → `/rite-review` → `/rite-seal`.
    Run each by Reading its `SKILL.md` and executing its workflow; state is carried by the
    workspace files, not chat.
 5. **Apply stop conditions at every gate** ([reference/stop-conditions.md](reference/stop-conditions.md)):
@@ -81,18 +81,17 @@ P=.claude/skills/devrites-lib/scripts/preamble.sh
 > Autonomy is for the routine path; the gates exist for everything else.
 
 ## Output
-A phase-by-phase progress log, then the final status. **End with the progress footer** —
-run `progress.sh` (resolved like the step-0 preamble — canonical snippet in
-`devrites-lib/SKILL.md`) as the last lines so the final slice meter + flow ribbon match the
-rest of the lifecycle (it reads the lifecycle position the run reached, e.g. `ship ✓` or the
-phase it stopped at):
+A compact phase-by-phase log, then the final status. **Progress first for the final
+status** — run `devrites-engine progress`, then use the shared typed states from
+[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md):
+`Shipped`, `Stopped`, `Awaiting human`, `NO-GO`, or `GO`.
+
+Keep the log terse:
 ```
 Autocomplete: <slug>
-spec ✓  temper ✓ (mode <m> | skipped)  define ✓  vet ✓ (depth <light|full>, floor <band>)  build ✓ (N slices)  prove ✓  polish ✓  review ✓  seal: GO
-→ SHIPPED  <sha> on <branch>            (--ship)
-   — or —
-→ STOPPED — awaiting human at <phase>: <reason>
-   Resume: <single command>
+spec <done|stopped> · temper <done|skipped|stopped> · define <done|stopped> · vet <done|stopped> · build <n/N|stopped> · prove <done|stopped> · polish <done|stopped> · review <done|stopped> · seal <GO|NO-GO|stopped>
 ```
 
-End with `↻ Hygiene` per `.claude/rules/context-hygiene.md` (`/clear` between long phases).
+Final state examples: `Shipped: <feature>`, `Stopped: <reason>`, `Awaiting human:
+<qid> · <gate> · <slice/phase>`, `NO-GO: <verdict>`, or `GO: feature cleared to ship`.
+Do not write a narrative recap.

@@ -1,6 +1,6 @@
 ---
 name: rite-spec
-description: Investigate a new feature and write `spec.md` (placement, gaps, design refs, measurable acceptance) under `.devrites/work/<slug>/`. Use when the user says "spec out a new feature" or "I have an idea". Not for planning approved specs (use `/rite-define`) or replanning (use `/rite-plan`).
+description: Investigate a new feature and write the `.devrites/work/<slug>/` spec workspace (workspace map, brief.md, spec.md, questions/decisions/assumptions, references, optional design-brief.md). Use when the user says "spec out a new feature" or "I have an idea". Not for planning approved specs (use `/rite-define`) or replanning (use `/rite-plan`).
 argument-hint: "<feature or idea>"
 user-invocable: true
 ---
@@ -18,36 +18,41 @@ are `/rite-define` and `/rite-build`.
 > the change turns out to touch auth / data / a migration / a public API / more than one slice.
 > Spec is for real features; don't pay its ceremony for a one-off.
 
-## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. DevRites skills Read `.claude/rules/core.md`
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. DevRites skills Read `.claude/skills/devrites-lib/reference/standards/core.md`
 as their first step; the other rule files load on demand. Pull `documentation.md` via `Read`
 when capturing significant spec decisions (why-not-what, ADR-style notes in `decisions.md`);
 pull `principles.md` when the project has declared invariants (`.devrites/principles.md`) — a
 new spec must respect them, and a requirement that can only be met by breaking one is a blocking gap.
-Pull `spec-grammar.md` when writing acceptance for a behavioral / high-risk requirement (auth,
+Pull `spec-grammar.md` and `devrites-lib/reference/workspace-artifact-schema.md` when writing
+acceptance for a behavioral / high-risk requirement (auth,
 data model, state machine, public API, money, migration) — the structured `### Requirement:` /
-`#### Scenario:` (SHALL · WHEN/THEN) form, lint-checked by `spec-validate.sh`. Simple criteria
-stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
+`#### Scenario:` (SHALL · WHEN/THEN) form, lint-checked by `devrites-engine spec-validate`. Simple criteria
+stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
 
 ## Operating rules (DevRites core)
 - No silent assumptions · no guessing through confusion · prefer existing conventions ·
   ask the human when an answer changes scope, placement, data model, UX, security,
   migration risk, or acceptance.
+- **Author section by section, not in one dump.** Draft the spec one section at a time
+  (problem → goal → requirements → acceptance → edge cases), and pause after each: a section
+  that carries real risk (a contested requirement, a boundary, an unstated assumption) can be
+  deepened right there with a fitting technique from
+  [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) before moving on. A spec
+  written a section at a time is where sharper thinking lands cheaply; a wall-of-text spec hides
+  the weak section.
 
 ## Workflow
-0. **Read `.claude/rules/core.md`** — the always-on operating rules and anti-rationalizations.
+0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`** — the always-on operating rules and anti-rationalizations.
    Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
 0a. **Brownfield check — onboard before speccing onto un-adopted existing code.** If this is an
    **existing codebase** (real source predating DevRites) that has **never been adopted** — no
-   `.devrites/conventions.md`, no prior `.devrites/work` or `.devrites/archive` — the build has no
+   `.devrites/conventions.md`, no prior `.devrites/work`, `.devrites/features`, or `.devrites/archive` — the build has no
    conventions ledger to follow and the first slice would guess the project's idioms. Route
    through `/rite-adopt` **first**, carrying `$ARGUMENTS` as its *next objective*: adopt
    reverse-derives the baseline `spec.md`, **seeds the conventions ledger**, and proposes
@@ -59,7 +64,7 @@ stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
    for the absence of adoption (the same no-op discipline as the principles gate). Cheap probe:
    ```bash
    if [ ! -f .devrites/conventions.md ] && [ ! -d .devrites/archive ] \
-      && [ -z "$(ls .devrites/work 2>/dev/null)" ] \
+      && [ -z "$(ls .devrites/work .devrites/features 2>/dev/null)" ] \
       && [ -n "$(git ls-files 2>/dev/null | grep -vE '^\.(devrites|claude)/' | head -1)" ]; then
      echo "brownfield, not yet adopted → recommend /rite-adopt first (carry this idea as its next objective)"
    else echo "greenfield or already onboarded → continue spec"; fi
@@ -73,15 +78,24 @@ stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
    (conflicts/constraints); **gaps** (unknowns); **blast radius**. Use a code-intelligence
    index **if available** — `codebase-memory-mcp` first, cross-checked with `codegraph`
    (`.codegraph/` / `codegraph_*`) + `graphify` (`graphify-out/`), else standard methods
-   (LSP / `Read`/`Grep`/`Glob`); see `.claude/rules/tooling.md` —
+   (LSP / `Read`/`Grep`/`Glob`); see `.claude/skills/devrites-lib/reference/standards/tooling.md` —
    for placement/callers/impact instead of broad file reads; fall back to reading files. For
    uncertain external library/framework facts that bear on placement or feasibility, consult
-   context7 if available.
+   context7 if available. When a material decision turns on a fact outside the codebase — a
+   common UX pattern, a standard, a prevailing best practice, how comparable products solve it —
+   **search the web if available** (brave MCP preferred; see `.claude/skills/devrites-lib/reference/standards/tooling.md`), and
+   carry the cited finding into the option you put to the human at step 4.
    Also discover the project's **test / build/typecheck/lint** commands and the
    frontend/backend systems; read `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` / `AGENTS.md` if
    present (`AGENTS.md` is the cross-tool agent-conventions standard — treat it as project
    conventions the build must follow, same standing as `CLAUDE.md`), and read
    `.devrites/principles.md` if present — the declared invariants the feature must respect.
+   **Consult the capability ledger** — the living record of what the system already does
+   ([`ledger.md`](../rite-ship/reference/ledger.md)): `devrites-engine ledger list` for the
+   capabilities on record, then `devrites-engine ledger show <capability>` for any this feature
+   touches. Starting from the proven contract (not a cold re-derive) is what makes the spec store
+   compound across features; it also tells you which requirements are new vs a change to existing
+   behavior, which decides the delta kind in step 5.
 3. **Gather design references (optional)** — [references-intake](reference/references-intake.md).
    The human **may** attach screenshots, mockups, a Figma link, a video, or links — or
    **none at all** (perfectly normal; skip this step then). If any are given: **view/fetch**
@@ -95,14 +109,24 @@ stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
    targets so the UI is built to plan, not guessed. In HITL it pauses for the human to
    confirm the direction; in AFK it asserts the best guess and logs it. Pure
    backend/data/CLI features skip this.
-4. **Close the gaps with the human.** Turn each material gap/issue into a question — one
-   at a time, **best guess attached**, structured options + escape hatch. (Vague ask →
-   `devrites-interview`; rough idea → `/rite-pressure-test`; ladders in
-   [interview-patterns](reference/interview-patterns.md) / [question-protocol](reference/question-protocol.md).)
-   For a vague ask, **map the decision tree** and resolve each branch depth-first; **cover
-   every dimension** (objective · scope · data model · UX · integration · non-functional ·
-   acceptance) — resolved or explicitly deferred — and **stop when answers converge** or you
-   can predict them (don't interrogate). Aim for **zero blocking gaps**. *If a gap is genuinely undecidable on paper (state
+4. **Close the gaps with the human — you recommend, the human decides.** Every material gap
+   (one that moves **objective · scope · placement · data model · UX · integration ·
+   non-functional · security · migration risk · acceptance**) is **put to the human as a ranked
+   option set**, one gap at a time, via the harness `AskUserQuestion` in HITL: **2–4 concrete
+   options, your recommended one first and marked `(Recommended)`**, each with a one-line
+   rationale + trade-off tagged by the dimensions that matter, plus an escape hatch (*Something
+   else — I'll describe it*). Render contract + AFK behaviour: the **Option set** section of
+   [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md); spec-phase question discipline:
+   [question-protocol](reference/question-protocol.md). Your job is to **investigate, rank, and
+   recommend** — not to settle a material decision yourself. **Confidence changes the *cost* of
+   the question, not its *owner*:** when you're near-certain, you still present the set — the
+   human just confirms your `(Recommended)` option in one pick — you do **not** silently decide
+   it because you predicted the answer. Only a **genuinely reversible, low-impact** detail is
+   auto-decided and logged to `assumptions.md`; when unsure whether a gap is material, ask.
+   (Vague ask → `devrites-interview`; rough idea → `/rite-pressure-test`.) For a vague ask,
+   **map the decision tree** and resolve each branch depth-first; **cover every dimension** —
+   each resolved by a human pick or explicitly deferred (logged, non-blocking), never silently
+   skipped. Aim for **zero blocking gaps**. *If a gap is genuinely undecidable on paper (state
    machine that may deadlock, data shape ambiguity, "which UX wins") → suggest a
    scoped detour to `/rite-prototype` to answer that ONE question before
    continuing.* **Invariant conflict is a blocking gap:** if a requirement or acceptance
@@ -110,17 +134,23 @@ stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
    surface it — the principle wins by default; breaking it needs a recorded, scoped exception a
    human approves, never a spec that silently contradicts an invariant.
 5. **Create the workspace** + set `.devrites/ACTIVE`
-   ([state-workspace](reference/state-workspace.md)). Write `spec.md`
-   ([spec-template](reference/spec-template.md)) — WHAT/WHY, technology-agnostic, with
-   **Placement & integration**, **Design references**, **Gaps/issues/decisions**, and
-   measurable acceptance ([acceptance-criteria](reference/acceptance-criteria.md)). For a
+   ([state-workspace](reference/state-workspace.md)). Write compact `README.md`,
+   `brief.md`, and `spec.md` ([spec-template](reference/spec-template.md)) — WHAT/WHY,
+   technology-agnostic, with requirements, acceptance, edge cases, scope boundaries, links
+   to future `architecture.md` / `traceability.md`, and measurable acceptance
+   ([acceptance-criteria](reference/acceptance-criteria.md)). For a
    behavioral / high-risk requirement, write the acceptance as a structured
    `### Requirement:` (SHALL) + `#### Scenario:` (WHEN/THEN) block per
-   [`spec-grammar.md`](../../rules/spec-grammar.md), nesting the `[ACn]` id inside each scenario
-   so `/rite-seal` still grades it; routine criteria stay flat `[ACn]` bullets. Also
+   [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md), nesting the `AC-###` id inside each scenario
+   so `/rite-seal` still grades it; routine criteria stay flat `AC-###` bullets. **When a
+   capability the ledger already holds is changing, write those requirements as deltas** —
+   `## ADDED / MODIFIED / REMOVED Requirements — capability: <c>` (spec-grammar.md § Delta form) —
+   so the change, not just the end state, is explicit and `/rite-ship` folds it cleanly; a
+   capability with no ledger entry stays flat (the first sync seeds it). Also
    write `brief.md`, `references.md`, `questions.md`, `decisions.md`, `assumptions.md`,
-   and an initial `state.md` (phase: spec). When the feature touches UI, `design-brief.md`
-   is written here too (by `devrites-ux-shape`, step 3a).
+   and an initial compact `state.md` (phase: spec) from
+   [state-workspace](reference/state-workspace.md). When the feature touches
+   UI, `design-brief.md` is written here too (by `devrites-ux-shape`, step 3a).
 5a. **Score the spec prose — "unit tests for English"** ([spec-checklists](reference/spec-checklists.md)).
    Emit `.devrites/work/<slug>/checklists/<domain>.md` (one per requirement domain the spec covers:
    functional · data-model · interaction · non-functional · edge-cases). Each tests the *requirement
@@ -130,15 +160,15 @@ stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
 6. **Run the spec readiness gate** (bottom of spec-template): no blocking
    `[NEEDS CLARIFICATION]`, placement decided, all material gaps resolved, any design
    references provided are saved, **UX/UI shaped into `design-brief.md` if the feature is
-   UI**, requirements testable, success criteria measurable, **every `checklists/<domain>.md` at
+   UI**, requirements testable, success criteria measurable, **one-sentence intent** (the whole
+   change states its intent in a single sentence — if it can't, it is two features: split it or
+   narrow the scope), **every `checklists/<domain>.md` at
    `Verdict: pass`**, and **any structured requirement blocks are grammar-valid** — run
-   `spec-validate.sh` (resolved like the step-0 preamble), a non-zero exit is a blocking
-   failure to fix, not soften:
+   `devrites-engine spec-validate` with `--against .devrites/specs` so any delta sections are also
+   reconciled against the ledger (an ADDED that already exists, or a MODIFIED/REMOVED that doesn't,
+   is a blocking failure to fix, not soften):
    ```bash
-   SV=.claude/skills/devrites-lib/scripts/spec-validate.sh
-   [ -f "$SV" ] || SV="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/spec-validate.sh"
-   [ -f "$SV" ] || SV=pack/.claude/skills/devrites-lib/scripts/spec-validate.sh
-   [ -f "$SV" ] && bash "$SV" ".devrites/work/<slug>" || echo "(spec-grammar validator unavailable — eyeball the Requirement/Scenario blocks)"
+   devrites-engine spec-validate ".devrites/work/<slug>" --against .devrites/specs
    ```
    When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when
    it passes.
@@ -147,20 +177,17 @@ stay flat `[ACn]` bullets; the grammar is opt-in by rigor, never forced.
 
 ## Output
 
-**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
+**Progress first** — run `devrites-engine progress`, then use the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Spec ready: <slug>
-Objective: <one sentence>   Placement: <where it lives>
-Resolves: <value>
-References: <n saved | none provided>
-Design brief: <design-brief.md shaped (compact|full) | n/a — not UI>
-Gaps closed: <n>   Open (non-blocking): <n>
-Checklists: <n domains scored — all pass | BLOCKED: n CRITICAL open>
-Grammar: <n requirements / m scenarios — valid | n/a (flat acceptance)>
-Next: big / risky feature (auth · data model · public API · migration · multi-slice · ambiguous scope)?
-      → /rite-temper   (strategic review: scope mode + pre-mortem, hardens the spec) — then /rite-define.
-      Small / reversible / unambiguous? → /rite-define directly.
-↻ Hygiene: /clear before /rite-define (spec.md + references/ + decisions.md + assumptions.md + questions.md captured); /rite-handoff if away > a few hours. See rules/context-hygiene.md.
+Done: spec ready for <slug>; placement decided and gaps closed.
+Changed: spec.md, decisions.md, assumptions.md, questions.md, references/ <updated|n/a>
+Evidence: checklists passed; grammar <valid | n/a flat acceptance>; design brief <path | n/a>
+Open: <none | n non-blocking questions | Alternative: /rite-define for small reversible work>
+Next: /rite-temper
+Record: .devrites/work/<slug>/spec.md
+↻ Hygiene: /clear before the next phase; /rite-handoff if away > a few hours
 ```
 If a workspace with the slug already exists, update its spec rather than overwriting blindly —
 and **show the human a short diff of what changed** in `spec.md` (acceptance criteria added /

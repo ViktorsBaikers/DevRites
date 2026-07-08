@@ -18,7 +18,7 @@ executable, not advisory.
 **Run this first. If ANY of these holds, STOP and route to `/rite-spec` — do NOT use the
 express lane:**
 - Touches **auth / authz**, a **data migration**, a **public API contract**, or any
-  **destructive / data-loss** path (the irreversible-risk list — `rules/afk-hitl.md`).
+  **destructive / data-loss** path (the irreversible-risk list — `standards/afk-hitl.md`).
 - Spans **more than one vertical slice**, or more than a couple of files of real logic.
 - **Ambiguous scope** — you'd have to guess what "done" means, or the ask hides a design
   decision (data model, new dependency, second design system).
@@ -32,7 +32,7 @@ escalate** — the cost of the full lifecycle on a small change is minutes; the 
 express lane on a risky one is the failure mode the lifecycle exists to prevent.
 
 ## Rules consulted
-Read `.claude/rules/core.md` first. Then the small set this lane actually needs:
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Then the small set this lane actually needs:
 - `coding-style.md` — naming, guard clauses, reuse-first.
 - `testing.md` — TDD, **completeness** (every touched behavior/element asserted) +
   **assertion strength** (no tautological tests; see it fail first), scaled to the change.
@@ -70,16 +70,18 @@ decision surfaces, scope grows past the boundary, or you hit an irreversible-ris
 fix into an unreviewed feature; that's the exact drift the lifecycle guards against.
 
 ## Output
-**Footer first** — render the flow ribbon by running the progress footer (`progress.sh`,
-resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`) when a
-workspace is active; otherwise skip it. Then:
+Run `devrites-engine progress` when a workspace is active; otherwise skip it. Then use the
+shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Quick change: <one line>
-Scope: <files touched>   (boundary held? yes)
-Tests: <cmd → pass>   ·   Assertion check: <real asserts, saw red | n/a>
-Diff: <summary>
-Next  ▸ commit (Conventional) on your confirm  ·  or /rite-ship if tracked
-↻ Hygiene: /clear after commit — the change is small and self-contained.
+Done: quick change complete — <one line>.
+Changed: <files touched>
+Evidence: tests <cmd -> pass>; assertion check <real asserts saw red | n/a>; boundary held <yes|no>
+Open: <none | escalation reason | tracked workspace needs ship>
+Next: <single recommended command>
+Record: <commit/PR path | .devrites/work/<slug>/evidence.md | not applicable>
+↻ Hygiene: /clear after commit
 ```
 
 **DO NOT** use this lane to dodge the gate — the express lane is for changes that are

@@ -30,7 +30,7 @@ the absence as a pass.
 ## Integration rule (the important one)
 Cross-model findings are **informational until the human approves each one** — even when you
 agree with them, even when they overlap the in-model reviewer. Cross-model **consensus** is a
-strong signal: surface it as such ("both reviewers flagged Slice 3's missing timeout test"), but
+strong signal: surface it as such ("both reviewers flagged SLICE-003's missing timeout test"), but
 the human still makes the call via `AskUserQuestion`. In AFK, the same gate ceiling applies:
 a cross-model finding that *hardens* the plan auto-applies and is recorded; one that *grows
 scope* or changes acceptance is a blocking pause.

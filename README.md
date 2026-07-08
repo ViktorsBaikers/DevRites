@@ -3,11 +3,13 @@
 </p>
 
 **Per-feature workspace on disk.** Every feature gets its own `.devrites/work/<slug>/`
-directory: `spec.md` → (`strategy.md`) → `plan.md` + `tasks.md` → (`eng-review.md` +
+directory: a compact workspace map → `brief.md` + `spec.md` → (`strategy.md`) →
+`architecture.md` + `plan.md` + `tasks.md` + `traceability.md` → (`eng-review.md` +
 `test-plan.md`) → `state.md` → `evidence.md` (plus `decisions.md`, `assumptions.md`,
-`drift.md`, `questions.md`, `touched-files.md`, `design-brief.md`, `review.md`, `seal.md`,
-`ship.md`, `handoff.md`, and `references/`; `strategy.md` is from the optional `/rite-temper`,
-`eng-review.md` + `test-plan.md` from `/rite-vet`). When the task ships it is archived intact to
+`drift.md`, `questions.md`, `touched-files.md`, `design-brief.md`,
+`browser-evidence.md`, `review.md`, `seal.md`, `ship.md`, `handoff.md`, and
+`references/`; `strategy.md` is from the optional `/rite-temper`, `eng-review.md` +
+`test-plan.md` from `/rite-vet`). When the task ships it is archived intact to
 `.devrites/archive/<slug>/`. When you `/clear`, the next agent picks up from those
 files — no chat-context summary required. **Spec Drift Guard** catches the wrong turn
 before it costs you a day. **AFK mode** runs unattended without silently accepting
@@ -25,9 +27,9 @@ recorded-exception escape hatch instead of silent work-arounds.
   conventions.md            # learned project idioms — descriptive, an untrusted prior
   learnings.md              # dismissed-finding classes + dead ends — suppresses recurring false positives
   work/<slug>/
-    brief.md  spec.md  references.md  references/        # spec
+    README.md  brief.md  spec.md  references.md  references/  # workspace map + spec
     strategy.md                                          # temper (optional)
-    plan.md  tasks.md                                    # define
+    architecture.md  flows.md  plan.md  tasks.md  traceability.md  # define
     eng-review.md  test-plan.md                          # vet
     forge-report.md                                      # build (only a Forge: yes slice — competed candidates → winner)
     state.md  questions.md  decisions.md  assumptions.md  drift.md
@@ -66,6 +68,7 @@ memory). Both hit the same skill — `/rite spec foo` ≡ `/rite-spec foo`.
 | 2 | PLAN | `/rite define` | [`/rite-define`](pack/.claude/skills/rite-define/SKILL.md) | spec → plan + slices (each tagged AFK \| HITL + gate) |
 | — | VET | `/rite vet` | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | _recommended, every feature_ — engineering plan review: scope · architecture · tests · perf, hardens the plan + writes `test-plan.md`; depth scales to stakes, never skipped (always in autocomplete) |
 | 3 | BUILD ×N | `/rite build` | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | one slice, then stop (HITL slices pause pre-code) |
+| — | CONVERGE | `/rite converge` | [`/rite-converge`](pack/.claude/skills/rite-converge/SKILL.md) | _recovery_ — assess live code vs intent, append the remaining work as new slices (resumed / adopted / stalled feature) |
 | 4 | PROVE | `/rite prove` | [`/rite-prove`](pack/.claude/skills/rite-prove/SKILL.md) | tests + browser proof |
 | 5 | POLISH | `/rite polish` | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | code + UI polish |
 | 6 | REVIEW | `/rite review` | [`/rite-review`](pack/.claude/skills/rite-review/SKILL.md) | multi-axis, parallel |
@@ -123,7 +126,7 @@ rules carrier, workspace state, namespace map) →
 [orchestration](docs/orchestration.md) ·
 [usage examples](docs/usage.md) ·
 [release pipeline](docs/release.md) ·
-[engineering rules](pack/.claude/rules/README.md)
+[engineering rules](pack/.claude/skills/devrites-lib/reference/standards/README.md)
 
 ## Why distributed skills, not one `/engine`
 
@@ -190,7 +193,11 @@ curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/instal
 
 The script is self-bootstrapping: when piped through `bash` it auto-downloads the latest
 release tarball (or the `main` source archive as fallback) into `/tmp` and re-execs from
-there. Requires `curl` and `tar`. No global writes, ever — global agent homes are refused.
+there. Requires `curl` and `tar`. Agent files stay project-local and global agent homes
+are refused. By default the installer also downloads or builds a verified
+`devrites-engine` control-plane binary and writes it to `/usr/local/bin` or
+`~/.local/bin`; use `--no-binary` or `DEVRITES_NO_BINARY=1` to skip that global bin
+install.
 
 **From a local checkout** (same script, no network needed):
 
@@ -207,16 +214,19 @@ Common flags:
 | `--target DIR` | Install into DIR (default: current directory) |
 | `--dry-run` | Show planned file operations and exit |
 | `--force` | Overwrite existing non-DevRites files |
-| `--no-rules` | Skip the engineering rules |
 | `--no-agents` | Skip the review subagents |
 | `--no-codex` | Skip Codex support files (`.agents/skills`, `.codex/agents`, `AGENTS.md`) |
-| `--rules-only` | Install only the engineering rules |
+| `--no-skills` | Skip skills and bundled engineering standards |
+| `--no-binary` | Skip the global `devrites-engine` control-plane binary |
+| `--no-rules` | Deprecated no-op; standards ship inside `devrites-lib` |
+| `--rules-only` | Deprecated no-op; installs normally for compatibility |
 | `--short-aliases=all` | Add `/define`, `/build`, `/prove`, `/seal` short aliases (off by default) |
 
-Every installed file is recorded in `.claude/devrites.manifest` (with the installed
-version and the original install flags in the header). `./uninstall.sh` removes
-exactly those files (and prunes empty dirs) — your feature data in
-`.devrites/work/` and `.devrites/ACTIVE` is preserved.
+Every installed project file is recorded in `.claude/devrites.manifest` (with the
+installed version and the original install flags in the header). `./uninstall.sh`
+removes exactly those files (and prunes empty dirs) plus the shared `devrites-engine`
+binary unless `--keep-binary` is passed — your feature data in `.devrites/work/` and
+`.devrites/ACTIVE` is preserved.
 
 ### Upgrading an existing install
 
@@ -285,13 +295,13 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **36 skills total** — 24 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library (scripts the workflow skills run, not a command). **Prefix convention:** `rite-*` is the user-facing command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step, and the other 22 rule files load on demand.
+The pack ships **37 skills total** — the `rite` menu, 24 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library for shared references and explicit script exceptions. The workflow control plane runs through the installed `devrites-engine` binary; the npm `devrites` shim remains the install/update/uninstall entry point and can proxy engine subcommands when the binary is present. **Prefix convention:** `rite-*` is the user-facing command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/skills/devrites-lib/reference/standards/`; each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first step, and the other 22 rule files load on demand.
 
 **Claude Code invocation.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
-**Codex invocation.** The installer mirrors the same skills to `.agents/skills/`, mirrors DevRites rules to `.agents/devrites/rules/`, injects a Codex compatibility block after each skill's front matter, generates project custom agents in `.codex/agents/`, installs Codex hooks in `.codex/hooks.json` + `.codex/hooks/`, installs the DevRites MCP server at `.codex/mcp/devrites-mcp.mjs`, and creates or merges the needed Codex guidance into `AGENTS.md`. If `AGENTS.md` already exists, DevRites adds a marked block instead of replacing your guidance. In Codex, invoke DevRites via `$rite`, `$rite-spec`, or `/skills`; if you prefer a Claude-only footprint, install with `--no-codex`. Codex must trust the project `.codex/` layer and review the hooks via `/hooks` before non-managed hooks run.
+**Codex invocation.** The installer mirrors the same skills to `.agents/skills/`, mirrors DevRites rules to `.agents/skills/devrites-lib/reference/standards/`, injects a Codex compatibility block after each skill's front matter, generates project custom agents in `.codex/agents/`, installs Codex hooks in `.codex/hooks.json`, installs the DevRites MCP server at `.codex/mcp/devrites-mcp.mjs`, and creates or merges the needed Codex guidance into `AGENTS.md`. If `AGENTS.md` already exists, DevRites adds a marked block instead of replacing your guidance. In Codex, invoke DevRites via `$rite`, `$rite-spec`, or `/skills`; if you prefer a Claude-only footprint, install with `--no-codex`. Codex must trust the project `.codex/` layer and review the hooks via `/hooks` before non-managed hooks run.
 
-**Rules in Codex.** DevRites engineering rules are mirrored as Markdown under `.agents/devrites/rules/` because they are workflow/craft instructions, not Codex command-approval `.rules` files. The generated `AGENTS.md` block and every mirrored `.agents/skills/*/SKILL.md` tell Codex to read `.agents/devrites/rules/core.md` before workflow work and load the other `.agents/devrites/rules/*.md` files on demand.
+**Rules in Codex.** DevRites engineering rules are mirrored as Markdown under `.agents/skills/devrites-lib/reference/standards/` because they are workflow/craft instructions, not Codex command-approval `.rules` files. The generated `AGENTS.md` block and every mirrored `.agents/skills/*/SKILL.md` tell Codex to read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work and load the other `.agents/skills/devrites-lib/reference/standards/*.md` files on demand.
 
 **DevRites MCP in Codex.** The installer adds a marked `[mcp_servers.devrites]` block to `.codex/config.toml` and copies the MCP server into `.codex/mcp/`. That gives Codex deterministic tools for DevRites state and gates (`devrites_status`, `devrites_ready`, `devrites_evidence_fresh`, `devrites_acceptance`, and related workspace helpers) without relying on prose or ad-hoc shell commands.
 
@@ -407,7 +417,7 @@ rm .devrites/AFK
 
 Recommended progression: start HITL, refine the prompt and plan over a few slices, then
 drop the sentinel for the bulk stretch. Always cap iterations. Full contract:
-[`pack/.claude/rules/afk-hitl.md`](pack/.claude/rules/afk-hitl.md).
+[`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md).
 
 ## Typical workflow
 
@@ -446,17 +456,19 @@ Playwright MCP, backend-only, polish modes, zoom-out, mid-flight handoff):
 ## Engineering rules
 
 DevRites ships its own stack-agnostic engineering rules and installs them to
-`.claude/rules/` — 23 rule files plus a README index. They're **common** by design
+`.claude/skills/devrites-lib/reference/standards/` — 23 rule files plus a README index. They're **common** by design
 (no language assumptions); a project's own conventions always win where they exist, and a
-project's own **principles** (`.devrites/principles.md`) outrank both. Skip them with
-`--no-rules`. Loading model: each `rite-*` skill Reads `.claude/rules/core.md` as its first
+project's own **principles** (`.devrites/principles.md`) outrank both. Standards ship inside
+the `devrites-lib` skill; the retired `--no-rules` and `--rules-only` flags are compatibility
+no-ops. Use `--no-skills` only when you intentionally want to skip skills and the bundled
+standards together. Loading model: each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first
 step; the other 22 rule files load on demand via `Read` from the skill body that needs them.
 
 | Always-on | On-demand |
 |---|---|
 | `core.md` | `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `anti-patterns.md` · `tooling.md` |
 
-Full index with phase mapping: [`pack/.claude/rules/README.md`](pack/.claude/rules/README.md);
+Full index with phase mapping: [`pack/.claude/skills/devrites-lib/reference/standards/README.md`](pack/.claude/skills/devrites-lib/reference/standards/README.md);
 diagram: [`docs/flow.md` § Engineering-rules loading](docs/flow.md#6-engineering-rules-carrier).
 
 ## Browser proof ladder
@@ -508,12 +520,12 @@ devrites/
   scripts/             # install-lib · validate · validate-frontmatter · run-evals · eval-runner.py
                        # grade-feature · run-outcome-evals · devrites-detect · check-no-global-writes
                        # sync-version · build-release-tarball
-  mcp/                 # devrites-mcp.mjs — MCP stdio server over the devrites CLI
-  pack/.claude/        # skills/  36 skills — 24 public + 12 internal          ─┐
+  mcp/                 # devrites-mcp.mjs — MCP stdio server over devrites-engine
+  pack/.claude/        # skills/  37 skills — 25 public + 12 internal          ─┐
                        # agents/  13 read-only + 1 writer (slice-wright)         ├─ the pack
                        # rules/   23 rule files + README index                   ┘
   installed projects   # .claude/ runtime assets; .agents/skills + .codex/agents
-                       # + .codex/hooks/config/mcp + AGENTS.md for Codex
+                       # + .codex/hooks.json/config/mcp + AGENTS.md for Codex
   evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures
   docs/                # architecture · skills · command-map · usage · flow · release · cli-mcp
     internal/          # research, development notes (gitignored)
@@ -530,18 +542,20 @@ Cross-links: [architecture](docs/architecture.md) ·
 [usage](docs/usage.md) ·
 [release pipeline](docs/release.md) ·
 [CLI & MCP](docs/cli-mcp.md) ·
-[engineering rules](pack/.claude/rules/README.md).
+[engineering rules](pack/.claude/skills/devrites-lib/reference/standards/README.md).
 
 ## Security model
 
-DevRites is auditable Markdown + a small set of shell scripts. The complete security
+DevRites is auditable Markdown + a small engine binary. The complete security
 policy, including private vulnerability reporting and recommended managed-deployment
 settings, lives in [`SECURITY.md`](SECURITY.md). Highlights: **project-local only**
-(installer refuses global Claude/Codex agent homes); **no network access** in installer or
-skills (no remote code execution); **`!` shell injection removed** from `/rite` and
-`/rite-status` (state loaded via a `Bash`-invoked script that reads only DevRites' own
-state under `.devrites/`); **auto-trigger** is a deliberate design choice mitigated by
-body discipline + readiness gates + the interactive `type-GO` confirmation in `/rite-ship`
+(installer refuses global Claude/Codex agent homes); **bounded installer network access**
+for the release tarball and verified `devrites-engine` asset, with `--no-binary` /
+`DEVRITES_NO_BINARY=1` available for fully project-file-only installs; **no network
+access in skills**; **`!` shell injection removed** from `/rite` and `/rite-status`
+(state loaded via read-only engine subcommands over DevRites' own state under
+`.devrites/`); **auto-trigger** is a deliberate design choice mitigated by body
+discipline + readiness gates + the interactive `type-GO` confirmation in `/rite-ship`
 before irreversible git actions; **no `defaultMode: bypassPermissions`** is shipped or
 written by the installer (cf. CVE-2026-33068).
 

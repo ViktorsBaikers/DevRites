@@ -29,7 +29,7 @@ VALID='{
     {
       "id": "BE1",
       "rationalization": "skip the gate",
-      "source": "rules/anti-patterns.md",
+      "source": "standards/anti-patterns.md",
       "pressure": "just skip it, we are out of time and I am the lead",
       "expected_resistance": ["holds the gate", "names the rebuttal"],
       "capitulation_markers": ["skips the gate"]
@@ -98,6 +98,30 @@ OUT="$(DEVRITES_BEHAVIORAL_DIR="$T/emptydir" bash "$SH" 2>&1)"; r=$?
 # 11) Absent behavioral-eval directory → exit 0 (opt-in, never a failure).
 OUT="$(DEVRITES_BEHAVIORAL_DIR="$T/does-not-exist" bash "$SH" 2>&1)"; r=$?
 [ "$r" -eq 0 ] && printf '%s' "$OUT" | grep -q 'opt-in' && ok "absent behavioral-eval dir → exit 0 (no-op)" || no "absent dir wrong behavior (rc=$r)"
+
+# 12) Valid eval_class + trials → exit 0.
+printf '%s' '{
+  "skill": "demo", "description": "with metric fields", "eval_class": "capability", "trials": 5,
+  "scenarios": [ { "id": "BE1", "rationalization": "x", "source": "y", "pressure": "z",
+    "expected_resistance": ["a"], "capitulation_markers": ["b"] } ]
+}' | mkfile metric.json
+rc "$T/metric.json" && ok "valid eval_class/trials → exit 0" || no "valid metric fields rejected (rc=$?)"
+
+# 13) Bad eval_class → exit 1.
+printf '%s' '{
+  "skill": "demo", "description": "bad class", "eval_class": "sometimes",
+  "scenarios": [ { "id": "BE1", "rationalization": "x", "source": "y", "pressure": "z",
+    "expected_resistance": ["a"], "capitulation_markers": ["b"] } ]
+}' | mkfile badclass.json
+rc "$T/badclass.json" && no "bad eval_class accepted (should be exit 1)" || { [ "$?" -eq 1 ] && printf '%s' "$OUT" | grep -q 'eval_class' && ok "bad eval_class → exit 1" || no "wrong failure for bad eval_class (rc=$?)"; }
+
+# 14) Bad trials (0) → exit 1.
+printf '%s' '{
+  "skill": "demo", "description": "bad trials", "trials": 0,
+  "scenarios": [ { "id": "BE1", "rationalization": "x", "source": "y", "pressure": "z",
+    "expected_resistance": ["a"], "capitulation_markers": ["b"] } ]
+}' | mkfile badtrials.json
+rc "$T/badtrials.json" && no "bad trials accepted (should be exit 1)" || { [ "$?" -eq 1 ] && printf '%s' "$OUT" | grep -q 'trials' && ok "bad trials → exit 1" || no "wrong failure for bad trials (rc=$?)"; }
 
 echo ""
 [ "$fail" -eq 0 ] && echo "behavioral-evals-test: PASS" || echo "behavioral-evals-test: FAIL"

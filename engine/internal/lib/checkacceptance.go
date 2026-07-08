@@ -31,7 +31,7 @@ var (
 // writes to stdout/stderr and returns the process exit code.
 func CheckAcceptance(ws string, stdout, stderr io.Writer) int {
 	if ws == "" || !isDir(ws) {
-		fmt.Fprintln(stderr, "usage: devrites check-acceptance <workspace-dir>")
+		fmt.Fprintln(stderr, "usage: devrites-engine check-acceptance <workspace-dir>")
 		return 2
 	}
 	spec := ws + "/spec.md"

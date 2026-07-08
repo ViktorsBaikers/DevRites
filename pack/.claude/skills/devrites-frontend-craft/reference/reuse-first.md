@@ -1,8 +1,8 @@
 # Reuse first — frontend application
 
 Frontend-specific application of the canonical reuse rule in
-[`.claude/rules/coding-style.md`](../../../rules/coding-style.md#reuse-before-you-write)
-(and the slightly longer treatment in `rules/patterns.md`). Same principle —
+[`.claude/skills/devrites-lib/reference/standards/coding-style.md`](../../devrites-lib/reference/standards/coding-style.md#reuse-before-you-write)
+(and the slightly longer treatment in `standards/patterns.md`). Same principle —
 **reuse → extend → build new**, with the AHA caveat. This file walks it through for
 components, styles, tokens, icons, hooks, utils, and helpers in a UI feature.
 
@@ -16,7 +16,7 @@ formatters, hooks, query helpers — anything that might already exist.
 ## The decision (in order)
 1. **Search first.** Use a code-intelligence index if available — codebase-memory-mcp first,
    cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob); see
-   `../../../rules/tooling.md` — to find
+   `../../devrites-lib/reference/standards/tooling.md` — to find
    similar definitions; fall back to grep/glob over `components/`, design tokens, hooks/,
    utils/, lib/. Look for things doing the *same job*, not just the same name.
 2. **Exact fit → REUSE.** Compose / import the existing thing. No copy, no fork.

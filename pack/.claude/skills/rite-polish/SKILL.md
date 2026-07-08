@@ -23,17 +23,14 @@ don't load both up front.
 
 ## Orchestration
 
-0. **Read** `.claude/rules/core.md` first (the always-on operating rules). The
+0. **Read** `.claude/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules). The
    per-phase rule files (`coding-style.md`, `error-handling.md`, …) load on demand
    from `reference/code.md` / `reference/ui.md` when their phase runs.
    Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
 1. **Read** `state.md`, `touched-files.md`, and the `git diff` for the active
    workspace (or `$ARGUMENTS` if a target was given).
@@ -76,17 +73,16 @@ the mode table.
 
 ## Output → `polish-report.md`
 
-**Footer first (to chat, not into the report file)** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`). Then write the report:
+Write the detailed report to `polish-report.md`. In chat, run `devrites-engine progress` first,
+then use the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Target: <slug | path/route/component>
-Phase 1 (code polish): findings → fixes (technique + why behavior preserved)
-Phase 2 (backend polish): error/log/data/API/cleanup fixes | n/a (no backend)
-Phase 3 (normalize):    drift found → root-cause fixes     | n/a (no UI)
-Phase 4 (UI polish):    quality-bar deltas                 | n/a (no UI)
-Browser evidence: <summary | n/a>
-Re-verification: <fast checks run after the edits → pass/fail | n/a (no code changed)>
-Open design questions asked: <none | list>
-Re-prove: <if polish changed code, run a scoped `/rite-prove` so evidence post-dates the change before /rite-review → /rite-seal | n/a — no code changed>
+Done: polished <slug | target>; code/backend/UI phases <ran|n/a>.
+Changed: polish-report.md, <files touched | workspace only>, browser-evidence.md <updated|n/a>
+Evidence: re-verification <cmd -> pass | n/a>; browser <summary | n/a>
+Open: <none | design questions | re-prove needed before review>
 Next: /rite-review
-↻ Hygiene: /clear between polish targets and before /rite-review (polish-report.md + browser-evidence.md captured). See rules/context-hygiene.md.
+Record: .devrites/work/<slug>/polish-report.md
+↻ Hygiene: /clear before /rite-review
 ```

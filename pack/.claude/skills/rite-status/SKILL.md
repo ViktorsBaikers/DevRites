@@ -12,21 +12,15 @@ Read-only. Report where the active feature stands. **Do not run any phase.**
 
 ## Load state
 
-Run this snippet (the shared DevRites preamble — one canonical command that
-resolves the install layouts: installed `.claude/` → plugin via `${CLAUDE_SKILL_DIR}`
-→ repo `pack/`, with a graceful fallback to reading `state.md`; default slug =
-`.devrites/ACTIVE`):
+Run the shared DevRites preamble (default slug = `.devrites/ACTIVE`):
 
 ```bash
-P=.claude/skills/devrites-lib/scripts/preamble.sh
-[ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-[ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-[ -f "$P" ] && bash "$P" [feature-slug] || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+devrites-engine preamble [feature-slug]
 ```
 
 The preamble prints the active workspace's `state.md` and the list of artifacts
 present. The `!`-prefix dynamic-context-injection idiom is **not** used here so
-the skill stays portable across harnesses; the script is the cross-harness
+the skill stays portable across harnesses; the `devrites` binary is the cross-harness
 mechanism.
 
 ## What to output
@@ -88,16 +82,20 @@ context into the workspace before the session ends.
 
 ## Output format
 
-**Footer first** — `/rite-status` *is* the status meter: render it by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`). The slice meter + flow ribbon answer "where am I / how much is left". Then the handoff-readiness check:
+**Progress first** — `/rite-status` *is* the status meter: render it by running
+`devrites-engine progress`. Then use the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md))
+as a read-only status variant:
 ```
-Ready for handoff: yes / partial (n gaps) / no
-
-Gaps (if any):
-- state.md "next action" lists 2 options, not 1
-- 3 open questions raised in conversation not yet in questions.md
-- ...
+Done: status read for <slug>; phase <phase> and active slice <slice|n/a>.
+Changed: workspace only
+Evidence: <current proof summary | not applicable yet>
+Open: <none | questions n | drift n | blockers n | handoff gaps n>
+Next: <single recommended command>
+Record: .devrites/work/<slug>/state.md
+↻ Hygiene: <handoff ready | /rite-handoff before /clear>
 ```
 
 If gaps exist, the recommended next command is to **persist them first** (see
-`.claude/rules/core.md` — "Persistence before stopping"). Only then
+`.claude/skills/devrites-lib/reference/standards/core.md` — "Persistence before stopping"). Only then
 move to the phase's next action.

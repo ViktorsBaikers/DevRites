@@ -1,167 +1,156 @@
-# `.devrites/` state workspace — canonical format
+# `.devrites/` state workspace
 
-The shared state contract for **all** DevRites skills. Every phase reads the active
-workspace first; if none exists, it stops and tells the user to run `/rite-spec <feature>`
-(which creates it).
+This is the writer-facing companion to the canonical schema in
+[`devrites-lib/reference/workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md).
+Load that schema before creating or updating workspace artifacts.
 
 ## Layout
-```
+
+```text
 .devrites/
-  README.md                       # what this dir is (seeded at install)
-  ACTIVE                          # single line: active feature slug, or empty
+  ACTIVE
   work/
     <feature-slug>/
-      brief.md                    # short user-facing objective
-      spec.md                     # what to build + why (from /rite-spec)
-      checklists/                 # spec-quality checklists — "unit tests for English", one <domain>.md per requirement domain (from /rite-spec; gated at spec readiness)
-      references/                 # saved design/reference assets (screenshots, exports, video)
-      references.md               # index of design references (saved files + links)
-      strategy.md                 # strategic review: scope mode + pre-mortem + dimension scores (from /rite-temper; optional — always invoked, significance-gated, in /rite-autocomplete)
-      plan.md                     # how to build it (from /rite-define)
-      tasks.md                    # ordered vertical slices (from /rite-define)
-      eng-review.md               # engineering plan review: scope challenge + axis findings + failure modes + parallelization (from /rite-vet — run on every plan; depth scales light/full, never skipped; always in /rite-autocomplete)
-      test-plan.md                # build-readable coverage target: coverage diagram + per-gap test requirements + acceptance→test map (from /rite-vet; read by /rite-build + /rite-prove)
-      coverage.md                 # traceability matrix: AC-id → slice(s) → test (from /rite-define; walked by /rite-prove + /rite-seal)
-      devex.md                    # developer-experience scorecard — predicted (/rite-vet) → measured (/rite-prove) → reconciled (/rite-seal); only when a developer-facing surface is in scope
-      state.md                    # phase, active slice, risk, next step
-      questions.md                # asked questions + answers
-      decisions.md                # decisions + rationale (+ a `## Dead ends` section: approaches tried that failed + why, so retries don't repeat them)
-      assumptions.md              # explicit assumptions still standing
-      drift.md                    # spec/plan drift observations + resolutions
-      touched-files.md            # files changed or intentionally inspected
-      evidence.md                 # commands run + results
-      forge-report.md             # competitive-build record: K candidates → winner + grafts (from /rite-build on a `Forge: yes` slice; rare)
-      browser-evidence.md         # screenshots, routes, console, viewport checks
-      design-brief.md             # UX/UI contract — if UI involved (from /rite-spec via devrites-ux-shape; refined per slice in /rite-build)
-      polish-report.md            # normalize+polish output
-      review.md                   # review findings + decisions
-      seal.md                     # final GO / NO-GO decision (from /rite-seal)
-      ship.md                     # ship record: commit/tag, acceptance, follow-ups (from /rite-ship)
-      handoff.md                  # human/next-agent-facing handoff summary (overwritten each handoff)
+      README.md                  # compact workspace map (feature.md/index.md aliases supported)
+      brief.md
+      spec.md
+      architecture.md            # from /rite-define
+      flows.md                   # optional, only when useful
+      decisions.md
+      assumptions.md
+      questions.md
+      plan.md                    # from /rite-define
+      tasks.md                   # from /rite-define
+      traceability.md            # from /rite-define
+      state.md
+      evidence.md                # from /rite-build or /rite-prove (proof.md alias supported)
+      browser-evidence.md        # UI only
+      drift.md                   # drift only
+      touched-files.md           # from /rite-build
+      design-brief.md            # UI only
+      handoff.md                 # from /rite-handoff
+      references.md
+      references/
   archive/
-    <feature-slug>/               # closed features (moved here by /rite-ship close-out; all .md preserved)
+    <feature-slug>/
 ```
 
-## Rules
-- **Slug**: kebab-case, derived from the objective (`add-csv-export`, not `feature1`).
-- All artifacts are **human-readable Markdown** — they must survive context compaction
-  and a fresh session. (`references/` also holds binary assets the human supplied.)
-- **`/rite-spec` creates the workspace** and writes `spec.md` (+ `references/`,
-  `references.md`, `brief.md`, `questions.md`, `decisions.md`, `assumptions.md`; **plus
-  `design-brief.md` when the feature touches UI**, via `devrites-ux-shape`) and sets
-  `ACTIVE`. **`/rite-define` reads `spec.md`** and adds `plan.md` + `tasks.md` and updates
-  `state.md`. Other skills read the active workspace; none create a new one.
-- Each phase **updates `state.md`** and the relevant evidence files.
-- Don't create `checklists/` / `strategy.md` / `eng-review.md` / `test-plan.md` /
-  `coverage.md` / `devex.md` / `evidence.md` / `forge-report.md` / `browser-evidence.md` /
-  `design-brief.md` / `polish-report.md` / `review.md` / `seal.md` / `ship.md` / `handoff.md`
-  until the producing phase runs — absence is meaningful (it means "not done yet").
-  `coverage.md` is the `/rite-define` traceability matrix; `devex.md` is the conditional DX
-  scorecard (only when a developer-facing surface is in scope — greenfield no-op otherwise);
-  `forge-report.md` records a competitive `Forge: yes` build and is absent on the common
-  single-path slice. `strategy.md` is written by `/rite-temper` (which may also edit `spec.md` /
-  `decisions.md` / `assumptions.md` via the Spec Drift Guard); its absence means the spec was
-  planned without a strategic review. `eng-review.md` + `test-plan.md` are written by `/rite-vet`
-  (which also hardens `plan.md` / `tasks.md`, and routes acceptance-changing deltas via the Spec
-  Drift Guard); their absence means the plan was built without an engineering review. `handoff.md`
-  is written by `/rite-handoff` and overwritten each handoff (latest snapshot, not a log).
-- **`/rite-ship` closes the feature**: it writes `ship.md`, sets `state.md` phase `done`,
-  then archives `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` (every `.md`
-  preserved) and clears `.devrites/ACTIVE`. Closing **relocates** the audit trail; it
-  never deletes it. Re-open by moving the dir back and re-pointing `ACTIVE`.
+Backward compatibility: if an installed project already uses
+`.devrites/features/<slug>/`, keep reading and updating that workspace. New
+writer instructions should prefer `.devrites/work/<slug>/`; migration adds
+canonical files and preserves aliases rather than deleting old ones.
 
-## `state.md` template
-```markdown
-# State: <slug>
+## Creation rules
 
-- Phase: spec | temper | plan | vet | build | prove | polish | review | seal | ship | done   # `temper` (pre-plan) + `vet` (post-plan, pre-build) only when those optional reviews ran; spec→plan→build directly otherwise
-- Status: running | awaiting_human | blocked | done
-- Active slice: <N — name> | none
-- Slice mode: AFK | HITL | none
-- Spec gate: passed <iso> | none                    # optional — set when the spec readiness gate passes
-- Plan approved: <iso> | none                       # optional — /rite-define sets it when the human confirms the plan
-- AFK slices remaining: <n> | none                  # mutable counter; initialized from .devrites/AFK max_slices on first AFK build
-- Risk: <highest current risk> | none
-- Next step: <single recommended command + why>
+- Slug is kebab-case and comes from the objective.
+- `/rite-spec` creates the workspace map, `brief.md`, `spec.md`, `decisions.md`,
+  `assumptions.md`, `questions.md`, `state.md`, optional `references.md` /
+  `references/`, and optional `design-brief.md` for UI.
+- `/rite-define` adds `architecture.md`, `plan.md`, `tasks.md`, and
+  `traceability.md`.
+- Later phases add only the artifact they own. Do not create optional files as
+  empty placeholders; absence means the phase has not produced that artifact.
+- Each artifact starts with a summary and links to deeper source files instead of
+  copying their content.
+- Use stable IDs: `REQ-001`, `AC-001`, `SLICE-001`, `DEC-001`, `Q-001`,
+  `DRIFT-001`, `EVID-001`.
 
-## Awaiting human   (only when Status == awaiting_human)
-- qid: <q-YYYY-MM-DD-NNN>
-- gate: advisory | validating | blocking | escalating
-- question: <crisp text>
-- proposed: <agent's tentative answer>
-- raised_at: <iso>
-- blocking_slices: [<slice ids that cannot advance until answered>]
-
-## Slice progress
-- [ ] Slice 1: <name> — <pending|built>
-- [ ] Slice 2: ...
-
-## Log
-- <date> <phase>: <one line of what happened>
-```
-
-A slice is only ever `pending` or `built`. Acceptance proof lives at the **feature**
-level in `evidence.md` (recorded by `/rite-prove`), not per slice — there is no per-slice
-`proven` / `done` state.
-
-## `.devrites/AFK` sentinel (AFK mode toggle)
-
-Presence of the file `.devrites/AFK` puts DevRites into **AFK mode**: skills that would
-normally pause for the user instead log to `questions.md` (when the gate severity allows
-it — see [`.claude/rules/afk-hitl.md`](../../../rules/afk-hitl.md)) and continue.
-`.devrites/AFK` presence is the **single source of truth** for run mode (the shared preamble
-derives it); skills re-read the sentinel at decision time rather than trusting a mirrored
-`state.md` field. The file content is optional YAML configuring loop discipline:
-
-```yaml
-# .devrites/AFK — presence = AFK mode active. All keys optional.
-max_slices: 10                       # read-only INITIAL budget; the mutable remaining count lives in state.md
-notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition; see afk-discipline.md for the env table
-allow_gates: [advisory, validating]  # gate severities AFK may auto-handle; everything else pauses
-```
-
-`max_slices` is **read-only config** — never rewritten in place. The mutable remaining
-count lives in `state.md` as `AFK slices remaining: <n>`, initialized from `max_slices` on
-the first AFK build and decremented per built slice (the cap is enforced by
-`tick-afk.sh`, not by prose).
-
-Absent or empty file = AFK active with defaults (`max_slices: unlimited`, no `notify`,
-`allow_gates: [advisory]`). **Destructive migrations, auth/authz boundary changes, and
-public-API breaks always pause regardless of `allow_gates`** — AFK never silently accepts
-irreversible risk.
-
-## `questions.md` entry format
-
-`questions.md` is append-only. Each entry:
+## README.md template
 
 ```markdown
-## q-2026-05-28-001
+# <Feature> Workspace
+phase: spec
+status: running
+next_action: /rite-define after spec readiness passes
+last_updated: <date>
+
+## Artifact map
+| File | Job |
+| --- | --- |
+| brief.md | Objective and bounds |
+| spec.md | Product contract |
+| architecture.md | Technical map; absent until /rite-define |
+| plan.md | Technical approach; absent until /rite-define |
+| tasks.md | Vertical slices; absent until /rite-define |
+| traceability.md | Coverage dashboard; absent until /rite-define |
+| evidence.md | Proof log; absent until /rite-prove |
+
+## Read next
+| Phase / role | Read |
+| --- | --- |
+| Spec | brief.md, spec.md, questions.md |
+| Build | state.md, tasks.md, plan.md |
+| Review | traceability.md, evidence.md, decisions.md |
+
+## Blocking gates
+None.
+```
+
+## state.md template
+
+```markdown
+# State
+
+## Cursor
+| Key | Value |
+| --- | --- |
+| phase | spec |
+| status | running |
+| active_slice | none |
+| slice_mode | none |
+| risk | none |
+| next_action | <single command + reason> |
+
+## Awaiting human
+Only present when status is awaiting_human.
+| Key | Value |
+| --- | --- |
+| question_id | Q-001 |
+| gate | blocking |
+| blocking_slices | SLICE-001 |
+```
+
+`state.md` is a compact cursor, not a history file. Put proof in `evidence.md`,
+decisions in `decisions.md`, assumptions in `assumptions.md`, and drift in
+`drift.md`.
+
+## questions.md entry format
+
+```markdown
+## Q-001
 status: open | answered | dropped
-slice: 03-list-endpoint              # which slice raised it (or "spec" / "plan")
+slice: spec | plan | SLICE-001
 gate: advisory | validating | blocking | escalating
-question: <one crisp sentence the human can answer>
-options: |                           # ranked option set, recommended FIRST
-  1. <recommended> (Recommended) — <dimension-tagged rationale + trade-off>
-  2. <alternative> — <rationale + trade-off>
-  3. Something else — describe it
-proposed: <the recommended option restated — the HITL default + AFK auto-pick>
-raised_at: 2026-05-28T17:30:00Z
-answered_at: <iso when status flips to answered>
-answer: <chosen option / human's reply, verbatim>
-supersedes: <q-... if this replaces an answered entry, else omit>
+question: <one crisp sentence>
+options:
+  1. <recommended> (Recommended) - <trade-off>
+  2. <alternative> - <trade-off>
+proposed: <best current answer>
+raised_at: <iso>
+answered_at:
+answer:
+impact: <affected AC/REQ/slice IDs>
 ```
 
-Canonical schema + rules (gate taxonomy, option-set contract): [`.claude/rules/afk-hitl.md`](../../../rules/afk-hitl.md).
-`/rite-resolve <qid> "<answer>"` is the canonical mutator — manual edits work but the
-skill keeps `state.md` and `questions.md` consistent.
+No open blocking/escalating question may remain before define/build/prove gates.
 
-## `brief.md` template
+## brief.md template
+
 ```markdown
-# <Feature>
-Objective: <one sentence — what and for whom>
-Why now: <one line>
-Definition of done: <one line>
+# Brief: <Feature>
+
+## Objective
+<One sentence.>
+
+## Non-goals
+- <Explicitly out of scope.>
+
+## Success definition
+<One sentence that says what "done" means.>
 ```
 
-`decisions.md`, `assumptions.md`, `questions.md`, `drift.md`, `touched-files.md` are
-append-only running logs — date-stamped bullet entries.
+## Compactness
+
+High-traffic files should stay within the budgets in
+`workspace-artifact-schema.md`. If a file truly must exceed its budget, add
+`Budget override: <reason>` near the top.

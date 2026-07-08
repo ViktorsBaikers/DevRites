@@ -8,10 +8,10 @@ Horizontal ("build all models, then all controllers, then all views") delays wor
 software and hides integration risk until the end. Vertical delivers a usable path each
 slice:
 ```
-Slice 1: Create a task   (DB + API + minimal UI)   → user can create + test passes
-Slice 2: List tasks      (query + API + UI)         → user can see them
-Slice 3: Edit a task     (update + API + UI)        → user can modify
-Slice 4: Delete a task   (delete + API + UI + confirm) → full CRUD
+SLICE-001: Create a task   (DB + API + minimal UI)   -> user can create + test passes
+SLICE-002: List tasks      (query + API + UI)         -> user can see them
+SLICE-003: Edit a task     (update + API + UI)        -> user can modify
+SLICE-004: Delete a task   (delete + API + UI + confirm) -> full CRUD
 ```
 
 ## Sizing a slice
@@ -21,8 +21,14 @@ A slice is the right size when it:
 - has acceptance criteria you can verify with evidence;
 - can be rolled back on its own.
 
-Too big if: it touches many unrelated files, has multiple "and"s in its goal, or you
-can't name its single observable outcome. → reslice.
+Too big if: it touches many unrelated files, or you can't name its single observable outcome.
+**The "and" test:** if the slice's *name* needs an "and" ("create **and** list tasks"), it's two
+slices — split on the "and". → reslice.
+
+Sizing isn't cosmetic. An agent builds a small or medium slice reliably in one pass but drifts on
+an outsized one, which is why a slice over `Complexity: 3/5` reslices (the `tasks.md` slice format
+in [`rite-define`](../../rite-define/SKILL.md)). Push every slice to the smallest cut that still
+stands alone end-to-end.
 
 ## How many slices? — derive, don't dictate
 The slice **count is an output, not an input.** It falls out of the work: one slice per
@@ -46,6 +52,11 @@ limits how many run unattended.
 ## First slice
 Make slice 1 the **thinnest useful end-to-end path** — it flushes out integration and
 convention surprises early, while changes are cheap.
+
+**Risk-first exception.** When the biggest risk is a technical *unknown* — "will this library
+even do X?", "can we hit the latency target?" — let slice 1 (or a throwaway spike ahead of it)
+prove that unknown, even if it isn't the thinnest user-facing path. Fail the risky bet first,
+while pivoting is still cheap.
 
 ## Slice independence
 Order by dependency, but minimize coupling. A slice that needs three other slices first

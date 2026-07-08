@@ -1,8 +1,8 @@
-// Package migrate performs the one-shot upgrade of a pre-v1 .devrites workspace
-// (the flat .devrites/work/<slug>/ layout the bash runtime used) to the current
-// per-feature schema (.devrites/features/<slug>/ with a fixed section set). It is
-// idempotent — re-running is a no-op — and always backs up the pre-migration
-// state before touching anything, so a botched upgrade never strands work.
+// Package migrate normalizes .devrites workspaces in place. work/<slug> is the
+// canonical layout; features/<slug> remains readable as a compatibility alias.
+// The normalizer adds canonical files without deleting aliases. It is idempotent
+// and backs up the pre-migration state before touching anything, so a botched
+// upgrade never strands work.
 package migrate
 
 import (
@@ -16,19 +16,6 @@ import (
 	"github.com/devrites/devrites/internal/state"
 )
 
-// oldToNew maps a legacy work/<slug> file to its new section file. Legacy files
-// with no mapping (review.md, seal.md, drift.md, questions.md, …) are copied
-// verbatim into the new feature dir so nothing is lost, but only these six carry
-// completeness meaning.
-var oldToNew = map[string]string{
-	"spec.md":      "spec.md",
-	"plan.md":      "plan.md",
-	"decisions.md": "decisions.md",
-	"tasks.md":     "tasks.md",
-	"evidence.md":  "proof.md",
-	"state.md":     "status.md",
-}
-
 // Result reports what a migration did. Skipped is true when there was nothing to
 // migrate (a no-op re-run); Migrated lists the slugs upgraded this run; BackupDir
 // is the pre-migration snapshot (empty when Skipped).
@@ -38,24 +25,20 @@ type Result struct {
 	BackupDir string
 }
 
-// Run migrates the workspace at root. It first determines which slugs still live
-// only in the old layout; if none do, it returns Skipped without writing or
-// backing up anything (idempotent). Otherwise it snapshots the old state, then
-// writes each feature's new-schema files.
+type normalizationTarget struct {
+	slug string
+	dir  string
+}
+
+// Run normalizes the workspace at root. If no feature directory needs additive
+// files, it returns Skipped without writing or backing up anything (idempotent).
+// Otherwise it snapshots the state, then writes missing canonical files.
 func Run(root string) (*Result, error) {
-	workDir := filepath.Join(root, "work")
-	slugs, err := oldSlugs(workDir)
+	targets, err := featureDirsNeedingNormalization(root)
 	if err != nil {
 		return nil, err
 	}
-
-	var todo []string
-	for _, slug := range slugs {
-		if !newFeatureExists(root, slug) {
-			todo = append(todo, slug)
-		}
-	}
-	if len(todo) == 0 {
+	if len(targets) == 0 {
 		return &Result{Skipped: true}, nil
 	}
 
@@ -63,72 +46,99 @@ func Run(root string) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, slug := range todo {
-		if err := migrateFeature(root, workDir, slug); err != nil {
-			return nil, fmt.Errorf("migrate %q: %w", slug, err)
+	migrated := make([]string, 0, len(targets))
+	for _, target := range targets {
+		if err := normalizeFeatureDir(target.dir, target.slug); err != nil {
+			return nil, fmt.Errorf("normalize %q: %w", target.slug, err)
 		}
+		migrated = append(migrated, target.slug)
 	}
-	return &Result{Migrated: todo, BackupDir: backup}, nil
+	return &Result{Migrated: uniqueSorted(migrated), BackupDir: backup}, nil
 }
 
-// oldSlugs lists the feature slugs in the legacy work/ directory. A missing work/
-// directory yields no slugs (nothing old to migrate), not an error.
-func oldSlugs(workDir string) ([]string, error) {
-	entries, err := os.ReadDir(workDir)
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	var slugs []string
-	for _, e := range entries {
-		if e.IsDir() {
-			slugs = append(slugs, e.Name())
-		}
-	}
-	sort.Strings(slugs)
-	return slugs, nil
-}
-
-func newFeatureExists(root, slug string) bool {
-	_, err := os.Stat(filepath.Join(root, "features", slug, "feature.md"))
-	return err == nil
-}
-
-// migrateFeature writes the new-schema feature dir from one legacy work/<slug>.
-func migrateFeature(root, workDir, slug string) error {
-	src := filepath.Join(workDir, slug)
-	dst := filepath.Join(root, "features", slug)
-	if err := os.MkdirAll(dst, 0o755); err != nil {
-		return err
-	}
-
-	entries, err := os.ReadDir(src)
-	if err != nil {
-		return err
-	}
-	for _, e := range entries {
-		if e.IsDir() {
+func featureDirsNeedingNormalization(root string) ([]normalizationTarget, error) {
+	var targets []normalizationTarget
+	for _, layout := range []string{"work", "features"} {
+		base := filepath.Join(root, layout)
+		entries, err := os.ReadDir(base)
+		if os.IsNotExist(err) {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(src, e.Name()))
 		if err != nil {
-			return err
+			return nil, err
 		}
-		target := e.Name()
-		if mapped, ok := oldToNew[e.Name()]; ok {
-			target = mapped
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+			dir := filepath.Join(base, e.Name())
+			if needsNormalizeFeature(dir) {
+				targets = append(targets, normalizationTarget{slug: e.Name(), dir: dir})
+			}
 		}
-		if err := state.AtomicWrite(filepath.Join(dst, target), data, 0o644); err != nil {
+	}
+	sort.Slice(targets, func(i, j int) bool {
+		if targets[i].slug != targets[j].slug {
+			return targets[i].slug < targets[j].slug
+		}
+		return targets[i].dir < targets[j].dir
+	})
+	return targets, nil
+}
+
+func needsNormalizeFeature(dir string) bool {
+	if !regularFileExists(filepath.Join(dir, "feature.md")) {
+		return true
+	}
+	return regularFileExists(filepath.Join(dir, "evidence.md")) && !regularFileExists(filepath.Join(dir, "proof.md")) ||
+		regularFileExists(filepath.Join(dir, state.LedgerFile)) && !regularFileExists(filepath.Join(dir, "status.md"))
+}
+
+func regularFileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
+func normalizeFeatureDir(dir, slug string) error {
+	if !regularFileExists(filepath.Join(dir, "feature.md")) {
+		phase := derivePhase(filepath.Join(dir, state.LedgerFile))
+		if err := state.AtomicWrite(filepath.Join(dir, "feature.md"), []byte(featureIndex(slug, phase)), 0o644); err != nil {
 			return err
 		}
 	}
-
-	phase := derivePhase(filepath.Join(src, "state.md"))
-	return state.AtomicWrite(filepath.Join(dst, "feature.md"), []byte(featureIndex(slug, phase)), 0o644)
+	if err := copyAliasFile(dir, "evidence.md", "proof.md"); err != nil {
+		return err
+	}
+	return copyAliasFile(dir, state.LedgerFile, "status.md")
 }
 
+func uniqueSorted(values []string) []string {
+	sort.Strings(values)
+	out := values[:0]
+	var prev string
+	for i, v := range values {
+		if i == 0 || v != prev {
+			out = append(out, v)
+			prev = v
+		}
+	}
+	return out
+}
+
+func copyAliasFile(dir, alias, canonical string) error {
+	src := filepath.Join(dir, alias)
+	dst := filepath.Join(dir, canonical)
+	if !regularFileExists(src) || regularFileExists(dst) {
+		return nil
+	}
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return state.AtomicWrite(dst, data, 0o644)
+}
+
+// featureIndex renders the manifest added to a normalized workspace.
 func featureIndex(slug string, phase state.Phase) string {
 	return fmt.Sprintf(`---
 slug: %s
@@ -137,7 +147,7 @@ phase: %s
 schemaVersion: %d
 ---
 
-Migrated from the pre-v1 .devrites/work/ layout.
+Normalized by DevRites migration.
 `, slug, slug, phase, state.SchemaVersion)
 }
 
@@ -150,7 +160,7 @@ func derivePhase(statePath string) state.Phase {
 		return state.PhaseBuild
 	}
 	for _, line := range strings.Split(string(raw), "\n") {
-		t := strings.ToLower(strings.TrimSpace(line))
+		t := strings.TrimLeft(strings.ToLower(strings.TrimSpace(line)), "-*+ \t")
 		key, val, ok := strings.Cut(t, ":")
 		if !ok || (strings.TrimSpace(key) != "phase" && strings.TrimSpace(key) != "status") {
 			continue
@@ -190,11 +200,14 @@ func mapLegacyPhase(word string) (state.Phase, bool) {
 	}
 }
 
-// backupWorkspace snapshots the legacy state (work/ and the ACTIVE pointer) into
+// backupWorkspace snapshots mutable state (work/, features/, and the ACTIVE pointer) into
 // a timestamped, gitignored backup directory under root before any change.
 func backupWorkspace(root string) (string, error) {
 	backup := filepath.Join(root, fmt.Sprintf(".migrate-backup-%d", time.Now().UnixNano()))
 	if err := copyTree(filepath.Join(root, "work"), filepath.Join(backup, "work")); err != nil {
+		return "", err
+	}
+	if err := copyTree(filepath.Join(root, "features"), filepath.Join(backup, "features")); err != nil {
 		return "", err
 	}
 	// The ACTIVE pointer is a single small file; copy it if present.

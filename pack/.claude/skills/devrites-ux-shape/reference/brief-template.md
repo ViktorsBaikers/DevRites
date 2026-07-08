@@ -78,7 +78,7 @@ changed in the brief because of it. Artifacts saved under `references/`.
 Genuinely unresolved only. If you'd write "Recommend: X", decide X instead.
 
 ## Build-time refinements  *(appended by devrites-frontend-craft per slice)*
-- Slice <N>: <decision made while building this surface + why>.
+- SLICE-001: <decision made while building this surface + why>.
 ```
 
 ## How downstream phases use it

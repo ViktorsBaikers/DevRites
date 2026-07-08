@@ -20,8 +20,8 @@ lifecycle (`/rite-temper` → `/rite-define` → `/rite-build` …) takes over.
 > unfamiliar code without creating a workspace or ledger. `/rite-adopt` is the heavier move:
 > it *commits the project to the lifecycle*. Pick zoom-out to look, adopt to begin.
 
-## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. Pull `documentation.md` when recording
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Pull `documentation.md` when recording
 the adoption decisions (why-not-what) in `decisions.md`; pull `principles.md` when the code
 upholds invariants worth proposing as project principles (step 4a).
 
@@ -31,12 +31,9 @@ upholds invariants worth proposing as project principles (step 4a).
   objective is unclear.
 
 ## Workflow
-0. **Read `.claude/rules/core.md`**, then run the shared orientation preamble:
+0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`**, then run the shared orientation preamble:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
 1. **Scope the adoption** (`$ARGUMENTS`). Which repo or sub-area is being onboarded, and —
    if stated — what the user wants to build *next* on top of it. If the next-build objective
@@ -45,7 +42,7 @@ upholds invariants worth proposing as project principles (step 4a).
 2. **Reverse-investigate the existing code** — the durable shape of the project. Use a
    code-intelligence index if available — codebase-memory-mcp first (its `get_architecture`
    gives a fast overview), cross-checked with codegraph + graphify, else standard methods
-   (LSP / Read/Grep/Glob); see `.claude/rules/tooling.md` — for
+   (LSP / Read/Grep/Glob); see `.claude/skills/devrites-lib/reference/standards/tooling.md` — for
    structure, callers, and impact. Capture, per [adoption](reference/adoption.md): **current
    behavior**, **architecture + placement** (layers, seams, where each kind of thing lives),
    the **commands** (test / build / typecheck / lint), and the **idioms** (naming, layering,
@@ -57,6 +54,17 @@ upholds invariants worth proposing as project principles (step 4a).
    **current behavior as the baseline** and the **next objective** (what adoption is for) with
    measurable acceptance. Also write `decisions.md`, `assumptions.md`, `questions.md`, and
    `state.md` (phase: spec).
+3a. **Seed the capability ledger** from the baseline. If the reverse-derived `spec.md` carries
+   structured `### Requirement:` blocks, fold them into the living
+   `.devrites/specs/<capability>/spec.md` ledger so the project's *current* proven behavior is on
+   record before the first new feature — the ledger the next `/rite-spec` writes deltas against
+   ([ledger.md](../rite-ship/reference/ledger.md)). A flat baseline folds as all-ADDED into the
+   feature slug's capability; tag capabilities in the spec first if you want finer granularity.
+   ```bash
+   devrites-engine ledger diff .devrites/work/<slug>   # preview
+   devrites-engine ledger sync .devrites/work/<slug>   # seed
+   ```
+   Skip when the baseline records no structured requirements (nothing to seed).
 4. **Seed the conventions ledger** from what the investigation *observed* —
    [adoption § seeding](reference/adoption.md). This is the deliberate bootstrap exception to
    evidence-gated promotion: the seeds start at the base band and are provenance-tagged as
@@ -69,7 +77,7 @@ upholds invariants worth proposing as project principles (step 4a).
    **ratified by the human, never auto-seeded** the way conventions are: present the candidates via
    `AskUserQuestion` with the evidence (where the code upholds it), and write the ones the human
    ratifies to `.devrites/principles.md` with a dated Governance entry
-   ([`principles.md`](../../rules/principles.md)). Propose, don't impose — an unratified candidate
+   ([`principles.md`](../devrites-lib/reference/standards/principles.md)). Propose, don't impose — an unratified candidate
    stays a convention, not a gate. Skip cleanly when nothing rises to an invariant (common — a
    fresh adopt may declare zero principles, and that's valid).
 5. **Hand off.** The project is now in the lifecycle with a spec and a head-start ledger.
@@ -82,14 +90,15 @@ upholds invariants worth proposing as project principles (step 4a).
 
 ## Output
 
-**Footer first** — render the progress footer (`progress.sh`, resolved like the step-0
-preamble). Then:
+**Progress first** — run `devrites-engine progress`, then use the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Adopted: <slug>
-Baseline: <one-line summary of current behavior>   Placement: <where it lives>
-Next objective: <what we'll build on top>
-Conventions seeded: <n> (commands · idioms · placement · gotchas)
-Principles proposed: <n ratified → .devrites/principles.md | none rose to an invariant>
-Next: big / risky? → /rite-temper   ·   straightforward? → /rite-define
-↻ Hygiene: /clear before the next phase (spec.md + decisions.md + the seeded ledger captured). See rules/context-hygiene.md.
+Done: adopted existing behavior into <slug>; baseline spec and placement recorded.
+Changed: spec.md, decisions.md, conventions ledger, principles proposals <updated|none>
+Evidence: not applicable; reverse-derived behavior is recorded for review
+Open: <none | adoption questions | Alternative: /rite-define for straightforward follow-up>
+Next: /rite-temper
+Record: .devrites/work/<slug>/spec.md
+↻ Hygiene: /clear before the next phase
 ```

@@ -15,11 +15,12 @@ canonical contract, so `/rite-define` plans the **hardened** spec. Optional for 
 `/rite-autocomplete`. **Read the active workspace first**; if there's no readied
 `spec.md`, tell the user to run `/rite-spec`.
 
-## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. Pull on demand: `patterns.md` +
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Pull on demand: `patterns.md` +
 `coding-style.md` (the over-engineering / YAGNI rubric — reuse the pack's standard, don't
 invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md`
-(irreversible-risk list + gate ceiling).
+(irreversible-risk list + gate ceiling), `elicitation.md` (the move-set to deepen a section
+that needs more than the default pre-mortem — selected by the section's risk).
 
 ## Operating rules
 - **Ambition on outcomes, minimalism on the surface.** Raise the success bar and solve the
@@ -41,14 +42,11 @@ invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md
   fail that re-opens the readiness gate.
 
 ## Workflow
-0. **Read `.claude/rules/core.md`**. Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
+0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`**. Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
    Then read the workspace: `spec.md` (+ `decisions.md`,
    `assumptions.md`, `design-brief.md` if UI), `state.md`. Require `Spec gate: passed` — else
@@ -58,14 +56,24 @@ invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md
    / shape-not-meaning work → write the one-line `skipped — low stakes (<trigger>)` verdict to `strategy.md`,
    set `state.md` `Next step: /rite-define`, and recommend it. Otherwise fire the full pass below.
 2. **FORWARD pass + mode selection** — [`reference/scope-modes.md`](reference/scope-modes.md).
-   Diverge on the *outcome* (the 10-star version of the real problem), then commit **exactly
-   one** scope mode (`expand` opt-in · `selective` · `hold-rigor` · `reduce-to-MVP`) with its
-   rationale and the **hinge** (what would change the call). `$ARGUMENTS` `--mode` is a hint, not
-   a command.
+   First, the **one-sentence-intent test**: state the whole change's intent in a single sentence.
+   If you can't without an "and" that joins two unrelated outcomes, it is **two features** — the
+   sharpest scope-creep signal there is; recommend splitting the spec (or narrowing this one) before
+   tempering further. Then diverge on the *outcome* (the 10-star version of the real problem), and
+   commit **exactly one** scope mode (`expand` opt-in · `selective` · `hold-rigor` · `reduce-to-MVP`)
+   with its rationale and the **hinge** (what would change the call). `$ARGUMENTS` `--mode` is a
+   hint, not a command.
 3. **INVERSION pass** — pre-mortem in past tense ("it shipped and failed — what went wrong"),
    each top risk carrying likelihood + mitigation + the slice it will bind to; then the **YAGNI
    ledger** (each candidate scope item gets the "imagine the later refactor" test; defer unless
    now-cost is trivial AND deferred-cost is large).
+   - **Deepen on demand.** When a specific scope call, requirement, or risk needs sharper thinking
+     than the default pre-mortem gives, pull the 3–5 techniques from
+     [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) whose *when-to-reach-for-it* matches that
+     section's risk (irreversible decision → Red-Team/Blue-Team + Assumption Audit; sizing → Delphi;
+     vague requirement → Steelman-then-Attack), offer them, and run the chosen one **on that one
+     section**. Record what it changed, not that you ran it. Optional — the default passes stand on
+     their own.
 4. **Score the 9 dimensions** — [`reference/review-dimensions.md`](reference/review-dimensions.md).
    Cite evidence *before* the band; **gate on the floor** (the weakest dimension, not an average).
 5. **Walk the findings WITH the human — do not batch-dump.** The artifact is the *output* of an
@@ -104,16 +112,16 @@ invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md
 
 ## Output
 
-**Footer first** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); keep the fact lines below it terse (`key value · key value`). Then:
+**Progress first** — run `devrites-engine progress`, then use the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Tempered: <slug>
-Significance: full | skipped — low stakes (<trigger>)
-Mode: <expand|selective|hold-rigor|reduce-to-MVP> — <one-line rationale> (hinge: <what would change it>)
-Scope: +<n expanded> / -<n reduced> / <n deferred to Non-goals>   (all via Spec Drift Guard)
-Pre-mortem: <n top risks> mitigated → bound to slices
-Dimensions: floor = <strong|adequate|thin|broken> on <weakest dimension>   Reviewer loop: <n> iter
-Spec readiness: re-checked → passes | <blocker>
-Next: /rite-define   (plans the hardened spec)
-↻ Hygiene: /clear before /rite-define (strategy.md + spec edits + decisions.md + assumptions.md captured). See rules/context-hygiene.md.
+Done: spec tempered for <slug>; mode <expand|selective|hold-rigor|reduce-to-MVP|skipped-low-stakes>.
+Changed: strategy.md, spec.md, decisions.md, assumptions.md
+Evidence: dimension floor <band>; reviewer loop <n>; spec readiness re-checked <pass|blocked>
+Open: <none | blocker | n deferred non-goals>
+Next: /rite-define
+Record: .devrites/work/<slug>/strategy.md
+↻ Hygiene: /clear before /rite-define
 ```
 **DO NOT plan, slice, or write code here** — that's `/rite-define` and `/rite-build`.

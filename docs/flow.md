@@ -25,6 +25,8 @@ flowchart LR
     Build -->|HITL gate fires| Await{{Awaiting human<br/>state.md + questions.md}}
     Await -->|"/rite-resolve &lt;qid&gt; &lt;answer&gt;"| Build
     Build -->|all slices built| Prove[/rite-prove/]
+    Define -.->|resumed / adopted / stalled<br/>code vs intent| Converge[/rite-converge/]
+    Converge -.->|appends remaining slices| Build
     Prove -->|evidence captured| Polish[/rite-polish/]
     Polish -->|polish-report.md| Review[/rite-review/]
     Review -->|review.md<br/>Critical == 0| Seal[/rite-seal/]
@@ -175,15 +177,15 @@ stays small.
 
 ## 6. Engineering-rules carrier
 
-Each `rite-*` skill Reads `.claude/rules/core.md` (the always-on subset) as
+Each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` (the always-on subset) as
 its first step (step 0); the other rule files load on demand. Per-phase
 skills pull additional rule files via plain `Read` as their workflow
 demands. No carrier skill, no session-start autoload.
 
 ```mermaid
 flowchart TD
-    R[rite-* skill<br/>step 0] -->|always-on| Core[.claude/rules/core.md]
-    R -->|on demand index| Idx[(.claude/rules/README.md<br/>19 specialist rule files)]
+    R[rite-* skill<br/>step 0] -->|always-on| Core[.claude/skills/devrites-lib/reference/standards/core.md]
+    R -->|on demand index| Idx[(.claude/skills/devrites-lib/reference/standards/README.md<br/>19 specialist rule files)]
     Idx --> CS[coding-style.md]
     Idx --> EH[error-handling.md]
     Idx --> T[testing.md]
@@ -282,7 +284,7 @@ erDiagram
 
 The exact list of files per workspace and what each holds is in
 [`usage.md`](usage.md#the-workspace). The full pause/resume contract is in
-[`pack/.claude/rules/afk-hitl.md`](../pack/.claude/rules/afk-hitl.md).
+[`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md).
 
 ## 8. Public vs internal namespace
 

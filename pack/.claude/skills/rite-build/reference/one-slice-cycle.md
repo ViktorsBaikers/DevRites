@@ -19,6 +19,8 @@ DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). 
 (DOUBT)   → orchestrator, on return: devrites-doubt each non-trivial decision the wright stood up
 PROVE     → orchestrator: fail-on-red check on the wright's gates; browser proof for UI
 RECORD    → orchestrator: state.md, evidence.md, touched-files.md (the canonical writer)
+(CHECKPOINT) → orchestrator: if .devrites/CHECKPOINT is set, commit the proven slice
+            local-only as WIP(<slug>) with a [devrites-context] body → survives a crash (checkpoint.md)
 STOP      → report + recommend next; do not start slice N+1
 ```
 

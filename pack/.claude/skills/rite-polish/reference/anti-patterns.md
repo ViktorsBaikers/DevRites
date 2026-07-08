@@ -5,7 +5,7 @@ skip normalize, polish without Chesterton's Fence, or cite clean lint/build
 as proof of quality.
 
 Pack-wide rationalizations + red flags (incl. lint-pass-as-quality): see
-[rules/anti-patterns.md](../../../rules/anti-patterns.md).
+[standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 
@@ -16,6 +16,7 @@ Pack-wide rationalizations + red flags (incl. lint-pass-as-quality): see
 | "Code is simple enough; no need to audit." | Measure first. If there's no hotspot, that's fine — but record "no hotspots found", don't skip silently. |
 | "It's a small UI change; polish without normalize is fine." | **NO** — decoration on drift is banned. Phase 3 runs before Phase 4, always. |
 | "Backend looks OK; skip Phase 2." | If the diff touched BE, Phase 2 runs — error responses, logging hygiene, queries, anti-slop. |
+| "Fewer lines is simpler, so this is done." | The bar is the comprehension test, not line count: would a new reader understand it *faster* than the original? A cryptic one-liner fails it. Fewer-but-slower is churn — revert it. |
 
 ## Red Flags
 
@@ -25,3 +26,5 @@ Pack-wide rationalizations + red flags (incl. lint-pass-as-quality): see
 - Backend was touched but `polish-report.md` shows no Phase 2 section.
 - A "simplification" that changes observable behavior — that's not behavior-preserving.
 - Reading a Chesterton's Fence as "looks dead" and deleting without explaining what it guards.
+- Simplifying, reflowing, or "tidying" a block marked `devrites:keep` / `simplify-ignore` — the marker is an explicit fence; leave it in place.
+- Hand-editing a >500-line simplification that a codemod / AST transform should have applied uniformly.

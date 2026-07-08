@@ -10,7 +10,7 @@ user-invocable: true
 LLMs reliably get four things wrong: they **assume** silently, **overcomplicate**, edit
 **out of scope**, and run on an **unverifiable** "make it work". The full DevRites
 lifecycle catches all four at its gates (spec readiness, the Spec Drift Guard,
-`touched-files.md` + `reconcile.sh`, `/rite-seal`). But the express lane and plain
+`touched-files.md` + `devrites-engine reconcile`, `/rite-seal`). But the express lane and plain
 "just do X" requests **skip those gates** — and a raw diff has no gate at all.
 
 `rite-frame` is the gate's reflex made portable. Two moves, no workspace required:
@@ -103,19 +103,18 @@ ask into unreviewed work.
 - Feature/ask scope only. Out-of-scope findings become FYI follow-ups, never silent fixes.
 
 ## Output
-```
-FRAME
-  Criterion: Done WHEN <falsifiable check>.
-  Verify:    <exact command / observation>
-  Boundary:  <files/areas NOT touched>
+Reply-contract exception: ad-hoc utility. It may run outside a DevRites workspace, so
+it skips `devrites-engine progress`, but it follows the compact reply principles in
+[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
 
-AUDIT (post-change)
-  1 assumption    : <clean | finding → cure>
-  2 simplicity    : <clean | finding → cure>
-  3 scope         : <clean | finding → cure>
-  4 verifiable    : <command → result, or finding>
-Verdict: framed & clean  |  N findings (acted | escalated to /rite-spec)
+```
+Done: frame complete for <task>; criterion and boundary are explicit.
+Changed: workspace only
+Evidence: verify command <cmd | not run yet>; audit findings <none|n>
+Open: <none | assumptions | escalation reason>
+Next: <single recommended command>
+Record: <.devrites/work/<slug>/decisions.md | not applicable>
+↻ Hygiene: /clear if no workspace; otherwise follow the active phase hygiene
 ```
 
-↻ Hygiene: rite-frame adds no workspace state — nothing to persist. If it routed you to
-`/rite-spec`, that phase owns the handoff from here.
+If it routes to `/rite-spec`, that phase owns the durable workspace from there.

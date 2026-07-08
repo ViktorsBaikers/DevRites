@@ -3,7 +3,7 @@
 The minimum baseline `devrites-performance-reviewer` checks against, in feature scope. It
 is a checklist, not a mandate: flag what the diff actually touches or what a measurement
 flags, never a project-wide sweep. The philosophy lives in
-[`rules/performance.md`](../../../rules/performance.md) (measure first) — this file is the
+[`standards/performance.md`](../../devrites-lib/reference/standards/performance.md) (measure first) — this file is the
 concrete what-to-look-for.
 
 ## Core Web Vitals targets

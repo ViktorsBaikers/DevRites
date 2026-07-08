@@ -22,11 +22,28 @@ stays stable.
 ## Stability principles
 - Design for the caller. The interface should make the common case easy and the wrong
   call hard.
-- Be conservative in what you expose; you can add later, but removing/changing breaks
-  consumers.
+- **Prefer addition over modification.** A new field is additive and optional; changing a
+  field's type or removing one is a breaking change. You can add later — you can't un-ship a
+  shape consumers already read (observable behavior is the contract: [`deprecation.md`](../devrites-lib/reference/standards/deprecation.md) Hyrum's law).
+- **One-Version Rule.** Design as if only one version of this interface will ever exist —
+  extend the single contract rather than fork a v2 you then maintain in parallel. Forking
+  multiplies the surface and breeds diamond-dependency conflicts; bump a version only when an
+  addition genuinely can't stay backward-compatible.
 - Match existing endpoints/modules in style — don't introduce a competing convention.
-- Validate at the boundary (untrusted → trusted); don't trust caller-supplied trust
-  signals (IDs, roles). (See `rite-review/reference/security-review.md` three-tier.)
+- **Validate at the boundary, and only there** (untrusted → trusted); don't trust
+  caller-supplied trust signals (IDs, roles). Validation does *not* belong between two internal
+  typed functions, on your own database's data, or in a utility already called by validated code
+  — a check inside the trusted core hides the bug in the boundary that should have caught it. A
+  third-party API response is external input: always untrusted. (Three-tier boundary:
+  [`security.md`](../devrites-lib/reference/standards/security.md); see `rite-review/reference/security-review.md`.)
+
+## Type craft — make the wrong call unrepresentable
+- **Brand your ids.** A bare `string`/`number` id is assignable to any other id, so the compiler
+  won't stop you passing a `userId` where a `taskId` is due. Give each a nominal brand
+  (`type TaskId = string & { readonly __brand: 'TaskId' }`) and the mix-up becomes a type error,
+  not a production incident.
+- **Model variants as discriminated unions**, each state carrying only its own fields, so an
+  impossible combination can't be constructed in the first place.
 
 ## Enables the split
 A clear contract lets `/rite-plan split` proceed: the backend slice can land against the

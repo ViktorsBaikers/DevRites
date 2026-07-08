@@ -49,6 +49,9 @@ jobs:
       - name: Check cross-references (no dead pointers)
         run: python3 scripts/check-cross-refs.py
 
+      - name: Check invocation integrity (named skills/rules resolve, both harnesses)
+        run: python3 scripts/check-invocation-integrity.py
+
       - name: Pack security scan (injection + hidden unicode — BLOCKING)
         run: python3 scripts/scan-pack-security.py pack/.claude
 
@@ -57,12 +60,6 @@ jobs:
 
       - name: Injection-resistance baseline present in agents
         run: bash tests/injection-baseline-present.sh
-
-      - name: Conventions ledger (scorer + store)
-        run: bash tests/conventions-ledger-test.sh
-
-      - name: Doctor health diagnose
-        run: bash tests/doctor-test.sh
 
       - name: Workflow security (SHA-pinned actions + scoped permissions — BLOCKING)
         run: python3 scripts/validate-workflow-security.py
@@ -76,9 +73,6 @@ jobs:
       - name: Supply-chain IOC scanner tests
         run: bash tests/supply-chain-iocs-test.sh
 
-      - name: Fan-out footprint collector
-        run: bash tests/footprint-test.sh
-
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
 
@@ -91,11 +85,8 @@ jobs:
       - name: Behavioral eval validator tests
         run: bash tests/behavioral-evals-test.sh
 
-      - name: Evidence-freshness gate test
-        run: bash tests/evidence-fresh-test.sh
-
-      - name: A1 pre-block hook test
-        run: bash tests/a1-guard-test.sh
+      - name: Hook config parity (hooks.json == settings.json)
+        run: bash tests/hooks-parity-test.sh
 
       - name: Anti-slop detector (advisory)
         run: bash scripts/devrites-detect.sh || true
@@ -143,6 +134,63 @@ jobs:
       - name: pack validation script
         run: bash tests/validate-pack.sh
 
+  engine:
+    name: engine (go test + cross-compile)
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache-dependency-path: engine/go.sum
+
+      - name: gofmt (no diffs)
+        working-directory: engine
+        run: |
+          diff=$(gofmt -l . )
+          if [ -n "$diff" ]; then echo "gofmt needed:"; echo "$diff"; exit 1; fi
+
+      - name: go vet
+        working-directory: engine
+        run: go vet ./...
+
+      - name: Install analysis tools (staticcheck + govulncheck)
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: staticcheck (static analysis — BLOCKING)
+        working-directory: engine
+        run: staticcheck ./...
+
+      - name: govulncheck (known-CVE scan of the reachable call graph — BLOCKING)
+        working-directory: engine
+        run: govulncheck ./...
+
+      - name: go test -race (control plane + parity oracle)
+        working-directory: engine
+        run: go test ./... -race -count=1
+
+      - name: Validate pack hook wiring (known ids + schema shape — BLOCKING)
+        working-directory: engine
+        run: go run . validate-pack ../pack/.claude
+
+      - name: Harness compliance matrix in sync (generated doc drift-check)
+        working-directory: engine
+        run: go run . harness-matrix --check ../docs/harness-compliance.md
+
+      - name: Cross-compile matrix smoke (all release targets build)
+        run: bash scripts/build-binaries.sh 0.0.0-ci
+
+      - name: Binary lifecycle (install / update / downgrade / uninstall)
+        run: bash tests/binary-lifecycle-test.sh
+
+      - name: Conventions ledger (scorer + store — engine runtime path)
+        run: bash tests/conventions-ledger-test.sh
+
   # Release runs in the same workflow as a final gate — so it (a) shows up as a
   # commit check, and (b) runs on the exact commit CI validated, on the real
   # branch tip, with tags fetched. No workflow_run hand-off, no detached
@@ -151,7 +199,7 @@ jobs:
   release:
     name: semantic-release
     runs-on: ubuntu-latest
-    needs: [validate, install-smoke]
+    needs: [validate, install-smoke, engine]
     # Push to main (the chore(release) commit carries [skip ci] so it never
     # re-triggers) or a manual dispatch — never on a PR.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -176,6 +224,16 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+
+      # semantic-release's prepare step cross-compiles the engine binary matrix
+      # (scripts/build-binaries.sh) — pure-Go, CGO_ENABLED=0, so one Linux runner
+      # produces every target (darwin/linux/windows × amd64/arm64) with no
+      # cross-toolchain. The binaries + sha256 sidecars are attached to the Release.
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache-dependency-path: engine/go.sum
 
       - name: Install dependencies
         run: npm ci

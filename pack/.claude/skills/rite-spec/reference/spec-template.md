@@ -1,134 +1,87 @@
 # `spec.md` template
 
-Write **what** to build and **why** — never **how** (implementation goes in `plan.md`,
-written later by `/rite-define`). Ground every section in the codebase you investigated;
-don't invent files, commands, or conventions.
+Write the product contract: WHAT users get, WHY it matters, how success is
+measured, and what is out of scope. Keep HOW in `plan.md`; put topology and
+diagrams in `architecture.md` / `flows.md`; put coverage in `traceability.md`.
 
-**Two hard rules:**
-1. **Mark every unknown** with `[NEEDS CLARIFICATION: the exact question]` instead of
-   guessing. Open markers block `/rite-define` and `/rite-build` (no silent assumptions).
-2. **No implementation details** in the spec — no tech/library/endpoint choices in the
-   requirements or success criteria. Those are technology-agnostic.
+Rules:
+
+1. Mark unknowns with `[NEEDS CLARIFICATION: <question>]`; blocking unknowns
+   stop `/rite-define`.
+2. Use stable IDs: `REQ-001` for requirements and `AC-001` for acceptance.
+3. Link to source artifacts instead of duplicating them.
+4. Keep the file compact. If it exceeds the schema budget, add
+   `Budget override: <reason>`.
 
 ```markdown
 # Spec: <Feature>
-Slug: <kebab-case>   Created: <date>   Status: Draft | Ready
+Slug: <kebab-case>
+Status: Draft | Ready
+Created: <date>
 
-## Objective
-One paragraph: what this delivers and the value. WHAT + WHY, not HOW.
+## Problem
+What is broken, missing, or costly today.
 
-## Users / actors
-Who uses it and the goal each has.
-
-## Problem statement
-What's broken/missing today; what users do instead.
-
-## User scenarios  *(prioritized, each independently testable)*
-Order by importance; each scenario should be shippable + verifiable on its own → it
-becomes a build slice. Use Given/When/Then.
-- **P1** — Given <state>, When <action>, Then <observable outcome>.
-- **P2** — Given <state>, When <action>, Then <observable outcome>.
-- **P3** — ...
-
-## Functional requirements  *(testable, unambiguous)*
-Number them so tasks and the seal can reference them.
-- **FR-001**: The system MUST <capability>.
-- **FR-002**: The system MUST <capability>.
-- **FR-003**: The system MUST NOT <prohibited behavior>.
-  (Mark gaps: "FR-004: [NEEDS CLARIFICATION: is export CSV-only or also XLSX?]")
-
-## Key entities / data model   *(if data is involved, else "none")*
-Entities, key fields, relationships, lifecycle (created/updated/soft-deleted). No DB
-schema here — that's the plan.
-
-## API / UI impact   *(else "none")*
-Endpoints + contracts (shape, status, errors) at the WHAT level; screens + the states
-each must handle (default/loading/empty/error/success/disabled).
-
-## Design references   *(if the human supplied any, else "none")*
-The screenshots / mockups / Figma / video / links that define the target look & behavior,
-from references.md. Name what each shows and which scenarios it governs.
-- R1 — references/<file> or <url> — <what it shows> → governs <scenario/FR>
-
-## UX/UI design brief   *(if the feature touches UI, else "n/a")*
-When UI is involved, `devrites-ux-shape` writes the feature-level **`design-brief.md`** here
-(design direction, key states, interaction model, visual-direction probe) — the target
-`/rite-build` builds to. Summarize its direction in one line; the full brief lives in
-`design-brief.md`.
-- Direction: <color strategy> · "<scene sentence>" · anchors: <ref A, ref B>
-
-## Success criteria  *(measurable AND technology-agnostic)*
-Observable outcomes that mean "this worked". Numbers where possible. No tech names.
-- Good: "A user exports 10k rows and receives a complete file in under 5s."
-- Good (UI): "The list view matches reference R1 at 1280px and 375px."
-- Bad: "The /export Sidekiq job uses streaming CSV." (that's HOW — belongs in plan)
-
-## Acceptance criteria
-Binary, evidence-backed checklist; each maps to a scenario/FR. See acceptance-criteria.md.
-- [ ] [AC1] <criterion> (FR-00x)
-
-For a behavioral / high-risk requirement (auth, data model, state machine, public API, money,
-migration), write it as a structured Requirement/Scenario block instead — testable by
-construction and lint-checked by spec-validate.sh (see spec-grammar.md). Keep the [ACn] id
-inside the scenario so the seal still grades it; routine criteria stay flat bullets above.
-### Requirement: <name>
-The system SHALL <core observable behavior>.
-#### Scenario: <name>
-- [ ] [AC2] **WHEN** <trigger> **THEN** <observable outcome>  (**AND** <extra condition>)
+## Goal
+One paragraph describing the user-visible outcome and why it matters.
 
 ## Non-goals
-Explicitly out of scope for this version.
+- <Explicitly out of scope.>
 
-## Constraints
-Tech/time/compatibility/perf/security/compliance constraints that bound the solution.
+## Users / actors
+| Actor | Need |
+| --- | --- |
+| <actor> | <goal> |
 
-## Placement & integration  *(where it lives — from investigation.md)*
-So the work is **correctly placed to be used**, not bolted on:
-- **Owns / lives in**: the module / layer / file / component that should hold this, + the
-  right seam.
-- **Reuse / extend**: existing patterns, components, utilities to build on — not duplicate.
-- **Integration points**: callers & dependents; data read/written; APIs / events /
-  contracts touched (how it interacts with the rest of the system).
-- **Affected areas**: the real modules / routes / models / components this change touches.
-- **Blast radius**: what could break (from the code-graph impact / callers).
+## Requirements
+- REQ-001: The system MUST <observable product behavior>.
+- REQ-002: The system MUST NOT <prohibited behavior>.
 
-## Commands discovered
-- Tests: <cmd>   Build/typecheck: <cmd>   Lint: <cmd>   Run/dev: <cmd>
-(From package scripts / Makefile / Gemfile / pyproject / go.mod / CI.)
+## Acceptance criteria
+Each criterion is binary and evidence-backed; every item maps to at least one
+requirement and later to at least one slice in `traceability.md`.
 
-## Test strategy
-What proves each acceptance criterion (unit/integration/e2e/manual).
+- [ ] AC-001: Given <state>, when <action>, then <observable outcome>. (REQ-001)
+- [ ] AC-002: Given <state>, when <action>, then <observable outcome>. (REQ-002)
 
-## Browser proof strategy   *(if UI, else "n/a")*
-Which proof-ladder rung, which routes/viewports, and which design references to verify against.
+For behavioral or high-risk requirements, use the structured form below. Keep the
+`AC-###` ID inside the scenario so traceability remains machine-checkable.
 
-## Risks
-Ranked. Include migration / data / security / UX risks.
+### Requirement: <name>
+The system SHALL <core observable behavior>.
 
-## Gaps, issues & decisions  *(drive the open count toward zero before /rite-define)*
-Every material gap/issue found in investigation, the options offered to the user, and the
-outcome. Resolved here = not rediscovered as drift later.
-| Item | Type (gap / issue / conflict) | Options offered | Decision (owner) | Status |
-|------|------------------------------|-----------------|------------------|--------|
-| <e.g. token scope> | gap | per-user / per-session / follow-up | per-session (user) | resolved |
+#### Scenario: <name>
+- [ ] AC-003: **WHEN** <trigger> **THEN** <observable outcome>. (REQ-001)
 
-## Open questions  *( [NEEDS CLARIFICATION] register )*
-List every open marker; blocking ones must be zero at the gate.
+## Edge cases
+- <Empty/error/permission/race/migration case.>
 
-## Boundaries
-- **Always do**: conventions to follow without asking.
-- **Ask first**: new deps, second design system, schema/migration, auth changes, scope expansion.
-- **Never do**: destructive ops, drive-by refactors, unrelated cleanup.
+## Measurable success
+- <Metric or observable proof that the feature worked.>
 
-## Readiness gate  *(must pass before /rite-define plans it)*
-- [ ] No blocking `[NEEDS CLARIFICATION]` markers remain (deferred ones are non-blocking)
-- [ ] **Placement decided** — where it lives + integration points are known
-- [ ] All material gaps/issues have a recorded decision
-- [ ] **Every spec dimension resolved or explicitly deferred** — objective · scope · data model · UX · integration · non-functional · acceptance (see question-protocol.md "Coverage gate")
-- [ ] Design references gathered + saved (if the human supplied any)
-- [ ] **UX/UI shaped into `design-brief.md`** (if the feature touches UI) — direction, key states, interaction model decided
-- [ ] Requirements are testable and unambiguous
-- [ ] **Structured requirements are grammar-valid** (if any) — `### Requirement:` / `#### Scenario:` blocks pass `spec-validate.sh` (SHALL + WHEN/THEN, unique headers); flat `[ACn]` bullets need no check (see spec-grammar.md)
-- [ ] Success criteria are measurable and technology-agnostic
-- [ ] **Spec-quality checklists pass** — every `checklists/<domain>.md` reaches `Verdict: pass` (zero CRITICAL "unit-tests-for-English" fails; see [spec-checklists.md](spec-checklists.md))
+## Scope boundaries
+- Owns: <product surface or behavior>.
+- Does not own: <adjacent area>.
+- Placement summary: <one-line module/layer summary>; full technical map lives in `architecture.md`.
+
+## References
+- `brief.md` - request, objective, non-goals, success definition.
+- `architecture.md` - technical placement and integration points.
+- `flows.md` - diagrams when useful.
+- `decisions.md` - ADR-style product/technical decisions.
+- `traceability.md` - AC/REQ coverage once `/rite-define` runs.
+- `design-brief.md` - UI direction when UI is in scope.
+
+## Open questions
+| Question ID | Gate | Question | Impact |
+| --- | --- | --- | --- |
+| Q-001 | blocking | [NEEDS CLARIFICATION: <question>] | AC-001 |
+
+## Readiness gate
+- [ ] No blocking `[NEEDS CLARIFICATION]` markers remain.
+- [ ] Requirements use `REQ-###` IDs.
+- [ ] Acceptance criteria use `AC-###` IDs and are independently provable.
+- [ ] Non-goals and scope boundaries are explicit.
+- [ ] Architecture/flows/decisions are linked out instead of duplicated here.
+- [ ] UI work has `design-brief.md`; non-UI work states UI is out of scope.
 ```
