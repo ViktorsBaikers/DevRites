@@ -164,10 +164,12 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    change states its intent in a single sentence — if it can't, it is two features: split it or
    narrow the scope), **every `checklists/<domain>.md` at
    `Verdict: pass`**, and **any structured requirement blocks are grammar-valid** — run
-   `devrites-engine spec-validate` with `--against .devrites/specs` so any delta sections are also
+   `devrites-engine spec-skeleton` first, then `devrites-engine spec-validate` with
+   `--against .devrites/specs` so any delta sections are also
    reconciled against the ledger (an ADDED that already exists, or a MODIFIED/REMOVED that doesn't,
    is a blocking failure to fix, not soften):
    ```bash
+   devrites-engine spec-skeleton ".devrites/work/<slug>"
    devrites-engine spec-validate ".devrites/work/<slug>" --against .devrites/specs
    ```
    When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when

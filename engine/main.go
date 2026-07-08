@@ -58,6 +58,9 @@ Usage:
   devrites-engine archive-search "<nouns>" Surface shipped features whose spec.md overlaps the query (prior-art probe)
   devrites-engine ledger <sub> [...]       Capability ledger (living specs/): sync|diff|validate|list|show
   devrites-engine learnings <sub> [...]    Cross-feature learning ledger: add|list|top|mine|nudge
+  devrites-engine timeline <sub> [...]     Session trace: log|list skill events, decisions, and state moves
+  devrites-engine health <sub> [...]       Health history: record|list compact quality scores
+  devrites-engine review-fingerprints [slug]  Stable IDs for review findings; --write saves JSONL
   devrites-engine conventions <sub> [...]  Project convention ledger: band|read|orient|promote|contradict
   devrites-engine extensions <sub>         Project extensions (.devrites/extensions/): list|validate|sync
   devrites-engine overrides <sub>          Reviewer-override linter (.devrites/overrides/): list|validate
@@ -193,6 +196,12 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return jsonWrap("ledger", j, stdout, stderr, func(o, e io.Writer) int { return lib.Ledger(resolveRootLenient(), rest, o, e) })
 	case "learnings":
 		return lib.Learnings(resolveRootLenient(), args[1:], stdout, stderr)
+	case "timeline":
+		return lib.Timeline(resolveRootLenient(), args[1:], stdout, stderr)
+	case "health":
+		return lib.Health(resolveRootLenient(), args[1:], stdout, stderr)
+	case "review-fingerprints":
+		return lib.ReviewFingerprints(resolveRootLenient(), args[1:], stdout, stderr)
 	case "conventions":
 		return lib.Conventions(args[1:], stdout, stderr)
 	case "extensions":

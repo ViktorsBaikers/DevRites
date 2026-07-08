@@ -18,15 +18,20 @@ Run the engine gates at these moments:
 ```bash
 devrites-engine preamble
 
+devrites-engine check-acceptance .devrites/work/<slug>; echo "check-acceptance rc=$?"
+devrites-engine evidence-fresh <slug>; echo "evidence-fresh rc=$?"
 devrites-engine doubt-coverage <slug>; echo "doubt-coverage rc=$?"
 
 devrites-engine footprint log <slug> reviewer devrites-<x>-reviewer
 devrites-engine footprint log <slug> skip devrites-<x>-reviewer
 devrites-engine footprint roster <slug>; echo "roster rc=$?"
 devrites-engine review-integrity <slug>; echo "review-integrity rc=$?"
+devrites-engine review-fingerprints --write <slug>
 
 devrites-engine footprint render <slug>
 devrites-engine learnings add "<slug>" "<dismissed-as-intentional class or dead-end>" dismiss
+devrites-engine health record <0..10> "<GO|NO-GO evidence summary>" --note "<top blocker or green proof>"
+devrites-engine timeline log completed --skill rite-seal --slug <slug> --outcome "<go|no-go>" --decision "<verdict>"
 
 devrites-engine progress
 ```
@@ -163,6 +168,10 @@ only; `$rite-ship` owns irreversible git/publish/deploy actions.
      review's completeness. Re-run that axis or record its `No-findings:` account, then re-seal.
    - **rc=0** — every axis has findings or a justified clean bill; proceed. (No `review.md`, or a
      freeform one, is a clean pass — the gate keys on per-axis sections.)
+   Then write stable finding IDs for learning and recurring-dismissal correlation:
+   ```bash
+   devrites-engine review-fingerprints --write <slug>
+   ```
 8. Decide GO / NO-GO — [go-no-go](go-no-go.md) — and write `seal.md`. Then render the
    **fan-out footprint** into `seal.md` and the output — deterministic run-weight (subagents
    dispatched · slices · wall-clock), **never a token or dollar figure** (DevRites can't
@@ -194,6 +203,13 @@ only; `$rite-ship` owns irreversible git/publish/deploy actions.
    ```bash
    devrites-engine learnings add "<slug>" "<dismissed-as-intentional class or dead-end>" dismiss
    ```
+10. **Record the durable phase traces.** Before the final output, record the health signal and
+    verdict event. The score is evidence-backed, not decorative: high for GO with green proof,
+    lower for NO-GO or unresolved blockers.
+    ```bash
+    devrites-engine health record <0..10> "<GO|NO-GO evidence summary>" --note "<top blocker or green proof>"
+    devrites-engine timeline log completed --skill rite-seal --slug <slug> --outcome "<go|no-go>" --decision "<verdict>"
+    ```
 
 ## `seal.md` template
 

@@ -32,6 +32,22 @@ model-invoked.
 
 Only promoted surfaces are shipped by the npm package.
 
+## Engine command ownership
+
+Engine commands are not all phase steps. Keep each new command in one of these
+lanes so it is either executed automatically or intentionally operator-owned:
+
+| Lane | Commands | Owner |
+|---|---|---|
+| Workflow gates | `preamble`, `build-readiness`, `spec-skeleton`, `spec-validate`, `check-acceptance`, `evidence-fresh`, `coverage`, `doubt-coverage`, `budget`, `test-integrity`, `mutation-gate`, `package-existence`, `review-integrity`, `footprint`, `reconcile`, `conventions`, `learnings`, `review-fingerprints`, `timeline`, `health`, `progress` | Called by the relevant `rite-*` workflow or shared reply contract. |
+| Workspace utilities | `status`, `analyze`, `archive-search`, `resolve`, `close-out`, `stuck`, `tick-afk`, `ledger` | Called by a specific utility/phase when its condition is met. |
+| Low-level completeness API | `readiness`, `seal` | Available for scripts/CI and documented engine use. Feature rites use stricter phase-specific gates (`build-readiness`, `/rite-seal` phase contract) instead of auto-running these weaker aggregate checks. |
+| Install / operator / CI | `install`, `update`, `uninstall`, `doctor`, `migrate`, `reindex`, `validate-pack`, `harness-matrix`, `extensions`, `overrides`, `hook`, `version` | Called by `npx devrites ...`, `/rite-doctor`, hooks, CI, or a human operator; do not auto-run during feature work just because the command exists. |
+
+Workflow-owned commands should have a concrete call site in a `rite-*` skill,
+phase contract, shared reply contract, or installed hook. Operator-owned commands
+must say who runs them.
+
 ## Public commands (`user-invocable: true`)
 
 | Command | Phase | Argument | What it does | Reads | Writes |

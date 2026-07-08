@@ -16,6 +16,9 @@ devrites-engine evidence-fresh [slug]    # proof freshness gate      (exit 0 fre
 devrites-engine check-acceptance <dir>   # acceptance gate           (exit 0 proven · 1 gap)
 devrites-engine ledger sync <dir>        # fold a feature's spec deltas into the living capability ledger
 devrites-engine ledger list|show <cap>   # read the ledger — what the system already does
+devrites-engine timeline log|list        # append/list session events, decisions, and state moves
+devrites-engine health record|list       # append/list compact workspace health history
+devrites-engine review-fingerprints [slug] # stable IDs for review findings; --write saves JSONL
 devrites-engine progress [slug]          # compact phase/slice footer
 devrites-engine resolve <qid> "<answer>" # answer a HITL gate
 devrites-engine close-out <slug>         # archive a shipped feature and clear ACTIVE
@@ -28,7 +31,9 @@ The AFK-parsed read commands (`status`, `readiness`, `seal`, `spec-validate`,
 [`engine/agent-contract.md`](engine/agent-contract.md).
 
 The npm `devrites` shim remains the installer/updater/uninstaller entry point and
-proxies these engine subcommands when `devrites-engine` is installed.
+proxies these engine subcommands when `devrites-engine` is installed. Install and
+update DevRites through `npx devrites ...`; DevRites is not distributed through
+Claude or Codex plugin stores.
 
 The exit code is the gate. A non-zero `build-readiness`,
 `evidence-fresh`, or `check-acceptance` result is a hard stop that can be used

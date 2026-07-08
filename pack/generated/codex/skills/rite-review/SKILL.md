@@ -120,6 +120,7 @@ pull these via `Read` when the diff demands them:
 9. **Guard against the silent reviewer.** After `review.md` is written, run:
    ```bash
    devrites-engine review-integrity
+   devrites-engine review-fingerprints --write
    ```
    Exit 1 means an adversarial axis reported nothing and justified nothing — a suspected
    rubber-stamp. Re-run that axis or add its `No-findings:` justification; do not carry a silent
@@ -172,7 +173,7 @@ the shared completion reply contract
 Default success shape:
 ```
 Done: review complete for <slice N | feature>.
-Changed: review.md, evidence.md <updated|n/a>, state.md
+Changed: review.md, review-fingerprints.jsonl, evidence.md <updated|n/a>, state.md
 Evidence: findings Critical <n> / Important <n> / Suggestion <n> / Nit <n> / FYI <n>; re-verification <cmd -> pass|n/a>
 Open: <none | Critical blockers, Fix: <single command> | Important fixes | re-prove needed>
 Next: $rite-seal

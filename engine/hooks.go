@@ -88,16 +88,18 @@ func hookStopGate(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) 
 const allowReason = "DevRites read-only orientation/gate command — auto-approved by the devrites-allow hook"
 
 var allowReadonlyCommands = map[string]bool{
+	"check-acceptance": true,
+	"doubt-coverage":   true,
+	"evidence-fresh":   true,
 	"preamble":         true,
 	"progress":         true,
 	"readiness":        true,
-	"evidence-fresh":   true,
-	"check-acceptance": true,
 	"review-integrity": true,
-	// ledger's read forms (list / show <cap> / validate) carry no path arg and are
-	// auto-approved; the write forms (sync / diff <workspace-dir>) require a path
-	// arg, which safeAllowArg rejects, so they still fall through to a prompt.
-	"ledger": true,
+}
+
+var allowReadonlySubcommands = map[string]map[string]bool{
+	"footprint": {"render": true, "roster": true},
+	"ledger":    {"diff": true, "validate": true, "list": true, "show": true},
 }
 
 // hookAllow auto-approves the read-only devrites orientation/gate subcommands so
@@ -147,10 +149,35 @@ func safeAllowCommand(cmd string) bool {
 		return false
 	}
 	fields := strings.Fields(cmd)
-	if len(fields) < 2 || fields[0] != "devrites-engine" || !allowReadonlyCommands[fields[1]] {
+	if len(fields) < 2 || fields[0] != "devrites-engine" {
 		return false
 	}
-	for _, arg := range fields[2:] {
+	return safeAllowShape(fields[1], fields[2:])
+}
+
+func safeAllowShape(cmd string, args []string) bool {
+	if subs, ok := allowReadonlySubcommands[cmd]; ok {
+		if len(args) == 0 || !subs[args[0]] {
+			return false
+		}
+		args = args[1:]
+	} else if !allowReadonlyCommands[cmd] {
+		return false
+	}
+	return safeAllowArgs(cmd, args)
+}
+
+func safeAllowArgs(cmd string, args []string) bool {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") {
+			switch arg {
+			case "--json":
+				continue
+			default:
+				return false
+			}
+		}
 		if !safeAllowArg(arg) {
 			return false
 		}
@@ -162,7 +189,7 @@ func safeAllowArg(arg string) bool {
 	if arg == "" || strings.HasPrefix(arg, "-") {
 		return false
 	}
-	if arg == "." || arg == ".." || strings.Contains(arg, "..") || strings.ContainsAny(arg, `/\`) {
+	if arg == "." || arg == ".." || strings.HasPrefix(arg, "/") || strings.Contains(arg, "..") || strings.ContainsRune(arg, '\\') {
 		return false
 	}
 	for _, r := range arg {
@@ -170,7 +197,7 @@ func safeAllowArg(arg string) bool {
 		case r >= 'a' && r <= 'z':
 		case r >= 'A' && r <= 'Z':
 		case r >= '0' && r <= '9':
-		case strings.ContainsRune("._@:+,-", r):
+		case strings.ContainsRune("._@:+,-/", r):
 		default:
 			return false
 		}

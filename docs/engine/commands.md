@@ -137,6 +137,52 @@ and unjustified. `/rite-review` runs it after writing `review.md`; `/rite-seal` 
 Important on the review's completeness. The honesty contract mirrors `doubt-coverage` and the
 footprint roster — it checks the *account* is present, not its quality.
 
+## `timeline` — append-only session trace
+
+`devrites-engine timeline log|list` records compact session events in `.devrites/timeline.jsonl`.
+It is for reconstructing what happened across long agent runs: which rite or skill acted, what
+feature it touched, what decision it made, and whether a state transition happened. It does not
+gate anything; it is durable context for audits, handoffs, and later learning.
+
+```bash
+devrites-engine timeline log completed --skill rite-review --slug auth-tokens --outcome ok --decision "ship"
+devrites-engine timeline log state-change --slug auth-tokens --from build --to review --note "tests green"
+devrites-engine timeline list --limit 20
+```
+
+Records are JSONL, append-only, and safe for concurrent short-lived engine calls. Install and
+update DevRites through the npm flow (`npx devrites ...`); this command is part of the installed
+engine, not a Claude/Codex plugin distribution path.
+
+## `health` — compact quality history
+
+`devrites-engine health record|list` keeps `.devrites/health-history.jsonl`, a small longitudinal
+quality signal for the workspace. The score is intentionally caller-owned: an agent, CI job, or
+human can record the observed health after a review, quality gate, or cleanup pass without the
+engine pretending to infer a universal metric.
+
+```bash
+devrites-engine health record 8.5 "tests green; one follow-up" --note "review-fingerprints stable"
+devrites-engine health list --limit 10
+```
+
+Scores must be `0..10`. The label should name the evidence, not a vibe.
+
+## `review-fingerprints` — stable IDs for findings
+
+`devrites-engine review-fingerprints [--write] [slug]` scans `.devrites/work/<slug>/review.md` for
+bold severity labels (`Critical`, `Important`, `Suggestion`, `Nit`, `FYI`) and emits stable
+12-character IDs derived from severity + normalized finding text. With `--write`, it saves
+`.devrites/work/<slug>/review-fingerprints.jsonl`.
+
+```bash
+devrites-engine review-fingerprints --write auth-tokens
+```
+
+The IDs make recurring findings, dismissals, and later learning easier to correlate without
+copying full review text into every downstream surface. `review-integrity` remains the gate; this
+command only records stable references.
+
 ## `extensions` / `overrides` — project extensibility
 
 Two project-local surfaces let a team extend the pack without forking it — full contract in

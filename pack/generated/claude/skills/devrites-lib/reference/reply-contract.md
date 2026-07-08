@@ -5,11 +5,24 @@ a compact status summary; durable detail belongs in the phase artifact
 (`spec.md`, `plan.md`, `eng-review.md`, `evidence.md`, `polish-report.md`,
 `review.md`, `seal.md`, `ship.md`, and related records).
 
-Always render the deterministic progress chrome first:
+Before the final reply, persist the phase event, then render the deterministic
+progress chrome:
 
 ```bash
+devrites-engine timeline log completed --skill <rite-name> --slug "$(cat .devrites/ACTIVE 2>/dev/null)" --outcome "<ok|blocked|no-go|go>" --decision "<one-line result>"
+devrites-engine budget
 devrites-engine progress
 ```
+
+If the phase produced a quality verdict (review, prove, polish, seal, ship), also
+record the evidence-backed health signal before `progress`:
+
+```bash
+devrites-engine health record <0..10> "<evidence-backed label>" --note "<primary check or blocker>"
+```
+
+Skip `timeline` / `health` only when the skill is explicitly workspace-less or
+read-only and has no active `.devrites` workspace.
 
 Do not restate the slice meter or flow ribbon in prose. Keep the default reply to
 roughly 8-10 lines after the progress footer.
