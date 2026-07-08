@@ -1,0 +1,14 @@
+# .devrites/ - DevRites runtime state
+
+This directory holds DevRites feature workspaces. Each feature lives in
+`work/<feature-slug>/` as human-readable Markdown (spec, plan, tasks, state,
+evidence, drift, decisions, review, seal). It survives context compaction and new
+sessions - it is the durable memory of in-flight work.
+
+- `ACTIVE` names the currently active feature slug (or is empty).
+- `work/<slug>/` is created by DevRites workflow skills; other phases read it.
+- `AFK` is an optional local unattended-mode sentinel.
+- `specs/<capability>/spec.md` is the capability ledger and may be shared.
+
+Safe to commit `work/` when the team wants shared feature state. Delete a
+feature folder when it is shipped and you no longer need the trail.

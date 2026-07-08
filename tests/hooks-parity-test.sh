@@ -18,7 +18,13 @@
 set -u
 export DEVRITES_NO_BINARY=1   # only the pack config is under test; no engine binary needed
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-target="$(mktemp -d)"; trap 'rm -rf "$target"' EXIT
+target="$(mktemp -d)"; gen=""; trap 'rm -rf "$target"; [ -n "$gen" ] && rm -rf "$gen"' EXIT
+if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
+  gen="$(mktemp -d)"
+  DEVRITES_HOST_ARTIFACT_DIR="$gen" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
+    || { echo "FAIL: could not build host artifacts"; exit 1; }
+  export DEVRITES_HOST_ARTIFACT_DIR="$gen"
+fi
 bash "$ROOT/install.sh" --target "$target" >/dev/null 2>&1 || { echo "FAIL: install failed"; exit 1; }
 
 python3 - "$ROOT" "$target" <<'PY'

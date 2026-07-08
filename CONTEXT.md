@@ -56,7 +56,6 @@ pause** — a "missing X" message and reserved **exit code 3**, never a crash. S
 | `engine/` | The Go control plane. `internal/{state,gate,harness,orient,migrate,lib,version}`. |
 | `engine/tests/` | Parity/golden + unit tests, incl. `adr_NNNN_*` guard tests. |
 | `pack/.claude/` | Agents (14 `devrites-*` reviewers/judges + builder), `rite-*` skills, hook wiring. |
-| `mcp/` | MCP server exposing the engine to hosts. |
 | `install.sh` / `bin/` | Installer + npx entry; version is single-sourced from `package.json`. |
 | `evals/` | Trigger / outcome / behavioral eval tiers with golden fixtures. |
 | `docs/adr/` | Architecture decisions (start here for "why"). |

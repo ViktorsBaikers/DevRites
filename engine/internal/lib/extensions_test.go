@@ -98,6 +98,12 @@ func TestExtensionsSyncMirrorsIntoClaude(t *testing.T) {
 	if !isFile(filepath.Join(project, ".claude", "agents", "audit-lite.md")) {
 		t.Fatal("agent not mirrored into .claude/agents/")
 	}
+	if isFile(filepath.Join(project, ".codex", "agents", "audit-lite.toml")) {
+		t.Fatal("extension sync must not generate Codex agent mirrors")
+	}
+	if isFile(filepath.Join(project, ".agents", "skills", "audit-lite", "SKILL.md")) {
+		t.Fatal("extension sync must not generate Codex skill mirrors")
+	}
 	// Idempotent second sync.
 	if code := Extensions(root, []string{"sync"}, &bytes.Buffer{}, &bytes.Buffer{}); code != 0 {
 		t.Fatalf("re-sync should be idempotent, got %d", code)

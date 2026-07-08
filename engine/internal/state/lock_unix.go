@@ -17,7 +17,7 @@ func acquireLock(path string) (*fileLock, error) {
 	if err != nil {
 		return nil, err
 	}
-	// LOCK_EX blocks until the lock is available; contending devrites processes
+	// LOCK_EX blocks until the lock is available; contending devrites-engine processes
 	// queue here rather than racing the read-modify-write.
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
 		f.Close()

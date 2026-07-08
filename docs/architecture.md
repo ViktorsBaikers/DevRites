@@ -87,13 +87,29 @@ slug, phase, artifacts present, run mode, open-question tally — before acting.
 that from raw Markdown in each skill was duplicated (step-0 prose across ~20 skills),
 token-heavy (counting open gates meant re-reading the append-only `questions.md`, which
 only grows), and error-prone (a missed AFK sentinel or a miscounted gate changes behavior).
-So orientation is computed once by the `devrites` engine binary, which prints a compact
+So orientation is computed once by the `devrites-engine` binary, which prints a compact
 digest each skill reads at step 0. The same binary owns the read-only gates
 (`build-readiness`, `evidence-fresh`, `check-acceptance`) and state mutators
-(`tick-afk`, `resolve`, `close-out`), so Claude Code, Codex, MCP clients, CI, and humans
+(`tick-afk`, `resolve`, `close-out`), so Claude Code, Codex, CI, and humans
 all exercise the same control plane. `devrites-lib` remains an internal library skill
 (`user-invocable: false`, not a command) for shared references. The orientation
 path is read-only; mutation stays in dedicated engine subcommands.
+
+### Why the engine owns install/update/uninstall semantics
+Install/update/uninstall behavior lives in `engine/internal/install`: manifest writing
+and pruning, shared-file marker merge/removal, Codex hook merge/removal, dry-run output,
+binary lifecycle, and update flag replay all execute through `devrites-engine`. The
+shell entrypoints (`install.sh`, `uninstall.sh`, `update.sh`) and npm entrypoint
+(`bin/devrites.mjs`) remain bootstrap shims: they acquire a release bundle or engine
+binary, then pass arguments through.
+
+Some duplication is intentionally preserved at host boundaries. Raw `curl | bash`
+install/uninstall must be self-contained enough to fetch the bundle before any sibling
+files exist. Claude assets are authored under `pack/.claude/**`; Codex assets are
+generated into `pack/generated/**` and installed to `.agents/skills`, `.codex/agents`,
+`.codex/hooks.json`, and `AGENTS.md` because Codex and Claude use
+different project-local conventions. Plugin packaging can layer on later, but it is a
+distribution option, not the current source of install semantics.
 
 ### Why `/engine` was rejected
 A single `/engine` (or `/devrites`) mega-command would load every phase's instructions
@@ -216,7 +232,7 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 24 public `rite-*` skills (36 total) — the thin `/rite` menu
+- **Surface**: 25 public `rite-*` skills (38 total) — the thin `/rite` menu
   (carries the routing) + 8 lifecycle phases (`rite-spec`, `rite-define`,
   `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
   `rite-ship` — seal **decides**, ship **executes + closes**) + the

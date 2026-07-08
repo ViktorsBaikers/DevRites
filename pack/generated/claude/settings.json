@@ -1,0 +1,76 @@
+{
+  "$comment": "DevRites hooks — every event invokes the global `devrites-engine` engine binary behind an inline fail-open guard (command -v devrites-engine && exec devrites-engine hook <name> --harness=claude || exit 0), so a session on a machine without the binary is a clean no-op rather than a wedged hook. The engine auto-approves the read-only orientation/gate subcommands (no per-run prompts), injects the active feature's orientation at session start + a live cursor each turn, arms the A1 pre-block guard on Edit/Write, drops a fail-on-red sentinel on test/build Bash output (redwatch), and refuses to end a turn while the workspace is provably inconsistent (stop-gate). New gates are OBSERVE-only by default (they log but never block); enable enforcement per gate: DEVRITES_A1_HOOK=enforce (or a .a1-enforce file), DEVRITES_STOP_GATE=enforce — each only after its log confirms no false positives, or flip every guard on at once with DEVRITES_HOOK_PROFILE=strict. Two control-plane env vars tune which hooks run without editing this file: DEVRITES_HOOK_PROFILE=minimal|standard(default)|strict (minimal = orientation/approval only; standard = the full working set; strict = standard + every guard enforced) and DEVRITES_DISABLED_HOOKS=\"stop-gate,redwatch\" (a comma-separated hook-id kill list); a stripped hook is a clean fail-open no-op. The wright-scope and reviewer-readonly guards are wired from subagent frontmatter (project-local Claude install), not here — on Codex they are wired globally with agent-type gating in .codex/hooks.json. The bash installer SEEDS this file only when .claude/settings.json is absent; it is never overwritten on update, so your own settings are safe to add here.",
+  "statusLine": {
+    "type": "command",
+    "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook statusline --harness=claude || exit 0"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook allow --harness=claude || exit 0" }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook a1-guard --harness=claude || exit 0" }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook source-cache-pre --harness=claude || exit 0" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook redwatch --harness=claude || exit 0" }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook source-cache-post --harness=claude || exit 0" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook stop-gate --harness=claude || exit 0" }
+        ]
+      },
+      {
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook refresh-indexes || exit 0" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook cursor --harness=claude || exit 0" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook orient --harness=claude || exit 0" }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook subagent-orient --harness=claude || exit 0" }
+        ]
+      }
+    ]
+  }
+}

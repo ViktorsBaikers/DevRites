@@ -1,6 +1,6 @@
 # `devrites-engine` agent contract (`--json`)
 
-An unattended driver (the AFK loop, a CI step, the MCP server) needs to read a
+An unattended driver (the AFK loop, a CI step, or a local script) needs to read a
 command's result **structurally** — never by scraping prose that may reword. The
 AFK-parsed read commands accept `--json` and emit a stable envelope on stdout; the
 command's own logic and exit code are unchanged, so `--json` is a pure add-on.

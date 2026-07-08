@@ -1,0 +1,11 @@
+---
+name: {{ .Name }}
+description: Alias of DevRites /{{ .To }}. Use when the user runs /{{ .Name }}. Delegates to /{{ .To }}.
+argument-hint: "[args]"
+user-invocable: true
+---
+
+# /{{ .Name }} - alias of /{{ .To }}
+
+This command **delegates to DevRites `/{{ .To }}`**. State that to the user, then load and
+run `{{ .To }}/SKILL.md` with the given arguments, following it exactly.

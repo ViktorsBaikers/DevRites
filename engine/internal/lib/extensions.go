@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/devrites/devrites/internal/fsutil"
 )
 
 // Extensions is the project-local extension surface: user-authored rites and
@@ -182,8 +184,9 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 // extensionsSync mirrors every valid extension into the project's .claude tree,
 // where the Claude harness discovers skills and agents: skill/ → .claude/skills/<name>/,
 // agent.md → .claude/agents/<name>.md. Idempotent (a re-sync overwrites in place).
-// It validates first and refuses to sync a broken set. Codex mirroring (the
-// .md → .toml conversion + skills-list stubbing) stays the installer's job.
+// It validates first and refuses to sync a broken set. Codex extension mirroring
+// is intentionally not implemented here so the engine stays out of the
+// Claude-to-Codex generation path.
 func extensionsSync(extDir, projectDir string, stdout, stderr io.Writer) int {
 	if code := extensionsValidate(extDir, io.Discard, stderr); code != 0 {
 		fmt.Fprintln(stderr, "extensions: not syncing — validation failed (run `devrites-engine extensions validate`)")
@@ -201,7 +204,7 @@ func extensionsSync(extDir, projectDir string, stdout, stderr io.Writer) int {
 	for _, e := range exts {
 		if e.skillPath != "" {
 			dst := filepath.Join(skillsDst, e.name)
-			if err := copyTree(filepath.Join(e.dir, "skill"), dst); err != nil {
+			if err := fsutil.CopyTree(filepath.Join(e.dir, "skill"), dst); err != nil {
 				fmt.Fprintf(stderr, "extensions: sync skill %s failed: %v\n", e.name, err)
 				return 1
 			}
@@ -323,36 +326,4 @@ func parseAliases(meta string) []string {
 // namespaces, which a user extension must not claim.
 func reservedPackName(name string) bool {
 	return strings.HasPrefix(name, "rite-") || strings.HasPrefix(name, "devrites-") || name == "rite"
-}
-
-// copyTree recursively copies src to dst, creating parents. Files are overwritten;
-// it is used for idempotent extension sync.
-func copyTree(src, dst string) error {
-	info, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-	if info.IsDir() {
-		if err := os.MkdirAll(dst, 0o755); err != nil {
-			return err
-		}
-		entries, err := os.ReadDir(src)
-		if err != nil {
-			return err
-		}
-		for _, e := range entries {
-			if err := copyTree(filepath.Join(src, e.Name()), filepath.Join(dst, e.Name())); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	data, err := os.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(dst, data, 0o644)
 }

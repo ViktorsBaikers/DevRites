@@ -1,0 +1,91 @@
+# Code review
+
+The reviewer's one question: **does this change make the codebase healthier** — clearer
+design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
+
+## Keep changes small
+- One concern per change (a fix, an endpoint, a refactor) — not three at once.
+- Aim for small diffs: under ~200 lines reviews well and merges fast; treat ~400 as a
+  soft ceiling and self-split beyond it. Large diffs hide defects and get rubber-stamped.
+
+## What to check (tests first)
+1. **Tests** — do they exist and prove the behavior + failure modes (empty, error,
+   boundary, concurrency)? Would they fail if the code were wrong?
+2. **Correctness** — logic, edge cases, error paths, race conditions, wrong assumptions.
+3. **Readability** — names, function size, control flow, intent obvious without the author.
+4. **Architecture** — right seam, coupling/cohesion, fits existing patterns, no premature
+   abstraction. How does it fit the bigger system, not just what it does?
+5. **Security** — trust boundaries, input validation, authz, secrets.
+6. **Risk** — migrations, destructive changes, rollback.
+
+## Give actionable feedback
+- Label severity so the author knows what blocks: **Critical / Important / Suggestion /
+  Nit / FYI**.
+- Be specific: point at the line, name the problem, propose the fix. Frame non-blocking
+  ideas as questions ("what about a map here for readability?").
+- Let automation (linters, formatters, CI) catch the trivial stuff so review focuses on
+  design and correctness.
+
+## Lead with leverage
+If a change has one structural problem and ten nits, the structural problem **is** the review.
+Walk it first and spend the review's weight there; the nits are a footnote, and half of them
+dissolve once the structure moves. A review that opens with whitespace and buries the wrong seam
+on line 200 has optimized for the cheap finding over the load-bearing one.
+
+## Structural Remedies — propose the move, not just the problem
+"This is hard to follow" names a smell; it doesn't discharge the review. When the problem is
+structural, name the **move** that fixes it so the author has a concrete next step, not a vibe:
+
+- **Replace a conditional chain with a typed dispatcher** — a map/table keyed by the variant,
+  each state carrying its own fields, instead of a growing `if/else` on a type tag.
+- **Delete a pass-through wrapper** — a function that only forwards its arguments earns removal;
+  call the inner thing directly.
+- **Collapse duplicate branches** — two arms doing the same work behind different conditions
+  become one.
+- **Hoist an invariant out of the loop** — computation that doesn't change per iteration moves
+  above it.
+
+A restructuring must *reduce* the concepts a reader holds, not relocate them
+([`patterns.md`](patterns.md)) — prefer the move that makes a whole branch or mode disappear.
+
+## Disagreement hierarchy — what wins when you and the author differ
+Resolve a review disagreement by the strongest ground available, in order: **facts** (a
+correctness bug, a failing case, a measured number) > **the project's stated style/convention** >
+**a general design principle** > **personal preference or consistency-for-its-own-sake**. If your
+objection bottoms out at the last tier, it's a Suggestion at most — say so, and don't block on it.
+An author who is factually right wins over a reviewer's taste.
+
+## Zero findings is suspicious
+An adversarial review that comes back empty is a claim, not a default — and the model's
+strongest pull in review is to agree. So a clean bill of health has to be *earned* the same way a
+finding is: by showing the work. When an axis (spec, code, security, a doubt) genuinely finds
+nothing, it records a **`No-findings:`** justification — the specific adversarial passes it ran
+(edge cases, error paths, the riskiest decision, the consumer whose test might not cover the
+change) and why each came back empty. "Looks good" is not a terminal state; a *justified* empty is.
+Treat a silent axis — no finding and no justification — as a re-run, not a pass.
+
+This is the mirror of confidence-banding: banding suppresses the noisy false positive; the
+no-findings justification catches the silent false negative. `devrites-engine review-integrity`
+checks the account is present (a `No-findings:` line on any axis section that raised nothing), not
+its quality — the same honesty contract as `doubt-coverage` and the footprint roster.
+
+## Scope discipline
+Review the change, not the whole project. Out-of-scope problems become follow-ups, not
+drive-by edits that balloon the diff.
+
+## Principles, charter & conventions are pass/fail gates
+Three project layers are evaluated as explicit pass/fail at `$rite-vet`, re-checked after design
+lands, and re-checked against the diff at `$rite-review` / `$rite-seal` — none are advisory:
+
+1. **Project principles** (`.devrites/principles.md`) — the authored invariants the project will
+   not break ([`principles.md`](principles.md)). A change that violates one with **no recorded,
+   human-approved exception** is a **Critical** finding and a **NO-GO** at seal, the same standing
+   as an unproven acceptance criterion. Check the diff against each principle's scope; an absent
+   or empty file means none are declared (gate passes).
+2. **The anti-slop charter** (`coding-style.md` + `prose-style.md`) — the AI-tells do-not list.
+3. **The conventions ledger** (`.devrites/conventions.md`) — proven project idioms (an untrusted
+   prior; a fresh read of the live code overrides it).
+
+A change that violates a stated convention or trips the charter is a **Critical** finding, not a
+Nit. Record every gate failure with `file:line` and block on it the same as any correctness
+defect.

@@ -1,0 +1,136 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec env DEVRITES_REVIEWER_AGENT_REQUIRED=1 devrites-engine hook reviewer-readonly --harness=codex",
+            "statusMessage": "DevRites: checking reviewer read-only boundary"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook allow --harness=codex",
+            "statusMessage": "DevRites: checking read-only helper approval"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook a1-guard --harness=codex",
+            "statusMessage": "DevRites: checking build write boundary"
+          },
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec env DEVRITES_WRIGHT_AGENT_REQUIRED=1 devrites-engine hook wright-scope --harness=codex",
+            "statusMessage": "DevRites: checking slice file scope"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook redwatch --harness=codex",
+            "statusMessage": "DevRites: checking test/build result"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook stop-gate --harness=codex",
+            "statusMessage": "DevRites: checking workspace stop gate"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook refresh-indexes",
+            "statusMessage": "DevRites: refreshing code indexes"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook cursor --harness=codex"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "devrites-.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook subagent-orient --harness=codex",
+            "statusMessage": "DevRites: injecting subagent discipline"
+          }
+        ]
+      },
+      {
+        "matcher": "devrites-slice-wright",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s\\n' 'DevRites: this subagent is the single write-capable slice-wright. Stay within the current slice contract and touched-files.md; write no .devrites bookkeeping.'"
+          }
+        ]
+      },
+      {
+        "matcher": "devrites-(code|test|frontend|security|performance|devex|doubt|simplifier|strategy|plan|spec)-reviewer|devrites-retrospector|devrites-forge-judge",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s\\n' 'DevRites: this subagent is read-only. Inspect with read/search/test commands and return findings only; do not mutate the tree.'"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "devrites-slice-wright|devrites-.*reviewer|devrites-retrospector|devrites-forge-judge",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s\\n' 'DevRites: reconcile this subagent result against the active DevRites skill contract before claiming completion.'"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook orient --harness=codex",
+            "statusMessage": "DevRites: loading project orientation"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -46,7 +46,7 @@ else
   cp -R "$ROOT"/. "$WORK"/ 2>/dev/null && ok "no git HEAD — copied working tree"
 fi
 
-( cd "$WORK" && npm pack --pack-destination "$PACKDIR" ) >/dev/null 2>&1 \
+( cd "$WORK" && env -u DEVRITES_HOST_ARTIFACT_DIR npm pack --pack-destination "$PACKDIR" ) >/dev/null 2>&1 \
   || { no "npm pack failed"; echo "npx-pack-smoke: FAIL"; exit 1; }
 TGZ="$(ls "$PACKDIR"/devrites-*.tgz 2>/dev/null | head -1)"
 { [ -n "$TGZ" ] && [ -f "$TGZ" ]; } && ok "packed $(basename "$TGZ")" \
@@ -60,6 +60,12 @@ for need in \
   package/uninstall.sh \
   package/update.sh \
   package/scripts/ \
+  package/scripts/codex-generate.sh \
+  package/scripts/build-host-artifacts.sh \
+  package/pack/generated/claude/skills/rite-build/SKILL.md \
+  package/pack/generated/codex/skills/rite-build/SKILL.md \
+  package/pack/generated/codex/agents/devrites-code-reviewer.toml \
+  package/pack/generated/codex/hooks.json \
   package/pack/.claude/ ; do
   echo "$contents" | grep -q "^$need" && ok "tarball ships $need" || no "tarball MISSING $need (files allowlist?)"
 done
@@ -80,41 +86,59 @@ got="$("$BIN" --version 2>/dev/null)"
 "$BIN" --help 2>/dev/null | grep -q 'Usage:' && ok "--help shows usage" || no "--help missing usage"
 
 # 5) a packaged install pins the binary lookup to this package's version.
-CURL_LOG="$FAKEBIN/curl.log"
-export CURL_LOG
-cat > "$FAKEBIN/curl" <<'SH'
+FETCH_LOG="$FAKEBIN/fetch.log"
+FAKE_RELEASE_ENGINE="$FAKEBIN/release-devrites-engine"
+FAKE_RELEASE_SHA="$FAKEBIN/release-devrites-engine.sha256"
+FAKE_RELEASE_TAG="v$want"
+export FETCH_LOG FAKE_RELEASE_ENGINE FAKE_RELEASE_SHA FAKE_RELEASE_TAG
+cat > "$FAKE_RELEASE_ENGINE" <<'SH'
 #!/usr/bin/env sh
-printf '%s\n' "$*" >> "$CURL_LOG"
-case "$*" in
-  *releases/latest*) exit 42 ;;
-  *) exit 22 ;;
+case "$1" in
+  install) exit 0 ;;
+  version) printf '%s\n' "${FAKE_RELEASE_TAG:-v0.0.0}"; exit 0 ;;
+  *) exit 0 ;;
 esac
 SH
-cat > "$FAKEBIN/devrites" <<'SH'
-#!/usr/bin/env sh
-exit 127
-SH
-chmod +x "$FAKEBIN/curl" "$FAKEBIN/devrites"
+chmod +x "$FAKE_RELEASE_ENGINE"
+if command -v shasum >/dev/null 2>&1; then
+  shasum -a 256 "$FAKE_RELEASE_ENGINE" > "$FAKE_RELEASE_SHA"
+elif command -v sha256sum >/dev/null 2>&1; then
+  sha256sum "$FAKE_RELEASE_ENGINE" > "$FAKE_RELEASE_SHA"
+else
+  no "no sha256 tool for fake release binary"
+fi
+cat > "$FAKEBIN/fetch-mock.mjs" <<'JS'
+import { readFileSync, appendFileSync } from 'node:fs';
+const ok = (body) => new Response(body, { status: 200 });
+globalThis.fetch = async (url) => {
+  const u = String(url);
+  appendFileSync(process.env.FETCH_LOG, `${u}\n`);
+  if (u.includes('releases/latest')) return new Response('', { status: 404 });
+  if (u.includes(`/releases/download/${process.env.FAKE_RELEASE_TAG}/devrites-`) && u.endsWith('.sha256')) return ok(readFileSync(process.env.FAKE_RELEASE_SHA));
+  if (u.includes(`/releases/download/${process.env.FAKE_RELEASE_TAG}/devrites-`)) return ok(readFileSync(process.env.FAKE_RELEASE_ENGINE));
+  return new Response('', { status: 404 });
+};
+JS
 NODE_DIR="$(dirname "$(command -v node)")"
-env -u DEVRITES_NO_BINARY DEVRITES_BIN_DIR="$BIN_STAGE" PATH="$FAKEBIN:$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin" \
+env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_NO_BINARY DEVRITES_BIN_DIR="$BIN_STAGE" NODE_OPTIONS="--import=$FAKEBIN/fetch-mock.mjs" PATH="$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin" \
   "$BIN" --target "$TARGET_BINARY" --force >/dev/null 2>&1 \
   || no "packaged binary install exited non-zero"
-curl_calls="$(cat "$CURL_LOG" 2>/dev/null || true)"
-printf '%s' "$curl_calls" | grep -q "releases/download/v$want/devrites-" \
+fetch_calls="$(cat "$FETCH_LOG" 2>/dev/null || true)"
+printf '%s' "$fetch_calls" | grep -q "releases/download/v$want/devrites-" \
   && ok "packaged binary lookup uses v$want" \
   || no "packaged binary lookup did not use v$want"
-printf '%s' "$curl_calls" | grep -q 'releases/latest' \
+printf '%s' "$fetch_calls" | grep -q 'releases/latest' \
   && no "packaged binary lookup queried latest release" \
   || ok "packaged binary lookup avoids latest release"
 
 # 6) dry-run writes nothing
-"$BIN" --target "$TARGET" --dry-run >/dev/null 2>&1 || no "dry-run exited non-zero"
+env -u DEVRITES_HOST_ARTIFACT_DIR "$BIN" --target "$TARGET" --dry-run >/dev/null 2>&1 || no "dry-run exited non-zero"
 [ -e "$TARGET/.claude" ] && no "dry-run created .claude" || ok "dry-run changed nothing"
 [ -e "$TARGET/.agents" ] && no "dry-run created .agents" || true
 [ -e "$TARGET/.codex" ] && no "dry-run created .codex" || true
 
 # 7) real install, driven entirely by the packaged artifact
-"$BIN" --target "$TARGET" >/dev/null 2>&1 || no "install from the packaged artifact exited non-zero"
+env -u DEVRITES_HOST_ARTIFACT_DIR "$BIN" --target "$TARGET" >/dev/null 2>&1 || no "install from the packaged artifact exited non-zero"
 for f in \
   ".claude/devrites.manifest" \
   ".claude/skills/rite/SKILL.md" \
@@ -122,9 +146,7 @@ for f in \
   ".agents/skills/devrites-lib/reference/standards/security.md" \
   ".claude/agents/devrites-code-reviewer.md" \
   ".codex/agents/devrites-code-reviewer.toml" \
-  ".codex/config.toml" \
   ".codex/hooks.json" \
-  ".codex/mcp/devrites-mcp.mjs" \
   ".claude/skills/devrites-lib/reference/standards/security.md" \
   "AGENTS.md" \
   ".devrites/ACTIVE" ; do

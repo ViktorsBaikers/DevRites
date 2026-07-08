@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cross-compile the devrites engine for every supported target and emit a sha256
+# Cross-compile devrites-engine for every supported target and emit a sha256
 # sidecar per binary — the artifacts attached to the GitHub Release alongside the
 # pack tarball. Pure-Go (CGO_ENABLED=0, modernc.org/sqlite) so every target builds
 # from one Linux runner with no cross-toolchain. The version is stamped into the

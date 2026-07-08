@@ -10,8 +10,18 @@ fail=0
 ok() { printf '  ok: %s\n' "$*"; }
 no() { printf '  FAIL: %s\n' "$*"; fail=1; }
 T="$(mktemp -d)"
-cleanup() { rm -rf "$T"; }
+GEN="$(mktemp -d)"
+cleanup() { rm -rf "$T" "$GEN"; }
 trap cleanup EXIT
+if [ -n "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
+  cp -R "$DEVRITES_HOST_ARTIFACT_DIR"/. "$GEN"/ \
+    || { echo "  FAIL: could not copy host artifacts"; exit 1; }
+else
+  DEVRITES_HOST_ARTIFACT_DIR="$GEN" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
+    || { echo "  FAIL: could not build host artifacts"; exit 1; }
+fi
+export DEVRITES_HOST_ARTIFACT_DIR="$GEN"
+printf '\n<!-- cli-smoke-generated-sentinel -->\n' >> "$GEN/codex/skills/rite/SKILL.md"
 
 echo "== cli-smoke (target: $T) =="
 
@@ -44,23 +54,7 @@ proxy_out="$(DEVRITES_ENGINE_CLI="$FAKE_ENGINE" node "$CLI" preamble alpha 2>/de
 archive_out="$(DEVRITES_ENGINE_CLI="$FAKE_ENGINE" node "$CLI" archive-search alpha 2>/dev/null)"
 [ "$archive_out" = "engine:archive-search alpha" ] && ok "archive-search proxies to devrites-engine" || no "archive-search proxy failed: $archive_out"
 
-missing_engine_commands="$(node -e "
-const fs = require('fs');
-const cli = fs.readFileSync('$CLI', 'utf8');
-const engine = fs.readFileSync('$ROOT/engine/main.go', 'utf8');
-const allowlist = new Set((cli.match(/const ENGINE_COMMANDS = new Set\\(\\[([\\s\\S]*?)\\]\\);/)?.[1] || '').match(/'([^']+)'/g)?.map(s => s.slice(1, -1)) || []);
-const runSwitch = engine.slice(engine.indexOf('func run('), engine.indexOf('func cmdStatus('));
-const commands = [...runSwitch.matchAll(/case \"([^\"]+)\":/g)]
-  .flatMap(m => m[1].split(/\",\\s*\"/))
-  .filter(cmd => !cmd.startsWith('-') && cmd !== 'help');
-const missing = [...new Set(commands)].filter(cmd => !allowlist.has(cmd));
-process.stdout.write(missing.join('\\n'));
-")"
-if [ -z "$missing_engine_commands" ]; then
-  ok "npm shim proxies every engine command"
-else
-  no "npm shim missing engine command proxies: $missing_engine_commands"
-fi
+grep -q 'ENGINE_COMMANDS' "$CLI" && no "npm shim still carries command list" || ok "npm shim forwards arbitrary engine commands"
 
 # 3) default (bare) dry-run writes nothing
 node "$CLI" --target "$T" --dry-run >/dev/null 2>&1 || no "dry-run exited non-zero"
@@ -86,15 +80,14 @@ for f in \
   ".agents/skills/devrites-lib/reference/standards/security.md" \
   ".claude/agents/devrites-code-reviewer.md" \
   ".codex/agents/devrites-code-reviewer.toml" \
-  ".codex/config.toml" \
   ".codex/hooks.json" \
-  ".codex/mcp/devrites-mcp.mjs" \
   ".claude/skills/devrites-lib/reference/standards/security.md" \
   "AGENTS.md" \
   ".devrites/README.md" \
   ".devrites/ACTIVE" ; do
   [ -f "$T/$f" ] && ok "present: $f" || no "missing: $f"
 done
+grep -q 'cli-smoke-generated-sentinel' "$T/.agents/skills/rite/SKILL.md" && ok "CLI install consumes generated Codex skill payload" || no "CLI install did not use generated Codex skill payload"
 
 # 6) no global write
 [ -e "$HOME/.claude/skills/rite" ] && no "wrote to ~/.claude !!" || ok "~/.claude untouched"
@@ -106,9 +99,7 @@ node "$CLI" uninstall --target "$T" >/dev/null 2>&1 || no "uninstall exited non-
 [ -f "$T/.claude/skills/rite/SKILL.md" ] && no "skill survived uninstall" || ok "skills removed"
 [ -f "$T/.agents/skills/rite/SKILL.md" ] && no "Codex skill survived uninstall" || ok "Codex skills removed"
 [ -f "$T/.codex/agents/devrites-code-reviewer.toml" ] && no "Codex agent survived uninstall" || ok "Codex agents removed"
-[ -f "$T/.codex/config.toml" ] && no "Codex config survived uninstall" || ok "Codex config removed"
 [ -f "$T/.codex/hooks.json" ] && no "Codex hooks survived uninstall" || ok "Codex hooks removed"
-[ -f "$T/.codex/mcp/devrites-mcp.mjs" ] && no "Codex MCP server survived uninstall" || ok "Codex MCP server removed"
 [ -f "$T/AGENTS.md" ] && no "AGENTS bridge survived uninstall" || ok "AGENTS bridge removed"
 [ -f "$T/.devrites/ACTIVE" ] && ok "uninstall preserved .devrites/ACTIVE" || no "uninstall dropped runtime state"
 

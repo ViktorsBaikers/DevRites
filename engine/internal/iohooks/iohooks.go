@@ -23,6 +23,8 @@ import (
 // exitOK is the fail-open success code these hooks return.
 const exitOK = 0
 
+var installHTTPClient = &http.Client{Timeout: 30 * time.Second}
+
 // ---- source-citation cache -------------------------------------------------
 
 // sourceCacheEntry is the on-disk cache record: a page's post-processed reading
@@ -193,6 +195,36 @@ func fetchValidators(url string) (etag, lastMod string) {
 	}
 	_ = resp.Body.Close()
 	return resp.Header.Get("ETag"), resp.Header.Get("Last-Modified")
+}
+
+func FetchJSON(url string, out any) error {
+	resp, err := installHTTPClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return fmt.Errorf("%s returned %s", url, resp.Status)
+	}
+	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+func DownloadFile(url, path string) error {
+	resp, err := installHTTPClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return fmt.Errorf("%s returned %s", url, resp.Status)
+	}
+	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, resp.Body)
+	return err
 }
 
 // webFetchURL / webFetchPrompt / webFetchContent decode the WebFetch payload fields

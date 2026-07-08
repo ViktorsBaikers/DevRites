@@ -14,8 +14,14 @@ no() { printf '  FAIL: %s\n' "$*"; fail=1; }
 command -v go >/dev/null 2>&1 || { echo "  SKIP: go toolchain not available"; exit 0; }
 [ -d "$ROOT/engine" ] || { echo "  SKIP: no engine/ (tarball install)"; exit 0; }
 
-BIN="$(mktemp -d)"; TGT="$(mktemp -d)"
-trap 'rm -rf "$BIN" "$TGT"' EXIT
+BIN="$(mktemp -d)"; TGT="$(mktemp -d)"; GEN=""
+trap 'rm -rf "$BIN" "$TGT"; [ -n "$GEN" ] && rm -rf "$GEN"' EXIT
+if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
+  GEN="$(mktemp -d)"
+  DEVRITES_HOST_ARTIFACT_DIR="$GEN" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
+    || { echo "  FAIL: could not build host artifacts"; exit 1; }
+  export DEVRITES_HOST_ARTIFACT_DIR="$GEN"
+fi
 export DEVRITES_BIN_DIR="$BIN"
 export PATH="$BIN:$PATH"   # so the downgrade guard's `command -v devrites-engine` resolves it
 
@@ -58,7 +64,7 @@ bash "$ROOT/uninstall.sh" --target "$TGT" --keep-binary >/dev/null 2>&1
 
 # 8) an unstamped source build (version "dev") must be UPGRADABLE to a release —
 #    the downgrade guard only compares real semver, so "dev" is never "newest".
-( cd "$ROOT/engine" && CGO_ENABLED=0 go build -o "$BIN/devrites-engine" . ) >/dev/null 2>&1
+( cd "$ROOT/engine" && GOCACHE="$BIN/go-cache-dev" CGO_ENABLED=0 go build -o "$BIN/devrites-engine" . ) >/dev/null 2>&1
 [ "$("$BIN/devrites-engine" version 2>/dev/null)" = "dev" ] && ok "planted a dev build" || no "could not plant a dev build"
 DEVRITES_REF="v9.9.9" bash "$ROOT/install.sh" --target "$TGT" --force >/dev/null 2>&1
 v="$("$BIN/devrites-engine" version 2>/dev/null || true)"

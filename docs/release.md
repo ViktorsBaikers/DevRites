@@ -4,9 +4,9 @@ Releases are **fully automated** via [semantic-release](https://semantic-release
 
 1. Runs `scripts/validate.sh` + install / uninstall smoke tests.
 2. Syncs the new version into `package.json` and the README status line (`scripts/sync-version.sh`).
-3. Builds a `dist/devrites-v<version>.tar.gz` release artifact via `scripts/build-release-tarball.sh` — the extractable bundle end-users get from the `curl | bash` installer.
+3. Builds a `dist/devrites-v<version>.tar.gz` release artifact via `scripts/build-release-tarball.sh` — the extractable bundle end-users get from the `curl | bash` installer. The bundle includes `pack/generated/` host-native Claude/Codex artifacts rendered from the canonical pack.
 4. Regenerates `CHANGELOG.md` from the commits.
-5. Publishes the `devrites` package to the npm registry (`@semantic-release/npm`, needs the `NPM_TOKEN` secret) — this is what `npx devrites@latest` resolves.
+5. Publishes the `devrites` package to the npm registry (`@semantic-release/npm`, needs the `NPM_TOKEN` secret) — this is what `npx devrites@latest` resolves. `npm pack` renders the same `pack/generated/` artifacts during `prepack` and removes them during `postpack`.
 6. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates a git tag `v<version>`, and publishes a GitHub Release with the tarball attached.
 
 Local dry-run: `npm run release:dry` (shows the version bump + draft notes without publishing). The release job is gated by passing CI — a broken `main` won't ship.

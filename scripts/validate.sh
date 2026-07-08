@@ -12,9 +12,6 @@ section() { printf '\n=== %s ===\n' "$1"; }
 bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
 good() { printf 'ok: %s\n' "$*"; }
 
-PUBLIC="rite rite-spec rite-adopt rite-temper rite-define rite-vet rite-plan rite-build rite-converge rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-doctor rite-resolve rite-frame rite-quick rite-learn rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
-INTERNAL="devrites-interview devrites-source-driven devrites-doubt devrites-ux-shape devrites-frontend-craft devrites-prose-craft devrites-browser-proof devrites-debug-recovery devrites-api-interface devrites-audit devrites-refresh-indexes devrites-lib"
-AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst devrites-frontend-reviewer devrites-security-auditor devrites-performance-reviewer devrites-devex-reviewer devrites-doubt-reviewer devrites-simplifier-reviewer devrites-strategy-reviewer devrites-plan-reviewer devrites-forge-judge devrites-retrospector devrites-slice-wright"
 
 # ---- 1. bash -n on every shell script ------------------------------------
 section "bash syntax (bash -n)"
@@ -36,34 +33,36 @@ else
   echo "skip: python3 not found"
 fi
 
-# ---- 2b. MCP server syntax (node --check) --------------------------------
-section "mcp server syntax (node --check)"
-if command -v node >/dev/null 2>&1; then
-  found=0
-  for f in "$ROOT"/mcp/*.mjs; do
-    [ -f "$f" ] || continue; found=1
-    if node --check "$f" 2>/tmp/dr_mjs; then good "node --check ${f#$ROOT/}"; else bad "node --check ${f#$ROOT/}: $(cat /tmp/dr_mjs)"; fi
-  done
-  [ "$found" -eq 0 ] && echo "skip: no mcp/*.mjs"
+
+# ---- 2d. shell install helper ownership ----------------------------------
+section "shell install helper ownership"
+INSTALL_LIB_HITS="$(grep -nE 'dr_(write_manifest|ver_gt|packaged_release_tag|strip_marker_block|merge_marker_block|strip_codex_|merge_codex_|codex_hooks_all_devrites)' "$ROOT/scripts/install-lib.sh" 2>/dev/null || true)"
+if [ -n "$INSTALL_LIB_HITS" ]; then
+  bad "scripts/install-lib.sh contains install/update/uninstall-era helpers:"
+  printf '%s\n' "$INSTALL_LIB_HITS" | sed "s|$ROOT/||"
 else
-  echo "skip: node not found"
+  good "scripts/install-lib.sh has no install semantics helpers; install semantics stay in devrites-engine"
 fi
 
 # ---- 3. required skills exist, each with SKILL.md ------------------------
 section "skills present + SKILL.md"
-for s in $PUBLIC $INTERNAL; do
-  if [ -f "$SKILLS/$s/SKILL.md" ]; then good "$s"; else bad "missing skill or SKILL.md: $s"; fi
-done
-# any stray skill dir without SKILL.md?
+skill_count=0
 for d in "$SKILLS"/*/; do
-  [ -f "${d}SKILL.md" ] || bad "skill dir without SKILL.md: ${d#$PACK/}"
+  [ -d "$d" ] || continue
+  skill_count=$((skill_count + 1))
+  [ -f "${d}SKILL.md" ] && good "$(basename "$d")" || bad "skill dir without SKILL.md: ${d#$PACK/}"
 done
+[ "$skill_count" -gt 0 ] || bad "no skills found in ${SKILLS#$ROOT/}"
 
 # ---- 4. agents present ---------------------------------------------------
 section "agents present"
-for a in $AGENT_FILES; do
-  if [ -f "$AGENTS/$a.md" ]; then good "$a"; else bad "missing agent: $a"; fi
+agent_count=0
+for agent_file in "$AGENTS"/*.md; do
+  [ -f "$agent_file" ] || continue
+  agent_count=$((agent_count + 1))
+  good "$(basename "$agent_file" .md)"
 done
+[ "$agent_count" -gt 0 ] || bad "no agents found in ${AGENTS#$ROOT/}"
 
 # ---- 5. frontmatter validation ------------------------------------------
 section "frontmatter"
@@ -82,6 +81,20 @@ for s in reference/code.md reference/ui.md; do
   if grep -q "$s" "$SKILLS/rite-polish/SKILL.md" 2>/dev/null; then good "rite-polish references $s"; else bad "rite-polish does not reference $s"; fi
   if [ -f "$SKILLS/rite-polish/$s" ]; then good "$s present"; else bad "$s missing"; fi
 done
+
+# ---- 6b. skill inventory / documentation counts --------------------------
+section "skills inventory"
+if command -v node >/dev/null 2>&1; then
+  if node "$ROOT/scripts/skills-inventory.mjs" >/tmp/dr_skills_inventory 2>&1; then
+    cat /tmp/dr_skills_inventory
+    good "skills inventory matches docs"
+  else
+    cat /tmp/dr_skills_inventory
+    bad "skills inventory drifted"
+  fi
+else
+  echo "skip: node not found"
+fi
 
 # ---- 7. broken reference links -------------------------------------------
 section "reference links resolve"
