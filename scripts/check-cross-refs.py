@@ -36,6 +36,10 @@ WORKSPACE_ARTIFACTS = {
     "devex.md", "retro.md",
     # spec-quality checklists (.devrites/work/<slug>/checklists/<domain>.md)
     "functional.md", "data-model.md", "interaction.md", "non-functional.md", "edge-cases.md",
+    # feature manifest (work/<slug>/feature.md) + the planning/proof artifacts the
+    # lifecycle generates: rite-define writes architecture.md + traceability.md, rite-spec
+    # writes flows.md + index.md, and proof.md is the SectionProof file (see engine state schema).
+    "feature.md", "architecture.md", "traceability.md", "flows.md", "index.md", "proof.md",
 }
 
 # Files the skills legitimately tell Claude to read in the USER's project / the repo,

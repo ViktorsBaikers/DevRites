@@ -4,7 +4,7 @@ Load this when standing a non-trivial review decision, when tempted to
 demote severity to hide a finding, or when crossing out of feature scope.
 
 Pack-wide rationalizations + red flags: see
-[rules/anti-patterns.md](../../../rules/anti-patterns.md).
+[standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 

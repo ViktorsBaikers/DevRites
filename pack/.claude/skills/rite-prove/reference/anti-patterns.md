@@ -5,7 +5,7 @@ report a pass you didn't observe, skip a rung of the browser-proof ladder,
 or proceed without all slices built.
 
 Pack-wide rationalizations + red flags (incl. observed-but-not-recorded):
-see [rules/anti-patterns.md](../../../rules/anti-patterns.md).
+see [standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 

@@ -34,3 +34,11 @@ matters and isn't certain, check the source of truth.
 - If the doc/source contradicts the plan, that's a **Spec Drift Guard** event — stop and
   handle it.
 - Don't rabbit-hole: confirm the one fact you need, record it, return.
+
+## Re-fetching is cheap (and still fresh)
+Fetching the same doc URL twice costs almost nothing: a WebFetch is transparently cached per
+project and, on reuse, revalidated against the origin — the cached reading is replayed **only**
+when the server confirms the page is unchanged (HTTP 304). A 304 is a fresh verification, not a
+memory read, so citing a revalidated page is as sound as re-fetching it. Fetch freely; don't
+skip a check to save a round trip. (Mechanism: the `devrites-source-cache` hooks; off via
+`DEVRITES_SOURCE_CACHE=off`. Web-search + cache policy lives in [`tooling.md`](../devrites-lib/reference/standards/tooling.md).)

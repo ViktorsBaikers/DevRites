@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://devrites.dev/schemas/hooks.schema.json",
+  "title": "DevRites hooks configuration",
+  "description": "Structure of a Claude Code settings.json / hooks.json that wires the devrites-engine hooks. Ships as the editor-facing contract; enforcement lives in `devrites-engine validate-pack`, which additionally checks that every command references a real hook id.",
+  "type": "object",
+  "properties": {
+    "$comment": { "type": "string" },
+    "$schema": { "type": "string" },
+    "statusLine": { "type": "object" },
+    "hooks": {
+      "type": "object",
+      "description": "Lifecycle event name -> array of matcher groups.",
+      "propertyNames": {
+        "enum": [
+          "PreToolUse",
+          "PostToolUse",
+          "PostToolUseFailure",
+          "Stop",
+          "SubagentStop",
+          "UserPromptSubmit",
+          "SessionStart",
+          "SessionEnd",
+          "SubagentStart",
+          "PreCompact",
+          "Notification"
+        ]
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/definitions/matcherGroup" }
+      }
+    }
+  },
+  "required": ["hooks"],
+  "additionalProperties": true,
+  "definitions": {
+    "matcherGroup": {
+      "type": "object",
+      "properties": {
+        "matcher": {
+          "type": "string",
+          "description": "Tool-name regex, e.g. \"Bash\" or \"Edit|Write|MultiEdit\". Absent = fire on every event of this type."
+        },
+        "hooks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/commandHook" }
+        }
+      },
+      "required": ["hooks"],
+      "additionalProperties": false
+    },
+    "commandHook": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "command" },
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Shell command. DevRites hooks use the fail-open form: command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook <id> --harness=claude || exit 0"
+        },
+        "async": { "type": "boolean" },
+        "timeout": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["type", "command"],
+      "additionalProperties": false
+    }
+  }
+}

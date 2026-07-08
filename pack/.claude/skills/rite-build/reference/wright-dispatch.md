@@ -40,7 +40,7 @@ Mode: <HITL | AFK>   (+ AFK budget note if a cap is set)
 Targets (stay inside these — from touched-files.md): <paths>
 Interfaces / signatures to match: <if any>
 Read yourself: spec.md, plan.md, decisions.md, assumptions.md, rite-polish/reference/anti-ai-slop.md<, design-brief.md if UI>
-Rules in scope (.claude/rules/): coding-style, error-handling, testing, patterns<, security if input/auth/data><, performance if hot path / query / large payload>
+Rules in scope (.claude/skills/devrites-lib/reference/standards/): coding-style, error-handling, testing, patterns<, security if input/auth/data><, performance if hot path / query / large payload>
 Test completeness: write ≥1 asserting test for EVERY interactive element + user flow in this
   slice's test-plan.md interaction inventory, each at the right level (fields/elements →
   unit/component; critical journeys → one E2E; never one-per-field). No element ships
@@ -63,8 +63,7 @@ Rules:
 ## On return — the orchestrator's job (don't delegate these)
 **You never edit source here.** The wright is the only writer of code + tests; you write only
 `.devrites/` bookkeeping. Every remedy below is **continue the same wright once** or **stop +
-escalate** — never an inline patch. You snapshotted the tree before dispatch (`reconcile.sh
-snapshot`); the reconcile check in step 4 proves no source changed outside the wright's claimed
+escalate** — never an inline patch. You snapshotted the tree before dispatch (`devrites-engine reconcile snapshot`); the reconcile check in step 4 proves no source changed outside the wright's claimed
 set.
 
 1. **Doubt the surfaced decisions.** For each entry in the wright's `Decisions stood`, apply
@@ -87,7 +86,7 @@ set.
    **no asserting test** has the same standing as red: an unverified-element gap blocks the
    slice (don't mark it built). Continue the same wright to cover it, or record a blocker.
 4. **Reconcile, then record.** First prove A1 held: write the wright's `Files changed` paths
-   (one per line) to `.devrites/work/<slug>/.reconcile-claimed` and run `reconcile.sh check`.
+   (one per line) to `.devrites/work/<slug>/.reconcile-claimed` and run `devrites-engine reconcile check`.
    **Exit 5 → STOP** — a source file changed outside the wright's claimed set (A1 breach); revert
    it and re-dispatch, don't mark the slice built. Then persist the wright's artifact to
    `state.md`, `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI) per
@@ -96,7 +95,7 @@ set.
    `decisions.md`, one line each ending `— doubt: <accept | reject-resolved | MISSING>`** —
    independent of the doubt step (step 1 above), so a skipped decision still lands on record for
    the seal's doubt-coverage cross-check (`- none` when the wright stood nothing). Then tick AFK if
-   `.devrites/AFK` is present (`tick-afk.sh`; exit 3 → STOP).
+   `.devrites/AFK` is present (`devrites-engine tick-afk`; exit 3 → STOP).
 
 ## Forge — competing candidates (the deliberate exception)
 
@@ -126,10 +125,10 @@ fallback in
 [`../../devrites-lib/reference/parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md).
 
 ## Optional pre-block hook (defense in depth)
-`reconcile.sh` is the **post-hoc** gate — it always runs and catches an A1 breach at record time.
-A companion **pre-block** hook, `.claude/hooks/devrites-a1-guard.sh` (a `PreToolUse` matcher on
+`devrites-engine reconcile` is the **post-hoc** gate — it always runs and catches an A1 breach at record time.
+A companion **pre-block** hook, `devrites-engine hook a1-guard` (a `PreToolUse` matcher on
 `Edit|Write|MultiEdit`), stops the breach *before* the write lands. It is armed only inside the
-mid-build window (between `reconcile.sh snapshot` and a clean `check`, keyed on `.reconcile-base`),
+mid-build window (between `devrites-engine reconcile snapshot` and a clean `check`, keyed on `.reconcile-base`),
 allows the wright (subagent calls carry `agent_id`), the inline fallback (`.reconcile-inline`),
 and any `.devrites/` write — so it never touches `/rite-polish`, `/rite-quick`, or ordinary
 manual edits. It ships **observe-only** (logs would-be blocks to `.a1-guard.log`, never blocks);

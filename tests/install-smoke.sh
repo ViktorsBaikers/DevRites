@@ -2,6 +2,7 @@
 # install-smoke.sh — dry-run, temp install, idempotent reinstall, flag behavior,
 # and the no-global-write guard. Exits non-zero on any failure.
 set -u
+export DEVRITES_NO_BINARY=1   # pack smoke: the engine binary has its own lifecycle test (binary-lifecycle-test.sh)
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
 ok()   { printf '  ok: %s\n' "$*"; }
@@ -27,8 +28,8 @@ for f in \
   ".agents/skills/rite/SKILL.md" \
   ".claude/skills/rite-define/SKILL.md" \
   ".agents/skills/rite-define/SKILL.md" \
-  ".agents/devrites/rules/core.md" \
-  ".agents/devrites/rules/security.md" \
+  ".agents/skills/devrites-lib/reference/standards/core.md" \
+  ".agents/skills/devrites-lib/reference/standards/security.md" \
   ".claude/skills/rite-seal/SKILL.md" \
   ".claude/skills/rite-polish/SKILL.md" \
   ".claude/skills/rite-polish/reference/code.md" \
@@ -36,19 +37,17 @@ for f in \
   ".claude/skills/rite-pressure-test/SKILL.md" \
   ".claude/skills/devrites-doubt/SKILL.md" \
   ".claude/skills/devrites-lib/reference/parallel-dispatch.md" \
-  ".claude/skills/devrites-lib/scripts/rites.sh" \
   ".claude/skills/devrites-frontend-craft/reference/shape.md" \
   ".claude/skills/devrites-debug-recovery/reference/build-the-loop.md" \
   ".claude/agents/devrites-code-reviewer.md" \
   ".codex/agents/devrites-code-reviewer.toml" \
   ".codex/config.toml" \
   ".codex/hooks.json" \
-  ".codex/hooks/devrites-stop-gate.sh" \
   ".codex/mcp/devrites-mcp.mjs" \
   ".claude/agents/devrites-spec-reviewer.md" \
-  ".claude/rules/security.md" \
-  ".claude/rules/anti-patterns.md" \
-  ".claude/rules/README.md" \
+  ".claude/skills/devrites-lib/reference/standards/security.md" \
+  ".claude/skills/devrites-lib/reference/standards/anti-patterns.md" \
+  ".claude/skills/devrites-lib/reference/standards/README.md" \
   "AGENTS.md" \
   ".devrites/README.md" \
   ".devrites/ACTIVE" ; do
@@ -83,7 +82,7 @@ n="$(grep -vc '^#' "$T/.claude/devrites.manifest")"
 [ "$n" -ge 80 ] && ok "manifest lists $n files" || no "manifest too small ($n)"
 grep -q '\.devrites/ACTIVE' "$T/.claude/devrites.manifest" && no "ACTIVE should NOT be manifest-managed" || ok "ACTIVE excluded from manifest"
 grep -q '^\.agents/skills/rite/SKILL.md$' "$T/.claude/devrites.manifest" && ok "manifest tracks Codex skill mirror" || no "manifest missing Codex skill mirror"
-grep -q '^\.agents/devrites/rules/core.md$' "$T/.claude/devrites.manifest" && ok "manifest tracks Codex rules mirror" || no "manifest missing Codex rules mirror"
+grep -q '^\.agents/skills/devrites-lib/reference/standards/core.md$' "$T/.claude/devrites.manifest" && ok "manifest tracks Codex rules mirror" || no "manifest missing Codex rules mirror"
 grep -q '^\.codex/agents/devrites-code-reviewer.toml$' "$T/.claude/devrites.manifest" && ok "manifest tracks Codex custom agent" || no "manifest missing Codex custom agent"
 grep -q '^AGENTS.md$' "$T/.claude/devrites.manifest" && no "AGENTS.md should be marker-managed, not file-managed" || ok "AGENTS.md not file-managed"
 grep -q '^\.claude/devrites\.agents-merge$' "$T/.claude/devrites.manifest" && ok "AGENTS merge marker managed" || no "AGENTS merge marker missing"
@@ -91,13 +90,13 @@ grep -q '^\.codex/config.toml$' "$T/.claude/devrites.manifest" && no ".codex/con
 grep -q '^\.claude/devrites\.codex-config-merge$' "$T/.claude/devrites.manifest" && ok "Codex config merge marker managed" || no "Codex config merge marker missing"
 grep -q '^\.codex/hooks.json$' "$T/.claude/devrites.manifest" && no ".codex/hooks.json should be marker-managed, not file-managed" || ok ".codex/hooks.json not file-managed"
 grep -q '^\.claude/devrites\.codex-hooks-merge$' "$T/.claude/devrites.manifest" && ok "Codex hooks merge marker managed" || no "Codex hooks merge marker missing"
-grep -q '^\.codex/hooks/devrites-stop-gate.sh$' "$T/.claude/devrites.manifest" && ok "manifest tracks Codex hook scripts" || no "manifest missing Codex hook scripts"
+grep -q '^\.codex/hooks/devrites-.*\.sh$' "$T/.claude/devrites.manifest" && no "post-cutover: Codex hook scripts should no longer be shipped" || ok "Codex hook scripts no longer shipped (engine binary is the control plane)"
 grep -q '^\.codex/mcp/devrites-mcp.mjs$' "$T/.claude/devrites.manifest" && ok "manifest tracks Codex MCP server" || no "manifest missing Codex MCP server"
 grep -q '## Codex compatibility' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror has compatibility block" || no "Codex skill mirror missing compatibility block"
 grep -q 'spawn the matching Codex custom agent' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror maps subagent dispatch" || no "Codex skill mirror missing subagent mapping"
-grep -q 'Read `.agents/devrites/rules/core.md`' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror loads DevRites rules mirror" || no "Codex skill mirror missing rules instruction"
+grep -q 'Read `.agents/skills/devrites-lib/reference/standards/core.md`' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror loads DevRites rules mirror" || no "Codex skill mirror missing rules instruction"
 grep -q '\.claude/agents' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/agents" || ok "Codex skill mirror does not point at .claude/agents"
-grep -q '\.claude/rules' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/rules" || ok "Codex skill mirror does not point at .claude/rules"
+grep -q '\.claude/skills/devrites-lib/reference/standards' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/skills/devrites-lib/reference/standards" || ok "Codex skill mirror does not point at .claude/skills/devrites-lib/reference/standards"
 grep -q '\.claude/skills' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/skills" || ok "Codex skill mirror does not point at .claude/skills"
 grep -q 'pack/\.claude' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at pack/.claude" || ok "Codex skill mirror does not point at pack/.claude"
 grep -q 'F=.agents/skills/rite-$V/SKILL.md' "$T/.agents/skills/rite/SKILL.md" && ok "Codex rite router dispatches inside .agents" || no "Codex rite router not rewritten to .agents"
@@ -105,11 +104,18 @@ grep -q '\.claude/skills/rite-$V' "$T/.agents/skills/rite/SKILL.md" && no "Codex
 grep -R -q '\.\./.*agents/devrites-.*\.md' "$T/.agents/skills" && no "Codex skill mirrors still contain relative agent links" || ok "Codex skill mirrors rewrite relative agent links"
 grep -q '\.codex/agents/devrites-slice-wright.toml' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill root points at Codex agent TOML" || no "Codex skill root missing Codex agent TOML path"
 grep -q '\.claude/agents' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" && no "Codex reference still points at .claude/agents" || ok "Codex reference rewrites .claude/agents"
-grep -q '\.claude/rules' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" && no "Codex reference still points at .claude/rules" || ok "Codex reference rewrites .claude/rules"
+grep -q '\.claude/skills/devrites-lib/reference/standards' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" && no "Codex reference still points at .claude/skills/devrites-lib/reference/standards" || ok "Codex reference rewrites .claude/skills/devrites-lib/reference/standards"
 grep -q '\.codex/agents' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" && ok "Codex reference points at Codex agents" || no "Codex reference missing Codex agents path"
-grep -q '\.agents/devrites/rules' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" && ok "Codex reference points at mirrored rules" || no "Codex reference missing mirrored rules path"
-grep -q '\.agents/skills/devrites-lib/scripts' "$T/.agents/skills/rite-build/reference/checkpoint-protocol.md" && ok "Codex reference rewrites helper script path" || no "Codex reference helper path not rewritten"
-grep -q '\.claude/rules' "$T/.codex/agents/devrites-code-reviewer.toml" && no "Codex agent still points at .claude/rules" || ok "Codex agent uses mirrored rules paths"
+grep -q '\.agents/skills/devrites-lib/reference/standards' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" && ok "Codex reference points at mirrored rules" || no "Codex reference missing mirrored rules path"
+grep -q '\.claude/skills/devrites-lib/reference/standards' "$T/.codex/agents/devrites-code-reviewer.toml" && no "Codex agent still points at .claude/skills/devrites-lib/reference/standards" || ok "Codex agent uses mirrored rules paths"
+grep -q '\$rite-seal' "$T/.agents/skills/devrites-audit/SKILL.md" && ok "Codex skill mirror rewrites slash rite invocations" || no "Codex skill mirror missing dollar rite invocation rewrite"
+grep -q '\$rite-build' "$T/.codex/agents/devrites-slice-wright.toml" && ok "Codex agent descriptions rewrite slash rite invocations" || no "Codex agent descriptions missing dollar rite invocation rewrite"
+if grep -R -nE '(^|[^A-Za-z0-9_./-])/rite(-[a-z0-9-]+)?([^A-Za-z0-9_-]|$)' "$T/.agents/skills" "$T/.codex/agents" >/tmp/dr_codex_slash_rite 2>/dev/null; then
+  no "Codex mirrors still contain slash rite invocations"
+  sed -n '1,20p' /tmp/dr_codex_slash_rite
+else
+  ok "Codex mirrors contain no slash rite invocations"
+fi
 python3 - <<PY
 import json, pathlib, tomllib
 tomllib.loads(pathlib.Path("$T/.codex/agents/devrites-code-reviewer.toml").read_text())
@@ -119,7 +125,7 @@ tomllib.loads(pathlib.Path("$T/.codex/config.toml").read_text())
 PY
 [ "$?" -eq 0 ] && ok "generated Codex TOML/JSON config parses" || no "generated Codex TOML/JSON config invalid"
 grep -q '"\$comment"' "$T/.codex/hooks.json" && no "generated Codex hooks include unsupported top-level comment" || ok "generated Codex hooks omit unsupported top-level comment"
-grep -q 'DEVRITES_WRIGHT_AGENT_REQUIRED=1 bash.*devrites-wright-scope.sh' "$T/.codex/hooks.json" \
+grep -q 'DEVRITES_WRIGHT_AGENT_REQUIRED=1 devrites-engine hook wright-scope' "$T/.codex/hooks.json" \
   && ok "Codex wright-scope hook is scoped to slice-wright agent" \
   || no "Codex wright-scope hook missing agent-required guard"
 
@@ -142,7 +148,7 @@ grep -q 'model = "gpt-5-codex"' "$T/.codex/config.toml" && ok "Codex config user
 grep -q 'echo user-stop' "$T/.codex/hooks.json" && ok "Codex user hook survives reinstall" || no "Codex user hook lost on reinstall"
 [ "$(grep -c '<!-- BEGIN DEVRITES CODEX -->' "$T/AGENTS.md")" -eq 1 ] && ok "AGENTS block remains single after shared-file reinstall" || no "AGENTS block duplicated after shared-file reinstall"
 [ "$(grep -c '# BEGIN DEVRITES CODEX MCP' "$T/.codex/config.toml")" -eq 1 ] && ok "Codex MCP block remains single after shared-file reinstall" || no "Codex MCP block duplicated after shared-file reinstall"
-[ "$(grep -c 'devrites-stop-gate.sh' "$T/.codex/hooks.json")" -eq 1 ] && ok "DevRites hooks remain single after shared-file reinstall" || no "DevRites hooks duplicated after shared-file reinstall"
+[ "$(grep -c 'devrites-engine hook stop-gate' "$T/.codex/hooks.json")" -eq 1 ] && ok "DevRites hooks remain single after shared-file reinstall" || no "DevRites hooks duplicated after shared-file reinstall"
 
 # 5b) prune: a managed file dropped from the pack is removed on reinstall/update,
 #     while .devrites/ runtime state is never touched (this is the path update.sh runs).
@@ -179,13 +185,13 @@ T3="$(mktemp -d)"; bash "$ROOT/install.sh" --target "$T3" --short-aliases=all >/
 [ -f "$T3/.agents/skills/build/SKILL.md" ]  && ok "--short-aliases=all mirrors /build for Codex"  || no "--short-aliases=all missing Codex /build"
 rm -rf "$T3"
 
-# 7b) --no-rules
+# 7b) --no-rules is a deprecated no-op — standards now ship inside the devrites-lib skill
 T4="$(mktemp -d)"; bash "$ROOT/install.sh" --target "$T4" --no-rules >/dev/null 2>&1
-[ -d "$T4/.claude/rules" ] && no "--no-rules still installed rules" || ok "--no-rules skipped rules"
+[ -d "$T4/.claude/skills/devrites-lib/reference/standards" ] && ok "--no-rules is a no-op; standards ship with the devrites-lib skill" || no "--no-rules dropped the standards (should be a no-op now)"
 [ -f "$T4/.claude/skills/rite-build/SKILL.md" ] && ok "--no-rules still installs skills" || no "--no-rules broke skills"
 # default install DOES include rules
 T5="$(mktemp -d)"; bash "$ROOT/install.sh" --target "$T5" >/dev/null 2>&1
-[ -f "$T5/.claude/rules/security.md" ] && ok "default install includes DevRites rules" || no "default missing rules"
+[ -f "$T5/.claude/skills/devrites-lib/reference/standards/security.md" ] && ok "default install includes DevRites rules" || no "default missing rules"
 rm -rf "$T4" "$T5"
 
 # 7c) --no-codex keeps the legacy Claude-only footprint
@@ -223,14 +229,14 @@ grep -q '# BEGIN DEVRITES CODEX MCP' "$T8/.codex/config.toml" && ok "DevRites MC
 grep -q '^\.codex/config.toml$' "$T8/.claude/devrites.manifest" && no "existing .codex/config.toml wrongly file-managed" || ok "existing .codex/config.toml not file-managed"
 grep -q '^\.claude/devrites\.codex-config-merge$' "$T8/.claude/devrites.manifest" && ok "Codex config merge marker managed" || no "Codex config merge marker missing"
 grep -q 'echo user-stop' "$T8/.codex/hooks.json" && ok "existing .codex/hooks.json content preserved" || no "existing .codex/hooks.json content lost"
-grep -q 'devrites-stop-gate.sh' "$T8/.codex/hooks.json" && ok "DevRites hooks merged into .codex/hooks.json" || no "DevRites hooks not merged"
+grep -q 'devrites-engine hook stop-gate' "$T8/.codex/hooks.json" && ok "DevRites hooks merged into .codex/hooks.json" || no "DevRites hooks not merged"
 grep -q '"\$comment"' "$T8/.codex/hooks.json" && no "merged Codex hooks include unsupported top-level comment" || ok "merged Codex hooks omit unsupported top-level comment"
 grep -q '^\.codex/hooks.json$' "$T8/.claude/devrites.manifest" && no "existing .codex/hooks.json wrongly file-managed" || ok "existing .codex/hooks.json not file-managed"
 grep -q '^\.claude/devrites\.codex-hooks-merge$' "$T8/.claude/devrites.manifest" && ok "Codex hooks merge marker managed" || no "Codex hooks merge marker missing"
 bash "$ROOT/install.sh" --target "$T8" >/dev/null 2>&1 || no "reinstall with existing AGENTS.md failed"
 [ "$(grep -c '<!-- BEGIN DEVRITES CODEX -->' "$T8/AGENTS.md")" -eq 1 ] && ok "AGENTS merge is idempotent" || no "AGENTS merge duplicated block"
 [ "$(grep -c '# BEGIN DEVRITES CODEX MCP' "$T8/.codex/config.toml")" -eq 1 ] && ok "Codex config merge is idempotent" || no "Codex config merge duplicated block"
-[ "$(grep -c 'devrites-stop-gate.sh' "$T8/.codex/hooks.json")" -eq 1 ] && ok "Codex hooks merge is idempotent" || no "Codex hooks merge duplicated entries"
+[ "$(grep -c 'devrites-engine hook stop-gate' "$T8/.codex/hooks.json")" -eq 1 ] && ok "Codex hooks merge is idempotent" || no "Codex hooks merge duplicated entries"
 bash "$ROOT/install.sh" --target "$T8" --no-codex --force >/dev/null 2>&1 || no "reinstall --no-codex with merged Codex blocks failed"
 grep -q 'Keep this user guidance' "$T8/AGENTS.md" && ok "--no-codex prune preserved existing AGENTS.md content" || no "--no-codex prune lost existing AGENTS.md content"
 grep -q '<!-- BEGIN DEVRITES CODEX -->' "$T8/AGENTS.md" && no "--no-codex prune left DevRites AGENTS block" || ok "--no-codex prune stripped DevRites AGENTS block"

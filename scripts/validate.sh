@@ -12,9 +12,9 @@ section() { printf '\n=== %s ===\n' "$1"; }
 bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
 good() { printf 'ok: %s\n' "$*"; }
 
-PUBLIC="rite rite-spec rite-adopt rite-temper rite-define rite-vet rite-plan rite-build rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-doctor rite-resolve rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
-INTERNAL="devrites-interview devrites-source-driven devrites-doubt devrites-ux-shape devrites-frontend-craft devrites-browser-proof devrites-debug-recovery devrites-api-interface devrites-audit"
-AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst devrites-frontend-reviewer devrites-security-auditor devrites-performance-reviewer devrites-devex-reviewer devrites-doubt-reviewer devrites-simplifier-reviewer devrites-strategy-reviewer devrites-plan-reviewer devrites-retrospector devrites-slice-wright"
+PUBLIC="rite rite-spec rite-adopt rite-temper rite-define rite-vet rite-plan rite-build rite-converge rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-doctor rite-resolve rite-frame rite-quick rite-learn rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
+INTERNAL="devrites-interview devrites-source-driven devrites-doubt devrites-ux-shape devrites-frontend-craft devrites-prose-craft devrites-browser-proof devrites-debug-recovery devrites-api-interface devrites-audit devrites-refresh-indexes devrites-lib"
+AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst devrites-frontend-reviewer devrites-security-auditor devrites-performance-reviewer devrites-devex-reviewer devrites-doubt-reviewer devrites-simplifier-reviewer devrites-strategy-reviewer devrites-plan-reviewer devrites-forge-judge devrites-retrospector devrites-slice-wright"
 
 # ---- 1. bash -n on every shell script ------------------------------------
 section "bash syntax (bash -n)"
@@ -126,10 +126,10 @@ echo "ok: size advisory complete"
 
 # ---- 9. DevRites engineering rules present -------------------------------
 section "DevRites rules present"
-if [ -f "$ROOT/pack/.claude/rules/README.md" ] && [ -f "$ROOT/pack/.claude/rules/security.md" ]; then
-  good "pack/.claude/rules present ($(find "$ROOT/pack/.claude/rules" -name '*.md' | wc -l | tr -d ' ') rule files)"
+if [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/README.md" ] && [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/security.md" ]; then
+  good "pack/.claude/skills/devrites-lib/reference/standards present ($(find "$ROOT/pack/.claude/skills/devrites-lib/reference/standards" -name '*.md' | wc -l | tr -d ' ') rule files)"
 else
-  bad "DevRites rules missing (need pack/.claude/rules/*.md)"
+  bad "DevRites rules missing (need pack/.claude/skills/devrites-lib/reference/standards/*.md)"
 fi
 
 # ---- 10. no global writes ------------------------------------------------
@@ -146,24 +146,48 @@ else
   bad "rule-uniqueness check failed (see scripts/check-rule-uniqueness.sh)"
 fi
 
+# ---- 11b. generated workspace schema fixtures ----------------------------
+section "workspace artifact schema"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/validate-workspace-schema.py" "$ROOT/tests/fixtures/workspace-schema" >/tmp/dr_workspace_schema 2>&1; then
+    cat /tmp/dr_workspace_schema
+    good "workspace artifact schema fixtures valid"
+  else
+    cat /tmp/dr_workspace_schema
+    bad "workspace artifact schema fixtures failed"
+  fi
+else
+  echo "skip: python3 not found"
+fi
+
+# ---- 11c. user-facing completion reply contract --------------------------
+section "rite completion reply contract"
+if bash "$ROOT/scripts/check-reply-contract.sh" >/tmp/dr_reply_contract 2>&1; then
+  cat /tmp/dr_reply_contract
+  good "reply-contract check passed"
+else
+  cat /tmp/dr_reply_contract
+  bad "reply-contract check failed (see scripts/check-reply-contract.sh)"
+fi
+
 # ---- 12. no runtime-broken pack/.claude/ path in installed prose ---------
-# After install the leading pack/ is stripped, so any literal pack/.claude/rules/
+# After install the leading pack/ is stripped, so any literal pack/.claude/skills/devrites-lib/reference/standards/
 # or pack/.claude/skills/ in shipped SKILL.md / reference prose is a dead path
 # at runtime. (Repo README/docs links are out of scope — they're GitHub links.)
 section "no literal pack/.claude/ paths in shipped skill prose"
 # Exclude the intentional resolution-snippet fallback (`... || P=pack/.claude/...`): the
 # preamble snippet tries the installed `.claude/` path first, then `${CLAUDE_SKILL_DIR}`
 # (plugin, best-effort), then the repo `pack/.claude/...` for DevRites self-development.
-PACKPATH_HITS="$(grep -rnI -e 'pack/\.claude/rules/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
+PACKPATH_HITS="$(grep -rnI -e 'pack/\.claude/skills/devrites-lib/reference/standards/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
 if [ -n "$PACKPATH_HITS" ]; then
   bad "literal pack/.claude/ path in shipped skill prose (strips to .claude/ on install):"
   printf '%s\n' "$PACKPATH_HITS" | sed "s|$ROOT/||"
 else
-  good "no literal pack/.claude/rules/ or pack/.claude/skills/ in shipped skill prose"
+  good "no literal pack/.claude/skills/devrites-lib/reference/standards/ or pack/.claude/skills/ in shipped skill prose"
 fi
 
 # ---- 14. no false session-start autoload claim ---------------------------
-# DevRites ships no autoload wiring; skills Read .claude/rules/core.md at step 0.
+# DevRites ships no autoload wiring; skills Read .claude/skills/devrites-lib/reference/standards/core.md at step 0.
 # Fail if any shipped skill or doc asserts native/session-start autoload.
 section "no false session-start autoload claim"
 AUTOLOAD_HITS="$(grep -rl 'autoloaded by Claude Code' "$ROOT/pack" "$ROOT/docs" "$ROOT/README.md" 2>/dev/null || true)"
@@ -172,6 +196,51 @@ if [ -n "$AUTOLOAD_HITS" ]; then
   printf '%s\n' "$AUTOLOAD_HITS" | sed "s|$ROOT/||"
 else
   good "no false session-start autoload claim in pack/ docs/ README.md"
+fi
+
+# ---- 14b. no deleted shell-helper guidance -------------------------------
+# The workflow control plane moved from devrites-lib/*.sh helpers to the
+# installed `devrites-engine` binary. Public docs and generated installer
+# guidance must not direct users or agents back to deleted helper files.
+section "no deleted shell-helper guidance"
+DELETED_HELPER_HITS="$(grep -rnI \
+  -e 'analyze\.sh' \
+  -e 'preamble\.sh' \
+  -e 'readiness\.sh' \
+  -e 'evidence-fresh\.sh' \
+  -e 'check-acceptance\.sh' \
+  -e 'coverage\.sh' \
+  -e 'doubt-coverage\.sh' \
+  -e 'footprint\.sh' \
+  -e 'learnings\.sh' \
+  -e 'mutation-gate\.sh' \
+  -e 'package-existence\.sh' \
+  -e 'progress\.sh' \
+  -e 'reconcile\.sh' \
+  -e 'tick-afk\.sh' \
+  -e 'test-integrity\.sh' \
+  -e 'resolve\.sh' \
+  -e 'close-out\.sh' \
+  -e 'stuck\.sh' \
+  -e 'spec-validate\.sh' \
+  -e 'devrites\.sh' \
+  -e 'devrites-a1-guard\.sh' \
+  -e 'devrites-allow\.sh' \
+  -e 'devrites-cursor\.sh' \
+  -e 'devrites-orient\.sh' \
+  -e 'devrites-redwatch\.sh' \
+  -e 'devrites-refresh-indexes\.sh' \
+  -e 'devrites-reviewer-readonly\.sh' \
+  -e 'devrites-statusline\.sh' \
+  -e 'devrites-stop-gate\.sh' \
+  -e 'devrites-wright-scope\.sh' \
+  -e '\.codex/hooks/' \
+  "$ROOT/README.md" "$ROOT/SECURITY.md" "$ROOT/docs" "$ROOT/evals" "$ROOT/install.sh" "$ROOT/b"*"in" 2>/dev/null || true)"
+if [ -n "$DELETED_HELPER_HITS" ]; then
+  bad "deleted helper/control-plane guidance found:"
+  printf '%s\n' "$DELETED_HELPER_HITS" | sed "s|$ROOT/||"
+else
+  good "public/generated guidance points at the devrites-engine binary, not deleted shell helpers"
 fi
 
 # ---- 15. shellcheck (error = blocking, warning = advisory) ---------------

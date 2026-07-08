@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # uninstall-smoke.sh — install into a temp project, then uninstall, asserting that
 # DevRites files are removed, empty dirs pruned, and runtime state preserved.
+# Binary lifecycle coverage lives in binary-lifecycle-test.sh; this smoke test
+# always passes --keep-binary so it cannot delete a developer's global binary.
 set -u
+export DEVRITES_NO_BINARY=1   # pack smoke: the engine binary has its own lifecycle test (binary-lifecycle-test.sh)
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
 ok() { printf '  ok: %s\n' "$*"; }
@@ -16,11 +19,11 @@ mkdir -p "$T/.devrites/work/demo"; echo "phase: build" > "$T/.devrites/work/demo
 printf 'demo\n' > "$T/.devrites/ACTIVE"
 
 # dry-run uninstall changes nothing
-bash "$ROOT/uninstall.sh" --target "$T" --dry-run >/dev/null 2>&1
+bash "$ROOT/uninstall.sh" --target "$T" --dry-run --keep-binary >/dev/null 2>&1
 [ -f "$T/.claude/devrites.manifest" ] && ok "dry-run uninstall kept manifest" || no "dry-run removed files"
 
 # real uninstall
-bash "$ROOT/uninstall.sh" --target "$T" >/dev/null 2>&1 || no "uninstall exited non-zero"
+bash "$ROOT/uninstall.sh" --target "$T" --keep-binary >/dev/null 2>&1 || no "uninstall exited non-zero"
 [ -e "$T/.claude/devrites.manifest" ] && no "manifest not removed" || ok "manifest removed"
 [ -e "$T/AGENTS.md" ] && no "AGENTS bridge not removed" || ok "AGENTS bridge removed"
 # .claude is pruned of all manifest-managed DevRites content. The seeded
@@ -54,21 +57,21 @@ fi
 
 # uninstall with no manifest must error cleanly
 T2="$(mktemp -d)"
-bash "$ROOT/uninstall.sh" --target "$T2" >/dev/null 2>&1 && no "uninstall succeeded with no manifest" || ok "uninstall errors without manifest"
+bash "$ROOT/uninstall.sh" --target "$T2" --keep-binary >/dev/null 2>&1 && no "uninstall succeeded with no manifest" || ok "uninstall errors without manifest"
 rm -rf "$T2"
 
 # foreign file is never removed
 T3="$(mktemp -d)"; bash "$ROOT/install.sh" --target "$T3" >/dev/null 2>&1
 echo "mine" > "$T3/.claude/skills/rite/USER_NOTE.txt"
 echo "mine" > "$T3/.agents/skills/rite/USER_NOTE.txt"
-bash "$ROOT/uninstall.sh" --target "$T3" >/dev/null 2>&1
+bash "$ROOT/uninstall.sh" --target "$T3" --keep-binary >/dev/null 2>&1
 [ -f "$T3/.claude/skills/rite/USER_NOTE.txt" ] && ok "foreign file preserved (dir not nuked)" || no "foreign file removed!"
 [ -f "$T3/.agents/skills/rite/USER_NOTE.txt" ] && ok "foreign Codex skill file preserved (dir not nuked)" || no "foreign Codex skill file removed!"
 rm -rf "$T3"
 
 # default DevRites-owned Codex hooks uninstall without Node
 T5="$(mktemp -d)"; bash "$ROOT/install.sh" --target "$T5" >/dev/null 2>&1
-PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" bash "$ROOT/uninstall.sh" --target "$T5" >/dev/null 2>&1 \
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" bash "$ROOT/uninstall.sh" --target "$T5" --keep-binary >/dev/null 2>&1 \
   && ok "default Codex hooks uninstall without Node" \
   || no "default Codex hooks uninstall required Node"
 [ -e "$T5/.codex/hooks.json" ] && no "DevRites-owned Codex hooks survived no-Node uninstall" || ok "DevRites-owned Codex hooks removed without Node"
@@ -83,8 +86,8 @@ printf '{ "hooks": { "Stop": [ { "hooks": [ { "type": "command", "command": "ech
 bash "$ROOT/install.sh" --target "$T4" >/dev/null 2>&1 || no "install with pre-existing AGENTS.md failed"
 grep -q '<!-- BEGIN DEVRITES CODEX -->' "$T4/AGENTS.md" && ok "DevRites block merged into pre-existing AGENTS.md" || no "DevRites block missing before uninstall"
 grep -q '# BEGIN DEVRITES CODEX MCP' "$T4/.codex/config.toml" && ok "DevRites MCP block merged into pre-existing .codex/config.toml" || no "DevRites MCP block missing before uninstall"
-grep -q 'devrites-stop-gate.sh' "$T4/.codex/hooks.json" && ok "DevRites hooks merged into pre-existing .codex/hooks.json" || no "DevRites hooks missing before uninstall"
-bash "$ROOT/uninstall.sh" --target "$T4" >/dev/null 2>&1 || no "uninstall with merged AGENTS.md failed"
+grep -q 'devrites-engine hook stop-gate' "$T4/.codex/hooks.json" && ok "DevRites hooks merged into pre-existing .codex/hooks.json" || no "DevRites hooks missing before uninstall"
+bash "$ROOT/uninstall.sh" --target "$T4" --keep-binary >/dev/null 2>&1 || no "uninstall with merged AGENTS.md failed"
 [ -f "$T4/AGENTS.md" ] && ok "pre-existing AGENTS.md preserved" || no "pre-existing AGENTS.md removed"
 grep -q 'Keep this guidance' "$T4/AGENTS.md" && ok "pre-existing AGENTS.md content preserved" || no "pre-existing AGENTS.md content lost"
 grep -q '<!-- BEGIN DEVRITES CODEX -->' "$T4/AGENTS.md" && no "DevRites block survived uninstall" || ok "DevRites block removed from pre-existing AGENTS.md"
@@ -93,7 +96,7 @@ grep -q 'model = "gpt-5-codex"' "$T4/.codex/config.toml" && ok "pre-existing .co
 grep -q '# BEGIN DEVRITES CODEX MCP' "$T4/.codex/config.toml" && no "DevRites MCP block survived uninstall" || ok "DevRites MCP block removed from pre-existing .codex/config.toml"
 [ -f "$T4/.codex/hooks.json" ] && ok "pre-existing .codex/hooks.json preserved" || no "pre-existing .codex/hooks.json removed"
 grep -q 'echo user-stop' "$T4/.codex/hooks.json" && ok "pre-existing .codex/hooks.json content preserved" || no "pre-existing .codex/hooks.json content lost"
-grep -q 'devrites-' "$T4/.codex/hooks.json" && no "DevRites hooks survived uninstall" || ok "DevRites hooks removed from pre-existing .codex/hooks.json"
+grep -qE 'devrites-engine hook |devrites-' "$T4/.codex/hooks.json" && no "DevRites hooks survived uninstall" || ok "DevRites hooks removed from pre-existing .codex/hooks.json"
 rm -rf "$T4"
 
 echo ""

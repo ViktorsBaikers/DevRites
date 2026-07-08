@@ -7,8 +7,8 @@
 #   ./install.sh --force              overwrite existing non-DevRites files
 #   ./install.sh --no-agents          skip the review subagents
 #   ./install.sh --no-codex           skip Codex support files (.agents, .codex, AGENTS.md)
-#   ./install.sh --no-rules           skip the DevRites engineering rules
-#   ./install.sh --rules-only         install only the engineering rules
+#   ./install.sh --no-rules           deprecated no-op (standards ship inside the devrites-lib skill)
+#   ./install.sh --rules-only         deprecated no-op (standards ship inside the devrites-lib skill)
 #   ./install.sh --short-aliases=all  install /define /build /prove /seal aliases
 #
 # Network install (no git clone needed):
@@ -120,8 +120,8 @@ DRYRUN=0
 FORCE=0
 WITH_SKILLS=1
 WITH_AGENTS=1
-WITH_RULES=1
 WITH_CODEX=1
+WITH_BINARY=1         # install the global devrites-engine binary (see install_binary)
 ALIAS_MODE="safe"     # safe | off | all
 
 # ---- parse args ----------------------------------------------------------
@@ -131,11 +131,11 @@ while [ $# -gt 0 ]; do
     --target=*) TARGET="${1#*=}" ;;
     --dry-run) DRYRUN=1 ;;
     --force) FORCE=1 ;;
-    --no-skills) WITH_SKILLS=0 ;;                 # accepted so a --rules-only manifest round-trips through update.sh's flag replay
+    --no-skills) WITH_SKILLS=0 ;;
     --no-agents) WITH_AGENTS=0 ;;
     --no-codex) WITH_CODEX=0 ;;
-    --no-rules) WITH_RULES=0 ;;
-    --rules-only) WITH_SKILLS=0; WITH_AGENTS=0; WITH_RULES=1; WITH_CODEX=0; ALIAS_MODE="off" ;;
+    --no-binary) WITH_BINARY=0 ;;               # skip the global engine binary (hooks fail open without it)
+    --no-rules|--rules-only) dr_warn "$1 is deprecated and now a no-op — DevRites engineering standards ship inside the devrites-lib skill (installed with --skills)." ;;
     --no-short-aliases) ALIAS_MODE="off" ;;       # accepted for backward compat; aliases are off by default now
     --short-aliases) dr_warn "--short-aliases with no value is a no-op (aliases default off); use --short-aliases=all to install /define /build /prove /seal."; ALIAS_MODE="off" ;;  # /polish + /normalize were removed in favor of /rite-polish argument-hint modes
     --short-aliases=all) ALIAS_MODE="all" ;;
@@ -231,25 +231,20 @@ install_tree() {
 gen_alias_wrapper() { dr_gen_alias_wrapper "$@"; }
 
 gen_codex_markdown_file() {
-  _src="$1"; _out="$2"
+  local _src="$1" _out="$2"
   mkdir -p "$(dirname "$_out")"
   sed -E \
-    -e 's#pack/\.claude/rules/#.agents/devrites/rules/#g' \
-    -e 's#pack/\.claude/rules#.agents/devrites/rules#g' \
     -e 's#pack/\.claude/skills/devrites-lib/scripts/#.agents/skills/devrites-lib/scripts/#g' \
     -e 's#pack/\.claude/skills/#.agents/skills/#g' \
     -e 's#pack/\.claude/agents/(devrites-[A-Za-z0-9_-]+)\.md#.codex/agents/\1.toml#g' \
     -e 's#pack/\.claude/agents/#.codex/agents/#g' \
-    -e 's#\.claude/rules/#.agents/devrites/rules/#g' \
-    -e 's#\.claude/rules#.agents/devrites/rules#g' \
     -e 's#\.claude/skills/devrites-lib/scripts/#.agents/skills/devrites-lib/scripts/#g' \
     -e 's#\.claude/skills/#.agents/skills/#g' \
     -e 's#\.claude/agents/(devrites-[A-Za-z0-9_-]+)\.md#.codex/agents/\1.toml#g' \
     -e 's#\.claude/agents/#.codex/agents/#g' \
     -e 's#\.\./\.\./\.\./agents/(devrites-[A-Za-z0-9_-]+)\.md#.codex/agents/\1.toml#g' \
     -e 's#\.\./\.\./agents/(devrites-[A-Za-z0-9_-]+)\.md#.codex/agents/\1.toml#g' \
-    -e 's#\.\./\.\./\.\./rules/#../../../devrites/rules/#g' \
-    -e 's#\.\./\.\./rules/#../../devrites/rules/#g' \
+    -e 's#(^|[^A-Za-z0-9_./-])/(rite(-[a-z0-9-]+)?)([^A-Za-z0-9_-]|$)#\1$\2\4#g' \
     "$_src" > "$_out"
 }
 
@@ -292,12 +287,21 @@ strip_codex_hooks_entries() {
 }
 
 gen_codex_skill_file() {
-  _src="$1"; _out="$2"
+  _src="$1"; _out="$2"; _internal="${3:-0}"
   _tmp="$TMP_GEN_DIR/codex-skill-raw-$(basename "$(dirname "$_src")").md"
   mkdir -p "$(dirname "$_out")"
-  awk '
+  # Internal (explicit-only) skills: replace the frontmatter description with a short stub in the
+  # Codex mirror. Codex uses the description ONLY to build its 2% skills-list for implicit matching;
+  # an explicit-only skill is never matched, so its full description is pure budget waste. Stubbing
+  # the 12 internal skills frees that budget so the user-facing rite-* descriptions fit un-shortened
+  # and keep matching reliably. Explicit `$name` invocation and the full SKILL.md body are untouched.
+  awk -v internal="$_internal" '
     BEGIN { fm = 0; inserted = 0 }
     NR == 1 && $0 == "---" { print; fm = 1; next }
+    fm && internal == "1" && /^description:/ {
+      print "description: Internal DevRites skill; DevRites agents invoke it explicitly, not by prompt match."
+      next
+    }
     fm && $0 == "---" {
       print
       print ""
@@ -305,11 +309,11 @@ gen_codex_skill_file() {
       print ""
       print "This is the Codex mirror of a DevRites skill. In Codex:"
       print ""
-      print "- Load DevRites engineering rules from `.agents/devrites/rules/`. Read `.agents/devrites/rules/core.md` before workflow work, then load the other `.agents/devrites/rules/*.md` files exactly when this skill asks for them."
-      print "- Use `.agents/skills/devrites-lib/scripts/` as the canonical runtime helper location unless this skill resolves another installed path."
-      print "- When this skill asks for a DevRites specialist or writer agent, spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents. Wait for the subagent result and reconcile it as the skill instructs."
-      print "- If Codex subagents are unavailable in the current surface, use the skill documented inline fallback and label the result as an inline fallback, not an independent subagent review."
-      print "- Codex project hooks are installed in `.codex/hooks.json` and `.codex/hooks/`. Review and trust them with `/hooks` before relying on hook enforcement."
+      print "- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them."
+      print "- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation."
+      print "- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional."
+      print "- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence."
+      print "- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement."
       print ""
       fm = 0
       inserted = 1
@@ -321,7 +325,7 @@ gen_codex_skill_file() {
         print ""
         print "## Codex compatibility"
         print ""
-        print "Load DevRites rules from `.agents/devrites/rules/`, use matching `.codex/agents/devrites-*.toml` custom agents for DevRites subagent dispatch, and trust `.codex/hooks.json` with `/hooks` before relying on hooks."
+        print "Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`, use matching `.codex/agents/devrites-*.toml` custom agents for DevRites subagent dispatch, and trust `.codex/hooks.json` with `/hooks` before relying on hooks."
       }
     }
   ' "$_src" > "$_tmp"
@@ -335,9 +339,24 @@ install_codex_skill_tree() {
     _r="${f#$_sd/}"
     case "$_r" in
     SKILL.md)
+      # Internal (user-invocable: false) skills are invoked EXPLICITLY by DevRites agents
+      # ($devrites-*), never implicitly from a user prompt. For those, on the Codex mirror we (a)
+      # stub the description (gen_codex_skill_file, to free the 2% skills-list budget for the
+      # user-facing rite-* skills) and (b) emit `agents/openai.yaml` with allow_implicit_invocation:
+      # false so Codex won't auto-fire an internal specialist from a stray prompt. Explicit $skill
+      # invocation still works either way. This is the Codex analog of Claude's `user-invocable: false`.
+      _internal=0
+      if awk 'NR==1&&$0=="---"{fm=1;next} fm&&$0=="---"{exit} fm&&/^user-invocable:[[:space:]]*false/{u=1} END{exit !u}' "$f"; then
+        _internal=1
+      fi
       _gen="$TMP_GEN_DIR/codex-skill-$(basename "$_sd").md"
-      gen_codex_skill_file "$f" "$_gen"
+      gen_codex_skill_file "$f" "$_gen" "$_internal"
       install_file "$_gen" "$_pre/$_r"
+      if [ "$_internal" -eq 1 ]; then
+        _pol="$TMP_GEN_DIR/codex-policy-$(basename "$_sd").yaml"
+        printf 'policy:\n  allow_implicit_invocation: false\n' > "$_pol"
+        install_file "$_pol" "$_pre/agents/openai.yaml"
+      fi
       ;;
     *.md)
       _gen="$TMP_GEN_DIR/codex-md-$(basename "$_sd")-$(printf '%s' "$_r" | tr '/ ' '__').md"
@@ -359,11 +378,17 @@ toml_escape() {
 # Codex does not consume .claude/agents/*.md directly; it loads project agents
 # from .codex/agents/*.toml.
 gen_codex_agent() {
-  _src="$1"; _out="$2"
+  local _src="$1" _out="$2"
+  local _name _desc _desc_tmp _desc_codex _tools _body_tmp _body_codex
   _name="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^name:[[:space:]]*/{sub(/^name:[[:space:]]*/, ""); print; exit}' "$_src")"
   _desc="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^description:[[:space:]]*/{sub(/^description:[[:space:]]*/, ""); print; exit}' "$_src")"
   [ -n "$_name" ] || _name="$(basename "$_src" .md)"
   [ -n "$_desc" ] || _desc="DevRites custom agent."
+  _desc_tmp="$TMP_GEN_DIR/codex-agent-desc-$(basename "$_src").txt"
+  _desc_codex="$TMP_GEN_DIR/codex-agent-desc-$(basename "$_src").codex.txt"
+  printf '%s' "$_desc" > "$_desc_tmp"
+  gen_codex_markdown_file "$_desc_tmp" "$_desc_codex"
+  _desc="$(cat "$_desc_codex")"
   _tools="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^tools:[[:space:]]*/{sub(/^tools:[[:space:]]*/, ""); print; exit}' "$_src")"
   mkdir -p "$(dirname "$_out")"
   {
@@ -395,11 +420,12 @@ This project has DevRites installed for both Claude Code and Codex.
 
 ## Codex usage
 
+- **Trust this project.** Codex skips every project-scoped `.codex/` layer — config, hooks, agents, rules — in an **untrusted** project. If DevRites seems absent (no skills, no custom agents, no MCP), trust the folder when Codex prompts on first run, or mark the project trusted in your global Codex config (`projects."<abs-path>".trust_level = "trusted"`). Untrusted = DevRites silently does nothing.
 - DevRites workflow skills are available to Codex from `.agents/skills`.
 - Use `$rite` or `$rite-<verb>` through Codex skills, or open `/skills` and select the matching DevRites skill.
 - If the user mentions a DevRites slash command such as `/rite spec`, `/rite-build`, or `/rite-seal`, treat that as an explicit request to use the corresponding DevRites skill.
-- DevRites runtime helpers are mirrored for Codex under `.agents/skills/devrites-lib/scripts/`.
-- Before using any DevRites workflow skill, read `.agents/devrites/rules/core.md`. Load other `.agents/devrites/rules/*.md` files when the skill or rule index asks for them. These are DevRites engineering rules, not Codex exec-policy `.rules` files.
+- DevRites runtime helpers run through the installed `devrites-engine` binary.
+- Before using any DevRites workflow skill, read `.agents/skills/devrites-lib/reference/standards/core.md`. Load other `.agents/skills/devrites-lib/reference/standards/*.md` files when the skill or rule index asks for them. These are DevRites engineering standards, not Codex exec-policy `.rules` files.
 - Custom Codex subagents generated from the DevRites review agents live in `.codex/agents`.
 - When DevRites skill prose asks for a DevRites specialist or writer agent, use the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents. If Codex subagents are unavailable in the current surface, run the skill's documented inline fallback and say that the result was not an independent subagent review.
 - Claude Code agent hook metadata is not active in Codex. The generated Codex agents preserve read-only intent with Codex sandbox settings where possible; still follow DevRites' scope and no-mutation rules explicitly.
@@ -558,7 +584,7 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; cd \"$root\" && DEVRITES_REVIEWER_AGENT_REQUIRED=1 bash \"$root/.codex/hooks/devrites-reviewer-readonly.sh\"",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec env DEVRITES_REVIEWER_AGENT_REQUIRED=1 devrites-engine hook reviewer-readonly --harness=codex",
             "statusMessage": "DevRites: checking reviewer read-only boundary"
           }
         ]
@@ -568,7 +594,7 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; cd \"$root\" && bash \"$root/.codex/hooks/devrites-allow.sh\"",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook allow --harness=codex",
             "statusMessage": "DevRites: checking read-only helper approval"
           }
         ]
@@ -578,12 +604,12 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; cd \"$root\" && bash \"$root/.codex/hooks/devrites-a1-guard.sh\"",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook a1-guard --harness=codex",
             "statusMessage": "DevRites: checking build write boundary"
           },
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; cd \"$root\" && DEVRITES_WRIGHT_AGENT_REQUIRED=1 bash \"$root/.codex/hooks/devrites-wright-scope.sh\"",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec env DEVRITES_WRIGHT_AGENT_REQUIRED=1 devrites-engine hook wright-scope --harness=codex",
             "statusMessage": "DevRites: checking slice file scope"
           }
         ]
@@ -595,7 +621,7 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; cd \"$root\" && bash \"$root/.codex/hooks/devrites-redwatch.sh\"",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook redwatch --harness=codex",
             "statusMessage": "DevRites: checking test/build result"
           }
         ]
@@ -606,7 +632,7 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; cd \"$root\" && bash \"$root/.codex/hooks/devrites-stop-gate.sh\"",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook stop-gate --harness=codex",
             "statusMessage": "DevRites: checking workspace stop gate"
           }
         ]
@@ -615,7 +641,7 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; cd \"$root\" && bash \"$root/.codex/hooks/devrites-refresh-indexes.sh\"",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook refresh-indexes",
             "statusMessage": "DevRites: refreshing code indexes"
           }
         ]
@@ -626,12 +652,22 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; cd \"$root\" && bash \"$root/.codex/hooks/devrites-cursor.sh\""
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook cursor --harness=codex"
           }
         ]
       }
     ],
     "SubagentStart": [
+      {
+        "matcher": "devrites-.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook subagent-orient --harness=codex",
+            "statusMessage": "DevRites: injecting subagent discipline"
+          }
+        ]
+      },
       {
         "matcher": "devrites-slice-wright",
         "hooks": [
@@ -668,7 +704,7 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; cd \"$root\" && bash \"$root/.codex/hooks/devrites-orient.sh\"",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook orient --harness=codex",
             "statusMessage": "DevRites: loading project orientation"
           }
         ]
@@ -716,7 +752,7 @@ dr_info "DevRites installer"
 dr_say  "  source : $SELF_DIR"
 dr_say  "  target : $TARGET"
 dr_say  "  skills : $([ "$WITH_SKILLS" -eq 1 ] && echo yes || echo no)"
-dr_say  "  rules  : $([ "$WITH_RULES" -eq 1 ] && echo 'DevRites engineering rules' || echo 'skipped')"
+dr_say  "  standards: ship inside the devrites-lib skill"
 dr_say  "  agents : $([ "$WITH_AGENTS" -eq 1 ] && echo yes || echo no)"
 dr_say  "  codex  : $([ "$WITH_CODEX" -eq 1 ] && echo yes || echo no)"
 dr_say  "  aliases: $ALIAS_MODE"
@@ -771,20 +807,17 @@ if [ "$WITH_CODEX" -eq 1 ] && [ "$WITH_SKILLS" -eq 1 ]; then
   fi
 fi
 
-# 4) DevRites engineering rules
-if [ "$WITH_RULES" -eq 1 ]; then
-  install_tree "$PACK_SRC/rules" ".claude/rules"
-  [ "$WITH_CODEX" -eq 1 ] && install_tree "$PACK_SRC/rules" ".agents/devrites/rules"
-fi
+# 4) DevRites engineering standards now live inside the devrites-lib skill
+# (pack/.claude/skills/devrites-lib/reference/standards/) and install with the
+# skills tree in step 1 — no separate rules install, and no reserved
+# .claude/rules/ namespace to collide with a project's own rules.
 
-# 4b) hooks — auto-approve the read-only orientation/gate scripts (no per-run permission
-# prompts) + a SessionStart orientation injector. Ship the scripts (manifest-managed, updated
-# on reinstall); SEED .claude/settings.json only when absent and never record it in the
-# manifest, so it is preserved on uninstall/update and the user's own settings stay safe.
-if [ "$WITH_SKILLS" -eq 1 ] && [ -d "$PACK_SRC/hooks" ]; then
-  install_tree "$PACK_SRC/hooks" ".claude/hooks"
+# 4b) hooks — seed Claude's JSON hook config and merge Codex's generated hook config.
+# Hooks call the global engine binary directly; no per-project hook scripts are shipped.
+# SEED .claude/settings.json only when absent and never record it in the manifest, so it
+# is preserved on uninstall/update and the user's own settings stay safe.
+if [ "$WITH_SKILLS" -eq 1 ]; then
   if [ "$WITH_CODEX" -eq 1 ]; then
-    install_tree "$PACK_SRC/hooks" ".codex/hooks"
     CODEX_HOOKS_JSON="$TMP_GEN_DIR/codex-hooks.json"
     gen_codex_hooks_json "$CODEX_HOOKS_JSON"
     install_codex_hooks_json "$CODEX_HOOKS_JSON"
@@ -814,7 +847,7 @@ sessions — it's the durable memory of in-flight work.
 - `work/<slug>/` is created by `/rite-define`; other phases read it.
 - `AFK` (optional, per-developer) — presence flips the session to AFK mode.
   Empty file = safe defaults; optional YAML body sets `max_slices`, `notify`,
-  `allow_gates`. Full contract: `.claude/rules/afk-hitl.md`.
+  `allow_gates`. Full contract: `.claude/skills/devrites-lib/reference/standards/afk-hitl.md`.
   **Gitignore `AFK` unless your team agrees on shared AFK defaults** — it's a
   local toggle, not project state.
 - `conventions.md` (optional) — the conventions ledger: facts a sealed slice proved
@@ -822,6 +855,11 @@ sessions — it's the durable memory of in-flight work.
   read at orient so the wright stops re-deriving them. The band is earned from how many
   slices corroborated each entry. **Gitignore `conventions.md`** — it's local, per-clone
   learning, not shared project state.
+- `specs/<capability>/spec.md` — the **capability ledger**: the living record of what the
+  system already does, folded from each feature's proven spec deltas on ship. **Commit
+  `specs/`** — it is durable, shared project truth (the next feature writes deltas against
+  it), unlike the ephemeral, per-clone runtime state above. Your `.gitignore` should track
+  it explicitly, e.g. `.devrites/*` + `!.devrites/specs/`.
 
 Safe to commit `work/` so the team and future sessions share feature state.
 Delete a feature's folder when it's shipped and you no longer need the trail.
@@ -852,7 +890,8 @@ DR_INSTALL_FLAGS=""
 [ "$WITH_SKILLS" -eq 0 ] && DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --no-skills"
 [ "$WITH_AGENTS" -eq 0 ] && DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --no-agents"
 [ "$WITH_CODEX" -eq 0 ] && DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --no-codex"
-[ "$WITH_RULES"  -eq 0 ] && DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --no-rules"
+[ "$WITH_BINARY" -eq 0 ] && DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --no-binary"
+# (--no-rules retired: engineering standards always ship with the skills)
 case "$ALIAS_MODE" in
   off) DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --no-short-aliases" ;;
   all) DR_INSTALL_FLAGS="$DR_INSTALL_FLAGS --short-aliases=all" ;;
@@ -912,6 +951,185 @@ if [ "$DRYRUN" -eq 0 ]; then
   } > "$PREV_MANIFEST"
 fi
 
+# ---- engine binary lifecycle --------------------------------------------
+# GUARD:no-global — install_binary only ever writes the sanctioned
+# `devrites-engine`
+# leaf under /usr/local/bin or ~/.local/bin (see check-no-global-writes.sh); it
+# never touches ~/.claude or ~/.codex. All bin paths flow through variables so the
+# static guard's write-verb scan stays clean.
+
+# dr_ver_gt A B — exit 0 iff semantic version A is strictly greater than B.
+# Portable POSIX-ish comparator; a leading "v" is tolerated. Equal → not greater.
+dr_ver_gt() {
+  [ "$1" = "$2" ] && return 1
+  _a="${1#v}"; _b="${2#v}"
+  [ "$_a" = "$_b" ] && return 1
+  _ap="${_a%%[-+]*}"; _bp="${_b%%[-+]*}"
+  _old_ifs="$IFS"; IFS=.
+  # shellcheck disable=SC2086
+  set -- $_ap
+  _a1="${1:-0}"; _a2="${2:-0}"; _a3="${3:-0}"
+  # shellcheck disable=SC2086
+  set -- $_bp
+  _b1="${1:-0}"; _b2="${2:-0}"; _b3="${3:-0}"
+  IFS="$_old_ifs"
+  for _part in 1 2 3; do
+    eval "_av=\$_a$_part"
+    eval "_bv=\$_b$_part"
+    case "$_av" in ''|*[!0-9]*) _av=0 ;; esac
+    case "$_bv" in ''|*[!0-9]*) _bv=0 ;; esac
+    if [ "$_av" -gt "$_bv" ]; then return 0; fi
+    if [ "$_av" -lt "$_bv" ]; then return 1; fi
+  done
+  return 1
+}
+
+dr_packaged_release_tag() {
+  case "$DR_INSTALLED_VERSION" in
+    unknown|"") return 0 ;;
+    v*) printf '%s\n' "$DR_INSTALLED_VERSION" ;;
+    *) printf 'v%s\n' "$DR_INSTALLED_VERSION" ;;
+  esac
+}
+
+install_binary() {
+  if [ "$WITH_BINARY" -ne 1 ] || [ "${DEVRITES_NO_BINARY:-0}" = "1" ]; then
+    dr_say "  engine binary: skipped (--no-binary); hooks fail open."
+    return 0
+  fi
+
+  # This unix installer covers darwin/linux; windows users take the .exe from the
+  # release page. Map uname → the release asset suffix.
+  _os="$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+  _arch="$(uname -m 2>/dev/null)"
+  case "$_os" in linux|darwin) : ;; *) dr_warn "engine binary: unsupported OS '$_os' — skipped (hooks fail open)."; return 0 ;; esac
+  case "$_arch" in x86_64|amd64) _arch=amd64 ;; arm64|aarch64) _arch=arm64 ;; *) dr_warn "engine binary: unsupported arch '$_arch' — skipped."; return 0 ;; esac
+  _plat="${_os}-${_arch}"
+
+  # Resolve the release tag. npm packages carry package.json, so a pinned
+  # `npx devrites@<version>` installs the matching binary instead of drifting to
+  # GitHub's latest release.
+  _tag="${DEVRITES_REF:-${BOOT_TAG:-}}"
+  if [ -z "$_tag" ]; then
+    _tag="$(dr_packaged_release_tag)"
+  fi
+  if [ -z "$_tag" ]; then
+    _tag="$(curl -fsSL "https://api.github.com/repos/$DEVRITES_REPO/releases/latest" 2>/dev/null \
+      | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+  fi
+  _incoming="${_tag#v}"
+
+  # Downgrade guard: never replace a newer installed binary with an older one.
+  # Only compare when BOTH sides are real semver releases — an unstamped source
+  # build reports "dev", which must always be upgradable (never treated as newest).
+  _existing_bin="$(command -v devrites-engine 2>/dev/null || true)"
+  if [ -n "$_existing_bin" ]; then
+    _existing_ver="$("$_existing_bin" version 2>/dev/null | head -n1 || true)"
+    if printf '%s' "${_existing_ver#v}" | grep -qE '^[0-9]' \
+      && printf '%s' "$_incoming" | grep -qE '^[0-9]' \
+      && dr_ver_gt "$_existing_ver" "$_incoming"; then
+      dr_warn "engine binary: installed ${_existing_ver} is newer than ${_tag:-<unknown>} — refusing to downgrade (kept)."
+      return 0
+    fi
+  fi
+
+  # Acquire the binary into a temp file: prefer the verified release asset, else
+  # build from source when this is a full checkout with the Go toolchain present.
+  _tmpd="$(mktemp -d 2>/dev/null || echo "${TMPDIR:-/tmp}/devrites-bin.$$")"; mkdir -p "$_tmpd"
+  _staged="$_tmpd/devrites"
+  _got=0
+
+  if [ -n "$_tag" ]; then
+    _url="https://github.com/$DEVRITES_REPO/releases/download/$_tag/devrites-$_plat"
+    if curl -fsSL -o "$_staged" "$_url" 2>/dev/null; then
+      if curl -fsSL -o "$_staged.sha256" "$_url.sha256" 2>/dev/null; then
+        _want="$(awk '{print $1; exit}' "$_staged.sha256" 2>/dev/null)"
+        if command -v shasum >/dev/null 2>&1; then _got_sum="$(shasum -a 256 "$_staged" | awk '{print $1}')"
+        elif command -v sha256sum >/dev/null 2>&1; then _got_sum="$(sha256sum "$_staged" | awk '{print $1}')"
+        else _got_sum=""; fi
+        if [ -z "$_got_sum" ]; then dr_warn "engine binary: no sha256 tool — refusing unverified release asset."
+        elif [ "$_got_sum" = "$_want" ]; then _got=1; dr_say "  engine binary: checksum verified (sha256)."
+        else dr_warn "engine binary: checksum mismatch for devrites-$_plat — refusing to install."; rm -rf "$_tmpd"; return 0; fi
+      else
+        dr_warn "engine binary: no .sha256 for devrites-$_plat — refusing unverified release asset."
+      fi
+    fi
+  fi
+
+  if [ "$_got" -ne 1 ] && [ -d "$SELF_DIR/engine" ] && command -v go >/dev/null 2>&1; then
+    dr_say "  engine binary: no release asset — building from source…"
+    if ( cd "$SELF_DIR/engine" && CGO_ENABLED=0 go build -trimpath \
+          -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=${_tag:-dev}" \
+          -o "$_staged" . ) 2>/dev/null; then
+      _got=1
+    fi
+  fi
+
+  if [ "$_got" -ne 1 ]; then
+    dr_warn "engine binary: could not obtain a binary (no release asset, no Go toolchain) — hooks fail open until you install it."
+    rm -rf "$_tmpd"; return 0
+  fi
+  chmod +x "$_staged" 2>/dev/null || true
+
+  # Destination: an explicit DEVRITES_BIN_DIR override (used by tests and by users
+  # who keep a custom bin dir), else the system bin dir when writable (directly or
+  # via sudo on a tty), else the per-user bin dir. Only ever the `devrites-engine` leaf.
+  _sys_dir="/usr/local/bin"        # GUARD:no-global — sanctioned bin dir
+  _user_dir="$HOME/.local/bin"     # GUARD:no-global — sanctioned bin dir
+  _use_sudo=0
+  if [ -n "${DEVRITES_BIN_DIR:-}" ]; then
+    _dest_dir="$DEVRITES_BIN_DIR"
+  elif [ -w "$_sys_dir" ] 2>/dev/null; then
+    _dest_dir="$_sys_dir"
+  elif [ -d "$_sys_dir" ] && command -v sudo >/dev/null 2>&1 && [ -t 0 ]; then
+    _dest_dir="$_sys_dir"; _use_sudo=1
+  else
+    _dest_dir="$_user_dir"
+  fi
+  _dest="$_dest_dir/devrites-engine"
+
+  if [ "$_use_sudo" -eq 1 ]; then
+    if ! sudo install -m 0755 "$_staged" "$_dest" 2>/dev/null; then
+      dr_warn "engine binary: sudo install to $_dest_dir failed — falling back to the per-user bin dir."
+      _dest_dir="$_user_dir"; _dest="$_dest_dir/devrites-engine"; _use_sudo=0
+    fi
+  fi
+  if [ "$_use_sudo" -eq 0 ]; then
+    _final_tmp="$_dest.tmp.$$"
+    if ! { mkdir -p "$_dest_dir" 2>/dev/null && cp "$_staged" "$_final_tmp" 2>/dev/null \
+           && chmod 0755 "$_final_tmp" 2>/dev/null && mv "$_final_tmp" "$_dest" 2>/dev/null; }; then
+      rm -f "$_final_tmp" 2>/dev/null || true
+      dr_warn "engine binary: cannot write $_dest — skipped (hooks fail open)."
+      rm -rf "$_tmpd"; return 0
+    fi
+  fi
+  rm -rf "$_tmpd"
+
+  dr_ok "engine binary installed: $_dest ${_tag:+($_tag)}"
+  case ":$PATH:" in
+    *":$_dest_dir:"*) : ;;
+    *) dr_warn "engine binary: $_dest_dir is not on your PATH — add it (export PATH=\"$_dest_dir:\$PATH\") so 'devrites-engine' resolves." ;;
+  esac
+}
+
+if [ "$DRYRUN" -eq 1 ]; then
+  [ "$WITH_BINARY" -eq 1 ] && dr_say "  [plan] would install the global devrites-engine control-plane binary (see install_binary)"
+else
+  install_binary
+fi
+
+# ---- mirror project extensions -------------------------------------------
+# Any project-local extensions (.devrites/extensions/) are mirrored into the
+# harness skill/agent dirs now the pack and engine binary are in place. Fail-open:
+# no extensions, no binary on PATH, or a sync error never fails the install — the
+# user can always run `devrites-engine extensions sync` or /rite-doctor later.
+if [ "$DRYRUN" -eq 0 ] && command -v devrites-engine >/dev/null 2>&1; then
+  if [ -d "$TARGET/.devrites/extensions" ]; then
+    DEVRITES_ROOT="$TARGET/.devrites" devrites-engine extensions sync >/dev/null 2>&1 \
+      && dr_ok "project extensions synced (.devrites/extensions/ → .claude/)" || true
+  fi
+fi
+
 # ---- summary -------------------------------------------------------------
 dr_say ""
 dr_ok "DevRites $([ "$DRYRUN" -eq 1 ] && echo 'plan complete (dry run)' || echo installed)"
@@ -922,7 +1140,7 @@ dr_say "${DR_B}Utilities:${DR_R} /rite-pressure-test  /rite-zoom-out  /rite-prot
 if [ "$ALIAS_MODE" = "all" ]; then
   dr_say "${DR_B}Aliases:${DR_R}  /define  /build  /prove  /seal"
 fi
-[ "$WITH_RULES" -eq 1 ] && dr_say "${DR_B}Rules:${DR_R}    engineering rules installed to .claude/rules/$([ "$WITH_CODEX" -eq 1 ] && echo ' and mirrored to .agents/devrites/rules/')"
+dr_say "${DR_B}Standards:${DR_R} engineering standards ship in .claude/skills/devrites-lib/reference/standards/$([ "$WITH_CODEX" -eq 1 ] && echo ' (Codex: .agents/skills/devrites-lib/reference/standards/)')"
 [ "$WITH_CODEX" -eq 1 ] && [ "$WITH_SKILLS" -eq 1 ] && dr_say "${DR_B}Codex:${DR_R}   skills mirrored to .agents/skills/; project guidance in AGENTS.md"
 dr_say ""
 dr_say "${DR_B}Next:${DR_R}"
@@ -930,7 +1148,7 @@ dr_say "  1. Open the project in Claude Code or Codex and accept the workspace t
 dr_say "  2. Claude Code: run ${DR_C}/rite${DR_R} for the menu, or ${DR_C}/rite-spec <feature>${DR_R} to start."
 [ "$WITH_CODEX" -eq 1 ] && [ "$WITH_SKILLS" -eq 1 ] && dr_say "     Codex: use ${DR_C}\$rite${DR_R} / ${DR_C}\$rite-spec${DR_R} through skills, or pick DevRites from ${DR_C}/skills${DR_R}."
 dr_say "  3. ${DR_B}HITL by default${DR_R} — HITL slices pause at typed gates; resume with ${DR_C}/rite-resolve <qid> \"<answer>\"${DR_R}."
-dr_say "     For unattended runs: ${DR_C}touch .devrites/AFK${DR_R} (see .claude/rules/afk-hitl.md for the contract)."
+dr_say "     For unattended runs: ${DR_C}touch .devrites/AFK${DR_R} (see .claude/skills/devrites-lib/reference/standards/afk-hitl.md for the contract)."
 [ "$N_SKIP" -gt 0 ] && dr_say "  • $N_SKIP file(s) were skipped (already present). Re-run with --force to overwrite."
 [ "$DRYRUN" -eq 1 ] && dr_say "  (dry run only — re-run without --dry-run to apply.)"
 exit 0

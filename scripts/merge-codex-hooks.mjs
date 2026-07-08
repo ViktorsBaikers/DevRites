@@ -24,7 +24,12 @@ function readJson(path) {
 
 function isDevRitesHook(value) {
   const s = JSON.stringify(value);
-  return s.includes('.codex/hooks/devrites-') || s.includes('DevRites:') || s.includes('DEVRITES_');
+  // Post-cutover DevRites hooks invoke the engine binary (`devrites-engine hook <name>`);
+  // the `.codex/hooks/devrites-` marker matches pre-cutover installs still being
+  // upgraded.
+  return s.includes('devrites-engine hook ') ||
+    s.includes('.codex/hooks/devrites-') ||
+    s.includes('DevRites:') || s.includes('DEVRITES_');
 }
 
 function stripDevRitesHooks(config) {

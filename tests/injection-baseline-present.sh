@@ -5,7 +5,7 @@
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-RULE="$HERE/../pack/.claude/rules/security.md"
+RULE="$HERE/../pack/.claude/skills/devrites-lib/reference/standards/security.md"
 AGENTS="$HERE/../pack/.claude/agents"
 fail=0
 

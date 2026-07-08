@@ -3,6 +3,7 @@
 # subcommand routing, flag passthrough, and that it drives the bundled bash
 # installers (install / uninstall) correctly. Exits non-zero on any failure.
 set -u
+export DEVRITES_NO_BINARY=1   # pack smoke: the engine binary has its own lifecycle test (binary-lifecycle-test.sh)
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 CLI="$ROOT/bin/devrites.mjs"
 fail=0
@@ -26,6 +27,40 @@ got="$(node "$CLI" --version 2>/dev/null)"
 help="$(node "$CLI" --help 2>/dev/null)"
 echo "$help" | grep -q 'Usage:' && ok "--help shows usage" || no "--help missing usage"
 echo "$help" | grep -q 'uninstall' && ok "--help lists uninstall" || no "--help missing uninstall"
+echo "$help" | grep -q -- '--no-binary.*devrites-engine' && ok "--help lists --no-binary engine skip" || no "--help missing --no-binary"
+echo "$help" | grep -q -- '--no-rules.*Deprecated no-op' && ok "--help marks --no-rules deprecated" || no "--help does not mark --no-rules deprecated"
+echo "$help" | grep -q -- '--rules-only.*Deprecated no-op' && ok "--help marks --rules-only deprecated" || no "--help does not mark --rules-only deprecated"
+echo "$help" | grep -q -- '--no-rules.*Skip the engineering rules' && no "--help still claims --no-rules skips rules" || ok "--help does not claim --no-rules skips rules"
+echo "$help" | grep -q -- '--rules-only.*Install only the engineering rules' && no "--help still claims --rules-only installs only rules" || ok "--help does not claim --rules-only is selective"
+
+FAKE_ENGINE="$T/devrites-engine"
+cat > "$FAKE_ENGINE" <<'SH'
+#!/usr/bin/env bash
+printf 'engine:%s\n' "$*"
+SH
+chmod +x "$FAKE_ENGINE"
+proxy_out="$(DEVRITES_ENGINE_CLI="$FAKE_ENGINE" node "$CLI" preamble alpha 2>/dev/null)"
+[ "$proxy_out" = "engine:preamble alpha" ] && ok "engine subcommands proxy to devrites-engine" || no "engine proxy failed: $proxy_out"
+archive_out="$(DEVRITES_ENGINE_CLI="$FAKE_ENGINE" node "$CLI" archive-search alpha 2>/dev/null)"
+[ "$archive_out" = "engine:archive-search alpha" ] && ok "archive-search proxies to devrites-engine" || no "archive-search proxy failed: $archive_out"
+
+missing_engine_commands="$(node -e "
+const fs = require('fs');
+const cli = fs.readFileSync('$CLI', 'utf8');
+const engine = fs.readFileSync('$ROOT/engine/main.go', 'utf8');
+const allowlist = new Set((cli.match(/const ENGINE_COMMANDS = new Set\\(\\[([\\s\\S]*?)\\]\\);/)?.[1] || '').match(/'([^']+)'/g)?.map(s => s.slice(1, -1)) || []);
+const runSwitch = engine.slice(engine.indexOf('func run('), engine.indexOf('func cmdStatus('));
+const commands = [...runSwitch.matchAll(/case \"([^\"]+)\":/g)]
+  .flatMap(m => m[1].split(/\",\\s*\"/))
+  .filter(cmd => !cmd.startsWith('-') && cmd !== 'help');
+const missing = [...new Set(commands)].filter(cmd => !allowlist.has(cmd));
+process.stdout.write(missing.join('\\n'));
+")"
+if [ -z "$missing_engine_commands" ]; then
+  ok "npm shim proxies every engine command"
+else
+  no "npm shim missing engine command proxies: $missing_engine_commands"
+fi
 
 # 3) default (bare) dry-run writes nothing
 node "$CLI" --target "$T" --dry-run >/dev/null 2>&1 || no "dry-run exited non-zero"
@@ -48,13 +83,13 @@ for f in \
   ".agents/skills/rite/SKILL.md" \
   ".claude/skills/rite-define/SKILL.md" \
   ".agents/skills/rite-define/SKILL.md" \
-  ".agents/devrites/rules/security.md" \
+  ".agents/skills/devrites-lib/reference/standards/security.md" \
   ".claude/agents/devrites-code-reviewer.md" \
   ".codex/agents/devrites-code-reviewer.toml" \
   ".codex/config.toml" \
   ".codex/hooks.json" \
   ".codex/mcp/devrites-mcp.mjs" \
-  ".claude/rules/security.md" \
+  ".claude/skills/devrites-lib/reference/standards/security.md" \
   "AGENTS.md" \
   ".devrites/README.md" \
   ".devrites/ACTIVE" ; do

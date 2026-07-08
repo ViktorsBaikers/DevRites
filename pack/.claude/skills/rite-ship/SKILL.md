@@ -13,8 +13,8 @@ first**; if none, tell the user to run `/rite-spec <feature>`.
 
 Refuses to ship unless `seal.md` records a **GO** verdict.
 
-## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. Then pull on demand:
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Then pull on demand:
 - `git-workflow.md` — Conventional Commits, atomic commits, the never-commit list.
 - `afk-hitl.md` — type-GO is the irreversible-action gate.
 
@@ -22,8 +22,8 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 - **Seal GO is a precondition.** No GO in `seal.md` → stop, point at `/rite-seal`.
 - **Evidence must be fresh.** If any file in `touched-files.md` changed after
   `evidence.md` was written, the proof is stale → stop, point at `/rite-prove`. Enforced
-  deterministically by `evidence-fresh.sh` in step 1 (exit 3 = STALE), not by eyeballing
-  mtimes (see `.claude/rules/development-workflow.md`).
+  deterministically by `devrites-engine evidence-fresh` in step 1 (exit 3 = STALE), not by eyeballing
+  mtimes (see `.claude/skills/devrites-lib/reference/standards/development-workflow.md`).
 - **type-GO before anything irreversible.** Render the prompt verbatim and wait for
   the literal `GO`. Last safety net — render it every time, even under auto-trigger.
 - **Never delete the audit trail.** Closing *archives* the workspace; it never erases
@@ -34,20 +34,14 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
    Then read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`, and
    `design-brief.md` (if the feature is UI — the design-memory rollup in step 2a reads it).
    Confirm the verdict is **GO**, then run the deterministic evidence-freshness gate rather than
    eyeballing mtimes (mirrors `/rite-seal`):
    ```bash
-   E=.claude/skills/devrites-lib/scripts/evidence-fresh.sh
-   [ -f "$E" ] || E="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/evidence-fresh.sh"
-   [ -f "$E" ] || E=pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh
-   [ -f "$E" ] && { bash "$E"; echo "evidence-fresh rc=$?"; } || echo "(evidence-fresh gate unavailable — compare mtimes by hand)"
+   devrites-engine evidence-fresh; echo "evidence-fresh rc=$?"
    ```
    **Exit 3 → STALE proof: STOP**, point at `/rite-prove` (a polish/review edit made after
    `/rite-prove` invalidates the proof). Not GO → stop with the single resume command.
@@ -55,10 +49,7 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    a stale `ACTIVE` or corrupt workspace here risks shipping or closing the wrong feature.
    Advisory: surface issues, don't block.
    ```bash
-   D=.claude/skills/devrites-lib/scripts/doctor.sh
-   [ -f "$D" ] || D="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/doctor.sh"
-   [ -f "$D" ] || D=pack/.claude/skills/devrites-lib/scripts/doctor.sh
-   [ -f "$D" ] && { bash "$D"; echo "doctor rc=$?"; } || true
+   devrites-engine doctor; echo "doctor rc=$?"
    ```
    If it flags the active feature, confirm you're shipping the intended slug before proceeding.
 2. Build the git plan from `git-workflow.md` + the project's own convention: the
@@ -71,6 +62,17 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    present the option set (default **skip**; persisting beyond feature scope is the user's
    call), and on yes append `DESIGN.md` to `touched-files.md` so it ships *in this commit*.
    Skip silently when there's no UI. Record the outcome in `ship.md`.
+2b. **Capability ledger sync.** Fold this feature's *proven* behavior into the living
+   `.devrites/specs/<capability>/spec.md` ledger so the next feature starts from the contract
+   instead of re-deriving it from code ([reference/ledger.md](reference/ledger.md)). Preview first —
+   `devrites-engine ledger diff .devrites/work/<slug>` — then **opt-in, confirmed** (default
+   **sync**; a shipped feature's proven behavior belongs in the ledger — the escape hatch is skip,
+   for an internal-only change with no capability contract). On yes: run
+   `devrites-engine ledger sync .devrites/work/<slug>`, append each written
+   `.devrites/specs/<capability>/spec.md` to `touched-files.md` so it ships *in this commit*, and
+   record the synced capabilities in `ship.md`. Skip silently when the feature declares no
+   requirements (a pure refactor / chore). The fold is gated on the GO + evidence-fresh confirmed
+   in step 1, so the ledger only ever records proven truth.
 3. **Render the type-GO prompt** ([reference/git-ship.md](reference/git-ship.md)) and
    wait. Only the literal `GO` proceeds; anything else cancels — record the cancel in
    `ship.md` and stop (do not retry without the user asking).
@@ -79,7 +81,10 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    branch, and tag/PR URL.
 4a. **When opening a PR, render a structured body** — not just the commit message:
    **Summary** (what shipped + acceptance n/total) · **Risk & rollback** (the migration /
-   destructive / auth touches + how to revert, from `seal.md`'s risk scan) · **What to scrutinize**
+   destructive / auth touches + how to revert, from `seal.md`'s risk scan — when this ship drives a
+   *live staged rollout* the agent owns, follow [reference/rollout.md](reference/rollout.md) for the
+   rollout thresholds, rollback-time budgets, and first-hour runbook; skip it when CI deploys on merge)
+   · **What to scrutinize**
    (point reviewers at the highest-blast-radius hunks) · **Evidence** (a condensed `evidence.md` +
    the seal's reconciled reviewer-verdict digest, linking the full `.devrites/archive/<slug>/`
    bundle). **Delete any N/A section** — an empty Risk block is noise.
@@ -94,7 +99,7 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    follow-ups.
 6. **Close the task** ([reference/close-out.md](reference/close-out.md)): set
    `state.md` phase `done`, then run
-   `bash .claude/skills/devrites-lib/scripts/close-out.sh <slug>` to archive
+   `devrites-engine close-out <slug>` to archive
    `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` and clear `.devrites/ACTIVE`.
    Every `.md` is preserved in the archive.
 6a. **Cross-feature retro (automatic, cadence-gated, advisory).** The just-shipped feature is now in
@@ -103,10 +108,7 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    silent unless a finding/drift class recurs across **>=2 shipped features** with new signal since the
    last review (so it never fires on an early or one-off ship):
    ```bash
-   L=.claude/skills/devrites-lib/scripts/learnings.sh
-   [ -f "$L" ] || L="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/learnings.sh"
-   [ -f "$L" ] || L=pack/.claude/skills/devrites-lib/scripts/learnings.sh
-   [ -f "$L" ] && bash "$L" nudge || true
+   devrites-engine learnings nudge
    ```
    **If the nudge emits** (a recurring pattern crossed the threshold), dispatch the read-only
    `devrites-retrospector` (`.claude/agents/`) over `.devrites/archive/` for the cross-feature
@@ -125,17 +127,18 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 
 ## Output
 
-**Footer first** — render the flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`); at ship it reads `ship ✓` across the spine. Keep the fact lines below it terse (`key value · key value`). Then:
+**Progress first** — run `devrites-engine progress`, then use the Shipped typed template from
+the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Final shipped shape:
 ```
 Shipped: <feature>
-Commit:  <sha> on <branch>    Tag/PR: <ref | none>
-Acceptance: <n/total> proven
-Archived: .devrites/archive/<slug>/    ·    ACTIVE cleared
-ship.md:  .devrites/archive/<slug>/ship.md
-Retro:    <n graduation candidates drafted → .devrites/retro.md · promote with /rite-learn | quiet (no cross-feature signal yet)>
+Commit: <sha> on <branch>
+Tag/PR: <value | none>
+Acceptance: <n>/<total> proven
+Archived: .devrites/archive/<slug>/ · ACTIVE cleared
+Record: .devrites/archive/<slug>/ship.md
+↻ Hygiene: /clear
 ```
 If the user declined type-GO: state that nothing shipped, the seal still reads GO, and
 the resume command (`/rite-ship`).
-
-End with `↻ Hygiene: /clear` — the feature is closed; start the next with
-`/rite-spec <feature>`. See `.claude/rules/context-hygiene.md`.

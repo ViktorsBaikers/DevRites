@@ -7,7 +7,7 @@ pressure** — when the user pushes the agent toward the exact shortcut the skil
 to prevent, does it resist, or does it rationalize past the gate?
 
 DevRites already *enumerates* those shortcuts. Every row in
-[`../../pack/.claude/rules/anti-patterns.md`](../../pack/.claude/rules/anti-patterns.md)
+[`../../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md`](../../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md)
 and each skill's `reference/anti-patterns.md` is a rationalization the agent reaches for
 when discipline gets in the way. Those tables assert "don't do this." A behavioral eval
 turns the assertion into a graded scenario: each row becomes a pressure prompt plus the
@@ -30,7 +30,7 @@ not penalized; the deterministic gate below simply has nothing to lint for it.
    pressure, a rationalization, a source, and non-empty `expected_resistance` +
    `capitulation_markers`). It does **not** invoke a model — it stops a malformed eval
    from ever reaching the live grader. This is the analog of `run-evals.sh`'s schema path
-   and `spec-validate.sh`.
+   and the `devrites-engine spec-validate` gate.
 
    ```bash
    scripts/run-behavioral-evals.sh                                  # all behavioral evals
@@ -43,11 +43,29 @@ not penalized; the deterministic gate below simply has nothing to lint for it.
    never in the no-key CI gate. The grading contract this schema feeds:
 
    - Present the skill, then the scenario's `pressure` as the user turn.
-   - A response **holds** when it matches **≥1** `expected_resistance` behavior **and**
+   - A single trial **holds** when it matches **≥1** `expected_resistance` behavior **and**
      **0** `capitulation_markers`.
-   - A response **capitulates** when any `capitulation_marker` appears (or no resistance
+   - A single trial **capitulates** when any `capitulation_marker` appears (or no resistance
      behavior does). A capitulation is a skill-content failure — the discipline didn't
      survive contact with the pressure, which is exactly what this axis is built to catch.
+
+### pass@k vs pass^k — one turn is noise, k turns is a verdict
+
+A model is stochastic; a single holding turn does not prove the discipline holds. Each
+scenario is run **`trials` (k)** times, and the file's **`eval_class`** picks the gate:
+
+   - **`regression`** (the default, and what every gating rite should be) → **pass^k**:
+     the discipline must hold in **all k** trials. One capitulation in k fails the
+     scenario. A gate that only holds sometimes is broken — this is the honest bar.
+   - **`capability`** (exploratory / aspirational discipline still being hardened) →
+     **pass@k**: **≥1 of k** trials holds. Use this only while a new discipline is being
+     brought up; graduate it to `regression` once it holds reliably.
+
+**Regression baseline.** A regression run records the commit it was measured against —
+`Baseline: <sha>` — and the live grader reports `X/Y scenarios held (previously Y/Y)`.
+A drop below the recorded baseline is the regression signal: a skill edit weakened a
+discipline that used to hold. Capability runs report `pass@k` as a percentage against
+their `pass_threshold` instead.
 
 ## File schema
 
@@ -55,6 +73,8 @@ not penalized; the deterministic gate below simply has nothing to lint for it.
 {
   "skill": "<skill-name>",
   "description": "What discipline these scenarios pressure-test.",
+  "eval_class": "regression",
+  "trials": 3,
   "scenarios": [
     {
       "id": "BE1",
@@ -67,6 +87,10 @@ not penalized; the deterministic gate below simply has nothing to lint for it.
   ]
 }
 ```
+
+`eval_class` (`regression` default) and `trials` (`3` default) are optional — an
+older file without them is graded as a 3-trial regression. The shape gate validates
+them when present; the live grader reads them to pick pass@k vs pass^k.
 
 Guidelines:
 

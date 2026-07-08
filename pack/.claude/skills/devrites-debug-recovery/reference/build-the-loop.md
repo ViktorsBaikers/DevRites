@@ -36,6 +36,17 @@ Goal is **higher reproduction rate**, not a clean repro. Loop the trigger 100×,
 parallelise, add stress, narrow timing windows, inject sleeps. A 50%-flake bug
 is debuggable; 1% is not — raise the rate until it's debuggable.
 
+**Classify the non-determinism first — the class picks the tactic:**
+- **Timing** (race, ordering, async interleave) — widen the window: inject artificial delays at
+  the suspect `await`, run under load/parallelism, pin the scheduler. Making it *more* flaky on
+  purpose is progress.
+- **Environment** (green here, red in CI/prod) — diff the environments: dependency versions, env
+  vars, locale, timezone, filesystem case-sensitivity, resource limits.
+- **State** (fails only after certain prior runs) — hunt a leaked global, singleton, cache, or DB
+  row; run the trigger in isolation, then again after the suspect predecessor, and compare.
+- **Truly random** (no pattern survives) — add defensive logging keyed on the failure signature
+  and alert on it in the wild. You're gathering repros, not fixing yet — don't guess a fix blind.
+
 ## When you genuinely cannot build a loop
 
 **STOP and say so explicitly.** List what you tried. Ask the user for:

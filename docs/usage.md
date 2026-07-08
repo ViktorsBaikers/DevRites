@@ -8,29 +8,36 @@ none exists it tells you to run `/rite-spec <feature>`.
 - **Full command reference** → [`command-map.md`](command-map.md)
 - **Flow diagrams** → [`flow.md`](flow.md)
 - **Architecture rationale** → [`architecture.md`](architecture.md)
+- **Workspace schema** → [`engine/workspace-schema.md`](engine/workspace-schema.md)
 
 ## The workspace
 
 `/rite-spec` creates `.devrites/work/<slug>/` and writes the spec;
-`/rite-define` adds the plan and tasks. All human-readable Markdown that
+`/rite-define` adds architecture, the plan, tasks, and traceability. All human-readable Markdown that
 survives compaction and new sessions:
 
 | File | Created by | Holds |
 |---|---|---|
+| `README.md` / `index.md` / `feature.md` | `/rite-spec` | compact workspace map: phase, status, next action, artifact map, read-next table, gates |
 | `brief.md` | `/rite-spec` | one-line objective + definition of done |
-| `spec.md` | `/rite-spec` | what to build + why, placement, acceptance, gaps/decisions |
+| `spec.md` | `/rite-spec` | product WHAT/WHY, requirements, acceptance, boundaries, measurable success |
+| `architecture.md` | `/rite-define` | owning module/layer, integration points, data/API/events, dependencies, risks |
+| `flows.md` | `/rite-spec` or `/rite-define` | optional Mermaid diagrams when sequence/state/data flow clarifies behavior |
 | `references/` + `references.md` | `/rite-spec` | saved design refs — screenshots, Figma, video, links |
 | `strategy.md` | `/rite-temper` | strategic spec review (optional): scope mode, pre-mortem, dimension scores |
 | `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback |
-| `tasks.md` | `/rite-define` | ordered vertical slices, each tagged `Mode: AFK \| HITL` + `Gate` / `SLA` / `Checkpoint` when HITL |
+| `tasks.md` | `/rite-define` | ordered `SLICE-###` vertical slices, each mapped to `AC-###` and tagged `Mode: AFK \| HITL` + gate fields |
+| `traceability.md` | `/rite-define` | AC/REQ → slices → tests/proofs → evidence → touched files matrix |
 | `eng-review.md` | `/rite-vet` | engineering plan review (optional): scope challenge, axis findings, failure modes, parallelization |
 | `test-plan.md` | `/rite-vet` | build-readable coverage target: coverage diagram, per-gap test requirements, acceptance→test map (read by `/rite-build` + `/rite-prove`) |
-| `state.md` | every phase | phase, status, active slice + slice mode, risk, next step (the cursor); plus `Awaiting human` block when paused (run mode is derived from `.devrites/AFK`, not stored here) |
+| `status.md` | every phase | canonical status checkpoint |
+| `state.md` | every phase | working ledger: phase, active slice + slice mode, risk, next step; plus `Awaiting human` block when paused (run mode is derived from `.devrites/AFK`, not stored here) |
 | `questions.md` | every phase | append-only Q&A — qid, slice, gate, status (`open` / `answered` / `dropped`), proposed answer, raised/answered timestamps |
 | `decisions.md` / `assumptions.md` | every phase | running logs |
 | `drift.md` | Spec Drift Guard | drift events + resolutions |
 | `touched-files.md` | `/rite-build` | what files this feature touched |
-| `evidence.md` | `/rite-build`, `/rite-prove` | recorded commands + output |
+| `evidence.md` | `/rite-build`, `/rite-prove` | canonical `EVID-###` command/action proof |
+| `proof.md` | `/rite-build`, `/rite-prove` | transition alias for `evidence.md` |
 | `browser-evidence.md` | `/rite-prove`, `/rite-polish` (UI) | screenshots, console, network, viewport runs |
 | `design-brief.md` | `devrites-frontend-craft` | shape, states, design references match |
 | `polish-report.md` | `/rite-polish` | Phase 1-4 findings + fixes |
@@ -43,11 +50,17 @@ When `/rite-ship` closes the task it **archives** the whole workspace —
 preserved, never deleted) — and clears `.devrites/ACTIVE`. The audit trail lives
 on under `.devrites/archive/<slug>/`.
 
+Backward compatibility: older `.devrites/features/<slug>/` workspaces remain
+readable; migration should add the canonical `.devrites/work` shape without
+deleting the old files. `feature.md`/`index.md` can still act as the workspace
+map, and `proof.md` can still act as the proof alias for `evidence.md`.
+
 Project-root sentinel (outside the workspace):
 
 | File | Created by | Holds |
 |---|---|---|
-| `.devrites/AFK` | you (presence = AFK mode active) | optional YAML: `max_slices`, `notify`, `allow_gates`. Empty file = AFK with defaults. See [`pack/.claude/rules/afk-hitl.md`](../pack/.claude/rules/afk-hitl.md). |
+| `.devrites/AFK` | you (presence = AFK mode active) | optional YAML: `max_slices`, `notify`, `allow_gates`. Empty file = AFK with defaults. See [`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md). |
+| `.devrites/CHECKPOINT` | you or `/rite-autocomplete` (presence = checkpoint mode) | empty sentinel. When set, `/rite-build` commits each proven slice local-only as `WIP(<slug>)` so a crash mid-build loses neither source nor reasoning; `/rite-ship` collapses the WIP run into the one feature commit. See [`pack/.claude/skills/rite-build/reference/checkpoint.md`](../pack/.claude/skills/rite-build/reference/checkpoint.md). |
 
 The shape of this directory is also documented in
 [`flow.md` § Workspace state model](flow.md#7-workspace-state-model).
@@ -209,7 +222,7 @@ Run before `/clear` if leaving for > a few hours.
   → reads tasks.md slice 03; Mode: HITL, Gate: blocking
   → STOPS before writing any code:
 
-    Slice 03 — list endpoint is HITL (blocking, SLA 15m).
+    SLICE-003 — list endpoint is HITL (blocking, SLA 15m).
     Checkpoint: Composite (user_id, created_at) index, or two single-col indexes?
     Proposed approach: composite — single read path, both columns used together
     in the most common filter; downside is rebuild cost on bulk updates.
@@ -266,7 +279,7 @@ EOF
 The loop refuses to mark a slice `built` if tests / types / lint go red — it
 writes a blocking question and stops regardless of `allow_gates`. AFK never
 silently accepts irreversible risk; see
-[`pack/.claude/rules/afk-hitl.md`](../pack/.claude/rules/afk-hitl.md) for the
+[`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md) for the
 full list.
 
 ## 11) Full unattended lifecycle — `/rite-autocomplete`

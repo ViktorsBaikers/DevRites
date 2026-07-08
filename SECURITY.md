@@ -42,7 +42,7 @@ shell scripts, a bash installer, and a thin `npx` CLI wrapper (`bin/devrites.mjs
 that shells out to that installer. It ships **no binary and no network service**. The only server is an
 **optional, opt-in MCP stdio server** (`mcp/devrites-mcp.mjs`) that speaks
 JSON-RPC over stdin/stdout (no port, no socket), is not installed or registered
-by default, and only shells out to the local `devrites` CLI — read/gate ops over
+by default, and only shells out to the local `devrites-engine` binary — read/gate ops over
 `.devrites/` plus a single `ACTIVE`-pointer write. The attack surface is the
 content of the skill files plus the installer.
 
@@ -66,23 +66,23 @@ file out of one class with `<!-- pack-scan-ignore-file: injection -->`.
 Suppressions live in the file, so every exception is visible in the diff and
 reviewable; never suppress a hidden-unicode finding you can't explain.
 
-### State loading (project-local script, no `!` injection)
+### State loading (engine subcommands, no `!` injection)
 
 `/rite`, `/rite-status`, and every workspace-operating skill load state by running
-a **read-only shell script via the `Bash` tool** — *not* Claude Code's
+a **read-only `devrites-engine` subcommand via the `Bash` tool** — *not* Claude Code's
 preprocessing-only `` !`<command>` `` dynamic-context injection, which DevRites
 **removed** for cross-harness portability:
 
 ```bash
-P=.claude/skills/devrites-lib/scripts/preamble.sh
-[ -f "$P" ] && bash "$P" || echo "(unavailable — read state.md directly)"
+command -v devrites-engine >/dev/null 2>&1 && devrites-engine preamble || echo "(unavailable — read state.md directly)"
 ```
 
-`preamble.sh` is a project-local read of DevRites' own `.devrites/` state: no user
-input is concatenated into a command, no network access, no write side effects.
-The gate scripts (`readiness.sh`, `evidence-fresh.sh`, `check-acceptance.sh`) are
-likewise read-only; only the explicit mutators (`resolve.sh`, `tick-afk.sh`,
-`close-out.sh`, and the CLI's `use`) write, and only under `.devrites/`.
+`devrites-engine preamble` is a project-local read of DevRites' own `.devrites/`
+state: no user input is concatenated into a command, no network access, no write
+side effects. The gate subcommands (`build-readiness`, `evidence-fresh`,
+`check-acceptance`) are likewise read-only; only explicit mutators (`resolve`,
+`tick-afk`, `close-out`, and the MCP `use` helper) write, and only under
+`.devrites/`.
 
 If your environment disallows skill-initiated shell execution, the scripts simply
 don't run — each skill degrades gracefully to reading `state.md` directly (the
@@ -148,28 +148,30 @@ The first three lines surface a confirmation prompt before any irreversible
 git action; the last disables the `/rite` and `/rite-status` dynamic-state
 read described above (DevRites still works).
 
-### Hooks (auto-approve scope + orientation)
+### Hooks (approval, orientation, and local guards)
 
-DevRites ships two `Bash`-matched hooks (`pack/.claude/hooks/`, wired via the
-plugin's `hooks.json` or a seeded `.claude/settings.json`):
+DevRites ships JSON-configured hooks (wired via the plugin's `hooks.json` or a
+seeded `.claude/settings.json`) that call `devrites-engine` behind an inline
+fail-open guard:
 
-- **`devrites-allow.sh` (PreToolUse)** — auto-approves *only* the five **read-only**
-  helper scripts (`preamble.sh`, `progress.sh`, `readiness.sh`, `evidence-fresh.sh`,
-  `check-acceptance.sh`) so they stop prompting on every skill run. It is **fail-open**:
-  it never denies, parses the command, and emits an `allow` *only* when the command runs
-  one of those five scripts **and** contains no dangerous/exfiltration tokens
-  (`rm`, `>`/redirects, `curl`/`wget`, `sudo`, `chmod`, `$(...)`/backticks, `eval`,
-  package managers, `git push/commit/reset`, …). Mutating scripts (`resolve.sh`,
-  `tick-afk.sh`, `close-out.sh`) are **deliberately excluded** and still prompt. On any
-  parse failure or non-match it emits nothing — Claude Code's normal permission flow is
-  untouched. It widens approval for read-only orientation; it never widens it for anything
-  that writes, deletes, or reaches the network.
-- **`devrites-orient.sh` (SessionStart)** — read-only; injects the active feature's
-  `preamble.sh` digest as session context, and stays silent when no `.devrites/` workspace
-  is active. No tool approval, no writes.
+- **`allow` (PreToolUse/Bash)** — auto-approves *only* the read-only engine
+  orientation/gate subcommands (`preamble`, `progress`, `readiness`,
+  `evidence-fresh`, `check-acceptance`) so they stop prompting on every skill run.
+  It never denies, and it emits `allow` only when the parsed command is one of those
+  subcommands and contains no dangerous/exfiltration tokens (`rm`, redirects,
+  `curl`/`wget`, `sudo`, `chmod`, command substitution, `eval`, package managers,
+  `git push/commit/reset`, etc.). Mutating subcommands (`resolve`, `tick-afk`,
+  `close-out`) are deliberately excluded and still prompt.
+- **Read-only context hooks** — `orient`, `cursor`, and `subagent-orient` inject
+  active-workspace context and stay silent when no `.devrites/` workspace is active.
+- **Local guard hooks** — `a1-guard`, `redwatch`, `stop-gate`, `source-cache-*`,
+  and `refresh-indexes` run through the engine and are fail-open by default. New
+  blocking guards are observe-first unless explicitly enforced with the documented
+  `DEVRITES_*` environment switches.
 
-Delete `.claude/settings.json` (or disable the plugin) to remove both. The seeded
-settings file is never overwritten on update, so your own permission rules are safe.
+Delete `.claude/settings.json` (or disable the plugin) to remove Claude hooks. The
+seeded settings file is never overwritten on update, so your own permission rules are
+safe.
 
 ### Third-party trust
 

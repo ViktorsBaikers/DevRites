@@ -4,14 +4,17 @@ How to turn a spec into ordered, vertical slices in `tasks.md`.
 
 ## Each slice is one task, in this format
 ```markdown
-## Slice N: <name>
+## SLICE-001 <name>
 Goal:                       # single observable capability
+Satisfies: AC-001[, AC-002] # reverse traceability to spec.md
 Acceptance criteria:        # binary, evidence-backed (see ../../rite-spec/reference/acceptance-criteria.md)
 Files likely touched:       # real paths from codebase inspection
-Tests to write/run:         # the command(s) that prove it
+Tests/proof:                # command(s) or EVID-### that prove it
 Browser proof required:     # yes/no (yes if UI — see ../../rite-build/reference/frontend-trigger.md)
 Frontend craft required:    # yes/no
-Dependencies:               # slice numbers that must land first
+Mode: AFK | HITL
+Gate: advisory | validating | blocking | escalating
+Dependencies:               # SLICE-### IDs that must land first
 Rollback notes:             # how to back this slice out
 Evidence required:          # what /rite-prove must capture
 ```
@@ -23,7 +26,9 @@ Evidence required:          # what /rite-prove must capture
    cheap to change).
 4. Mark which slices touch UI (→ frontend craft + browser proof) and which cross a
    module/service boundary (→ `devrites-api-interface`, `devrites-doubt`).
-5. Sanity check: every acceptance criterion in `spec.md` maps to ≥1 slice; no slice has
+5. Write or update `traceability.md` so every `AC-###` maps to ≥1 `SLICE-###`, a
+   planned proof, evidence status, and likely touched files.
+6. Sanity check: every acceptance criterion in `spec.md` maps to ≥1 slice; no slice has
    an unowned criterion.
 
 ## Keep it honest

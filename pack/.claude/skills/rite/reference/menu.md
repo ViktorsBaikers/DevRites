@@ -14,6 +14,7 @@ what each command does or how phases connect.
 | Vet | `/rite-vet` | _Optional, before build._ Engineering review of the plan — scope · architecture · tests · perf; hardens the plan. Best on big/risky features; mandatory in `/rite-autocomplete`. |
 | Re-plan | `/rite-plan` | The active plan is too big, wrong, stale, ambiguous, or blocked. |
 | Build | `/rite-build` | Implement the next single vertical slice. Stops after one slice. |
+| Converge | `/rite-converge` | _Recovery._ Code drifted from / falls short of intent (resumed cold, adopted, stalled build) — assess live code vs spec/plan/tasks and append the remaining work as new slices for `/rite-build`. |
 | Prove | `/rite-prove` | Prove the current scope: tests, build, runtime, browser evidence. |
 | Polish | `/rite-polish` | Code polish always; UI normalize + ship-quality polish if UI is in scope. Modes: `bolder/quieter/distill/harden/normalize-only`. |
 | Review | `/rite-review` | Feature-scoped review before sealing. |
@@ -31,6 +32,8 @@ what each command does or how phases connect.
   `/rite-polish` (always: code + UI if UI) → `/rite-review` → `/rite-seal` → `/rite-ship`.
 - **Existing codebase**: `/rite-adopt` (onboard → spec.md + conventions) → continue at `/rite-define`.
 - **Drift mid-build**: stop → drift question → `/rite-plan` (repair) → resume build.
+- **Resumed / adopted / stalled**: `/rite-converge` (assess live code vs intent → append the
+  remaining slices) → `/rite-build` ×N → continue at `/rite-prove`.
 
 ## Rules this menu obeys
 

@@ -119,7 +119,7 @@ defaults and the always-pause rules:
 
 \* but **never** for destructive migrations, auth/authz boundary changes, public API
 breaks, or red tests/types/lint — those always pause. See
-[`.claude/rules/afk-hitl.md`](../../../rules/afk-hitl.md) for the irreversible-risk
+[`.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) for the irreversible-risk
 list.
 
 `escalating` is never in `allow_gates` — specialist routing is not something AFK can
@@ -139,12 +139,12 @@ shortcut.
 ## Field shape in `tasks.md`
 
 ```markdown
-## Slice 03: list endpoint
+## SLICE-003: list endpoint
 Mode: HITL
 Gate: blocking
 SLA: 15m
 Checkpoint: Confirm (user_id, created_at) composite index choice vs two single-col indexes.
-Blocked by: Slice 02
+Blocked by: SLICE-002
 ...
 ```
 

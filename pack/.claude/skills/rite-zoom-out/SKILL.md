@@ -11,7 +11,7 @@ When the agent (or the user) is staring at unfamiliar code without a working men
 model of how it fits the larger system. Stops the "open more files" reflex by returning
 a single, structured map instead.
 
-Read `.claude/rules/core.md` first — chiefly its vocabulary / existing-conventions
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first — chiefly its vocabulary / existing-conventions
 disciplines, which keep the map in the project's own language. The other rule files load
 on demand.
 
@@ -37,7 +37,7 @@ If the project has them — `codebase-memory-mcp` (`get_architecture` / `search_
 cross-checked with `codegraph` (`.codegraph/`) and `graphify` (`graphify-out/`) — use them. For
 codegraph, `codegraph_context` + one `codegraph_explore` return the map in two calls — vastly
 cheaper than a file-walk and more accurate for callers/callees. Fall back to standard methods
-(LSP, then `Grep` + `Read`) when no index is available. See `.claude/rules/tooling.md`.
+(LSP, then `Grep` + `Read`) when no index is available. See `.claude/skills/devrites-lib/reference/standards/tooling.md`.
 
 ## Vocabulary discipline
 
@@ -57,20 +57,18 @@ end; don't try to fix it here.
   out of DevRites' feature-scoped remit.
 
 ## Output shape
+Reply-contract exception: read-only mapping utility. It skips `devrites-engine progress` when
+there is no active workspace, but follows
+[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
 
 ```
-Area: <one line, project's vocabulary>
-Modules:
-  - path/x.ts — <purpose>
-  - path/y.ts — <purpose>
-Callers (in):
-  - <module> — <how it calls in>
-Calls (out):
-  - <module> — <what it calls for>
-Decisions touching it:
-  - ADR-NNNN / decisions.md entry — <one-line claim>
-Smallest sensible change-scope: <where a fix would land>
-FYI (optional): <fuzzy term / suspected drift / open question>
+Done: mapped <area> in the project's vocabulary.
+Changed: workspace only
+Evidence: modules <n>; callers <n>; callees <n>; decisions <n>
+Open: <none | fuzzy term | suspected drift | open question>
+Next: <single recommended command>
+Record: <decision/ADR path | not applicable>
+↻ Hygiene: /clear if this was only orientation; /rite-handoff if it informs active work
 ```
 
 Print the path of any decisions/ADR files referenced so the user can open them.

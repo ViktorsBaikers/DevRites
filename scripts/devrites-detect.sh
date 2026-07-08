@@ -56,7 +56,7 @@ for f in "${FILES[@]}"; do
       case "$f" in
         REVIEW.md|CHANGELOG.md|res.md)                                 continue ;;
         .review-notes/*|*/.review-notes/*)                             continue ;;
-        pack/.claude/rules/*|*/pack/.claude/rules/*)                   continue ;;
+        pack/.claude/skills/devrites-lib/reference/standards/*|*/pack/.claude/skills/devrites-lib/reference/standards/*)                   continue ;;
         pack/.claude/skills/*|*/pack/.claude/skills/*)                 continue ;;
       esac
       SCAN_MD+=("$f")

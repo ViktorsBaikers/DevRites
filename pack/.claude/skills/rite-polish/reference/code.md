@@ -3,7 +3,7 @@
 Loaded from `/rite-polish` every run, regardless of UI scope. Two sub-phases:
 code polish (Phase 1) and, when backend is touched, backend polish (Phase 2).
 
-## Rules consulted (read on demand from `.claude/rules/`)
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 
 - `coding-style.md` — Phase 1 (simplify, dead code, naming, comments).
 - `patterns.md` — Phase 1 simplification — avoid over-engineering.
@@ -37,7 +37,10 @@ feature only.
   feature added.
 - **Chesterton's Fence** — understand *why* something exists before removing it.
   If you can't explain a check, branch, or wrapper, you may not remove it —
-  many "useless" lines guard a real edge case.
+  many "useless" lines guard a real edge case. A `devrites:keep` / `simplify-ignore`
+  marker comment **is** an author's fence, made explicit: read it and leave the marked
+  block exactly as-is — never simplify, reflow, or "tidy" it. Honor the marker in place;
+  don't rewrite the file around it.
 - **Behavior preservation** — observable behavior stays identical; tests stay
   green. If behavior would change, it's not simplification — it needs its own
   acceptance + proof (and maybe drift handling). Prefer transformations with
@@ -50,11 +53,19 @@ feature only.
   suspected dead code **outside** this feature without asking; re-prove after
   simplifying (a simplification that breaks a test wasn't behavior-preserving);
   cleverness that's shorter but harder to read is not simpler.
+- **Rule of 500 — mechanize the big ones.** A simplification touching more than ~500 lines
+  (a rename, an API-shape change, a repeated idiom swap) is a job for a codemod / AST transform /
+  `sed`, not hand-edits. Hand-editing at that scale is where transcription bugs and inconsistent
+  application creep in; a scripted transform applies once, uniformly, and is reviewable as one diff.
 - **Cleanup**: remove TODOs, `console.log`s, commented-out code, unused
   imports/vars; tighten naming and comments in code this feature touched.
-- **Done when** — every anti-slop charter item in the touched code is cleared
-  (the AI-tells do-not list — [anti-ai-slop.md](anti-ai-slop.md) Code section,
-  `coding-style.md`) **and** the feature's targeted tests + build re-run green.
+- **The comprehension test (the completion criterion).** Every change must pass one question:
+  *would a new team member understand this faster than the original?* If not, it's churn, not
+  simplification — revert it. Fewer lines that read slower fail this test; a clearer five lines
+  beat a cryptic one.
+- **Done when** — every touched change passes the comprehension test, every anti-slop charter
+  item in the touched code is cleared (the AI-tells do-not list — [anti-ai-slop.md](anti-ai-slop.md)
+  Code section, `coding-style.md`) **and** the feature's targeted tests + build re-run green.
   An open charter item or a red check means Phase 1 isn't done.
 
 ## Phase 2 — Backend polish *(if BE touched)*

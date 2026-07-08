@@ -36,7 +36,7 @@ s = pathlib.Path(sys.argv[1]).read_text() if pathlib.Path(sys.argv[1]).exists() 
 checks = {
     "DevRites guidance visible": "DevRites" in s,
     "DevRites AGENTS block visible": "BEGIN DEVRITES CODEX" in s,
-    "DevRites rules mirror path visible": ".agents/devrites/rules/core.md" in s,
+    "DevRites rules mirror path visible": ".agents/skills/devrites-lib/reference/standards/core.md" in s,
     "DevRites Codex agents path visible": ".codex/agents" in s,
 }
 for label, passed in checks.items():
@@ -60,6 +60,30 @@ else
   no "DevRites MCP server did not initialize/list tools"
   sed -n '1,80p' "$T/mcp.err"
   sed -n '1,80p' "$T/mcp.jsonl"
+fi
+
+FAKEBIN="$T/fakebin"
+mkdir -p "$FAKEBIN"
+cat > "$FAKEBIN/devrites-engine" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" > "$DEVRITES_FAKE_ARGS"
+case "$1" in
+  build-readiness) printf 'readiness: OK %s\n' "${2:-}" ;;
+  *) printf 'unexpected command: %s\n' "$*" >&2; exit 9 ;;
+esac
+SH
+chmod +x "$FAKEBIN/devrites-engine"
+printf '%s\n%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"devrites_ready","arguments":{"slug":"alpha"}}}' \
+  | (cd "$PROJECT" && PATH="$FAKEBIN:$PATH" DEVRITES_FAKE_ARGS="$T/mcp.args" node .codex/mcp/devrites-mcp.mjs) > "$T/mcp-call.jsonl" 2> "$T/mcp-call.err"
+if grep -q 'readiness: OK alpha' "$T/mcp-call.jsonl" && [ "$(cat "$T/mcp.args" 2>/dev/null)" = "build-readiness alpha" ]; then
+  ok "DevRites MCP tools/call invokes the engine binary"
+else
+  no "DevRites MCP tools/call did not invoke the engine binary"
+  sed -n '1,80p' "$T/mcp-call.err"
+  sed -n '1,80p' "$T/mcp-call.jsonl"
+  [ -f "$T/mcp.args" ] && sed -n '1,20p' "$T/mcp.args"
 fi
 
 MODEL_HOME="${DEVRITES_CODEX_MODEL_HOME:-${HOME:-}}"

@@ -7,6 +7,7 @@ package state
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -62,6 +63,99 @@ func TestStatusFixtureSpecComplete(t *testing.T) {
 func TestStatusUnknownSlugErrors(t *testing.T) {
 	if _, err := Status(fixtureRoot, "nope"); err == nil {
 		t.Fatal("Status on unknown slug returned nil error, want an error")
+	}
+}
+
+func writeSection(t *testing.T, root, slug, name, body string) {
+	t.Helper()
+	dir := filepath.Join(root, "features", slug)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeWorkSection(t *testing.T, root, slug, name, body string) {
+	t.Helper()
+	dir := filepath.Join(root, "work", slug)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A live workspace the pack creates has no feature.md manifest: the phase lives in
+// the state.md ledger and the proof/status sections are satisfied by their aliases
+// (evidence.md / state.md). The engine must load, list, and report it anyway.
+func TestLoadFeatureFromLedgerAndAliases(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeSection(t, root, "live", "state.md", "- Phase: prove\n- Status: running\n")
+	writeSection(t, root, "live", "spec.md", "# Spec\n\nDo the thing.\n")
+	writeSection(t, root, "live", "plan.md", "# Plan\n\nApproach.\n")
+	writeSection(t, root, "live", "decisions.md", "# Decisions\n\nChose X.\n")
+	writeSection(t, root, "live", "tasks.md", "# Tasks\n\n- [x] slice 1\n")
+	writeSection(t, root, "live", "evidence.md", "# Evidence\n\nTests pass.\n") // alias for proof
+
+	rep, err := Status(root, "live")
+	if err != nil {
+		t.Fatalf("Status on a manifest-less live workspace = %v, want nil", err)
+	}
+	if rep.Phase != PhaseProve {
+		t.Errorf("phase = %q, want prove (from the state.md ledger)", rep.Phase)
+	}
+	if !rep.Present[SectionProof] {
+		t.Error("proof section should be present via its evidence.md alias")
+	}
+	if !rep.Present[SectionStatus] {
+		t.Error("status section should be present via its state.md alias")
+	}
+	if !rep.Complete() {
+		t.Errorf("prove-phase feature should be complete, missing: %v", rep.Missing)
+	}
+
+	slugs, err := ListFeatures(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(slugs) != 1 || slugs[0] != "live" {
+		t.Errorf("ListFeatures = %v, want [live] (a ledger-only dir must list)", slugs)
+	}
+}
+
+func TestWorkLayoutIsCanonicalAndFeaturesIsAlias(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeWorkSection(t, root, "live", "state.md", "- Phase: build\n")
+	writeWorkSection(t, root, "live", "spec.md", "# Spec\n\nDo the thing.\n")
+	writeSection(t, root, "alias", "state.md", "- Phase: spec\n")
+	writeSection(t, root, "alias", "spec.md", "# Spec\n\nAlias.\n")
+
+	for _, slug := range []string{"live", "alias"} {
+		if _, err := Status(root, slug); err != nil {
+			t.Fatalf("Status(%q) = %v, want nil", slug, err)
+		}
+	}
+
+	slugs, err := ListFeatures(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(slugs, ","); got != "alias,live" {
+		t.Fatalf("ListFeatures = %v, want [alias live]", slugs)
+	}
+}
+
+// An unknown phase word in the ledger is ignored (not accepted as a phase), so a
+// ledger-only feature with no recognizable phase is a clear error, not a silent
+// mis-load.
+func TestLedgerPhaseRejectsUnknownWord(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeSection(t, root, "bogus", "state.md", "- Phase: banana\n")
+	if _, err := Status(root, "bogus"); err == nil {
+		t.Error("Status on a ledger with an unknown phase word = nil error, want an error")
 	}
 }
 

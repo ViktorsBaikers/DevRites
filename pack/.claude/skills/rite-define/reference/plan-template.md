@@ -22,19 +22,23 @@ Spec: ./spec.md   Date: <date>
 ## Approach
 The strategy in a few sentences. Why this over the alternatives considered.
 
+## Slice strategy
+How the feature is split into vertical `SLICE-###` increments, why the order is
+risk-first within dependency tiers, and which acceptance criteria each slice covers.
+
 ## Architecture decisions
 Key decisions + rationale (mirror into decisions.md). New pattern vs reuse — prefer
 reuse of existing project conventions.
 
 ## Dependency graph
 What must exist before what (text is fine):
-- Slice 1 (no deps) → Slice 2 (needs 1) → Slice 4 (needs 2,3)
-- Slice 3 (independent / parallelizable)
+- SLICE-001 (no deps) → SLICE-002 (needs SLICE-001) → SLICE-004 (needs SLICE-002, SLICE-003)
+- SLICE-003 (independent / parallelizable)
 
 ## Implementation order
 Ordered slice list + the reason for the order (risk-first within a dependency tier).
 
-## Verification checkpoints
+## Validation strategy
 After which slices to run tests / build / browser proof.
 
 ## Complexity & deviations gate
@@ -45,7 +49,7 @@ If you can't justify a deviation, simplify instead of recording it.
 |-----------|-----------|---------------------------------|
 | <e.g. new dependency X> | <reason> | <why the in-repo option won't work> |
 
-## Rollback notes
+## Rollback
 How to back out each risky step (migration down, feature flag, revert boundary, backup).
 
 ## Scope boundaries

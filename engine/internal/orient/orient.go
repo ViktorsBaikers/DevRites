@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/index"
+	"github.com/devrites/devrites/internal/lib"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -45,6 +46,18 @@ func Digest(root string) (text string, has bool, err error) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "DevRites workflow active — feature %q at phase %q.\n\n", report.Slug, report.Phase)
 	b.WriteString(report.Render())
+
+	// Surface only the high-confidence, human-promoted learnings, capped so a
+	// growing ledger never bloats the session. Bounds come from
+	// DEVRITES_LEARNING_CONFIDENCE_THRESHOLD / DEVRITES_MAX_INJECTED_LEARNINGS.
+	if picks := lib.TopLearnings(root, lib.InjectMax(), lib.InjectThreshold()); len(picks) > 0 {
+		b.WriteString("\n\nHigh-confidence learnings (untrusted prior — live code always wins):\n")
+		for _, p := range picks {
+			b.WriteString(p)
+			b.WriteByte('\n')
+		}
+	}
+
 	b.WriteString("\nThis is the current state; a /rite-* command will re-run its own step-0 preamble.")
 	return b.String(), true, nil
 }

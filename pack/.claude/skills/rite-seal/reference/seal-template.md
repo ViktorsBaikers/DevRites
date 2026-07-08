@@ -32,5 +32,5 @@ Verdict: GO / NO-GO
 <one paragraph: verdict + why>
 
 ## Footprint
-<deterministic fan-out from footprint.sh — subagents · slices · wall-clock; never tokens/cost>
+<deterministic fan-out from devrites-engine footprint — subagents · slices · wall-clock; never tokens/cost>
 ```

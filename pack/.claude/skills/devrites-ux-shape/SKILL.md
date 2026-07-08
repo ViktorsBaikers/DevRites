@@ -93,7 +93,7 @@ the brief than in the build.
 Write `design-brief.md` ([reference/brief-template.md](reference/brief-template.md)) —
 **compact** (3-5 bullets) when discovery was crisp, **full** when the surface is ambiguous
 or multi-screen. Don't pad a clear brief to look thorough; don't skip the pause to look
-fast. Then honor the run mode (`../../rules/afk-hitl.md`):
+fast. Then honor the run mode (`../devrites-lib/reference/standards/afk-hitl.md`):
 - **HITL** — present the brief and **STOP for explicit confirmation**. The pause is the
   point: shape ends at the user's "go", not at your own certainty. Disagreement → revisit
   the relevant discovery question.

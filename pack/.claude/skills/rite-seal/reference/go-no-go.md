@@ -17,16 +17,16 @@ the two in sync.
   human-approved exception — same standing as an unproven criterion (absent / empty file →
   none declared → not a blocker).
 - A **stood decision was never independently doubted** — a `## Decisions stood` entry in
-  `decisions.md` carrying `doubt: MISSING` (or `doubt-coverage.sh` rc=3) — when that decision
+  `decisions.md` carrying `doubt: MISSING` (or `devrites-engine doubt-coverage` rc=3) — when that decision
   is irreversible-risk (auth / public-API / migration). Severity rides the undoubted decision,
   not the exit code.
 - Any `questions.md` entry with `gate: validating` and `status: open` — **NO-GO
   regardless of behavior impact** (an open validating gate is merge-blocking by
   definition). A slice marked `built (pending review)` is not done.
-- A **test was weakened to go green** (`test-integrity.sh` exit 3 — a test deleted, skipped,
+- A **test was weakened to go green** (`devrites-engine test-integrity` exit 3 — a test deleted, skipped,
   `xfail`-ed, or de-asserted since the slice base). A suite that passes on a lowered bar is not
   proof; this is a Critical NO-GO.
-- Under `DEVRITES_MUTATION=enforce`, a **mutation score below threshold** (`mutation-gate.sh`
+- Under `DEVRITES_MUTATION=enforce`, a **mutation score below threshold** (`devrites-engine mutation-gate`
   exit 3 — survived mutants are behaviours no test actually checks).
 
 ## GO requires

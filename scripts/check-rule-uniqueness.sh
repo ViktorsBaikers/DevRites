@@ -18,8 +18,8 @@ PACK="$ROOT/pack/.claude"
 
 # Format: <grep-pattern>|<canonical-relative-path>
 PRINCIPLES=(
-  '^## Reuse before you write|pack/.claude/rules/coding-style.md'
-  '^## Trust boundary (three tiers)|pack/.claude/rules/security.md'
+  '^## Reuse before you write|pack/.claude/skills/devrites-lib/reference/standards/coding-style.md'
+  '^## Trust boundary (three tiers)|pack/.claude/skills/devrites-lib/reference/standards/security.md'
 )
 
 fail=0
@@ -30,7 +30,7 @@ for entry in "${PRINCIPLES[@]}"; do
   # Use literal-string grep (-F) to avoid regex meta-char surprises in headings.
   # Match anchored to line start by adding the '## ' prefix ourselves.
   needle="${pattern#^}"
-  matches="$(grep -rln -F -- "$needle" "$PACK"/rules "$PACK"/skills "$PACK"/agents 2>/dev/null | sort -u)"
+  matches="$(grep -rln -F -- "$needle" "$PACK"/skills "$PACK"/agents 2>/dev/null | sort -u)"
   count="$(printf '%s\n' "$matches" | grep -c .)"
   if [ "$count" -eq 1 ] && [ "$matches" = "$ROOT/$canonical" ]; then
     printf 'ok: unique heading "%s" (canonical: %s)\n' "$needle" "$canonical"
@@ -48,8 +48,8 @@ done
 # (the excuse-column text, stable across both files) appear verbatim in both.
 # These cover the five rows core.md duplicates:
 #   tests-later / small-refactor / special-case / user-will-tell / lint-and-build.
-CORE="$PACK/rules/core.md"
-ANTI="$PACK/rules/anti-patterns.md"
+CORE="$PACK/skills/devrites-lib/reference/standards/core.md"
+ANTI="$PACK/skills/devrites-lib/reference/standards/anti-patterns.md"
 SHARED_EXCUSES=(
   '"I'\''ll add the tests later."'
   '"It'\''s only a small refactor while I'\''m in here."'

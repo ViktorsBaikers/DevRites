@@ -4,7 +4,7 @@ Load this when standing a non-trivial planning decision in `/rite-define`,
 or when the agent feels reluctance toward vertical slicing or coverage
 mapping.
 
-Pack-wide rationalizations + red flags: see [rules/anti-patterns.md](../../../rules/anti-patterns.md).
+Pack-wide rationalizations + red flags: see [standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 
@@ -19,6 +19,7 @@ Pack-wide rationalizations + red flags: see [rules/anti-patterns.md](../../../ru
 ## Red Flags
 
 - A slice with no acceptance criterion link back to `spec.md`.
+- A slice whose name contains "and" — two capabilities smuggled into one slice (the "and" test, [slicing](../../rite-plan/reference/slicing.md)).
 - No first slice that's end-to-end thin (every slice depends on infra that doesn't exist yet).
 - A new dependency added without rationale in `decisions.md`.
 - A slice that doesn't list "Existing to reuse / extend" (you didn't search).

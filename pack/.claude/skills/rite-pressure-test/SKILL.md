@@ -10,18 +10,30 @@ user-invocable: true
 Use when the *idea* (not just the requirements) is rough. Generate options, then commit
 to one — so `/rite-spec` has a real direction to specify.
 
-Read `.claude/rules/core.md` first — its operating rules (no silent assumptions, prefer
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first — its operating rules (no silent assumptions, prefer
 existing conventions) shape the divergence. The other rule files load on demand.
 
 ## Diverge (widen)
 - Generate 3–5 genuinely different approaches to the underlying goal, not variations of
   one. Cover at least: the obvious approach, a simpler/smaller approach, and a
   different-shape approach (different data model, flow, or boundary).
+- Generate from **named lenses** so each option exists for a reason, not to pad the count:
+  *inversion* (do the opposite), *constraint-removal* (what if the hard limit vanished),
+  *audience-shift* (build it for a different user), *10×* (what if it had to handle ten times
+  the scale or scope), *expert-lens* (how a specialist in the domain would do it). Borrow the
+  *structure* of an analogous product, not its surface — "Uber for X" copies the veneer, not
+  the mechanism that made it work.
 - For each: one-line description, what it optimizes for, rough cost, main risk.
 - Stay concrete — name real entities, flows, and surfaces, not abstractions.
 
 ## Converge (commit)
 - Weigh options against the goal, constraints, and existing codebase conventions.
+- **Painkiller or vitamin?** Score each on whether it removes a real, felt pain (a painkiller
+  users seek out) or is merely nice-to-have (a vitamin they forget). Prefer the painkiller — a
+  vitamin dressed as a painkiller is the most common ideation trap.
+- **Rank the differentiation**, strongest to weakest: a new capability > a 10× improvement > a
+  new audience > a new context > better UX > cheaper. The higher an option sits, the more
+  defensible the direction.
 - Recommend one, with the reason and the key trade-off accepted.
 - Note what would change the recommendation (the decision's hinge).
 
@@ -31,14 +43,21 @@ existing conventions) shape the divergence. The other rule files load on demand.
 - Don't over-explore: 3–5 options, one pass of convergence. If the user already knows
   the direction, skip this and go straight to `/rite-spec`.
 - Ask the user to pick when two options are close and the choice changes the product.
+- Name a **"Not doing" list** — the good options you deliberately cut. It's the highest-value
+  output of convergence: it hands `/rite-spec` its scope boundary and stops the rejected ideas
+  from creeping back in later.
 
 ## Output
+Reply-contract exception: pre-workspace ideation utility. It skips `devrites-engine progress`,
+but follows the compact labels and single-next-action rule from
+[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
+
 ```
-Goal (restated): ...
-Options:
-  A. <approach> — optimizes <x>, cost <y>, risk <z>
-  B. ...
-Recommendation: <option> because <reason>; trade-off accepted: <...>
-Hinge: <what would change this>
-Next: /rite-spec <feature>  (using the chosen direction)
+Done: pressure test complete for <goal>.
+Changed: workspace only
+Evidence: options compared <n>; recommendation <option>; hinge <condition>
+Open: <none | unresolved premise>
+Next: /rite-spec <feature>
+Record: not applicable
+↻ Hygiene: /clear before starting the lifecycle
 ```

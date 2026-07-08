@@ -10,7 +10,7 @@
 #
 # Live evidence-freshness (mtime: does proof post-date code?) is NOT graded here
 # — git fixtures don't preserve mtimes; that gate is enforced on a live
-# workspace by pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh.
+# workspace by the `devrites-engine evidence-fresh` engine gate.
 #
 # Usage: grade-feature.sh <workspace-dir>
 #   e.g. evals/golden/shippable-feature | .devrites/work/<slug> | .devrites/archive/<slug>
@@ -28,6 +28,7 @@
 
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ws="${1:-}"
 if [ -z "$ws" ] || [ ! -d "$ws" ]; then
   printf 'usage: grade-feature.sh <workspace-dir>\n' >&2
@@ -85,13 +86,29 @@ else
 fi
 
 # 8 — executable acceptance criteria: every spec [ACn] proven + checked in seal
-SELF="$(cd "$(dirname "$0")" && pwd)"
-AC="$SELF/../pack/.claude/skills/devrites-lib/scripts/check-acceptance.sh"
-[ -f "$AC" ] || AC=".claude/skills/devrites-lib/scripts/check-acceptance.sh"
-if [ -f "$AC" ]; then
-  if ! acout=$(bash "$AC" "$ws" 2>&1); then
-    problems+=("acceptance: $(printf '%s' "$acout" | tail -1 | sed 's/^check-acceptance: //')")
+run_acceptance_check() {
+  if [ -n "${DEVRITES_CLI:-}" ]; then
+    "$DEVRITES_CLI" check-acceptance "$ws"
+    return $?
   fi
+  if command -v devrites-engine >/dev/null 2>&1; then
+    devrites-engine check-acceptance "$ws"
+    return $?
+  fi
+  if [ -x "$ROOT/engine/devrites" ]; then
+    "$ROOT/engine/devrites" check-acceptance "$ws"
+    return $?
+  fi
+  if [ -d "$ROOT/engine" ] && command -v go >/dev/null 2>&1; then
+    ( cd "$ROOT/engine" && go run . check-acceptance "$ws" )
+    return $?
+  fi
+  printf 'check-acceptance: devrites engine unavailable (install devrites or run from a checkout with Go)\n' >&2
+  return 127
+}
+
+if ! acout=$(run_acceptance_check 2>&1); then
+  problems+=("acceptance: $(printf '%s' "$acout" | tail -1 | sed 's/^check-acceptance: //')")
 fi
 
 slug="$(basename "$ws")"

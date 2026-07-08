@@ -16,8 +16,8 @@ pre-flight (readiness, slice select, HITL pause), dispatch the wright for the bu
 run the post-return gates (doubt, fail-on-red, record, stop). See
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 
-## Rules consulted (read on demand from `.claude/rules/`)
-DevRites skills Read `.claude/rules/core.md` as their first step (workflow step 0). The
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+DevRites skills Read `.claude/skills/devrites-lib/reference/standards/core.md` as their first step (workflow step 0). The
 following load on demand — **the wright reads them** (they are named in its contract) while it
 writes; read them yourself for the doubt/record gates or in the inline fallback:
 - `coding-style.md` — naming, function shape, guard clauses, comments, reuse-first.
@@ -31,6 +31,13 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 - **One slice at a time. DO NOT** start the next slice without the user asking.
 - Evidence over confidence. Prefer existing conventions. Feature scope only — no
   drive-by refactors.
+- **Noticed, not touched.** An adjacent smell the wright sees outside `touched-files.md` is
+  recorded as an FYI follow-up in `decisions.md`, never fixed inline — the slice's change summary
+  states what it *deliberately left alone* ([`git-workflow.md`](../devrites-lib/reference/standards/git-workflow.md) "Things
+  I didn't touch"), so the reviewer reads a feature-scoped diff, not a renovation. The `devrites-engine reconcile`
+  gate (step 6) enforces this by exit code.
+- **Don't re-run an unchanged check.** Re-running the same build/test command on code that hasn't
+  changed since proves nothing new — it's motion, not evidence. Re-verify after an edit, not before.
 - Surface material assumptions; ask before adding dependencies or a second design
   system. The [Spec Drift Guard](reference/spec-drift-guard.md) is active throughout.
 - **Avoid AI slop while writing.** `devrites-slice-wright` enforces the anti-slop charter **at
@@ -39,7 +46,7 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   idiom, reusing before building; **you verify the charter held on return** — you do not re-list
   it and you do not fix slop by editing source. Polish catches what slips; build prevents.
   The **prose you write yourself** — `evidence.md`, `decisions.md`, the slice report — follows
-  the human-voice charter (`.claude/rules/prose-style.md`; depth in `devrites-prose-craft`): no
+  the human-voice charter (`.claude/skills/devrites-lib/reference/standards/prose-style.md`; depth in `devrites-prose-craft`): no
   filler openers, no marketing adjectives, exact commands and identifiers kept verbatim.
 - **Honor declared project principles.** The wright reads `.devrites/principles.md` and treats
   each invariant as **binding** (not a prior to weigh like a convention) — a slice it cannot build
@@ -50,7 +57,7 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 - **You never edit source — the wright is the only writer of code + tests.** You write only
   `.devrites/` bookkeeping. On any red gate, doubt finding, or coverage gap your only remedies
   are **continue the same wright once** (it fixes in its own context) or **stop + escalate** —
-  never patch the code yourself. The `reconcile.sh` gate (step 6) enforces this by exit code:
+  never patch the code yourself. The `devrites-engine reconcile` gate (step 6) enforces this by exit code:
   any source file changed outside the wright's claimed set is a hard STOP.
 - **A `Forge: yes` slice competes candidates — one author still lands.** When `/rite-vet`
   flagged the slice a genuine architecture fork, step 3 runs K=2–3 candidate wrights in
@@ -61,25 +68,21 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 
 ## Workflow ([one-slice-cycle](reference/one-slice-cycle.md))
 
-> **Running the gate helpers.** Each gated `bash` block resolves the shared runner `rites.sh` into
-> `$R` (self-contained — blocks don't share shell state), then calls a named helper:
-> `bash "$R" <helper> [args]` runs
-> `devrites-lib/scripts/<helper>.sh`, **propagates its exit code** (so the `rc=$?` checks below
-> still hold) and degrades to a printed note if the lib is absent. One locator, many helpers —
-> see [`devrites-lib/scripts/rites.sh`](../devrites-lib/scripts/rites.sh).
+> **Running the gate helpers.** Each gated `bash` block calls a named helper directly:
+> `devrites <helper> [args]` runs the helper, **propagates its exit code** (so the `rc=$?`
+> checks below still hold) and degrades to a printed note if the binary is absent. The
+> `devrites` binary is the shared runner.
 
-0. **Rules + AFK + readiness check.** Read `.claude/rules/core.md` first. Then **run the
+0. **Rules + AFK + readiness check.** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Then **run the
    shared orientation preamble** — it prints `state.md`, the artifacts present, the run
    mode (HITL/AFK), and the open-question tally by gate, deterministically:
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && bash "$R" preamble || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
    Then **run the readiness gate** — it enforces the step-0 stop conditions by exit code,
    not by memory:
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && { bash "$R" readiness; echo "readiness rc=$?"; } || echo "(readiness gate unavailable — apply the prose checks below)"
+   devrites-engine build-readiness; echo "readiness rc=$?"
    ```
    A non-zero `rc` is a hard STOP: `2` → `/rite-define` (plan not approved), `3` →
    `/rite-resolve` (awaiting human), `4` → `/rite-plan` (blocked). The prose below is the
@@ -114,7 +117,7 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
       **first and labelled `(Recommended)`**, each with its dimension-tagged rationale + the
       trade-off it accepts, plus the `Something else — I'll describe it` escape hatch. The
       human picks; record the pick to `questions.md` (`answered`) + `decisions.md` (through the
-      `resolve.sh` writer), clear the gate, and **continue to step 3 in place** — do **not**
+      `devrites-engine resolve` writer), clear the gate, and **continue to step 3 in place** — do **not**
       STOP, do **not** route through `/rite-resolve`.
     - **Human absent / AFK (`.devrites/AFK` present) → auto-pick or persist + STOP.** For a gate
       in `allow_gates`, auto-pick the recommended option (option 1) and proceed; otherwise
@@ -126,14 +129,12 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    call, fresh context. **First**, capture the pre-dispatch tree so the reconcile gate (step 6)
    can prove you never touched source — run this immediately before the `Task` call:
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && bash "$R" reconcile snapshot || echo "(reconcile gate unavailable — verify by hand that only the wright wrote source)"
+   devrites-engine reconcile snapshot
    ```
    Then log the dispatch so the stuck-loop detector can catch a slice that keeps being
    re-dispatched without progress (it pauses the build even under AFK):
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && bash "$R" stuck log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>" || true
+   devrites-engine stuck log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>"
    ```
    **Forge branch — only if the selected slice is `Forge: yes`.** Instead of the single dispatch
    below, run the competitive build per [`reference/forge.md`](reference/forge.md): K=2–3 candidate
@@ -157,10 +158,10 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    when present — its per-gap test requirements + regression-criticals for this slice are the
    coverage the wright must write — and `design-brief.md`
    when the slice touches UI per [frontend-trigger](reference/frontend-trigger.md)); and the
-   `.claude/rules/` files in scope. The wright **orients** on the project's idiom (using a
+   `.claude/skills/devrites-lib/reference/standards/` files in scope. The wright **orients** on the project's idiom (using a
    code-intelligence index **if available** — `codebase-memory-mcp` first, cross-checked with
    `codegraph` (`.codegraph/` / `codegraph_*`) + `graphify` (`graphify-out/`), else standard
-   methods (LSP / `Read`/`Grep`/`Glob`); see `.claude/rules/tooling.md` — for
+   methods (LSP / `Read`/`Grep`/`Glob`); see `.claude/skills/devrites-lib/reference/standards/tooling.md` — for
    placement/callers/impact), writes the **failing test first** when
    behaviour changes ([tdd](reference/tdd.md)), implements the **smallest complete** version in
    the project's style (applying `devrites-frontend-craft` to `design-brief.md` for UI, and
@@ -185,8 +186,7 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    `built`.** Log each dispatch so the seal can prove doubt ran (the footprint already counts a
    `doubt` kind):
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && bash "$R" footprint log <slug> doubt "<decision id>" || true
+   devrites-engine footprint log <slug> doubt "<decision id>"
    ``` The doubt loop honours `.devrites/AFK` (see its AFK
    exception): findings below the slice's gate ceiling become advisory entries in `questions.md`;
    destructive / auth / public-API concerns always pause regardless. A non-empty `Escalation` in
@@ -212,10 +212,10 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    `Next step: /rite-plan unblock` until resolved.
 6. **Record — you are the canonical writer.** **First, run the reconcile gate (A1):** write the
    wright's reported `Files changed` paths (one per line) to
-   `.devrites/work/<slug>/.reconcile-claimed`, then:
+   `.devrites/work/<slug>/.reconcile-claimed` (or the active legacy
+   `.devrites/features/<slug>/` workspace during migration), then:
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && { bash "$R" reconcile check; echo "reconcile rc=$?"; } || echo "(reconcile gate unavailable — confirm by hand only the wright wrote source)"
+   devrites-engine reconcile check; echo "reconcile rc=$?"
    ```
    **Exit 5 → hard STOP:** a source file changed outside the wright's claimed set — code was
    edited by something other than the wright (A1 breach). Revert it and re-dispatch the wright;
@@ -224,12 +224,22 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    **Then run the test-integrity gate (anti-reward-hacking)** — prove the slice didn't reach
    green by weakening its tests:
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && { bash "$R" test-integrity; echo "test-integrity rc=$?"; } || echo "(test-integrity gate unavailable — confirm by hand no test was deleted/skipped/loosened)"
+   devrites-engine test-integrity; echo "test-integrity rc=$?"
    ```
    **Exit 3 → hard STOP:** a test was deleted, skipped, or de-asserted since the slice base — the
    slice went green by weakening its tests, a Critical protocol violation. Revert the weakening and
    re-dispatch the wright; do **not** mark the slice `built`.
+
+   **Then run the package-existence gate (anti-hallucination)** — every new third-party import must
+   be declared in a project manifest, not just imported:
+   ```bash
+   devrites-engine package-existence; echo "package-existence rc=$?"
+   ```
+   **Exit 3 → STOP:** an imported package is not declared in any manifest (`package.json`, `go.mod`,
+   `requirements.txt`, `pyproject.toml`, `Pipfile`, `Cargo.toml`) — the classic shape of a
+   hallucinated or typo-squatted dependency. Confirm the name on the registry and declare it via the
+   package manager, or remove the import; do **not** mark the slice `built`. The gate is deterministic
+   and fail-open (not a git repo / no manifest / stdlib-only import → rc 0).
 
    Then, from the wright's artifact, update `state.md`,
    `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). **Persist every
@@ -246,9 +256,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    **If the wright's `Conventions` field reports a contradiction** (the live code now
    disagrees with a held convention), record the drift — you own this bookkeeping:
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && bash "$R" conventions contradict --key <key> --slug <slug> \
-     --evidence "<what the live code does>" --drift-file .devrites/work/<slug>/drift.md || true
+   devrites-engine conventions contradict --key <key> --slug <slug> \
+     --evidence "<what the live code does>" --drift-file .devrites/work/<slug>/drift.md
    ```
    It lowers the convention's band (or retires it) and appends a `convention-drift` entry to
    `drift.md`. The ledger is **promoted only at `/rite-seal` on GO** — build only records
@@ -257,11 +266,10 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    [evidence-standard](reference/evidence-standard.md). Append a footprint record for this
    slice's wright dispatch (deterministic run-weight bookkeeping the seal reports):
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && bash "$R" footprint log <slug> wright "<slice id>" || true
+   devrites-engine footprint log <slug> wright "<slice id>"
    ```
    If `.devrites/AFK` is present, decrement
-   the budget by running `bash .claude/skills/devrites-lib/scripts/tick-afk.sh <state.md path>` —
+   the budget by running `devrites-engine tick-afk <state.md path>` —
    it decrements `state.md`'s `AFK slices remaining` field, prints the new value, and exits `3`
    when it hits 0. **Exit 3 → STOP** (forced HITL stop; the cap is exhausted). Never rewrite
    `.devrites/AFK` `max_slices` in place — it is read-only initial budget.
@@ -269,8 +277,7 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
    shared footer (mirror of the step-0 preamble) so the slice meter + flow ribbon are
    deterministic, not model-typed:
    ```bash
-   R=.claude/skills/devrites-lib/scripts/rites.sh; [ -f "$R" ] || R="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/rites.sh"; [ -f "$R" ] || R=pack/.claude/skills/devrites-lib/scripts/rites.sh
-   [ -f "$R" ] && bash "$R" progress || echo "(progress footer unavailable on this install)"
+   devrites-engine progress
    ```
    It reads `state.md` (already updated in step 6), so the meter reflects the slice you
    just built. **When every slice is built** (`✅ ALL BUILT`) say so explicitly — the build
@@ -280,37 +287,39 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 
 ## Output
 
-The `progress.sh` footer (step 7) prints the first three lines — the header rule, the
-**slice meter** (how many of N are built), and the **flow ribbon**. Your fact lines sit
-under it. Two shapes:
+The `devrites-engine progress` footer (step 7) prints the deterministic header, slice meter,
+and flow ribbon. Put the compact status lines below it using the shared completion
+reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 
-**Slices still pending:**
+**Slice built; slices remain:**
 ```
-── rite-build ──────────────────────────────
-Slice 3/5  ██████░░░░  csv-streaming ✓
-Flow   spec ✓ define ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○
-Built     slice 3 — csv-streaming   (by devrites-slice-wright | inline fallback)
-Acceptance ✓ met · Tests <cmd → pass> · Browser <summary | n/a> · Drift <none | handled>
-Next  ▸ /rite-build  (slice 4 — pagination)
-↻ Hygiene  /clear between slices (state.md + touched-files.md + evidence.md carry forward); /rite-handoff if away > a few hours.
-```
-
-**All slices built (build phase complete — say it):**
-```
-── rite-build ──────────────────────────────
-Slices 5/5  ██████████  ✅ ALL BUILT
-Flow   spec ✓ define ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○
-Built     slice 5 — error-states   (by devrites-slice-wright | inline fallback)
-Acceptance ✓ met · Tests <cmd → pass> · Browser <summary | n/a> · Drift <none | handled>
-✅ Feature implemented — every slice built. Build phase done.
-Next  ▸ /rite-prove  (prove the completed feature)
-↻ Hygiene  /clear (state.md + evidence.md captured); /rite-handoff if away > a few hours.
+Done: built slice <n> — <name>.
+Changed: <files touched>; state.md, touched-files.md, evidence.md
+Evidence: acceptance met; tests <cmd -> pass>; browser <summary | n/a>; drift <none|handled>
+Open: <none | blockers | questions>
+Next: /rite-build
+Record: .devrites/work/<slug>/evidence.md
+↻ Hygiene: /clear between slices; /rite-handoff if away > a few hours
 ```
 
-Keep fact lines terse — one `key value` per fact, `·` between, no prose. The meter, the
-`✅ ALL BUILT` marker, and the ribbon carry the progress; don't restate them in words.
+**Slice built; all slices built:**
+```
+Done: built slice <n> — <name>; all slices built.
+Changed: <files touched>; state.md, touched-files.md, evidence.md
+Evidence: acceptance met; tests <cmd -> pass>; browser <summary | n/a>; drift <none|handled>
+Open: <none | blockers | questions>
+Next: /rite-prove
+Record: .devrites/work/<slug>/evidence.md
+↻ Hygiene: /clear before /rite-prove; /rite-handoff if away > a few hours
+```
+
+For awaiting-human or stopped states, use the typed templates from the reply contract.
+Keep fact lines terse. The meter and ribbon carry progress; don't duplicate them in
+prose.
 
 For a **forged slice**, the `Built` line names the competition and points at the record, e.g.
-`Built  slice 3 — csv-streaming   (forged: 3 candidates → winner B; forge-report.md)`.
+`Done: built slice 3 — csv-streaming (forged: 3 candidates, winner B).` and
+`Record: .devrites/work/<slug>/forge-report.md`.
 
 **DO NOT continue to the next slice automatically** — even at `✅ ALL BUILT`, `/rite-prove` is the user's call.

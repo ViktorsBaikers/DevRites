@@ -1,6 +1,6 @@
-# All 36 skills
+# All 37 skills
 
-The pack ships **36 skills total** — 24 user-invocable `rite-*` workflow + utility skills and 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library skill (`user-invocable: false`, not a command) that ships the cross-cutting scripts the workflow skills run: the read-only orientation preamble and the `readiness` / `evidence-fresh` / `acceptance` gate scripts, plus the `tick-afk` / `resolve` / `close-out` state mutators. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/rules/`; each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0) and pulls the other 22 rule files on demand (no carrier skill, no session-start autoload). The installer mirrors skills to `.agents/skills` for Codex, mirrors rules to `.agents/devrites/rules`, injects Codex-specific dispatch/rules guidance into those mirrors, generates `.codex/agents` from the DevRites review agents, installs Codex hooks in `.codex/hooks.json` + `.codex/hooks/`, merges DevRites guidance into `AGENTS.md`, and registers the project-local DevRites MCP server through `.codex/config.toml`. A unified `devrites` CLI and an MCP server expose the `devrites-lib` ops to any tool (see [`cli-mcp.md`](cli-mcp.md)).
+The pack ships **37 skills total** — the `rite` menu, 24 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library skill (`user-invocable: false`, not a command) that ships shared references and explicit script exceptions. The workflow control plane runs through the installed `devrites-engine` binary: orientation, read-only gates, and state mutation all use engine subcommands so Claude Code, Codex, MCP clients, CI, and humans get the same verdicts. Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/skills/devrites-lib/reference/standards/`; each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first step (step 0) and pulls the other 24 rule files on demand (no carrier skill, no session-start autoload). The installer mirrors skills to `.agents/skills` for Codex, mirrors rules to `.agents/skills/devrites-lib/reference/standards`, injects Codex-specific dispatch/rules guidance into those mirrors, generates `.codex/agents` from the DevRites review agents, installs Codex hooks in `.codex/hooks.json`, merges DevRites guidance into `AGENTS.md`, and registers the project-local DevRites MCP server through `.codex/config.toml`. The npm `devrites` shim owns install/update/uninstall and can proxy engine subcommands when `devrites-engine` is installed; the MCP server invokes the engine binary directly (see [`cli-mcp.md`](cli-mcp.md)).
 
 **Naming convention.** `rite-*` is the user-facing slash-command surface (lifecycle phases plus utilities — `rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`, `rite-doctor`, `rite-prototype`, `rite-handoff`, `rite-zoom-out`, `rite-pressure-test`). `devrites-*` is internal (model-invoked, hidden from the menu) and collision-avoiding against bundled Claude Code skill names. Visibility is governed by each skill's `user-invocable:` flag; the prefix mirrors it.
 
@@ -25,29 +25,47 @@ of which satisfy the convention:
   (api-interface, rite, status).
 
 **New skills SHOULD use `## Gotchas`** — 2–3 traps the model most reaches for in that
-phase (the rationalizations in `pack/.claude/rules/anti-patterns.md`, specialized), not a
+phase (the rationalizations in `pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md`, specialized), not a
 restatement of the positive steps. A mechanical rename of the equivalents above to a
 single `## Gotchas` heading is a possible future normalization; the content already holds.
 
+## Completion reply contract
+
+Workspace-operating `rite-*` skills render `devrites-engine progress` first, then a compact
+completion reply from
+[`reply-contract.md`](../pack/.claude/skills/devrites-lib/reference/reply-contract.md).
+The progress command owns the deterministic header, slice meter, and flow ribbon; the
+chat reply only summarizes status: `Done`, `Changed`, `Evidence`, `Open`, one `Next`
+command, `Record`, and `↻ Hygiene`. Detailed reports stay in durable workspace
+artifacts such as `spec.md`, `plan.md`, `evidence.md`, `review.md`, `seal.md`, and
+`ship.md`.
+
+Typed stop states are standardized too: `Awaiting human`, `Stopped`, `NO-GO`, `GO`,
+and `Shipped`. Utility commands that do not operate on an active workspace declare a
+reply-contract exception but still keep the same compact labels and one-next-action
+rule. `scripts/check-reply-contract.sh` enforces the reference/exception marker and
+blocks obvious multi-command `Next:` wording.
+
 ## Commands quick reference
 
-In Claude Code, every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` for the discoverable entry point) and `/rite-<verb>` (direct shortcut). Both hit the same skill; use whichever reads more naturally. In Codex, use `$rite`, `$rite-<verb>`, or `/skills` to select the mirrored skill from `.agents/skills`; when a skill dispatches a DevRites subagent, the Codex mirror instructs Codex to use the matching `.codex/agents/devrites-*.toml` custom agent. The generated `AGENTS.md` block tells Codex to read `.agents/devrites/rules/core.md` before DevRites workflow work.
+In Claude Code, every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` for the discoverable entry point) and `/rite-<verb>` (direct shortcut). Both hit the same skill; use whichever reads more naturally. In Codex, use `$rite`, `$rite-<verb>`, or `/skills` to select the mirrored skill from `.agents/skills`; when a skill dispatches a DevRites subagent, the Codex mirror instructs Codex to use the matching `.codex/agents/devrites-*.toml` custom agent. The generated `AGENTS.md` block tells Codex to read `.agents/skills/devrites-lib/reference/standards/core.md` before DevRites workflow work.
 
 | Menu form | Direct shortcut | Phase | Does |
 |---|---|---|---|
 | `/rite` | — | menu | Compact menu + dispatches verb args to the matching `rite-<verb>` skill. Without args, renders the menu. |
-| `/rite spec <feature>` | `/rite-spec <feature>` | spec | **Start here.** Deep investigation → writes `spec.md`: understands the ask fully, decides **placement** (where it lives), names what it resolves, closes gaps with you (questions with options), and gathers any design references you optionally attach (screenshots / Figma / links / video — there may be none). |
+| `/rite spec <feature>` | `/rite-spec <feature>` | spec | **Start here.** Deep investigation → writes `spec.md`: understands the ask fully, decides **placement** (where it lives), names what it resolves, closes gaps with you (questions with options), and gathers any design references you optionally attach (screenshots / Figma / links / video — there may be none). Checks the shipped archive for prior art first, so a solved feature is extended rather than re-specced. |
 | `/rite temper` | `/rite-temper` | temper | **Optional, before define.** Strategic review of the readied spec — pick a scope mode (expand / selective / hold-rigor / reduce-to-MVP), run a pre-mortem, harden the spec, write `strategy.md`, and fold the decisions back via the Spec Drift Guard. Significance-gated (skips small work); **mandatory inside `/rite-autocomplete`**. |
 | `/rite define` | `/rite-define` | plan | Turns the approved spec into `plan.md` + vertical task slices + state. |
 | `/rite vet` | `/rite-vet` | vet | **Before build — every feature.** Engineering review of the defined plan — scope challenge (reuse / minimum-diff / complexity smell), then architecture / plan code-quality / test-coverage design / performance through senior-engineer lenses, every finding confidence-banded with a quote-the-source verification gate. Maps failure modes + parallel lanes, hardens `plan.md` / `tasks.md`, writes the build-readable `test-plan.md`; acceptance-changing deltas fold back via the Spec Drift Guard. `--cross-model` adds a different-model second opinion. Runs on every plan — depth scales to stakes (light pass on simple, full on big/risky), never skipped; **always inside `/rite-autocomplete`**. |
 | `/rite plan` | `/rite-plan` | re-plan | Decompose / reslice / repair an active plan. |
-| `/rite build` | `/rite-build` | build | Implement **exactly one** vertical slice, then stop — dispatches a fresh-context `devrites-slice-wright` to write it; gates and records the result. |
+| `/rite build` | `/rite-build` | build | Implement **exactly one** vertical slice, then stop — dispatches a fresh-context `devrites-slice-wright` to write it; gates and records the result. Opt-in **checkpoint mode** (`.devrites/CHECKPOINT`) commits each proven slice local-only as `WIP(<slug>)` so a crash mid-build survives; `/rite-ship` collapses them. |
+| `/rite converge` | `/rite-converge` | converge | **Recovery.** Assess the live codebase against `spec.md`+`plan.md`+`tasks.md` (+ principles) as the sole source of intent — present state, no git — and **append** each unmet piece as a new traceable `SLICE-###` for `/rite-build`. Append-only; `tasks.md` byte-unchanged when the code already converged. For a resumed / `/rite-adopt`'d / stalled feature. |
 | `/rite prove` | `/rite-prove` | prove | Tests + build + runtime + browser evidence for the current scope. |
 | `/rite polish` | `/rite-polish` | polish | Code polish always; UI normalize + polish if UI in scope. Modes: `bolder / quieter / distill / harden / normalize-only`. |
 | `/rite review` | `/rite-review` | review | Feature-scoped multi-axis review (parallel Spec + Standards axes). |
 | `/rite seal` | `/rite-seal` | seal | Final GO / NO-GO decision gate — walks acceptance vs evidence, fans out reviewers, writes the verdict to `seal.md`. Decides only; hands off to `/rite-ship`. |
 | `/rite ship` | `/rite-ship` | ship | Final phase. Requires a GO in `seal.md` → renders type-`GO`, runs the irreversible git ladder (commit → push → tag/PR), writes `ship.md`, then closes the task (archives the workspace, clears `ACTIVE`). |
-| `/rite autocomplete` | `/rite-autocomplete` | (orchestrator) | Runs the whole lifecycle unattended (spec → … → seal → ship), choosing the best option at each soft gate. `--ship` / `--yolo` auto-confirms the final type-`GO`. |
+| `/rite autocomplete` | `/rite-autocomplete` | (orchestrator) | Runs the whole lifecycle unattended (spec → … → seal → ship), choosing the best option at each soft gate. Arms AFK + checkpoint mode for the run. `--ship` / `--yolo` auto-confirms the final type-`GO`. |
 | `/rite status` | `/rite-status` | status | Where the active feature stands. |
 | `/rite resolve <qid> "<answer>"` | `/rite-resolve <qid> "<answer>"` | resume | Answer a HITL checkpoint (or `--drop <qid>` / `--batch <file>`); clears `state.md` `Awaiting human` and resumes. |
 | `/rite zoom-out` | `/rite-zoom-out` | utility | Step up an abstraction layer when stuck — returns a map of the area (modules, callers, decisions) in the project's vocabulary. |
@@ -104,6 +122,7 @@ The 11 model-invoked internal specialists (hidden from the menu): `devrites-inte
 |---|---|---|
 | [`rite-define`](../pack/.claude/skills/rite-define/SKILL.md) | Approved spec → `plan.md` + vertical task slices + `state.md`. | `spec.md` exists and is approved. |
 | [`rite-plan`](../pack/.claude/skills/rite-plan/SKILL.md) | Decompose / reslice / repair an active plan after drift. | Spec Drift Guard fires, or you need to repair an existing plan. |
+| [`rite-converge`](../pack/.claude/skills/rite-converge/SKILL.md) | Assess live code vs `spec`/`plan`/`tasks` intent; append the remaining unbuilt work as new traceable slices (append-only, no git). | Resuming a half-built or stalled feature, or after `/rite-adopt` when code drifted from the derived spec. |
 
 ### Vet — Lock in the engineering plan before building
 
@@ -164,13 +183,13 @@ The 11 model-invoked internal specialists (hidden from the menu): `devrites-inte
 | [`rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | Map an unfamiliar area — modules, callers, callees, decisions — in the project's domain glossary. | You say "zoom out", "I don't know this area", "map this area", "bigger picture". |
 | [`rite-prototype`](../pack/.claude/skills/rite-prototype/SKILL.md) | Throwaway code answering ONE design question — logic harness OR 2–4 UI variations on one route. | "Prototype this", "let me play with it", "try a few designs", question is undecidable on paper. |
 | [`rite-handoff`](../pack/.claude/skills/rite-handoff/SKILL.md) | Compact chat session → handoff doc. References existing `.devrites/work/<slug>/` artifacts by path. | "Handoff", "summarize this session", before `/clear`, fresh agent will continue. |
-| [`rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | Cross-feature learning loop — mine shipped features for recurring mistakes + dismissed-finding classes (`learnings.sh mine`), propose project-local lessons into `.devrites/learnings.md` (loaded by the review skills before a fan-out). | After several features ship; "what have we learned", "harvest lessons", "why does this keep coming up". |
+| [`rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | Cross-feature learning loop — mine shipped features for recurring mistakes + dismissed-finding classes (`devrites-engine learnings mine`), propose project-local lessons into `.devrites/learnings.md` (loaded by the review skills before a fan-out). | After several features ship; "what have we learned", "harvest lessons", "why does this keep coming up". |
 
 ### Foundation — Engineering rules
 
 | Skill | What It Does | Use When |
 |---|---|---|
-| (engineering rules) | Live at `.claude/rules/` post-install — each `rite-*` skill Reads `.claude/rules/core.md` as its first step (step 0); the other 22 rule files (`coding-style.md`, `prose-style.md`, `error-handling.md`, `testing.md`, `spec-grammar.md`, `code-review.md`, `principles.md`, `security.md`, `performance.md`, `observability.md`, `developer-experience.md`, `patterns.md`, `git-workflow.md`, `hooks.md`, `documentation.md`, `development-workflow.md`, `deprecation.md`, `agents.md`, `context-hygiene.md`, `anti-patterns.md`, `afk-hitl.md`, `tooling.md`) load on demand per skill body. No carrier skill, no session-start autoload. | n/a — step-0 core / on-demand by path. |
+| (engineering rules) | Live at `.claude/skills/devrites-lib/reference/standards/` post-install — each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first step (step 0); the other 24 rule files (`coding-style.md`, `prose-style.md`, `error-handling.md`, `testing.md`, `spec-grammar.md`, `code-review.md`, `principles.md`, `security.md`, `performance.md`, `observability.md`, `developer-experience.md`, `patterns.md`, `git-workflow.md`, `ci-cd.md`, `hooks.md`, `documentation.md`, `development-workflow.md`, `deprecation.md`, `elicitation.md`, `agents.md`, `context-hygiene.md`, `anti-patterns.md`, `afk-hitl.md`, `tooling.md`) load on demand per skill body. No carrier skill, no session-start autoload. | n/a — step-0 core / on-demand by path. |
 
 ---
 

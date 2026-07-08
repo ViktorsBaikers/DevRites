@@ -9,6 +9,8 @@ package gate
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/devrites/devrites/internal/orient"
@@ -81,7 +83,7 @@ func (r *Result) Render() string {
 	} else {
 		fmt.Fprintf(&b, "result: blocked (missing to leave %q: %s)\n", r.Phase, strings.Join(names, ", "))
 	}
-	fmt.Fprintf(&b, "next: add real content to %s, then re-run: devrites %s %s\n",
+	fmt.Fprintf(&b, "next: add real content to %s, then re-run: devrites-engine %s %s\n",
 		strings.Join(fileNames(r.Missing), ", "), r.Kind, r.Slug)
 	return b.String()
 }
@@ -104,6 +106,28 @@ func StopGate(root string) (StopResult, error) {
 	if err != nil {
 		return StopResult{}, nil // fail-open: a broken workspace never wedges Stop
 	}
+	// Fail-on-red: the redwatch hook marks a known-red suite by writing .red. A turn
+	// must not rest while it is set — evidence over confidence. This is a rest-point
+	// invariant (a concrete, provable inconsistency), not whole-feature completeness.
+	featureDir := featureDir(root, slug)
+	if _, statErr := os.Stat(filepath.Join(featureDir, ".red")); statErr == nil {
+		return StopResult{
+			Slug:    slug,
+			Blocked: true,
+			Reason: fmt.Sprintf(
+				"feature %q has tests/build RED (.red is set) — fix to green, or record the failure and next step, before stopping",
+				slug),
+		}, nil
+	}
+	if gates, blocked := unsurfacedHumanGates(featureDir); blocked {
+		return StopResult{
+			Slug:    slug,
+			Blocked: true,
+			Reason: fmt.Sprintf(
+				"feature %q has open %s human question(s) in questions.md but state.md is not awaiting_human — surface the gate before stopping",
+				slug, strings.Join(gates, "/")),
+		}, nil
+	}
 	claimsDone := f.Phase == state.PhaseSeal || f.Phase == state.PhaseShip
 	if claimsDone && !f.Present[state.SectionProof] {
 		return StopResult{
@@ -115,6 +139,93 @@ func StopGate(root string) (StopResult, error) {
 		}, nil
 	}
 	return StopResult{Slug: slug}, nil
+}
+
+func featureDir(root, slug string) string {
+	work := filepath.Join(root, "work", slug)
+	if info, err := os.Stat(work); err == nil && info.IsDir() {
+		return work
+	}
+	features := filepath.Join(root, "features", slug)
+	if info, err := os.Stat(features); err == nil && info.IsDir() {
+		return features
+	}
+	return work
+}
+
+const gateSpaceChars = " \t\n\v\f\r"
+
+func unsurfacedHumanGates(featureDir string) ([]string, bool) {
+	qdata, err := os.ReadFile(filepath.Join(featureDir, "questions.md"))
+	if err != nil {
+		return nil, false
+	}
+	gates := openBlockingQuestionGates(qdata)
+	if len(gates) == 0 {
+		return nil, false
+	}
+	sdata, err := os.ReadFile(filepath.Join(featureDir, "state.md"))
+	if err == nil && stateAwaitingHuman(sdata) {
+		return nil, false
+	}
+	return gates, true
+}
+
+func openBlockingQuestionGates(data []byte) []string {
+	lines := splitLinesNoTrailing(data)
+	seen := map[string]bool{}
+	var gates []string
+	inQ := false
+	status, gate := "", ""
+	finalize := func() {
+		if inQ && status == "open" && (gate == "blocking" || gate == "validating") && !seen[gate] {
+			seen[gate] = true
+			gates = append(gates, gate)
+		}
+	}
+	for _, line := range lines {
+		switch {
+		case strings.HasPrefix(line, "## q-"):
+			finalize()
+			inQ, status, gate = true, "", ""
+		case inQ && strings.HasPrefix(line, "status:"):
+			status = strings.TrimLeft(strings.TrimPrefix(line, "status:"), gateSpaceChars)
+		case inQ && strings.HasPrefix(line, "gate:"):
+			gate = strings.TrimLeft(strings.TrimPrefix(line, "gate:"), gateSpaceChars)
+		case inQ && isHeadingLine(line):
+			finalize()
+			inQ = false
+		}
+	}
+	finalize()
+	return gates
+}
+
+func stateAwaitingHuman(data []byte) bool {
+	for _, line := range splitLinesNoTrailing(data) {
+		if strings.HasPrefix(line, "- Status:") {
+			status := strings.TrimLeft(strings.TrimPrefix(line, "- Status:"), gateSpaceChars)
+			return status == "awaiting_human"
+		}
+	}
+	return false
+}
+
+func isHeadingLine(line string) bool {
+	if !strings.HasPrefix(line, "##") {
+		return false
+	}
+	rest := line[2:]
+	return rest != "" && strings.ContainsRune(gateSpaceChars, rune(rest[0]))
+}
+
+func splitLinesNoTrailing(data []byte) []string {
+	s := string(data)
+	s = strings.TrimSuffix(s, "\n")
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, "\n")
 }
 
 // StopResult is a stop-gate evaluation. Slug names the active feature (empty when

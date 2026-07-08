@@ -17,19 +17,25 @@ It is **read-only**: it never edits the workspace, never advances a phase, never
 ## Workflow
 1. Run the diagnose core verbosely (resolve across install layouts):
    ```bash
-   D=.claude/skills/devrites-lib/scripts/doctor.sh
-   [ -f "$D" ] || D="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/doctor.sh"
-   [ -f "$D" ] || D=pack/.claude/skills/devrites-lib/scripts/doctor.sh
-   [ -f "$D" ] && bash "$D" --verbose; echo "doctor rc=$?"
+   devrites-engine doctor --verbose; echo "doctor rc=$?"
    ```
 1a. **Surface the learnings nudge** — point the user at `/rite-learn` when a pattern recurs across
    shipped features (read-only; silent when there's nothing to say):
    ```bash
-   L=.claude/skills/devrites-lib/scripts/learnings.sh
-   [ -f "$L" ] || L="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/learnings.sh"
-   [ -f "$L" ] || L=pack/.claude/skills/devrites-lib/scripts/learnings.sh
-   [ -f "$L" ] && bash "$L" nudge || true
+   devrites-engine learnings nudge
    ```
+1b. **Validate project extensions + overrides** (read-only — report, don't sync). A user rite/
+   reviewer under `.devrites/extensions/` is held to the same schema as the shipped pack; a
+   reviewer override under `.devrites/overrides/` may add emphasis but never relax a gate:
+   ```bash
+   devrites-engine extensions validate; echo "extensions rc=$?"
+   devrites-engine overrides validate;  echo "overrides rc=$?"
+   ```
+   - **extensions rc=1** — an extension is malformed (missing frontmatter, empty, duplicate name).
+     Fix the named file; once valid, the user mirrors it into the harness with
+     `devrites-engine extensions sync`.
+   - **overrides rc=1** — an override reads like it waives a gate. That is the one thing overrides
+     must not do — hand the user the offending file to rewrite as added emphasis, not a waiver.
 2. Report the result. **rc=0** → "DevRites healthy" + the `ok:` checks. **rc=1** → list each
    `issue:` line with the fix it names, then the single command that resolves the most urgent
    one (a stale ACTIVE → `rite use <slug>` or `/rite-status`; an orphaned gate →
@@ -43,9 +49,16 @@ It is **read-only**: it never edits the workspace, never advances a phase, never
 - Healthy is the common case; say so plainly and stop. Don't invent issues.
 
 ## Output
+Reply-contract exception: workspace-less diagnostic. It does not render `devrites
+progress`, but it follows the compact labels and one-next-action rule from
+[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
+
 ```
-DevRites health: OK | N issue(s)
-<for each issue: the problem + its fix>
-Learnings: <n recurring pattern(s) across features → /rite-learn | none>
-Next: <single command for the most urgent issue, or "nothing to do">
+Done: DevRites health checked; <OK | n issues>.
+Changed: workspace only
+Evidence: devrites-engine doctor --verbose rc=<0|1>; learnings nudge <summary|none>; extensions/overrides <ok|n issues>
+Open: <none | issue count and top issue>
+Next: <single command for the most urgent issue>
+Record: not applicable
+↻ Hygiene: /clear if stopping; /compact (doctor issue) if fixing now
 ```

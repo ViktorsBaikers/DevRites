@@ -1,16 +1,26 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook statusline --harness=claude || exit 0"
+  },
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-allow.sh\"" }
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook allow --harness=claude || exit 0" }
         ]
       },
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit",
         "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-a1-guard.sh\"" }
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook a1-guard --harness=claude || exit 0" }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook source-cache-pre --harness=claude || exit 0" }
         ]
       }
     ],
@@ -18,33 +28,46 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-redwatch.sh\"" }
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook redwatch --harness=claude || exit 0" }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook source-cache-post --harness=claude || exit 0" }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-stop-gate.sh\"" }
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook stop-gate --harness=claude || exit 0" }
         ]
       },
       {
         "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-refresh-indexes.sh\"" }
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook refresh-indexes || exit 0" }
         ]
       }
     ],
     "UserPromptSubmit": [
       {
         "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-cursor.sh\"" }
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook cursor --harness=claude || exit 0" }
         ]
       }
     ],
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-orient.sh\"" }
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook orient --harness=claude || exit 0" }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook subagent-orient --harness=claude || exit 0" }
         ]
       }
     ]

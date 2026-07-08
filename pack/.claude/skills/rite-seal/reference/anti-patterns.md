@@ -5,7 +5,7 @@ NO-GO up to GO. (The irreversible push/tag/deploy and its type-GO gate now live 
 `/rite-ship` — see that skill's anti-patterns for the type-GO discipline.)
 
 Pack-wide rationalizations + red flags (incl. user-wants-it-bypass-gate):
-see [rules/anti-patterns.md](../../../rules/anti-patterns.md).
+see [standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 

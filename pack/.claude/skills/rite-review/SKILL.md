@@ -17,8 +17,8 @@ if none, tell the user to run `/rite-spec <feature>`.
 > into `/rite-seal`. Use `/code-review` for a one-off diff; use
 > `/rite-review` for a DevRites feature where the spec is the contract.
 
-## Rules consulted (read on demand from `.claude/rules/`)
-**Step 0:** Read `.claude/rules/core.md` first. The other rule files load on demand;
+## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. The other rule files load on demand;
 pull these via `Read` when the diff demands them:
 - `code-review.md` — small PRs, severity labels, tests-first review focus.
 - `principles.md` — declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
@@ -37,23 +37,20 @@ pull these via `Read` when the diff demands them:
 - Findings are labeled (below). Re-prove after any change you make.
 
 ## Workflow
-0. Read `.claude/rules/core.md` first (the always-on operating rules); pull the
+0. Read `.claude/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
    on-demand rules above as the diff demands them.
    Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
    ```bash
-   P=.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] || P="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/preamble.sh"
-   [ -f "$P" ] || P=pack/.claude/skills/devrites-lib/scripts/preamble.sh
-   [ -f "$P" ] && bash "$P" || echo "(orientation preamble unavailable on this install — read state.md directly to orient)"
+   devrites-engine preamble
    ```
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`, `evidence.md`,
    `touched-files.md`, `.devrites/principles.md` (if present — the binding invariants to score
    the diff against), and the `git diff`. For "what would this change break"
    questions, prefer a code-intelligence index if available — codebase-memory-mcp first,
    cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob); see
-   `.claude/rules/tooling.md` — over file reads;
+   `.claude/skills/devrites-lib/reference/standards/tooling.md` — over file reads;
    they answer impact/callers in one call. When a finding hinges on an external library's
    current API, context7 if available can confirm the signature.
 2. **Review tests first** — do they actually prove the acceptance criteria? Missing,
@@ -106,6 +103,13 @@ pull these via `Read` when the diff demands them:
    relevant or a regression risk is visible (measure first).
 7. Apply only in-scope fixes; **run verification after changes** (`/rite-prove` logic).
 8. Update `review.md`, `evidence.md`, and `state.md`.
+9. **Guard against the silent reviewer.** After `review.md` is written, run:
+   ```bash
+   devrites-engine review-integrity
+   ```
+   Exit 1 means an adversarial axis reported nothing and justified nothing — a suspected
+   rubber-stamp. Re-run that axis or add its `No-findings:` justification; do not carry a silent
+   axis into `/rite-seal` (where it surfaces as an Important).
 
 ## Finding labels
 - **Critical** — must fix before seal (correctness/security/data loss).
@@ -130,6 +134,12 @@ investigate each finding; past ~30% they label the tool noisy and skip it):
   `file:line` that proves it — no unverified blockers.
 - **Budget the noise.** Roll up trivia ("N style nits") into a single line; tooling already
   catches style. Review's job is correctness + spec fidelity, not a lint dump.
+- **A silent axis is suspicious, not clean.** An adversarial axis that raises nothing must earn
+  it: end its `## Spec` / `## Code review` section with a **`No-findings:`** line naming the
+  passes it ran (missing/partial/incorrect for spec; edge cases, error paths, the riskiest
+  decision, a changed behavior whose test may not cover it for code) and why each came back
+  empty. This is the mirror of confidence-banding — banding kills the false positive, this catches
+  the false negative ([`code-review.md` § Zero findings is suspicious](../devrites-lib/reference/standards/code-review.md)).
 
 ## Severity orientation (labels, not score)
 
@@ -142,32 +152,16 @@ the labels do the work.
 
 ## Output → `review.md`
 
-**Footer first (to chat, not into the report file)** — render the slice meter + flow ribbon by running the progress footer (`progress.sh`, resolved like the step-0 preamble — canonical snippet in `devrites-lib/SKILL.md`). Then write the report:
+Write the detailed review to `review.md`. In chat, run `devrites-engine progress` first, then use
+the shared completion reply contract
+([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+Default success shape:
 ```
-Reviewed: <slice N | feature>
-Tests: <adequate? gaps>
-Kept (≤1, specific): <one concrete decision worth protecting from later churn | omit>
-
-## Spec   (from devrites-spec-reviewer sub-agent, verbatim)
-- <quoted spec line> — <missing / partial / wrong / scope-creep> — <where>
-- ...
-
-## Code review   (from devrites-code-reviewer sub-agent, verbatim)
-- <file:line> — <violation / correctness / readability / architecture / maintainability> — <fix>
-- ...
-
-## Cross-axis contradictions (if any)
-- Spec axis: ... | Code-review axis: ... | who decides at seal: ...
-
-Findings (combined, after the parallel pass):
-  [Critical]   <n> — <file:line — problem — fix>
-  [Important]  <n> — <file:line — problem — fix>
-  [Suggestion] <n> — <file:line — problem — fix>
-  [Nit]        <n> — <file:line — problem — fix>
-  [FYI]        <n> — <file:line — note>
-Fixes applied (in scope): ...
-Re-verification: <cmd → pass/fail>
-Re-prove: <if review changed code, run a scoped `/rite-prove` so evidence post-dates the fix | n/a — no code changed>
-Next: /rite-seal   (or fix Criticals first)
-↻ Hygiene: /compact (review findings) if fixing Criticals/Importants this session; /clear if review is clean — see rules/context-hygiene.md.
+Done: review complete for <slice N | feature>.
+Changed: review.md, evidence.md <updated|n/a>, state.md
+Evidence: findings Critical <n> / Important <n> / Suggestion <n> / Nit <n> / FYI <n>; re-verification <cmd -> pass|n/a>
+Open: <none | Critical blockers, Fix: <single command> | Important fixes | re-prove needed>
+Next: /rite-seal
+Record: .devrites/work/<slug>/review.md
+↻ Hygiene: /compact (review findings) if fixing now; /clear if clean
 ```

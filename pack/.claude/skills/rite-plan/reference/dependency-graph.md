@@ -10,9 +10,9 @@ Order slices by what must exist before what. Keep it in `plan.md` as plain text.
    parallelizable for the user).
 
 ```
-Slice 1 (schema)  ──►  Slice 2 (write API)  ──►  Slice 3 (UI form)
-                  └─►  Slice 4 (read API)   ──►  Slice 5 (UI list)
-Slice 6 (config)  ── independent ──
+SLICE-001 (schema)  ->  SLICE-002 (write API)  ->  SLICE-003 (UI form)
+                   \->  SLICE-004 (read API)   ->  SLICE-005 (UI list)
+SLICE-006 (config)  -> independent
 ```
 
 ## Within a tier: risk-first

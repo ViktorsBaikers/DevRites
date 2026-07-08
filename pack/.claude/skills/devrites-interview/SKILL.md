@@ -10,6 +10,10 @@ Close the gap between what the user said and what they want, at the cheapest mom
 before a plan, spec, or code exists.
 
 ## Protocol
+- **State a confidence number.** Open with your one-line hypothesis of what the user wants and an
+  explicit **0–100%** confidence in it. The number forces honesty — if you wrote 85% but can't
+  predict how the user reacts to your next three questions, the number is wrong. Below **~70%**,
+  append the single thing still unresolved so the user can close the gap directly.
 - **One question per turn.** Multiple questions get one answered and the rest ignored.
 - **Attach your best guess** to every question, with the reason:
   > "I'm assuming export is CSV only (covers the stated use case). Right, or also XLSX?"
@@ -22,7 +26,7 @@ before a plan, spec, or code exists.
   the spec; **default-and-record** the rest in `assumptions.md` (best-guess + why). A reversible
   detail never earns a blocking question.
 - **Structured options** when the space is enumerable — present them as the standard ranked
-  **option set** (`rules/afk-hitl.md` → "Option set"): recommended **first**, labelled
+  **option set** (`standards/afk-hitl.md` → "Option set"): recommended **first**, labelled
   `(Recommended)`, each with a dimension-tagged rationale (`logic · infra · business ·
   architecture`, + `security`/`UX`/`risk` when in scope), plus the escape hatch. Render via
   `AskUserQuestion` when the harness has it:
@@ -33,9 +37,14 @@ before a plan, spec, or code exists.
   ```
 
 ## Stop condition
-Stop when **any** holds — don't interrogate past the point of value:
-- **Confidence** — you can predict the next answer (~95%); remaining unknowns are
-  reversible details that don't change the spec.
+Stop **opening new questions** when **any** holds — don't interrogate past the point of value.
+(Stopping the interview ≠ deciding for the user: a material call still goes back as a ranked
+option set — confidence lowers the question's *cost* to a one-pick confirm, not its *owner*. See
+[`rite-spec/reference/question-protocol.md`](../rite-spec/reference/question-protocol.md).)
+- **Confidence — the predict-three test.** The 95% bar is checkable, not a feeling: *can you
+  predict the user's reaction to the next three questions you would ask?* If yes, you're done
+  extracting. If several rounds pass and you still can't predict, something foundational is
+  missing — step back and name it, don't grind out more questions.
 - **Convergence** — the last 2–3 answers only rubber-stamped your guesses and didn't
   move the spec.
 - **Soft cap** — after ~8 material questions, proceed with your best-guess answers logged
@@ -44,6 +53,23 @@ Stop when **any** holds — don't interrogate past the point of value:
 Depth on the few that matter, not breadth for its own sake. If answers stop converging —
 you keep circling one area without progress — **reframe once** (below) instead of asking
 another question.
+
+## Want vs. should-want
+People answer with what they think they *should* want — the buzzword, the best practice, the
+convention — not what they actually want. Watch for tells: abstract virtues ("scalable", "clean",
+"modern"), deferral to what's conventional, an answer that could be pasted into any project. When
+you hear one, ask the unlock question — *"if you didn't have to justify this to anyone, what would
+you actually want?"* — it often does more than the previous five questions. Extract the real want,
+then record it; don't design to the performed one.
+
+## What counts as a yes
+Approval is an **explicit** yes, and several common replies aren't one:
+- *"Whatever you think is best"* / *"you decide"* — **delegation, not approval.** Re-ask with two
+  concrete options so the user chooses on the substance, not the deferral.
+- *"Sounds good"* / *"sure, let's go"* — a polite exit; probe once that it's real agreement, not
+  fatigue, on anything material.
+- **Silence** — not consent. Half of misalignment is silent disagreement about what *won't* be
+  built. Make the "out of scope" line explicit and get a yes on it too.
 
 ## Don't ask
 - Things the codebase answers (read it first).

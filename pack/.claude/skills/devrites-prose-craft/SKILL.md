@@ -11,7 +11,7 @@ search engine; the artifact is documentation a person will rely on, not content 
 This is the prose sibling of [`devrites-frontend-craft`](../devrites-frontend-craft/SKILL.md):
 craft applied to words instead of UI.
 
-The always-available core is [`.claude/rules/prose-style.md`](../../rules/prose-style.md) — the
+The always-available core is [`.claude/skills/devrites-lib/reference/standards/prose-style.md`](../devrites-lib/reference/standards/prose-style.md) — the
 two registers and the cut-list. This skill carries the depth: the full banned-phrase and
 structure references, and the before/after examples. Read the rule first; load a reference
 when you need the full list.

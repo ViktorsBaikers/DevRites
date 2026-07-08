@@ -55,7 +55,7 @@ of the above.
 | Feature request | GitHub Issues / Discussions | Explain the problem first; suggest a shape, not a finished design. |
 | New / improved skill | `pack/.claude/skills/<skill>/SKILL.md` | Must have frontmatter, body discipline, and ≥1 eval file. |
 | Review agent | `pack/.claude/agents/<agent>.md` | Read-only, fresh-context, severity-labeled output. |
-| Engineering rule | `pack/.claude/rules/<rule>.md` | Stack-agnostic. Project conventions always win. |
+| Engineering rule | `pack/.claude/skills/devrites-lib/reference/standards/<rule>.md` | Stack-agnostic. Project conventions always win. |
 | Docs | `docs/` or `README.md` | Keep cross-links current. |
 | Eval query | `evals/<skill>.json` | Trigger phrasing that should/shouldn't load the skill (20 per public skill). |
 | Behavioral eval | `evals/behavioral/<skill>.json` | Pressure scenario that tests whether a gating skill resists a documented rationalization. Opt-in; sourced from `anti-patterns.md`. |
@@ -106,7 +106,7 @@ A quick map — the [README "Layout" section](README.md#layout) has the full ver
 
 - `pack/.claude/skills/` — 28 skills (19 user-invocable `rite-*` + 9 model-invoked `devrites-*`), plus the internal `devrites-lib` script library.
 - `pack/.claude/agents/` — 11 agents: 10 fresh-context read-only reviewers + 1 writer (`devrites-slice-wright`).
-- `pack/.claude/rules/` — 20 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
+- `pack/.claude/skills/devrites-lib/reference/standards/` — 20 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
 - `evals/` — trigger evals (20 queries per public skill), `golden/` fixtures for the deterministic outcome grader, and `behavioral/` discipline-under-pressure scenarios for gating rites.
 - `scripts/` — install lib, validators, eval runner, the outcome grader (`grade-feature.sh` / `run-outcome-evals.sh`), release tooling.
 - `mcp/` — `devrites-mcp.mjs`, an MCP stdio server over the `devrites` CLI.
@@ -145,11 +145,11 @@ Run `python3 scripts/validate-frontmatter.py <files>` (or `npm run validate`) an
 - Emit severity-labeled findings: Critical / Important / Suggestion / Nit / FYI.
 - One file per agent; keep them focused (Spec vs Standards vs Test vs …).
 
-### Engineering rules (`pack/.claude/rules/<rule>.md`)
+### Engineering rules (`pack/.claude/skills/devrites-lib/reference/standards/<rule>.md`)
 
 - Stack-agnostic. No language-specific assumptions.
 - "Project conventions always win" — these are defaults, not laws.
-- Add to `pack/.claude/rules/README.md` index when you add a file.
+- Add to `pack/.claude/skills/devrites-lib/reference/standards/README.md` index when you add a file.
 
 ## Commit message format (strict)
 

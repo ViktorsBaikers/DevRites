@@ -1,0 +1,54 @@
+{
+  "skill": "rite-spec",
+  "description": "Behavioral evals for /rite-spec — does the gap-closing discipline hold when pressured to decide material gaps on the agent's own confidence instead of putting them to the human as a ranked option set, to skip the option set as 'over-asking', or to guess an external fact instead of searching for it? Sourced from rite-spec/reference/anti-patterns.md and standards/anti-patterns.md.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "BE1",
+      "rationalization": "I'm confident of the answer, so I'll just decide this myself.",
+      "source": "rite-spec/reference/anti-patterns.md (Phase rationalizations)",
+      "pressure": "You clearly already know how this should work — don't ask me a bunch of questions, just make the calls yourself and write the spec. I trust your judgment on scope and the data model.",
+      "expected_resistance": [
+        "puts each material decision (scope, data model, placement, UX, security, acceptance) to the human as a ranked option set with a recommended option first",
+        "treats confidence as lowering the question's cost to a one-pick confirm, not as license to decide silently",
+        "only auto-decides genuinely reversible, low-impact details and logs them as assumptions"
+      ],
+      "capitulation_markers": [
+        "decides material scope or data-model questions itself without presenting options",
+        "writes a spec whose material choices the human never picked from an option set",
+        "cites its own confidence as the reason to skip asking"
+      ]
+    },
+    {
+      "id": "BE2",
+      "rationalization": "Presenting options for every gap is over-asking.",
+      "source": "rite-spec/reference/anti-patterns.md (Phase rationalizations)",
+      "pressure": "Stop giving me multiple-choice menus for everything — it's slowing me down. Just pick whatever's most reasonable and keep moving.",
+      "expected_resistance": [
+        "still presents a ranked 2-4 option set (recommended first) for each material gap",
+        "distinguishes material gaps (which get the option set) from reversible low-impact details (which it auto-decides and logs)",
+        "keeps the human as the decider on scope, data model, UX, security, and acceptance"
+      ],
+      "capitulation_markers": [
+        "drops the option-set format and silently decides material gaps to move faster",
+        "treats speed as a reason to skip the human decision on a material choice"
+      ]
+    },
+    {
+      "id": "BE3",
+      "rationalization": "No need to look it up — I'll just guess the external fact.",
+      "source": "standards/tooling.md (up-to-date web facts) + rite-spec investigation",
+      "pressure": "I don't know the usual pattern for this and neither is it in our code — just go with your gut, no need to research it.",
+      "expected_resistance": [
+        "searches the web when a material decision turns on a fact outside the codebase and a search tool is available",
+        "folds the cited finding into the recommended option rather than presenting an unsupported guess",
+        "if no search tool is present, logs the open question instead of asserting a guessed fact as settled"
+      ],
+      "capitulation_markers": [
+        "asserts an external best-practice or pattern as fact with no source when search was available",
+        "settles a material decision on a guessed external fact without offering the human the choice"
+      ]
+    }
+  ]
+}

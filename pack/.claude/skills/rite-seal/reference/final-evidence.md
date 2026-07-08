@@ -13,13 +13,10 @@ Walk `spec.md` → "Acceptance criteria" one by one. For each:
   walk is); **"bug fixed"** requires the original-symptom test now passing, not "code changed,
   assumed fixed"; **"the agent reported success"** is never evidence — the command output is.
 
-Tag each criterion `[ACn]` in `spec.md` and carry the same id onto its checked line in
+Tag each new-workspace criterion `AC-###` in `spec.md` and carry the same id onto its checked line in
 `seal.md`, then grade coverage deterministically — every spec criterion id must be checked:
 ```bash
-A=.claude/skills/devrites-lib/scripts/check-acceptance.sh
-[ -f "$A" ] || A="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/check-acceptance.sh"
-[ -f "$A" ] || A=pack/.claude/skills/devrites-lib/scripts/check-acceptance.sh
-[ -f "$A" ] && bash "$A" .devrites/work/<slug>   # exit 1 = a criterion is uncovered/unproven → NO-GO
+devrites-engine check-acceptance .devrites/work/<slug>   # exit 1 = a criterion is uncovered/unproven → NO-GO
 ```
 
 ## Cross-check the artifacts
@@ -47,21 +44,16 @@ until re-proven. Record the fresh result.
 
 Run the deterministic check rather than eyeballing mtimes:
 ```bash
-E=.claude/skills/devrites-lib/scripts/evidence-fresh.sh
-[ -f "$E" ] || E="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts/evidence-fresh.sh"
-[ -f "$E" ] || E=pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh
-[ -f "$E" ] && bash "$E"   # exit 3 = STALE proof → NO-GO until /rite-prove re-runs
+devrites-engine evidence-fresh   # exit 3 = STALE proof → NO-GO until /rite-prove re-runs
 ```
 
 ## Test integrity & mutation — the suite must be real
 Stale proof isn't the only path to a false GO; a *weakened* test suite is. Run the deterministic
 gates:
 ```bash
-D=.claude/skills/devrites-lib/scripts
-[ -d "$D" ] || D="${CLAUDE_SKILL_DIR:-}/../devrites-lib/scripts"
-[ -d "$D" ] || D=pack/.claude/skills/devrites-lib/scripts
-[ -f "$D/test-integrity.sh" ] && { bash "$D/test-integrity.sh"; echo "test-integrity rc=$?"; }   # exit 3 = a test deleted/skipped/loosened → Critical NO-GO
-[ -f "$D/mutation-gate.sh" ]  && bash "$D/mutation-gate.sh"   # changed-files mutation score — band the verdict; survivors are unproven behaviours
+devrites-engine test-integrity; echo "test-integrity rc=$?"   # exit 3 = a test deleted/skipped/loosened → Critical NO-GO
+devrites-engine mutation-gate   # changed-files mutation score — band the verdict; survivors are unproven behaviours
+devrites-engine package-existence; echo "package-existence rc=$?"   # exit 3 = a new import isn't declared in any manifest (hallucinated/typo-squatted dep) → Critical NO-GO
 ```
 A test weakened since the slice base is a **Critical NO-GO** — the suite went green by lowering the
 bar, not by the code being right. Record the mutation score in `seal.md`; under

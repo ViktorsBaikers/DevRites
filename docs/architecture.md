@@ -5,6 +5,10 @@ that make an AI coding agent behave like a disciplined senior engineer: clarify 
 spec+plan → build one verified slice → prove with evidence → polish → review → seal →
 ship.
 
+For the `.devrites/` load order, file budgets, artifact schema, aliases,
+traceability rules, and phase-relative completeness model, see
+[`engine/workspace-schema.md`](engine/workspace-schema.md).
+
 ## Layers
 
 1. **Public workflow skills** — `.claude/skills/rite-*`, `user-invocable: true`. Each
@@ -38,8 +42,8 @@ ship.
    internal is governed by the `user-invocable:` flag, not by the name
    prefix.
 
-   Engineering rules live at `.claude/rules/` (each `rite-*` skill Reads
-   `.claude/rules/core.md` as its first step; the other 15 files load on
+   Engineering rules live at `.claude/skills/devrites-lib/reference/standards/` (each `rite-*` skill Reads
+   `.claude/skills/devrites-lib/reference/standards/core.md` as its first step; the other 15 files load on
    demand — no session-start autoload). Parallel reviewer fan-out at
    `/rite-seal` is a reference file
    (`rite-seal/reference/parallel-dispatch.md`), not a skill.
@@ -58,7 +62,7 @@ ship.
    dispatched by `/rite-build` to write one slice in a clean context (the write-side mirror of
    the reviewers).
 6. **Engineering rules** — DevRites' own stack-agnostic rules installed to
-   `.claude/rules/`. Each `rite-*` skill Reads `core.md` as its first step
+   `.claude/skills/devrites-lib/reference/standards/`. Each `rite-*` skill Reads `core.md` as its first step
    (step 0); 22 on-demand files load by the phase that needs them:
    - **Craft:** `coding-style.md` · `prose-style.md` · `patterns.md` · `error-handling.md` ·
      `testing.md` · `spec-grammar.md` · `documentation.md`.
@@ -77,25 +81,19 @@ per-skill catalog with triggers + I/O.
 
 ## Design rationale
 
-### Why a shared orientation preamble (`devrites-lib`)
+### Why the engine owns shared orientation (`devrites-lib`)
 Every workspace-operating skill's first move is the same: orient on the active feature —
 slug, phase, artifacts present, run mode, open-question tally — before acting. Re-deriving
 that from raw Markdown in each skill was duplicated (step-0 prose across ~20 skills),
 token-heavy (counting open gates meant re-reading the append-only `questions.md`, which
 only grows), and error-prone (a missed AFK sentinel or a miscounted gate changes behavior).
-So orientation is computed once by one read-only script, `devrites-lib/scripts/preamble.sh`,
-which prints a compact digest each skill reads at step 0. `devrites-lib` is an internal
-library skill (`user-invocable: false`, not a command) that houses the cross-cutting
-scripts — the preamble, the read-only gate scripts (`readiness.sh` / `evidence-fresh.sh` /
-`check-acceptance.sh`), the state mutators (`tick-afk.sh` / `resolve.sh` / `close-out.sh`),
-and the unified `devrites.sh` CLI that dispatches to all of them — *inside* `skills/` so
-they ship on both the bash-installer and plugin channels. Skills resolve them with a three-layout snippet (installed `.claude/` → plugin
-`${CLAUDE_SKILL_DIR}` → repo `pack/`). Bundled-script execution is reliable on the
-bash-installer channel (CWD-relative `.claude/`); Claude Code does **not** expose a stable
-script path to skill-invoked bash on the plugin channel (only to hooks — confirmed against
-`anthropics/claude-code` issues #48230 / #38699), so there the preamble is best-effort via
-`${CLAUDE_SKILL_DIR}` and degrades gracefully to reading `state.md` directly. The preamble is read-only; all mutation stays in
-the dedicated scripts.
+So orientation is computed once by the `devrites` engine binary, which prints a compact
+digest each skill reads at step 0. The same binary owns the read-only gates
+(`build-readiness`, `evidence-fresh`, `check-acceptance`) and state mutators
+(`tick-afk`, `resolve`, `close-out`), so Claude Code, Codex, MCP clients, CI, and humans
+all exercise the same control plane. `devrites-lib` remains an internal library skill
+(`user-invocable: false`, not a command) for shared references. The orientation
+path is read-only; mutation stays in dedicated engine subcommands.
 
 ### Why `/engine` was rejected
 A single `/engine` (or `/devrites`) mega-command would load every phase's instructions
@@ -125,15 +123,17 @@ are **disciplines**, not user commands. As `user-invocable: false` skills they:
   trigger conditions hit;
 - keep each public `SKILL.md` small by housing the heavy process elsewhere.
 
-### Why spec and plan are separate phases (`/rite-spec`, `/rite-define`, `/rite-plan`)
+### Why spec, architecture, plan, tasks, and traceability are separate artifacts
 Doing investigation, spec, plan, and slicing in one batch lets things slip — a gap goes
 unasked, placement is guessed, a slice misses a requirement. DevRites splits them so each
-is focused and gated. `/rite-spec` **investigates deeply and writes `spec.md`** (what/why,
-placement, issues, gaps closed with the user, design references) and must pass its
-readiness gate. `/rite-define` then turns that **approved spec** into `plan.md` +
-`tasks.md` (the how + vertical slices), checking every acceptance criterion maps to a
-slice. The spec is fully covered before any planning begins. `/rite-plan` is the separate
-repair/reslice/re-order tool for an *active* plan when it goes stale or drifts.
+is focused and gated. `/rite-spec` **investigates deeply and writes `spec.md`** (product
+what/why, requirements, acceptance, non-goals, measurable success) and must pass its
+readiness gate. `/rite-define` then turns that **approved spec** into `architecture.md`
+(technical map), `plan.md` (approach), `tasks.md` (vertical `SLICE-###` work), and
+`traceability.md` (AC/REQ → slice → proof → evidence → files). The spec is fully covered
+before any building begins, but it does not become a long technical omnibus. `/rite-plan`
+is the separate repair/reslice/re-order tool for an *active* plan when it goes stale or
+drifts.
 
 ### Why `/rite-polish` is one skill with two progressive-disclosure halves
 Polish has two natural halves — **code** (simplify, dead code, naming, plus
@@ -211,7 +211,7 @@ keeps the loop alive when the answer can wait, and pauses hard when it can't. Th
 "AFK never silently accepts irreversible risk" rule — destructive migrations,
 auth/authz boundaries, public API breaks, red tests/types/lint — always pauses
 regardless of the sentinel. See
-[`pack/.claude/rules/afk-hitl.md`](../pack/.claude/rules/afk-hitl.md) for the full
+[`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md) for the full
 contract.
 
 ## Design choices at a glance
@@ -275,4 +275,4 @@ acceptance criteria.
 See the top-level tree in `README.md` and the installed-target tree in `usage.md`.
 Source pack lives under `pack/.claude/` (skills, agents, and rules); the installer copies
 it into a target project's `.claude/`, including DevRites' engineering rules in
-`.claude/rules/`.
+`.claude/skills/devrites-lib/reference/standards/`.

@@ -4,9 +4,17 @@
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-CONV="python3 $HERE/../pack/.claude/skills/devrites-lib/scripts/conventions.py"
+ROOT="$(cd "$HERE/.." && pwd -P)"
+# The conventions ledger now ships in the Go engine (`devrites-engine conventions …`); this
+# test exercises that runtime path. Build the binary hermetically, mirroring
+# binary-lifecycle-test.sh, and self-skip where the Go toolchain / engine checkout is absent.
+command -v go >/dev/null 2>&1 || { echo "  SKIP: go toolchain not available"; exit 0; }
+[ -d "$ROOT/engine" ] || { echo "  SKIP: no engine/ (tarball install)"; exit 0; }
+BIN="$(mktemp -d)"
+( cd "$ROOT/engine" && go build -o "$BIN/devrites-engine" . ) || { echo "FAIL: could not build devrites-engine"; exit 1; }
+CONV="$BIN/devrites-engine conventions"
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+trap 'rm -rf "$TMP" "$BIN"' EXIT
 fail=0
 
 eq() { # label expected actual

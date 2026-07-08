@@ -30,6 +30,26 @@ var Sections = []Section{
 	SectionStatus,
 }
 
+// sectionFiles lists the filenames that can satisfy each section, canonical name
+// first, then the transitional aliases the live pack still writes — the same
+// mapping `devrites-engine migrate` normalizes (evidence→proof, state→status). A section
+// counts as present if ANY of its files has real content, so the engine reads a
+// live workspace before the pack sweep converges the filenames. The manifest
+// (feature.md) is not a section; it is handled separately in LoadFeature.
+var sectionFiles = map[Section][]string{
+	SectionSpec:      {"spec.md"},
+	SectionPlan:      {"plan.md"},
+	SectionDecisions: {"decisions.md"},
+	SectionTasks:     {"tasks.md"},
+	SectionProof:     {"proof.md", "evidence.md"},
+	SectionStatus:    {"status.md", "state.md"},
+}
+
+// LedgerFile is the working-state ledger the live pack writes. It carries the
+// phase (as a "- Phase: <p>" line) when no feature.md manifest declares one, and
+// it satisfies the status section.
+const LedgerFile = "state.md"
+
 // Phase is a workflow state. The order mirrors the rite-* arc.
 type Phase string
 

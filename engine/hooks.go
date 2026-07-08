@@ -64,12 +64,12 @@ func hookStopGate(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) 
 	if err != nil || !res.Blocked {
 		return exitOK
 	}
-	if os.Getenv("DEVRITES_STOP_GATE") != "enforce" {
+	if !hookEnforce("DEVRITES_STOP_GATE") {
 		// Observe mode: never block. Record a would-block to the feature's
 		// append-only log (mirroring devrites-stop-gate.sh) so the invariant is
 		// visible without gating; the append is O_APPEND-atomic across the
 		// concurrent processes DevRites spawns.
-		logPath := filepath.Join(root, "features", res.Slug, ".stop-gate.log")
+		logPath := filepath.Join(resolveWorkspaceDir(root, res.Slug), ".stop-gate.log")
 		if err := state.AppendLog(logPath, "WOULD-BLOCK\t"+res.Reason); err != nil {
 			debugf(stderr, "stop-gate log: %v", err)
 		}
@@ -82,6 +82,100 @@ func hookStopGate(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) 
 	}
 	fmt.Fprintln(stdout, out)
 	return exitOK
+}
+
+// allowReason is the auto-approval message the allow hook emits.
+const allowReason = "DevRites read-only orientation/gate command — auto-approved by the devrites-allow hook"
+
+var allowReadonlyCommands = map[string]bool{
+	"preamble":         true,
+	"progress":         true,
+	"readiness":        true,
+	"evidence-fresh":   true,
+	"check-acceptance": true,
+	"review-integrity": true,
+	// ledger's read forms (list / show <cap> / validate) carry no path arg and are
+	// auto-approved; the write forms (sync / diff <workspace-dir>) require a path
+	// arg, which safeAllowArg rejects, so they still fall through to a prompt.
+	"ledger": true,
+}
+
+// hookAllow auto-approves the read-only devrites orientation/gate subcommands so
+// they stop triggering a permission prompt on every skill run. FAIL-OPEN: it only
+// ever EMITS an allow for a structurally exact command shape; on any doubt it
+// stays silent, leaving the normal permission flow untouched.
+func hookAllow(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) int {
+	data, err := io.ReadAll(stdin)
+	if err != nil {
+		return exitOK
+	}
+	// Fast path: a command not mentioning devrites at all is never ours.
+	if !bytes.Contains(data, []byte("devrites")) {
+		return exitOK
+	}
+	cmd := h.ParsePreToolInput(bytes.NewReader(data)).Command
+	if cmd == "" {
+		return exitOK
+	}
+	if !safeAllowCommand(cmd) {
+		return exitOK
+	}
+	out, err := h.PreToolAllow(allowReason)
+	if err != nil {
+		debugf(stderr, "allow: %v", err)
+		return exitOK
+	}
+	fmt.Fprintln(stdout, out)
+	return exitOK
+}
+
+func safeAllowCommand(cmd string) bool {
+	cmd = strings.TrimSpace(cmd)
+	if cmd == "" {
+		return false
+	}
+	for _, prefix := range []string{
+		"command -v devrites-engine >/dev/null 2>&1 && ",
+		"command -v devrites-engine && ",
+	} {
+		if strings.HasPrefix(cmd, prefix) {
+			cmd = strings.TrimSpace(strings.TrimPrefix(cmd, prefix))
+			break
+		}
+	}
+	if strings.ContainsAny(cmd, "\n\r;|&<>$`\\\"'(){}[]*?!") {
+		return false
+	}
+	fields := strings.Fields(cmd)
+	if len(fields) < 2 || fields[0] != "devrites-engine" || !allowReadonlyCommands[fields[1]] {
+		return false
+	}
+	for _, arg := range fields[2:] {
+		if !safeAllowArg(arg) {
+			return false
+		}
+	}
+	return true
+}
+
+func safeAllowArg(arg string) bool {
+	if arg == "" || strings.HasPrefix(arg, "-") {
+		return false
+	}
+	if arg == "." || arg == ".." || strings.Contains(arg, "..") || strings.ContainsAny(arg, `/\`) {
+		return false
+	}
+	for _, r := range arg {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case strings.ContainsRune("._@:+,-", r):
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 // reviewerReadonlyDenyReason is the exact denial message
@@ -139,7 +233,7 @@ func hookReviewerReadonly(h harness.Harness, stdin io.Reader, stdout, stderr io.
 		return exitOK
 	}
 
-	if os.Getenv("DEVRITES_REVIEWER_RO") == "enforce" {
+	if hookEnforce("DEVRITES_REVIEWER_RO") {
 		out, err := h.PreToolDeny(reviewerReadonlyDenyReason)
 		if err != nil {
 			debugf(stderr, "reviewer-readonly: %v", err)
@@ -149,13 +243,12 @@ func hookReviewerReadonly(h harness.Harness, stdin io.Reader, stdout, stderr io.
 		return exitOK
 	}
 
-	// Observe mode: record the would-block to the active feature's append-only log
-	// (new-schema features/<slug>/, mirroring the stop-gate's log convention), then
-	// allow. The append is O_APPEND-atomic across the concurrent processes DevRites
-	// spawns.
+	// Observe mode: record the would-block to the active feature's append-only log,
+	// mirroring the stop-gate's log convention, then allow. The append is
+	// O_APPEND-atomic across the concurrent processes DevRites spawns.
 	if root, err := orient.ResolveRoot(os.Getenv("DEVRITES_ROOT")); err == nil {
 		if slug, _ := orient.ActiveSlug(root); slug != "" {
-			logPath := filepath.Join(root, "features", slug, ".reviewer-ro.log")
+			logPath := filepath.Join(resolveWorkspaceDir(root, slug), ".reviewer-ro.log")
 			if err := state.AppendLog(logPath, "WOULD-BLOCK\t"+head80(in.Command)); err != nil {
 				debugf(stderr, "reviewer-readonly log: %v", err)
 			}

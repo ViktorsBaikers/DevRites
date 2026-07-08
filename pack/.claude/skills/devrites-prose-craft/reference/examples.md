@@ -21,9 +21,9 @@ feature is, who it's for, and the scope boundary.
 ## 2. Acceptance criteria (technical register — precision stays)
 
 **Keep this as-is — do NOT "humanize" it:**
-> - [AC1] A `GET /reports/:id/export?format=csv` returns `200` with `Content-Type: text/csv`.
-> - [AC2] Rows stream; peak memory stays under 50 MB for a 1M-row export.
-> - [AC3] An unknown `format` returns `400` with `{ "error": "unsupported format" }`.
+> - AC-001: A `GET /reports/:id/export?format=csv` returns `200` with `Content-Type: text/csv`.
+> - AC-002: Rows stream; peak memory stays under 50 MB for a 1M-row export.
+> - AC-003: An unknown `format` returns `400` with `{ "error": "unsupported format" }`.
 
 Three items, exact identifiers, exact status codes. This is the technical register working
 correctly. The skill leaves it alone.
@@ -50,7 +50,7 @@ Named the decision, the reason (with evidence), and the trade-off. That's what a
 
 **After:**
 > Critical — `export.ts:42` catches every error and returns `500 "something went wrong"`. A
-> bad `format` param should be a `400` with the specific message (AC3). Catch the parse error
+> bad `format` param should be a `400` with the specific message (AC-003). Catch the parse error
 > narrowly; let the rest propagate.
 
 Severity label, `file:line`, the specific problem, the fix. No hedging, no "fundamentally".

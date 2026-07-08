@@ -6,7 +6,7 @@ calling `devrites-doubt`.
 
 Pack-wide rationalizations + red flags (incl. tests-later, defensive checks,
 generic AI naming, drive-by refactors): see
-[rules/anti-patterns.md](../../../rules/anti-patterns.md).
+[standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 
