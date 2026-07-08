@@ -140,7 +140,7 @@ echo "ok: size advisory complete"
 # ---- 9. DevRites engineering rules present -------------------------------
 section "DevRites rules present"
 if [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/README.md" ] && [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/security.md" ]; then
-  good "pack/.claude/skills/devrites-lib/reference/standards present ($(find "$ROOT/pack/.claude/skills/devrites-lib/reference/standards" -name '*.md' | wc -l | tr -d ' ') rule files)"
+  good "pack/.claude/skills/devrites-lib/reference/standards present ($(find "$ROOT/pack/.claude/skills/devrites-lib/reference/standards" -name '*.md' | wc -l | tr -d ' ') markdown files)"
 else
   bad "DevRites rules missing (need pack/.claude/skills/devrites-lib/reference/standards/*.md)"
 fi

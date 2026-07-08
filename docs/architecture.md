@@ -63,14 +63,15 @@ traceability rules, and phase-relative completeness model, see
    the reviewers).
 6. **Engineering rules** — DevRites' own stack-agnostic rules installed to
    `.claude/skills/devrites-lib/reference/standards/`. Each `rite-*` skill Reads `core.md` as its first step
-   (step 0); 22 on-demand files load by the phase that needs them:
+   (step 0); 25 on-demand files load by the phase that needs them:
    - **Craft:** `coding-style.md` · `prose-style.md` · `patterns.md` · `error-handling.md` ·
-     `testing.md` · `spec-grammar.md` · `documentation.md`.
+     `testing.md` · `spec-grammar.md` · `documentation.md` · `skill-authoring.md`.
    - **Quality / safety:** `code-review.md` · `principles.md` · `security.md` ·
      `performance.md` · `observability.md` · `developer-experience.md` · `deprecation.md` ·
      `anti-patterns.md`.
    - **Workflow / ops:** `development-workflow.md` · `git-workflow.md` ·
-     `hooks.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `tooling.md`.
+     `ci-cd.md` · `hooks.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` ·
+     `tooling.md` · `elicitation.md`.
    - **Index:** `README.md` (phase mapping, loading model).
 
 State lives in `.devrites/` as human-readable Markdown so it survives context
