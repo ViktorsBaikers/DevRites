@@ -8,6 +8,11 @@ const skillsDir = join(root, 'pack', '.claude', 'skills');
 const docsSkills = join(root, 'docs', 'skills.md');
 const readme = join(root, 'README.md');
 const arch = join(root, 'docs', 'architecture.md');
+const DESCRIPTION_WORD_LIMITS = {
+  public: 90,
+  internal: 75,
+  library: 60,
+};
 
 function fail(message) {
   console.error(`FAIL: ${message}`);
@@ -48,10 +53,29 @@ for (const entry of readdirSync(skillsDir).sort()) {
   const description = fm.get('description') || '';
   const invocable = fm.get('user-invocable') || '';
   const lines = text.split(/\r?\n/).length;
+  const descriptionWords = description.trim().split(/\s+/).filter(Boolean).length;
+  const descriptionSentences = (description.match(/[.!?](?:\s|$)/g) || []).length;
+  const descriptionBudget = entry === 'devrites-lib'
+    ? DESCRIPTION_WORD_LIMITS.library
+    : invocable === 'true'
+      ? DESCRIPTION_WORD_LIMITS.public
+      : DESCRIPTION_WORD_LIMITS.internal;
 
   if (name !== entry) fail(`${relative(root, file)}: name ${JSON.stringify(name)} does not match directory ${JSON.stringify(entry)}`);
   if (!description) fail(`${relative(root, file)}: missing description`);
   if (description.length > 1024) fail(`${relative(root, file)}: description is ${description.length} chars (max 1024)`);
+  if (descriptionWords > descriptionBudget) {
+    fail(`${relative(root, file)}: description is ${descriptionWords} words (max ${descriptionBudget}; keep triggers tight and move reference into the body)`);
+  }
+  if (descriptionSentences > 4) {
+    fail(`${relative(root, file)}: description has ${descriptionSentences} sentences (max 4; one purpose, one trigger branch, one boundary is enough)`);
+  }
+  for (const phrase of ['Use when', 'Not for']) {
+    const count = (description.match(new RegExp(`\\b${phrase}\\b`, 'g')) || []).length;
+    if (count > 1) {
+      fail(`${relative(root, file)}: description repeats "${phrase}" ${count} times (collapse duplicate trigger branches)`);
+    }
+  }
   if (!['true', 'false'].includes(invocable)) fail(`${relative(root, file)}: user-invocable must be explicit true/false`);
   if (entry === 'devrites-lib' && fm.get('disable-model-invocation') !== 'true') {
     fail(`${relative(root, file)}: devrites-lib must set disable-model-invocation: true`);
