@@ -31,10 +31,8 @@ upholds invariants worth proposing as project principles (step 4a).
   objective is unclear.
 
 ## Workflow
-0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`**, then run the shared orientation preamble:
-   ```bash
-   devrites-engine preamble
-   ```
+0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`**, then run
+   `devrites-engine preamble` for deterministic workspace orientation.
 1. **Scope the adoption** (`$ARGUMENTS`). Which repo or sub-area is being onboarded, and —
    if stated — what the user wants to build *next* on top of it. If the next-build objective
    is missing, ask once (it shapes the spec's acceptance); if the area is ambiguous, confirm

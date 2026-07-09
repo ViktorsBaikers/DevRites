@@ -59,16 +59,37 @@ func Learnings(root string, args []string, stdout, stderr io.Writer) int {
 			meta = fmt.Sprintf("%s · c=%s", tag, strconv.FormatFloat(c, 'f', -1, 64))
 		}
 		if !isFile(ledger) {
-			_ = os.MkdirAll(root, 0o755)
-			_ = os.WriteFile(ledger, []byte(learningsHeader), 0o644)
+			if err := os.MkdirAll(root, 0o755); err != nil {
+				fmt.Fprintf(stderr, "learnings: create ledger directory: %v\n", err)
+				return 1
+			}
+			if err := os.WriteFile(ledger, []byte(learningsHeader), 0o644); err != nil {
+				fmt.Fprintf(stderr, "learnings: create ledger: %v\n", err)
+				return 1
+			}
 		}
 		if slug == "" {
 			slug = "?"
 		}
 		entry := fmt.Sprintf("- [%s] (%s · %s) %s\n", time.Now().Format("2006-01-02"), meta, slug, text)
-		if f, err := os.OpenFile(ledger, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
-			_, _ = f.WriteString(entry)
+		f, err := os.OpenFile(ledger, os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			fmt.Fprintf(stderr, "learnings: open ledger: %v\n", err)
+			return 1
+		}
+		if _, err := f.WriteString(entry); err != nil {
 			_ = f.Close()
+			fmt.Fprintf(stderr, "learnings: append ledger: %v\n", err)
+			return 1
+		}
+		if err := f.Sync(); err != nil {
+			_ = f.Close()
+			fmt.Fprintf(stderr, "learnings: sync ledger: %v\n", err)
+			return 1
+		}
+		if err := f.Close(); err != nil {
+			fmt.Fprintf(stderr, "learnings: close ledger: %v\n", err)
+			return 1
 		}
 		fmt.Fprintln(stdout, "learnings: recorded.")
 		return 0

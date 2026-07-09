@@ -2,9 +2,11 @@ package lib
 
 import (
 	"bufio"
+	"context"
 	"crypto/sha1" // #nosec G505 -- non-cryptographic decision-index id; persisted hashes depend on sha1
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +15,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/devrites/devrites/internal/fsutil"
 )
@@ -75,12 +78,12 @@ func hasProjectFiles(project string) bool {
 }
 
 func isGitDirty(project string) bool {
-	out, err := exec.Command("git", "-C", project, "status", "--porcelain").Output()
+	out, err := boundedCommandOutput(15*time.Second, "", "git", "-C", project, "status", "--porcelain")
 	return err == nil && strings.TrimSpace(string(out)) != ""
 }
 
 func gitBranchAhead(project string) bool {
-	out, err := exec.Command("git", "-C", project, "status", "-sb", "--porcelain").Output()
+	out, err := boundedCommandOutput(15*time.Second, "", "git", "-C", project, "status", "-sb", "--porcelain")
 	return err == nil && strings.Contains(string(out), "ahead ")
 }
 
@@ -152,9 +155,7 @@ func CodeHealth(root string, args []string, stdout, stderr io.Writer) int {
 	cats := map[string]string{}
 	notes := []string{}
 	run := func(name string, argv ...string) {
-		cmd := exec.Command(argv[0], argv[1:]...)
-		cmd.Dir = project
-		out, err := cmd.CombinedOutput()
+		out, err := boundedCommandOutput(10*time.Minute, project, argv[0], argv[1:]...)
 		if err == nil {
 			cats[name] = "PASS"
 			return
@@ -236,6 +237,14 @@ func firstLine(s string) string {
 
 func commandExists(name string) bool { _, err := exec.LookPath(name); return err == nil }
 
+func boundedCommandOutput(timeout time.Duration, dir, name string, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.Dir = dir
+	return cmd.CombinedOutput()
+}
+
 func npmScript(project, name string) bool {
 	b, err := os.ReadFile(filepath.Join(project, "package.json"))
 	if err != nil {
@@ -263,7 +272,11 @@ type decisionIndexEntry struct {
 func Decisions(root string, args []string, stdout, stderr io.Writer) int {
 	switch argAt(args, 0) {
 	case "index":
-		entries := collectDecisions(root)
+		entries, err := collectDecisions(root)
+		if err != nil {
+			fmt.Fprintf(stderr, "decisions: %v\n", err)
+			return 1
+		}
 		var b strings.Builder
 		for _, e := range entries {
 			j, _ := json.Marshal(e)
@@ -283,7 +296,11 @@ func Decisions(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintln(stderr, "usage: devrites-engine decisions search <query>")
 			return 2
 		}
-		entries := collectDecisions(root)
+		entries, err := collectDecisions(root)
+		if err != nil {
+			fmt.Fprintf(stderr, "decisions: %v\n", err)
+			return 1
+		}
 		terms := strings.Fields(q)
 		matches := []decisionIndexEntry{}
 		for _, e := range entries {
@@ -319,25 +336,32 @@ func pluralY(n int) string {
 	return "ies"
 }
 
-func collectDecisions(root string) []decisionIndexEntry {
+func collectDecisions(root string) ([]decisionIndexEntry, error) {
 	paths := []string{}
 	for _, base := range []string{filepath.Join(root, "archive"), filepath.Join(root, "work")} {
-		_ = filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
-			if err == nil && !d.IsDir() && filepath.Base(p) == "decisions.md" {
+		err := filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() && filepath.Base(p) == "decisions.md" {
 				paths = append(paths, p)
 			}
 			return nil
 		})
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("walk decisions in %s: %w", base, err)
+		}
 	}
 	sort.Strings(paths)
 	var out []decisionIndexEntry
 	for _, p := range paths {
 		f, err := os.Open(p)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("open decisions %s: %w", p, err)
 		}
 		slug := filepath.Base(filepath.Dir(p))
 		s := bufio.NewScanner(f)
+		s.Buffer(make([]byte, 64*1024), 1024*1024)
 		lineNo := 0
 		for s.Scan() {
 			lineNo++
@@ -353,9 +377,15 @@ func collectDecisions(root string) []decisionIndexEntry {
 			rel, _ := filepath.Rel(projectDir(root), p)
 			out = append(out, decisionIndexEntry{Slug: slug, Path: rel, Line: lineNo, Text: text, Hash: hex.EncodeToString(h[:])[:12]})
 		}
-		_ = f.Close()
+		if err := s.Err(); err != nil {
+			_ = f.Close()
+			return nil, fmt.Errorf("scan decisions %s: %w", p, err)
+		}
+		if err := f.Close(); err != nil {
+			return nil, fmt.Errorf("close decisions %s: %w", p, err)
+		}
 	}
-	return out
+	return out, nil
 }
 
 type secretFinding struct{ Severity, Path, Kind, Match string }
@@ -452,7 +482,7 @@ func scanSecrets(path, text string) []secretFinding {
 }
 
 func gitStagedNames(project string) []string {
-	out, err := exec.Command("git", "-C", project, "diff", "--cached", "--name-only").Output()
+	out, err := boundedCommandOutput(15*time.Second, "", "git", "-C", project, "diff", "--cached", "--name-only")
 	if err != nil {
 		return nil
 	}

@@ -32,6 +32,10 @@ func WriteFileAtomic(path string, data []byte, perm fs.FileMode) error {
 		_ = tmp.Close()
 		return fmt.Errorf("atomic write %s: %w", path, err)
 	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("atomic write %s: %w", path, err)
+	}
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("atomic write %s: %w", path, err)
 	}
@@ -40,6 +44,25 @@ func WriteFileAtomic(path string, data []byte, perm fs.FileMode) error {
 	}
 	cleanup = false
 	return nil
+}
+
+// FileModTime returns a regular file's modification time in whole seconds.
+func FileModTime(path string) (int64, bool) {
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return 0, false
+	}
+	return info.ModTime().Unix(), true
+}
+
+// NewestModTime returns the newest modification time among regular files.
+func NewestModTime(paths ...string) (newest int64, ok bool) {
+	for _, path := range paths {
+		if modified, exists := FileModTime(path); exists && (!ok || modified > newest) {
+			newest, ok = modified, true
+		}
+	}
+	return newest, ok
 }
 
 // CopyTree recursively copies src to dst, creating parent directories and

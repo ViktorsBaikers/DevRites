@@ -7,9 +7,11 @@ package iohooks
 // their own file to mark that boundary. Every one is fail-open and never blocks.
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -79,11 +81,12 @@ func SourceCachePre(stdin io.Reader, stdout, stderr io.Writer) int {
 	if err != nil {
 		return exitOK
 	}
-	url := webFetchURL(data)
+	payload := parseWebFetchPayload(data)
+	url := payload.ToolInput.URL
 	if url == "" {
 		return exitOK
 	}
-	prompt := webFetchPrompt(data)
+	prompt := payload.ToolInput.Prompt
 	raw, err := os.ReadFile(sourceCachePath(url))
 	if err != nil {
 		return exitOK
@@ -143,15 +146,16 @@ func SourceCachePost(stdin io.Reader, stdout, stderr io.Writer) int {
 	if err != nil {
 		return exitOK
 	}
-	url := webFetchURL(data)
+	payload := parseWebFetchPayload(data)
+	url := payload.ToolInput.URL
 	if url == "" {
 		return exitOK
 	}
-	content := webFetchContent(data)
+	content := payload.content()
 	if content == "" {
 		return exitOK
 	}
-	prompt := webFetchPrompt(data)
+	prompt := payload.ToolInput.Prompt
 
 	etag, lastMod := fetchValidators(url)
 	entryPath := sourceCachePath(url)
@@ -217,50 +221,70 @@ func DownloadFile(url, path string) error {
 	if err != nil {
 		return fmt.Errorf("download to %s: %w", path, err)
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		_ = resp.Body.Close()
 		return fmt.Errorf("%s returned %s", url, resp.Status)
 	}
-	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	dir := filepath.Dir(path)
+	out, err := os.CreateTemp(dir, "."+filepath.Base(path)+".download-*")
 	if err != nil {
+		_ = resp.Body.Close()
 		return fmt.Errorf("create output file: %w", err)
 	}
-	defer out.Close()
+	tmp := out.Name()
+	keep := false
+	defer func() {
+		_ = out.Close()
+		if !keep {
+			_ = os.Remove(tmp)
+		}
+	}()
 	if _, err := io.Copy(out, resp.Body); err != nil {
+		_ = resp.Body.Close()
 		return fmt.Errorf("write %s: %w", path, err)
 	}
+	if err := resp.Body.Close(); err != nil {
+		return fmt.Errorf("close download %s: %w", url, err)
+	}
+	if err := out.Chmod(0o644); err != nil {
+		return fmt.Errorf("chmod %s: %w", path, err)
+	}
+	if err := out.Sync(); err != nil {
+		return fmt.Errorf("sync %s: %w", path, err)
+	}
+	if err := out.Close(); err != nil {
+		return fmt.Errorf("close %s: %w", path, err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		return fmt.Errorf("install %s: %w", path, err)
+	}
+	keep = true
 	return nil
 }
 
-// webFetchURL / webFetchPrompt / webFetchContent decode the WebFetch payload fields
-// the cache hooks read, best-effort (empty on any failure).
-func webFetchURL(data []byte) string {
-	var p struct {
-		ToolInput struct {
-			URL string `json:"url"`
-		} `json:"tool_input"`
-	}
-	_ = json.Unmarshal(data, &p)
-	return p.ToolInput.URL
+type webFetchPayload struct {
+	ToolInput struct {
+		URL    string `json:"url"`
+		Prompt string `json:"prompt"`
+	} `json:"tool_input"`
+	ToolResponse json.RawMessage `json:"tool_response"`
 }
 
-func webFetchPrompt(data []byte) string {
-	var p struct {
-		ToolInput struct {
-			Prompt string `json:"prompt"`
-		} `json:"tool_input"`
-	}
+func parseWebFetchPayload(data []byte) webFetchPayload {
+	var p webFetchPayload
 	_ = json.Unmarshal(data, &p)
-	return p.ToolInput.Prompt
+	return p
 }
 
-// webFetchContent tries the known WebFetch response fields, then a bare string
-// response — mirroring the jq fallback chain in the shell hook.
+func webFetchURL(data []byte) string    { return parseWebFetchPayload(data).ToolInput.URL }
+func webFetchPrompt(data []byte) string { return parseWebFetchPayload(data).ToolInput.Prompt }
 func webFetchContent(data []byte) string {
-	var p struct {
-		ToolResponse json.RawMessage `json:"tool_response"`
-	}
-	if json.Unmarshal(data, &p) != nil || len(p.ToolResponse) == 0 {
+	return parseWebFetchPayload(data).content()
+}
+
+// content tries the known WebFetch response fields, then a bare string response.
+func (p webFetchPayload) content() string {
+	if len(p.ToolResponse) == 0 {
 		return ""
 	}
 	if p.ToolResponse[0] == '"' {
@@ -454,29 +478,35 @@ func refreshWorker(root string, st refreshState, out io.Writer) {
 // runIndexTool runs one external index command under a timeout, tee-ing its combined
 // output; a failure or timeout is reported, never fatal.
 func runIndexTool(out io.Writer, timeout time.Duration, name string, args ...string) {
-	cmd := exec.Command(name, args...)
-	done := make(chan error, 1)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...)
 	var buf strings.Builder
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
-	if err := cmd.Start(); err != nil {
-		fmt.Fprintf(out, "[%s] not runnable\n", name)
+	err := cmd.Run()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		fmt.Fprintf(out, "[%s] timed out\n", name)
 		return
 	}
-	go func() { done <- cmd.Wait() }()
-	select {
-	case <-time.After(timeout):
-		_ = cmd.Process.Kill()
-		fmt.Fprintf(out, "[%s] timed out\n", name)
-	case err := <-done:
+	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			fmt.Fprintf(out, "[%s] not runnable\n", name)
+			return
+		}
 		if s := buf.String(); s != "" {
 			fmt.Fprint(out, s)
 			if !strings.HasSuffix(s, "\n") {
 				fmt.Fprintln(out)
 			}
 		}
-		if err != nil {
-			fmt.Fprintf(out, "[%s] failed\n", name)
+		fmt.Fprintf(out, "[%s] failed\n", name)
+		return
+	}
+	if s := buf.String(); s != "" {
+		fmt.Fprint(out, s)
+		if !strings.HasSuffix(s, "\n") {
+			fmt.Fprintln(out)
 		}
 	}
 }
@@ -490,7 +520,9 @@ func cbmRegistered(root string) bool {
 	if dirExists(filepath.Join(root, ".codebase-memory")) {
 		return true
 	}
-	cmd := exec.Command("codebase-memory-mcp", "cli", "--raw", "list_projects")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "codebase-memory-mcp", "cli", "--raw", "list_projects")
 	outBytes, err := cmd.Output()
 	return err == nil && strings.Contains(string(outBytes), root)
 }

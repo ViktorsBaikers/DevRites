@@ -1,7 +1,8 @@
 # Extending DevRites — project extensions & reviewer overrides
 
-DevRites ships a fixed, authored pack of rites, reviewers, and standards. Two project-local
-surfaces let a team tune it **without forking the pack** — both live in the data plane
+DevRites ships a fixed, authored pack of rites, reviewers, and standards. The extension sync
+surface is currently **Claude Code-only**; Codex extension mirrors are not generated. Two project-local
+surfaces let a Claude Code project tune the pack **without forking it** — both live in the data plane
 (`.devrites/`), both are git-diffable, and both are held to the same contracts the shipped pack is.
 
 They answer two different questions:
@@ -39,7 +40,7 @@ pack — a malformed extension is refused, not silently half-installed.
 ```bash
 devrites-engine extensions list       # enumerate extensions and what each provides
 devrites-engine extensions validate   # schema-check every extension (exit 1 on a violation)
-devrites-engine extensions sync        # mirror valid extensions into .claude/ so the harness finds them
+devrites-engine extensions sync        # mirror valid extensions into .claude/ for Claude Code
 ```
 
 - **`validate`** checks each declared skill/agent carries `name:` + `description:` frontmatter, that
@@ -102,8 +103,9 @@ Use `/rite-customize extension <name>` for guided authoring, or do it by hand:
 
 ### Harness scope
 
-`sync` targets the **Claude** layout (`.claude/skills`, `.claude/agents`), which the harness
-auto-discovers. It does not generate Codex mirrors. The `.md` → `.codex/agents/*.toml` conversion,
+`sync` targets the **Claude Code-only** layout (`.claude/skills`, `.claude/agents`), which that host
+auto-discovers. It does not generate Codex mirrors, so project extensions are unavailable to Codex
+unless an operator maintains an equivalent Codex surface independently. The `.md` → `.codex/agents/*.toml` conversion,
 path rewriting, hook/config blocks, and skills-list description stubbing are deliberately limited to
 the generated shipped pack artifacts so extension sync does not become a second Codex generator.
 

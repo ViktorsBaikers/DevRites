@@ -68,6 +68,19 @@ Read core.md.
 SKILL
 run_fail_contains "skill anatomy rejects missing output contract" "output/reply contract" python3 "$ROOT/scripts/validate-skill-anatomy.py" --skills-dir "$T/skills" --quiet
 
+# A legacy skill exemption may waive named sections, but must not bypass every
+# other anatomy contract.
+mkdir -p "$T/exempt-skills/rite-doctor"
+cat > "$T/exempt-skills/rite-doctor/SKILL.md" <<'SKILL'
+---
+name: rite-doctor
+description: Use when diagnosing DevRites. Not for feature work.
+user-invocable: true
+---
+# /rite-doctor
+SKILL
+run_fail_contains "skill anatomy exemptions are section-scoped" "output/reply contract" python3 "$ROOT/scripts/validate-skill-anatomy.py" --skills-dir "$T/exempt-skills" --quiet
+
 # Fixture: routing eval owner negatives are pairwise, not vacuous.
 mkdir -p "$T/routing-skills/alpha" "$T/routing-skills/beta" "$T/routing-evals"
 cat > "$T/routing-skills/alpha/SKILL.md" <<'SKILL'
@@ -90,6 +103,11 @@ cat > "$T/routing-evals/alpha.json" <<'JSON'
 {"skill":"alpha","queries":[{"text":"alpha task","expected":"should_not_trigger","owner":"beta","rationale":"beta owns it"}]}
 JSON
 run_fail_contains "routing eval rejects owner that does not outrank target" "declared owner" python3 "$ROOT/scripts/run-routing-evals.py" --skills-dir "$T/routing-skills" --evals-dir "$T/routing-evals" --baseline "$T/no-baseline.json"
+
+cat > "$T/routing-baseline.json" <<'JSON'
+{"recorded_at":"2026-07-10","skills":99,"queries":1,"positive_queries":0,"negative_queries":1}
+JSON
+run_fail_contains "routing eval rejects stale baseline metadata" "baseline metadata: skills" python3 "$ROOT/scripts/run-routing-evals.py" --skills-dir "$T/routing-skills" --evals-dir "$T/routing-evals" --baseline "$T/routing-baseline.json"
 
 # Fixture: host parity rejects docs without a Codex equivalent.
 cp -R "$ROOT/pack/.claude/skills" "$T/parity-skills"

@@ -55,12 +55,7 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
 
 ## Workflow
 0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`** — the always-on operating rules and anti-rationalizations.
-   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
-   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-   instead of re-deriving state from raw Markdown:
-   ```bash
-   devrites-engine preamble
-   ```
+   Then run `devrites-engine preamble` for deterministic workspace orientation.
 0a. **Brownfield check — onboard before speccing onto un-adopted existing code.** If this is an
    **existing codebase** (real source predating DevRites) that has **never been adopted** — no
    `.devrites/conventions.md`, no prior `.devrites/work`, `.devrites/features`, or `.devrites/archive` — the build has no
@@ -142,7 +137,8 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    it because you predicted the answer. Only a **genuinely reversible, low-impact** detail is
    auto-decided and logged to `assumptions.md`; when unsure whether a gap is material, ask.
    (Vague ask → `devrites-interview`; rough idea → `$rite-pressure-test`.) For a vague ask,
-   **map the decision tree** and resolve each branch depth-first; **cover every dimension** —
+   load [`reference/interview-patterns.md`](reference/interview-patterns.md), **map the decision
+   tree**, and resolve each branch depth-first; **cover every dimension** —
    each resolved by a human pick or explicitly deferred (logged, non-blocking), never silently
    skipped. Aim for **zero blocking gaps**. *If a gap is genuinely undecidable on paper (state
    machine that may deadlock, data shape ambiguity, "which UX wins") → suggest a

@@ -56,7 +56,12 @@ func cmdValidatePack(args []string, stdout, stderr io.Writer) int {
 	files := 0
 	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return nil // unreadable entry — skip, never abort the walk
+			rel, relErr := filepath.Rel(dir, path)
+			if relErr != nil {
+				rel = path
+			}
+			issues = append(issues, fmt.Sprintf("%s: cannot inspect: %v", rel, err))
+			return nil
 		}
 		if d.IsDir() || filepath.Ext(path) != ".json" {
 			return nil
@@ -64,6 +69,7 @@ func cmdValidatePack(args []string, stdout, stderr io.Writer) int {
 		rel, _ := filepath.Rel(dir, path)
 		data, err := os.ReadFile(path) // #nosec G122 -- validation walk over the pack dir the operator passed in; a symlink race requires an attacker already writing to that checkout
 		if err != nil {
+			issues = append(issues, fmt.Sprintf("%s: cannot read: %v", rel, err))
 			return nil
 		}
 		var doc any

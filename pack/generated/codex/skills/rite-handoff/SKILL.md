@@ -27,12 +27,7 @@ the same user after `/clear` — can pick the work up without re-reading the tra
 Read `.agents/skills/devrites-lib/reference/standards/core.md` first — its "Persistence before stopping" discipline is
 exactly what this skill executes. The other rule files load on demand.
 
-Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
-the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-instead of re-deriving state from raw Markdown:
-```bash
-devrites-engine preamble
-```
+Then run `devrites-engine preamble` for deterministic workspace orientation.
 
 ## Where to write
 

@@ -24,6 +24,9 @@ You are the DevRites entry point. Two modes:
 - **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a workflow phase. Do not read `state.md` / run evidence checks / list artifacts — that's `$rite-status`.
 - **Verb arg** → dispatch to the matching `rite-<verb>` skill (see "Dispatch" below). The router is a pass-through: `$rite spec foo` ≡ `$rite-spec foo`; the called skill owns the output.
 
+When the user asks which rite fits, load [`devrites-lib/reference/intent-map.md`](../devrites-lib/reference/intent-map.md).
+When they ask how phases connect, load [`reference/menu.md`](reference/menu.md).
+
 ## Dispatch
 
 If `$ARGUMENTS` starts with a verb in this table, **load the matching skill and execute its workflow** with the remainder of `$ARGUMENTS` as that skill's argument. Try post-install path first, fall back to pre-install:

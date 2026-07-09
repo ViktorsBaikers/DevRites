@@ -25,13 +25,9 @@ don't load both up front.
 
 0. **Read** `.claude/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules). The
    per-phase rule files (`coding-style.md`, `error-handling.md`, …) load on demand
-   from `reference/code.md` / `reference/ui.md` when their phase runs.
-   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
-   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-   instead of re-deriving state from raw Markdown:
-   ```bash
-   devrites-engine preamble
-   ```
+   from `reference/code.md` / `reference/ui.md` when their phase runs; for UI scope also read
+   `.claude/skills/devrites-lib/reference/standards/browser-proof-checklist.md`.
+   Then run `devrites-engine preamble` for deterministic workspace orientation.
 1. **Read** `state.md`, `touched-files.md`, and the `git diff` for the active
    workspace (or `$ARGUMENTS` if a target was given).
 2. **Detect UI scope** — UI is touched if the diff or `touched-files.md`

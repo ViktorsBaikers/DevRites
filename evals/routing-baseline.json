@@ -1,13 +1,13 @@
 {
-  "description": "Routing quality ratchet. Start from the 2026-07-09 deterministic routing baseline; fail on regression before raising the floors.",
-  "recorded_at": "2026-07-09",
-  "skills": 38,
+  "description": "Routing quality ratchet. Trigger-section-aware deterministic baseline; fail on corpus drift or score regression before raising the floors.",
+  "recorded_at": "2026-07-10",
+  "skills": 42,
   "queries": 660,
   "positive_queries": 303,
   "negative_queries": 357,
-  "rank1_rate_min": 0.5941,
-  "rank_top3_rate_min": 0.8185,
+  "rank1_rate_min": 0.6403,
+  "rank_top3_rate_min": 0.8251,
   "false_positive_collisions_max": 6,
-  "public_vs_internal_confusion_max": 24,
+  "public_vs_internal_confusion_max": 14,
   "host_wording_confusion_max": 0
 }

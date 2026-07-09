@@ -17,6 +17,10 @@ live in `/rite-ship`, which refuses to run without a GO recorded here.
 pull these via `Read` before sealing:
 - `agents.md` — review-subagent fan-out at seal.
 - `code-review.md` — severity labels (Critical / Important / Suggestion / Nit / FYI).
+- `review-checklist.md` — compact final review pass/fail sweep.
+- `test-proof-checklist.md` — compact proof-quality gate for tests and evidence.
+- `browser-proof-checklist.md` — for UI scope, the browser-state and Visual Verdict gate.
+- `security-checklist.md` — when input / auth / data / integrations / secrets are in scope.
 - `principles.md` — declared project invariants (`.devrites/principles.md`) are a pass/fail gate; a diff that violates one with no recorded, human-approved exception is a NO-GO.
 - `documentation.md` — record decisions in `decisions.md` before sealing.
 - `observability.md` — a runtime surface that ships blind is an Important finding.

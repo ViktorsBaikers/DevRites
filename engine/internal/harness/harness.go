@@ -251,24 +251,20 @@ func (h Harness) ParseGuardInput(r io.Reader) GuardInput {
 // PostToolContext returns the hook stdout that injects text as PostToolUse
 // additionalContext (e.g. the fail-on-red notice).
 func (h Harness) PostToolContext(text string) (string, error) {
-	switch h {
-	case Claude, Codex:
-		var env additionalContextEnvelope
-		env.HookSpecificOutput.HookEventName = "PostToolUse"
-		env.HookSpecificOutput.AdditionalContext = text
-		return marshalCompact(env)
-	default:
-		return "", fmt.Errorf("unsupported harness %q", h)
-	}
+	return h.additionalContext("PostToolUse", text)
 }
 
 // SubagentStartContext returns the hook stdout that injects text as
 // SubagentStart orientation for a spawned subagent.
 func (h Harness) SubagentStartContext(text string) (string, error) {
+	return h.additionalContext("SubagentStart", text)
+}
+
+func (h Harness) additionalContext(event, text string) (string, error) {
 	switch h {
 	case Claude, Codex:
 		var env additionalContextEnvelope
-		env.HookSpecificOutput.HookEventName = "SubagentStart"
+		env.HookSpecificOutput.HookEventName = event
 		env.HookSpecificOutput.AdditionalContext = text
 		return marshalCompact(env)
 	default:

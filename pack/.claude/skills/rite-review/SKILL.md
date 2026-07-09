@@ -21,10 +21,12 @@ if none, tell the user to run `/rite-spec <feature>`.
 **Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. The other rule files load on demand;
 pull these via `Read` when the diff demands them:
 - `code-review.md` — small PRs, severity labels, tests-first review focus.
+- `review-checklist.md` — compact pass/fail sweep before reporting the verdict.
 - `principles.md` — declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
 - `testing.md` — confirm the tests prove the spec, not just pass.
 - `agents.md` — when to fan out to which review subagent.
 - `security.md` — when input / auth / data / integrations / secrets are in scope.
+- `security-checklist.md` — for the same security-sensitive scope, the compact trust-boundary sweep.
 - `performance.md` — only when perf is relevant or a regression risk is visible.
 
 ## Operating rules
@@ -39,12 +41,7 @@ pull these via `Read` when the diff demands them:
 ## Workflow
 0. Read `.claude/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
    on-demand rules above as the diff demands them.
-   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
-   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-   instead of re-deriving state from raw Markdown:
-   ```bash
-   devrites-engine preamble
-   ```
+   Then run `devrites-engine preamble` for deterministic workspace orientation.
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`, `evidence.md`,
    `touched-files.md`, `.devrites/principles.md` (if present — the binding invariants to score
    the diff against), and the `git diff`. For "what would this change break"

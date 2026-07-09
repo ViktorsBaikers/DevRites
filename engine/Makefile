@@ -4,12 +4,16 @@ GOFILES := $(shell find . -name '*.go' -not -path './$(DIST)/*')
 # darwin/amd64 kept for Intel Macs; the five targets the release matrix ships.
 PLATFORMS := darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64
 
-.PHONY: build fmt-check test test-race vet quality staticcheck govulncheck cover tools crosscompile clean
+.PHONY: build fmt-check test test-race vet quality staticcheck govulncheck gosec cover tools crosscompile clean
 
 # Pinned analysis tools. `make tools` installs them into $(go env GOPATH)/bin;
 # CI installs the same versions so local and CI verdicts match.
 STATICCHECK_VERSION := 2025.1.1
-GOVULNCHECK_VERSION := latest
+GOVULNCHECK_VERSION := v1.5.0
+GOSEC_VERSION := v2.27.1
+STATICCHECK := go run honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION)
+GOVULNCHECK := go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+GOSEC := go run github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
 
 build:
 	CGO_ENABLED=0 go build -o $(BINARY) .
@@ -30,17 +34,21 @@ vet:
 
 # quality is the full local gate — mirror it in CI so a green `make quality`
 # means a green pipeline (the date-sensitive parity golden aside; see ADR-0006).
-quality: fmt-check vet staticcheck test-race
+quality: fmt-check vet staticcheck govulncheck gosec test-race
 
 tools:
 	go install honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION)
 	go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+	go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
 
 staticcheck:
-	staticcheck ./...
+	$(STATICCHECK) ./...
 
 govulncheck:
-	govulncheck ./...
+	$(GOVULNCHECK) ./...
+
+gosec:
+	$(GOSEC) -conf .gosec.json -exclude=G204,G304,G702,G703 ./...
 
 # Coverage baseline. No hard floor is wired yet (see ADR-0006): the number is
 # understated because most engine behaviour is exercised through CLI-level

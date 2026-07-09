@@ -5,12 +5,37 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestDownloadFilePreservesDestinationWhenResponseIsTruncated(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Length", "100")
+		_, _ = w.Write([]byte("partial"))
+	}))
+	defer server.Close()
+
+	dest := filepath.Join(t.TempDir(), "bundle.tar.gz")
+	if err := os.WriteFile(dest, []byte("known-good"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := DownloadFile(server.URL, dest); err == nil {
+		t.Fatal("DownloadFile succeeded for a truncated response")
+	}
+	got, err := os.ReadFile(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "known-good" {
+		t.Fatalf("destination = %q, want previous content preserved", got)
+	}
+}
 
 func TestWebFetchPayloadReaders(t *testing.T) {
 	data := []byte(`{"tool_input":{"url":"https://example.com","prompt":"summarize"},"tool_response":{"output":"body text"}}`)

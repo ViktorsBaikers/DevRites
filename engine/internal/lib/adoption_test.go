@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDecisionsSearchFindsArchivedDecision(t *testing.T) {
@@ -18,6 +20,24 @@ func TestDecisionsSearchFindsArchivedDecision(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "auth-refresh") || !strings.Contains(out.String(), "refresh tokens") {
 		t.Fatalf("missing decision hit:\n%s", out.String())
+	}
+}
+
+func TestDecisionsIndexAcceptsLongDecisionLine(t *testing.T) {
+	root := t.TempDir()
+	decision := "- " + strings.Repeat("a", 128*1024) + " searchable-tail\n"
+	mustWrite(t, filepath.Join(root, "archive", "large", "decisions.md"), decision)
+	var out, err bytes.Buffer
+
+	if code := Decisions(root, []string{"index"}, &out, &err); code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, err.String())
+	}
+	indexed, readErr := os.ReadFile(filepath.Join(root, "decisions-index.jsonl"))
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if !bytes.Contains(indexed, []byte("searchable-tail")) {
+		t.Fatal("long decision was silently omitted from the index")
 	}
 }
 
@@ -43,6 +63,20 @@ func TestSpecDedupeSearchesScratchPRDs(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), ".scratch/webhooks/PRD.md") {
 		t.Fatalf("missing dedupe hit:\n%s", out.String())
+	}
+}
+
+func TestBoundedCommandOutputStopsLongRunningProcess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test command uses POSIX sh")
+	}
+
+	started := time.Now()
+	if _, err := boundedCommandOutput(50*time.Millisecond, "", "sh", "-c", "sleep 2"); err == nil {
+		t.Fatal("expected timed-out command to return an error")
+	}
+	if elapsed := time.Since(started); elapsed > time.Second {
+		t.Fatalf("timed-out command took %s", elapsed)
 	}
 }
 

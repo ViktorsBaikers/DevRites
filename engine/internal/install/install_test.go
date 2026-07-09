@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -36,6 +37,81 @@ func TestInstallDryRunWritesNothing(t *testing.T) {
 	if !strings.Contains(out.String(), "[install] .claude/skills/rite/SKILL.md") {
 		t.Fatalf("dry-run output missing planned install:\n%s", out.String())
 	}
+}
+
+func TestExtractTarGzRejectsTooManyEntries(t *testing.T) {
+	tarball := filepath.Join(t.TempDir(), "many.tar.gz")
+	f, err := os.Create(tarball)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gz := gzip.NewWriter(f)
+	tw := tar.NewWriter(gz)
+	for i := 0; i <= maxUpdateEntries; i++ {
+		hdr := &tar.Header{Name: fmt.Sprintf("entry-%05d", i), Typeflag: tar.TypeDir, Mode: 0o755}
+		if err := tw.WriteHeader(hdr); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	err = extractTarGz(tarball, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "too many entries") {
+		t.Fatalf("extractTarGz error = %v, want entry-count rejection", err)
+	}
+}
+
+func FuzzExtractTarGzPaths(f *testing.F) {
+	f.Add("safe/file.txt", []byte("content"))
+	f.Add("../escape", []byte("blocked"))
+	f.Add("/absolute", []byte("blocked"))
+	f.Fuzz(func(t *testing.T, name string, content []byte) {
+		if len(name) > 256 || len(content) > 4096 || strings.ContainsRune(name, '\x00') {
+			t.Skip()
+		}
+		base := t.TempDir()
+		tarball := filepath.Join(base, "input.tar.gz")
+		file, err := os.Create(tarball)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gz := gzip.NewWriter(file)
+		tw := tar.NewWriter(gz)
+		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(content)), Typeflag: tar.TypeReg}); err != nil {
+			_ = tw.Close()
+			_ = gz.Close()
+			_ = file.Close()
+			return
+		}
+		if _, err := tw.Write(content); err != nil {
+			t.Fatal(err)
+		}
+		if err := tw.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if err := gz.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if err := file.Close(); err != nil {
+			t.Fatal(err)
+		}
+		dest := filepath.Join(base, "dest")
+		if err := os.Mkdir(dest, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		_ = extractTarGz(tarball, dest)
+		if _, err := os.Stat(filepath.Join(base, "escape")); !os.IsNotExist(err) {
+			t.Fatalf("archive escaped destination through %q", name)
+		}
+	})
 }
 
 func TestInstallManifestConflictAndPrune(t *testing.T) {

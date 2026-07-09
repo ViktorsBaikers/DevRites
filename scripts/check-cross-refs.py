@@ -14,11 +14,17 @@ existed. Three checks, tuned for near-zero false positives:
 
 Scans pack/.claude/. Exit 1 on any dead reference. Read-only.
 """
+import argparse
 import os
 import re
 import sys
 
-ROOT = os.path.join("pack", ".claude")
+parser = argparse.ArgumentParser()
+parser.add_argument("--root", default=".", help="repository root containing pack/.claude")
+args = parser.parse_args()
+
+REPO_ROOT = os.path.normpath(args.root)
+ROOT = os.path.join(REPO_ROOT, "pack", ".claude")
 SKILLS_ROOT = os.path.join(ROOT, "skills")
 
 # Runtime artifacts live under .devrites/ (per-feature work/<slug>/ files, plus the
@@ -40,6 +46,8 @@ WORKSPACE_ARTIFACTS = {
     # lifecycle generates: rite-define writes architecture.md + traceability.md, rite-spec
     # writes flows.md + index.md, and proof.md is the SectionProof file (see engine state schema).
     "feature.md", "architecture.md", "traceability.md", "flows.md", "index.md", "proof.md",
+    # Named outputs created in the user's workspace by their owning workflow.
+    "agent.md", "dogfood.md", "walkthrough.md", "ai-spec.md",
 }
 
 # Files the skills legitimately tell Claude to read in the USER's project / the repo,
@@ -55,7 +63,9 @@ def resolve(here, link):
     """Resolve a link. `.claude/...`-rooted paths are install-root-relative (= pack/
     in this repo); everything else is relative to the containing file."""
     if link.startswith(".claude/"):
-        return os.path.normpath(os.path.join("pack", link))
+        return os.path.normpath(os.path.join(REPO_ROOT, "pack", link))
+    if link.startswith("docs/"):
+        return os.path.normpath(os.path.join(REPO_ROOT, link))
     return os.path.normpath(os.path.join(here, link))
 
 md_files = []

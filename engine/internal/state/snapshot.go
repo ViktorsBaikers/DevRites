@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/workflow"
 )
 
@@ -221,7 +222,7 @@ func parseSliceLines(text string) []SliceSnapshot {
 }
 
 func evidenceSummary(root, workDir string) EvidenceSnapshot {
-	newestProof, haveProof := snapshotNewestModTime(
+	newestProof, haveProof := fsutil.NewestModTime(
 		filepath.Join(workDir, "evidence.md"),
 		filepath.Join(workDir, "proof.md"),
 		filepath.Join(workDir, "browser-evidence.md"),
@@ -241,7 +242,7 @@ func evidenceSummary(root, workDir string) EvidenceSnapshot {
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(filepath.Dir(root), path)
 		}
-		if m, ok := snapshotModTime(path); ok && m > newestCode {
+		if m, ok := fsutil.FileModTime(path); ok && m > newestCode {
 			newestCode, newestPath = m, listed
 		}
 	}
@@ -249,26 +250,6 @@ func evidenceSummary(root, workDir string) EvidenceSnapshot {
 		return EvidenceSnapshot{Status: "stale", Detail: newestPath + " is newer than proof"}
 	}
 	return EvidenceSnapshot{Status: "fresh", Detail: "proof post-dates touched files"}
-}
-
-func snapshotNewestModTime(paths ...string) (newest int64, ok bool) {
-	for _, p := range paths {
-		if !regularFileExists(p) {
-			continue
-		}
-		if m, mok := snapshotModTime(p); mok && (!ok || m > newest) {
-			newest, ok = m, true
-		}
-	}
-	return newest, ok
-}
-
-func snapshotModTime(path string) (secs int64, ok bool) {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return 0, false
-	}
-	return fi.ModTime().Unix(), true
 }
 
 func driftSummary(workDir string) DriftSnapshot {

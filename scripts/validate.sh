@@ -103,6 +103,13 @@ else
   echo "skip: node not found"
 fi
 
+section "reference reachability governance"
+if command -v node >/dev/null 2>&1; then
+  if node "$ROOT/scripts/check-reference-governance.mjs"; then good "reference reachability governance passed"; else bad "reference reachability governance failed"; fi
+else
+  echo "skip: node not found"
+fi
+
 # ---- 6. /rite-polish orchestrator references its phase reference files ---
 section "rite-polish orchestrator → reference files"
 for s in reference/code.md reference/ui.md; do

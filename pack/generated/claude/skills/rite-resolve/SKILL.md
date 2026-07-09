@@ -55,12 +55,7 @@ Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Then pull 
 
 0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`** (operating rules + persistence discipline) before
    touching the workspace.
-   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
-   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-   instead of re-deriving state from raw Markdown:
-   ```bash
-   devrites-engine preamble
-   ```
+   Then run `devrites-engine preamble` for deterministic workspace orientation.
 1. **Parse arguments.** `$ARGUMENTS` is one of:
    - `<qid> "<answer>"` — answer the single open question.
    - `--drop <qid>` (optional `"<reason>"`) — mark the question `dropped`; record
