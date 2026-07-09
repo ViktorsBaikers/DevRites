@@ -16,6 +16,10 @@ Other subcommands (hooks, `footprint`, `tick-afk`, mutating commands) do not acc
 `--json` — they are not parsed for a decision. This is deliberate scope, not an
 oversight; the flag is added where a machine reads the result.
 
+Exception: `snapshot` and `context show --json` are already direct structured reports, not
+envelopes. `context show --json` emits `root`, `project`, `activeWorkspace`, `source`,
+`hostCommands`, and `status` so wrappers can tell where DevRites will act.
+
 ## Envelope
 
 ```json
@@ -83,4 +87,6 @@ the prefix while the catalog grows specific kinds:
 | `<command>_error` / `_warning` / `_info` | any | an unclassified stderr line at that severity |
 
 New specific codes append to this table; the `<command>_<severity>` fallback keeps
-any future stderr line representable without a code change.
+any future stderr line representable without a code change. `engine/tests/json_contract_test.go`
+gauntlets the AFK-parsed commands so every `--json` run stays one parseable JSON document whose
+`exitCode` and `ok` match the process result.

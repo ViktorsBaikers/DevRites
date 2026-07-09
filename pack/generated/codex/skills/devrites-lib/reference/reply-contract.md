@@ -9,7 +9,7 @@ Before the final reply, persist the phase event, then render the deterministic
 progress chrome:
 
 ```bash
-devrites-engine timeline log completed --skill <rite-name> --slug "$(cat .devrites/ACTIVE 2>/dev/null)" --outcome "<ok|blocked|no-go|go>" --decision "<one-line result>"
+devrites-engine timeline log completed --skill <skill> --slug "$(cat .devrites/ACTIVE 2>/dev/null)" --outcome "<ok|blocked|no-go|go>" --decision "<one-line result>"
 devrites-engine budget
 devrites-engine progress
 ```

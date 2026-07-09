@@ -133,10 +133,12 @@ the plan:
    `state.md` (phase: plan → next `$rite-vet`).
 7. **Readiness gate** (bottom of plan-template): every acceptance criterion covered by a
    slice, dependency order acyclic + risk-first, no unjustified deviation, rollback for
-   every destructive/migration step. **Stop and confirm** before code. When the human
-   confirms the plan, write `Plan approved: <iso>` to `state.md` (see
-   [state-workspace](../rite-spec/reference/state-workspace.md)); `$rite-build` checks
-   this exists before building.
+   every destructive/migration step. **Stop and confirm** before code. Render the review-before-code
+   digest first: `Intent` (one sentence from the spec), `Done means` (acceptance coverage x/y),
+   `Plan sanity` (slice count + riskiest boundary/gate), and `Build exactly this?` (yes → approve;
+   no → `$rite-plan revise`). When the human confirms the plan, write `Plan approved: <iso>` to
+   `state.md` (see [state-workspace](../rite-spec/reference/state-workspace.md)); `$rite-build`
+   checks this exists before building.
 
 ## tasks.md slice format
 ```markdown
@@ -199,7 +201,7 @@ Default success shape:
 Done: plan written for <slug>; <n> vertical slices defined.
 Changed: architecture.md, plan.md, tasks.md, traceability.md, decisions.md, state.md
 Evidence: not applicable; acceptance coverage <x/y> mapped in traceability.md
-Open: <none | plan questions | Alternative: $rite-plan to reshape slices>
+Open: <none | plan questions | Alternative: $rite-plan revise to reshape artifacts>; review digest: intent + coverage + plan sanity rendered
 Next: $rite-vet
 Record: .devrites/work/<slug>/plan.md
 ↻ Hygiene: /clear after user confirms the plan
