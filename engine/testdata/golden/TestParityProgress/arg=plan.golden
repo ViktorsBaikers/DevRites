@@ -1,0 +1,4 @@
+exit 0
+── rite-plan ─────────
+Slice 2/3  ███████░░░  detail ✓
+Flow   spec ✓ define ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○

@@ -1,0 +1,5 @@
+exit 0
+# DevRites learnings ledger
+
+- [2026-01-01] (note · feat-x) prefer explicit error handling
+- [2026-01-02] (bug · feat-y) the linter false-positive recurs

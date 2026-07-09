@@ -1,0 +1,10 @@
+exit 0
+feature: live
+phase: build
+  spec       present  required
+  plan       present  required
+  decisions  present  required
+  tasks      present  required
+  proof      empty
+  status     present
+result: complete

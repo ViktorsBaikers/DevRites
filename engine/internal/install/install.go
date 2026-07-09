@@ -116,7 +116,9 @@ func parseArgs(args []string, opts *Options) error {
 	normalized := make([]string, 0, len(args))
 	shortAliasesWithoutValue := false
 	for _, arg := range args {
-		if arg == "--short-aliases" {
+		// flag treats -short-aliases and --short-aliases alike; without this
+		// rewrite a bare occurrence would consume the next argument as its value.
+		if arg == "--short-aliases" || arg == "-short-aliases" {
 			normalized = append(normalized, "--short-aliases=")
 			shortAliasesWithoutValue = true
 			continue
@@ -124,34 +126,34 @@ func parseArgs(args []string, opts *Options) error {
 		normalized = append(normalized, arg)
 	}
 
-	fs := flag.NewFlagSet("devrites-engine "+string(opts.Mode), flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
-	target := fs.String("target", opts.Target, "")
-	payloadDir := fs.String("payload-dir", opts.PayloadDir, "")
-	sourceDir := fs.String("source-dir", opts.SourceDir, "")
-	dryRun := fs.Bool("dry-run", opts.DryRun, "")
-	force := fs.Bool("force", opts.Force, "")
-	noCodex := fs.Bool("no-codex", !opts.WithCodex, "")
-	noAgents := fs.Bool("no-agents", !opts.WithAgents, "")
-	noSkills := fs.Bool("no-skills", !opts.WithSkills, "")
-	noBinary := fs.Bool("no-binary", !opts.WithBinary, "")
-	keepBinary := fs.Bool("keep-binary", opts.KeepBinary, "")
-	noRules := fs.Bool("no-rules", false, "")
-	rulesOnly := fs.Bool("rules-only", false, "")
-	noShortAliases := fs.Bool("no-short-aliases", false, "")
-	shortAliases := fs.String("short-aliases", opts.AliasMode, "")
-	updateCheck := fs.Bool("check", opts.UpdateCheck, "")
-	allowPre := fs.Bool("pre", opts.AllowPre, "")
-	updateTo := fs.String("to", opts.UpdateTo, "")
+	flags := flag.NewFlagSet("devrites-engine "+string(opts.Mode), flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	target := flags.String("target", opts.Target, "")
+	payloadDir := flags.String("payload-dir", opts.PayloadDir, "")
+	sourceDir := flags.String("source-dir", opts.SourceDir, "")
+	dryRun := flags.Bool("dry-run", opts.DryRun, "")
+	force := flags.Bool("force", opts.Force, "")
+	noCodex := flags.Bool("no-codex", !opts.WithCodex, "")
+	noAgents := flags.Bool("no-agents", !opts.WithAgents, "")
+	noSkills := flags.Bool("no-skills", !opts.WithSkills, "")
+	noBinary := flags.Bool("no-binary", !opts.WithBinary, "")
+	keepBinary := flags.Bool("keep-binary", opts.KeepBinary, "")
+	noRules := flags.Bool("no-rules", false, "")
+	rulesOnly := flags.Bool("rules-only", false, "")
+	noShortAliases := flags.Bool("no-short-aliases", false, "")
+	shortAliases := flags.String("short-aliases", opts.AliasMode, "")
+	updateCheck := flags.Bool("check", opts.UpdateCheck, "")
+	allowPre := flags.Bool("pre", opts.AllowPre, "")
+	updateTo := flags.String("to", opts.UpdateTo, "")
 
-	if err := fs.Parse(normalized); err != nil {
+	if err := flags.Parse(normalized); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return errHelp
 		}
 		return err
 	}
-	if fs.NArg() > 0 {
-		return fmt.Errorf("unknown option: %s (try --help)", fs.Arg(0))
+	if flags.NArg() > 0 {
+		return fmt.Errorf("unknown option: %s (try --help)", flags.Arg(0))
 	}
 
 	opts.Target = *target
@@ -167,22 +169,22 @@ func parseArgs(args []string, opts *Options) error {
 	opts.UpdateCheck = *updateCheck
 	opts.AllowPre = *allowPre
 	opts.UpdateTo = *updateTo
-	if *noRules {
-		fmt.Fprintln(opts.Stderr, "warning: --no-rules is deprecated and now a no-op - DevRites engineering standards ship inside the devrites-lib skill.")
-	}
-	if *rulesOnly {
-		fmt.Fprintln(opts.Stderr, "warning: --rules-only is deprecated and now a no-op - DevRites engineering standards ship inside the devrites-lib skill.")
+	for _, dep := range []struct {
+		set  bool
+		name string
+	}{{*noRules, "--no-rules"}, {*rulesOnly, "--rules-only"}} {
+		if dep.set {
+			fmt.Fprintf(opts.Stderr, "warning: %s is deprecated and now a no-op - DevRites engineering standards ship inside the devrites-lib skill.\n", dep.name)
+		}
 	}
 	if *noShortAliases {
 		opts.AliasMode = "off"
-	} else if flagWasSet(fs, "short-aliases") {
-		switch *shortAliases {
-		case "":
+	} else if flagWasSet(flags, "short-aliases") {
+		switch {
+		case *shortAliases == "" && shortAliasesWithoutValue:
 			opts.AliasMode = "off"
-			if shortAliasesWithoutValue {
-				fmt.Fprintln(opts.Stderr, "warning: --short-aliases with no value is a no-op; use --short-aliases=all.")
-			}
-		case "all":
+			fmt.Fprintln(opts.Stderr, "warning: --short-aliases with no value is a no-op; use --short-aliases=all.")
+		case *shortAliases == "all":
 			opts.AliasMode = "all"
 		default:
 			return fmt.Errorf("unknown option: --short-aliases=%s (try --help)", *shortAliases)
@@ -191,9 +193,9 @@ func parseArgs(args []string, opts *Options) error {
 	return nil
 }
 
-func flagWasSet(fs *flag.FlagSet, name string) bool {
+func flagWasSet(flags *flag.FlagSet, name string) bool {
 	found := false
-	fs.Visit(func(f *flag.Flag) {
+	flags.Visit(func(f *flag.Flag) {
 		if f.Name == name {
 			found = true
 		}
@@ -1329,6 +1331,11 @@ func readManifestList(path string) []string {
 	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// The manifest is hand-editable; an entry that escapes the target
+		// (absolute or ..-traversal) must never be overwritten or removed.
+		if !filepath.IsLocal(filepath.FromSlash(line)) {
 			continue
 		}
 		out = append(out, line)

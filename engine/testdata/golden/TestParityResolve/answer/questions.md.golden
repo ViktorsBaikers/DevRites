@@ -1,0 +1,9 @@
+## q-1 blocking
+status: answered
+answered_at: TS
+answer: use JWT with 15m expiry
+
+## q-2 advisory
+status: open
+answered_at:
+answer:

@@ -1,0 +1,4 @@
+exit 0
+budget: act
+  spec.md            5 lines  ~    3 tok  limit  260  ok
+budget: all 1 file(s) within budget

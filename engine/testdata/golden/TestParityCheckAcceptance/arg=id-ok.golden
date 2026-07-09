@@ -1,0 +1,2 @@
+exit 0
+check-acceptance: OK — all 3 acceptance criteria ([AC1] [AC2] [AC3]) proven + checked in seal.md

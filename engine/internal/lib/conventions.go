@@ -3,7 +3,6 @@ package lib
 import (
 	"bytes"
 	"embed"
-	"flag"
 	"fmt"
 	"io"
 	"math"
@@ -40,29 +39,23 @@ func Conventions(args []string, stdout, stderr io.Writer) int {
 	cmd := argAt(args, 0)
 	switch cmd {
 	case "band":
-		fs := newConventionsFlagSet("conventions band")
-		corroborations := fs.Int("corroborations", 0, "")
-		contradictions := fs.Int("contradictions", 0, "")
-		if !parseConventionsFlags(fs, args[1:], stderr) {
+		c, ok := intFlag(args[1:], "--corroborations", true, stderr)
+		if !ok {
 			return 2
 		}
-		if !flagSet(fs, "corroborations") {
-			fmt.Fprintln(stderr, "missing required flag: --corroborations")
+		k, ok := intFlag(args[1:], "--contradictions", false, stderr)
+		if !ok {
 			return 2
 		}
-		if b, active := conventionBand(*corroborations, *contradictions); active {
+		if b, active := conventionBand(c, k); active {
 			fmt.Fprintf(stdout, "%.2f\n", b)
 		} else {
 			fmt.Fprintln(stdout, "retired")
 		}
 		return 0
 	case "read":
-		fs := newConventionsFlagSet("conventions read")
-		root := fs.String("root", ".", "")
-		if !parseConventionsFlags(fs, args[1:], stderr) {
-			return 2
-		}
-		data, err := os.ReadFile(conventionsPath(*root))
+		root := stringFlag(args[1:], "--root", ".")
+		data, err := os.ReadFile(conventionsPath(root))
 		if err != nil {
 			return 0
 		}
@@ -89,13 +82,9 @@ func conventionBand(corroborations, contradictions int) (float64, bool) {
 }
 
 func conventionsOrient(args []string, stdout, stderr io.Writer) int {
-	fs := newConventionsFlagSet("conventions orient")
-	root := fs.String("root", ".", "")
-	minBand := fs.Float64("min-band", 0, "")
-	if !parseConventionsFlags(fs, args, stderr) {
-		return 2
-	}
-	entries := loadConventions(*root)
+	root := stringFlag(args, "--root", ".")
+	minBand := floatFlag(args, "--min-band", 0)
+	entries := loadConventions(root)
 	type row struct {
 		key string
 		b   float64
@@ -104,7 +93,7 @@ func conventionsOrient(args []string, stdout, stderr io.Writer) int {
 	var rows []row
 	for key, e := range entries {
 		b, active := conventionBand(e.Corroborations, e.Contradictions)
-		if !active || b < *minBand {
+		if !active || b < minBand {
 			continue
 		}
 		rows = append(rows, row{key: key, b: b, e: e})
@@ -130,42 +119,53 @@ func conventionsOrient(args []string, stdout, stderr io.Writer) int {
 }
 
 func conventionsPromote(args []string, stdout, stderr io.Writer) int {
-	fs := newConventionsFlagSet("conventions promote")
-	root := fs.String("root", ".", "")
-	key := fs.String("key", "", "")
-	statement := fs.String("statement", "", "")
-	kind := fs.String("kind", "", "")
-	slug := fs.String("slug", "", "")
-	evidence := fs.String("evidence", "", "")
-	date := fs.String("date", "", "")
-	if !parseConventionsFlags(fs, args, stderr) || !requireConventionsFlags(fs, stderr, "key", "statement", "kind", "slug", "evidence") {
+	root := stringFlag(args, "--root", ".")
+	key, ok := requiredStringFlag(args, "--key", stderr)
+	if !ok {
 		return 2
 	}
-	entries := loadConventions(*root)
-	e, exists := entries[*key]
+	statement, ok := requiredStringFlag(args, "--statement", stderr)
+	if !ok {
+		return 2
+	}
+	kind, ok := requiredStringFlag(args, "--kind", stderr)
+	if !ok {
+		return 2
+	}
+	slug, ok := requiredStringFlag(args, "--slug", stderr)
+	if !ok {
+		return 2
+	}
+	evidence, ok := requiredStringFlag(args, "--evidence", stderr)
+	if !ok {
+		return 2
+	}
+	date := stringFlag(args, "--date", "")
+	entries := loadConventions(root)
+	e, exists := entries[key]
 	if !exists {
-		e = conventionEntry{Statement: *statement, Kind: *kind, Status: "active"}
+		e = conventionEntry{Statement: statement, Kind: kind, Status: "active"}
 	} else {
-		if *statement != "" {
-			e.Statement = *statement
+		if statement != "" {
+			e.Statement = statement
 		}
-		if *kind != "" {
-			e.Kind = *kind
+		if kind != "" {
+			e.Kind = kind
 		}
 	}
 	already := false
 	for _, proof := range e.Proofs {
-		if proofSlug(proof) == *slug {
+		if proofSlug(proof) == slug {
 			already = true
 			break
 		}
 	}
 	if !already {
 		e.Corroborations++
-		e.Proofs = append(e.Proofs, fmt.Sprintf("%s %s — %s", *slug, conventionDate(*date), *evidence))
+		e.Proofs = append(e.Proofs, fmt.Sprintf("%s %s — %s", slug, conventionDate(date), evidence))
 	}
-	entries[*key] = e
-	if err := saveConventions(*root, entries); err != nil {
+	entries[key] = e
+	if err := saveConventions(root, entries); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
@@ -174,32 +174,37 @@ func conventionsPromote(args []string, stdout, stderr io.Writer) int {
 	if active {
 		band = fmt.Sprintf("%.2f", b)
 	}
-	fmt.Fprintf(stdout, "promoted '%s' → band %s (%d corroboration(s))\n", *key, band, e.Corroborations)
+	fmt.Fprintf(stdout, "promoted '%s' → band %s (%d corroboration(s))\n", key, band, e.Corroborations)
 	return 0
 }
 
 func conventionsContradict(args []string, stdout, stderr io.Writer) int {
-	fs := newConventionsFlagSet("conventions contradict")
-	root := fs.String("root", ".", "")
-	key := fs.String("key", "", "")
-	slug := fs.String("slug", "", "")
-	evidence := fs.String("evidence", "", "")
-	date := fs.String("date", "", "")
-	driftFile := fs.String("drift-file", "", "")
-	if !parseConventionsFlags(fs, args, stderr) || !requireConventionsFlags(fs, stderr, "key", "slug", "evidence") {
+	root := stringFlag(args, "--root", ".")
+	key, ok := requiredStringFlag(args, "--key", stderr)
+	if !ok {
 		return 2
 	}
-	entries := loadConventions(*root)
-	e, exists := entries[*key]
+	slug, ok := requiredStringFlag(args, "--slug", stderr)
+	if !ok {
+		return 2
+	}
+	evidence, ok := requiredStringFlag(args, "--evidence", stderr)
+	if !ok {
+		return 2
+	}
+	date := stringFlag(args, "--date", "")
+	driftFile := stringFlag(args, "--drift-file", "")
+	entries := loadConventions(root)
+	e, exists := entries[key]
 	if !exists {
-		fmt.Fprintf(stderr, "no such convention: '%s'\n", *key)
+		fmt.Fprintf(stderr, "no such convention: '%s'\n", key)
 		return 3
 	}
-	when := conventionDate(*date)
+	when := conventionDate(date)
 	e.Contradictions++
-	e.Proofs = append(e.Proofs, fmt.Sprintf("%s %s — CONTRADICTED: %s", *slug, when, *evidence))
-	entries[*key] = e
-	if err := saveConventions(*root, entries); err != nil {
+	e.Proofs = append(e.Proofs, fmt.Sprintf("%s %s — CONTRADICTED: %s", slug, when, evidence))
+	entries[key] = e
+	if err := saveConventions(root, entries); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
@@ -208,17 +213,17 @@ func conventionsContradict(args []string, stdout, stderr io.Writer) int {
 	if active {
 		state = fmt.Sprintf("band %.2f", b)
 	}
-	if *driftFile != "" {
-		if err := os.MkdirAll(filepath.Dir(absPath(*driftFile)), 0o755); err != nil {
+	if driftFile != "" {
+		if err := os.MkdirAll(filepath.Dir(absPath(driftFile)), 0o755); err != nil {
 			fmt.Fprintln(stderr, err)
 			return 1
 		}
-		f, err := os.OpenFile(*driftFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		f, err := os.OpenFile(driftFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 		if err != nil {
 			fmt.Fprintln(stderr, err)
 			return 1
 		}
-		entry, renderErr := renderConventionDrift(*key, *slug, *evidence, state, when)
+		entry, renderErr := renderConventionDrift(key, slug, evidence, state, when)
 		if renderErr != nil {
 			_ = f.Close()
 			fmt.Fprintln(stderr, renderErr)
@@ -235,7 +240,7 @@ func conventionsContradict(args []string, stdout, stderr io.Writer) int {
 			return 1
 		}
 	}
-	fmt.Fprintf(stdout, "DRIFT: convention '%s' contradicted by %s — now %s\n", *key, *slug, state)
+	fmt.Fprintf(stdout, "DRIFT: convention '%s' contradicted by %s — now %s\n", key, slug, state)
 	return 0
 }
 
@@ -374,38 +379,62 @@ func conventionDate(date string) string {
 	return time.Now().Format("2006-01-02")
 }
 
-func newConventionsFlagSet(name string) *flag.FlagSet {
-	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
-	return fs
-}
-
-func parseConventionsFlags(fs *flag.FlagSet, args []string, stderr io.Writer) bool {
-	if err := fs.Parse(args); err != nil {
-		fmt.Fprintln(stderr, err)
-		return false
+func stringFlag(args []string, name, fallback string) string {
+	value, ok := flagValue(args, name)
+	if !ok {
+		return fallback
 	}
-	return true
+	return value
 }
 
-func requireConventionsFlags(fs *flag.FlagSet, stderr io.Writer, names ...string) bool {
-	for _, name := range names {
-		if !flagSet(fs, name) {
-			fmt.Fprintf(stderr, "missing required flag: --%s\n", name)
-			return false
+func flagValue(args []string, name string) (string, bool) {
+	for i := 0; i < len(args); i++ {
+		if args[i] == name && i+1 < len(args) {
+			return args[i+1], true
+		}
+		if strings.HasPrefix(args[i], name+"=") {
+			return strings.TrimPrefix(args[i], name+"="), true
 		}
 	}
-	return true
+	return "", false
 }
 
-func flagSet(fs *flag.FlagSet, name string) bool {
-	found := false
-	fs.Visit(func(f *flag.Flag) {
-		if f.Name == name {
-			found = true
+func requiredStringFlag(args []string, name string, stderr io.Writer) (string, bool) {
+	value, ok := flagValue(args, name)
+	if !ok {
+		fmt.Fprintf(stderr, "missing required flag: %s\n", name)
+		return "", false
+	}
+	return value, true
+}
+
+func intFlag(args []string, name string, required bool, stderr io.Writer) (int, bool) {
+	value, present := flagValue(args, name)
+	if !present {
+		if required {
+			fmt.Fprintf(stderr, "missing required flag: %s\n", name)
+			return 0, false
 		}
-	})
-	return found
+		return 0, true
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil {
+		fmt.Fprintf(stderr, "invalid integer for %s: %s\n", name, value)
+		return 0, false
+	}
+	return n, true
+}
+
+func floatFlag(args []string, name string, fallback float64) float64 {
+	value := stringFlag(args, name, "")
+	if value == "" {
+		return fallback
+	}
+	f, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return fallback
+	}
+	return f
 }
 
 func absPath(path string) string {
