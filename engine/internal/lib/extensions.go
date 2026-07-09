@@ -53,6 +53,7 @@ type extension struct {
 	dir       string
 	skillPath string // "" if none
 	agentPath string // "" if none
+	manifest  string // "" if none; component.yaml declares npm-managed safety bounds
 	aliases   []string
 }
 
@@ -78,6 +79,9 @@ func discoverExtensions(extDir string) ([]extension, error) {
 		}
 		if p := filepath.Join(dir, "agent.md"); isFile(p) {
 			ext.agentPath = p
+		}
+		if p := filepath.Join(dir, "component.yaml"); isFile(p) {
+			ext.manifest = p
 		}
 		if meta, ok := readFileOK(filepath.Join(dir, "extension.yaml")); ok {
 			ext.aliases = parseAliases(meta)
@@ -105,6 +109,9 @@ func extensionsList(extDir string, stdout io.Writer) int {
 		}
 		if e.agentPath != "" {
 			provides = append(provides, "agent")
+		}
+		if e.manifest != "" {
+			provides = append(provides, "manifest")
 		}
 		if len(provides) == 0 {
 			provides = []string{"(empty)"}
@@ -137,11 +144,17 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 	}
 
 	var problems []string
+	manifestCount := 0
 	seenSkill, seenAgent := map[string]string{}, map[string]string{}
 	for _, e := range exts {
 		if e.skillPath == "" && e.agentPath == "" {
 			problems = append(problems, fmt.Sprintf("%s: provides neither skill/SKILL.md nor agent.md", e.name))
-			continue
+		}
+		if e.manifest != "" {
+			manifestCount++
+			for _, problem := range validateComponentManifest(e.name, e.manifest) {
+				problems = append(problems, problem)
+			}
 		}
 		if e.skillPath != "" {
 			name, missing := frontmatterName(e.skillPath)
@@ -177,8 +190,111 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 		}
 		return 1
 	}
-	fmt.Fprintf(stdout, "extensions: OK — %d extension(s) well-formed\n", len(exts))
+	fmt.Fprintf(stdout, "extensions: OK — %d extension(s) well-formed, %d manifest(s) checked\n", len(exts), manifestCount)
 	return 0
+}
+
+// validateComponentManifest enforces DevRites' Spec Kit-inspired component
+// contract while keeping distribution npm-first and project-local. It accepts a
+// small YAML subset instead of pulling a YAML dependency into the static engine.
+func validateComponentManifest(extName, path string) []string {
+	content, ok := readFileOK(path)
+	if !ok {
+		return []string{fmt.Sprintf("%s: component.yaml unreadable", extName)}
+	}
+	manifest := parseComponentManifest(content)
+	var problems []string
+	if manifest.componentID != "" && manifest.componentID != extName {
+		problems = append(problems, fmt.Sprintf("%s: component id %q must match extension directory", extName, manifest.componentID))
+	}
+	if manifest.kind != "" && manifest.kind != "extension" && manifest.kind != "preset" && manifest.kind != "bundle" {
+		problems = append(problems, fmt.Sprintf("%s: component kind must be extension, preset, or bundle", extName))
+	}
+	if manifest.scope != "" && manifest.scope != "project-local" {
+		problems = append(problems, fmt.Sprintf("%s: scope must be project-local", extName))
+	}
+	if manifest.distribution != "" && manifest.distribution != "npx-managed" {
+		problems = append(problems, fmt.Sprintf("%s: distribution must be npx-managed", extName))
+	}
+	for _, root := range manifest.writes {
+		if !allowedComponentWriteRoot(root) {
+			problems = append(problems, fmt.Sprintf("%s: write root %q is not project-local/managed", extName, root))
+		}
+	}
+	if manifest.mayWeakenGates == "true" {
+		problems = append(problems, fmt.Sprintf("%s: may_weaken_gates must be false", extName))
+	}
+	if manifest.requiresTypeGOBypass == "true" {
+		problems = append(problems, fmt.Sprintf("%s: requires_type_go_bypass must be false", extName))
+	}
+	return problems
+}
+
+type componentManifest struct {
+	componentID          string
+	kind                 string
+	scope                string
+	distribution         string
+	writes               []string
+	mayWeakenGates       string
+	requiresTypeGOBypass string
+}
+
+func parseComponentManifest(content string) componentManifest {
+	var out componentManifest
+	section := ""
+	inWrites := false
+	for _, line := range strings.Split(content, "\n") {
+		raw := strings.TrimSpace(strings.SplitN(line, "#", 2)[0])
+		if raw == "" {
+			continue
+		}
+		if !strings.HasPrefix(line, " ") && strings.HasSuffix(raw, ":") {
+			section = strings.TrimSuffix(raw, ":")
+			inWrites = false
+			continue
+		}
+		if section == "permissions" && raw == "writes:" {
+			inWrites = true
+			continue
+		}
+		if inWrites && strings.HasPrefix(raw, "- ") {
+			out.writes = append(out.writes, strings.Trim(strings.TrimSpace(raw[2:]), `"'`))
+			continue
+		}
+		key, val, ok := strings.Cut(raw, ":")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		val = strings.Trim(strings.TrimSpace(val), `"'`)
+		switch section + "." + key {
+		case "component.id":
+			out.componentID = val
+		case "component.kind":
+			out.kind = val
+		case "component.scope":
+			out.scope = val
+		case "component.distribution":
+			out.distribution = val
+		case "safety.may_weaken_gates":
+			out.mayWeakenGates = val
+		case "safety.requires_type_go_bypass":
+			out.requiresTypeGOBypass = val
+		}
+	}
+	return out
+}
+
+func allowedComponentWriteRoot(root string) bool {
+	root = strings.TrimSpace(root)
+	allowed := []string{".devrites/", ".claude/", ".agents/", ".codex/", "AGENTS.md", "CLAUDE.md"}
+	for _, prefix := range allowed {
+		if root == prefix || strings.HasPrefix(root, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // extensionsSync mirrors every valid extension into the project's .claude tree,

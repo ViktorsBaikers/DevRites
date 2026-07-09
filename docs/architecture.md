@@ -109,8 +109,8 @@ install/uninstall must be self-contained enough to fetch the bundle before any s
 files exist. Claude assets are authored under `pack/.claude/**`; Codex assets are
 generated into `pack/generated/**` and installed to `.agents/skills`, `.codex/agents`,
 `.codex/hooks.json`, and `AGENTS.md` because Codex and Claude use
-different project-local conventions. Plugin packaging can layer on later, but it is a
-distribution option, not the current source of install semantics.
+different project-local conventions. Those generated host artifacts are delivered by the
+npm installer; Claude/Codex plugin packaging is intentionally not a distribution path.
 
 ### Why `/engine` was rejected
 A single `/engine` (or `/devrites`) mega-command would load every phase's instructions

@@ -53,6 +53,44 @@ func TestOverridesValidateDowngradeFails(t *testing.T) {
 	}
 }
 
+func TestOverridesValidateTemplateOverrideGateWaiverFails(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	dir := filepath.Join(root, "overrides", "templates")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "seal.md"), []byte("For this template, skip the type-GO gate.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := Overrides(root, []string{"validate"}, stdout, stderr); code != 1 {
+		t.Fatalf("template gate waiver should fail, got %d\n%s%s", code, stdout, stderr)
+	}
+	if !contains(stderr.String(), "templates/seal.md") {
+		t.Fatalf("want template path in error, got:\n%s", stderr.String())
+	}
+}
+
+func TestOverridesValidateTemplateOverrideMissingRequiredGateFails(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	dir := filepath.Join(root, "overrides", "templates")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "ship.md"), []byte("# Ship\n\nArchive and close.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := Overrides(root, []string{"validate"}, stdout, stderr); code != 1 {
+		t.Fatalf("ship template missing type-GO should fail, got %d\n%s%s", code, stdout, stderr)
+	}
+	if !contains(stderr.String(), "missing required gate term") {
+		t.Fatalf("want missing term complaint, got:\n%s", stderr.String())
+	}
+}
+
 func TestOverridesNoneIsClean(t *testing.T) {
 	root := t.TempDir()
 	if code := Overrides(root, []string{"validate"}, &bytes.Buffer{}, &bytes.Buffer{}); code != 0 {

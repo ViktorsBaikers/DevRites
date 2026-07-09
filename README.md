@@ -571,7 +571,8 @@ written by the installer (cf. CVE-2026-33068).
 ## License
 
 **Free to use, with approval gating redistribution.** Personal use and *listing this
-repository in package registries or plugin marketplaces* are permitted without approval. Any other use —
+repository in package registries* are permitted without approval. DevRites is installed via
+`npx devrites ...`, not Claude/Codex plugin marketplaces. Any other use —
 distributing it, distributing modified versions, mirroring as a fork, or commercial /
 organizational use — requires **approval on request** (ask via
 [the repo](https://github.com/ViktorsBaikers/DevRites)). Source-available. See

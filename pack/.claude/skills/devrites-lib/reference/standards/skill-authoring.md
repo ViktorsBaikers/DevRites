@@ -5,9 +5,9 @@ Use this when creating or editing DevRites skills.
 ## Distribution
 
 DevRites is installed through the npm package (`npx devrites ...`). Claude Code
-and Codex files are generated host artifacts copied by that installer, not
-plugin-store surfaces. Edit canonical sources under `pack/.claude/`, rebuild
-host artifacts, then validate.
+and Codex files are generated host artifacts copied by that installer, never
+Claude/Codex plugin-store surfaces. Edit the canonical Claude-authored pack sources,
+rebuild host artifacts, then validate.
 
 ## Surface lifecycle
 

@@ -91,7 +91,12 @@ func overridesValidate(dir, projectDir string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "overrides: cannot read %s: %v\n", dir, err)
 		return 1
 	}
-	if len(files) == 0 {
+	templates, err := templateOverrideFiles(filepath.Join(dir, "templates"))
+	if err != nil {
+		fmt.Fprintf(stderr, "overrides: cannot read %s: %v\n", filepath.Join(dir, "templates"), err)
+		return 1
+	}
+	if len(files) == 0 && len(templates) == 0 {
 		fmt.Fprintln(stdout, "overrides: none to validate")
 		return 0
 	}
@@ -112,13 +117,61 @@ func overridesValidate(dir, projectDir string, stdout, stderr io.Writer) int {
 			subversions++
 		}
 	}
+	for _, f := range templates {
+		rel := filepath.ToSlash(filepath.Join("templates", f))
+		body, _ := readFileOK(filepath.Join(dir, "templates", f))
+		if strings.TrimSpace(body) == "" {
+			fmt.Fprintf(stdout, "  warning: %s is empty — no template override applied\n", rel)
+			continue
+		}
+		if subversionPhrase.MatchString(body) {
+			fmt.Fprintf(stderr, "  VIOLATION: %s reads like it waives a gate — a template override may add structure, never relax one.\n", rel)
+			subversions++
+		}
+		for _, term := range requiredTemplateGateTerms(f) {
+			if !strings.Contains(strings.ToLower(body), term) {
+				fmt.Fprintf(stderr, "  VIOLATION: %s missing required gate term %q\n", rel, term)
+				subversions++
+			}
+		}
+	}
 
 	if subversions > 0 {
 		fmt.Fprintf(stderr, "overrides: %d override(s) attempt to relax a gate. A gate stays authoritative; remove the waiver.\n", subversions)
 		return 1
 	}
-	fmt.Fprintf(stdout, "overrides: OK — %d override(s), none relaxing a gate\n", len(files))
+	fmt.Fprintf(stdout, "overrides: OK — %d reviewer override(s), %d template override(s), none relaxing a gate\n", len(files), len(templates))
 	return 0
+}
+
+func templateOverrideFiles(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var out []string
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		out = append(out, e.Name())
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+func requiredTemplateGateTerms(name string) []string {
+	switch name {
+	case "seal.md":
+		return []string{"type-go", "no-go"}
+	case "ship.md":
+		return []string{"type-go"}
+	default:
+		return nil
+	}
 }
 
 // overrideTargetExists reports whether an installed agent named agent is present
