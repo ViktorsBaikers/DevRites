@@ -1,6 +1,6 @@
 ---
 name: rite-explain
-description: Teach the developer one thing well — turn a concept, a diff, an idea, or a window of their own recent work into a dense, personal explainer, with an optional predict-then-reveal check-in that makes it stick. The human half of the learning loop. Use when the user says "explain this to me", "teach me X", "what did I ship this week", or "help me understand this diff". Not the repo-facing learning loop (`$rite-learn`), a plain code-map (`$rite-zoom-out`), or a diff review (`$rite-review`).
+description: User-invoked explainer that teaches one concept, diff, idea, or recent-work recap with an optional retrieval check-in.
 argument-hint: "[a concept | a diff ref | an idea | \"what did I do this week?\"] — or bare to be asked"
 user-invocable: true
 disable-model-invocation: true

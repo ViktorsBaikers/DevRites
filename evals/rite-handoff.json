@@ -1,26 +1,14 @@
 {
   "skill": "rite-handoff",
-  "description": "Trigger evals for /rite-handoff — user-invocable utility that compacts the current chat into a handoff doc, syncs chat-only context into the workspace, and references existing artifacts by path.",
+  "description": "Explicit-only evals for /rite-handoff — chat-only context sync and fresh-agent handoff writer.",
   "queries": [
     {"text": "/rite-handoff", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "handoff", "expected": "should_trigger", "rationale": "Description names this trigger exactly."},
-    {"text": "summarize this session for the next agent", "expected": "should_trigger", "rationale": "Description names 'summarize this session'."},
-    {"text": "I'm out — write a handoff", "expected": "should_trigger", "rationale": "Description names this exact phrase."},
-    {"text": "Fresh agent will continue tomorrow — capture what they need", "expected": "should_trigger", "rationale": "Description names 'fresh agent will continue'."},
-    {"text": "Before I /clear, capture the in-flight state", "expected": "should_trigger", "rationale": "Description names 'before /clear'."},
-    {"text": "Compact this conversation into something I can hand off", "expected": "should_trigger", "rationale": "Compact + handoff = description's purpose."},
-    {"text": "Write a handoff doc focused on finishing the export endpoint", "expected": "should_trigger", "rationale": "Tailored-focus handoff matches argument-hint."},
-    {"text": "I have to stop — make sure the next session can pick up cold", "expected": "should_trigger", "rationale": "Stopping mid-work + fresh-agent continuation = handoff."},
-    {"text": "Sync the chat-only context into the workspace", "expected": "should_trigger", "rationale": "Syncing chat-only context is the skill's primary job."},
-    {"text": "Capture the open questions and assumptions before I close this tab", "expected": "should_trigger", "rationale": "Open questions + assumptions → handoff's sync step."},
-    {"text": "Save the gist of this session somewhere durable", "expected": "should_trigger", "rationale": "Durable session save = handoff."},
-    {"text": "Where am I in the active feature?", "expected": "should_not_trigger", "rationale": "Status query is /rite-status, not a handoff."},
-    {"text": "Plan the next slice of the active feature", "expected": "should_not_trigger", "rationale": "Planning is /rite-define / /rite-plan."},
-    {"text": "Run the test suite and prove the feature works", "expected": "should_not_trigger", "rationale": "Proving belongs to /rite-prove."},
-    {"text": "Review the diff", "expected": "should_not_trigger", "rationale": "Review is /rite-review."},
-    {"text": "Polish the UI", "expected": "should_not_trigger", "rationale": "Polish is /rite-polish."},
-    {"text": "Open a PR with these changes", "expected": "should_not_trigger", "rationale": "Git/PR workflow, not handoff."},
-    {"text": "Show me how this feature is structured", "expected": "should_not_trigger", "rationale": "Structural map is /rite-zoom-out, not handoff."},
-    {"text": "What time is it?", "expected": "should_not_trigger", "rationale": "Off-topic."}
+    {"text": "$rite-handoff", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
+    {"text": "/rite handoff", "expected": "should_trigger", "rationale": "Menu-style invocation."},
+    {"text": "handoff", "expected": "should_not_trigger", "rationale": "Explicit-only utility; natural language should route through /rite or stay manual."},
+    {"text": "summarize this session for the next agent", "expected": "should_not_trigger", "rationale": "Natural-language handoff request is no longer model-invoked."},
+    {"text": "Where am I in the active feature?", "expected": "should_not_trigger", "rationale": "Status query is /rite-status."},
+    {"text": "Plan the next slice of the active feature", "expected": "should_not_trigger", "rationale": "Planning is /rite-define or /rite-plan."},
+    {"text": "Review the diff", "expected": "should_not_trigger", "rationale": "Review is /rite-review."}
   ]
 }

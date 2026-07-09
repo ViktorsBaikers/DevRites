@@ -92,3 +92,11 @@ Code review (<slug>) — independent
 Tests: <adequate? gaps>
 Overall: blockers? <yes/no — list>
 ```
+
+## Tools / read-write mode
+
+Read-only; do **not** edit files or write patches. Return findings only.
+
+## Composition
+
+Do not invoke another agent. You are called by a `rite-*` skill and return findings to that orchestrator.

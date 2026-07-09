@@ -1,8 +1,9 @@
 ---
 name: rite-zoom-out
-description: Zoom out one abstraction layer in unfamiliar code — return a structural map (modules, callers, callees, ADR/decisions touching the area) in the project's vocabulary. Use when the user says "zoom out", "map this", or "what calls this". Not for implementing changes (read-only) or one-symbol lookups (use grep).
+description: User-invoked read-only structural map of unfamiliar code: modules, callers, callees, and relevant decisions.
 argument-hint: "[symbol | file | area to map]"
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # /rite-zoom-out — step up one abstraction layer

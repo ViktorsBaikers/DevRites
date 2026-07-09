@@ -1,6 +1,6 @@
 ---
 name: rite-frame
-description: Frame an ad-hoc ask into a falsifiable success criterion before coding, then audit the diff against the four classic LLM failure modes — silent assumption, overcomplication, out-of-scope edit, unverifiable goal. Use to reframe an underspecified imperative ask, to self-audit a raw diff, or at the top of `$rite-quick`. Not a replacement for the lifecycle gates (`$rite-seal`, `$rite-review`), the adversarial pre-mortem (`devrites-doubt`), or the fresh-context axis audit (`devrites-audit`) — it is the lightweight inline reflex for work that skips those.
+description: Frame an ad-hoc ask before coding, then audit the diff. Use for underspecified imperative asks, raw-diff self-audits, or `$rite-quick` setup. Not a lifecycle gate.
 argument-hint: "[task to frame | diff to audit]"
 user-invocable: true
 ---

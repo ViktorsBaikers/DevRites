@@ -1,7 +1,8 @@
 ---
 name: rite-prototype
-description: Throwaway prototype answering ONE design question — either a runnable Logic harness or 2–4 radically different UI variations on one route — then delete or absorb. Use when the user says "prototype this", "sanity-check the data model", or "try a few UI designs". Not for production code.
+description: User-invoked throwaway prototype for one logic or UI design question; delete or absorb after the answer.
 user-invocable: true
+disable-model-invocation: true
 argument-hint: "[the question the prototype is answering]"
 ---
 

@@ -73,8 +73,9 @@ def validate(skills_dir: Path) -> list[str]:
         if not has_any(text, GOTCHA_PATTERNS):
             errors.append(f"{f}: missing gotchas/anti-patterns pointer")
         desc = fm.get("description", "")
-        if not re.search(r"\bUse when\b|\bUse to\b|\bTrigger|\bwhen the user\b|\bfor ", desc, re.I):
-            errors.append(f"{f}: description must include trigger language")
+        explicit_only = fm.get("disable-model-invocation") == "true"
+        if not explicit_only and not re.search(r"\bUse when\b|\bUse to\b|\bTrigger|\bwhen the user\b|\bfor ", desc, re.I):
+            errors.append(f"{f}: model-invoked description must include trigger language")
         # Cross-skill references: obvious backtick references should exist.
         for ref in re.findall(r"`((?:rite|devrites)-[a-z0-9-]+)`", text):
             if ref in {"rite-use", "devrites-source-cache"}:

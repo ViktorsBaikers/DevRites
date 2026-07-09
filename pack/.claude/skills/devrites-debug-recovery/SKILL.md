@@ -54,4 +54,6 @@ move is unclear.
 - **3 failed attempts on the same root cause → escalate**: record the wrong idea and *why it
   failed* under `## Dead ends` in `decisions.md` (so a retry or the next agent doesn't repeat it),
   then re-hypothesize from **scratch** — fresh context, carrying those dead-ends as ruled-out —
-  invoke `devrites-doubt`, or ask the user. Don't keep trying variations of a wrong idea.
+  invoke `devrites-doubt`, or ask the user. If the failures expose different coupled failure points,
+  route to `/rite-plan repair` or an architecture decision before fix #4. Don't keep trying
+  variations of a wrong idea.

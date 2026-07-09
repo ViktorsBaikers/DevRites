@@ -140,7 +140,7 @@ first step (step 0); the rest are referenced on demand. Full index in
 | Performance requirement or suspected regression | `devrites-audit perf` (+ `devrites-performance-reviewer`) |
 | Failing tests / build / runtime / browser checks | `devrites-debug-recovery` |
 | Slice crosses a boundary or defines a public interface | `devrites-api-interface` |
-| Unfamiliar area, "zoom out", "map this" | `/rite-zoom-out` (uses codegraph/graphify) |
+| Explicit `/rite-zoom-out` / `$rite-zoom-out` | read-only structural map (uses codegraph/graphify) |
 | Every defined plan before build; "engineering review", "review the architecture", "lock in the plan", "test coverage check" | `/rite-vet` (+ `devrites-plan-reviewer`; depth scales to stakes, never skipped; always in `/rite-autocomplete`) |
 
 ## Code-graph integration

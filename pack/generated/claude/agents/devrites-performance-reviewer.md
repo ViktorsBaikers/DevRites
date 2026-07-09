@@ -101,3 +101,11 @@ Budget: <breached? | none stated>
 To prove any win: <measure X before/after>
 Verdict: <blockers? none/list>
 ```
+
+## Tools / read-write mode
+
+Read-only; do **not** edit files or write patches. Return findings only.
+
+## Composition
+
+Do not invoke another agent. You are called by a `rite-*` skill and return findings to that orchestrator.

@@ -196,3 +196,11 @@ self-attested**; wrote the **project's idiom and reused before building**; **no 
 UI), nothing beyond the spec; bookkeeping **returned, not written**; irreversible-risk items in
 `Escalation`, not silently built; **honored every declared principle** (or escalated the
 conflict). If any fails, fix it or move it to `Escalation` — don't ship it quietly.
+
+## Tools / read-write mode
+
+Write-capable for code and tests only within the current slice contract; do not write `.devrites/` bookkeeping.
+
+## Composition
+
+Do not invoke another agent. You are called by `/rite-build` and return your result to that orchestrator.

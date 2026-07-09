@@ -92,3 +92,11 @@ Graft from runner-up: <specific idea + source candidate | none>
 Discarded reasons: <one line per losing candidate — why it lost (load-bearing for a later slice)>
 Verdict: LAND <winner> | NO QUALIFYING CANDIDATE → /rite-plan repair
 ```
+
+## Tools / read-write mode
+
+Read-only; do **not** edit files or write patches. Return findings only.
+
+## Composition
+
+Do not invoke another agent. You are called by a `rite-*` skill and return findings to that orchestrator.

@@ -27,6 +27,7 @@ class Skill:
     name: str
     description: str
     invocable: bool
+    explicit_only: bool
 
 
 def parse_frontmatter(text: str) -> dict[str, str]:
@@ -60,7 +61,12 @@ def load_skills(skills_dir: Path) -> list[Skill]:
         if not f.is_file():
             continue
         fm = parse_frontmatter(f.read_text(encoding="utf-8"))
-        skills.append(Skill(fm.get("name", d.name), fm.get("description", ""), fm.get("user-invocable") == "true"))
+        skills.append(Skill(
+            fm.get("name", d.name),
+            fm.get("description", ""),
+            fm.get("user-invocable") == "true",
+            fm.get("disable-model-invocation") == "true",
+        ))
     return skills
 
 
@@ -88,7 +94,12 @@ def cosine(a: Counter, b: Counter) -> float:
 
 def direct_command_target(prompt: str, skill_names: set[str]) -> str | None:
     p = prompt.strip().lower()
-    m = re.match(r"^[/][$]?rite-([a-z0-9-]+)\b", p)
+    if p in {"/rite", "$rite", "rite"} and "rite" in skill_names:
+        return "rite"
+    first = p.split(maxsplit=1)[0]
+    if first in skill_names:
+        return first
+    m = re.match(r"^[$/]rite-([a-z0-9-]+)\b", p)
     if m:
         name = f"rite-{m.group(1)}"
         return name if name in skill_names else None
@@ -105,7 +116,10 @@ def rank_prompt(prompt: str, skills: list[Skill], vectors: dict[str, Counter]) -
     q = Counter(tokens(prompt))
     scored = []
     for s in skills:
-        score = cosine(q, vectors[s.name])
+        if s.explicit_only and direct != s.name:
+            score = 0.0
+        else:
+            score = cosine(q, vectors[s.name])
         if direct == s.name:
             score += 10.0
         # Nudge command surface above internals for public lifecycle wording.

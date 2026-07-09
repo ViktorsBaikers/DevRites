@@ -1,26 +1,14 @@
 {
   "skill": "rite",
-  "description": "Trigger evals for /rite — compact menu + active feature + suggested next step. Not a workflow engine; only routes.",
+  "description": "Explicit-only evals for /rite — compact menu and router.",
   "queries": [
     {"text": "/rite", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "What DevRites commands exist?", "expected": "should_trigger", "rationale": "Description names this phrase."},
-    {"text": "Show me the DevRites menu.", "expected": "should_trigger", "rationale": "Menu = rite."},
-    {"text": "Suggest my next DevRites step.", "expected": "should_trigger", "rationale": "Suggested-next-step = rite."},
-    {"text": "Where am I in DevRites and what should I run next?", "expected": "should_trigger", "rationale": "Combines status + menu — rite handles it."},
-    {"text": "Help, I don't know what rite-* command to use.", "expected": "should_trigger", "rationale": "Router-style help."},
-    {"text": "What is DevRites?", "expected": "should_trigger", "rationale": "Description framing."},
-    {"text": "Open the menu.", "expected": "should_trigger", "rationale": "Menu request."},
+    {"text": "$rite", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
+    {"text": "rite", "expected": "should_trigger", "rationale": "Explicit skill name."},
+    {"text": "What DevRites commands exist?", "expected": "should_not_trigger", "rationale": "Menu is explicit-only."},
+    {"text": "Show me the DevRites menu.", "expected": "should_not_trigger", "rationale": "Menu is explicit-only."},
     {"text": "Start a feature for invoice export.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Plan from the active spec.", "expected": "should_not_trigger", "rationale": "/rite-define."},
     {"text": "Build slice 1.", "expected": "should_not_trigger", "rationale": "/rite-build."},
-    {"text": "Prove the feature.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
-    {"text": "Polish the UI.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
-    {"text": "Review the diff.", "expected": "should_not_trigger", "rationale": "/rite-review."},
-    {"text": "Final GO/NO-GO.", "expected": "should_not_trigger", "rationale": "/rite-seal."},
-    {"text": "Where am I, full detail?", "expected": "should_not_trigger", "rationale": "/rite-status."},
-    {"text": "Re-plan the slices.", "expected": "should_not_trigger", "rationale": "/rite-plan."},
-    {"text": "What's a vertical slice?", "expected": "should_not_trigger", "rationale": "Concept Q; not a menu request."},
-    {"text": "What's the weather?", "expected": "should_not_trigger", "rationale": "Off-topic Q."},
-    {"text": "Translate this to French.", "expected": "should_not_trigger", "rationale": "Off-topic Q."}
+    {"text": "Review the diff.", "expected": "should_not_trigger", "rationale": "/rite-review."}
   ]
 }

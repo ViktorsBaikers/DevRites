@@ -1,26 +1,14 @@
 {
   "skill": "rite-prototype",
-  "description": "Trigger evals for /rite-prototype — user-invocable utility that builds throwaway code (Logic harness or 2–4 UI variations) to answer ONE undecidable-on-paper design question.",
+  "description": "Explicit-only evals for /rite-prototype — throwaway logic/UI prototypes.",
   "queries": [
     {"text": "/rite-prototype", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "prototype this", "expected": "should_trigger", "rationale": "Description names this exact trigger."},
-    {"text": "let me play with it", "expected": "should_trigger", "rationale": "Description names this phrase."},
-    {"text": "try a few designs", "expected": "should_trigger", "rationale": "Description names this phrase."},
-    {"text": "I want to see options", "expected": "should_trigger", "rationale": "Description names this phrase."},
-    {"text": "sanity-check the state model before I commit to it", "expected": "should_trigger", "rationale": "State model sanity-check = Logic branch."},
-    {"text": "mock up a few different layouts for the settings page so I can pick", "expected": "should_trigger", "rationale": "Several radically different UI variations = UI branch."},
-    {"text": "Build a throwaway terminal app that pushes this reducer through add/undo/re-add", "expected": "should_trigger", "rationale": "Throwaway harness for a state model = Logic branch."},
-    {"text": "I can't tell if this state machine deadlocks — let me poke at it", "expected": "should_trigger", "rationale": "Undecidable on paper, want runnable harness."},
-    {"text": "Spin up two or three radically different UX directions for the onboarding flow", "expected": "should_trigger", "rationale": "Radically different UI variations matches description verbatim."},
-    {"text": "Let's try the design first before we commit", "expected": "should_trigger", "rationale": "Pre-commit exploration = prototype's whole reason."},
-    {"text": "Just show me the data model running with a few example inputs", "expected": "should_trigger", "rationale": "Runnable harness over a data model = Logic branch."},
-    {"text": "Implement the next slice of the active feature", "expected": "should_not_trigger", "rationale": "Real implementation belongs to /rite-build, not a prototype."},
+    {"text": "$rite-prototype", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
+    {"text": "/rite prototype", "expected": "should_trigger", "rationale": "Menu-style invocation."},
+    {"text": "prototype this", "expected": "should_not_trigger", "rationale": "Explicit-only utility; natural language should not spend always-loaded surface."},
+    {"text": "try a few designs", "expected": "should_not_trigger", "rationale": "Explicit-only utility."},
+    {"text": "Implement the next slice of the active feature", "expected": "should_not_trigger", "rationale": "Real implementation belongs to /rite-build."},
     {"text": "Spec out a new export feature", "expected": "should_not_trigger", "rationale": "Spec investigation is /rite-spec."},
-    {"text": "Plan the breakdown of this approved spec", "expected": "should_not_trigger", "rationale": "Planning is /rite-define."},
-    {"text": "Fix the failing build", "expected": "should_not_trigger", "rationale": "Failure debugging is /devrites-debug-recovery."},
-    {"text": "Review the diff I just made", "expected": "should_not_trigger", "rationale": "Review belongs to /rite-review."},
-    {"text": "Polish the UI for the dashboard route", "expected": "should_not_trigger", "rationale": "Polish belongs to /rite-polish."},
-    {"text": "Open a Linear ticket for this bug", "expected": "should_not_trigger", "rationale": "Issue tracking is out of DevRites pack scope."},
-    {"text": "What time is it?", "expected": "should_not_trigger", "rationale": "Off-topic."}
+    {"text": "Review the diff I just made", "expected": "should_not_trigger", "rationale": "Review belongs to /rite-review."}
   ]
 }
