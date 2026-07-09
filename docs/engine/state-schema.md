@@ -2,8 +2,7 @@
 
 The `devrites-engine` binary reads a project's workflow state from plain files under
 `.devrites/`. Those files are the source of truth and are hand-editable — a
-human edit always wins. (A derived SQLite index is added in issue 02 purely as a
-disposable navigator; it never overrides the files.)
+human edit always wins.
 
 `schemaVersion: 1`.
 
@@ -127,30 +126,9 @@ result: incomplete (missing: tasks)
 
 The engine makes **zero model or network calls**; `status` is a pure read of the
 files under `DEVRITES_ROOT` (or the nearest `.devrites/` above the working
-directory).
+directory). A hand edit wins immediately because there is no status cache.
 
-## Index (SQLite cache)
-
-The files are the source of truth. `state.db` — a pure-Go SQLite database (WAL
-mode) written under the `.devrites/` root — is a **disposable, gitignored
-navigator** over them, never an authority.
-
-- **`devrites-engine reindex`** drops `state.db` and rebuilds it from the files,
-  reporting how many features were indexed. Deleting `state.db` costs nothing.
-- **`devrites-engine status`** serves from the index. Before answering it
-  staleness-checks the feature: each of its files is fingerprinted by name,
-  size, mtime, and content hash, and any change (edit, add, remove) re-indexes
-  that feature first — so a **hand-edit always wins** without an explicit
-  reindex. Content is hashed, so a restored mtime can't hide an edit.
-- The index **carries its own schema version** (SQLite `PRAGMA user_version`),
-  independent of the state `schemaVersion`. A DB with a mismatched version, a
-  missing schema, or an unreadable/corrupt file is **dropped and rebuilt, never
-  trusted**.
-- If the index can't be used at all, `status` **fails open** to reading the
-  files directly, so the cache being unavailable never breaks a read.
-
-`state.db` and its `-wal`/`-shm` sidecars are gitignored. `.devrites/` is ignored
-**except** the capability ledger at `specs/`, which is committed shared truth — the
-recommended pattern is `.devrites/*` + `!.devrites/specs/` (so `work/`, `archive/`,
-`ACTIVE`, and `state.db` stay per-clone runtime state while `specs/` is tracked).
-Index-served `status` output is byte-identical to a files-only read.
+`.devrites/` is ignored **except** the capability ledger at `specs/`, which is
+committed shared truth — the recommended pattern is `.devrites/*` +
+`!.devrites/specs/` (so `work/`, `archive/`, and `ACTIVE` stay per-clone runtime
+state while `specs/` is tracked).

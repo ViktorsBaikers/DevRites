@@ -5,8 +5,7 @@ package main_test
 // seam — it exercises external behavior only, never internals.
 //
 // Each test runs against a fresh COPY of the fixture in a temp dir, so a test
-// may write the index (state.db) or hand-edit a file without disturbing the
-// committed fixture or another test.
+// may hand-edit files without disturbing the committed fixture or another test.
 
 import (
 	"bytes"
@@ -181,44 +180,13 @@ func TestUnknownCommandExitsNonZero(t *testing.T) {
 	}
 }
 
-// --- issue 02: SQLite index + reindex + staleness ---
-
-func TestReindexBuildsDB(t *testing.T) {
+func TestStatusReflectsHandEdit(t *testing.T) {
 	root := newWorkspace(t)
-	_, errOut, code := runDevrites(t, root, "reindex")
-	if code != 0 {
-		t.Fatalf("reindex exit = %d, want 0 (stderr: %s)", code, errOut)
-	}
-	if _, err := os.Stat(filepath.Join(root, "state.db")); err != nil {
-		t.Errorf("state.db not created: %v", err)
-	}
-}
-
-func TestIndexServedStatusMatchesGolden(t *testing.T) {
-	root := newWorkspace(t)
-	// Build the index first, so status is served from it rather than lazily.
-	if _, _, code := runDevrites(t, root, "reindex"); code != 0 {
-		t.Fatalf("reindex failed")
-	}
-	out, _, code := runDevrites(t, root, "status", "auth-tokens")
-	if code != 0 {
-		t.Fatalf("status exit = %d, want 0", code)
-	}
-	if want := goldenStatus(t, "auth-tokens"); out != want {
-		t.Errorf("index-served status != files-only golden\n--- got ---\n%s--- want ---\n%s", out, want)
-	}
-}
-
-func TestStalenessHealReflectsHandEdit(t *testing.T) {
-	root := newWorkspace(t)
-	if _, _, code := runDevrites(t, root, "reindex"); code != 0 {
-		t.Fatalf("reindex failed")
-	}
 	// Before: tasks is a heading-only stub → incomplete.
 	if out, _, _ := runDevrites(t, root, "status", "auth-tokens"); !bytes.Contains([]byte(out), []byte("result: incomplete")) {
 		t.Fatalf("precondition failed, expected incomplete, got:\n%s", out)
 	}
-	// Hand-edit the file to add real content — no explicit reindex.
+	// Hand-edit the file to add real content; status reads files directly.
 	tasks := filepath.Join(root, "features", "auth-tokens", "tasks.md")
 	appendFile(t, tasks, "\n- [x] mint\n- [x] verify\n")
 
@@ -227,52 +195,10 @@ func TestStalenessHealReflectsHandEdit(t *testing.T) {
 		t.Fatalf("status exit = %d, want 0", code)
 	}
 	if !bytes.Contains([]byte(out), []byte("  tasks      present")) {
-		t.Errorf("staleness heal: tasks still not present after edit\n%s", out)
+		t.Errorf("tasks still not present after edit\n%s", out)
 	}
 	if !bytes.Contains([]byte(out), []byte("result: complete")) {
-		t.Errorf("staleness heal: expected complete after edit\n%s", out)
-	}
-}
-
-func TestDeleteDBReindexIsByteIdentical(t *testing.T) {
-	root := newWorkspace(t)
-	first, _, code := runDevrites(t, root, "status", "auth-tokens") // lazily builds the DB
-	if code != 0 {
-		t.Fatalf("first status exit = %d", code)
-	}
-	for _, sidecar := range []string{"state.db", "state.db-wal", "state.db-shm"} {
-		_ = os.Remove(filepath.Join(root, sidecar))
-	}
-	if _, _, code := runDevrites(t, root, "reindex"); code != 0 {
-		t.Fatalf("reindex failed")
-	}
-	second, _, code := runDevrites(t, root, "status", "auth-tokens")
-	if code != 0 {
-		t.Fatalf("second status exit = %d", code)
-	}
-	if first != second {
-		t.Errorf("status changed across delete+reindex\n--- first ---\n%s--- second ---\n%s", first, second)
-	}
-	if want := goldenStatus(t, "auth-tokens"); second != want {
-		t.Errorf("post-reindex status != golden\n%s", second)
-	}
-}
-
-func TestCorruptDBIsRebuilt(t *testing.T) {
-	root := newWorkspace(t)
-	if _, _, code := runDevrites(t, root, "reindex"); code != 0 {
-		t.Fatalf("reindex failed")
-	}
-	// Corrupt the DB with garbage; a well-behaved cache must drop and rebuild it.
-	if err := os.WriteFile(filepath.Join(root, "state.db"), []byte("not a sqlite database at all"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	out, errOut, code := runDevrites(t, root, "status", "auth-tokens")
-	if code != 0 {
-		t.Fatalf("status on corrupt DB exit = %d, want 0 (stderr: %s)", code, errOut)
-	}
-	if want := goldenStatus(t, "auth-tokens"); out != want {
-		t.Errorf("status after corrupt-DB rebuild != golden\n%s", out)
+		t.Errorf("expected complete after edit\n%s", out)
 	}
 }
 

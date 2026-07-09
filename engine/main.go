@@ -16,7 +16,6 @@ import (
 
 	"github.com/devrites/devrites/internal/gate"
 	"github.com/devrites/devrites/internal/harness"
-	"github.com/devrites/devrites/internal/index"
 	"github.com/devrites/devrites/internal/install"
 	"github.com/devrites/devrites/internal/iohooks"
 	"github.com/devrites/devrites/internal/lib"
@@ -34,7 +33,6 @@ Usage:
   devrites-engine status <slug>            Print a feature's phase and per-section completeness
   devrites-engine snapshot [slug]          Emit the DevRites workspace/status JSON snapshot
   devrites-engine first-task               Print the deterministic recommended-start token
-  devrites-engine reindex                  Rebuild the SQLite index from the .devrites files
   devrites-engine readiness <slug>         Gate: are the sections required to leave this phase complete?
   devrites-engine seal <slug>              Gate: is the feature complete enough to seal?
   devrites-engine spec-validate <dir|file> [--against <ledger-root>]  Lint the structured Requirement/Scenario grammar in a spec.md (--against cross-checks delta sections vs the capability ledger)
@@ -157,8 +155,6 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdSnapshot(args[1:], stdout, stderr)
 	case "first-task":
 		return lib.FirstTask(resolveRootLenient(), args[1:], stdout, stderr)
-	case "reindex":
-		return cmdReindex(args[1:], stdout, stderr)
 	case "readiness":
 		rest, j := extractFlag(args[1:], "--json")
 		return jsonWrap("readiness", j, stdout, stderr, func(o, e io.Writer) int { return cmdGate(gate.Readiness, rest, o, e) })
@@ -286,31 +282,12 @@ func cmdStatus(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
 	}
-	report, err := index.Status(root, args[0])
+	report, err := state.Status(root, args[0])
 	if err != nil {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
 	}
 	fmt.Fprint(stdout, report.Render())
-	return exitOK
-}
-
-func cmdReindex(args []string, stdout, stderr io.Writer) int {
-	if len(args) != 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine reindex")
-		return exitUsage
-	}
-	root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: %v\n", err)
-		return exitUsage
-	}
-	n, err := index.Reindex(root)
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: reindex failed: %v\n", err)
-		return 1
-	}
-	fmt.Fprintf(stdout, "reindexed %d feature(s)\n", n)
 	return exitOK
 }
 

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/workflow"
 )
 
@@ -17,47 +18,17 @@ const spaceChars = " \t\n\v\f\r"
 // featureDir is the per-feature directory under root. work/ is canonical;
 // features/ remains readable as a compatibility alias.
 func featureDir(root, slug string) string {
-	if ws := workspaceOverride(root, slug); ws != "" {
-		return ws
-	}
-	work := filepath.Join(root, "work", slug)
-	if isDir(work) {
-		return work
-	}
-	features := filepath.Join(root, "features", slug)
-	if isDir(features) {
-		return features
-	}
-	return work
-}
-
-func workspaceOverride(root, slug string) string {
-	raw := strings.TrimSpace(os.Getenv("DEVRITES_WORKSPACE"))
-	if raw == "" {
-		return ""
-	}
-	path := raw
-	if !filepath.IsAbs(path) {
-		path = filepath.Join(filepath.Dir(root), path)
-	}
-	path = filepath.Clean(path)
-	if slug == "" || filepath.Base(path) == slug {
-		return path
-	}
-	return ""
+	return devritespaths.FeatureDir(root, slug)
 }
 
 // activeSlug reads the active-feature pointer at <root>/ACTIVE (trimmed), or ""
 // when absent — the new-schema replacement for the old .devrites/ACTIVE lookup.
 func activeSlug(root string) string {
-	if ws := workspaceOverride(root, ""); ws != "" {
-		return filepath.Base(ws)
-	}
-	b, err := os.ReadFile(filepath.Join(root, "ACTIVE"))
+	slug, err := devritespaths.ActiveSlug(root)
 	if err != nil {
 		return ""
 	}
-	return strings.TrimSpace(string(b))
+	return slug
 }
 
 // preambleArtifacts is the fixed order preamble.sh scans for present artifacts.

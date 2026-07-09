@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/orient"
 	"github.com/devrites/devrites/internal/state"
 )
@@ -142,15 +143,7 @@ func StopGate(root string) (StopResult, error) {
 }
 
 func featureDir(root, slug string) string {
-	work := filepath.Join(root, "work", slug)
-	if info, err := os.Stat(work); err == nil && info.IsDir() {
-		return work
-	}
-	features := filepath.Join(root, "features", slug)
-	if info, err := os.Stat(features); err == nil && info.IsDir() {
-		return features
-	}
-	return work
+	return devritespaths.FeatureDir(root, slug)
 }
 
 const gateSpaceChars = " \t\n\v\f\r"

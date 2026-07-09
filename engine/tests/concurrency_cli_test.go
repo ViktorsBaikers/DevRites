@@ -1,10 +1,8 @@
 package main_test
 
-// Issue 07: multi-process concurrency. DevRites fans out reviewer subagents that
-// each spawn the binary, so the real contention is between short-lived
-// processes, not goroutines. This spawns many concurrent devrites-engine processes
-// against ONE workspace and asserts they all succeed with consistent output —
-// exercising WAL + busy_timeout so SQLITE_BUSY never surfaces as a hard failure.
+// Multi-process concurrency: DevRites fans out reviewer subagents that each
+// spawn the binary. This asserts concurrent read-only status calls stay
+// consistent against one workspace.
 
 import (
 	"bytes"
@@ -42,12 +40,6 @@ func TestConcurrentStatusProcessesStayConsistent(t *testing.T) {
 		t.Skip("skipping process stress test in -short mode")
 	}
 	root := newWorkspace(t)
-	// Warm the index once, then fan out — this is the real DevRites pattern: the
-	// index is built up front, then many short-lived processes read and heal it
-	// concurrently (with the occasional rebuild) while reviewer subagents run.
-	if _, _, code := runDevrites(t, root, "reindex"); code != 0 {
-		t.Fatal("warm-up reindex failed")
-	}
 	want := goldenStatus(t, "auth-tokens")
 
 	const n = 24
@@ -62,13 +54,6 @@ func TestConcurrentStatusProcessesStayConsistent(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			// Mix readers (status) with the occasional index rebuild (reindex) to
-			// force writer-vs-writer and writer-vs-reader contention on SQLite.
-			if i%6 == 0 {
-				out, code, fatal := runProc(root, "reindex")
-				results[i] = res{out, code, fatal}
-				return
-			}
 			out, code, fatal := runProc(root, "status", "auth-tokens")
 			results[i] = res{out, code, fatal}
 		}(i)
@@ -80,10 +65,10 @@ func TestConcurrentStatusProcessesStayConsistent(t *testing.T) {
 			t.Fatalf("proc %d could not run: %v", i, r.fatal)
 		}
 		if r.code != 0 {
-			t.Errorf("proc %d exit = %d, want 0 (SQLITE_BUSY not handled?)\n%s", i, r.code, r.out)
+			t.Errorf("proc %d exit = %d, want 0\n%s", i, r.code, r.out)
 			continue
 		}
-		if i%6 != 0 && r.out != want {
+		if r.out != want {
 			t.Errorf("proc %d status output diverged under contention\n--- got ---\n%s--- want ---\n%s", i, r.out, want)
 		}
 	}

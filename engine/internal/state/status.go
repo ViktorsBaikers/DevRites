@@ -26,9 +26,7 @@ func Status(root, slug string) (*Report, error) {
 }
 
 // NewReport computes the phase-relative required set and missing sections for a
-// loaded Feature. Callers that reconstruct a Feature from another source (e.g.
-// the SQLite index) use this so their output is byte-identical to a files-only
-// Status.
+// loaded Feature.
 func NewReport(f *Feature) *Report {
 	required := make(map[Section]bool)
 	for _, s := range RequiredSections(f.Phase) {

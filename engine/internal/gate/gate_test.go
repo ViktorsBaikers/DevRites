@@ -103,6 +103,30 @@ func TestStopGateRestPointInvariants(t *testing.T) {
 	}
 }
 
+func TestStopGateUsesWorkspaceOverride(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	override := filepath.Join(project, "custom", "alpha")
+	t.Setenv("DEVRITES_WORKSPACE", override)
+	writeFile(t, override, "feature.md", "---\nphase: build\nschemaVersion: 1\n---\n")
+	writeFile(t, override, "state.md", "- Phase: build\n")
+	writeFile(t, override, ".red", "go test ./...\n")
+
+	got, err := StopGate(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Slug != "alpha" {
+		t.Fatalf("StopGate slug=%q, want alpha", got.Slug)
+	}
+	if !got.Blocked || !strings.Contains(got.Reason, "tests/build RED") {
+		t.Fatalf("StopGate did not block on override .red: blocked=%v reason=%q", got.Blocked, got.Reason)
+	}
+}
+
 func TestOpenBlockingQuestionGates(t *testing.T) {
 	got := openBlockingQuestionGates([]byte("## q-1\nstatus: open\ngate: blocking\n\n## Not a question\n\n## q-2\nstatus: open\ngate: validating\n\n## q-3\nstatus: resolved\ngate: blocking\n\n## q-4\nstatus: open\ngate: blocking\n"))
 	want := []string{"blocking", "validating"}

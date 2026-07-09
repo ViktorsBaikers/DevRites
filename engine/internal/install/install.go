@@ -985,7 +985,7 @@ func extractTarGz(tarball, dest string) error {
 			if err := os.MkdirAll(target, fs.FileMode(hdr.Mode)&0o777); err != nil {
 				return err
 			}
-		case tar.TypeReg, tar.TypeRegA:
+		case tar.TypeReg:
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}

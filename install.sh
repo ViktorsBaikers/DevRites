@@ -23,6 +23,13 @@ verify_sha256() {
 }
 
 bootstrap_bundle() {
+  script="install"
+  case "${1:-}" in
+    install|update|uninstall)
+      script="$1"
+      shift
+      ;;
+  esac
   if [ "${DEVRITES_BOOTSTRAPPED:-0}" = "1" ]; then
     echo "error: bootstrap re-exec did not find pack/ - aborting to avoid a loop." >&2
     exit 1
@@ -58,11 +65,11 @@ bootstrap_bundle() {
   fi
   tar -C "$tmp" -xzf "$tmp/devrites.tar.gz" || { echo "error: could not extract DevRites tarball" >&2; exit 1; }
   bundle="$(find "$tmp" -mindepth 1 -maxdepth 1 -type d | head -n1)"
-  [ -n "$bundle" ] && [ -f "$bundle/install.sh" ] || { echo "error: extracted bundle is missing install.sh" >&2; exit 1; }
+  [ -n "$bundle" ] && [ -f "$bundle/$script.sh" ] || { echo "error: extracted bundle is missing $script.sh" >&2; exit 1; }
   chmod +x "$bundle/install.sh" "$bundle/uninstall.sh" "$bundle/update.sh" 2>/dev/null || true
   echo "DevRites: bootstrapped from ${tag:-main} -> $bundle"
   export DEVRITES_BOOTSTRAPPED=1
-  exec bash "$bundle/install.sh" "$@"
+  exec bash "$bundle/$script.sh" "$@"
 }
 
 if [ -z "$SELF_DIR" ] || [ ! -d "$SELF_DIR/pack" ]; then
