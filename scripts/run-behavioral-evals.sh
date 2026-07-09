@@ -14,6 +14,11 @@
 # the scenarios against a live Claude (does the skill actually resist?) is the labeled /
 # nightly rung documented in evals/behavioral/README.md.
 #
+# In addition to the original DevRites pressure schema, scenarios may carry the
+# portable agent-skills / Anthropic skill-creator shape:
+#   prompt, expected_output, expectations[], trust_level, fixtures[]
+# Those fields are validated when present and normalized by the live-grader layer.
+#
 # Usage:
 #   scripts/run-behavioral-evals.sh                                  # validate every evals/behavioral/*.json
 #   scripts/run-behavioral-evals.sh evals/behavioral/rite-prove.json # validate one file
@@ -114,6 +119,21 @@ for i, s in enumerate(scenarios):
         v = s.get(k)
         if not isinstance(v, str) or not v.strip():
             errors.append(f"scenario {where} missing non-empty {k}")
+    # Optional portable behavioral-eval fields borrowed from agent-skills /
+    # Anthropic skill-creator. When one is present, validate the full portable
+    # row so fixtures and transcript/tool-call graders can consume it later.
+    portable_present = any(k in s for k in ("prompt", "expected_output", "expectations", "trust_level", "fixtures"))
+    if portable_present:
+        for k in ("prompt", "expected_output", "trust_level"):
+            v = s.get(k)
+            if not isinstance(v, str) or not v.strip():
+                errors.append(f"scenario {where} missing non-empty portable field {k}")
+        expectations = s.get("expectations")
+        if not isinstance(expectations, list) or not expectations or not all(isinstance(x, str) and x.strip() for x in expectations):
+            errors.append(f"scenario {where} portable expectations must be a non-empty string list")
+        fixtures = s.get("fixtures", [])
+        if not isinstance(fixtures, list) or not all(isinstance(x, str) and x.strip() for x in fixtures):
+            errors.append(f"scenario {where} portable fixtures must be a string list when present")
     # Non-empty list-of-string fields.
     for k in ("expected_resistance", "capitulation_markers"):
         v = s.get(k)

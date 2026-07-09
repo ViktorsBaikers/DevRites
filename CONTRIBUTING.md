@@ -245,3 +245,15 @@ disclosure channels documented in [`SECURITY.md`](SECURITY.md):
 
 Thanks again for contributing. Every well-scoped issue, sharp PR, and
 thoughtful eval query makes DevRites better.
+
+
+## Skill and agent contribution preflight
+
+Before adding a DevRites skill or agent:
+
+1. Search the catalog and open work for an existing surface. Prefer extending an existing skill/reference over creating a near-duplicate.
+2. Justify why the behavior cannot live as a reference file inside an existing skill.
+3. A new public `rite-*` requires command map entries, docs table entry, trigger evals, host parity across Claude (`/rite-*`) and Codex (`$rite-*`), generated artifacts, and reply-contract compliance or a documented exception.
+4. A new internal `devrites-*` requires trigger evals and proof it should be a skill rather than an agent or reference.
+5. A new agent requires orchestration justification, read/write mode, output format, and composition block. Only `devrites-slice-wright` may write code.
+6. Run `npm run validate` and the relevant targeted tests before proposing the change.

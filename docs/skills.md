@@ -29,6 +29,38 @@ phase (the rationalizations in `pack/.claude/skills/devrites-lib/reference/stand
 restatement of the positive steps. A mechanical rename of the equivalents above to a
 single `## Gotchas` heading is a possible future normalization; the content already holds.
 
+## Host command parity manifest
+
+DevRites installs via `npx devrites ...`; Claude Code and Codex support are generated host artifacts installed by that npm flow, not plugin-store installs. Every public command has equivalent Claude and Codex wording:
+
+| Skill | Claude menu | Claude direct | Codex menu | Codex direct |
+|---|---|---|---|---|
+| `rite-adopt` | `/rite adopt` | `/rite-adopt` | `$rite adopt` | `$rite-adopt` |
+| `rite-autocomplete` | `/rite autocomplete` | `/rite-autocomplete` | `$rite autocomplete` | `$rite-autocomplete` |
+| `rite-build` | `/rite build` | `/rite-build` | `$rite build` | `$rite-build` |
+| `rite-converge` | `/rite converge` | `/rite-converge` | `$rite converge` | `$rite-converge` |
+| `rite-define` | `/rite define` | `/rite-define` | `$rite define` | `$rite-define` |
+| `rite-doctor` | `/rite doctor` | `/rite-doctor` | `$rite doctor` | `$rite-doctor` |
+| `rite-explain` | `/rite explain` | `/rite-explain` | `$rite explain` | `$rite-explain` |
+| `rite-frame` | `/rite frame` | `/rite-frame` | `$rite frame` | `$rite-frame` |
+| `rite-handoff` | `/rite handoff` | `/rite-handoff` | `$rite handoff` | `$rite-handoff` |
+| `rite-learn` | `/rite learn` | `/rite-learn` | `$rite learn` | `$rite-learn` |
+| `rite-plan` | `/rite plan` | `/rite-plan` | `$rite plan` | `$rite-plan` |
+| `rite-polish` | `/rite polish` | `/rite-polish` | `$rite polish` | `$rite-polish` |
+| `rite-pressure-test` | `/rite pressure-test` | `/rite-pressure-test` | `$rite pressure-test` | `$rite-pressure-test` |
+| `rite-prototype` | `/rite prototype` | `/rite-prototype` | `$rite prototype` | `$rite-prototype` |
+| `rite-prove` | `/rite prove` | `/rite-prove` | `$rite prove` | `$rite-prove` |
+| `rite-quick` | `/rite quick` | `/rite-quick` | `$rite quick` | `$rite-quick` |
+| `rite-resolve` | `/rite resolve` | `/rite-resolve` | `$rite resolve` | `$rite-resolve` |
+| `rite-review` | `/rite review` | `/rite-review` | `$rite review` | `$rite-review` |
+| `rite-seal` | `/rite seal` | `/rite-seal` | `$rite seal` | `$rite-seal` |
+| `rite-ship` | `/rite ship` | `/rite-ship` | `$rite ship` | `$rite-ship` |
+| `rite-spec` | `/rite spec` | `/rite-spec` | `$rite spec` | `$rite-spec` |
+| `rite-status` | `/rite status` | `/rite-status` | `$rite status` | `$rite-status` |
+| `rite-temper` | `/rite temper` | `/rite-temper` | `$rite temper` | `$rite-temper` |
+| `rite-vet` | `/rite vet` | `/rite-vet` | `$rite vet` | `$rite-vet` |
+| `rite-zoom-out` | `/rite zoom-out` | `/rite-zoom-out` | `$rite zoom-out` | `$rite-zoom-out` |
+
 ## Completion reply contract
 
 Workspace-operating `rite-*` skills render `devrites-engine progress` first, then a compact

@@ -38,6 +38,8 @@ Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Then the s
   **assertion strength** (no tautological tests; see it fail first), scaled to the change.
 - `error-handling.md` / `security.md` — only if the change touches input/errors.
 - `principles.md` — when `.devrites/principles.md` exists; a change that breaks an invariant is a gate, not a quick fix.
+- `definition-of-done.md` — standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+
 
 ## Workflow
 0. **Orient.** Read `core.md`. If a `.devrites/` workspace is active, run the preamble to

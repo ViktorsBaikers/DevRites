@@ -2,6 +2,9 @@
   <img src="images/logo.png" alt="DevRites">
 </p>
 
+
+**If you only remember one thing:** `SPEC -> DEFINE -> VET -> BUILD -> PROVE -> POLISH -> REVIEW -> SEAL -> SHIP`. Seal decides; Ship mutates git. Build one slice at a time; Autocomplete is opt-in and starts from a clean baseline. DevRites installs via `npx devrites ...`; Claude/Codex support is generated project-local surface, not plugin distribution.
+
 **Per-feature workspace on disk.** Every feature gets its own `.devrites/work/<slug>/`
 directory: a compact workspace map → `brief.md` + `spec.md` → (`strategy.md`) →
 `architecture.md` + `plan.md` + `tasks.md` + `traceability.md` → (`eng-review.md` +
@@ -126,7 +129,7 @@ rules carrier, workspace state, namespace map) →
 [orchestration](docs/orchestration.md) ·
 [usage examples](docs/usage.md) ·
 [release pipeline](docs/release.md) ·
-[engineering rules](pack/.claude/skills/devrites-lib/reference/standards/README.md)
+[engineering rules](pack/.claude/skills/devrites-lib/reference/standards/README.md) · [quick reference](docs/quick-reference.md)
 
 ## Why distributed skills, not one `/engine`
 

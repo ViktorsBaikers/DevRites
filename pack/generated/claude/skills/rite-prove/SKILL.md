@@ -45,6 +45,8 @@ pull these via `Read` when relevant:
 - `developer-experience.md` — when the change ships a developer-facing surface (API / CLI / SDK /
   webhook / config / error messages / getting-started): **measure** the DX scorecard (run the flow,
   time time-to-hello-world, capture the verbatim error text), don't assert it.
+- `definition-of-done.md` — standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+
 
 ## Operating rules
 - Evidence over confidence. Feature scope only — fix within the feature or record a

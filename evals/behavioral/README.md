@@ -105,3 +105,8 @@ Guidelines:
   a transcript ("re-runs the command and records the output"), not a vibe ("is careful").
 - **Make `capitulation_markers` the inverse.** They are the concrete failure the row warns
   about — the grader fails the scenario the moment one appears.
+
+
+## Portable schema compatibility
+
+Scenarios may include optional agent-skills / Anthropic skill-creator fields: `prompt`, `expected_output`, `expectations[]`, `trust_level`, and `fixtures[]`. The deterministic validator checks the shape without invoking a model; live graders can use those fields for transcript/tool-call grading. The original DevRites pressure fields remain required so existing gates keep their rationalization/resistance vocabulary.

@@ -96,6 +96,35 @@ else
   echo "skip: node not found"
 fi
 
+# ---- 6c. skill anatomy + routing + host parity ----------------------------
+section "skill anatomy"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/validate-skill-anatomy.py" >/tmp/dr_skill_anatomy 2>&1; then cat /tmp/dr_skill_anatomy; good "skill anatomy contracts passed"; else cat /tmp/dr_skill_anatomy; bad "skill anatomy validation failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+section "deterministic routing/collision evals"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/run-routing-evals.py" >/tmp/dr_routing_evals 2>&1; then cat /tmp/dr_routing_evals; good "routing/collision evals passed"; else cat /tmp/dr_routing_evals; bad "routing/collision evals failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+section "command host parity"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/validate-command-parity.py" >/tmp/dr_command_parity 2>&1; then cat /tmp/dr_command_parity; good "command host parity passed"; else cat /tmp/dr_command_parity; bad "command host parity failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+section "agent composition"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/validate-agent-composition.py" >/tmp/dr_agent_composition 2>&1; then cat /tmp/dr_agent_composition; good "agent composition contracts passed"; else cat /tmp/dr_agent_composition; bad "agent composition validation failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
 # ---- 7. broken reference links -------------------------------------------
 section "reference links resolve"
 if command -v python3 >/dev/null 2>&1; then
