@@ -191,6 +191,17 @@ gen_codex_hooks_json() {
         ]
       }
     ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook handoff-snapshot",
+            "statusMessage": "DevRites: snapshotting active handoff"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -258,6 +269,10 @@ gen_codex_hooks_json() {
           {
             "type": "command",
             "command": "printf '%s\\n' 'DevRites: reconcile this subagent result against the active DevRites skill contract before claiming completion.'"
+          },
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook event subagent-stop"
           }
         ]
       }
@@ -270,6 +285,16 @@ gen_codex_hooks_json() {
             "type": "command",
             "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook orient --harness=codex",
             "statusMessage": "DevRites: loading project orientation"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook event session-end"
           }
         ]
       }

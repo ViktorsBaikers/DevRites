@@ -97,6 +97,8 @@ Hooks:
   hook source-cache-pre   Serve a cached page reading on a 304 revalidation (WebFetch)
   hook source-cache-post  Store a WebFetch result keyed on its origin validators
   hook refresh-indexes    Refresh the code-intelligence indexes (detached) on Stop
+  hook event <name>       Append a hook/session event to the active workspace trace
+  hook handoff-snapshot   Append a compact active-workspace handoff before compaction
 
 Exit codes:
   0  ok / gate passed
@@ -437,10 +439,16 @@ func cmdHook(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if !hookActive(name) {
 		return exitOK
 	}
-	// refresh-indexes carries its own positional flags (--worker/--force ROOT) and
-	// needs no harness, so it is dispatched before harness parsing.
+	// These hooks carry their own positional args and need no harness parsing, so
+	// dispatch them before the --harness requirement.
 	if name == "refresh-indexes" {
 		return iohooks.RefreshIndexes(args[1:], stdin, stdout, stderr)
+	}
+	if name == "event" {
+		return hookEvent(args[1:], stdin, stdout, stderr)
+	}
+	if name == "handoff-snapshot" {
+		return hookHandoffSnapshot(stdin, stdout, stderr)
 	}
 	h, err := harness.Parse(harnessFlag(args[1:]))
 	if err != nil {

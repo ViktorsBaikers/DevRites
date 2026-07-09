@@ -56,6 +56,8 @@ var hookRegistry = map[string]hookTier{
 	"source-cache-pre":  tierStandard,
 	"source-cache-post": tierStandard,
 	"refresh-indexes":   tierStandard,
+	"event":             tierStandard,
+	"handoff-snapshot":  tierStandard,
 }
 
 // hookProfileTier resolves DEVRITES_HOOK_PROFILE to a tier, defaulting to

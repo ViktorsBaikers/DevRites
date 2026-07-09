@@ -48,6 +48,10 @@ a release flow the project doesn't use.
    secrets, `.env`, or out-of-scope files (see the never-commit list in `git-workflow.md`).
 2. **Commit** with a Conventional Commit message derived from the feature (`feat(scope):
    …` / `fix(scope): …`). Atomic — one logical change. Put the *why* in the body.
+   For non-trivial features, append trailers from the workspace record:
+   `Constraint:` from binding principles/irreversible risks, `Rejected:` from material alternatives,
+   `Confidence:` from `seal.md`, `Scope-risk:` from the blast-radius scan, and `Not-tested:` for
+   known proof gaps. Skip trailers for typos and pure formatting.
 3. **Push** to the target branch (the feature branch, or per the project's trunk
    convention).
 4. **Tag / PR** only if the project does it: cut a tag when the project tags releases,

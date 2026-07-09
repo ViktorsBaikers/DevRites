@@ -3,6 +3,7 @@ package doctor
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/devrites/devrites/internal/version"
@@ -119,5 +120,31 @@ func TestDiagnoseDevBinaryNeverFalseWarns(t *testing.T) {
 	}
 	if r.Refuse || (len(r.Verdict) >= 4 && r.Verdict[:4] == "WARN") {
 		t.Errorf("a dev (incomparable) binary must not warn on skew; verdict=%q", r.Verdict)
+	}
+}
+
+func TestDiagnoseReportsHostArtifactDrift(t *testing.T) {
+	projectDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(projectDir, ".claude", "skills", "rite-build"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(projectDir, ".claude", "settings.json"), []byte(`{"hooks":{}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	writeFeature(t, root, "f", 1)
+
+	r, err := Diagnose(projectDir, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Checks) == 0 {
+		t.Fatal("expected drift checks")
+	}
+	out := r.Render()
+	for _, want := range []string{"devrites-engine hooks", "Codex skill mirror", "devrites.version marker"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("doctor output missing %q:\n%s", want, out)
+		}
 	}
 }
