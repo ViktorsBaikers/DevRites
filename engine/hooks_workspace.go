@@ -7,6 +7,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/devrites/devrites/internal/harness"
 	"github.com/devrites/devrites/internal/orient"
@@ -63,6 +65,69 @@ func resolveWorkspace() (root, slug, dir string, ok bool) {
 		return "", "", "", false
 	}
 	return root, slug, resolveWorkspaceDir(root, slug), true
+}
+
+type hookEventJSON struct {
+	TS    string `json:"ts"`
+	Event string `json:"event"`
+	Slug  string `json:"slug,omitempty"`
+	Note  string `json:"note,omitempty"`
+}
+
+// hookEvent records hook/session observability without changing flow. It is
+// fail-open: outside an active workspace it stays silent.
+func hookEvent(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	_, _ = io.Copy(io.Discard, stdin)
+	event := "hook"
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "--") {
+			continue
+		}
+		event = arg
+		break
+	}
+	root, slug, dir, ok := resolveWorkspace()
+	if !ok {
+		return exitOK
+	}
+	rec := hookEventJSON{TS: time.Now().UTC().Format(time.RFC3339), Event: event, Slug: slug}
+	line, err := json.Marshal(rec)
+	if err != nil {
+		return exitOK
+	}
+	_ = state.AppendLog(filepath.Join(root, "timeline.jsonl"), string(line))
+	_ = state.AppendLog(filepath.Join(dir, "events.jsonl"), string(line))
+	return exitOK
+}
+
+// hookHandoffSnapshot preserves a compact resume note before context compaction.
+// It appends; it never rewrites the canonical workspace artifacts.
+func hookHandoffSnapshot(stdin io.Reader, stdout, stderr io.Writer) int {
+	_, _ = io.Copy(io.Discard, stdin)
+	_, slug, dir, ok := resolveWorkspace()
+	if !ok {
+		return exitOK
+	}
+	stateLines := wsReadLines(filepath.Join(dir, "state.md"))
+	phase := wsField(stateLines, findPhase, stripPhase)
+	status := wsField(stateLines, findStatus, stripStatus)
+	next := wsField(stateLines, findNextStep, stripNextStep)
+	stamp := time.Now().UTC().Format(time.RFC3339)
+	var b strings.Builder
+	fmt.Fprintf(&b, "\n## Handoff snapshot — %s\n", stamp)
+	fmt.Fprintf(&b, "- Feature: %s\n", slug)
+	if phase != "" {
+		fmt.Fprintf(&b, "- Phase: %s\n", phase)
+	}
+	if status != "" {
+		fmt.Fprintf(&b, "- Status: %s\n", status)
+	}
+	if next != "" {
+		fmt.Fprintf(&b, "- Next: %s\n", next)
+	}
+	fmt.Fprintf(&b, "- Open questions: %s\n", wsOrZero(wsGateCount(filepath.Join(dir, "questions.md"))))
+	_ = state.AppendLog(filepath.Join(dir, "handoff.md"), strings.TrimRight(b.String(), "\n"))
+	return exitOK
 }
 
 // hookCursor re-injects the active feature's cursor each turn (UserPromptSubmit),

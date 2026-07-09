@@ -82,6 +82,13 @@ else
   echo "skip: python3 not found"
 fi
 
+section "generated skill payload budget"
+if command -v node >/dev/null 2>&1; then
+  if node "$ROOT/scripts/check-generated-skill-budget.mjs" "$SKILLS"; then good "generated skill payload budget passed"; else bad "generated skill payload budget failed"; fi
+else
+  echo "skip: node not found"
+fi
+
 # ---- 6. /rite-polish orchestrator references its phase reference files ---
 section "rite-polish orchestrator → reference files"
 for s in reference/code.md reference/ui.md; do
@@ -175,11 +182,11 @@ echo "ok: size advisory complete"
 
 # ---- 8b. skill pruning audit (advisory) ----------------------------------
 section "skill pruning audit (advisory)"
-if command -v node >/dev/null 2>&1; then
+if command -v node >/dev/null 2>&1 && [ -f "$ROOT/scripts/skill-pruning-audit.mjs" ]; then
   node "$ROOT/scripts/skill-pruning-audit.mjs" || true
   good "skill pruning audit complete"
 else
-  echo "skip: node not found"
+  echo "skip: node or skill-pruning-audit.mjs not found"
 fi
 
 # ---- 9. DevRites engineering rules present -------------------------------

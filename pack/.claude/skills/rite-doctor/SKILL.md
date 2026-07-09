@@ -1,6 +1,6 @@
 ---
 name: rite-doctor
-description: Diagnose DevRites install and workspace health. Use when the user says "rite doctor", "check my DevRites install", or the workflow is not picking up a feature. Not for app bugs.
+description: Diagnose DevRites install and workspace health. Use when the user says "rite doctor", "check my DevRites install", or workflow pickup is broken. Not for app bugs.
 argument-hint: "[--code]"
 user-invocable: true
 ---
@@ -10,8 +10,7 @@ user-invocable: true
 The on-demand deep report. The same checks run **silently at session start** (the orient
 hook surfaces issues only when there are any); `/rite-doctor` runs them **verbosely** —
 printing every check, pass or fail — so you can inspect health even when nothing is broken.
-It covers both Claude Code wiring and optional Codex mirrors/hooks when those files are present.
-With `--code`, it also runs the read-only project code-health dashboard (`devrites-engine health`).
+It covers version drift, Claude Code wiring, optional Codex mirrors/hooks, stale host artifacts, and missing install markers when those files are present. With `--code`, it also runs the read-only project code-health dashboard (`devrites-engine health`).
 It also reports an in-progress git merge/rebase and points to `git-workflow.md`'s conflict
 recovery playbook.
 

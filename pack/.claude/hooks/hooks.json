@@ -38,6 +38,13 @@
         ]
       }
     ],
+    "PreCompact": [
+      {
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook handoff-snapshot || exit 0" }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -68,6 +75,20 @@
       {
         "hooks": [
           { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook subagent-orient --harness=claude || exit 0" }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook event subagent-stop || exit 0" }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook event session-end || exit 0" }
         ]
       }
     ]
