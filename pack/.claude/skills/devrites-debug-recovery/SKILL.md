@@ -1,6 +1,6 @@
 ---
 name: devrites-debug-recovery
-description: Debug systematically when tests, builds, or runtime/browser checks fail — reproduce, rank hypotheses, fix the root cause, regression-test. Use when the user says "debug this", "the build is red", or "the tests fail". Not for code review or flaky tests (fix the flake first).
+description: Debug when tests, builds, runtime, or browser checks fail: reproduce, rank hypotheses, fix root cause, regression-test. Use when the user says "debug", "build is red", or "tests fail". Not for code review.
 user-invocable: false
 ---
 

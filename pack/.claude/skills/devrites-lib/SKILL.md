@@ -1,6 +1,6 @@
 ---
 name: devrites-lib
-description: Internal shared helper library for DevRites — not a user command and not model-invocable. It documents DevRites' cross-cutting helper commands, run via the global `devrites` binary (notably the read-only orientation preamble that every workspace-operating rite-* skill runs at step 0). No workflow; do not invoke.
+description: Internal shared DevRites helper library. Documents cross-cutting engine commands and references; not a user workflow. Do not invoke directly.
 user-invocable: false
 disable-model-invocation: true
 ---

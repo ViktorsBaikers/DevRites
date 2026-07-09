@@ -139,9 +139,11 @@ func Timeline(root string, args []string, stdout, stderr io.Writer) int {
 	}
 }
 
-// Health records one compact health score per run. The caller owns the score;
-// the engine owns the append-only history shape.
+// Health records one compact score (legacy record/list) or runs the project code-health dashboard.
 func Health(root string, args []string, stdout, stderr io.Writer) int {
+	if len(args) == 0 || argAt(args, 0) == "run" || argAt(args, 0) == "check" {
+		return CodeHealth(root, args, stdout, stderr)
+	}
 	switch argAt(args, 0) {
 	case "record":
 		score, ok := parseHealthScore(argAt(args, 1))
@@ -189,10 +191,14 @@ func Health(root string, args []string, stdout, stderr io.Writer) int {
 			}
 			limit = n
 		}
-		printTail(filepath.Join(root, "health-history.jsonl"), limit, "health", stdout)
+		path := filepath.Join(root, "health.jsonl")
+		if !isFile(path) {
+			path = filepath.Join(root, "health-history.jsonl")
+		}
+		printTail(path, limit, "health", stdout)
 		return 0
 	default:
-		fmt.Fprintln(stderr, "usage: devrites-engine health record|list [...]")
+		fmt.Fprintln(stderr, "usage: devrites-engine health [run|check] | record|list [...]")
 		return 2
 	}
 }

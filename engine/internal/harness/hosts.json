@@ -5,6 +5,12 @@
     "globalConfigDir": "~/.claude",
     "hookSurface": ["SessionStart", "PreToolUse", "PostToolUse", "Stop", "SubagentStart"],
     "commandStyle": "slash-skills",
+    "commandSigil": "/",
+    "invocationSyntax": "/rite <verb>",
+    "skillRoot": ".claude/skills",
+    "agentRoot": ".claude/agents",
+    "frontmatter": {"disableModelInvocation": "disable-model-invocation", "userInvocable": "user-invocable"},
+    "modelFallbackConfidence": "high",
     "sandboxTier": "host",
     "supportTier": "first-party"
   },
@@ -14,6 +20,12 @@
     "globalConfigDir": "~/.codex",
     "hookSurface": ["SessionStart", "PreToolUse", "PostToolUse", "Stop", "SubagentStart"],
     "commandStyle": "dollar-skills",
+    "commandSigil": "$",
+    "invocationSyntax": "$rite <verb>",
+    "skillRoot": ".agents/skills",
+    "agentRoot": ".codex/agents",
+    "frontmatter": {"disableModelInvocation": "disable-model-invocation", "userInvocable": "user-invocable"},
+    "modelFallbackConfidence": "medium",
     "sandboxTier": "host",
     "supportTier": "first-party"
   }

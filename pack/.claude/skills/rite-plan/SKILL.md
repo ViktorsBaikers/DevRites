@@ -1,6 +1,6 @@
 ---
 name: rite-plan
-description: Reshape an active plan — decompose / reslice / repair / reorder / split FE-BE / unblock / course-correct — without changing product behavior unless asked. Use when the user says "replan", "reslice", "repair the plan", "unblock", "we're pivoting", or `/rite-build` flags Spec Drift. Not for the initial plan (use `/rite-define`).
+description: Reshape an active plan: decompose, reslice, repair, reorder, split FE/BE, unblock, or course-correct. Use when the user says "replan", "reslice", "repair the plan", "unblock", or "pivot". Not for initial planning.
 argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct]"
 user-invocable: true
 ---

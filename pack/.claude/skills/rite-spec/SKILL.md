@@ -71,6 +71,12 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    ```
 1. **Understand the request** (`$ARGUMENTS`). Restate the goal and the *real problem
    behind it* in a sentence or two.
+1a. **Local dedupe.** Search local issues/PRDs and archived specs before creating a new workspace:
+   ```bash
+   devrites-engine spec-dedupe "$ARGUMENTS"
+   ```
+   If it finds a close match, ask the user: extend existing / adopt / new spec. Record the choice in
+   `decisions.md` once the workspace exists. No match → continue silently.
 2. **Investigate deeply** — [investigation](reference/investigation.md). Produce, and
    later write into the spec: **current behavior**; **placement** (which module/layer/
    file/component should own it, the seam, patterns to reuse, and integration points —
@@ -93,7 +99,8 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    **Consult the capability ledger** — the living record of what the system already does
    ([`ledger.md`](../rite-ship/reference/ledger.md)): `devrites-engine ledger list` for the
    capabilities on record, then `devrites-engine ledger show <capability>` for any this feature
-   touches. Starting from the proven contract (not a cold re-derive) is what makes the spec store
+   touches. Also search prior decisions with `devrites-engine decisions search "<2-4 feature nouns>"`
+   before asking the human to re-decide a settled architecture/API/auth choice. Starting from the proven contract (not a cold re-derive) is what makes the spec store
    compound across features; it also tells you which requirements are new vs a change to existing
    behavior, which decides the delta kind in step 5.
 3. **Gather design references (optional)** — [references-intake](reference/references-intake.md).
