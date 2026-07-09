@@ -27,6 +27,7 @@ A project extension is a directory under `.devrites/extensions/`:
   skill/SKILL.md      (optional) a user rite/skill — needs name + description frontmatter
   agent.md            (optional) a user reviewer agent — needs name + description frontmatter
   component.yaml      (optional) npx-managed component manifest + safety bounds
+  provenance.json     (optional) source/author/review metadata for shared extensions
   extension.yaml      (optional) metadata: aliases (prior names, so a rename doesn't orphan)
 ```
 
@@ -45,7 +46,10 @@ devrites-engine extensions sync        # mirror valid extensions into .claude/ s
   an extension provides at least one artifact, and that no two extensions claim the same skill/agent
   name. If `component.yaml` is present, it must declare an npm-managed, project-local component:
   `distribution: npx-managed`, `scope: project-local`, project-local write roots only, and safety
-  fields that do **not** weaken gates, bypass `type-GO`, or run executables. V2 manifests may
+  fields that do **not** weaken gates, bypass `type-GO`, or run executables. If `provenance.json`
+  is present it must be valid JSON with `source`, `author`, `created_at`, and optional
+  `confidence` (`0..1`) / `reviewed_by`; `/rite-doctor` warns when an extension ships artifacts
+  without provenance. V2 manifests may
   also declare `tier`, `requires`, `owns`, and `surface`; dependencies must be acyclic, and anything
   in `owns` that collides with the first-party `rite-`/`devrites-` namespaces is refused.
 - **`sync`** validates first, then mirrors `skill/` → `.claude/skills/<name>/` and `agent.md` →
@@ -55,6 +59,9 @@ devrites-engine extensions sync        # mirror valid extensions into .claude/ s
   project's references don't orphan.
 
 ### Component manifest
+
+Public schemas live in [`../schemas/`](../schemas/): `extension-component.schema.json` and
+`provenance.schema.json` for extension metadata, plus workspace/hook schemas for editor tooling.
 
 `component.yaml` is the DevRites-native answer to Spec Kit-style extension/preset/bundle metadata.
 It is **not** a plugin package descriptor; it documents what the npm-installed engine may copy or
