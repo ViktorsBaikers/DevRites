@@ -198,8 +198,11 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    devrites-engine spec-skeleton ".devrites/work/<slug>"
    devrites-engine spec-validate ".devrites/work/<slug>" --against .devrites/specs
    ```
-   Treat edge/prohibition findings as blocking just like grammar findings. When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when
-   it passes.
+   Treat edge/prohibition findings as blocking just like grammar findings. When it passes, write `Spec gate: passed <iso>` to `state.md`.
+6a. **Review-before-code digest.** Before handing off to planning, render the cheap human review:
+   `Intent` (one sentence), `Done means` (top acceptance/scenario IDs), `Scope/risk` (what is in/out
+   plus the hard gates), and `Build exactly this?` (yes → next phase; no → revise now). The digest
+   is a view over `spec.md`, not a new artifact. **Stop** after the digest.
 
 > **Mid-flight discipline.** When tempted to skip investigation depth, gap-closing, or placement decisions — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 
@@ -212,7 +215,7 @@ Default success shape:
 Done: spec ready for <slug>; placement decided and gaps closed.
 Changed: spec.md, decisions.md, assumptions.md, questions.md, references/ <updated|n/a>
 Evidence: checklists passed; grammar <valid | n/a flat acceptance>; design brief <path | n/a>
-Open: <none | n non-blocking questions | Alternative: $rite-define for small reversible work>
+Open: <none | n non-blocking questions | Alternative: $rite-define for small reversible work>; review digest: intent + done-means + scope/risk rendered
 Next: $rite-temper
 Record: .devrites/work/<slug>/spec.md
 ↻ Hygiene: /clear before the next phase; $rite-handoff if away > a few hours

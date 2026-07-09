@@ -1,7 +1,7 @@
 ---
 name: rite-plan
-description: Reshape an active plan: decompose, reslice, repair, reorder, split FE/BE, unblock, or course-correct. Use when the user says "replan", "reslice", "repair the plan", "unblock", or "pivot". Not for initial planning.
-argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct]"
+description: Reshape an active plan: decompose, reslice, repair, reorder, split FE/BE, unblock, pivot, or revise planning artifacts. Use for replan/reslice/repair/unblock/pivot/revise spec/plan/tasks. Not initial planning.
+argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct|revise]"
 user-invocable: true
 ---
 
@@ -9,7 +9,9 @@ user-invocable: true
 
 Reshape the plan when reality and the plan disagree. **Read the active workspace
 first.** If `.devrites/ACTIVE` is empty or its workspace is missing, stop and tell the
-user to run `/rite-spec <feature>`.
+user to run `/rite-spec <feature>`. **Revise mode is artifact-only**: reconcile
+`spec.md` / `architecture.md` / `plan.md` / `tasks.md` / `traceability.md` without
+editing source code.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Pull `development-workflow.md` via `Read` when
@@ -56,6 +58,9 @@ reshaping slice cadence or DoD criteria.
      from accidental drift: classify the change, assess its impact across the remaining slices,
      decide rollback vs forward-fix, and update `spec.md` + `plan.md` + `tasks.md` + `decisions.md`
      atomically. An acceptance/behavior change still goes through the user first.
+   - **revise** — apply a requested planning-artifact revision and reconcile existing artifacts in
+     any direction; propose the file edit set first, confirm each file before writing, and **never
+     edit source code**.
    See [replan-and-repair](reference/replan-and-repair.md) for each mode's steps.
 3. Reason about dependencies — [dependency-graph](reference/dependency-graph.md).
 4. Re-slice using vertical-slice rules — [slicing](reference/slicing.md) and
@@ -65,7 +70,8 @@ reshaping slice cadence or DoD criteria.
 6. If product behavior/acceptance criteria change, confirm with the user before writing.
 7. **Done when** — every slice is sized (builds + proves in one cycle; no slice scoring >3
    left unjustified), the dependency order is acyclic, every `drift.md` entry you stopped for
-   is marked resolved, and behavior-change-vs-not is confirmed (`no`, or asked + answered).
+   is marked resolved, revised artifacts agree with each other, no source files changed in
+   `revise` mode, and behavior-change-vs-not is confirmed (`no`, or asked + answered).
    If any check fails, loop back — don't hand off a half-reshaped plan.
 
 > **Mid-flight discipline.** When tempted to change product behavior without asking, absorb drift silently, or skip the user — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
@@ -80,7 +86,7 @@ Done: plan repaired for <slug> in <mode> mode.
 Changed: plan.md, tasks.md, traceability.md, decisions.md, state.md
 Evidence: not applicable; slice map now <n> slices and next slice is <name>
 Open: <none | behavior question answered | Alternative: /rite-prove if all built slices need re-verification>
-Next: /rite-build
+Next: <single next command: build, re-define, or prove depending on the revision>
 Record: .devrites/work/<slug>/plan.md
 ↻ Hygiene: /clear if the repair was large; keep session for small reorder-only repairs
 ```

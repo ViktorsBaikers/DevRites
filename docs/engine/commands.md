@@ -203,12 +203,17 @@ Two project-local surfaces let a team extend the pack without forking it — ful
   house rules a shipped reviewer reads after its standards. `validate` exits `1` when an override
   reads like it waives a gate — an override may add checks, never relax one.
 
-## `context sync` — managed agent-context block
+## `context sync|show` — agent context
 
 `devrites-engine context sync [file ...]` upserts only the block delimited by
 `<!-- DEVRITES START -->` / `<!-- DEVRITES END -->` in project context files. With no file args it
 reads `.devrites/context.yaml` (`context_file:` or `context_files:`), then falls back to existing
 `AGENTS.md` / `CLAUDE.md`, then `AGENTS.md`. Paths must be project-relative.
+
+`devrites-engine context show [--json]` is read-only. It reports the project root, `.devrites` root,
+active workspace, the source of that selection (`ACTIVE`, `DEVRITES_WORKSPACE`, `DEVRITES_ROOT`, or
+`none`), and the Claude/Codex menu forms. `--json` emits one direct JSON document for wrappers that
+need to know where a command will act.
 
 ## `runbook` — tiny local automation
 

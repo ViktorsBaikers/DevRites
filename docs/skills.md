@@ -89,7 +89,7 @@ In Claude Code, every user-invocable skill responds to **both** `/rite <verb>` (
 | `/rite temper` | `/rite-temper` | temper | **Optional, before define.** Strategic review of the readied spec — pick a scope mode (expand / selective / hold-rigor / reduce-to-MVP), run a pre-mortem, harden the spec, write `strategy.md`, and fold the decisions back via the Spec Drift Guard. Significance-gated (skips small work); **mandatory inside `/rite-autocomplete`**. |
 | `/rite define` | `/rite-define` | plan | Turns the approved spec into `plan.md` + vertical task slices + state. |
 | `/rite vet` | `/rite-vet` | vet | **Before build — every feature.** Engineering review of the defined plan — scope challenge (reuse / minimum-diff / complexity smell), then architecture / plan code-quality / test-coverage design / performance through senior-engineer lenses, every finding confidence-banded with a quote-the-source verification gate. Maps failure modes + parallel lanes, hardens `plan.md` / `tasks.md`, writes the build-readable `test-plan.md`; acceptance-changing deltas fold back via the Spec Drift Guard. `--cross-model` adds a different-model second opinion. Runs on every plan — depth scales to stakes (light pass on simple, full on big/risky), never skipped; **always inside `/rite-autocomplete`**. |
-| `/rite plan` | `/rite-plan` | re-plan | Decompose / reslice / repair an active plan. |
+| `/rite plan` | `/rite-plan` | re-plan | Decompose / reslice / repair an active plan; `revise` reconciles planning artifacts without touching code. |
 | `/rite build` | `/rite-build` | build | Implement **exactly one** vertical slice, then stop — dispatches a fresh-context `devrites-slice-wright` to write it; gates and records the result. Opt-in **checkpoint mode** (`.devrites/CHECKPOINT`) commits each proven slice local-only as `WIP(<slug>)` so a crash mid-build survives; `/rite-ship` collapses them. |
 | `/rite converge` | `/rite-converge` | converge | **Recovery.** Assess the live codebase against `spec.md`+`plan.md`+`tasks.md` (+ principles) as the sole source of intent — present state, no git — and **append** each unmet piece as a new traceable `SLICE-###` for `/rite-build`. Append-only; `tasks.md` byte-unchanged when the code already converged. For a resumed / `/rite-adopt`'d / stalled feature. |
 | `/rite prove` | `/rite-prove` | prove | Tests + build + runtime + browser evidence for the current scope. |
@@ -154,7 +154,7 @@ The 11 model-invoked internal specialists (hidden from the menu): `devrites-inte
 | Skill | What It Does | Use When |
 |---|---|---|
 | [`rite-define`](../pack/.claude/skills/rite-define/SKILL.md) | Approved spec → `plan.md` + vertical task slices + `state.md`. | `spec.md` exists and is approved. |
-| [`rite-plan`](../pack/.claude/skills/rite-plan/SKILL.md) | Decompose / reslice / repair an active plan after drift. | Spec Drift Guard fires, or you need to repair an existing plan. |
+| [`rite-plan`](../pack/.claude/skills/rite-plan/SKILL.md) | Decompose / reslice / repair an active plan after drift; `revise` updates planning artifacts only. | Spec Drift Guard fires, or you need to repair/revise an existing plan. |
 | [`rite-converge`](../pack/.claude/skills/rite-converge/SKILL.md) | Assess live code vs `spec`/`plan`/`tasks` intent; append the remaining unbuilt work as new traceable slices (append-only, no git). | Resuming a half-built or stalled feature, or after `/rite-adopt` when code drifted from the derived spec. |
 
 ### Vet — Lock in the engineering plan before building

@@ -17,6 +17,7 @@ devrites-engine evidence-fresh [slug]    # proof freshness gate      (exit 0 fre
 devrites-engine check-acceptance <dir>   # acceptance gate           (exit 0 proven · 1 gap)
 devrites-engine ledger sync <dir>        # fold a feature's spec deltas into the living capability ledger
 devrites-engine ledger list|show <cap>   # read the ledger — what the system already does
+devrites-engine context show --json      # report root, active workspace, and host command forms
 devrites-engine timeline log|list        # append/list session events, decisions, and state moves
 devrites-engine health record|list       # append/list compact workspace health history
 devrites-engine review-fingerprints [slug] # stable IDs for review findings; --write saves JSONL

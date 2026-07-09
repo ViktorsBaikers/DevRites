@@ -74,6 +74,7 @@ Usage:
   devrites-engine extensions <sub>         Project extensions (.devrites/extensions/): list|validate|sync
   devrites-engine overrides <sub>          Reviewer-override linter (.devrites/overrides/): list|validate
   devrites-engine context sync [file ...]  Sync managed DevRites block into context files
+  devrites-engine context show [--json]    Report root, active workspace, and host command forms
   devrites-engine runbook <sub> [...]      Local runbooks: list|validate|run|resume
   devrites-engine doctor                   Report the binary / pack / state-schema version triangle
   devrites-engine migrate                  Normalize .devrites workspaces to the current schema
