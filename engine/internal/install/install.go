@@ -1190,6 +1190,9 @@ func (r *runner) installBinary() error {
 	}
 	_ = os.Chmod(dest, 0o755)
 	fmt.Fprintf(r.opts.Stdout, "  engine binary: installed %s\n", dest)
+	if !binaryReachableFromPATH(dest) {
+		fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %s is not on PATH; installed hooks will fail open until devrites-engine is reachable.\n", dest)
+	}
 	return nil
 }
 
@@ -1249,12 +1252,45 @@ func binaryDest() string {
 }
 
 func binaryCandidates() []string {
-	home, _ := os.UserHomeDir()
-	return []string{
-		filepath.Join(os.Getenv("DEVRITES_BIN_DIR"), "devrites-engine"),
-		filepath.Join(home, ".local", "bin", "devrites-engine"),
-		"/usr/local/bin/devrites-engine",
+	candidates := []string{}
+	if dir := os.Getenv("DEVRITES_BIN_DIR"); dir != "" {
+		candidates = append(candidates, filepath.Join(dir, "devrites-engine"))
 	}
+	home, _ := os.UserHomeDir()
+	if home != "" {
+		candidates = append(candidates, filepath.Join(home, ".local", "bin", "devrites-engine"))
+	}
+	return append(candidates, "/usr/local/bin/devrites-engine")
+}
+
+func binaryReachableFromPATH(dest string) bool {
+	if _, err := exec.LookPath("devrites-engine"); err == nil {
+		return true
+	}
+	return pathContainsDir(filepath.Dir(dest))
+}
+
+func pathContainsDir(dir string) bool {
+	if dir == "" {
+		return false
+	}
+	want, err := filepath.Abs(dir)
+	if err != nil {
+		want = filepath.Clean(dir)
+	}
+	for _, entry := range filepath.SplitList(os.Getenv("PATH")) {
+		if entry == "" {
+			continue
+		}
+		got, err := filepath.Abs(entry)
+		if err != nil {
+			got = filepath.Clean(entry)
+		}
+		if got == want {
+			return true
+		}
+	}
+	return false
 }
 
 func engineVersion(path string) string {

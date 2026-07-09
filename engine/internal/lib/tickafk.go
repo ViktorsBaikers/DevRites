@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/devrites/devrites/internal/fsutil"
 )
 
 // budgetField matches an "AFK slices remaining:" line and captures the value that
@@ -52,7 +54,7 @@ func TickAfk(args []string, stdout, stderr io.Writer) int {
 		n = 0
 	}
 
-	if err := writeFileAtomic(path, setBudget(lines, n), 0o644); err != nil {
+	if err := fsutil.WriteFileAtomic(path, setBudget(lines, n), 0o644); err != nil {
 		fmt.Fprintf(stderr, "tick-afk: %v\n", err)
 		return 5
 	}

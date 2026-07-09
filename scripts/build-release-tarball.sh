@@ -46,7 +46,17 @@ PAYLOAD=(
 
 for item in "${PAYLOAD[@]}"; do
   if [[ -e "$item" ]]; then
-    cp -R "$item" "$STAGE/"
+    if [[ "$item" == "engine" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      while IFS= read -r -d '' path; do
+        if [[ "$path" == engine/testdata/golden/* ]]; then
+          continue
+        fi
+        mkdir -p "$STAGE/$(dirname "$path")"
+        cp "$path" "$STAGE/$path"
+      done < <(git ls-files -z -- "$item")
+    else
+      cp -R "$item" "$STAGE/"
+    fi
   fi
 done
 
