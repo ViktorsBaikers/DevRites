@@ -56,7 +56,7 @@ func SpecSkeleton(arg, cwd string, stdout, stderr io.Writer) int {
 func specTopLevelSections(path string) (map[string]bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read spec: %w", err)
 	}
 	defer f.Close()
 
@@ -73,7 +73,7 @@ func specTopLevelSections(path string) (map[string]bool, error) {
 		present[strings.ToLower(heading)] = true
 	}
 	if err := sc.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan %s: %w", path, err)
 	}
 	return present, nil
 }

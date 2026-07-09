@@ -2,7 +2,7 @@ package lib
 
 import (
 	"bufio"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- non-cryptographic decision-index id; persisted hashes depend on sha1
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -349,7 +349,7 @@ func collectDecisions(root string) []decisionIndexEntry {
 			if text == "" {
 				continue
 			}
-			h := sha1.Sum([]byte(slug + "\n" + text))
+			h := sha1.Sum([]byte(slug + "\n" + text)) // #nosec G401 -- stable 12-hex content id, not a security boundary
 			rel, _ := filepath.Rel(projectDir(root), p)
 			out = append(out, decisionIndexEntry{Slug: slug, Path: rel, Line: lineNo, Text: text, Hash: hex.EncodeToString(h[:])[:12]})
 		}
@@ -544,7 +544,7 @@ func SpecDedupe(root string, args []string, stdout, stderr io.Writer) int {
 			if !strings.Contains(p, string(filepath.Separator)+"archive"+string(filepath.Separator)) && lowName != "issue.md" && lowName != "prd.md" && !strings.Contains(lowName, "prd") {
 				return nil
 			}
-			b, err := os.ReadFile(p)
+			b, err := os.ReadFile(p) // #nosec G122 -- scoring walk over the project's own .scratch tree; a symlink race requires an attacker already writing to the checkout
 			if err != nil {
 				return nil
 			}

@@ -302,7 +302,7 @@ func parseConventions(text string) map[string]conventionEntry {
 func saveConventions(root string, entries map[string]conventionEntry) error {
 	path := conventionsPath(root)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+		return fmt.Errorf("create conventions dir: %w", err)
 	}
 	return fsutil.WriteFileAtomic(path, []byte(serializeConventions(entries)), 0o644)
 }
@@ -364,7 +364,10 @@ func renderConventionDrift(key, slug, evidence, state, when string) (string, err
 		State:    state,
 		When:     when,
 	})
-	return buf.String(), err
+	if err != nil {
+		return buf.String(), fmt.Errorf("render drift entry: %w", err)
+	}
+	return buf.String(), nil
 }
 
 func proofSlug(proof string) string {

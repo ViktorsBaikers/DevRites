@@ -266,7 +266,7 @@ func MergeMarkerBlock(current, block []byte, begin, end string) []byte {
 func render(name string, data any) ([]byte, error) {
 	var out bytes.Buffer
 	if err := templates.ExecuteTemplate(&out, name, data); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("render %s: %w", name, err)
 	}
 	return out.Bytes(), nil
 }

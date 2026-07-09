@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- non-cryptographic tool-call fingerprint; must match `sha1sum` output
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -193,7 +193,7 @@ func checkStuck(h []string, rawWin string, stdout io.Writer) int {
 
 // sha1Hex returns the lowercase hex sha1 of s, matching `sha1sum`/`shasum`.
 func sha1Hex(s string) string {
-	sum := sha1.Sum([]byte(s))
+	sum := sha1.Sum([]byte(s)) // #nosec G401 -- dedup fingerprint, not a security boundary; persisted records depend on sha1
 	return hex.EncodeToString(sum[:])
 }
 

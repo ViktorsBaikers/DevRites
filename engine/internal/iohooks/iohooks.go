@@ -190,7 +190,7 @@ func fetchValidators(url string) (etag, lastMod string) {
 func headURL(url string, headers http.Header) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodHead, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("build HEAD request: %w", err)
 	}
 	for name, values := range headers {
 		for _, value := range values {
@@ -203,7 +203,7 @@ func headURL(url string, headers http.Header) (*http.Response, error) {
 func FetchJSON(url string, out any) error {
 	resp, err := installHTTPClient.Get(url)
 	if err != nil {
-		return err
+		return fmt.Errorf("fetch JSON: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -215,7 +215,7 @@ func FetchJSON(url string, out any) error {
 func DownloadFile(url, path string) error {
 	resp, err := installHTTPClient.Get(url)
 	if err != nil {
-		return err
+		return fmt.Errorf("download to %s: %w", path, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -223,11 +223,13 @@ func DownloadFile(url, path string) error {
 	}
 	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 	if err != nil {
-		return err
+		return fmt.Errorf("create output file: %w", err)
 	}
 	defer out.Close()
-	_, err = io.Copy(out, resp.Body)
-	return err
+	if _, err := io.Copy(out, resp.Body); err != nil {
+		return fmt.Errorf("write %s: %w", path, err)
+	}
+	return nil
 }
 
 // webFetchURL / webFetchPrompt / webFetchContent decode the WebFetch payload fields

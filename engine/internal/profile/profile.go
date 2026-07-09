@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 const schemaVersion = "1"
@@ -124,26 +126,26 @@ func readCache(path, rootSHA, headSHA string) (Profile, bool) {
 
 func writeCache(path string, p Profile) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+		return fmt.Errorf("write profile cache %s: %w", path, err)
 	}
 	env := cacheEnvelope{ProfileSchemaVersion: schemaVersion, RootSHA: p.RootSHA, HeadSHA: p.HeadSHA, Profile: p}
 	raw, err := json.MarshalIndent(env, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal profile cache: %w", err)
 	}
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".profile-*.tmp")
 	if err != nil {
-		return err
+		return fmt.Errorf("write profile cache %s: %w", path, err)
 	}
 	name := tmp.Name()
 	if _, err := tmp.Write(append(raw, '\n')); err != nil {
 		_ = tmp.Close()
 		_ = os.Remove(name)
-		return err
+		return fmt.Errorf("write profile cache %s: %w", path, err)
 	}
 	if err := tmp.Close(); err != nil {
 		_ = os.Remove(name)
-		return err
+		return fmt.Errorf("write profile cache %s: %w", path, err)
 	}
 	return os.Rename(name, path)
 }
@@ -253,7 +255,9 @@ func matchAny(s string, vals ...string) bool {
 }
 
 func git(dir string, args ...string) (string, bool) {
-	cmd := exec.Command("git", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", args...)
 	if dir != "" {
 		cmd.Dir = dir
 	}

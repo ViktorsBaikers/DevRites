@@ -1,12 +1,14 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/devrites/devrites/internal/workflow"
 )
@@ -113,7 +115,7 @@ func Snapshot(root, slug string) (*WorkspaceSnapshot, error) {
 	}
 	report, err := Status(root, slug)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("snapshot workspace: %w", err)
 	}
 
 	workDir := featureDir(root, report.Slug)
@@ -345,7 +347,9 @@ func extensionSummary(root string) ExtensionSnapshot {
 }
 
 func dirtyWorkspace(projectDir string) DirtyWorkspace {
-	cmd := exec.Command("git", "status", "--porcelain")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "status", "--porcelain")
 	cmd.Dir = projectDir
 	out, err := cmd.Output()
 	if err != nil {

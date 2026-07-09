@@ -295,19 +295,19 @@ func parseHealthScore(s string) (float64, bool) {
 
 func appendJSONLine(path string, v any) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+		return fmt.Errorf("create log dir: %w", err)
 	}
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
-		return err
+		return fmt.Errorf("append log: %w", err)
 	}
 	defer f.Close()
 	b, err := json.Marshal(v)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal entry: %w", err)
 	}
 	if _, err := f.Write(append(b, '\n')); err != nil {
-		return err
+		return fmt.Errorf("append log: %w", err)
 	}
 	return nil
 }

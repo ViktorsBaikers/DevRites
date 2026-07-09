@@ -26,7 +26,7 @@ const ActiveFile = "ACTIVE"
 func Digest(root string) (text string, has bool, err error) {
 	slug, err := ActiveSlug(root)
 	if err != nil {
-		return "", false, err
+		return "", false, fmt.Errorf("orient digest: %w", err)
 	}
 	if slug == "" {
 		return "", false, nil

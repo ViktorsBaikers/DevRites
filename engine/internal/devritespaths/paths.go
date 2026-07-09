@@ -2,6 +2,7 @@ package devritespaths
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -64,7 +65,7 @@ func ActiveSlug(root string) (string, error) {
 		return "", nil
 	}
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("read active feature: %w", err)
 	}
 	return strings.TrimSpace(string(raw)), nil
 }

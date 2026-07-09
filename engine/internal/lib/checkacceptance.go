@@ -114,7 +114,7 @@ func CheckAcceptance(ws string, stdout, stderr io.Writer) int {
 func acSection(file string) ([]string, error) {
 	f, err := os.Open(file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read acceptance section: %w", err)
 	}
 	defer f.Close()
 

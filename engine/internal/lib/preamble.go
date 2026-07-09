@@ -64,7 +64,7 @@ func Preamble(root string, args []string, stdout, stderr io.Writer) int {
 	if state, err := os.ReadFile(filepath.Join(workDir, "state.md")); err == nil {
 		fmt.Fprintln(stdout, "### state.md")
 		// Emit the file verbatim, like `cat` — no added trailing newline.
-		stdout.Write(state)
+		_, _ = stdout.Write(state)
 	}
 
 	fmt.Fprintln(stdout)

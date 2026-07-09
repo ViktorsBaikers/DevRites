@@ -42,7 +42,7 @@ type Report struct {
 func Diagnose(projectDir, root string) (*Report, error) {
 	stateSchema, err := state.MaxDeclaredSchemaVersion(root)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read state schema: %w", err)
 	}
 	if stateSchema == 0 {
 		// Nothing on disk declares a version — treat it as the current schema;

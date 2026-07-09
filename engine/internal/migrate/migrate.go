@@ -37,7 +37,7 @@ type normalizationTarget struct {
 func Run(root string) (*Result, error) {
 	targets, err := featureDirsNeedingNormalization(root)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan workspace: %w", err)
 	}
 	if len(targets) == 0 {
 		return &Result{Skipped: true}, nil
@@ -45,7 +45,7 @@ func Run(root string) (*Result, error) {
 
 	backup, err := backupWorkspace(root)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("backup workspace: %w", err)
 	}
 	migrated := make([]string, 0, len(targets))
 	for _, target := range targets {
@@ -66,7 +66,7 @@ func featureDirsNeedingNormalization(root string) ([]normalizationTarget, error)
 			continue
 		}
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list feature dirs: %w", err)
 		}
 		for _, e := range entries {
 			if !e.IsDir() {
@@ -104,11 +104,11 @@ func normalizeFeatureDir(dir, slug string) error {
 	if !regularFileExists(filepath.Join(dir, "feature.md")) {
 		phase := derivePhase(filepath.Join(dir, state.LedgerFile))
 		if err := state.AtomicWrite(filepath.Join(dir, "feature.md"), []byte(featureIndex(slug, phase)), 0o644); err != nil {
-			return err
+			return fmt.Errorf("write feature index: %w", err)
 		}
 	}
 	if err := copyAliasFile(dir, "evidence.md", "proof.md"); err != nil {
-		return err
+		return fmt.Errorf("copy evidence.md to proof.md: %w", err)
 	}
 	return copyAliasFile(dir, state.LedgerFile, "status.md")
 }
@@ -134,7 +134,7 @@ func copyAliasFile(dir, alias, canonical string) error {
 	}
 	data, err := os.ReadFile(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("read alias file: %w", err)
 	}
 	return state.AtomicWrite(dst, data, 0o644)
 }
@@ -206,18 +206,18 @@ func mapLegacyPhase(word string) (state.Phase, bool) {
 func backupWorkspace(root string) (string, error) {
 	backup := filepath.Join(root, fmt.Sprintf(".migrate-backup-%d", time.Now().UnixNano()))
 	if err := fsutil.CopyTree(filepath.Join(root, "work"), filepath.Join(backup, "work")); err != nil {
-		return "", err
+		return "", fmt.Errorf("copy work tree: %w", err)
 	}
 	if err := fsutil.CopyTree(filepath.Join(root, "features"), filepath.Join(backup, "features")); err != nil {
-		return "", err
+		return "", fmt.Errorf("copy features tree: %w", err)
 	}
 	// The ACTIVE pointer is a single small file; copy it if present.
 	if data, err := os.ReadFile(filepath.Join(root, "ACTIVE")); err == nil {
 		if err := os.MkdirAll(backup, 0o755); err != nil {
-			return "", err
+			return "", fmt.Errorf("create backup dir: %w", err)
 		}
 		if err := os.WriteFile(filepath.Join(backup, "ACTIVE"), data, 0o644); err != nil {
-			return "", err
+			return "", fmt.Errorf("copy ACTIVE pointer: %w", err)
 		}
 	}
 	return backup, nil

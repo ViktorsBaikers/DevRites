@@ -50,7 +50,7 @@ func (h Harness) SessionStartContext(text string) (string, error) {
 	env.HookSpecificOutput.AdditionalContext = text
 	b, err := json.Marshal(env)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("marshal SessionStart envelope: %w", err)
 	}
 	return string(b), nil
 }
@@ -74,7 +74,7 @@ func (h Harness) StopBlock(reason string) (string, error) {
 		Reason:   "DevRites stop-gate: " + reason + ". (devrites-stop-gate)",
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("marshal stop decision: %w", err)
 	}
 	return string(b), nil
 }
@@ -293,7 +293,7 @@ func marshalCompact(v any) (string, error) {
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(v); err != nil {
-		return "", err
+		return "", fmt.Errorf("encode hook output: %w", err)
 	}
 	return strings.TrimRight(buf.String(), "\n"), nil
 }

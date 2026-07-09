@@ -2,7 +2,10 @@
 
 package state
 
-import "os"
+import (
+	"fmt"
+	"os"
+)
 
 // fileLock on non-unix platforms (notably Windows) is best-effort: the engine
 // still cross-compiles and runs, but without kernel advisory locking. DevRites'
@@ -13,7 +16,7 @@ type fileLock struct{ f *os.File }
 func acquireLock(path string) (*fileLock, error) {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("acquire lock: %w", err)
 	}
 	return &fileLock{f: f}, nil
 }

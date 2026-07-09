@@ -35,7 +35,7 @@ func ResolveRoot(override string) (string, error) {
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("resolve working directory: %w", err)
 	}
 	for dir := cwd; ; {
 		cand := filepath.Join(dir, ".devrites")
@@ -81,7 +81,7 @@ func ListFeatures(root string) ([]string, error) {
 			continue
 		}
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list features: %w", err)
 		}
 		for _, e := range entries {
 			if !e.IsDir() {
@@ -138,7 +138,7 @@ func LoadFeature(root, slug string) (*Feature, error) {
 
 	manifest, mErr := os.ReadFile(filepath.Join(dir, "feature.md"))
 	if mErr != nil && !errors.Is(mErr, os.ErrNotExist) {
-		return nil, mErr
+		return nil, fmt.Errorf("feature %q: %w", slug, mErr)
 	}
 	hasManifest := mErr == nil
 	hasLedger := regularFileExists(filepath.Join(dir, LedgerFile))
@@ -241,7 +241,7 @@ func ReadDeclaredSchemaVersion(root, slug string) int {
 func MaxDeclaredSchemaVersion(root string) (int, error) {
 	slugs, err := ListFeatures(root)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("resolve max schema version: %w", err)
 	}
 	max := 0
 	for _, slug := range slugs {

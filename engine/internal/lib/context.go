@@ -217,7 +217,7 @@ func managedContextBlock(root string) string {
 
 func upsertContextBlock(path, block string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+		return fmt.Errorf("create context dir: %w", err)
 	}
 	existingBytes, _ := os.ReadFile(path)
 	existing := string(existingBytes)
