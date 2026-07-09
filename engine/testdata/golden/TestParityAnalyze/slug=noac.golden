@@ -1,0 +1,15 @@
+exit 0
+# Cross-artifact analysis: noac
+
+## Coverage
+- [warn] spec.md — no [ACn] acceptance ids found; tag criteria as '[AC1] ...' for a machine-checkable gate.
+
+## Consistency
+
+## Ambiguity
+- [ok] no unquantified adjectives or unresolved placeholders found
+
+## Metrics
+- Acceptance criteria: 0 (none tagged) · orphan slices 0 · ambiguity flags 0
+
+## Verdict: clear — spec/tasks consistent and fully mapped.

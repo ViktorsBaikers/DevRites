@@ -1,0 +1,3 @@
+exit 0
+mutation-gate: no mutation runner detected (stryker / mutmut / cosmic-ray / pitest) — advisory skipped.
+  Strengthen the criticals by hand-mutating (flip a comparison, drop a guard) and confirming a test goes red (standards/testing.md).

@@ -17,16 +17,20 @@ func CopyTree(t *testing.T, src, dst string) {
 	}
 }
 
+// WriteFile writes data to path with mode 0644, creating parent directories.
 func WriteFile(t *testing.T, path, data string) {
 	t.Helper()
 	WriteFileMode(t, path, data, 0o644)
 }
 
+// WriteExecutable writes data to path with mode 0755, creating parent directories.
 func WriteExecutable(t *testing.T, path, data string) {
 	t.Helper()
 	WriteFileMode(t, path, data, 0o755)
 }
 
+// WriteFileMode writes data to path with the given permissions, creating parent
+// directories. It fails the test on any error.
 func WriteFileMode(t *testing.T, path, data string, perm os.FileMode) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -37,6 +41,8 @@ func WriteFileMode(t *testing.T, path, data string, perm os.FileMode) {
 	}
 }
 
+// AppendFile appends data to an existing file, failing the test if the file is
+// missing or unwritable.
 func AppendFile(t *testing.T, path, data string) {
 	t.Helper()
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
@@ -49,6 +55,7 @@ func AppendFile(t *testing.T, path, data string) {
 	}
 }
 
+// ReadFile returns the contents of path, failing the test on any error.
 func ReadFile(t *testing.T, path string) string {
 	t.Helper()
 	data, err := os.ReadFile(path)
