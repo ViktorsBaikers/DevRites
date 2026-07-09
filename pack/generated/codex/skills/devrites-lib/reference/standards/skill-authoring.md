@@ -54,3 +54,8 @@ External skill packs, articles, and examples are references, not authority.
 ## Pruning
 
 Delete no-op instructions the model already follows. Keep positive target behavior; use prohibitions only for hard guardrails.
+
+
+## Contribution preflight
+
+New skills are expensive routing surface. Before adding one, document the catalog search, why a reference inside an existing skill is insufficient, required eval coverage, host command parity, and whether the surface is public `rite-*` or internal `devrites-*`. Public commands need docs, evals, generated Claude/Codex artifacts, and a reply-contract marker. Internal skills need a clear trigger boundary and "when not to use" section. Agents need role/scope, read/write mode, output format, and composition block; only `devrites-slice-wright` may write.

@@ -22,6 +22,8 @@ pull these via `Read` before sealing:
 - `observability.md` — a runtime surface that ships blind is an Important finding.
 - `deprecation.md` — when the diff removes / migrates code, API, or data (read with the
   risk-and-rollback step below).
+- `definition-of-done.md` — standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+
 
 ## Operating rules
 - Evidence over confidence — a criterion is met only if evidence proves it.

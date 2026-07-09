@@ -39,3 +39,6 @@ WIP commits are scratch and never reach shared history. `/rite-ship` folds them 
 one atomic feature commit before the Conventional-Commit ladder — see the collapse step in
 [git-ship.md](../../rite-ship/reference/git-ship.md). Result: one clean commit, bisect
 stays green.
+
+## Autocomplete clean-baseline use
+`/rite-autocomplete` may arm checkpoint mode after it verifies a clean or explicitly accepted baseline. Checkpoints are local-only crash recovery, not authorization to continue across red gates or to ship. `/rite-build` remains one-slice-at-a-time; autocomplete is the only opt-in loop that may invoke multiple builds.

@@ -37,6 +37,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 - `patterns.md` — composition over inheritance, avoid premature abstraction.
 - `principles.md` — the project invariants (`.devrites/principles.md`) the slice must honor; the wright reads them as **binding**, not priors.
 - `security.md` — when the slice touches user input, auth, data, or external integrations.
+- `definition-of-done.md` — standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+
 
 ## Operating rules
 - **One slice at a time. DO NOT** start the next slice without the user asking.

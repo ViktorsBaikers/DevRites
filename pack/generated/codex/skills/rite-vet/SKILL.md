@@ -46,6 +46,8 @@ webhook / config / error messages / getting-started — predict the DX scorecard
 `elicitation.md` (the move-set to deepen an axis finding or a risky design choice — selected by
 the section's risk: Tournament for two viable designs, Delphi for a shaky estimate, Assumption
 Audit for a plan resting on unstated beliefs).
+- `definition-of-done.md` — standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+
 
 ## Operating rules
 - **Review the plan, not the spec's ambition.** The spec's scope/ambition is `$rite-temper`'s

@@ -106,3 +106,9 @@ spec <done|stopped> · temper <done|skipped|stopped> · define <done|stopped> ·
 Final state examples: `Shipped: <feature>`, `Stopped: <reason>`, `Awaiting human:
 <qid> · <gate> · <slice/phase>`, `NO-GO: <verdict>`, or `GO: feature cleared to ship`.
 Do not write a narrative recap.
+
+## Clean baseline and checkpoint mode
+- Before an autonomous run, require a clean or explicitly accepted baseline: refuse unrelated dirty work and record expected planning artifacts.
+- Arm `.devrites/CHECKPOINT` for the run so each proven slice can be checkpointed local-only; `$rite-ship` owns collapsing those checkpoints.
+- Stop on risky steps, red gates, NO-GO, stale evidence, or budget exhaustion.
+- Autocomplete gets one approved pass through the lifecycle; `$rite-build` still builds exactly one slice per invocation.
