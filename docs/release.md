@@ -9,7 +9,7 @@ Releases are **fully automated** via [semantic-release](https://semantic-release
 5. Publishes the `devrites` package to the npm registry (`@semantic-release/npm`, needs the `NPM_TOKEN` secret) — this is what `npx devrites@latest` resolves. `npm pack` renders the same `pack/generated/` artifacts during `prepack` and removes them during `postpack`.
 6. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates a git tag `v<version>`, and publishes a GitHub Release with the tarball attached.
 
-Local dry-run: `npm run release:dry` (shows the version bump + draft notes without publishing). The release job is gated by passing CI — a broken `main` won't ship.
+Local dry-run: `npm run release:dry` (shows the version bump + draft notes without publishing). Before publishing, `scripts/release-check.sh` builds the evidence packet: generated pack freshness, tarball checksum presence, `npx-pack-smoke`, install/update/uninstall, `validate-pack`, behavioral eval schema, and a README/docs check that install instructions stay `npx devrites ...` only. DevRites is not shipped through Claude or Codex plugin stores. The release job is gated by passing CI — a broken `main` won't ship.
 
 ## Authoring commits that trigger releases
 

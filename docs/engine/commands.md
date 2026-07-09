@@ -63,7 +63,12 @@ verdict: ok: binary, pack, and state schema are compatible
 
 The pack version is discovered from `.claude/devrites.version` or the project
 `package.json`; when neither exists the pack is reported `unknown` and no skew is
-asserted.
+asserted. Doctor also warns when project extensions have artifacts but no optional
+`provenance.json`.
+
+## `snapshot` — workspace status JSON
+
+`devrites-engine snapshot [slug]` emits the `devrites.workspace.v1` JSON contract.
 
 ## `migrate` — legacy aliases and old layouts
 
@@ -167,7 +172,9 @@ devrites-engine health record 8.5 "tests green; one follow-up" --note "review-fi
 devrites-engine health list --limit 10
 ```
 
-Scores must be `0..10`. The label should name the evidence, not a vibe.
+Scores must be `0..10`. The label should name the evidence, not a vibe. Skill health stays static
+until DevRites records per-skill run outcomes; use `scripts/skill-pruning-audit.mjs` for pruning
+signals instead of inventing telemetry.
 
 ## `review-fingerprints` — stable IDs for findings
 

@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://devrites.dev/schemas/extension-component.schema.json",
+  "title": "DevRites project extension component",
+  "type": "object",
+  "properties": {
+    "schema_version": { "type": "string" },
+    "kind": { "enum": ["extension", "preset", "bundle"] },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "version": { "type": "string" },
+    "tier": { "enum": ["core", "standard", "full"] },
+    "scope": { "const": "project-local" },
+    "distribution": { "const": "npx-managed" },
+    "requires": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "owns": {
+      "type": "object",
+      "properties": {
+        "skills": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "agents": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "surface": {
+      "type": "object",
+      "properties": { "clusters": { "type": "array", "items": { "type": "string" }, "uniqueItems": true } },
+      "additionalProperties": true
+    },
+    "safety": {
+      "type": "object",
+      "properties": {
+        "may_weaken_gates": { "const": false },
+        "requires_type_go_bypass": { "const": false },
+        "executable": { "const": false }
+      },
+      "additionalProperties": true
+    },
+    "component": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "enum": ["extension", "preset", "bundle"] },
+        "scope": { "const": "project-local" },
+        "distribution": { "const": "npx-managed" }
+      },
+      "additionalProperties": true
+    },
+    "permissions": {
+      "type": "object",
+      "properties": { "writes": { "type": "array", "items": { "type": "string" } } },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

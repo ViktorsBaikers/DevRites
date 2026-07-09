@@ -62,6 +62,9 @@ func cmdDoctor(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	fmt.Fprint(stdout, report.Render())
+	for _, warning := range extensionProvenanceWarnings(root) {
+		fmt.Fprintf(stdout, "warning: %s\n", warning)
+	}
 	if slug := strings.TrimSpace(readFile(filepath.Join(root, "ACTIVE"))); slug != "" {
 		if snap, err := state.Snapshot(root, slug); err == nil {
 			fmt.Fprintln(stdout)
@@ -87,6 +90,26 @@ func cmdDoctor(args []string, stdout, stderr io.Writer) int {
 
 // cmdMigrate normalizes workspaces to the current schema. It is idempotent
 // (a second run is a no-op) and backs up the pre-migration state first.
+func extensionProvenanceWarnings(root string) []string {
+	dir := filepath.Join(root, "extensions")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var warnings []string
+	for _, entry := range entries {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+		edir := filepath.Join(dir, entry.Name())
+		hasArtifact := readFile(filepath.Join(edir, "skill", "SKILL.md")) != "" || readFile(filepath.Join(edir, "agent.md")) != "" || readFile(filepath.Join(edir, "component.yaml")) != ""
+		if hasArtifact && readFile(filepath.Join(edir, "provenance.json")) == "" {
+			warnings = append(warnings, fmt.Sprintf("extension %s has no provenance.json", entry.Name()))
+		}
+	}
+	return warnings
+}
+
 func cmdMigrate(args []string, stdout, stderr io.Writer) int {
 	if len(args) != 0 {
 		fmt.Fprintln(stderr, "usage: devrites-engine migrate")

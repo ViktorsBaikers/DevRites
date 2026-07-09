@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -49,12 +50,13 @@ func Extensions(root string, args []string, stdout, stderr io.Writer) int {
 
 // extension is one discovered extension directory and what it provides.
 type extension struct {
-	name      string
-	dir       string
-	skillPath string // "" if none
-	agentPath string // "" if none
-	manifest  string // "" if none; component.yaml declares npm-managed safety bounds
-	aliases   []string
+	name       string
+	dir        string
+	skillPath  string // "" if none
+	agentPath  string // "" if none
+	manifest   string // "" if none; component.yaml declares npm-managed safety bounds
+	provenance string // "" if none; optional trust-boundary metadata
+	aliases    []string
 }
 
 // discoverExtensions returns the extensions under extDir, sorted by name. A
@@ -82,6 +84,9 @@ func discoverExtensions(extDir string) ([]extension, error) {
 		}
 		if p := filepath.Join(dir, "component.yaml"); isFile(p) {
 			ext.manifest = p
+		}
+		if p := filepath.Join(dir, "provenance.json"); isFile(p) {
+			ext.provenance = p
 		}
 		if meta, ok := readFileOK(filepath.Join(dir, "extension.yaml")); ok {
 			ext.aliases = parseAliases(meta)
@@ -112,6 +117,9 @@ func extensionsList(extDir string, stdout io.Writer) int {
 		}
 		if e.manifest != "" {
 			provides = append(provides, "manifest")
+		}
+		if e.provenance != "" {
+			provides = append(provides, "provenance")
 		}
 		if len(provides) == 0 {
 			provides = []string{"(empty)"}
@@ -156,6 +164,9 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 				problems = append(problems, problem)
 			}
 		}
+		if e.provenance != "" {
+			problems = append(problems, validateProvenance(e.name, e.provenance)...)
+		}
 		if e.skillPath != "" {
 			name, missing := frontmatterName(e.skillPath)
 			if missing != "" {
@@ -198,6 +209,37 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 // validateComponentManifest enforces DevRites' Spec Kit-inspired component
 // contract while keeping distribution npm-first and project-local. It accepts a
 // small YAML subset instead of pulling a YAML dependency into the static engine.
+func validateProvenance(extName, path string) []string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return []string{fmt.Sprintf("%s: provenance.json unreadable", extName)}
+	}
+	var p struct {
+		Source     string  `json:"source"`
+		Author     string  `json:"author"`
+		CreatedAt  string  `json:"created_at"`
+		Confidence float64 `json:"confidence"`
+		ReviewedBy string  `json:"reviewed_by"`
+	}
+	if err := json.Unmarshal(data, &p); err != nil {
+		return []string{fmt.Sprintf("%s: provenance.json must be valid JSON", extName)}
+	}
+	var problems []string
+	if strings.TrimSpace(p.Source) == "" {
+		problems = append(problems, fmt.Sprintf("%s: provenance source is required", extName))
+	}
+	if strings.TrimSpace(p.Author) == "" {
+		problems = append(problems, fmt.Sprintf("%s: provenance author is required", extName))
+	}
+	if strings.TrimSpace(p.CreatedAt) == "" {
+		problems = append(problems, fmt.Sprintf("%s: provenance created_at is required", extName))
+	}
+	if p.Confidence < 0 || p.Confidence > 1 {
+		problems = append(problems, fmt.Sprintf("%s: provenance confidence must be 0..1", extName))
+	}
+	return problems
+}
+
 func validateComponentManifest(extName, path string) []string {
 	content, ok := readFileOK(path)
 	if !ok {
@@ -303,9 +345,9 @@ func parseComponentManifest(content string) componentManifest {
 			out.kind = val
 		case ".tier", "surface.tier":
 			out.tier = val
-		case "component.scope":
+		case ".scope", "component.scope":
 			out.scope = val
-		case "component.distribution":
+		case ".distribution", "component.distribution":
 			out.distribution = val
 		case "safety.may_weaken_gates":
 			out.mayWeakenGates = val

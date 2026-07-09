@@ -77,8 +77,10 @@ traceability rules, and phase-relative completeness model, see
 State lives in `.devrites/` as human-readable Markdown so it survives context
 compaction and new sessions. The optional `.devrites/AFK` sentinel toggles
 the session-level run mode (see "Run modes" below). See `usage.md` for the
-workspace file list, and [`command-map.md`](command-map.md) for the full
-per-skill catalog with triggers + I/O.
+workspace file list, [`command-map.md`](command-map.md) for the full
+per-skill catalog with triggers + I/O, and
+[`capability-surface-selection.md`](capability-surface-selection.md) for where future
+capabilities belong.
 
 ## Design rationale
 
