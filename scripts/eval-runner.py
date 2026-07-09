@@ -219,6 +219,8 @@ def main() -> int:
     summary_lines: list[str] = []
 
     for eval_path in args.eval_files:
+        if eval_path.name == "routing-baseline.json":
+            continue
         if not eval_path.is_file():
             sys.stderr.write(f"skip: {eval_path} not a file\n")
             continue

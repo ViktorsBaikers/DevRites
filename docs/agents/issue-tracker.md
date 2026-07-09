@@ -18,13 +18,12 @@ Create a new file under `.scratch/<feature-slug>/` (creating the directory if ne
 
 Read the file at the referenced path. The user will normally pass the path or the issue number directly.
 
-## Wayfinding operations
+## Investigation maps
 
-Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
+For huge, foggy efforts, `/rite-pressure-test` may create an **investigation map** instead of pretending one session can settle the whole thing. No separate map command exists.
 
-- **Map**: `.scratch/<effort>/map.md` — the Notes / Decisions-so-far / Fog body.
-- **Child ticket**: `.scratch/<effort>/issues/NN-<slug>.md`, numbered from `01`, with the question in the body. A `Type:` line records the ticket type (`research`/`prototype`/`grilling`/`task`); a `Status:` line records `claimed`/`resolved`.
-- **Blocking**: a `Blocked by: NN, NN` line near the top. A ticket is unblocked when every file it lists is `resolved`.
-- **Frontier**: scan `.scratch/<effort>/issues/` for files that are open, unblocked, and unclaimed; first by number wins.
-- **Claim**: set `Status: claimed` and save before any work.
-- **Resolve**: append the answer under an `## Answer` heading, set `Status: resolved`, then append a context pointer (gist + link) to the map's Decisions-so-far in `map.md`.
+- **Map**: `.scratch/<effort>/map.md` with `Destination`, `Decisions so far`, `Not yet specified`, and `Out of scope`.
+- **Child ticket**: `.scratch/<effort>/issues/NN-<slug>.md`, numbered from `01`, with one research/prototype/grilling/task question in the body. A `Type:` line records the ticket type; a `Status:` line records `open`/`claimed`/`resolved`.
+- **Frontier**: one ticket per session. Pick the first open, unblocked, unclaimed ticket by number.
+- **Blocking**: `Blocked by: NN, NN` near the top. A ticket is unblocked when every listed ticket is `resolved`.
+- **Resolve**: append `## Answer`, set `Status: resolved`, then add a one-line context pointer to `map.md` under `Decisions so far`.

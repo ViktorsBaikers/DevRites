@@ -77,7 +77,7 @@ must say who runs them.
 | [`/rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | utility | `[--mine \| "<lesson>"]` | Mine archived features for recurring mistakes / dismissed-finding classes; propose project-local lessons into `.devrites/learnings.md` (loaded by the review skills before a fan-out). | archive + workspace | `.devrites/learnings.md` |
 | [`/rite-explain`](../pack/.claude/skills/rite-explain/SKILL.md) | utility | `[concept \| diff: \| since: \| idea]` | The **human** half of the learning loop (complement of `/rite-learn`, which teaches the repo). Turns a concept, diff, idea, or window of the user's own recent work into a dense personal explainer, with an optional predict-then-reveal / checked-exercise **check-in** for active recall. Grounds off `seal.md` / `evidence.md` / the diff / the archive. Read-only against source. | workspace + archive + diff + code | `.devrites/explainers/<date>-<slug>/explainer.md` |
 | [`/rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | utility | `[idea]` | Pressure-test a rough idea: 3–5 genuinely different options → converge on one with trade-off + hinge. | spec / surrounding code | `decisions.md` (optional) |
-| [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | — | Diagnose DevRites install + workspace health — install integrity, stale `.devrites/ACTIVE`, corrupt workspace, orphaned gates, broken hook wiring. Read-only report. Triggers: "rite doctor", "is DevRites healthy", "why isn't the workflow picking up my feature". | install + workspace | — |
+| [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | — | Diagnose DevRites install + workspace health — install integrity, stale `.devrites/ACTIVE`, corrupt workspace, orphaned gates, broken hook wiring, and in-progress merge/rebase state. Read-only report. Triggers: "rite doctor", "is DevRites healthy", "why isn't the workflow picking up my feature". | install + workspace | — |
 
 ## Internal skills (`user-invocable: false`, model-invoked)
 
@@ -153,9 +153,9 @@ when available, falling back to file reads otherwise:
 - `/rite-build` — `touched-files.md` + impact when loading slice context
 - `/rite-review` — blast-radius checks on the diff
 - `/rite-seal` — final blast-radius check
-- `/devrites-doubt` — "where does this claim reach" via `codegraph_impact` / `codegraph_callers`
+- `devrites-doubt` — "where does this claim reach" via `codegraph_impact` / `codegraph_callers`
 - `/rite-zoom-out` — `codegraph_context` + `codegraph_explore`
-- `/devrites-frontend-craft` — component / token lookups
+- `devrites-frontend-craft` — component / token lookups
 
 ## Interactions (typical flow)
 

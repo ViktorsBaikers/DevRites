@@ -52,7 +52,10 @@ existing conventions) shape the divergence. The other rule files load on demand.
 - This is exploration, not specification. Output a **direction**, not a finished spec —
   `$rite-spec` writes the spec.
 - Don't over-explore: 3–5 options, one pass of convergence. If the user already knows
-  the direction, skip this and go straight to `$rite-spec`.
+  the direction, skip this and go straight to `$rite-spec`. If the effort is too foggy for
+  one pass, start an investigation map at `.devrites/work/<slug>/investigation-map.md`
+  with `Destination`, `Decisions so far`, `Not yet specified`, `Out of scope`, plus one
+  frontier question per session.
 - Ask the user to pick when two options are close and the choice changes the product.
 - Name a **"Not doing" list** — the good options you deliberately cut. It's the highest-value
   output of convergence: it hands `$rite-spec` its scope boundary and stops the rejected ideas

@@ -54,6 +54,13 @@ CLAUDE_API_KEY=sk-... python3 scripts/eval-runner.py \
 Override the model with `DEVRITES_EVAL_MODEL=claude-...`. Pass
 `--summary-file out.jsonl` to dump a machine-readable per-skill report.
 
+## Routing ratchet
+
+`scripts/run-routing-evals.py` compares deterministic routing metrics with
+[`routing-baseline.json`](routing-baseline.json). The first gate is no regression:
+rank-1/top-3 cannot drop, and false-positive / public-internal / host-wording confusion cannot
+increase. Raise the baseline only after description tuning improves the run.
+
 ## Outcome evals (deterministic grader)
 
 Trigger evals test whether the right skill *fires*. They do **not** test whether

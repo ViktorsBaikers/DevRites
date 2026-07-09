@@ -1,0 +1,13 @@
+{
+  "description": "Routing quality ratchet. Start from the 2026-07-09 deterministic routing baseline; fail on regression before raising the floors.",
+  "recorded_at": "2026-07-09",
+  "skills": 38,
+  "queries": 557,
+  "positive_queries": 289,
+  "negative_queries": 268,
+  "rank1_rate_min": 0.526,
+  "rank_top3_rate_min": 0.7647,
+  "false_positive_collisions_max": 9,
+  "public_vs_internal_confusion_max": 33,
+  "host_wording_confusion_max": 0
+}

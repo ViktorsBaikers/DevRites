@@ -22,6 +22,8 @@ The on-demand deep report. The same checks run **silently at session start** (th
 hook surfaces issues only when there are any); `$rite-doctor` runs them **verbosely** —
 printing every check, pass or fail — so you can inspect health even when nothing is broken.
 It covers both Claude Code wiring and optional Codex mirrors/hooks when those files are present.
+It also reports an in-progress git merge/rebase and points to `git-workflow.md`'s conflict
+recovery playbook.
 
 It is **read-only**: it never edits the workspace, never advances a phase, never blocks.
 
@@ -50,7 +52,9 @@ It is **read-only**: it never edits the workspace, never advances a phase, never
 2. Report the result. **rc=0** → "DevRites healthy" + the `ok:` checks. **rc=1** → list each
    `issue:` line with the fix it names, then the single command that resolves the most urgent
    one (a stale ACTIVE → `rite use <slug>` or `$rite-status`; an orphaned gate →
-   `$rite-resolve <qid>`; an incomplete install → reinstall).
+   `$rite-resolve <qid>`; an incomplete install → reinstall). If the output includes
+   `git-state: merge in progress` or `git-state: rebase in progress`, make the next action the
+   `git-workflow.md` merge-conflict recovery playbook.
 3. **Do not fix anything yourself** — doctor is diagnostic. Hand the user the fix command.
 
 ## Gotchas

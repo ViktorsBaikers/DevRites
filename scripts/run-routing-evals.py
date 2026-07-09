@@ -17,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = ROOT / "pack" / ".claude" / "skills"
 EVALS_DIR = ROOT / "evals"
+BASELINE = EVALS_DIR / "routing-baseline.json"
 TOKEN_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
 STOP = {"the","and","or","to","a","an","of","for","with","when","use","not","this","that","it","in","on","by","from","as","is","are","be","exactly","one"}
 SIMILARITY_WARN = 0.72
@@ -71,7 +72,7 @@ def load_skills(skills_dir: Path) -> list[Skill]:
 
 
 def load_eval_files(evals_dir: Path) -> list[Path]:
-    return sorted(p for p in evals_dir.glob("*.json") if p.is_file())
+    return sorted(p for p in evals_dir.glob("*.json") if p.is_file() and p.name != "routing-baseline.json")
 
 
 def corpus_vector(skill: Skill) -> Counter:
@@ -139,6 +140,26 @@ def description_collisions(skills: list[Skill], vectors: dict[str, Counter]) -> 
     return sorted(rows, key=lambda r: -r["similarity"])
 
 
+def ratchet_failures(report: dict, baseline_path: Path | None) -> list[str]:
+    if not baseline_path or not baseline_path.is_file():
+        return []
+    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+    failures = []
+    for key, label in (("rank1_rate", "rank-1"), ("rank_top3_rate", "top-3")):
+        floor = baseline.get(f"{key}_min")
+        if floor is not None and report[key] < floor:
+            failures.append(f"routing ratchet: {label} {report[key]:.4f} below baseline {floor:.4f}")
+    for key, label in (
+        ("false_positive_collisions", "false-positive collisions"),
+        ("public_vs_internal_confusion", "public/internal confusion"),
+        ("host_wording_confusion", "host wording confusion"),
+    ):
+        ceiling = baseline.get(f"{key}_max")
+        if ceiling is not None and report[key] > ceiling:
+            failures.append(f"routing ratchet: {label} {report[key]} above baseline {ceiling}")
+    return failures
+
+
 def run(args) -> tuple[int, dict]:
     skills = load_skills(args.skills_dir)
     by_name = {s.name: s for s in skills}
@@ -194,6 +215,9 @@ def run(args) -> tuple[int, dict]:
         "direct_command_misses": direct_miss,
         "hard_failures": hard_failures,
     }
+    ratchet = ratchet_failures(report, args.baseline)
+    report["routing_ratchet_failures"] = ratchet
+    hard_failures.extend(ratchet)
     if args.json_out:
         args.json_out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     if not args.quiet:
@@ -217,6 +241,7 @@ def main() -> int:
     p.add_argument("--skills-dir", type=Path, default=SKILLS_DIR)
     p.add_argument("--evals-dir", type=Path, default=EVALS_DIR)
     p.add_argument("--json-out", type=Path)
+    p.add_argument("--baseline", type=Path, default=BASELINE, help="Routing ratchet baseline JSON (default: evals/routing-baseline.json)")
     p.add_argument("--quiet", action="store_true")
     args = p.parse_args()
     code, _ = run(args)
