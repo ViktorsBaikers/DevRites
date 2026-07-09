@@ -53,6 +53,7 @@ F=.agents/skills/rite-$V/SKILL.md
 | `status [slug]` | `$rite-status` | active feature, next action, evidence |
 | `doctor` | `$rite-doctor` | health check — install integrity, stale ACTIVE, orphaned gates, hook wiring, merge/rebase state |
 | `learn [--mine \| "<lesson>"]` | `$rite-learn` | review the captured learning ledger → promote recurring lessons to project rules / principles |
+| `customize [override <agent> \| extension <name>]` | `$rite-customize` | author a project-local override or extension, then validate it |
 | `use <slug>` | (inline) | switch the active feature — re-point `.devrites/ACTIVE` |
 | `resolve <qid> "<answer>"` | `$rite-resolve` | answer a HITL gate |
 | `prototype [question]` | `$rite-prototype` | throwaway prototype |
@@ -115,6 +116,7 @@ SHIP          $rite ship               ≡    $rite-ship        type-GO + commit
 STATUS        $rite status             ≡    $rite-status      active feature, next action, evidence, risks
 DOCTOR        $rite doctor             ≡    $rite-doctor      health check — install · stale ACTIVE · orphaned gates · hook wiring · merge/rebase
 LEARN         $rite learn ...          ≡    $rite-learn       review captured lessons → promote to project rules / principles
+CUSTOMIZE     $rite customize ...      ≡    $rite-customize   author overrides/extensions without forking the pack
 SWITCH        $rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 RESUME        $rite resolve ...        ≡    $rite-resolve     answer a HITL checkpoint
 AUTO          $rite autocomplete ...   ≡    $rite-autocomplete  run the whole lifecycle unattended (--ship to push)

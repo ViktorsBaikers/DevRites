@@ -235,7 +235,7 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 25 public `rite-*` skills (38 total) — the thin `/rite` menu
+- **Surface**: 26 public `rite-*` skills (39 total) — the thin `/rite` menu
   (carries the routing) + 8 lifecycle phases (`rite-spec`, `rite-define`,
   `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
   `rite-ship` — seal **decides**, ship **executes + closes**) + the
@@ -243,6 +243,7 @@ contract.
   reviews + the `rite-quick` express lane and `rite-frame` pre-flight/self-audit
   lens + `rite-adopt` (onboard an existing codebase) + `rite-learn` (cross-feature
   lessons) + `rite-status` + `rite-doctor` (install health) +
+  `rite-customize` (project-local overrides/extensions) +
   the `rite-plan` replan verb + the `rite-resolve` resume verb + 4 ideation /
   handoff utilities (`rite-zoom-out`, `rite-prototype`, `rite-handoff`,
   `rite-pressure-test`) + `rite-autocomplete` (the unattended full-lifecycle

@@ -91,6 +91,8 @@ a gate, run executables, or bypass `type-GO`.
 
 ### Workflow
 
+Use `/rite-customize extension <name>` for guided authoring, or do it by hand:
+
 1. Author the extension under `.devrites/extensions/<name>/`.
 2. `devrites-engine extensions validate` until clean.
 3. `devrites-engine extensions sync` to mirror it into `.claude/`.
@@ -127,6 +129,8 @@ permission. The engine gates don't read them at all, so an override literally ca
 the linter exists to catch one that *tries to talk a reviewer into it*.
 
 ### Commands
+
+Use `/rite-customize override <agent>` for guided authoring, or manage files directly:
 
 ```bash
 devrites-engine overrides list       # enumerate override files and the agent each targets

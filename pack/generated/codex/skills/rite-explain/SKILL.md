@@ -22,7 +22,9 @@ This is the Codex mirror of a DevRites skill. In Codex:
 Agent-driven development removed the learning that writing code by hand used to give the
 developer. When the agent writes the code, the human stops absorbing the codebase. `$rite-explain`
 is the replacement: it teaches the developer **one** thing well — a concept, a change, an idea, or
-a window of their own recent work — so they keep learning while the agents do the writing.
+a window of their own recent work — so they keep learning while the agents do the writing. For a
+specific change, it can instead write a **walkthrough**: a human review guide organized by concern,
+risk stops, and manual observations.
 
 This is the **complement of [`$rite-learn`](../rite-learn/SKILL.md)**, and the two together are
 the whole compounding story. `$rite-learn` teaches the **repo** — it promotes recurring lessons
@@ -59,7 +61,8 @@ the same budget.
 ### 1. Classify the input — load the intake reference
 
 The four input shapes (concept · diff · idea · work-recap) each ground and compose differently,
-and each drives a different check-in. Getting the shape wrong wastes the whole explainer.
+and each drives a different check-in. Diff inputs also branch into explainer vs walkthrough
+composition. Getting the shape wrong wastes the whole artifact.
 
 **Load [`reference/intake.md`](reference/intake.md) now** — it owns the classification rules, the
 `diff:` / `since:` / `output:` token table, the concept-vs-diff tiebreak, and the check-in
@@ -91,7 +94,11 @@ RUN_DIR=".devrites/explainers/$(date +%Y%m%d)-<slug>"; mkdir -p "$RUN_DIR"
 
 ### 3. Compose the explainer
 
-Write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**, not summarize:
+For diff inputs that ask for `walkthrough:<ref>`, "checkpoint", "walk me through", or human review,
+write `$RUN_DIR/walkthrough.md` using the walkthrough composition in `reference/intake.md`, then skip
+the active-recall check-in unless the user asks for teaching too.
+
+Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**, not summarize:
 
 1. **One thing.** A single clear takeaway named in the first two lines. If the input sprawls,
    teach the highest-leverage slice and say what you cut.
@@ -139,9 +146,9 @@ skips `devrites-engine progress` when no workspace exists. Otherwise follows
 [`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
 
 ```
-Done: explained <the one thing> as a <concept|diff|idea|recap> explainer.
-Changed: .devrites/explainers/<date>-<slug>/explainer.md
-Evidence: grounded in <artifacts/files quoted>; check-in <offered+result | skipped>
+Done: explained <the one thing> as a <concept|diff|idea|recap> explainer OR walked through <change> for human review.
+Changed: .devrites/explainers/<date>-<slug>/<explainer.md|walkthrough.md>
+Evidence: grounded in <artifacts/files quoted>; check-in <offered+result | skipped>; walkthrough stops <count>
 Open: <none | next-time topics deferred | check-in awaiting the user>
 Next: <single command — usually back to the calling phase, or $rite-learn if a repo rule surfaced>
 Record: .devrites/explainers/<date>-<slug>/explainer.md

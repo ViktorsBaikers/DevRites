@@ -18,7 +18,7 @@ bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`,
 …). It does **not** signal "internal" — visibility is governed by the
 `user-invocable:` flag in each `SKILL.md`. All public utilities use the
 `rite-*` prefix (`rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`,
-`rite-doctor`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
+`rite-doctor`, `rite-customize`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
 `rite-pressure-test`, `rite-autocomplete`, `rite-explain`); every `devrites-*` skill is
 model-invoked.
 
@@ -75,7 +75,8 @@ must say who runs them.
 | [`/rite-prototype`](../pack/.claude/skills/rite-prototype/SKILL.md) | utility | `[question]` | Throwaway code answering ONE design question. Logic harness OR 2–4 UI variations on one route. Captures verdict to `decisions.md`. | spec / surrounding code | prototype scratch + `decisions.md` |
 | [`/rite-handoff`](../pack/.claude/skills/rite-handoff/SKILL.md) | utility | `[next-session-focus]` | Compacts the chat into a handoff doc. Syncs chat-only context into workspace canonical files. References existing artifacts by path. | chat + workspace | `handoff.md` + sync into canonical files |
 | [`/rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | utility | `[--mine \| "<lesson>"]` | Mine archived features for recurring mistakes / dismissed-finding classes; propose project-local lessons into `.devrites/learnings.md` (loaded by the review skills before a fan-out). | archive + workspace | `.devrites/learnings.md` |
-| [`/rite-explain`](../pack/.claude/skills/rite-explain/SKILL.md) | utility | `[concept \| diff: \| since: \| idea]` | The **human** half of the learning loop (complement of `/rite-learn`, which teaches the repo). Turns a concept, diff, idea, or window of the user's own recent work into a dense personal explainer, with an optional predict-then-reveal / checked-exercise **check-in** for active recall. Grounds off `seal.md` / `evidence.md` / the diff / the archive. Read-only against source. | workspace + archive + diff + code | `.devrites/explainers/<date>-<slug>/explainer.md` |
+| [`/rite-customize`](../pack/.claude/skills/rite-customize/SKILL.md) | utility | `[override <agent> \| extension <name>]` | Guided authoring for project-local reviewer overrides and extensions; writes the smallest artifact, then runs the matching validator. Explicit-only. | `.devrites/overrides`, `.devrites/extensions`, pack agents | `.devrites/overrides/<agent>.md` or `.devrites/extensions/<name>/...` |
+| [`/rite-explain`](../pack/.claude/skills/rite-explain/SKILL.md) | utility | `[concept \| diff: \| walkthrough: \| since: \| idea]` | The **human** half of the learning loop (complement of `/rite-learn`, which teaches the repo). Turns a concept, diff, idea, or window of the user's own recent work into a dense personal explainer; diff inputs can produce a concern-ordered human review walkthrough. Grounds off `seal.md` / `evidence.md` / the diff / the archive. Read-only against source. | workspace + archive + diff + code | `.devrites/explainers/<date>-<slug>/explainer.md` or `walkthrough.md` |
 | [`/rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | utility | `[idea]` | Pressure-test a rough idea: 3–5 genuinely different options → converge on one with trade-off + hinge. | spec / surrounding code | `decisions.md` (optional) |
 | [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | — | Diagnose DevRites install + workspace health — install integrity, stale `.devrites/ACTIVE`, corrupt workspace, orphaned gates, broken hook wiring, and in-progress merge/rebase state. Read-only report. Triggers: "rite doctor", "is DevRites healthy", "why isn't the workflow picking up my feature". | install + workspace | — |
 
@@ -126,7 +127,7 @@ first step (step 0); the rest are referenced on demand. Full index in
 [`pack/.claude/skills/devrites-lib/reference/standards/README.md`](../pack/.claude/skills/devrites-lib/reference/standards/README.md).
 
 - `core.md` (always-on) — operating rules + universal anti-rationalizations + 1-line craft disciplines + persistence-before-stopping summary.
-- The other **22 on-demand** (read by the phase that needs them): `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `agents.md` · `context-hygiene.md` · `afk-hitl.md` · `tooling.md`
+- The other **26 on-demand** (read by the phase that needs them): `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `edge-case-trace.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `ci-cd.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `elicitation.md` · `agents.md` · `context-hygiene.md` · `anti-patterns.md` · `afk-hitl.md` · `tooling.md` · `skill-authoring.md`
 - `anti-patterns.md` — pack-wide rationalizations + red flags. Loaded by each per-phase `rite-*/reference/anti-patterns.md`; can be loaded directly for cross-phase reluctance.
 
 ## Trigger conditions (auto-selection)

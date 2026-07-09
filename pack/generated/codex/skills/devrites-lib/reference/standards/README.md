@@ -11,8 +11,8 @@ prefers what's already there).
 ## Loading model — progressive disclosure
 
 To keep context lean, the rules follow Claude's progressive-disclosure pattern. There
-are 26 rule files (plus this README index): each DevRites `rite-*` skill Reads
-`.agents/skills/devrites-lib/reference/standards/core.md` as its first step; the other 25 rule files load on demand by the
+are 27 rule files (plus this README index): each DevRites `rite-*` skill Reads
+`.agents/skills/devrites-lib/reference/standards/core.md` as its first step; the other 26 rule files load on demand by the
 phase that needs them.
 
 ### Always-on (read by each `rite-*` skill as step 0)
@@ -31,6 +31,7 @@ phase that needs them.
 | `testing.md` | Pyramid, behavior over implementation, determinism. | `$rite-build`, `$rite-prove`, `$rite-review`. |
 | `spec-grammar.md` | Optional, recommended structure for behavioral acceptance — `### Requirement:` (SHALL/MUST) + `#### Scenario:` (WHEN/THEN), validated deterministically by `devrites-engine spec-validate`. Progressive rigor; flat `AC-###` bullets stay valid. | `$rite-spec` readiness gate; `$rite-prove`, `$rite-review` consume the scenario hooks. |
 | `code-review.md` | Small PRs, severity labels, what to check, actionable feedback. | `$rite-review`, `$rite-seal`. |
+| `edge-case-trace.md` | Mechanical branch/boundary sweep, fixed-set siblings, and deletion-contract checks. | `$rite-review`, `$rite-seal`, `devrites-doubt`. |
 | `security.md` | Untrusted input, least privilege, secrets, three-tier trust boundary, fail closed. | When input / auth / data / integrations are in scope. |
 | `performance.md` | Measure first, common pitfalls, prove the win. | When perf is in scope. |
 | `observability.md` | Structured logs, metrics/SLIs, traces, symptom-based alerts, verify-the-telemetry-fires — proof a feature works in prod. | When the change has a runtime surface (endpoint, job, integration, user flow); `$rite-prove`, `$rite-seal`. |

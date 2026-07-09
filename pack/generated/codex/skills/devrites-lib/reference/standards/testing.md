@@ -24,6 +24,8 @@ covered, not lines executed: 100% line coverage can still leave a button's click
 and a button with one asserting unit test is "covered" at far less than 100% lines. Chase the
 behavior, not the number.
 
+Acceptance and tests are **surface-anchored**: assert the outermost surface the intent names. If the feature promised an API response, assert the API response; a database row behind it is supporting evidence, not proof.
+
 Put each test at the level that proves it cheapest and most reliably (the pyramid above):
 - **Element / field behavior** — validation, required, format, min/max, toggle on→off, select
   options load + change fires, button enabled/disabled, handler runs → a **unit / component**
@@ -85,7 +87,7 @@ change reverted. Run this trace for each behavioral change in the diff:
    load-bearing change often isn't the line that looks important.
 2. **Name what changed.** State the old behavior and the new one in one sentence each.
 3. **Trace to the consumer.** Find where the changed code is actually called from.
-4. **Inspect the consumer's test.** Does an *asserting* test drive that consumer through the
+4. **Inspect the consumer's test.** Does an *asserting*, surface-anchored test drive that consumer through the
    **new** behavior — not merely execute the path, and not assert the old expectation still?
 5. **Confirm the gap is real.** A finding is: `<change at file:line>` has no test that would go red
    if it regressed — cite the test that *should* cover it and show what it misses. No general

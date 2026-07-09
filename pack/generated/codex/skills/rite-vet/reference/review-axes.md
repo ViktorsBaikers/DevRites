@@ -54,7 +54,7 @@ within the gate ceiling (`depth.md`). If an axis genuinely has no issue, say "No
 moving on" and continue — don't manufacture findings.
 
 ### 1. Architecture
-- Component boundaries, coupling, data-flow patterns, single points of failure.
+- Component boundaries, coupling, data-flow patterns, single points of failure. Architecture records invariants, not scaffolding: each medium+ decision should state `Binds:` and `Prevents:` so the builder knows what divergence it prevents.
 - Scaling characteristics; where the plan's approach breaks under real load.
 - Security architecture at the seams (auth, data access, API boundaries) — does the plan name
   the trust boundary for each untrusted input?
@@ -75,7 +75,7 @@ moving on" and continue — don't manufacture findings.
 The differentiator: design the tests *before* the code, so the build writes them alongside.
 - **Framework detection** — find the project's existing test runner + conventions; match them
   (never introduce a new runner to prove one change — `testing.md`).
-- **Map acceptance → tests.** Every spec acceptance criterion must map to ≥1 planned test.
+- **Map acceptance → tests.** Every spec acceptance criterion must map to ≥1 planned, surface-anchored test (the API response/UI state/CLI output the criterion names, not an internal proxy).
 - **Tool per path** — unit (pure logic, single function, edge cases), integration/E2E (a user
   flow spanning 3+ components, an auth/payment/data-loss path, a mock-hides-failure boundary),
   eval (an LLM/prompt change that needs a quality bar).

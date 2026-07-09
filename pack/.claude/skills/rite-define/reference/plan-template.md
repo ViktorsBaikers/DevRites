@@ -30,7 +30,10 @@ green, or name the integration branch + final verify slice.
 
 ## Architecture decisions
 Key decisions + rationale (mirror into decisions.md). New pattern vs reuse — prefer
-reuse of existing project conventions.
+reuse of existing project conventions. Record architecture as invariants, not scaffolding:
+include a decision only when two implementing slices could otherwise choose incompatibly. For each
+medium+ decision, include `Binds:` (what future work must follow) and `Prevents:` (the divergence
+or failure it avoids).
 
 ## Dependency graph
 What must exist before what (text is fine):
