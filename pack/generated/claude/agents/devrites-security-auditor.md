@@ -75,3 +75,11 @@ Dependencies: <audited; issues?>
 LLM surface: <n/a | audited; issues?>
 Verdict: <GO-able / NO-GO — blockers>
 ```
+
+## Tools / read-write mode
+
+Read-only; do **not** edit files or write patches. Return findings only.
+
+## Composition
+
+Do not invoke another agent. You are called by a `rite-*` skill and return findings to that orchestrator.

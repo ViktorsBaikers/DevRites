@@ -1,7 +1,8 @@
 ---
 name: rite-handoff
-description: Compact the current chat into a handoff doc a fresh agent can pick up cold — syncs chat-only context into the canonical `.devrites/` files, references artifacts by path. Use when the user says "handoff", "prep for tomorrow", or "summarize for the next agent". Not for routine `/clear` between phases.
+description: User-invoked handoff writer: sync chat-only context into `.devrites/` and write a fresh-agent handoff.
 user-invocable: true
+disable-model-invocation: true
 argument-hint: "[what the next session will focus on]"
 ---
 

@@ -4,6 +4,7 @@
   "queries": [
     {"text": "/rite-spec add CSV export", "expected": "should_trigger", "rationale": "Direct slash invocation."},
     {"text": "Start a new feature for invoice generation.", "expected": "should_trigger", "rationale": "Phrase 'start a feature' matches description."},
+    {"text": "Let's make a react todo list.", "expected": "should_trigger", "rationale": "New-harness acceptance: new app request must route to spec before code."},
     {"text": "Help me spec out a notification system.", "expected": "should_trigger", "rationale": "Explicit 'spec' keyword."},
     {"text": "Investigate and design a search ranking change.", "expected": "should_trigger", "rationale": "Investigation framing matches description."},
     {"text": "Interview me about a webhook delivery feature.", "expected": "should_trigger", "rationale": "Description names 'interview me' phrasing."},

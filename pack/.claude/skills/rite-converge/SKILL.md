@@ -1,6 +1,6 @@
 ---
 name: rite-converge
-description: Close the gap between a feature's spec/plan/tasks and what the code actually implements — assess the live codebase against intent and append each unmet piece as a new traceable slice for `/rite-build` to finish. Use when resuming a half-built or stalled feature, after `/rite-adopt` when code has drifted from the derived spec, or the user says "converge", "close the gap", or "what's left to build". Not for the initial plan (`/rite-define`), reshaping a plan (`/rite-plan`), or proving a finished feature (`/rite-prove`).
+description: Converge intent and live code. Use when resuming a half-built feature, after `/rite-adopt` drift, or the user asks "what's left to build". Not for initial planning.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---

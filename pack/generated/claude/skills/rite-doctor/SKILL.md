@@ -1,6 +1,6 @@
 ---
 name: rite-doctor
-description: Diagnose DevRites install + workspace health on demand and print a full report — install integrity, Codex/Claude hook wiring, Codex support mirrors, a stale `.devrites/ACTIVE` pointer, a corrupt workspace, and orphaned gates. Use when the user says "rite doctor", "check my DevRites install", or "why isn't the workflow picking up my feature". Not for debugging the user's own code (use `devrites-debug-recovery`) or for feature progress / next-action (use `/rite-status`).
+description: Diagnose DevRites install and workspace health. Use when the user says "rite doctor", "check my DevRites install", or the workflow is not picking up a feature. Not for app bugs.
 argument-hint: ""
 user-invocable: true
 ---

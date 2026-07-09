@@ -6,6 +6,13 @@ It separates three roles: **specialist skills** (model-invoked disciplines that 
 and the **executor subagent** (`devrites-slice-wright` — fresh-context but **write-capable**,
 the one agent that produces code).
 
+## Model tier policy
+
+Use [`model-tiers.md`](../model-tiers.md) when a harness supports model choice. Wright defaults to
+standard/inherited, with the strongest available model for high-risk architecture, migration, auth,
+or public API slices; cheap tiers are only for mechanical read-only scouts. Seal/spec/security
+reviewers stay strongest/inherited. If the harness cannot select models, record "host default".
+
 ## Review subagents — `.claude/agents/`
 Fresh-context, read-only reviewers. Each is given the active feature workspace path
 (`.devrites/work/<slug>/`) + the diff, and returns findings — they do **not** edit code.

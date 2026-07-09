@@ -1,6 +1,6 @@
 ---
 name: rite
-description: DevRites menu + router; without args it renders the menu, and with a verb (e.g. `spec`, `build`, `review`) it dispatches to the matching `rite-<verb>` skill. Use when the user types `$rite` or names a phase verb.
+description: User-invoked DevRites menu and router; no args renders the menu, a verb dispatches to the matching `rite-<verb>` skill.
 argument-hint: "[verb [args...]]"
 user-invocable: true
 disable-model-invocation: true

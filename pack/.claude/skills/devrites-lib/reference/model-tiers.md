@@ -1,8 +1,8 @@
 # Model tiers — dispatch by task shape, never by model name
 
 The single source for how DevRites skills choose a model for a dispatched subagent. A skill
-names a **tier** by the *shape of the work*; it never hardcodes `haiku` / `sonnet` / `opus` into
-skill content. Model names change and differ per harness; a tier is stable. Loaded on demand by
+names a **tier** by the *shape of the work*; it never hardcodes provider SKUs (Claude,
+OpenAI/ChatGPT, or otherwise) into skill content. Model names change and differ per harness; a tier is stable. Loaded on demand by
 any skill that dispatches subagents (review fan-out, scouts, judges); not a skill itself.
 
 ## The three tiers
@@ -39,5 +39,5 @@ Name the tier and the budget where you dispatch; never the model:
 > Dispatch an **extraction-tier** scout (read budget: 20 files, output cap: the dossier path + a
 > 3-line gist) to quote every call site of `X` into `<scratch>/dossier.md`.
 
-Not: "dispatch a Haiku agent to…". If a future reviewer needs to know why a scout is cheap, this
-file is the answer; the skill stays legible and portable.
+Not: "dispatch a cheap Claude/OpenAI model to…". If a future reviewer needs to know why a scout is cheap,
+this file is the answer; the skill stays legible and portable.

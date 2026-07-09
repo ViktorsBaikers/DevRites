@@ -1,6 +1,6 @@
 ---
 name: rite-spec
-description: Investigate a new feature and write the `.devrites/work/<slug>/` spec workspace (workspace map, brief.md, spec.md, questions/decisions/assumptions, references, optional design-brief.md). Use when the user says "spec out a new feature" or "I have an idea". Not for planning approved specs (use `$rite-define`) or replanning (use `$rite-plan`).
+description: Spec a new feature/app before code and write its `.devrites/work/<slug>/` workspace. Use when the user says "spec out a new feature", "I have an idea", or "make a React todo list". Not for approved-spec planning.
 argument-hint: "<feature or idea>"
 user-invocable: true
 ---

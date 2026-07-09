@@ -1,8 +1,9 @@
 ---
 name: rite-resolve
-description: Resolve open `questions.md` entries on the active feature — answer one, drop one, or batch-resolve from a file — and clear `state.md` `Awaiting human` so the workflow resumes. Use when the user says "answer that question", "drop that question", or a HITL checkpoint / AFK blocking question needs an answer. Not for raising new questions or editing answered ones.
+description: User-invoked resume verb for answering, dropping, or batch-resolving open `questions.md` gates.
 argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <path-to-yaml>"
 user-invocable: true
+disable-model-invocation: true
 ---
 
 ## Codex compatibility

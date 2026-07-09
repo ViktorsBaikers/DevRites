@@ -68,3 +68,11 @@ Visual Verdict: <PASS | PARTIAL(n) | FAIL(n) | absent> — <acceptance-mapped FA
 Evidence: <real / asserted / pending-manual>
 Verdict: UI shippable? <yes/partial/no — blockers>
 ```
+
+## Tools / read-write mode
+
+Read-only; do **not** edit files or write patches. Return findings only.
+
+## Composition
+
+Do not invoke another agent. You are called by a `rite-*` skill and return findings to that orchestrator.
