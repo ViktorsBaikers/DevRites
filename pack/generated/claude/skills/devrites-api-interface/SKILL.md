@@ -1,6 +1,6 @@
 ---
 name: devrites-api-interface
-description: Design stable APIs and interface contracts before implementation — REST/GraphQL endpoints, module boundaries, type contracts, FE/BE splits. Use when the user says "design the API", "contract this out", "split frontend and backend", or a slice crosses a boundary. Not for internal helpers or post-ship interfaces (use `/rite-review`).
+description: Design stable API/interface contracts before implementation: REST/GraphQL endpoints, module boundaries, type contracts, FE/BE splits. Use when the user says "design the API" or a slice crosses a boundary. Not for helpers.
 user-invocable: false
 ---
 

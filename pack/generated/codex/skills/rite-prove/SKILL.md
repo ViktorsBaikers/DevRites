@@ -1,6 +1,6 @@
 ---
 name: rite-prove
-description: Prove the completed feature against its `spec.md` acceptance criteria. Use when the user says "prove this", "run the full tests", or "check it end-to-end". Not for single-slice or pre-completion proof.
+description: Prove completed feature with full tests/build/typecheck/lint, end-to-end/browser evidence, screenshots, commands and outputs for seal. Not for single-slice proof.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---

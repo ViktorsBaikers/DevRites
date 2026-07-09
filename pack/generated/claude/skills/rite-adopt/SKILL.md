@@ -1,6 +1,6 @@
 ---
 name: rite-adopt
-description: Adopt an existing codebase into DevRites. Use when the user says "adopt this project" or asks to reverse-engineer a spec from a live app. Not for new-feature specs.
+description: Adopt/onboard an existing or legacy codebase into DevRites: reverse-engineer current behavior/spec, seed conventions, start using rites. Use for inherited/live apps. Not for new features.
 argument-hint: "[path or area to adopt] [+ what you want to build next]"
 user-invocable: true
 ---

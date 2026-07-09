@@ -1,6 +1,6 @@
 ---
 name: rite-build
-description: Implement exactly ONE vertical slice of the active feature, then stop with evidence. Use when the user says "build the next slice", "implement slice N", "continue the build", "code this slice". Not for bug fixes, prototypes, refactors outside scope, or two slices in a row.
+description: Implement one vertical slice, then stop with evidence. Use for build next slice, implement slice N, continue build, code/write API endpoint slice, start building after plan ready. Not for two slices.
 argument-hint: "[slice number or name]"
 user-invocable: true
 ---

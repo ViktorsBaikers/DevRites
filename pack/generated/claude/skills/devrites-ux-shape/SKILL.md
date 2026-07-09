@@ -1,6 +1,6 @@
 ---
 name: devrites-ux-shape
-description: Plan the UX/UI before any code — produce the feature-level `design-brief.md` the build then targets. Use when `/rite-spec` detects UI, or the user says "shape the UX" or "plan the UI before coding". Not for building (use `devrites-frontend-craft`), polishing a built UI (use `/rite-polish`), or throwaway exploration (use `/rite-prototype`).
+description: Plan UX/UI before code: design direction, design brief, visual direction, key states, interaction model for screens/forms/dashboards/settings pages. Use when shaping UI. Not for building/polish.
 user-invocable: false
 ---
 

@@ -17,6 +17,9 @@ const spaceChars = " \t\n\v\f\r"
 // featureDir is the per-feature directory under root. work/ is canonical;
 // features/ remains readable as a compatibility alias.
 func featureDir(root, slug string) string {
+	if ws := workspaceOverride(root, slug); ws != "" {
+		return ws
+	}
 	work := filepath.Join(root, "work", slug)
 	if isDir(work) {
 		return work
@@ -28,9 +31,28 @@ func featureDir(root, slug string) string {
 	return work
 }
 
+func workspaceOverride(root, slug string) string {
+	raw := strings.TrimSpace(os.Getenv("DEVRITES_WORKSPACE"))
+	if raw == "" {
+		return ""
+	}
+	path := raw
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(filepath.Dir(root), path)
+	}
+	path = filepath.Clean(path)
+	if slug == "" || filepath.Base(path) == slug {
+		return path
+	}
+	return ""
+}
+
 // activeSlug reads the active-feature pointer at <root>/ACTIVE (trimmed), or ""
 // when absent — the new-schema replacement for the old .devrites/ACTIVE lookup.
 func activeSlug(root string) string {
+	if ws := workspaceOverride(root, ""); ws != "" {
+		return filepath.Base(ws)
+	}
 	b, err := os.ReadFile(filepath.Join(root, "ACTIVE"))
 	if err != nil {
 		return ""

@@ -11,8 +11,8 @@ import (
 )
 
 // ResolveRoot returns the .devrites directory to operate on. A non-empty
-// override (e.g. from DEVRITES_ROOT) is used verbatim; otherwise the nearest
-// ancestor .devrites of the working directory is used.
+// override (e.g. from DEVRITES_ROOT) may name either the project root or its
+// .devrites directory; otherwise the nearest ancestor .devrites is used.
 func ResolveRoot(override string) (string, error) {
 	if override != "" {
 		info, err := os.Stat(override)
@@ -22,7 +22,14 @@ func ResolveRoot(override string) (string, error) {
 		if !info.IsDir() {
 			return "", fmt.Errorf("DEVRITES_ROOT %q is not a directory", override)
 		}
-		return override, nil
+		if filepath.Base(filepath.Clean(override)) == ".devrites" {
+			return override, nil
+		}
+		child := filepath.Join(override, ".devrites")
+		if info, err := os.Stat(child); err == nil && info.IsDir() {
+			return child, nil
+		}
+		return "", fmt.Errorf("DEVRITES_ROOT %q is not a project root or .devrites directory", override)
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -52,6 +59,9 @@ type Feature struct {
 // featureDir is where per-feature state lives under the root. work/ is the
 // canonical layout; features/ remains readable as a compatibility alias.
 func featureDir(root, slug string) string {
+	if ws := workspaceOverride(root, slug); ws != "" {
+		return ws
+	}
 	work := filepath.Join(root, "work", slug)
 	if _, err := os.Stat(work); err == nil {
 		return work
@@ -61,6 +71,22 @@ func featureDir(root, slug string) string {
 		return features
 	}
 	return work
+}
+
+func workspaceOverride(root, slug string) string {
+	raw := strings.TrimSpace(os.Getenv("DEVRITES_WORKSPACE"))
+	if raw == "" {
+		return ""
+	}
+	path := raw
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(filepath.Dir(root), path)
+	}
+	path = filepath.Clean(path)
+	if slug == "" || filepath.Base(path) == slug {
+		return path
+	}
+	return ""
 }
 
 // ListFeatures returns the slugs of every feature under root — directories under

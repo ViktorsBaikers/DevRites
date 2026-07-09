@@ -1,6 +1,6 @@
 ---
 name: rite-quick
-description: Express lane for a SMALL, reversible change. Use when the user says "quick fix" or "just do X", or for a typo / copy / config / single-function / one-file change that is low-risk and unambiguous. Escalates to `/rite-spec` (full lifecycle) the moment scope, risk, or ambiguity grows. Not for auth / data-model / migration / public-API / multi-slice / ambiguous work — those need the full lifecycle.
+description: Express lane for a small reversible change: typo/copy/config, rate-limit constant, error message, local variable rename, feature flag, README link, one-file/function fix.
 argument-hint: "<what to change>"
 user-invocable: true
 ---

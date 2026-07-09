@@ -1,6 +1,6 @@
 ---
 name: rite-seal
-description: Decide GO / NO-GO on the active feature. Use when the user says "seal this" or "GO / NO-GO". Hands off to $rite-ship for the actual commit/push/close. Not for the irreversible ship itself (use $rite-ship), inline review, or unpolished features.
+description: Decide GO / NO-GO on the active feature. Use when the user says "seal this" or "GO / NO-GO". Hands off commit/push/close to $rite-ship. Not for the irreversible ship.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---
@@ -58,8 +58,20 @@ Read `review.md` and the latest reviewer outputs.
 | Unresolved drift in `drift.md` | **NO-GO**, route through `$rite-plan` first. |
 | Any `questions.md` entry with `gate: validating` and `status: open` | **NO-GO** regardless of behavior impact — an open validating gate is merge-blocking by definition. A slice marked `built (pending review)` is not done. |
 | A stood decision (boundary / data-model / auth / public-API / migration / branching) in the `decisions.md` `## Decisions stood` ledger with no recorded `devrites-doubt` verdict — `doubt: MISSING` / `doubt-coverage` rc=3 | **Important** — **NO-GO** when the undoubted decision is irreversible-risk (auth / public-API / migration), the same standing as an unproven acceptance criterion. Severity rides the unverified **decision**, not the exit code: `doubt-coverage` rc=1 (zero doubt dispatched) is a **prompt to verify**, not itself a finding — confirm against the ledger, where every-slice-trivial (`- none`) passes and a skipped triggering decision is the finding. |
+| `devrites-engine docs-stale` warns that user-facing CLI/API/install/docs-referenced code changed without README/docs updates | **FYI** unless the spec promised docs or users need docs to satisfy acceptance; then escalate to Important. |
+| Outside voice (`devrites-engine outside-voice`) is unavailable in `auto` mode | Advisory only; record `outside-voice: skipped-unavailable`. Disabled mode records `outside-voice: disabled`. |
 
 ## Workflow
+
+Before the verdict, run the deterministic advisory checks and record their outcomes in `seal.md`:
+```bash
+devrites-engine docs-stale; echo "docs-stale rc=$?"
+devrites-engine outside-voice; echo "outside-voice rc=$?"
+```
+If outside voice is `available`, ask the same artifacts/diff second opinion;
+findings stay advisory until verified with line quotes or accepted into the normal review pipeline.
+For developer-facing surfaces, compare `devex.md` predicted TTHW against the measured proof path and
+record the boomerang result.
 
 Run the full execution contract in
 [`reference/phase-contract.md`](reference/phase-contract.md). It is not optional:

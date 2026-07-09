@@ -158,6 +158,9 @@ func Snapshot(root, slug string) (*WorkspaceSnapshot, error) {
 }
 
 func readActiveSlug(root string) string {
+	if ws := workspaceOverride(root, ""); ws != "" {
+		return filepath.Base(ws)
+	}
 	raw, err := os.ReadFile(filepath.Join(root, "ACTIVE"))
 	if err != nil {
 		return ""

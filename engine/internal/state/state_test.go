@@ -223,3 +223,38 @@ func TestSectionPresentDistinguishesContentFromStubs(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveRootAcceptsProjectRootOrDevritesRoot(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, in := range []string{project, root} {
+		got, err := ResolveRoot(in)
+		if err != nil {
+			t.Fatalf("ResolveRoot(%q): %v", in, err)
+		}
+		if got != root {
+			t.Fatalf("ResolveRoot(%q) = %q, want %q", in, got, root)
+		}
+	}
+}
+
+func TestDevritesWorkspaceOverridesActiveFeature(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeWorkSection(t, root, "explicit", "state.md", "- Phase: spec\n")
+	writeWorkSection(t, root, "explicit", "spec.md", "# Spec\n\nBody\n")
+	if err := os.WriteFile(filepath.Join(root, "ACTIVE"), []byte("other\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DEVRITES_WORKSPACE", filepath.Join(root, "work", "explicit"))
+
+	snap, err := Snapshot(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap.Slug != "explicit" {
+		t.Fatalf("Snapshot slug = %q, want explicit", snap.Slug)
+	}
+}

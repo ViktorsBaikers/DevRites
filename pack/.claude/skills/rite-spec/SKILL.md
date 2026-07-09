@@ -161,7 +161,11 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    Populate `## Edge Coverage` with the deterministic boundary classes implied by each requirement
    (empty/huge input, rounding, timezone, ordering, permissions, races, migration) and `## Prohibitions (must-NOT)`
    only for bespoke constraints. If the feature touches model calls, RAG, agents, evals, or LLM output,
-   also create `ai-spec.md` from [ai-spec-template](reference/ai-spec-template.md).
+   also create `ai-spec.md` from [ai-spec-template](reference/ai-spec-template.md). Then refresh any
+   managed project context block so `AGENTS.md` / `CLAUDE.md` point at the new active workspace:
+   ```bash
+   devrites-engine context sync || true
+   ```
 5a. **Score the spec prose — "unit tests for English"** ([spec-checklists](reference/spec-checklists.md)).
    Emit `.devrites/work/<slug>/checklists/<domain>.md` (one per requirement domain the spec covers:
    functional · data-model · interaction · non-functional · edge-cases). Each tests the *requirement

@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 You are the DevRites entry point. Two modes:
 
-- **No args** → render the menu (below), then stop. Do not execute a workflow phase. Do not read `state.md` / run evidence checks / list artifacts — that's `/rite-status`.
+- **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a workflow phase. Do not read `state.md` / run evidence checks / list artifacts — that's `/rite-status`.
 - **Verb arg** → dispatch to the matching `rite-<verb>` skill (see "Dispatch" below). The router is a pass-through: `/rite spec foo` ≡ `/rite-spec foo`; the called skill owns the output.
 
 ## Dispatch
@@ -74,12 +74,12 @@ Called phase skills own the shared completion reply contract
 ([`reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 
 1. **Verb in `$ARGUMENTS`** → dispatch per the table above. The called skill owns the response.
-2. **No args** → render the menu below, then stop.
+2. **No args** → run `devrites-engine first-task`; render its one-line recommendation, then the menu below, then stop.
 3. **Unrecognized first token** → tell the user the known verbs and stop. Don't guess.
 4. **No active feature** and the user asked "where am I" or named no verb → point at `/rite spec <feature>` (or `/rite-spec`). Don't summarize state yourself — `/rite status` (or `/rite-status`) owns that.
 
 ## Gotchas
-- No args → render the menu and stop. Don't execute a phase, read `state.md`, or summarize status — that's `/rite-status`.
+- No args → run `devrites-engine first-task`, render the suggested starting loop, then the menu and stop. Don't execute a phase, read `state.md`, or summarize status — that's `/rite-status`.
 - Unrecognized first token → list the known verbs and stop; never guess which phase the user meant.
 - Pure pass-through: dispatch to the `rite-<verb>` skill and let it own the output; don't do the phase's work in the router.
 
@@ -87,6 +87,7 @@ Called phase skills own the shared completion reply contract
 
 ```
 DevRites — disciplined senior-engineer workflow
+Recommended start: <greenfield: /rite spec <feature> | brownfield-unadopted: /rite adopt | active-feature: /rite status | dirty-worktree: /rite frame or /rite quick | branch-ahead: /rite ship/status | clean-default: /rite spec <feature>>
                               menu form           direct shortcut
 SPEC          /rite spec               ≡    /rite-spec        investigate deeply → write spec.md
 ADOPT         /rite adopt              ≡    /rite-adopt       onboard existing code → reverse-derive spec.md + seed conventions

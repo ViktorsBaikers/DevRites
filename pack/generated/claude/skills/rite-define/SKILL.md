@@ -1,6 +1,6 @@
 ---
 name: rite-define
-description: Decompose an approved `spec.md` into `architecture.md`, `plan.md`, `tasks.md`, `traceability.md`, and `state.md`; every acceptance criterion maps to ≥1 slice. Use when the user says "plan this" or "break this into slices". Not for writing code or repairing an existing plan (use `/rite-plan`).
+description: Decompose an approved spec into architecture, plan, tasks, traceability, and state; every acceptance criterion maps to a slice. Use when the user says "plan this" or "break this into slices". Not for code.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---

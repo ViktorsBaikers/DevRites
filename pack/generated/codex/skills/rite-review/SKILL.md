@@ -1,6 +1,6 @@
 ---
 name: rite-review
-description: Review the polished diff at feature scope across Spec + Code-review axes. Use when the user says "review this", "audit my diff", "final review before seal", "check this against the spec". Not for whole-project refactors or single-slice review.
+description: Review polished feature diff for correctness, readability, architecture, security, tests proving acceptance, Critical/Important findings, and quality dimensions before seal.
 argument-hint: "[scope: slice N | feature]"
 user-invocable: true
 ---
