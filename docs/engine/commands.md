@@ -200,6 +200,22 @@ The IDs make recurring findings, dismissals, and later learning easier to correl
 copying full review text into every downstream surface. `review-integrity` remains the gate; this
 command only records stable references.
 
+## `reviewers list` — bounded reviewer aliases
+
+`devrites-engine reviewers list` validates same-adapter reviewer aliases from `.devrites/config.json`
+or flat `.devrites/config*` keys. It never executes a reviewer; it only checks the bounded config
+surface (`cli` must be `claude` or `codex`; `model` and `agent` are opaque strings).
+
+```json
+{
+  "review": {
+    "reviewer_instances": {
+      "codex-deep": { "cli": "codex", "model": "o3" }
+    }
+  }
+}
+```
+
 ## `extensions` / `overrides` — project extensibility
 
 Two project-local surfaces let a team extend the pack without forking it — full contract in

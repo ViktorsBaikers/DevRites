@@ -184,7 +184,7 @@ demands. No carrier skill, no session-start autoload.
 ```mermaid
 flowchart TD
     R[rite-* skill<br/>step 0] -->|always-on| Core[.claude/skills/devrites-lib/reference/standards/core.md]
-    R -->|on demand index| Idx[(.claude/skills/devrites-lib/reference/standards/README.md<br/>25 on-demand rule files)]
+    R -->|on demand index| Idx[(.claude/skills/devrites-lib/reference/standards/README.md<br/>on-demand rule files)]
     Idx --> CS[coding-style.md]
     Idx --> EH[error-handling.md]
     Idx --> T[testing.md]

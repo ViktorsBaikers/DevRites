@@ -67,6 +67,7 @@ Usage:
   devrites-engine timeline <sub> [...]     Session trace: log|list skill events, decisions, and state moves
   devrites-engine health [run|record|list] Code-health dashboard + history
   devrites-engine config get <key>         Read project config (outside_voice defaults auto)
+  devrites-engine reviewers list           Validate/list configured reviewer aliases
   devrites-engine outside-voice            Detect outside-review availability
   devrites-engine docs-stale [slug]        Advisory docs-staleness check over changed public surfaces
   devrites-engine secret-scan [slug]       Credential scan over staged/touched files; HIGH blocks
@@ -230,6 +231,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.Health(resolveRootLenient(), args[1:], stdout, stderr)
 	case "config":
 		return lib.Config(resolveRootLenient(), args[1:], stdout, stderr)
+	case "reviewers":
+		return lib.Reviewers(resolveRootLenient(), args[1:], stdout, stderr)
 	case "outside-voice":
 		return lib.OutsideVoice(resolveRootLenient(), args[1:], stdout, stderr)
 	case "docs-stale":

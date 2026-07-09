@@ -127,6 +127,7 @@ func hookHandoffSnapshot(stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(&b, "- Open questions: %s\n", wsOrZero(wsGateCount(filepath.Join(dir, "questions.md"))))
 	_ = state.AppendLog(filepath.Join(dir, "handoff.md"), strings.TrimRight(b.String(), "\n"))
+	fmt.Fprintf(stdout, "DevRites: compaction handoff saved for %s; resume with the status command or read handoff.md.\n", slug)
 	return exitOK
 }
 

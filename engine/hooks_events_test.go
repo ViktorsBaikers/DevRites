@@ -47,8 +47,12 @@ func TestHookEventWritesTimelineAndWorkspaceEvents(t *testing.T) {
 
 func TestHookHandoffSnapshotAppendsResumeNote(t *testing.T) {
 	root := makeHookWorkspace(t)
-	if code := hookHandoffSnapshot(strings.NewReader(`{}`), &bytes.Buffer{}, &bytes.Buffer{}); code != 0 {
+	stdout := &bytes.Buffer{}
+	if code := hookHandoffSnapshot(strings.NewReader(`{}`), stdout, &bytes.Buffer{}); code != 0 {
 		t.Fatalf("hookHandoffSnapshot code=%d", code)
+	}
+	if !strings.Contains(stdout.String(), "compaction handoff saved") {
+		t.Fatalf("handoff hook should warn on stdout, got %q", stdout.String())
 	}
 	raw, err := os.ReadFile(filepath.Join(root, "work", "demo", "handoff.md"))
 	if err != nil {

@@ -1,0 +1,6 @@
+{
+  "profiles": {
+    "full": ["*"]
+  },
+  "notes": "Dependency closure guard for future core/standard profiles. '*' means every shipped skill."
+}

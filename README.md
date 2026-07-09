@@ -115,7 +115,7 @@ Full diagram set (lifecycle, polish orchestrator, review fan-out, debug loop,
 rules carrier, workspace state, namespace map) →
 [`docs/flow.md`](docs/flow.md).
 
-**Status:** [`v2.6.1`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v2.6.1) — see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+**Status:** [`v3.0.0`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v3.0.0) — see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
 ## Contents
 
@@ -307,7 +307,7 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **42 skills total** — the `rite` menu, 29 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library for shared references and explicit script exceptions. The workflow control plane runs through the installed `devrites-engine` binary; the npm `devrites` shim remains the install/update/uninstall entry point and can proxy engine subcommands when the binary is present. **Prefix convention:** `rite-*` is the user-facing command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/skills/devrites-lib/reference/standards/`; each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first step, and the other 26 rule files load on demand.
+The pack ships **42 skills total** — the `rite` menu, 29 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library for shared references and explicit script exceptions. The workflow control plane runs through the installed `devrites-engine` binary; the npm `devrites` shim remains the install/update/uninstall entry point and can proxy engine subcommands when the binary is present. **Prefix convention:** `rite-*` is the user-facing command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/skills/devrites-lib/reference/standards/`; each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first step, and the remaining rule files load on demand.
 
 **Claude Code invocation.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
@@ -467,13 +467,13 @@ Playwright MCP, backend-only, polish modes, zoom-out, mid-flight handoff):
 ## Engineering rules
 
 DevRites ships its own stack-agnostic engineering rules and installs them to
-`.claude/skills/devrites-lib/reference/standards/` — 27 rule files plus a README index. They're **common** by design
+`.claude/skills/devrites-lib/reference/standards/` — common rule files plus a README index. They're **common** by design
 (no language assumptions); a project's own conventions always win where they exist, and a
 project's own **principles** (`.devrites/principles.md`) outrank both. Standards ship inside
 the `devrites-lib` skill; the retired `--no-rules` and `--rules-only` flags are compatibility
 no-ops. Use `--no-skills` only when you intentionally want to skip skills and the bundled
 standards together. Loading model: each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first
-step; the other 26 rule files load on demand via `Read` from the skill body that needs them.
+step; the remaining rule files load on demand via `Read` from the skill body that needs them.
 
 | Always-on | On-demand |
 |---|---|
@@ -533,7 +533,7 @@ devrites/
                        # sync-version · build-release-tarball
   pack/.claude/        # skills/  42 skills — 30 public + 12 internal          ─┐
                        # agents/  13 read-only + 1 writer (slice-wright)         ├─ the pack
-                       # rules/   27 rule files + README index                   ┘
+                       # rules/   common rule files + README index               ┘
   installed projects   # .claude/ runtime assets; .agents/skills + .codex/agents
                        # + .codex/hooks.json + AGENTS.md for Codex
   evals/               # trigger evals (20/skill) + golden/ outcome-eval fixtures

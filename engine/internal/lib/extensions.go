@@ -151,7 +151,7 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 		return 0
 	}
 
-	var problems []string
+	var problems, warnings []string
 	manifestCount := 0
 	seenSkill, seenAgent := map[string]string{}, map[string]string{}
 	for _, e := range exts {
@@ -160,9 +160,11 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 		}
 		if e.manifest != "" {
 			manifestCount++
-			for _, problem := range validateComponentManifest(e.name, e.manifest) {
-				problems = append(problems, problem)
+			manifestProblems := validateComponentManifest(e.name, e.manifest)
+			if len(manifestProblems) > 0 && manifestDeclaresGateSurface(e.manifest) {
+				warnings = append(warnings, fmt.Sprintf("%s: declared review/gate surface is inactive until validation passes", e.name))
 			}
+			problems = append(problems, manifestProblems...)
 		}
 		if e.provenance != "" {
 			problems = append(problems, validateProvenance(e.name, e.provenance)...)
@@ -196,6 +198,9 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 	problems = append(problems, validateExtensionDependencyGraph(exts)...)
 
 	if len(problems) > 0 {
+		for _, w := range warnings {
+			fmt.Fprintf(stderr, "  warning: %s\n", w)
+		}
 		fmt.Fprintf(stderr, "extensions: %d problem(s):\n", len(problems))
 		for _, p := range problems {
 			fmt.Fprintf(stderr, "  - %s\n", p)
@@ -299,6 +304,7 @@ type componentManifest struct {
 	requires             []string
 	ownsSkills           []string
 	ownsAgents           []string
+	surfaceClusters      []string
 	mayWeakenGates       string
 	requiresTypeGOBypass string
 	executable           string
@@ -355,6 +361,8 @@ func parseComponentManifest(content string) componentManifest {
 			out.requiresTypeGOBypass = val
 		case "safety.executable":
 			out.executable = val
+		case "surface.clusters", ".gates", "surface.gates":
+			out.surfaceClusters = append(out.surfaceClusters, val)
 		}
 	}
 	return out
@@ -385,7 +393,24 @@ func appendManifestList(out *componentManifest, section, key, val string) {
 		out.ownsSkills = append(out.ownsSkills, val)
 	case "owns.agents":
 		out.ownsAgents = append(out.ownsAgents, val)
+	case "surface.clusters", ".gates", "surface.gates":
+		out.surfaceClusters = append(out.surfaceClusters, val)
 	}
+}
+
+func manifestDeclaresGateSurface(path string) bool {
+	content, ok := readFileOK(path)
+	if !ok {
+		return false
+	}
+	m := parseComponentManifest(content)
+	for _, c := range m.surfaceClusters {
+		c = strings.ToLower(strings.TrimSpace(c))
+		if strings.Contains(c, "gate") || c == "review" || c == "seal" || c == "security" || c == "prove" {
+			return true
+		}
+	}
+	return false
 }
 
 func validateExtensionDependencyGraph(exts []extension) []string {
