@@ -4,7 +4,7 @@ The `devrites-engine` binary is the deterministic control plane over a project's
 `.devrites/` state. It makes **zero model or network calls** — the in-session
 LLM stays the judgment data plane; the engine only sequences, gates, and reads.
 
-This covers the commands added in issues 03–07, on top of `status` / `reindex`
+This covers the commands added in issues 03–07, on top of `status`
 (see [state-schema.md](state-schema.md)).
 
 ## Exit codes
@@ -268,8 +268,4 @@ contention is between short-lived **processes**. State writes are hardened for i
 - **structured files** are written via temp-file + atomic rename — a reader (or a
   writer killed mid-write) never sees a half-written file;
 - **read-modify-write** takes a per-feature advisory `flock` (unix) — no lost
-  updates;
-- the **SQLite index** runs in WAL mode with a busy timeout, and `reindex`
-  rebuilds transactionally (no file deletion), so `SQLITE_BUSY` under contention
-  is waited out, never a hard failure. The file write always commits before the
-  index, so truth is never lost to a DB hiccup.
+  updates.

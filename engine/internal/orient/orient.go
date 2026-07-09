@@ -1,19 +1,15 @@
 // Package orient builds the SessionStart orientation digest injected at the top
 // of a session, so the model knows a DevRites workflow is in flight and where it
-// stands. It reads workspace state through the index (which may lazily heal the
-// disposable state.db cache) and makes zero model or network calls. It is silent
+// stands. It reads workspace state from files and makes zero model or network calls. It is silent
 // when there is nothing to say, mirroring the legacy devrites-orient.sh: an
 // enhancement, never a dependency.
 package orient
 
 import (
-	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/devrites/devrites/internal/index"
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/lib"
 	"github.com/devrites/devrites/internal/state"
 )
@@ -38,7 +34,7 @@ func Digest(root string) (text string, has bool, err error) {
 
 	// A stale pointer (names a feature that no longer exists) stays silent
 	// rather than erroring — orientation must never be a session dependency.
-	report, err := index.Status(root, slug)
+	report, err := state.Status(root, slug)
 	if err != nil {
 		return "", false, nil
 	}
@@ -65,21 +61,7 @@ func Digest(root string) (text string, has bool, err error) {
 // ActiveSlug reads and trims the active-feature pointer. A missing pointer file
 // is not an error — it yields the empty slug (no active feature).
 func ActiveSlug(root string) (string, error) {
-	if raw := strings.TrimSpace(os.Getenv("DEVRITES_WORKSPACE")); raw != "" {
-		path := raw
-		if !filepath.IsAbs(path) {
-			path = filepath.Join(filepath.Dir(root), path)
-		}
-		return filepath.Base(filepath.Clean(path)), nil
-	}
-	raw, err := os.ReadFile(filepath.Join(root, ActiveFile))
-	if errors.Is(err, os.ErrNotExist) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(raw)), nil
+	return devritespaths.ActiveSlug(root)
 }
 
 // ResolveRoot is a thin re-export so hook callers can fail open on a

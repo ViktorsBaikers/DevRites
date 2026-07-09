@@ -12,24 +12,19 @@ if [ -z "$SELF_DIR" ] || [ ! -d "$SELF_DIR/pack" ]; then
     exit 1
   fi
   command -v curl >/dev/null 2>&1 || { echo "error: curl is required for the network uninstaller." >&2; exit 1; }
-  command -v tar >/dev/null 2>&1 || { echo "error: tar is required for the network uninstaller." >&2; exit 1; }
-  tmp="$(mktemp -d 2>/dev/null || echo "${TMPDIR:-/tmp}/devrites-bootstrap.$$")"
   if [ -n "$DEVRITES_REF" ]; then
-    tag="$DEVRITES_REF"
+    ref="$DEVRITES_REF"
   else
-    tag="$(curl -fsSL "https://api.github.com/repos/$DEVRITES_REPO/releases/latest" 2>/dev/null | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+    ref="$(curl -fsSL "https://api.github.com/repos/$DEVRITES_REPO/releases/latest" 2>/dev/null | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
   fi
-  got=0
-  if [ -n "$tag" ]; then
-    curl -fsSL -o "$tmp/devrites.tar.gz" "https://github.com/$DEVRITES_REPO/releases/download/$tag/devrites-$tag.tar.gz" 2>/dev/null && got=1
-    [ "$got" -eq 1 ] || curl -fsSL -o "$tmp/devrites.tar.gz" "https://github.com/$DEVRITES_REPO/archive/refs/tags/$tag.tar.gz" 2>/dev/null && got=1
-  fi
-  [ "$got" -eq 1 ] || curl -fsSL -o "$tmp/devrites.tar.gz" "https://github.com/$DEVRITES_REPO/archive/refs/heads/main.tar.gz" || { echo "error: could not download DevRites" >&2; exit 1; }
-  tar -C "$tmp" -xzf "$tmp/devrites.tar.gz" || { echo "error: could not extract DevRites tarball" >&2; exit 1; }
-  bundle="$(find "$tmp" -mindepth 1 -maxdepth 1 -type d | head -n1)"
-  [ -n "$bundle" ] && [ -f "$bundle/uninstall.sh" ] || { echo "error: extracted bundle is missing uninstall.sh" >&2; exit 1; }
-  export DEVRITES_BOOTSTRAPPED=1
-  exec bash "$bundle/uninstall.sh" "$@"
+  ref="${ref:-main}"
+  url="https://raw.githubusercontent.com/$DEVRITES_REPO/$ref/install.sh"
+  tmp="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/devrites-install.$$")"
+  curl -fsSL -o "$tmp" "$url" || { echo "error: could not download DevRites bootstrap from $url" >&2; rm -f "$tmp"; exit 1; }
+  bash "$tmp" uninstall "$@"
+  rc="$?"
+  rm -f "$tmp"
+  exit "$rc"
 fi
 
 INSTALL_LIB="$SELF_DIR/scripts/install-lib.sh"

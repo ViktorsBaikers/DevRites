@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/devrites/devrites/internal/devritespaths"
 )
 
 // ResolveRoot returns the .devrites directory to operate on. A non-empty
@@ -59,34 +61,11 @@ type Feature struct {
 // featureDir is where per-feature state lives under the root. work/ is the
 // canonical layout; features/ remains readable as a compatibility alias.
 func featureDir(root, slug string) string {
-	if ws := workspaceOverride(root, slug); ws != "" {
-		return ws
-	}
-	work := filepath.Join(root, "work", slug)
-	if _, err := os.Stat(work); err == nil {
-		return work
-	}
-	features := filepath.Join(root, "features", slug)
-	if _, err := os.Stat(features); err == nil {
-		return features
-	}
-	return work
+	return devritespaths.FeatureDir(root, slug)
 }
 
 func workspaceOverride(root, slug string) string {
-	raw := strings.TrimSpace(os.Getenv("DEVRITES_WORKSPACE"))
-	if raw == "" {
-		return ""
-	}
-	path := raw
-	if !filepath.IsAbs(path) {
-		path = filepath.Join(filepath.Dir(root), path)
-	}
-	path = filepath.Clean(path)
-	if slug == "" || filepath.Base(path) == slug {
-		return path
-	}
-	return ""
+	return devritespaths.WorkspaceOverride(root, slug)
 }
 
 // ListFeatures returns the slugs of every feature under root — directories under
