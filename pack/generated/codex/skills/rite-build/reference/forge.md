@@ -107,13 +107,23 @@ The durable record of the competition (template below). One per forged slice; ar
 feature.
 
 ### F7 — Clean up, then return to the cycle
-Remove the losing worktrees / delete the candidate branches:
+Remove only clean losing worktrees / delete their candidate branches. If a losing worktree is dirty,
+preserve it and record the path in `forge-report.md`; never `--force` away unlanded work.
 
 ```bash
 SLUG="$(cat .devrites/ACTIVE 2>/dev/null)"
 for C in A B; do
-  git worktree remove ".devrites/work/$SLUG/forge/cand-$C" --force 2>/dev/null || true
-  git branch -D "forge/$SLUG/cand-$C" 2>/dev/null || true
+  WT=".devrites/work/$SLUG/forge/cand-$C"
+  if [ -d "$WT/.git" ] || git -C "$WT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if git -C "$WT" diff --quiet && git -C "$WT" diff --cached --quiet; then
+      git worktree remove "$WT" 2>/dev/null || true
+      git branch -D "forge/$SLUG/cand-$C" 2>/dev/null || true
+    else
+      echo "preserved dirty forge worktree: $WT"
+    fi
+  else
+    git branch -D "forge/$SLUG/cand-$C" 2>/dev/null || true
+  fi
 done
 ```
 

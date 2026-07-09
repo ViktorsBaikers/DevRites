@@ -80,6 +80,14 @@ memory). Both hit the same skill — `/rite spec foo` ≡ `/rite-spec foo`.
 | — | RESUME | `/rite resolve` | [`/rite-resolve`](pack/.claude/skills/rite-resolve/SKILL.md) | answer a HITL gate, clears `Awaiting human`, resumes |
 | — | AUTO | `/rite autocomplete` | [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md) | run the whole lifecycle unattended (`--ship` to push) |
 
+Common utilities that sit outside the main lifecycle:
+
+| Utility | Menu form | Direct shortcut | Does |
+|---|---|---|---|
+| POV | `/rite pov` | [`/rite-pov`](pack/.claude/skills/rite-pov/SKILL.md) | project-grounded adopt / switch / reject verdict for an external option |
+| DOGFOOD | `/rite dogfood` | [`/rite-dogfood`](pack/.claude/skills/rite-dogfood/SKILL.md) | exploratory browser QA for real user journeys |
+| PR FEEDBACK | `/rite pr-feedback` | [`/rite-pr-feedback`](pack/.claude/skills/rite-pr-feedback/SKILL.md) | resolve GitHub PR review threads with evidence |
+
 If implementation reveals the plan is wrong, the **Spec Drift Guard** stops
 the build, records the drift, asks you when product behavior changes, and
 routes through [`/rite-plan repair`](pack/.claude/skills/rite-plan/SKILL.md)
@@ -115,7 +123,7 @@ rules carrier, workspace state, namespace map) →
 - [Modes — HITL & AFK](#modes--hitl--afk)
 - [Install](#install) — [npx / bash](#installing) · [upgrade](#upgrading-an-existing-install)
 - [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · Playwright MCP
-- [Skills](#skills) — 39 total · full catalogue in [`docs/skills.md`](docs/skills.md)
+- [Skills](#skills) — 42 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
 - [Engineering rules](#engineering-rules) · [Browser proof ladder](#browser-proof-ladder) · [Frontend & fullstack](#frontend--fullstack)
 - [Safety & scope](#safety--scope) · [Security model](#security-model)
@@ -299,7 +307,7 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **39 skills total** — the `rite` menu, 26 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library for shared references and explicit script exceptions. The workflow control plane runs through the installed `devrites-engine` binary; the npm `devrites` shim remains the install/update/uninstall entry point and can proxy engine subcommands when the binary is present. **Prefix convention:** `rite-*` is the user-facing command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/skills/devrites-lib/reference/standards/`; each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first step, and the other 26 rule files load on demand.
+The pack ships **42 skills total** — the `rite` menu, 29 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library for shared references and explicit script exceptions. The workflow control plane runs through the installed `devrites-engine` binary; the npm `devrites` shim remains the install/update/uninstall entry point and can proxy engine subcommands when the binary is present. **Prefix convention:** `rite-*` is the user-facing command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/skills/devrites-lib/reference/standards/`; each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first step, and the other 26 rule files load on demand.
 
 **Claude Code invocation.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally.
 
@@ -320,7 +328,7 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md` and mirror to `.agents/
 
 ### Full skill + agent inventory
 
-**Public `rite-*` skills (25)** — slash-command surface:
+**Public `rite-*` skills (29)** — slash-command surface:
 
 | Group | Skills |
 |---|---|
@@ -329,7 +337,7 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md` and mirror to `.agents/
 | Strategic (optional) | `rite-temper` — strategic spec review between spec and define; mandatory in `rite-autocomplete` |
 | Engineering (every feature) | `rite-vet` — engineering plan review between define and build; depth scales to stakes, never skipped; always in `rite-autocomplete` |
 | Resume / replan | `rite-resolve` · `rite-plan` |
-| Utility | `rite-status` · `rite-doctor` · `rite-customize` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
+| Utility | `rite-status` · `rite-doctor` · `rite-customize` · `rite-pov` · `rite-dogfood` · `rite-pr-feedback` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
 | Learning (optional) | `rite-learn` — cross-feature learning loop: mine shipped features for recurring mistakes + dismissed-finding classes, propose project-local lessons into `.devrites/learnings.md`, and promote recurring invariants to `.devrites/principles.md` |
 | Menu | `rite` |
 
@@ -523,7 +531,7 @@ devrites/
   scripts/             # install-lib (shim + pin helpers) · validate · validate-frontmatter · run-evals
                        # grade-feature · run-outcome-evals · devrites-detect · check-no-global-writes
                        # sync-version · build-release-tarball
-  pack/.claude/        # skills/  39 skills — 27 public + 12 internal          ─┐
+  pack/.claude/        # skills/  42 skills — 30 public + 12 internal          ─┐
                        # agents/  13 read-only + 1 writer (slice-wright)         ├─ the pack
                        # rules/   27 rule files + README index                   ┘
   installed projects   # .claude/ runtime assets; .agents/skills + .codex/agents

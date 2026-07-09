@@ -70,6 +70,15 @@ asserted. Doctor also warns when project extensions have artifacts but no option
 
 `devrites-engine snapshot [slug]` emits the `devrites.workspace.v1` JSON contract.
 
+## `profile` — stable repo facts cache
+
+`devrites-engine profile get|refresh` caches question-agnostic repo facts for grounding skills: top-level layout, manifests, and digests for root docs, ADRs, CI/deploy files, and `.devrites` principles/conventions. It never calls a model or the network.
+
+- `profile get` prints `HIT` + JSON, `MISS` + cache path, or `NO-CACHE` outside a git repo.
+- `profile refresh` derives the profile from disk and writes the cache.
+
+The cache lives under `/tmp/compound-engineering/devrites/repo-profile` by default and is invalidated when profile-input files are dirty or newly added. Skills still re-scan candidate-specific code fresh.
+
 ## `migrate` — legacy aliases and old layouts
 
 `devrites-engine migrate` preserves old workspaces while the canonical live location is

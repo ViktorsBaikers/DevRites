@@ -19,7 +19,8 @@ bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`,
 `user-invocable:` flag in each `SKILL.md`. All public utilities use the
 `rite-*` prefix (`rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`,
 `rite-doctor`, `rite-customize`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
-`rite-pressure-test`, `rite-autocomplete`, `rite-explain`); every `devrites-*` skill is
+`rite-pressure-test`, `rite-autocomplete`, `rite-explain`, `rite-pov`, `rite-dogfood`,
+`rite-pr-feedback`); every `devrites-*` skill is
 model-invoked.
 
 ## Surface lifecycle
@@ -40,7 +41,7 @@ lanes so it is either executed automatically or intentionally operator-owned:
 | Lane | Commands | Owner |
 |---|---|---|
 | Workflow gates | `preamble`, `build-readiness`, `spec-skeleton`, `spec-validate`, `check-acceptance`, `evidence-fresh`, `coverage`, `doubt-coverage`, `budget`, `test-integrity`, `mutation-gate`, `package-existence`, `review-integrity`, `footprint`, `reconcile`, `conventions`, `learnings`, `review-fingerprints`, `timeline`, `health`, `progress` | Called by the relevant `rite-*` workflow or shared reply contract. |
-| Workspace utilities | `status`, `snapshot`, `analyze`, `archive-search`, `resolve`, `close-out`, `stuck`, `tick-afk`, `ledger` | Called by a specific utility/phase when its condition is met. |
+| Workspace utilities | `status`, `snapshot`, `analyze`, `archive-search`, `resolve`, `close-out`, `stuck`, `tick-afk`, `ledger`, `profile` | Called by a specific utility/phase when its condition is met. |
 | Low-level completeness API | `readiness`, `seal` | Available for scripts/CI and documented engine use. Feature rites use stricter phase-specific gates (`build-readiness`, `/rite-seal` phase contract) instead of auto-running these weaker aggregate checks. |
 | Install / operator / CI | `install`, `update`, `uninstall`, `doctor`, `migrate`, `reindex`, `validate-pack`, `harness-matrix`, `extensions`, `overrides`, `hook`, `version` | Called by `npx devrites ...`, `/rite-doctor`, hooks, CI, or a human operator; do not auto-run during feature work just because the command exists. |
 
@@ -77,6 +78,9 @@ must say who runs them.
 | [`/rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | utility | `[--mine \| "<lesson>"]` | Mine archived features for recurring mistakes / dismissed-finding classes; propose project-local lessons into `.devrites/learnings.md` (loaded by the review skills before a fan-out). | archive + workspace | `.devrites/learnings.md` |
 | [`/rite-customize`](../pack/.claude/skills/rite-customize/SKILL.md) | utility | `[override <agent> \| extension <name>]` | Guided authoring for project-local reviewer overrides and extensions; writes the smallest artifact, then runs the matching validator. Explicit-only. | `.devrites/overrides`, `.devrites/extensions`, pack agents | `.devrites/overrides/<agent>.md` or `.devrites/extensions/<name>/...` |
 | [`/rite-explain`](../pack/.claude/skills/rite-explain/SKILL.md) | utility | `[concept \| diff: \| walkthrough: \| since: \| idea]` | The **human** half of the learning loop (complement of `/rite-learn`, which teaches the repo). Turns a concept, diff, idea, or window of the user's own recent work into a dense personal explainer; diff inputs can produce a concern-ordered human review walkthrough. Grounds off `seal.md` / `evidence.md` / the diff / the archive. Read-only against source. | workspace + archive + diff + code | `.devrites/explainers/<date>-<slug>/explainer.md` or `walkthrough.md` |
+| [`/rite-pov`](../pack/.claude/skills/rite-pov/SKILL.md) | utility | `[candidate/link/question]` | Project-grounded verdict on adopting, switching, rejecting, or ignoring a named external technology/library/platform/pattern. Clears a project floor and external floor before grading. | repo profile + code/docs + external sources | `decisions.md` or ADR only on request |
+| [`/rite-dogfood`](../pack/.claude/skills/rite-dogfood/SKILL.md) | utility | `[feature-slug\|branch] [--port N]` | Diff-scoped browser QA: map changed user journeys, run scenario matrix, fix small obvious breakages, write dogfood report. Explicit-only. | diff + app routes + browser | `.devrites/work/<slug>/dogfood.md` + safe fixes |
+| [`/rite-pr-feedback`](../pack/.claude/skills/rite-pr-feedback/SKILL.md) | utility | `[PR number\|thread URL]` | Resolve GitHub PR review feedback: fetch unresolved threads, judge centrally, fix valid items, reply, resolve. Explicit-only. | PR threads + code | code/tests + PR replies/resolutions |
 | [`/rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | utility | `[idea]` | Pressure-test a rough idea: 3–5 genuinely different options → converge on one with trade-off + hinge. | spec / surrounding code | `decisions.md` (optional) |
 | [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | — | Diagnose DevRites install + workspace health — install integrity, stale `.devrites/ACTIVE`, corrupt workspace, orphaned gates, broken hook wiring, and in-progress merge/rebase state. Read-only report. Triggers: "rite doctor", "is DevRites healthy", "why isn't the workflow picking up my feature". | install + workspace | — |
 
