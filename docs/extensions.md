@@ -45,8 +45,9 @@ devrites-engine extensions sync        # mirror valid extensions into .claude/ s
   an extension provides at least one artifact, and that no two extensions claim the same skill/agent
   name. If `component.yaml` is present, it must declare an npm-managed, project-local component:
   `distribution: npx-managed`, `scope: project-local`, project-local write roots only, and safety
-  fields that do **not** weaken gates or bypass `type-GO`. A name using a reserved pack prefix
-  (`rite-`, `devrites-`) is a collision **warning** — the pack owns those namespaces.
+  fields that do **not** weaken gates, bypass `type-GO`, or run executables. V2 manifests may
+  also declare `tier`, `requires`, `owns`, and `surface`; dependencies must be acyclic, and anything
+  in `owns` that collides with the first-party `rite-`/`devrites-` namespaces is refused.
 - **`sync`** validates first, then mirrors `skill/` → `.claude/skills/<name>/` and `agent.md` →
   `.claude/agents/<name>.md`, where the Claude harness discovers them. Idempotent. It refuses to
   sync a set that fails validation.
@@ -60,26 +61,26 @@ It is **not** a plugin package descriptor; it documents what the npm-installed e
 validate inside the current project.
 
 ```yaml
-schema_version: "1.0"
-component:
-  id: audit-lite              # must match .devrites/extensions/<name>/ when present
-  kind: extension             # extension | preset | bundle
-  version: 0.1.0
-  scope: project-local
-  distribution: npx-managed
-permissions:
-  writes:
-    - .devrites/**
-    - .claude/**
-    - .agents/**
-    - .codex/**
+schema_version: "1.1"
+kind: extension
+id: audit-lite              # must match .devrites/extensions/<name>/ when present
+version: 0.1.0
+tier: standard              # core | standard | full
+requires: []                # other local extension ids; acyclic
+owns:
+  skills: [audit-lite]
+  agents: []
+surface:
+  clusters: [review]
 safety:
   may_weaken_gates: false
-  requires_type_go_bypass: false
+  executable: false
 ```
 
-The validator refuses global homes (`~/.claude/**`, `~/.codex/**`), plugin-store distribution names,
-non-project scopes, and any manifest that claims it can weaken a gate or bypass `type-GO`.
+Legacy `component:` / `permissions:` manifests still validate. The validator refuses global homes
+(`~/.claude/**`, `~/.codex/**`), plugin-store distribution names, non-project scopes, unknown/cyclic
+extension dependencies, first-party ownership collisions, and any manifest that claims it can weaken
+a gate, run executables, or bypass `type-GO`.
 
 ### Workflow
 

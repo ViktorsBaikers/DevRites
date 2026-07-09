@@ -23,6 +23,16 @@ Expose a settings toggle with clear saved and error states.
 - [ ] AC-001: The settings page shows the current digest preference. (REQ-001)
 - [ ] AC-002: Toggling the control saves the new preference and announces success. (REQ-002)
 
+## Edge Coverage
+| Edge ID | Requirement/AC | Class | Status | Reason/backstop |
+| --- | --- | --- | --- | --- |
+| EDGE-001 | AC-002 | save failure | covered | AC-002 covers success; error state covered by Edge cases. |
+
+## Prohibitions (must-NOT)
+| Prohibition ID | Requirement/AC | Status | Test/evidence |
+| --- | --- | --- | --- |
+| PROH-001 | REQ-002 | resolved/judgment | Previous state remains visible on failure. |
+
 ## Edge cases
 - Save failure leaves the previous state visible and announces an error.
 

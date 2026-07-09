@@ -1,0 +1,20 @@
+{
+  "claude": {
+    "artifactLayout": [".claude/skills", ".claude/agents", ".claude/settings.json"],
+    "localConfigDir": ".claude",
+    "globalConfigDir": "~/.claude",
+    "hookSurface": ["SessionStart", "PreToolUse", "PostToolUse", "Stop", "SubagentStart"],
+    "commandStyle": "slash-skills",
+    "sandboxTier": "host",
+    "supportTier": "first-party"
+  },
+  "codex": {
+    "artifactLayout": [".agents/skills", ".codex/agents", ".codex/hooks.json", "AGENTS.md"],
+    "localConfigDir": ".codex",
+    "globalConfigDir": "~/.codex",
+    "hookSurface": ["SessionStart", "PreToolUse", "PostToolUse", "Stop", "SubagentStart"],
+    "commandStyle": "dollar-skills",
+    "sandboxTier": "host",
+    "supportTier": "first-party"
+  }
+}

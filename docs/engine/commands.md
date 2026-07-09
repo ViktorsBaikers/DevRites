@@ -124,7 +124,8 @@ is a header-identity upsert/delete, so it is **idempotent** — re-syncing a fea
   `/rite-adopt` to write deltas against the current contract). Exit `0` · `1` unknown capability.
 
 `spec-validate <dir> --against .devrites/specs` cross-checks a spec's delta classification against
-the ledger (ADDED must be new; MODIFIED/REMOVED must already exist) — a blocking spec-gate check.
+the ledger (ADDED must be new; MODIFIED/REMOVED must already exist) and validates Edge Coverage /
+Prohibitions tables — a blocking spec-gate check.
 
 ## `review-integrity` — the silent-reviewer gate
 

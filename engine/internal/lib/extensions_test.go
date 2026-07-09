@@ -42,6 +42,70 @@ func TestExtensionsValidateGood(t *testing.T) {
 	}
 }
 
+func TestExtensionsValidateComponentManifestV2Passes(t *testing.T) {
+	root := t.TempDir()
+	writeExtSkill(t, root, "base", "---\nname: base-skill\ndescription: Base.\n---\n")
+	writeExtSkill(t, root, "audit-lite", "---\nname: audit-lite\ndescription: Audit.\n---\n")
+	writeExtManifest(t, root, "base", `schema_version: "1.1"
+kind: extension
+id: base
+tier: core
+requires: []
+owns:
+  skills: [audit-lite]
+  agents: [house-reviewer]
+surface:
+  clusters: [review]
+safety:
+  may_weaken_gates: false
+  executable: false
+`)
+	writeExtManifest(t, root, "audit-lite", `schema_version: "1.1"
+kind: extension
+id: audit-lite
+tier: standard
+requires: [base]
+safety:
+  may_weaken_gates: false
+  executable: false
+`)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := Extensions(root, []string{"validate"}, stdout, stderr); code != 0 {
+		t.Fatalf("safe v2 manifests should pass, got %d\n%s%s", code, stdout, stderr)
+	}
+}
+
+func TestExtensionsValidateComponentManifestV2RejectsCyclesAndFirstPartyClaims(t *testing.T) {
+	root := t.TempDir()
+	writeExtSkill(t, root, "one", goodSkill)
+	writeExtSkill(t, root, "two", goodSkill)
+	writeExtManifest(t, root, "one", `schema_version: "1.1"
+kind: extension
+id: one
+requires: [two]
+owns:
+  skills: [rite-build]
+safety:
+  may_weaken_gates: false
+`)
+	writeExtManifest(t, root, "two", `schema_version: "1.1"
+kind: extension
+id: two
+requires: [one]
+safety:
+  may_weaken_gates: false
+`)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := Extensions(root, []string{"validate"}, stdout, stderr); code != 1 {
+		t.Fatalf("unsafe v2 manifests should fail, got %d\n%s%s", code, stdout, stderr)
+	}
+	for _, want := range []string{"collides with the first-party DevRites pack", "dependency graph must be acyclic"} {
+		if !contains(stderr.String(), want) {
+			t.Fatalf("want %q in stderr, got:\n%s", want, stderr.String())
+		}
+	}
+}
+
 func TestExtensionsValidateComponentManifestPasses(t *testing.T) {
 	root := t.TempDir()
 	writeExtSkill(t, root, "audit-lite", goodSkill)

@@ -162,6 +162,10 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    and an initial compact `state.md` (phase: spec) from
    [state-workspace](reference/state-workspace.md). When the feature touches
    UI, `design-brief.md` is written here too (by `devrites-ux-shape`, step 3a).
+   Populate `## Edge Coverage` with the deterministic boundary classes implied by each requirement
+   (empty/huge input, rounding, timezone, ordering, permissions, races, migration) and `## Prohibitions (must-NOT)`
+   only for bespoke constraints. If the feature touches model calls, RAG, agents, evals, or LLM output,
+   also create `ai-spec.md` from [ai-spec-template](reference/ai-spec-template.md).
 5a. **Score the spec prose — "unit tests for English"** ([spec-checklists](reference/spec-checklists.md)).
    Emit `.devrites/work/<slug>/checklists/<domain>.md` (one per requirement domain the spec covers:
    functional · data-model · interaction · non-functional · edge-cases). Each tests the *requirement
@@ -183,7 +187,7 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    devrites-engine spec-skeleton ".devrites/work/<slug>"
    devrites-engine spec-validate ".devrites/work/<slug>" --against .devrites/specs
    ```
-   When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when
+   Treat edge/prohibition findings as blocking just like grammar findings. When it passes, write `Spec gate: passed <iso>` to `state.md`. **Stop** when
    it passes.
 
 > **Mid-flight discipline.** When tempted to skip investigation depth, gap-closing, or placement decisions — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.

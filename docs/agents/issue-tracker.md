@@ -1,6 +1,6 @@
 # Issue tracker: Local Markdown
 
-Issues and PRDs for this repo live as markdown files in `.scratch/`.
+Issues and PRDs for this repo live as markdown files in `.scratch/`. For the end-to-end local issue → rites flow, see [issue-driven-rites.md](issue-driven-rites.md).
 
 ## Conventions
 

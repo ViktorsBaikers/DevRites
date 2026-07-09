@@ -9,15 +9,20 @@ import (
 )
 
 var specSkeletonSections = []string{
-	"Outcome",
-	"Scope",
-	"Constraints",
-	"Prior decisions",
-	"Task breakdown",
-	"Acceptance",
+	"Problem",
+	"Goal",
+	"Non-goals",
+	"Users / actors",
+	"Requirements",
+	"Acceptance criteria",
+	"Edge Coverage",
+	"Prohibitions (must-NOT)",
+	"Edge cases",
+	"Measurable success",
+	"Scope boundaries",
 }
 
-// SpecSkeleton checks that a spec.md declares the six top-level contract
+// SpecSkeleton checks that a spec.md declares the required top-level contract
 // sections. It is separate from SpecValidate so the structured acceptance grammar
 // output remains stable.
 func SpecSkeleton(arg, cwd string, stdout, stderr io.Writer) int {
@@ -44,7 +49,7 @@ func SpecSkeleton(arg, cwd string, stdout, stderr io.Writer) int {
 		return 3
 	}
 
-	fmt.Fprintf(stdout, "spec-skeleton: OK — %s: all six top-level sections present\n", rel)
+	fmt.Fprintf(stdout, "spec-skeleton: OK — %s: all required top-level sections present\n", rel)
 	return 0
 }
 

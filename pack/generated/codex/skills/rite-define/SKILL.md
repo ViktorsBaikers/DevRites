@@ -96,7 +96,9 @@ the plan:
    state coverage maps onto slices, not just acceptance criteria.
 4. **Map coverage** — every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
-   criterion.
+   criterion. Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`
+   rows into `traceability.md` and `test-plan.md`; unresolved rows go to `assumptions.md` with
+   their gate/owner.
 4a. **Parallel-lane sanity check** — after drafting `tasks.md` but before asking for plan
    approval, run the advisory lane planner:
    ```bash
@@ -163,6 +165,7 @@ Dependencies:               # external deps (libs, services), NOT slice ordering
 Existing to reuse / extend:   # what already exists (components / utils / hooks) the slice should use
 Rollback notes:
 Evidence required:
+Edge/Prohibition coverage: # EDGE/PROH IDs this slice proves or backstops
 ```
 
 > **Why Mode + Gate + Blocked by.** `Mode` lets `$rite-build` and `$rite-status` know

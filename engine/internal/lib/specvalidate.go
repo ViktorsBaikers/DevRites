@@ -30,6 +30,8 @@ var (
 	shallRe      = regexp.MustCompile(`(^|[^A-Za-z])(SHALL|MUST)([^A-Za-z]|$)`)
 	whenRe       = regexp.MustCompile(`(^|[^A-Za-z])WHEN([^A-Za-z]|$)`)
 	thenRe       = regexp.MustCompile(`(^|[^A-Za-z])THEN([^A-Za-z]|$)`)
+	reqIDRe      = regexp.MustCompile(`REQ-[0-9]+`)
+	acBareIDRe   = regexp.MustCompile(`AC-[0-9]+`)
 )
 
 // SpecValidate lints the structured grammar in a spec.md. arg is a workspace dir
@@ -46,6 +48,7 @@ func SpecValidate(arg, against, cwd string, stdout, stderr io.Writer) int {
 	}
 
 	reqs, scens, findings, err := lintSpec(spec)
+	findings = append(findings, lintEdgeProhibitionTables(spec)...)
 	if err != nil {
 		fmt.Fprintf(stderr, "spec-validate: %v\n", err)
 		return 2
@@ -53,7 +56,7 @@ func SpecValidate(arg, against, cwd string, stdout, stderr io.Writer) int {
 
 	rel := strings.TrimPrefix(spec, cwd+"/")
 
-	if reqs == 0 {
+	if reqs == 0 && len(findings) == 0 {
 		fmt.Fprintf(stdout, "spec-validate: %s uses the simple acceptance form (no \"### Requirement:\" blocks) — nothing to lint\n", rel)
 		return 0
 	}
@@ -82,6 +85,99 @@ func SpecValidate(arg, against, cwd string, stdout, stderr io.Writer) int {
 // lintSpec walks the spec once, mirroring the single awk pass in spec-validate.sh:
 // it counts requirements and scenarios and collects ERROR findings in encounter
 // order. `file` is used verbatim in the finding messages (the awk FILE var).
+func lintEdgeProhibitionTables(file string) []string {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil
+	}
+	text := string(data)
+	knownText := sectionBody(text, "Requirements") + "\n" + sectionBody(text, "Acceptance criteria")
+	known := map[string]bool{}
+	for _, id := range reqIDRe.FindAllString(knownText, -1) {
+		known[id] = true
+	}
+	for _, id := range acBareIDRe.FindAllString(knownText, -1) {
+		known[id] = true
+	}
+	var findings []string
+	for _, row := range markdownTableRows(sectionBody(text, "Edge Coverage")) {
+		if len(row) < 4 {
+			continue
+		}
+		id, target, status, reason := row[0], row[1], strings.ToLower(row[3]), ""
+		if len(row) > 4 {
+			reason = strings.TrimSpace(row[4])
+		}
+		if !tableTargetKnown(target, known) && !(status == "dismissed" && reason != "") {
+			findings = append(findings, fmt.Sprintf("ERROR:%s: Edge Coverage %q targets no known REQ/AC and is not dismissed with a reason", file, id))
+		}
+	}
+	for _, row := range markdownTableRows(sectionBody(text, "Prohibitions (must-NOT)")) {
+		if len(row) < 4 {
+			continue
+		}
+		id, target, status, proof := row[0], row[1], strings.ToLower(row[2]), strings.TrimSpace(row[3])
+		if !tableTargetKnown(target, known) {
+			findings = append(findings, fmt.Sprintf("ERROR:%s: Prohibition %q targets no known REQ/AC", file, id))
+		}
+		if status == "resolved/test" && proof == "" {
+			findings = append(findings, fmt.Sprintf("ERROR:%s: Prohibition %q is resolved/test but has no linked test/evidence", file, id))
+		}
+	}
+	return findings
+}
+
+func sectionBody(text, heading string) string {
+	start := -1
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		if strings.EqualFold(strings.TrimSpace(line), "## "+heading) {
+			start = i + 1
+			break
+		}
+	}
+	if start < 0 {
+		return ""
+	}
+	end := len(lines)
+	for i := start; i < len(lines); i++ {
+		t := strings.TrimSpace(lines[i])
+		if strings.HasPrefix(t, "## ") && !strings.HasPrefix(t, "###") {
+			end = i
+			break
+		}
+	}
+	return strings.Join(lines[start:end], "\n")
+}
+
+func markdownTableRows(body string) [][]string {
+	var rows [][]string
+	for _, line := range strings.Split(body, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "|") || !strings.HasSuffix(line, "|") || strings.Contains(line, "---") {
+			continue
+		}
+		parts := strings.Split(strings.Trim(line, "|"), "|")
+		for i := range parts {
+			parts[i] = strings.TrimSpace(parts[i])
+		}
+		if len(parts) > 0 && (strings.EqualFold(parts[0], "Edge ID") || strings.EqualFold(parts[0], "Prohibition ID")) {
+			continue
+		}
+		rows = append(rows, parts)
+	}
+	return rows
+}
+
+func tableTargetKnown(target string, known map[string]bool) bool {
+	for id := range known {
+		if strings.Contains(target, id) {
+			return true
+		}
+	}
+	return false
+}
+
 func lintSpec(file string) (reqCount, scenCount int, findings []string, err error) {
 	f, err := os.Open(file)
 	if err != nil {

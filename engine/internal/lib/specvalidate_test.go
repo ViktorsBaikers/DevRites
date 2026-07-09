@@ -53,6 +53,62 @@ The system SHALL export reports.
 	}
 }
 
+func TestSpecValidateEdgeAndProhibitionTables(t *testing.T) {
+	work := t.TempDir()
+	writeSpec(t, work, "ok", `## Requirements
+- REQ-001: The system MUST export.
+
+## Acceptance criteria
+- [ ] AC-001: export works. (REQ-001)
+
+## Edge Coverage
+| Edge ID | Requirement/AC | Class | Status | Reason/backstop |
+| --- | --- | --- | --- | --- |
+| EDGE-001 | AC-001 | empty input | covered | test: TestExportEmpty |
+| EDGE-002 | n/a | timezone | dismissed | no dates involved |
+
+## Prohibitions (must-NOT)
+| Prohibition ID | Requirement/AC | Status | Test/evidence |
+| --- | --- | --- | --- |
+| PROH-001 | REQ-001 | resolved/test | evidence.md#export |
+`)
+	writeSpec(t, work, "bad", `## Requirements
+- REQ-001: The system MUST export.
+
+## Acceptance criteria
+- [ ] AC-001: export works. (REQ-001)
+
+## Edge Coverage
+| Edge ID | Requirement/AC | Class | Status | Reason/backstop |
+| --- | --- | --- | --- | --- |
+| EDGE-001 | AC-999 | empty input | covered | |
+
+## Prohibitions (must-NOT)
+| Prohibition ID | Requirement/AC | Status | Test/evidence |
+| --- | --- | --- | --- |
+| PROH-001 | REQ-001 | resolved/test | |
+`)
+
+	for _, tc := range []struct {
+		name, slug, want string
+		code             int
+	}{
+		{name: "ok", slug: "ok", code: 0},
+		{name: "bad", slug: "bad", code: 1, want: "Edge Coverage \"EDGE-001\" targets no known REQ/AC"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+			code := SpecValidate(filepath.Join(work, tc.slug), "", work, stdout, stderr)
+			if code != tc.code {
+				t.Fatalf("code=%d want %d; stdout=%q stderr=%q", code, tc.code, stdout.String(), stderr.String())
+			}
+			if tc.want != "" && !strings.Contains(stderr.String(), tc.want) {
+				t.Fatalf("stderr=%q, want %q", stderr.String(), tc.want)
+			}
+		})
+	}
+}
+
 func TestSpecValidateAgainstLedger(t *testing.T) {
 	// Seed a capability ledger: theming already holds "Dark mode".
 	ledger := t.TempDir()
