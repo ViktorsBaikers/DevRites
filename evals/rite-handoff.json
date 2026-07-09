@@ -1,14 +1,112 @@
 {
   "skill": "rite-handoff",
-  "description": "Explicit-only evals for /rite-handoff — chat-only context sync and fresh-agent handoff writer.",
+  "description": "Explicit-only evals for /rite-handoff \u2014 chat-only context sync and fresh-agent handoff writer.",
   "queries": [
-    {"text": "/rite-handoff", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "$rite-handoff", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
-    {"text": "/rite handoff", "expected": "should_trigger", "rationale": "Menu-style invocation."},
-    {"text": "handoff", "expected": "should_not_trigger", "rationale": "Explicit-only utility; natural language should route through /rite or stay manual."},
-    {"text": "summarize this session for the next agent", "expected": "should_not_trigger", "rationale": "Natural-language handoff request is no longer model-invoked."},
-    {"text": "Where am I in the active feature?", "expected": "should_not_trigger", "rationale": "Status query is /rite-status."},
-    {"text": "Plan the next slice of the active feature", "expected": "should_not_trigger", "rationale": "Planning is /rite-define or /rite-plan."},
-    {"text": "Review the diff", "expected": "should_not_trigger", "rationale": "Review is /rite-review."}
+    {
+      "text": "/rite-handoff",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-handoff",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite handoff",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "$rite handoff next session focuses on seal",
+      "expected": "should_trigger",
+      "rationale": "Codex menu-style invocation."
+    },
+    {
+      "text": "handoff",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility; natural language should not auto-invoke."
+    },
+    {
+      "text": "summarize this session for the next agent",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only handoff request."
+    },
+    {
+      "text": "write a handoff doc for tomorrow",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only handoff request."
+    },
+    {
+      "text": "capture the context before compacting",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only handoff request."
+    },
+    {
+      "text": "Where am I in the active feature?",
+      "expected": "should_not_trigger",
+      "rationale": "Status query is /rite-status."
+    },
+    {
+      "text": "What should I do next in DevRites?",
+      "expected": "should_not_trigger",
+      "rationale": "Status/next-action query is /rite-status."
+    },
+    {
+      "text": "Plan the next slice of the active feature",
+      "expected": "should_not_trigger",
+      "rationale": "Planning is /rite-define or /rite-plan."
+    },
+    {
+      "text": "Review the diff",
+      "expected": "should_not_trigger",
+      "rationale": "Review is /rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Seal this feature",
+      "expected": "should_not_trigger",
+      "rationale": "Seal decision is /rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Ship it",
+      "expected": "should_not_trigger",
+      "rationale": "Shipping is /rite-ship.",
+      "owner": "rite-ship"
+    },
+    {
+      "text": "Fix the failing tests",
+      "expected": "should_not_trigger",
+      "rationale": "Debugging belongs to devrites-debug-recovery."
+    },
+    {
+      "text": "Explain this module to me",
+      "expected": "should_not_trigger",
+      "rationale": "Explanation is /rite-explain."
+    },
+    {
+      "text": "Start a new feature",
+      "expected": "should_not_trigger",
+      "rationale": "Spec is /rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Build slice 2",
+      "expected": "should_not_trigger",
+      "rationale": "Build is /rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Run the proof suite",
+      "expected": "should_not_trigger",
+      "rationale": "Proof is /rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Format this JSON",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic utility."
+    }
   ]
 }

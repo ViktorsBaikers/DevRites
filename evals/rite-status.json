@@ -1,14 +1,113 @@
 {
   "skill": "rite-status",
-  "description": "Explicit-only evals for /rite-status — read-only active feature report.",
+  "description": "Explicit-only evals for /rite-status \u2014 read-only active feature report.",
   "queries": [
-    {"text": "/rite-status", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "$rite-status", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
-    {"text": "/rite status", "expected": "should_trigger", "rationale": "Menu-style invocation."},
-    {"text": "Where am I in DevRites?", "expected": "should_not_trigger", "rationale": "Explicit-only utility."},
-    {"text": "What's the status of the active feature?", "expected": "should_not_trigger", "rationale": "Explicit-only utility."},
-    {"text": "Start a new feature.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Build slice 2.", "expected": "should_not_trigger", "rationale": "/rite-build."},
-    {"text": "List all DevRites commands.", "expected": "should_not_trigger", "rationale": "/rite menu."}
+    {
+      "text": "/rite-status",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-status",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite status",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "$rite status",
+      "expected": "should_trigger",
+      "rationale": "Codex menu-style invocation."
+    },
+    {
+      "text": "Where am I in DevRites?",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility."
+    },
+    {
+      "text": "What is the status of the active feature?",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility."
+    },
+    {
+      "text": "What should I do next?",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only status request."
+    },
+    {
+      "text": "Show open questions and blockers.",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only status request."
+    },
+    {
+      "text": "Start a new feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Build slice 2.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "List all DevRites commands.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite menu."
+    },
+    {
+      "text": "Resolve the open question with yes.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-resolve."
+    },
+    {
+      "text": "Run proof for the feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Review the diff.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Seal this feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Ship it.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-ship.",
+      "owner": "rite-ship"
+    },
+    {
+      "text": "Doctor my DevRites install.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-doctor.",
+      "owner": "rite-doctor"
+    },
+    {
+      "text": "Write a handoff.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-handoff."
+    },
+    {
+      "text": "Debug failing tests.",
+      "expected": "should_not_trigger",
+      "rationale": "devrites-debug-recovery."
+    },
+    {
+      "text": "Explain this file.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-explain."
+    }
   ]
 }

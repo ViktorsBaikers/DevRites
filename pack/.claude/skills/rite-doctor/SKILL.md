@@ -1,6 +1,6 @@
 ---
 name: rite-doctor
-description: Diagnose DevRites install and workspace health. Use when the user says "rite doctor", "check my DevRites install", or workflow pickup is broken. Not for app bugs.
+description: Doctor DevRites setup health: install, hooks, generated artifacts, ACTIVE/workspace pickup. Use when "rite doctor", "check my DevRites install", or workflow wiring is broken. Not for application bugs.
 argument-hint: "[--code]"
 user-invocable: true
 ---

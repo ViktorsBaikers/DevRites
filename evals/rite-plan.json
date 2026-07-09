@@ -12,7 +12,7 @@
     {"text": "Re-plan the feature given that the API contract changed.", "expected": "should_trigger", "rationale": "Re-plan post-contract-change."},
     {"text": "We need to separate backend and frontend contracts.", "expected": "should_trigger", "rationale": "Split mode."},
     {"text": "Start a new feature for OAuth login.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Plan from the approved spec.", "expected": "should_not_trigger", "rationale": "First plan = /rite-define."},
+    {"text": "Plan from the approved spec.", "expected": "should_not_trigger", "owner": "rite-define", "rationale": "First plan = /rite-define."},
     {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "/rite-build."},
     {"text": "Run the test suite for the active feature.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
     {"text": "Polish the dashboard.", "expected": "should_not_trigger", "rationale": "/rite-polish."},

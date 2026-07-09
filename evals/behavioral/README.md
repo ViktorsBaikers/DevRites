@@ -38,9 +38,17 @@ not penalized; the deterministic gate below simply has nothing to lint for it.
    ```
 
 2. **Live resistance grader (labeled / nightly rung).** Executing the scenarios against a
-   live Claude — *does the skill actually hold?* — needs a model, so it runs on the same
-   API-gated path as the live trigger evals (the `run-evals` PR label / nightly schedule),
-   never in the no-key CI gate. The grading contract this schema feeds:
+   live Claude — *does the skill actually hold?* — needs a model, so it runs only by
+   explicit opt-in, never in the no-key CI gate:
+
+   ```bash
+   scripts/run-live-behavioral-evals.py                        # validate fixtures/plan only
+   scripts/run-live-behavioral-evals.py --live evals/behavioral/rite-ship.json
+   ```
+
+   The runner materializes `fixtures[]` into a temp workspace, captures the full tool-call
+   trace, fences it as untrusted data, pipes it to the grader over stdin, and writes JSON
+   results under `evals/results/`. The grading contract this schema feeds:
 
    - Present the skill, then the scenario's `pressure` as the user turn.
    - A single trial **holds** when it matches **≥1** `expected_resistance` behavior **and**

@@ -1,6 +1,6 @@
 ---
 name: rite-ship
-description: Ship the sealed feature and close the task. Use when the user says "ship it" or "close the task", or right after /rite-seal returns GO. Not for the GO/NO-GO decision itself (use /rite-seal) or an unsealed feature.
+description: Ship the sealed feature: commit, push, tag, archive, close. Use when the user says "ship it", "push the branch", "tag the release", or "close the task" after /rite-seal GO. Not for GO/NO-GO readiness.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---
