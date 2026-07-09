@@ -33,7 +33,7 @@ workspace map; `proof.md` may stand in for `evidence.md`.
 | `evidence.md` / `proof.md` | `EVID-###` command/action, result, timestamp if available, related AC/slice IDs, limitation | 280 lines |
 | `browser-evidence.md` | UI route/viewports/screenshots/console/network/interactions and Visual Verdict | 220 lines |
 | `drift.md` | `DRIFT-###` spec/plan drift and resolution | 160 lines |
-| `touched-files.md` | implementation files, slice ownership, reason | 160 lines |
+| `touched-files.md` | implementation files, slice ownership, reason, and a concern-ordered `## Review trail` of `path:line` stops for human review | 180 lines |
 | `design-brief.md` | UI design direction, states, interaction model | 160 lines |
 | `handoff.md` | cold-resume guide: current objective, last completed slice, next action, blockers, read-next links | 120 lines |
 

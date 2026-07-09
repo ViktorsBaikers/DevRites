@@ -11,7 +11,7 @@ design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
 ## What to check (tests first)
 1. **Tests** — do they exist and prove the behavior + failure modes (empty, error,
    boundary, concurrency)? Would they fail if the code were wrong?
-2. **Correctness** — logic, edge cases, error paths, race conditions, wrong assumptions.
+2. **Correctness** — logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the mechanical [`edge-case trace`](edge-case-trace.md): explicit paths, fixed-set siblings, and deletion contracts.
 3. **Readability** — names, function size, control flow, intent obvious without the author.
 4. **Architecture** — right seam, coupling/cohesion, fits existing patterns, no premature
    abstraction. How does it fit the bigger system, not just what it does?
@@ -19,6 +19,7 @@ design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
 6. **Risk** — migrations, destructive changes, rollback.
 
 ## Give actionable feedback
+- Read surrounding source before severity: call sites, existing guards, and the nearest consumer decide impact; a diff hunk alone is not enough.
 - Label severity so the author knows what blocks: **Critical / Important / Suggestion /
   Nit / FYI**.
 - Be specific: point at the line, name the problem, propose the fix. Frame non-blocking

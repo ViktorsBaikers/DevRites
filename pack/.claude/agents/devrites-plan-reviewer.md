@@ -27,7 +27,7 @@ Then, if `.devrites/overrides/devrites-plan-reviewer.md` exists, read it as **pr
 ## Score the seven dimensions
 For each, **cite the evidence first** (the plan/spec line or its absence), then assign the band
 — never score first and rationalize after:
-1. **Architecture & boundaries** — component seams, coupling, data flow, single points of failure; does each new codepath have a named production failure scenario the plan accounts for?
+1. **Architecture & boundaries** — component seams, coupling, data flow, single points of failure; does each new codepath have a named production failure scenario the plan accounts for? Architecture decisions should be invariants with `Binds:` and `Prevents:` on medium+ calls.
 2. **Scope discipline & reuse** — minimum diff for the stated acceptance? Does anything that already exists solve a sub-problem (reuse vs rebuild)? Complexity smell (>8 files / >2 new services/modules) unjustified in the complexity gate?
 3. **Plan code-quality** — DRY across the planned slices, error-handling + edge cases named, no over- or under-engineering relative to the pack's rules; a built-in chosen over a custom roll where one exists.
 4. **Test-coverage design** — does every acceptance criterion map to a planned test? Are regressions (changed existing behavior with no covering test) flagged as critical? Right tool per path (unit / integration-E2E / eval)?

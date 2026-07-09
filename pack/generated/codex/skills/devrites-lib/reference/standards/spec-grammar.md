@@ -71,6 +71,11 @@ plan before `$rite-define` has chosen it. Name the input, the observable output,
 change — not the function, class, or library. Implementation belongs in `plan.md`, not the
 requirement.
 
+Acceptance criteria are **surface-anchored**: they observe the outermost surface the user or
+system can see. If the feature is an API contract, the THEN names the response shape/status; if it
+is a UI flow, the THEN names the visible state. Internal rows, helper calls, and emitted logs can
+support proof, but they are not the criterion unless the spec's surface is explicitly internal.
+
 ## How it composes (no new gate, no duplication)
 
 - **`AC-###` ids nest inside scenarios.** Tag each scenario's checkable line with an `AC-###` id

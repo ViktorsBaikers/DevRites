@@ -70,7 +70,7 @@ reconciles.
 
 Rules:
 
-- **One Task call per subagent.** Send them in a single message with multiple `Task` invocations so the runtime dispatches concurrently.
+- **One Task call per subagent, awaited in the same turn.** Send them in a single message with multiple `Task` invocations so the runtime dispatches concurrently. Never background/detach reviewers in `/rite-autocomplete` or AFK; there is no event loop that guarantees a later result is reconciled.
 - **No cross-pollination.** Each subagent gets only its narrow brief and the workspace path. Do not pass another subagent's findings into a sibling's prompt — that recreates the masking problem.
 - **No author context.** Do not include the caller's analysis or the user's framing of the change; the point is a fresh, adversarial read.
 - **Feature scope only.** Each subagent must stay inside `touched-files.md` + the diff.

@@ -222,7 +222,10 @@ gates.
    and fail-open (not a git repo / no manifest / stdlib-only import → rc 0).
 
    Then, from the wright's artifact, update `state.md`,
-   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). **Persist every
+   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). Add a `## Review trail`
+   to `touched-files.md`: group the slice's important `path:line` stops by concern (design intent,
+   not file order), 1–5 concerns, each stop under 15 words. This is for a later human walkthrough;
+   keep it factual and skip invented rationale. **Persist every
    `Decisions stood` entry from the wright's artifact to a `## Decisions stood` section in
    `decisions.md`, one line each ending `— doubt: <accept | reject-resolved | MISSING>`** — the
    verdict from step 4, or `MISSING` if step 4 was skipped for that entry. Write this ledger at
