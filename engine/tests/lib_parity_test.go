@@ -179,26 +179,36 @@ func TestSpecSkeleton(t *testing.T) {
 
 	writeSpec(t, work, "present", `# Contract
 
-## Outcome
+## Problem
 done
-## Scope
+## Goal
 done
-## Constraints
+## Non-goals
 done
-## Prior decisions
+## Users / actors
 done
-## Task breakdown
+## Requirements
 done
-## Acceptance
+## Acceptance criteria
+done
+## Edge Coverage
+done
+## Prohibitions (must-NOT)
+done
+## Edge cases
+done
+## Measurable success
+done
+## Scope boundaries
 done
 `)
 	writeSpec(t, work, "missing", `# Contract
 
-## Outcome
+## Problem
 done
-## Scope
+## Goal
 done
-## Task breakdown
+## Requirements
 done
 `)
 

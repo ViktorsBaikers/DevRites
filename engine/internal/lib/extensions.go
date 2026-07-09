@@ -182,6 +182,7 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 			}
 		}
 	}
+	problems = append(problems, validateExtensionDependencyGraph(exts)...)
 
 	if len(problems) > 0 {
 		fmt.Fprintf(stderr, "extensions: %d problem(s):\n", len(problems))
@@ -210,6 +211,9 @@ func validateComponentManifest(extName, path string) []string {
 	if manifest.kind != "" && manifest.kind != "extension" && manifest.kind != "preset" && manifest.kind != "bundle" {
 		problems = append(problems, fmt.Sprintf("%s: component kind must be extension, preset, or bundle", extName))
 	}
+	if manifest.tier != "" && manifest.tier != "core" && manifest.tier != "standard" && manifest.tier != "full" {
+		problems = append(problems, fmt.Sprintf("%s: tier must be core, standard, or full", extName))
+	}
 	if manifest.scope != "" && manifest.scope != "project-local" {
 		problems = append(problems, fmt.Sprintf("%s: scope must be project-local", extName))
 	}
@@ -227,23 +231,41 @@ func validateComponentManifest(extName, path string) []string {
 	if manifest.requiresTypeGOBypass == "true" {
 		problems = append(problems, fmt.Sprintf("%s: requires_type_go_bypass must be false", extName))
 	}
+	if manifest.executable == "true" {
+		problems = append(problems, fmt.Sprintf("%s: executable must be false", extName))
+	}
+	for _, dep := range manifest.requires {
+		if dep == extName {
+			problems = append(problems, fmt.Sprintf("%s: requires must not include itself", extName))
+		}
+	}
+	for _, owned := range append(manifest.ownsSkills, manifest.ownsAgents...) {
+		if reservedPackName(owned) {
+			problems = append(problems, fmt.Sprintf("%s: owns %q collides with the first-party DevRites pack", extName, owned))
+		}
+	}
 	return problems
 }
 
 type componentManifest struct {
 	componentID          string
 	kind                 string
+	tier                 string
 	scope                string
 	distribution         string
 	writes               []string
+	requires             []string
+	ownsSkills           []string
+	ownsAgents           []string
 	mayWeakenGates       string
 	requiresTypeGOBypass string
+	executable           string
 }
 
 func parseComponentManifest(content string) componentManifest {
 	var out componentManifest
 	section := ""
-	inWrites := false
+	listKey := ""
 	for _, line := range strings.Split(content, "\n") {
 		raw := strings.TrimSpace(strings.SplitN(line, "#", 2)[0])
 		if raw == "" {
@@ -251,15 +273,15 @@ func parseComponentManifest(content string) componentManifest {
 		}
 		if !strings.HasPrefix(line, " ") && strings.HasSuffix(raw, ":") {
 			section = strings.TrimSuffix(raw, ":")
-			inWrites = false
+			listKey = ""
 			continue
 		}
-		if section == "permissions" && raw == "writes:" {
-			inWrites = true
+		if strings.HasSuffix(raw, ":") {
+			listKey = strings.TrimSuffix(raw, ":")
 			continue
 		}
-		if inWrites && strings.HasPrefix(raw, "- ") {
-			out.writes = append(out.writes, strings.Trim(strings.TrimSpace(raw[2:]), `"'`))
+		if listKey != "" && strings.HasPrefix(raw, "- ") {
+			appendManifestList(&out, section, listKey, strings.Trim(strings.TrimSpace(raw[2:]), `"'`))
 			continue
 		}
 		key, val, ok := strings.Cut(raw, ":")
@@ -268,11 +290,19 @@ func parseComponentManifest(content string) componentManifest {
 		}
 		key = strings.TrimSpace(key)
 		val = strings.Trim(strings.TrimSpace(val), `"'`)
+		if vals := parseYAMLList(val); len(vals) > 0 {
+			for _, v := range vals {
+				appendManifestList(&out, section, key, v)
+			}
+			continue
+		}
 		switch section + "." + key {
-		case "component.id":
+		case ".id", "component.id":
 			out.componentID = val
-		case "component.kind":
+		case ".kind", "component.kind":
 			out.kind = val
+		case ".tier", "surface.tier":
+			out.tier = val
 		case "component.scope":
 			out.scope = val
 		case "component.distribution":
@@ -281,9 +311,86 @@ func parseComponentManifest(content string) componentManifest {
 			out.mayWeakenGates = val
 		case "safety.requires_type_go_bypass":
 			out.requiresTypeGOBypass = val
+		case "safety.executable":
+			out.executable = val
 		}
 	}
 	return out
+}
+
+func parseYAMLList(val string) []string {
+	val = strings.TrimSpace(val)
+	if !strings.HasPrefix(val, "[") || !strings.HasSuffix(val, "]") {
+		return nil
+	}
+	val = strings.Trim(val, "[]")
+	var out []string
+	for _, part := range strings.Split(val, ",") {
+		if v := strings.Trim(strings.TrimSpace(part), `"'`); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+func appendManifestList(out *componentManifest, section, key, val string) {
+	switch section + "." + key {
+	case ".requires":
+		out.requires = append(out.requires, val)
+	case "permissions.writes":
+		out.writes = append(out.writes, val)
+	case "owns.skills":
+		out.ownsSkills = append(out.ownsSkills, val)
+	case "owns.agents":
+		out.ownsAgents = append(out.ownsAgents, val)
+	}
+}
+
+func validateExtensionDependencyGraph(exts []extension) []string {
+	deps := map[string][]string{}
+	known := map[string]bool{}
+	for _, e := range exts {
+		known[e.name] = true
+		if e.manifest == "" {
+			continue
+		}
+		if content, ok := readFileOK(e.manifest); ok {
+			deps[e.name] = parseComponentManifest(content).requires
+		}
+	}
+	var problems []string
+	for name, reqs := range deps {
+		for _, dep := range reqs {
+			if !known[dep] {
+				problems = append(problems, fmt.Sprintf("%s: requires unknown extension %q", name, dep))
+			}
+		}
+	}
+	visiting, visited := map[string]bool{}, map[string]bool{}
+	var visit func(string) bool
+	visit = func(n string) bool {
+		if visiting[n] {
+			return true
+		}
+		if visited[n] {
+			return false
+		}
+		visiting[n], visited[n] = true, true
+		for _, dep := range deps[n] {
+			if visit(dep) {
+				return true
+			}
+		}
+		visiting[n] = false
+		return false
+	}
+	for _, e := range exts {
+		if visit(e.name) {
+			problems = append(problems, "extension dependency graph must be acyclic")
+			break
+		}
+	}
+	return problems
 }
 
 func allowedComponentWriteRoot(root string) bool {

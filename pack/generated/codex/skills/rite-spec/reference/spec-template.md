@@ -53,8 +53,28 @@ The system SHALL <core observable behavior>.
 #### Scenario: <name>
 - [ ] AC-003: **WHEN** <trigger> **THEN** <observable outcome>. (REQ-001)
 
+## Edge Coverage
+Deterministic boundary checklist for the requirements. Use `covered`, `backstop`,
+`dismissed`, or `unresolved`; every row targets an existing REQ/AC unless dismissed.
+
+| Edge ID | Requirement/AC | Class | Status | Reason/backstop |
+| --- | --- | --- | --- | --- |
+| EDGE-001 | AC-001 | empty/error/permission/race/migration | covered | <test/evidence or rationale> |
+
+## Prohibitions (must-NOT)
+Only bespoke constraints; generic security/privacy canon stays in project standards.
+Use `resolved/test`, `resolved/judgment`, `dismissed`, or `unresolved`.
+
+| Prohibition ID | Requirement/AC | Status | Test/evidence |
+| --- | --- | --- | --- |
+| PROH-001 | REQ-002 | resolved/test | <test/evidence link> |
+
 ## Edge cases
-- <Empty/error/permission/race/migration case.>
+- <Narrative notes for boundary cases not captured in the table.>
+
+## AI-SPEC annex
+- Required when the feature touches model calls, RAG, agents, evals, or LLM output: `ai-spec.md` from `ai-spec-template.md`.
+- Otherwise: not applicable.
 
 ## Measurable success
 - <Metric or observable proof that the feature worked.>
@@ -81,6 +101,9 @@ The system SHALL <core observable behavior>.
 - [ ] No blocking `[NEEDS CLARIFICATION]` markers remain.
 - [ ] Requirements use `REQ-###` IDs.
 - [ ] Acceptance criteria use `AC-###` IDs and are independently provable.
+- [ ] Edge Coverage rows target existing REQ/AC IDs or carry a dismissal reason.
+- [ ] Prohibitions have resolved/dismissed status; `resolved/test` rows link test/evidence.
+- [ ] AI features have `ai-spec.md`; non-AI work states the annex is not applicable.
 - [ ] Non-goals and scope boundaries are explicit.
 - [ ] Architecture/flows/decisions are linked out instead of duplicated here.
 - [ ] UI work has `design-brief.md`; non-UI work states UI is out of scope.

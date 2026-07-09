@@ -22,6 +22,16 @@ Import submitted files through the existing ingestion service.
 - [ ] AC-001: Submitted files enter the ingestion service queue. (REQ-001)
 - [ ] AC-002: Ingestion failures show an actionable error. (REQ-002)
 
+## Edge Coverage
+| Edge ID | Requirement/AC | Class | Status | Reason/backstop |
+| --- | --- | --- | --- | --- |
+| EDGE-001 | AC-002 | unsupported file | covered | AC-002 covers actionable failure. |
+
+## Prohibitions (must-NOT)
+| Prohibition ID | Requirement/AC | Status | Test/evidence |
+| --- | --- | --- | --- |
+| PROH-001 | REQ-001 | dismissed | no bespoke prohibition |
+
 ## Edge cases
 - Unsupported files fail before queueing.
 

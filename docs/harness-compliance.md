@@ -6,6 +6,8 @@ states — per surface — whether each supported harness enforces it natively,
 through an adapter, or only by instruction the model may ignore. It is the honest
 answer to "does DevRites work the same on Codex as on Claude Code?"
 
+Host facts live in `engine/internal/harness/hosts.json`; update that descriptor before adding another host.
+
 The table below is **generated**. The single source of truth is the frozen matrix
 in `engine/internal/harness/compliance.go`; regenerate this block with:
 

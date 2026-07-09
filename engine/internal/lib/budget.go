@@ -33,6 +33,7 @@ var budgetLimits = []struct {
 	{"feature.md", 120},          // legacy workspace map alias
 	{"brief.md", 80},             // objective and bounds
 	{"spec.md", 260},             // product WHAT/WHY and acceptance contract
+	{"ai-spec.md", 160},          // optional AI/LLM annex
 	{"architecture.md", 180},     // technical map
 	{"flows.md", 160},            // useful diagrams only
 	{"plan.md", 220},             // approach and slice strategy

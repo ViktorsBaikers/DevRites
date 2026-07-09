@@ -50,7 +50,7 @@ Read `review.md` and the latest reviewer outputs.
 | `Critical == 0` and `Important == 0` and acceptance proven and drift resolved | **GO** (proceed) |
 | `Critical == 0` and `Important > 0` and acceptance proven and drift resolved | Render interactive prompt: *"`Important > 0` open. Proceed to seal? [y/N]"*. Default **N**. If the user types `y`, GO; otherwise NO-GO with the open Important findings listed as blockers-by-policy. |
 | `Critical > 0` | **NO-GO**, no exceptions. List every Critical with `file:line` and fix direction. |
-| Any acceptance criterion unproven | **NO-GO**, list the unproven criteria. |
+| Any acceptance criterion unproven, or any bespoke `Prohibitions (must-NOT)` `resolved/test` row lacks linked proof | **NO-GO**, list the unproven criteria/prohibitions. |
 | Fan-out roster incomplete — `devrites-engine footprint roster` rc=3 (a reviewer neither dispatched nor skip-recorded) | **NO-GO** on the review's *completeness*, not a verdict on the diff: dispatch the missing reviewer or record a justified skip, then re-seal. Same standing as an unproven criterion. |
 | Silent review axis — `devrites-engine review-integrity` rc=1 (an adversarial axis in `review.md` reported nothing and justified nothing) | **Important** — a suspected rubber-stamp, on the review's *completeness* not the diff. Re-run that axis or record its `No-findings:` justification (`code-review.md` § Zero findings is suspicious), then re-seal. |
 | Visual Verdict `FAIL` on an acceptance-mapped UI criterion (`browser-evidence.md`) | **NO-GO** — an unmet acceptance criterion. A declared-state `FAIL` is Important (the `Important > 0` row). UI build with a `design-brief.md` but no Visual Verdict → Important evidence gap. No brief → not applicable. |

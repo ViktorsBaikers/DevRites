@@ -62,12 +62,13 @@ canonical files without deleting aliases.
 | --- | --- | --- | --- | --- | --- | --- |
 | `README.md` / `index.md` / `feature.md` | required | `/rite-spec` | always first | 120 lines | current phase, status, next action, artifact map, read-next table, blocking gates, last updated | Must not duplicate full spec/plan/evidence. |
 | `brief.md` | required | `/rite-spec` | clarify objective | 80 lines | Objective, Non-goals, Success definition | One-screen request and scope summary. |
-| `spec.md` | required | `/rite-spec` | product contract | 260 lines | Problem, Goal, Non-goals, Users / actors, Requirements, Acceptance criteria, Edge cases, Measurable success, Scope boundaries | Must use stable `REQ-###` and `AC-###`; no deep implementation details. |
+| `spec.md` | required | `/rite-spec` | product contract | 260 lines | Problem, Goal, Non-goals, Users / actors, Requirements, Acceptance criteria, Edge Coverage, Prohibitions (must-NOT), Edge cases, Measurable success, Scope boundaries | Must use stable `REQ-###` and `AC-###`; no deep implementation details. |
 | `architecture.md` | required from plan | `/rite-define` | placement/integration work | 180 lines | Owning module / layer, Integration points, Data / API / events, Dependencies, Risks, Affected boundaries | Carries topology and boundaries, not product acceptance. |
 | `flows.md` | optional | `/rite-spec` or `/rite-define` | lifecycle/state/sequence/data flow is hard to infer | 160 lines | diagram-specific headings | Mermaid only when it clarifies behavior; each diagram states why it matters and related IDs. |
 | `decisions.md` | required | all phases | non-trivial product/technical choice | 200 lines | Decision log | Entries use `DEC-###`, status, context, options, decision, consequences, related IDs. |
 | `assumptions.md` | required | all phases | assumption is not yet verified | 160 lines | Assumption register | Confidence, owner, and validation status are explicit. |
 | `questions.md` | required | all phases | human input or gate | 180 lines | Question register | `Q-###`; no open blocking/escalating questions before plan/build/prove gates. |
+| `ai-spec.md` | conditional | `/rite-spec` or `/rite-define` | AI/LLM annex | 160 lines | AI surface, model/runtime choice, evals, guardrails, monitoring | Required only for model calls, RAG, agents, evals, or LLM output. |
 | `plan.md` | required from plan | `/rite-define` | implementation approach | 220 lines | Approach, Slice strategy, Validation strategy, Rollback | HOW lives here, not in `spec.md`. |
 | `tasks.md` | required from plan | `/rite-define` | build one slice | 280 lines | Slice index | Each `SLICE-###` has goal, AC IDs, likely files, tests/proof, mode, gate, dependencies, done condition. |
 | `traceability.md` | required from plan | `/rite-define` | coverage/review/seal | 220 lines | Coverage matrix | Matrix maps AC/REQ ID, slice IDs, test/proof, evidence ID, touched files, status. |

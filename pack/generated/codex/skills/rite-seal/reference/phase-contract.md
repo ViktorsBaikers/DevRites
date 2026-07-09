@@ -18,6 +18,7 @@ Run the engine gates at these moments:
 ```bash
 devrites-engine preamble
 
+devrites-engine spec-validate .devrites/work/<slug>; echo "spec-validate rc=$?"
 devrites-engine check-acceptance .devrites/work/<slug>; echo "check-acceptance rc=$?"
 devrites-engine evidence-fresh <slug>; echo "evidence-fresh rc=$?"
 devrites-engine doubt-coverage <slug>; echo "doubt-coverage rc=$?"
@@ -54,7 +55,9 @@ only; `$rite-ship` owns irreversible git/publish/deploy actions.
    (codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods LSP / Read/Grep/Glob — see `.agents/skills/devrites-lib/reference/standards/tooling.md`), use it for
    blast-radius checks on the final diff in step 5; context7 if available can confirm a current
    external-API signature a reviewer flags.
-2. Check **acceptance criteria one by one** — [final-evidence](final-evidence.md).
+2. Check **acceptance criteria one by one** — first run `devrites-engine spec-validate .devrites/work/<slug>`;
+   unresolved or unproven `resolved/test` prohibitions are a NO-GO until the linked evidence exists.
+   Then use [final-evidence](final-evidence.md).
    Each gets a checkbox + the evidence that proves it (or "unproven"). Verify each criterion
    **independently against the evidence artifact** — the slice report or the build narrative is not
    proof; the `devrites-spec-reviewer` + `devrites-test-analyst` fan-out in step 7 is the
