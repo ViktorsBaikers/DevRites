@@ -150,19 +150,41 @@ func isSourceFile(f string) bool {
 	}
 }
 
-// isTestFile recognises a path as a test by its filename/directory conventions
-// across the common ecosystems (JS/TS, Python, Go, Rust, JUnit).
+// testDirSegments are directory names that mark everything beneath them as test
+// code, across the common ecosystems (JS/TS, Python, Go, Rust, JUnit).
+var testDirSegments = map[string]bool{
+	"test": true, "tests": true, "spec": true, "specs": true,
+	"__tests__": true, "__test__": true,
+}
+
+// isTestFile recognises a path as a test by its filename/directory conventions.
+// Markers must land on a basename or a whole path segment: matching "test" or
+// "spec" as a bare substring would classify ordinary source ("internal/latest/",
+// "internal/respect/") as tests, deleting them would then trip the WEAKENED gate,
+// and they would never count toward the verification-gap advisory.
 func isTestFile(f string) bool {
+	f = filepath.ToSlash(f)
+	base := filepath.Base(f)
+
 	for _, marker := range []string{
-		"_test.", ".test.", ".spec.", "_spec.", "Test.", "Tests.", "Spec.",
-		"/__tests__/", "/tests/", "/test/", "/spec/",
-		"test", "spec",
+		"_test.", ".test.", "_tests.", ".tests.",
+		"_spec.", ".spec.", "_specs.", ".specs.",
+		"Test.", "Tests.", "Spec.", "Specs.",
 	} {
-		if strings.Contains(f, marker) {
+		if strings.Contains(base, marker) {
 			return true
 		}
 	}
-	return strings.HasPrefix(f, "test_")
+	if strings.HasPrefix(base, "test_") || strings.HasPrefix(base, "spec_") {
+		return true
+	}
+
+	for _, seg := range strings.Split(filepath.Dir(f), "/") {
+		if testDirSegments[seg] {
+			return true
+		}
+	}
+	return false
 }
 
 // countMatches counts the non-overlapping matches of re in text.
