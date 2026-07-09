@@ -62,7 +62,7 @@ func cmdValidatePack(args []string, stdout, stderr io.Writer) int {
 			return nil
 		}
 		rel, _ := filepath.Rel(dir, path)
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(path) // #nosec G122 -- validation walk over the pack dir the operator passed in; a symlink race requires an attacker already writing to that checkout
 		if err != nil {
 			return nil
 		}

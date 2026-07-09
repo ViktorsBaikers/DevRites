@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -52,7 +53,7 @@ type SpecDoc struct {
 func ParseSpec(file string) (*SpecDoc, error) {
 	f, err := os.Open(file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read spec: %w", err)
 	}
 	defer f.Close()
 
@@ -64,7 +65,7 @@ func ParseSpec(file string) (*SpecDoc, error) {
 		lines = append(lines, sc.Text())
 	}
 	if err := sc.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan %s: %w", file, err)
 	}
 
 	doc := &SpecDoc{}

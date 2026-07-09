@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -150,7 +151,7 @@ func parseArgs(args []string, opts *Options) error {
 		if errors.Is(err, flag.ErrHelp) {
 			return errHelp
 		}
-		return err
+		return fmt.Errorf("parse flags: %w", err)
 	}
 	if flags.NArg() > 0 {
 		return fmt.Errorf("unknown option: %s (try --help)", flags.Arg(0))
@@ -229,7 +230,7 @@ func Apply(opts Options) error {
 	}
 	r, err := newRunner(opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("prepare installer: %w", err)
 	}
 	if opts.Mode == ModeUninstall {
 		return r.uninstall()
@@ -240,7 +241,7 @@ func Apply(opts Options) error {
 func newRunner(opts Options) (*runner, error) {
 	target, err := filepath.Abs(opts.Target)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resolve target %s: %w", opts.Target, err)
 	}
 	info, err := os.Stat(target)
 	if err != nil {
@@ -251,7 +252,7 @@ func newRunner(opts Options) (*runner, error) {
 	}
 	target, err = filepath.EvalSymlinks(target)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resolve symlinks for %s: %w", target, err)
 	}
 	if isGlobalTarget(target) {
 		return nil, fmt.Errorf("refusing to target a global agent home. DevRites is project-local; choose a project directory")
@@ -273,7 +274,7 @@ func newRunner(opts Options) (*runner, error) {
 	r := &runner{opts: opts, target: target, payload: payload, payloadFS: os.DirFS(payload), source: source, prev: map[string]bool{}, records: map[string]string{}}
 	if opts.Mode != ModeUninstall {
 		if err := r.validatePayload(); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("validate payload: %w", err)
 		}
 	}
 	r.prev = readManifest(filepath.Join(target, ManifestName))
@@ -318,7 +319,7 @@ func (r *runner) validatePayload() error {
 		return fmt.Errorf("generated install payload not found; pass --payload-dir or run scripts/build-host-artifacts.sh")
 	}
 	if err := hostpack.ValidatePayload(r.payloadFS, r.opts.WithCodex); err != nil {
-		return fmt.Errorf("generated install payload %s under %s", err, r.payload)
+		return fmt.Errorf("generated install payload under %s: %w", r.payload, err)
 	}
 	return nil
 }
@@ -346,50 +347,50 @@ func (r *runner) install() error {
 
 	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex) {
 		if err := r.installTree(tree.PayloadPrefix, tree.TargetPrefix); err != nil {
-			return err
+			return fmt.Errorf("install tree %s: %w", tree.TargetPrefix, err)
 		}
 	}
 	if r.opts.WithSkills && r.opts.AliasMode == "all" {
 		for _, alias := range hostpack.Aliases {
 			data, err := hostpack.RenderAliasSkill(alias)
 			if err != nil {
-				return err
+				return fmt.Errorf("render alias skill %s: %w", alias.Name, err)
 			}
 			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex) {
 				if err := r.installData(data, rel); err != nil {
-					return err
+					return fmt.Errorf("install alias: %w", err)
 				}
 			}
 		}
 	}
 	for _, merge := range hostpack.MarkerMerges(r.opts.WithSkills, r.opts.WithCodex) {
 		if err := r.mergeMarkerFile(merge); err != nil {
-			return err
+			return fmt.Errorf("merge %s: %w", merge.TargetRel, err)
 		}
 	}
 	for _, merge := range hostpack.JSONMerges(r.opts.WithSkills, r.opts.WithCodex) {
 		if err := r.mergeCodexHooks(merge); err != nil {
-			return err
+			return fmt.Errorf("merge %s: %w", merge.TargetRel, err)
 		}
 	}
 	if r.opts.WithSkills {
 		if err := r.seedClaudeSettings(); err != nil {
-			return err
+			return fmt.Errorf("seed claude settings: %w", err)
 		}
 	}
 	if err := r.seedDevrites(); err != nil {
-		return err
+		return fmt.Errorf("seed .devrites: %w", err)
 	}
 	if err := r.pruneDropped(); err != nil {
-		return err
+		return fmt.Errorf("prune dropped files: %w", err)
 	}
 	if !r.opts.DryRun {
 		if err := r.writeManifest(); err != nil {
-			return err
+			return fmt.Errorf("write manifest: %w", err)
 		}
 	}
 	if err := r.installBinary(); err != nil {
-		return err
+		return fmt.Errorf("install engine binary: %w", err)
 	}
 
 	fmt.Fprintln(r.opts.Stdout)
@@ -405,14 +406,14 @@ func (r *runner) install() error {
 func (r *runner) installTree(srcPrefix, relPrefix string) error {
 	return fs.WalkDir(r.payloadFS, srcPrefix, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("walk payload %s: %w", path, err)
 		}
 		if d.IsDir() {
 			return nil
 		}
 		rel, err := filepath.Rel(srcPrefix, path)
 		if err != nil {
-			return err
+			return fmt.Errorf("resolve relative path for %s: %w", path, err)
 		}
 		return r.installFile(path, filepath.ToSlash(filepath.Join(relPrefix, rel)))
 	})
@@ -421,7 +422,7 @@ func (r *runner) installTree(srcPrefix, relPrefix string) error {
 func (r *runner) installFile(src, rel string) error {
 	data, err := fs.ReadFile(r.payloadFS, src)
 	if err != nil {
-		return err
+		return fmt.Errorf("read payload %s: %w", src, err)
 	}
 	return r.installData(data, rel)
 }
@@ -479,7 +480,7 @@ func (r *runner) installMarker(rel, text string) error {
 func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 	block, err := fs.ReadFile(r.payloadFS, merge.PayloadRel)
 	if err != nil {
-		return err
+		return fmt.Errorf("read payload %s: %w", merge.PayloadRel, err)
 	}
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
 	if r.opts.DryRun {
@@ -499,7 +500,7 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 			next = hostpack.MergeMarkerBlock(current, block, merge.Begin, merge.End)
 		}
 		if err := fsutil.WriteFileAtomic(dest, next, 0o644); err != nil {
-			return err
+			return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 		}
 	}
 	return r.installMarker(merge.MarkerRel, merge.MarkerText)
@@ -509,7 +510,7 @@ func (r *runner) mergeCodexHooks(merge hostpack.JSONMerge) error {
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
 	devrites, err := readJSONFS(r.payloadFS, merge.PayloadRel)
 	if err != nil {
-		return err
+		return fmt.Errorf("load hooks payload: %w", err)
 	}
 	if r.opts.DryRun {
 		fmt.Fprintf(r.opts.Stdout, "  [merge] %s\n", merge.DryRunText)
@@ -521,11 +522,11 @@ func (r *runner) mergeCodexHooks(merge hostpack.JSONMerge) error {
 	}
 	data, err := json.MarshalIndent(next, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("encode merged hooks: %w", err)
 	}
 	data = append(data, '\n')
 	if err := fsutil.WriteFileAtomic(dest, data, 0o644); err != nil {
-		return err
+		return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 	}
 	return r.installMarker(merge.MarkerRel, merge.MarkerText)
 }
@@ -543,7 +544,7 @@ func (r *runner) seedClaudeSettings() error {
 	}
 	data, err := fs.ReadFile(r.payloadFS, "claude/settings.json")
 	if err != nil {
-		return err
+		return fmt.Errorf("read payload claude/settings.json: %w", err)
 	}
 	return fsutil.WriteFileAtomic(dest, data, 0o644)
 }
@@ -551,10 +552,10 @@ func (r *runner) seedClaudeSettings() error {
 func (r *runner) seedDevrites() error {
 	readme, err := hostpack.RenderDevritesReadme()
 	if err != nil {
-		return err
+		return fmt.Errorf("render readme: %w", err)
 	}
 	if err := r.installData(readme, ".devrites/README.md"); err != nil {
-		return err
+		return fmt.Errorf("install readme: %w", err)
 	}
 	active := filepath.Join(r.target, ".devrites", "ACTIVE")
 	if exists(active) {
@@ -565,14 +566,14 @@ func (r *runner) seedDevrites() error {
 		return nil
 	}
 	if err := os.MkdirAll(filepath.Dir(active), 0o755); err != nil {
-		return err
+		return fmt.Errorf("create %s: %w", filepath.Dir(active), err)
 	}
 	f, err := os.OpenFile(active, os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		if os.IsExist(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("create %s: %w", active, err)
 	}
 	return f.Close()
 }
@@ -609,7 +610,7 @@ func (r *runner) pruneDropped() error {
 				}
 			}
 			if err := os.Remove(dead); err != nil && !os.IsNotExist(err) {
-				return err
+				return fmt.Errorf("remove %s: %w", rel, err)
 			}
 			pruneEmptyDirs(filepath.Dir(dead), r.target)
 			fmt.Fprintf(r.opts.Stdout, "  [prune] %s\n", rel)
@@ -687,12 +688,12 @@ func (r *runner) uninstall() error {
 		}
 		if merge.TargetRel == hostpack.CodexHooksMerge.TargetRel {
 			if err := r.stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
-				return err
+				return fmt.Errorf("strip hooks from %s: %w", merge.TargetRel, err)
 			}
 			continue
 		}
 		if err := stripMarkerPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End); err != nil {
-			return err
+			return fmt.Errorf("strip marker block from %s: %w", merge.TargetRel, err)
 		}
 	}
 
@@ -706,7 +707,7 @@ func (r *runner) uninstall() error {
 			if r.opts.DryRun {
 				fmt.Fprintf(r.opts.Stdout, "  [remove] %s\n", rel)
 			} else if err := os.Remove(dest); err != nil && !os.IsNotExist(err) {
-				return err
+				return fmt.Errorf("remove %s: %w", rel, err)
 			}
 			dirs = append(dirs, filepath.Dir(dest))
 			r.stats.removed++
@@ -724,7 +725,7 @@ func (r *runner) uninstall() error {
 		}
 	}
 	if err := r.removeBinary(); err != nil {
-		return err
+		return fmt.Errorf("remove engine binary: %w", err)
 	}
 	fmt.Fprintln(r.opts.Stdout)
 	if r.opts.DryRun {
@@ -745,10 +746,10 @@ func (r *runner) uninstall() error {
 func (r *runner) stripHooksPath(path string) error {
 	current, err := readJSON(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("load hooks config: %w", err)
 	}
 	next := stripDevritesHooks(current)
 	if len(next) == 0 {
@@ -756,7 +757,7 @@ func (r *runner) stripHooksPath(path string) error {
 	}
 	data, err := json.MarshalIndent(next, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("encode hooks config: %w", err)
 	}
 	data = append(data, '\n')
 	if string(bytes.TrimSpace(data)) == "{}" {
@@ -768,7 +769,7 @@ func (r *runner) stripHooksPath(path string) error {
 func runUpdate(opts Options) error {
 	target, err := filepath.Abs(opts.Target)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve target %s: %w", opts.Target, err)
 	}
 	mf := filepath.Join(target, ManifestName)
 	if !exists(mf) {
@@ -780,7 +781,7 @@ func runUpdate(opts Options) error {
 	}
 	latestTag, err := resolveUpdateTag(opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve update tag: %w", err)
 	}
 	latest := strings.TrimPrefix(latestTag, "v")
 	fmt.Fprintln(opts.Stdout, "DevRites update")
@@ -800,13 +801,13 @@ func runUpdate(opts Options) error {
 	}
 	source, cleanup, err := acquireUpdateBundle(latestTag, opts.Stdout)
 	if err != nil {
-		return err
+		return fmt.Errorf("acquire update %s: %w", latestTag, err)
 	}
 	defer cleanup()
 	payload := filepath.Join(source, "pack", "generated")
 	if !validPayload(payload) {
 		if err := buildHostArtifacts(source, payload); err != nil {
-			return err
+			return fmt.Errorf("prepare update payload: %w", err)
 		}
 	}
 	installFlags := manifestHeader(mf, "devrites-flags")
@@ -815,7 +816,7 @@ func runUpdate(opts Options) error {
 	next.Stderr = opts.Stderr
 	if installFlags != "" {
 		if err := parseArgs(strings.Fields(installFlags), &next); err != nil {
-			return err
+			return fmt.Errorf("parse manifest install flags: %w", err)
 		}
 	}
 	next.Target = target
@@ -875,7 +876,7 @@ func resolveUpdateTag(opts Options) (string, error) {
 func acquireUpdateBundle(tag string, stdout io.Writer) (string, func(), error) {
 	tmp, err := os.MkdirTemp("", "devrites-update-*")
 	if err != nil {
-		return "", func() {}, err
+		return "", func() {}, fmt.Errorf("create temp dir: %w", err)
 	}
 	cleanup := func() { _ = os.RemoveAll(tmp) }
 	artifact := fmt.Sprintf("devrites-%s.tar.gz", tag)
@@ -921,7 +922,7 @@ func acquireUpdateBundle(tag string, stdout io.Writer) (string, func(), error) {
 func verifySHA256(path, sumPath string) error {
 	data, err := os.ReadFile(sumPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("read checksum %s: %w", sumPath, err)
 	}
 	want := strings.Fields(string(data))
 	if len(want) == 0 {
@@ -929,7 +930,7 @@ func verifySHA256(path, sumPath string) error {
 	}
 	body, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("read artifact %s: %w", path, err)
 	}
 	got := fmt.Sprintf("%x", sha256.Sum256(body))
 	if got != want[0] {
@@ -941,12 +942,12 @@ func verifySHA256(path, sumPath string) error {
 func extractUpdateBundle(tarball, tmp string, cleanup func()) (string, func(), error) {
 	if err := extractTarGz(tarball, tmp); err != nil {
 		cleanup()
-		return "", func() {}, err
+		return "", func() {}, fmt.Errorf("extract update bundle: %w", err)
 	}
 	entries, err := os.ReadDir(tmp)
 	if err != nil {
 		cleanup()
-		return "", func() {}, err
+		return "", func() {}, fmt.Errorf("list extracted bundle: %w", err)
 	}
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -964,18 +965,18 @@ func extractUpdateBundle(tarball, tmp string, cleanup func()) (string, func(), e
 func extractTarGz(tarball, dest string) error {
 	f, err := os.Open(tarball)
 	if err != nil {
-		return err
+		return fmt.Errorf("open update bundle: %w", err)
 	}
 	defer f.Close()
 	gz, err := gzip.NewReader(f)
 	if err != nil {
-		return err
+		return fmt.Errorf("decompress %s: %w", tarball, err)
 	}
 	defer gz.Close()
 	tr := tar.NewReader(gz)
 	root, err := filepath.Abs(dest)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve %s: %w", dest, err)
 	}
 	for {
 		hdr, err := tr.Next()
@@ -983,7 +984,7 @@ func extractTarGz(tarball, dest string) error {
 			return nil
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("read tar entry: %w", err)
 		}
 		name := filepath.Clean(hdr.Name)
 		if name == "." || filepath.IsAbs(name) || strings.HasPrefix(name, ".."+string(os.PathSeparator)) || name == ".." {
@@ -995,24 +996,30 @@ func extractTarGz(tarball, dest string) error {
 		}
 		switch hdr.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, fs.FileMode(hdr.Mode)&0o777); err != nil {
-				return err
+			if err := os.MkdirAll(target, fs.FileMode(hdr.Mode&0o777)); err != nil {
+				return fmt.Errorf("create dir %s: %w", name, err)
 			}
 		case tar.TypeReg:
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-				return err
+				return fmt.Errorf("create dir for %s: %w", name, err)
 			}
-			out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fs.FileMode(hdr.Mode)&0o777)
+			out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fs.FileMode(hdr.Mode&0o777))
 			if err != nil {
-				return err
+				return fmt.Errorf("create %s: %w", name, err)
 			}
-			_, copyErr := io.Copy(out, tr)
+			// Cap per-entry extraction so a crafted bundle can't decompression-bomb
+			// the host; real update bundles are a few MB.
+			const maxUpdateEntryBytes = int64(1) << 30
+			written, copyErr := io.Copy(out, io.LimitReader(tr, maxUpdateEntryBytes+1))
 			closeErr := out.Close()
 			if copyErr != nil {
-				return copyErr
+				return fmt.Errorf("extract %s: %w", name, copyErr)
+			}
+			if written > maxUpdateEntryBytes {
+				return fmt.Errorf("entry %s in update bundle exceeds %d bytes", hdr.Name, maxUpdateEntryBytes)
 			}
 			if closeErr != nil {
-				return closeErr
+				return fmt.Errorf("close %s: %w", name, closeErr)
 			}
 		default:
 			continue
@@ -1025,11 +1032,13 @@ func buildHostArtifacts(source, payload string) error {
 	if !exists(script) {
 		return fmt.Errorf("generated install payload missing at %s and no builder found at %s", payload, script)
 	}
-	cmd := exec.Command("bash", script)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "bash", script)
 	cmd.Dir = source
 	cmd.Env = append(os.Environ(), "DEVRITES_HOST_ARTIFACT_DIR="+payload)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("build generated install payload: %v: %s", err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("build generated install payload: %w: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }
@@ -1048,7 +1057,7 @@ func stripMarkerPath(path, begin, end string) error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("read %s: %w", path, err)
 	}
 	var out strings.Builder
 	inBlock := false
@@ -1076,7 +1085,7 @@ func stripMarkerPath(path, begin, end string) error {
 func readJSON(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
 	return decodeJSON(data)
 }
@@ -1084,7 +1093,7 @@ func readJSON(path string) (map[string]any, error) {
 func readJSONFS(src fs.FS, path string) (map[string]any, error) {
 	data, err := fs.ReadFile(src, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
 	return decodeJSON(data)
 }
@@ -1092,7 +1101,7 @@ func readJSONFS(src fs.FS, path string) (map[string]any, error) {
 func decodeJSON(data []byte) (map[string]any, error) {
 	var out map[string]any
 	if err := json.Unmarshal(data, &out); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode JSON: %w", err)
 	}
 	return out, nil
 }
@@ -1218,15 +1227,17 @@ func (r *runner) acquireBinary(tag string) (string, func(), error) {
 	}
 	tmp, err := os.MkdirTemp("", "devrites-engine-*")
 	if err != nil {
-		return "", func() {}, err
+		return "", func() {}, fmt.Errorf("create temp dir: %w", err)
 	}
 	cleanup := func() { _ = os.RemoveAll(tmp) }
 	staged := filepath.Join(tmp, "devrites-engine")
 	if r.source != "" && exists(filepath.Join(r.source, "engine", "go.mod")) {
-		cmd := exec.Command("go", "build", "-trimpath", "-ldflags", "-s -w -X github.com/devrites/devrites/internal/version.Version="+tag, "-o", staged, ".")
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, "go", "build", "-trimpath", "-ldflags", "-s -w -X github.com/devrites/devrites/internal/version.Version="+tag, "-o", staged, ".")
 		cmd.Dir = filepath.Join(r.source, "engine")
 		if out, err := cmd.CombinedOutput(); err != nil {
-			return "", cleanup, fmt.Errorf("could not build from source: %v: %s", err, strings.TrimSpace(string(out)))
+			return "", cleanup, fmt.Errorf("could not build from source: %w: %s", err, strings.TrimSpace(string(out)))
 		}
 		return staged, cleanup, nil
 	}
@@ -1307,7 +1318,9 @@ func pathContainsDir(dir string) bool {
 }
 
 func engineVersion(path string) string {
-	out, err := exec.Command(path, "version").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, path, "version").Output()
 	if err != nil {
 		return ""
 	}
@@ -1442,8 +1455,8 @@ func verGT(a, b string) bool {
 	}
 	for i := 0; i < 3; i++ {
 		var ai, bi int
-		fmt.Sscanf(as[i], "%d", &ai)
-		fmt.Sscanf(bs[i], "%d", &bi)
+		_, _ = fmt.Sscanf(as[i], "%d", &ai)
+		_, _ = fmt.Sscanf(bs[i], "%d", &bi)
 		if ai > bi {
 			return true
 		}

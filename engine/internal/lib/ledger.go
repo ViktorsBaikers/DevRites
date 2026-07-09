@@ -215,7 +215,7 @@ func writeLedgerCapability(root string, f capabilityFold) error {
 		return nil
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
+		return fmt.Errorf("create capability dir: %w", err)
 	}
 	return os.WriteFile(dir+"/spec.md", []byte(renderLedgerSpec(f.capability, f.blocks)), 0o644)
 }

@@ -67,7 +67,7 @@ func discoverExtensions(extDir string) ([]extension, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("list extensions: %w", err)
 	}
 	var out []extension
 	for _, e := range entries {

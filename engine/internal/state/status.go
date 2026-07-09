@@ -20,7 +20,7 @@ type Report struct {
 func Status(root, slug string) (*Report, error) {
 	f, err := LoadFeature(root, slug)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("compute status: %w", err)
 	}
 	return NewReport(f), nil
 }

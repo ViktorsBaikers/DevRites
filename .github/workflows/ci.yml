@@ -157,10 +157,11 @@ jobs:
         working-directory: engine
         run: go vet ./...
 
-      - name: Install analysis tools (staticcheck + govulncheck)
+      - name: Install analysis tools (staticcheck + govulncheck + gosec)
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
           go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
 
       - name: staticcheck (static analysis — BLOCKING)
         working-directory: engine
@@ -169,6 +170,14 @@ jobs:
       - name: govulncheck (known-CVE scan of the reachable call graph — BLOCKING)
         working-directory: engine
         run: govulncheck ./...
+
+      # G204/G304 and their taint variants G702/G703 are excluded: this is a project-local
+      # CLI that by design execs git/go and reads paths the operator passes in, so every
+      # subprocess argument and file path is "tainted". Permission expectations for the
+      # files the engine writes (0644 files / 0755 dirs+binaries) live in .gosec.json.
+      - name: gosec (security static analysis — BLOCKING)
+        working-directory: engine
+        run: gosec -conf .gosec.json -exclude=G204,G304,G702,G703 ./...
 
       - name: go test -race (control plane + parity oracle)
         working-directory: engine

@@ -181,7 +181,7 @@ func tableTargetKnown(target string, known map[string]bool) bool {
 func lintSpec(file string) (reqCount, scenCount int, findings []string, err error) {
 	f, err := os.Open(file)
 	if err != nil {
-		return 0, 0, nil, err
+		return 0, 0, nil, fmt.Errorf("read spec: %w", err)
 	}
 	defer f.Close()
 
@@ -283,7 +283,7 @@ func lintSpec(file string) (reqCount, scenCount int, findings []string, err erro
 		}
 	}
 	if err := sc.Err(); err != nil {
-		return 0, 0, nil, err
+		return 0, 0, nil, fmt.Errorf("scan %s: %w", file, err)
 	}
 	closeRequirement()
 	return reqCount, scenCount, findings, nil

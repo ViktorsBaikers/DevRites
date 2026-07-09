@@ -179,7 +179,7 @@ func runbookPath(root, name string) (string, error) {
 func parseRunbook(path string) ([]runbookStep, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read runbook: %w", err)
 	}
 	var steps []runbookStep
 	for _, line := range splitLinesNoTrailing(data) {
@@ -258,11 +258,11 @@ func runShellStep(project, line string, stdout, stderr io.Writer) int {
 func writeRunbookState(root string, st runbookState) error {
 	path := filepath.Join(root, "runs", st.RunID, "state.json")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+		return fmt.Errorf("create run dir: %w", err)
 	}
 	b, err := json.MarshalIndent(st, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal run state: %w", err)
 	}
 	return state.AtomicWrite(path, append(b, '\n'), 0o644)
 }
@@ -271,10 +271,10 @@ func readRunbookState(root, id string) (runbookState, error) {
 	var st runbookState
 	b, err := os.ReadFile(filepath.Join(root, "runs", id, "state.json"))
 	if err != nil {
-		return st, err
+		return st, fmt.Errorf("read run state: %w", err)
 	}
 	if err := json.Unmarshal(b, &st); err != nil {
-		return st, err
+		return st, fmt.Errorf("parse run state %s: %w", id, err)
 	}
 	if st.Status != "paused" {
 		return st, fmt.Errorf("run %s is %s, not paused", id, st.Status)

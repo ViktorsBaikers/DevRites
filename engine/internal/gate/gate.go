@@ -49,7 +49,7 @@ type Result struct {
 func Check(kind Kind, root, slug string) (*Result, error) {
 	f, err := state.LoadFeature(root, slug)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gate %s: %w", kind, err)
 	}
 	target := f.Phase
 	if kind == Seal {

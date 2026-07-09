@@ -48,7 +48,7 @@ func overrideFiles(dir string) ([]string, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("list overrides: %w", err)
 	}
 	var out []string
 	for _, e := range entries {
@@ -150,7 +150,7 @@ func templateOverrideFiles(dir string) ([]string, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("list template overrides: %w", err)
 	}
 	var out []string
 	for _, e := range entries {
