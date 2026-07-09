@@ -28,6 +28,7 @@ SIMILARITY_FAIL = 0.88
 class Skill:
     name: str
     description: str
+    routing_text: str
     invocable: bool
     explicit_only: bool
 
@@ -62,10 +63,23 @@ def load_skills(skills_dir: Path) -> list[Skill]:
         f = d / "SKILL.md"
         if not f.is_file():
             continue
-        fm = parse_frontmatter(f.read_text(encoding="utf-8"))
+        text = f.read_text(encoding="utf-8")
+        fm = parse_frontmatter(text)
+        routing_lines = []
+        in_trigger_section = False
+        for line in text.splitlines():
+            if line.startswith("## "):
+                in_trigger_section = bool(re.search(r"trigger|when to use|use when", line, re.I))
+                continue
+            if in_trigger_section:
+                if line.startswith("#"):
+                    in_trigger_section = False
+                else:
+                    routing_lines.append(line)
         skills.append(Skill(
             fm.get("name", d.name),
             fm.get("description", ""),
+            " ".join(routing_lines),
             fm.get("user-invocable") == "true",
             fm.get("disable-model-invocation") == "true",
         ))
@@ -77,12 +91,9 @@ def load_eval_files(evals_dir: Path) -> list[Path]:
 
 
 def corpus_vector(skill: Skill) -> Counter:
-    c = Counter(tokens(f"{skill.name} {skill.name.replace('-', ' ')} {skill.description}"))
-    if skill.name.startswith("rite-"):
-        verb = skill.name.removeprefix("rite-")
-        for form in (f"/rite-{verb}", f"/rite {verb}", f"$rite-{verb}", f"$rite {verb}", verb):
-            c.update(tokens(form))
-    return c
+    # Explicit command forms are handled by direct_command_target. Repeating the
+    # command verb here overweights generic lifecycle verbs such as plan/build.
+    return Counter(tokens(f"{skill.name} {skill.name.replace('-', ' ')} {skill.description} {skill.routing_text}"))
 
 
 def cosine(a: Counter, b: Counter) -> float:
@@ -153,6 +164,14 @@ def ratchet_failures(report: dict, baseline_path: Path | None) -> list[str]:
         return []
     baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
     failures = []
+    for key in ("skills", "queries", "positive_queries", "negative_queries"):
+        if key not in baseline:
+            failures.append(f"baseline metadata: missing {key}")
+        elif baseline[key] != report[key]:
+            failures.append(f"baseline metadata: {key} is {baseline[key]}, current corpus is {report[key]}")
+    recorded_at = baseline.get("recorded_at", "")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", recorded_at):
+        failures.append("baseline metadata: recorded_at must be YYYY-MM-DD")
     for key, label in (("rank1_rate", "rank-1"), ("rank_top3_rate", "top-3")):
         floor = baseline.get(f"{key}_min")
         if floor is not None and report[key] < floor:

@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/testutil"
 )
 
 // runDevritesIO is runDevrites with control over stdin and extra environment,
@@ -99,7 +101,7 @@ func TestSealPassesWhenComplete(t *testing.T) {
 	root := newWorkspace(t)
 	// Fill the two empty sections auth-tokens is missing for a seal. tasks.md is
 	// a heading-only stub in the fixture; proof.md is absent (empty), so write it.
-	appendFile(t, filepath.Join(root, "features", "auth-tokens", "tasks.md"), "\n- [x] mint\n")
+	testutil.AppendFile(t, filepath.Join(root, "features", "auth-tokens", "tasks.md"), "\n- [x] mint\n")
 	if err := os.WriteFile(filepath.Join(root, "features", "auth-tokens", "proof.md"),
 		[]byte("# Proof\n\nAll acceptance tests pass.\n"), 0o644); err != nil {
 		t.Fatal(err)

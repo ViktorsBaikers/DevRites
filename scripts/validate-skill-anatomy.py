@@ -2,6 +2,7 @@
 """Validate DevRites-native skill anatomy contracts."""
 from __future__ import annotations
 import argparse, re, sys
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -22,20 +23,45 @@ INTERNAL_REQUIRED = {
 }
 GOTCHA_PATTERNS = [r"## Gotchas", r"reference/anti-patterns\.md", r"Mid-flight discipline", r"## Hard rules", r"## NEVER", r"## Boundaries", r"## Rules", r"## Scope reminders", r"## When NOT to use", r"## What NOT to include", r"Anti-AI-slop", r"Do not", r"Never"]
 EXEMPT = {"devrites-lib"}
-# Validator-owned anatomy exemptions for legacy surfaces whose existing body
-# headings are intentionally lighter than the new section contract. New skills
-# should not be added here without a reason in review.
-SECTION_EXEMPT = {
-    "devrites-api-interface": "compact specialist; trigger/output are encoded in prose and command-map",
-    "devrites-frontend-craft": "craft specialist with reference-driven output contract",
-    "rite-doctor": "diagnostic utility; read-only report shape is enforced by reply-contract gate",
-    "rite-frame": "ad-hoc lens utility; workflow is FRAME/AUDIT in body prose",
-    "rite-handoff": "utility writer; output is handoff artifact by convention",
-    "rite-polish": "progressive-disclosure orchestrator; workflow split across reference/code.md and reference/ui.md",
-    "rite-pressure-test": "ideation utility; boundary and output are compact by design",
-    "rite-prototype": "throwaway prototype utility; lifecycle deliberately differs from feature phases",
-    "rite-status": "read-only status utility; output owned by engine progress/status",
-    "rite-zoom-out": "read-only mapping utility; output is structural map by convention",
+# Legacy exceptions waive only the named missing section. They are owned and
+# time-bounded so a compact skill cannot silently bypass unrelated contracts.
+def exemption(owner: str, reason: str) -> dict[str, str]:
+    return {"owner": owner, "reason": reason, "expires": "2026-10-01"}
+
+
+SECTION_EXEMPTIONS = {
+    "devrites-api-interface": {
+        "hard rules": exemption("guidance", "compact specialist encodes rules in prose"),
+        "output contract": exemption("guidance", "output is owned by the caller contract"),
+        "gotchas/anti-patterns pointer": exemption("guidance", "compact specialist has no standalone reference payload"),
+    },
+    "devrites-frontend-craft": {"output contract": exemption("guidance", "reference-driven craft output")},
+    "rite-doctor": {
+        "operating contract": exemption("guidance", "read-only diagnostic utility"),
+        "rules consulted / standards read": exemption("guidance", "engine owns the diagnostic checks"),
+    },
+    "rite-frame": {
+        "rules consulted / standards read": exemption("guidance", "ad-hoc lens utility"),
+        "workflow or phase-contract pointer": exemption("guidance", "FRAME/AUDIT flow is encoded in prose"),
+    },
+    "rite-handoff": {
+        "operating contract": exemption("guidance", "single-purpose artifact writer"),
+        "workflow or phase-contract pointer": exemption("guidance", "handoff artifact is the workflow")},
+    "rite-polish": {"workflow or phase-contract pointer": exemption("guidance", "workflow is split across code and UI references")},
+    "rite-pressure-test": {
+        "operating contract": exemption("guidance", "compact ideation utility"),
+        "workflow or phase-contract pointer": exemption("guidance", "pressure-test loop is encoded in prose")},
+    "rite-prototype": {
+        "operating contract": exemption("guidance", "throwaway prototype lifecycle"),
+        "workflow or phase-contract pointer": exemption("guidance", "prototype loop is encoded in prose"),
+        "phase boundary / stop condition": exemption("guidance", "prototype is intentionally disposable"),
+        "gotchas/anti-patterns pointer": exemption("guidance", "prototype warning is encoded in prose")},
+    "rite-status": {
+        "operating contract": exemption("guidance", "read-only engine status utility"),
+        "workflow or phase-contract pointer": exemption("guidance", "engine progress command owns flow")},
+    "rite-zoom-out": {
+        "operating contract": exemption("guidance", "read-only mapping utility"),
+        "workflow or phase-contract pointer": exemption("guidance", "structural map is the workflow")},
 }
 
 
@@ -63,15 +89,19 @@ def validate(skills_dir: Path) -> list[str]:
         name = fm.get("name", f.parent.name)
         if name in EXEMPT:
             continue
-        if name in SECTION_EXEMPT:
-            continue
+        exemptions = SECTION_EXEMPTIONS.get(name, {})
         invocable = fm.get("user-invocable") == "true"
         rules = PUBLIC_REQUIRED if invocable else INTERNAL_REQUIRED
         for label, patterns in rules.items():
-            if not has_any(text, patterns):
+            if not has_any(text, patterns) and label not in exemptions:
                 errors.append(f"{f}: missing {label}")
-        if not has_any(text, GOTCHA_PATTERNS):
+        if not has_any(text, GOTCHA_PATTERNS) and "gotchas/anti-patterns pointer" not in exemptions:
             errors.append(f"{f}: missing gotchas/anti-patterns pointer")
+        for label, record in exemptions.items():
+            if not record.get("owner") or not record.get("reason") or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", record.get("expires", "")):
+                errors.append(f"{f}: anatomy exemption {label!r} requires owner, reason, and YYYY-MM-DD expires")
+            elif record["expires"] < date.today().isoformat():
+                errors.append(f"{f}: anatomy exemption {label!r} expired {record['expires']}")
         desc = fm.get("description", "")
         explicit_only = fm.get("disable-model-invocation") == "true"
         if not explicit_only and not re.search(r"\bUse when\b|\bUse to\b|\bTrigger|\bwhen the user\b|\bfor ", desc, re.I):

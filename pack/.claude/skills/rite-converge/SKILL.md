@@ -54,11 +54,7 @@ prerequisite skill to run.
 
 ## Workflow
 0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`** first (the always-on
-   operating rules). Then **run the shared orientation preamble** — it prints `state.md`, the
-   artifacts present, the run mode (HITL/AFK), and the open-question tally by gate:
-   ```bash
-   devrites-engine preamble
-   ```
+   operating rules), then run `devrites-engine preamble` for deterministic workspace orientation.
 1. **Confirm the gate.** Require `spec.md` + `plan.md` + `tasks.md` in the active workspace. If
    any is missing, **STOP** and name the prerequisite (`/rite-spec` for a missing spec,
    `/rite-define` for a missing plan/tasks, `/rite-adopt` to onboard existing code). Do not

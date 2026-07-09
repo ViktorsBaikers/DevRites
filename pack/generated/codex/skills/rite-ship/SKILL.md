@@ -28,6 +28,8 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 **Step 0:** Read `.agents/skills/devrites-lib/reference/standards/core.md` first. Then pull on demand:
 - `git-workflow.md` — Conventional Commits, atomic commits, the never-commit list.
 - `afk-hitl.md` — type-GO is the irreversible-action gate.
+- `definition-of-done.md` — final acceptance, evidence, drift, rollback, and documentation bar.
+- [`release/ship-checklist.md`](../devrites-lib/reference/standards/release/ship-checklist.md) — compact final ship and archive pass/fail sweep.
 
 ## Operating rules
 - **Seal GO is a precondition.** No GO in `seal.md` → stop, point at `$rite-seal`.
@@ -41,12 +43,7 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
   the `.md` files.
 
 ## Workflow
-1. **Run the shared orientation preamble** — it prints `state.md`, the artifacts present,
-   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-   instead of re-deriving state from raw Markdown:
-   ```bash
-   devrites-engine preamble
-   ```
+1. **Orient.** Run `devrites-engine preamble` for deterministic workspace orientation.
    Then read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`, and
    `design-brief.md` (if the feature is UI — the design-memory rollup in step 2a reads it).
    Confirm the verdict is **GO**, then run the deterministic evidence-freshness gate rather than

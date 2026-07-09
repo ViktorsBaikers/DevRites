@@ -5,45 +5,19 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/devrites/devrites/internal/fsutil"
 )
 
 // AtomicWrite writes data to path via a temp file in the same directory followed
 // by an atomic rename, so a concurrent reader — or a writer killed mid-write —
 // never observes a half-written structured file. The temp file is fsync'd before
 // the rename so the content is durable before it becomes visible.
-func AtomicWrite(path string, data []byte, perm os.FileMode) (err error) {
-	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
-	if err != nil {
+func AtomicWrite(path string, data []byte, perm os.FileMode) error {
+	if _, err := os.Stat(filepath.Dir(path)); err != nil {
 		return fmt.Errorf("atomic write %s: %w", path, err)
 	}
-	tmpName := tmp.Name()
-	// On any failure, don't leave the temp file behind.
-	defer func() {
-		if err != nil {
-			_ = os.Remove(tmpName)
-		}
-	}()
-
-	if _, err = tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("atomic write %s: %w", path, err)
-	}
-	if err = tmp.Chmod(perm); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("atomic write %s: %w", path, err)
-	}
-	if err = tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("atomic write %s: %w", path, err)
-	}
-	if err = tmp.Close(); err != nil {
-		return fmt.Errorf("atomic write %s: %w", path, err)
-	}
-	if err = os.Rename(tmpName, path); err != nil {
-		return fmt.Errorf("atomic write %s: %w", path, err)
-	}
-	return nil
+	return fsutil.WriteFileAtomic(path, data, perm)
 }
 
 // AppendLog appends one newline-terminated record to path using O_APPEND, so

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strings"
 )
 
@@ -295,6 +294,5 @@ func ledgerCapabilities(root string) []string {
 			caps = append(caps, e.Name())
 		}
 	}
-	sort.Strings(caps)
 	return caps
 }

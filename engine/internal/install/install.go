@@ -962,6 +962,12 @@ func extractUpdateBundle(tarball, tmp string, cleanup func()) (string, func(), e
 	return "", func() {}, fmt.Errorf("extracted update bundle has no install.sh")
 }
 
+const (
+	maxUpdateEntries    = 4096
+	maxUpdateEntryBytes = int64(1) << 30
+	maxUpdateTotalBytes = int64(2) << 30
+)
+
 func extractTarGz(tarball, dest string) error {
 	f, err := os.Open(tarball)
 	if err != nil {
@@ -978,6 +984,8 @@ func extractTarGz(tarball, dest string) error {
 	if err != nil {
 		return fmt.Errorf("resolve %s: %w", dest, err)
 	}
+	entryCount := 0
+	var totalBytes int64
 	for {
 		hdr, err := tr.Next()
 		if errors.Is(err, io.EOF) {
@@ -986,6 +994,20 @@ func extractTarGz(tarball, dest string) error {
 		if err != nil {
 			return fmt.Errorf("read tar entry: %w", err)
 		}
+		entryCount++
+		if entryCount > maxUpdateEntries {
+			return fmt.Errorf("update bundle has too many entries (maximum %d)", maxUpdateEntries)
+		}
+		if hdr.Size < 0 {
+			return fmt.Errorf("entry %s in update bundle has a negative size", hdr.Name)
+		}
+		if hdr.Size > maxUpdateEntryBytes {
+			return fmt.Errorf("entry %s in update bundle exceeds %d bytes", hdr.Name, maxUpdateEntryBytes)
+		}
+		if hdr.Size > maxUpdateTotalBytes-totalBytes {
+			return fmt.Errorf("update bundle exceeds %d total bytes", maxUpdateTotalBytes)
+		}
+		totalBytes += hdr.Size
 		name := filepath.Clean(hdr.Name)
 		if name == "." || filepath.IsAbs(name) || strings.HasPrefix(name, ".."+string(os.PathSeparator)) || name == ".." {
 			return fmt.Errorf("unsafe path in update bundle: %s", hdr.Name)
@@ -1007,9 +1029,8 @@ func extractTarGz(tarball, dest string) error {
 			if err != nil {
 				return fmt.Errorf("create %s: %w", name, err)
 			}
-			// Cap per-entry extraction so a crafted bundle can't decompression-bomb
-			// the host; real update bundles are a few MB.
-			const maxUpdateEntryBytes = int64(1) << 30
+			// Keep the streaming cap even after validating the header so malformed
+			// archives cannot make the extractor trust inconsistent metadata.
 			written, copyErr := io.Copy(out, io.LimitReader(tr, maxUpdateEntryBytes+1))
 			closeErr := out.Close()
 			if copyErr != nil {

@@ -53,12 +53,8 @@ that needs more than the default pre-mortem — selected by the section's risk).
   fail that re-opens the readiness gate.
 
 ## Workflow
-0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`**. Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
-   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-   instead of re-deriving state from raw Markdown:
-   ```bash
-   devrites-engine preamble
-   ```
+0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`**, then run
+   `devrites-engine preamble` for deterministic workspace orientation.
    Then read the workspace: `spec.md` (+ `decisions.md`,
    `assumptions.md`, `design-brief.md` if UI), `state.md`. Require `Spec gate: passed` — else
    STOP → `$rite-spec`. If a plan already exists, scope changes route through `$rite-plan

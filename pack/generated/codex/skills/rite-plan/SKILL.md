@@ -44,12 +44,7 @@ reshaping slice cadence or DoD criteria.
 
 ## Workflow
 0. Read `.agents/skills/devrites-lib/reference/standards/core.md` (operating rules) before reshaping anything.
-   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
-   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-   instead of re-deriving state from raw Markdown:
-   ```bash
-   devrites-engine preamble
-   ```
+   Then run `devrites-engine preamble` for deterministic workspace orientation.
 1. Read `spec.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`, and the current
    `git diff` (if a repo). Read `decisions.md` and `assumptions.md`. If a code-intelligence
    index is available — `codebase-memory-mcp` first, cross-checked with `codegraph`

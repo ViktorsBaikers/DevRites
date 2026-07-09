@@ -37,6 +37,8 @@ the affected criteria/routes to refresh proof before `/rite-seal`.
 **Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. The other rule files load on demand;
 pull these via `Read` when relevant:
 - `testing.md` — pyramid, determinism, no-flake discipline.
+- `test-proof-checklist.md` — compact proof-quality gate for tests and recorded evidence.
+- `browser-proof-checklist.md` — for UI scope, the required browser states and Visual Verdict evidence.
 - `spec-grammar.md` — when the spec uses structured `### Requirement:` / `#### Scenario:`
   blocks, each scenario (WHEN/THEN) is one observable behavior to walk and prove.
 - `performance.md` — measure first when perf is in scope.
@@ -57,12 +59,7 @@ pull these via `Read` when relevant:
 ## Workflow
 0. Read `.claude/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
    on-demand rules above when relevant.
-   Then **run the shared orientation preamble** — it prints `state.md`, the artifacts present,
-   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-   instead of re-deriving state from raw Markdown:
-   ```bash
-   devrites-engine preamble
-   ```
+   Then run `devrites-engine preamble` for deterministic workspace orientation.
 1. **Confirm the gate** (all slices built). Read `spec.md` (acceptance criteria +
    "Commands discovered"), `tasks.md`, `state.md`, `test-plan.md` if present (the vetted
    coverage target from `/rite-vet`), and the full `git diff`.

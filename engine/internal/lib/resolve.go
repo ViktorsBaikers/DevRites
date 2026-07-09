@@ -71,7 +71,9 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 		if code := resolveQuestion(qfile, qid, "answered", payload, stderr); code != 0 {
 			return code
 		}
-		clearAwaiting(sfile, qid)
+		if err := clearAwaiting(sfile, qid); err != nil {
+			return fail(stderr, err.Error(), 1)
+		}
 		fmt.Fprintf(stdout, "Resolved: %s\n", qid)
 		fmt.Fprintf(stdout, "Status:   answered\n")
 		fmt.Fprintf(stdout, "Workspace: questions.md + state.md updated.\n")
@@ -79,7 +81,9 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 		if code := resolveQuestion(qfile, qid, "dropped", payload, stderr); code != 0 {
 			return code
 		}
-		clearAwaiting(sfile, qid)
+		if err := clearAwaiting(sfile, qid); err != nil {
+			return fail(stderr, err.Error(), 1)
+		}
 		fmt.Fprintf(stdout, "Dropped:  %s\n", qid)
 		fmt.Fprintf(stdout, "Reason:   %s\n", payload)
 		fmt.Fprintf(stdout, "Workspace: questions.md + state.md updated.\n")
@@ -99,7 +103,9 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 				if code := resolveQuestion(qfile, bid, "dropped", reason, stderr); code != 0 {
 					return code
 				}
-				clearAwaiting(sfile, bid)
+				if err := clearAwaiting(sfile, bid); err != nil {
+					return fail(stderr, err.Error(), 1)
+				}
 				fmt.Fprintf(stdout, "Dropped:  %s — %s\n", bid, reason)
 			} else {
 				bid, ans := splitColon(line)
@@ -107,7 +113,9 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 				if code := resolveQuestion(qfile, bid, "answered", ans, stderr); code != 0 {
 					return code
 				}
-				clearAwaiting(sfile, bid)
+				if err := clearAwaiting(sfile, bid); err != nil {
+					return fail(stderr, err.Error(), 1)
+				}
 				fmt.Fprintf(stdout, "Resolved: %s\n", bid)
 			}
 		}
@@ -186,9 +194,7 @@ func resolveNextQID(qpath string, stdout, stderr io.Writer) int {
 }
 
 // resolveQuestion rewrites the <qid> block in questions.md so it records the new
-// status, answer, and answered-at time. It works in two passes: the first updates
-// any fields already present (and detects a missing or non-open block); the second
-// appends answered_at/answer if the block did not carry them. Returns 0, or 3 (qid
+// status, answer, and answered-at time in one pass. Returns 0, or 3 (qid
 // not found) / 4 (qid not open), writing the message on failure.
 func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
 	data, err := os.ReadFile(qfile)
@@ -196,7 +202,7 @@ func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
 		return fail(stderr, "questions.md missing at "+qfile, 2)
 	}
 	ts := nowUTC()
-	target := regexp.MustCompile(`^## ` + qid + `([[:space:]]|$)`)
+	target := regexp.MustCompile(`^## ` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)
 
 	updated, found, notOpen := rewriteQuestionFields(splitLinesNoTrailing(data), target, status, answer, ts)
 	if !found {
@@ -209,9 +215,6 @@ func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
 		return fail(stderr, err.Error(), 1)
 	}
 
-	reread, _ := os.ReadFile(qfile)
-	complete := ensureAnswerFields(splitLinesNoTrailing(reread), target, answer, ts)
-	_ = fsutil.WriteFileAtomic(qfile, joinRecords(complete), 0o644)
 	return 0
 }
 
@@ -230,10 +233,19 @@ var (
 // of closing fields appended.
 func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer, ts string) (out []string, found, notOpen bool) {
 	inQ := false
-	statusSeen := false
+	statusSeen, answeredAtSeen, answerSeen := false, false, false
 	closeBlock := func() {
-		if inQ && !statusSeen {
-			out = append(out, "status: "+status, "answered_at: "+ts, "answer: "+answer)
+		if !inQ {
+			return
+		}
+		if !statusSeen {
+			out = append(out, "status: "+status)
+		}
+		if !answeredAtSeen {
+			out = append(out, "answered_at: "+ts)
+		}
+		if !answerSeen {
+			out = append(out, "answer: "+answer)
 		}
 	}
 	for _, line := range lines {
@@ -241,7 +253,7 @@ func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer
 		case qHeaderRe.MatchString(line):
 			closeBlock()
 			inQ = target.MatchString(line)
-			statusSeen = false
+			statusSeen, answeredAtSeen, answerSeen = false, false, false
 			if inQ {
 				found = true
 			}
@@ -257,8 +269,10 @@ func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer
 				out = append(out, "status: "+status)
 			}
 		case inQ && answeredAtRe.MatchString(line):
+			answeredAtSeen = true
 			out = append(out, "answered_at: "+ts)
 		case inQ && answerRe.MatchString(line):
+			answerSeen = true
 			out = append(out, "answer: "+answer)
 		default:
 			out = append(out, line)
@@ -266,45 +280,6 @@ func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer
 	}
 	closeBlock()
 	return out, found, notOpen
-}
-
-// ensureAnswerFields appends answered_at/answer to the target question's block if
-// the first pass did not find existing lines to rewrite.
-func ensureAnswerFields(lines []string, target *regexp.Regexp, answer, ts string) []string {
-	var out []string
-	inQ, sawAt, sawAns := false, false, false
-	for _, line := range lines {
-		if qHeaderRe.MatchString(line) {
-			if inQ {
-				if !sawAt {
-					out = append(out, "answered_at: "+ts)
-				}
-				if !sawAns {
-					out = append(out, "answer: "+answer)
-				}
-			}
-			inQ = target.MatchString(line)
-			sawAt, sawAns = false, false
-			out = append(out, line)
-			continue
-		}
-		if inQ && answeredAtRe.MatchString(line) {
-			sawAt = true
-		}
-		if inQ && answerRe.MatchString(line) {
-			sawAns = true
-		}
-		out = append(out, line)
-	}
-	if inQ {
-		if !sawAt {
-			out = append(out, "answered_at: "+ts)
-		}
-		if !sawAns {
-			out = append(out, "answer: "+answer)
-		}
-	}
-	return out
 }
 
 var (
@@ -319,13 +294,13 @@ var (
 // "Awaiting human" block references qid, it drops that block, flips Status back to
 // running, clears the Next step, and appends a Log entry. It is a no-op when the
 // workspace is not waiting on this question.
-func clearAwaiting(sfile, qid string) {
+func clearAwaiting(sfile, qid string) error {
 	data, err := os.ReadFile(sfile)
 	if err != nil {
-		return
+		return fmt.Errorf("read state %s: %w", sfile, err)
 	}
 	lines := splitLinesNoTrailing(data)
-	qidRef := regexp.MustCompile(`qid:[[:space:]]*` + qid + `([[:space:]]|$)`)
+	qidRef := regexp.MustCompile(`qid:[[:space:]]*` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)
 
 	// First check whether the awaiting block references this question at all.
 	inAw, matched := false, false
@@ -342,7 +317,7 @@ func clearAwaiting(sfile, qid string) {
 		}
 	}
 	if !matched {
-		return
+		return nil
 	}
 
 	// Rewrite: drop the awaiting block, reset Status/Next step, log the resolution.
@@ -385,7 +360,10 @@ func clearAwaiting(sfile, qid string) {
 	if inLog && !logAppended {
 		out = append(out, fmt.Sprintf("- %s build: resolved %s", ts, qid))
 	}
-	_ = fsutil.WriteFileAtomic(sfile, joinRecords(out), 0o644)
+	if err := fsutil.WriteFileAtomic(sfile, joinRecords(out), 0o644); err != nil {
+		return fmt.Errorf("update state %s: %w", sfile, err)
+	}
+	return nil
 }
 
 // joinRecords joins lines with newlines and terminates the last one, so a rewritten

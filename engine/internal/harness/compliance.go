@@ -19,8 +19,8 @@ import (
 type Tier int
 
 const (
-	// Native — the harness exposes the surface directly; the engine hook fires
-	// and its decision is honoured.
+	// Native — the harness exposes and delivers the surface directly. Whether a
+	// delivered policy blocks is stated separately in the surface note.
 	Native Tier = iota
 	// Adapter — supported, but through a translation shim (a different verb,
 	// a mirrored file tree) rather than the harness's first-class path.
@@ -65,14 +65,14 @@ type Surface struct {
 // Change a cell only when that wiring changes.
 var complianceMatrix = []Surface{
 	{"SessionStart orientation", Native, Native, "all phases", "manual preamble/snapshot", "yes", "high", "Both wire the orient hook; identical additionalContext envelope."},
-	{"PreToolUse allow / deny (allow, a1-guard, reviewer-readonly, wright-scope)", Native, Native, "build/review safety", "engine gates + human review", "yes", "high", "Codex wires the same PreToolUse guards with agent-type gating."},
+	{"PreToolUse policy (allow, a1-guard, reviewer-readonly, wright-scope)", Conditional, Conditional, "build/review safety", "observe-only findings + human review", "yes", "high", "Both deliver the event, but these policies are non-blocking by default; DEVRITES_HOOK_PROFILE=strict enables every guard, or each guard can be enabled through its documented specific variable."},
 	{"PostToolUse sentinel (redwatch)", Native, Native, "prove/build rest points", "manual red/green check", "yes", "high", "Fail-on-red sentinel wired on both."},
-	{"Stop gate", Native, Native, "all rest points", "manual host-specific rite-status", "yes", "high", "Both honour the {decision:block} convention."},
+	{"Stop gate", Conditional, Conditional, "all rest points", "observe-only finding + manual host-specific rite-status", "yes", "high", "Both deliver Stop; stop-gate blocks with DEVRITES_STOP_GATE=enforce or DEVRITES_HOOK_PROFILE=strict."},
 	{"SubagentStart discipline injection", Native, Native, "review/build fan-out", "agent file preamble", "yes", "high", "subagent-orient wired on both."},
 	{"Skill invocation", Native, Adapter, "all public rites", "explicit file read", "yes", "high", "Claude: native /rite. Codex: $rite over the mirrored .agents/skills tree."},
 	{"Reviewer subagent dispatch", Native, Instruction, "review/seal confidence", "labelled inline pass", "partial", "medium", "Codex under-fires embedded spawns (openai/codex#23496); falls back to .codex/agents + a labelled inline pass."},
 	{"Standards step-0 load", Native, Instruction, "all phases", "explicit standards read", "partial", "medium", "Claude: skill Reads core.md. Codex: an AGENTS.md directive to read it."},
-	{"Project activation", Native, Conditional, "Codex-only startup", "trust project then rerun doctor", "yes", "medium", "Codex silently skips every .codex/ layer in an untrusted project until it is trusted."},
+	{"Project activation", Native, Conditional, "Codex-only startup", "inspect hooks/config, decide trust, then rerun doctor", "yes", "medium", "Codex silently skips every .codex/ layer in an untrusted project; trust remains an operator decision after inspection."},
 }
 
 // Matrix markers delimit the generated block inside a docs file so drift-check
@@ -93,7 +93,7 @@ func RenderMatrix() string {
 	for _, s := range complianceMatrix {
 		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %s | %s | %s |\n", s.Name, s.Claude, s.Codex, s.PhaseImpact, s.Fallback, s.DoctorCheck, s.Confidence, s.Note)
 	}
-	b.WriteString("\nTiers: **Native** (harness enforces it directly) · **Adapter-backed** ")
+	b.WriteString("\nTiers: **Native** (the harness exposes and delivers the surface directly; policy notes state whether it blocks) · **Adapter-backed** ")
 	b.WriteString("(supported through a translation shim) · **Instruction-backed** ")
 	b.WriteString("(no runtime surface — rides on a directive the model may under-fire) · ")
 	b.WriteString("**Conditional** (native but gated on an operator precondition).\n\n")

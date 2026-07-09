@@ -188,7 +188,7 @@ func TestStatusReflectsHandEdit(t *testing.T) {
 	}
 	// Hand-edit the file to add real content; status reads files directly.
 	tasks := filepath.Join(root, "features", "auth-tokens", "tasks.md")
-	appendFile(t, tasks, "\n- [x] mint\n- [x] verify\n")
+	testutil.AppendFile(t, tasks, "\n- [x] mint\n- [x] verify\n")
 
 	out, _, code := runDevrites(t, root, "status", "auth-tokens")
 	if code != 0 {
@@ -199,17 +199,5 @@ func TestStatusReflectsHandEdit(t *testing.T) {
 	}
 	if !bytes.Contains([]byte(out), []byte("result: complete")) {
 		t.Errorf("expected complete after edit\n%s", out)
-	}
-}
-
-func appendFile(t *testing.T, path, text string) {
-	t.Helper()
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-	if _, err := f.WriteString(text); err != nil {
-		t.Fatal(err)
 	}
 }

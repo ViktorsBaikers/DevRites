@@ -160,7 +160,7 @@ jobs:
       - name: Install analysis tools (staticcheck + govulncheck + gosec)
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
           go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
 
       - name: staticcheck (static analysis — BLOCKING)

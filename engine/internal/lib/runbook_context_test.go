@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/testutil"
 )
 
 func TestContextSyncUpsertsManagedBlockOnly(t *testing.T) {
@@ -29,7 +31,7 @@ func TestContextSyncUpsertsManagedBlockOnly(t *testing.T) {
 	if code := Context(root, []string{"sync", "AGENTS.md"}, stdout, stderr); code != 0 {
 		t.Fatalf("context sync = %d\nstdout=%s\nstderr=%s", code, stdout, stderr)
 	}
-	got := mustReadString(t, path)
+	got := testutil.ReadFile(t, path)
 	for _, want := range []string{"# Team rules", "<!-- DEVRITES START -->", "Active workspace: `.devrites/work/demo/`", "Project principles"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("synced AGENTS.md missing %q:\n%s", want, got)
@@ -42,7 +44,7 @@ func TestContextSyncUpsertsManagedBlockOnly(t *testing.T) {
 	if code := Context(root, []string{"sync", "AGENTS.md"}, stdout, stderr); code != 0 {
 		t.Fatalf("second context sync = %d", code)
 	}
-	got = mustReadString(t, path)
+	got = testutil.ReadFile(t, path)
 	if strings.Count(got, "<!-- DEVRITES START -->") != 1 {
 		t.Fatalf("second sync duplicated block:\n%s", got)
 	}
@@ -114,13 +116,4 @@ func TestRunbookDryRunDoesNotExecuteShell(t *testing.T) {
 	if _, err := os.Stat(marker); err == nil {
 		t.Fatal("dry run executed shell step")
 	}
-}
-
-func mustReadString(t *testing.T, path string) string {
-	t.Helper()
-	b, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(b)
 }

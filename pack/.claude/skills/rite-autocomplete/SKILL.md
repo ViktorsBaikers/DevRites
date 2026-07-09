@@ -47,12 +47,7 @@ blocking / escalating gates, and any NO-GO still pause.
   pause. Cross-model is off unless `--cross-model` was armed.
 
 ## Workflow
-1. **Orient + parse args.** Run the shared orientation preamble — it prints `state.md`, the artifacts present,
-the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-instead of re-deriving state from raw Markdown:
-```bash
-devrites-engine preamble
-```
+1. **Orient + parse args.** Run `devrites-engine preamble` for deterministic workspace orientation.
    The idea + flags: `--ship` / `--yolo` (auto-confirm the final
    type-GO), `--max-slices N` (OPTIONAL *lower* safety cap for a partial run; default =
    the plan's slice count, i.e. run all planned slices).

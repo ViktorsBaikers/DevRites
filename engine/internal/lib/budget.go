@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 )
 
 // The context-budget lint. A feature is deliberately a directory of small,
@@ -150,7 +149,6 @@ func collectBudgetRows(dir string) []budgetRow {
 		}
 		extras = append(extras, name)
 	}
-	sort.Strings(extras)
 	for _, name := range extras {
 		if lines, tokens, ok := measureFile(filepath.Join(dir, name)); ok {
 			rows = append(rows, budgetRow{name, lines, tokens, defaultBudget})

@@ -12,8 +12,10 @@ DevRites separates three roles and never blurs them:
   the gates and the `.devrites/` workspace, dispatches the other agents, and is the *single
   canonical writer* of workspace state.
 - **Reviewers** — fresh-context, **read-only** subagents under `.claude/agents/`. Each gets the
-  workspace path + the diff and returns labelled findings; read-only is enforced at the tool layer
-  (`devrites-engine hook reviewer-readonly`), not merely promised.
+  workspace path + the diff and returns labelled findings. The generated host hooks observe this
+  boundary by default; set the documented strict-enforcement environment switch when a blocking
+  tool-layer boundary is required. Without strict mode, the agent contract and reconciliation gate
+  remain part of the control, rather than a fail-closed sandbox guarantee.
 - **Executor** — `devrites-slice-wright`, the one **write-capable** agent. It implements a single
   fully-specified slice in a fresh context and returns code + tests; it never writes the `.devrites/`
   bookkeeping (the orchestrator does).

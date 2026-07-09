@@ -118,7 +118,7 @@ This project has DevRites installed for both Claude Code and Codex.
 
 ## Codex usage
 
-- **Trust this project.** Codex skips every project-scoped `.codex/` layer — hooks, agents, and rules — in an **untrusted** project. If DevRites seems absent (no skills or custom agents), trust the folder when Codex prompts on first run, or mark the project trusted in your global Codex config (`projects."<abs-path>".trust_level = "trusted"`). Untrusted = DevRites silently does nothing.
+- **Inspect before trust.** Codex skips project-scoped `.codex/` hooks, agents, and rules in an untrusted project. Before enabling them, inspect `.codex/hooks.json`, `.codex/agents/`, and the project guidance; use `/hooks` to review the commands Codex would run. The human operator decides whether to trust the folder. Until then, use DevRites only through explicitly inspected commands and treat hook enforcement as unavailable.
 - DevRites workflow skills are available to Codex from `.agents/skills`.
 - Use `$rite` or `$rite-<verb>` through Codex skills, or open `/skills` and select the matching DevRites skill.
 - If the user mentions a DevRites slash command such as `/rite spec`, `/rite-build`, or `/rite-seal`, treat that as an explicit request to use the corresponding DevRites skill.

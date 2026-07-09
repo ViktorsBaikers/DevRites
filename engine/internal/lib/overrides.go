@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -42,13 +41,13 @@ func Overrides(root string, args []string, stdout, stderr io.Writer) int {
 
 // overrideFiles returns the *.md override files under dir, sorted. A missing dir
 // means the project declares no overrides — not an error.
-func overrideFiles(dir string) ([]string, error) {
+func markdownFiles(dir, kind string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("list overrides: %w", err)
+		return nil, fmt.Errorf("list %s: %w", kind, err)
 	}
 	var out []string
 	for _, e := range entries {
@@ -57,9 +56,10 @@ func overrideFiles(dir string) ([]string, error) {
 		}
 		out = append(out, e.Name())
 	}
-	sort.Strings(out)
 	return out, nil
 }
+
+func overrideFiles(dir string) ([]string, error) { return markdownFiles(dir, "overrides") }
 
 func overridesList(dir string, stdout io.Writer) int {
 	files, err := overrideFiles(dir)
@@ -145,22 +145,7 @@ func overridesValidate(dir, projectDir string, stdout, stderr io.Writer) int {
 }
 
 func templateOverrideFiles(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("list template overrides: %w", err)
-	}
-	var out []string
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
-			continue
-		}
-		out = append(out, e.Name())
-	}
-	sort.Strings(out)
-	return out, nil
+	return markdownFiles(dir, "template overrides")
 }
 
 func requiredTemplateGateTerms(name string) []string {

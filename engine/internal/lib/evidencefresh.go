@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/workflow"
 )
 
@@ -44,7 +45,7 @@ func EvidenceFresh(root string, args []string, stdout, stderr io.Writer) int {
 		return 5
 	}
 
-	newestProof, haveProof := newestModTime(
+	newestProof, haveProof := fsutil.NewestModTime(
 		filepath.Join(workDir, "evidence.md"),
 		filepath.Join(workDir, "proof.md"),
 		filepath.Join(workDir, "browser-evidence.md"),
@@ -70,7 +71,7 @@ func EvidenceFresh(root string, args []string, stdout, stderr io.Writer) int {
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(filepath.Dir(root), path)
 		}
-		if m, ok := modTime(path); ok && m > newestCode {
+		if m, ok := fsutil.FileModTime(path); ok && m > newestCode {
 			newestCode, newestPath = m, listed
 		}
 	}
@@ -81,27 +82,4 @@ func EvidenceFresh(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintln(stdout, "evidence-fresh: OK — evidence post-dates every touched file.")
 	return 0
-}
-
-// newestModTime returns the most recent modification time among the given paths
-// that exist as regular files, and whether any qualified.
-func newestModTime(paths ...string) (newest int64, ok bool) {
-	for _, p := range paths {
-		if !isFile(p) {
-			continue
-		}
-		if m, mok := modTime(p); mok && (!ok || m > newest) {
-			newest, ok = m, true
-		}
-	}
-	return newest, ok
-}
-
-// modTime returns a file's modification time in whole seconds since the epoch.
-func modTime(path string) (secs int64, ok bool) {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return 0, false
-	}
-	return fi.ModTime().Unix(), true
 }
