@@ -6,6 +6,8 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/devrites/devrites/internal/workflow"
 )
 
 // BuildReadiness decides whether a feature is ready to build, reading only its
@@ -30,7 +32,7 @@ func BuildReadiness(root string, args []string, stdout, stderr io.Writer) int {
 		if shown == "" {
 			shown = "<unset>"
 		}
-		fmt.Fprintf(stderr, "readiness: no active workspace/state.md (slug=%s) — run /rite-spec <feature>\n", shown)
+		fmt.Fprintf(stderr, "readiness: no active workspace/state.md (slug=%s) — run %s <feature>\n", shown, workflow.ForVerb("spec").Both())
 		return 5
 	}
 
@@ -40,16 +42,16 @@ func BuildReadiness(root string, args []string, stdout, stderr io.Writer) int {
 	status := readinessField(lines, "Status")
 	switch status {
 	case "awaiting_human":
-		fmt.Fprintln(stderr, `readiness: STOP — Status: awaiting_human. Resume with /rite-resolve <qid> "<answer>".`)
+		fmt.Fprintf(stderr, "readiness: STOP — Status: awaiting_human. Resume with %s <qid> \"<answer>\".\n", workflow.ForVerb("resolve").Both())
 		return 3
 	case "blocked":
-		fmt.Fprintln(stderr, "readiness: STOP — Status: blocked. Repair with /rite-plan repair (or unblock).")
+		fmt.Fprintf(stderr, "readiness: STOP — Status: blocked. Repair with %s repair (or unblock).\n", workflow.ForVerb("plan").Both())
 		return 4
 	}
 
 	approved := readinessField(lines, "Plan approved")
 	if approved == "" || approved == "none" {
-		fmt.Fprintln(stderr, `readiness: STOP — plan not approved (state.md has no "Plan approved"). Run /rite-define.`)
+		fmt.Fprintf(stderr, "readiness: STOP — plan not approved (state.md has no \"Plan approved\"). Run %s.\n", workflow.ForVerb("define").Both())
 		return 2
 	}
 

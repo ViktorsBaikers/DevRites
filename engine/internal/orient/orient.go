@@ -58,7 +58,7 @@ func Digest(root string) (text string, has bool, err error) {
 		}
 	}
 
-	b.WriteString("\nThis is the current state; a /rite-* command will re-run its own step-0 preamble.")
+	b.WriteString("\nThis is the current state; the next host-specific DevRites command (/rite-* in Claude Code, $rite-* in Codex) will re-run its own step-0 preamble.")
 	return b.String(), true, nil
 }
 

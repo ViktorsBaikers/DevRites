@@ -10,6 +10,7 @@ package main_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -106,6 +107,49 @@ func TestStatusMatchesGolden(t *testing.T) {
 				t.Errorf("stdout mismatch\n--- got ---\n%s--- want ---\n%s", out, want)
 			}
 		})
+	}
+}
+
+func TestSnapshotEmitsDevRitesWorkspaceJSON(t *testing.T) {
+	root := newWorkspace(t)
+	out, errOut, code := runDevrites(t, root, "snapshot", "auth-tokens")
+	if code != 0 {
+		t.Fatalf("snapshot exit = %d, want 0 (stderr: %s)", code, errOut)
+	}
+	var got struct {
+		SchemaVersion   string   `json:"schemaVersion"`
+		Slug            string   `json:"slug"`
+		Phase           string   `json:"phase"`
+		RunMode         string   `json:"runMode"`
+		Complete        bool     `json:"complete"`
+		MissingSections []string `json:"missingSections"`
+		NextCommand     string   `json:"nextCommand"`
+		NextCommands    struct {
+			Verb   string `json:"verb"`
+			Claude string `json:"claude"`
+			Codex  string `json:"codex"`
+		} `json:"nextCommands"`
+	}
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("snapshot output is not JSON: %v\n%s", err, out)
+	}
+	if got.SchemaVersion != "devrites.workspace.v1" {
+		t.Fatalf("schemaVersion = %q, want devrites.workspace.v1", got.SchemaVersion)
+	}
+	if got.Slug != "auth-tokens" || got.Phase != "build" || got.RunMode != "HITL" {
+		t.Fatalf("unexpected identity fields: %+v", got)
+	}
+	if got.Complete {
+		t.Fatalf("auth-tokens fixture should be incomplete before tasks are filled")
+	}
+	if len(got.MissingSections) != 1 || got.MissingSections[0] != "tasks" {
+		t.Fatalf("missingSections = %#v, want [tasks]", got.MissingSections)
+	}
+	if got.NextCommand != "/rite-build" {
+		t.Fatalf("nextCommand = %q, want /rite-build", got.NextCommand)
+	}
+	if got.NextCommands.Verb != "build" || got.NextCommands.Claude != "/rite-build" || got.NextCommands.Codex != "$rite-build" {
+		t.Fatalf("nextCommands = %+v, want build with Claude/Codex forms", got.NextCommands)
 	}
 }
 

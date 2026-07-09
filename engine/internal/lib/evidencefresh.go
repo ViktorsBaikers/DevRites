@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"github.com/devrites/devrites/internal/workflow"
 )
 
 // touchedPathRe captures each `backtick-quoted` path listed in touched-files.md.
@@ -48,7 +50,7 @@ func EvidenceFresh(root string, args []string, stdout, stderr io.Writer) int {
 		filepath.Join(workDir, "browser-evidence.md"),
 	)
 	if !haveProof {
-		fmt.Fprintf(stderr, "evidence-fresh: no evidence.md / proof.md / browser-evidence.md in %s — run /rite-prove\n", workDir)
+		fmt.Fprintf(stderr, "evidence-fresh: no evidence.md / proof.md / browser-evidence.md in %s — run %s\n", workDir, workflow.ForVerb("prove").Both())
 		return 5
 	}
 
@@ -74,7 +76,7 @@ func EvidenceFresh(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	if newestCode > newestProof {
-		fmt.Fprintf(stderr, "evidence-fresh: STALE — %s is newer than the proof. Re-run /rite-prove before GO.\n", newestPath)
+		fmt.Fprintf(stderr, "evidence-fresh: STALE — %s is newer than the proof. Re-run %s before GO.\n", newestPath, workflow.ForVerb("prove").Both())
 		return 3
 	}
 	fmt.Fprintln(stdout, "evidence-fresh: OK — evidence post-dates every touched file.")

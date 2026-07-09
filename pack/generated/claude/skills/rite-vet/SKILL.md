@@ -63,6 +63,7 @@ Audit for a plan resting on unstated beliefs).
    instead of re-deriving state from raw Markdown:
    ```bash
    devrites-engine preamble
+   devrites-engine snapshot
    ```
    Then the workspace: `plan.md`, `tasks.md`, `spec.md`
    (for intent + acceptance), `strategy.md` (if `/rite-temper` ran), `decisions.md`,
@@ -120,7 +121,12 @@ Audit for a plan resting on unstated beliefs).
    (`spec-grammar.md`), the diagram maps **each `#### Scenario:` (WHEN/THEN) to ≥1 planned
    test** — an unmapped scenario is a coverage gap the build must close. Then the failure-mode
    table, "NOT in scope", "What already exists",
-   and the worktree parallelization strategy. Shapes in [`reference/review-axes.md`](reference/review-axes.md).
+   and the worktree parallelization strategy. Ground the parallelization section in the
+   engine's advisory planner:
+   ```bash
+   devrites-engine lanes plan "$(cat .devrites/ACTIVE 2>/dev/null)"
+   ```
+   Shapes in [`reference/review-axes.md`](reference/review-axes.md).
    **Developer-facing surface?** If the plan ships one (`developer-experience.md` — API / CLI / SDK /
    webhook / config / error messages / getting-started), the DX scorecard is **predicted by a
    fresh-context `devrites-devex-reviewer` in predict mode** (dispatched in step 6 alongside the

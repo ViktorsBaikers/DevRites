@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/devrites/devrites/internal/workflow"
 )
 
 // Learnings is the cross-feature learning ledger for /rite-learn. Its state is
@@ -143,8 +145,8 @@ func Learnings(root string, args []string, stdout, stderr io.Writer) int {
 		if len(phrase) > 48 {
 			phrase = phrase[:48]
 		}
-		fmt.Fprintf(stdout, "learnings: a pattern recurs %sx across shipped features (\"%s…\") — review + maybe promote it to a rule with /rite-learn.\n",
-			strconv.Itoa(top.count), phrase)
+		fmt.Fprintf(stdout, "learnings: a pattern recurs %sx across shipped features (\"%s…\") — review + maybe promote it to a rule with %s.\n",
+			strconv.Itoa(top.count), phrase, workflow.ForVerb("learn").Both())
 		return 0
 
 	default:

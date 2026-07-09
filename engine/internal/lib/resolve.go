@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/devrites/devrites/internal/workflow"
 )
 
 // Resolve answers or drops an open question and keeps questions.md and state.md
@@ -25,7 +27,7 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 
 	slug := activeSlug(root)
 	if slug == "" {
-		return fail(stderr, "No active workspace. Run /rite-spec <feature> first.", 2)
+		return fail(stderr, "No active workspace. Run "+workflow.ForVerb("spec").Both()+" <feature> first.", 2)
 	}
 	work := featureDir(root, slug)
 	qfile := filepath.Join(work, "questions.md")
@@ -362,7 +364,7 @@ func clearAwaiting(sfile, qid string) {
 			out = append(out, "- Status: running")
 			continue
 		case nextStepRe.MatchString(line):
-			out = append(out, "- Next step: (resume — `/rite-build` to continue the workflow)")
+			out = append(out, "- Next step: (resume — `"+workflow.ForVerb("build").Both()+"` to continue the workflow)")
 			continue
 		case logHdrRe.MatchString(line):
 			out = append(out, line)

@@ -71,6 +71,7 @@ type runner struct {
 	payloadFS fs.FS
 	source    string
 	manifest  []string
+	records   map[string]string
 	prev      map[string]bool
 	stats     stats
 }
@@ -256,7 +257,7 @@ func newRunner(opts Options) (*runner, error) {
 	if payload != "" {
 		payload, _ = filepath.Abs(payload)
 	}
-	r := &runner{opts: opts, target: target, payload: payload, payloadFS: os.DirFS(payload), source: source, prev: map[string]bool{}}
+	r := &runner{opts: opts, target: target, payload: payload, payloadFS: os.DirFS(payload), source: source, prev: map[string]bool{}, records: map[string]string{}}
 	if opts.Mode != ModeUninstall {
 		if err := r.validatePayload(); err != nil {
 			return nil, err
@@ -437,6 +438,7 @@ func (r *runner) installData(data []byte, rel string) error {
 		return fmt.Errorf("cannot write %s: %w", rel, err)
 	}
 	r.addManifest(rel)
+	r.addInstallRecord(rel, data)
 	if action == "install" {
 		r.stats.installed++
 	} else {
@@ -447,6 +449,14 @@ func (r *runner) installData(data []byte, rel string) error {
 
 func (r *runner) addManifest(rel string) {
 	r.manifest = append(r.manifest, filepath.ToSlash(rel))
+}
+
+func (r *runner) addInstallRecord(rel string, data []byte) {
+	if r.records == nil {
+		r.records = map[string]string{}
+	}
+	sum := sha256.Sum256(data)
+	r.records[filepath.ToSlash(rel)] = fmt.Sprintf("sha256:%x", sum[:])
 }
 
 func (r *runner) installMarker(rel, text string) error {
@@ -604,6 +614,12 @@ func (r *runner) writeManifest() error {
 	b.WriteString("# Generated " + time.Now().UTC().Format(time.RFC3339) + ". Uninstall removes exactly these paths.\n")
 	b.WriteString("# devrites-version: " + installedVersion(r.source) + "\n")
 	b.WriteString("# devrites-flags: " + r.flagsString() + "\n")
+	b.WriteString("# managed-records: source=npx payload=pack/generated format=rel sha256\n")
+	for _, rel := range r.manifest {
+		if hash := r.records[rel]; hash != "" {
+			b.WriteString("# managed: " + rel + " " + hash + "\n")
+		}
+	}
 	for _, rel := range r.manifest {
 		b.WriteString(rel + "\n")
 	}

@@ -179,6 +179,31 @@ Code itself and, optionally and at the user's choice, on codegraph /
 graphify / Playwright MCP — each of which is invoked through its own
 documented interface, not bundled.
 
+### Agentic trust boundaries
+
+Treat every instruction-bearing file as supply chain:
+
+1. **Shipped pack** — `pack/.claude/**`, generated host artifacts, hooks, and the
+   engine are release-managed and scanned before publish.
+2. **Project-local state** — `.devrites/work/**`, learnings, principles, and
+   review artifacts are evidence, not authority. Live source and engine gates win
+   over stale state.
+3. **User extensions/overrides** — `.devrites/extensions/**` and
+   `.devrites/overrides/**` are untrusted until `devrites-engine extensions
+   validate` / `overrides validate` pass. Extensions may add checks or reviewers;
+   they must not weaken type-GO, seal/ship, AFK/HITL, security, or evidence
+   gates.
+4. **External capability configs** — MCP/tool configs are optional and
+   project-local. `/rite-doctor`/`devrites-engine doctor` reports readiness, but
+   missing tools degrade to file-system/engine gates instead of silently changing
+   workflow semantics.
+
+Never copy untrusted issue text, web content, or model output into a skill,
+agent, hook, MCP config, or generated artifact without reviewing it as executable
+instructions. Hidden unicode, prompt-injection phrasing, personal absolute paths,
+and secret-like strings are release-blocking findings unless explicitly and
+visibly justified.
+
 ### Known non-issues
 
 - **`!` injection in `/rite`** — local read of own state; safe. See above.

@@ -155,6 +155,14 @@ else
 fi
 
 # ---- 10. no global writes ------------------------------------------------
+section "no personal paths in shipped artifacts"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/check-no-personal-paths.py" >/tmp/dr_personal_paths 2>&1; then cat /tmp/dr_personal_paths; good "no personal paths check passed"; else cat /tmp/dr_personal_paths; bad "personal path check failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+# ---- 10b. no global writes ------------------------------------------------
 section "no global ~/.claude writes"
 if bash "$ROOT/scripts/check-no-global-writes.sh" >/tmp/dr_glob 2>&1; then good "no-global-writes check passed"; else bad "no-global-writes check failed"; cat /tmp/dr_glob; fi
 
