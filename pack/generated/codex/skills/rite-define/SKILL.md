@@ -57,6 +57,7 @@ the plan:
    open-question tally):
    ```bash
    devrites-engine preamble
+   devrites-engine snapshot
    devrites-engine spec-skeleton ".devrites/work/$(cat .devrites/ACTIVE 2>/dev/null)"
    ```
    If there is no active workspace, no `spec.md`, `spec-skeleton` blocks, or its readiness gate hasn't passed →
@@ -96,7 +97,14 @@ the plan:
 4. **Map coverage** — every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
    criterion.
-4a. **Persist the traceability matrix** — write `traceability.md` (`AC/REQ ID → slice(s) →
+4a. **Parallel-lane sanity check** — after drafting `tasks.md` but before asking for plan
+   approval, run the advisory lane planner:
+   ```bash
+   devrites-engine lanes plan "$(cat .devrites/ACTIVE 2>/dev/null)"
+   ```
+   Use it to spot independent read-only/review lanes and dependency mistakes, but do not
+   weaken DevRites' default of one production-write slice at a time.
+4b. **Persist the traceability matrix** — write `traceability.md` (`AC/REQ ID → slice(s) →
    test/proof → evidence ID → touched files → status`), the living map `$rite-prove` and
    `$rite-seal` walk. Generate it with `devrites-engine coverage` when available, then save/rename
    the output as `traceability.md`, or write the table by hand from the same inputs if the

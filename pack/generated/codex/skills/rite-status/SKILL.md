@@ -23,15 +23,19 @@ Read-only. Report where the active feature stands. **Do not run any phase.**
 
 ## Load state
 
-Run the shared DevRites preamble (default slug = `.devrites/ACTIVE`):
+Run the shared DevRites preamble plus the machine snapshot (default slug = `.devrites/ACTIVE`):
 
 ```bash
 devrites-engine preamble [feature-slug]
-devrites-engine status <feature-slug>
+devrites-engine snapshot [feature-slug]
 ```
 
-The preamble prints the active workspace's `state.md` and the list of artifacts
-present; `status` prints the deterministic phase-relative completeness verdict.
+The preamble is the human-readable orientation digest: it prints `state.md`, artifacts
+present, run mode, and open-question counts. The snapshot is the canonical
+cross-harness machine contract: phase, section completeness, current slice,
+evidence/drift/review freshness, capability readiness, and **both** host-specific
+next-command forms under `nextCommands` (`claude` = `/rite-*`, `codex` = `$rite-*`).
+Use the command form for the current host; do not invent or hardcode one.
 The `!`-prefix dynamic-context-injection idiom is **not** used here so the skill
 stays portable across harnesses; the `devrites` binary is the cross-harness mechanism.
 
@@ -49,7 +53,8 @@ Otherwise summarize from the loaded state, concisely:
    `awaiting_human`, render the `Awaiting human` block from `state.md` (qid, gate,
    question, proposed, raised_at, blocking_slices) and instruct
    `$rite-resolve <qid> "<answer>"`.
-4. **Next action** — the single recommended next command.
+4. **Next action** — the single recommended next command from `snapshot.nextCommands`
+   for the current host.
 5. **Evidence** — what's proven vs unproven (from `evidence.md` /
    `browser-evidence.md`).
 6. **Open questions** — count by gate (from `questions.md`:

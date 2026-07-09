@@ -11,6 +11,7 @@ Install DevRites normally, then run the engine from the project root:
 
 ```bash
 devrites-engine preamble                 # workspace digest for the active feature
+devrites-engine snapshot [slug]          # machine-readable workspace/status snapshot
 devrites-engine build-readiness [slug]   # build-readiness gate      (exit 0 ready)
 devrites-engine evidence-fresh [slug]    # proof freshness gate      (exit 0 fresh · 3 stale)
 devrites-engine check-acceptance <dir>   # acceptance gate           (exit 0 proven · 1 gap)
@@ -28,7 +29,11 @@ devrites-engine help
 The AFK-parsed read commands (`status`, `readiness`, `seal`, `spec-validate`,
 `evidence-fresh`, `preamble`, `coverage`, `analyze`, `doctor`, `ledger`) accept
 `--json`, which wraps the result in a stable envelope — see
-[`engine/agent-contract.md`](engine/agent-contract.md).
+[`engine/agent-contract.md`](engine/agent-contract.md). `snapshot` is already a
+structured JSON contract and emits `schemaVersion: devrites.workspace.v1`
+directly rather than wrapping human text. Snapshot consumers should read
+`nextCommands.claude` or `nextCommands.codex` for the current host instead of
+hardcoding a `/rite-*` or `$rite-*` command form.
 
 The npm `devrites` shim remains the installer/updater/uninstaller entry point and
 proxies these engine subcommands when `devrites-engine` is installed. Install and

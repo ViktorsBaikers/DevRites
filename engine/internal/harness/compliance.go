@@ -50,25 +50,29 @@ func (t Tier) String() string {
 
 // Surface is one enforcement surface and how each harness backs it.
 type Surface struct {
-	Name   string
-	Claude Tier
-	Codex  Tier
-	Note   string
+	Name        string
+	Claude      Tier
+	Codex       Tier
+	PhaseImpact string
+	Fallback    string
+	DoctorCheck string
+	Confidence  string
+	Note        string
 }
 
 // complianceMatrix is grounded in the shipped wiring: pack/.claude/settings.json
 // for Claude, generated host artifacts + AGENTS.md merge for Codex.
 // Change a cell only when that wiring changes.
 var complianceMatrix = []Surface{
-	{"SessionStart orientation", Native, Native, "Both wire the orient hook; identical additionalContext envelope."},
-	{"PreToolUse allow / deny (allow, a1-guard, reviewer-readonly, wright-scope)", Native, Native, "Codex wires the same PreToolUse guards with agent-type gating."},
-	{"PostToolUse sentinel (redwatch)", Native, Native, "Fail-on-red sentinel wired on both."},
-	{"Stop gate", Native, Native, "Both honour the {decision:block} convention."},
-	{"SubagentStart discipline injection", Native, Native, "subagent-orient wired on both."},
-	{"Skill invocation", Native, Adapter, "Claude: native /rite. Codex: $rite over the mirrored .agents/skills tree."},
-	{"Reviewer subagent dispatch", Native, Instruction, "Codex under-fires embedded spawns (openai/codex#23496); falls back to .codex/agents + a labelled inline pass."},
-	{"Standards step-0 load", Native, Instruction, "Claude: skill Reads core.md. Codex: an AGENTS.md directive to read it."},
-	{"Project activation", Native, Conditional, "Codex silently skips every .codex/ layer in an untrusted project until it is trusted."},
+	{"SessionStart orientation", Native, Native, "all phases", "manual preamble/snapshot", "yes", "high", "Both wire the orient hook; identical additionalContext envelope."},
+	{"PreToolUse allow / deny (allow, a1-guard, reviewer-readonly, wright-scope)", Native, Native, "build/review safety", "engine gates + human review", "yes", "high", "Codex wires the same PreToolUse guards with agent-type gating."},
+	{"PostToolUse sentinel (redwatch)", Native, Native, "prove/build rest points", "manual red/green check", "yes", "high", "Fail-on-red sentinel wired on both."},
+	{"Stop gate", Native, Native, "all rest points", "manual host-specific rite-status", "yes", "high", "Both honour the {decision:block} convention."},
+	{"SubagentStart discipline injection", Native, Native, "review/build fan-out", "agent file preamble", "yes", "high", "subagent-orient wired on both."},
+	{"Skill invocation", Native, Adapter, "all public rites", "explicit file read", "yes", "high", "Claude: native /rite. Codex: $rite over the mirrored .agents/skills tree."},
+	{"Reviewer subagent dispatch", Native, Instruction, "review/seal confidence", "labelled inline pass", "partial", "medium", "Codex under-fires embedded spawns (openai/codex#23496); falls back to .codex/agents + a labelled inline pass."},
+	{"Standards step-0 load", Native, Instruction, "all phases", "explicit standards read", "partial", "medium", "Claude: skill Reads core.md. Codex: an AGENTS.md directive to read it."},
+	{"Project activation", Native, Conditional, "Codex-only startup", "trust project then rerun doctor", "yes", "medium", "Codex silently skips every .codex/ layer in an untrusted project until it is trusted."},
 }
 
 // Matrix markers delimit the generated block inside a docs file so drift-check
@@ -84,10 +88,10 @@ const (
 func RenderMatrix() string {
 	var b strings.Builder
 	b.WriteString(MatrixBeginMarker)
-	b.WriteString("\n\n| Surface | Claude Code | Codex | Notes |\n")
-	b.WriteString("| --- | --- | --- | --- |\n")
+	b.WriteString("\n\n| Surface | Claude Code | Codex | Phase impact | Fallback | Doctor check | Confidence | Notes |\n")
+	b.WriteString("| --- | --- | --- | --- | --- | --- | --- | --- |\n")
 	for _, s := range complianceMatrix {
-		fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", s.Name, s.Claude, s.Codex, s.Note)
+		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %s | %s | %s |\n", s.Name, s.Claude, s.Codex, s.PhaseImpact, s.Fallback, s.DoctorCheck, s.Confidence, s.Note)
 	}
 	b.WriteString("\nTiers: **Native** (harness enforces it directly) · **Adapter-backed** ")
 	b.WriteString("(supported through a translation shim) · **Instruction-backed** ")

@@ -31,6 +31,7 @@ Usage:
   devrites-engine update [flags]           Update an existing DevRites install in place
   devrites-engine uninstall [flags]        Remove a DevRites install, preserving runtime state
   devrites-engine status <slug>            Print a feature's phase and per-section completeness
+  devrites-engine snapshot [slug]          Emit the DevRites workspace/status JSON snapshot
   devrites-engine reindex                  Rebuild the SQLite index from the .devrites files
   devrites-engine readiness <slug>         Gate: are the sections required to leave this phase complete?
   devrites-engine seal <slug>              Gate: is the feature complete enough to seal?
@@ -62,6 +63,7 @@ Usage:
   devrites-engine health <sub> [...]       Health history: record|list compact quality scores
   devrites-engine review-fingerprints [slug]  Stable IDs for review findings; --write saves JSONL
   devrites-engine conventions <sub> [...]  Project convention ledger: band|read|orient|promote|contradict
+  devrites-engine lanes plan [slug]       Advisory safe-parallelism/lane plan for slices
   devrites-engine extensions <sub>         Project extensions (.devrites/extensions/): list|validate|sync
   devrites-engine overrides <sub>          Reviewer-override linter (.devrites/overrides/): list|validate
   devrites-engine doctor                   Report the binary / pack / state-schema version triangle
@@ -134,6 +136,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "status":
 		rest, j := extractFlag(args[1:], "--json")
 		return jsonWrap("status", j, stdout, stderr, func(o, e io.Writer) int { return cmdStatus(rest, o, e) })
+	case "snapshot":
+		return cmdSnapshot(args[1:], stdout, stderr)
 	case "reindex":
 		return cmdReindex(args[1:], stdout, stderr)
 	case "readiness":
@@ -204,6 +208,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.ReviewFingerprints(resolveRootLenient(), args[1:], stdout, stderr)
 	case "conventions":
 		return lib.Conventions(args[1:], stdout, stderr)
+	case "lanes":
+		return lib.Lanes(resolveRootLenient(), args[1:], stdout, stderr)
 	case "extensions":
 		return lib.Extensions(resolveRootLenient(), args[1:], stdout, stderr)
 	case "overrides":

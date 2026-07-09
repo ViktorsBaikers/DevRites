@@ -19,6 +19,7 @@ Run the engine gates at these moments:
 
 ```bash
 devrites-engine preamble
+devrites-engine snapshot
 devrites-engine build-readiness; echo "readiness rc=$?"
 
 devrites-engine reconcile snapshot
@@ -54,8 +55,11 @@ gates.
    mode (HITL/AFK), and the open-question tally by gate, deterministically:
    ```bash
    devrites-engine preamble
+   devrites-engine snapshot
    ```
-   Then **run the readiness gate** — it enforces the step-0 stop conditions by exit code,
+   Treat the snapshot as the canonical machine-readable status; if you need to tell the
+   user the next command, use `nextCommands.claude` in Claude Code or `nextCommands.codex`
+   in Codex. Then **run the readiness gate** — it enforces the step-0 stop conditions by exit code,
    not by memory:
    ```bash
    devrites-engine build-readiness; echo "readiness rc=$?"

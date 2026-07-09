@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/devrites/devrites/internal/workflow"
 )
 
 // spaceChars is the POSIX [[:space:]] set under the C locale — the collation the
@@ -60,7 +62,7 @@ func Preamble(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	workDir := featureDir(root, slug)
 	if slug == "" || !isDir(workDir) {
-		fmt.Fprintln(stdout, "No active workspace. Run /rite-spec <feature> to start.")
+		fmt.Fprintf(stdout, "No active workspace. Run %s <feature> to start.\n", workflow.ForVerb("spec").Both())
 		return 0
 	}
 

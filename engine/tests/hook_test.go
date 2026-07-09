@@ -54,7 +54,7 @@ func TestHookOrientActiveFeatureEmitsDigest(t *testing.T) {
 				`feature "auth-tokens"`,
 				"phase: build",
 				"result: incomplete (missing: tasks)",
-				"/rite-* command",
+				"host-specific DevRites command",
 			} {
 				if !strings.Contains(ctx, want) {
 					t.Errorf("additionalContext missing %q\n--- got ---\n%s", want, ctx)

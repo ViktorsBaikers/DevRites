@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/doctor"
@@ -26,6 +28,14 @@ func resolveRootLenient() string {
 		return ".devrites"
 	}
 	return filepath.Join(cwd, devritespaths.DevritesRootName)
+}
+
+func readFile(path string) string {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return string(raw)
 }
 
 // cmdDoctor reports the binary / pack / state-schema version triangle and its
@@ -52,6 +62,23 @@ func cmdDoctor(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	fmt.Fprint(stdout, report.Render())
+	if slug := strings.TrimSpace(readFile(filepath.Join(root, "ACTIVE"))); slug != "" {
+		if snap, err := state.Snapshot(root, slug); err == nil {
+			fmt.Fprintln(stdout)
+			fmt.Fprintln(stdout, "readiness-dashboard:")
+			fmt.Fprintf(stdout, "  active: %s (%s, %s)\n", snap.Slug, snap.Phase, snap.RunMode)
+			fmt.Fprintf(stdout, "  evidence: %s\n", snap.Evidence.Status)
+			fmt.Fprintf(stdout, "  drift: %s\n", snap.Drift.Status)
+			fmt.Fprintf(stdout, "  review: %s\n", snap.Review.Status)
+			fmt.Fprintf(stdout, "  harness: %s — %s\n", snap.Harness.Status, snap.Harness.Detail)
+			fmt.Fprintf(stdout, "  extensions: %s (%d)\n", snap.Extensions.Status, snap.Extensions.Count)
+			fmt.Fprintf(stdout, "  worktree: %s (%d changed)\n", snap.DirtyWorkspace.Status, snap.DirtyWorkspace.Changed)
+			fmt.Fprintln(stdout, "  capabilities:")
+			for _, cap := range snap.Capabilities {
+				fmt.Fprintf(stdout, "    - %s: %s · used by %s · fallback: %s · risk: %s\n", cap.Name, cap.Status, cap.UsedBy, cap.Fallback, cap.Risk)
+			}
+		}
+	}
 	if report.Refuse {
 		return exitBlocked
 	}
@@ -81,5 +108,33 @@ func cmdMigrate(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "migrated %d feature(s): %v\n", len(result.Migrated), result.Migrated)
 	fmt.Fprintf(stdout, "backup: %s\n", result.BackupDir)
+	return exitOK
+}
+
+func cmdSnapshot(args []string, stdout, stderr io.Writer) int {
+	if len(args) > 1 {
+		fmt.Fprintln(stderr, "usage: devrites-engine snapshot [slug]")
+		return exitUsage
+	}
+	root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
+	if err != nil {
+		fmt.Fprintf(stderr, "devrites: %v\n", err)
+		return exitUsage
+	}
+	slug := ""
+	if len(args) == 1 {
+		slug = args[0]
+	}
+	snapshot, err := state.Snapshot(root, slug)
+	if err != nil {
+		fmt.Fprintf(stderr, "devrites: %v\n", err)
+		return exitUsage
+	}
+	data, err := json.MarshalIndent(snapshot, "", "  ")
+	if err != nil {
+		fmt.Fprintf(stderr, "devrites: cannot render snapshot JSON: %v\n", err)
+		return exitUsage
+	}
+	_, _ = stdout.Write(append(data, '\n'))
 	return exitOK
 }

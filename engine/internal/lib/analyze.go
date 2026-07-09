@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/devrites/devrites/internal/workflow"
 )
 
 // Analyze cross-checks a feature's spec.md against its tasks.md before any code is
@@ -126,7 +128,7 @@ func Analyze(root string, args []string, stdout, stderr io.Writer) int {
 
 	fmt.Fprintln(stdout)
 	if crit > 0 {
-		fmt.Fprintf(stdout, "## Verdict: BLOCKED — %d CRITICAL finding(s). Resolve before /rite-build.\n", crit)
+		fmt.Fprintf(stdout, "## Verdict: BLOCKED — %d CRITICAL finding(s). Resolve before %s.\n", crit, workflow.ForVerb("build").Both())
 		return 1
 	}
 	fmt.Fprintln(stdout, "## Verdict: clear — spec/tasks consistent and fully mapped.")
