@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/fs"
@@ -112,82 +113,92 @@ func Run(args []string, stdout, stderr io.Writer, mode Mode) int {
 var errHelp = errors.New("help")
 
 func parseArgs(args []string, opts *Options) error {
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-		next := func(name string) (string, error) {
-			i++
-			if i >= len(args) {
-				return "", fmt.Errorf("%s needs a value", name)
-			}
-			return args[i], nil
+	normalized := make([]string, 0, len(args))
+	shortAliasesWithoutValue := false
+	for _, arg := range args {
+		if arg == "--short-aliases" {
+			normalized = append(normalized, "--short-aliases=")
+			shortAliasesWithoutValue = true
+			continue
 		}
-		switch {
-		case arg == "--target":
-			v, err := next(arg)
-			if err != nil {
-				return err
-			}
-			opts.Target = v
-		case strings.HasPrefix(arg, "--target="):
-			opts.Target = strings.TrimPrefix(arg, "--target=")
-		case arg == "--payload-dir":
-			v, err := next(arg)
-			if err != nil {
-				return err
-			}
-			opts.PayloadDir = v
-		case strings.HasPrefix(arg, "--payload-dir="):
-			opts.PayloadDir = strings.TrimPrefix(arg, "--payload-dir=")
-		case arg == "--source-dir":
-			v, err := next(arg)
-			if err != nil {
-				return err
-			}
-			opts.SourceDir = v
-		case strings.HasPrefix(arg, "--source-dir="):
-			opts.SourceDir = strings.TrimPrefix(arg, "--source-dir=")
-		case arg == "--dry-run":
-			opts.DryRun = true
-		case arg == "--force":
-			opts.Force = true
-		case arg == "--no-codex":
-			opts.WithCodex = false
-		case arg == "--no-agents":
-			opts.WithAgents = false
-		case arg == "--no-skills":
-			opts.WithSkills = false
-		case arg == "--no-binary":
-			opts.WithBinary = false
-		case arg == "--keep-binary":
-			opts.KeepBinary = true
-		case arg == "--no-rules" || arg == "--rules-only":
-			fmt.Fprintf(opts.Stderr, "warning: %s is deprecated and now a no-op - DevRites engineering standards ship inside the devrites-lib skill.\n", arg)
-		case arg == "--no-short-aliases":
-			opts.AliasMode = "off"
-		case arg == "--short-aliases":
-			opts.AliasMode = "off"
-			fmt.Fprintln(opts.Stderr, "warning: --short-aliases with no value is a no-op; use --short-aliases=all.")
-		case arg == "--short-aliases=all":
-			opts.AliasMode = "all"
-		case arg == "--check":
-			opts.UpdateCheck = true
-		case arg == "--pre":
-			opts.AllowPre = true
-		case arg == "--to":
-			v, err := next(arg)
-			if err != nil {
-				return err
-			}
-			opts.UpdateTo = v
-		case strings.HasPrefix(arg, "--to="):
-			opts.UpdateTo = strings.TrimPrefix(arg, "--to=")
-		case arg == "-h" || arg == "--help":
+		normalized = append(normalized, arg)
+	}
+
+	fs := flag.NewFlagSet("devrites-engine "+string(opts.Mode), flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	target := fs.String("target", opts.Target, "")
+	payloadDir := fs.String("payload-dir", opts.PayloadDir, "")
+	sourceDir := fs.String("source-dir", opts.SourceDir, "")
+	dryRun := fs.Bool("dry-run", opts.DryRun, "")
+	force := fs.Bool("force", opts.Force, "")
+	noCodex := fs.Bool("no-codex", !opts.WithCodex, "")
+	noAgents := fs.Bool("no-agents", !opts.WithAgents, "")
+	noSkills := fs.Bool("no-skills", !opts.WithSkills, "")
+	noBinary := fs.Bool("no-binary", !opts.WithBinary, "")
+	keepBinary := fs.Bool("keep-binary", opts.KeepBinary, "")
+	noRules := fs.Bool("no-rules", false, "")
+	rulesOnly := fs.Bool("rules-only", false, "")
+	noShortAliases := fs.Bool("no-short-aliases", false, "")
+	shortAliases := fs.String("short-aliases", opts.AliasMode, "")
+	updateCheck := fs.Bool("check", opts.UpdateCheck, "")
+	allowPre := fs.Bool("pre", opts.AllowPre, "")
+	updateTo := fs.String("to", opts.UpdateTo, "")
+
+	if err := fs.Parse(normalized); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
 			return errHelp
+		}
+		return err
+	}
+	if fs.NArg() > 0 {
+		return fmt.Errorf("unknown option: %s (try --help)", fs.Arg(0))
+	}
+
+	opts.Target = *target
+	opts.PayloadDir = *payloadDir
+	opts.SourceDir = *sourceDir
+	opts.DryRun = *dryRun
+	opts.Force = *force
+	opts.WithCodex = !*noCodex
+	opts.WithAgents = !*noAgents
+	opts.WithSkills = !*noSkills
+	opts.WithBinary = !*noBinary
+	opts.KeepBinary = *keepBinary
+	opts.UpdateCheck = *updateCheck
+	opts.AllowPre = *allowPre
+	opts.UpdateTo = *updateTo
+	if *noRules {
+		fmt.Fprintln(opts.Stderr, "warning: --no-rules is deprecated and now a no-op - DevRites engineering standards ship inside the devrites-lib skill.")
+	}
+	if *rulesOnly {
+		fmt.Fprintln(opts.Stderr, "warning: --rules-only is deprecated and now a no-op - DevRites engineering standards ship inside the devrites-lib skill.")
+	}
+	if *noShortAliases {
+		opts.AliasMode = "off"
+	} else if flagWasSet(fs, "short-aliases") {
+		switch *shortAliases {
+		case "":
+			opts.AliasMode = "off"
+			if shortAliasesWithoutValue {
+				fmt.Fprintln(opts.Stderr, "warning: --short-aliases with no value is a no-op; use --short-aliases=all.")
+			}
+		case "all":
+			opts.AliasMode = "all"
 		default:
-			return fmt.Errorf("unknown option: %s (try --help)", arg)
+			return fmt.Errorf("unknown option: --short-aliases=%s (try --help)", *shortAliases)
 		}
 	}
 	return nil
+}
+
+func flagWasSet(fs *flag.FlagSet, name string) bool {
+	found := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }
 
 func usage(mode Mode) string {

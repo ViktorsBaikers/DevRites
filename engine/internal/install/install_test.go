@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/testutil"
 )
 
 func TestInstallDryRunWritesNothing(t *testing.T) {
@@ -42,15 +44,15 @@ func TestInstallManifestConflictAndPrune(t *testing.T) {
 	target := t.TempDir()
 
 	runInstall(t, target, payload, func(o *Options) {})
-	writeFile(t, filepath.Join(target, ".claude", "skills", "foreign", "SKILL.md"), "mine\n")
+	testutil.WriteFile(t, filepath.Join(target, ".claude", "skills", "foreign", "SKILL.md"), "mine\n")
 	runInstall(t, target, payload, func(o *Options) {})
-	if got := readFile(t, filepath.Join(target, ".claude", "skills", "foreign", "SKILL.md")); got != "mine\n" {
+	if got := testutil.ReadFile(t, filepath.Join(target, ".claude", "skills", "foreign", "SKILL.md")); got != "mine\n" {
 		t.Fatalf("unmanaged file clobbered: %q", got)
 	}
 
 	stale := filepath.Join(target, ".claude", "skills", "stale", "SKILL.md")
-	writeFile(t, stale, "stale\n")
-	appendFile(t, filepath.Join(target, ManifestName), ".claude/skills/stale/SKILL.md\n")
+	testutil.WriteFile(t, stale, "stale\n")
+	testutil.AppendFile(t, filepath.Join(target, ManifestName), ".claude/skills/stale/SKILL.md\n")
 	runInstall(t, target, payload, func(o *Options) { o.Force = true })
 	if exists(stale) {
 		t.Fatal("managed stale file was not pruned")
@@ -58,7 +60,7 @@ func TestInstallManifestConflictAndPrune(t *testing.T) {
 	if !exists(filepath.Join(target, ".devrites", "ACTIVE")) {
 		t.Fatal("ACTIVE not seeded")
 	}
-	if strings.Contains(readFile(t, filepath.Join(target, ManifestName)), ".devrites/ACTIVE") {
+	if strings.Contains(testutil.ReadFile(t, filepath.Join(target, ManifestName)), ".devrites/ACTIVE") {
 		t.Fatal("ACTIVE should not be manifest-managed")
 	}
 }
@@ -67,36 +69,36 @@ func TestMarkerMergeAndUninstallPreserveUserContent(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	payload := testPayload(t)
 	target := t.TempDir()
-	writeFile(t, filepath.Join(target, "AGENTS.md"), "user guidance\n")
-	writeFile(t, filepath.Join(target, ".codex", "config.toml"), "model = \"x\"\n")
-	writeFile(t, filepath.Join(target, ".codex", "hooks.json"), `{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo user"}]}]}}`+"\n")
+	testutil.WriteFile(t, filepath.Join(target, "AGENTS.md"), "user guidance\n")
+	testutil.WriteFile(t, filepath.Join(target, ".codex", "config.toml"), "model = \"x\"\n")
+	testutil.WriteFile(t, filepath.Join(target, ".codex", "hooks.json"), `{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo user"}]}]}}`+"\n")
 
 	runInstall(t, target, payload, func(o *Options) {})
 	runInstall(t, target, payload, func(o *Options) {})
-	agents := readFile(t, filepath.Join(target, "AGENTS.md"))
+	agents := testutil.ReadFile(t, filepath.Join(target, "AGENTS.md"))
 	if strings.Count(agents, "<!-- BEGIN DEVRITES CODEX -->") != 1 {
 		t.Fatalf("AGENTS marker duplicated:\n%s", agents)
 	}
 	if !strings.Contains(agents, "user guidance") {
 		t.Fatal("AGENTS user content lost")
 	}
-	config := readFile(t, filepath.Join(target, ".codex", "config.toml"))
+	config := testutil.ReadFile(t, filepath.Join(target, ".codex", "config.toml"))
 	if strings.Contains(config, "DEVRITES CODEX") || !strings.Contains(config, `model = "x"`) {
 		t.Fatalf("config preservation wrong:\n%s", config)
 	}
-	hooks := readFile(t, filepath.Join(target, ".codex", "hooks.json"))
+	hooks := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json"))
 	if strings.Count(hooks, "devrites-engine hook stop-gate") != 1 || !strings.Contains(hooks, "echo user") {
 		t.Fatalf("hooks merge wrong:\n%s", hooks)
 	}
 
 	runUninstall(t, target)
-	if got := readFile(t, filepath.Join(target, "AGENTS.md")); !strings.Contains(got, "user guidance") || strings.Contains(got, "DEVRITES CODEX") {
+	if got := testutil.ReadFile(t, filepath.Join(target, "AGENTS.md")); !strings.Contains(got, "user guidance") || strings.Contains(got, "DEVRITES CODEX") {
 		t.Fatalf("AGENTS uninstall preservation wrong:\n%s", got)
 	}
-	if got := readFile(t, filepath.Join(target, ".codex", "config.toml")); !strings.Contains(got, `model = "x"`) || strings.Contains(got, "DEVRITES CODEX") {
+	if got := testutil.ReadFile(t, filepath.Join(target, ".codex", "config.toml")); !strings.Contains(got, `model = "x"`) || strings.Contains(got, "DEVRITES CODEX") {
 		t.Fatalf("config uninstall preservation wrong:\n%s", got)
 	}
-	if got := readFile(t, filepath.Join(target, ".codex", "hooks.json")); !strings.Contains(got, "echo user") || strings.Contains(got, "devrites-engine hook") {
+	if got := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json")); !strings.Contains(got, "echo user") || strings.Contains(got, "devrites-engine hook") {
 		t.Fatalf("hooks uninstall preservation wrong:\n%s", got)
 	}
 	if !exists(filepath.Join(target, ".devrites", "ACTIVE")) {
@@ -109,10 +111,10 @@ func TestGeneratedPayloadInstallsVerbatim(t *testing.T) {
 	payload := testPayload(t)
 	target := t.TempDir()
 	sentinel := "generated sentinel"
-	writeFile(t, filepath.Join(payload, "codex", "skills", "rite", "SKILL.md"), sentinel+"\n")
+	testutil.WriteFile(t, filepath.Join(payload, "codex", "skills", "rite", "SKILL.md"), sentinel+"\n")
 
 	runInstall(t, target, payload, func(o *Options) {})
-	if got := readFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != sentinel+"\n" {
+	if got := testutil.ReadFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != sentinel+"\n" {
 		t.Fatalf("codex payload was not installed verbatim: %q", got)
 	}
 }
@@ -123,7 +125,7 @@ func TestInstallBinaryUsesEngineHandoff(t *testing.T) {
 	binDir := t.TempDir()
 	engine := filepath.Join(t.TempDir(), "devrites-engine")
 	engineBody := "#!/bin/sh\nif [ \"$1\" = version ]; then echo 1.2.3; exit 0; fi\necho handoff\n"
-	writeExecutable(t, engine, engineBody)
+	testutil.WriteExecutable(t, engine, engineBody)
 	t.Setenv("DEVRITES_ENGINE_CLI", engine)
 	t.Setenv("DEVRITES_BIN_DIR", binDir)
 	t.Setenv("DEVRITES_REF", "v1.2.3")
@@ -131,7 +133,7 @@ func TestInstallBinaryUsesEngineHandoff(t *testing.T) {
 	runInstall(t, target, payload, func(o *Options) {})
 
 	installed := filepath.Join(binDir, "devrites-engine")
-	if got := readFile(t, installed); got != engineBody {
+	if got := testutil.ReadFile(t, installed); got != engineBody {
 		t.Fatalf("installed binary did not come from DEVRITES_ENGINE_CLI handoff:\n%s", got)
 	}
 	info, err := os.Stat(installed)
@@ -148,7 +150,7 @@ func TestInstallBinaryWarnsWhenHooksCannotResolveEngine(t *testing.T) {
 	target := t.TempDir()
 	binDir := t.TempDir()
 	engine := filepath.Join(t.TempDir(), "devrites-engine")
-	writeExecutable(t, engine, "#!/bin/sh\nif [ \"$1\" = version ]; then echo 1.2.3; exit 0; fi\n")
+	testutil.WriteExecutable(t, engine, "#!/bin/sh\nif [ \"$1\" = version ]; then echo 1.2.3; exit 0; fi\n")
 	pathDir := t.TempDir()
 	var stderr bytes.Buffer
 
@@ -185,11 +187,11 @@ func TestUpdateInstallsRequestedBundle(t *testing.T) {
 
 	bundleRoot := t.TempDir()
 	bundle := filepath.Join(bundleRoot, "devrites-v2.0.0")
-	writeFile(t, filepath.Join(bundle, "install.sh"), "#!/usr/bin/env bash\n")
-	writeFile(t, filepath.Join(bundle, "package.json"), `{"version":"2.0.0"}`+"\n")
+	testutil.WriteFile(t, filepath.Join(bundle, "install.sh"), "#!/usr/bin/env bash\n")
+	testutil.WriteFile(t, filepath.Join(bundle, "package.json"), `{"version":"2.0.0"}`+"\n")
 	payload := filepath.Join(bundle, "pack", "generated")
 	writeTestPayload(t, payload)
-	writeFile(t, filepath.Join(payload, "codex", "skills", "rite", "SKILL.md"), "updated rite\n")
+	testutil.WriteFile(t, filepath.Join(payload, "codex", "skills", "rite", "SKILL.md"), "updated rite\n")
 	t.Setenv("DEVRITES_UPDATE_BUNDLE", tarGzDir(t, bundleRoot))
 
 	opts := DefaultOptions(ModeUpdate)
@@ -201,7 +203,7 @@ func TestUpdateInstallsRequestedBundle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := readFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != "updated rite\n" {
+	if got := testutil.ReadFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != "updated rite\n" {
 		t.Fatalf("update did not install requested bundle payload: %q", got)
 	}
 	if got := manifestHeader(filepath.Join(target, ManifestName), "devrites-version"); got != "2.0.0" {
@@ -217,9 +219,9 @@ func TestUpdateBuildsGeneratedPayloadForSourceArchive(t *testing.T) {
 
 	bundleRoot := t.TempDir()
 	bundle := filepath.Join(bundleRoot, "devrites-v2.1.0")
-	writeFile(t, filepath.Join(bundle, "install.sh"), "#!/usr/bin/env bash\n")
-	writeFile(t, filepath.Join(bundle, "package.json"), `{"version":"2.1.0"}`+"\n")
-	writeExecutable(t, filepath.Join(bundle, "scripts", "build-host-artifacts.sh"), `#!/usr/bin/env bash
+	testutil.WriteFile(t, filepath.Join(bundle, "install.sh"), "#!/usr/bin/env bash\n")
+	testutil.WriteFile(t, filepath.Join(bundle, "package.json"), `{"version":"2.1.0"}`+"\n")
+	testutil.WriteExecutable(t, filepath.Join(bundle, "scripts", "build-host-artifacts.sh"), `#!/usr/bin/env bash
 set -eu
 out="${DEVRITES_HOST_ARTIFACT_DIR:?}"
 mkdir -p "$out/claude/skills/rite" "$out/claude/agents" "$out/codex/skills/rite" "$out/codex/agents"
@@ -242,7 +244,7 @@ printf '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"devrites-engine
 		t.Fatal(err)
 	}
 
-	if got := readFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != "source archive codex\n" {
+	if got := testutil.ReadFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != "source archive codex\n" {
 		t.Fatalf("source archive update did not build generated payload: %q", got)
 	}
 }
@@ -281,66 +283,25 @@ func testPayload(t *testing.T) string {
 
 func writeTestPayload(t *testing.T, root string) {
 	t.Helper()
-	writeFile(t, filepath.Join(root, "claude", "skills", "rite", "SKILL.md"), "claude rite\n")
-	writeFile(t, filepath.Join(root, "claude", "agents", "devrites-code-reviewer.md"), "agent\n")
-	writeFile(t, filepath.Join(root, "claude", "settings.json"), "{}\n")
-	writeFile(t, filepath.Join(root, "codex", "skills", "rite", "SKILL.md"), "codex rite\n")
-	writeFile(t, filepath.Join(root, "codex", "agents", "devrites-code-reviewer.toml"), "name = \"devrites-code-reviewer\"\n")
-	writeFile(t, filepath.Join(root, "codex", "AGENTS.md"), "<!-- BEGIN DEVRITES CODEX -->\nDevRites\n<!-- END DEVRITES CODEX -->\n")
+	testutil.WriteFile(t, filepath.Join(root, "claude", "skills", "rite", "SKILL.md"), "claude rite\n")
+	testutil.WriteFile(t, filepath.Join(root, "claude", "agents", "devrites-code-reviewer.md"), "agent\n")
+	testutil.WriteFile(t, filepath.Join(root, "claude", "settings.json"), "{}\n")
+	testutil.WriteFile(t, filepath.Join(root, "codex", "skills", "rite", "SKILL.md"), "codex rite\n")
+	testutil.WriteFile(t, filepath.Join(root, "codex", "agents", "devrites-code-reviewer.toml"), "name = \"devrites-code-reviewer\"\n")
+	testutil.WriteFile(t, filepath.Join(root, "codex", "AGENTS.md"), "<!-- BEGIN DEVRITES CODEX -->\nDevRites\n<!-- END DEVRITES CODEX -->\n")
 	hooks := map[string]any{"hooks": map[string]any{"Stop": []any{map[string]any{"hooks": []any{map[string]any{"type": "command", "command": "devrites-engine hook stop-gate"}}}}}}
 	data, err := json.MarshalIndent(hooks, "", "  ")
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(root, "codex", "hooks.json"), string(data)+"\n")
+	testutil.WriteFile(t, filepath.Join(root, "codex", "hooks.json"), string(data)+"\n")
 }
 
 func testSource(t *testing.T, version string) string {
 	t.Helper()
 	root := t.TempDir()
-	writeFile(t, filepath.Join(root, "package.json"), `{"version":"`+version+`"}`+"\n")
+	testutil.WriteFile(t, filepath.Join(root, "package.json"), `{"version":"`+version+`"}`+"\n")
 	return root
-}
-
-func writeFile(t *testing.T, path, data string) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func writeExecutable(t *testing.T, path, data string) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(data), 0o755); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func appendFile(t *testing.T, path, data string) {
-	t.Helper()
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-	if _, err := f.WriteString(data); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func readFile(t *testing.T, path string) string {
-	t.Helper()
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(data)
 }
 
 func tarGzDir(t *testing.T, root string) string {

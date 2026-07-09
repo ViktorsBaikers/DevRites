@@ -18,6 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/devrites/devrites/internal/testutil"
 )
 
 // libEnv forces byte-order collation so `sort` in the bash script and
@@ -58,13 +60,7 @@ func writeSpec(t *testing.T, workdir, name, content string) string {
 
 func writeFile(t *testing.T, workdir, rel, content string) {
 	t.Helper()
-	p := filepath.Join(workdir, rel)
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	testutil.WriteFile(t, filepath.Join(workdir, rel), content)
 }
 
 // runGo runs the built binary in workdir with libEnv, returning stdout, stderr, code.

@@ -94,7 +94,10 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 			}
 			if strings.HasPrefix(line, "--drop") {
 				rest := strings.TrimPrefix(line, "--drop ")
-				bid, reason := splitColon(rest)
+				bid, reason, ok := strings.Cut(rest, ":")
+				if !ok {
+					reason = bid
+				}
 				reason = strings.TrimPrefix(reason, " ")
 				if code := resolveQuestion(qfile, bid, "dropped", reason, stderr); code != 0 {
 					return code
@@ -102,7 +105,10 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 				clearAwaiting(sfile, bid)
 				fmt.Fprintf(stdout, "Dropped:  %s — %s\n", bid, reason)
 			} else {
-				bid, ans := splitColon(line)
+				bid, ans, ok := strings.Cut(line, ":")
+				if !ok {
+					ans = bid
+				}
 				ans = strings.TrimPrefix(ans, " ")
 				if code := resolveQuestion(qfile, bid, "answered", ans, stderr); code != 0 {
 					return code
@@ -127,16 +133,6 @@ func fail(stderr io.Writer, msg string, code int) int {
 func batchLines(data []byte) []string {
 	lines := strings.Split(string(data), "\n")
 	return lines[:len(lines)-1]
-}
-
-// splitColon splits s at the first ':', returning the parts before and after it
-// (both the whole string when there is no ':').
-func splitColon(s string) (before, after string) {
-	i := strings.Index(s, ":")
-	if i < 0 {
-		return s, s
-	}
-	return s[:i], s[i+1:]
 }
 
 // clockNow is the single wall-clock read for the resolve command. When
