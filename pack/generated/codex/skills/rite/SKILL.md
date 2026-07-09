@@ -127,7 +127,7 @@ SWITCH        $rite use <slug>                                re-point .devrites
 RESUME        $rite resolve ...        ≡    $rite-resolve     answer a HITL checkpoint
 AUTO          $rite autocomplete ...   ≡    $rite-autocomplete  run the whole lifecycle unattended (--ship to push)
 QUICK         $rite quick <change>     ≡    $rite-quick       express lane — one small reversible change (escalates if it grows)
-UTILITY       $rite frame | prototype | handoff | zoom-out | pressure-test  (or direct /rite-* shortcuts)
+UTILITY       $rite frame | prototype | handoff | zoom-out | pressure-test  (or direct shortcuts)
 ```
 
 > **Small one-off change?** A typo, copy tweak, config bump, or one-function fix → **`$rite-quick`**

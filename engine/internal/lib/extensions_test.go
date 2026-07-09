@@ -177,6 +177,26 @@ safety:
 	}
 }
 
+func TestExtensionsValidateWarnsWhenGateSurfaceIsInactive(t *testing.T) {
+	root := t.TempDir()
+	writeExtSkill(t, root, "audit-lite", goodSkill)
+	writeExtManifest(t, root, "audit-lite", `schema_version: "1.1"
+kind: extension
+id: audit-lite
+surface:
+  clusters: [review]
+safety:
+  executable: true
+`)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := Extensions(root, []string{"validate"}, stdout, stderr); code != 1 {
+		t.Fatalf("unsafe gate-like extension should fail, got %d\n%s%s", code, stdout, stderr)
+	}
+	if !contains(stderr.String(), "declared review/gate surface is inactive") {
+		t.Fatalf("want inactive gate warning, got:\n%s", stderr.String())
+	}
+}
+
 func writeExtManifest(t *testing.T, root, ext, body string) {
 	t.Helper()
 	dir := filepath.Join(root, "extensions", ext)

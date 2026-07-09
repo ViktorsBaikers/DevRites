@@ -55,6 +55,7 @@
     "test:fast": "node scripts/run-tests.mjs --fast",
     "test:parallel": "node scripts/run-tests.mjs",
     "test:serial": "node scripts/run-tests.mjs --serial",
+    "size:baseline": "node scripts/check-instruction-size-baseline.mjs --write",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run --no-ci"
   },

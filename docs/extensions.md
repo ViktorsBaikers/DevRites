@@ -51,7 +51,9 @@ devrites-engine extensions sync        # mirror valid extensions into .claude/ s
   `confidence` (`0..1`) / `reviewed_by`; `/rite-doctor` warns when an extension ships artifacts
   without provenance. V2 manifests may
   also declare `tier`, `requires`, `owns`, and `surface`; dependencies must be acyclic, and anything
-  in `owns` that collides with the first-party `rite-`/`devrites-` namespaces is refused.
+  in `owns` that collides with the first-party `rite-`/`devrites-` namespaces is refused. If a
+  malformed extension declares a review/gate-like surface, validation warns that the surface is
+  inactive until the schema is fixed — fail-open, but loud.
 - **`sync`** validates first, then mirrors `skill/` → `.claude/skills/<name>/` and `agent.md` →
   `.claude/agents/<name>.md`, where the Claude harness discovers them. Idempotent. It refuses to
   sync a set that fails validation.

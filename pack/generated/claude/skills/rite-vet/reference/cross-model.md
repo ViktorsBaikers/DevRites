@@ -8,13 +8,15 @@ thoroughly. It is **opt-in** for `/rite-vet` (the flag) and **off by default in
 
 ## When it runs
 Only when `$ARGUMENTS` contains `--cross-model` **and** a different-model reviewer is available.
-The default path (no flag) relies on `devrites-plan-reviewer` for independence — that is a
-complete review on its own; cross-model is an enhancement, not a requirement.
+First run `devrites-engine reviewers list`; configured aliases there are preferred over ad-hoc
+model choices. The default path (no flag) relies on `devrites-plan-reviewer` for independence —
+that is a complete review on its own; cross-model is an enhancement, not a requirement.
 
 ## Dispatch
 After the in-model reviewer loop converges (or in parallel with its final iteration), hand the
-**same fresh inputs** to a different model — preferentially the `codex:codex-rescue` agent (it
-runs Codex through the shared runtime). Give it only the contract, never the authoring reasoning:
+**same fresh inputs** to a different model — preferentially a configured `codex` reviewer alias,
+then the `codex:codex-rescue` agent if no alias exists. Give it only the contract, never the
+authoring reasoning:
 
 > Independent engineering review of a defined implementation plan, before any code.
 > Read only `.devrites/work/<slug>/plan.md`, `tasks.md`, and `spec.md`. Judge: architecture &

@@ -10,10 +10,9 @@ prefers what's already there).
 
 ## Loading model — progressive disclosure
 
-To keep context lean, the rules follow Claude's progressive-disclosure pattern. There
-are 27 rule files (plus this README index): each DevRites `rite-*` skill Reads
-`.agents/skills/devrites-lib/reference/standards/core.md` as its first step; the other 26 rule files load on demand by the
-phase that needs them.
+To keep context lean, the rules follow progressive disclosure: each DevRites `rite-*`
+skill Reads `.agents/skills/devrites-lib/reference/standards/core.md` as its first step;
+the remaining rule files load on demand by the phase that needs them.
 
 ### Always-on (read by each `rite-*` skill as step 0)
 
@@ -51,6 +50,11 @@ phase that needs them.
 | `afk-hitl.md` | AFK vs HITL contract: `.devrites/AFK` sentinel format, `questions.md` schema, four-gate taxonomy (advisory / validating / blocking / escalating), AFK-never-silently-accepts boundaries. | `$rite-build`, `$rite-status`, `$rite-resolve`, `devrites-doubt`; anywhere a pause-or-proceed decision happens. |
 | `tooling.md` | Optional external tools — code intelligence (codebase-memory-mcp first → cross-verify with codegraph + graphify → standard methods LSP / `Read`/`Grep`/`Glob`), up-to-date library docs (context7), architecture/ADR memory. Recommended, not required. | Any phase doing structural lookups (callers / impact / placement) or relying on external library/framework facts. |
 | `skill-authoring.md` | Skill descriptions, progressive disclosure, completion criteria, and pruning rules for keeping DevRites skills predictable and cheap. | When creating or editing DevRites skills or reviewing skill pack quality. |
+| `definition-of-done.md` | Done means acceptance proven, evidence recorded, drift resolved, and handoff/ship state clean. | `$rite-prove`, `$rite-seal`, `$rite-ship`. |
+| `review-checklist.md` | Compact reviewer pass/fail checklist. | `$rite-review`, `$rite-seal`. |
+| `test-proof-checklist.md` | Proof-quality checklist for tests and evidence. | `$rite-prove`, `$rite-seal`. |
+| `browser-proof-checklist.md` | Browser/UI proof checklist. | UI features in `$rite-prove`, `$rite-polish`, `$rite-seal`. |
+| `security-checklist.md` | Security review checklist. | Auth/input/data/integration changes. |
 
 How they're used: DevRites skills follow these rules; you and Claude can reference them
 directly. They are guidance, not enforced gates — the enforced gates live in the
