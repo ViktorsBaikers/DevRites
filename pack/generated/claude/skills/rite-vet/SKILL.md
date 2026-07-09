@@ -1,6 +1,6 @@
 ---
 name: rite-vet
-description: Vet a defined plan before any code with a senior-engineer plan review. Use when the user says "vet the plan", "engineering review", "lock in the plan", or before building a feature. Not for the spec's strategy (`/rite-temper`), a mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
+description: Vet a defined plan before code with senior-engineer engineering review. Use when the user says "vet the plan", "engineering review", "lock in the plan", or before building. Not for code review or final seal.
 argument-hint: "[slug] [--cross-model] [--full]"
 user-invocable: true
 ---
@@ -80,7 +80,9 @@ Audit for a plan resting on unstated beliefs).
    **full pass** below. There is no skip: every feature leaves a recorded engineering verdict and
    a `test-plan.md` coverage map.
 2. **Scope Challenge (blocking gate)** — [`reference/review-axes.md`](reference/review-axes.md)
-   §0. What already exists that solves a sub-problem (reuse vs rebuild)? The minimum diff for the
+   §0. Search prior archived decisions for the plan's main nouns before asking the human to re-decide:
+   `devrites-engine decisions search "<2-4 plan nouns>"` (run `decisions index` first if needed).
+   What already exists that solves a sub-problem (reuse vs rebuild)? The minimum diff for the
    stated acceptance? Complexity smell (the plan touches **>8 files** or adds **>2 new
    services/modules**) → **STOP and ask** before any axis. Verify each new pattern / infra choice
    against a built-in (dispatch `devrites-source-driven`); completeness check (with AI, full
@@ -169,9 +171,11 @@ Audit for a plan resting on unstated beliefs).
    iteration. Resolve actionable findings, re-dispatch the plan-reviewer; **cap ≤3 iterations**. An axis still
    below bar after 3 → blocking question (HITL) or AFK gate-ceiling entry. On a **light pass**
    the fresh-context loop is skipped — the per-axis scan + the `test-plan.md` coverage map are the
-   verdict (escalate to this loop if the light scan surfaces a real finding). With `--cross-model`,
-   add one genuinely different-model pass — [`reference/cross-model.md`](reference/cross-model.md)
-   (informational until the human approves each finding). If sub-agents are unavailable, do the
+   verdict (escalate to this loop if the light scan surfaces a real finding). On a **full pass**, run
+   `devrites-engine outside-voice`; when it prints `available`, add one genuinely different-model
+   Codex pass over the same artifacts/diff. `--cross-model` forces this check even outside full-pass
+   defaults. Findings are informational until the human approves each one with line quotes —
+   [`reference/cross-model.md`](reference/cross-model.md). If sub-agents are unavailable, do the
    independent rubric pass yourself in a separate read, discarding the authoring reasoning (a
    flagged fallback, not an independent review).
 7. **STOP.** Report the scope verdict, the per-axis floor, the coverage gaps closed, and the
@@ -190,7 +194,7 @@ Default success shape:
 ```
 Done: plan vetted for <slug>; depth <light|full> with axis floor <band>.
 Changed: eng-review.md, test-plan.md, plan.md, decisions.md
-Evidence: coverage <x/y> planned; findings Critical <n> / Important <n> / Suggestion <n>; reviewer loop <n>
+Evidence: coverage <x/y> planned; findings Critical <n> / Important <n> / Suggestion <n>; reviewer loop <n>; outside-voice <ran|skipped-unavailable|disabled>
 Open: <none | blockers | plan deltas routed via Spec Drift Guard>
 Next: /rite-build
 Record: .devrites/work/<slug>/eng-review.md

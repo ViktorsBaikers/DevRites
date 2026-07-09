@@ -108,7 +108,11 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    `state.md` phase `done`, then run
    `devrites-engine close-out <slug>` to archive
    `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` and clear `.devrites/ACTIVE`.
-   Every `.md` is preserved in the archive.
+   Every `.md` is preserved in the archive. Then refresh any managed project context block so
+   `AGENTS.md` / `CLAUDE.md` no longer advertise a closed active workspace:
+   ```bash
+   devrites-engine context sync || true
+   ```
 6a. **Cross-feature retro (automatic, cadence-gated, advisory).** The just-shipped feature is now in
    the archive, so this is where the **cross-feature** learning loop closes on its own — the synthesis
    that otherwise waits for a human to run `/rite-learn`. Run the cheap cadence gate first; it stays

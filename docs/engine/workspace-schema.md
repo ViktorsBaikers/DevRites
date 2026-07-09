@@ -8,6 +8,14 @@ guessing. The schema follows three rules:
 - Read the index first, then load only the files needed for the current phase.
 - Trace every acceptance criterion through slices, proof, evidence, and touched files.
 
+Root selection has two axes:
+
+- `DEVRITES_ROOT` selects the project root or `.devrites/` directory. When unset, the engine walks up
+  from cwd to the nearest `.devrites/`.
+- `.devrites/ACTIVE` selects the active feature workspace.
+- `DEVRITES_WORKSPACE` optionally names an explicit workspace path for CI/agents and overrides
+  `.devrites/ACTIVE` for commands that default to the active feature.
+
 Canonical live workspace:
 
 ```text

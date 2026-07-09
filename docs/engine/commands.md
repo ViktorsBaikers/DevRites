@@ -203,6 +203,31 @@ Two project-local surfaces let a team extend the pack without forking it — ful
   house rules a shipped reviewer reads after its standards. `validate` exits `1` when an override
   reads like it waives a gate — an override may add checks, never relax one.
 
+## `context sync` — managed agent-context block
+
+`devrites-engine context sync [file ...]` upserts only the block delimited by
+`<!-- DEVRITES START -->` / `<!-- DEVRITES END -->` in project context files. With no file args it
+reads `.devrites/context.yaml` (`context_file:` or `context_files:`), then falls back to existing
+`AGENTS.md` / `CLAUDE.md`, then `AGENTS.md`. Paths must be project-relative.
+
+## `runbook` — tiny local automation
+
+`devrites-engine runbook list|validate|run|resume` executes flat YAML runbooks from
+`.devrites/runbooks/*.yaml`. Supported step forms are deliberately small:
+
+```yaml
+steps:
+  - engine: doctor
+  - rite: status
+  - shell: npm test
+  - gate: review before release
+```
+
+`engine` runs a local `devrites-engine` subcommand, `rite` prints the Claude/Codex dispatch form,
+`shell` runs in the project root, and `gate` writes `.devrites/runs/<id>/state.json` then exits `3`.
+Resume with `devrites-engine runbook resume <id>`. This is for repeatable local runbooks, not a
+replacement lifecycle.
+
 ## Concurrency
 
 DevRites fans out reviewer subagents that each spawn the binary, so the real

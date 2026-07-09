@@ -1,6 +1,6 @@
 ---
 name: rite-temper
-description: Temper a readied `spec.md` before planning. Use when the user says "temper this", "strategy review", "pre-mortem the spec", "are we over/under-building", or before defining a big or risky feature. Not for a rough idea (`/rite-pressure-test`), a mid-build decision (`devrites-doubt`), a code diff (`/rite-review`), or the final gate (`/rite-seal`).
+description: Temper a readied spec before planning. Use when the user says "temper this", "strategy review", "pre-mortem the spec", or asks if we are over/under-building. Not for code review or final seal.
 argument-hint: "[feature-slug] [--mode expand|selective|hold|reduce]"
 user-invocable: true
 ---

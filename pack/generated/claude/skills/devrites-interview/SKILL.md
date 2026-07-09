@@ -1,6 +1,6 @@
 ---
 name: devrites-interview
-description: Interview the user one question at a time to extract what they want. Use when the user says "interview me", "I'm not sure what I want", or `/rite-spec` / `/rite-define` flags the ask as underspecified. Not for casual clarification or ideation (use `/rite-pressure-test`).
+description: Interview the user one question at a time to extract intent. Use when the user says "interview me", "I am not sure what I want", or the ask is underspecified. Not for casual clarification.
 user-invocable: false
 ---
 

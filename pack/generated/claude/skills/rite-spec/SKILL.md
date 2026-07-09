@@ -71,6 +71,12 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    ```
 1. **Understand the request** (`$ARGUMENTS`). Restate the goal and the *real problem
    behind it* in a sentence or two.
+1a. **Local dedupe.** Search local issues/PRDs and archived specs before creating a new workspace:
+   ```bash
+   devrites-engine spec-dedupe "$ARGUMENTS"
+   ```
+   If it finds a close match, ask the user: extend existing / adopt / new spec. Record the choice in
+   `decisions.md` once the workspace exists. No match → continue silently.
 2. **Investigate deeply** — [investigation](reference/investigation.md). Produce, and
    later write into the spec: **current behavior**; **placement** (which module/layer/
    file/component should own it, the seam, patterns to reuse, and integration points —
@@ -93,7 +99,8 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    **Consult the capability ledger** — the living record of what the system already does
    ([`ledger.md`](../rite-ship/reference/ledger.md)): `devrites-engine ledger list` for the
    capabilities on record, then `devrites-engine ledger show <capability>` for any this feature
-   touches. Starting from the proven contract (not a cold re-derive) is what makes the spec store
+   touches. Also search prior decisions with `devrites-engine decisions search "<2-4 feature nouns>"`
+   before asking the human to re-decide a settled architecture/API/auth choice. Starting from the proven contract (not a cold re-derive) is what makes the spec store
    compound across features; it also tells you which requirements are new vs a change to existing
    behavior, which decides the delta kind in step 5.
 3. **Gather design references (optional)** — [references-intake](reference/references-intake.md).
@@ -154,7 +161,11 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    Populate `## Edge Coverage` with the deterministic boundary classes implied by each requirement
    (empty/huge input, rounding, timezone, ordering, permissions, races, migration) and `## Prohibitions (must-NOT)`
    only for bespoke constraints. If the feature touches model calls, RAG, agents, evals, or LLM output,
-   also create `ai-spec.md` from [ai-spec-template](reference/ai-spec-template.md).
+   also create `ai-spec.md` from [ai-spec-template](reference/ai-spec-template.md). Then refresh any
+   managed project context block so `AGENTS.md` / `CLAUDE.md` point at the new active workspace:
+   ```bash
+   devrites-engine context sync || true
+   ```
 5a. **Score the spec prose — "unit tests for English"** ([spec-checklists](reference/spec-checklists.md)).
    Emit `.devrites/work/<slug>/checklists/<domain>.md` (one per requirement domain the spec covers:
    functional · data-model · interaction · non-functional · edge-cases). Each tests the *requirement

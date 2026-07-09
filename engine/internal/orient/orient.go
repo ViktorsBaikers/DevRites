@@ -65,6 +65,13 @@ func Digest(root string) (text string, has bool, err error) {
 // ActiveSlug reads and trims the active-feature pointer. A missing pointer file
 // is not an error — it yields the empty slug (no active feature).
 func ActiveSlug(root string) (string, error) {
+	if raw := strings.TrimSpace(os.Getenv("DEVRITES_WORKSPACE")); raw != "" {
+		path := raw
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(filepath.Dir(root), path)
+		}
+		return filepath.Base(filepath.Clean(path)), nil
+	}
 	raw, err := os.ReadFile(filepath.Join(root, ActiveFile))
 	if errors.Is(err, os.ErrNotExist) {
 		return "", nil

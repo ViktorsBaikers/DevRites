@@ -1,6 +1,6 @@
 ---
 name: devrites-audit
-description: Audit the active feature read-only on one axis — security (OWASP, trust boundary, secrets), perf (measure-first, N+1, CWV), or simplify (Chesterton's Fence, deletion test). Use when the user says "security review", "perf check", or "simplify this". Not for write actions or whole-project audits.
+description: Read-only feature audit on security/perf/simplify: auth trust boundary, injection, secrets, hot-path, payload-size, perf budget, Chesterton delete/cleanup. Use when auditing one axis. Not for writes.
 argument-hint: "<security | perf | simplify>"
 user-invocable: false
 ---

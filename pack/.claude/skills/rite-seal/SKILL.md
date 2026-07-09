@@ -57,7 +57,7 @@ Before the verdict, run the deterministic advisory checks and record their outco
 devrites-engine docs-stale; echo "docs-stale rc=$?"
 devrites-engine outside-voice; echo "outside-voice rc=$?"
 ```
-If outside voice is `available`, ask Codex (read-only) for the same artifacts/diff second opinion;
+If outside voice is `available`, ask the same artifacts/diff second opinion;
 findings stay advisory until verified with line quotes or accepted into the normal review pipeline.
 For developer-facing surfaces, compare `devex.md` predicted TTHW against the measured proof path and
 record the boomerang result.

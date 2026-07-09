@@ -73,6 +73,8 @@ Usage:
   devrites-engine lanes plan [slug]       Advisory safe-parallelism/lane plan for slices
   devrites-engine extensions <sub>         Project extensions (.devrites/extensions/): list|validate|sync
   devrites-engine overrides <sub>          Reviewer-override linter (.devrites/overrides/): list|validate
+  devrites-engine context sync [file ...]  Sync managed DevRites block into context files
+  devrites-engine runbook <sub> [...]      Local runbooks: list|validate|run|resume
   devrites-engine doctor                   Report the binary / pack / state-schema version triangle
   devrites-engine migrate                  Normalize .devrites workspaces to the current schema
   devrites-engine validate-pack [dir]      Lint the shipped pack's hook wiring + skill/agent frontmatter contracts + docs/command-map.md links
@@ -102,8 +104,10 @@ Exit codes:
      gap and retry (HITL, never a crash)
 
 Environment:
-  DEVRITES_ROOT   Path to the .devrites directory. Defaults to the nearest
-                  .devrites found walking up from the working directory.
+  DEVRITES_ROOT   Path to the project root or .devrites directory. Defaults to
+                  the nearest .devrites found walking up from the working directory.
+  DEVRITES_WORKSPACE  Explicit feature workspace path for CI/agents; overrides
+                  .devrites/ACTIVE when a command defaults to the active feature.
 
 Hook control plane:
   DEVRITES_HOOK_PROFILE   minimal | standard (default) | strict. minimal runs
@@ -235,6 +239,10 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.Extensions(resolveRootLenient(), args[1:], stdout, stderr)
 	case "overrides":
 		return lib.Overrides(resolveRootLenient(), args[1:], stdout, stderr)
+	case "context":
+		return lib.Context(resolveRootLenient(), args[1:], stdout, stderr)
+	case "runbook":
+		return lib.Runbook(resolveRootLenient(), args[1:], stdout, stderr)
 	case "doctor":
 		rest, j := extractFlag(args[1:], "--json")
 		return jsonWrap("doctor", j, stdout, stderr, func(o, e io.Writer) int { return cmdDoctor(rest, o, e) })

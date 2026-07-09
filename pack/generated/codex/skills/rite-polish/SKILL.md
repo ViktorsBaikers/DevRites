@@ -1,6 +1,6 @@
 ---
 name: rite-polish
-description: Polish the active feature before review — code polish always; UI normalize + ship-quality pass when UI is touched. Use when the user says "polish this", "finish before review", "normalize the UI", or "make it bolder/quieter". Not for repo-wide refactors or pre-`$rite-prove` polish.
+description: Polish the active feature before review: code always, UI when touched. Use when the user says "polish this", "finish before review", "normalize the UI", or "make it bolder/quieter". Not for repo-wide refactors.
 argument-hint: "[target | bolder | quieter | distill | harden | normalize-only]"
 user-invocable: true
 ---

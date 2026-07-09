@@ -84,6 +84,13 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    record the synced capabilities in `ship.md`. Skip silently when the feature declares no
    requirements (a pure refactor / chore). The fold is gated on the GO + evidence-fresh confirmed
    in step 1, so the ledger only ever records proven truth.
+2c. **Credential guard (blocking for HIGH).** Before the irreversible type-GO prompt, scan staged
+   and touched files plus any PR body draft. HIGH blocks ship and tells the user to rotate/redact;
+   MEDIUM asks for confirmation and records the exception in `ship.md`; LOW is FYI.
+   ```bash
+   devrites-engine secret-scan --staged; echo "secret-scan rc=$?"
+   ```
+   **rc=3 → STOP**: do not type-GO, commit, push, or archive.
 3. **Render the type-GO prompt** ([reference/git-ship.md](reference/git-ship.md)) and
    wait. Only the literal `GO` proceeds; anything else cancels — record the cancel in
    `ship.md` and stop (do not retry without the user asking).
@@ -112,7 +119,11 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    `state.md` phase `done`, then run
    `devrites-engine close-out <slug>` to archive
    `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` and clear `.devrites/ACTIVE`.
-   Every `.md` is preserved in the archive.
+   Every `.md` is preserved in the archive. Then refresh any managed project context block so
+   `AGENTS.md` / `CLAUDE.md` no longer advertise a closed active workspace:
+   ```bash
+   devrites-engine context sync || true
+   ```
 6a. **Cross-feature retro (automatic, cadence-gated, advisory).** The just-shipped feature is now in
    the archive, so this is where the **cross-feature** learning loop closes on its own — the synthesis
    that otherwise waits for a human to run `$rite-learn`. Run the cheap cadence gate first; it stays
