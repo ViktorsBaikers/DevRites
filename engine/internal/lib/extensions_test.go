@@ -42,6 +42,88 @@ func TestExtensionsValidateGood(t *testing.T) {
 	}
 }
 
+func TestExtensionsValidateComponentManifestPasses(t *testing.T) {
+	root := t.TempDir()
+	writeExtSkill(t, root, "audit-lite", goodSkill)
+	writeExtManifest(t, root, "audit-lite", `schema_version: "1.0"
+component:
+  id: audit-lite
+  kind: extension
+  version: 0.1.0
+  scope: project-local
+  distribution: npx-managed
+permissions:
+  writes:
+    - .devrites/**
+    - .claude/**
+safety:
+  may_weaken_gates: false
+  requires_type_go_bypass: false
+`)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := Extensions(root, []string{"validate"}, stdout, stderr); code != 0 {
+		t.Fatalf("safe component manifest should pass, got %d\n%s%s", code, stdout, stderr)
+	}
+	if !contains(stdout.String(), "manifest") {
+		t.Fatalf("validation should report manifest coverage, got:\n%s", stdout.String())
+	}
+}
+
+func TestExtensionsValidateComponentManifestRejectsPluginDistribution(t *testing.T) {
+	root := t.TempDir()
+	writeExtSkill(t, root, "audit-lite", goodSkill)
+	writeExtManifest(t, root, "audit-lite", `component:
+  id: audit-lite
+  kind: extension
+  scope: project-local
+  distribution: claude-plugin
+`)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := Extensions(root, []string{"validate"}, stdout, stderr); code != 1 {
+		t.Fatalf("plugin distribution should fail, got %d\n%s%s", code, stdout, stderr)
+	}
+	if !contains(stderr.String(), "distribution must be npx-managed") {
+		t.Fatalf("want distribution complaint, got:\n%s", stderr.String())
+	}
+}
+
+func TestExtensionsValidateComponentManifestRejectsUnsafeClaims(t *testing.T) {
+	root := t.TempDir()
+	writeExtSkill(t, root, "audit-lite", goodSkill)
+	writeExtManifest(t, root, "audit-lite", `component:
+  id: audit-lite
+  kind: extension
+  scope: global
+  distribution: npx-managed
+permissions:
+  writes:
+    - ~/.claude/**
+safety:
+  may_weaken_gates: true
+  requires_type_go_bypass: true
+`)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := Extensions(root, []string{"validate"}, stdout, stderr); code != 1 {
+		t.Fatalf("unsafe component manifest should fail, got %d\n%s%s", code, stdout, stderr)
+	}
+	for _, want := range []string{"scope must be project-local", "write root", "may_weaken_gates must be false", "requires_type_go_bypass must be false"} {
+		if !contains(stderr.String(), want) {
+			t.Fatalf("want %q in stderr, got:\n%s", want, stderr.String())
+		}
+	}
+}
+
+func writeExtManifest(t *testing.T, root, ext, body string) {
+	t.Helper()
+	dir := filepath.Join(root, "extensions", ext)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "component.yaml"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestExtensionsValidateMissingFrontmatter(t *testing.T) {
 	root := t.TempDir()
 	writeExtSkill(t, root, "broken", "# no frontmatter here\n")

@@ -147,8 +147,9 @@ read described above (DevRites still works).
 
 ### Hooks (approval, orientation, and local guards)
 
-DevRites ships JSON-configured hooks (wired via the plugin's `hooks.json` or a
-seeded `.claude/settings.json`) that call `devrites-engine` behind an inline
+DevRites ships JSON-configured hooks installed by the npm flow into the
+project-local host artifacts (`.claude/settings.json` for Claude Code and
+`.codex/hooks.json` for Codex). They call `devrites-engine` behind an inline
 fail-open guard:
 
 - **`allow` (PreToolUse/Bash)** — auto-approves *only* the read-only engine
@@ -166,9 +167,10 @@ fail-open guard:
   blocking guards are observe-first unless explicitly enforced with the documented
   `DEVRITES_*` environment switches.
 
-Delete `.claude/settings.json` (or disable the plugin) to remove Claude hooks. The
-seeded settings file is never overwritten on update, so your own permission rules are
-safe.
+Delete the project-local hook file (`.claude/settings.json` for Claude Code, or
+the DevRites-managed entries in `.codex/hooks.json` for Codex) to remove hooks.
+The seeded settings file is never overwritten on update, so your own permission
+rules are safe.
 
 ### Third-party trust
 

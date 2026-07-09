@@ -26,6 +26,7 @@ A project extension is a directory under `.devrites/extensions/`:
 .devrites/extensions/<name>/
   skill/SKILL.md      (optional) a user rite/skill — needs name + description frontmatter
   agent.md            (optional) a user reviewer agent — needs name + description frontmatter
+  component.yaml      (optional) npx-managed component manifest + safety bounds
   extension.yaml      (optional) metadata: aliases (prior names, so a rename doesn't orphan)
 ```
 
@@ -42,13 +43,43 @@ devrites-engine extensions sync        # mirror valid extensions into .claude/ s
 
 - **`validate`** checks each declared skill/agent carries `name:` + `description:` frontmatter, that
   an extension provides at least one artifact, and that no two extensions claim the same skill/agent
-  name. A name using a reserved pack prefix (`rite-`, `devrites-`) is a collision **warning** — the
-  pack owns those namespaces.
+  name. If `component.yaml` is present, it must declare an npm-managed, project-local component:
+  `distribution: npx-managed`, `scope: project-local`, project-local write roots only, and safety
+  fields that do **not** weaken gates or bypass `type-GO`. A name using a reserved pack prefix
+  (`rite-`, `devrites-`) is a collision **warning** — the pack owns those namespaces.
 - **`sync`** validates first, then mirrors `skill/` → `.claude/skills/<name>/` and `agent.md` →
   `.claude/agents/<name>.md`, where the Claude harness discovers them. Idempotent. It refuses to
   sync a set that fails validation.
 - **`aliases`** (in `extension.yaml`) carry an extension's prior names forward across a rename, so a
   project's references don't orphan.
+
+### Component manifest
+
+`component.yaml` is the DevRites-native answer to Spec Kit-style extension/preset/bundle metadata.
+It is **not** a plugin package descriptor; it documents what the npm-installed engine may copy or
+validate inside the current project.
+
+```yaml
+schema_version: "1.0"
+component:
+  id: audit-lite              # must match .devrites/extensions/<name>/ when present
+  kind: extension             # extension | preset | bundle
+  version: 0.1.0
+  scope: project-local
+  distribution: npx-managed
+permissions:
+  writes:
+    - .devrites/**
+    - .claude/**
+    - .agents/**
+    - .codex/**
+safety:
+  may_weaken_gates: false
+  requires_type_go_bypass: false
+```
+
+The validator refuses global homes (`~/.claude/**`, `~/.codex/**`), plugin-store distribution names,
+non-project scopes, and any manifest that claims it can weaken a gate or bypass `type-GO`.
 
 ### Workflow
 
@@ -97,3 +128,15 @@ devrites-engine overrides validate   # flag empty overrides and any that read li
 `validate` trips on subversion phrasing ("ignore the gate", "treat any Critical as a Suggestion",
 "waive review") and on an override targeting an agent that isn't installed (an orphan warning).
 `/rite-doctor` runs it on every health check.
+
+### Template overrides
+
+Future template/preset work uses `.devrites/overrides/templates/*.md` as the project-local override
+layer. `devrites-engine overrides validate` already applies the same anti-subversion scan to those
+files and adds required-term checks for high-risk lifecycle templates:
+
+- `seal.md` must still mention `type-GO` and `NO-GO`.
+- `ship.md` must still mention `type-GO`.
+
+This keeps the extension point useful without letting a project template erase the gates that make
+DevRites safe.
