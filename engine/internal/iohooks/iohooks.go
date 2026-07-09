@@ -18,6 +18,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/devrites/devrites/internal/fsutil"
 )
 
 // exitOK is the fail-open success code these hooks return.
@@ -158,9 +160,6 @@ func SourceCachePost(stdin io.Reader, stdout, stderr io.Writer) int {
 		_ = os.Remove(entryPath)
 		return exitOK
 	}
-	if err := os.MkdirAll(filepath.Dir(entryPath), 0o755); err != nil {
-		return exitOK
-	}
 	e := sourceCacheEntry{
 		URL:          url,
 		Prompt:       prompt,
@@ -173,12 +172,7 @@ func SourceCachePost(stdin io.Reader, stdout, stderr io.Writer) int {
 	if err != nil {
 		return exitOK
 	}
-	// Atomic write: temp + rename, so a concurrent reader never sees a half file.
-	tmp := fmt.Sprintf("%s.%d.tmp", entryPath, os.Getpid())
-	if os.WriteFile(tmp, body, 0o644) == nil {
-		_ = os.Rename(tmp, entryPath)
-	}
-	_ = os.Remove(tmp)
+	_ = fsutil.WriteFileAtomic(entryPath, body, 0o644)
 	return exitOK
 }
 

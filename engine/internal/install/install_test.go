@@ -143,6 +143,39 @@ func TestInstallBinaryUsesEngineHandoff(t *testing.T) {
 	}
 }
 
+func TestInstallBinaryWarnsWhenHooksCannotResolveEngine(t *testing.T) {
+	payload := testPayload(t)
+	target := t.TempDir()
+	binDir := t.TempDir()
+	engine := filepath.Join(t.TempDir(), "devrites-engine")
+	writeExecutable(t, engine, "#!/bin/sh\nif [ \"$1\" = version ]; then echo 1.2.3; exit 0; fi\n")
+	pathDir := t.TempDir()
+	var stderr bytes.Buffer
+
+	t.Setenv("DEVRITES_ENGINE_CLI", engine)
+	t.Setenv("DEVRITES_BIN_DIR", binDir)
+	t.Setenv("DEVRITES_REF", "v1.2.3")
+	t.Setenv("PATH", pathDir)
+
+	runInstall(t, target, payload, func(o *Options) {
+		o.Stderr = &stderr
+	})
+
+	if !strings.Contains(stderr.String(), "not on PATH") {
+		t.Fatalf("missing PATH reachability warning:\n%s", stderr.String())
+	}
+}
+
+func TestBinaryCandidatesSkipsUnsetBinDir(t *testing.T) {
+	t.Setenv("DEVRITES_BIN_DIR", "")
+
+	for _, candidate := range binaryCandidates() {
+		if candidate == "devrites-engine" {
+			t.Fatalf("unset DEVRITES_BIN_DIR produced relative candidate %q", candidate)
+		}
+	}
+}
+
 func TestUpdateInstallsRequestedBundle(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	oldPayload := testPayload(t)

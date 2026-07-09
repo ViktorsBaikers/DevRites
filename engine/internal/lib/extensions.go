@@ -508,7 +508,7 @@ func extensionsSync(extDir, projectDir string, stdout, stderr io.Writer) int {
 			}
 			data, err := os.ReadFile(e.agentPath)
 			if err == nil {
-				err = writeFileAtomic(filepath.Join(agentsDst, e.name+".md"), data, 0o644)
+				err = fsutil.WriteFileAtomic(filepath.Join(agentsDst, e.name+".md"), data, 0o644)
 			}
 			if err != nil {
 				fmt.Fprintf(stderr, "extensions: sync agent %s failed: %v\n", e.name, err)

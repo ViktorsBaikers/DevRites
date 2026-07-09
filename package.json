@@ -48,7 +48,6 @@
   "scripts": {
     "prepare": "husky || true",
     "prepack": "bash scripts/build-host-artifacts.sh && rm -rf scripts/__pycache__ scripts/.cache docs/internal",
-    "postpack": "rm -rf pack/generated",
     "commitlint": "commitlint --edit",
     "validate": "bash scripts/validate.sh",
     "test": "node scripts/run-tests.mjs",

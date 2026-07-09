@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/workflow"
 )
 
@@ -204,13 +205,13 @@ func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
 	if notOpen {
 		return fail(stderr, "qid not open (already answered/dropped): "+qid, 4)
 	}
-	if err := writeFileAtomic(qfile, joinRecords(updated), 0o644); err != nil {
+	if err := fsutil.WriteFileAtomic(qfile, joinRecords(updated), 0o644); err != nil {
 		return fail(stderr, err.Error(), 1)
 	}
 
 	reread, _ := os.ReadFile(qfile)
 	complete := ensureAnswerFields(splitLinesNoTrailing(reread), target, answer, ts)
-	_ = writeFileAtomic(qfile, joinRecords(complete), 0o644)
+	_ = fsutil.WriteFileAtomic(qfile, joinRecords(complete), 0o644)
 	return 0
 }
 
@@ -384,7 +385,7 @@ func clearAwaiting(sfile, qid string) {
 	if inLog && !logAppended {
 		out = append(out, fmt.Sprintf("- %s build: resolved %s", ts, qid))
 	}
-	_ = writeFileAtomic(sfile, joinRecords(out), 0o644)
+	_ = fsutil.WriteFileAtomic(sfile, joinRecords(out), 0o644)
 }
 
 // joinRecords joins lines with newlines and terminates the last one, so a rewritten

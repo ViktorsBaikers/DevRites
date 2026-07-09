@@ -40,23 +40,19 @@ func Parse(s string) (Harness, error) {
 //
 // Claude Code and Codex both consume the same
 // hookSpecificOutput.additionalContext envelope today (the shipped pack wires
-// both harnesses' SessionStart hook to a script that emits exactly this shape),
-// so the two branches are identical. The switch is the seam: when a harness's
-// convention diverges, only its branch changes — callers stay unaware.
+// both harnesses' SessionStart hook to a script that emits exactly this shape).
 func (h Harness) SessionStartContext(text string) (string, error) {
-	switch h {
-	case Claude, Codex:
-		env := sessionStartEnvelope{}
-		env.HookSpecificOutput.HookEventName = "SessionStart"
-		env.HookSpecificOutput.AdditionalContext = text
-		b, err := json.Marshal(env)
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
-	default:
+	if h != Claude && h != Codex {
 		return "", fmt.Errorf("unsupported harness %q", h)
 	}
+	env := sessionStartEnvelope{}
+	env.HookSpecificOutput.HookEventName = "SessionStart"
+	env.HookSpecificOutput.AdditionalContext = text
+	b, err := json.Marshal(env)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 type sessionStartEnvelope struct {
@@ -68,21 +64,19 @@ type sessionStartEnvelope struct {
 
 // StopBlock returns the hook stdout that blocks a Stop with a human-readable
 // reason. Both harnesses honour the {"decision":"block","reason":...} convention
-// the legacy devrites-stop-gate.sh emits; the seam again lets one diverge later.
+// the legacy devrites-stop-gate.sh emits.
 func (h Harness) StopBlock(reason string) (string, error) {
-	switch h {
-	case Claude, Codex:
-		b, err := json.Marshal(stopDecision{
-			Decision: "block",
-			Reason:   "DevRites stop-gate: " + reason + ". (devrites-stop-gate)",
-		})
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
-	default:
+	if h != Claude && h != Codex {
 		return "", fmt.Errorf("unsupported harness %q", h)
 	}
+	b, err := json.Marshal(stopDecision{
+		Decision: "block",
+		Reason:   "DevRites stop-gate: " + reason + ". (devrites-stop-gate)",
+	})
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 type stopDecision struct {

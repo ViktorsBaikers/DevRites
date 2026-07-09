@@ -13,6 +13,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/devrites/devrites/internal/fsutil"
 )
 
 type codeHealthEntry struct {
@@ -269,7 +271,7 @@ func Decisions(root string, args []string, stdout, stderr io.Writer) int {
 			b.WriteByte('\n')
 		}
 		_ = os.MkdirAll(root, 0o755)
-		if err := writeFileAtomic(filepath.Join(root, "decisions-index.jsonl"), []byte(b.String()), 0o644); err != nil {
+		if err := fsutil.WriteFileAtomic(filepath.Join(root, "decisions-index.jsonl"), []byte(b.String()), 0o644); err != nil {
 			fmt.Fprintf(stderr, "decisions: %v\n", err)
 			return 1
 		}

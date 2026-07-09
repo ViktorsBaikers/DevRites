@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/devrites/devrites/internal/fsutil"
 )
 
 type timelineEntry struct {
@@ -242,7 +244,7 @@ func ReviewFingerprints(root string, args []string, stdout, stderr io.Writer) in
 		}
 	}
 	if write {
-		if err := writeFileAtomic(filepath.Join(dir, "review-fingerprints.jsonl"), []byte(jsonl.String()), 0o644); err != nil {
+		if err := fsutil.WriteFileAtomic(filepath.Join(dir, "review-fingerprints.jsonl"), []byte(jsonl.String()), 0o644); err != nil {
 			fmt.Fprintf(stderr, "review-fingerprints: %v\n", err)
 			return 1
 		}

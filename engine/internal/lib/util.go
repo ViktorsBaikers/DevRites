@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -38,20 +37,6 @@ func stripASCIISpace(s string) string {
 		}
 		return r
 	}, s)
-}
-
-// writeFileAtomic writes data to a sibling temp file and renames it into place, so
-// a crash mid-write can never leave a half-written state file behind.
-func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, perm); err != nil {
-		return err
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return err
-	}
-	return nil
 }
 
 // isAllDigits reports whether s is a non-empty run of ASCII digits.

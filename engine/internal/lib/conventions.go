@@ -13,6 +13,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/devrites/devrites/internal/fsutil"
 )
 
 //go:embed templates/conventions_ledger_header.md templates/conventions_orient_header.txt templates/conventions_drift.tmpl
@@ -302,7 +304,7 @@ func saveConventions(root string, entries map[string]conventionEntry) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return writeFileAtomic(path, []byte(serializeConventions(entries)), 0o644)
+	return fsutil.WriteFileAtomic(path, []byte(serializeConventions(entries)), 0o644)
 }
 
 func serializeConventions(entries map[string]conventionEntry) string {
