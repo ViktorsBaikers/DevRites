@@ -3,9 +3,10 @@
 
 Zero-token lexical runner for evals/*.json. It scores skill names + descriptions
 against positive/negative trigger prompts, reports rank-1/top-3 rates, direct
-command misses, false-positive collisions, host wording confusion, and nearest
-skill-description collisions. Rank is a ratchet metric; hard failures are schema,
-direct command misses, and unallowlisted severe description collisions.
+command misses, false-positive collisions, pairwise owner misses, host wording
+confusion, and nearest skill-description collisions. Rank is a ratchet metric;
+hard failures are schema, direct command misses, owner misses, and unallowlisted
+severe description collisions.
 """
 from __future__ import annotations
 
@@ -140,6 +141,13 @@ def description_collisions(skills: list[Skill], vectors: dict[str, Counter]) -> 
     return sorted(rows, key=lambda r: -r["similarity"])
 
 
+def display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def ratchet_failures(report: dict, baseline_path: Path | None) -> list[str]:
     if not baseline_path or not baseline_path.is_file():
         return []
@@ -166,7 +174,7 @@ def run(args) -> tuple[int, dict]:
     vectors = {s.name: corpus_vector(s) for s in skills}
     results = []
     hard_failures = []
-    rank1 = top3 = positives = negatives = false_positive = host_confusion = direct_miss = internal_over_public = 0
+    rank1 = top3 = positives = negatives = false_positive = owner_miss = host_confusion = direct_miss = internal_over_public = 0
     for path in load_eval_files(args.evals_dir):
         data = json.loads(path.read_text(encoding="utf-8"))
         target = data.get("skill")
@@ -196,7 +204,22 @@ def run(args) -> tuple[int, dict]:
                 negatives += 1
                 if top == target:
                     false_positive += 1
-            results.append({"file": str(path.relative_to(ROOT)), "skill": target, "query": text, "expected": expected, "rank": rank, "top": top, "top3": names[:3]})
+                owner = q.get("owner")
+                if owner:
+                    if owner not in by_name:
+                        owner_miss += 1
+                        hard_failures.append(f"{display_path(path)}: query[{i}] declares unknown owner {owner!r}")
+                    else:
+                        owner_rank = names.index(owner) + 1
+                        owner_score = ranked[owner_rank - 1][1]
+                        target_score = ranked[rank - 1][1] if rank else 0
+                        if owner_score <= 0 or owner_rank > rank:
+                            owner_miss += 1
+                            hard_failures.append(
+                                f"{display_path(path)}: query[{i}] declared owner {owner} does not outrank {target} "
+                                f"(owner #{owner_rank} @ {owner_score:.2f}, target #{rank} @ {target_score:.2f})"
+                            )
+            results.append({"file": display_path(path), "skill": target, "query": text, "expected": expected, "rank": rank, "top": top, "top3": names[:3]})
     collisions = description_collisions(skills, vectors)
     for c in collisions:
         if c["hard"]:
@@ -209,6 +232,7 @@ def run(args) -> tuple[int, dict]:
         "rank1_rate": round(rank1 / positives, 4) if positives else 0,
         "rank_top3_rate": round(top3 / positives, 4) if positives else 0,
         "false_positive_collisions": false_positive,
+        "owner_misses": owner_miss,
         "nearest_neighbor_collisions": collisions[:25],
         "public_vs_internal_confusion": internal_over_public,
         "host_wording_confusion": host_confusion,
@@ -222,7 +246,7 @@ def run(args) -> tuple[int, dict]:
         args.json_out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     if not args.quiet:
         print(f"routing evals: {rank1}/{positives} rank-1 ({report['rank1_rate']:.0%}); {top3}/{positives} top-3 ({report['rank_top3_rate']:.0%})")
-        print(f"false-positive collisions: {false_positive}; host wording confusion: {host_confusion}; public/internal confusion: {internal_over_public}")
+        print(f"false-positive collisions: {false_positive}; owner misses: {owner_miss}; host wording confusion: {host_confusion}; public/internal confusion: {internal_over_public}")
         if collisions:
             print("nearest description collisions:")
             for c in collisions[:10]:

@@ -1,6 +1,6 @@
 ---
 name: rite-seal
-description: Decide GO / NO-GO on the active feature. Use when the user says "seal this" or "GO / NO-GO". Hands off commit/push/close to $rite-ship. Not for the irreversible ship.
+description: Decide GO / NO-GO readiness on the active feature. Use when the user asks "seal this", "GO / NO-GO", "decide if we can ship", "can we ship", or "safe to merge". Not for commit/push/tag/close; use $rite-ship.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---

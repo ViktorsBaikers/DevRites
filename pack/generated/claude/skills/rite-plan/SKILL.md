@@ -1,6 +1,6 @@
 ---
 name: rite-plan
-description: Reshape an active plan: decompose, reslice, repair, reorder, split FE/BE, unblock, pivot, or revise planning artifacts. Use for replan/reslice/repair/unblock/pivot/revise spec/plan/tasks. Not initial planning.
+description: Re-plan an active feature after reality changed: reslice, repair drift, reorder, split FE/BE, unblock, pivot, or revise artifacts. Use for replan/reslice/repair/unblock/pivot. Not first-pass decomposition.
 argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct|revise]"
 user-invocable: true
 ---

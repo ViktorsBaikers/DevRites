@@ -1,14 +1,114 @@
 {
   "skill": "rite-zoom-out",
-  "description": "Explicit-only evals for /rite-zoom-out — read-only structural map utility.",
+  "description": "Explicit-only evals for /rite-zoom-out \u2014 read-only structural map utility.",
   "queries": [
-    {"text": "/rite-zoom-out", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "$rite-zoom-out", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
-    {"text": "/rite zoom-out auth module", "expected": "should_trigger", "rationale": "Menu-style invocation."},
-    {"text": "zoom out", "expected": "should_not_trigger", "rationale": "Explicit-only utility; natural language should not auto-invoke it."},
-    {"text": "give me the bigger picture of this module", "expected": "should_not_trigger", "rationale": "Explicit-only utility."},
-    {"text": "Grep for the string 'INVOICE_NOT_FOUND' across the repo", "expected": "should_not_trigger", "rationale": "Literal lookup is grep."},
-    {"text": "Design a new export endpoint for the orders module", "expected": "should_not_trigger", "rationale": "Designing a change is /rite-spec."},
-    {"text": "Fix this failing test", "expected": "should_not_trigger", "rationale": "Debugging belongs to devrites-debug-recovery."}
+    {
+      "text": "/rite-zoom-out",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-zoom-out",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite zoom-out auth module",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "$rite zoom-out billing flow",
+      "expected": "should_trigger",
+      "rationale": "Codex menu-style invocation."
+    },
+    {
+      "text": "zoom out",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility; natural language should not auto-invoke it."
+    },
+    {
+      "text": "give me the bigger picture of this module",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility."
+    },
+    {
+      "text": "map the auth subsystem for me",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only structural map request."
+    },
+    {
+      "text": "show how these files relate",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only structural map request."
+    },
+    {
+      "text": "Grep for the string 'INVOICE_NOT_FOUND' across the repo",
+      "expected": "should_not_trigger",
+      "rationale": "Literal lookup is grep."
+    },
+    {
+      "text": "Design a new export endpoint for the orders module",
+      "expected": "should_not_trigger",
+      "rationale": "Designing a change is /rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Fix this failing test",
+      "expected": "should_not_trigger",
+      "rationale": "Debugging belongs to devrites-debug-recovery."
+    },
+    {
+      "text": "Build the next slice",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Plan from the approved spec",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-define.",
+      "owner": "rite-define"
+    },
+    {
+      "text": "Re-plan the slices",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-plan.",
+      "owner": "rite-plan"
+    },
+    {
+      "text": "Review the diff",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Prove the feature works",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Seal this feature",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Ship it",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-ship.",
+      "owner": "rite-ship"
+    },
+    {
+      "text": "Explain this one file",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-explain."
+    },
+    {
+      "text": "What commands exist?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite menu."
+    }
   ]
 }

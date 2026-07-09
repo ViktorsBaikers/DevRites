@@ -1,14 +1,113 @@
 {
   "skill": "rite-prototype",
-  "description": "Explicit-only evals for /rite-prototype — throwaway logic/UI prototypes.",
+  "description": "Explicit-only evals for /rite-prototype \u2014 throwaway logic/UI prototypes.",
   "queries": [
-    {"text": "/rite-prototype", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "$rite-prototype", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
-    {"text": "/rite prototype", "expected": "should_trigger", "rationale": "Menu-style invocation."},
-    {"text": "prototype this", "expected": "should_not_trigger", "rationale": "Explicit-only utility; natural language should not spend always-loaded surface."},
-    {"text": "try a few designs", "expected": "should_not_trigger", "rationale": "Explicit-only utility."},
-    {"text": "Implement the next slice of the active feature", "expected": "should_not_trigger", "rationale": "Real implementation belongs to /rite-build."},
-    {"text": "Spec out a new export feature", "expected": "should_not_trigger", "rationale": "Spec investigation is /rite-spec."},
-    {"text": "Review the diff I just made", "expected": "should_not_trigger", "rationale": "Review belongs to /rite-review."}
+    {
+      "text": "/rite-prototype",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-prototype",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite prototype",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "$rite prototype state model",
+      "expected": "should_trigger",
+      "rationale": "Codex menu-style invocation."
+    },
+    {
+      "text": "prototype this",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility; natural language should not auto-invoke."
+    },
+    {
+      "text": "try a few designs",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility."
+    },
+    {
+      "text": "mock up a throwaway UI",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only prototype request."
+    },
+    {
+      "text": "sanity-check this state model",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only prototype request."
+    },
+    {
+      "text": "Implement the next slice of the active feature",
+      "expected": "should_not_trigger",
+      "rationale": "Real implementation belongs to /rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Spec out a new export feature",
+      "expected": "should_not_trigger",
+      "rationale": "Spec investigation is /rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Review the diff I just made",
+      "expected": "should_not_trigger",
+      "rationale": "Review belongs to /rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Polish the dashboard UI",
+      "expected": "should_not_trigger",
+      "rationale": "Polish belongs to /rite-polish.",
+      "owner": "rite-polish"
+    },
+    {
+      "text": "Prove the feature works end to end",
+      "expected": "should_not_trigger",
+      "rationale": "Proof belongs to /rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Seal this feature GO or NO-GO",
+      "expected": "should_not_trigger",
+      "rationale": "Seal belongs to /rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Ship it",
+      "expected": "should_not_trigger",
+      "rationale": "Ship belongs to /rite-ship.",
+      "owner": "rite-ship"
+    },
+    {
+      "text": "Explain this component",
+      "expected": "should_not_trigger",
+      "rationale": "Explain belongs to /rite-explain."
+    },
+    {
+      "text": "Zoom out on the auth module",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit /rite-zoom-out, not prototype."
+    },
+    {
+      "text": "Debug the failing test",
+      "expected": "should_not_trigger",
+      "rationale": "Debugging belongs to devrites-debug-recovery."
+    },
+    {
+      "text": "Ask me questions about the feature",
+      "expected": "should_not_trigger",
+      "rationale": "Interview/spec belongs to /rite-spec."
+    },
+    {
+      "text": "What time is it?",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic."
+    }
   ]
 }

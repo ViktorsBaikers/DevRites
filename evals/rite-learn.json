@@ -1,14 +1,114 @@
 {
   "skill": "rite-learn",
-  "description": "Explicit-only evals for /rite-learn — human-gated learning-ledger promotion.",
+  "description": "Explicit-only evals for /rite-learn \u2014 human-gated learning-ledger promotion.",
   "queries": [
-    {"text": "/rite-learn", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "$rite-learn", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
-    {"text": "/rite learn", "expected": "should_trigger", "rationale": "Menu-style invocation."},
-    {"text": "Mine the learnings from the archived features.", "expected": "should_not_trigger", "rationale": "Explicit-only utility."},
-    {"text": "Update the learnings ledger.", "expected": "should_not_trigger", "rationale": "Explicit-only utility."},
-    {"text": "Where am I in the active feature and what's next?", "expected": "should_not_trigger", "rationale": "/rite-status."},
-    {"text": "Review this feature's diff against the spec.", "expected": "should_not_trigger", "rationale": "/rite-review."},
-    {"text": "Answer question q-2026-06-21-003 with use cursor pagination.", "expected": "should_not_trigger", "rationale": "/rite-resolve."}
+    {
+      "text": "/rite-learn",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-learn",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite learn",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "$rite learn",
+      "expected": "should_trigger",
+      "rationale": "Codex menu-style invocation."
+    },
+    {
+      "text": "Mine the learnings from the archived features.",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility."
+    },
+    {
+      "text": "Update the learnings ledger.",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility."
+    },
+    {
+      "text": "Promote recurring lessons into principles.",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only learning promotion."
+    },
+    {
+      "text": "Review the retrospector output.",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only learning promotion."
+    },
+    {
+      "text": "Where am I in the active feature and what is next?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-status."
+    },
+    {
+      "text": "Review this feature diff against the spec.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Answer question q-2026-06-21-003 with use cursor pagination.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-resolve."
+    },
+    {
+      "text": "Start a new feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Plan from the approved spec.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-define.",
+      "owner": "rite-define"
+    },
+    {
+      "text": "Build the next slice.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Seal this feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Ship the sealed feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-ship.",
+      "owner": "rite-ship"
+    },
+    {
+      "text": "Customize DevRites rules.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-customize.",
+      "owner": "rite-customize"
+    },
+    {
+      "text": "Check my DevRites install.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-doctor.",
+      "owner": "rite-doctor"
+    },
+    {
+      "text": "Explain the architecture.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-explain."
+    },
+    {
+      "text": "What is 2 + 2?",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic."
+    }
   ]
 }

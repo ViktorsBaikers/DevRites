@@ -1,14 +1,114 @@
 {
   "skill": "rite-resolve",
-  "description": "Explicit-only evals for /rite-resolve — answer, drop, or batch-resolve open questions.md gates.",
+  "description": "Explicit-only evals for /rite-resolve \u2014 answer, drop, or batch-resolve open questions.md gates.",
   "queries": [
-    {"text": "/rite-resolve q-2026-05-28-001 \"use UUIDv7\"", "expected": "should_trigger", "rationale": "Direct slash invocation with qid + answer."},
-    {"text": "$rite-resolve --drop q-2026-05-28-002", "expected": "should_trigger", "rationale": "Direct Codex invocation with --drop."},
-    {"text": "/rite resolve --batch answers.yaml", "expected": "should_trigger", "rationale": "Menu-style invocation."},
-    {"text": "Answer that question.", "expected": "should_not_trigger", "rationale": "Explicit-only resume verb."},
-    {"text": "Resolve q-2026-05-28-001 with yes", "expected": "should_not_trigger", "rationale": "Natural-language resolve should be explicit."},
-    {"text": "Start a new feature.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Where am I in the workflow?", "expected": "should_not_trigger", "rationale": "/rite-status."},
-    {"text": "Review my diff.", "expected": "should_not_trigger", "rationale": "/rite-review."}
+    {
+      "text": "/rite-resolve q-2026-05-28-001 \"use UUIDv7\"",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation with qid + answer."
+    },
+    {
+      "text": "$rite-resolve --drop q-2026-05-28-002",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation with --drop."
+    },
+    {
+      "text": "/rite resolve --batch answers.yaml",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "$rite resolve q-2026-05-28-001 yes",
+      "expected": "should_trigger",
+      "rationale": "Codex menu-style invocation."
+    },
+    {
+      "text": "Answer that question.",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only resume verb."
+    },
+    {
+      "text": "Resolve q-2026-05-28-001 with yes",
+      "expected": "should_not_trigger",
+      "rationale": "Natural-language resolve should be explicit."
+    },
+    {
+      "text": "Drop the open question about pagination",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only resolve request."
+    },
+    {
+      "text": "Batch apply these answers",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only resolve request."
+    },
+    {
+      "text": "Start a new feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Where am I in the workflow?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-status."
+    },
+    {
+      "text": "Review my diff.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Build the next slice.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Repair the plan after drift.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-plan.",
+      "owner": "rite-plan"
+    },
+    {
+      "text": "Seal this feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Ship it.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-ship.",
+      "owner": "rite-ship"
+    },
+    {
+      "text": "Write a handoff.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-handoff."
+    },
+    {
+      "text": "Check DevRites install health.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-doctor.",
+      "owner": "rite-doctor"
+    },
+    {
+      "text": "Debug the app 500.",
+      "expected": "should_not_trigger",
+      "rationale": "devrites-debug-recovery."
+    },
+    {
+      "text": "Polish the code.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-polish.",
+      "owner": "rite-polish"
+    },
+    {
+      "text": "List commands.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite menu."
+    }
   ]
 }

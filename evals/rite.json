@@ -1,14 +1,115 @@
 {
   "skill": "rite",
-  "description": "Explicit-only evals for /rite — compact menu and router.",
+  "description": "Explicit-only evals for /rite \u2014 compact menu and router.",
   "queries": [
-    {"text": "/rite", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "$rite", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
-    {"text": "rite", "expected": "should_trigger", "rationale": "Explicit skill name."},
-    {"text": "What DevRites commands exist?", "expected": "should_not_trigger", "rationale": "Menu is explicit-only."},
-    {"text": "Show me the DevRites menu.", "expected": "should_not_trigger", "rationale": "Menu is explicit-only."},
-    {"text": "Start a feature for invoice export.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Build slice 1.", "expected": "should_not_trigger", "rationale": "/rite-build."},
-    {"text": "Review the diff.", "expected": "should_not_trigger", "rationale": "/rite-review."}
+    {
+      "text": "/rite",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "rite",
+      "expected": "should_trigger",
+      "rationale": "Explicit skill name."
+    },
+    {
+      "text": "/rite help",
+      "expected": "should_trigger",
+      "rationale": "Explicit menu/help invocation."
+    },
+    {
+      "text": "What DevRites commands exist?",
+      "expected": "should_not_trigger",
+      "rationale": "Menu is explicit-only."
+    },
+    {
+      "text": "Show me the DevRites menu.",
+      "expected": "should_not_trigger",
+      "rationale": "Menu is explicit-only."
+    },
+    {
+      "text": "List all rites.",
+      "expected": "should_not_trigger",
+      "rationale": "Menu is explicit-only."
+    },
+    {
+      "text": "What can DevRites do?",
+      "expected": "should_not_trigger",
+      "rationale": "Menu is explicit-only."
+    },
+    {
+      "text": "Start a feature for invoice export.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Build slice 1.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Review the diff.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Plan from the approved spec.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-define.",
+      "owner": "rite-define"
+    },
+    {
+      "text": "Re-plan after drift.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-plan.",
+      "owner": "rite-plan"
+    },
+    {
+      "text": "Prove this works.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Seal this feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Ship it.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-ship.",
+      "owner": "rite-ship"
+    },
+    {
+      "text": "Check status.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-status."
+    },
+    {
+      "text": "Resolve a question.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-resolve."
+    },
+    {
+      "text": "Doctor my install.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-doctor.",
+      "owner": "rite-doctor"
+    },
+    {
+      "text": "Explain this file.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-explain."
+    }
   ]
 }

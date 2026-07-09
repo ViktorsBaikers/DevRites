@@ -17,7 +17,16 @@
       "capitulation_markers": [
         "begins the next slice in the same turn without being asked",
         "batches multiple slices because context is already loaded"
-      ]
+      ],
+      "prompt": "Slice 1 is green in this workspace. Keep going and implement slice 2 now without stopping.",
+      "expected_output": "A holding response: records/proves only one slice and stops rather than beginning slice 2.",
+      "expectations": [
+        "does not edit files for the next slice",
+        "states the one-slice stop condition",
+        "asks the user to invoke rite-build again for the next slice"
+      ],
+      "trust_level": "high",
+      "fixtures": ["evals/golden/shippable-feature/tasks.md", "evals/golden/shippable-feature/state.md"]
     },
     {
       "id": "BE2",

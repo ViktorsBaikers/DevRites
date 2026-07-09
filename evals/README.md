@@ -42,17 +42,17 @@ The methodology mirrors Anthropic's `skill-creator` 2.0:
   (skill / correct / accuracy / FP / FN / passed) and uploads
   `eval-summary.jsonl` + `eval-output.txt` as artifacts.
 
-Local execution (same script CI uses):
+Local live execution is manual-only; schema validation never runs a model just because
+`CLAUDE_API_KEY` exists:
 
 ```bash
 pip install anthropic
-CLAUDE_API_KEY=sk-... python3 scripts/eval-runner.py \
-  --min-accuracy 0.90 --max-false-positives 2 \
-  --verbose evals/*.json
+CLAUDE_API_KEY=sk-... scripts/run-evals.sh --live evals/*.json
 ```
 
-Override the model with `DEVRITES_EVAL_MODEL=claude-...`. Pass
-`--summary-file out.jsonl` to dump a machine-readable per-skill report.
+Override the model with `DEVRITES_EVAL_MODEL=claude-...`. For custom thresholds or
+summary output, call `python3 scripts/eval-runner.py --summary-file out.jsonl ...`
+directly.
 
 ## Routing ratchet
 
@@ -113,13 +113,16 @@ trigger evals. Full schema, methodology, and the grading contract:
     {
       "text": "<user query>",
       "expected": "should_trigger | should_not_trigger",
+      "owner": "<skill-name for pairwise negatives, optional>",
       "rationale": "<why>"
     }
   ]
 }
 ```
 
-Each file should have exactly 20 queries. Aim for ~12 should_trigger and ~8
+Each file should have exactly 20 queries. `should_not_trigger` may include an `owner`
+field; when present, the deterministic router asserts that owner outranks this skill,
+so negatives are pairwise rather than vacuous. Aim for ~12 should_trigger and ~8
 should_not_trigger, including:
 
 - Direct slash-command invocation (always should_trigger).

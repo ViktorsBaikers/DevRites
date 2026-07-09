@@ -41,6 +41,8 @@ python3 "$ROOT/scripts/run-routing-evals.py" --json-out "$T/routing.json" --quie
   && grep -q '"host_wording_confusion"' "$T/routing.json" \
   && ok "routing eval writes machine-readable rank report" \
   || no "routing eval missing JSON report fields"
+run_ok "live behavioral eval dry-run plans shipped portable scenarios" python3 "$ROOT/scripts/run-live-behavioral-evals.py" --dry-run "$ROOT/evals/behavioral/rite-ship.json"
+run_ok "skill pruning audit runs" node "$ROOT/scripts/skill-pruning-audit.mjs" --quiet
 run_ok "skill anatomy validator passes shipped pack" python3 "$ROOT/scripts/validate-skill-anatomy.py" --quiet
 run_ok "host command parity validator passes" python3 "$ROOT/scripts/validate-command-parity.py" --quiet
 run_ok "agent composition validator passes" python3 "$ROOT/scripts/validate-agent-composition.py" --quiet
@@ -65,6 +67,29 @@ Read core.md.
 - Run a step.
 SKILL
 run_fail_contains "skill anatomy rejects missing output contract" "output/reply contract" python3 "$ROOT/scripts/validate-skill-anatomy.py" --skills-dir "$T/skills" --quiet
+
+# Fixture: routing eval owner negatives are pairwise, not vacuous.
+mkdir -p "$T/routing-skills/alpha" "$T/routing-skills/beta" "$T/routing-evals"
+cat > "$T/routing-skills/alpha/SKILL.md" <<'SKILL'
+---
+name: alpha
+description: Alpha handles beta task wording.
+user-invocable: true
+---
+# alpha
+SKILL
+cat > "$T/routing-skills/beta/SKILL.md" <<'SKILL'
+---
+name: beta
+description: Beta handles other wording.
+user-invocable: true
+---
+# beta
+SKILL
+cat > "$T/routing-evals/alpha.json" <<'JSON'
+{"skill":"alpha","queries":[{"text":"alpha task","expected":"should_not_trigger","owner":"beta","rationale":"beta owns it"}]}
+JSON
+run_fail_contains "routing eval rejects owner that does not outrank target" "declared owner" python3 "$ROOT/scripts/run-routing-evals.py" --skills-dir "$T/routing-skills" --evals-dir "$T/routing-evals" --baseline "$T/no-baseline.json"
 
 # Fixture: host parity rejects docs without a Codex equivalent.
 cp -R "$ROOT/pack/.claude/skills" "$T/parity-skills"
