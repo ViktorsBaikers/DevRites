@@ -1,22 +1,22 @@
 package migrate
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/devrites/devrites/internal/state"
+	"github.com/devrites/devrites/internal/testutil"
 )
 
 func TestRunNormalizesCanonicalWorkLayout(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, root, "ACTIVE", "alpha\n")
-	writeFile(t, root, "work/alpha/spec.md", "spec\n")
-	writeFile(t, root, "work/alpha/plan.md", "plan\n")
-	writeFile(t, root, "work/alpha/evidence.md", "proof\n")
-	writeFile(t, root, "work/alpha/state.md", "status: done - shipped\n")
-	writeFile(t, root, "work/alpha/review.md", "review\n")
+	testutil.WriteFile(t, filepath.Join(root, "ACTIVE"), "alpha\n")
+	testutil.WriteFile(t, filepath.Join(root, "work/alpha/spec.md"), "spec\n")
+	testutil.WriteFile(t, filepath.Join(root, "work/alpha/plan.md"), "plan\n")
+	testutil.WriteFile(t, filepath.Join(root, "work/alpha/evidence.md"), "proof\n")
+	testutil.WriteFile(t, filepath.Join(root, "work/alpha/state.md"), "status: done - shipped\n")
+	testutil.WriteFile(t, filepath.Join(root, "work/alpha/review.md"), "review\n")
 
 	res, err := Run(root)
 	if err != nil {
@@ -57,8 +57,8 @@ func TestRunNormalizesCanonicalWorkLayout(t *testing.T) {
 
 func TestRunNormalizesLiveFeatureAliases(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, root, "features/beta/state.md", "- Phase: prove\n")
-	writeFile(t, root, "features/beta/evidence.md", "evidence\n")
+	testutil.WriteFile(t, filepath.Join(root, "features/beta/state.md"), "- Phase: prove\n")
+	testutil.WriteFile(t, filepath.Join(root, "features/beta/evidence.md"), "evidence\n")
 
 	res, err := Run(root)
 	if err != nil {
@@ -97,24 +97,9 @@ func TestMapLegacyPhase(t *testing.T) {
 	}
 }
 
-func writeFile(t *testing.T, root, rel, content string) {
-	t.Helper()
-	path := filepath.Join(root, rel)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func assertFile(t *testing.T, root, rel, want string) {
 	t.Helper()
-	got, err := os.ReadFile(filepath.Join(root, rel))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(got) != want {
+	if got := testutil.ReadFile(t, filepath.Join(root, rel)); got != want {
 		t.Fatalf("%s=%q, want %q", rel, got, want)
 	}
 }

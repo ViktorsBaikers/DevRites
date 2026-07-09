@@ -25,7 +25,10 @@ import (
 // exitOK is the fail-open success code these hooks return.
 const exitOK = 0
 
-var installHTTPClient = &http.Client{Timeout: 30 * time.Second}
+var (
+	installHTTPClient     = &http.Client{Timeout: 30 * time.Second}
+	sourceCacheHTTPClient = &http.Client{Timeout: 5 * time.Second}
+)
 
 // ---- source-citation cache -------------------------------------------------
 
@@ -97,17 +100,14 @@ func SourceCachePre(stdin io.Reader, stdout, stderr io.Writer) int {
 		return exitOK
 	}
 
-	req, err := http.NewRequest(http.MethodHead, url, nil)
-	if err != nil {
-		return exitOK
-	}
+	headers := http.Header{}
 	if e.ETag != "" {
-		req.Header.Set("If-None-Match", e.ETag)
+		headers.Set("If-None-Match", e.ETag)
 	}
 	if e.LastModified != "" {
-		req.Header.Set("If-Modified-Since", e.LastModified)
+		headers.Set("If-Modified-Since", e.LastModified)
 	}
-	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
+	resp, err := headURL(url, headers)
 	if err != nil {
 		return exitOK // slow/dead server must not stall the turn
 	}
@@ -179,16 +179,25 @@ func SourceCachePost(stdin io.Reader, stdout, stderr io.Writer) int {
 // fetchValidators does a HEAD to the origin (following redirects) and returns the
 // FINAL response's ETag / Last-Modified, empty on any failure.
 func fetchValidators(url string) (etag, lastMod string) {
-	req, err := http.NewRequest(http.MethodHead, url, nil)
-	if err != nil {
-		return "", ""
-	}
-	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
+	resp, err := headURL(url, nil)
 	if err != nil {
 		return "", ""
 	}
 	_ = resp.Body.Close()
 	return resp.Header.Get("ETag"), resp.Header.Get("Last-Modified")
+}
+
+func headURL(url string, headers http.Header) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodHead, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	for name, values := range headers {
+		for _, value := range values {
+			req.Header.Add(name, value)
+		}
+	}
+	return sourceCacheHTTPClient.Do(req)
 }
 
 func FetchJSON(url string, out any) error {

@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/testutil"
 )
 
 // goodSkill / goodAgent are minimal well-formed contracts for the happy path and
@@ -30,8 +33,8 @@ body
 // TestPackContractGood: a well-formed skill + agent lint clean.
 func TestPackContractGood(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "skills/rite-demo/SKILL.md", goodSkill)
-	writeFile(t, dir, "agents/devrites-demo-reviewer.md", goodAgent)
+	testutil.WriteFile(t, filepath.Join(dir, "skills/rite-demo/SKILL.md"), goodSkill)
+	testutil.WriteFile(t, filepath.Join(dir, "agents/devrites-demo-reviewer.md"), goodAgent)
 	var out, errb bytes.Buffer
 	if code := cmdValidatePack([]string{dir}, &out, &errb); code != exitOK {
 		t.Fatalf("expected OK, got %d; stderr=%s", code, errb.String())
@@ -97,7 +100,7 @@ func TestPackContractFrontmatter(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
-			writeFile(t, dir, tc.relPath, tc.body)
+			testutil.WriteFile(t, filepath.Join(dir, tc.relPath), tc.body)
 			var out, errb bytes.Buffer
 			if code := cmdValidatePack([]string{dir}, &out, &errb); code != 1 {
 				t.Fatalf("expected exit 1, got %d; stderr=%s", code, errb.String())
@@ -113,7 +116,7 @@ func TestPackContractFrontmatter(t *testing.T) {
 // rite-*); the naming rule must accept it.
 func TestPackContractRiteRouterAllowed(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "skills/rite/SKILL.md", "---\nname: rite\ndescription: router\nuser-invocable: true\n---\n")
+	testutil.WriteFile(t, filepath.Join(dir, "skills/rite/SKILL.md"), "---\nname: rite\ndescription: router\nuser-invocable: true\n---\n")
 	var out, errb bytes.Buffer
 	if code := cmdValidatePack([]string{dir}, &out, &errb); code != exitOK {
 		t.Fatalf("expected OK for bare rite router, got %d; stderr=%s", code, errb.String())
@@ -123,7 +126,7 @@ func TestPackContractRiteRouterAllowed(t *testing.T) {
 // A devrites-* skill with user-invocable:false is legitimate and must lint clean.
 func TestPackContractDevritesModelInvokedOK(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "skills/devrites-demo/SKILL.md", "---\nname: devrites-demo\ndescription: x\nuser-invocable: false\n---\n")
+	testutil.WriteFile(t, filepath.Join(dir, "skills/devrites-demo/SKILL.md"), "---\nname: devrites-demo\ndescription: x\nuser-invocable: false\n---\n")
 	var out, errb bytes.Buffer
 	if code := cmdValidatePack([]string{dir}, &out, &errb); code != exitOK {
 		t.Fatalf("expected OK, got %d; stderr=%s", code, errb.String())
@@ -137,8 +140,8 @@ func TestDocClaimBrokenLink(t *testing.T) {
 	root := t.TempDir()
 	packDir := root + "/pack/.claude"
 	// A real skill so the linked-good case exists, plus a dangling reference.
-	writeFile(t, packDir, "skills/rite-demo/SKILL.md", goodSkill)
-	writeFile(t, root, "docs/command-map.md", strings.Join([]string{
+	testutil.WriteFile(t, filepath.Join(packDir, "skills/rite-demo/SKILL.md"), goodSkill)
+	testutil.WriteFile(t, filepath.Join(root, "docs/command-map.md"), strings.Join([]string{
 		"[rite-demo](../pack/.claude/skills/rite-demo/SKILL.md)", // exists
 		"[gone](../pack/.claude/skills/rite-ghost/SKILL.md)",     // missing
 		"[external](https://example.com)",                        // ignored
@@ -159,8 +162,8 @@ func TestDocClaimBrokenLink(t *testing.T) {
 func TestDocClaimAllResolve(t *testing.T) {
 	root := t.TempDir()
 	packDir := root + "/pack/.claude"
-	writeFile(t, packDir, "skills/rite-demo/SKILL.md", goodSkill)
-	writeFile(t, root, "docs/command-map.md", "[rite-demo](../pack/.claude/skills/rite-demo/SKILL.md)\n")
+	testutil.WriteFile(t, filepath.Join(packDir, "skills/rite-demo/SKILL.md"), goodSkill)
+	testutil.WriteFile(t, filepath.Join(root, "docs/command-map.md"), "[rite-demo](../pack/.claude/skills/rite-demo/SKILL.md)\n")
 	var out, errb bytes.Buffer
 	if code := cmdValidatePack([]string{packDir}, &out, &errb); code != exitOK {
 		t.Fatalf("expected OK, got %d; stderr=%s", code, errb.String())

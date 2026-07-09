@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/testutil"
 )
 
 func TestCheckAndRenderReadiness(t *testing.T) {
@@ -83,7 +85,7 @@ func TestStopGateRestPointInvariants(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
-			writeFile(t, root, "ACTIVE", "alpha\n")
+			testutil.WriteFile(t, filepath.Join(root, "ACTIVE"), "alpha\n")
 			writeFeature(t, root, "alpha", tc.files)
 
 			got, err := StopGate(root)
@@ -111,9 +113,9 @@ func TestStopGateUsesWorkspaceOverride(t *testing.T) {
 	}
 	override := filepath.Join(project, "custom", "alpha")
 	t.Setenv("DEVRITES_WORKSPACE", override)
-	writeFile(t, override, "feature.md", "---\nphase: build\nschemaVersion: 1\n---\n")
-	writeFile(t, override, "state.md", "- Phase: build\n")
-	writeFile(t, override, ".red", "go test ./...\n")
+	testutil.WriteFile(t, filepath.Join(override, "feature.md"), "---\nphase: build\nschemaVersion: 1\n---\n")
+	testutil.WriteFile(t, filepath.Join(override, "state.md"), "- Phase: build\n")
+	testutil.WriteFile(t, filepath.Join(override, ".red"), "go test ./...\n")
 
 	got, err := StopGate(root)
 	if err != nil {
@@ -138,17 +140,6 @@ func TestOpenBlockingQuestionGates(t *testing.T) {
 func writeFeature(t *testing.T, root, slug string, files map[string]string) {
 	t.Helper()
 	for name, content := range files {
-		writeFile(t, root, filepath.Join("features", slug, name), content)
-	}
-}
-
-func writeFile(t *testing.T, root, rel, content string) {
-	t.Helper()
-	path := filepath.Join(root, rel)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
+		testutil.WriteFile(t, filepath.Join(root, "features", slug, name), content)
 	}
 }
