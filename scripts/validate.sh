@@ -75,6 +75,13 @@ else
   echo "skip: python3 not found"
 fi
 
+section "skill description budget"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/check-skill-description-budget.py" "$SKILLS"; then good "skill descriptions stay within catalog budget"; else bad "skill description budget failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
 # ---- 6. /rite-polish orchestrator references its phase reference files ---
 section "rite-polish orchestrator → reference files"
 for s in reference/code.md reference/ui.md; do

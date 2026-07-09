@@ -32,11 +32,13 @@ Usage:
   devrites-engine uninstall [flags]        Remove a DevRites install, preserving runtime state
   devrites-engine status <slug>            Print a feature's phase and per-section completeness
   devrites-engine snapshot [slug]          Emit the DevRites workspace/status JSON snapshot
+  devrites-engine first-task               Print the deterministic recommended-start token
   devrites-engine reindex                  Rebuild the SQLite index from the .devrites files
   devrites-engine readiness <slug>         Gate: are the sections required to leave this phase complete?
   devrites-engine seal <slug>              Gate: is the feature complete enough to seal?
   devrites-engine spec-validate <dir|file> [--against <ledger-root>]  Lint the structured Requirement/Scenario grammar in a spec.md (--against cross-checks delta sections vs the capability ledger)
   devrites-engine spec-skeleton <dir|file> Check spec.md declares the six top-level spec sections
+  devrites-engine spec-dedupe "<query>"    Search local PRDs/issues/archive for similar specs
   devrites-engine check-acceptance <dir>   Grade spec.md's [ACn] criteria against seal.md
   devrites-engine footprint <sub> <slug>   Fan-out footprint: log|render|roster the dispatch log
   devrites-engine evidence-fresh [slug]    Gate: does the proof post-date every touched file?
@@ -57,10 +59,15 @@ Usage:
   devrites-engine resolve <qid> "<ans>"    Resolve an open question; keep state.md consistent
   devrites-engine close-out <slug>         Archive a shipped feature and clear ACTIVE
   devrites-engine archive-search "<nouns>" Surface shipped features whose spec.md overlaps the query (prior-art probe)
+  devrites-engine decisions <sub> [...]    Derived decision memory: index|search
   devrites-engine ledger <sub> [...]       Capability ledger (living specs/): sync|diff|validate|list|show
   devrites-engine learnings <sub> [...]    Cross-feature learning ledger: add|list|top|mine|nudge
   devrites-engine timeline <sub> [...]     Session trace: log|list skill events, decisions, and state moves
-  devrites-engine health <sub> [...]       Health history: record|list compact quality scores
+  devrites-engine health [run|record|list] Code-health dashboard + history
+  devrites-engine config get <key>         Read project config (outside_voice defaults auto)
+  devrites-engine outside-voice            Detect outside-review availability
+  devrites-engine docs-stale [slug]        Advisory docs-staleness check over changed public surfaces
+  devrites-engine secret-scan [slug]       Credential scan over staged/touched files; HIGH blocks
   devrites-engine review-fingerprints [slug]  Stable IDs for review findings; --write saves JSONL
   devrites-engine conventions <sub> [...]  Project convention ledger: band|read|orient|promote|contradict
   devrites-engine lanes plan [slug]       Advisory safe-parallelism/lane plan for slices
@@ -138,6 +145,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return jsonWrap("status", j, stdout, stderr, func(o, e io.Writer) int { return cmdStatus(rest, o, e) })
 	case "snapshot":
 		return cmdSnapshot(args[1:], stdout, stderr)
+	case "first-task":
+		return lib.FirstTask(resolveRootLenient(), args[1:], stdout, stderr)
 	case "reindex":
 		return cmdReindex(args[1:], stdout, stderr)
 	case "readiness":
@@ -151,6 +160,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return jsonWrap("spec-validate", j, stdout, stderr, func(o, e io.Writer) int { return cmdSpecValidate(rest, o, e) })
 	case "spec-skeleton":
 		return cmdSpecSkeleton(args[1:], stdout, stderr)
+	case "spec-dedupe":
+		return lib.SpecDedupe(resolveRootLenient(), args[1:], stdout, stderr)
 	case "check-acceptance":
 		return cmdCheckAcceptance(args[1:], stdout, stderr)
 	case "footprint":
@@ -195,6 +206,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.CloseOut(resolveRootLenient(), args[1:], stdout, stderr)
 	case "archive-search":
 		return lib.ArchiveSearch(resolveRootLenient(), args[1:], stdout, stderr)
+	case "decisions":
+		return lib.Decisions(resolveRootLenient(), args[1:], stdout, stderr)
 	case "ledger":
 		rest, j := extractFlag(args[1:], "--json")
 		return jsonWrap("ledger", j, stdout, stderr, func(o, e io.Writer) int { return lib.Ledger(resolveRootLenient(), rest, o, e) })
@@ -204,6 +217,14 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.Timeline(resolveRootLenient(), args[1:], stdout, stderr)
 	case "health":
 		return lib.Health(resolveRootLenient(), args[1:], stdout, stderr)
+	case "config":
+		return lib.Config(resolveRootLenient(), args[1:], stdout, stderr)
+	case "outside-voice":
+		return lib.OutsideVoice(resolveRootLenient(), args[1:], stdout, stderr)
+	case "docs-stale":
+		return lib.DocsStale(resolveRootLenient(), args[1:], stdout, stderr)
+	case "secret-scan":
+		return lib.SecretScan(resolveRootLenient(), args[1:], stdout, stderr)
 	case "review-fingerprints":
 		return lib.ReviewFingerprints(resolveRootLenient(), args[1:], stdout, stderr)
 	case "conventions":

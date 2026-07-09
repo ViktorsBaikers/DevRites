@@ -1,6 +1,6 @@
 ---
 name: devrites-browser-proof
-description: Prove UI behavior in a real browser, capturing screenshots, console, network, interactions, and Core Web Vitals to `browser-evidence.md`. Use when the user says "check the UI in browser", "screenshot this", "prove it renders", or a Core Web Vital / perf budget needs measuring. Not for backend-only features.
+description: Prove UI behavior in a real browser, capturing screenshots, console/network, interactions, and Core Web Vitals. Use when the user says "check the UI", "screenshot", "prove it renders", or asks for browser perf. Not for backend-only features.
 user-invocable: false
 ---
 

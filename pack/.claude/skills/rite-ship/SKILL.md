@@ -73,6 +73,13 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    record the synced capabilities in `ship.md`. Skip silently when the feature declares no
    requirements (a pure refactor / chore). The fold is gated on the GO + evidence-fresh confirmed
    in step 1, so the ledger only ever records proven truth.
+2c. **Credential guard (blocking for HIGH).** Before the irreversible type-GO prompt, scan staged
+   and touched files plus any PR body draft. HIGH blocks ship and tells the user to rotate/redact;
+   MEDIUM asks for confirmation and records the exception in `ship.md`; LOW is FYI.
+   ```bash
+   devrites-engine secret-scan --staged; echo "secret-scan rc=$?"
+   ```
+   **rc=3 → STOP**: do not type-GO, commit, push, or archive.
 3. **Render the type-GO prompt** ([reference/git-ship.md](reference/git-ship.md)) and
    wait. Only the literal `GO` proceeds; anything else cancels — record the cancel in
    `ship.md` and stop (do not retry without the user asking).
