@@ -61,11 +61,14 @@ structured design-brief / design-reference scorecard below) · limitations.
 ## Visual Verdict — structured pass/fail (auto-emit for UI with a design brief)
 The screenshots you already opened and described become a verdict, not a vibe. **Whenever the
 feature is UI and a `design-brief.md` exists** (or the spec saved design refs in `references/`),
-emit a `## Visual Verdict` table to `browser-evidence.md`, scored from the opened screenshots.
-This is the prose "design-reference match" formalized so `/rite-seal` and the
-`devrites-frontend-reviewer` can gate on it instead of re-reading prose. No `design-brief.md` and
-no saved references → no Visual Verdict (greenfield no-op — never block UI for the absence of a
-brief; record the limitation and move on).
+emit both:
+
+- a `## Visual Verdict` table to `browser-evidence.md`, scored from opened screenshots;
+- `visual-verdict.json` beside `browser-evidence.md`, using the JSON shape below.
+
+This gives `/rite-seal` and the `devrites-frontend-reviewer` a machine-readable gate. No
+`design-brief.md` and no saved references → no Visual Verdict (greenfield no-op — never block UI
+for the absence of a brief; record the limitation and move on).
 
 One row per **declared `design-brief.md` state** the slice delivers (default / loading / empty /
 error / success / disabled / long-content), plus key **design-reference** diffs and the
@@ -91,6 +94,24 @@ Overall: PARTIAL — 1 FAIL (error state), 1 PARTIAL (CTA size). Screenshots: <p
 - **Overall line** — `PASS` | `PARTIAL (n)` | `FAIL (n)`. This is what the consumers read: a
   FAIL on an acceptance-mapped row is a NO-GO at `/rite-seal`, and the FAIL/PARTIAL rows are the
   `/rite-polish` normalize worklist.
+Write the JSON file exactly as:
+
+```json
+{
+  "score": 0,
+  "verdict": "pass|partial|fail",
+  "threshold": 90,
+  "criteria": [
+    {"name":"...","source":"brief|reference|anti-slop|acceptance","expected":"...","observed":"...","verdict":"PASS|PARTIAL|FAIL","severity":"Critical|Important|Suggestion"}
+  ],
+  "screenshots": ["path/to/screenshot.png"],
+  "reasoning": "1-2 sentences"
+}
+```
+
+Default `threshold` is 90 when matching a supplied design reference; otherwise use the threshold
+named in `design-brief.md` or omit threshold pressure and gate on Critical/Important failures.
+
 - **Honesty.** A row scored without an opened screenshot is `pending (manual)` with the command —
   never a green you didn't observe (the same standing as `pending (manual)` proof below).
 

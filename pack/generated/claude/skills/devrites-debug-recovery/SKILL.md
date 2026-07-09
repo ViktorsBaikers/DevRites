@@ -23,17 +23,21 @@ move is unclear.
    (not a nearby failure); capture the **exact error text**; confirm
    reproducibility (or a high enough repro rate for flaky bugs). Do not proceed
    without reproduction.
-3. **Ranked hypotheses (3-5, falsifiable)** — generate the list before testing
+3. **Trace when ambiguous** — if the cause is unclear, flaky, causal, or one fix
+   already failed, run the competing-hypothesis trace branch before editing.
+   Completion: top hypothesis has evidence for/against plus one discriminating probe.
+   See [trace.md](reference/trace.md).
+4. **Ranked hypotheses (3-5, falsifiable)** — generate the list before testing
    any of them. Each must state a prediction.
    See [hypotheses.md](reference/hypotheses.md).
-4. **Instrument** — debugger > logs > "log everything and grep". One variable
+5. **Instrument** — debugger > logs > "log everything and grep". One variable
    at a time. Tagged debug-log prefixes.
    See [instrumentation.md](reference/instrumentation.md).
-5. **Fix + regression test** — write the regression test before the fix, but
+6. **Fix + regression test** — write the regression test before the fix, but
    only if a correct seam exists. If no correct seam: that IS the finding;
    record it.
    See [regression-test.md](reference/regression-test.md).
-6. **Cleanup + classify** — repro gone, debug logs gone, throwaway harnesses
+7. **Cleanup + classify** — repro gone, debug logs gone, throwaway harnesses
    gone, hypothesis recorded. Classify the failure.
    See [cleanup-and-classify.md](reference/cleanup-and-classify.md).
 

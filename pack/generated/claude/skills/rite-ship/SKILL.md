@@ -53,8 +53,11 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    ```
    If it flags the active feature, confirm you're shipping the intended slug before proceeding.
 2. Build the git plan from `git-workflow.md` + the project's own convention: the
-   Conventional-Commit message(s), the target branch, and whether a tag / PR applies.
-   Scope the commit to `touched-files.md`; never stage secrets or out-of-scope files.
+   Conventional-Commit message(s), commit trailers for non-trivial work, the target branch, and
+   whether a tag / PR applies. Derive trailers from `decisions.md`, `assumptions.md`, `seal.md`,
+   and `evidence.md`: `Constraint`, `Rejected`, `Confidence`, `Scope-risk`, `Not-tested` when
+   present; skip trailers for trivial typo/formatting commits. Scope the commit to
+   `touched-files.md`; never stage secrets or out-of-scope files.
 2a. **Design memory (optional, UI features only).** If the feature shipped UI, offer to roll
    its *proven* design language up into a project-level `DESIGN.md` so the next feature
    inherits the system instead of re-discovering it

@@ -20,6 +20,7 @@ import (
 	"github.com/devrites/devrites/internal/install"
 	"github.com/devrites/devrites/internal/iohooks"
 	"github.com/devrites/devrites/internal/lib"
+	"github.com/devrites/devrites/internal/profile"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/version"
 )
@@ -47,6 +48,7 @@ Usage:
   devrites-engine budget [slug]            Lint each workspace file against its context-size ceiling
   devrites-engine preamble [slug]          Print the active feature's workspace-state orientation
   devrites-engine progress [slug]          Render the active feature's phase/slice/flow footer
+  devrites-engine profile get|refresh      Cache stable repo facts for grounding skills
   devrites-engine stuck <sub> <slug>       Unattended-build loop detector: log|check
   devrites-engine tick-afk <state.md>      Decrement the AFK slice budget in a state.md
   devrites-engine build-readiness [slug]   Gate: is the plan approved and the state build-ready?
@@ -188,6 +190,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return jsonWrap("preamble", j, stdout, stderr, func(o, e io.Writer) int { return cmdPreamble(rest, o, e) })
 	case "progress":
 		return cmdProgress(args[1:], stdout, stderr)
+	case "profile":
+		return profile.Run(args[1:], stdout, stderr)
 	case "stuck":
 		return cmdStuck(args[1:], stdout, stderr)
 	case "tick-afk":

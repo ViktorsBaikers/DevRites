@@ -42,6 +42,9 @@ F=.claude/skills/rite-$V/SKILL.md
 | `status [slug]` | `/rite-status` | active feature, next action, evidence |
 | `doctor` | `/rite-doctor` | health check — install integrity, stale ACTIVE, orphaned gates, hook wiring, merge/rebase state |
 | `learn [--mine \| "<lesson>"]` | `/rite-learn` | review the captured learning ledger → promote recurring lessons to project rules / principles |
+| `pov [candidate]` | `/rite-pov` | project-grounded verdict on adopting / switching / rejecting an external option |
+| `dogfood [--port N]` | `/rite-dogfood` | diff-scoped browser QA by user journey |
+| `pr-feedback [PR\|thread]` | `/rite-pr-feedback` | fix, reply to, and resolve PR review feedback |
 | `customize [override <agent> \| extension <name>]` | `/rite-customize` | author a project-local override or extension, then validate it |
 | `use <slug>` | (inline) | switch the active feature — re-point `.devrites/ACTIVE` |
 | `resolve <qid> "<answer>"` | `/rite-resolve` | answer a HITL gate |
@@ -105,6 +108,9 @@ SHIP          /rite ship               ≡    /rite-ship        type-GO + commit
 STATUS        /rite status             ≡    /rite-status      active feature, next action, evidence, risks
 DOCTOR        /rite doctor             ≡    /rite-doctor      health check — install · stale ACTIVE · orphaned gates · hook wiring · merge/rebase
 LEARN         /rite learn ...          ≡    /rite-learn       review captured lessons → promote to project rules / principles
+POV           /rite pov ...            ≡    /rite-pov         decide adopt / trial / hold / reject for an external option
+DOGFOOD       /rite dogfood ...        ≡    /rite-dogfood     browser QA by changed user journey
+PR FEEDBACK   /rite pr-feedback ...    ≡    /rite-pr-feedback fix and resolve PR review threads
 CUSTOMIZE     /rite customize ...      ≡    /rite-customize   author overrides/extensions without forking the pack
 SWITCH        /rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 RESUME        /rite resolve ...        ≡    /rite-resolve     answer a HITL checkpoint

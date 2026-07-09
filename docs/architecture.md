@@ -23,8 +23,8 @@ traceability rules, and phase-relative completeness model, see
    clears `ACTIVE`). Keeping the decision and the irreversible action as two
    separately-auditable steps is the point.
 2. **Public utility skills** — `.claude/skills/rite-zoom-out`,
-   `rite-prototype`, `rite-handoff`, `rite-pressure-test`, and
-   `rite-autocomplete` — public commands. `rite-autocomplete` is the
+   `rite-prototype`, `rite-handoff`, `rite-pressure-test`, `rite-pov`,
+   `rite-dogfood`, `rite-pr-feedback`, and `rite-autocomplete` — public commands. `rite-autocomplete` is the
    unattended orchestrator: it drives the whole lifecycle (spec → … → seal →
    ship) end-to-end, choosing the best option at each soft gate, pausing only
    on hard irreversible-risk / blocking / escalating gates or a NO-GO. The
@@ -235,7 +235,7 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 26 public `rite-*` skills (39 total) — the thin `/rite` menu
+- **Surface**: 29 public `rite-*` skills (42 total) — the thin `/rite` menu
   (carries the routing) + 8 lifecycle phases (`rite-spec`, `rite-define`,
   `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
   `rite-ship` — seal **decides**, ship **executes + closes**) + the
@@ -244,6 +244,8 @@ contract.
   lens + `rite-adopt` (onboard an existing codebase) + `rite-learn` (cross-feature
   lessons) + `rite-status` + `rite-doctor` (install health) +
   `rite-customize` (project-local overrides/extensions) +
+  `rite-pov` (external-option verdicts) + `rite-dogfood` (browser QA) +
+  `rite-pr-feedback` (review-thread closure) +
   the `rite-plan` replan verb + the `rite-resolve` resume verb + 4 ideation /
   handoff utilities (`rite-zoom-out`, `rite-prototype`, `rite-handoff`,
   `rite-pressure-test`) + `rite-autocomplete` (the unattended full-lifecycle
