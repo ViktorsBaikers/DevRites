@@ -53,7 +53,11 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	case "snapshot":
 		_ = os.Remove(inline) // clear any stale sentinel / prior-slice manifest
 		_ = os.Remove(claimed)
-		tree := worktreeTree(gitRoot)
+		tree, err := worktreeTree(gitRoot)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot snapshot worktree: %v\n", err)
+			return 6
+		}
 		if err := os.WriteFile(base, []byte(tree+"\n"), 0o644); err != nil {
 			fmt.Fprintf(stderr, "reconcile: cannot write snapshot: %v\n", err)
 			return 6
@@ -75,9 +79,21 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintln(stderr, "reconcile: no claimed manifest (.reconcile-claimed) — write the wright Files-changed paths first.")
 			return 6
 		}
-		baseBytes, _ := os.ReadFile(base)
+		baseBytes, err := os.ReadFile(base)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot read snapshot: %v\n", err)
+			return 6
+		}
 		baseTree := strings.TrimSpace(string(baseBytes))
-		nowTree := worktreeTree(gitRoot)
+		if baseTree == "" {
+			fmt.Fprintln(stderr, "reconcile: empty snapshot (.reconcile-base) — re-run \"devrites-engine reconcile snapshot\" before dispatch.")
+			return 6
+		}
+		nowTree, err := worktreeTree(gitRoot)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot capture worktree: %v\n", err)
+			return 6
+		}
 
 		claimedSet := claimedPaths(claimed)
 		viol := 0
@@ -109,24 +125,37 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 
 // worktreeTree captures the whole working tree (tracked + untracked, .gitignore
 // honored) as a git tree object via a throwaway index, so the user's real index
-// is never touched. Returns the tree sha (empty on failure).
-func worktreeTree(gitRoot string) string {
+// is never touched.
+//
+// A failing "git add -A" must not be ignored: write-tree would still succeed
+// against the empty throwaway index and return the empty-tree sha. Both the
+// snapshot and the check would then record that same sha, the diff would come
+// back empty, and the gate would report OK on precisely the A1 breach it exists
+// to catch. Surface the error and let the caller fail closed.
+func worktreeTree(gitRoot string) (string, error) {
 	idx := filepath.Join(os.TempDir(), fmt.Sprintf("devrites-reconcile-%d.idx", os.Getpid()))
 	_ = os.Remove(idx)
+	defer func() { _ = os.Remove(idx) }()
 	env := append(os.Environ(), "GIT_INDEX_FILE="+idx)
 
 	add := exec.Command("git", "-C", gitRoot, "add", "-A")
 	add.Env = env
-	_ = add.Run()
+	add.Stdout, add.Stderr = io.Discard, io.Discard
+	if err := add.Run(); err != nil {
+		return "", fmt.Errorf("git add -A: %w", err)
+	}
 
 	write := exec.Command("git", "-C", gitRoot, "write-tree")
 	write.Env = env
 	out, err := write.Output()
-	_ = os.Remove(idx)
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("git write-tree: %w", err)
 	}
-	return strings.TrimSpace(string(out))
+	tree := strings.TrimSpace(string(out))
+	if tree == "" {
+		return "", fmt.Errorf("git write-tree: empty tree sha")
+	}
+	return tree, nil
 }
 
 // claimedPaths reads the .reconcile-claimed manifest into a set of the exact
