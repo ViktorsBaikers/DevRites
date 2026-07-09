@@ -26,6 +26,7 @@ else
   FILES=()
   while IFS= read -r f; do
     [[ "$f" == */README.md ]] && continue
+    [[ "$f" == */routing-baseline.json ]] && continue
     # Behavioral evals have their own schema + validator (run-behavioral-evals.sh);
     # they are not 20-query trigger evals, so keep them out of this scan.
     [[ "$f" == */behavioral/* ]] && continue
@@ -53,6 +54,7 @@ FAILED=0
 TOTAL=0
 
 for file in "${FILES[@]}"; do
+  [[ "$file" == */routing-baseline.json ]] && continue
   TOTAL=$((TOTAL + 1))
   printf '== %s ==\n' "$file"
 

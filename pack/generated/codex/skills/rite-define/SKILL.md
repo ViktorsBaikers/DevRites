@@ -49,6 +49,10 @@ the plan:
   criterion mapped to ≥1 slice. A user-named count is a hint at most: slice logically and,
   if your honest count differs, present it and why. Never pad or compress to hit a figure.
   (`.devrites/AFK` `max_slices` is a separate AFK iteration budget, not the decomposition.)
+- **Wide mechanical refactors slice expand → migrate → contract.** If one repeated change
+  crosses many files, don't fake vertical slices. Add a compatibility/adapter slice, migrate
+  small green batches, then remove the old path. If a batch cannot stay green, use an
+  integration branch plus a final verify slice.
 
 ## Workflow
 0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`** — the always-on operating rules and anti-rationalizations.
@@ -88,7 +92,9 @@ the plan:
 3. **Slice into vertical tasks** — each delivers one observable capability end-to-end and
    is verifiable on its own; the **count emerges from the work, not a target number**;
    first slice = thinnest useful end-to-end path; order by dependency (risk-first within a
-   tier). Use `rite-plan/reference/slicing.md` and
+   tier). For a broad mechanical refactor, use expand → migrate batches → contract instead
+   of pretending each touched file is a product slice; every migrate batch must stay green,
+   or route through an integration branch + final verify slice. Use `rite-plan/reference/slicing.md` and
    `rite-plan/reference/task-breakdown.md`. Mark per slice: **Frontend craft required**
    and **Browser proof required** (UI), and whether it's **fullstack** (FE+BE → contract
    first, see `devrites-frontend-craft/reference/fullstack.md`). **For UI slices, name which

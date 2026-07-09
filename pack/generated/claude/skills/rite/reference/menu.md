@@ -21,7 +21,7 @@ what each command does or how phases connect.
 | Seal | `/rite-seal` | Final GO / NO-GO decision (no git). |
 | Ship | `/rite-ship` | Type-GO → commit/push/tag, then archive the task + clear ACTIVE. |
 | Status | `/rite-status` | See where the active feature stands. |
-| Doctor | `/rite-doctor` | Health check — install integrity, stale ACTIVE, orphaned gates, hook wiring. |
+| Doctor | `/rite-doctor` | Health check — install integrity, stale ACTIVE, orphaned gates, hook wiring, merge/rebase state. |
 | Learn | `/rite-learn` | Review the captured learning ledger → promote recurring lessons to project rules / principles. |
 
 ## Typical orderings

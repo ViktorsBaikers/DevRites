@@ -36,6 +36,17 @@ to fix — proves the diff is feature-scoped ([`core.md`](core.md) rule 7) and m
 `touched-files.md`, rather than an unsolicited renovation the reviewer has to untangle from the
 real change. Noticed-but-not-fixed becomes an FYI follow-up, never a silent addition to this diff.
 
+## Merge conflict recovery
+When git is mid-merge or mid-rebase, recover before other workflow work:
+
+1. Inspect state: `git status --short --branch`, then note whether this is a merge or rebase.
+2. For each conflicted file, identify **our intent** and **their intent** before editing.
+3. Resolve each hunk by preserving both intents when possible; if intents conflict, pick one and
+   record the trade-off in the commit/PR body.
+4. `git add` the resolved files, then run the smallest relevant checks.
+5. Finish with `git merge --continue` or `git rebase --continue`; abort only when the chosen
+   branch direction is wrong, not because a hunk is annoying.
+
 ## Versioning & changelog
 - **The version is a promise.** Semver encodes what a consumer may rely on. A "patch" that
   changes behaviour someone depended on is a major wearing a disguise — every observable behaviour

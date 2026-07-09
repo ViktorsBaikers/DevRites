@@ -28,8 +28,7 @@ NONSKILL = {
     "devrites-context",
 }
 # names a skill deliberately mentions as NON-existent (self-documenting prose).
-# rite-principles: principles authoring rides existing skills; no such lifecycle step (principles.md).
-DOCUMENTED_NONEXISTENT = {"rite-use", "rite-principles"}
+DOCUMENTED_NONEXISTENT = {"rite-use"}
 
 SKILL_TOK = re.compile(r"\$?\b(devrites-[a-z0-9-]+|rite-[a-z0-9-]+)\b")
 RULE_REF = re.compile(r"(?:\.claude/skills/devrites-lib/reference/standards|\.agents/skills/devrites-lib/reference/standards)/([a-z0-9-]+)\.md")

@@ -22,6 +22,25 @@ func TestDoctorPrintsTriangle(t *testing.T) {
 	}
 }
 
+func TestDoctorReportsMergeInProgress(t *testing.T) {
+	root := newWorkspace(t)
+	git := filepath.Join(filepath.Dir(root), ".git")
+	if err := os.MkdirAll(git, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(git, "MERGE_HEAD"), []byte("abc123\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, errOut, code := runDevrites(t, root, "doctor")
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0 (stderr: %s)", code, errOut)
+	}
+	if !strings.Contains(out, "git-state: merge in progress") || !strings.Contains(out, "git-workflow.md#merge-conflict-recovery") {
+		t.Fatalf("doctor did not point to merge conflict recovery\n%s", out)
+	}
+}
+
 func TestDoctorRefusesNewerStateSchema(t *testing.T) {
 	root := newWorkspace(t)
 	// Drop in a feature declaring a far-newer schema than the binary supports.

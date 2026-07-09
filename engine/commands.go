@@ -38,6 +38,35 @@ func readFile(path string) string {
 	return string(raw)
 }
 
+func gitDir(projectDir string) string {
+	path := filepath.Join(projectDir, ".git")
+	if info, err := os.Stat(path); err == nil && info.IsDir() {
+		return path
+	}
+	line := strings.TrimSpace(readFile(path))
+	if target, ok := strings.CutPrefix(line, "gitdir:"); ok {
+		target = strings.TrimSpace(target)
+		if filepath.IsAbs(target) {
+			return target
+		}
+		return filepath.Clean(filepath.Join(projectDir, target))
+	}
+	return path
+}
+
+func gitOperation(projectDir string) string {
+	dir := gitDir(projectDir)
+	if _, err := os.Stat(filepath.Join(dir, "MERGE_HEAD")); err == nil {
+		return "merge"
+	}
+	for _, name := range []string{"rebase-merge", "rebase-apply"} {
+		if info, err := os.Stat(filepath.Join(dir, name)); err == nil && info.IsDir() {
+			return "rebase"
+		}
+	}
+	return ""
+}
+
 // cmdDoctor reports the binary / pack / state-schema version triangle and its
 // skew verdict. It exits non-zero only when the state schema is a newer major
 // than the binary can safely parse (a genuine refuse); a mere pack-vs-binary
@@ -62,6 +91,9 @@ func cmdDoctor(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	fmt.Fprint(stdout, report.Render())
+	if op := gitOperation(projectDir); op != "" {
+		fmt.Fprintf(stdout, "git-state: %s in progress — resolve with .claude/skills/devrites-lib/reference/standards/git-workflow.md#merge-conflict-recovery\n", op)
+	}
 	for _, warning := range extensionProvenanceWarnings(root) {
 		fmt.Fprintf(stdout, "warning: %s\n", warning)
 	}

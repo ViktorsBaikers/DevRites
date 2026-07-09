@@ -24,7 +24,9 @@ The strategy in a few sentences. Why this over the alternatives considered.
 
 ## Slice strategy
 How the feature is split into vertical `SLICE-###` increments, why the order is
-risk-first within dependency tiers, and which acceptance criteria each slice covers.
+risk-first within dependency tiers, and which acceptance criteria each slice covers. For a
+wide mechanical refactor, use expand → migrate batches → contract; keep every migrate batch
+green, or name the integration branch + final verify slice.
 
 ## Architecture decisions
 Key decisions + rationale (mirror into decisions.md). New pattern vs reuse — prefer
@@ -65,5 +67,6 @@ decisions.md / evidence.md when used.
 - [ ] No unjustified deviation remains in the complexity gate
 - [ ] Rollback exists for every destructive / migration step
 - [ ] Every `Mode: HITL` slice has `Gate`, `SLA`, and `Checkpoint` populated
+- [ ] Any wide mechanical refactor is sliced expand → migrate batches → contract, with green migrate batches or an integration branch + final verify slice
 - [ ] No `Gate: blocking` slice is implicitly chained behind an AFK slice without surfacing the dependency
 ```

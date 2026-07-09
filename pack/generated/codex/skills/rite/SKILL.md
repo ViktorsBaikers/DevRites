@@ -51,7 +51,7 @@ F=.agents/skills/rite-$V/SKILL.md
 | `seal` | `$rite-seal` | final GO / NO-GO decision |
 | `ship` | `$rite-ship` | type-GO + commit/push/tag, then archive the task |
 | `status [slug]` | `$rite-status` | active feature, next action, evidence |
-| `doctor` | `$rite-doctor` | health check — install integrity, stale ACTIVE, orphaned gates, hook wiring |
+| `doctor` | `$rite-doctor` | health check — install integrity, stale ACTIVE, orphaned gates, hook wiring, merge/rebase state |
 | `learn [--mine \| "<lesson>"]` | `$rite-learn` | review the captured learning ledger → promote recurring lessons to project rules / principles |
 | `use <slug>` | (inline) | switch the active feature — re-point `.devrites/ACTIVE` |
 | `resolve <qid> "<answer>"` | `$rite-resolve` | answer a HITL gate |
@@ -112,7 +112,7 @@ REVIEW        $rite review             ≡    $rite-review      feature-scoped m
 SEAL          $rite seal               ≡    $rite-seal        final GO / NO-GO decision (no git)
 SHIP          $rite ship               ≡    $rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
 STATUS        $rite status             ≡    $rite-status      active feature, next action, evidence, risks
-DOCTOR        $rite doctor             ≡    $rite-doctor      health check — install · stale ACTIVE · orphaned gates · hook wiring
+DOCTOR        $rite doctor             ≡    $rite-doctor      health check — install · stale ACTIVE · orphaned gates · hook wiring · merge/rebase
 LEARN         $rite learn ...          ≡    $rite-learn       review captured lessons → promote to project rules / principles
 SWITCH        $rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 RESUME        $rite resolve ...        ≡    $rite-resolve     answer a HITL checkpoint

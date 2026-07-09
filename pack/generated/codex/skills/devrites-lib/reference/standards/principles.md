@@ -132,7 +132,7 @@ around it with exceptions until it means nothing.
 
 ## How principles get authored — no new phase
 
-Authoring rides existing skills; there is no `$rite-principles` lifecycle step:
+Authoring rides existing skills; there is no dedicated principles lifecycle step:
 
 - **`$rite-adopt`** seeds them. Onboarding a codebase reverse-derives candidate invariants
   (the money-handling rule the code already follows, the logging redaction it already does) and

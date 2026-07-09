@@ -32,6 +32,24 @@ Walk it first and spend the review's weight there; the nits are a footnote, and 
 dissolve once the structure moves. A review that opens with whitespace and buries the wrong seam
 on line 200 has optimized for the cheap finding over the load-bearing one.
 
+## Smell lexicon — advisory vocabulary
+Name these as judgment calls, not automatic violations. They block only when the smell creates a
+concrete risk or breaks a DevRites/project standard.
+
+- **Feature Envy** — code asks another object/module for too much data, so behavior likely lives
+  on the wrong side of the seam.
+- **Primitive Obsession** — strings/maps/booleans stand in for a real domain concept and scatter
+  validation.
+- **Shotgun Surgery** — one change forces many tiny edits across unrelated files.
+- **Divergent Change** — one module changes for multiple unrelated reasons.
+- **Speculative Generality** — abstraction/config/extension point exists for a future nobody needs
+  yet.
+- **Long Method / Large Class** — too many responsibilities for a reviewer to reason about safely.
+- **Data Clumps** — the same fields travel together without a named value object/type.
+- **Message Chains / Middle Man** — callers know too much about navigation, or wrappers only pass
+  calls through.
+- **Duplicate Code** — repeated logic likely hides inconsistent future fixes.
+
 ## Structural Remedies — propose the move, not just the problem
 "This is hard to follow" names a smell; it doesn't discharge the review. When the problem is
 structural, name the **move** that fixes it so the author has a concrete next step, not a vibe:

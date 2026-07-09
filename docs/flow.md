@@ -109,8 +109,7 @@ flowchart LR
 The seal fans out **all** relevant reviewers in parallel and reconciles their
 findings, then **decides** GO / NO-GO and stops. It no longer runs git — on GO
 it hands off to `/rite-ship`, which renders the type-GO prompt and runs the
-irreversible commit · push · tag · archive. The advisory `/20` score has been
-removed — the gate is severity + acceptance + drift.
+irreversible commit · push · tag · archive. The old advisory score has been removed — the gate is severity + acceptance + drift.
 
 ```mermaid
 flowchart TB
