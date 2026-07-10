@@ -110,7 +110,7 @@ func StopGate(root string) (StopResult, error) {
 	// Fail-on-red: the redwatch hook marks a known-red suite by writing .red. A turn
 	// must not rest while it is set — evidence over confidence. This is a rest-point
 	// invariant (a concrete, provable inconsistency), not whole-feature completeness.
-	featureDir := featureDir(root, slug)
+	featureDir := devritespaths.FeatureDir(root, slug)
 	if _, statErr := os.Stat(filepath.Join(featureDir, ".red")); statErr == nil {
 		return StopResult{
 			Slug:    slug,
@@ -140,10 +140,6 @@ func StopGate(root string) (StopResult, error) {
 		}, nil
 	}
 	return StopResult{Slug: slug}, nil
-}
-
-func featureDir(root, slug string) string {
-	return devritespaths.FeatureDir(root, slug)
 }
 
 const gateSpaceChars = " \t\n\v\f\r"

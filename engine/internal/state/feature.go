@@ -64,10 +64,6 @@ func featureDir(root, slug string) string {
 	return devritespaths.FeatureDir(root, slug)
 }
 
-func workspaceOverride(root, slug string) string {
-	return devritespaths.WorkspaceOverride(root, slug)
-}
-
 // ListFeatures returns the slugs of every feature under root — directories under
 // canonical work/ plus compatibility features/ recognized as a feature — sorted.
 // A directory is a feature if it has a manifest (feature.md) OR the working-state

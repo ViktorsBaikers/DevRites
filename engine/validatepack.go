@@ -17,7 +17,7 @@ import (
 // deterministic zero-token counterpart to spec-validate, but for DevRites' OWN
 // config rather than a user's spec. Two checks:
 //
-//  1. Structural — every settings.json / hooks/hooks.json parses, and each hook
+//  1. Structural — every settings.json / generated hooks.json parses, and each hook
 //     entry is a well-formed {type:"command", command:"…"} (mirrors
 //     schemas/hooks.schema.json, hand-checked to keep the engine dependency-free).
 //  2. Referential — every `devrites-engine hook <id>` in any JSON file names a

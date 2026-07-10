@@ -2,8 +2,6 @@ package hostpack
 
 import (
 	"io/fs"
-	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -109,27 +107,5 @@ func TestTemplateFSIsEmbedded(t *testing.T) {
 	}
 	if _, err := RenderDevritesReadme(); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestValidPayloadWithOSDirFS(t *testing.T) {
-	root := t.TempDir()
-	for _, rel := range RequiredPayload(true) {
-		path := filepath.Join(root, filepath.FromSlash(rel))
-		if strings.HasSuffix(rel, ".json") || strings.HasSuffix(rel, ".md") {
-			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(path, []byte("{}\n"), 0o644); err != nil {
-				t.Fatal(err)
-			}
-			continue
-		}
-		if err := os.MkdirAll(path, 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if !ValidPayload(os.DirFS(root)) {
-		t.Fatal("ValidPayload(os.DirFS(root)) = false")
 	}
 }

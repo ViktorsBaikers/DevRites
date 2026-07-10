@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -246,12 +247,7 @@ func isManifest(rel string) bool {
 }
 
 func matchAny(s string, vals ...string) bool {
-	for _, v := range vals {
-		if s == v {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(vals, s)
 }
 
 func git(dir string, args ...string) (string, bool) {

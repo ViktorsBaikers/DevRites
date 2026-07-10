@@ -2,7 +2,9 @@
 
 DevRites is distributed through `npx devrites` and installs project-local artifacts. Do not add a harness through a Claude/Codex plugin or marketplace path.
 
-Before adding a host, update `engine/internal/harness/hosts.json` and prove the host can run DevRites without per-session opt-in.
+Before adding a host, add its thin adapter to `engine/internal/harness/harness.go`,
+update the frozen matrix in `compliance.go`, and prove the host can run DevRites
+without per-session opt-in.
 
 ## Hard acceptance test
 

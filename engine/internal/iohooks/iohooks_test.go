@@ -39,20 +39,21 @@ func TestDownloadFilePreservesDestinationWhenResponseIsTruncated(t *testing.T) {
 
 func TestWebFetchPayloadReaders(t *testing.T) {
 	data := []byte(`{"tool_input":{"url":"https://example.com","prompt":"summarize"},"tool_response":{"output":"body text"}}`)
-	if got := webFetchURL(data); got != "https://example.com" {
-		t.Fatalf("webFetchURL=%q", got)
+	payload := parseWebFetchPayload(data)
+	if got := payload.ToolInput.URL; got != "https://example.com" {
+		t.Fatalf("ToolInput.URL=%q", got)
 	}
-	if got := webFetchPrompt(data); got != "summarize" {
-		t.Fatalf("webFetchPrompt=%q", got)
+	if got := payload.ToolInput.Prompt; got != "summarize" {
+		t.Fatalf("ToolInput.Prompt=%q", got)
 	}
-	if got := webFetchContent(data); got != "body text" {
-		t.Fatalf("webFetchContent object=%q", got)
+	if got := payload.content(); got != "body text" {
+		t.Fatalf("content object=%q", got)
 	}
-	if got := webFetchContent([]byte(`{"tool_response":"plain body"}`)); got != "plain body" {
-		t.Fatalf("webFetchContent string=%q", got)
+	if got := parseWebFetchPayload([]byte(`{"tool_response":"plain body"}`)).content(); got != "plain body" {
+		t.Fatalf("content string=%q", got)
 	}
-	if got := webFetchContent([]byte(`{"tool_response":{"unknown":"x"}}`)); got != "" {
-		t.Fatalf("webFetchContent unknown=%q, want empty", got)
+	if got := parseWebFetchPayload([]byte(`{"tool_response":{"unknown":"x"}}`)).content(); got != "" {
+		t.Fatalf("content unknown=%q, want empty", got)
 	}
 }
 

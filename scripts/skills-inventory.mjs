@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // skills-inventory.mjs — verify authored DevRites skill inventory and docs counts.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, join, relative } from 'node:path';
+import { join, relative } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const skillsDir = join(root, 'pack', '.claude', 'skills');

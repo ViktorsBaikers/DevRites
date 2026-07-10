@@ -6,7 +6,7 @@ the deterministic shape gate stays in run-behavioral-evals.sh.
 """
 from __future__ import annotations
 
-import argparse, json, os, re, shutil, subprocess, sys, tempfile
+import argparse, json, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent

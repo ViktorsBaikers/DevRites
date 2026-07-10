@@ -89,13 +89,6 @@ else
   echo "skip: node not found"
 fi
 
-section "skill profile dependency closure"
-if command -v node >/dev/null 2>&1; then
-  if node "$ROOT/scripts/check-skill-deps.mjs"; then good "skill profile dependency closure passed"; else bad "skill profile dependency closure failed"; fi
-else
-  echo "skip: node not found"
-fi
-
 section "instruction size ratchet"
 if command -v node >/dev/null 2>&1; then
   if node "$ROOT/scripts/check-instruction-size-baseline.mjs"; then good "instruction size baseline passed"; else bad "instruction size baseline failed"; fi

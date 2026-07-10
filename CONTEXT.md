@@ -45,9 +45,9 @@ pause** — a "missing X" message and reserved **exit code 3**, never a crash. S
 | **Section** | One single-concern completeness file in a feature dir. |
 | **Phase** | Workflow state; gates are phase-relative. |
 | **Gate** | Deterministic completeness check; blocks as exit-3 HITL pause. |
-| **Hook** | An engine subcommand (`hook <id>`) wired via `hooks.json`; profiles select which fire. See [ADR-0005](docs/adr/0005-hooks-as-engine-subcommands.md). |
+| **Hook** | An engine subcommand (`hook <id>`) wired through Claude `settings.json` or generated Codex `hooks.json`; profiles select which fire. See [ADR-0005](docs/adr/0005-hooks-as-engine-subcommands.md). |
 | **Harness** | Per-host edge adapter. Two hosts: Claude + Codex. See [ADR-0002](docs/adr/0002-dual-host-harness.md). |
-| **Pack** | `pack/.claude/` — the installed bundle: reviewer/judge agents, `rite-*` skills, `hooks.json`. |
+| **Pack** | `pack/.claude/` — the installed bundle: reviewer/judge agents, `rite-*` skills, and `settings.json` hook wiring. |
 
 ## Repository map
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -131,10 +132,6 @@ func ValidatePayload(payload fs.FS, withCodex bool) error {
 	return nil
 }
 
-func ValidPayload(payload fs.FS) bool {
-	return ValidatePayload(payload, true) == nil
-}
-
 func InstallTrees(withSkills, withAgents, withCodex bool) []Tree {
 	var trees []Tree
 	if withSkills {
@@ -168,20 +165,6 @@ func RenderDevritesReadme() ([]byte, error) {
 	return render("devrites_readme.md.tmpl", nil)
 }
 
-func MarkerMerges(withSkills, withCodex bool) []MarkerMerge {
-	if !withSkills || !withCodex {
-		return nil
-	}
-	return []MarkerMerge{CodexAgentsMerge}
-}
-
-func JSONMerges(withSkills, withCodex bool) []JSONMerge {
-	if !withSkills || !withCodex {
-		return nil
-	}
-	return []JSONMerge{CodexHooksMerge}
-}
-
 func ManagedMergeForMarker(markerRel string) (ManagedMerge, bool) {
 	for _, merge := range managedMerges {
 		if merge.MarkerRel == markerRel {
@@ -189,15 +172,6 @@ func ManagedMergeForMarker(markerRel string) (ManagedMerge, bool) {
 		}
 	}
 	return ManagedMerge{}, false
-}
-
-func HasManagedMarker(entries []string, markerRel string) bool {
-	for _, entry := range entries {
-		if entry == markerRel {
-			return true
-		}
-	}
-	return false
 }
 
 func PreserveOnPrune(rel string) bool {
@@ -217,7 +191,7 @@ func ShouldRemoveOnUninstall(rel string, entries []string) bool {
 		return false
 	}
 	for _, merge := range managedMerges {
-		if rel == merge.TargetRel && HasManagedMarker(entries, merge.MarkerRel) {
+		if rel == merge.TargetRel && slices.Contains(entries, merge.MarkerRel) {
 			return false
 		}
 	}

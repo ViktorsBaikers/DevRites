@@ -31,9 +31,6 @@ module.exports = {
       'always',
       ['feat', 'fix', 'remove', 'docs', 'style', 'refactor', 'perf', 'test', 'build', 'ci', 'chore', 'revert'],
     ],
-    'type-case': [2, 'always', 'lower-case'],
-    'type-empty': [2, 'never'],
-
     // scope — required and constrained to DevRites areas
     'scope-enum': [
       2,
@@ -43,17 +40,13 @@ module.exports = {
     'scope-empty': [2, 'never'],
     'scope-case': [2, 'always', 'lower-case'],
 
-    // subject
-    'subject-empty': [2, 'never'],
-    'subject-full-stop': [2, 'never', '.'],
-    // inherit config-conventional subject-case (forbids sentence/start/pascal/upper case,
+    // Inherit config-conventional subject rules (forbids sentence/start/pascal/upper case,
     // but still allows acronyms like API/OWASP mid-subject)
 
     // header / body / footer shape
     'header-max-length': [2, 'always', 72],
     'header-min-length': [2, 'always', 12],
     'body-leading-blank': [2, 'always'],
-    'body-max-line-length': [2, 'always', 100],
     'footer-leading-blank': [2, 'always'],
   },
 };

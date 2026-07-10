@@ -276,12 +276,6 @@ func parseWebFetchPayload(data []byte) webFetchPayload {
 	return p
 }
 
-func webFetchURL(data []byte) string    { return parseWebFetchPayload(data).ToolInput.URL }
-func webFetchPrompt(data []byte) string { return parseWebFetchPayload(data).ToolInput.Prompt }
-func webFetchContent(data []byte) string {
-	return parseWebFetchPayload(data).content()
-}
-
 // content tries the known WebFetch response fields, then a bare string response.
 func (p webFetchPayload) content() string {
 	if len(p.ToolResponse) == 0 {
