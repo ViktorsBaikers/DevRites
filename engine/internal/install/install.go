@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"sort"
 	"strings"
@@ -361,7 +362,7 @@ func (r *runner) install() error {
 		if err := r.mergeMarkerFile(hostpack.CodexAgentsMerge); err != nil {
 			return fmt.Errorf("merge %s: %w", hostpack.CodexAgentsMerge.TargetRel, err)
 		}
-		if err := r.mergeCodexHooks(hostpack.CodexHooksMerge); err != nil {
+		if err := r.mergeJSONHooks(hostpack.CodexHooksMerge); err != nil {
 			return fmt.Errorf("merge %s: %w", hostpack.CodexHooksMerge.TargetRel, err)
 		}
 	}
@@ -498,7 +499,7 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 	return r.installMarker(merge.MarkerRel, merge.MarkerText)
 }
 
-func (r *runner) mergeCodexHooks(merge hostpack.JSONMerge) error {
+func (r *runner) mergeJSONHooks(merge hostpack.JSONMerge) error {
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
 	devrites, err := readJSONFS(r.payloadFS, merge.PayloadRel)
 	if err != nil {
@@ -510,6 +511,11 @@ func (r *runner) mergeCodexHooks(merge hostpack.JSONMerge) error {
 	}
 	next := devrites
 	if current, err := readJSON(dest); err == nil {
+		if currentStatus, exists := current["statusLine"]; exists && !isDevritesHookCommand(currentStatus) {
+			if _, wanted := devrites["statusLine"]; wanted {
+				fmt.Fprintln(r.opts.Stderr, "warning: preserved existing Claude statusLine; DevRites statusline was not installed.")
+			}
+		}
 		next = mergeHooks(stripDevritesHooks(current), devrites)
 	}
 	data, err := json.MarshalIndent(next, "", "  ")
@@ -524,17 +530,43 @@ func (r *runner) mergeCodexHooks(merge hostpack.JSONMerge) error {
 }
 
 func (r *runner) seedClaudeSettings() error {
-	rel := ".claude/settings.json"
+	merge := hostpack.ClaudeSettingsMerge
+	rel := merge.TargetRel
 	dest := filepath.Join(r.target, rel)
 	if exists(dest) {
-		fmt.Fprintln(r.opts.Stderr, "warning: skip .claude/settings.json (exists) - existing settings are preserved.")
-		return nil
+		current, err := readJSON(dest)
+		if err != nil {
+			return fmt.Errorf("load existing Claude settings: %w", err)
+		}
+		devrites, err := readJSONFS(r.payloadFS, merge.PayloadRel)
+		if err != nil {
+			return fmt.Errorf("load Claude settings payload: %w", err)
+		}
+		managed := r.prev[merge.MarkerRel]
+		if reflect.DeepEqual(current, devrites) {
+			if managed {
+				return r.installMarker(merge.MarkerRel, merge.MarkerText)
+			}
+			return nil
+		}
+		if containsDevritesHook(current) && len(stripDevritesHooks(current)) == 0 && !managed {
+			if r.opts.DryRun {
+				fmt.Fprintln(r.opts.Stdout, "  [seed] .claude/settings.json (refresh DevRites hooks)")
+				return nil
+			}
+			data, err := fs.ReadFile(r.payloadFS, merge.PayloadRel)
+			if err != nil {
+				return fmt.Errorf("read payload claude/settings.json: %w", err)
+			}
+			return fsutil.WriteFileAtomic(dest, data, 0o644)
+		}
+		return r.mergeJSONHooks(merge)
 	}
 	if r.opts.DryRun {
 		fmt.Fprintln(r.opts.Stdout, "  [seed] .claude/settings.json (DevRites hooks - preserved on uninstall/update)")
 		return nil
 	}
-	data, err := fs.ReadFile(r.payloadFS, "claude/settings.json")
+	data, err := fs.ReadFile(r.payloadFS, merge.PayloadRel)
 	if err != nil {
 		return fmt.Errorf("read payload claude/settings.json: %w", err)
 	}
@@ -595,8 +627,9 @@ func (r *runner) pruneDropped() error {
 			fmt.Fprintf(r.opts.Stdout, "  [prune] %s (dropped from pack)\n", rel)
 		} else {
 			if merge, ok := hostpack.ManagedMergeForMarker(rel); ok {
-				if merge.TargetRel == hostpack.CodexHooksMerge.TargetRel {
-					_ = r.stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)))
+				if merge.TargetRel == hostpack.CodexHooksMerge.TargetRel || merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
+					preserveEmpty := merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel
+					_ = r.stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), preserveEmpty)
 				} else {
 					_ = stripMarkerPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End)
 				}
@@ -678,8 +711,9 @@ func (r *runner) uninstall() error {
 			fmt.Fprintf(r.opts.Stdout, "  [merge-remove] %s\n", merge.DryRun)
 			continue
 		}
-		if merge.TargetRel == hostpack.CodexHooksMerge.TargetRel {
-			if err := r.stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
+		if merge.TargetRel == hostpack.CodexHooksMerge.TargetRel || merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
+			preserveEmpty := merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel
+			if err := r.stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), preserveEmpty); err != nil {
 				return fmt.Errorf("strip hooks from %s: %w", merge.TargetRel, err)
 			}
 			continue
@@ -735,7 +769,7 @@ func (r *runner) uninstall() error {
 	return nil
 }
 
-func (r *runner) stripHooksPath(path string) error {
+func (r *runner) stripHooksPath(path string, preserveEmpty bool) error {
 	current, err := readJSON(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -744,7 +778,7 @@ func (r *runner) stripHooksPath(path string) error {
 		return fmt.Errorf("load hooks config: %w", err)
 	}
 	next := stripDevritesHooks(current)
-	if len(next) == 0 {
+	if len(next) == 0 && !preserveEmpty {
 		return os.Remove(path)
 	}
 	data, err := json.MarshalIndent(next, "", "  ")
@@ -752,9 +786,6 @@ func (r *runner) stripHooksPath(path string) error {
 		return fmt.Errorf("encode hooks config: %w", err)
 	}
 	data = append(data, '\n')
-	if string(bytes.TrimSpace(data)) == "{}" {
-		return os.Remove(path)
-	}
 	return fsutil.WriteFileAtomic(path, data, 0o644)
 }
 
@@ -1119,22 +1150,56 @@ func decodeJSON(data []byte) (map[string]any, error) {
 	return out, nil
 }
 
-func isDevritesHook(v any) bool {
-	data, _ := json.Marshal(v)
-	s := string(data)
-	return strings.Contains(s, "devrites-engine hook ") ||
-		strings.Contains(s, ".codex/hooks/devrites-") ||
-		strings.Contains(s, "DevRites:") ||
-		strings.Contains(s, "DEVRITES_")
+func isDevritesHookCommand(v any) bool {
+	hook, ok := v.(map[string]any)
+	if !ok {
+		return false
+	}
+	command, _ := hook["command"].(string)
+	return strings.Contains(command, "devrites-engine hook ") ||
+		strings.Contains(command, ".claude/hooks/devrites-") ||
+		strings.Contains(command, ".codex/hooks/devrites-") ||
+		(strings.Contains(command, "printf ") && strings.Contains(command, "DevRites:"))
+}
+
+func containsDevritesHook(v any) bool {
+	switch value := v.(type) {
+	case map[string]any:
+		if isDevritesHookCommand(value) {
+			return true
+		}
+		for _, child := range value {
+			if containsDevritesHook(child) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range value {
+			if containsDevritesHook(child) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isDevritesHooksComment(comment string) bool {
+	return comment == "DevRites hooks" ||
+		strings.HasPrefix(comment, "DevRites hooks — every event invokes the global `devrites-engine` engine binary") ||
+		strings.HasPrefix(comment, "DevRites hooks — auto-approve the read-only orientation/gate scripts") ||
+		strings.HasPrefix(comment, "DevRites hooks for Codex. Project hooks load only after")
 }
 
 func stripDevritesHooks(config map[string]any) map[string]any {
 	next := map[string]any{}
 	for k, v := range config {
 		if k == "$comment" {
-			if s, ok := v.(string); ok && strings.Contains(s, "DevRites hooks for Codex") {
+			if s, ok := v.(string); ok && isDevritesHooksComment(s) {
 				continue
 			}
+		}
+		if k == "statusLine" && isDevritesHookCommand(v) {
+			continue
 		}
 		next[k] = v
 	}
@@ -1152,8 +1217,29 @@ func stripDevritesHooks(config map[string]any) map[string]any {
 		}
 		var kept []any
 		for _, entry := range arr {
-			if !isDevritesHook(entry) {
+			entryMap, ok := entry.(map[string]any)
+			if !ok {
 				kept = append(kept, entry)
+				continue
+			}
+			commands, ok := entryMap["hooks"].([]any)
+			if !ok {
+				kept = append(kept, entry)
+				continue
+			}
+			var keptCommands []any
+			for _, command := range commands {
+				if !isDevritesHookCommand(command) {
+					keptCommands = append(keptCommands, command)
+				}
+			}
+			if len(keptCommands) > 0 {
+				nextEntry := make(map[string]any, len(entryMap))
+				for k, v := range entryMap {
+					nextEntry[k] = v
+				}
+				nextEntry["hooks"] = keptCommands
+				kept = append(kept, nextEntry)
 			}
 		}
 		if len(kept) > 0 {
@@ -1180,6 +1266,11 @@ func mergeHooks(existing, devrites map[string]any) map[string]any {
 		hooks[event] = append(arr, devArr...)
 	}
 	existing["hooks"] = hooks
+	if statusLine, ok := devrites["statusLine"]; ok {
+		if current, exists := existing["statusLine"]; !exists || isDevritesHookCommand(current) {
+			existing["statusLine"] = statusLine
+		}
+	}
 	return existing
 }
 
