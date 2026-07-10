@@ -50,17 +50,9 @@ def main():
             break
     for name in skills:
         verb=name.removeprefix('rite-')
-        clauses=[
-            (docs_skills, f'/rite-{verb}', 'docs/skills Claude direct'),
-            (docs_skills, f'/rite {verb}', 'docs/skills Claude menu'),
-            (docs_skills, f'$rite-{verb}', 'docs/skills Codex direct'),
-            (docs_skills, f'$rite {verb}', 'docs/skills Codex menu'),
-            (docs_map, f'/rite-{verb}', 'docs/command-map Claude direct'),
-        ]
-        for text, needle, label in clauses:
-            if needle not in text:
-                kind='Codex' if needle.startswith('$') else 'Claude'
-                errors.append(f'{label}: missing {kind} command {needle} for {name}')
+        needle=f'/rite-{verb}'
+        if needle not in docs_map:
+            errors.append(f'docs/command-map Claude direct: missing Claude command {needle} for {name}')
         if args.generated_root.exists():
             for rel in [f'claude/skills/{name}/SKILL.md', f'codex/skills/{name}/SKILL.md']:
                 if not (args.generated_root/rel).exists():

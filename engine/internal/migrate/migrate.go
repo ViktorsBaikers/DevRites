@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -54,7 +55,8 @@ func Run(root string) (*Result, error) {
 		}
 		migrated = append(migrated, target.slug)
 	}
-	return &Result{Migrated: uniqueSorted(migrated), BackupDir: backup}, nil
+	sort.Strings(migrated)
+	return &Result{Migrated: slices.Compact(migrated), BackupDir: backup}, nil
 }
 
 func featureDirsNeedingNormalization(root string) ([]normalizationTarget, error) {
@@ -111,19 +113,6 @@ func normalizeFeatureDir(dir, slug string) error {
 		return fmt.Errorf("copy evidence.md to proof.md: %w", err)
 	}
 	return copyAliasFile(dir, state.LedgerFile, "status.md")
-}
-
-func uniqueSorted(values []string) []string {
-	sort.Strings(values)
-	out := values[:0]
-	var prev string
-	for i, v := range values {
-		if i == 0 || v != prev {
-			out = append(out, v)
-			prev = v
-		}
-	}
-	return out
 }
 
 func copyAliasFile(dir, alias, canonical string) error {

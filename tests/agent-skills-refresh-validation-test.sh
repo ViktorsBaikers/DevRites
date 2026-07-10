@@ -109,19 +109,18 @@ cat > "$T/routing-baseline.json" <<'JSON'
 JSON
 run_fail_contains "routing eval rejects stale baseline metadata" "baseline metadata: skills" python3 "$ROOT/scripts/run-routing-evals.py" --skills-dir "$T/routing-skills" --evals-dir "$T/routing-evals" --baseline "$T/routing-baseline.json"
 
-# Fixture: host parity rejects docs without a Codex equivalent.
+# Fixture: host parity rejects a missing canonical command-map entry.
 cp -R "$ROOT/pack/.claude/skills" "$T/parity-skills"
 cp "$ROOT/docs/skills.md" "$T/skills.md"
 cp "$ROOT/docs/command-map.md" "$T/command-map.md"
-python3 - "$T/skills.md" <<'PY'
+python3 - "$T/command-map.md" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1])
 s = p.read_text()
-s = s.replace('$rite-build', 'RITE_BUILD_CODEX_REMOVED')
-s = s.replace('$rite build', 'RITE_BUILD_MENU_REMOVED')
+s = s.replace('/rite-build', 'RITE_BUILD_CLAUDE_REMOVED')
 p.write_text(s)
 PY
-run_fail_contains "host parity rejects missing Codex wording" "Codex" python3 "$ROOT/scripts/validate-command-parity.py" --skills-dir "$T/parity-skills" --docs-skills "$T/skills.md" --docs-command-map "$T/command-map.md" --readme "$ROOT/README.md" --quiet
+run_fail_contains "host parity rejects missing command-map entry" "docs/command-map Claude direct" python3 "$ROOT/scripts/validate-command-parity.py" --skills-dir "$T/parity-skills" --docs-skills "$T/skills.md" --docs-command-map "$T/command-map.md" --readme "$ROOT/README.md" --quiet
 
 # Fixture: agent validator rejects a write-capable reviewer.
 mkdir -p "$T/agents"

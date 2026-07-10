@@ -91,7 +91,7 @@ func overridesValidate(dir, projectDir string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "overrides: cannot read %s: %v\n", dir, err)
 		return 1
 	}
-	templates, err := templateOverrideFiles(filepath.Join(dir, "templates"))
+	templates, err := markdownFiles(filepath.Join(dir, "templates"), "template overrides")
 	if err != nil {
 		fmt.Fprintf(stderr, "overrides: cannot read %s: %v\n", filepath.Join(dir, "templates"), err)
 		return 1
@@ -142,10 +142,6 @@ func overridesValidate(dir, projectDir string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "overrides: OK — %d reviewer override(s), %d template override(s), none relaxing a gate\n", len(files), len(templates))
 	return 0
-}
-
-func templateOverrideFiles(dir string) ([]string, error) {
-	return markdownFiles(dir, "template overrides")
 }
 
 func requiredTemplateGateTerms(name string) []string {

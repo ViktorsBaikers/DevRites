@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -324,13 +325,6 @@ func (r *runner) validatePayload() error {
 	return nil
 }
 
-func validPayload(payload string) bool {
-	if payload == "" {
-		return false
-	}
-	return hostpack.ValidPayload(os.DirFS(payload))
-}
-
 func (r *runner) install() error {
 	fmt.Fprintln(r.opts.Stdout, "DevRites installer")
 	fmt.Fprintf(r.opts.Stdout, "  target : %s\n", r.target)
@@ -363,14 +357,12 @@ func (r *runner) install() error {
 			}
 		}
 	}
-	for _, merge := range hostpack.MarkerMerges(r.opts.WithSkills, r.opts.WithCodex) {
-		if err := r.mergeMarkerFile(merge); err != nil {
-			return fmt.Errorf("merge %s: %w", merge.TargetRel, err)
+	if r.opts.WithSkills && r.opts.WithCodex {
+		if err := r.mergeMarkerFile(hostpack.CodexAgentsMerge); err != nil {
+			return fmt.Errorf("merge %s: %w", hostpack.CodexAgentsMerge.TargetRel, err)
 		}
-	}
-	for _, merge := range hostpack.JSONMerges(r.opts.WithSkills, r.opts.WithCodex) {
-		if err := r.mergeCodexHooks(merge); err != nil {
-			return fmt.Errorf("merge %s: %w", merge.TargetRel, err)
+		if err := r.mergeCodexHooks(hostpack.CodexHooksMerge); err != nil {
+			return fmt.Errorf("merge %s: %w", hostpack.CodexHooksMerge.TargetRel, err)
 		}
 	}
 	if r.opts.WithSkills {
@@ -622,7 +614,7 @@ func (r *runner) pruneDropped() error {
 
 func (r *runner) writeManifest() error {
 	sort.Strings(r.manifest)
-	r.manifest = unique(r.manifest)
+	r.manifest = slices.Compact(r.manifest)
 	var b strings.Builder
 	b.WriteString("# DevRites install manifest - do not edit by hand.\n")
 	b.WriteString("# Generated " + time.Now().UTC().Format(time.RFC3339) + ". Uninstall removes exactly these paths.\n")
@@ -805,7 +797,7 @@ func runUpdate(opts Options) error {
 	}
 	defer cleanup()
 	payload := filepath.Join(source, "pack", "generated")
-	if !validPayload(payload) {
+	if hostpack.ValidatePayload(os.DirFS(payload), true) != nil {
 		if err := buildHostArtifacts(source, payload); err != nil {
 			return fmt.Errorf("prepare update payload: %w", err)
 		}
@@ -1437,18 +1429,6 @@ func pruneEmptyDirs(start, stop string) {
 func exists(path string) bool {
 	_, err := os.Lstat(path)
 	return err == nil
-}
-
-func unique(in []string) []string {
-	var out []string
-	var last string
-	for i, v := range in {
-		if i == 0 || v != last {
-			out = append(out, v)
-			last = v
-		}
-	}
-	return out
 }
 
 func yesno(v bool) string {

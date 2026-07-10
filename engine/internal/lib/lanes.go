@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -95,20 +96,11 @@ func parseLaneSlices(md string) []laneSlice {
 			cur.forge = true
 		}
 		for _, m := range lanePathRe.FindAllStringSubmatch(trim, -1) {
-			if !laneContains(cur.paths, m[1]) {
+			if !slices.Contains(cur.paths, m[1]) {
 				cur.paths = append(cur.paths, m[1])
 			}
 		}
 	}
 	flush()
 	return out
-}
-
-func laneContains(xs []string, x string) bool {
-	for _, y := range xs {
-		if y == x {
-			return true
-		}
-	}
-	return false
 }

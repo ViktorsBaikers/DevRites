@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/workflow"
 )
@@ -136,7 +137,7 @@ func Snapshot(root, slug string) (*WorkspaceSnapshot, error) {
 		DirtyWorkspace: dirtyWorkspace(filepath.Dir(root)),
 		Capabilities:   capabilityInventory(filepath.Dir(root)),
 		NextCommand:    next.Claude,
-		NextCommands:   commandSnapshot(next),
+		NextCommands:   CommandSnapshot{Verb: next.Verb, Claude: next.Claude, Codex: next.Codex},
 	}
 	for _, section := range Sections {
 		snap.Sections = append(snap.Sections, SectionSnapshot{
@@ -161,7 +162,7 @@ func Snapshot(root, slug string) (*WorkspaceSnapshot, error) {
 }
 
 func readActiveSlug(root string) string {
-	if ws := workspaceOverride(root, ""); ws != "" {
+	if ws := devritespaths.WorkspaceOverride(root, ""); ws != "" {
 		return filepath.Base(ws)
 	}
 	raw, err := os.ReadFile(filepath.Join(root, "ACTIVE"))
@@ -380,8 +381,4 @@ func mcpConfigCapability(projectDir string) CapabilitySnapshot {
 		}
 	}
 	return CapabilitySnapshot{Name: "mcp-config", Status: status, UsedBy: "optional external tools", Fallback: "engine/file-system gates", Risk: "optional capabilities unavailable"}
-}
-
-func commandSnapshot(cmd workflow.Command) CommandSnapshot {
-	return CommandSnapshot{Verb: cmd.Verb, Claude: cmd.Claude, Codex: cmd.Codex}
 }

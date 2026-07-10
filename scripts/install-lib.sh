@@ -5,12 +5,11 @@
 # ---- logging -------------------------------------------------------------
 if [ -t 1 ]; then
   DR_B="$(printf '\033[1m')"; DR_R="$(printf '\033[0m')"
-  DR_Y="$(printf '\033[33m')"; DR_G="$(printf '\033[32m')"; DR_C="$(printf '\033[36m')"
+  DR_Y="$(printf '\033[33m')"; DR_G="$(printf '\033[32m')"
 else
-  DR_B=""; DR_R=""; DR_Y=""; DR_G=""; DR_C=""
+  DR_B=""; DR_R=""; DR_Y=""; DR_G=""
 fi
 dr_say()  { printf '%s\n' "$*"; }
-dr_info() { printf '%s%s%s\n' "$DR_C" "$*" "$DR_R"; }
 dr_ok()   { printf '%s%s%s\n' "$DR_G" "$*" "$DR_R"; }
 dr_warn() { printf '%swarning:%s %s\n' "$DR_Y" "$DR_R" "$*" >&2; }
 dr_err()  { printf 'error: %s\n' "$*" >&2; }

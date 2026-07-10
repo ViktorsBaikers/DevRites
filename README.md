@@ -533,7 +533,7 @@ devrites/
                        # sync-version · build-release-tarball
   pack/.claude/        # skills/  42 skills — 30 public + 12 internal          ─┐
                        # agents/  13 read-only + 1 writer (slice-wright)         ├─ the pack
-                       # hooks/hooks.json + settings.json  (engine hook wiring)  ┘
+                       # settings.json  (canonical Claude engine hook wiring)   ┘
                        # (standards live inside skills/devrites-lib/reference/standards/)
   installed projects   # .claude/ runtime assets; .agents/skills + .codex/agents
                        # + .codex/hooks.json + AGENTS.md for Codex
