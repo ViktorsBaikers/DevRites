@@ -1,0 +1,26 @@
+{
+  "skill": "devrites-prose-craft",
+  "description": "Trigger evals for devrites-prose-craft — the model-invoked specialist that humanizes DevRites artifacts and replies while preserving technical content.",
+  "queries": [
+    {"text": "Humanize this prose without losing any technical content or identifiers.", "expected": "should_trigger", "rationale": "The defining humanize-with-fidelity branch should route directly here."},
+    {"text": "Remove the AI-writing tells from this artifact, but preserve every fact and constraint.", "expected": "should_trigger", "rationale": "AI-writing tell removal is an explicit trigger branch."},
+    {"text": "Match this paragraph to the supplied writing sample without inventing opinions or history.", "expected": "should_trigger", "rationale": "Writing-sample voice calibration belongs to prose craft."},
+    {"text": "Edit this generated-sounding reply into natural prose while keeping the exact commands and errors.", "expected": "should_trigger", "rationale": "Reply humanization plus protected technical tokens is a named branch."},
+    {"text": "Rewrite this commit prose in the project's existing voice and keep the decision record intact.", "expected": "should_trigger", "rationale": "Commit prose and project-voice matching are explicit branches."},
+    {"text": "This PR prose reads like AI writing; humanize it without changing status codes or links.", "expected": "should_trigger", "rationale": "PR prose humanization with technical fidelity belongs here."},
+    {"text": "Run the prose pass on these artifacts and remove chatbot phrasing without dropping evidence.", "expected": "should_trigger", "rationale": "The artifact prose-pass branch is explicit."},
+    {"text": "Audit this prose for AI-writing tells in detect-only mode; do not rewrite the source.", "expected": "should_trigger", "rationale": "Detect-only prose auditing is part of the specialist contract."},
+    {"text": "Calibrate this note to the neighboring project's voice, preserving its uncertainty and examples.", "expected": "should_trigger", "rationale": "Project-voice calibration with fidelity belongs to prose craft."},
+    {"text": "Make this user-facing reply sound human, concise, and specific without adding new claims.", "expected": "should_trigger", "rationale": "Natural user-facing reply prose is a named trigger branch."},
+    {"text": "Rename the generic variables and remove tutorial comments from this TypeScript file.", "expected": "should_not_trigger", "rationale": "Code anti-slop belongs to build/polish, not prose craft."},
+    {"text": "Design a distinctive settings page with accessible loading and error states.", "expected": "should_not_trigger", "rationale": "Frontend craft owns UI implementation."},
+    {"text": "Polish the dashboard layout and replace the generic card grid.", "expected": "should_not_trigger", "rationale": "Rite-polish and frontend craft own visual polish."},
+    {"text": "Review the authentication diff for security vulnerabilities.", "expected": "should_not_trigger", "rationale": "Security review owns code findings."},
+    {"text": "Debug why the API returns 500 for an empty request body.", "expected": "should_not_trigger", "rationale": "Debug recovery owns root-cause diagnosis."},
+    {"text": "Run the test suite and record evidence for every acceptance criterion.", "expected": "should_not_trigger", "rationale": "Rite-prove owns verification."},
+    {"text": "Refactor this handler to remove the unnecessary interface and factory.", "expected": "should_not_trigger", "rationale": "Code cleanup is not a prose task."},
+    {"text": "Explain how this module works to a developer who is new to the repository.", "expected": "should_not_trigger", "rationale": "Rite-explain owns explanatory walkthroughs rather than artifact humanization."},
+    {"text": "Generate API documentation from these route signatures.", "expected": "should_not_trigger", "rationale": "Documentation generation is not automatically a style rewrite."},
+    {"text": "Update the changelog with the released fixes and version number.", "expected": "should_not_trigger", "rationale": "A factual changelog update does not require prose craft unless style editing is requested."}
+  ]
+}

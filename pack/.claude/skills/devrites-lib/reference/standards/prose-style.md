@@ -23,6 +23,22 @@ DevRites writes in two voices. The anti-slop rules apply to both, but precision 
 The shared rule: cut what carries no information; keep what a reader needs. In prose that
 means killing filler; in technical writing it means keeping the precise list.
 
+## Preservation contract — fidelity before polish
+
+A rewrite succeeds only when the source still supports every sentence and the reader can make
+the same decisions from it.
+
+- Preserve every fact, constraint, uncertainty, identifier, count, criterion, evidence link,
+  decision, and voice-bearing detail. Restructure freely; keep the information.
+- Keep quotations, titles, proper names, code spans/fences, CLI output, error strings, and text
+  discussed as an example exact unless the user asks to edit that material.
+- Let unknowns stay unknown. Name the missing evidence or assumption, and state what the available
+  evidence does establish. Plausible history or behavior is still invented.
+- Add only facts, opinions, anecdotes, slang, and quirks supported by the source or an explicit
+  voice sample. Voice matching is calibration, not impersonation by fabrication.
+- Act on clusters or a clear register mismatch. One em dash, transition, passive sentence, or
+  formal word can be the author's deliberate choice; preserve it when it carries the voice.
+
 ## Cut these tells (both registers)
 
 | Tell | Instead |

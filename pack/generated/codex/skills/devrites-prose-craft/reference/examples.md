@@ -79,7 +79,21 @@ Dropped the pleasantries and the "not just X" inflation. Led with what's done an
 
 Followed `git-workflow.md`: the *why*, wrapped, in plain language.
 
-## The pattern across all six
+## 7. Fidelity when evidence is incomplete
+
+**Before (slop, but informative):**
+> It is important to note that the importer retries twice after a `429`. The available evidence
+> does not clearly indicate whether a third attempt is dropped or queued. In either case, the
+> alert text is `Import delayed`.
+
+**After:**
+> The importer retries twice after a `429`. We do not have a production trace showing whether a
+> third attempt is dropped or queued. The alert text remains `Import delayed`.
+
+Cut the opener and vague phrasing. Kept the retry count, status code, evidence gap, two possible
+outcomes, and exact alert text. A smoother sentence that picked one outcome would be fabrication.
+
+## The pattern across all seven
 
 1. Lead with the concrete thing (what it is, what's done, what's wrong).
 2. Replace every "robust/seamless/leverage" flourish with the specific behavior + its proof.

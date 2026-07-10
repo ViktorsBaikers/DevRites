@@ -82,8 +82,8 @@ reads it only when the phase needs depth.
 - **Write like a human, not a model.** Cut the LLM tells from every artifact
   and reply — filler openers, "not X, it's Y" contrasts, fake profundity,
   marketing adjectives, em-dash tics — while keeping precise lists and exact
-  terms in specs. → [`prose-style.md`](prose-style.md) (depth in the
-  `devrites-prose-craft` skill)
+  terms in specs. Read [`prose-style.md`](prose-style.md); for substantive prose,
+  explicitly invoke `devrites-prose-craft` for its rewrite and completion check.
 - **Atomic commits, Conventional Commits.** One logical change per commit;
   it builds + passes tests on its own. → [`git-workflow.md`](git-workflow.md)
 
