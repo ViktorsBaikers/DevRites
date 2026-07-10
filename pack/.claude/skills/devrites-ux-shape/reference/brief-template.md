@@ -31,7 +31,8 @@ Slug: <kebab>   Shaped: <iso>   Register: brand | product
 
 ## 1. Summary
 What this is, who it's for, what it must accomplish, what existing identity/behavior must
-survive, and the anti-goal (2-3 sentences).
+survive — including IA, content voice, SEO/analytics hooks, and accessibility wins — and
+the anti-goal (2-3 sentences).
 
 ## 2. Primary action
 The single most important thing the user does or understands here. Everything else is secondary.
@@ -72,7 +73,8 @@ every action; the flow from entry to completion.
 ## 8. Content & copy
 Labels, empty/error messages, microcopy in the product's voice. Realistic dynamic ranges.
 For image-led surfaces: required media roles + likely source (project asset / generated /
-SVG-CSS / icon library / accepted omission).
+SVG-CSS / icon library / accepted omission) and the shippable provenance/usage recorded in
+`references.md`.
 
 ## 9. Responsive & a11y
 Reflow 320→1440 (what stacks / collapses / scrolls); focus order, labels, contrast,

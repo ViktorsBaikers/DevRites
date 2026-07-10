@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 992413,
+  "total_bytes": 992833,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 7443,
     "pack/.claude/agents/devrites-devex-reviewer.md": 7176,
@@ -81,9 +81,9 @@
     "pack/.claude/skills/devrites-prose-craft/SKILL.md": 6321,
     "pack/.claude/skills/devrites-refresh-indexes/SKILL.md": 2712,
     "pack/.claude/skills/devrites-source-driven/SKILL.md": 3135,
-    "pack/.claude/skills/devrites-ux-shape/reference/brief-template.md": 5529,
+    "pack/.claude/skills/devrites-ux-shape/reference/brief-template.md": 5672,
     "pack/.claude/skills/devrites-ux-shape/reference/visual-direction-probe.md": 3047,
-    "pack/.claude/skills/devrites-ux-shape/SKILL.md": 8162,
+    "pack/.claude/skills/devrites-ux-shape/SKILL.md": 8421,
     "pack/.claude/skills/rite-adopt/reference/adoption.md": 3019,
     "pack/.claude/skills/rite-adopt/reference/anti-patterns.md": 1544,
     "pack/.claude/skills/rite-adopt/SKILL.md": 6803,
@@ -182,7 +182,7 @@
     "pack/.claude/skills/rite-spec/reference/interview-patterns.md": 2337,
     "pack/.claude/skills/rite-spec/reference/investigation.md": 5512,
     "pack/.claude/skills/rite-spec/reference/question-protocol.md": 4149,
-    "pack/.claude/skills/rite-spec/reference/references-intake.md": 3981,
+    "pack/.claude/skills/rite-spec/reference/references-intake.md": 3999,
     "pack/.claude/skills/rite-spec/reference/spec-checklists.md": 4656,
     "pack/.claude/skills/rite-spec/reference/spec-template.md": 4128,
     "pack/.claude/skills/rite-spec/reference/state-workspace.md": 4474,
