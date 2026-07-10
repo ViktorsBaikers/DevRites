@@ -92,6 +92,7 @@ RULES=(
   '\bcatch[[:space:]]*\([[:space:]]*\)[[:space:]]*\{[^}]*\}'                       'high'  'Blanket catch with no narrow handling — likely swallowing errors.'
   '\bcatch[[:space:]]*\([[:space:]]*[A-Za-z][A-Za-z0-9_]*[[:space:]]*\)[[:space:]]*\{[[:space:]]*\}'  'high'  'Empty catch body — silently swallows errors. Catch narrow; recover or rethrow.'
   '//[[:space:]]*helper function|//[[:space:]]*increment'                          'low'   'Tutorial-style comment — restates code; remove.'
+  '^[[:space:]]*(//|#)[[:space:]]*(Now (I('"'"'ll| will)|we('"'"'ll| will))|Updated|Added|Changed|Modified|As requested|Step [0-9]+:)'  'low'   'Diff-narrating comment — describe the current constraint or delete it.'
   '\bfunction[[:space:]]+(process|handle|do)(Data|Item|Thing|It)?\b'               'high'  'Generic AI naming (`processData` / `handleItem` / `doIt`) — name for intent.'
   '\bfunction[[:space:]]+get[A-Z][a-zA-Z]*\([^)]*\)[[:space:]]*\{[[:space:]]*return[[:space:]]+[A-Z][a-zA-Z]+\.find'  'low'   'Useless wrapper around a single ORM call — inline.'
   '//[[:space:]]*TODO:[[:space:]]*(improve|cleanup|refactor)[[:space:]]+(this|later)'  'low'   '"TODO: improve this later" — without owner/issue, this rots.'
