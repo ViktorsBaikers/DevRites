@@ -40,7 +40,13 @@ neighboring screens).
 - **Responsive** — behavior across small/large viewports; layout shift.
 - **Anti-AI-slop** — purple/blue gradients, gradient text, default glassmorphism,
   cards-in-cards, identical card grids, icon-tile-above-heading, gray-on-color,
-  hero-metric cliché, decorative bounce easing, random Inter, modal-first.
+  hero-metric cliché, decorative bounce easing, random Inter, modal-first, ghost-card
+  (border + big shadow), fake UI-in-a-div, placeholder copy/data — and run the
+  **mechanical pre-flight** (em-dash count, eyebrow cap, layout-family repetition;
+  `rite-polish/reference/anti-ai-slop.md`).
+- **Persona lenses** — walk the flow as a first-timer, a power user, a keyboard/screen-
+  reader user, a phone user, and a stress-tester (huge data, slow network); name what
+  breaks for whom.
 - **Evidence honesty** — is the browser evidence real (screenshots described, console
   clean), or asserted? If a browser couldn't run, is it marked pending-manual?
 - **Visual Verdict** — read the `## Visual Verdict` table in `browser-evidence.md` (the

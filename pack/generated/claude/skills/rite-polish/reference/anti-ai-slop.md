@@ -24,8 +24,8 @@ match the neighbors.
   the project's surface tokens).
 - **All-CAPS body text** for paragraphs/labels. Reserve uppercase for short
   micro-copy (badges, eyebrows); never for sentences.
-- **Em-dash overuse** in UI copy — multiple em-dashes per paragraph, em-
-  dashes where a comma or period would do. A clear AI tell.
+- **Em-dashes in UI copy — zero.** Soft limits ("use sparingly") get ignored; the rule
+  is binary and greppable: no `—` in any visible string. Use a comma, period, or colon.
 - **Cards inside cards** — nested bordered/elevated containers.
 - **Identical card grids** for everything, regardless of content.
 - A **generic rounded-square icon tile** above every heading/section.
@@ -38,6 +38,27 @@ match the neighbors.
     they're not the project's actual type system.
   Match the project; don't reach for the "tasteful default" of 2024.
 - **Modal-first thinking** — reaching for a modal as the answer to every interaction.
+- **Ghost-card** — a `1px` border *and* a soft (blur ≥16px) shadow on the same element.
+  Borders separate; shadows lift — pick one
+  (`devrites-frontend-craft/reference/quality-standards.md` — Materiality).
+- **Balloon radius** — `border-radius` above ~16px on cards, inputs, panels. Cards top
+  out around 12–16px; full pills are for tags and buttons only.
+- **Uppercase tracked eyebrow above every section** — one named kicker is voice; one per
+  section is template grammar (countable cap below).
+- **Numbered-section scaffolding** (`01 / 02 / 03`) when the sections aren't a sequence.
+- **Fake UI-in-a-div** — a "product screenshot" assembled from nested divs, or hand-drawn/
+  sketchy SVG scenery. Ship a real capture/asset or nothing (quality-standards — Materiality).
+- **Hero prop badges** — version labels (`V0.6`, `BETA`) and decorative pulsing status
+  dots as set dressing.
+
+### Copy & data realism
+Placeholder content is a tell even when the layout is clean:
+- **Fake-perfect numbers** — `99.99%`, `10,000+`, `$1M`. Real data is ragged: `47.2%`, `1,283`.
+- **Placeholder people/brands** — "John Doe", "Acme", "Nexus". Invent specific, plausible ones.
+- **Filler verbs** — Elevate / Seamless / Unleash / Supercharge / Next-Gen. Say what it does.
+- **Copy self-audit** — re-read every visible string before shipping; anything grammatically
+  broken, referent-unclear, or "an LLM trying to sound thoughtful" gets rewritten. AI-cute
+  copy is worse than boring copy.
 
 ### Category-reflex check — run at two altitudes
 
@@ -61,6 +82,14 @@ second one catches what the first one misses.
   alone.
 
 Both pass = the surface looks like *this product*, not "an app in this category".
+
+### Mechanical pre-flight (countable — run, don't vibe)
+Each is pass/fail by counting or grep, not judgment:
+- **Em-dashes** in visible UI strings: exactly **0**.
+- **Eyebrows** (uppercase-tracked kickers): ≤ `ceil(sections / 3)`.
+- **Layout families** (hero, image+text split, card grid, bento, table…): no family more
+  than twice per page; never 3 consecutive image+text zigzags.
+- **Icons**: 0 emoji-as-icon; exactly one icon set imported.
 
 ## Code anti-slop (UI **and** backend)
 - **Over-defensive checks** — `if (x && x.length > 0)` repeated, layered null guards,

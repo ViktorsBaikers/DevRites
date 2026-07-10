@@ -152,8 +152,9 @@ Audit for a plan resting on unstated beliefs).
    (greenfield no-op, like the principles gate).
    Also a **PRP one-pass-implementable check** per slice brief (the build's pre-flight): confirm each
    slice's Consumes/Produces, Known-Gotchas, validation commands, and reuse targets are present and
-   concrete — a brief that can't be built in one pass is a finding; harden the slice until it clears,
-   before `$rite-build`.
+   concrete. A UI slice also needs `Design brief states` and binary `Visual acceptance`
+   (state × viewport × input + target R-id/brief rule). A brief that can't be built and
+   visually judged in one pass is a finding; harden the slice until it clears before `$rite-build`.
 4a. **Forge gate (rare — confirm or clear).** For each slice carrying `Forge: yes` (proposed by
    `$rite-define`), and any slice the architecture axis showed has **≥2 genuinely-viable approaches
    with no clear winner at Complexity ≥4**, confirm the flag: name the 2–3 candidate strategies that

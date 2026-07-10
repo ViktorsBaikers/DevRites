@@ -6,8 +6,8 @@ DevRites-native answer to "build it according to the design (Figma, images)": sh
 direction, get a reaction, then write the brief.
 
 ## When to run (all true)
-- The work is **net-new** or directionally **ambiguous**. An existing surface to match →
-  skip; the supplied references already ARE the target.
+- The work is **net-new** or directionally **ambiguous**. An existing surface or an
+  approved reference classified **target** already fixes the direction → skip.
 - Fidelity is **mid-fi or higher**. Sketch-only planning → skip.
 - A probe tool is actually available (below). **Capability-gated** — never ask the user to
   install APIs or tooling. If none is available, **announce the skip in one line** and

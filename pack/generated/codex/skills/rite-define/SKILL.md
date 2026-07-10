@@ -72,7 +72,7 @@ the plan:
    register, and pre-mortem risks from `$rite-temper` — cut slices to mitigate the top risks
    and respect the IN/OUT line; map coverage against the **hardened** spec), and
    **`design-brief.md` if the feature touches UI** (the UX/UI contract `$rite-spec` shaped —
-   its key states + interaction model drive how UI slices are cut). If a blocking
+   its key states, interaction model, and proof targets drive how UI slices are cut). If a blocking
    `[NEEDS CLARIFICATION]` remains, stop → `$rite-spec`.
 2. **Decide the architecture + approach** (the HOW the spec deliberately omitted): write
    `architecture.md` for owning layer, boundaries, integration points, data/API/events,
@@ -98,8 +98,9 @@ the plan:
    `rite-plan/reference/task-breakdown.md`. Mark per slice: **Frontend craft required**
    and **Browser proof required** (UI), and whether it's **fullstack** (FE+BE → contract
    first, see `devrites-frontend-craft/reference/fullstack.md`). **For UI slices, name which
-   of `design-brief.md`'s key states + interaction the slice delivers** — so the brief's
-   state coverage maps onto slices, not just acceptance criteria.
+   of `design-brief.md`'s key states + interaction the slice delivers, and give it a binary
+   **Visual acceptance** target (state × viewport × input + target R-id/brief rule)** — so
+   the design contract maps onto slices, not just acceptance criteria.
 4. **Map coverage** — every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
    criterion. Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`
@@ -168,6 +169,7 @@ Tests to write/run:
 Browser proof required: yes/no
 Frontend craft required: yes/no
 Design brief states:        # UI slices only — which design-brief.md states/interaction this slice delivers (default/empty/error/…)
+Visual acceptance:          # UI slices only — state × viewport × input + target R-id/brief rule; binary enough for browser evidence
 Fullstack (FE+BE): yes/no
 Dependencies:               # external deps (libs, services), NOT slice ordering
 Existing to reuse / extend:   # what already exists (components / utils / hooks) the slice should use

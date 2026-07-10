@@ -16,10 +16,10 @@ import a new one. (Detail: `reference/design-references.md`.)
 - **Load the design brief + references the spec gathered** —
   `.devrites/work/<slug>/design-brief.md` (the UX/UI contract from `devrites-ux-shape` — the
   primary build target) plus `references.md` + the saved files in `references/`
-  (screenshots, Figma, video, links). When present they are the **build target**: match the
-  direction, layout, spacing, states, and behavior they show (pull Figma context if a Figma
-  integration is available) — extract type / spacing / color-roles / layout / component
-  behavior to it deliberately, don't eyeball it
+  (screenshots, Figma, video, links). Honor the role in `references.md`: match **targets**,
+  satisfy **constraints**, and extract only the named principle from **inspiration** (pull
+  Figma context if a Figma integration is available). For targets, extract type / spacing /
+  color-roles / layout / component behavior deliberately; don't eyeball it
   (`reference/design-references.md` — *Building to a supplied reference*). A reference that
   conflicts with the design system is a question for the user, not a silent choice.
 
@@ -41,7 +41,7 @@ The feature's **`design-brief.md`** is your target — `/rite-spec` shaped it up
 probe. **Read it first and refine it for this slice's surface; don't re-derive the design
 from scratch.** Confirm the slice covers the brief's states for this surface (default,
 loading, empty, error, success, disabled, long-content), its information hierarchy +
-primary action, responsive behavior, a11y, and interaction model. **If a UI slice has no
+primary action, responsive behavior, a11y, interaction model, and proof targets. **If a UI slice has no
 `design-brief.md`** (a spec written before shaping), shape it now via `devrites-ux-shape`
 before coding. **Ask before coding if the visual direction or UX flow is still ambiguous.**
 
@@ -63,8 +63,10 @@ before coding. **Ask before coding if the visual direction or UX flow is still a
   (LCP ≤2.5s / INP ≤200ms / CLS ≤0.1), WCAG 2.2 AA (keyboard, visible focus, contrast,
   ≥24px targets / 44px touch, no drag-only), responsive at 320/768/1024/1440 — and run
   its verification gate (no console errors, no axe violations, all states).
-- Verify in the browser (`devrites-browser-proof`) — screenshots opened and described,
-  console clean, responsive + keyboard checked.
+- Run the **visual convergence loop** in the browser (`devrites-browser-proof`): render the
+  slice's named states/viewports/input modes, open the screenshots, compare them with the
+  brief + target R-ids, record material deltas, fix, and re-render until none remain. A
+  detector/checklist is a floor, not the visual verdict.
 - **Every interactive element has an asserting test at the right level** — each field,
   checkbox, radio, select, toggle, button, and actionable link gets a unit/component test for
   what it *does* (validation, toggle, options, enabled/disabled, handler); critical journeys
@@ -87,7 +89,8 @@ to a real UI state, and **prove both layers** (contract tests + browser proof).
 Purple/blue gradients · gradient text · glassmorphism by default · cards-in-cards ·
 identical card grids everywhere · rounded-square icon tile above every heading ·
 gray-on-color text · hero-metric cliché · decorative bounce/elastic easing · random
-Inter-for-everything · modal-first thinking. Full list + rationale:
+Inter-for-everything · modal-first thinking · ghost-card (border + big shadow) · fake
+UI-in-a-div · placeholder copy/data. Full list + the countable mechanical pre-flight:
 `rite-polish/reference/anti-ai-slop.md`.
 
 ## Default vs departure

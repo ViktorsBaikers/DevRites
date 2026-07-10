@@ -32,10 +32,18 @@ these are the floor, not the ceiling.
 ## Responsive
 - Fluid layouts; no fixed widths that break. Verify at **320 / 768 / 1024 / 1440** px; no
   horizontal scroll; survives **200% text zoom**.
+- **`dvh`, not `vh`**, for full-height surfaces (`min-height: 100dvh`, never `h-screen` /
+  `100vh` — mobile address bars break them). A hero fits the *initial* viewport: headline
+  ≤2 lines, primary CTA above the fold.
 
 ## Design system
 - Use the project's **tokens** (spacing/type/color roles) — never hard-code a value a
   token covers. Compose from existing components; one icon set.
+
+### Consistency locks (one per surface)
+Lock these in `design-brief.md` and hold them page-wide — mid-scroll drift ("a different
+website by section 7") is a tell: **one accent** (no new accent appearing later on the
+page), **one radius scale**, **one theme** (light or dark, not both).
 
 ## Numerical bar (enforceable specifics)
 
@@ -54,6 +62,10 @@ Project tokens win when stricter; these are the floor.
 - **Tint neutrals toward the brand hue** — pure-grey neutrals look sterile.
   Nudge every grey 0.005–0.01 chroma toward the brand colour — invisible at
   a glance, but the surface stops feeling generic.
+- **Alpha is a smell** — heavy translucency usually means an incomplete palette.
+  Define explicit overlay/hover tokens; transparency is for focus rings and scrims.
+- **Every colored surface token ships its `on-` pair** (`primary`/`on-primary`,
+  `destructive`/`on-destructive`, …) so contrast is designed in, not patched after.
 
 #### Color commitment — pick the strategy before the palette
 Decide *how committed* the surface is to colour before opening the picker.
@@ -118,6 +130,9 @@ Corollaries (same shape as colour commitment):
 - **Product surfaces**: **fixed rem scale** (1.125 – 1.2 ratio). One family
   usually carries headings, body, labels, data.
 - Body line-height ~1.5; headings ~1.1 – 1.25. Prose width ~ 65–75 ch.
+- Display ceiling: `clamp()` max ≤ ~6rem — larger is shouting. Display
+  letter-spacing floor **≥ −0.04em**; tighter and the letters touch.
+- `text-wrap: balance` on h1–h3; `text-wrap: pretty` on long prose.
 
 ### Motion
 | Class | Duration | Use |
@@ -213,3 +228,7 @@ rung that carries the structure.
 - [ ] **No accessibility violations** (axe or equivalent)
 - [ ] Meets the **CWV budget** above (measure, don't assume)
 - [ ] Aligned to the **design system** (tokens, components, type, spacing)
+- [ ] Clickables show `cursor: pointer` + a hover state; icons are SVG from the one set
+      (no emoji); nothing trapped under fixed/sticky bars
+- [ ] **Consistency locks hold** (one accent / one radius scale / one theme) and the
+      mechanical pre-flight passes (`rite-polish/reference/anti-ai-slop.md`)
