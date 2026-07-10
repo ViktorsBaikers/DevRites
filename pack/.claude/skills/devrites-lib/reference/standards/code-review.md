@@ -100,7 +100,9 @@ drive-by edits that balloon the diff.
 Treat external review as claims to verify, not orders to obey. Clarify unclear feedback before a
 partial fix; check each claim against the live code; push back with evidence when it is wrong;
 then implement blocking → simple → complex items one at a time and test each fix. Technical
-replies state the evidence and next action — no performative agreement.
+replies state the evidence and next action — no performative agreement, no gratitude theater:
+"Fixed: <what> in <where>" beats "Great catch, thanks!". About to write "Thanks"? Delete it
+and state the fix.
 
 ## Principles, charter & conventions are pass/fail gates
 Three project layers are evaluated as explicit pass/fail at `/rite-vet`, re-checked after design

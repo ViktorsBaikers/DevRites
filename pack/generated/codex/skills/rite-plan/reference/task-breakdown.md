@@ -9,6 +9,7 @@ Goal:                       # single observable capability
 Satisfies: AC-001[, AC-002] # reverse traceability to spec.md
 Acceptance criteria:        # binary, evidence-backed (see ../../rite-spec/reference/acceptance-criteria.md)
 Files likely touched:       # real paths from codebase inspection
+Interfaces:                 # consumes/produces — names + types neighboring slices rely on
 Tests/proof:                # command(s) or EVID-### that prove it
 Browser proof required:     # yes/no (yes if UI — see ../../rite-build/reference/frontend-trigger.md)
 Frontend craft required:    # yes/no
@@ -35,6 +36,10 @@ Evidence required:          # what $rite-prove must capture
    an unowned criterion.
 
 ## Keep it honest
+- **Interfaces prevent cross-slice drift.** A slice-wright sees only its own contract; the
+  `Interfaces` line is how it learns the names and types neighboring slices use. A function
+  called `clearLayers()` in slice 3 and `clearFullLayers()` in slice 7 is a planning bug —
+  name shared symbols once, here.
 - Don't pre-write code in the task — describe the outcome, not the implementation.
 - Don't bundle "while we're here" work into a slice. That's scope creep; log it as a
   follow-up instead.

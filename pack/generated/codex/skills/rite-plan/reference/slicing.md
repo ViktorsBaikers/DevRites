@@ -19,7 +19,9 @@ A slice is the right size when it:
 - delivers one observable capability end-to-end;
 - can be built and proven in a single `$rite-build` → `$rite-prove` cycle;
 - has acceptance criteria you can verify with evidence;
-- can be rolled back on its own.
+- can be rolled back on its own;
+- is worth its own review gate: a reviewer could meaningfully reject *this* slice while
+  approving its neighbor. If two slices can only pass or fail together, they're one slice.
 
 Too big if: it touches many unrelated files, or you can't name its single observable outcome.
 **The "and" test:** if the slice's *name* needs an "and" ("create **and** list tasks"), it's two

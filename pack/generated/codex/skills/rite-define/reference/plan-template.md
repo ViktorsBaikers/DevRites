@@ -19,6 +19,11 @@ Spec: ./spec.md   Date: <date>
 - Target / platform / constraints: <...>
 - `[NEEDS CLARIFICATION: ...]` for any unknown that affects the approach.
 
+## Global constraints
+Project-wide requirements from the spec that every slice implicitly includes — version
+floors, dependency limits, naming/copy rules, platform requirements. One line each, exact
+values **verbatim from spec.md** (a paraphrased constraint drifts by the time slice 4 builds).
+
 ## Approach
 The strategy in a few sentences. Why this over the alternatives considered.
 

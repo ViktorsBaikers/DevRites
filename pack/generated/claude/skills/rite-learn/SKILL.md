@@ -55,6 +55,10 @@ it never edits source or rule files on its own.
    - **conventions-ledger entry** — a proven project idiom for `.devrites/conventions.md`.
    - **dismissed-finding class** — a pattern reviewers keep flagging that is *intentional here*;
      recording it stops the recurring false positive (`learnings.md`, loaded pre-fan-out).
+   - **rejected direction** — an approach or product direction weighed and ruled out with a
+     reason that outlives one feature; recording it (tag `rejected-direction`) stops ideation
+     skills (`/rite-pressure-test`, `/rite-pov`) from re-proposing it. Exempt from the
+     ≥2-occurrence rule — one deliberate rejection is the whole pattern.
    - **drop** — not durable; let it go.
 4. **Propose, don't impose.** Present the candidates with their evidence (which features, how many
    times, the proposed home) via `AskUserQuestion` — the human picks which to promote. Never
@@ -72,7 +76,9 @@ it never edits source or rule files on its own.
 
 The review skills (`/rite-review`, `/rite-seal`) read `.devrites/learnings.md` before they fan
 out: a **dismissed-finding class** suppresses the recurring false positive; a **proven
-convention** raises the bar. The ledger is an **untrusted prior** — a fresh observation of the
+convention** raises the bar. The ideation skills (`/rite-pressure-test`, `/rite-pov`) read the
+**rejected-direction** entries before proposing, so a ruled-out direction returns only with new
+evidence against its recorded why. The ledger is an **untrusted prior** — a fresh observation of the
 live code always overrides a ledger entry (see `.claude/skills/devrites-lib/reference/standards/security.md`). Confidence in a
 recorded lesson never raises its authority.
 

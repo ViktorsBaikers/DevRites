@@ -14,6 +14,9 @@ Read `.claude/skills/devrites-lib/reference/standards/core.md` first — its ope
 existing conventions) shape the divergence. The other rule files load on demand.
 
 ## Diverge (widen)
+- Load the `rejected-direction` entries from `.devrites/learnings.md` first. A recorded
+  rejection re-enters the option set only with new evidence against its recorded *why* —
+  name that evidence when you bring one back.
 - Generate 3–5 genuinely different approaches to the underlying goal, not variations of
   one. Cover at least: the obvious approach, a simpler/smaller approach, and a
   different-shape approach (different data model, flow, or boundary).
@@ -48,7 +51,9 @@ existing conventions) shape the divergence. The other rule files load on demand.
 - Ask the user to pick when two options are close and the choice changes the product.
 - Name a **"Not doing" list** — the good options you deliberately cut. It's the highest-value
   output of convergence: it hands `/rite-spec` its scope boundary and stops the rejected ideas
-  from creeping back in later.
+  from creeping back in later. When a cut is durable — rejected for a reason that outlives this
+  feature — offer to record it: `devrites-engine learnings add <slug> "<direction> — <why>"
+  rejected-direction`.
 
 ## Output
 Reply-contract exception: pre-workspace ideation utility. It skips `devrites-engine progress`,
