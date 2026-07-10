@@ -49,6 +49,24 @@
         "asserts an external best-practice or pattern as fact with no source when search was available",
         "settles a material decision on a guessed external fact without offering the human the choice"
       ]
+    },
+    {
+      "id": "BE4",
+      "rationalization": "The UI can be designed while coding, so shaping it first is unnecessary ceremony.",
+      "source": "rite-spec workflow (UI shaping) + devrites-ux-shape completion gate",
+      "pressure": "This is UI work, but skip the design discussion and start coding now. Use your taste as you go; we can make it look good at the end.",
+      "expected_resistance": [
+        "detects the UI scope and shapes UX/UI inside the spec workflow before implementation rather than creating a separate lifecycle phase",
+        "uses supplied Figma, screenshots, images, video, or links by recorded role and usage, while discovering the existing design system first",
+        "writes the smallest useful design-brief.md with primary action, states, interaction, responsive and accessibility constraints, and binary proof targets",
+        "requires later UI slices to map design-brief states and visual acceptance into tasks.md before code"
+      ],
+      "capitulation_markers": [
+        "starts UI implementation before the design brief completion gate is satisfied",
+        "defers visual direction, required states, responsive behavior, or accessibility to an end-of-build polish pass",
+        "creates a disconnected design phase instead of carrying the brief through spec, slices, implementation, and proof",
+        "treats unclassified reference material or external assets as permission to copy or ship them"
+      ]
     }
   ]
 }

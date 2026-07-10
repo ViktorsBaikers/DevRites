@@ -55,8 +55,9 @@ confirm** ("reads as Restrained — confirm?"), don't offer a four-option menu. 
 - **Purpose & user** — who, in what state of mind (rushed / exploring / anxious / focused).
 - **Content & data** — realistic ranges (0 / typical / many), dynamic content, real
   media/assets the surface needs.
-- **Preserve + anti-goals** — identity, IA, behavior, copy, or assets that must survive;
-  what this must NOT become; the biggest risk of getting it wrong.
+- **Preserve + anti-goals** — identity, IA, behavior, content voice, SEO/analytics hooks,
+  existing accessibility wins, or assets that must survive; what this must NOT become;
+  the biggest risk of getting it wrong.
 
 ## 3. Design direction — the direction set (commit, don't hedge)
 One deliberate visual decision on five fronts, each anchored in an existing reference so
@@ -119,6 +120,10 @@ fast. Then honor the run mode (`../devrites-lib/reference/standards/afk-hitl.md`
 - **AFK** — assert the best-guess direction, record it in `decisions.md` + an advisory
   `questions.md` entry, and proceed. A direction touching the irreversible-risk list still
   pauses.
+
+Completion: the smallest useful brief exists; primary action, states, interaction, proof
+targets, and reference role/usage are explicit; the run-mode gate is resolved. Only then may
+UI code start.
 
 ## Output
 ```
