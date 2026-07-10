@@ -37,6 +37,12 @@
         "hooks": [
           { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook source-cache-post --harness=claude || exit 0" }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook auq || exit 0" }
+        ]
       }
     ],
     "PreCompact": [

@@ -102,8 +102,20 @@ Every hook is **fail-open and read-only unless it explicitly gates**.
 
 - `devrites-engine hook orient --harness=H` — emits the SessionStart orientation for the
   active feature (named by `.devrites/ACTIVE`) as the harness's
-  `hookSpecificOutput.additionalContext` envelope. Silent (exit `0`, no output)
-  outside a workspace, with no active feature, or on a stale pointer.
+  `hookSpecificOutput.additionalContext` envelope. With no active feature (or a
+  stale pointer), the first-ever such session instead gets a one-time starting
+  nudge derived from the `first-task` token (greenfield → `/rite-spec`,
+  brownfield → `/rite-adopt`, …); the `.devrites/.first-run-shown` marker keeps
+  it from repeating. Silent (exit `0`, no output) outside a workspace or once
+  the marker exists.
+- `devrites-engine hook auq` — PostToolUse capture of an `AskUserQuestion`
+  exchange: appends each question + chosen answer to `.devrites/timeline.jsonl`
+  and the feature's `events.jsonl`, so HITL decisions are recorded at the
+  substrate instead of trusted to the model's bookkeeping. Capture only — never
+  tunes, blocks, or replies; silent outside an active workspace. Claude-only by
+  design: Codex has an equivalent tool (`request_user_input`) but emits no hook
+  event for it — its PostToolUse matches only Bash/`apply_patch`/MCP calls, and
+  the user-input-requested event was declined upstream (openai/codex#12524).
 - `devrites-engine hook stop-gate --harness=H` — refuses to end a turn at a provably
   inconsistent **rest point** (a feature claiming completion — phase `seal`/`ship`
   — with empty `evidence.md` / `proof.md`). NOT whole-feature completeness, so normal
@@ -140,6 +152,24 @@ is a header-identity upsert/delete, so it is **idempotent** — re-syncing a fea
 `spec-validate <dir> --against .devrites/specs` cross-checks a spec's delta classification against
 the ledger (ADDED must be new; MODIFIED/REMOVED must already exist) and validates Edge Coverage /
 Prohibitions tables — a blocking spec-gate check.
+
+## `analyze` — cross-artifact coverage & consistency
+
+`devrites-engine analyze [slug]` cross-checks a feature's `spec.md` against its `tasks.md` before
+any code is written, so a coverage gap surfaces as a one-line plan edit instead of a reslice
+mid-build. It emits a markdown report with four passes:
+
+- **Coverage** — a spec `[ACn]` that no slice `Satisfies:` (**CRITICAL**).
+- **Consistency** — a slice that `Satisfies:` an AC the spec never defines (**CRITICAL**).
+- **Orphan slice** — a slice satisfying no acceptance criterion (warn).
+- **Ambiguity** — an unquantified vague adjective (`fast`, `robust`, `intuitive`, …) or an
+  unresolved placeholder (`TODO`, `TKTK`, `???`) in the spec (warn).
+
+It closes with a **Metrics** line (criteria count, coverage %, orphan + ambiguity counts) so the
+vet gate reports a number, not just a pass/fail. Exit `0` clear · `1` at least one CRITICAL ·
+`2` no workspace (no active slug, or `spec.md`/`tasks.md` missing). `/rite-vet` runs it in its
+cross-artifact gate (step 2a) and layers the semantic passes the engine can't do — terminology
+drift, duplicated/conflicting requirements — on top of this deterministic floor.
 
 ## `review-integrity` — the silent-reviewer gate
 
@@ -199,6 +229,28 @@ devrites-engine review-fingerprints --write auth-tokens
 The IDs make recurring findings, dismissals, and later learning easier to correlate without
 copying full review text into every downstream surface. `review-integrity` remains the gate; this
 command only records stable references.
+
+## `reviewer-stats` — dispatch outcomes that gate the fan-out
+
+`devrites-engine reviewer-stats record <agent> <surviving-findings> [slug]` appends one dispatch
+outcome to `.devrites/reviewer-stats.jsonl` (cross-feature, append-only).
+`devrites-engine reviewer-stats report [--json]` grades each reviewer deterministically:
+
+- `run (always-on)` — the unconditional axes (`spec-reviewer`, `code-reviewer`, `test-analyst`).
+- `run (insurance — never gated)` — `security-auditor` and `doubt-reviewer`: a dry streak is
+  success, never a reason to skip.
+- `gate-candidate` — a conditional reviewer with zero surviving findings in its last 10+
+  dispatches; the fan-out may skip it as a *recorded* skip (see
+  `parallel-dispatch.md § Hit-rate gating`).
+- `run` — everything else.
+
+```bash
+devrites-engine reviewer-stats record devrites-performance-reviewer 0 auth-tokens
+devrites-engine reviewer-stats report
+```
+
+Thresholds live in the engine, not the prompt: the caller reads the verdict, it never re-derives
+or overrides the streak math (a user-requested full panel dispatches everything regardless).
 
 ## `reviewers list` — bounded reviewer aliases
 

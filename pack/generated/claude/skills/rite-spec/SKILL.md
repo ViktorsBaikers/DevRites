@@ -19,8 +19,8 @@ are `/rite-define` and `/rite-build`.
 > Spec is for real features; don't pay its ceremony for a one-off.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. DevRites skills Read `.claude/skills/devrites-lib/reference/standards/core.md`
-as their first step; the other rule files load on demand. Pull `documentation.md` via `Read`
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first; the other
+rule files load on demand. Pull `documentation.md` via `Read`
 when capturing significant spec decisions (why-not-what, ADR-style notes in `decisions.md`);
 pull `principles.md` when the project has declared invariants (`.devrites/principles.md`) — a
 new spec must respect them, and a requirement that can only be met by breaking one is a blocking gap.

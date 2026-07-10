@@ -29,33 +29,35 @@ type codeHealthEntry struct {
 
 // FirstTask classifies the current repo into one deterministic next-action token.
 func FirstTask(root string, _ []string, stdout, stderr io.Writer) int {
+	fmt.Fprintln(stdout, FirstTaskToken(root))
+	return 0
+}
+
+// FirstTaskToken is the classification behind the first-task command, exposed so
+// the SessionStart orientation can render a first-run nudge from the same enum.
+// The token set is load-bearing: callers map tokens to prose, so a new token
+// needs a new mapping, never a reworded one.
+func FirstTaskToken(root string) string {
 	project := projectDir(root)
 	if isGitDirty(project) {
-		fmt.Fprintln(stdout, "dirty-worktree")
-		return 0
+		return "dirty-worktree"
 	}
 	if activeSlug(root) != "" {
-		fmt.Fprintln(stdout, "active-feature")
-		return 0
+		return "active-feature"
 	}
 	if gitBranchAhead(project) {
-		fmt.Fprintln(stdout, "branch-ahead")
-		return 0
+		return "branch-ahead"
 	}
 	if !isDir(root) || !isDir(filepath.Join(root, "work")) && !isDir(filepath.Join(root, "specs")) && !isDir(filepath.Join(root, "archive")) {
 		if hasProjectFiles(project) {
-			fmt.Fprintln(stdout, "brownfield-unadopted")
-		} else {
-			fmt.Fprintln(stdout, "greenfield")
+			return "brownfield-unadopted"
 		}
-		return 0
+		return "greenfield"
 	}
 	if hasProjectFiles(project) {
-		fmt.Fprintln(stdout, "clean-default")
-	} else {
-		fmt.Fprintln(stdout, "greenfield")
+		return "clean-default"
 	}
-	return 0
+	return "greenfield"
 }
 
 func projectDir(root string) string {

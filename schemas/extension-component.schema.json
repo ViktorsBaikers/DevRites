@@ -34,6 +34,19 @@
       },
       "additionalProperties": true
     },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": { "enum": ["seal"] },
+          "instruction": { "type": "string", "minLength": 1 },
+          "doc": { "type": "string" }
+        },
+        "required": ["at", "instruction"],
+        "additionalProperties": false
+      }
+    },
     "component": {
       "type": "object",
       "properties": {

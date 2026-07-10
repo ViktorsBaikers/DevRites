@@ -69,7 +69,13 @@ it never edits source or rule files on its own.
    the normal flow — `/rite-learn` writes the ledger, not the rule or principle files. A
    **principle** promotion is the highest-stakes of these: draft the `.devrites/principles.md` entry
    **plus its dated Governance line**, and let the human confirm before it lands — a principle is a
-   gate, so it is amended deliberately, never auto-written. Then `touch .devrites/.learnings-reviewed`
+   gate, so it is amended deliberately, never auto-written. **Amendment ripple:** a confirmed
+   add/change/retire of a principle has a blast radius — grep its `P#` (and its key nouns) across
+   `.devrites/` and every open `.devrites/work/*/` workspace, and append to the same dated
+   Governance entry one line per referencing artifact: *still-aligned* or *needs-follow-up (what)*.
+   An open plan that bakes in the now-retired or now-tightened invariant is a `needs-follow-up`
+   the next `/rite-vet` or `/rite-plan repair` on that feature must clear; a ripple with zero
+   references is itself worth recording ("no live references"). Then `touch .devrites/.learnings-reviewed`
    so the SessionStart learnings nudge snoozes until new signal accumulates.
 
 ## How the ledger is used

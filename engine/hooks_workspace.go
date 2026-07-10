@@ -74,6 +74,96 @@ type hookEventJSON struct {
 	Note  string `json:"note,omitempty"`
 }
 
+type auqEventJSON struct {
+	TS       string `json:"ts"`
+	Event    string `json:"event"`
+	Slug     string `json:"slug,omitempty"`
+	Question string `json:"question"`
+	Answer   string `json:"answer,omitempty"`
+}
+
+// auqFieldMax caps each captured question/answer so a verbose exchange never
+// bloats the timeline.
+const auqFieldMax = 300
+
+// hookAUQ deterministically captures an AskUserQuestion exchange — every
+// question with the user's chosen answer — into the session trace, so HITL
+// decisions are recorded at the substrate rather than trusted to the model's
+// bookkeeping. Capture only: it never tunes, blocks, or replies. Fail-open like
+// every workspace hook: unparseable payload, unknown response shape, or no
+// active workspace all exit 0 silently.
+func hookAUQ(stdin io.Reader, stdout, stderr io.Writer) int {
+	data, err := io.ReadAll(io.LimitReader(stdin, 1<<20))
+	if err != nil {
+		return exitOK
+	}
+	var payload struct {
+		ToolInput struct {
+			Questions []struct {
+				Question string `json:"question"`
+			} `json:"questions"`
+		} `json:"tool_input"`
+		ToolResponse json.RawMessage `json:"tool_response"`
+	}
+	if json.Unmarshal(data, &payload) != nil || len(payload.ToolInput.Questions) == 0 {
+		return exitOK
+	}
+	answers := auqAnswers(payload.ToolResponse)
+	root, slug, dir, ok := resolveWorkspace()
+	if !ok {
+		return exitOK
+	}
+	ts := time.Now().UTC().Format(time.RFC3339)
+	for _, q := range payload.ToolInput.Questions {
+		question := truncateField(strings.TrimSpace(q.Question), auqFieldMax)
+		if question == "" {
+			continue
+		}
+		rec := auqEventJSON{
+			TS:       ts,
+			Event:    "auq",
+			Slug:     slug,
+			Question: question,
+			Answer:   truncateField(answers[q.Question], auqFieldMax),
+		}
+		line, err := json.Marshal(rec)
+		if err != nil {
+			continue
+		}
+		_ = state.AppendLog(filepath.Join(root, "timeline.jsonl"), string(line))
+		_ = state.AppendLog(filepath.Join(dir, "events.jsonl"), string(line))
+	}
+	return exitOK
+}
+
+// auqAnswers extracts the question→answer map from the tool response,
+// tolerating the shapes the harness emits: an object with an "answers"
+// string map, a bare string map, or anything else (→ no answers, questions
+// still recorded).
+func auqAnswers(raw json.RawMessage) map[string]string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var wrapped struct {
+		Answers map[string]string `json:"answers"`
+	}
+	if json.Unmarshal(raw, &wrapped) == nil && len(wrapped.Answers) > 0 {
+		return wrapped.Answers
+	}
+	var flat map[string]string
+	if json.Unmarshal(raw, &flat) == nil {
+		return flat
+	}
+	return nil
+}
+
+func truncateField(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "…"
+}
+
 // hookEvent records hook/session observability without changing flow. It is
 // fail-open: outside an active workspace it stays silent.
 func hookEvent(args []string, stdin io.Reader, stdout, stderr io.Writer) int {

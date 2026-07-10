@@ -88,6 +88,14 @@ jobs:
       - name: Hook config parity (hooks.json == settings.json)
         run: bash tests/hooks-parity-test.sh
 
+      - name: Generated host artifacts fresh (regenerate + diff — BLOCKING)
+        run: |
+          bash scripts/build-host-artifacts.sh
+          git diff --exit-code -- pack/generated || {
+            echo "pack/generated drifted from pack/.claude sources; rerun scripts/build-host-artifacts.sh and commit the result" >&2
+            exit 1
+          }
+
       - name: Anti-slop detector (advisory)
         run: bash scripts/devrites-detect.sh || true
 

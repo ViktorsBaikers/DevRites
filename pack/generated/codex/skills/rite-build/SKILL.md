@@ -14,6 +14,7 @@ This is the Codex mirror of a DevRites skill. In Codex:
 - When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
 - The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence.
 - Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers — NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # $rite-build — one verified slice
@@ -28,7 +29,7 @@ run the post-return gates (doubt, fail-on-red, record, stop). See
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-DevRites skills Read `.agents/skills/devrites-lib/reference/standards/core.md` as their first step (workflow step 0). The
+Read `.agents/skills/devrites-lib/reference/standards/core.md` first (workflow step 0). The
 following load on demand — **the wright reads them** (they are named in its contract) while it
 writes; read them yourself for the doubt/record gates or in the inline fallback:
 - `coding-style.md` — naming, function shape, guard clauses, comments, reuse-first.

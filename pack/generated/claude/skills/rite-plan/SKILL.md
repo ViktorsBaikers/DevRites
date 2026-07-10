@@ -52,7 +52,9 @@ reshaping slice cadence or DoD criteria.
    - **course-correct** — a deliberate mid-build *pivot* (the user changed their mind), distinct
      from accidental drift: classify the change, assess its impact across the remaining slices,
      decide rollback vs forward-fix, and update `spec.md` + `plan.md` + `tasks.md` + `decisions.md`
-     atomically. An acceptance/behavior change still goes through the user first.
+     atomically. An acceptance/behavior change still goes through the user first. When the plan
+     names an `MVP cut`, offer it as the retreat option: falling back to the cut is a pre-agreed
+     scope, not a new negotiation.
    - **revise** — apply a requested planning-artifact revision and reconcile existing artifacts in
      any direction; propose the file edit set first, confirm each file before writing, and **never
      edit source code**.

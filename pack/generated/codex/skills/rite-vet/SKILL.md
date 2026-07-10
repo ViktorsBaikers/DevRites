@@ -14,6 +14,7 @@ This is the Codex mirror of a DevRites skill. In Codex:
 - When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
 - The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence.
 - Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers — NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # $rite-vet — vet the plan before you build
@@ -82,8 +83,8 @@ Audit for a plan resting on unstated beliefs).
    (for intent + acceptance), `strategy.md` (if `$rite-temper` ran), `decisions.md`,
    `assumptions.md`, `design-brief.md` (if UI), `state.md`. Require a `plan.md` whose
    Readiness gate passes (or `Plan approved`) — else STOP → `$rite-define`. Prefer a
-   code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
-   (see `.agents/skills/devrites-lib/reference/standards/tooling.md`) — for placement / blast-radius / reuse checks.
+   code-intelligence index if available (see
+   `.agents/skills/devrites-lib/reference/standards/tooling.md`) for placement / blast-radius / reuse checks.
 1. **Calibrate depth — never skip** — [`reference/depth.md`](reference/depth.md). Every plan is
    vetted; what scales is the *depth*. A simple, single-module, reversible plan with no
    irreversible-risk / data-model / new-pattern trigger → **light pass** (brief scope check + a
@@ -102,7 +103,11 @@ Audit for a plan resting on unstated beliefs).
 2a. **Cross-artifact analyze gate + principles / charter / conventions gate.** Before the axes, run
    one read-only consistency+coverage pass over `spec.md` + `plan.md` + `tasks.md` (+ `traceability.md`
    if present); any **CRITICAL** — an acceptance criterion with no slice, a slice satisfying no
-   criterion, a contradiction across artifacts — **blocks `$rite-build`** until resolved. Then score
+   criterion, a contradiction across artifacts, a requirement stated twice with conflicting terms —
+   **blocks `$rite-build`** until resolved. The engine covers the deterministic floor (AC coverage,
+   orphan slices, vague adjectives); you add the semantic passes it can't: **terminology drift**
+   (the same concept named differently across artifacts — normalize to the spec's term) and
+   **duplicated or conflicting requirements**. Then score
    the three project gates as explicit **pass/fail** on the planned approach:
    - **Principles** (`.devrites/principles.md`, rubric in [`principles.md`](../devrites-lib/reference/standards/principles.md))
      — the authored invariants the project will not break. A plan that bakes in a violation of a

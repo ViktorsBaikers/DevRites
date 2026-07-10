@@ -45,6 +45,46 @@ func TestHookEventWritesTimelineAndWorkspaceEvents(t *testing.T) {
 	}
 }
 
+func TestHookAUQRecordsQuestionAndAnswer(t *testing.T) {
+	root := makeHookWorkspace(t)
+	payload := `{"tool_name":"AskUserQuestion","tool_input":{"questions":[{"question":"Ship now?"}]},"tool_response":{"answers":{"Ship now?":"Yes, ship"}}}`
+	if code := hookAUQ(strings.NewReader(payload), &bytes.Buffer{}, &bytes.Buffer{}); code != 0 {
+		t.Fatalf("hookAUQ code=%d", code)
+	}
+	for _, path := range []string{
+		filepath.Join(root, "timeline.jsonl"),
+		filepath.Join(root, "work", "demo", "events.jsonl"),
+	} {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, want := range []string{`"event":"auq"`, `"question":"Ship now?"`, `"answer":"Yes, ship"`, `"slug":"demo"`} {
+			if !strings.Contains(string(raw), want) {
+				t.Fatalf("auq log %s missing %s: %s", path, want, raw)
+			}
+		}
+	}
+}
+
+func TestHookAUQFailOpenOnGarbageAndNoWorkspace(t *testing.T) {
+	root := makeHookWorkspace(t)
+	if code := hookAUQ(strings.NewReader("not json"), &bytes.Buffer{}, &bytes.Buffer{}); code != 0 {
+		t.Fatalf("garbage payload must exit 0, got %d", code)
+	}
+	if _, err := os.Stat(filepath.Join(root, "timeline.jsonl")); !os.IsNotExist(err) {
+		t.Fatalf("garbage payload must record nothing, stat err = %v", err)
+	}
+	t.Setenv("DEVRITES_ROOT", "")
+	if err := os.Remove(filepath.Join(root, "ACTIVE")); err != nil {
+		t.Fatal(err)
+	}
+	payload := `{"tool_input":{"questions":[{"question":"q"}]}}`
+	if code := hookAUQ(strings.NewReader(payload), &bytes.Buffer{}, &bytes.Buffer{}); code != 0 {
+		t.Fatalf("no workspace must exit 0, got %d", code)
+	}
+}
+
 func TestHookHandoffSnapshotAppendsResumeNote(t *testing.T) {
 	root := makeHookWorkspace(t)
 	stdout := &bytes.Buffer{}

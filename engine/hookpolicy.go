@@ -57,6 +57,7 @@ var hookRegistry = map[string]hookTier{
 	"source-cache-post": tierStandard,
 	"refresh-indexes":   tierStandard,
 	"event":             tierStandard,
+	"auq":               tierStandard,
 	"handoff-snapshot":  tierStandard,
 }
 

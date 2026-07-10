@@ -13,6 +13,11 @@
 #   - source-cache-pre/-post : fire on Claude's WebFetch tool; Codex has no WebFetch (uses
 #                              web_search, which self-caches), so there is nothing to revalidate.
 #   - statusline            : Claude settings statusLine surface; Codex has no matching hook event.
+#   - auq                   : fires on Claude's AskUserQuestion tool. Codex HAS an equivalent
+#                             tool (request_user_input) but emits NO hook event for it — its
+#                             PostToolUse matches only Bash/apply_patch/MCP calls, and the
+#                             user-input-requested event was declined (openai/codex#12524,
+#                             closed not-planned). Re-check if Codex hooks gain that event.
 # subagent-orient IS shared. reviewer-readonly + wright-scope live in Claude SUBAGENT FRONTMATTER
 # but in the Codex hooks.json (Codex agent TOML can't carry frontmatter hooks) — same enforcement.
 set -u
@@ -48,7 +53,7 @@ if names(f"{root}/pack/.claude/hooks/hooks.json") != names(f"{root}/pack/.claude
 
 # (3) Codex must carry every SHARED hook. Shared = all Claude hooks (settings.json + the two
 # subagent-frontmatter guards) minus the documented Claude-only set.
-CLAUDE_ONLY = {"source-cache-pre", "source-cache-post", "statusline"}
+CLAUDE_ONLY = {"source-cache-pre", "source-cache-post", "statusline", "auq"}
 claude_all = names(f"{root}/pack/.claude/settings.json")
 for f in glob.glob(f"{root}/pack/.claude/agents/*.md"):
     claude_all |= set(re.findall(RE, open(f).read()))
@@ -69,5 +74,5 @@ if fail:
     sys.exit(1)
 print(f"HOOKS-PARITY: PASS — Claude plugin==file ({len(names(f'{root}/pack/.claude/settings.json'))} hooks); "
       f"Codex carries all {len(shared)} shared enforcement hooks (incl. subagent-orient); "
-      f"{len(CLAUDE_ONLY)} Claude-only by design (source-cache x2 + statusline).")
+      f"{len(CLAUDE_ONLY)} Claude-only by design (source-cache x2 + statusline + auq).")
 PY

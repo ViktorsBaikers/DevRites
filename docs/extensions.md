@@ -92,6 +92,26 @@ Legacy `component:` / `permissions:` manifests still validate. The validator ref
 extension dependencies, first-party ownership collisions, and any manifest that claims it can weaken
 a gate, run executables, or bypass `type-GO`.
 
+### Declarative checks
+
+`component.yaml` may declare **checks** — non-executable, one-line instructions the data plane
+surfaces at a lifecycle gate:
+
+```yaml
+checks:
+  - at: seal
+    instruction: Run the license scan and record the result in evidence.md
+    doc: docs/license-scan.md   # optional pointer to the project's own procedure
+```
+
+- A check is an **instruction the in-session model addresses**, never a command the engine runs —
+  the deterministic engine gates still do not read extensions, and `executable: false` still holds.
+- Checks are **additive-only**: they can raise the bar at a gate, never lower one (same rule as
+  overrides). `/rite-seal` treats a declared `at: seal` check that is neither addressed nor
+  skip-justified in `seal.md` as an **Important** finding on the review's completeness.
+- Checks in an extension that fails validation are inactive — fail-open, but `extensions validate`
+  says so loudly.
+
 ### Workflow
 
 Use `/rite-customize extension <name>` for guided authoring, or do it by hand:

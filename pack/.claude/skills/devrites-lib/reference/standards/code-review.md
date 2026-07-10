@@ -4,9 +4,16 @@ The reviewer's one question: **does this change make the codebase healthier** �
 design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
 
 ## Keep changes small
-- One concern per change (a fix, an endpoint, a refactor) — not three at once.
+- One concern per change (a fix, an endpoint, a refactor) — not three at once. Refactoring
+  that rides along with new behavior is two changes: split them.
 - Aim for small diffs: under ~200 lines reviews well and merges fast; treat ~400 as a
   soft ceiling and self-split beyond it. Large diffs hide defects and get rubber-stamped.
+- Watch **file size**, not just diff size: a small diff that grows an already-large file
+  (~1000+ total lines) is an inspection signal — extract the helper or module *first*,
+  then add.
+- To self-split: **stack** (land the smallest standalone piece, build on top) or cut a
+  **thinner vertical slice** (`rite-plan/reference/slicing.md`). Whole-file deletions and
+  mechanical refactors may run large — review intent, not every line.
 
 ## What to check (tests first)
 1. **Tests** — do they exist and prove the behavior + failure modes (empty, error,
@@ -20,8 +27,15 @@ design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
 
 ## Give actionable feedback
 - Read surrounding source before severity: call sites, existing guards, and the nearest consumer decide impact; a diff hunk alone is not enough.
-- Label severity so the author knows what blocks: **Critical / Important / Suggestion /
-  Nit / FYI**.
+- Label severity so the author knows what blocks — each label names the author's action:
+
+  | Label | Author action |
+  |---|---|
+  | **Critical** | Blocks merge. Fix before anything else. |
+  | **Important** | Fix before merge. |
+  | **Suggestion** | Weigh it; adopt or answer why not. |
+  | **Nit** | May ignore. |
+  | **FYI** | No action — context only. |
 - Be specific: point at the line, name the problem, propose the fix. Frame non-blocking
   ideas as questions ("what about a map here for readability?").
 - Let automation (linters, formatters, CI) catch the trivial stuff so review focuses on

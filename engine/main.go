@@ -70,6 +70,7 @@ Usage:
   devrites-engine docs-stale [slug]        Advisory docs-staleness check over changed public surfaces
   devrites-engine secret-scan [slug]       Credential scan over staged/touched files; HIGH blocks
   devrites-engine review-fingerprints [slug]  Stable IDs for review findings; --write saves JSONL
+  devrites-engine reviewer-stats <sub>     Reviewer dispatch outcomes: record <agent> <n> [slug] | report [--json]
   devrites-engine conventions <sub> [...]  Project convention ledger: band|read|orient|promote|contradict
   devrites-engine lanes plan [slug]       Advisory safe-parallelism/lane plan for slices
   devrites-engine extensions <sub>         Project extensions (.devrites/extensions/): list|validate|sync
@@ -99,6 +100,7 @@ Hooks:
   hook source-cache-post  Store a WebFetch result keyed on its origin validators
   hook refresh-indexes    Refresh the code-intelligence indexes (detached) on Stop
   hook event <name>       Append a hook/session event to the active workspace trace
+  hook auq                Record an AskUserQuestion exchange to the session trace (capture only)
   hook handoff-snapshot   Append a compact active-workspace handoff before compaction
 
 Exit codes:
@@ -237,6 +239,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.SecretScan(resolveRootLenient(), args[1:], stdout, stderr)
 	case "review-fingerprints":
 		return lib.ReviewFingerprints(resolveRootLenient(), args[1:], stdout, stderr)
+	case "reviewer-stats":
+		return lib.ReviewerStats(resolveRootLenient(), args[1:], stdout, stderr)
 	case "conventions":
 		return lib.Conventions(args[1:], stdout, stderr)
 	case "lanes":
@@ -430,6 +434,9 @@ func cmdHook(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	if name == "event" {
 		return hookEvent(args[1:], stdin, stdout, stderr)
+	}
+	if name == "auq" {
+		return hookAUQ(stdin, stdout, stderr)
 	}
 	if name == "handoff-snapshot" {
 		return hookHandoffSnapshot(stdin, stdout, stderr)
