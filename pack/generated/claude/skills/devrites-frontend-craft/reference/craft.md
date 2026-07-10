@@ -17,6 +17,15 @@ supplied reference*).
    sensible defaults (Enter submits, Esc closes, etc.).
 5. **Responsive** — verify the reflow at the target viewports.
 
+## Technical floors (cheap now, expensive to retrofit)
+- Full-height = `min-height: 100dvh`, never `h-screen` / `100vh`.
+- Columns via CSS Grid, not flex + `calc(%)` math.
+- Continuous input (mouse, scroll, drag) never re-renders per frame — refs / motion
+  values / CSS, not component state.
+- **Real-imagery ladder**: project asset → generated asset → seeded stock placeholder →
+  labeled empty slot + tell the user. Never divs pretending to be a screenshot; real SVG
+  logos, not text wordmarks.
+
 ## Use the system, don't fight it
 - Tokens for spacing/color/type — never hard-code a value a token covers.
 - Match the nearest neighbor's patterns for forms, buttons, menus, toasts.
@@ -30,7 +39,8 @@ Build what *this* slice needs. Don't scaffold future screens, settings, or varia
 - The primary action is unmistakable.
 - Empty states teach the next step; error states offer recovery.
 - Spacing reads as deliberate; alignment holds at every breakpoint.
-- Copy is in the product's voice, specific, and short.
+- Copy is in the product's voice, specific, and short — and survives the copy self-audit
+  with realistic data (`rite-polish/reference/anti-ai-slop.md` — Copy & data realism).
 - No console noise; no layout shift.
 
 ## Avoid the slop
@@ -39,8 +49,10 @@ project genuinely uses one, follow the project — consistency wins.
 
 ## Record
 Append slice build-time refinements → `design-brief.md` (the brief `devrites-ux-shape`
-produced at spec; refine it, don't recreate it). Then verify in the browser
-(`devrites-browser-proof`) and record evidence before claiming the UI works.
+produced at spec; refine it, don't recreate it). Then render the slice's proof targets,
+open each screenshot, compare with the brief + target R-ids, fix material deltas, and
+re-render until none remain (`devrites-browser-proof`). Record the comparison evidence
+before claiming the UI works.
 
 ## NEVER (craft)
 

@@ -4,9 +4,10 @@ During the spec phase the human **may** hand you **how it should look or behave*
 screenshots, mockups, a Figma link, a video of a flow, a reference site, or a doc — **or
 nothing at all** (no design, no screenshots, no explanation is perfectly normal). This is
 entirely **optional**. When references *are* given, treat them as first-class inputs:
-gather them, understand them, **save the local ones**, and index them so every later phase
-(build, prove, polish, seal) can check the work against them. When there are none, skip
-this and proceed with the spec.
+gather them, understand them, **save the local ones**, and classify each as a fidelity
+**target**, a hard **constraint**, or **inspiration**. That role prevents a mood reference
+from silently becoming a pixel-match contract. When there are none, skip this and proceed
+with the spec.
 
 ## Gather + understand each reference
 - **Images / screenshots / mockups** — open and **view** them (the Read tool renders
@@ -32,26 +33,31 @@ original; copy it. For remote-only refs (a live Figma/URL), record the link in t
 ## Index in `references.md`
 ```markdown
 # References: <slug>
-| Ref | Type | Location | Shows / why it's a reference | Informs |
-|-----|------|----------|------------------------------|---------|
-| R1 | screenshot | references/login-mockup.png | target login layout + spacing | spec UI, slice 2, polish |
-| R2 | figma | https://figma.com/… (+ export references/tokens.png) | design tokens, component set | all UI |
-| R3 | video | references/checkout-flow.mp4 | expected step order + transitions | build, prove |
-| R4 | link | https://example.com | tone + density to match | craft |
+| Ref | Role | Type | Location | Shows / why it's a reference | Informs |
+|-----|------|------|----------|------------------------------|---------|
+| R1 | target | screenshot | references/login-mockup.png | approved login composition + spacing | spec UI, slice 2, proof |
+| R2 | constraint | figma | https://figma.com/… (+ export references/tokens.png) | required tokens + component set | all UI |
+| R3 | target | video | references/checkout-flow.mp4 | approved step order + transitions | build, proof |
+| R4 | inspiration | link | https://example.com | useful tone + density, not identity/layout | shape |
 ```
+
+Roles are normative: **target** means compare fidelity, **constraint** means satisfy the
+named rule, and **inspiration** means extract the cited principle without copying identity,
+composition, copy, or distinctive assets.
 
 ## Feed them into the spec + the design brief
 - Use references to sharpen `spec.md` (UI impact, success/acceptance — e.g. "matches R1").
 - When the feature touches UI, these references are the primary input to **`devrites-ux-shape`**
   (spec step 3a): they anchor the design direction and can seed the visual-direction probe
   (a Figma link → pulled design context; reference sites → screenshots). The resulting
-  `design-brief.md` cites them by R-id.
+  `design-brief.md` cites them by R-id **and role**.
 - A reference can *resolve a gap* ("which layout?") — record that in the gaps table.
 - If a reference **conflicts** with the existing design system, that's an issue to raise
   with the human (match the system, or adopt the reference — their call).
 
 ## Later phases use them (wire-through)
-`devrites-frontend-craft` builds **to** the references; `$rite-polish` compares the built
-UI **against** them; `$rite-prove` / `browser-evidence.md` verify against them; `$rite-seal`
-checks "matches the agreed design references" as acceptance. So save them once here and
-everything downstream can connect to them.
+`devrites-frontend-craft` builds to the approved brief and its **target** references,
+honors **constraints**, and uses **inspiration** only for the named principle. `$rite-prove`
+records rendered comparisons in `browser-evidence.md`; `$rite-polish` and `$rite-seal`
+reuse that same contract. Save and classify once here so every downstream phase makes the
+same fidelity decision.

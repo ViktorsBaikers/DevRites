@@ -12,6 +12,8 @@ Files likely touched:       # real paths from codebase inspection
 Tests/proof:                # command(s) or EVID-### that prove it
 Browser proof required:     # yes/no (yes if UI — see ../../rite-build/reference/frontend-trigger.md)
 Frontend craft required:    # yes/no
+Design brief states:        # UI only: states/interaction delivered
+Visual acceptance:          # UI only: state × viewport × input + target R-id/brief rule
 Mode: AFK | HITL
 Gate: advisory | validating | blocking | escalating
 Dependencies:               # SLICE-### IDs that must land first
@@ -24,8 +26,9 @@ Evidence required:          # what $rite-prove must capture
 2. Map each to a vertical slice (thinnest end-to-end cut).
 3. Order by dependency; risk-first within a tier (do the scary slice early while it's
    cheap to change).
-4. Mark which slices touch UI (→ frontend craft + browser proof) and which cross a
-   module/service boundary (→ `devrites-api-interface`, `devrites-doubt`).
+4. Mark which slices touch UI (→ frontend craft + browser proof), map each to the design
+   brief states, and give each a binary visual acceptance target. Mark which slices cross
+   a module/service boundary (→ `devrites-api-interface`, `devrites-doubt`).
 5. Write or update `traceability.md` so every `AC-###` maps to ≥1 `SLICE-###`, a
    planned proof, evidence status, and likely touched files.
 6. Sanity check: every acceptance criterion in `spec.md` maps to ≥1 slice; no slice has

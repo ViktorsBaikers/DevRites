@@ -102,7 +102,8 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    The human **may** attach screenshots, mockups, a Figma link, a video, or links — or
    **none at all** (perfectly normal; skip this step then). If any are given: **view/fetch**
    them, **save local files** into `.devrites/work/<slug>/references/`, and index them in
-   `references.md`. They become the target later phases verify against.
+   `references.md` as target, constraint, or inspiration. Later phases honor that role
+   rather than treating every reference as a fidelity target.
 3a. **Shape the UX/UI before code (if the feature touches UI)** — when this feature is
    frontend ([frontend-trigger](../rite-build/reference/frontend-trigger.md)), apply
    `devrites-ux-shape` **now**, woven into the spec — not as a separate phase. It turns the

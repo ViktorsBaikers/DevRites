@@ -79,10 +79,12 @@ pull these via `Read` when relevant:
    scripts, Makefile, CI configs, Gemfile/Rakefile, pyproject, go.mod, Cargo.toml.
 3. **Run the full relevant test suite** for the feature (not a single slice), then the
    relevant **build / typecheck / lint**.
-4. **UI feature?** Run the browser proof ladder over the feature's routes —
+4. **UI feature?** Read `design-brief.md` + `references.md`, then run the browser proof ladder over the feature's routes —
    [proof-ladder](reference/proof-ladder.md) + [browser-proof](reference/browser-proof.md)
    (`devrites-browser-proof`): routes, viewports, screenshots (opened + described),
-   console, network, interaction paths, and design-reference match if references exist.
+   console, network, interaction paths, and the brief's proof targets. Compare screenshots
+   with target references, record deltas, fix/re-render, and do not pass with an unresolved
+   material mismatch.
 5. **Map results to acceptance** — walk `spec.md` acceptance criteria; note which are now
    proven and which aren't. **If the spec uses the structured grammar** (`### Requirement:` /
    `#### Scenario:` blocks — `spec-grammar.md`), walk it **per scenario**: each `#### Scenario:`

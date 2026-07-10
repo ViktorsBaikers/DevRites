@@ -44,7 +44,8 @@ What must exist before what (text is fine):
 Ordered slice list + the reason for the order (risk-first within a dependency tier).
 
 ## Validation strategy
-After which slices to run tests / build / browser proof.
+After which slices to run tests / build / browser proof. For UI slices, name the visual
+acceptance targets from `design-brief.md`, not a generic "looks good" check.
 
 ## Complexity & deviations gate
 List anything that deviates from DevRites defaults (prefer existing conventions, the
@@ -70,6 +71,7 @@ decisions.md / evidence.md when used.
 - [ ] No unjustified deviation remains in the complexity gate
 - [ ] Rollback exists for every destructive / migration step
 - [ ] Every `Mode: HITL` slice has `Gate`, `SLA`, and `Checkpoint` populated
+- [ ] Every UI slice names `Design brief states` and binary `Visual acceptance`
 - [ ] Any wide mechanical refactor is sliced expand → migrate batches → contract, with green migrate batches or an integration branch + final verify slice
 - [ ] No `Gate: blocking` slice is implicitly chained behind an AFK slice without surfacing the dependency
 ```

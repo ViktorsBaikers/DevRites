@@ -31,7 +31,8 @@ gathered:
   proven component behaviors) earlier features sealed via `../rite-ship/reference/design-memory.md`;
   treat it as the inherited system — read it before re-discovering, depart only on signal.
 - `references.md` + `references/` — the screenshots / Figma / video / links the human
-  supplied. When present they are the **build target**, not inspiration.
+  supplied. Honor each recorded role: **target** = fidelity contract, **constraint** =
+  required rule, **inspiration** = extract only the cited principle.
 
 ## 2. Discovery — one round, assert-then-confirm
 Understand the feature deeply enough to make excellent design calls — **no code, no
@@ -42,10 +43,11 @@ confirm** ("reads as Restrained — confirm?"), don't offer a four-option menu. 
 - **Purpose & user** — who, in what state of mind (rushed / exploring / anxious / focused).
 - **Content & data** — realistic ranges (0 / typical / many), dynamic content, real
   media/assets the surface needs.
-- **Anti-goals** — what this must NOT be; the biggest risk of getting it wrong.
+- **Preserve + anti-goals** — identity, IA, behavior, copy, or assets that must survive;
+  what this must NOT become; the biggest risk of getting it wrong.
 
 ## 3. Design direction — the direction set (commit, don't hedge)
-One deliberate visual decision on four fronts, each anchored in an existing reference so
+One deliberate visual decision on five fronts, each anchored in an existing reference so
 the call is checkable, not taste:
 - **Scene sentence** — who / where / ambient light / mood, per
   `../devrites-frontend-craft/reference/design-references.md`. Forces dark-vs-light and
@@ -59,6 +61,9 @@ the call is checkable, not taste:
   launch hero → Airy + Expressive).
 - **Named anchor references** — 2-3 *specific* products / brands / objects to steer toward
   (not adjectives like "modern" or "clean"), plus the saved `references/` files.
+- **Visual thesis** — the focal point and hierarchy in one sentence, plus one memorable
+  move (or `none — system continuity`) and the obvious-but-wrong direction rejected. This
+  creates intentional distinction without forcing novelty into product UI.
 
 Respect the existing identity (default, ~90%); depart only on an explicit signal.
 
@@ -73,8 +78,10 @@ List every state the feature needs and what the user must see/feel in each (defa
 loading initial+subsequent, empty→next-action, error→recovery, success, disabled/
 no-permission, long-content/overflow), the information hierarchy (what's seen 1st / 2nd /
 3rd; primary action unmistakable), responsive reflow, a11y must-haves, and the interaction
-model (inline vs navigated vs — rarely — modal; optimistic vs pending; feedback). Canonical
-state list: `../devrites-frontend-craft/reference/shape.md`.
+model (inline vs navigated vs — rarely — modal; optimistic vs pending; feedback). Name the
+representative states, viewports, input modes, and target R-ids that will prove the result;
+"looks polished" is not a proof target. Canonical state list:
+`../devrites-frontend-craft/reference/shape.md`.
 
 ## 6. Visual-direction probe — capability-gated
 When the work is net-new or directionally ambiguous and fidelity ≥ mid-fi, pressure-test
@@ -116,6 +123,7 @@ Next: /rite-define (UI slices map to the brief's states) — or /rite-build refi
 - Never finalize the brief without naming the **primary action** and the **full state set**
   (not just the happy path).
 - Never decide visual direction by taste when the project has a system — discover first.
+- Never treat an **inspiration** reference as a fidelity target — honor its recorded role.
 - Never skip the HITL confirmation pause "because the brief is obviously right" — ask once,
   wait.
 - Never re-derive the brief from scratch in `/rite-build` — refine the existing one.

@@ -15,9 +15,12 @@ step. Don't pad a clear brief into a long one to look thorough.
 Slug: <kebab>   Shaped: <iso>   Register: brand | product   Fidelity: <sketch|mid-fi|high-fi|production>
 
 - **Building**: <one line — what + who it's for + the primary action>
-- **Direction**: <color strategy> · density <airy|balanced|dense>/motion <minimal|standard|expressive> · "<scene sentence>" · anchors: <ref A, ref B>  (+ references/<file> R-ids)
+- **Thesis**: <focal point + hierarchy> · memorable move: <one move | none — system continuity> · preserve/avoid: <identity + anti-goal>
+- **Direction**: <color strategy> · density <airy|balanced|dense>/motion <minimal|standard|expressive> · "<scene sentence>" · targets: <R-ids> · constraints: <R-ids> · inspiration: <R-ids>
+- **Locks**: accent <token> · radius <scale> · theme <light|dark>
 - **States**: <the states this surface needs, comma-listed>
 - **Interaction**: <inline / navigated / modal · feedback · entry→completion in a phrase>
+- **Proof**: <states × viewports × input modes; target R-ids; zero material visual mismatches>
 - **Confirm or override?** <the one or two things you still want the user to confirm>
 ```
 
@@ -27,7 +30,8 @@ Slug: <kebab>   Shaped: <iso>   Register: brand | product   Fidelity: <sketch|mi
 Slug: <kebab>   Shaped: <iso>   Register: brand | product
 
 ## 1. Summary
-What this is, who it's for, what it must accomplish (2-3 sentences).
+What this is, who it's for, what it must accomplish, what existing identity/behavior must
+survive, and the anti-goal (2-3 sentences).
 
 ## 2. Primary action
 The single most important thing the user does or understands here. Everything else is secondary.
@@ -36,7 +40,11 @@ The single most important thing the user does or understands here. Everything el
 - Color strategy: Restrained | Committed | Multi-role | Saturated — why (from the scene, not the category).
 - Calibration: density Airy | Balanced | Dense · motion Minimal | Standard | Expressive — from the scene (`../../devrites-frontend-craft/reference/quality-standards.md` — Calibration).
 - Scene sentence: "<who uses it, where, under what light, in what mood>".
-- Named anchors: <2-3 specific products / brands / objects> + saved references (R-ids → references/<file>).
+- Visual thesis: <focal point + 1st/2nd/3rd hierarchy> · memorable move: <one | none — system continuity>.
+- References by role: targets <R-ids> · constraints <R-ids> · inspiration <R-ids>.
+- Locks: one accent <token> · one radius scale · one theme — held page-wide
+  (`../../devrites-frontend-craft/reference/quality-standards.md` — Consistency locks).
+- Rejected direction: <the obvious-but-wrong direction + why>.
 - Departure: default (preserve identity) | departing because <explicit signal>.
 
 ## 4. Scope  *(task-scoped — not persisted to PRODUCT.md / DESIGN.md)*
@@ -74,7 +82,12 @@ keyboard, target size. Floor: `../../devrites-frontend-craft/reference/quality-s
 Which probe ran (figma / images / prototype / skipped — no tool), which direction won, what
 changed in the brief because of it. Artifacts saved under `references/`.
 
-## 11. Open questions
+## 11. Proof targets
+Representative states × viewports × input modes, the target R-ids or brief rules each
+render is compared with, and the exact interaction/accessibility checks. A visual pass
+requires zero unresolved **material** mismatch; accepted departures are recorded below.
+
+## 12. Open questions
 Genuinely unresolved only. If you'd write "Recommend: X", decide X instead.
 
 ## Build-time refinements  *(appended by devrites-frontend-craft per slice)*
@@ -82,12 +95,12 @@ Genuinely unresolved only. If you'd write "Recommend: X", decide X instead.
 ```
 
 ## How downstream phases use it
-- `/rite-define` — UI slices map to the **Key states** + **Interaction model**; each UI
-  slice names which states it covers.
+- `/rite-define` — UI slices map to the **Key states**, **Interaction model**, and **Proof
+  targets**; each UI slice names the visual acceptance it proves.
 - `/rite-build` + `devrites-frontend-craft` — build **to** the brief; refine per slice;
   append refinements above instead of re-deriving.
-- `/rite-prove` + `browser-evidence.md` — verify the built UI against the brief's states +
-  references.
+- `/rite-prove` + `browser-evidence.md` — render the proof targets, compare against the
+  brief + target references, and close material deltas.
 - `/rite-polish` — Phase 4 reads the brief so polish honors the agreed direction.
 - `/rite-seal` + `devrites-frontend-reviewer` — check the UI matches the brief (states
   covered, direction held, references matched).

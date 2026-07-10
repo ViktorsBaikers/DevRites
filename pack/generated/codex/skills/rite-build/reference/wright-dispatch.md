@@ -34,6 +34,7 @@ Workspace: .devrites/work/<slug>/
 Slice: <id — name>
 Goal: <one or two sentences>
 Acceptance criteria: <the slice's criteria, verbatim>
+UI visual acceptance: <if UI — state × viewport × input + target R-id/brief rule, verbatim from tasks.md>
 Scope boundary: <what it WILL and will NOT touch>
 Mode: <HITL | AFK>   (+ AFK budget note if a cap is set)
 
@@ -48,7 +49,8 @@ Test completeness: write ≥1 asserting test for EVERY interactive element + use
   element/flow list from the slice's own UI surface and cover it the same way.
 
 Apply your documented discipline (orient → RED → implement smallest complete → verify →
-return). Frontend slice → build to design-brief.md with devrites-frontend-craft. Uncertain
+return). Frontend slice → build to design-brief.md with devrites-frontend-craft and close
+the slice's visual-acceptance deltas before returning. Uncertain
 framework fact → verify at the source. Code + tests only — do NOT write the workspace
 bookkeeping files; return that data. Return your structured artifact, not your transcript.
 ```
