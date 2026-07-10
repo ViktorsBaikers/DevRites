@@ -223,3 +223,6 @@ and **show the human a short diff of what changed** in `spec.md` (acceptance cri
 removed / reworded) before proceeding. A spec edit reviewed as a diff catches silent scope
 drift that a full re-read buries; this is the spec-review view (`$rite-spec --review` renders
 just the diff + the open-question delta, no re-investigation).
+
+When the ask overlaps the ACTIVE feature (same intent, >50% scope), route to
+`$rite-plan revise` — its gate decides — rather than minting a parallel workspace.

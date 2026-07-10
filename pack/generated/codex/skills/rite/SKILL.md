@@ -22,8 +22,8 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 You are the DevRites entry point. Two modes:
 
-- **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a workflow phase. Do not read `state.md` / run evidence checks / list artifacts — that's `$rite-status`.
-- **Verb arg** → dispatch to the matching `rite-<verb>` skill (see "Dispatch" below). The router is a pass-through: `$rite spec foo` ≡ `$rite-spec foo`; the called skill owns the output.
+- **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a phase or read `state.md` — status is `$rite-status`.
+- **Verb arg** → pass-through dispatch to the matching `rite-<verb>` skill (`$rite spec foo` ≡ `$rite-spec foo`); the called skill owns the output.
 
 When the user asks which rite fits, load [`devrites-lib/reference/intent-map.md`](../devrites-lib/reference/intent-map.md).
 When they ask how phases connect, load [`reference/menu.md`](reference/menu.md).
@@ -39,44 +39,54 @@ F=.agents/skills/rite-$V/SKILL.md
 # Then Read "$F" and follow its workflow with $ARGS as that skill's $ARGUMENTS.
 ```
 
-| Verb | Equivalent shortcut | Skill |
-|---|---|---|
-| `spec [feature]` | `$rite-spec` | start a feature — investigate + write spec.md |
-| `adopt [area]` | `$rite-adopt` | onboard an existing codebase — reverse-derive spec.md + seed conventions |
-| `temper [--mode]` | `$rite-temper` | optional strategic spec review (scope mode + pre-mortem) before define |
-| `define` | `$rite-define` | turn the spec into plan + task slices |
-| `vet [--cross-model]` | `$rite-vet` | optional engineering plan review (scope · architecture · tests · perf) before build |
-| `plan [mode]` | `$rite-plan` | reshape / reslice / repair an active plan |
-| `build [slice]` | `$rite-build` | implement exactly one vertical slice, then stop |
-| `converge [slug]` | `$rite-converge` | recovery — assess live code vs intent, append remaining work as new slices |
-| `prove` | `$rite-prove` | full tests + browser proof |
-| `polish [mode]` | `$rite-polish` | code + UI polish |
-| `review [scope]` | `$rite-review` | multi-axis feature review |
-| `seal` | `$rite-seal` | final GO / NO-GO decision |
-| `ship` | `$rite-ship` | type-GO + commit/push/tag, then archive the task |
-| `status [slug]` | `$rite-status` | active feature, next action, evidence |
-| `doctor` | `$rite-doctor` | health check — install integrity, stale ACTIVE, orphaned gates, hook wiring, merge/rebase state |
-| `learn [--mine \| "<lesson>"]` | `$rite-learn` | review the captured learning ledger → promote recurring lessons to project rules / principles |
-| `pov [candidate]` | `$rite-pov` | project-grounded verdict on adopting / switching / rejecting an external option |
-| `dogfood [--port N]` | `$rite-dogfood` | diff-scoped browser QA by user journey |
-| `pr-feedback [PR\|thread]` | `$rite-pr-feedback` | fix, reply to, and resolve PR review feedback |
-| `customize [override <agent> \| extension <name>]` | `$rite-customize` | author a project-local override or extension, then validate it |
-| `use <slug>` | (inline) | switch the active feature — re-point `.devrites/ACTIVE` |
-| `resolve <qid> "<answer>"` | `$rite-resolve` | answer a HITL gate |
-| `prototype [question]` | `$rite-prototype` | throwaway prototype |
-| `handoff [focus]` | `$rite-handoff` | compact chat → handoff doc |
-| `zoom-out` | `$rite-zoom-out` | structural map of unfamiliar code |
-| `pressure-test` | `$rite-pressure-test` | diverge → converge on a rough idea |
-| `autocomplete [idea] [--ship]` | `$rite-autocomplete` | run the whole lifecycle unattended |
-| `quick [change]` | `$rite-quick` | express lane — one small reversible change, build → prove → ship |
-| `frame [task]` | `$rite-frame` | pre-flight goal-reframe + four-failure-mode self-audit for ad-hoc / express work |
+What each verb does lives once, in the Menu below; this table is the dispatch map only.
 
-The `/rite-<verb>` standalones remain user-invocable as direct shortcuts; both forms hit the same skill. Use whichever reads more naturally — the menu form (`$rite spec`) for discovery, the shortcut (`$rite-spec`) for muscle memory.
+| Verb | Skill |
+|---|---|
+| `spec [feature]` | `$rite-spec` |
+| `adopt [area]` | `$rite-adopt` |
+| `temper [--mode]` | `$rite-temper` |
+| `define` | `$rite-define` |
+| `vet [--cross-model]` | `$rite-vet` |
+| `plan [mode]` | `$rite-plan` |
+| `build [slice]` | `$rite-build` |
+| `converge [slug]` | `$rite-converge` |
+| `prove` | `$rite-prove` |
+| `polish [mode]` | `$rite-polish` |
+| `review [scope]` | `$rite-review` |
+| `seal` | `$rite-seal` |
+| `ship` | `$rite-ship` |
+| `status [slug]` | `$rite-status` |
+| `doctor` | `$rite-doctor` |
+| `learn [--mine \| "<lesson>"]` | `$rite-learn` |
+| `pov [candidate]` | `$rite-pov` |
+| `dogfood [--port N]` | `$rite-dogfood` |
+| `pr-feedback [PR\|thread]` | `$rite-pr-feedback` |
+| `customize [override <agent> \| extension <name>]` | `$rite-customize` |
+| `use <slug>` | (inline) |
+| `guide` | (inline) |
+| `resolve <qid> "<answer>"` | `$rite-resolve` |
+| `prototype [question]` | `$rite-prototype` |
+| `handoff [focus]` | `$rite-handoff` |
+| `zoom-out` | `$rite-zoom-out` |
+| `pressure-test` | `$rite-pressure-test` |
+| `autocomplete [idea] [--ship]` | `$rite-autocomplete` |
+| `quick [change]` | `$rite-quick` |
+| `frame [task]` | `$rite-frame` |
+
+Both forms hit the same skill — the menu form for discovery, the `/rite-<verb>` shortcut for muscle memory.
 
 `use <slug>` is handled **inline** — there is no `rite-use` skill. Confirm
 `.devrites/work/<slug>/` exists, then re-point `.devrites/ACTIVE` to `<slug>` and report
 the now-active feature. It is cheap context-switching only — no re-spec, no phase run. If
 the workspace is missing, list the slugs under `.devrites/work/` and stop.
+
+`guide` is also inline — a first-feature walkthrough that teaches the lifecycle by running
+it. Agree on one **real, genuinely small** change, then dispatch the normal phases in order
+(spec → define → build → prove → seal → ship). Per phase, exactly two narration beats:
+before, what it will decide; after, what it wrote in `.devrites/work/<slug>/` and why. Walk
+every phase — the small change is what makes the full ceremony affordable to watch. Pause
+at each boundary for the user's go-ahead. Teach without lecturing.
 
 Specialist triggers (model-invoked inside the above):
 `devrites-frontend-craft` (UI) · `devrites-browser-proof` (UI verify) ·
@@ -92,15 +102,10 @@ Reply-contract exception: `$rite` is the menu/router, not a workspace completion
 Called phase skills own the shared completion reply contract
 ([`reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 
-1. **Verb in `$ARGUMENTS`** → dispatch per the table above. The called skill owns the response.
-2. **No args** → run `devrites-engine first-task`; render its one-line recommendation, then the menu below, then stop.
+1. **Verb in `$ARGUMENTS`** → dispatch per the table above.
+2. **No args** → menu mode, as above.
 3. **Unrecognized first token** → tell the user the known verbs and stop. Don't guess.
 4. **No active feature** and the user asked "where am I" or named no verb → point at `$rite spec <feature>` (or `$rite-spec`). Don't summarize state yourself — `$rite status` (or `$rite-status`) owns that.
-
-## Gotchas
-- No args → run `devrites-engine first-task`, render the suggested starting loop, then the menu and stop. Don't execute a phase, read `state.md`, or summarize status — that's `$rite-status`.
-- Unrecognized first token → list the known verbs and stop; never guess which phase the user meant.
-- Pure pass-through: dispatch to the `rite-<verb>` skill and let it own the output; don't do the phase's work in the router.
 
 ## Menu
 
@@ -128,6 +133,7 @@ DOGFOOD       $rite dogfood ...        ≡    $rite-dogfood     browser QA by ch
 PR FEEDBACK   $rite pr-feedback ...    ≡    $rite-pr-feedback fix and resolve PR review threads
 CUSTOMIZE     $rite customize ...      ≡    $rite-customize   author overrides/extensions without forking the pack
 SWITCH        $rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
+GUIDE         $rite guide                                     first feature, guided — full lifecycle on one small real change (inline)
 RESUME        $rite resolve ...        ≡    $rite-resolve     answer a HITL checkpoint
 AUTO          $rite autocomplete ...   ≡    $rite-autocomplete  run the whole lifecycle unattended (--ship to push)
 QUICK         $rite quick <change>     ≡    $rite-quick       express lane — one small reversible change (escalates if it grows)

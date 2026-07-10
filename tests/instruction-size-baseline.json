@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 992900,
+  "total_bytes": 992413,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 7443,
     "pack/.claude/agents/devrites-devex-reviewer.md": 7176,
@@ -44,7 +44,7 @@
     "pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md": 4806,
     "pack/.claude/skills/devrites-lib/reference/standards/browser-proof-checklist.md": 405,
     "pack/.claude/skills/devrites-lib/reference/standards/ci-cd.md": 4298,
-    "pack/.claude/skills/devrites-lib/reference/standards/code-review.md": 8690,
+    "pack/.claude/skills/devrites-lib/reference/standards/code-review.md": 9065,
     "pack/.claude/skills/devrites-lib/reference/standards/coding-style.md": 2991,
     "pack/.claude/skills/devrites-lib/reference/standards/context-hygiene.md": 7587,
     "pack/.claude/skills/devrites-lib/reference/standards/core.md": 7945,
@@ -127,7 +127,7 @@
     "pack/.claude/skills/rite-plan/reference/replan-and-repair.md": 2029,
     "pack/.claude/skills/rite-plan/reference/slicing.md": 3572,
     "pack/.claude/skills/rite-plan/reference/task-breakdown.md": 2567,
-    "pack/.claude/skills/rite-plan/SKILL.md": 6207,
+    "pack/.claude/skills/rite-plan/SKILL.md": 6543,
     "pack/.claude/skills/rite-polish/reference/anti-ai-slop.md": 12522,
     "pack/.claude/skills/rite-polish/reference/anti-patterns.md": 2064,
     "pack/.claude/skills/rite-polish/reference/backend-polish.md": 4285,
@@ -139,7 +139,7 @@
     "pack/.claude/skills/rite-polish/SKILL.md": 4582,
     "pack/.claude/skills/rite-pov/SKILL.md": 3393,
     "pack/.claude/skills/rite-pr-feedback/SKILL.md": 2639,
-    "pack/.claude/skills/rite-pressure-test/SKILL.md": 4102,
+    "pack/.claude/skills/rite-pressure-test/SKILL.md": 4280,
     "pack/.claude/skills/rite-prototype/SKILL.md": 5404,
     "pack/.claude/skills/rite-prove/reference/anti-patterns.md": 1425,
     "pack/.claude/skills/rite-prove/reference/browser-proof.md": 2451,
@@ -186,7 +186,7 @@
     "pack/.claude/skills/rite-spec/reference/spec-checklists.md": 4656,
     "pack/.claude/skills/rite-spec/reference/spec-template.md": 4128,
     "pack/.claude/skills/rite-spec/reference/state-workspace.md": 4474,
-    "pack/.claude/skills/rite-spec/SKILL.md": 16794,
+    "pack/.claude/skills/rite-spec/SKILL.md": 16959,
     "pack/.claude/skills/rite-status/SKILL.md": 5137,
     "pack/.claude/skills/rite-temper/reference/anti-patterns.md": 2985,
     "pack/.claude/skills/rite-temper/reference/review-dimensions.md": 4532,
@@ -203,6 +203,6 @@
     "pack/.claude/skills/rite-vet/SKILL.md": 16349,
     "pack/.claude/skills/rite-zoom-out/SKILL.md": 3512,
     "pack/.claude/skills/rite/reference/menu.md": 3234,
-    "pack/.claude/skills/rite/SKILL.md": 10325
+    "pack/.claude/skills/rite/SKILL.md": 8784
   }
 }
