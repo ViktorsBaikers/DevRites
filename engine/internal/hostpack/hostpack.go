@@ -76,6 +76,14 @@ var CodexAgentsMerge = MarkerMerge{
 	MarkerText: "AGENTS.md contains a DevRites managed block between BEGIN/END DEVRITES CODEX markers.",
 }
 
+var ClaudeSettingsMerge = JSONMerge{
+	PayloadRel: "claude/settings.json",
+	TargetRel:  ".claude/settings.json",
+	MarkerRel:  ".claude/devrites.claude-hooks-merge",
+	MarkerText: ".claude/settings.json contains DevRites managed hook entries.",
+	DryRunText: ".claude/settings.json (DevRites hooks)",
+}
+
 var CodexHooksMerge = JSONMerge{
 	PayloadRel: "codex/hooks.json",
 	TargetRel:  ".codex/hooks.json",
@@ -98,6 +106,11 @@ var managedMerges = []ManagedMerge{
 		Begin:     "# BEGIN DEVRITES CODEX MCP",
 		End:       "# END DEVRITES CODEX MCP",
 		DryRun:    ".codex/config.toml DevRites MCP block",
+	},
+	{
+		MarkerRel: ClaudeSettingsMerge.MarkerRel,
+		TargetRel: ClaudeSettingsMerge.TargetRel,
+		DryRun:    ".claude/settings.json DevRites hooks",
 	},
 	{
 		MarkerRel: CodexHooksMerge.MarkerRel,

@@ -182,6 +182,131 @@ func TestMarkerMergeAndUninstallPreserveUserContent(t *testing.T) {
 	}
 }
 
+func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	testutil.WriteFile(t, filepath.Join(payload, "claude", "settings.json"), `{
+  "statusLine": {"type":"command","command":"devrites-engine hook statusline --harness=claude"},
+  "hooks": {
+    "Stop": [{"hooks":[{"type":"command","command":"devrites-engine hook stop-gate --harness=claude"}]}],
+    "SessionStart": [{"hooks":[{"type":"command","command":"devrites-engine hook orient --harness=claude"}]}]
+  }
+}`+"\n")
+	target := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(target, ".claude", "settings.json"), `{
+  "$comment": "DevRites hooks — keep my local notes",
+  "theme": "dark",
+  "statusLine": {"type":"command","command":"DEVRITES_THEME=dark echo user-status"},
+  "hooks": {"Stop":[{"hooks":[
+    {"type":"command","command":"echo user-stop"},
+    {"type":"command","command":"devrites-engine hook old-gate --harness=claude"}
+  ]}]}
+}`+"\n")
+
+	var stderr bytes.Buffer
+	runInstall(t, target, payload, func(o *Options) { o.Stderr = &stderr })
+	runInstall(t, target, payload, func(o *Options) { o.Stderr = &stderr })
+
+	settings := testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
+	for _, preserved := range []string{"DevRites hooks — keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
+		if !strings.Contains(settings, preserved) {
+			t.Fatalf("Claude settings lost user content %q:\n%s", preserved, settings)
+		}
+	}
+	for _, command := range []string{"devrites-engine hook stop-gate", "devrites-engine hook orient"} {
+		if strings.Count(settings, command) != 1 {
+			t.Fatalf("Claude hook %q was not merged exactly once:\n%s", command, settings)
+		}
+	}
+	if !strings.Contains(stderr.String(), "preserved existing Claude statusLine") {
+		t.Fatalf("missing statusLine conflict warning:\n%s", stderr.String())
+	}
+	manifest := testutil.ReadFile(t, filepath.Join(target, ManifestName))
+	if !strings.Contains(manifest, "\n.claude/devrites.claude-hooks-merge\n") {
+		t.Fatalf("Claude hook merge marker missing:\n%s", manifest)
+	}
+
+	runUninstall(t, target)
+	settings = testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
+	for _, preserved := range []string{"DevRites hooks — keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
+		if !strings.Contains(settings, preserved) {
+			t.Fatalf("Claude settings uninstall lost user content %q:\n%s", preserved, settings)
+		}
+	}
+	if strings.Contains(settings, "devrites-engine hook") {
+		t.Fatalf("Claude settings uninstall left DevRites hooks:\n%s", settings)
+	}
+}
+
+func TestInstallKeepsClaudeMergeOwnershipAcrossReinstall(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	testutil.WriteFile(t, filepath.Join(payload, "claude", "settings.json"), `{
+  "hooks": {"Stop":[{"hooks":[{"type":"command","command":"devrites-engine hook stop-gate --harness=claude"}]}]}
+}`+"\n")
+	target := t.TempDir()
+	settingsPath := filepath.Join(target, ".claude", "settings.json")
+	testutil.WriteFile(t, settingsPath, "{}\n")
+
+	runInstall(t, target, payload, func(o *Options) {})
+	markerRel := ".claude/devrites.claude-hooks-merge"
+	if !exists(filepath.Join(target, filepath.FromSlash(markerRel))) {
+		t.Fatal("first install did not create the Claude hook merge marker")
+	}
+	if !readManifest(filepath.Join(target, ManifestName))[markerRel] {
+		t.Fatalf("first install did not record the Claude hook merge marker:\n%s", testutil.ReadFile(t, filepath.Join(target, ManifestName)))
+	}
+	runInstall(t, target, payload, func(o *Options) {})
+
+	settings := testutil.ReadFile(t, settingsPath)
+	if strings.Count(settings, "devrites-engine hook stop-gate") != 1 {
+		t.Fatalf("Claude hooks lost merge ownership on reinstall (marker exists: %t):\nsettings:\n%s\nmanifest:\n%s",
+			exists(filepath.Join(target, filepath.FromSlash(markerRel))), settings, testutil.ReadFile(t, filepath.Join(target, ManifestName)))
+	}
+	manifest := testutil.ReadFile(t, filepath.Join(target, ManifestName))
+	if !strings.Contains(manifest, "\n.claude/devrites.claude-hooks-merge\n") {
+		t.Fatalf("Claude hook merge marker missing after reinstall:\n%s", manifest)
+	}
+
+	runUninstall(t, target)
+	if got := testutil.ReadFile(t, settingsPath); got != "{}\n" {
+		t.Fatalf("uninstall did not preserve the pre-existing empty settings file: %q", got)
+	}
+}
+
+func TestInstallRefreshesSeededClaudeHooksWithoutManagingSettings(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	settingsPayload := filepath.Join(payload, "claude", "settings.json")
+	testutil.WriteFile(t, settingsPayload, `{
+  "$comment": "DevRites hooks",
+  "hooks": {"Stop":[{"hooks":[{"type":"command","command":"bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-stop-gate.sh\""}]}]}
+}`+"\n")
+	target := t.TempDir()
+
+	runInstall(t, target, payload, func(o *Options) {})
+	testutil.WriteFile(t, settingsPayload, `{
+  "$comment": "DevRites hooks — auto-approve the read-only orientation/gate scripts.",
+  "hooks": {"Stop":[{"hooks":[{"type":"command","command":"devrites-engine hook new-gate --harness=claude"}]}]}
+}`+"\n")
+	runInstall(t, target, payload, func(o *Options) {})
+
+	settings := testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
+	if strings.Contains(settings, ".claude/hooks/devrites-") || strings.Count(settings, "new-gate") != 1 {
+		t.Fatalf("seeded Claude hooks were not refreshed:\n%s", settings)
+	}
+	manifest := testutil.ReadFile(t, filepath.Join(target, ManifestName))
+	if strings.Contains(manifest, ".claude/devrites.claude-hooks-merge") {
+		t.Fatalf("seeded Claude settings became merge-managed:\n%s", manifest)
+	}
+
+	runUninstall(t, target)
+	settings = testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
+	if !strings.Contains(settings, "new-gate") {
+		t.Fatalf("uninstall removed refreshed seeded Claude settings:\n%s", settings)
+	}
+}
+
 func TestGeneratedPayloadInstallsVerbatim(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	payload := testPayload(t)
