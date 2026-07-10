@@ -52,7 +52,7 @@ only; `$rite-ship` owns irreversible git/publish/deploy actions.
    `decisions.md`, `assumptions.md`, `questions.md`, `drift.md`, `evidence.md`,
    `browser-evidence.md`, `polish-report.md`, `review.md`, `design-brief.md` (if UI),
    `devex.md` (if a developer-facing surface), `strategy.md` (if present), and the **final diff**. If a code-intelligence index is available
-   (codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods LSP / Read/Grep/Glob — see `.agents/skills/devrites-lib/reference/standards/tooling.md`), use it for
+   (see `.agents/skills/devrites-lib/reference/standards/tooling.md`), use it for
    blast-radius checks on the final diff in step 5; context7 if available can confirm a current
    external-API signature a reviewer flags.
 2. Check **acceptance criteria one by one** — first run `devrites-engine spec-validate .devrites/work/<slug>`;

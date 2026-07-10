@@ -47,10 +47,20 @@ What must exist before what (text is fine):
 
 ## Implementation order
 Ordered slice list + the reason for the order (risk-first within a dependency tier).
+`MVP cut: after SLICE-00N — <what ships if we stop here>` — the earliest prefix of the order
+that is a coherent, shippable feature on its own. This is the pre-agreed retreat position when
+the feature stalls or `/rite-plan` pivots: every acceptance criterion above the cut is proven by
+slices above the cut, and no slice above it depends on one below.
 
 ## Validation strategy
 After which slices to run tests / build / browser proof. For UI slices, name the visual
 acceptance targets from `design-brief.md`, not a generic "looks good" check.
+
+**Key links** — the wiring the assembled feature must exhibit, one row each:
+`<from> → <to> via <mechanism>` (route → handler via registration; producer → consumer via
+event). List only cross-slice links whose absence no single
+slice's tests would catch — `/rite-prove` walks each (step 5d). `Key links: none` is a
+deliberate single-slice call.
 
 ## Complexity & deviations gate
 List anything that deviates from DevRites defaults (prefer existing conventions, the
@@ -73,10 +83,12 @@ decisions.md / evidence.md when used.
 ## Readiness gate  *(must pass before /rite-build)*
 - [ ] Every spec acceptance criterion is covered by a slice
 - [ ] Dependency order is acyclic and risk-first
+- [ ] An `MVP cut` is named, self-contained (ACs above the cut proven above the cut, no dependency reaching below), and marks a genuinely shippable scope
 - [ ] No unjustified deviation remains in the complexity gate
 - [ ] Rollback exists for every destructive / migration step
 - [ ] Every `Mode: HITL` slice has `Gate`, `SLA`, and `Checkpoint` populated
 - [ ] Every UI slice names `Design brief states` and binary `Visual acceptance`
+- [ ] `Key links` rows cover every cross-slice wiring (or state `none`)
 - [ ] Any wide mechanical refactor is sliced expand → migrate batches → contract, with green migrate batches or an integration branch + final verify slice
 - [ ] No `Gate: blocking` slice is implicitly chained behind an AFK slice without surfacing the dependency
 ```

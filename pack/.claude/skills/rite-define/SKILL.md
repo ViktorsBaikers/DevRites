@@ -14,9 +14,8 @@ spec, architecture, plan, tasks, and traceability keeps each file small and phas
 **No code here.**
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. DevRites skills Read `.claude/skills/devrites-lib/reference/standards/core.md`
-as their first step; the other rule files load on demand. Pull these via `Read` when shaping
-the plan:
+**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first; the other
+rule files load on demand. Pull these via `Read` when shaping the plan:
 - `development-workflow.md` — small batches, trunk-always-green, definition of done.
 - `principles.md` — the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
 - `documentation.md` — record plan-time decisions and rationale.
@@ -67,8 +66,8 @@ the plan:
    `architecture.md` for owning layer, boundaries, integration points, data/API/events,
    dependencies, risks, and affected areas; write only the build strategy in `plan.md`.
    Use a
-   code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
-   (see `.claude/skills/devrites-lib/reference/standards/tooling.md`) — for structure/impact; for the current API or behaviour of
+   code-intelligence index if available (see
+   `.claude/skills/devrites-lib/reference/standards/tooling.md`) for structure/impact; for the current API or behaviour of
    an external library/framework the architecture will rely on, consult context7 if available.
    Record significant options in `decisions.md` as `DEC-###` ADR entries.
    **Deep-modules check** — while sketching the major modules, look for opportunities

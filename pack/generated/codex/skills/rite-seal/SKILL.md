@@ -1,7 +1,7 @@
 ---
 name: rite-seal
 description: Decide GO / NO-GO readiness on the active feature. Use when the user asks "seal this", "GO / NO-GO", "decide if we can ship", "can we ship", or "safe to merge". Not for commit/push/tag/close; use $rite-ship.
-argument-hint: "[feature-slug]"
+argument-hint: "[feature-slug] [--full]"
 user-invocable: true
 ---
 
@@ -14,6 +14,7 @@ This is the Codex mirror of a DevRites skill. In Codex:
 - When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
 - The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence.
 - Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers — NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # $rite-seal — GO / NO-GO
@@ -54,9 +55,11 @@ Read `review.md` and the latest reviewer outputs.
 | `Critical == 0` and `Important == 0` and acceptance proven and drift resolved | **GO** (proceed) |
 | `Critical == 0` and `Important > 0` and acceptance proven and drift resolved | Render interactive prompt: *"`Important > 0` open. Proceed to seal? [y/N]"*. Default **N**. If the user types `y`, GO; otherwise NO-GO with the open Important findings listed as blockers-by-policy. |
 | `Critical > 0` | **NO-GO**, no exceptions. List every Critical with `file:line` and fix direction. |
-| Any acceptance criterion unproven, or any bespoke `Prohibitions (must-NOT)` `resolved/test` row lacks linked proof | **NO-GO**, list the unproven criteria/prohibitions. |
+| Any acceptance criterion unproven, any bespoke `Prohibitions (must-NOT)` `resolved/test` row lacking linked proof, or any `plan.md` Key links row with no covering `EVID-###` wiring check (built-but-not-wired; `none declared` → n/a) | **NO-GO**, list the unproven criteria/prohibitions/links. |
+| Any criterion tagged `proof: judgment` in `evidence.md` (untagged reads `judgment`) | Judgment proof needs a human eye. HITL: enumerate them in the verdict digest — the human's GO covers them. AFK: **no auto-GO** — append a `gate: validating` question listing them and stop. |
 | Fan-out roster incomplete — `devrites-engine footprint roster` rc=3 (a reviewer neither dispatched nor skip-recorded) | **NO-GO** on the review's *completeness*, not a verdict on the diff: dispatch the missing reviewer or record a justified skip, then re-seal. Same standing as an unproven criterion. |
 | Silent review axis — `devrites-engine review-integrity` rc=1 (an adversarial axis in `review.md` reported nothing and justified nothing) | **Important** — a suspected rubber-stamp, on the review's *completeness* not the diff. Re-run that axis or record its `No-findings:` justification (`code-review.md` § Zero findings is suspicious), then re-seal. |
+| A declared extension check unaddressed — a valid `.devrites/extensions/*/component.yaml` declares `checks: at: seal` and `seal.md` records neither the check's outcome nor a skip justification | **Important** — same standing as a silent axis, on the review's *completeness*. Address the check's instruction or record why it doesn't apply, then re-seal. Checks are additive-only (an extension raises the bar, never lowers it); an extension that fails `extensions validate` has inactive checks — not a blocker. |
 | Visual Verdict `FAIL` on an acceptance-mapped UI criterion (`browser-evidence.md`) | **NO-GO** — an unmet acceptance criterion. A declared-state `FAIL` is Important (the `Important > 0` row). UI build with a `design-brief.md` but no Visual Verdict → Important evidence gap. No brief → not applicable. |
 | Diff violates a declared project principle (`.devrites/principles.md`) with no recorded, human-approved exception | **NO-GO**, list each violated principle with `file:line`. Same standing as an unproven criterion (absent / empty file → none declared → not a blocker). |
 | Unresolved drift in `drift.md` | **NO-GO**, route through `$rite-plan` first. |
@@ -74,6 +77,9 @@ devrites-engine outside-voice; echo "outside-voice rc=$?"
 ```
 If outside voice is `available`, ask the same artifacts/diff second opinion;
 findings stay advisory until verified with line quotes or accepted into the normal review pipeline.
+If `.devrites/extensions/` exists, read each valid extension's `component.yaml` for `checks:
+at: seal` entries and record every declared check's outcome (or skip justification) in `seal.md`
+— the severity gate treats an unaddressed one as Important.
 For developer-facing surfaces, compare `devex.md` predicted TTHW against the measured proof path and
 record the boomerang result.
 

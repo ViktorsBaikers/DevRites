@@ -64,14 +64,25 @@ func TestHookOrientActiveFeatureEmitsDigest(t *testing.T) {
 	}
 }
 
-func TestHookOrientNoActiveFeatureIsSilent(t *testing.T) {
+func TestHookOrientNoActiveFeatureNudgesOnceThenSilent(t *testing.T) {
 	root := newWorkspace(t) // fixture has no ACTIVE pointer
 	out, errOut, code := runDevrites(t, root, "hook", "orient", "--harness=claude")
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0 (stderr: %s)", code, errOut)
 	}
+	ctx := parseAdditionalContext(t, out)
+	if !strings.Contains(ctx, "no feature is active") || !strings.Contains(ctx, "/rite") {
+		t.Errorf("first blank-slate session should nudge a starting rite, got %q", ctx)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".first-run-shown")); err != nil {
+		t.Fatalf("first-run marker not written: %v", err)
+	}
+	out, errOut, code = runDevrites(t, root, "hook", "orient", "--harness=claude")
+	if code != 0 {
+		t.Fatalf("second run exit = %d, want 0 (stderr: %s)", code, errOut)
+	}
 	if strings.TrimSpace(out) != "" {
-		t.Errorf("stdout = %q, want silent when no feature is active", out)
+		t.Errorf("second run stdout = %q, want silent once the marker exists", out)
 	}
 }
 

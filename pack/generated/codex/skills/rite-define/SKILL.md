@@ -14,6 +14,7 @@ This is the Codex mirror of a DevRites skill. In Codex:
 - When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
 - The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence.
 - Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers — NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # $rite-define — plan from the spec
@@ -25,9 +26,8 @@ spec, architecture, plan, tasks, and traceability keeps each file small and phas
 **No code here.**
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.agents/skills/devrites-lib/reference/standards/core.md` first. DevRites skills Read `.agents/skills/devrites-lib/reference/standards/core.md`
-as their first step; the other rule files load on demand. Pull these via `Read` when shaping
-the plan:
+**Step 0:** Read `.agents/skills/devrites-lib/reference/standards/core.md` first; the other
+rule files load on demand. Pull these via `Read` when shaping the plan:
 - `development-workflow.md` — small batches, trunk-always-green, definition of done.
 - `principles.md` — the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
 - `documentation.md` — record plan-time decisions and rationale.
@@ -78,8 +78,8 @@ the plan:
    `architecture.md` for owning layer, boundaries, integration points, data/API/events,
    dependencies, risks, and affected areas; write only the build strategy in `plan.md`.
    Use a
-   code-intelligence index if available — codebase-memory-mcp first, cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob)
-   (see `.agents/skills/devrites-lib/reference/standards/tooling.md`) — for structure/impact; for the current API or behaviour of
+   code-intelligence index if available (see
+   `.agents/skills/devrites-lib/reference/standards/tooling.md`) for structure/impact; for the current API or behaviour of
    an external library/framework the architecture will rely on, consult context7 if available.
    Record significant options in `decisions.md` as `DEC-###` ADR entries.
    **Deep-modules check** — while sketching the major modules, look for opportunities

@@ -14,6 +14,11 @@ The contract is intentionally small: one sentinel, one queue, one verb.
   human picks; the skill records the pick to `questions.md` (`answered`) + `decisions.md` and
   **continues in place — no `$rite-resolve` round-trip**. `$rite-resolve` is only for answering
   **async** (a pause that already stopped the session) or in **batch**.
+  **No interactive question tool in the current surface?** (Codex outside Plan mode —
+  `request_user_input` is Plan-mode-only.) Render the same option set as a plain numbered
+  list in chat and **end the turn**; the human's reply is the pick. Auto-picking an option
+  is **AFK's contract, gated by the `.devrites/AFK` sentinel** — a missing tool never
+  converts a HITL gap into a self-answered one.
 - **AFK** — `.devrites/AFK` is present. For any gate AFK may auto-handle (severity in
   `allow_gates`), the skill **auto-picks the recommended option** (option 1 of the set), records
   it (`gate: advisory` + a `decisions.md` ADR), and continues unattended. Gates above the

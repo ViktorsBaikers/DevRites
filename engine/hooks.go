@@ -36,7 +36,11 @@ func hookOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) in
 		return exitOK
 	}
 	if !has {
-		return exitOK // no active feature — silent
+		// No active feature: on the first-ever such session, orient once with a
+		// repo-classified starting nudge instead of staying silent.
+		if text, has = orient.FirstRunDigest(root); !has {
+			return exitOK
+		}
 	}
 	out, err := h.SessionStartContext(text)
 	if err != nil {
@@ -98,8 +102,9 @@ var allowReadonlyCommands = map[string]bool{
 }
 
 var allowReadonlySubcommands = map[string]map[string]bool{
-	"footprint": {"render": true, "roster": true},
-	"ledger":    {"diff": true, "validate": true, "list": true, "show": true},
+	"footprint":      {"render": true, "roster": true},
+	"ledger":         {"diff": true, "validate": true, "list": true, "show": true},
+	"reviewer-stats": {"report": true},
 }
 
 // hookAllow auto-approves the read-only devrites orientation/gate subcommands so

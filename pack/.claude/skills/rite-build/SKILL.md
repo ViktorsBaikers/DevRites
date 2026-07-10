@@ -17,7 +17,7 @@ run the post-return gates (doubt, fail-on-red, record, stop). See
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-DevRites skills Read `.claude/skills/devrites-lib/reference/standards/core.md` as their first step (workflow step 0). The
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first (workflow step 0). The
 following load on demand — **the wright reads them** (they are named in its contract) while it
 writes; read them yourself for the doubt/record gates or in the inline fallback:
 - `coding-style.md` — naming, function shape, guard clauses, comments, reuse-first.

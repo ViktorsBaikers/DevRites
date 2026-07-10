@@ -13,6 +13,7 @@ This is the Codex mirror of a DevRites skill. In Codex:
 - When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
 - The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence.
 - Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers — NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # devrites-source-driven — verify, don't guess
@@ -55,8 +56,8 @@ flow above stays the path for confirming a single fact.
 - Don't rabbit-hole: confirm the one fact you need, record it, return.
 
 ## Re-fetching is cheap (and still fresh)
-Fetching the same doc URL twice costs almost nothing: a WebFetch is transparently cached per
-project and, on reuse, revalidated against the origin — the cached reading is replayed **only**
+Fetching the same doc URL twice costs almost nothing: on Claude Code a WebFetch is transparently
+cached per project and, on reuse, revalidated against the origin — the cached reading is replayed **only**
 when the server confirms the page is unchanged (HTTP 304). A 304 is a fresh verification, not a
 memory read, so citing a revalidated page is as sound as re-fetching it. Fetch freely; don't
 skip a check to save a round trip. (Mechanism: the `devrites-source-cache` hooks; off via

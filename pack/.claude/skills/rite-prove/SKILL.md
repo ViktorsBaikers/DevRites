@@ -10,15 +10,12 @@ user-invocable: true
 Turn "I think it works" into recorded evidence for the **whole feature**. Read the active
 workspace first; if none, run `/rite-spec <feature>`.
 
-> **Differs from built-in `/verify` and `/run` in:** `/verify` proves a
-> single change; `/run` launches the app. `/rite-prove` is feature-scoped:
-> it walks `spec.md` acceptance criteria one-by-one, runs the full relevant
-> test suite + build/typecheck/lint, ascends the browser-proof ladder
-> (Playwright MCP → DevTools MCP → `/run`+`/verify` → project E2E →
-> manual), and writes `evidence.md` + `browser-evidence.md` keyed to the
-> active `.devrites/work/<slug>/` (`.devrites/features/<slug>/` remains readable
-> during migration). Use `/verify` or `/run` on their own
-> when there is no DevRites feature workspace.
+> **Differs from built-in `/verify` and `/run`:** those prove a single change /
+> launch the app. `/rite-prove` is feature-scoped — it walks `spec.md` acceptance
+> criteria one-by-one, runs the full relevant test suite + build/typecheck/lint,
+> ascends the browser-proof ladder (step 4),
+> and writes `evidence.md` + `browser-evidence.md` keyed to the active
+> `.devrites/work/<slug>/`. No DevRites workspace → use `/verify` or `/run` alone.
 
 ## Gate: all slices must be built first
 Read `tasks.md` + `state.md`. **If ANY slice is still pending/unbuilt, STOP** and tell the
@@ -75,7 +72,10 @@ pull these via `Read` when relevant:
    with target references, record deltas, fix/re-render, and do not pass with an unresolved
    material mismatch.
 5. **Map results to acceptance** — walk `spec.md` acceptance criteria; note which are now
-   proven and which aren't. **If the spec uses the structured grammar** (`### Requirement:` /
+   proven and which aren't. Tag every criterion's evidence row with its **proof class**:
+   `proof: test` / `command` / `browser` / `judgment` (observation only, for criteria no
+   automatable assertion can prove — taste, copy tone; record the one-line why). Untagged
+   reads `judgment`; the tag earns a test-proven criterion its auto-pass at `/rite-seal`. **If the spec uses the structured grammar** (`### Requirement:` /
    `#### Scenario:` blocks — `spec-grammar.md`), walk it **per scenario**: each `#### Scenario:`
    WHEN/THEN is one observable behavior that needs a passing asserting test (the WHEN is the
    arrange, the THEN the assert). A scenario with no covering result is an unproven gap =
@@ -129,12 +129,17 @@ pull these via `Read` when relevant:
    boomerang reconciles at `/rite-seal`) and the headline numbers + error strings to `evidence.md`. A
    scorecard from "the code looks fine" is Source mode, not proof. Skip entirely when no developer-facing
    surface is in scope — don't DX-measure an internal refactor.
+5d. **Wiring walk (key links).** Read `plan.md` § Validation strategy Key links; verify each in
+   the assembled feature by following the reference or exercising the path — slice
+   tests prove the parts, this walk proves the assembly. An unwired link is an **unproven gap
+   = blocker** at `/rite-seal`. Record each check as an `EVID-###` row; plan names none →
+   record `key links: none declared` in `evidence.md` and move on.
 6. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. Reproduce → isolate → fix within scope → re-run; if a fix
    would exceed scope, record a blocker.
 7. Update `evidence.md`, `browser-evidence.md` (if UI), `traceability.md`, and
-   `state.md`. `proof.md` remains a readable migration alias only; new proof goes
-   to `evidence.md`.
+   `state.md`. New proof goes to `evidence.md` (`proof.md` is a read-only alias —
+   see `devrites-lib/reference/workspace-artifact-schema.md`).
 
 > **Mid-flight discipline.** When tempted to claim an un-observed pass, skip a rung of the browser-proof ladder, or proceed with slices pending — see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 
@@ -146,7 +151,7 @@ Default success shape:
 ```
 Done: feature proof complete for <slug>.
 Changed: evidence.md, browser-evidence.md <updated|n/a>, devex.md <updated|n/a>, state.md
-Evidence: acceptance <n>/<total>; scenarios <n>/<total|n/a>; tests/build/lint/browser <pass|fail summary>
+Evidence: acceptance <n>/<total> (judgment-only <n>); scenarios <n>/<total|n/a>; key links <n>/<n|none>; tests/build/lint/browser <pass|fail summary>
 Open: <none | unresolved blockers | unproven criteria>
 Next: /rite-polish
 Record: .devrites/work/<slug>/evidence.md

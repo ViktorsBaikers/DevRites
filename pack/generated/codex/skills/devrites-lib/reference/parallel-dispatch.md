@@ -30,6 +30,35 @@ either fired or consciously skipped — never silently dropped.
 | `devrites-performance-reviewer` | conditional | `spec.md` states a perf budget, **OR** the diff adds a query / a loop over a growing set / hot-path or render work |
 | `devrites-devex-reviewer` | conditional | the diff changes a developer-facing surface — public API, CLI, SDK/library export, webhook, config/env contract, error message, or getting-started path |
 
+### Hit-rate gating — consult before dispatching conditionals
+
+Before dispatching, run `devrites-engine reviewer-stats report`. It grades each reviewer from the
+cross-feature dispatch ledger (`.devrites/reviewer-stats.jsonl`):
+
+- `run` / `run (always-on)` / `run (insurance — never gated)` — dispatch per the trigger table above.
+- `gate-candidate` — this **conditional** reviewer produced zero surviving findings in its last 10+
+  dispatches on this project. Skip it as a *recorded* skip:
+  `devrites-engine footprint log <slug> skip devrites-<x>-reviewer` with the reason
+  `gated: zero surviving findings in <N> dispatches`. The roster gate stays satisfied — a gated
+  skip is a conscious skip.
+
+The verdict is engine-owned and deterministic; never gate by your own judgement of a reviewer's
+past usefulness. Two hard bounds: the always-on axes (`spec`, `code-review`, `test-analyst`) and
+the insurance reviewers (`security-auditor`, `doubt-reviewer`) are **never** gated — the engine
+never grades them `gate-candidate`, and a caller must not skip them on hit-rate grounds. The user
+can override gating for one run by asking for a full panel (`--full`): then dispatch every
+triggered reviewer regardless of verdict.
+
+After reconciliation, close the loop — record each **dispatched** reviewer's outcome so the
+ledger stays live:
+
+```bash
+devrites-engine reviewer-stats record devrites-<x>-reviewer <surviving Critical+Important count> <slug>
+```
+
+Surviving means it stood after reconciliation and dismissals — a finding the caller dismissed as a
+false positive does not count. Record `0` honestly; dry streaks are the signal.
+
 **Not in this fan-out** (named so the roster is unambiguous): `devrites-simplifier-reviewer` fires
 at `$rite-polish` Phase 1 (via `devrites-audit simplify`) and `devrites-doubt-reviewer` fires from
 `devrites-doubt` when a decision is stood up — neither is a seal reviewer, so neither is part of
@@ -42,7 +71,9 @@ One entity, one name: the `devrites-code-reviewer`'s axis is the **Code-review a
 
 ## Dispatch shape
 
-For each chosen subagent, the caller uses the `Task` tool with this prompt shape:
+For each chosen subagent, the caller uses the harness's subagent primitive — the `Task` tool on
+Claude Code, `spawn_agent` (with the matching `.codex/agents/devrites-*.toml` custom agent) on
+Codex — with this prompt shape:
 
 ```
 Audit the active DevRites feature.
@@ -129,4 +160,6 @@ save cost. Extraction-tier savings belong to scouts (archive-search, footprint),
 
 ## Fallback
 
-If the `Task` tool is unavailable in the current environment, the caller runs the relevant subagent discipline **inline** in its own context and flags the result as a fallback (not an independent review). The seal weighs the fallback differently — see [`../../rite-seal/reference/risk-and-rollback.md`](../../rite-seal/reference/risk-and-rollback.md). This is the [`model-tiers.md`](model-tiers.md) degradation rule applied to the review panel: no subagent primitive → run inline under the same discipline and budget.
+If the harness has **no subagent primitive at all** (neither Claude's `Task` nor Codex's
+`spawn_agent` — an absent tool on one harness while the other's equivalent exists does NOT
+qualify), the caller runs the relevant subagent discipline **inline** in its own context and flags the result as a fallback (not an independent review). The seal weighs the fallback differently — see [`../../rite-seal/reference/risk-and-rollback.md`](../../rite-seal/reference/risk-and-rollback.md). This is the [`model-tiers.md`](model-tiers.md) degradation rule applied to the review panel: no subagent primitive → run inline under the same discipline and budget.

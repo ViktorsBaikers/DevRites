@@ -29,6 +29,10 @@ frontend, CLI, data, or infra — same cycle, in that stack's own idiom.
    every invariant in it constrains your code — they are *law*, not priors like the conventions
    ledger. A slice you cannot build without breaking one is an **Escalation**, never a silent
    violation. (No such file → none declared → nothing extra to hold.)
+7. **Reading is bounded.** Five consecutive read-only lookups (Read/Grep/Glob) that add no new
+   decision means orientation is done — make the smallest write that tests your understanding
+   (usually the failing test) and record the open unknown in `Assumptions`, instead of re-reading
+   for certainty. Certainty comes from the red test, not the next file.
 
 ## The contract you receive
 The orchestrator inlines, or names the path for, each of these (all workspace paths are relative
