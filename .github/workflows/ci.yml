@@ -34,17 +34,14 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install npm deps
-        run: npm install --no-audit --no-fund
+        run: npm ci
 
       - name: Validate pack structure
         run: bash scripts/validate.sh
-
-      - name: Frontmatter validator rejects unknown fields
-        run: bash tests/validate-frontmatter-rejects-unknown.sh
 
       - name: Check cross-references (no dead pointers)
         run: python3 scripts/check-cross-refs.py
@@ -55,23 +52,11 @@ jobs:
       - name: Pack security scan (injection + hidden unicode — BLOCKING)
         run: python3 scripts/scan-pack-security.py pack/.claude
 
-      - name: Pack security scanner tests
-        run: bash tests/scan-pack-security-test.sh
-
-      - name: Injection-resistance baseline present in agents
-        run: bash tests/injection-baseline-present.sh
-
       - name: Workflow security (SHA-pinned actions + scoped permissions — BLOCKING)
         run: python3 scripts/validate-workflow-security.py
 
-      - name: Workflow security validator tests
-        run: bash tests/workflow-security-test.sh
-
       - name: Supply-chain IOC scan (npm lockfile — BLOCKING)
         run: python3 scripts/scan-supply-chain-iocs.py package-lock.json
-
-      - name: Supply-chain IOC scanner tests
-        run: bash tests/supply-chain-iocs-test.sh
 
       - name: Validate trigger evals
         run: bash scripts/run-evals.sh
@@ -81,12 +66,6 @@ jobs:
 
       - name: Validate behavioral evals (shape gate)
         run: bash scripts/run-behavioral-evals.sh
-
-      - name: Behavioral eval validator tests
-        run: bash tests/behavioral-evals-test.sh
-
-      - name: Hook config parity (hooks.json == settings.json)
-        run: bash tests/hooks-parity-test.sh
 
       - name: Generated host artifacts fresh (regenerate + diff — BLOCKING)
         run: |
@@ -99,14 +78,18 @@ jobs:
       - name: Anti-slop detector (advisory)
         run: bash scripts/devrites-detect.sh || true
 
-  install-smoke:
-    name: install / uninstall smoke (node ${{ matrix.node }})
+  # Every tests/*.sh through the same runner developers use locally (npm test).
+  # run-tests.mjs auto-discovers the suite, so a new test file is gated here
+  # without touching this workflow — no more hand-enumerated steps drifting
+  # behind the tests/ directory.
+  tests:
+    name: shell test suite (node ${{ matrix.node }})
     runs-on: ubuntu-latest
     needs: validate
     strategy:
       fail-fast: false
       matrix:
-        node: ['18', '22']   # engines floor + current; brackets the supported range
+        node: ['18', '24']   # engines floor + current LTS; brackets the supported range
     steps:
       - uses: actions/checkout@v6
 
@@ -115,32 +98,22 @@ jobs:
         with:
           python-version: '3.11'
 
+      # Go is needed so run-tests.mjs can build the shared engine binary the
+      # install/update/uninstall + binary-lifecycle + conventions-ledger tests exercise.
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.5'
+          cache-dependency-path: engine/go.sum
+
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
 
-      - name: install smoke
-        run: bash tests/install-smoke.sh
-
-      - name: cli (npx entry point) smoke
-        run: bash tests/cli-smoke.sh
-
-      - name: npx packaged-artifact install smoke
-        run: bash tests/npx-pack-smoke.sh
-
-      - name: uninstall smoke
-        run: bash tests/uninstall-smoke.sh
-
-      - name: update smoke
-        run: bash tests/update-smoke.sh
-
-      - name: fixture install
-        run: bash tests/fixture-install.sh
-
-      - name: pack validation script
-        run: bash tests/validate-pack.sh
+      - name: Run full shell test suite (tests/*.sh)
+        run: node scripts/run-tests.mjs
 
   engine:
     name: engine (go test + cross-compile)
@@ -150,7 +123,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.26.5'
           cache-dependency-path: engine/go.sum
@@ -202,11 +175,15 @@ jobs:
       - name: Cross-compile matrix smoke (all release targets build)
         run: bash scripts/build-binaries.sh 0.0.0-ci
 
-      - name: Binary lifecycle (install / update / downgrade / uninstall)
-        run: bash tests/binary-lifecycle-test.sh
-
-      - name: Conventions ledger (scorer + store — engine runtime path)
-        run: bash tests/conventions-ledger-test.sh
+      # Same script semantic-release's prepare step runs — prove the release
+      # tarball (+ sha256 sidecar) builds BEFORE publish time, not during it.
+      - name: Release tarball smoke (build + checksum present)
+        run: |
+          bash scripts/build-release-tarball.sh 0.0.0-ci
+          test -f dist/devrites-v0.0.0-ci.tar.gz.sha256 || {
+            echo "release tarball checksum sidecar missing" >&2
+            exit 1
+          }
 
   # DevRites ships a Windows engine binary; run the Go tests where path
   # separators, file locking, and %USERPROFILE% semantics actually differ.
@@ -220,7 +197,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.26.5'
           cache-dependency-path: engine/go.sum
@@ -237,7 +214,7 @@ jobs:
   release:
     name: semantic-release
     runs-on: ubuntu-latest
-    needs: [validate, install-smoke, engine, engine-windows]
+    needs: [validate, tests, engine, engine-windows]
     # Push to main (the chore(release) commit carries [skip ci] so it never
     # re-triggers) or a manual dispatch — never on a PR.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -260,15 +237,22 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
+
+      # prepack (npm publish path) regenerates pack/generated via
+      # scripts/build-host-artifacts.sh, which needs python3 on PATH.
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
       # semantic-release's prepare step cross-compiles the engine binary matrix
       # (scripts/build-binaries.sh) — pure-Go, CGO_ENABLED=0, so one Linux runner
       # produces every target (darwin/linux/windows × amd64/arm64) with no
       # cross-toolchain. The binaries + sha256 sidecars are attached to the Release.
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.26.5'
           cache-dependency-path: engine/go.sum
