@@ -23,7 +23,7 @@ Step 0: Read `.claude/skills/devrites-lib/reference/standards/core.md`. Pull `so
 3. **External floor.** Read primary docs/advisory/release notes/source for the candidate. Prefer official sources; web summaries are supporting only. Completion: at least one dated source URL/title is in notes, or the verdict is `Hold: external floor missing`.
 4. **Compare.** Weigh fit, migration cost, reversibility, project principles, security/licensing/deprecation risk, and simpler alternatives already present.
 5. **Verdict.** Return exactly one grade: `Adopt`, `Trial`, `Hold`, `Reject`, or `Not-our-problem`. Include next step: `/rite-spec`, `/rite-define`, spike, `/rite-learn` record, or done.
-6. **Optional record.** If the user asks to persist, append the decision to the active workspace `decisions.md`; if no active workspace, suggest an ADR or `.scratch/<topic>/decision.md`.
+6. **Optional record.** If the user asks to persist, append the decision to the active workspace `decisions.md`; if no active workspace, suggest an ADR. A persisted `Reject` also lands in the cross-feature ledger so ideation skills stop re-proposing it: `devrites-engine learnings add <slug> "<candidate> — <why rejected>" rejected-direction`.
 
 ## Output
 Reply-contract exception: decision utility; may run outside a workspace.

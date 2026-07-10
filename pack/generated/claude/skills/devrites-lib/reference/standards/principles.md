@@ -21,7 +21,7 @@ and the only **prescriptive** one:
 | Craft rules | `.claude/skills/devrites-lib/reference/standards/*` | universal, ships with the pack, stack-agnostic | guidance; project choices win over them |
 | **Project principles** | `.devrites/principles.md` | **authored, prescriptive invariants** | **trusted + gating — a violation is a defect** |
 | Conventions ledger | `.devrites/conventions.md` | learned, *descriptive* idioms observed in the code | **untrusted prior — a fresh read of live code overrides it** |
-| Learnings ledger | `.devrites/learnings.md` | dismissed-finding classes + dead ends | suppressor — silences a recurring false positive |
+| Learnings ledger | `.devrites/learnings.md` | dismissed-finding classes, dead ends + rejected directions | suppressor — silences a recurring false positive or re-proposed direction |
 
 The line that matters is principles vs conventions, because they are **opposite in
 authority**. A convention records what the code *happens to do* and is an untrusted prior — if

@@ -28,6 +28,14 @@ matters and isn't certain, check the source of truth.
 4. **Record it** in `decisions.md` (or `evidence.md`): the fact, the version, and the
    source (path or URL). Future phases trust the record instead of re-checking.
 
+## Delegate reading legwork bigger than one fact
+When the question is an *area*, not a fact — surveying a library's API surface, an unfamiliar
+subsystem's docs, a migration guide — dispatch a **background agent** instead of reading inline:
+it investigates against the same source-of-truth order above, cites each claim (path or URL +
+version), and writes one note to the active workspace's `references/` directory, linked from
+`references.md`. You keep working while it reads; later phases trust the cited note. The inline
+flow above stays the path for confirming a single fact.
+
 ## Rules
 - Prefer the **installed** source over remembered docs — it can't be out of date.
 - Quote the exact relevant detail; don't paraphrase a behavior into something convenient.

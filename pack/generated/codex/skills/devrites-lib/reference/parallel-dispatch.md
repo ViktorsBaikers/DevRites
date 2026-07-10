@@ -73,7 +73,14 @@ Rules:
 - **One Task call per subagent, awaited in the same turn.** Send them in a single message with multiple `Task` invocations so the runtime dispatches concurrently. Never background/detach reviewers in `$rite-autocomplete` or AFK; there is no event loop that guarantees a later result is reconciled.
 - **No cross-pollination.** Each subagent gets only its narrow brief and the workspace path. Do not pass another subagent's findings into a sibling's prompt — that recreates the masking problem.
 - **No author context.** Do not include the caller's analysis or the user's framing of the change; the point is a fresh, adversarial read.
+- **Never coach a reviewer.** No "do not flag X", "treat Y as at most Minor", or "the plan
+  chose this" in a dispatch prompt — pre-judging findings is how a known defect sails through.
+  A plan-mandated quirk still gets reported; the caller (or the human) grades it, not the prompt.
 - **Feature scope only.** Each subagent must stay inside `touched-files.md` + the diff.
+- **Can't-verify is a verdict, not a pass.** A reviewer that cannot verify a spec requirement
+  from the diff + its allowed reads returns it as a `CANNOT-VERIFY: <requirement> — <why>` line.
+  The caller resolves each one itself before the gate; an unresolved CANNOT-VERIFY on an
+  acceptance-mapped requirement stands as a gap, not a pass.
 
 ## Account for every reviewer — the roster gate
 
