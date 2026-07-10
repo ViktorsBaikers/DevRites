@@ -57,7 +57,10 @@ reshaping slice cadence or DoD criteria.
      scope, not a new negotiation.
    - **revise** — apply a requested planning-artifact revision and reconcile existing artifacts in
      any direction; propose the file edit set first, confirm each file before writing, and **never
-     edit source code**.
+     edit source code**. **Gate first — revise or new?** Same intent? >50% of existing scope
+     survives? original *not* completable without this? Two "no"s → new work: recommend
+     sealing/shipping the current workspace (MVP cut if named) then `/rite-spec` for the new
+     intent, and stop. Revise preserves context; a new workspace provides clarity.
    See [replan-and-repair](reference/replan-and-repair.md) for each mode's steps.
 3. Reason about dependencies — [dependency-graph](reference/dependency-graph.md).
 4. Re-slice using vertical-slice rules — [slicing](reference/slicing.md) and

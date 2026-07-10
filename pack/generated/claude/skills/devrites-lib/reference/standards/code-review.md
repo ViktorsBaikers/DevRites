@@ -38,6 +38,11 @@ design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
   | **FYI** | No action — context only. |
 - Be specific: point at the line, name the problem, propose the fix. Frame non-blocking
   ideas as questions ("what about a map here for readability?").
+- **Uncertainty lowers the label.** A finding anchored to a quoted line or reproduced
+  behavior keeps its severity; one that isn't drops a notch (Important → Suggestion), and a
+  Critical always carries anchored evidence — the diff-review form of quote-or-suppress.
+- **Skipped checks are recorded.** A check you couldn't run gets a
+  `Skipped: <check> — <why>` line.
 - Let automation (linters, formatters, CI) catch the trivial stuff so review focuses on
   design and correctness.
 

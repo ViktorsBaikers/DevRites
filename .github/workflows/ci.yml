@@ -208,6 +208,27 @@ jobs:
       - name: Conventions ledger (scorer + store — engine runtime path)
         run: bash tests/conventions-ledger-test.sh
 
+  # DevRites ships a Windows engine binary; run the Go tests where path
+  # separators, file locking, and %USERPROFILE% semantics actually differ.
+  # Ubuntu stays the full strict gate (staticcheck/govulncheck/gosec/-race);
+  # this job only proves the binary logic on Windows.
+  engine-windows:
+    name: engine (go test, windows)
+    runs-on: windows-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+          cache-dependency-path: engine/go.sum
+
+      - name: go test (path / root / workspace / ledger behavior)
+        working-directory: engine
+        run: go test ./... -count=1
+
   # Release runs in the same workflow as a final gate — so it (a) shows up as a
   # commit check, and (b) runs on the exact commit CI validated, on the real
   # branch tip, with tags fetched. No workflow_run hand-off, no detached
@@ -216,7 +237,7 @@ jobs:
   release:
     name: semantic-release
     runs-on: ubuntu-latest
-    needs: [validate, install-smoke, engine]
+    needs: [validate, install-smoke, engine, engine-windows]
     # Push to main (the chore(release) commit carries [skip ci] so it never
     # re-triggers) or a manual dispatch — never on a PR.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

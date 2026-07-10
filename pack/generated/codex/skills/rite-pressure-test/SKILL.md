@@ -22,6 +22,9 @@ This is the Codex mirror of a DevRites skill. In Codex:
 Use when the *idea* (not just the requirements) is rough. Generate options, then commit
 to one — so `$rite-spec` has a real direction to specify.
 
+A thinking stance, not a build phase — capturing thinking is not implementing. Write
+workspace/ticket artifacts freely; source edits wait for `$rite-build`, via `$rite-spec`.
+
 Read `.agents/skills/devrites-lib/reference/standards/core.md` first — its operating rules (no silent assumptions, prefer
 existing conventions) shape the divergence. The other rule files load on demand.
 
