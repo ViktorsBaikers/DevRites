@@ -39,6 +39,50 @@ workspace map; `proof.md` may stand in for `evidence.md`.
 
 Files can exceed the budget only with `Budget override: <reason>`.
 
+## Canonical slice grammar
+
+Every producer of `tasks.md` uses this field set. `Dependencies` is slice
+ordering; package and service requirements belong in `External dependencies`.
+
+<!-- canonical-slice:start -->
+```markdown
+## SLICE-001 <observable capability>
+Goal: <single observable capability>
+Satisfies: AC-001[, AC-002]
+Acceptance criteria: <binary criteria this slice closes>
+Complexity: <1..5> — <reason>
+Forge: <no | yes — reason>
+Mode: <AFK | HITL>
+Gate: <advisory | validating | blocking | escalating>
+SLA: <15m | 4h | 24h | none>
+Checkpoint: <question | none>
+Dependencies: <SLICE-### list | none>
+depends_on: [<SLICE-### IDs>]
+Consumes / Produces: <interfaces read and exposed>
+Known-Gotchas: <ordering hazards and framework footguns | none>
+Prior-slice learnings: <constraints learned earlier | none>
+Files likely touched: <real paths>
+Tests/proof: <tests to write/run and exact validation commands>
+Browser proof required: <yes | no>
+Frontend craft required: <yes | no>
+Design brief states: <UI states/interaction | none>
+Visual acceptance: <state × viewport × input target | none>
+Fullstack (FE+BE): <yes | no>
+External dependencies: <libraries/services | none>
+Existing to reuse / extend: <components/utilities/patterns | none>
+Rollback notes: <reversal path>
+Evidence required: <evidence $rite-prove must capture>
+Edge/Prohibition coverage: <EDGE/PROH IDs | none>
+Done condition: <checkable, exhaustive completion criterion>
+```
+<!-- canonical-slice:end -->
+
+`depends_on` is the machine-readable mirror of `Dependencies`; keep the sets
+identical and cycle-free. `Gate`, `SLA`, and `Checkpoint` are required for HITL
+slices; use `none` when they do not apply. Complexity above 3 triggers reslicing
+unless the stated reason makes the boundary irreducible. `Forge: yes` is reserved
+for a high-complexity architecture fork with multiple viable approaches.
+
 ## Read next by phase
 
 | Phase | Read |

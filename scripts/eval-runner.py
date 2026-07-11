@@ -37,7 +37,7 @@ What it does per query
 Outputs
 -------
 A per-query line and a final accuracy summary. Exit code 1 if accuracy is
-below `--min-accuracy` (default 0.85).
+below `--min-accuracy` (default 0.90).
 
 Usage
 -----
@@ -187,7 +187,7 @@ def main() -> int:
     parser.add_argument("eval_files", nargs="+", type=Path, help="Eval JSON files to execute")
     parser.add_argument("--model", default=os.environ.get("DEVRITES_EVAL_MODEL", "claude-haiku-4-5-20251001"))
     parser.add_argument("--min-accuracy", type=float, default=0.90,
-                        help="Per-eval minimum correct/total (default: 0.90 ≈ 18/20)")
+                        help="Per-eval minimum correct/total (default: 0.90)")
     parser.add_argument("--max-false-positives", type=int, default=2,
                         help="Per-eval max should_not_trigger queries that fired (default: 2)")
     parser.add_argument("--verbose", action="store_true", help="Print every per-query line")

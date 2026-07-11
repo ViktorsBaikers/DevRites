@@ -2,25 +2,120 @@
   "skill": "rite-seal",
   "description": "Trigger evals for /rite-seal — final GO / NO-GO senior review with acceptance criteria walked one-by-one against evidence.",
   "queries": [
-    {"text": "/rite-seal", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "GO or NO-GO on the active feature?", "expected": "should_trigger", "rationale": "GO/NO-GO phrasing."},
-    {"text": "Final review — ready to ship?", "expected": "should_trigger", "rationale": "Final-review framing."},
-    {"text": "Seal this feature.", "expected": "should_trigger", "rationale": "Direct seal verb."},
-    {"text": "Walk the acceptance criteria one by one with evidence.", "expected": "should_trigger", "rationale": "Acceptance-walk = rite-seal."},
-    {"text": "Decide if we can ship — check risks and rollback.", "expected": "should_trigger", "rationale": "Risk + rollback = rite-seal."},
-    {"text": "Fan out to the review subagents and reconcile.", "expected": "should_trigger", "rationale": "Subagent fan-out is rite-seal's job."},
-    {"text": "Write seal.md for this feature.", "expected": "should_trigger", "rationale": "seal.md is rite-seal's output."},
-    {"text": "Investigate a new feature idea.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Re-plan the slices.", "expected": "should_not_trigger", "rationale": "/rite-plan."},
-    {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "/rite-build."},
-    {"text": "Run all tests.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
-    {"text": "Polish before review.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
-    {"text": "Multi-axis review of the diff.", "expected": "should_not_trigger", "rationale": "/rite-review."},
-    {"text": "Status check.", "expected": "should_not_trigger", "rationale": "/rite-status."},
-    {"text": "Push the branch.", "expected": "should_not_trigger", "owner": "rite-ship", "rationale": "→ /rite-ship — the irreversible git push lives in /rite-ship, not /rite-seal."},
-    {"text": "Tag a release.", "expected": "should_not_trigger", "owner": "rite-ship", "rationale": "→ /rite-ship — release tagging is part of /rite-ship's irreversible git ladder."},
-    {"text": "Ship it and close the task.", "expected": "should_not_trigger", "owner": "rite-ship", "rationale": "→ /rite-ship — shipping + closing/archiving the task is /rite-ship; /rite-seal only decides GO/NO-GO."},
-    {"text": "Why did test X fail?", "expected": "should_not_trigger", "rationale": "Debugging."},
-    {"text": "What's the time in Tokyo?", "expected": "should_not_trigger", "rationale": "Off-topic Q."}
+    {
+      "text": "/rite-seal",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "GO or NO-GO on the active feature?",
+      "expected": "should_trigger",
+      "rationale": "GO/NO-GO phrasing."
+    },
+    {
+      "text": "Final review — ready to ship?",
+      "expected": "should_trigger",
+      "rationale": "Final-review framing."
+    },
+    {
+      "text": "Seal this feature.",
+      "expected": "should_trigger",
+      "rationale": "Direct seal verb."
+    },
+    {
+      "text": "Walk the acceptance criteria one by one with evidence.",
+      "expected": "should_trigger",
+      "rationale": "Acceptance-walk = rite-seal."
+    },
+    {
+      "text": "Decide if we can ship — check risks and rollback.",
+      "expected": "should_trigger",
+      "rationale": "Risk + rollback = rite-seal."
+    },
+    {
+      "text": "Fan out to the review subagents and reconcile.",
+      "expected": "should_trigger",
+      "rationale": "Subagent fan-out is rite-seal's job."
+    },
+    {
+      "text": "Write seal.md for this feature.",
+      "expected": "should_trigger",
+      "rationale": "seal.md is rite-seal's output."
+    },
+    {
+      "text": "Investigate a new feature idea.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Re-plan the slices.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-plan.",
+      "owner": "rite-plan"
+    },
+    {
+      "text": "Build the next slice.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Run all tests.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Polish before review.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-polish.",
+      "owner": "rite-polish"
+    },
+    {
+      "text": "Multi-axis review of the diff.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Status check.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-status.",
+      "owner": null,
+      "owner_rationale": "/rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Push the branch.",
+      "expected": "should_not_trigger",
+      "owner": "rite-ship",
+      "rationale": "→ /rite-ship — the irreversible git push lives in /rite-ship, not /rite-seal."
+    },
+    {
+      "text": "Tag a release.",
+      "expected": "should_not_trigger",
+      "owner": "rite-ship",
+      "rationale": "→ /rite-ship — release tagging is part of /rite-ship's irreversible git ladder."
+    },
+    {
+      "text": "Ship it and close the task.",
+      "expected": "should_not_trigger",
+      "owner": "rite-ship",
+      "rationale": "→ /rite-ship — shipping + closing/archiving the task is /rite-ship; /rite-seal only decides GO/NO-GO."
+    },
+    {
+      "text": "Why did test X fail?",
+      "expected": "should_not_trigger",
+      "rationale": "Debugging.",
+      "owner": null,
+      "owner_rationale": "Debugging."
+    },
+    {
+      "text": "What's the time in Tokyo?",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic Q.",
+      "owner": null,
+      "owner_rationale": "Off-topic Q."
+    }
   ]
 }

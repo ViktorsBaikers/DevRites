@@ -43,25 +43,10 @@ commands match what actually runs, and note the result in `browser-evidence.md` 
 5. **Manual fallback** — none available: record the limitation + exact manual steps.
 
 ## Core Web Vitals capture (when the spec states a perf budget)
-If `spec.md` carries a perf budget — or a frontend regression risk is visible — capture the
-CWV numbers here so the perf reviewer judges real data instead of guessing. Use the highest
-rung available; **detect, don't install**.
-
-1. **Chrome DevTools MCP** (preferred for CWV when configured) — `lighthouse_audit` for
-   LCP/INP/CLS + the Lighthouse performance score. Source label: **Lab (Lighthouse)**. A
-   `performance_*` trace gives **Trace (DevTools)** attribution.
-2. **Playwright MCP** — `browser_navigate` the route, then `browser_evaluate` the web-vitals
-   library to read LCP/INP/CLS off the live page. Source label: **Trace (DevTools)** (a
-   real-page number, not a Lighthouse score). Use **alongside** rung 1 when both are present —
-   the lab score and the trace corroborate each other.
-3. **CrUX / PageSpeed Insights** — only if the user supplied an API key. Field data, p75.
-   Source label: **Field (CrUX)**.
-4. **None available** → mark CWV **pending (manual)** and name the exact command
-   (`npx lighthouse <url> --output json …`). Don't install anything; don't fake a number.
-
-Write each captured value **with its source label** to `evidence.md` (so the perf reviewer
-reads it in Measured mode) and note the tool + route in `browser-evidence.md`. Never present
-a lab value as a field value or vice versa.
+When a performance budget or visible regression risk exists, follow
+[`reference/browser-performance.md`](reference/browser-performance.md). Completion:
+every captured value has a source label, or the evidence says `pending (manual)` with
+the exact command.
 
 ## Evidence schema → `browser-evidence.md`
 Tooling used · route(s) · viewports (320/768/1024/1440 — the canonical responsive set; see [`devrites-frontend-craft/reference/quality-standards.md`](../devrites-frontend-craft/reference/quality-standards.md)) · screenshot paths **opened and
@@ -70,64 +55,13 @@ accessibility basics · responsive checks · **CWV capture** (tool + route + eac
 source-labeled value, or `pending (manual)` + the command) · **Visual Verdict** (the
 structured design-brief / design-reference scorecard below) · limitations.
 
-## Visual Verdict — structured pass/fail (auto-emit for UI with a design brief)
-The screenshots you already opened and described become a verdict, not a vibe. **Whenever the
-feature is UI and a `design-brief.md` exists** (or the spec saved design refs in `references/`),
-emit both:
+## Visual Verdict — when a design brief or target reference exists
+Follow [`reference/visual-verdict.md`](reference/visual-verdict.md). Completion: every
+declared state and target-reference delta is scored from an opened screenshot in both
+`browser-evidence.md` and `visual-verdict.json`; unavailable observation is `pending
+(manual)`, never green.
 
-- a `## Visual Verdict` table to `browser-evidence.md`, scored from opened screenshots;
-- `visual-verdict.json` beside `browser-evidence.md`, using the JSON shape below.
-
-This gives `$rite-seal` and the `devrites-frontend-reviewer` a machine-readable gate. No
-`design-brief.md` and no saved references → no Visual Verdict (greenfield no-op — never block UI
-for the absence of a brief; record the limitation and move on).
-
-One row per **declared `design-brief.md` state** the slice delivers (default / loading / empty /
-error / success / disabled / long-content), plus key **design-reference** diffs and the
-**anti-slop** checks (`rite-polish/reference/anti-ai-slop.md`). Score each from a real screenshot,
-not the markup:
-
-```markdown
-## Visual Verdict — <route / component>   (viewport: 320 / 1440)
-| Criterion (source) | Expected | Observed (screenshot) | Verdict | Severity |
-|---|---|---|---|---|
-| empty state (brief) | welcoming copy + primary action | renders, copy present | PASS | — |
-| error state (brief) | inline recoverable message | no error UI — silent | FAIL | Important |
-| primary CTA (ref)   | brand indigo, 44px target | indigo, 32px target | PARTIAL | Suggestion |
-| anti-slop           | no gradient-on-card cliché | clean | PASS | — |
-
-Overall: PARTIAL — 1 FAIL (error state), 1 PARTIAL (CTA size). Screenshots: <paths>.
-```
-
-- **Verdict per row** — `PASS` (matches), `PARTIAL` (present but off), `FAIL` (missing / wrong /
-  broken). **Severity** scales by who-pays and acceptance mapping: a FAIL on a criterion that maps
-  to a **spec acceptance criterion** is **Critical** (it's an unmet criterion, not a polish nit); a
-  declared-state FAIL is **Important**; a cosmetic drift is **Suggestion**.
-- **Overall line** — `PASS` | `PARTIAL (n)` | `FAIL (n)`. This is what the consumers read: a
-  FAIL on an acceptance-mapped row is a NO-GO at `$rite-seal`, and the FAIL/PARTIAL rows are the
-  `$rite-polish` normalize worklist.
-Write the JSON file exactly as:
-
-```json
-{
-  "score": 0,
-  "verdict": "pass|partial|fail",
-  "threshold": 90,
-  "criteria": [
-    {"name":"...","source":"brief|reference|anti-slop|acceptance","expected":"...","observed":"...","verdict":"PASS|PARTIAL|FAIL","severity":"Critical|Important|Suggestion"}
-  ],
-  "screenshots": ["path/to/screenshot.png"],
-  "reasoning": "1-2 sentences"
-}
-```
-
-Default `threshold` is 90 when matching a supplied design reference; otherwise use the threshold
-named in `design-brief.md` or omit threshold pressure and gate on Critical/Important failures.
-
-- **Honesty.** A row scored without an opened screenshot is `pending (manual)` with the command —
-  never a green you didn't observe (the same standing as `pending (manual)` proof below).
-
-## Blast radius & untrusted content
+## Boundaries — blast radius and untrusted content
 The browser you drive is a trust surface, and the danger scales with which one it is. Prefer an
 **isolated / temporary profile** for automated proofs. Attaching to the user's **live** browser
 exposes every open window — email, banking, source control — and the worst case is a page carrying

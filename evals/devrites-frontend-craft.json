@@ -2,25 +2,118 @@
   "skill": "devrites-frontend-craft",
   "description": "Trigger evals for devrites-frontend-craft — model-invoked specialist that implements frontend at senior designer-engineer quality (every state, anti-AI-slop, WCAG 2.2 AA), routed from /rite-build when UI is detected.",
   "queries": [
-    {"text": "Build the UI for the new settings page.", "expected": "should_trigger", "rationale": "\"build the UI\" is the canonical trigger phrase in the description."},
-    {"text": "I need this frontend to be ship-quality before we hand it over.", "expected": "should_trigger", "rationale": "\"ship-quality frontend\" named verbatim in the description."},
-    {"text": "Stand up a design system for the app's components and tokens.", "expected": "should_trigger", "rationale": "\"design system\" is a named trigger."},
-    {"text": "Make the booking form accessible — keyboard, visible focus, WCAG 2.2 AA.", "expected": "should_trigger", "rationale": "a11y + WCAG 2.2 AA is the skill's quality bar."},
-    {"text": "Implement the dashboard so every state is covered — loading, empty, error, success.", "expected": "should_trigger", "rationale": "\"every state covered\" is the skill's core promise."},
-    {"text": "I want this component built the way a senior designer-engineer would.", "expected": "should_trigger", "rationale": "Paraphrase of the skill's senior designer-engineer quality bar."},
-    {"text": "Build this screen but make sure it doesn't look like generic AI output.", "expected": "should_trigger", "rationale": "anti-AI-slop is an explicit concern of this skill."},
-    {"text": "Code up the new onboarding flow following the design-brief.", "expected": "should_trigger", "rationale": "Building UI to the design-brief is this skill's build target."},
-    {"text": "Implement the export feature's frontend, reusing our existing tokens and components.", "expected": "should_trigger", "rationale": "Reuse-first frontend implementation is squarely this skill."},
-    {"text": "Add the new modal — fully keyboard navigable with all the states handled.", "expected": "should_trigger", "rationale": "Oblique but clear: a11y + state coverage on a new UI element."},
-    {"text": "Ship the pricing page UI at production quality.", "expected": "should_trigger", "rationale": "Production/ship-quality UI implementation matches the description."},
-    {"text": "rite-build flagged this slice as UI — build the interactive data table.", "expected": "should_trigger", "rationale": "Description names \"/rite-build detects UI\" as a route into this specialist."},
-    {"text": "Polish the dashboard UI before review.", "expected": "should_not_trigger", "rationale": "/rite-polish owns polishing an already-built feature."},
-    {"text": "Run the full tests and browser-proof the finished UI end-to-end.", "expected": "should_not_trigger", "rationale": "/rite-prove owns proving the completed feature."},
-    {"text": "Try a few radically different UI directions so I can pick one.", "expected": "should_not_trigger", "rationale": "/rite-prototype owns throwaway design exploration."},
-    {"text": "The dropdown is throwing in the console — debug why it crashes.", "expected": "should_not_trigger", "rationale": "diagnose owns systematic bug debugging."},
-    {"text": "Grill me on my component API plan before I build it.", "expected": "should_not_trigger", "rationale": "grill-me owns interview/stress-test of a plan."},
-    {"text": "Do a code review of my frontend diff.", "expected": "should_not_trigger", "rationale": "code-review (and /rite-review) owns reviewing a diff."},
-    {"text": "Let's red-green-refactor the date formatter util.", "expected": "should_not_trigger", "rationale": "tdd owns the test-first red-green-refactor loop."},
-    {"text": "Compact this session into a handoff doc for the next agent.", "expected": "should_not_trigger", "rationale": "handoff owns conversation compaction for handover."}
+    {
+      "text": "Build the UI for the new settings page.",
+      "expected": "should_trigger",
+      "rationale": "\"build the UI\" is the canonical trigger phrase in the description."
+    },
+    {
+      "text": "I need this frontend to be ship-quality before we hand it over.",
+      "expected": "should_trigger",
+      "rationale": "\"ship-quality frontend\" named verbatim in the description."
+    },
+    {
+      "text": "Stand up a design system for the app's components and tokens.",
+      "expected": "should_trigger",
+      "rationale": "\"design system\" is a named trigger."
+    },
+    {
+      "text": "Make the booking form accessible — keyboard, visible focus, WCAG 2.2 AA.",
+      "expected": "should_trigger",
+      "rationale": "a11y + WCAG 2.2 AA is the skill's quality bar."
+    },
+    {
+      "text": "Implement the dashboard so every state is covered — loading, empty, error, success.",
+      "expected": "should_trigger",
+      "rationale": "\"every state covered\" is the skill's core promise."
+    },
+    {
+      "text": "I want this component built the way a senior designer-engineer would.",
+      "expected": "should_trigger",
+      "rationale": "Paraphrase of the skill's senior designer-engineer quality bar."
+    },
+    {
+      "text": "Build this screen but make sure it doesn't look like generic AI output.",
+      "expected": "should_trigger",
+      "rationale": "anti-AI-slop is an explicit concern of this skill."
+    },
+    {
+      "text": "Code up the new onboarding flow following the design-brief.",
+      "expected": "should_trigger",
+      "rationale": "Building UI to the design-brief is this skill's build target."
+    },
+    {
+      "text": "Implement the export feature's frontend, reusing our existing tokens and components.",
+      "expected": "should_trigger",
+      "rationale": "Reuse-first frontend implementation is squarely this skill."
+    },
+    {
+      "text": "Add the new modal — fully keyboard navigable with all the states handled.",
+      "expected": "should_trigger",
+      "rationale": "Oblique but clear: a11y + state coverage on a new UI element."
+    },
+    {
+      "text": "Ship the pricing page UI at production quality.",
+      "expected": "should_trigger",
+      "rationale": "Production/ship-quality UI implementation matches the description."
+    },
+    {
+      "text": "rite-build flagged this slice as UI — build the interactive data table.",
+      "expected": "should_trigger",
+      "rationale": "Description names \"/rite-build detects UI\" as a route into this specialist."
+    },
+    {
+      "text": "Polish the dashboard UI before review.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-polish owns polishing an already-built feature.",
+      "owner": "rite-polish"
+    },
+    {
+      "text": "Run the full tests and browser-proof the finished UI end-to-end.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prove owns proving the completed feature.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Try a few radically different UI directions so I can pick one.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prototype owns throwaway design exploration.",
+      "owner": null,
+      "owner_rationale": "/rite-prototype owns throwaway design exploration. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "The dropdown is throwing in the console — debug why it crashes.",
+      "expected": "should_not_trigger",
+      "rationale": "diagnose owns systematic bug debugging.",
+      "owner": null,
+      "owner_rationale": "diagnose owns systematic bug debugging."
+    },
+    {
+      "text": "Grill me on my component API plan before I build it.",
+      "expected": "should_not_trigger",
+      "rationale": "grill-me owns interview/stress-test of a plan.",
+      "owner": null,
+      "owner_rationale": "grill-me owns interview/stress-test of a plan."
+    },
+    {
+      "text": "Do a code review of my frontend diff.",
+      "expected": "should_not_trigger",
+      "rationale": "code-review (and /rite-review) owns reviewing a diff.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Let's red-green-refactor the date formatter util.",
+      "expected": "should_not_trigger",
+      "rationale": "tdd owns the test-first red-green-refactor loop.",
+      "owner": null,
+      "owner_rationale": "tdd owns the test-first red-green-refactor loop."
+    },
+    {
+      "text": "Compact this session into a handoff doc for the next agent.",
+      "expected": "should_not_trigger",
+      "rationale": "handoff owns conversation compaction for handover.",
+      "owner": null,
+      "owner_rationale": "handoff owns conversation compaction for handover."
+    }
   ]
 }

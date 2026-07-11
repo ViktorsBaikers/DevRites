@@ -65,42 +65,54 @@
     {
       "text": "The build is red and the tests are throwing — debug why it's failing.",
       "expected": "should_not_trigger",
-      "rationale": "Failing build/tests belong to diagnose (devrites-debug-recovery), not a read-only audit."
+      "rationale": "Failing build/tests belong to diagnose (devrites-debug-recovery), not a read-only audit.",
+      "owner": "devrites-debug-recovery"
     },
     {
       "text": "Grill me on this plan until we've resolved every open branch of the design.",
       "expected": "should_not_trigger",
-      "rationale": "Interviewing a plan belongs to grill-me / devrites-interview."
+      "rationale": "Interviewing a plan belongs to grill-me / devrites-interview.",
+      "owner": "devrites-interview"
     },
     {
       "text": "Review my diff for correctness bugs and post the findings as inline PR comments.",
       "expected": "should_not_trigger",
-      "rationale": "General correctness-bug diff review belongs to code-review, not a single-axis audit."
+      "rationale": "General correctness-bug diff review belongs to code-review, not a single-axis audit.",
+      "owner": null,
+      "owner_rationale": "General correctness-bug diff review belongs to code-review, not a single-axis audit."
     },
     {
       "text": "Let's build this feature test-first with a red-green-refactor loop.",
       "expected": "should_not_trigger",
-      "rationale": "Test-first red-green-refactor development belongs to tdd."
+      "rationale": "Test-first red-green-refactor development belongs to tdd.",
+      "owner": null,
+      "owner_rationale": "Test-first red-green-refactor development belongs to tdd."
     },
     {
       "text": "Mock up a few radically different UI variations so I can play with them.",
       "expected": "should_not_trigger",
-      "rationale": "Throwaway UI exploration belongs to prototype / rite-prototype."
+      "rationale": "Throwaway UI exploration belongs to prototype / rite-prototype.",
+      "owner": null,
+      "owner_rationale": "Throwaway UI exploration belongs to prototype / rite-prototype. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Compact this session into a handoff doc the next agent can pick up cold.",
       "expected": "should_not_trigger",
-      "rationale": "Compacting context into a handoff belongs to handoff / rite-handoff."
+      "rationale": "Compacting context into a handoff belongs to handoff / rite-handoff.",
+      "owner": null,
+      "owner_rationale": "Compacting context into a handoff belongs to handoff / rite-handoff. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Implement the next vertical slice and write the code for it.",
       "expected": "should_not_trigger",
-      "rationale": "Writing a slice is a write action owned by rite-build, not a read-only audit."
+      "rationale": "Writing a slice is a write action owned by rite-build, not a read-only audit.",
+      "owner": "rite-build"
     },
     {
       "text": "Polish this feature to ship-quality and normalize the UI before review.",
       "expected": "should_not_trigger",
-      "rationale": "Polishing and applying changes belongs to rite-polish, not a read-only audit."
+      "rationale": "Polishing and applying changes belongs to rite-polish, not a read-only audit.",
+      "owner": "rite-polish"
     }
   ]
 }

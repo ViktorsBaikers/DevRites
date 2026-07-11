@@ -77,8 +77,11 @@ Default success shape:
 Done: polished <slug | target>; code/backend/UI phases <ran|n/a>.
 Changed: polish-report.md, <files touched | workspace only>, browser-evidence.md <updated|n/a>
 Evidence: re-verification <cmd -> pass | n/a>; browser <summary | n/a>
-Open: <none | design questions | re-prove needed before review>
+Open: <none | non-blocking design follow-ups>
 Next: /rite-review
 Record: .devrites/work/<slug>/polish-report.md
 ↻ Hygiene: /clear before /rite-review
 ```
+If a design decision remains unresolved or polish invalidated proof, use `Awaiting human`
+or `Stopped / blocked` and route to the decision or `/rite-prove`; do not recommend
+`/rite-review`.

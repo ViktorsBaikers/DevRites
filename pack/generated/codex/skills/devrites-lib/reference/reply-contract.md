@@ -33,13 +33,16 @@ roughly 8-10 lines after the progress footer.
 Done: <phase result in one sentence>
 Changed: <artifact(s) written/updated, or "workspace only">
 Evidence: <checks/proof/artifact pointer, or "not applicable">
-Open: <none | blockers | questions | drift | unproven criteria>
+Open: <none | non-blocking questions or follow-ups>
 Next: <exactly one recommended command>
 Record: <primary durable artifact path>
 ↻ Hygiene: <clear/compact/handoff advice, one line>
 ```
 
 Rules:
+- Use this default form only for a green, non-blocking result. If proof, a verdict,
+  or a required decision is missing, use `Awaiting human`, `Stopped / blocked`, or
+  `NO-GO`; do not label the phase `Done` or advance it.
 - `Next:` contains exactly one recommended command. Put alternates in `Open:` or an
   `Alternative:` line only when the phase needs one.
 - Use `Evidence: not applicable` only when the phase truly does not verify runtime

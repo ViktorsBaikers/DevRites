@@ -2,25 +2,117 @@
   "skill": "devrites-api-interface",
   "description": "Trigger evals for devrites-api-interface — designing stable API/interface contracts before implementation (REST/GraphQL endpoints, module boundaries, type contracts, FE/BE splits); must NOT fire for internal helpers, post-ship review, or sibling build/review/polish/prove/debug/tdd/prototype work.",
   "queries": [
-    {"text": "Design the API for this feature before we start coding.", "expected": "should_trigger", "rationale": "Canonical \"design the API\" trigger from the description."},
-    {"text": "Let's contract this out so the frontend and backend aren't blocked on each other.", "expected": "should_trigger", "rationale": "\"Contract this out\" + unblock-both-sides framing."},
-    {"text": "Split the frontend and backend for this slice.", "expected": "should_trigger", "rationale": "Direct FE/BE split trigger phrase."},
-    {"text": "This slice crosses the FE/BE boundary — nail down the interface first.", "expected": "should_trigger", "rationale": "A slice crossing a boundary is exactly contract-first territory."},
-    {"text": "Define the REST endpoints: request/response shape, status codes, and error bodies.", "expected": "should_trigger", "rationale": "Shape + status/errors of REST endpoints is the contract surface."},
-    {"text": "Design the GraphQL schema and types before implementation.", "expected": "should_trigger", "rationale": "GraphQL contract design ahead of build."},
-    {"text": "What should the module boundary between the parser and the renderer look like?", "expected": "should_trigger", "rationale": "Module/module boundary contract."},
-    {"text": "Lock the type contract between these two services before either side builds.", "expected": "should_trigger", "rationale": "Service/service type contract, stabilized up front."},
-    {"text": "We need a stable interface here so both sides can build against a mock in parallel.", "expected": "should_trigger", "rationale": "Stable interface enabling the parallel split is the skill's purpose."},
-    {"text": "Is this a breaking change to the existing endpoint's response shape?", "expected": "should_trigger", "rationale": "Versioning/compat of an existing contract is a contract decision."},
-    {"text": "Pin down the function signature and error semantics for this public interface.", "expected": "should_trigger", "rationale": "Signature + error semantics of a public interface."},
-    {"text": "Two teams are about to build against each other — agree the request/response and error codes up front so neither blocks.", "expected": "should_trigger", "rationale": "Oblique but clear: cross-boundary contract before parallel work."},
-    {"text": "Write the internal helper that formats dates for this module.", "expected": "should_not_trigger", "rationale": "Internal helper, not a cross-boundary contract — /rite-build owns it (explicit Not-for)."},
-    {"text": "Review the interface of this already-shipped endpoint.", "expected": "should_not_trigger", "rationale": "Post-ship interface review is /rite-review (the explicit Not-for boundary)."},
-    {"text": "Polish the UI before review.", "expected": "should_not_trigger", "rationale": "Pre-review polish is /rite-polish, not contract design."},
-    {"text": "Prove the new endpoint works end-to-end with the full test suite.", "expected": "should_not_trigger", "rationale": "Full end-to-end proof is /rite-prove."},
-    {"text": "The endpoint is returning 500s — figure out why it's broken.", "expected": "should_not_trigger", "rationale": "Debugging a failure belongs to diagnose / devrites-debug-recovery."},
-    {"text": "Code-review my diff for correctness bugs and cleanups.", "expected": "should_not_trigger", "rationale": "Diff-level review is the bundled code-review skill."},
-    {"text": "Red-green-refactor the endpoint: failing test first, then implement.", "expected": "should_not_trigger", "rationale": "Test-first implementation is the tdd skill."},
-    {"text": "Throwaway prototype a couple of response shapes so I can play with them.", "expected": "should_not_trigger", "rationale": "Disposable exploration is the prototype skill, not a stable contract."}
+    {
+      "text": "Design the API for this feature before we start coding.",
+      "expected": "should_trigger",
+      "rationale": "Canonical \"design the API\" trigger from the description."
+    },
+    {
+      "text": "Let's contract this out so the frontend and backend aren't blocked on each other.",
+      "expected": "should_trigger",
+      "rationale": "\"Contract this out\" + unblock-both-sides framing."
+    },
+    {
+      "text": "Split the frontend and backend for this slice.",
+      "expected": "should_trigger",
+      "rationale": "Direct FE/BE split trigger phrase."
+    },
+    {
+      "text": "This slice crosses the FE/BE boundary — nail down the interface first.",
+      "expected": "should_trigger",
+      "rationale": "A slice crossing a boundary is exactly contract-first territory."
+    },
+    {
+      "text": "Define the REST endpoints: request/response shape, status codes, and error bodies.",
+      "expected": "should_trigger",
+      "rationale": "Shape + status/errors of REST endpoints is the contract surface."
+    },
+    {
+      "text": "Design the GraphQL schema and types before implementation.",
+      "expected": "should_trigger",
+      "rationale": "GraphQL contract design ahead of build."
+    },
+    {
+      "text": "What should the module boundary between the parser and the renderer look like?",
+      "expected": "should_trigger",
+      "rationale": "Module/module boundary contract."
+    },
+    {
+      "text": "Lock the type contract between these two services before either side builds.",
+      "expected": "should_trigger",
+      "rationale": "Service/service type contract, stabilized up front."
+    },
+    {
+      "text": "We need a stable interface here so both sides can build against a mock in parallel.",
+      "expected": "should_trigger",
+      "rationale": "Stable interface enabling the parallel split is the skill's purpose."
+    },
+    {
+      "text": "Is this a breaking change to the existing endpoint's response shape?",
+      "expected": "should_trigger",
+      "rationale": "Versioning/compat of an existing contract is a contract decision."
+    },
+    {
+      "text": "Pin down the function signature and error semantics for this public interface.",
+      "expected": "should_trigger",
+      "rationale": "Signature + error semantics of a public interface."
+    },
+    {
+      "text": "Two teams are about to build against each other — agree the request/response and error codes up front so neither blocks.",
+      "expected": "should_trigger",
+      "rationale": "Oblique but clear: cross-boundary contract before parallel work."
+    },
+    {
+      "text": "Write the internal helper that formats dates for this module.",
+      "expected": "should_not_trigger",
+      "rationale": "Internal helper, not a cross-boundary contract.",
+      "owner": null,
+      "owner_rationale": "Without an active-slice command, no DevRites skill implicitly owns a generic helper edit."
+    },
+    {
+      "text": "Review the interface of this already-shipped endpoint.",
+      "expected": "should_not_trigger",
+      "rationale": "Post-ship interface review is /rite-review (the explicit Not-for boundary).",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Polish the UI before review.",
+      "expected": "should_not_trigger",
+      "rationale": "Pre-review polish is /rite-polish, not contract design.",
+      "owner": "rite-polish"
+    },
+    {
+      "text": "Prove the new endpoint works end-to-end with the full test suite.",
+      "expected": "should_not_trigger",
+      "rationale": "Full end-to-end proof is /rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "The endpoint is returning 500s — figure out why it's broken.",
+      "expected": "should_not_trigger",
+      "rationale": "Debugging a failure belongs to diagnose / devrites-debug-recovery.",
+      "owner": "devrites-debug-recovery"
+    },
+    {
+      "text": "Code-review my diff for correctness bugs and cleanups.",
+      "expected": "should_not_trigger",
+      "rationale": "Diff-level review is the bundled code-review skill.",
+      "owner": null,
+      "owner_rationale": "Diff-level review is the bundled code-review skill."
+    },
+    {
+      "text": "Red-green-refactor the endpoint: failing test first, then implement.",
+      "expected": "should_not_trigger",
+      "rationale": "Test-first implementation is the tdd skill.",
+      "owner": null,
+      "owner_rationale": "Test-first implementation is the tdd skill."
+    },
+    {
+      "text": "Throwaway prototype a couple of response shapes so I can play with them.",
+      "expected": "should_not_trigger",
+      "rationale": "Disposable exploration is the prototype skill, not a stable contract.",
+      "owner": null,
+      "owner_rationale": "Disposable exploration is the prototype skill, not a stable contract."
+    }
   ]
 }

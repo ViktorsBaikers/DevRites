@@ -104,10 +104,10 @@ To try your changes inside a real project:
 
 A quick map — the [README "Layout" section](README.md#layout) has the full version.
 
-- `pack/.claude/skills/` — 28 skills (19 user-invocable `rite-*` + 9 model-invoked `devrites-*`), plus the internal `devrites-lib` script library.
-- `pack/.claude/agents/` — 11 agents: 10 fresh-context read-only reviewers + 1 writer (`devrites-slice-wright`).
-- `pack/.claude/skills/devrites-lib/reference/standards/` — 20 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
-- `evals/` — trigger evals (20 queries per public skill), `golden/` fixtures for the deterministic outcome grader, and `behavioral/` discipline-under-pressure scenarios for gating rites.
+- `pack/.claude/skills/` — canonical public rites, internal specialists, and the `devrites-lib` reference library.
+- `pack/.claude/agents/` — fresh-context reviewers plus the write-capable `devrites-slice-wright`.
+- `pack/.claude/skills/devrites-lib/reference/standards/` — shared engineering rules loaded by the workflows that need them.
+- `evals/` — routing corpora, `golden/` fixtures for the deterministic outcome grader, and `behavioral/` discipline-under-pressure scenarios for gating rites.
 - `scripts/` — install lib, validators, eval runner, the outcome grader (`grade-feature.sh` / `run-outcome-evals.sh`), release tooling.
 - `docs/` — architecture, skills, command map, flow diagrams, usage, release, CLI.
 - `tests/` — install/uninstall smoke + fixture install + pack validation.
@@ -118,16 +118,18 @@ A quick map — the [README "Layout" section](README.md#layout) has the full ver
 
 Every skill **must** have:
 
-- YAML frontmatter with `name`, `description` (the trigger — fold the *Use when* /
-  *Not for* phrasing into it; there is **no** separate `when-to-use` field), and
-  `user-invocable` (true/false). Optional: `argument-hint`, `disable-model-invocation`.
+- YAML frontmatter with `name`, `description`, and `user-invocable` (true/false).
+  Model-invoked descriptions carry *Use when* / *Not for* triggers; explicit-only
+  descriptions are human summaries. Optional: `argument-hint`, `disable-model-invocation`.
 - A short body — operating rules, anti-rationalization tables where useful,
   red flags. **Body discipline:** if it doesn't change the model's behavior
   for this phase, it doesn't belong in the body.
 - A **failure-mode section** — a `## Gotchas` (or an equivalent `Hard rules` /
   `NEVER` / `Mid-flight discipline` pointer). Convention: [`docs/skills.md`](docs/skills.md).
-- A matching eval file under `evals/` with positive + negative trigger
-  phrasings (the validator enforces exactly 20 queries for public skills).
+- A matching eval file under `evals/`: model-invoked skills need implicit positive and
+  negative queries; explicit-only public skills need direct-command positives plus an
+  implicit-invocation negative boundary. Corpus size follows the distinct routing branches;
+  it is not padded to a fixed query count. `devrites-lib` is exempt.
 - For a **gating** skill (one whose job is to hold a line — prove, build, seal, vet,
   peers): a behavioral eval under `evals/behavioral/<skill>.json` that pressure-tests
   whether the discipline resists the rationalizations in its `anti-patterns.md`. Opt-in

@@ -1,16 +1,5 @@
 # rite-seal phase contract
 
-This is the normative workflow for `$rite-seal`. It is loaded from
-`../SKILL.md` to keep the root skill focused without weakening the execution
-contract. Follow `../SKILL.md`, this file, and the linked supporting references
-together. If any supporting reference appears to conflict with the root skill,
-follow the stricter instruction.
-
-The split is intentional: `../SKILL.md` is the routing, operating-rule, and
-severity-gate surface; this file is the detailed procedure. Do not replace this
-file with a summary. Use the spine below to stay oriented, then apply the full
-step details that follow it.
-
 ## Execution spine
 
 Run the engine gates at these moments:

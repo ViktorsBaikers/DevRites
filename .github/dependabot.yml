@@ -34,7 +34,7 @@ updates:
           - "major"
     # Majors stay individual + un-grouped so the auto-merge workflow can skip them.
 
-  # GitHub Actions used by ci.yml / release.yml / dependabot-auto-merge.yml.
+  # GitHub Actions used across .github/workflows/.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

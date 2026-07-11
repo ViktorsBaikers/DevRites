@@ -22,7 +22,7 @@ It is **deliberately small**: one verb, one source of truth (`questions.md`), on
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 
-Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Then pull these via `Read` when shaping the resolve:
+Pull these via `Read` when shaping the resolve:
 
 - `afk-hitl.md` — gate taxonomy, `questions.md` schema, AFK exception rules.
 - `documentation.md` — record decisions and rationale where the answer changes scope.
@@ -84,6 +84,7 @@ Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Then pull 
 5. **Post-resolve hand-off.** If the answer changes product behavior or acceptance →
    recommend `/rite-plan repair`. Otherwise → recommend the slice's natural next action
    (typically `/rite-build` for the slice that was awaiting).
+   **Completion:** the resolved state contains exactly one next command.
 6. **STOP.** This skill does not run `/rite-build` itself — the user re-enters the
    workflow explicitly.
 

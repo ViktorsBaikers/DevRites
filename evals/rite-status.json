@@ -1,6 +1,6 @@
 {
   "skill": "rite-status",
-  "description": "Explicit-only evals for /rite-status \u2014 read-only active feature report.",
+  "description": "Explicit-only evals for /rite-status — read-only active feature report.",
   "queries": [
     {
       "text": "/rite-status",
@@ -25,22 +25,30 @@
     {
       "text": "Where am I in DevRites?",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only utility."
+      "rationale": "Explicit-only utility.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility."
     },
     {
       "text": "What is the status of the active feature?",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only utility."
+      "rationale": "Explicit-only utility.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility."
     },
     {
       "text": "What should I do next?",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only status request."
+      "rationale": "Explicit-only status request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only status request."
     },
     {
       "text": "Show open questions and blockers.",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only status request."
+      "rationale": "Explicit-only status request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only status request."
     },
     {
       "text": "Start a new feature.",
@@ -57,12 +65,16 @@
     {
       "text": "List all DevRites commands.",
       "expected": "should_not_trigger",
-      "rationale": "/rite menu."
+      "rationale": "/rite menu.",
+      "owner": null,
+      "owner_rationale": "/rite menu. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Resolve the open question with yes.",
       "expected": "should_not_trigger",
-      "rationale": "/rite-resolve."
+      "rationale": "/rite-resolve.",
+      "owner": null,
+      "owner_rationale": "/rite-resolve. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Run proof for the feature.",
@@ -97,17 +109,22 @@
     {
       "text": "Write a handoff.",
       "expected": "should_not_trigger",
-      "rationale": "/rite-handoff."
+      "rationale": "/rite-handoff.",
+      "owner": null,
+      "owner_rationale": "/rite-handoff. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Debug failing tests.",
       "expected": "should_not_trigger",
-      "rationale": "devrites-debug-recovery."
+      "rationale": "devrites-debug-recovery.",
+      "owner": "devrites-debug-recovery"
     },
     {
       "text": "Explain this file.",
       "expected": "should_not_trigger",
-      "rationale": "/rite-explain."
+      "rationale": "/rite-explain.",
+      "owner": null,
+      "owner_rationale": "/rite-explain. The functional owner is explicit-only, so natural language has no implicit owner."
     }
   ]
 }

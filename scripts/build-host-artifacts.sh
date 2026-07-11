@@ -37,11 +37,15 @@ render_codex_skill_tree() {
     case "$_r" in
       SKILL.md)
         _internal=0
+        _implicit_disabled=0
         if awk 'NR==1&&$0=="---"{fm=1;next} fm&&$0=="---"{exit} fm&&/^user-invocable:[[:space:]]*false/{u=1} END{exit !u}' "$f"; then
           _internal=1
         fi
+        if awk 'NR==1&&$0=="---"{fm=1;next} fm&&$0=="---"{exit} fm&&/^disable-model-invocation:[[:space:]]*true/{u=1} END{exit !u}' "$f"; then
+          _implicit_disabled=1
+        fi
         gen_codex_skill_file "$f" "$_out" "$_internal"
-        if [ "$_internal" -eq 1 ]; then
+        if [ "$_internal" -eq 1 ] || [ "$_implicit_disabled" -eq 1 ]; then
           mkdir -p "$_dest/agents"
           printf 'policy:\n  allow_implicit_invocation: false\n' > "$_dest/agents/openai.yaml"
         fi

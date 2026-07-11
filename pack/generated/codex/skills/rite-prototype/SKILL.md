@@ -112,8 +112,11 @@ completion reply contract
 Done: prototype answered <question>.
 Changed: <prototype path | deleted after absorption>; decisions.md or NOTES.md
 Evidence: run command <cmd -> result>; verdict <one line>
-Open: <none | awaiting human verdict | delete/absorb remaining>
+Open: <none | non-blocking delete/absorb follow-up>
 Next: <single command returning to the calling phase>
 Record: <.devrites/work/<slug>/decisions.md | NOTES.md path>
 ↻ Hygiene: /clear after the answer is recorded; delete or absorb throwaway code before shipping
 ```
+
+If the verdict is missing, use the shared `Awaiting human` form. The prototype is
+not `Done`, and `Resume:` points to the queued verdict question.

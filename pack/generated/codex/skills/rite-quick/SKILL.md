@@ -44,7 +44,7 @@ escalate** — the cost of the full lifecycle on a small change is minutes; the 
 express lane on a risky one is the failure mode the lifecycle exists to prevent.
 
 ## Rules consulted
-Read `.agents/skills/devrites-lib/reference/standards/core.md` first. Then the small set this lane actually needs:
+Load this lane's conditional standards when needed:
 - `coding-style.md` — naming, guard clauses, reuse-first.
 - `testing.md` — TDD, **completeness** (every touched behavior/element asserted) +
   **assertion strength** (no tautological tests; see it fail first), scaled to the change.
@@ -91,12 +91,15 @@ Default success shape:
 ```
 Done: quick change complete — <one line>.
 Changed: <files touched>
-Evidence: tests <cmd -> pass>; assertion check <real asserts saw red | n/a>; boundary held <yes|no>
-Open: <none | escalation reason | tracked workspace needs ship>
+Evidence: tests <cmd -> pass>; assertion check <real asserts saw red | n/a>; boundary held yes
+Open: <none | non-blocking follow-up | tracked workspace needs ship>
 Next: <single recommended command>
 Record: <commit/PR path | .devrites/work/<slug>/evidence.md | not applicable>
 ↻ Hygiene: /clear after commit
 ```
+
+If the quick boundary does not hold or an escalation remains, use `Stopped / blocked`
+and route to the full lifecycle; do not render `Done`.
 
 **DO NOT** use this lane to dodge the gate — the express lane is for changes that are
 *actually* small, not for shipping risky work faster.

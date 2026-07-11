@@ -150,34 +150,36 @@ flowchart TB
     class VV artifact
 ```
 
-## 5. `devrites-debug-recovery` six-phase loop
+## 5. `devrites-debug-recovery` seven-step loop
 
 Failure recovery — the loop construction in Phase 1 is the load-bearing piece.
 
 ```mermaid
 flowchart LR
-    F([failing test /<br/>build / runtime]) --> L1[Phase 1<br/>Build the loop]
-    L1 -->|fast deterministic signal| R[Phase 2<br/>Reproduce]
-    R -->|exact error text| H[Phase 3<br/>Ranked hypotheses 3-5]
-    H -->|show user before testing| I[Phase 4<br/>Instrument]
-    I -->|change one variable| Fix[Phase 5<br/>Fix + regression test]
-    Fix --> C[Phase 6<br/>Cleanup + classify]
+    F([failing test /<br/>build / runtime]) --> L1[Step 1<br/>Build the loop]
+    L1 -->|fast deterministic signal| R[Step 2<br/>Reproduce]
+    R -->|exact error text| H[Step 3<br/>Ranked hypotheses 3-5]
+    H --> T[Step 4<br/>Trace when ambiguous]
+    T -->|discriminating probe| I[Step 5<br/>Instrument]
+    I -->|change one variable| Fix[Step 6<br/>Fix + regression test]
+    Fix --> C[Step 7<br/>Cleanup + classify]
     L1 -.->|can't build loop| Ask([STOP — ask user])
 
     classDef phase fill:#1f2937,stroke:#60a5fa,color:#f9fafb
     classDef stop fill:#7f1d1d,stroke:#f87171,color:#fee2e2
-    class L1,R,H,I,Fix,C phase
+    class L1,R,H,T,I,Fix,C phase
     class Ask stop
 ```
 
-Each phase's detail lives in a separate reference file under
+Each step's detail lives in a separate reference file under
 `pack/.claude/skills/devrites-debug-recovery/reference/` so the SKILL.md body
 stays small.
 
 ## 6. Engineering-rules carrier
 
-Each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` (the always-on subset) as
-its first step (step 0); the other rule files load on demand. Per-phase
+Workspace-operating lifecycle skills read
+`.claude/skills/devrites-lib/reference/standards/core.md` in step 0; compact utilities
+keep their narrower contract local. The other rule files load on demand. Per-phase
 skills pull additional rule files via plain `Read` as their workflow
 demands. No carrier skill, no session-start autoload.
 

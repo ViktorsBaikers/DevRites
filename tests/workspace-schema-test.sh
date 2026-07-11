@@ -4,8 +4,18 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 VALIDATOR="$ROOT/scripts/validate-workspace-schema.py"
 FIXTURES="$ROOT/tests/fixtures/workspace-schema"
+CANONICAL_SCHEMA="$ROOT/pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md"
 
 python3 "$VALIDATOR" "$FIXTURES" >/tmp/devrites-workspace-schema-ok.txt
+
+CANONICAL_WORKSPACE="$(mktemp -d)"
+cp -R "$FIXTURES" "$CANONICAL_WORKSPACE/fixtures"
+{
+  printf '# Tasks\n\n## Slice index\n\n'
+  awk '/<!-- canonical-slice:start -->/{on=1; next} /<!-- canonical-slice:end -->/{on=0} on' "$CANONICAL_SCHEMA" \
+    | sed '/^```/d'
+} > "$CANONICAL_WORKSPACE/fixtures/.devrites/work/backend-api/tasks.md"
+python3 "$VALIDATOR" "$CANONICAL_WORKSPACE/fixtures" >/tmp/devrites-workspace-schema-canonical.txt
 
 BAD="$(mktemp -d)"
 mkdir -p "$BAD/.devrites/work/broken"
@@ -210,4 +220,4 @@ if python3 "$VALIDATOR" "$STALE_EVIDENCE/fixtures" >/tmp/devrites-workspace-sche
 fi
 grep -q 'evidence ID EVID-003' /tmp/devrites-workspace-schema-stale-evidence.txt
 
-echo "ok: workspace schema validator accepts fixtures and rejects legacy, underspecified, and stale-evidence workspaces"
+echo "ok: workspace schema validator accepts the canonical slice grammar and rejects legacy, underspecified, and stale-evidence workspaces"

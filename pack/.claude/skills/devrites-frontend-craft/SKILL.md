@@ -30,10 +30,10 @@ project for an existing one and **reuse → extend → build new** — see
 caveat, and the per-slice reuse record.
 
 ## 2. Register detection
-- **Brand surface** — landing, marketing, portfolio, campaign: expressive type, larger
-  scale contrast, motion welcome.
-- **Product surface** — dashboard, admin, settings, app UI, tools: system fonts
-  legitimate, one family often enough, fixed rem scale, tight ratio, density is fine.
+Read the discovery and register contract in
+[`reference/design-references.md`](reference/design-references.md#discover-these).
+Completion: the surface is classified as brand or product and its existing tokens,
+components, patterns, and nearest neighbor are named before design choices begin.
 
 ## 3. Shape before code — build to the brief ([reference/shape.md](reference/shape.md))
 The feature's **`design-brief.md`** is your target — `/rite-spec` shaped it up front

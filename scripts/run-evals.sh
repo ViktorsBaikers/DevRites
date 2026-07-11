@@ -4,7 +4,8 @@
 # Schema check + summary. Does NOT invoke a model unless --live is passed.
 # Live execution requires CLAUDE_API_KEY and is manual-only, never CI default.
 # CI runs this script to enforce the shape and
-# catch broken JSON / missing skills / wrong query counts.
+# catch broken JSON, missing skills, and empty/one-sided corpora. Invocation-policy
+# shape is enforced by run-routing-evals.py in scripts/validate.sh.
 #
 # Usage:
 #   scripts/run-evals.sh                         # validate every evals/*.json
@@ -15,7 +16,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EVALS_DIR="$ROOT/evals"
-EXPECTED_QUERIES=20
 LIVE=0
 ARGS=()
 for arg in "$@"; do
@@ -86,11 +86,11 @@ for key in ("skill", "description", "queries"):
 queries = data.get("queries", [])
 if not isinstance(queries, list):
     errors.append("queries is not a list")
-elif len(queries) != 20:
-    errors.append(f"expected 20 queries, got {len(queries)}")
+elif not queries:
+    errors.append("queries is empty")
 
 trig = noTrig = 0
-for i, q in enumerate(queries):
+for i, q in enumerate(queries if isinstance(queries, list) else []):
     if not isinstance(q, dict):
         errors.append(f"query[{i}] not an object")
         continue
@@ -104,6 +104,12 @@ for i, q in enumerate(queries):
     else:
         errors.append(f"query[{i}] invalid expected: {q.get('expected')!r}")
 
+if isinstance(queries, list) and queries:
+    if trig == 0:
+        errors.append("corpus has no should_trigger query")
+    if noTrig == 0:
+        errors.append("corpus has no should_not_trigger query")
+
 if errors:
     for e in errors:
         print(f"  FAIL: {e}")
@@ -116,10 +122,10 @@ PY
   else
     if OUT=$(jq -r '
       if (.skill and .description and (.queries|type=="array")) then
-        if (.queries|length) == 20 then
+        if ((.queries|length) > 0 and (.queries|map(select(.expected=="should_trigger"))|length) > 0 and (.queries|map(select(.expected=="should_not_trigger"))|length) > 0) then
           "  skill: \(.skill)\n  queries: \(.queries|length) (should_trigger=\(.queries|map(select(.expected=="should_trigger"))|length), should_not_trigger=\(.queries|map(select(.expected=="should_not_trigger"))|length))"
         else
-          "  FAIL: expected 20 queries, got \(.queries|length)"
+          "  FAIL: queries must be non-empty and include should_trigger + should_not_trigger"
         end
       else
         "  FAIL: missing required keys"

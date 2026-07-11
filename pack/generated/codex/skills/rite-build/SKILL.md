@@ -1,6 +1,6 @@
 ---
 name: rite-build
-description: Implement one vertical slice, then stop with evidence. Use for build next slice, implement slice N, continue build, code/write API endpoint slice, start building after plan ready. Not for two slices.
+description: Build one approved vertical slice, then stop with evidence. Use when the next planned slice should be implemented. Not for multiple slices.
 argument-hint: "[slice number or name]"
 user-invocable: true
 ---
@@ -86,10 +86,6 @@ Run the full execution contract in
 [`reference/phase-contract.md`](reference/phase-contract.md). It is not optional:
 it contains the gated one-slice workflow, including readiness, HITL/AFK handling,
 wright dispatch, forge, doubt, fail-on-red, record gates, and stop behavior.
-
-The operating rules above and the phase contract together define `$rite-build`.
-If any supporting reference appears to conflict with this root file, follow the
-stricter instruction.
 
 ## Output
 

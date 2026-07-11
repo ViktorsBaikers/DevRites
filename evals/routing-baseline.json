@@ -2,12 +2,12 @@
   "description": "Routing quality ratchet. Trigger-section-aware deterministic baseline; fail on corpus drift or score regression before raising the floors.",
   "recorded_at": "2026-07-10",
   "skills": 42,
-  "queries": 680,
-  "positive_queries": 313,
-  "negative_queries": 367,
-  "rank1_rate_min": 0.6403,
-  "rank_top3_rate_min": 0.8251,
-  "false_positive_collisions_max": 6,
+  "queries": 719,
+  "positive_queries": 334,
+  "negative_queries": 385,
+  "rank1_rate_min": 0.6677,
+  "rank_top3_rate_min": 0.8323,
+  "false_positive_collisions_max": 5,
   "public_vs_internal_confusion_max": 14,
   "host_wording_confusion_max": 0
 }

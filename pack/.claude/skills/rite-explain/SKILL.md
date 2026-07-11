@@ -91,13 +91,16 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
 
 1. **One thing.** A single clear takeaway named in the first two lines. If the input sprawls,
    teach the highest-leverage slice and say what you cut.
+   **Completion:** the first two lines state one takeaway and any deferred topics.
 2. **Build the model, don't list facts.** Start from what the developer already knows in *this*
    codebase and move to the new thing. Concrete before abstract — a real symbol, file, or line
    from the grounding beats a generic example every time.
+   **Completion:** the explanation connects a known project anchor to the new model without a fact dump.
 3. **Show the load-bearing detail.** Quote the actual diff hunk, the real function, the specific
    config — with `file:line` pointers so the developer can go read it.
 4. **Visual where it earns it.** A small diagram, a before/after, or a worked trace when the shape
    is spatial or sequential. Not decoration — only when it carries the idea faster than prose.
+   **Completion:** the visual carries a named relationship faster than prose, or this branch is explicitly skipped.
 5. **Human voice.** Follow [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md):
    no throat-clearing, no false-binary contrast, no marketing adjectives. One senior engineer
    explaining to another.

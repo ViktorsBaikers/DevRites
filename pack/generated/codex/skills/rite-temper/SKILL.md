@@ -28,7 +28,7 @@ canonical contract, so `$rite-define` plans the **hardened** spec. Optional for 
 `spec.md`, tell the user to run `$rite-spec`.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.agents/skills/devrites-lib/reference/standards/core.md` first. Pull on demand: `patterns.md` +
+Pull on demand: `patterns.md` +
 `coding-style.md` (the over-engineering / YAGNI rubric — reuse the pack's standard, don't
 invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md`
 (irreversible-risk list + gate ceiling), `elicitation.md` (the move-set to deepen a section
@@ -84,6 +84,7 @@ that needs more than the default pre-mortem — selected by the section's risk).
      their own.
 4. **Score the 9 dimensions** — [`reference/review-dimensions.md`](reference/review-dimensions.md).
    Cite evidence *before* the band; **gate on the floor** (the weakest dimension, not an average).
+   **Completion:** all nine dimensions have cited evidence, a band, and one explicit floor verdict.
 5. **Walk the findings WITH the human — do not batch-dump.** The artifact is the *output* of an
    interactive review, not a substitute for it: surface each material scope call / finding via
    `AskUserQuestion`, one at a time, best-guess + **why**. Each material scope call ends as a
@@ -126,10 +127,12 @@ Default success shape:
 ```
 Done: spec tempered for <slug>; mode <expand|selective|hold-rigor|reduce-to-MVP|skipped-low-stakes>.
 Changed: strategy.md, spec.md, decisions.md, assumptions.md
-Evidence: dimension floor <band>; reviewer loop <n>; spec readiness re-checked <pass|blocked>
-Open: <none | blocker | n deferred non-goals>
+Evidence: dimension floor <band>; reviewer loop <n>; spec readiness re-checked pass
+Open: <none | n deferred non-goals>
 Next: $rite-define
 Record: .devrites/work/<slug>/strategy.md
 ↻ Hygiene: /clear before $rite-define
 ```
+If readiness is blocked, use the shared `Stopped / blocked` form and route `Fix:`
+to `$rite-spec`; do not recommend `$rite-define`.
 **DO NOT plan, slice, or write code here** — that's `$rite-define` and `$rite-build`.

@@ -1,6 +1,6 @@
 ---
 name: rite-plan
-description: Re-plan an active feature after reality changed: reslice, repair drift, reorder, split FE/BE, unblock, pivot, or revise artifacts. Use for replan/reslice/repair/unblock/pivot. Not first-pass decomposition.
+description: Re-plan existing work when reality invalidates the plan: reslice a slice that is too big, repair drift, reorder dependencies, split boundaries, or unblock work. Not first-pass decomposition.
 argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct|revise]"
 user-invocable: true
 ---
@@ -26,8 +26,7 @@ user to run `$rite-spec <feature>`. **Revise mode is artifact-only**: reconcile
 editing source code.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-Read `.agents/skills/devrites-lib/reference/standards/core.md` first. Pull `development-workflow.md` via `Read` when
-reshaping slice cadence or DoD criteria.
+Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD criteria.
 
 ## Operating rules
 - Spec is living, not sacred — but never plan around a known-wrong assumption silently.
@@ -75,11 +74,15 @@ reshaping slice cadence or DoD criteria.
      intent, and stop. Revise preserves context; a new workspace provides clarity.
    See [replan-and-repair](reference/replan-and-repair.md) for each mode's steps.
 3. Reason about dependencies — [dependency-graph](reference/dependency-graph.md).
+   **Completion:** the slice graph is cycle-free and every dependency names an existing slice.
 4. Re-slice using vertical-slice rules — [slicing](reference/slicing.md) and
    [task-breakdown](reference/task-breakdown.md). Prefer thin, shippable, verifiable.
+   **Completion:** every slice is independently shippable/provable or carries an irreducibility reason.
 5. Update `plan.md`, `tasks.md`, `state.md`, and append rationale to `decisions.md`.
    If you stopped for drift, mark the `drift.md` entry resolved.
 6. If product behavior/acceptance criteria change, confirm with the user before writing.
+   **Completion:** the change is classified, and every behavior/acceptance change has explicit
+   confirmation recorded before the artifacts are updated.
 7. **Done when** — every slice is sized (builds + proves in one cycle; no slice scoring >3
    left unjustified), the dependency order is acyclic, every `drift.md` entry you stopped for
    is marked resolved, revised artifacts agree with each other, no source files changed in

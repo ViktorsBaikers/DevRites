@@ -307,13 +307,22 @@ investigation, cheaper context, and real browser proof. None are required.
 
 ## Skills
 
-The pack ships **42 skills total** — the `rite` menu, 29 user-invocable `rite-*` workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal `devrites-lib` library for shared references and explicit script exceptions. The workflow control plane runs through the installed `devrites-engine` binary; the npm `devrites` shim remains the install/update/uninstall entry point and can proxy engine subcommands when the binary is present. **Prefix convention:** `rite-*` is the user-facing command surface; `devrites-*` is internal (model-invoked, hidden from the menu). Each skill is a structured workflow with its own operating rules, anti-rationalization tables, and red flags. Engineering rules live at `.claude/skills/devrites-lib/reference/standards/`; each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first step, and the remaining rule files load on demand.
+The pack ships **42 skills total** — the `rite` menu, 29 user-invocable `rite-*`
+workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal
+`devrites-lib` reference library. The installed `devrites-engine` owns workflow control;
+the npm `devrites` shim owns install/update/uninstall and proxies engine subcommands.
+`rite-*` and `devrites-*` are namespaces, not visibility rules: frontmatter is
+authoritative. Workspace-operating lifecycle skills read `core.md` in step 0 and disclose
+phase rules on demand; compact utilities keep their narrower contract local.
 
 **Claude Code invocation.** Every user-invocable skill responds to **both** `/rite <verb>` (menu form — type `/rite` to discover) and `/rite-<verb>` (direct shortcut — muscle memory). The forms are equivalent: `/rite build slice-2` ≡ `/rite-build slice-2`. Use whichever reads more naturally. Installation merges DevRites event hooks into an existing `.claude/settings.json` without replacing user entries; an existing non-DevRites `statusLine` is preserved with a warning because Claude exposes one status-line slot.
 
 **Codex invocation.** The installer mirrors the same skills to `.agents/skills/`, mirrors DevRites rules to `.agents/skills/devrites-lib/reference/standards/`, injects a Codex compatibility block after each skill's front matter, generates project custom agents in `.codex/agents/`, installs Codex hooks in `.codex/hooks.json`, and creates or merges the needed Codex guidance into `AGENTS.md`. If `AGENTS.md` already exists, DevRites adds a marked block instead of replacing your guidance. In Codex, invoke DevRites via `$rite`, `$rite-spec`, or `/skills`; if you prefer a Claude-only footprint, install with `--no-codex`. Codex must trust the project `.codex/` layer and review the hooks via `/hooks` before non-managed hooks run.
 
-**Rules in Codex.** DevRites engineering rules are mirrored as Markdown under `.agents/skills/devrites-lib/reference/standards/` because they are workflow/craft instructions, not Codex command-approval `.rules` files. The generated `AGENTS.md` block and every mirrored `.agents/skills/*/SKILL.md` tell Codex to read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work and load the other `.agents/skills/devrites-lib/reference/standards/*.md` files on demand.
+**Rules in Codex.** DevRites engineering rules are mirrored as Markdown under
+`.agents/skills/devrites-lib/reference/standards/` because they are workflow/craft
+instructions, not Codex command-approval `.rules` files. Generated guidance points at the
+mirror; each skill's own contract decides whether `core.md` or a conditional standard loads.
 
 **Custom pinned aliases** (optional). Add your own one-word shortcuts to any `rite-*` skill at runtime with `scripts/pin.sh` — useful for muscle-memory commands like `/b` → `/rite-build` or `/ship` → `/rite-ship`. The wrapper is a thin delegate (same shape the installer uses for `--short-aliases=all`); pinned aliases are manifest-tracked so `./uninstall.sh` cleans them up.
 
@@ -341,7 +350,7 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md` and mirror to `.agents/
 | Learning (optional) | `rite-learn` — cross-feature learning loop: mine shipped features for recurring mistakes + dismissed-finding classes, propose project-local lessons into `.devrites/learnings.md`, and promote recurring invariants to `.devrites/principles.md` |
 | Menu | `rite` |
 
-**Internal `devrites-*` specialists (11)** — model-invoked, hidden from menu:
+**Internal `devrites-*` specialists** — model-invoked, hidden from menu:
 
 `devrites-interview` · `devrites-source-driven` · `devrites-doubt` ·
 `devrites-ux-shape` · `devrites-frontend-craft` · `devrites-browser-proof` ·

@@ -2,25 +2,115 @@
   "skill": "devrites-source-driven",
   "description": "Trigger eval for devrites-source-driven — verifying uncertain framework/library behavior against official docs or installed source before relying on it. Must fire on \"check the docs\" / \"don't guess\" / \"cite the source\" / \"is this still the API\" / \"verify this assumption\" intents; must NOT fire for sibling DevRites phases (build/review/polish/prove) or the bundled skills it name-collides with (diagnose, grill-me, code-review, tdd, prototype, handoff).",
   "queries": [
-    {"text": "check the docs before you use that method", "expected": "should_trigger", "rationale": "Canonical \"check the docs\" trigger phrase from the description."},
-    {"text": "is this still the API in the version we're on?", "expected": "should_trigger", "rationale": "\"Is this still the API\" — verify a possibly-stale signature against the pinned version."},
-    {"text": "don't guess at the function signature, verify it", "expected": "should_trigger", "rationale": "\"Don't guess\" — confirm the signature at the source of truth."},
-    {"text": "cite the source for that default value", "expected": "should_trigger", "rationale": "\"Cite the source\" — record the fact's origin in evidence/decisions."},
-    {"text": "verify this assumption about how the library behaves", "expected": "should_trigger", "rationale": "\"Verify this assumption\" is a direct trigger for source-driven checking."},
-    {"text": "confirm against the installed package source — I'm not sure that's the right config key for this version", "expected": "should_trigger", "rationale": "Uncertain config key; prefer installed source over remembered docs."},
-    {"text": "what's the actual default for this option? look it up in node_modules", "expected": "should_trigger", "rationale": "Confirm a specific default by reading the installed package, not memory."},
-    {"text": "before we rely on this React hook's behavior, check the official docs for our version", "expected": "should_trigger", "rationale": "Behavior matters and isn't certain — consult version-specific docs first."},
-    {"text": "the lockfile pins an older release, does this option even exist there?", "expected": "should_trigger", "rationale": "Version-specific behavior — find the version, then verify the option."},
-    {"text": "I think this call returns a promise but I'm not certain, make sure before we build on it", "expected": "should_trigger", "rationale": "Oblique but clear — an uncertain framework behavior that drives implementation."},
-    {"text": "this error mentions framework behavior I don't fully understand — pin down what it actually does", "expected": "should_trigger", "rationale": "Error points at framework behavior; confirm the fact at the source."},
-    {"text": "we keep getting surprised by this library, nail down what it really does from the source of truth", "expected": "should_trigger", "rationale": "Oblique ask to verify real behavior against the source of truth."},
-    {"text": "diagnose why the tests are suddenly failing", "expected": "should_not_trigger", "rationale": "Systematic failure diagnosis is devrites-debug-recovery (bundled diagnose), not source verification."},
-    {"text": "grill me on this design until we reach agreement", "expected": "should_not_trigger", "rationale": "Relentless interview belongs to grill-me / devrites-interview."},
-    {"text": "do a code review of my changes for correctness bugs", "expected": "should_not_trigger", "rationale": "Reviewing a written diff is code-review / rite-review."},
-    {"text": "build this feature test-first with red-green-refactor", "expected": "should_not_trigger", "rationale": "Test-first implementation is tdd / rite-build, not doc verification."},
-    {"text": "prototype a couple of throwaway UI variations so I can play with them", "expected": "should_not_trigger", "rationale": "Throwaway exploration is prototype / rite-prototype."},
-    {"text": "compact this conversation into a handoff doc for the next agent", "expected": "should_not_trigger", "rationale": "Conversation handoff is handoff / rite-handoff."},
-    {"text": "polish this feature before review", "expected": "should_not_trigger", "rationale": "Pre-review polish is the rite-polish phase, not source verification."},
-    {"text": "prove the whole feature end-to-end before we seal", "expected": "should_not_trigger", "rationale": "Full feature proof is the rite-prove phase."}
+    {
+      "text": "check the docs before you use that method",
+      "expected": "should_trigger",
+      "rationale": "Canonical \"check the docs\" trigger phrase from the description."
+    },
+    {
+      "text": "is this still the API in the version we're on?",
+      "expected": "should_trigger",
+      "rationale": "\"Is this still the API\" — verify a possibly-stale signature against the pinned version."
+    },
+    {
+      "text": "don't guess at the function signature, verify it",
+      "expected": "should_trigger",
+      "rationale": "\"Don't guess\" — confirm the signature at the source of truth."
+    },
+    {
+      "text": "cite the source for that default value",
+      "expected": "should_trigger",
+      "rationale": "\"Cite the source\" — record the fact's origin in evidence/decisions."
+    },
+    {
+      "text": "verify this assumption about how the library behaves",
+      "expected": "should_trigger",
+      "rationale": "\"Verify this assumption\" is a direct trigger for source-driven checking."
+    },
+    {
+      "text": "confirm against the installed package source — I'm not sure that's the right config key for this version",
+      "expected": "should_trigger",
+      "rationale": "Uncertain config key; prefer installed source over remembered docs."
+    },
+    {
+      "text": "what's the actual default for this option? look it up in node_modules",
+      "expected": "should_trigger",
+      "rationale": "Confirm a specific default by reading the installed package, not memory."
+    },
+    {
+      "text": "before we rely on this React hook's behavior, check the official docs for our version",
+      "expected": "should_trigger",
+      "rationale": "Behavior matters and isn't certain — consult version-specific docs first."
+    },
+    {
+      "text": "the lockfile pins an older release, does this option even exist there?",
+      "expected": "should_trigger",
+      "rationale": "Version-specific behavior — find the version, then verify the option."
+    },
+    {
+      "text": "I think this call returns a promise but I'm not certain, make sure before we build on it",
+      "expected": "should_trigger",
+      "rationale": "Oblique but clear — an uncertain framework behavior that drives implementation."
+    },
+    {
+      "text": "this error mentions framework behavior I don't fully understand — pin down what it actually does",
+      "expected": "should_trigger",
+      "rationale": "Error points at framework behavior; confirm the fact at the source."
+    },
+    {
+      "text": "we keep getting surprised by this library, nail down what it really does from the source of truth",
+      "expected": "should_trigger",
+      "rationale": "Oblique ask to verify real behavior against the source of truth."
+    },
+    {
+      "text": "diagnose why the tests are suddenly failing",
+      "expected": "should_not_trigger",
+      "rationale": "Systematic failure diagnosis is devrites-debug-recovery (bundled diagnose), not source verification.",
+      "owner": "devrites-debug-recovery"
+    },
+    {
+      "text": "grill me on this design until we reach agreement",
+      "expected": "should_not_trigger",
+      "rationale": "Relentless interview belongs to grill-me / devrites-interview.",
+      "owner": "devrites-interview"
+    },
+    {
+      "text": "do a code review of my changes for correctness bugs",
+      "expected": "should_not_trigger",
+      "rationale": "Reviewing a written diff is code-review / rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "build this feature test-first with red-green-refactor",
+      "expected": "should_not_trigger",
+      "rationale": "Test-first implementation is tdd / rite-build, not doc verification.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "prototype a couple of throwaway UI variations so I can play with them",
+      "expected": "should_not_trigger",
+      "rationale": "Throwaway exploration is prototype / rite-prototype.",
+      "owner": null,
+      "owner_rationale": "Throwaway exploration is prototype / rite-prototype. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "compact this conversation into a handoff doc for the next agent",
+      "expected": "should_not_trigger",
+      "rationale": "Conversation handoff is handoff / rite-handoff.",
+      "owner": null,
+      "owner_rationale": "Conversation handoff is handoff / rite-handoff. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "polish this feature before review",
+      "expected": "should_not_trigger",
+      "rationale": "Pre-review polish is the rite-polish phase, not source verification.",
+      "owner": "rite-polish"
+    },
+    {
+      "text": "prove the whole feature end-to-end before we seal",
+      "expected": "should_not_trigger",
+      "rationale": "Full feature proof is the rite-prove phase.",
+      "owner": "rite-prove"
+    }
   ]
 }

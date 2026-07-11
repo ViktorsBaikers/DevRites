@@ -1,6 +1,6 @@
 {
   "skill": "rite-zoom-out",
-  "description": "Explicit-only evals for /rite-zoom-out \u2014 read-only structural map utility.",
+  "description": "Explicit-only evals for /rite-zoom-out — read-only structural map utility.",
   "queries": [
     {
       "text": "/rite-zoom-out",
@@ -25,27 +25,37 @@
     {
       "text": "zoom out",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only utility; natural language should not auto-invoke it."
+      "rationale": "Explicit-only utility; natural language should not auto-invoke it.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility; natural language should not auto-invoke it."
     },
     {
       "text": "give me the bigger picture of this module",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only utility."
+      "rationale": "Explicit-only utility.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility."
     },
     {
       "text": "map the auth subsystem for me",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only structural map request."
+      "rationale": "Explicit-only structural map request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only structural map request."
     },
     {
       "text": "show how these files relate",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only structural map request."
+      "rationale": "Explicit-only structural map request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only structural map request."
     },
     {
       "text": "Grep for the string 'INVOICE_NOT_FOUND' across the repo",
       "expected": "should_not_trigger",
-      "rationale": "Literal lookup is grep."
+      "rationale": "Literal lookup is grep.",
+      "owner": null,
+      "owner_rationale": "Literal lookup is grep."
     },
     {
       "text": "Design a new export endpoint for the orders module",
@@ -56,7 +66,8 @@
     {
       "text": "Fix this failing test",
       "expected": "should_not_trigger",
-      "rationale": "Debugging belongs to devrites-debug-recovery."
+      "rationale": "Debugging belongs to devrites-debug-recovery.",
+      "owner": "devrites-debug-recovery"
     },
     {
       "text": "Build the next slice",
@@ -103,12 +114,16 @@
     {
       "text": "Explain this one file",
       "expected": "should_not_trigger",
-      "rationale": "/rite-explain."
+      "rationale": "/rite-explain.",
+      "owner": null,
+      "owner_rationale": "/rite-explain. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "What commands exist?",
       "expected": "should_not_trigger",
-      "rationale": "/rite menu."
+      "rationale": "/rite menu.",
+      "owner": null,
+      "owner_rationale": "/rite menu. The functional owner is explicit-only, so natural language has no implicit owner."
     }
   ]
 }

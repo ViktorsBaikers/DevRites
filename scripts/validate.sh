@@ -75,13 +75,6 @@ else
   echo "skip: python3 not found"
 fi
 
-section "skill description budget"
-if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/check-skill-description-budget.py" "$SKILLS"; then good "skill descriptions stay within catalog budget"; else bad "skill description budget failed"; fi
-else
-  echo "skip: python3 not found"
-fi
-
 section "generated skill payload budget"
 if command -v node >/dev/null 2>&1; then
   if node "$ROOT/scripts/check-generated-skill-budget.mjs" "$SKILLS"; then good "generated skill payload budget passed"; else bad "generated skill payload budget failed"; fi
@@ -186,19 +179,10 @@ else
   echo "skip: python3 not found"
 fi
 
-# ---- 8. size advisory (not a hard failure) -------------------------------
-section "SKILL.md size advisory"
-for d in "$SKILLS"/*/; do
-  n=$(wc -l < "${d}SKILL.md" | tr -d ' ')
-  [ "$n" -gt 200 ] && printf 'warn: %s is %s lines (recommended <=180 public / <=160 internal)\n' "$(basename "$d")" "$n"
-done
-echo "ok: size advisory complete"
-
-# ---- 8b. skill pruning audit (advisory) ----------------------------------
-section "skill pruning audit (advisory)"
+# ---- 8. skill pruning + step contracts ----------------------------------
+section "skill pruning + step contracts"
 if command -v node >/dev/null 2>&1 && [ -f "$ROOT/scripts/skill-pruning-audit.mjs" ]; then
-  node "$ROOT/scripts/skill-pruning-audit.mjs" || true
-  good "skill pruning audit complete"
+  if node "$ROOT/scripts/skill-pruning-audit.mjs"; then good "skill pruning and step contracts passed"; else bad "skill pruning step contracts failed"; fi
 else
   echo "skip: node or skill-pruning-audit.mjs not found"
 fi

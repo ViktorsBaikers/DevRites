@@ -1,6 +1,6 @@
 ---
 name: rite-spec
-description: Spec a new feature/app before code and write its `.devrites/work/<slug>/` workspace. Use when the user says "spec out a new feature", "I have an idea", or "make a React todo list". Not for approved-spec planning.
+description: Spec new or high-risk behavior before code and write its `.devrites/work/<slug>/` workspace. Use for a feature/app, vague product idea, auth or migration work, or a public-API change. Not for approved-spec planning.
 argument-hint: "<feature or idea>"
 user-invocable: true
 ---
@@ -19,8 +19,7 @@ are `/rite-define` and `/rite-build`.
 > Spec is for real features; don't pay its ceremony for a one-off.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first; the other
-rule files load on demand. Pull `documentation.md` via `Read`
+Pull `documentation.md` via `Read`
 when capturing significant spec decisions (why-not-what, ADR-style notes in `decisions.md`);
 pull `principles.md` when the project has declared invariants (`.devrites/principles.md`) — a
 new spec must respect them, and a requirement that can only be met by breaking one is a blocking gap.
@@ -66,6 +65,7 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    ```
 1. **Understand the request** (`$ARGUMENTS`). Restate the goal and the *real problem
    behind it* in a sentence or two.
+   **Completion:** one sentence states both requested outcome and underlying problem.
 1a. **Local dedupe.** Search local issues/PRDs and archived specs before creating a new workspace:
    ```bash
    devrites-engine spec-dedupe "$ARGUMENTS"
@@ -104,6 +104,7 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    them, **save local files** into `.devrites/work/<slug>/references/`, and index them in
    `references.md` as target, constraint, or inspiration. Later phases honor that role
    rather than treating every reference as a fidelity target.
+   **Completion:** every supplied reference is saved and classified, or absence is explicit.
 3a. **Shape the UX/UI before code (if the feature touches UI)** — when this feature is
    frontend ([frontend-trigger](../rite-build/reference/frontend-trigger.md)), apply
    `devrites-ux-shape` **now**, woven into the spec — not as a separate phase. It turns the

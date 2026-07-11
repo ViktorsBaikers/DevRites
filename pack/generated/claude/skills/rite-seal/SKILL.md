@@ -76,10 +76,6 @@ Run the full execution contract in
 it contains the orientation, evidence, risk, reviewer fan-out, roster,
 review-integrity, verdict, convention, and learning steps for this gate.
 
-The operating rules and severity gate above plus the phase contract together
-define `/rite-seal`. If any supporting reference appears to conflict with this
-root file, follow the stricter instruction.
-
 ## On GO → hand off to /rite-ship
 
 `/rite-seal` makes the **decision** and stops. It does **not** run `git commit`,

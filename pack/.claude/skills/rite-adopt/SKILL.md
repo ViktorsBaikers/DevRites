@@ -1,6 +1,6 @@
 ---
 name: rite-adopt
-description: Adopt/onboard an existing or legacy codebase into DevRites: reverse-engineer current behavior/spec, seed conventions, start using rites. Use for inherited/live apps. Not for new features.
+description: Adopt an existing or legacy codebase into DevRites by reverse-engineering current behavior, seeding conventions, and establishing the workflow. Use for inherited or live applications.
 argument-hint: "[path or area to adopt] [+ what you want to build next]"
 user-invocable: true
 ---
@@ -21,8 +21,8 @@ lifecycle (`/rite-temper` → `/rite-define` → `/rite-build` …) takes over.
 > it *commits the project to the lifecycle*. Pick zoom-out to look, adopt to begin.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Pull `documentation.md` when recording
-the adoption decisions (why-not-what) in `decisions.md`; pull `principles.md` when the code
+Pull `documentation.md` when recording the adoption decisions (why-not-what) in
+`decisions.md`; pull `principles.md` when the code
 upholds invariants worth proposing as project principles (step 4a).
 
 ## Operating rules (DevRites core)
@@ -68,6 +68,7 @@ upholds invariants worth proposing as project principles (step 4a).
    evidence-gated promotion: the seeds start at the base band and are provenance-tagged as
    onboarding observations, not sealed-slice proofs, so real slices later corroborate or
    (fresh-wins) contradict them.
+   **Completion:** every seed names observed evidence, provenance, and the base band.
 4a. **Propose candidate principles** (human-ratified; optional). Where the investigation found an
    invariant the code *consistently and deliberately* upholds — money always in integer cents, PII
    always redacted from logs, every v1 endpoint preserved — surface it as a **candidate
@@ -81,6 +82,7 @@ upholds invariants worth proposing as project principles (step 4a).
 5. **Hand off.** The project is now in the lifecycle with a spec and a head-start ledger.
    Point the user at `/rite-temper` (big/risky) or `/rite-define` (straightforward) — do not
    plan or build here.
+   **Completion:** one next rite is reported and no plan or application code was written.
 
 > **Mid-flight discipline.** Don't invent conventions the code doesn't actually follow, don't
 > seed an idiom you only assumed, and don't expand scope into a rewrite — adoption documents

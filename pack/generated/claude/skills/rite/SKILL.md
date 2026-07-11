@@ -45,8 +45,9 @@ What each verb does lives once, in the Menu below; this table is the dispatch ma
 | `seal` | `/rite-seal` |
 | `ship` | `/rite-ship` |
 | `status [slug]` | `/rite-status` |
-| `doctor` | `/rite-doctor` |
+| `doctor [--code | --reindex]` | `/rite-doctor` |
 | `learn [--mine \| "<lesson>"]` | `/rite-learn` |
+| `explain [concept \| diff \| idea \| recap]` | `/rite-explain` |
 | `pov [candidate]` | `/rite-pov` |
 | `dogfood [--port N]` | `/rite-dogfood` |
 | `pr-feedback [PR\|thread]` | `/rite-pr-feedback` |
@@ -114,8 +115,9 @@ REVIEW        /rite review             ≡    /rite-review      feature-scoped m
 SEAL          /rite seal               ≡    /rite-seal        final GO / NO-GO decision (no git)
 SHIP          /rite ship               ≡    /rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
 STATUS        /rite status             ≡    /rite-status      active feature, next action, evidence, risks
-DOCTOR        /rite doctor             ≡    /rite-doctor      health check — install · stale ACTIVE · orphaned gates · hook wiring · merge/rebase
+DOCTOR        /rite doctor ...         ≡    /rite-doctor      health check; --reindex refreshes structural indexes
 LEARN         /rite learn ...          ≡    /rite-learn       review captured lessons → promote to project rules / principles
+EXPLAIN       /rite explain ...        ≡    /rite-explain     grounded concept/diff/idea/recap explainer
 POV           /rite pov ...            ≡    /rite-pov         decide adopt / trial / hold / reject for an external option
 DOGFOOD       /rite dogfood ...        ≡    /rite-dogfood     browser QA by changed user journey
 PR FEEDBACK   /rite pr-feedback ...    ≡    /rite-pr-feedback fix and resolve PR review threads

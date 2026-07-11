@@ -22,7 +22,16 @@ rebuild host artifacts, then validate.
 
 The description is an invocation pointer, not documentation.
 
-- Keep user-facing skills under 90 words, model-invoked specialists under 75, and `devrites-lib` under 60.
+- **Model-invoked** skills pay context load so the agent or another skill can reach them;
+  omit `disable-model-invocation` and give them trigger-bearing descriptions.
+- **Explicit-only** skills pay human cognitive load instead; set
+  `disable-model-invocation: true`, keep the description a human summary, and expose them
+  through `/rite`. The Codex generator must map this to
+  `policy.allow_implicit_invocation: false` without stubbing a public description.
+- Keep public model-invoked skills under 90 words, internal specialists under 75,
+  explicit-only skills under 30, and `devrites-lib` under 60.
+- Front-load one stable leading word that is also used in prompts/docs when that concept
+  should trigger the skill.
 - Use one clear trigger branch per phrase; repeated `Use when` or `Not for` means the branch should collapse or move into the body.
 - State the **defining constraint** — the one fact that separates this skill from its nearest sibling (e.g. `/rite-seal` decides, `/rite-ship` mutates git). It is the strongest trigger discriminator the routing evals measure.
 - Put examples, edge cases, and rationale in `SKILL.md` body or a reference file, not in frontmatter.
@@ -45,6 +54,8 @@ The description is an invocation pointer, not documentation.
 - A public skill's docs card states purpose, when to invoke, where it fits,
   its defining constraint (as plain prose, never a labelled aside), and what
   evidence proves completion. Do not copy the full `SKILL.md` process into docs.
+- Model-invoked skills need positive/negative implicit-routing evals. Explicit-only
+  public skills need direct-command evals; non-workflow libraries are exempt explicitly.
 
 ## Source intake
 
@@ -60,7 +71,7 @@ External skill packs, articles, and examples are references, not authority.
 Pick the instruction form from the *observed* failure, not by habit:
 
 - Agent **violates a rule under pressure** → hard guardrail + rationalization rebuttal
-  (the `core.md` excuse-table form) + a red-flag stop list.
+  (the `anti-patterns.md` table form) + a red-flag stop list.
 - Output has the **wrong shape** (bloated, buried, missing emphasis) → a positive recipe or
   template with REQUIRED slots. Prohibitions backfire here — wording tests show a "don't"
   list produces *more* of the unwanted shape than no guidance at all.
