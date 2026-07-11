@@ -2,25 +2,11 @@
 
 How to turn a spec into ordered, vertical slices in `tasks.md`.
 
-## Each slice is one task, in this format
-```markdown
-## SLICE-001 <name>
-Goal:                       # single observable capability
-Satisfies: AC-001[, AC-002] # reverse traceability to spec.md
-Acceptance criteria:        # binary, evidence-backed (see ../../rite-spec/reference/acceptance-criteria.md)
-Files likely touched:       # real paths from codebase inspection
-Interfaces:                 # consumes/produces — names + types neighboring slices rely on
-Tests/proof:                # command(s) or EVID-### that prove it
-Browser proof required:     # yes/no (yes if UI — see ../../rite-build/reference/frontend-trigger.md)
-Frontend craft required:    # yes/no
-Design brief states:        # UI only: states/interaction delivered
-Visual acceptance:          # UI only: state × viewport × input + target R-id/brief rule
-Mode: AFK | HITL
-Gate: advisory | validating | blocking | escalating
-Dependencies:               # SLICE-### IDs that must land first
-Rollback notes:             # how to back this slice out
-Evidence required:          # what /rite-prove must capture
-```
+## Each slice is one task
+
+Use the complete canonical grammar in
+[`workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar).
+This reference owns decomposition; the shared schema owns field names and meanings.
 
 ## Process
 1. List the capabilities the spec promises.

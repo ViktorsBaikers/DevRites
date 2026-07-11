@@ -26,8 +26,8 @@ permissions:
 jobs:
   a:
     steps:
-      - uses: actions/checkout@v6
-      - uses: marocchino/sticky-pull-request-comment@$SHA # v2
+      - uses: actions/checkout@v7
+      - uses: marocchino/sticky-pull-request-comment@$SHA # SHA-pinned fixture
 EOF
 
 cat > "$TMP/unpinned.yml" <<'EOF'
@@ -45,7 +45,7 @@ name: noperm
 jobs:
   a:
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 EOF
 
 cat > "$TMP/writeall.yml" <<'EOF'
@@ -54,7 +54,7 @@ permissions: write-all
 jobs:
   a:
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 EOF
 
 cat > "$TMP/prtarget.yml" <<'EOF'
@@ -65,7 +65,47 @@ permissions:
 jobs:
   a:
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
+EOF
+
+cat > "$TMP/dependabot-target.yml" <<'EOF'
+name: safe-dependabot-write
+on: pull_request_target
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  merge:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - uses: dependabot/fetch-metadata@773744901bac0e8cbb5a0dc842800d45e9b2b405
+EOF
+
+cat > "$TMP/dependabot-target-checkout.yml" <<'EOF'
+name: unsafe-dependabot-checkout
+on: pull_request_target
+permissions:
+  contents: write
+jobs:
+  merge:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@v7
+EOF
+
+cat > "$TMP/dependabot-target-unguarded-job.yml" <<'EOF'
+name: unsafe-extra-job
+on: pull_request_target
+permissions:
+  contents: write
+jobs:
+  merge:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - run: gh pr merge --auto "$PR_URL"
+  unsafe:
+    steps:
+      - run: echo unguarded
 EOF
 
 clean "SHA-pinned + scoped"        "$TMP/clean.yml"
@@ -73,6 +113,9 @@ finds "unpinned third-party"       "$TMP/unpinned.yml"
 finds "no permissions block"       "$TMP/noperm.yml"
 finds "write-all over-broad"       "$TMP/writeall.yml"
 finds "pull_request_target"        "$TMP/prtarget.yml"
+clean "Dependabot-only target without checkout" "$TMP/dependabot-target.yml"
+finds "Dependabot target with checkout" "$TMP/dependabot-target-checkout.yml"
+finds "Dependabot target with unguarded job" "$TMP/dependabot-target-unguarded-job.yml"
 
 # regression: the repo's real workflows must pass
 clean "repo workflows pass"        "$HERE/../.github/workflows"

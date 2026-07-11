@@ -55,24 +55,13 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    and `evidence.md`: `Constraint`, `Rejected`, `Confidence`, `Scope-risk`, `Not-tested` when
    present; skip trailers for trivial typo/formatting commits. Scope the commit to
    `touched-files.md`; never stage secrets or out-of-scope files.
-2a. **Design memory (optional, UI features only).** If the feature shipped UI, offer to roll
-   its *proven* design language up into a project-level `DESIGN.md` so the next feature
-   inherits the system instead of re-discovering it
-   ([reference/design-memory.md](reference/design-memory.md)). **Opt-in and confirmed** —
-   present the option set (default **skip**; persisting beyond feature scope is the user's
-   call), and on yes append `DESIGN.md` to `touched-files.md` so it ships *in this commit*.
-   Skip silently when there's no UI. Record the outcome in `ship.md`.
-2b. **Capability ledger sync.** Fold this feature's *proven* behavior into the living
-   `.devrites/specs/<capability>/spec.md` ledger so the next feature starts from the contract
-   instead of re-deriving it from code ([reference/ledger.md](reference/ledger.md)). Preview first —
-   `devrites-engine ledger diff .devrites/work/<slug>` — then **opt-in, confirmed** (default
-   **sync**; a shipped feature's proven behavior belongs in the ledger — the escape hatch is skip,
-   for an internal-only change with no capability contract). On yes: run
-   `devrites-engine ledger sync .devrites/work/<slug>`, append each written
-   `.devrites/specs/<capability>/spec.md` to `touched-files.md` so it ships *in this commit*, and
-   record the synced capabilities in `ship.md`. Skip silently when the feature declares no
-   requirements (a pure refactor / chore). The fold is gated on the GO + evidence-fresh confirmed
-   in step 1, so the ledger only ever records proven truth.
+   **Completion:** message, trailers, target branch, tag/PR choice, and exact staged scope are explicit.
+2a. **Design memory (UI only).** Follow
+   [`reference/design-memory.md`](reference/design-memory.md). Completion: the confirmed
+   outcome is recorded, and any `DESIGN.md` edit is in `touched-files.md`; non-UI skips.
+2b. **Capability ledger sync.** Follow [`reference/ledger.md`](reference/ledger.md).
+   Completion: proven capability deltas are previewed, the confirmed outcome is recorded,
+   and every synced ledger file is in `touched-files.md`.
 2c. **Credential guard (blocking for HIGH).** Before the irreversible type-GO prompt, scan staged
    and touched files plus any PR body draft. HIGH blocks ship and tells the user to rotate/redact;
    MEDIUM asks for confirmation and records the exception in `ship.md`; LOW is FYI.
@@ -86,21 +75,11 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 4. On `GO`: run the git ladder — commit → push → tag / PR as applicable
    ([reference/git-ship.md](reference/git-ship.md)). Capture the commit SHA(s),
    branch, and tag/PR URL.
-4a. **When opening a PR, render a structured body** — not just the commit message:
-   **Summary** (what shipped + acceptance n/total) · **Risk & rollback** (the migration /
-   destructive / auth touches + how to revert, from `seal.md`'s risk scan — when this ship drives a
-   *live staged rollout* the agent owns, follow [reference/rollout.md](reference/rollout.md) for the
-   rollout thresholds, rollback-time budgets, and first-hour runbook; skip it when CI deploys on merge)
-   · **What to scrutinize**
-   (point reviewers at the highest-blast-radius hunks) · **Evidence** (a condensed `evidence.md` +
-   the seal's reconciled reviewer-verdict digest, linking the full `.devrites/archive/<slug>/`
-   bundle). **Delete any N/A section** — an empty Risk block is noise.
-4b. **Promote architecturally-significant decisions to ADRs.** For each `decisions.md` ADR that
-   records a *durable* architecture / interface choice (not a slice-local call), append it to a
-   persistent `docs/adr/ADR-NNN.md` — Nygard shape (Context · Decision · Status `accepted` ·
-   Consequences), **append-only**, never rewritten; supersede with a new ADR that links the old.
-   The per-feature `decisions.md` is archived with the workspace; the ADR keeps the load-bearing
-   *why* discoverable in the repo. Skip if the project keeps no `docs/adr/` and the user doesn't want one.
+4a. **PR branch only.** Render the structured body from
+   [`reference/git-ship.md`](reference/git-ship.md#pull-request-body); omit empty sections.
+4b. **Durable architecture decisions only.** Apply
+   [`reference/adr-promotion.md`](reference/adr-promotion.md); slice-local decisions stay in
+   the archived workspace.
 5. Write `ship.md` ([reference/ship-template.md](reference/ship-template.md)): what
    shipped, SHA(s), branch, tag/PR, acceptance summary (n/total), link to `seal.md`,
    follow-ups.
@@ -113,23 +92,10 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    ```bash
    devrites-engine context sync || true
    ```
-6a. **Cross-feature retro (automatic, cadence-gated, advisory).** The just-shipped feature is now in
-   the archive, so this is where the **cross-feature** learning loop closes on its own — the synthesis
-   that otherwise waits for a human to run `/rite-learn`. Run the cheap cadence gate first; it stays
-   silent unless a finding/drift class recurs across **>=2 shipped features** with new signal since the
-   last review (so it never fires on an early or one-off ship):
-   ```bash
-   devrites-engine learnings nudge
-   ```
-   **If the nudge emits** (a recurring pattern crossed the threshold), dispatch the read-only
-   `devrites-retrospector` (`.claude/agents/`) over `.devrites/archive/` for the cross-feature
-   synthesis. Persist its digest to `.devrites/retro.md` (append a dated entry — the project-level
-   retro ledger, never rewritten) and surface the **graduation candidates** with a one-line pointer
-   to `/rite-learn`, which is where the human confirms a promotion to a rule / principle / convention.
-   **Propose, never impose:** retro **drafts**; it never auto-writes a rule or principle (a principle
-   is a gate, amended deliberately and dated — `principles.md` governance), and it never blocks the
-   ship, which has already happened. If the nudge is silent, skip — no retro this close. Then `touch
-   .devrites/.learnings-reviewed` only when the human acts on it via `/rite-learn`, not here.
+6a. **Cross-feature retro.** Run the cadence-gated advisory branch in
+   [`reference/close-out.md`](reference/close-out.md#cross-feature-retro). Completion: a
+   silent nudge does nothing; a real recurrence is appended to `.devrites/retro.md` and
+   surfaced to `/rite-learn`, never auto-promoted.
 
 > **Mid-flight discipline.** When tempted to ship without a GO seal, skip the type-GO,
 > stage files outside `touched-files.md`, or delete the workspace instead of archiving
@@ -140,16 +106,6 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 
 **Progress first** — run `devrites-engine progress`, then use the Shipped typed template from
 the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Final shipped shape:
-```
-Shipped: <feature>
-Commit: <sha> on <branch>
-Tag/PR: <value | none>
-Acceptance: <n>/<total> proven
-Archived: .devrites/archive/<slug>/ · ACTIVE cleared
-Record: .devrites/archive/<slug>/ship.md
-↻ Hygiene: /clear
-```
+([`reply-contract.md` § Shipped](../devrites-lib/reference/reply-contract.md#shipped)).
 If the user declined type-GO: state that nothing shipped, the seal still reads GO, and
 the resume command (`/rite-ship`).

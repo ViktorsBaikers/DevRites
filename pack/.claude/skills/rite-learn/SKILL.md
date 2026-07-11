@@ -45,6 +45,8 @@ it never edits source or rule files on its own.
    **≥2 occurrences across distinct features** — one-offs are noise, not a pattern. Name the
    pattern in one specific sentence (the specificity rule from `prose-style.md` applies: a lesson
    you could swap onto any project says nothing).
+   **Completion:** every candidate cites two distinct features, except a single deliberate
+   rejected direction with its durable reason.
 3. **Classify each candidate** into its durable home:
    - **project rule** — a craft/standard that belongs in a `.claude/skills/devrites-lib/reference/standards/*` file or `CLAUDE.md`.
    - **project principle** — a recurring correction that is really a *non-negotiable invariant*
@@ -63,6 +65,7 @@ it never edits source or rule files on its own.
 4. **Propose, don't impose.** Present the candidates with their evidence (which features, how many
    times, the proposed home) via `AskUserQuestion` — the human picks which to promote. Never
    promote a lesson to a rule silently; an unproven "lesson" hardened into a rule is its own slop.
+   **Completion:** every candidate is explicitly accepted, rejected, or deferred by the human.
 5. **Record the accepted.** For each the user accepts, append it with `devrites-engine learnings add <slug>
    "<lesson>" <tag>` (`tag` ∈ `rule | convention | dismiss`). If the user approves a **rule**,
    **principle**, or **ledger** promotion, draft the exact edit and let the user confirm it through

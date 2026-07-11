@@ -1,6 +1,6 @@
 {
   "skill": "rite-handoff",
-  "description": "Explicit-only evals for /rite-handoff \u2014 chat-only context sync and fresh-agent handoff writer.",
+  "description": "Explicit-only evals for /rite-handoff — chat-only context sync and fresh-agent handoff writer.",
   "queries": [
     {
       "text": "/rite-handoff",
@@ -25,37 +25,51 @@
     {
       "text": "handoff",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only utility; natural language should not auto-invoke."
+      "rationale": "Explicit-only utility; natural language should not auto-invoke.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility; natural language should not auto-invoke."
     },
     {
       "text": "summarize this session for the next agent",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only handoff request."
+      "rationale": "Explicit-only handoff request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only handoff request."
     },
     {
       "text": "write a handoff doc for tomorrow",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only handoff request."
+      "rationale": "Explicit-only handoff request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only handoff request."
     },
     {
       "text": "capture the context before compacting",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only handoff request."
+      "rationale": "Explicit-only handoff request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only handoff request."
     },
     {
       "text": "Where am I in the active feature?",
       "expected": "should_not_trigger",
-      "rationale": "Status query is /rite-status."
+      "rationale": "Status query is /rite-status.",
+      "owner": null,
+      "owner_rationale": "Status query is /rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "What should I do next in DevRites?",
       "expected": "should_not_trigger",
-      "rationale": "Status/next-action query is /rite-status."
+      "rationale": "Status/next-action query is /rite-status.",
+      "owner": null,
+      "owner_rationale": "Status/next-action query is /rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Plan the next slice of the active feature",
       "expected": "should_not_trigger",
-      "rationale": "Planning is /rite-define or /rite-plan."
+      "rationale": "Planning is /rite-define or /rite-plan.",
+      "owner": null,
+      "owner_rationale": "Planning is /rite-define or /rite-plan."
     },
     {
       "text": "Review the diff",
@@ -78,12 +92,15 @@
     {
       "text": "Fix the failing tests",
       "expected": "should_not_trigger",
-      "rationale": "Debugging belongs to devrites-debug-recovery."
+      "rationale": "Debugging belongs to devrites-debug-recovery.",
+      "owner": "devrites-debug-recovery"
     },
     {
       "text": "Explain this module to me",
       "expected": "should_not_trigger",
-      "rationale": "Explanation is /rite-explain."
+      "rationale": "Explanation is /rite-explain.",
+      "owner": null,
+      "owner_rationale": "Explanation is /rite-explain. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Start a new feature",
@@ -106,7 +123,9 @@
     {
       "text": "Format this JSON",
       "expected": "should_not_trigger",
-      "rationale": "Off-topic utility."
+      "rationale": "Off-topic utility.",
+      "owner": null,
+      "owner_rationale": "Off-topic utility."
     }
   ]
 }

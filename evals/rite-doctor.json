@@ -2,25 +2,120 @@
   "skill": "rite-doctor",
   "description": "Trigger evals for /rite-doctor — diagnosing DevRites install + workspace health. Adversarial against /rite-status (feature progress) and devrites-debug-recovery (the user's own code).",
   "queries": [
-    {"text": "/rite-doctor", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "Check my DevRites install.", "expected": "should_trigger", "rationale": "Install health check."},
-    {"text": "Is DevRites healthy?", "expected": "should_trigger", "rationale": "Canonical health phrasing."},
-    {"text": "Diagnose devrites.", "expected": "should_trigger", "rationale": "Diagnose the setup, not the app."},
-    {"text": "rite doctor", "expected": "should_trigger", "rationale": "Menu-verb form."},
-    {"text": "Why isn't the workflow picking up my active feature?", "expected": "should_trigger", "rationale": "Stale ACTIVE / corrupt-workspace symptom — a doctor check."},
-    {"text": "Something's off with my .devrites state — check the setup.", "expected": "should_trigger", "rationale": "Workspace/state integrity = doctor."},
-    {"text": "My rite commands aren't finding the workspace — is the install broken?", "expected": "should_trigger", "rationale": "Install integrity / hook wiring = doctor."},
-    {"text": "Run a health check on the DevRites setup.", "expected": "should_trigger", "rationale": "Explicit health-check request."},
-    {"text": "The DevRites hooks don't seem wired up — verify them.", "expected": "should_trigger", "rationale": "Broken hook wiring is a doctor check."},
-    {"text": "Where am I in DevRites?", "expected": "should_not_trigger", "rationale": "Feature progress / next action = /rite-status, not health."},
-    {"text": "Status of the billing feature.", "expected": "should_not_trigger", "rationale": "/rite-status territory."},
-    {"text": "Debug why my tests are failing.", "expected": "should_not_trigger", "owner": "devrites-debug-recovery", "rationale": "The user's code = devrites-debug-recovery."},
-    {"text": "The app is throwing a 500 — diagnose it.", "expected": "should_not_trigger", "owner": "devrites-debug-recovery", "rationale": "Application bug, not DevRites health (devrites-debug-recovery)."},
-    {"text": "Fix this bug in the auth middleware.", "expected": "should_not_trigger", "rationale": "Code fix, not a health check."},
-    {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "/rite-build."},
-    {"text": "Review my PR.", "expected": "should_not_trigger", "rationale": "/rite-review."},
-    {"text": "Spec a new feature for exports.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "What DevRites commands are available?", "expected": "should_not_trigger", "rationale": "/rite menu."},
-    {"text": "What's 2 + 2?", "expected": "should_not_trigger", "rationale": "Off-topic."}
+    {
+      "text": "/rite-doctor",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "Check my DevRites install.",
+      "expected": "should_trigger",
+      "rationale": "Install health check."
+    },
+    {
+      "text": "Is DevRites healthy?",
+      "expected": "should_trigger",
+      "rationale": "Canonical health phrasing."
+    },
+    {
+      "text": "Diagnose devrites.",
+      "expected": "should_trigger",
+      "rationale": "Diagnose the setup, not the app."
+    },
+    {
+      "text": "rite doctor",
+      "expected": "should_trigger",
+      "rationale": "Menu-verb form."
+    },
+    {
+      "text": "Why isn't the workflow picking up my active feature?",
+      "expected": "should_trigger",
+      "rationale": "Stale ACTIVE / corrupt-workspace symptom — a doctor check."
+    },
+    {
+      "text": "Something's off with my .devrites state — check the setup.",
+      "expected": "should_trigger",
+      "rationale": "Workspace/state integrity = doctor."
+    },
+    {
+      "text": "My rite commands aren't finding the workspace — is the install broken?",
+      "expected": "should_trigger",
+      "rationale": "Install integrity / hook wiring = doctor."
+    },
+    {
+      "text": "Run a health check on the DevRites setup.",
+      "expected": "should_trigger",
+      "rationale": "Explicit health-check request."
+    },
+    {
+      "text": "The DevRites hooks don't seem wired up — verify them.",
+      "expected": "should_trigger",
+      "rationale": "Broken hook wiring is a doctor check."
+    },
+    {
+      "text": "Where am I in DevRites?",
+      "expected": "should_not_trigger",
+      "rationale": "Feature progress / next action = /rite-status, not health.",
+      "owner": null,
+      "owner_rationale": "Feature progress / next action = /rite-status, not health. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Status of the billing feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-status territory.",
+      "owner": null,
+      "owner_rationale": "/rite-status territory. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Debug why my tests are failing.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-debug-recovery",
+      "rationale": "The user's code = devrites-debug-recovery."
+    },
+    {
+      "text": "The app is throwing a 500 — diagnose it.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-debug-recovery",
+      "rationale": "Application bug, not DevRites health (devrites-debug-recovery)."
+    },
+    {
+      "text": "Fix this bug in the auth middleware.",
+      "expected": "should_not_trigger",
+      "rationale": "Code fix, not a health check.",
+      "owner": null,
+      "owner_rationale": "Code fix, not a health check."
+    },
+    {
+      "text": "Build the next slice.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Review my PR.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Spec a new feature for exports.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "What DevRites commands are available?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite menu.",
+      "owner": null,
+      "owner_rationale": "/rite menu. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "What's 2 + 2?",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic.",
+      "owner": null,
+      "owner_rationale": "Off-topic."
+    }
   ]
 }

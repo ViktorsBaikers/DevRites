@@ -42,9 +42,9 @@ traceability rules, and phase-relative completeness model, see
    internal is governed by the `user-invocable:` flag, not by the name
    prefix.
 
-   Engineering rules live at `.claude/skills/devrites-lib/reference/standards/` (each `rite-*` skill Reads
-   `.claude/skills/devrites-lib/reference/standards/core.md` as its first step; the other 15 files load on
-   demand — no session-start autoload). Parallel reviewer fan-out at
+   Engineering rules live at `.claude/skills/devrites-lib/reference/standards/`.
+   Workspace-operating lifecycle rites load `core.md` first and disclose phase-specific
+   files on demand; compact utilities keep a narrower local contract. Parallel reviewer fan-out at
    `/rite-seal` is a reference file
    (`rite-seal/reference/parallel-dispatch.md`), not a skill.
 4. **Supporting references** — `reference/*.md` inside each skill. Long checklists,
@@ -62,8 +62,9 @@ traceability rules, and phase-relative completeness model, see
    dispatched by `/rite-build` to write one slice in a clean context (the write-side mirror of
    the reviewers).
 6. **Engineering rules** — DevRites' own stack-agnostic rules installed to
-   `.claude/skills/devrites-lib/reference/standards/`. Each `rite-*` skill Reads `core.md` as its first step
-   (step 0); on-demand files load by the phase that needs them:
+   `.claude/skills/devrites-lib/reference/standards/`. Workspace-operating lifecycle
+   skills read `core.md` in step 0; compact utilities load only their local or conditional
+   rules. On-demand files load by the phase that needs them:
    - **Craft:** `coding-style.md` · `prose-style.md` · `patterns.md` · `error-handling.md` ·
      `testing.md` · `spec-grammar.md` · `documentation.md` · `skill-authoring.md`.
    - **Quality / safety:** `code-review.md` · `principles.md` · `security.md` ·

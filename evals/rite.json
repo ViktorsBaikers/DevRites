@@ -1,6 +1,6 @@
 {
   "skill": "rite",
-  "description": "Explicit-only evals for /rite \u2014 compact menu and router.",
+  "description": "Explicit-only evals for /rite — compact menu and router.",
   "queries": [
     {
       "text": "/rite",
@@ -25,22 +25,30 @@
     {
       "text": "What DevRites commands exist?",
       "expected": "should_not_trigger",
-      "rationale": "Menu is explicit-only."
+      "rationale": "Menu is explicit-only.",
+      "owner": null,
+      "owner_rationale": "Menu is explicit-only."
     },
     {
       "text": "Show me the DevRites menu.",
       "expected": "should_not_trigger",
-      "rationale": "Menu is explicit-only."
+      "rationale": "Menu is explicit-only.",
+      "owner": null,
+      "owner_rationale": "Menu is explicit-only."
     },
     {
       "text": "List all rites.",
       "expected": "should_not_trigger",
-      "rationale": "Menu is explicit-only."
+      "rationale": "Menu is explicit-only.",
+      "owner": null,
+      "owner_rationale": "Menu is explicit-only."
     },
     {
       "text": "What can DevRites do?",
       "expected": "should_not_trigger",
-      "rationale": "Menu is explicit-only."
+      "rationale": "Menu is explicit-only.",
+      "owner": null,
+      "owner_rationale": "Menu is explicit-only."
     },
     {
       "text": "Start a feature for invoice export.",
@@ -93,12 +101,16 @@
     {
       "text": "Check status.",
       "expected": "should_not_trigger",
-      "rationale": "/rite-status."
+      "rationale": "/rite-status.",
+      "owner": null,
+      "owner_rationale": "/rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Resolve a question.",
       "expected": "should_not_trigger",
-      "rationale": "/rite-resolve."
+      "rationale": "/rite-resolve.",
+      "owner": null,
+      "owner_rationale": "/rite-resolve. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Doctor my install.",
@@ -109,7 +121,9 @@
     {
       "text": "Explain this file.",
       "expected": "should_not_trigger",
-      "rationale": "/rite-explain."
+      "rationale": "/rite-explain.",
+      "owner": null,
+      "owner_rationale": "/rite-explain. The functional owner is explicit-only, so natural language has no implicit owner."
     }
   ]
 }

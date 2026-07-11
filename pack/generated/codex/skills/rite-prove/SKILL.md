@@ -1,6 +1,6 @@
 ---
 name: rite-prove
-description: Prove completed feature with full tests/build/typecheck/lint, end-to-end/browser evidence, screenshots, commands and outputs for seal. Not for single-slice proof.
+description: Prove a completed feature with tests and the full test suite, build/typecheck/lint, end-to-end/browser evidence, screenshots, commands, and outputs for seal. Not for single-slice proof.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---
@@ -43,8 +43,7 @@ the existing `evidence.md` no longer post-dates the change, so re-run `$rite-pro
 the affected criteria/routes to refresh proof before `$rite-seal`.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.agents/skills/devrites-lib/reference/standards/core.md` first. The other rule files load on demand;
-pull these via `Read` when relevant:
+Pull these via `Read` when relevant:
 - `testing.md` — pyramid, determinism, no-flake discipline.
 - `test-proof-checklist.md` — compact proof-quality gate for tests and recorded evidence.
 - `browser-proof-checklist.md` — for UI scope, the required browser states and Visual Verdict evidence.
@@ -75,6 +74,7 @@ pull these via `Read` when relevant:
 2. **Discover commands** if not recorded —
    [test-command-discovery](reference/test-command-discovery.md): README, package
    scripts, Makefile, CI configs, Gemfile/Rakefile, pyproject, go.mod, Cargo.toml.
+   **Completion:** exact runnable test/build/typecheck/lint commands are recorded or explicitly unavailable.
 3. **Run the full relevant test suite** for the feature (not a single slice), then the
    relevant **build / typecheck / lint**.
 4. **UI feature?** Read `design-brief.md` + `references.md`, then run the browser proof ladder over the feature's routes —
@@ -83,69 +83,11 @@ pull these via `Read` when relevant:
    console, network, interaction paths, and the brief's proof targets. Compare screenshots
    with target references, record deltas, fix/re-render, and do not pass with an unresolved
    material mismatch.
-5. **Map results to acceptance** — walk `spec.md` acceptance criteria; note which are now
-   proven and which aren't. Tag every criterion's evidence row with its **proof class**:
-   `proof: test` / `command` / `browser` / `judgment` (observation only, for criteria no
-   automatable assertion can prove — taste, copy tone; record the one-line why). Untagged
-   reads `judgment`; the tag earns a test-proven criterion its auto-pass at `$rite-seal`. **If the spec uses the structured grammar** (`### Requirement:` /
-   `#### Scenario:` blocks — `spec-grammar.md`), walk it **per scenario**: each `#### Scenario:`
-   WHEN/THEN is one observable behavior that needs a passing asserting test (the WHEN is the
-   arrange, the THEN the assert). A scenario with no covering result is an unproven gap =
-   blocker, the same standing as an uncovered acceptance criterion. Re-run the grammar gate
-   first so a requirement hand-edited to malformed since `$rite-spec` can't masquerade as proven
-   (`--against` re-checks any delta classification against the ledger, same as the spec gate):
-   ```bash
-   devrites-engine spec-validate ".devrites/work/<slug>" --against .devrites/specs; echo "spec-validate rc=$?"
-   ```
-   If `test-plan.md` exists, also walk its acceptance→test map and
-   per-gap requirements — a planned test (especially a regression-Critical) with no covering
-   result is an unproven gap, not a pass. **Also walk the test-plan interaction inventory**
-   (every interactive element + user flow): each must have a passing asserting test. An
-   element/flow with no asserting result is an **unproven gap = blocker** — a NO-GO at
-   `$rite-seal`, the same standing as an unproven acceptance criterion (`testing.md`
-   "Completeness"). For UI, the browser proof (step 4) demonstrates the flows; the asserting
-   tests prove the elements.
-5a. **Assertion-strength spot check (critical paths).** For each regression-Critical /
-   irreversible / data-loss path, confirm the covering test actually *can* fail: reject
-   tautological assertions (`toBeDefined`-only, asserting the mock), and **fault-inject** —
-   break the code on purpose (flip a comparison, drop a guard) and confirm the test goes red,
-   then revert. Run the project's mutation-testing tool over the touched criticals if it has
-   one. A test that stays green on deliberately broken code is an unproven gap, not a pass
-   (`testing.md` "Assertion strength"). Record what was fault-checked in `evidence.md`.
-   Run the deterministic gates rather than eyeballing:
-   ```bash
-   devrites-engine test-integrity; echo "test-integrity rc=$?"   # exit 3 = a test was weakened to pass → NO-GO
-   devrites-engine mutation-gate   # changed-files mutation score → band the seal verdict
-   devrites-engine package-existence; echo "package-existence rc=$?"   # exit 3 = a new import isn't declared in any manifest (hallucinated/typo-squatted dep) → NO-GO
-   ```
-   For a parser / serializer / encoder / auth-token / pure-transform criterion, add a **round-trip
-   or metamorphic property** check (`decode(encode(x))==x`, `parse∘print==id`) over generated inputs —
-   example tests miss the edge cases these explore. If the same unit regenerated from a paraphrased
-   spec (or a second sample) **diverges in behaviour on shared inputs**, treat that as a low-confidence
-   signal: under AFK it blocks an auto-GO and routes to HITL.
-5b. **Observability check (runtime surface only).** If the feature added an endpoint, job,
-   queue consumer, external integration, user-facing flow, or a new error path, apply the
-   on-call test (`observability.md`): are the signals needed to debug a prod failure present —
-   structured logs on the failure path, a metric/counter on errors, a trace id across any
-   boundary? Then **observe them fire**: trigger the path and confirm the log line / metric /
-   span actually emits, and record that observation in `evidence.md`. Instrumentation never seen
-   emitting is unproven, not done. Skip entirely for pure-internal / docs / config / type-only
-   changes — don't instrument a typo fix.
-5c. **Developer-experience measure (developer-facing surface only).** If the feature ships a public
-   API, CLI, SDK/library, webhook, config/env contract, error/exit path, or the getting-started flow
-   (`developer-experience.md`), **exercise it** rather than reading it: run the getting-started steps
-   on a clean state and **time time-to-hello-world**; invoke the CLI `--help` / call the endpoint /
-   import the package; trigger the failure path and capture the **verbatim** error text. For a docs or
-   quickstart page, capture it through the browser-proof ladder (`devrites-browser-proof`) and describe
-   the screenshot. Write the **measured** scorecard to `devex.md` (beside the `$rite-vet` prediction the
-   boomerang reconciles at `$rite-seal`) and the headline numbers + error strings to `evidence.md`. A
-   scorecard from "the code looks fine" is Source mode, not proof. Skip entirely when no developer-facing
-   surface is in scope — don't DX-measure an internal refactor.
-5d. **Wiring walk (key links).** Read `plan.md` § Validation strategy Key links; verify each in
-   the assembled feature by following the reference or exercising the path — slice
-   tests prove the parts, this walk proves the assembly. An unwired link is an **unproven gap
-   = blocker** at `$rite-seal`. Record each check as an `EVID-###` row; plan names none →
-   record `key links: none declared` in `evidence.md` and move on.
+5. **Map proof completely.** Follow
+   [`reference/acceptance-proof.md`](reference/acceptance-proof.md) for acceptance/scenario
+   coverage and the conditional critical-path, observability, developer-surface, and wiring
+   branches. Completion: every criterion, planned interaction, and declared key link has a
+   proof class plus passing evidence, or is recorded as a blocker.
 6. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. Reproduce → isolate → fix within scope → re-run; if a fix
    would exceed scope, record a blocker.
@@ -163,10 +105,12 @@ Default success shape:
 ```
 Done: feature proof complete for <slug>.
 Changed: evidence.md, browser-evidence.md <updated|n/a>, devex.md <updated|n/a>, state.md
-Evidence: acceptance <n>/<total> (judgment-only <n>); scenarios <n>/<total|n/a>; key links <n>/<n|none>; tests/build/lint/browser <pass|fail summary>
-Open: <none | unresolved blockers | unproven criteria>
+Evidence: acceptance <total>/<total> (judgment-only <n>); scenarios <total>/<total|n/a>; key links <n>/<n|none>; tests/build/lint/browser <pass summary>
+Open: none
 Next: $rite-polish
 Record: .devrites/work/<slug>/evidence.md
 ↻ Hygiene: /clear before $rite-polish
 ```
-— (see hard rule above).
+If any check fails, a blocker remains, or a criterion is unproven, use the shared
+`Stopped / blocked` form and route `Fix:` to the failing check or `$rite-build`; do
+not recommend `$rite-polish`.

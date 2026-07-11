@@ -31,7 +31,7 @@ Fast paths:
    - Override: write only added checks/emphasis. Do not restate base reviewer rules.
    - Extension: create the smallest valid `skill/SKILL.md` or `agent.md` that matches the user's requested surface.
    Done when the draft has no gate-waiver language and no global paths.
-4. **Show before writing.** Present the path and full content (or a concise diff when updating), then wait for explicit approval. Done only after the user approves or aborts.
+4. **Show before writing.** Present the path and full content (or a concise diff when updating), then wait. **Completion:** the user explicitly approves or aborts.
 5. **Write and validate.** Create parent dirs, write the file(s), then run the matching validator:
    ```bash
    devrites-engine overrides validate

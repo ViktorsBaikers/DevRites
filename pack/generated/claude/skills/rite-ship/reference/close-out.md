@@ -29,3 +29,14 @@ deleted. DevRites keeps the full audit trail; it just moves out of the live path
 To resume archived work, move it back:
 `mv .devrites/archive/<slug> .devrites/work/<slug>` and write `<slug>` into
 `.devrites/ACTIVE`. Nothing is lost — close-out is reversible by design.
+
+## Cross-feature retro
+
+After archive, run `devrites-engine learnings nudge`. It stays silent until a
+finding/drift class recurs across at least two shipped features with new signal.
+
+When it emits, dispatch the read-only `devrites-retrospector` over
+`.devrites/archive/`, append its dated digest to `.devrites/retro.md`, and surface
+graduation candidates to `/rite-learn`. The retro proposes; only `/rite-learn` may
+promote a rule, principle, or convention. Mark `.devrites/.learnings-reviewed` only
+after the human acts there.

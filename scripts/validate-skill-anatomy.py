@@ -104,7 +104,7 @@ def validate(skills_dir: Path) -> list[str]:
                 errors.append(f"{f}: anatomy exemption {label!r} expired {record['expires']}")
         desc = fm.get("description", "")
         explicit_only = fm.get("disable-model-invocation") == "true"
-        if not explicit_only and not re.search(r"\bUse when\b|\bUse to\b|\bTrigger|\bwhen the user\b|\bfor ", desc, re.I):
+        if not explicit_only and not re.search(r"\bUse when\b|\bUse to\b|\bTrigger|\bwhen\b|\bfor ", desc, re.I):
             errors.append(f"{f}: model-invoked description must include trigger language")
         # Cross-skill references: obvious backtick references should exist.
         for ref in re.findall(r"`((?:rite|devrites)-[a-z0-9-]+)`", text):
@@ -112,6 +112,13 @@ def validate(skills_dir: Path) -> list[str]:
                 continue
             if not (skills_dir / ref / "SKILL.md").exists() and not (ROOT / "pack" / ".claude" / "agents" / f"{ref}.md").exists():
                 errors.append(f"{f}: unknown cross-skill/agent reference `{ref}`")
+    afk_contract = skills_dir / "devrites-lib" / "reference" / "standards" / "afk-hitl.md"
+    if afk_contract.exists():
+        afk_text = afk_contract.read_text(encoding="utf-8")
+        if "allow_irreversible" in afk_text:
+            errors.append(f"{afk_contract}: irreversible-risk gates must not have an unattended bypass")
+        if "## Irreversible-risk list (always pause)" not in afk_text:
+            errors.append(f"{afk_contract}: missing irreversible-risk always-pause contract")
     return errors
 
 

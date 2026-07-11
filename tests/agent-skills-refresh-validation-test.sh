@@ -47,6 +47,63 @@ run_ok "skill anatomy validator passes shipped pack" python3 "$ROOT/scripts/vali
 run_ok "host command parity validator passes" python3 "$ROOT/scripts/validate-command-parity.py" --quiet
 run_ok "agent composition validator passes" python3 "$ROOT/scripts/validate-agent-composition.py" --quiet
 
+# Fixtures: schema validation accepts policy-sized corpora and rejects empty ones.
+cat > "$T/small-eval.json" <<'JSON'
+{"skill":"rite-demo","description":"Small direct-command corpus.","queries":[{"text":"/rite-demo","expected":"should_trigger","rationale":"Direct invocation."},{"text":"run something else","expected":"should_not_trigger","rationale":"Negative boundary."}]}
+JSON
+run_ok "trigger eval schema accepts variable corpus size" bash "$ROOT/scripts/run-evals.sh" "$T/small-eval.json"
+cat > "$T/empty-eval.json" <<'JSON'
+{"skill":"rite-demo","description":"Invalid empty corpus.","queries":[]}
+JSON
+run_fail_contains "trigger eval schema rejects empty corpus" "queries is empty" bash "$ROOT/scripts/run-evals.sh" "$T/empty-eval.json"
+
+# Fixtures: Done is green-only across the blocked/unproven/awaiting state table.
+reply_case() {
+  label="$1" line="$2" expected="$3"
+  dir="$T/reply-$label/rite-demo"
+  mkdir -p "$dir"
+  cat > "$dir/SKILL.md" <<SKILL
+---
+name: rite-demo
+description: Demo.
+user-invocable: true
+---
+# rite-demo
+## Output
+Uses devrites-lib/reference/reply-contract.md.
+\`\`\`
+Done: demo complete.
+Evidence: checks pass
+$line
+Next: /rite-prove
+\`\`\`
+SKILL
+  if [ "$expected" = pass ]; then
+    run_ok "reply contract accepts $label" env DEVRITES_SKILLS_DIR="${dir%/rite-demo}" bash "$ROOT/scripts/check-reply-contract.sh"
+  else
+    run_fail_contains "reply contract rejects $label" "unresolved state" env DEVRITES_SKILLS_DIR="${dir%/rite-demo}" bash "$ROOT/scripts/check-reply-contract.sh"
+  fi
+}
+reply_case green "Open: none" pass
+reply_case blocked "Open: blocker remains" fail
+reply_case unproven "Evidence: acceptance unproven" fail
+reply_case awaiting "Open: awaiting human" fail
+
+# Fixture: an ordered step needs either an explicit completion signal or an
+# observable action + target; generic exhortation is not a contract.
+mkdir -p "$T/pruning-skills/rite-demo"
+cat > "$T/pruning-skills/rite-demo/SKILL.md" <<'SKILL'
+---
+name: rite-demo
+description: Use when demonstrating an invalid step.
+user-invocable: true
+---
+# rite-demo
+## Workflow
+1. Think carefully.
+SKILL
+run_fail_contains "step audit rejects vague ordered step" "needs a checkable completion criterion" node "$ROOT/scripts/skill-pruning-audit.mjs" --skills-dir "$T/pruning-skills" --quiet
+
 # Fixture: anatomy validator rejects a public skill without a stop/output contract.
 mkdir -p "$T/skills/rite-demo"
 cat > "$T/skills/rite-demo/SKILL.md" <<'SKILL'
@@ -103,6 +160,36 @@ cat > "$T/routing-evals/alpha.json" <<'JSON'
 {"skill":"alpha","queries":[{"text":"alpha task","expected":"should_not_trigger","owner":"beta","rationale":"beta owns it"}]}
 JSON
 run_fail_contains "routing eval rejects owner that does not outrank target" "declared owner" python3 "$ROOT/scripts/run-routing-evals.py" --skills-dir "$T/routing-skills" --evals-dir "$T/routing-evals" --baseline "$T/no-baseline.json"
+
+# Fixtures: invocation policy determines the required routing corpus shape.
+mkdir -p "$T/explicit-skills/rite-explicit" "$T/explicit-evals"
+cat > "$T/explicit-skills/rite-explicit/SKILL.md" <<'SKILL'
+---
+name: rite-explicit
+description: Explicit demo.
+user-invocable: true
+disable-model-invocation: true
+---
+# rite-explicit
+SKILL
+cat > "$T/explicit-evals/rite-explicit.json" <<'JSON'
+{"skill":"rite-explicit","queries":[{"text":"please run the explicit demo","expected":"should_trigger"},{"text":"ignore the demo","expected":"should_not_trigger","owner":null,"owner_rationale":"No owner."}]}
+JSON
+run_fail_contains "routing eval rejects implicit positive for explicit-only skill" "positives must all directly invoke" python3 "$ROOT/scripts/run-routing-evals.py" --skills-dir "$T/explicit-skills" --evals-dir "$T/explicit-evals" --baseline "$T/no-baseline.json"
+
+mkdir -p "$T/model-skills/rite-model" "$T/model-evals"
+cat > "$T/model-skills/rite-model/SKILL.md" <<'SKILL'
+---
+name: rite-model
+description: Model demo. Use when asked for model routing.
+user-invocable: true
+---
+# rite-model
+SKILL
+cat > "$T/model-evals/rite-model.json" <<'JSON'
+{"skill":"rite-model","queries":[{"text":"/rite-model","expected":"should_trigger"},{"text":"ignore the demo","expected":"should_not_trigger","owner":null,"owner_rationale":"No owner."}]}
+JSON
+run_fail_contains "routing eval rejects direct-only model corpus" "needs implicit positive and negative queries" python3 "$ROOT/scripts/run-routing-evals.py" --skills-dir "$T/model-skills" --evals-dir "$T/model-evals" --baseline "$T/no-baseline.json"
 
 cat > "$T/routing-baseline.json" <<'JSON'
 {"recorded_at":"2026-07-10","skills":99,"queries":1,"positive_queries":0,"negative_queries":1}

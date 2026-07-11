@@ -1,6 +1,6 @@
 {
   "skill": "rite-learn",
-  "description": "Explicit-only evals for /rite-learn \u2014 human-gated learning-ledger promotion.",
+  "description": "Explicit-only evals for /rite-learn — human-gated learning-ledger promotion.",
   "queries": [
     {
       "text": "/rite-learn",
@@ -25,27 +25,37 @@
     {
       "text": "Mine the learnings from the archived features.",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only utility."
+      "rationale": "Explicit-only utility.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility."
     },
     {
       "text": "Update the learnings ledger.",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only utility."
+      "rationale": "Explicit-only utility.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility."
     },
     {
       "text": "Promote recurring lessons into principles.",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only learning promotion."
+      "rationale": "Explicit-only learning promotion.",
+      "owner": null,
+      "owner_rationale": "Explicit-only learning promotion."
     },
     {
       "text": "Review the retrospector output.",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only learning promotion."
+      "rationale": "Explicit-only learning promotion.",
+      "owner": null,
+      "owner_rationale": "Explicit-only learning promotion."
     },
     {
       "text": "Where am I in the active feature and what is next?",
       "expected": "should_not_trigger",
-      "rationale": "/rite-status."
+      "rationale": "/rite-status.",
+      "owner": null,
+      "owner_rationale": "/rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Review this feature diff against the spec.",
@@ -56,7 +66,9 @@
     {
       "text": "Answer question q-2026-06-21-003 with use cursor pagination.",
       "expected": "should_not_trigger",
-      "rationale": "/rite-resolve."
+      "rationale": "/rite-resolve.",
+      "owner": null,
+      "owner_rationale": "/rite-resolve. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Start a new feature.",
@@ -92,7 +104,8 @@
       "text": "Customize DevRites rules.",
       "expected": "should_not_trigger",
       "rationale": "/rite-customize.",
-      "owner": "rite-customize"
+      "owner": null,
+      "owner_rationale": "/rite-customize. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Check my DevRites install.",
@@ -103,12 +116,16 @@
     {
       "text": "Explain the architecture.",
       "expected": "should_not_trigger",
-      "rationale": "/rite-explain."
+      "rationale": "/rite-explain.",
+      "owner": null,
+      "owner_rationale": "/rite-explain. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "What is 2 + 2?",
       "expected": "should_not_trigger",
-      "rationale": "Off-topic."
+      "rationale": "Off-topic.",
+      "owner": null,
+      "owner_rationale": "Off-topic."
     }
   ]
 }

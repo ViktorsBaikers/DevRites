@@ -20,8 +20,8 @@ bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`,
 `rite-*` prefix (`rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`,
 `rite-doctor`, `rite-customize`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
 `rite-pressure-test`, `rite-autocomplete`, `rite-explain`, `rite-pov`, `rite-dogfood`,
-`rite-pr-feedback`); every `devrites-*` skill is
-model-invoked.
+`rite-pr-feedback`). `devrites-*` specialists are model-invoked; `devrites-lib` is the
+explicit non-workflow library exception.
 
 ## Surface lifecycle
 
@@ -82,7 +82,7 @@ must say who runs them.
 | [`/rite-dogfood`](../pack/.claude/skills/rite-dogfood/SKILL.md) | utility | `[feature-slug\|branch] [--port N]` | Diff-scoped browser QA: map changed user journeys, run scenario matrix, fix small obvious breakages, write dogfood report. Explicit-only. | diff + app routes + browser | `.devrites/work/<slug>/dogfood.md` + safe fixes |
 | [`/rite-pr-feedback`](../pack/.claude/skills/rite-pr-feedback/SKILL.md) | utility | `[PR number\|thread URL]` | Resolve GitHub PR review feedback: fetch unresolved threads, judge centrally, fix valid items, reply, resolve. Explicit-only. | PR threads + code | code/tests + PR replies/resolutions |
 | [`/rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | utility | `[idea]` | Pressure-test a rough idea: 3–5 genuinely different options → converge on one with trade-off + hinge. | spec / surrounding code | `decisions.md` (optional) |
-| [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | — | Diagnose DevRites install + workspace health — install integrity, stale `.devrites/ACTIVE`, corrupt workspace, orphaned gates, broken hook wiring, and in-progress merge/rebase state. Read-only report. Triggers: "rite doctor", "is DevRites healthy", "why isn't the workflow picking up my feature". | install + workspace | — |
+| [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | `[--code \| --reindex]` | Diagnose DevRites install, workspace, and optional index health. `--reindex` explicitly runs the internal synchronous refresh. Triggers: "rite doctor", "is DevRites healthy", "reindex". | install + workspace + optional indexes | — |
 
 ## Internal skills (`user-invocable: false`, model-invoked)
 
@@ -95,8 +95,8 @@ must say who runs them.
 | [`devrites-frontend-craft`](../pack/.claude/skills/devrites-frontend-craft/SKILL.md) | UI detected in build/polish | Build **to** `design-brief.md`: register, refine-per-slice, states, anti-slop | refs: shape/craft/design-references |
 | [`devrites-prose-craft`](../pack/.claude/skills/devrites-prose-craft/SKILL.md) | a phase writes prose; `/rite-polish` Phase 1 catch | Human-voice writing — strip LLM tells, keep precise lists/terms | refs: banned-phrases, structures, examples |
 | [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | UI in prove/polish | Browser proof ladder + evidence schema + the structured **Visual Verdict** table | harness preferred |
-| [`devrites-refresh-indexes`](../pack/.claude/skills/devrites-refresh-indexes/SKILL.md) | Stop hook (auto) or "reindex" | Keep codebase-memory-mcp / codegraph / graphify current after edits | manual force; no-ops when no index |
-| [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | failing tests/build/runtime | 6-phase: loop → reproduce → hypotheses → instrument → fix → cleanup | references split per phase |
+| [`devrites-refresh-indexes`](../pack/.claude/skills/devrites-refresh-indexes/SKILL.md) | Stop hook or explicit `/rite-doctor --reindex` call | Keep codebase-memory-mcp / codegraph / graphify current after edits | internal synchronous force; no-ops when no index |
+| [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | failing tests/build/runtime | 7-step: loop → reproduce → hypotheses → trace → instrument → fix → cleanup | references split per step |
 | [`devrites-api-interface`](../pack/.claude/skills/devrites-api-interface/SKILL.md) | cross-boundary slice | Stable API/contract design | FE/BE split |
 | [`devrites-audit simplify`](../pack/.claude/skills/devrites-audit/SKILL.md) | `/rite-polish` Phase 1 | Chesterton's Fence, behavior-preserving simplification | dispatches `devrites-simplifier-reviewer` |
 | [`devrites-audit security`](../pack/.claude/skills/devrites-audit/SKILL.md) | input/auth/data/integration in scope | OWASP Top 10, three-tier boundary | dispatches `devrites-security-auditor` |
@@ -126,12 +126,12 @@ must say who runs them.
 
 ## Engineering rules (`pack/.claude/skills/devrites-lib/reference/standards/`)
 
-Progressive-disclosure rules. Each `rite-*` skill Reads `core.md` as its
-first step (step 0); the rest are referenced on demand. Full index in
+Progressive-disclosure rules. Workspace-operating lifecycle skills read `core.md`
+in step 0; compact utilities load their narrower contract. The rest are referenced on demand. Full index in
 [`pack/.claude/skills/devrites-lib/reference/standards/README.md`](../pack/.claude/skills/devrites-lib/reference/standards/README.md).
 
 - `core.md` (always-on) — operating rules + universal anti-rationalizations + 1-line craft disciplines + persistence-before-stopping summary.
-- The other **31 on-demand** rules and checklists (read by the phase that needs them): `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `edge-case-trace.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `ci-cd.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `elicitation.md` · `agents.md` · `context-hygiene.md` · `anti-patterns.md` · `afk-hitl.md` · `tooling.md` · `skill-authoring.md` · `definition-of-done.md` · `review-checklist.md` · `test-proof-checklist.md` · `browser-proof-checklist.md` · `security-checklist.md`
+- On-demand rules and checklists (read by the phase that needs them): `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `edge-case-trace.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `ci-cd.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `elicitation.md` · `agents.md` · `context-hygiene.md` · `anti-patterns.md` · `afk-hitl.md` · `tooling.md` · `skill-authoring.md` · `definition-of-done.md` · `review-checklist.md` · `test-proof-checklist.md` · `browser-proof-checklist.md` · `security-checklist.md`
 - `anti-patterns.md` — pack-wide rationalizations + red flags. Loaded by each per-phase `rite-*/reference/anti-patterns.md`; can be loaded directly for cross-phase reluctance.
 
 ## Trigger conditions (auto-selection)

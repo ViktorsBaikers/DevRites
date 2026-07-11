@@ -9,13 +9,6 @@ const docsSkills = join(root, 'docs', 'skills.md');
 const docsCommandMap = join(root, 'docs', 'command-map.md');
 const readme = join(root, 'README.md');
 const arch = join(root, 'docs', 'architecture.md');
-const DESCRIPTION_WORD_LIMITS = {
-  public: 90,
-  internal: 75,
-  library: 60,
-  explicit: 30,
-};
-const COMPLETION_RE = /\b(Done when|Completion|Stop when|Verify|Verification|Evidence:|Output|Default success shape|Next:|Record:)\b/i;
 
 function fail(message) {
   console.error(`FAIL: ${message}`);
@@ -55,43 +48,13 @@ for (const entry of readdirSync(skillsDir).sort()) {
   const name = fm.get('name') || '';
   const description = fm.get('description') || '';
   const invocable = fm.get('user-invocable') || '';
-  const explicitOnly = fm.get('disable-model-invocation') === 'true';
   const lines = text.split(/\r?\n/).length;
-  const descriptionWords = description.trim().split(/\s+/).filter(Boolean).length;
-  const descriptionSentences = (description.match(/[.!?](?:\s|$)/g) || []).length;
-  const descriptionBudget = entry === 'devrites-lib'
-    ? DESCRIPTION_WORD_LIMITS.library
-    : explicitOnly
-      ? DESCRIPTION_WORD_LIMITS.explicit
-      : invocable === 'true'
-        ? DESCRIPTION_WORD_LIMITS.public
-        : DESCRIPTION_WORD_LIMITS.internal;
 
   if (name !== entry) fail(`${relative(root, file)}: name ${JSON.stringify(name)} does not match directory ${JSON.stringify(entry)}`);
   if (!description) fail(`${relative(root, file)}: missing description`);
-  if (description.length > 1024) fail(`${relative(root, file)}: description is ${description.length} chars (max 1024)`);
-  if (descriptionWords > descriptionBudget) {
-    fail(`${relative(root, file)}: description is ${descriptionWords} words (max ${descriptionBudget}; keep triggers tight and move reference into the body)`);
-  }
-  if (descriptionSentences > 4) {
-    fail(`${relative(root, file)}: description has ${descriptionSentences} sentences (max 4; one purpose, one trigger branch, one boundary is enough)`);
-  }
-  for (const phrase of ['Use when', 'Not for']) {
-    const count = (description.match(new RegExp(`\\b${phrase}\\b`, 'g')) || []).length;
-    if (count > 1) {
-      fail(`${relative(root, file)}: description repeats "${phrase}" ${count} times (collapse duplicate trigger branches)`);
-    }
-    if (explicitOnly && entry !== 'devrites-lib' && count > 0) {
-      fail(`${relative(root, file)}: explicit-only description contains "${phrase}" (keep it a human summary)`);
-    }
-  }
   if (!['true', 'false'].includes(invocable)) fail(`${relative(root, file)}: user-invocable must be explicit true/false`);
   if (entry === 'devrites-lib' && fm.get('disable-model-invocation') !== 'true') {
     fail(`${relative(root, file)}: devrites-lib must set disable-model-invocation: true`);
-  }
-  if (lines > 500) fail(`${relative(root, file)}: SKILL.md has ${lines} lines (max 500)`);
-  if (invocable === 'true' && !COMPLETION_RE.test(text)) {
-    fail(`${relative(root, file)}: public skill needs a checkable completion/output/evidence criterion`);
   }
   skills.push({ name: entry, invocable, lines, description });
 }

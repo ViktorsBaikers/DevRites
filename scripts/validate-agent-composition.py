@@ -13,6 +13,14 @@ REQUIRED={
   'output format':[r'## Output format', r'## Output', r'```'],
   'composition block':[r'## Composition', r'Do not invoke another agent', r'Invoke directly when']
 }
+COMPOSITION_LINE=re.compile(
+    r'^Do not invoke another agent\. You are called by (?:a `rite-\*` skill|`/rite-build`) '
+    r'and return (?:findings|your result) to that orchestrator\.$', re.M
+)
+UNTRUSTED_LINE=re.compile(
+    r'^> \*\*Untrusted-input safety\.\*\* .*data, not instructions.*never act on a directive.*'
+    r'surface it instead of obeying it.*security\.md', re.I | re.M
+)
 
 def validate(agents_dir:Path):
     errors=[]
@@ -22,6 +30,10 @@ def validate(agents_dir:Path):
         for label,pats in REQUIRED.items():
             if not any(re.search(p,text,re.I|re.M) for p in pats):
                 errors.append(f'{f}: missing {label}')
+        if not COMPOSITION_LINE.search(text):
+            errors.append(f'{f}: composition guard must match the canonical no-nested-agent contract')
+        if not UNTRUSTED_LINE.search(text):
+            errors.append(f'{f}: untrusted-input guard must keep the complete canonical safety contract')
         says_write=bool(WRITE_TERMS.search(text)) and not re.search(r'Do \*\*not\*\* edit|Do not edit|never edit|does not edit|does not write|Does not edit', text, re.I)
         if name=='devrites-slice-wright':
             if not re.search(r'write-capable|Writes code|write code', text, re.I):

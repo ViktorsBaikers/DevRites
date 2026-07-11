@@ -1,6 +1,6 @@
 ---
 name: rite-define
-description: Define the initial build plan from an approved spec: architecture, task slices, traceability, state. Use when the user says "plan from the approved spec" or "break this spec into slices". Not for re-plan/repair or code.
+description: Define the first build plan from an approved spec: architecture, task slices, traceability, and state. Use when turning approved intent into its initial plan.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---
@@ -14,8 +14,7 @@ spec, architecture, plan, tasks, and traceability keeps each file small and phas
 **No code here.**
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first; the other
-rule files load on demand. Pull these via `Read` when shaping the plan:
+Pull these via `Read` when shaping the plan:
 - `development-workflow.md` — small batches, trunk-always-green, definition of done.
 - `principles.md` — the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
 - `documentation.md` — record plan-time decisions and rationale.
@@ -130,55 +129,11 @@ rule files load on demand. Pull these via `Read` when shaping the plan:
    checks this exists before building.
 
 ## tasks.md slice format
-```markdown
-## SLICE-001 <name>
-Goal:
-Satisfies: AC-001[, AC-002] # reverse traceability — which spec acceptance criteria this slice satisfies
-Acceptance criteria:        # which spec REQ/AC criteria this satisfies
-Complexity: N/5 — <reason>  # 1=trivial … 5=hairy; >3 triggers a reslice unless the reason justifies it
-Forge: no | yes — <reason>  # default no. Propose yes ONLY when Complexity ≥4 AND the slice has ≥2 genuinely-viable
-                            # approaches with no clear winner (an architecture fork, not just "hard"). /rite-vet confirms
-                            # or clears it; /rite-build then competes K isolated candidates and keeps one. See rite-build/reference/forge.md.
-Mode: AFK | HITL            # AFK = implementable + mergeable without human gating;
-                            # HITL = needs a human decision mid-slice (design call,
-                            # architectural choice, destructive migration sign-off).
-                            # Prefer AFK; only mark HITL with the reason inline.
-Gate: advisory | validating | blocking | escalating   # required when Mode=HITL; see reference/gates.md
-SLA: 15m | 4h | 24h | none                            # required when Mode=HITL; matches the gate
-Checkpoint: <one crisp question>                       # required when Mode=HITL; what the human must decide
-Blocked by: SLICE-001, SLICE-002  # other slices that must complete first ("None" if free)
-depends_on: [SLICE-001, SLICE-002]  # machine-readable mirror of Blocked by (same set)
-Consumes / Produces:        # interfaces this slice reads (types/endpoints/events from prior slices) and exposes for later ones
-Known-Gotchas:              # sharp edges / ordering hazards / framework footguns the wright must avoid (keeps the slice one-pass)
-Validation commands:        # exact runnable commands that prove the slice green (test / build / typecheck / lint)
-Prior-slice learnings:      # (filled forward) what an earlier slice discovered that this one must honor — starts empty
-Files likely touched:       # from the spec's Placement & integration
-Tests to write/run:
-Browser proof required: yes/no
-Frontend craft required: yes/no
-Design brief states:        # UI slices only — which design-brief.md states/interaction this slice delivers (default/empty/error/…)
-Visual acceptance:          # UI slices only — state × viewport × input + target R-id/brief rule; binary enough for browser evidence
-Fullstack (FE+BE): yes/no
-Dependencies:               # external deps (libs, services), NOT slice ordering
-Existing to reuse / extend:   # what already exists (components / utils / hooks) the slice should use
-Rollback notes:
-Evidence required:
-Edge/Prohibition coverage: # EDGE/PROH IDs this slice proves or backstops
-```
 
-> **Why Mode + Gate + Blocked by.** `Mode` lets `/rite-build` and `/rite-status` know
-> whether a slice can run unattended or must surface a checkpoint; `Gate` + `SLA` tell
-> AFK loops which gates they may auto-handle vs which always pause (see
-> [`reference/gates.md`](reference/gates.md) for the four-gate taxonomy:
-> advisory / validating / blocking / escalating). `Blocked by` makes the dependency
-> graph explicit so re-planning (`/rite-plan reorder`) doesn't break acceptance-criteria
-> coverage. Keep `Blocked by` cycle-free. `depends_on` is the machine-readable mirror tools read
-> to pick the next *buildable* slice; `Complexity` (>3 → reslice) sizes it; `Satisfies` +
-> `Consumes/Produces` + `Known-Gotchas` + `Validation commands` make each slice a self-contained,
-> one-pass-implementable brief (the PRP target `/rite-vet` checks). `Forge` flags the rare slice
-> worth *competing* — a genuine architecture fork at high complexity, not a slice that is merely
-> hard. Define only proposes it; `/rite-vet` confirms or clears it and `/rite-build` acts on it.
-> The bulk of slices stay `no` (single-path is cheaper and the default).
+Use the canonical slice grammar in
+[`workspace-artifact-schema.md`](../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar).
+Every slice must satisfy that complete field set; phase-specific gate details live in
+[`reference/gates.md`](reference/gates.md).
 
 > **Mid-flight discipline.** When tempted to skip vertical slicing, coverage mapping, or dependency-order discipline — see [`anti-patterns`](reference/anti-patterns.md) (Common Rationalizations + Red Flags). Load it the moment you reach for the excuse.
 

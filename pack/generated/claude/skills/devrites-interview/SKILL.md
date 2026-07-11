@@ -39,8 +39,7 @@ before a plan, spec, or code exists.
 ## Stop condition
 Stop **opening new questions** when **any** holds — don't interrogate past the point of value.
 (Stopping the interview ≠ deciding for the user: a material call still goes back as a ranked
-option set — confidence lowers the question's *cost* to a one-pick confirm, not its *owner*. See
-[`rite-spec/reference/question-protocol.md`](../rite-spec/reference/question-protocol.md).)
+option set — confidence lowers the question's *cost* to a one-pick confirm, not its *owner*.)
 - **Confidence — the predict-three test.** The 95% bar is checkable, not a feeling: *can you
   predict the user's reaction to the next three questions you would ask?* If yes, you're done
   extracting. If several rounds pass and you still can't predict, something foundational is
@@ -103,5 +102,3 @@ A short summary the caller can use: objective in one sentence, confirmed decisio
 still-open (non-blocking) items, recommended next step. If a workspace is active, write
 Q&A to `questions.md`, confirmed calls to `decisions.md`, standing guesses to
 `assumptions.md`. If not, just return the summary — don't create a workspace.
-
-Domain question ladders: `rite-spec/reference/interview-patterns.md`.

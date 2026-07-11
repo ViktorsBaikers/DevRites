@@ -23,8 +23,7 @@ The contract is intentionally small: one sentinel, one queue, one verb.
   `allow_gates`), the skill **auto-picks the recommended option** (option 1 of the set), records
   it (`gate: advisory` + a `decisions.md` ADR), and continues unattended. Gates above the
   ceiling — and every irreversible-risk item — pause and queue a `questions.md` entry for
-  `/rite-resolve`, **unless `allow_irreversible: true`** is set (see [Maximal
-  autonomy](#irreversible-risk-list-always-pause)).
+  `/rite-resolve`.
 
 `.devrites/AFK` presence is authoritative for run mode; gate-deciding skills re-read the
 sentinel at decision time (the shared preamble derives the mode from it). There is no
@@ -38,9 +37,6 @@ Presence = AFK active. The file body is optional YAML:
 max_slices: 10                       # read-only INITIAL budget; seeds state.md `AFK slices remaining`
 notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
-allow_irreversible: false            # DANGER, opt-in. true → auto-pick the recommended option even on
-                                     # irreversible gates (drop-table, auth, public-API break, data-loss).
-                                     # Lifts the safety floor; destructive changes ship unattended. Default false.
 ```
 
 The file is **read-only config** — never rewritten in place. `max_slices` is the initial
@@ -55,7 +51,6 @@ Missing keys fall back to defaults:
 | `max_slices` | unlimited | a missing cap is unsafe; recommend setting one explicitly |
 | `notify` | none | no notification fires |
 | `allow_gates` | `[advisory]` | AFK auto-handles advisory only by default (auto-picks the recommended option) |
-| `allow_irreversible` | `false` | when `true`, AFK auto-picks even irreversible-risk gates — the safety floor is lifted (see [Maximal autonomy](#irreversible-risk-list-always-pause)) |
 
 To leave AFK, delete the file. The next skill invocation reverts to HITL.
 
@@ -119,14 +114,6 @@ prove the old path unused before removing it, and a rollback for every destructi
 abandon the work.
 
 By default, AFK widens what's *automatic*; it never widens what's *irreversible*.
-
-**Maximal autonomy (`allow_irreversible: true` — opt-in, dangerous).** Setting this key in
-`.devrites/AFK` lifts the floor: AFK then **auto-picks the recommended option on irreversible
-gates too, with no pause**. This ships destructive migrations / auth changes / public-API
-breaks / data-loss paths **unattended, with zero human review** — recommended *only* on a
-throwaway or sandboxed target you can roll back wholesale. Default is `false`; a missing key
-keeps the floor. The floor is the deliberate safety default — `allow_irreversible` is the user
-pulling the trigger themselves, not something a stray sentinel can do silently.
 
 ## `questions.md` schema
 

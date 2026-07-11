@@ -1,10 +1,11 @@
 # Trigger evals
 
-Every DevRites skill has a `<skill-name>.json` eval file in this directory —
-the 20 user-invocable `rite-*` phases **and** the 9 model-invoked `devrites-*`
-specialists (29 files). Each contains **20 queries** — a mix of `should_trigger`
-and `should_not_trigger` — that exercise the skill's `description` field. The
-`devrites-*` evals lean on adversarial `should_not_trigger` cases against the
+Every executable DevRites skill has a `<skill-name>.json` eval file in this directory;
+the non-workflow `devrites-lib` library is exempt. Model-invoked corpora exercise the
+description with implicit positive and negative queries. Explicit-only corpora use
+direct-command positives plus an implicit-invocation negative boundary. Corpus size
+follows distinct routing branches instead of a fixed quota. The `devrites-*` evals lean
+on adversarial `should_not_trigger` cases against the
 sibling skills and bundled globals (`diagnose`, `grill-me`, `code-review`, `tdd`,
 `prototype`, `handoff`) their trigger surfaces collide with.
 
@@ -29,13 +30,13 @@ The methodology mirrors Anthropic's `skill-creator` 2.0:
 - **`ci.yml`** runs `scripts/run-evals.sh` (trigger-eval schema + shape) **and**
   `scripts/run-outcome-evals.sh` (the deterministic outcome grader on the golden
   fixtures) on every PR — no API key required. Catches broken JSON, wrong query
-  counts, missing keys, and a golden workspace that no longer grades as expected.
+  coverage, missing keys, and a golden workspace that no longer grades as expected.
 - **`evals.yml`** runs `scripts/eval-runner.py` against the live Anthropic
   API on a nightly schedule (and on PRs that carry the `run-evals` label).
   Requires the repo secret `ANTHROPIC_API_KEY`. For each query, the runner
   asks Claude to predict which DevRites skill would fire and compares the
   prediction to the expected verdict. Per-skill budget gate:
-  - accuracy ≥ **0.90** (≈ 18 / 20 correct)
+  - accuracy ≥ **0.90** (small corpora therefore require every query correct)
   - false-positives ≤ **2** (`should_not_trigger` queries that fired)
 
   Per-skill failures fail the job; the workflow renders a markdown summary
@@ -113,17 +114,18 @@ trigger evals. Full schema, methodology, and the grading contract:
     {
       "text": "<user query>",
       "expected": "should_trigger | should_not_trigger",
-      "owner": "<skill-name for pairwise negatives, optional>",
+      "owner": "<skill-name or null; required for should_not_trigger>",
+      "owner_rationale": "<required when owner is null>",
       "rationale": "<why>"
     }
   ]
 }
 ```
 
-Each file should have exactly 20 queries. `should_not_trigger` may include an `owner`
-field; when present, the deterministic router asserts that owner outranks this skill,
-so negatives are pairwise rather than vacuous. Aim for ~12 should_trigger and ~8
-should_not_trigger, including:
+Every corpus must be non-empty and contain both verdicts. A `should_not_trigger` query
+must name its `owner`; when no DevRites skill owns it, use `owner: null` plus
+`owner_rationale`. The deterministic router asserts that a named owner outranks the
+target, so negatives are pairwise rather than vacuous. Include:
 
 - Direct slash-command invocation (always should_trigger).
 - Natural-language paraphrases that match the description's intent.

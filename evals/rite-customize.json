@@ -2,25 +2,129 @@
   "skill": "rite-customize",
   "description": "Explicit-only evals for /rite-customize — author DevRites overrides/extensions.",
   "queries": [
-    {"text": "/rite-customize override devrites-code-reviewer", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "$rite-customize override devrites-security-auditor", "expected": "should_trigger", "rationale": "Direct Codex invocation."},
-    {"text": "/rite customize override devrites-test-analyst", "expected": "should_trigger", "rationale": "Menu-style invocation."},
-    {"text": "$rite customize extension audit-lite", "expected": "should_trigger", "rationale": "Codex menu-style invocation."},
-    {"text": "/rite-customize extension qa-lite", "expected": "should_trigger", "rationale": "Direct extension authoring."},
-    {"text": "/rite customize", "expected": "should_trigger", "rationale": "Bare explicit invocation asks a clarifying question."},
-    {"text": "customize DevRites for our security rules", "expected": "should_not_trigger", "rationale": "Explicit-only; natural language should not spend context automatically."},
-    {"text": "add a project override for the reviewer", "expected": "should_not_trigger", "rationale": "Must use /rite-customize or /rite customize."},
-    {"text": "create a DevRites extension", "expected": "should_not_trigger", "rationale": "Must be explicit to avoid accidental writes."},
-    {"text": "change how devrites-code-reviewer behaves", "expected": "should_not_trigger", "rationale": "Natural language alone should not invoke explicit-only authoring."},
-    {"text": "/rite doctor", "expected": "should_not_trigger", "rationale": "Doctor validates health; it does not author customizations."},
-    {"text": "/rite learn", "expected": "should_not_trigger", "rationale": "Learning promotes lessons, not overrides/extensions."},
-    {"text": "/rite explain overrides", "expected": "should_not_trigger", "rationale": "Explain teaches; customize writes."},
-    {"text": "/rite-spec custom extension support", "expected": "should_not_trigger", "rationale": "Spec starts feature work, not operator customization."},
-    {"text": "/rite-review", "expected": "should_not_trigger", "rationale": "Review audits a feature diff."},
-    {"text": "is there a way to tune the security auditor?", "expected": "should_not_trigger", "rationale": "Question can be answered without invoking write-capable customization."},
-    {"text": "validate my extensions", "expected": "should_not_trigger", "rationale": "Validation is doctor/engine unless explicit authoring is requested."},
-    {"text": "$rite doctor extensions", "expected": "should_not_trigger", "rationale": "Still routes to doctor."},
-    {"text": "$rite-customize", "expected": "should_trigger", "rationale": "Bare direct Codex invocation."},
-    {"text": "/rite customize extension my-reviewer", "expected": "should_trigger", "rationale": "Explicit menu form with extension target."}
+    {
+      "text": "/rite-customize override devrites-code-reviewer",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-customize override devrites-security-auditor",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite customize override devrites-test-analyst",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "$rite customize extension audit-lite",
+      "expected": "should_trigger",
+      "rationale": "Codex menu-style invocation."
+    },
+    {
+      "text": "/rite-customize extension qa-lite",
+      "expected": "should_trigger",
+      "rationale": "Direct extension authoring."
+    },
+    {
+      "text": "/rite customize",
+      "expected": "should_trigger",
+      "rationale": "Bare explicit invocation asks a clarifying question."
+    },
+    {
+      "text": "customize DevRites for our security rules",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only; natural language should not spend context automatically.",
+      "owner": null,
+      "owner_rationale": "Explicit-only; natural language should not spend context automatically."
+    },
+    {
+      "text": "add a project override for the reviewer",
+      "expected": "should_not_trigger",
+      "rationale": "Must use /rite-customize or /rite customize.",
+      "owner": null,
+      "owner_rationale": "Must use /rite-customize or /rite customize."
+    },
+    {
+      "text": "create a DevRites extension",
+      "expected": "should_not_trigger",
+      "rationale": "Must be explicit to avoid accidental writes.",
+      "owner": null,
+      "owner_rationale": "Must be explicit to avoid accidental writes."
+    },
+    {
+      "text": "change how devrites-code-reviewer behaves",
+      "expected": "should_not_trigger",
+      "rationale": "Natural language alone should not invoke explicit-only authoring.",
+      "owner": null,
+      "owner_rationale": "Natural language alone should not invoke explicit-only authoring."
+    },
+    {
+      "text": "/rite doctor",
+      "expected": "should_not_trigger",
+      "rationale": "Doctor validates health; it does not author customizations.",
+      "owner": null,
+      "owner_rationale": "Doctor validates health; it does not author customizations."
+    },
+    {
+      "text": "/rite learn",
+      "expected": "should_not_trigger",
+      "rationale": "Learning promotes lessons, not overrides/extensions.",
+      "owner": null,
+      "owner_rationale": "Learning promotes lessons, not overrides/extensions."
+    },
+    {
+      "text": "/rite explain overrides",
+      "expected": "should_not_trigger",
+      "rationale": "Explain teaches; customize writes.",
+      "owner": null,
+      "owner_rationale": "Explain teaches; customize writes."
+    },
+    {
+      "text": "/rite-spec custom extension support",
+      "expected": "should_not_trigger",
+      "rationale": "Spec starts feature work, not operator customization.",
+      "owner": null,
+      "owner_rationale": "Spec starts feature work, not operator customization."
+    },
+    {
+      "text": "/rite-review",
+      "expected": "should_not_trigger",
+      "rationale": "Review audits a feature diff.",
+      "owner": null,
+      "owner_rationale": "Review audits a feature diff."
+    },
+    {
+      "text": "is there a way to tune the security auditor?",
+      "expected": "should_not_trigger",
+      "rationale": "Question can be answered without invoking write-capable customization.",
+      "owner": null,
+      "owner_rationale": "Question can be answered without invoking write-capable customization."
+    },
+    {
+      "text": "validate my extensions",
+      "expected": "should_not_trigger",
+      "rationale": "Validation is doctor/engine unless explicit authoring is requested.",
+      "owner": null,
+      "owner_rationale": "Validation is doctor/engine unless explicit authoring is requested."
+    },
+    {
+      "text": "$rite doctor extensions",
+      "expected": "should_not_trigger",
+      "rationale": "Still routes to doctor.",
+      "owner": null,
+      "owner_rationale": "Still routes to doctor."
+    },
+    {
+      "text": "$rite-customize",
+      "expected": "should_trigger",
+      "rationale": "Bare direct Codex invocation."
+    },
+    {
+      "text": "/rite customize extension my-reviewer",
+      "expected": "should_trigger",
+      "rationale": "Explicit menu form with extension target."
+    }
   ]
 }

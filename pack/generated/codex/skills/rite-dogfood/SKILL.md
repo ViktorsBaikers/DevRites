@@ -45,12 +45,15 @@ Follows [`reply-contract.md`](../devrites-lib/reference/reply-contract.md).
 ```
 Done: dogfooded <slug> across <n> journeys / <m> scenarios.
 Changed: .devrites/work/<slug>/dogfood.md; fixes <none|files>
-Evidence: browser <tool|manual>; suite <pass|fail|not run>; blocked <n>
-Open: <none|human decisions>
+Evidence: browser <tool|manual>; required suite <pass|not applicable>; journeys clear <m>/<m>
+Open: <none|non-blocking follow-ups>
 Next: $rite-prove
 Record: .devrites/work/<slug>/dogfood.md
 ↻ Hygiene: /clear after reading the report
 ```
+
+If a required scenario or suite fails, a journey is blocked, or a human decision is
+required, use `Stopped / blocked` or `Awaiting human`; do not recommend `$rite-prove`.
 
 ## Gotchas
 - A page list is not a journey map; draw the flow first.

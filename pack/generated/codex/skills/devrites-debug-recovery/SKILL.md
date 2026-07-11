@@ -26,7 +26,7 @@ Loaded by `$rite-prove` (and during `$rite-build`) when something fails. Use
 when tests, builds, typecheck, runtime, or browser checks are red and the next
 move is unclear.
 
-## The six-phase cycle
+## The seven-step cycle
 
 1. **Build the feedback loop** — fast, deterministic, agent-runnable pass/fail
    signal. **This is the skill** — be aggressive here.
@@ -35,15 +35,17 @@ move is unclear.
    (not a nearby failure); capture the **exact error text**; confirm
    reproducibility (or a high enough repro rate for flaky bugs). Do not proceed
    without reproduction.
-3. **Trace when ambiguous** — if the cause is unclear, flaky, causal, or one fix
+3. **Ranked hypotheses (3-5, falsifiable)** — generate the list before testing
+   any of them. Each must state a prediction.
+   **Completion:** 3–5 distinct hypotheses each state an observable prediction.
+   See [hypotheses.md](reference/hypotheses.md).
+4. **Trace when ambiguous** — if the cause is unclear, flaky, causal, or one fix
    already failed, run the competing-hypothesis trace branch before editing.
    Completion: top hypothesis has evidence for/against plus one discriminating probe.
    See [trace.md](reference/trace.md).
-4. **Ranked hypotheses (3-5, falsifiable)** — generate the list before testing
-   any of them. Each must state a prediction.
-   See [hypotheses.md](reference/hypotheses.md).
 5. **Instrument** — debugger > logs > "log everything and grep". One variable
    at a time. Tagged debug-log prefixes.
+   **Completion:** one discriminating signal is captured for the top hypothesis.
    See [instrumentation.md](reference/instrumentation.md).
 6. **Fix + regression test** — write the regression test before the fix, but
    only if a correct seam exists. If no correct seam: that IS the finding;

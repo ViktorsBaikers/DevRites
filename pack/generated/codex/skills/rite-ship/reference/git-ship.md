@@ -59,3 +59,15 @@ a release flow the project doesn't use.
    is the ship.
 
 Capture the resulting commit SHA(s), branch, and tag/PR URL for `ship.md`.
+
+## Pull request body
+
+When this ship opens a PR, include only applicable sections:
+
+- **Summary** — what shipped and acceptance proven.
+- **Risk & rollback** — migration/auth/destructive risk and reversal from `seal.md`.
+- **What to scrutinize** — highest-blast-radius review stops.
+- **Evidence** — condensed proof plus the archived evidence bundle.
+
+For an agent-owned staged rollout, apply [`rollout.md`](rollout.md). CI-owned deploys
+skip that branch. Delete empty sections rather than writing `N/A`.

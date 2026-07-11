@@ -1,0 +1,34 @@
+{
+  "skill": "rite-explain",
+  "description": "Direct-invocation evals for the explicit grounded explainer.",
+  "queries": [
+    {
+      "text": "/rite-explain auth flow",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation."
+    },
+    {
+      "text": "$rite-explain this diff",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite explain what changed this week",
+      "expected": "should_trigger",
+      "rationale": "Router invocation."
+    },
+    {
+      "text": "Explain this module to me.",
+      "expected": "should_not_trigger",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility; natural language must not invoke it.",
+      "rationale": "Explicit-only boundary."
+    },
+    {
+      "text": "Review this diff for bugs.",
+      "expected": "should_not_trigger",
+      "owner": "rite-review",
+      "rationale": "Review belongs to rite-review."
+    }
+  ]
+}

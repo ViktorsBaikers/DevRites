@@ -45,6 +45,13 @@ grep -q '.codex/agents/devrites-slice-wright.toml' "$OUT/codex/skills/rite-build
   && ok "Codex skill artifact references Codex agent TOML" \
   || no "Codex skill artifact missing Codex agent TOML"
 
+grep -q 'allow_implicit_invocation: false' "$OUT/codex/skills/rite-status/agents/openai.yaml" \
+  && ok "Codex preserves public explicit-only policy" \
+  || no "Codex public explicit-only skill missing native invocation policy"
+grep -q '^description: User-invoked read-only active-feature report' "$OUT/codex/skills/rite-status/SKILL.md" \
+  && ok "Codex preserves public explicit-only description" \
+  || no "Codex public explicit-only description was stubbed"
+
 if grep -R -nE 'pack/\.claude|\.claude/skills|\.claude/agents|(^|[^A-Za-z0-9_./-])/rite(-[a-z0-9-]+)?([^A-Za-z0-9_-]|$)' "$OUT/codex/skills" "$OUT/codex/agents" >/tmp/dr_host_artifacts_paths 2>/dev/null; then
   no "Codex artifacts contain stale Claude paths or slash invocations"
   sed -n '1,40p' /tmp/dr_host_artifacts_paths

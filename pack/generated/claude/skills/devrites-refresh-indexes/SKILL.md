@@ -1,6 +1,6 @@
 ---
 name: devrites-refresh-indexes
-description: Refresh optional code-intelligence indexes. Use when structural lookup disagrees with live code, after large code changes before a structural query, or when the user says "reindex". Not for agentmemory.
+description: Refresh stale optional indexes. Use when structural lookup disagrees with live code or rite-doctor requests a synchronous reindex.
 user-invocable: false
 ---
 

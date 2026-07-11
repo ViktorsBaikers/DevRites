@@ -18,8 +18,7 @@ if none, tell the user to run `/rite-spec <feature>`.
 > `/rite-review` for a DevRites feature where the spec is the contract.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. The other rule files load on demand;
-pull these via `Read` when the diff demands them:
+Pull these via `Read` when the diff demands them:
 - `code-review.md` — small PRs, severity labels, tests-first review focus.
 - `review-checklist.md` — compact pass/fail sweep before reporting the verdict.
 - `principles.md` — declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
@@ -52,6 +51,7 @@ pull these via `Read` when the diff demands them:
    current API, context7 if available can confirm the signature.
 2. **Review tests first** — do they actually prove the acceptance criteria? Missing,
    weak, or wrong tests are the first findings.
+   **Completion:** every acceptance criterion maps to a proven test or a labeled finding.
 3. **Spec ↔ Code-review split (parallel sub-agents, fresh context).** A change can pass
    one axis and fail the other — code that follows every project standard but
    implements the wrong thing (Code-review pass, Spec fail), or code that does exactly
@@ -160,9 +160,12 @@ Default success shape:
 ```
 Done: review complete for <slice N | feature>.
 Changed: review.md, review-fingerprints.jsonl, evidence.md <updated|n/a>, state.md
-Evidence: findings Critical <n> / Important <n> / Suggestion <n> / Nit <n> / FYI <n>; re-verification <cmd -> pass|n/a>
-Open: <none | Critical blockers, Fix: <single command> | Important fixes | re-prove needed>
+Evidence: open findings Critical 0 / Important <non-blocking n> / Suggestion <n> / Nit <n> / FYI <n>; re-verification <cmd -> pass|n/a>
+Open: <none | non-blocking Important/Suggestion follow-ups>
 Next: /rite-seal
 Record: .devrites/work/<slug>/review.md
 ↻ Hygiene: /compact (review findings) if fixing now; /clear if clean
 ```
+If a blocking Critical or required re-proof remains, use the shared `Stopped /
+blocked` form and route `Fix:` to the single repair or `/rite-prove`; do not
+recommend `/rite-seal`.

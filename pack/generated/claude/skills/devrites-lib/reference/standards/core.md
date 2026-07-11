@@ -1,9 +1,8 @@
 # DevRites core rules — always-on
 
-The minimal always-on subset of the DevRites engineering rules. DevRites
-`rite-*` skills Read `.claude/skills/devrites-lib/reference/standards/core.md` as their first step; the other 22
-rule files in this directory load on demand by the phase that needs them (see
-`README.md` for the index).
+The minimal always-on subset of the DevRites engineering rules. Workspace-operating
+lifecycle rites read it in workflow step 0; phase-specific files load on demand from
+`README.md`.
 
 Project conventions always win where they exist; these rules fill gaps.
 
@@ -40,19 +39,11 @@ Project conventions always win where they exist; these rules fill gaps.
    behaviour matters and isn't certain, check the installed source or docs (context7 for
    current upstream docs, **if available** — see [`tooling.md`](tooling.md)) and record it.
 
-## Universal anti-rationalizations
+## Rationalization guard
 
-When you catch yourself reaching for one of these excuses, stop, name it,
-apply the rebuttal. This is the **minimal subset — full table in
-[`.claude/skills/devrites-lib/reference/standards/anti-patterns.md`](anti-patterns.md)**:
-
-| Excuse | Rebuttal |
-|---|---|
-| "I'll add the tests later." | Tests written after the fact don't drive design and miss the boundary cases the act of writing exposes. Test now or the tests you eventually write are worse. |
-| "Lint and build pass — that proves quality." | Automation proves syntax and style, not design or correctness. Never cite clean automation as evidence of good design. |
-| "It's only a small refactor while I'm in here." | Feature scope only — drive-by cleanup balloons the diff, hides intent, and gets rejected at seal. Record as an FYI follow-up. |
-| "This is a special case, the pattern doesn't apply." | Special cases multiply silently. Either they really are special (record *why* in `decisions.md`) or they're not (and the pattern wins). |
-| "The user will tell me if something is wrong." | Drift detection is the workflow's job, not the user's QA. Surface assumptions; route material questions through the Spec Drift Guard. |
+When an excuse appears, load the canonical
+[`anti-patterns.md` rationalization table](anti-patterns.md#universal-rationalizations)
+and apply its matching rebuttal before continuing.
 
 ## One-line discipline (load the full rule file when in scope)
 

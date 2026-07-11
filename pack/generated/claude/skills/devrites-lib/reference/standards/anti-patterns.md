@@ -5,8 +5,7 @@ the way. Apply at every phase. Each `rite-*/reference/anti-patterns.md`
 extends this with phase-specific items.
 
 This file is the **single source** of the universal anti-rationalization table.
-`core.md` carries only a minimal 5-row subset (its first five rows are
-byte-identical to the matching rows below); read this file for the full set.
+`core.md` points here when an excuse appears.
 
 ## Universal rationalizations
 

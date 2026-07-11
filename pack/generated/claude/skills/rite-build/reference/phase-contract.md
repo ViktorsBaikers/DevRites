@@ -1,16 +1,5 @@
 # rite-build phase contract
 
-This is the normative workflow for `/rite-build`. It is loaded from
-`../SKILL.md` to keep the root skill focused without weakening the execution
-contract. Follow `../SKILL.md`, this file, and the linked supporting references
-together. If any supporting reference appears to conflict with the root skill,
-follow the stricter instruction.
-
-The split is intentional: `../SKILL.md` is the routing and hard-rule surface;
-this file is the detailed procedure. Do not replace this file with a summary.
-Use the spine below to stay oriented, then apply the full step details that
-follow it.
-
 See also [`one-slice-cycle.md`](one-slice-cycle.md).
 
 ## Execution spine

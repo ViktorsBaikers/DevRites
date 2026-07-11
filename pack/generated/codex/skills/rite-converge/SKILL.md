@@ -34,7 +34,7 @@ prerequisite skill to run.
 > review use `$rite-review`; to prove a finished feature use `$rite-prove`.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.agents/skills/devrites-lib/reference/standards/core.md` first. Pull on demand:
+Pull on demand:
 - `principles.md` — the project invariants (`.devrites/principles.md`); code that violates a
   MUST principle is the highest-severity gap and produces a remediation slice.
 - `spec-grammar.md` — buildable acceptance criteria vs `## Success metrics` (outcome KPIs the
@@ -76,6 +76,7 @@ prerequisite skill to run.
    from `plan.md`: architecture decisions + named touch-points (files/components the plan says
    get built); from `tasks.md`: existing slices + their `Satisfies:`; from
    `.devrites/principles.md`: the invariants.
+   **Completion:** every buildable criterion, touch-point, slice output, and principle is in the assessment inventory.
 3. **Run the mechanical backbone**, then read the code. `devrites-engine analyze` gives coverage +
    consistency; `devrites-engine coverage` gives the AC→slice→proven matrix. They catch *unmapped*
    criteria; they do **not** see whether mapped code is actually built and correct — for that,
@@ -89,11 +90,13 @@ prerequisite skill to run.
    [`reference/convergence-assessment.md`](reference/convergence-assessment.md)): every
    acceptance criterion / scenario, every plan touch-point, and every existing slice's stated
    Produces. A principle violated in the current code is its own top-severity gap.
+   **Completion:** every inventory unit is classified once with live-code evidence.
 5. **Enqueue the remainder as new slices.** For each *partial* or *absent* unit, append a
    `## SLICE-###` (continue the numbering after the highest existing id) in the `rite-define`
    slice grammar, each with a `Satisfies:` line tracing to the AC/REQ it closes and a
    `Convergence: <iso>` marker line. Dependency-order them after the existing slices; a
    principle-remediation slice sorts first. **If every unit is built → append nothing.**
+   **Completion:** every partial/absent unit has one traceable appended slice, or the file is byte-for-byte unchanged.
 6. **Write append-only + bookkeeping.** Append the slice batch to `tasks.md` (nothing else in
    that file changes); refresh `traceability.md` (`devrites-engine coverage` → new rows for the
    appended slices); update `state.md` (`Phase: converge`, `Next step: $rite-build`; or, when
@@ -103,26 +106,16 @@ prerequisite skill to run.
    converged).
 
 ## Appended slice format
-Continue the `tasks.md` grammar from `rite-define` — same fields — with one added marker:
+Use the complete
+[`canonical slice grammar`](../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar)
+with one added `Convergence:` field after `Satisfies:`:
 ```markdown
 <!-- Convergence 2026-07-07: slices below appended by $rite-converge — live code assessed against intent. -->
 ## SLICE-014 <name of the unmet capability>
-Goal:
 Satisfies: AC-007            # the criterion / scenario this closes
 Convergence: 2026-07-07      # marks this as a convergence-appended slice, not an original
-Complexity: N/5 — <reason>
-Mode: AFK | HITL
-Blocked by: None
-depends_on: []
-Consumes / Produces:
-Known-Gotchas:               # what the partial/absent assessment found already in the code
-Validation commands:
-Files likely touched:
-Tests to write/run:
-Rollback notes:
-Evidence required:
+<all remaining canonical slice fields>
 ```
-(Full field list + when each applies: [`rite-define`](../rite-define/SKILL.md) "tasks.md slice format".)
 
 > **Mid-flight discipline.** When tempted to rewrite an existing slice instead of appending, to
 > edit the code directly "while you're in there", to mark a happy-path-only implementation as
@@ -138,10 +131,13 @@ Default success shape:
 ```
 Done: convergence assessed for <slug>; <n> slices appended.
 Changed: tasks.md <appended|unchanged>, traceability.md, state.md
-Evidence: units <built>/<total> built · <partial> partial · <absent> absent · principle violations <n>
-Open: <none | spec drift routed to $rite-plan | blockers | if nothing was unmet, use $rite-prove instead>
+Evidence: units <built>/<total> built · <partial> partial · <absent> absent · principle violations 0
+Open: none
 Next: $rite-build
 Record: .devrites/work/<slug>/tasks.md
 ↻ Hygiene: /clear before $rite-build
 ```
+When nothing was unmet, render the same green form with `Next: $rite-prove`.
+If spec drift or another blocker remains, use the shared `Stopped / blocked` form
+and route `Fix:` to `$rite-plan`; do not recommend `$rite-build`.
 **DO NOT write application code, rewrite existing slices, or edit spec.md/plan.md here** — convergence assesses and enqueues; `$rite-build` implements.

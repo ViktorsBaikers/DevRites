@@ -119,7 +119,7 @@ def direct_command_target(prompt: str, skill_names: set[str]) -> str | None:
     m = re.match(r"^[$/]rite\s+([a-z0-9-]+)\b", p)
     if m:
         name = f"rite-{m.group(1)}"
-        return name if name in skill_names else None
+        return name if name in skill_names else ("rite" if "rite" in skill_names else None)
     return None
 
 
@@ -136,7 +136,7 @@ def rank_prompt(prompt: str, skills: list[Skill], vectors: dict[str, Counter]) -
         if direct == s.name:
             score += 10.0
         # Nudge command surface above internals for public lifecycle wording.
-        if s.invocable and re.search(r"[/$]?rite|ship|seal|prove|build|review|spec|plan|vet|quick", prompt, re.I):
+        if s.invocable and re.search(r"[/$]?rite|ship|seal|prove|build|review|spec|plan|vet|quick|doctor|reindex", prompt, re.I):
             score += 0.02
         scored.append((s.name, score))
     return sorted(scored, key=lambda x: (-x[1], x[0]))
@@ -194,13 +194,55 @@ def run(args) -> tuple[int, dict]:
     results = []
     hard_failures = []
     rank1 = top3 = positives = negatives = false_positive = owner_miss = host_confusion = direct_miss = internal_over_public = 0
+    eval_data = []
+    eval_targets = {}
     for path in load_eval_files(args.evals_dir):
         data = json.loads(path.read_text(encoding="utf-8"))
         target = data.get("skill")
         if target not in by_name:
             hard_failures.append(f"{path}: unknown skill {target!r}")
             continue
-        for i, q in enumerate(data.get("queries", [])):
+        if target in eval_targets:
+            hard_failures.append(f"{path}: duplicate eval target {target!r}; first declared by {eval_targets[target]}")
+            continue
+        eval_targets[target] = path
+        eval_data.append((path, data))
+    required_targets = {s.name for s in skills if s.name != "devrites-lib"}
+    for target in sorted(required_targets - set(eval_targets)):
+        hard_failures.append(f"missing eval corpus for executable skill {target}")
+
+    for path, data in eval_data:
+        target = data["skill"]
+        skill = by_name[target]
+        queries = data.get("queries")
+        if not isinstance(queries, list) or not queries:
+            hard_failures.append(f"{display_path(path)}: eval corpus needs at least one query")
+            continue
+        runnable_queries = []
+        for i, q in enumerate(queries):
+            if not isinstance(q, dict) or not q.get("text"):
+                hard_failures.append(f"{display_path(path)}: query[{i}] needs non-empty text")
+                continue
+            if q.get("expected") not in {"should_trigger", "should_not_trigger"}:
+                hard_failures.append(f"{display_path(path)}: query[{i}] has invalid expected value {q.get('expected')!r}")
+                continue
+            runnable_queries.append((i, q))
+        positive_queries = [q for _, q in runnable_queries if q["expected"] == "should_trigger"]
+        negative_queries = [q for _, q in runnable_queries if q["expected"] == "should_not_trigger"]
+        names = set(by_name)
+        if skill.explicit_only:
+            if not skill.invocable:
+                hard_failures.append(f"{display_path(path)}: explicit-only executable skill must be public")
+            if not positive_queries or any(direct_command_target(q["text"], names) != target for q in positive_queries):
+                hard_failures.append(f"{display_path(path)}: explicit-only corpus positives must all directly invoke {target}")
+            if not negative_queries:
+                hard_failures.append(f"{display_path(path)}: explicit-only corpus needs a negative implicit-invocation boundary")
+        else:
+            implicit_positives = [q for q in positive_queries if direct_command_target(q["text"], names) is None]
+            implicit_negatives = [q for q in negative_queries if direct_command_target(q["text"], names) is None]
+            if not implicit_positives or not implicit_negatives:
+                hard_failures.append(f"{display_path(path)}: model-invoked corpus needs implicit positive and negative queries")
+        for i, q in runnable_queries:
             text = q.get("text", "")
             expected = q.get("expected")
             ranked = rank_prompt(text, skills, vectors)
@@ -223,7 +265,11 @@ def run(args) -> tuple[int, dict]:
                 negatives += 1
                 if top == target:
                     false_positive += 1
-                owner = q.get("owner")
+                if "owner" not in q:
+                    hard_failures.append(f"{display_path(path)}: query[{i}] negative needs owner or explicit owner:null rationale")
+                    owner = None
+                else:
+                    owner = q.get("owner")
                 if owner:
                     if owner not in by_name:
                         owner_miss += 1
@@ -238,6 +284,8 @@ def run(args) -> tuple[int, dict]:
                                 f"{display_path(path)}: query[{i}] declared owner {owner} does not outrank {target} "
                                 f"(owner #{owner_rank} @ {owner_score:.2f}, target #{rank} @ {target_score:.2f})"
                             )
+                elif not q.get("owner_rationale"):
+                    hard_failures.append(f"{display_path(path)}: query[{i}] owner:null needs owner_rationale")
             results.append({"file": display_path(path), "skill": target, "query": text, "expected": expected, "rank": rank, "top": top, "top3": names[:3]})
     collisions = description_collisions(skills, vectors)
     for c in collisions:

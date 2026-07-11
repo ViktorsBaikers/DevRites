@@ -1,0 +1,39 @@
+{
+  "skill": "rite-converge",
+  "description": "Routing evals for reconciling half-built live code with recorded intent.",
+  "queries": [
+    {
+      "text": "/rite-converge billing",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation."
+    },
+    {
+      "text": "This feature is half built; compare the live code with the plan and tell me what's left.",
+      "expected": "should_trigger",
+      "rationale": "Canonical convergence branch."
+    },
+    {
+      "text": "After adoption, reconcile the drift and enqueue every unmet capability.",
+      "expected": "should_trigger",
+      "rationale": "Post-adoption convergence."
+    },
+    {
+      "text": "Create the initial task slices from the approved spec.",
+      "expected": "should_not_trigger",
+      "owner": "rite-define",
+      "rationale": "Initial planning belongs to rite-define."
+    },
+    {
+      "text": "Repair the plan after the API contract changed.",
+      "expected": "should_not_trigger",
+      "owner": "rite-plan",
+      "rationale": "Plan repair belongs to rite-plan."
+    },
+    {
+      "text": "Implement the next unmet slice.",
+      "expected": "should_not_trigger",
+      "owner": "rite-build",
+      "rationale": "Implementation belongs to rite-build."
+    }
+  ]
+}

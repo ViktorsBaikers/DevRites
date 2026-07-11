@@ -1,6 +1,6 @@
 {
   "skill": "rite-prototype",
-  "description": "Explicit-only evals for /rite-prototype \u2014 throwaway logic/UI prototypes.",
+  "description": "Explicit-only evals for /rite-prototype — throwaway logic/UI prototypes.",
   "queries": [
     {
       "text": "/rite-prototype",
@@ -25,22 +25,30 @@
     {
       "text": "prototype this",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only utility; natural language should not auto-invoke."
+      "rationale": "Explicit-only utility; natural language should not auto-invoke.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility; natural language should not auto-invoke."
     },
     {
       "text": "try a few designs",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only utility."
+      "rationale": "Explicit-only utility.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility."
     },
     {
       "text": "mock up a throwaway UI",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only prototype request."
+      "rationale": "Explicit-only prototype request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only prototype request."
     },
     {
       "text": "sanity-check this state model",
       "expected": "should_not_trigger",
-      "rationale": "Explicit-only prototype request."
+      "rationale": "Explicit-only prototype request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only prototype request."
     },
     {
       "text": "Implement the next slice of the active feature",
@@ -87,27 +95,35 @@
     {
       "text": "Explain this component",
       "expected": "should_not_trigger",
-      "rationale": "Explain belongs to /rite-explain."
+      "rationale": "Explain belongs to /rite-explain.",
+      "owner": null,
+      "owner_rationale": "Explain belongs to /rite-explain. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Zoom out on the auth module",
       "expected": "should_not_trigger",
-      "rationale": "Explicit /rite-zoom-out, not prototype."
+      "rationale": "Explicit /rite-zoom-out, not prototype.",
+      "owner": null,
+      "owner_rationale": "Explicit /rite-zoom-out, not prototype. The functional owner is explicit-only, so natural language has no implicit owner."
     },
     {
       "text": "Debug the failing test",
       "expected": "should_not_trigger",
-      "rationale": "Debugging belongs to devrites-debug-recovery."
+      "rationale": "Debugging belongs to devrites-debug-recovery.",
+      "owner": "devrites-debug-recovery"
     },
     {
       "text": "Ask me questions about the feature",
       "expected": "should_not_trigger",
-      "rationale": "Interview/spec belongs to /rite-spec."
+      "rationale": "Interview/spec belongs to /rite-spec.",
+      "owner": "rite-spec"
     },
     {
       "text": "What time is it?",
       "expected": "should_not_trigger",
-      "rationale": "Off-topic."
+      "rationale": "Off-topic.",
+      "owner": null,
+      "owner_rationale": "Off-topic."
     }
   ]
 }

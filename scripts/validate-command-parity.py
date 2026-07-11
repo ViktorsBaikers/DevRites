@@ -33,6 +33,7 @@ def main():
     p.add_argument('--docs-skills', type=Path, default=ROOT/'docs/skills.md')
     p.add_argument('--docs-command-map', type=Path, default=ROOT/'docs/command-map.md')
     p.add_argument('--readme', type=Path, default=ROOT/'README.md')
+    p.add_argument('--router', type=Path, default=ROOT/'pack/.claude/skills/rite/SKILL.md')
     p.add_argument('--generated-root', type=Path, default=ROOT/'pack/generated')
     p.add_argument('--quiet', action='store_true')
     args=p.parse_args()
@@ -41,6 +42,7 @@ def main():
     docs_skills=args.docs_skills.read_text(encoding='utf-8') if args.docs_skills.exists() else ''
     docs_map=args.docs_command_map.read_text(encoding='utf-8') if args.docs_command_map.exists() else ''
     readme=args.readme.read_text(encoding='utf-8') if args.readme.exists() else ''
+    router=args.router.read_text(encoding='utf-8') if args.router.exists() else ''
     all_docs='\n'.join([docs_skills, docs_map, readme])
     if 'npx devrites' not in all_docs:
         errors.append('docs missing npx devrites distribution contract')
@@ -51,6 +53,8 @@ def main():
     for name in skills:
         verb=name.removeprefix('rite-')
         needle=f'/rite-{verb}'
+        if needle not in router:
+            errors.append(f'router missing {needle} for {name}')
         if needle not in docs_map:
             errors.append(f'docs/command-map Claude direct: missing Claude command {needle} for {name}')
         if args.generated_root.exists():

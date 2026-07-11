@@ -172,14 +172,8 @@ def main(argv):
                         break
                 if failed:
                     continue
-        if "when_to_use" in data:
-            dlen += len(str(data.get("when_to_use", "")))
-            if dlen > 1536:
-                warn += " [warn: description+when_to_use %d>1536 chars]" % dlen
         ui = data.get("user-invocable", "(default)")
-        ctx = data.get("context", "")
-        flag = (" context=%s" % ctx) if ctx else ""
-        print("OK    %s  (user-invocable=%s%s)%s" % (path, ui, flag, warn))
+        print("OK    %s  (user-invocable=%s)%s" % (path, ui, warn))
     if errors:
         print("\n%d file(s) failed frontmatter validation." % errors)
         return 1

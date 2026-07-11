@@ -22,7 +22,7 @@ This is the engineering counterpart to `/rite-temper` (which is strategic, on th
 Temper decides *the right thing*; vet decides *the right way to build it*.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` first. Pull on demand: `principles.md` (the project
+Pull on demand: `principles.md` (the project
 invariants gate — how `.devrites/principles.md` is scored pass/fail), `patterns.md` +
 `coding-style.md` (the over-engineering / reuse-first / YAGNI rubric — reuse the pack's
 standard), `testing.md` (the test-coverage axis) + `spec-grammar.md` (when the spec uses
@@ -124,41 +124,17 @@ Audit for a plan resting on unstated beliefs).
    single-sourced in [`reference/depth.md`](reference/depth.md): hardening /
    coverage-increasing findings auto-apply; **anything that grows scope or changes acceptance is a
    blocking pause**; irreversible-risk always pauses.)
-4. **Required outputs** — the test-coverage diagram + per-gap test requirements (the **regression
-   rule** is mandatory, no question). When the spec uses the structured grammar
-   (`spec-grammar.md`), the diagram maps **each `#### Scenario:` (WHEN/THEN) to ≥1 planned
-   test** — an unmapped scenario is a coverage gap the build must close. Then the failure-mode
-   table, "NOT in scope", "What already exists",
-   and the worktree parallelization strategy. Ground the parallelization section in the
-   engine's advisory planner:
+4. **Required outputs** — write every shape and fold-back required by
+   [`reference/artifacts.md`](reference/artifacts.md), using the review rules in
+   [`reference/review-axes.md`](reference/review-axes.md). Ground parallelization in:
    ```bash
    devrites-engine lanes plan "$(cat .devrites/ACTIVE 2>/dev/null)"
    ```
-   Shapes in [`reference/review-axes.md`](reference/review-axes.md).
-   **Developer-facing surface?** If the plan ships one (`developer-experience.md` — API / CLI / SDK /
-   webhook / config / error messages / getting-started), the DX scorecard is **predicted by a
-   fresh-context `devrites-devex-reviewer` in predict mode** (dispatched in step 6 alongside the
-   plan-reviewer): it scores the *planned* surface — time-to-hello-world estimate plus the
-   getting-started, error-message, and ergonomics friction the plan bakes in — and writes `devex.md`,
-   the **prediction the boomerang measures against** at `/rite-prove` / `/rite-seal`. If subagents are
-   unavailable, score it inline as a flagged fallback. Absent surface → skip, no `devex.md`
-   (greenfield no-op, like the principles gate).
-   Also a **PRP one-pass-implementable check** per slice brief (the build's pre-flight): confirm each
-   slice's Consumes/Produces, Known-Gotchas, validation commands, and reuse targets are present and
-   concrete. A UI slice also needs `Design brief states` and binary `Visual acceptance`
-   (state × viewport × input + target R-id/brief rule). A brief that can't be built and
-   visually judged in one pass is a finding; harden the slice until it clears before `/rite-build`.
-4a. **Forge gate (rare — confirm or clear).** For each slice carrying `Forge: yes` (proposed by
-   `/rite-define`), and any slice the architecture axis showed has **≥2 genuinely-viable approaches
-   with no clear winner at Complexity ≥4**, confirm the flag: name the 2–3 candidate strategies that
-   actually differ (different data shape, different seam, reuse-vs-build — not variations of one), and
-   confirm the slice's acceptance + `test-plan.md` give the judge an objective scorecard. **Clear**
-   `Forge: yes` back to `no` when the review settled on one approach, the slice is below the complexity
-   bar, or you can't name two real strategies — competing a decided or trivial slice burns K× the build
-   for nothing. Forge is a **build-cost** decision, not an irreversible one: it never bypasses a gate,
-   and under AFK its K candidates count against the slice budget. Record the confirmed strategies in
-   the slice brief so `/rite-build` competes them
-   ([`rite-build/reference/forge.md`](../rite-build/reference/forge.md)). No flagged slice → nothing to do.
+   Completion: every scenario and acceptance criterion maps to planned proof, every slice is
+   one-pass implementable, and developer-facing plans have a predicted `devex.md` scorecard.
+4a. **Forge gate (only when `Forge: yes`).** Apply the eligibility and scorecard contract in
+   [`rite-build/reference/forge.md`](../rite-build/reference/forge.md). Confirm and record
+   genuinely distinct strategies, or clear the flag; an ineligible Forge never reaches build.
 5. **Write `eng-review.md` + `test-plan.md`, fold back** — [`reference/artifacts.md`](reference/artifacts.md).
    `eng-review.md` is the durable record; `test-plan.md` is the build-readable coverage target
    (`/rite-build` and `/rite-prove` read it). Harden `plan.md` / `tasks.md` directly for
@@ -167,22 +143,11 @@ Audit for a plan resting on unstated beliefs).
    `decisions.md` (one ADR per material call) and `assumptions.md`. Update `state.md`:
    `Phase: vet`, `Next step: /rite-build`; on a blocking pause write the `Awaiting human` block +
    `Status: awaiting_human` before stopping.
-6. **Adversarial verification loop (full pass)** — dispatch [`devrites-plan-reviewer`](../../agents/devrites-plan-reviewer.md)
-   (fresh context, **only** `plan.md` + `tasks.md` + `spec.md` + the rubric — no authoring
-   reasoning). **When the plan ships a developer-facing surface** (`developer-experience.md`),
-   dispatch [`devrites-devex-reviewer`](../../agents/devrites-devex-reviewer.md) in **predict mode**
-   in the same parallel pass — it scores the *planned* surface and writes the predicted `devex.md`
-   (Source mode); a single predict pass suffices pre-build, so it sits outside the plan-rubric
-   iteration. Resolve actionable findings, re-dispatch the plan-reviewer; **cap ≤3 iterations**. An axis still
-   below bar after 3 → blocking question (HITL) or AFK gate-ceiling entry. On a **light pass**
-   the fresh-context loop is skipped — the per-axis scan + the `test-plan.md` coverage map are the
-   verdict (escalate to this loop if the light scan surfaces a real finding). On a **full pass**, run
-   `devrites-engine outside-voice`; when it prints `available`, add one genuinely different-model
-   Codex pass over the same artifacts/diff. `--cross-model` forces this check even outside full-pass
-   defaults. Findings are informational until the human approves each one with line quotes —
-   [`reference/cross-model.md`](reference/cross-model.md). If sub-agents are unavailable, do the
-   independent rubric pass yourself in a separate read, discarding the authoring reasoning (a
-   flagged fallback, not an independent review).
+6. **Adversarial verification loop.** Apply the light/full branching contract in
+   [`reference/depth.md`](reference/depth.md). Full mode dispatches the fresh-context plan
+   reviewer, plus the devex predictor when applicable, for at most three repair iterations;
+   [`reference/cross-model.md`](reference/cross-model.md) owns the optional outside voice.
+   Completion: the final axis floor clears or a blocking gate is recorded.
 7. **STOP.** Report the scope verdict, the per-axis floor, the coverage gaps closed, and the
    failure-mode criticals; recommend `/rite-build`.
 
@@ -199,10 +164,12 @@ Default success shape:
 ```
 Done: plan vetted for <slug>; depth <light|full> with axis floor <band>.
 Changed: eng-review.md, test-plan.md, plan.md, decisions.md
-Evidence: coverage <x/y> planned; findings Critical <n> / Important <n> / Suggestion <n>; reviewer loop <n>; outside-voice <ran|skipped-unavailable|disabled>
-Open: <none | blockers | plan deltas routed via Spec Drift Guard>
+Evidence: coverage <x/y> planned; open findings Critical 0 / Important 0 / Suggestion <n>; reviewer loop <n>; outside-voice <ran|skipped-unavailable|disabled>
+Open: none
 Next: /rite-build
 Record: .devrites/work/<slug>/eng-review.md
 ↻ Hygiene: /clear before /rite-build
 ```
+If a blocker or Spec Drift Guard delta remains, use the shared `Stopped / blocked`
+form and route `Fix:` to `/rite-plan`; do not recommend `/rite-build`.
 **DO NOT write code, slice, or run the build here** — that's `/rite-build`. Vet reviews and hardens the plan; it never implements.

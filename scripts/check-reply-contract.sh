@@ -4,7 +4,7 @@
 set -u
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-SKILLS="$ROOT/pack/.claude/skills"
+SKILLS="${DEVRITES_SKILLS_DIR:-$ROOT/pack/.claude/skills}"
 CONTRACT="devrites-lib/reference/reply-contract.md"
 fail=0
 
@@ -34,6 +34,24 @@ for f in "$SKILLS"/rite*/SKILL.md; do
   if grep -nE '^Next:[^`]*(/rite-[^[:space:]]+)[^`]*([[:space:]]or[[:space:]]|[[:space:]]/[[:alnum:]_-]+| · |→)' "$f" >/tmp/dr_reply_next 2>/dev/null; then
     bad "$rel has ambiguous Next: wording:"
     sed "s|$ROOT/||" /tmp/dr_reply_next
+  fi
+
+  if grep -q 'Reply-contract exception:' "$f" || [ "$rel" = "pack/.claude/skills/rite-status/SKILL.md" ]; then
+    continue
+  fi
+  if awk '
+    /^```/ {
+      if (inside && done && bad) exit 0
+      inside = !inside
+      done = bad = 0
+      next
+    }
+    inside && /^Done:/ { done = 1 }
+    inside && tolower($0) ~ /(^|[^a-z])(fail|not run|blocker|blocked|unproven|awaiting|spec drift|re-prove needed)([^a-z]|$)/ { bad = 1 }
+    inside && /Critical <n>|principle violations <n>|boundary held <yes\|no>/ { bad = 1 }
+    END { exit !(inside && done && bad) }
+  ' "$f"; then
+    bad "$rel puts an unresolved state in a Done template; use Awaiting/Stopped/NO-GO"
   fi
 done
 

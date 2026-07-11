@@ -25,7 +25,9 @@ Step 0: Read `.claude/skills/devrites-lib/reference/standards/core.md`, plus `gi
 3. **Legitimacy gate.** For each item, read the surrounding code and classify: `fix`, `not-addressing`, `declined`, `reply-only`, or `needs-human`. Deduplicate overlapping items.
 4. **Fix approved items.** Apply contained fixes, add/update tests when behavior changes, and run targeted checks. Larger product/API/security calls become `needs-human`.
 5. **Commit/push.** Stage only touched files. Commit only if changes exist; push the branch.
+   **Completion:** changed files are committed/pushed with SHA evidence, or no commit is created because the diff is empty.
 6. **Reply and resolve.** Reply to every thread with outcome and evidence. Resolve only `fix`, `not-addressing`, `declined`, and `reply-only`; leave `needs-human` open.
+   **Completion:** every thread has one recorded outcome and only permitted terminal outcomes are resolved.
 7. **Verify.** Fetch unresolved threads again and report remaining intentional opens.
 
 ## Output
