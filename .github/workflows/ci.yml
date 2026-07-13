@@ -142,7 +142,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.26'
           cache-dependency-path: engine/go.sum
@@ -230,7 +230,7 @@ jobs:
       # produces every target (darwin/linux/windows × amd64/arm64) with no
       # cross-toolchain. The binaries + sha256 sidecars are attached to the Release.
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.26'
           cache-dependency-path: engine/go.sum
