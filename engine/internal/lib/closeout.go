@@ -60,10 +60,10 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 	if isFile(active) {
 		if b, err := os.ReadFile(active); err == nil && stripASCIISpace(string(b)) == slug {
 			_ = os.WriteFile(active, nil, 0o644)
-			fmt.Fprintf(stdout, "close-out: archived %s -> %s and cleared ACTIVE\n", slug, arch)
+			fmt.Fprintf(stdout, "close-out: archived %s -> %s and cleared ACTIVE\n", slug, filepath.ToSlash(arch))
 			return 0
 		}
 	}
-	fmt.Fprintf(stdout, "close-out: archived %s -> %s (ACTIVE pointed elsewhere — left as-is)\n", slug, arch)
+	fmt.Fprintf(stdout, "close-out: archived %s -> %s (ACTIVE pointed elsewhere — left as-is)\n", slug, filepath.ToSlash(arch))
 	return 0
 }
