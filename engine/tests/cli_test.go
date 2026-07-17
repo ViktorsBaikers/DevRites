@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/devrites/devrites/internal/testutil"
@@ -34,7 +35,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	binPath = filepath.Join(dir, "devrites")
+	name := "devrites"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	binPath = filepath.Join(dir, name)
 	build := exec.Command("go", "build", "-o", binPath, ".")
 	build.Dir = engineRoot
 	build.Env = append(os.Environ(), "CGO_ENABLED=0")

@@ -243,6 +243,7 @@ func boundedCommandOutput(timeout time.Duration, dir, name string, args ...strin
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, args...)
+	configureBoundedCommand(cmd)
 	cmd.Dir = dir
 	return cmd.CombinedOutput()
 }
@@ -589,7 +590,7 @@ func SpecDedupe(root string, args []string, stdout, stderr io.Writer) int {
 			}
 			if score >= 2 || score == len(terms) {
 				rel, _ := filepath.Rel(project, p)
-				hits = append(hits, hit{score: score, path: rel, line: firstLine(string(b))})
+				hits = append(hits, hit{score: score, path: filepath.ToSlash(rel), line: firstLine(string(b))})
 			}
 			return nil
 		})

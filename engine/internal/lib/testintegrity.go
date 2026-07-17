@@ -179,7 +179,7 @@ func isTestFile(f string) bool {
 		return true
 	}
 
-	for _, seg := range strings.Split(filepath.Dir(f), "/") {
+	for _, seg := range strings.Split(filepath.ToSlash(filepath.Dir(f)), "/") {
 		if testDirSegments[seg] {
 			return true
 		}
