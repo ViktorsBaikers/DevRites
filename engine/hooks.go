@@ -307,7 +307,7 @@ func hookSubagentOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Wr
 	if !strings.HasPrefix(agentType, "devrites-") {
 		return exitOK // not a DevRites subagent (or no identity) — silent no-op
 	}
-	out, err := h.SubagentStartContext(subagentOrientContext)
+	out, err := h.SubagentStartContext(strings.ReplaceAll(subagentOrientContext, "\r\n", "\n"))
 	if err != nil {
 		debugf(stderr, "subagent-orient: %v", err)
 		return exitOK
