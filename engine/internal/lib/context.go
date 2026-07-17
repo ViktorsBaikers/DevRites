@@ -204,7 +204,7 @@ func managedContextBlock(root string) string {
 	if slug != "" {
 		shown := filepath.Join(".devrites", "work", slug)
 		if rel, err := filepath.Rel(filepath.Dir(root), featureDir(root, slug)); err == nil {
-			shown = rel
+			shown = filepath.ToSlash(rel)
 		}
 		lines = append(lines, "- Active workspace: `"+shown+"/` (selected by `.devrites/ACTIVE` or `DEVRITES_WORKSPACE`).")
 	}

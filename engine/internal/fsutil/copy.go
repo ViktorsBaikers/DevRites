@@ -39,7 +39,7 @@ func WriteFileAtomic(path string, data []byte, perm fs.FileMode) error {
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("atomic write %s: %w", path, err)
 	}
-	if err := os.Rename(tmpName, path); err != nil {
+	if err := replaceFile(tmpName, path); err != nil {
 		return fmt.Errorf("atomic write %s: %w", path, err)
 	}
 	cleanup = false
