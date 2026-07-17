@@ -60,8 +60,9 @@ func assertGoldenKey(t *testing.T, key, got string) {
 	if err != nil {
 		t.Fatalf("missing golden %s — regenerate with UPDATE_GOLDEN=1: %v", path, err)
 	}
-	if got != string(want) {
-		t.Errorf("golden mismatch for %s\n got: %q\nwant: %q", key, got, string(want))
+	wantText := strings.ReplaceAll(string(want), "\r\n", "\n")
+	if got != wantText {
+		t.Errorf("golden mismatch for %s\n got: %q\nwant: %q", key, got, wantText)
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,6 +60,9 @@ func TestAppendLogConcurrentNoInterleaveNoLoss(t *testing.T) {
 // always observe a complete, self-consistent file — never a half-written or
 // mixed one — which is exactly what temp-file + atomic rename guarantees.
 func TestAtomicWriteReaderNeverSeesPartial(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not allow replacing a file while another handle is reading it")
+	}
 	path := filepath.Join(t.TempDir(), "structured.md")
 	const size = 8192
 	if err := AtomicWrite(path, bytes.Repeat([]byte{'A'}, size), 0o644); err != nil {

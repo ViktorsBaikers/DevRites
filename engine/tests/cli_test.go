@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/devrites/devrites/internal/testutil"
@@ -95,7 +96,7 @@ func goldenStatus(t *testing.T, slug string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return string(b)
+	return strings.ReplaceAll(string(b), "\r\n", "\n")
 }
 
 func TestStatusMatchesGolden(t *testing.T) {
