@@ -66,6 +66,7 @@ mkdir -p "$OUT_ROOT/claude" "$OUT_ROOT/codex"
 # Claude artifacts are host-native copies of the canonical pack.
 copy_tree "$PACK_SRC/skills" "$OUT_ROOT/claude/skills"
 copy_tree "$PACK_SRC/agents" "$OUT_ROOT/claude/agents"
+rm -rf "$OUT_ROOT/claude/agents/.impeccable"
 cp "$PACK_SRC/settings.json" "$OUT_ROOT/claude/settings.json"
 
 # Codex artifacts are generated host-native mirrors.
