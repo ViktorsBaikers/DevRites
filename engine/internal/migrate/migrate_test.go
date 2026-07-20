@@ -80,6 +80,13 @@ func TestRunNormalizesLiveFeatureAliases(t *testing.T) {
 }
 
 func TestMapLegacyPhase(t *testing.T) {
+	for _, phase := range state.LifecyclePhases() {
+		got, ok := mapLegacyPhase(string(phase))
+		if !ok || got != phase {
+			t.Fatalf("mapLegacyPhase(%q)=(%q,%v), want canonical phase", phase, got, ok)
+		}
+	}
+
 	for _, tc := range []struct {
 		word string
 		want state.Phase
@@ -87,7 +94,6 @@ func TestMapLegacyPhase(t *testing.T) {
 	}{
 		{word: "specced", want: state.PhaseSpec, ok: true},
 		{word: "in-progress", want: state.PhaseBuild, ok: true},
-		{word: "temper", want: state.PhaseTemper, ok: true},
 		{word: "reviewing", want: state.PhaseReview, ok: true},
 		{word: "done - shipped", want: state.PhaseDone, ok: true},
 		{word: "mystery"},

@@ -23,6 +23,7 @@ var (
 	snapshotSliceStateRe   = regexp.MustCompile(`[[:space:]]+(built|pending)[[:space:]]*$`)
 	snapshotSliceSepRe     = regexp.MustCompile(`[[:space:]]+[^[:alnum:][:space:]]+[[:space:]]*$`)
 	snapshotSliceCheckedRe = regexp.MustCompile(`\[[xX]\]`)
+	snapshotSliceHeadingRe = regexp.MustCompile(`(?m)^##[[:space:]]+(SLICE-[0-9]{3})(?:[[:space:]]+.*)?$`)
 	snapshotTouchedPathRe  = regexp.MustCompile("`([^`]+)`")
 )
 
@@ -163,13 +164,13 @@ func Snapshot(root, slug string) (*WorkspaceSnapshot, error) {
 
 func nextCommand(workDir string, phase Phase) workflow.Command {
 	if raw, err := os.ReadFile(filepath.Join(workDir, LedgerFile)); err == nil {
-		if action, ok := CursorField(strings.Split(string(raw), "\n"), "next_action"); ok {
+		if action, ok := CursorField(strings.Split(string(raw), "\n"), CursorNextAction); ok {
 			if command := workflow.ForAction(action); command.Verb != "" {
 				return command
 			}
 		}
 	}
-	return workflow.ForPhase(string(phase))
+	return workflow.ForVerb(ResumeVerb(phase))
 }
 
 func readActiveSlug(root string) string {
@@ -191,6 +192,22 @@ func runMode(root string) string {
 }
 
 func currentSlice(workDir string) *SliceSnapshot {
+	if rawState, err := os.ReadFile(filepath.Join(workDir, LedgerFile)); err == nil {
+		if active, ok := CursorField(strings.Split(string(rawState), "\n"), CursorActiveSlice); ok {
+			fields := strings.Fields(active)
+			if len(fields) > 0 {
+				active = fields[0]
+				if rawTasks, taskErr := os.ReadFile(filepath.Join(workDir, "tasks.md")); taskErr == nil {
+					matches := snapshotSliceHeadingRe.FindAllStringSubmatch(string(rawTasks), -1)
+					for i, match := range matches {
+						if match[1] == active {
+							return &SliceSnapshot{Index: i + 1, Total: len(matches), Name: active, State: "pending"}
+						}
+					}
+				}
+			}
+		}
+	}
 	for _, name := range []string{"state.md", "tasks.md"} {
 		raw, err := os.ReadFile(filepath.Join(workDir, name))
 		if err != nil {
@@ -271,6 +288,9 @@ func driftSummary(workDir string) DriftSnapshot {
 			continue
 		}
 		open := countOpenMarkers(string(raw))
+		if name == "questions.md" {
+			open = countOpenQuestions(string(raw))
+		}
 		if open > 0 {
 			return DriftSnapshot{Status: "open", Open: open}
 		}
@@ -278,11 +298,37 @@ func driftSummary(workDir string) DriftSnapshot {
 	return DriftSnapshot{Status: "clear"}
 }
 
+func countOpenQuestions(text string) int {
+	open := 0
+	inQuestion := false
+	status := ""
+	finalize := func() {
+		if inQuestion && status == "open" {
+			open++
+		}
+	}
+	for _, line := range strings.Split(text, "\n") {
+		lower := strings.ToLower(strings.TrimSpace(line))
+		switch {
+		case strings.HasPrefix(lower, "## q-"):
+			finalize()
+			inQuestion, status = true, ""
+		case inQuestion && strings.HasPrefix(lower, "status:"):
+			status = strings.TrimSpace(strings.TrimPrefix(lower, "status:"))
+		case inQuestion && strings.HasPrefix(lower, "## "):
+			finalize()
+			inQuestion = false
+		}
+	}
+	finalize()
+	return open
+}
+
 func countOpenMarkers(text string) int {
 	open := 0
 	for _, line := range strings.Split(text, "\n") {
 		l := strings.ToLower(strings.TrimSpace(line))
-		if strings.Contains(l, "status: open") || strings.Contains(l, "- [ ]") || strings.Contains(l, "gate: blocking") {
+		if strings.Contains(l, "status: open") || strings.Contains(l, "- [ ]") {
 			open++
 		}
 	}

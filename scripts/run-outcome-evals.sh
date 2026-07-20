@@ -24,6 +24,27 @@ else
 fi
 
 echo
+echo "== grade synthetic/canonical-cursor (expect GO) =="
+canonical="$tmp/canonical-cursor"
+mkdir -p "$canonical"
+cp -R "$good/." "$canonical/"
+cat > "$canonical/state.md" <<'MD'
+# State
+
+## Cursor
+| Key | Value |
+| --- | --- |
+| phase | done |
+| status | done |
+| next_action | archived |
+MD
+if bash "$GRADER" "$canonical"; then
+  echo "  PASS — canonical cursor graded GO"
+else
+  echo "  FAIL — canonical cursor should grade GO"; fail=1
+fi
+
+echo
 echo "== grade golden/blocked-feature (expect NO-GO) =="
 if bash "$GRADER" "$bad"; then
   echo "  FAIL — a known-blocked workspace should NOT grade GO"; fail=1

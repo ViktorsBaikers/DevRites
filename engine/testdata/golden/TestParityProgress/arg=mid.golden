@@ -1,4 +1,4 @@
 exit 0
 ── rite-build ─────────
 Slice 2/3  ███████░░░  detail ✓
-Flow   spec ✓ temper ✓ define ✓ vet ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○
+Flow   spec ✓ temper ✓ define ✓ plan ✓ vet ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○

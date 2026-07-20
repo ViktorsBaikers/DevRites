@@ -795,7 +795,7 @@ func TestParityPreamble(t *testing.T) {
 //
 // Golden: the header rule width, the slice meter (round-half math, ✅ ALL BUILT
 // vs the last-built tail), and the flow ribbon (conditional temper/vet, the
-// plan→build and done cursor rules) are checked against golden snapshots.
+// explicit plan and terminal done cursor rules) are checked against golden snapshots.
 
 func TestParityProgress(t *testing.T) {
 	work := t.TempDir()

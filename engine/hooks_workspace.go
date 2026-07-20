@@ -187,9 +187,9 @@ func hookHandoffSnapshot(stdin io.Reader, stdout, stderr io.Writer) int {
 		return exitOK
 	}
 	stateLines := wsReadLines(filepath.Join(dir, "state.md"))
-	phase, _ := state.CursorField(stateLines, "phase")
-	status, _ := state.CursorField(stateLines, "status")
-	next, _ := state.CursorField(stateLines, "next_action")
+	phase, _ := state.CursorField(stateLines, state.CursorPhase)
+	status, _ := state.CursorField(stateLines, state.CursorStatus)
+	next, _ := state.CursorField(stateLines, state.CursorNextAction)
 	stamp := time.Now().UTC().Format(time.RFC3339)
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n## Handoff snapshot — %s\n", stamp)
@@ -221,12 +221,12 @@ func hookCursor(stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	stateLines := wsReadLines(filepath.Join(dir, "state.md"))
 
-	next, _ := state.CursorField(stateLines, "next_action")
-	status, _ := state.CursorField(stateLines, "status")
+	next, _ := state.CursorField(stateLines, state.CursorNextAction)
+	status, _ := state.CursorField(stateLines, state.CursorStatus)
 	gates := wsGateCount(filepath.Join(dir, "questions.md"))
 	afk := ""
 	if wsIsFile(filepath.Join(root, "AFK")) {
-		afk, _ = state.CursorField(stateLines, "afk_slices_remaining")
+		afk, _ = state.CursorField(stateLines, state.CursorAFKSlicesRemaining)
 	}
 
 	fmt.Fprintf(stdout, "DevRites cursor — active feature: %s\n", slug)
@@ -255,7 +255,7 @@ func hookStatusline(stdin io.Reader, stdout, stderr io.Writer) int {
 	if !ok {
 		return exitOK
 	}
-	phase, _ := state.CursorField(wsReadLines(filepath.Join(dir, "state.md")), "phase")
+	phase, _ := state.CursorField(wsReadLines(filepath.Join(dir, "state.md")), state.CursorPhase)
 	if phase == "" {
 		phase = "?"
 	}

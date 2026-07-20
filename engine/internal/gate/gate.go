@@ -129,7 +129,7 @@ func StopGate(root string) (StopResult, error) {
 				slug, strings.Join(gates, "/")),
 		}, nil
 	}
-	claimsDone := f.Phase == state.PhaseSeal || f.Phase == state.PhaseShip || f.Phase == state.PhaseDone
+	claimsDone := state.ShippablePhase(f.Phase)
 	if claimsDone && !f.Present[state.SectionProof] {
 		return StopResult{
 			Slug:    slug,
@@ -167,14 +167,14 @@ func openBlockingQuestionGates(data []byte) []string {
 	inQ := false
 	status, gate := "", ""
 	finalize := func() {
-		if inQ && status == "open" && (gate == "blocking" || gate == "validating") && !seen[gate] {
+		if inQ && status == "open" && (gate == "blocking" || gate == "validating" || gate == "escalating") && !seen[gate] {
 			seen[gate] = true
 			gates = append(gates, gate)
 		}
 	}
 	for _, line := range lines {
 		switch {
-		case strings.HasPrefix(line, "## q-"):
+		case strings.HasPrefix(strings.ToLower(line), "## q-"):
 			finalize()
 			inQ, status, gate = true, "", ""
 		case inQ && strings.HasPrefix(line, "status:"):
@@ -191,7 +191,7 @@ func openBlockingQuestionGates(data []byte) []string {
 }
 
 func stateAwaitingHuman(data []byte) bool {
-	status, _ := state.CursorField(splitLinesNoTrailing(data), "status")
+	status, _ := state.CursorField(splitLinesNoTrailing(data), state.CursorStatus)
 	return status == "awaiting_human"
 }
 

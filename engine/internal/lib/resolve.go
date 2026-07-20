@@ -220,7 +220,7 @@ func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
 }
 
 var (
-	qHeaderRe    = regexp.MustCompile(`^## q-`)
+	qHeaderRe    = regexp.MustCompile(`(?i)^## q-`)
 	statusLineRe = regexp.MustCompile(`^status:`)
 	statusStrip  = regexp.MustCompile(`^status:[[:space:]]*`)
 	answeredAtRe = regexp.MustCompile(`^answered_at:`)
@@ -299,6 +299,15 @@ func clearAwaiting(sfile, qid string) error {
 		return fmt.Errorf("read state %s: %w", sfile, err)
 	}
 	lines := splitLinesNoTrailing(data)
+	resumePhase := state.PhaseBuild
+	if rawPhase, ok := state.CursorField(lines, state.CursorPhase); ok {
+		if fields := strings.Fields(strings.ToLower(rawPhase)); len(fields) > 0 {
+			if phase, known := state.PhaseForName(fields[0]); known && state.ResumeVerb(phase) != "" {
+				resumePhase = phase
+			}
+		}
+	}
+	resumeCommand := workflow.ForVerb(state.ResumeVerb(resumePhase))
 	// First check whether the awaiting block references this question at all.
 	inAw := false
 	var awaitingLines []string
@@ -314,7 +323,7 @@ func clearAwaiting(sfile, qid string) error {
 			awaitingLines = append(awaitingLines, line)
 		}
 	}
-	waitingOn, _ := state.CursorField(awaitingLines, "question_id")
+	waitingOn, _ := state.CursorField(awaitingLines, state.CursorQuestionID)
 	if waitingOn != qid {
 		return nil
 	}
@@ -341,7 +350,7 @@ func clearAwaiting(sfile, qid string) error {
 			continue
 		case inLog && hdrSpaceRe.MatchString(line):
 			if !logAppended {
-				out = append(out, fmt.Sprintf("- %s build: resolved %s", ts, qid))
+				out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePhase, qid))
 				logAppended = true
 			}
 			inLog = false
@@ -351,10 +360,10 @@ func clearAwaiting(sfile, qid string) error {
 		out = append(out, line)
 	}
 	if inLog && !logAppended {
-		out = append(out, fmt.Sprintf("- %s build: resolved %s", ts, qid))
+		out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePhase, qid))
 	}
-	out, _ = state.SetCursorField(out, "status", "running")
-	out, _ = state.SetCursorField(out, "next_action", "(resume — `"+workflow.ForVerb("build").Both()+"` to continue the workflow)")
+	out, _ = state.SetCursorField(out, state.CursorStatus, "running")
+	out, _ = state.SetCursorField(out, state.CursorNextAction, "(resume — `"+resumeCommand.Both()+"` to continue the workflow)")
 	if err := fsutil.WriteFileAtomic(sfile, joinRecords(out), 0o644); err != nil {
 		return fmt.Errorf("update state %s: %w", sfile, err)
 	}

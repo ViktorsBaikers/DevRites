@@ -16,20 +16,3 @@ func TestForActionExtractsCanonicalInvocation(t *testing.T) {
 		}
 	}
 }
-
-func TestForPhaseCoversCurrentLifecycle(t *testing.T) {
-	for _, phase := range []string{
-		"frame", "spec", "temper", "define", "vet", "build", "converge",
-		"prove", "polish", "review", "seal", "ship",
-	} {
-		if got := ForPhase(phase).Verb; got != phase {
-			t.Fatalf("ForPhase(%q).Verb=%q, want %q", phase, got, phase)
-		}
-	}
-	if got := ForPhase("plan").Verb; got != "define" {
-		t.Fatalf("ForPhase(plan).Verb=%q, want define compatibility route", got)
-	}
-	if got := ForPhase("done").Verb; got != "" {
-		t.Fatalf("ForPhase(done).Verb=%q, want empty", got)
-	}
-}

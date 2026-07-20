@@ -20,6 +20,7 @@ var (
 	sliceStateRe   = regexp.MustCompile(`[[:space:]]+(built|pending)[[:space:]]*$`)
 	sliceSepRe     = regexp.MustCompile(`[[:space:]]+[^[:alnum:][:space:]]+[[:space:]]*$`) // drop " — "
 	sliceCheckedRe = regexp.MustCompile(`\[[xX]\]`)
+	sliceHeadingRe = regexp.MustCompile(`^##[[:space:]]+(SLICE-[0-9]{3})(?:[[:space:]]+(.*))?$`)
 )
 
 // Progress renders the active feature's position — the deterministic footer every
@@ -50,6 +51,9 @@ func Progress(root string, args []string, stdout, stderr io.Writer) int {
 		phase = "spec"
 	}
 	total, built, lastbuilt := tallySlices(lines)
+	if total == 0 {
+		total, built, lastbuilt = tallyCanonicalSlices(workDir)
+	}
 
 	// Header rule: pad "── rite-<phase> " with box glyphs to ≥44 BYTES. Under the
 	// oracle's LC_ALL=C the bash `${#header}` counts bytes, which len() matches.
@@ -80,28 +84,28 @@ func Progress(root string, args []string, stdout, stderr io.Writer) int {
 
 	// Flow ribbon: the lifecycle spine; optional phases appear once their artifact
 	// exists or while they are the active phase, so the cursor is never omitted.
-	var order []string
-	if phase == "frame" {
-		order = append(order, "frame")
+	order := make([]string, 0, len(state.LifecyclePhases()))
+	for _, lifecyclePhase := range state.LifecyclePhases() {
+		name := string(lifecyclePhase)
+		include := true
+		switch lifecyclePhase {
+		case state.PhaseFrame:
+			include = phase == name
+		case state.PhaseTemper:
+			include = phase == name || isFile(filepath.Join(workDir, "strategy.md"))
+		case state.PhaseDone:
+			include = false
+		case state.PhaseVet:
+			include = phase == name || isFile(filepath.Join(workDir, "eng-review.md"))
+		case state.PhaseConverge:
+			include = phase == name
+		}
+		if include {
+			order = append(order, name)
+		}
 	}
-	order = append(order, "spec")
-	if phase == "temper" || isFile(filepath.Join(workDir, "strategy.md")) {
-		order = append(order, "temper")
-	}
-	order = append(order, "define")
-	if phase == "vet" || isFile(filepath.Join(workDir, "eng-review.md")) {
-		order = append(order, "vet")
-	}
-	order = append(order, "build")
-	if phase == "converge" {
-		order = append(order, "converge")
-	}
-	order = append(order, "prove", "polish", "review", "seal", "ship")
 
 	cur := phase
-	if cur == "plan" { // replan sits at build
-		cur = "build"
-	}
 	idx := -1
 	if phase == "done" { // past ship
 		idx = len(order)
@@ -127,9 +131,44 @@ func Progress(root string, args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
+func tallyCanonicalSlices(workDir string) (total, built int, lastbuilt string) {
+	raw, err := os.ReadFile(filepath.Join(workDir, "tasks.md"))
+	if err != nil {
+		return 0, 0, ""
+	}
+	name, sliceState := "", ""
+	finalize := func() {
+		if name == "" {
+			return
+		}
+		total++
+		if sliceState == "built" {
+			built++
+			lastbuilt = name
+		}
+	}
+	for _, line := range strings.Split(string(raw), "\n") {
+		if match := sliceHeadingRe.FindStringSubmatch(strings.TrimSpace(line)); match != nil {
+			finalize()
+			name = match[1]
+			if strings.TrimSpace(match[2]) != "" {
+				name += " " + strings.TrimSpace(match[2])
+			}
+			sliceState = "pending"
+			continue
+		}
+		if name != "" && strings.HasPrefix(strings.ToLower(strings.TrimSpace(line)), "status:") {
+			_, value, _ := strings.Cut(strings.TrimSpace(line), ":")
+			sliceState = strings.ToLower(strings.TrimSpace(value))
+		}
+	}
+	finalize()
+	return total, built, lastbuilt
+}
+
 // parsePhase returns the first token of the canonical or legacy phase field.
 func parsePhase(lines []string) string {
-	value, ok := state.CursorField(lines, "phase")
+	value, ok := state.CursorField(lines, state.CursorPhase)
 	if !ok {
 		return ""
 	}

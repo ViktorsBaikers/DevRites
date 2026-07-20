@@ -12,25 +12,8 @@ import (
 	"github.com/devrites/devrites/internal/state"
 )
 
-// phaseArc is the canonical order the lifecycle advances through (ADR-0004).
-var phaseArc = []state.Phase{
-	state.PhaseFrame,
-	state.PhaseSpec,
-	state.PhaseTemper,
-	state.PhaseDefine,
-	state.PhasePlan,
-	state.PhaseVet,
-	state.PhaseBuild,
-	state.PhaseConverge,
-	state.PhaseProve,
-	state.PhasePolish,
-	state.PhaseReview,
-	state.PhaseSeal,
-	state.PhaseShip,
-	state.PhaseDone,
-}
-
 func TestADR0004RequiredSectionsAreAdditiveDownTheArc(t *testing.T) {
+	phaseArc := state.LifecyclePhases()
 	for _, p := range phaseArc {
 		if !state.KnownPhase(p) {
 			t.Fatalf("phase %q in the arc is not a known phase", p)

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 974242,
+  "total_bytes": 974307,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 7443,
     "pack/.claude/agents/devrites-devex-reviewer.md": 7176,
@@ -75,7 +75,7 @@
     "pack/.claude/skills/devrites-lib/reference/standards/test-proof-checklist.md": 369,
     "pack/.claude/skills/devrites-lib/reference/standards/testing.md": 11554,
     "pack/.claude/skills/devrites-lib/reference/standards/tooling.md": 6697,
-    "pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md": 6352,
+    "pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md": 6417,
     "pack/.claude/skills/devrites-lib/SKILL.md": 5183,
     "pack/.claude/skills/devrites-prose-craft/reference/banned-phrases.md": 4678,
     "pack/.claude/skills/devrites-prose-craft/reference/examples.md": 4607,

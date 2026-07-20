@@ -65,8 +65,9 @@ The per-feature index. Its YAML frontmatter carries:
 | `phase`         | current workflow phase (see below)             |
 | `schemaVersion` | schema version the file was written against    |
 
-A feature exists iff its `feature.md` exists. A `feature.md` with no `phase`, or
-an unknown `phase`, is an error.
+A feature exists when it has either a live `state.md` ledger or the transitional
+`feature.md` manifest. The mutable `state.md` cursor is authoritative when both
+declare a phase; an unknown declared phase is an error.
 
 ## Sections
 
@@ -91,16 +92,18 @@ requires only the sections needed to leave it, and the set grows additively down
 the arc. A section that is not yet required (e.g. `proof` during the `spec`
 phase) never blocks.
 
-| phase   | required sections                                     |
-| ------- | ----------------------------------------------------- |
-| `frame` | *(none)*                                              |
-| `spec`  | `spec`                                                |
-| `plan`  | `spec`, `plan`                                         |
-| `build` | `spec`, `plan`, `decisions`, `tasks`                  |
-| `prove` | `spec`, `plan`, `decisions`, `tasks`, `proof`         |
-| `vet`   | `spec`, `plan`, `decisions`, `tasks`, `proof`         |
-| `seal`  | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` |
-| `ship`  | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` |
+| phase | required sections |
+| --- | --- |
+| `frame` | *(none)* |
+| `spec`, `temper` | `spec` |
+| `define`, `plan` | `spec`, `plan` |
+| `vet`, `build`, `converge` | `spec`, `plan`, `decisions`, `tasks` |
+| `prove`, `polish`, `review` | `spec`, `plan`, `decisions`, `tasks`, `proof` |
+| `seal`, `ship`, `done` | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` |
+
+The authoritative typed definitions live in `engine/internal/state/schema.go`.
+`workflow_manifest.json` is a generated derivative for non-Go release tools;
+run `go generate ./internal/state` after editing the registry.
 
 ## `devrites-engine status <slug>`
 

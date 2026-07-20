@@ -29,6 +29,56 @@ func TestRequiredSectionsIsPhaseRelativeAndOrdered(t *testing.T) {
 	}
 }
 
+func TestLifecycleRegistryOwnsOrderAndResumeCommands(t *testing.T) {
+	phases := LifecyclePhases()
+	if len(phases) == 0 || phases[0] != PhaseFrame || phases[len(phases)-1] != PhaseDone {
+		t.Fatalf("LifecyclePhases()=%v, want frame...done", phases)
+	}
+	if got := ResumeVerb(PhasePlan); got != "define" {
+		t.Fatalf("ResumeVerb(plan)=%q, want define", got)
+	}
+	if got := ResumeVerb(PhaseDone); got != "" {
+		t.Fatalf("ResumeVerb(done)=%q, want empty", got)
+	}
+
+	phases[0] = PhaseDone
+	if got := LifecyclePhases()[0]; got != PhaseFrame {
+		t.Fatalf("LifecyclePhases exposed mutable registry: first=%q", got)
+	}
+}
+
+func TestLifecycleRegistryInvariants(t *testing.T) {
+	phaseNames := map[Phase]bool{}
+	aliases := map[string]Phase{}
+	for i, definition := range phaseDefinitions {
+		if definition.phase == "" || phaseNames[definition.phase] {
+			t.Fatalf("phase definition %d has empty or duplicate ID %q", i, definition.phase)
+		}
+		phaseNames[definition.phase] = true
+		if len(definition.workspaceRequired) == 0 {
+			t.Fatalf("phase %q has no workspace requirements", definition.phase)
+		}
+		for _, alias := range definition.aliases {
+			if alias == "" || aliases[alias] != "" || KnownPhase(Phase(alias)) {
+				t.Fatalf("phase %q has empty or duplicate alias %q", definition.phase, alias)
+			}
+			aliases[alias] = definition.phase
+		}
+		for _, section := range definition.required {
+			known := false
+			for _, canonical := range Sections {
+				known = known || section == canonical
+			}
+			if !known {
+				t.Fatalf("phase %q requires unknown section %q", definition.phase, section)
+			}
+		}
+		if definition.shippable && !definition.proofRequired {
+			t.Fatalf("shippable phase %q does not require proof", definition.phase)
+		}
+	}
+}
+
 func TestStatusFixtureBuildIncomplete(t *testing.T) {
 	rep, err := Status(fixtureRoot, "auth-tokens")
 	if err != nil {
@@ -169,6 +219,27 @@ func TestSnapshotUsesCanonicalNextActionAndWarnsWhenRequiredProofMissing(t *test
 	}
 	if got := strings.Join(snap.Warnings, "\n"); !strings.Contains(got, "requires fresh evidence") {
 		t.Fatalf("warnings=%v, want missing required-proof warning", snap.Warnings)
+	}
+}
+
+func TestSnapshotReadsCanonicalActiveSliceAndCountsQuestionsByRecord(t *testing.T) {
+	workDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workDir, "state.md"), []byte("| phase | build |\n| active_slice | SLICE-002 |\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workDir, "tasks.md"), []byte("## SLICE-001 First\n\n## SLICE-002 Second\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workDir, "questions.md"), []byte("## Q-001\nstatus: open\ngate: blocking\n\n## Q-002\nstatus: answered\ngate: blocking\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	slice := currentSlice(workDir)
+	if slice == nil || slice.Name != "SLICE-002" || slice.Index != 2 || slice.Total != 2 {
+		t.Fatalf("currentSlice=%+v, want canonical SLICE-002 at 2/2", slice)
+	}
+	if drift := driftSummary(workDir); drift.Status != "open" || drift.Open != 1 {
+		t.Fatalf("driftSummary=%+v, want one open question record", drift)
 	}
 }
 

@@ -1,0 +1,310 @@
+{
+  "generatedBy": "go generate ./internal/state; DO NOT EDIT",
+  "schemaVersion": 1,
+  "phases": [
+    {
+      "id": "frame",
+      "resumeVerb": "frame",
+      "workspaceRequired": [
+        "state.md"
+      ]
+    },
+    {
+      "id": "spec",
+      "resumeVerb": "spec",
+      "aliases": [
+        "specced",
+        "specifying"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md"
+      ]
+    },
+    {
+      "id": "temper",
+      "resumeVerb": "temper",
+      "aliases": [
+        "tempered",
+        "tempering"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md"
+      ]
+    },
+    {
+      "id": "define",
+      "resumeVerb": "define",
+      "aliases": [
+        "defined",
+        "defining"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md"
+      ],
+      "blocksOpenQuestions": true
+    },
+    {
+      "id": "plan",
+      "resumeVerb": "define",
+      "aliases": [
+        "planned",
+        "planning"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md"
+      ],
+      "blocksOpenQuestions": true
+    },
+    {
+      "id": "vet",
+      "resumeVerb": "vet",
+      "aliases": [
+        "vetted",
+        "vetting"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md"
+      ],
+      "blocksOpenQuestions": true
+    },
+    {
+      "id": "build",
+      "resumeVerb": "build",
+      "aliases": [
+        "building",
+        "wip",
+        "in",
+        "in-progress"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md"
+      ],
+      "blocksOpenQuestions": true
+    },
+    {
+      "id": "converge",
+      "resumeVerb": "converge",
+      "aliases": [
+        "converged",
+        "converging"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md"
+      ],
+      "blocksOpenQuestions": true
+    },
+    {
+      "id": "prove",
+      "resumeVerb": "prove",
+      "aliases": [
+        "proving",
+        "proven",
+        "testing"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "evidence.md",
+        "touched-files.md"
+      ],
+      "proofRequired": true,
+      "blocksOpenQuestions": true
+    },
+    {
+      "id": "polish",
+      "resumeVerb": "polish",
+      "aliases": [
+        "polished",
+        "polishing"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "evidence.md",
+        "touched-files.md"
+      ],
+      "proofRequired": true,
+      "blocksOpenQuestions": true
+    },
+    {
+      "id": "review",
+      "resumeVerb": "review",
+      "aliases": [
+        "reviewed",
+        "reviewing"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "evidence.md",
+        "touched-files.md"
+      ],
+      "proofRequired": true,
+      "blocksOpenQuestions": true
+    },
+    {
+      "id": "seal",
+      "resumeVerb": "seal",
+      "aliases": [
+        "sealed",
+        "sealing"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "evidence.md",
+        "touched-files.md"
+      ],
+      "proofRequired": true,
+      "blocksOpenQuestions": true,
+      "shippable": true
+    },
+    {
+      "id": "ship",
+      "resumeVerb": "ship",
+      "aliases": [
+        "shipped",
+        "shipping"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "evidence.md",
+        "touched-files.md"
+      ],
+      "proofRequired": true,
+      "blocksOpenQuestions": true,
+      "shippable": true
+    },
+    {
+      "id": "done",
+      "aliases": [
+        "closed",
+        "complete",
+        "completed"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "evidence.md",
+        "touched-files.md"
+      ],
+      "proofRequired": true,
+      "blocksOpenQuestions": true,
+      "shippable": true
+    }
+  ],
+  "cursorKeyAliases": [
+    {
+      "alias": "nextstep",
+      "canonical": "next_action"
+    },
+    {
+      "alias": "qid",
+      "canonical": "question_id"
+    }
+  ]
+}

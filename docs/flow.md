@@ -270,7 +270,7 @@ erDiagram
         string slug PK ".devrites/work/<slug>/"
     }
     state {
-        string phase "spec | plan | build | prove | polish | review | seal | ship | done"
+        string phase "frame | spec | temper | define | plan | vet | build | converge | prove | polish | review | seal | ship | done"
         string status "running | awaiting_human | blocked | done"
         string active_slice "N — name"
         int afk_slices_remaining "from .devrites/AFK max_slices on first AFK build"

@@ -12,6 +12,8 @@ import re
 import sys
 from pathlib import Path
 
+from workflow_schema import PHASES, cursor_field
+
 
 ID_PATTERNS = {
     "AC": re.compile(r"\bAC-\d{3}\b"),
@@ -112,68 +114,6 @@ SLICE_REQUIRED_FIELDS = (
     "Done condition",
 )
 
-PHASE_REQUIRED = {
-    "frame": ["state.md"],
-    "spec": ["brief.md", "spec.md", "state.md", "decisions.md", "assumptions.md", "questions.md"],
-    "temper": ["brief.md", "spec.md", "state.md", "decisions.md", "assumptions.md", "questions.md"],
-    "plan": [
-        "brief.md",
-        "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
-        "state.md",
-        "decisions.md",
-        "assumptions.md",
-        "questions.md",
-    ],
-    "vet": [
-        "brief.md",
-        "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
-        "state.md",
-        "decisions.md",
-        "assumptions.md",
-        "questions.md",
-    ],
-    "build": [
-        "brief.md",
-        "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
-        "state.md",
-        "decisions.md",
-        "assumptions.md",
-        "questions.md",
-    ],
-    "prove": [
-        "brief.md",
-        "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
-        "state.md",
-        "decisions.md",
-        "assumptions.md",
-        "questions.md",
-    ],
-    "polish": [],
-    "review": [],
-    "seal": [],
-    "ship": [],
-    "done": [],
-}
-for phase in ("polish", "review", "seal", "ship", "done"):
-    PHASE_REQUIRED[phase] = PHASE_REQUIRED["prove"]
-
-
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
@@ -198,12 +138,9 @@ def has_budget_override(text: str) -> bool:
 def phase_for(workspace: Path) -> str:
     for name in ("state.md", "status.md", "README.md", "index.md", "feature.md"):
         p = workspace / name
-        if not p.exists():
-            continue
-        text = read(p)
-        m = re.search(r"(?im)^\s*-?\s*phase\s*:\s*([a-z-]+)", text)
-        if m:
-            return m.group(1).lower()
+        value = cursor_field(p, "phase")
+        if value:
+            return value.split()[0].lower()
     return "spec"
 
 
@@ -374,9 +311,8 @@ def validate_workspace(workspace: Path) -> list[str]:
     if not workspace_index_present(workspace):
         errors.append(f"{workspace}: missing README.md/index.md/feature.md workspace map")
 
-    required = PHASE_REQUIRED.get(phase, PHASE_REQUIRED["spec"])
-    if phase in {"prove", "polish", "review", "seal", "ship", "done"}:
-        required = [*required, "evidence.md", "touched-files.md"]
+    metadata = PHASES.get(phase, PHASES["spec"])
+    required = list(metadata["workspaceRequired"])
     for name in required:
         if not existing_or_alias(workspace, name):
             errors.append(f"{workspace}: phase {phase} requires {name}")
@@ -456,7 +392,7 @@ def validate_workspace(workspace: Path) -> list[str]:
         for ac in sorted(ac_ids):
             if ac not in rows:
                 errors.append(f"{workspace / 'traceability.md'}: {ac} absent from coverage matrix")
-        if phase in {"prove", "polish", "review", "seal", "ship", "done"}:
+        if bool(metadata.get("proofRequired")):
             for eid in sorted(evid_ids):
                 if eid not in trace:
                     errors.append(f"{workspace / 'traceability.md'}: evidence ID {eid} from evidence/browser proof is not mapped")
@@ -467,7 +403,7 @@ def validate_workspace(workspace: Path) -> list[str]:
         elif slice_id not in evidence:
             errors.append(f"{evidence_path}: completed {slice_id} is not referenced by evidence")
 
-    if phase in {"plan", "vet", "build", "prove", "polish", "review", "seal", "ship", "done"}:
+    if bool(metadata.get("blocksOpenQuestions")):
         qfile = workspace / "questions.md"
         if qfile.exists():
             for qid in blocking_questions(read(qfile)):
