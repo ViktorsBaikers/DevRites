@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.1...v3.0.2) (2026-07-20)
+
+### Fixed
+
+* **rite:** read canonical workspace cursor state ([e2fd60c](https://github.com/ViktorsBaikers/DevRites/commit/e2fd60c13aa53637e1af02a792f36f3efe32e1c9))
+
 ## [3.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.0...v3.0.1) (2026-07-20)
 
 ### Fixed
