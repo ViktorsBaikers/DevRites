@@ -58,25 +58,26 @@ func TestMigrateNormalizesCanonicalWorkSchema(t *testing.T) {
 	}
 
 	feat := filepath.Join(root, "work", slug)
-	// evidence.md → proof.md, state.md → status.md, plus a generated feature.md.
-	for _, want := range []string{"feature.md", "spec.md", "plan.md", "decisions.md", "tasks.md", "proof.md", "status.md"} {
+	// Current canonical files stay canonical; migration adds only the missing map.
+	for _, want := range []string{"README.md", "state.md", "spec.md", "plan.md", "decisions.md", "tasks.md", "evidence.md"} {
 		if _, err := os.Stat(filepath.Join(feat, want)); err != nil {
 			t.Errorf("missing new-schema file %s: %v", want, err)
 		}
 	}
-	fm, err := os.ReadFile(filepath.Join(feat, "feature.md"))
+	readme, err := os.ReadFile(filepath.Join(feat, "README.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(fm), "phase: temper") {
-		t.Errorf("feature.md phase not derived from state.md\n%s", fm)
+	if !strings.Contains(string(readme), "phase: temper") {
+		t.Errorf("README.md phase not derived from state.md\n%s", readme)
 	}
-	if !strings.Contains(string(fm), "schemaVersion: 1") {
-		t.Errorf("feature.md missing schemaVersion\n%s", fm)
+	if !strings.Contains(string(readme), "schemaVersion: 1") {
+		t.Errorf("README.md missing schemaVersion\n%s", readme)
 	}
-	proof, _ := os.ReadFile(filepath.Join(feat, "proof.md"))
-	if !strings.Contains(string(proof), "Tests green") {
-		t.Errorf("proof.md did not carry evidence.md content\n%s", proof)
+	for _, unwanted := range []string{"feature.md", "proof.md", "status.md"} {
+		if _, err := os.Stat(filepath.Join(feat, unwanted)); !os.IsNotExist(err) {
+			t.Errorf("migration created legacy alias %s: %v", unwanted, err)
+		}
 	}
 
 	// A backup of the pre-migration state must exist.
@@ -127,11 +128,12 @@ func TestMigrateNormalizesLiveFeatureInPlace(t *testing.T) {
 		t.Fatal(err)
 	}
 	files := map[string]string{
-		"state.md":     "# State\n\n- Phase: prove\n- Status: running\n",
+		"feature.md":   "# Legacy feature map\n",
+		"status.md":    "# State\n\n- Phase: prove\n- Status: running\n",
 		"spec.md":      "# Spec\n\nRotate tokens.\n",
 		"plan.md":      "# Plan\n\nStep 1, step 2.\n",
 		"tasks.md":     "# Tasks\n\n- [x] one\n",
-		"evidence.md":  "# Evidence\n\nTests green.\n",
+		"proof.md":     "# Evidence\n\nTests green.\n",
 		"decisions.md": "# Decisions\n\nUse HMAC.\n",
 	}
 	for name, body := range files {
@@ -147,25 +149,25 @@ func TestMigrateNormalizesLiveFeatureInPlace(t *testing.T) {
 	if !strings.Contains(out, "migrated 1 feature(s)") {
 		t.Errorf("unexpected migrate output\n%s", out)
 	}
-	for _, want := range []string{"feature.md", "proof.md", "status.md", "state.md", "evidence.md"} {
+	for _, want := range []string{"README.md", "feature.md", "proof.md", "status.md", "state.md", "evidence.md"} {
 		if _, err := os.Stat(filepath.Join(feat, want)); err != nil {
 			t.Errorf("missing normalized file %s: %v", want, err)
 		}
 	}
-	fm, err := os.ReadFile(filepath.Join(feat, "feature.md"))
+	readme, err := os.ReadFile(filepath.Join(feat, "README.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(fm), "phase: prove") {
-		t.Errorf("feature.md phase not derived from ledger\n%s", fm)
+	if !strings.Contains(string(readme), "Legacy feature map") {
+		t.Errorf("README.md did not carry feature.md content\n%s", readme)
 	}
-	status, _ := os.ReadFile(filepath.Join(feat, "status.md"))
-	if !strings.Contains(string(status), "running") {
-		t.Errorf("status.md did not carry state.md content\n%s", status)
+	stateFile, _ := os.ReadFile(filepath.Join(feat, "state.md"))
+	if !strings.Contains(string(stateFile), "running") {
+		t.Errorf("state.md did not carry status.md content\n%s", stateFile)
 	}
-	proof, _ := os.ReadFile(filepath.Join(feat, "proof.md"))
-	if !strings.Contains(string(proof), "Tests green") {
-		t.Errorf("proof.md did not carry evidence.md content\n%s", proof)
+	evidence, _ := os.ReadFile(filepath.Join(feat, "evidence.md"))
+	if !strings.Contains(string(evidence), "Tests green") {
+		t.Errorf("evidence.md did not carry proof.md content\n%s", evidence)
 	}
 	if got := backupDirs(t, root); len(got) != 1 {
 		t.Errorf("want exactly one backup dir, got %v", got)

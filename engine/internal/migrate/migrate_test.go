@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -33,8 +34,11 @@ func TestRunNormalizesCanonicalWorkLayout(t *testing.T) {
 	}
 
 	assertFile(t, root, "work/alpha/spec.md", "spec\n")
-	assertFile(t, root, "work/alpha/proof.md", "proof\n")
-	assertFile(t, root, "work/alpha/status.md", "status: done - shipped\n")
+	assertFile(t, root, "work/alpha/evidence.md", "proof\n")
+	assertFile(t, root, "work/alpha/state.md", "status: done - shipped\n")
+	assertFileContains(t, root, "work/alpha/README.md", "phase: done")
+	assertMissing(t, root, "work/alpha/proof.md")
+	assertMissing(t, root, "work/alpha/status.md")
 	assertFile(t, root, "work/alpha/review.md", "review\n")
 
 	f, err := state.LoadFeature(root, "alpha")
@@ -57,8 +61,9 @@ func TestRunNormalizesCanonicalWorkLayout(t *testing.T) {
 
 func TestRunNormalizesLiveFeatureAliases(t *testing.T) {
 	root := t.TempDir()
-	testutil.WriteFile(t, filepath.Join(root, "features/beta/state.md"), "- Phase: prove\n")
-	testutil.WriteFile(t, filepath.Join(root, "features/beta/evidence.md"), "evidence\n")
+	testutil.WriteFile(t, filepath.Join(root, "features/beta/feature.md"), "# Beta\n")
+	testutil.WriteFile(t, filepath.Join(root, "features/beta/status.md"), "- Phase: prove\n")
+	testutil.WriteFile(t, filepath.Join(root, "features/beta/proof.md"), "evidence\n")
 
 	res, err := Run(root)
 	if err != nil {
@@ -67,6 +72,9 @@ func TestRunNormalizesLiveFeatureAliases(t *testing.T) {
 	if got := strings.Join(res.Migrated, ","); got != "beta" {
 		t.Fatalf("Run normalized=%q, want beta", got)
 	}
+	assertFile(t, root, "features/beta/README.md", "# Beta\n")
+	assertFile(t, root, "features/beta/state.md", "- Phase: prove\n")
+	assertFile(t, root, "features/beta/evidence.md", "evidence\n")
 	assertFile(t, root, "features/beta/status.md", "- Phase: prove\n")
 	assertFile(t, root, "features/beta/proof.md", "evidence\n")
 
@@ -109,5 +117,19 @@ func assertFile(t *testing.T, root, rel, want string) {
 	t.Helper()
 	if got := testutil.ReadFile(t, filepath.Join(root, rel)); got != want {
 		t.Fatalf("%s=%q, want %q", rel, got, want)
+	}
+}
+
+func assertFileContains(t *testing.T, root, rel, want string) {
+	t.Helper()
+	if got := testutil.ReadFile(t, filepath.Join(root, rel)); !strings.Contains(got, want) {
+		t.Fatalf("%s=%q, want it to contain %q", rel, got, want)
+	}
+}
+
+func assertMissing(t *testing.T, root, rel string) {
+	t.Helper()
+	if _, err := os.Stat(filepath.Join(root, rel)); !os.IsNotExist(err) {
+		t.Fatalf("%s exists or stat failed with %v, want missing", rel, err)
 	}
 }

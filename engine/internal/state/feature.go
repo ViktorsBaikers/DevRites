@@ -66,8 +66,8 @@ func featureDir(root, slug string) string {
 
 // ListFeatures returns the slugs of every feature under root — directories under
 // canonical work/ plus compatibility features/ recognized as a feature — sorted.
-// A directory is a feature if it has a manifest (feature.md) OR the working-state
-// ledger (state.md), so a live workspace the pack created without a manifest
+// A directory is a feature if it has a workspace map OR the working-state
+// ledger (state.md), so a live workspace the pack created without a map
 // still lists. Missing layout directories yield an empty list, not an error.
 func ListFeatures(root string) ([]string, error) {
 	seen := map[string]bool{}
@@ -96,11 +96,18 @@ func ListFeatures(root string) ([]string, error) {
 	return slugs, nil
 }
 
-// isFeatureDir reports whether dir is a recognized feature: it carries a manifest
-// or the working-state ledger. Either is a sufficient phase source for LoadFeature.
+// isFeatureDir reports whether dir carries a workspace map or the working-state
+// ledger. Either is a sufficient phase source for LoadFeature.
 func isFeatureDir(dir string) bool {
-	return regularFileExists(filepath.Join(dir, "feature.md")) ||
-		regularFileExists(filepath.Join(dir, LedgerFile))
+	if regularFileExists(filepath.Join(dir, LedgerFile)) {
+		return true
+	}
+	for _, name := range workspaceMapFiles {
+		if regularFileExists(filepath.Join(dir, name)) {
+			return true
+		}
+	}
+	return false
 }
 
 func regularFileExists(path string) bool {
@@ -109,18 +116,25 @@ func regularFileExists(path string) bool {
 }
 
 // LoadFeature reads feature <slug> under root. The phase comes from the live
-// working-state ledger when it declares one, otherwise from feature.md
-// frontmatter. A feature with neither a manifest nor a ledger does not exist.
-// Section content is read from the canonical section files or their transitional
+// working-state ledger when it declares one, otherwise from workspace-map
+// frontmatter. A feature with neither a map nor a ledger does not exist.
+// Section content is read from the canonical section files or their
 // aliases (see sectionFiles).
 func LoadFeature(root, slug string) (*Feature, error) {
 	dir := featureDir(root, slug)
 
-	manifest, mErr := os.ReadFile(filepath.Join(dir, "feature.md"))
-	if mErr != nil && !errors.Is(mErr, os.ErrNotExist) {
-		return nil, fmt.Errorf("feature %q: %w", slug, mErr)
+	var manifest []byte
+	for _, name := range workspaceMapFiles {
+		data, err := os.ReadFile(filepath.Join(dir, name))
+		if err == nil {
+			manifest = data
+			break
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("feature %q: read %s: %w", slug, name, err)
+		}
 	}
-	hasManifest := mErr == nil
+	hasManifest := manifest != nil
 	hasLedger := regularFileExists(filepath.Join(dir, LedgerFile))
 	if !hasManifest && !hasLedger {
 		return nil, fmt.Errorf("feature %q not found", slug)
@@ -150,7 +164,7 @@ func LoadFeature(root, slug string) (*Feature, error) {
 		phase = manifestPhase
 	}
 	if phase == "" {
-		return nil, fmt.Errorf("feature %q: no phase in feature.md frontmatter or %s ledger", slug, LedgerFile)
+		return nil, fmt.Errorf("feature %q: no phase in workspace-map frontmatter or %s ledger", slug, LedgerFile)
 	}
 	if !KnownPhase(phase) {
 		return nil, fmt.Errorf("feature %q: unknown phase %q", slug, phase)

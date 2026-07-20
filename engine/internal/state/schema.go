@@ -3,10 +3,22 @@ package state
 //go:generate go run ./cmd/workflowmanifest -out workflow_manifest.json
 
 // SchemaVersion is the .devrites state-schema version this engine understands.
-// A feature.md may declare its own schemaVersion in frontmatter; the engine
+// A workspace map may declare its own schemaVersion in frontmatter; the engine
 // refuses a version newer than this (see LoadFeature) and otherwise reads the
 // files, which evolve additively.
 const SchemaVersion = 1
+
+const (
+	WorkspaceMapFile = "README.md"
+	EvidenceFile     = "evidence.md"
+)
+
+var workspaceMapFiles = []string{WorkspaceMapFile, "feature.md", "index.md"}
+
+// WorkspaceMapFiles returns the canonical workspace map followed by readable aliases.
+func WorkspaceMapFiles() []string {
+	return append([]string(nil), workspaceMapFiles...)
+}
 
 // Section is one single-concern completeness file within a feature directory.
 // Splitting a feature into small files (rather than one long document) keeps
@@ -33,23 +45,23 @@ var Sections = []Section{
 }
 
 // sectionFiles lists the filenames that can satisfy each section, canonical name
-// first, then the transitional aliases the live pack still writes — the same
-// mapping `devrites-engine migrate` normalizes (evidence→proof, state→status). A section
+// first, then supported aliases — the same mapping `devrites-engine migrate`
+// normalizes (proof→evidence, status→state). A section
 // counts as present if ANY of its files has real content, so the engine reads a
-// live workspace before the pack sweep converges the filenames. The manifest
-// (feature.md) is not a section; it is handled separately in LoadFeature.
+// live workspace before the pack sweep converges the filenames. The workspace
+// map is not a section; it is handled separately in LoadFeature.
 var sectionFiles = map[Section][]string{
 	SectionSpec:      {"spec.md"},
 	SectionPlan:      {"plan.md"},
 	SectionDecisions: {"decisions.md"},
 	SectionTasks:     {"tasks.md"},
-	SectionProof:     {"proof.md", "evidence.md"},
-	SectionStatus:    {"status.md", "state.md"},
+	SectionProof:     {EvidenceFile, "proof.md"},
+	SectionStatus:    {"state.md", "status.md"},
 }
 
 // LedgerFile is the working-state ledger the live pack writes. It carries the
 // phase in its canonical cursor table (legacy "- Phase: <p>" remains readable)
-// when no feature.md manifest declares one, and it satisfies the status section.
+// when no workspace map declares one, and it satisfies the status section.
 const LedgerFile = "state.md"
 
 // Phase is a workflow state. The order mirrors the rite-* arc.
