@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.0...v3.0.1) (2026-07-20)
+
+### Fixed
+
+* **rite:** run analysis after task definition ([6373227](https://github.com/ViktorsBaikers/DevRites/commit/6373227521b5e1e6b22bfe48e98799e709f5dc7a))
+
 ## [3.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.6.1...v3.0.0) (2026-07-17)
 
 ### ⚠ BREAKING CHANGES
