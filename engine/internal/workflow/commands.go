@@ -13,14 +13,19 @@ type Command struct {
 }
 
 var phaseToVerb = map[string]string{
-	"frame": "frame",
-	"spec":  "spec",
-	"plan":  "define",
-	"build": "build",
-	"prove": "prove",
-	"vet":   "vet",
-	"seal":  "seal",
-	"ship":  "ship",
+	"frame":    "frame",
+	"spec":     "spec",
+	"temper":   "temper",
+	"define":   "define",
+	"plan":     "define", // plan is the artifact state produced by rite-define.
+	"vet":      "vet",
+	"build":    "build",
+	"converge": "converge",
+	"prove":    "prove",
+	"polish":   "polish",
+	"review":   "review",
+	"seal":     "seal",
+	"ship":     "ship",
 }
 
 // ForVerb returns the Claude and Codex forms for a public rite verb. The empty
@@ -33,6 +38,18 @@ func ForVerb(verb string) Command {
 	}
 	name := "rite-" + verb
 	return Command{Verb: verb, Claude: "/" + name, Codex: "$" + name}
+}
+
+// ForAction extracts the first explicit rite invocation from a cursor action.
+// Cursor values may append a short reason after the command.
+func ForAction(action string) Command {
+	for _, field := range strings.Fields(action) {
+		field = strings.Trim(field, "`'\"()[]{}<>,.;:")
+		if strings.HasPrefix(field, "/rite-") || strings.HasPrefix(field, "$rite-") {
+			return ForVerb(field)
+		}
+	}
+	return Command{}
 }
 
 // ForPhase returns the next public command for a workflow phase.

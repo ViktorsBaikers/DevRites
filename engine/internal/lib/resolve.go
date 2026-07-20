@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/devrites/devrites/internal/fsutil"
+	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/workflow"
 )
 
@@ -285,8 +286,6 @@ func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer
 var (
 	awaitingRe = regexp.MustCompile(`^## Awaiting human`)
 	hdrSpaceRe = regexp.MustCompile(`^##[[:space:]]`)
-	statusMdRe = regexp.MustCompile(`^- Status:`)
-	nextStepRe = regexp.MustCompile(`^- Next step:`)
 	logHdrRe   = regexp.MustCompile(`^## Log`)
 )
 
@@ -300,10 +299,9 @@ func clearAwaiting(sfile, qid string) error {
 		return fmt.Errorf("read state %s: %w", sfile, err)
 	}
 	lines := splitLinesNoTrailing(data)
-	qidRef := regexp.MustCompile(`qid:[[:space:]]*` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)
-
 	// First check whether the awaiting block references this question at all.
-	inAw, matched := false, false
+	inAw := false
+	var awaitingLines []string
 	for _, line := range lines {
 		switch {
 		case awaitingRe.MatchString(line):
@@ -312,11 +310,12 @@ func clearAwaiting(sfile, qid string) error {
 		case inAw && hdrSpaceRe.MatchString(line):
 			inAw = false
 		}
-		if inAw && qidRef.MatchString(line) {
-			matched = true
+		if inAw {
+			awaitingLines = append(awaitingLines, line)
 		}
 	}
-	if !matched {
+	waitingOn, _ := state.CursorField(awaitingLines, "question_id")
+	if waitingOn != qid {
 		return nil
 	}
 
@@ -336,12 +335,6 @@ func clearAwaiting(sfile, qid string) error {
 			continue
 		}
 		switch {
-		case statusMdRe.MatchString(line):
-			out = append(out, "- Status: running")
-			continue
-		case nextStepRe.MatchString(line):
-			out = append(out, "- Next step: (resume — `"+workflow.ForVerb("build").Both()+"` to continue the workflow)")
-			continue
 		case logHdrRe.MatchString(line):
 			out = append(out, line)
 			inLog = true
@@ -360,6 +353,8 @@ func clearAwaiting(sfile, qid string) error {
 	if inLog && !logAppended {
 		out = append(out, fmt.Sprintf("- %s build: resolved %s", ts, qid))
 	}
+	out, _ = state.SetCursorField(out, "status", "running")
+	out, _ = state.SetCursorField(out, "next_action", "(resume — `"+workflow.ForVerb("build").Both()+"` to continue the workflow)")
 	if err := fsutil.WriteFileAtomic(sfile, joinRecords(out), 0o644); err != nil {
 		return fmt.Errorf("update state %s: %w", sfile, err)
 	}

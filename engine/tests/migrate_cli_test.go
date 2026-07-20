@@ -20,7 +20,7 @@ func workWorkspace(t *testing.T) (root, slug string) {
 		t.Fatal(err)
 	}
 	files := map[string]string{
-		"state.md":     "# State\n\nphase: build\n\nWorking on it.\n",
+		"state.md":     "# State\n\n| Key | Value |\n| --- | --- |\n| phase | temper |\n| status | running |\n",
 		"spec.md":      "# Spec\n\nRotate tokens.\n",
 		"plan.md":      "# Plan\n\nStep 1, step 2.\n",
 		"tasks.md":     "# Tasks\n\n- [x] one\n",
@@ -68,7 +68,7 @@ func TestMigrateNormalizesCanonicalWorkSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(fm), "phase: build") {
+	if !strings.Contains(string(fm), "phase: temper") {
 		t.Errorf("feature.md phase not derived from state.md\n%s", fm)
 	}
 	if !strings.Contains(string(fm), "schemaVersion: 1") {
@@ -94,7 +94,7 @@ func TestMigratePostStatusWorks(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("status after migrate exit = %d (stderr: %s)", code, errOut)
 	}
-	if !strings.Contains(out, "phase: build") {
+	if !strings.Contains(out, "phase: temper") {
 		t.Errorf("migrated feature status is wrong\n%s", out)
 	}
 }

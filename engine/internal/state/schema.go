@@ -46,36 +46,48 @@ var sectionFiles = map[Section][]string{
 }
 
 // LedgerFile is the working-state ledger the live pack writes. It carries the
-// phase (as a "- Phase: <p>" line) when no feature.md manifest declares one, and
-// it satisfies the status section.
+// phase in its canonical cursor table (legacy "- Phase: <p>" remains readable)
+// when no feature.md manifest declares one, and it satisfies the status section.
 const LedgerFile = "state.md"
 
 // Phase is a workflow state. The order mirrors the rite-* arc.
 type Phase string
 
 const (
-	PhaseFrame Phase = "frame" // problem framing
-	PhaseSpec  Phase = "spec"  // specification
-	PhasePlan  Phase = "plan"  // planning
-	PhaseBuild Phase = "build" // implementation
-	PhaseProve Phase = "prove" // proof / testing
-	PhaseVet   Phase = "vet"   // review
-	PhaseSeal  Phase = "seal"  // completeness seal
-	PhaseShip  Phase = "ship"  // shipping
+	PhaseFrame    Phase = "frame"    // problem framing
+	PhaseSpec     Phase = "spec"     // specification
+	PhaseTemper   Phase = "temper"   // strategic specification review
+	PhaseDefine   Phase = "define"   // plan definition
+	PhasePlan     Phase = "plan"     // approved plan
+	PhaseVet      Phase = "vet"      // pre-build engineering review
+	PhaseBuild    Phase = "build"    // implementation
+	PhaseConverge Phase = "converge" // post-build gap closure
+	PhaseProve    Phase = "prove"    // proof / testing
+	PhasePolish   Phase = "polish"   // quality pass
+	PhaseReview   Phase = "review"   // post-proof review
+	PhaseSeal     Phase = "seal"     // completeness seal
+	PhaseShip     Phase = "ship"     // shipping
+	PhaseDone     Phase = "done"     // archived completion
 )
 
 // requiredByPhase lists the sections that must have real content to complete a
 // phase. Completeness is phase-relative: a section not yet required (e.g. proof
 // during the spec phase) never blocks. The set is additive down the arc.
 var requiredByPhase = map[Phase][]Section{
-	PhaseFrame: {},
-	PhaseSpec:  {SectionSpec},
-	PhasePlan:  {SectionSpec, SectionPlan},
-	PhaseBuild: {SectionSpec, SectionPlan, SectionDecisions, SectionTasks},
-	PhaseProve: {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof},
-	PhaseVet:   {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof},
-	PhaseSeal:  {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus},
-	PhaseShip:  {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus},
+	PhaseFrame:    {},
+	PhaseSpec:     {SectionSpec},
+	PhaseTemper:   {SectionSpec},
+	PhaseDefine:   {SectionSpec, SectionPlan},
+	PhasePlan:     {SectionSpec, SectionPlan},
+	PhaseVet:      {SectionSpec, SectionPlan, SectionDecisions, SectionTasks},
+	PhaseBuild:    {SectionSpec, SectionPlan, SectionDecisions, SectionTasks},
+	PhaseConverge: {SectionSpec, SectionPlan, SectionDecisions, SectionTasks},
+	PhaseProve:    {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof},
+	PhasePolish:   {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof},
+	PhaseReview:   {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof},
+	PhaseSeal:     {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus},
+	PhaseShip:     {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus},
+	PhaseDone:     {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus},
 }
 
 // KnownPhase reports whether p is a phase the engine understands.

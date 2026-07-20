@@ -90,7 +90,7 @@ func (r *Result) Render() string {
 }
 
 // StopGate evaluates the stop-hook rest-point invariant for the active feature:
-// a feature that CLAIMS completion (it has advanced to the seal or ship phase)
+// a feature that CLAIMS completion (it has advanced to seal, ship, or done)
 // must not have an empty proof section. This is a rest-point check, NOT
 // whole-feature completeness — normal in-progress incompleteness never trips it,
 // so a mid-build turn is never blocked.
@@ -129,7 +129,7 @@ func StopGate(root string) (StopResult, error) {
 				slug, strings.Join(gates, "/")),
 		}, nil
 	}
-	claimsDone := f.Phase == state.PhaseSeal || f.Phase == state.PhaseShip
+	claimsDone := f.Phase == state.PhaseSeal || f.Phase == state.PhaseShip || f.Phase == state.PhaseDone
 	if claimsDone && !f.Present[state.SectionProof] {
 		return StopResult{
 			Slug:    slug,
@@ -191,13 +191,8 @@ func openBlockingQuestionGates(data []byte) []string {
 }
 
 func stateAwaitingHuman(data []byte) bool {
-	for _, line := range splitLinesNoTrailing(data) {
-		if strings.HasPrefix(line, "- Status:") {
-			status := strings.TrimLeft(strings.TrimPrefix(line, "- Status:"), gateSpaceChars)
-			return status == "awaiting_human"
-		}
-	}
-	return false
+	status, _ := state.CursorField(splitLinesNoTrailing(data), "status")
+	return status == "awaiting_human"
 }
 
 func isHeadingLine(line string) bool {

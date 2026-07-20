@@ -141,29 +141,29 @@ Normalized by DevRites migration.
 `, slug, slug, phase, state.SchemaVersion)
 }
 
-// derivePhase reads the legacy state.md and maps its recorded phase/status onto a
-// v1 phase. An unreadable or unrecognised state defaults to build — the safe
-// middle of the arc, from which the completeness gates re-derive what's missing.
+// derivePhase reads state.md in either canonical cursor-table or legacy form and
+// maps its recorded phase/status onto the current lifecycle. An unreadable or
+// unrecognised state defaults to build — the safe middle of the arc, from which
+// the completeness gates re-derive what's missing.
 func derivePhase(statePath string) state.Phase {
 	raw, err := os.ReadFile(statePath)
 	if err != nil {
 		return state.PhaseBuild
 	}
-	for _, line := range strings.Split(string(raw), "\n") {
-		t := strings.TrimLeft(strings.ToLower(strings.TrimSpace(line)), "-*+ \t")
-		key, val, ok := strings.Cut(t, ":")
-		if !ok || (strings.TrimSpace(key) != "phase" && strings.TrimSpace(key) != "status") {
-			continue
-		}
-		if p, ok := mapLegacyPhase(strings.TrimSpace(val)); ok {
-			return p
+	lines := strings.Split(string(raw), "\n")
+	for _, key := range []string{"phase", "status"} {
+		if value, found := state.CursorField(lines, key); found {
+			if p, ok := mapLegacyPhase(value); ok {
+				return p
+			}
 		}
 	}
 	return state.PhaseBuild
 }
 
-// mapLegacyPhase maps a legacy phase/status word onto a v1 phase.
+// mapLegacyPhase maps a current or legacy phase/status word onto the lifecycle.
 func mapLegacyPhase(word string) (state.Phase, bool) {
+	word = strings.ToLower(strings.TrimSpace(word))
 	// Take the first token, so "done — shipped 2024" maps on "done".
 	if i := strings.IndexAny(word, " \t—-"); i > 0 {
 		word = word[:i]
@@ -173,18 +173,30 @@ func mapLegacyPhase(word string) (state.Phase, bool) {
 		return state.PhaseFrame, true
 	case "spec", "specced", "specifying":
 		return state.PhaseSpec, true
-	case "plan", "planned", "define", "defined":
+	case "temper", "tempered", "tempering":
+		return state.PhaseTemper, true
+	case "define", "defined", "defining":
+		return state.PhaseDefine, true
+	case "plan", "planned", "planning":
 		return state.PhasePlan, true
+	case "vet", "vetted", "vetting":
+		return state.PhaseVet, true
 	case "build", "building", "wip", "in", "in-progress":
 		return state.PhaseBuild, true
+	case "converge", "converged", "converging":
+		return state.PhaseConverge, true
 	case "prove", "proving", "proven", "testing":
 		return state.PhaseProve, true
-	case "vet", "review", "reviewing", "vetting":
-		return state.PhaseVet, true
+	case "polish", "polished", "polishing":
+		return state.PhasePolish, true
+	case "review", "reviewed", "reviewing":
+		return state.PhaseReview, true
 	case "seal", "sealed", "sealing":
 		return state.PhaseSeal, true
-	case "ship", "shipped", "done", "closed", "complete", "completed":
+	case "ship", "shipped", "shipping":
 		return state.PhaseShip, true
+	case "done", "closed", "complete", "completed":
+		return state.PhaseDone, true
 	default:
 		return "", false
 	}

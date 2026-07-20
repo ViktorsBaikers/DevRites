@@ -16,12 +16,18 @@ import (
 var phaseArc = []state.Phase{
 	state.PhaseFrame,
 	state.PhaseSpec,
+	state.PhaseTemper,
+	state.PhaseDefine,
 	state.PhasePlan,
-	state.PhaseBuild,
-	state.PhaseProve,
 	state.PhaseVet,
+	state.PhaseBuild,
+	state.PhaseConverge,
+	state.PhaseProve,
+	state.PhasePolish,
+	state.PhaseReview,
 	state.PhaseSeal,
 	state.PhaseShip,
+	state.PhaseDone,
 }
 
 func TestADR0004RequiredSectionsAreAdditiveDownTheArc(t *testing.T) {

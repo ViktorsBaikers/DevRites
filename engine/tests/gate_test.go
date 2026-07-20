@@ -85,6 +85,28 @@ func TestReadinessPassesCompletePhase(t *testing.T) {
 	}
 }
 
+func TestReadinessAcceptsCanonicalTemperCursor(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	testutil.WriteFile(t, filepath.Join(root, "work", "tempered", "state.md"), `# State
+
+## Cursor
+| Key | Value |
+| --- | --- |
+| phase | temper |
+| status | running |
+| next_action | /rite-define |
+`)
+	testutil.WriteFile(t, filepath.Join(root, "work", "tempered", "spec.md"), "# Spec\n\nReady.\n")
+
+	out, errOut, code := runDevrites(t, root, "readiness", "tempered")
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0; stderr:\n%s", code, errOut)
+	}
+	if !strings.Contains(out, "phase: temper") || !strings.Contains(out, "result: pass") {
+		t.Fatalf("unexpected readiness output:\n%s", out)
+	}
+}
+
 func TestSealBlocksWhenSealSectionsMissing(t *testing.T) {
 	root := newWorkspace(t)
 	out, _, code := runDevrites(t, root, "seal", "auth-tokens")
