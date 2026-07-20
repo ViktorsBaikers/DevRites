@@ -115,7 +115,7 @@ Full diagram set (lifecycle, polish orchestrator, review fan-out, debug loop,
 rules carrier, workspace state, namespace map) →
 [`docs/flow.md`](docs/flow.md).
 
-**Status:** [`v3.0.2`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v3.0.2) — see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+**Status:** [`v3.0.3`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v3.0.3) — see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
 ## Contents
 
