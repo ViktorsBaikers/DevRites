@@ -72,6 +72,7 @@ A 60-second checklist that saves review round-trips:
 - [ ] You've read the relevant section of [`docs/architecture.md`](docs/architecture.md).
 - [ ] Commit messages follow the **strict** Conventional Commits policy below.
 - [ ] `npm run validate` passes.
+- [ ] `npm run audit` reports no moderate-or-higher dependency advisories.
 - [ ] `npm test` passes (install/uninstall smoke + pack validation).
 - [ ] If you touched a skill, you ran the matching eval (`scripts/run-evals.sh`).
 - [ ] If you touched a **gating** skill's discipline (or its `anti-patterns.md`), you ran / updated its behavioral eval (`scripts/run-behavioral-evals.sh`).
@@ -86,6 +87,7 @@ git clone https://github.com/ViktorsBaikers/DevRites devrites
 cd devrites
 npm install            # installs husky + commitlint + semantic-release toolchain
 npm run validate       # static validation of pack structure
+npm run audit          # known dependency vulnerabilities (moderate+ blocks)
 npm test               # install + uninstall smoke + fixture install + pack validation
 ```
 
@@ -206,6 +208,7 @@ Draft PRs are welcome and encouraged for early feedback.
 
 ```bash
 npm run validate                # pack structure + frontmatter
+npm run audit                   # dependency advisory gate
 npm test                        # install/uninstall + fixture install + validation
 bash scripts/run-evals.sh       # run all eval files
 bash scripts/run-evals.sh rite-spec   # run a single skill's evals

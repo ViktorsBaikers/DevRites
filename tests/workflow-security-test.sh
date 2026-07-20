@@ -26,7 +26,7 @@ permissions:
 jobs:
   a:
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@$SHA # v7
       - uses: marocchino/sticky-pull-request-comment@$SHA # SHA-pinned fixture
 EOF
 
@@ -38,6 +38,16 @@ jobs:
   a:
     steps:
       - uses: marocchino/sticky-pull-request-comment@v2
+EOF
+
+cat > "$TMP/unpinned-first-party.yml" <<'EOF'
+name: bad-first-party
+permissions:
+  contents: read
+jobs:
+  a:
+    steps:
+      - uses: actions/checkout@v7
 EOF
 
 cat > "$TMP/noperm.yml" <<'EOF'
@@ -110,6 +120,7 @@ EOF
 
 clean "SHA-pinned + scoped"        "$TMP/clean.yml"
 finds "unpinned third-party"       "$TMP/unpinned.yml"
+finds "unpinned first-party"       "$TMP/unpinned-first-party.yml"
 finds "no permissions block"       "$TMP/noperm.yml"
 finds "write-all over-broad"       "$TMP/writeall.yml"
 finds "pull_request_target"        "$TMP/prtarget.yml"
