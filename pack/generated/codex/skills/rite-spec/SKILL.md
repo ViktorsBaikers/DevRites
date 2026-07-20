@@ -197,6 +197,8 @@ stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced.
    devrites-engine spec-skeleton ".devrites/work/<slug>"
    devrites-engine spec-validate ".devrites/work/<slug>" --against .devrites/specs
    ```
+   **Do not run `devrites-engine analyze` in this phase:** `tasks.md` deliberately does not
+   exist yet. `$rite-define` owns the first analyze pass after it writes the slices.
    Treat edge/prohibition findings as blocking just like grammar findings. When it passes, write `Spec gate: passed <iso>` to `state.md`.
 6a. **Review-before-code digest.** Before handing off to planning, render the cheap human review:
    `Intent` (one sentence), `Done means` (top acceptance/scenario IDs), `Scope/risk` (what is in/out

@@ -15,7 +15,7 @@ import (
 // written, so a coverage gap surfaces as a one-line plan edit rather than a reslice
 // mid-build. It emits a markdown report and flags:
 //
-//	Coverage     — a spec [ACn] that no slice Satisfies                (CRITICAL)
+//	Coverage     — a spec AC id that no slice Satisfies                 (CRITICAL)
 //	Consistency  — a slice that Satisfies an AC the spec never defines (CRITICAL)
 //	Orphan slice — a slice that satisfies no acceptance criterion       (warn)
 //	Ambiguity    — an unquantified vague adjective or unresolved
@@ -27,9 +27,8 @@ import (
 // Exit codes: 0 clear · 1 at least one CRITICAL finding · 2 no workspace (no active
 // slug, or spec.md/tasks.md missing).
 var (
-	specACRe           = regexp.MustCompile(`\[AC[0-9]+\]`) // a bracketed [ACn] in the spec
-	taskACRe           = regexp.MustCompile(`\bAC[0-9]+\b`) // a bare ACn in the tasks
-	sliceHeadRe        = regexp.MustCompile(`^##[[:space:]]*Slice`)
+	taskACRe           = regexp.MustCompile(`\b(?:AC-[0-9]{3}|AC[0-9]+)\b`)
+	sliceHeadRe        = regexp.MustCompile(`(?i)^##[[:space:]]*(?:SLICE-[0-9]{3}\b|Slice\b)`)
 	sliceNamePrefixRe  = regexp.MustCompile(`^##[[:space:]]*`) // stripped to leave the slice name
 	analyzeSatisfiesRe = regexp.MustCompile(`^[[:space:]]*Satisfies:`)
 	// Ambiguity scan: a vague quality adjective with no number on the line is an
@@ -57,7 +56,7 @@ func Analyze(root string, args []string, stdout, stderr io.Writer) int {
 	specData, _ := os.ReadFile(spec)
 	tasksData, _ := os.ReadFile(tasks)
 
-	specACs := sortedACIDs(specACRe, specData, true) // brackets stripped: "[AC1]" -> "AC1"
+	specACs := sortedACIDs(acIDRe, specData, true) // legacy brackets stripped: "[AC1]" -> "AC1"
 	taskACs := sortedACIDs(taskACRe, tasksData, false)
 	specSet := stringSet(specACs)
 	taskSet := stringSet(taskACs)
@@ -70,7 +69,7 @@ func Analyze(root string, args []string, stdout, stderr io.Writer) int {
 	covered := 0
 	fmt.Fprintln(stdout, "## Coverage")
 	if len(specACs) == 0 {
-		fmt.Fprintln(stdout, "- [warn] spec.md — no [ACn] acceptance ids found; tag criteria as '[AC1] ...' for a machine-checkable gate.")
+		fmt.Fprintln(stdout, "- [warn] spec.md — no AC-### acceptance ids found; tag criteria for a machine-checkable gate.")
 	} else {
 		for _, ac := range specACs {
 			if taskSet[ac] {
@@ -155,9 +154,9 @@ func ambiguityFindings(specData []byte) []string {
 			out = append(out, fmt.Sprintf("- [warn] spec.md:L%d — unresolved placeholder %q", ln, m))
 			continue
 		}
-		// Strip the AC id before the digit gate — else the id's own digit
-		// ("[AC1]") masks a vague adjective on the very criterion line it tags.
-		bare := specACRe.ReplaceAllString(line, "")
+		// Strip the AC id before the digit gate — else the id's own digit masks
+		// a vague adjective on the very criterion line it tags.
+		bare := acIDRe.ReplaceAllString(line, "")
 		bare = taskACRe.ReplaceAllString(bare, "")
 		if !analyzeDigitRe.MatchString(bare) {
 			if m := vagueAdjRe.FindString(bare); m != "" {
@@ -170,7 +169,7 @@ func ambiguityFindings(specData []byte) []string {
 
 // sortedACIDs collects every acceptance id matched by re, deduplicated and sorted
 // lexicographically. When strip is set the surrounding brackets are removed, so
-// "[AC1]" becomes "AC1". Returns nil when there are none.
+// Legacy "[AC1]" becomes "AC1". Returns nil when there are none.
 func sortedACIDs(re *regexp.Regexp, data []byte, strip bool) []string {
 	seen := map[string]bool{}
 	var out []string

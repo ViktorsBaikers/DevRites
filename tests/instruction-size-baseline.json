@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 973590,
+  "total_bytes": 974242,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 7443,
     "pack/.claude/agents/devrites-devex-reviewer.md": 7176,
@@ -114,7 +114,7 @@
     "pack/.claude/skills/rite-define/reference/anti-patterns.md": 1686,
     "pack/.claude/skills/rite-define/reference/gates.md": 6350,
     "pack/.claude/skills/rite-define/reference/plan-template.md": 4814,
-    "pack/.claude/skills/rite-define/SKILL.md": 10600,
+    "pack/.claude/skills/rite-define/SKILL.md": 10862,
     "pack/.claude/skills/rite-doctor/SKILL.md": 4527,
     "pack/.claude/skills/rite-dogfood/SKILL.md": 2895,
     "pack/.claude/skills/rite-explain/reference/intake.md": 5558,
@@ -190,7 +190,7 @@
     "pack/.claude/skills/rite-spec/reference/spec-checklists.md": 4656,
     "pack/.claude/skills/rite-spec/reference/spec-template.md": 4128,
     "pack/.claude/skills/rite-spec/reference/state-workspace.md": 4474,
-    "pack/.claude/skills/rite-spec/SKILL.md": 17022,
+    "pack/.claude/skills/rite-spec/SKILL.md": 17199,
     "pack/.claude/skills/rite-status/SKILL.md": 5137,
     "pack/.claude/skills/rite-temper/reference/anti-patterns.md": 2985,
     "pack/.claude/skills/rite-temper/reference/review-dimensions.md": 4532,
@@ -204,7 +204,7 @@
     "pack/.claude/skills/rite-vet/reference/depth.md": 3650,
     "pack/.claude/skills/rite-vet/reference/eng-lenses.md": 3617,
     "pack/.claude/skills/rite-vet/reference/review-axes.md": 11492,
-    "pack/.claude/skills/rite-vet/SKILL.md": 13030,
+    "pack/.claude/skills/rite-vet/SKILL.md": 13243,
     "pack/.claude/skills/rite-zoom-out/SKILL.md": 3512,
     "pack/.claude/skills/rite/reference/menu.md": 3234,
     "pack/.claude/skills/rite/SKILL.md": 8942

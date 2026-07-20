@@ -119,6 +119,12 @@ Pull these via `Read` when shaping the plan:
    as a blocking gate at `/rite-vet`; no file → none declared → nothing to check.)
 6. **Write** `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md`; update
    `state.md` (phase: plan → next `/rite-vet`).
+6a. **Cross-artifact gate — now that `tasks.md` exists.** Run the deterministic
+   spec↔tasks coverage/consistency check; any non-zero result blocks plan readiness:
+   ```bash
+   S="$(cat .devrites/ACTIVE 2>/dev/null)"
+   devrites-engine analyze "$S"
+   ```
 7. **Readiness gate** (bottom of plan-template): every acceptance criterion covered by a
    slice, dependency order acyclic + risk-first, no unjustified deviation, rollback for
    every destructive/migration step. **Stop and confirm** before code. Render the review-before-code

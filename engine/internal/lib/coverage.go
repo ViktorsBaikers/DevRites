@@ -18,9 +18,9 @@ import (
 // criterion is covered by a slice and proven in the seal. Read-only.
 //
 // The convention pairs with check-acceptance: a criterion carries a stable id,
-// spec.md declares `- [ ] [ACn] …`, a tasks.md slice claims it with a
-// `Satisfies: ACn` line, and seal.md proves it with `- [x] [ACn] …`. A criterion
-// is proven iff its `[ACn]` id is checked in seal.md.
+// spec.md declares `- [ ] AC-###: …`, a tasks.md slice claims it with a
+// `Satisfies: AC-###` line, and seal.md proves it with `- [x] AC-###: …`.
+// Legacy [ACn] ids remain supported for existing workspaces.
 //
 // base is the project directory that contains the .devrites tree; slug defaults
 // to the active feature named in .devrites/ACTIVE. The matrix is the stdout
@@ -83,16 +83,14 @@ func Coverage(root string, args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// acIDRe (`\[AC[0-9]+\]`) is shared with check-acceptance, which declares it.
+// acIDRe is shared with check-acceptance, which declares it.
 var (
-	sliceHeaderRe = regexp.MustCompile(`^##[[:space:]]*Slice`)
-	sliceStripRe  = regexp.MustCompile(`^##[[:space:]]*`)
-	satisfiesRe   = regexp.MustCompile(`^[[:space:]]*Satisfies:`)
+	sliceStripRe = regexp.MustCompile(`^##[[:space:]]*`)
+	satisfiesRe  = regexp.MustCompile(`^[[:space:]]*Satisfies:`)
 )
 
-// acIDs returns the unique `[ACn]` ids declared in spec.md, bracket-stripped and
-// byte-order sorted — mirroring `grep -oE '\[AC[0-9]+\]' | tr -d '[]' | sort -u`
-// under LC_ALL=C.
+// acIDs returns unique canonical AC-### and legacy [ACn] ids declared in
+// spec.md, bracket-stripped and byte-order sorted.
 func acIDs(spec string) []string {
 	seen := map[string]bool{}
 	var ids []string
@@ -118,7 +116,7 @@ func slicesForAC(tasks, ac string) string {
 	sc := newLineScanner(strings.NewReader(tasks))
 	for sc.Scan() {
 		line := sc.Text()
-		if sliceHeaderRe.MatchString(line) {
+		if sliceHeadRe.MatchString(line) {
 			cur = sliceStripRe.ReplaceAllString(line, "")
 		}
 		if satisfiesRe.MatchString(line) && strings.Contains(line, ac) {
@@ -128,11 +126,11 @@ func slicesForAC(tasks, ac string) string {
 	return strings.Join(matched, ";")
 }
 
-// provenInSeal reports whether seal.md checks off ac's id — a line of the form
-// `- [x] [ACn]` (with optional surrounding whitespace), the same pattern the
-// script greps for.
+// provenInSeal reports whether seal.md contains a checked canonical or legacy
+// criterion line.
 func provenInSeal(seal, ac string) bool {
-	re := regexp.MustCompile(`(?m)^[[:space:]]*-[[:space:]]*\[x\][[:space:]]*\[` + regexp.QuoteMeta(ac) + `\]`)
+	quoted := regexp.QuoteMeta(ac)
+	re := regexp.MustCompile(`(?m)^[[:space:]]*-[[:space:]]*\[x\][[:space:]]*(?:\[` + quoted + `\]|` + quoted + `\b)`)
 	return re.MatchString(seal)
 }
 
