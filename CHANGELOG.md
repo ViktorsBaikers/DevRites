@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.3...v3.0.4) (2026-07-20)
+
+### Fixed
+
+* **ci:** harden supply chain checks ([d902574](https://github.com/ViktorsBaikers/DevRites/commit/d902574a7d30168fcef94aa4a3dae7707191fe8d))
+* **devrites:** normalize canonical workspace files ([e70221f](https://github.com/ViktorsBaikers/DevRites/commit/e70221f5dd9fbda0f3a73c500a493497bc023a91))
+
 ## [3.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.2...v3.0.3) (2026-07-20)
 
 ### Fixed
