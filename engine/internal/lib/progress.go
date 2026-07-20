@@ -7,13 +7,14 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/devrites/devrites/internal/state"
 )
 
 // State-parsing patterns ported verbatim from progress.sh's awk. Each name-strip
 // sub is anchored (^ or $), so it matches at most once per line — ReplaceAllString
 // is therefore equivalent to awk's single-match sub.
 var (
-	phaseSplitRe   = regexp.MustCompile(`: *`)
 	sliceCheckRe   = regexp.MustCompile(`^- \[[^\]]*\][[:space:]]*`)             // drop "- [x] "
 	sliceNameRe    = regexp.MustCompile(`^Slice[[:space:]]*[0-9]+:[[:space:]]*`) // drop "Slice N: "
 	sliceStateRe   = regexp.MustCompile(`[[:space:]]+(built|pending)[[:space:]]*$`)
@@ -77,17 +78,25 @@ func Progress(root string, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	// Flow ribbon: the lifecycle spine; temper/vet appear only once their artifact
-	// exists.
-	order := []string{"spec"}
-	if isFile(filepath.Join(workDir, "strategy.md")) {
+	// Flow ribbon: the lifecycle spine; optional phases appear once their artifact
+	// exists or while they are the active phase, so the cursor is never omitted.
+	var order []string
+	if phase == "frame" {
+		order = append(order, "frame")
+	}
+	order = append(order, "spec")
+	if phase == "temper" || isFile(filepath.Join(workDir, "strategy.md")) {
 		order = append(order, "temper")
 	}
 	order = append(order, "define")
-	if isFile(filepath.Join(workDir, "eng-review.md")) {
+	if phase == "vet" || isFile(filepath.Join(workDir, "eng-review.md")) {
 		order = append(order, "vet")
 	}
-	order = append(order, "build", "prove", "polish", "review", "seal", "ship")
+	order = append(order, "build")
+	if phase == "converge" {
+		order = append(order, "converge")
+	}
+	order = append(order, "prove", "polish", "review", "seal", "ship")
 
 	cur := phase
 	if cur == "plan" { // replan sits at build
@@ -118,25 +127,17 @@ func Progress(root string, args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// parsePhase returns the first whitespace token of the value on the first
-// "- Phase:" line, mirroring progress.sh's `awk -F': *' '/^- Phase:/{print $2}' |
-// awk '{print $1}'`. Empty when absent.
+// parsePhase returns the first token of the canonical or legacy phase field.
 func parsePhase(lines []string) string {
-	for _, line := range lines {
-		if !strings.HasPrefix(line, "- Phase:") {
-			continue
-		}
-		fields := phaseSplitRe.Split(line, -1)
-		if len(fields) < 2 {
-			return ""
-		}
-		toks := strings.Fields(fields[1])
-		if len(toks) == 0 {
-			return ""
-		}
-		return toks[0]
+	value, ok := state.CursorField(lines, "phase")
+	if !ok {
+		return ""
 	}
-	return ""
+	toks := strings.Fields(value)
+	if len(toks) == 0 {
+		return ""
+	}
+	return toks[0]
 }
 
 // tallySlices reads the "## Slice progress" block: total slice lines, how many are

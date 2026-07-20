@@ -26,6 +26,21 @@ func makeHookWorkspace(t *testing.T) string {
 	return root
 }
 
+func TestHookStatuslineReadsCanonicalCursor(t *testing.T) {
+	root := makeHookWorkspace(t)
+	state := "| Key | Value |\n| --- | --- |\n| phase | temper |\n| status | running |\n"
+	if err := os.WriteFile(filepath.Join(root, "work", "demo", "state.md"), []byte(state), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout bytes.Buffer
+	if code := hookStatusline(strings.NewReader(""), &stdout, &bytes.Buffer{}); code != 0 {
+		t.Fatalf("hookStatusline code=%d", code)
+	}
+	if !strings.Contains(stdout.String(), "demo · temper ·") {
+		t.Fatalf("statusline ignored table phase: %s", stdout.String())
+	}
+}
+
 func TestHookEventWritesTimelineAndWorkspaceEvents(t *testing.T) {
 	root := makeHookWorkspace(t)
 	if code := hookEvent([]string{"subagent-stop"}, strings.NewReader(`{}`), &bytes.Buffer{}, &bytes.Buffer{}); code != 0 {

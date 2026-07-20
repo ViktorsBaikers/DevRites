@@ -41,8 +41,8 @@ func TestRunNormalizesCanonicalWorkLayout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if f.Phase != state.PhaseShip {
-		t.Fatalf("migrated phase=%q, want %q", f.Phase, state.PhaseShip)
+	if f.Phase != state.PhaseDone {
+		t.Fatalf("migrated phase=%q, want %q", f.Phase, state.PhaseDone)
 	}
 	assertFile(t, res.BackupDir, "ACTIVE", "alpha\n")
 
@@ -87,7 +87,9 @@ func TestMapLegacyPhase(t *testing.T) {
 	}{
 		{word: "specced", want: state.PhaseSpec, ok: true},
 		{word: "in-progress", want: state.PhaseBuild, ok: true},
-		{word: "done - shipped", want: state.PhaseShip, ok: true},
+		{word: "temper", want: state.PhaseTemper, ok: true},
+		{word: "reviewing", want: state.PhaseReview, ok: true},
+		{word: "done - shipped", want: state.PhaseDone, ok: true},
 		{word: "mystery"},
 	} {
 		got, ok := mapLegacyPhase(tc.word)

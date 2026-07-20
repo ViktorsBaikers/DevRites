@@ -22,20 +22,8 @@ import (
 	"github.com/devrites/devrites/internal/state"
 )
 
-// State-field patterns. Each hook reads a field the way the scripts do:
-// `grep -iE <find>` (case-INSENSITIVE) selects the first matching line, then
-// `sed -E s/<strip>//` (case-SENSITIVE, as sed is) removes the key prefix — a
-// no-op when the case differs, so the mismatched-case behavior is preserved.
 var (
-	findNextStep  = regexp.MustCompile(`(?i)^[-[:space:]]*Next step:`)
-	stripNextStep = regexp.MustCompile(`^[-[:space:]]*Next step:[[:space:]]*`)
-	findStatus    = regexp.MustCompile(`(?i)^[-[:space:]]*Status:`)
-	stripStatus   = regexp.MustCompile(`^[-[:space:]]*Status:[[:space:]]*`)
-	findPhase     = regexp.MustCompile(`(?i)^[-[:space:]]*Phase:`)
-	stripPhase    = regexp.MustCompile(`^[-[:space:]]*Phase:[[:space:]]*`)
-	findAFKRem    = regexp.MustCompile(`(?i)AFK slices remaining:`)
-	stripAFKRem   = regexp.MustCompile(`.*remaining:[[:space:]]*`)
-	openStatusRe  = regexp.MustCompile(`(?i)^[[:space:]]*status:[[:space:]]*open`)
+	openStatusRe = regexp.MustCompile(`(?i)^[[:space:]]*status:[[:space:]]*open`)
 )
 
 // resolveWorkspaceDir resolves the active feature's directory. New writes default
@@ -199,9 +187,9 @@ func hookHandoffSnapshot(stdin io.Reader, stdout, stderr io.Writer) int {
 		return exitOK
 	}
 	stateLines := wsReadLines(filepath.Join(dir, "state.md"))
-	phase := wsField(stateLines, findPhase, stripPhase)
-	status := wsField(stateLines, findStatus, stripStatus)
-	next := wsField(stateLines, findNextStep, stripNextStep)
+	phase, _ := state.CursorField(stateLines, "phase")
+	status, _ := state.CursorField(stateLines, "status")
+	next, _ := state.CursorField(stateLines, "next_action")
 	stamp := time.Now().UTC().Format(time.RFC3339)
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n## Handoff snapshot — %s\n", stamp)
@@ -233,12 +221,12 @@ func hookCursor(stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	stateLines := wsReadLines(filepath.Join(dir, "state.md"))
 
-	next := wsField(stateLines, findNextStep, stripNextStep)
-	status := wsField(stateLines, findStatus, stripStatus)
+	next, _ := state.CursorField(stateLines, "next_action")
+	status, _ := state.CursorField(stateLines, "status")
 	gates := wsGateCount(filepath.Join(dir, "questions.md"))
 	afk := ""
 	if wsIsFile(filepath.Join(root, "AFK")) {
-		afk = wsField(stateLines, findAFKRem, stripAFKRem)
+		afk, _ = state.CursorField(stateLines, "afk_slices_remaining")
 	}
 
 	fmt.Fprintf(stdout, "DevRites cursor — active feature: %s\n", slug)
@@ -267,7 +255,7 @@ func hookStatusline(stdin io.Reader, stdout, stderr io.Writer) int {
 	if !ok {
 		return exitOK
 	}
-	phase := wsField(wsReadLines(filepath.Join(dir, "state.md")), findPhase, stripPhase)
+	phase, _ := state.CursorField(wsReadLines(filepath.Join(dir, "state.md")), "phase")
 	if phase == "" {
 		phase = "?"
 	}
@@ -534,17 +522,6 @@ func hookWrightScope(h harness.Harness, stdin io.Reader, stdout, stderr io.Write
 	}
 	_ = state.AppendLog(filepath.Join(dir, ".wright-scope.log"), "WOULD-BLOCK\t"+strings.Join(bad, ", "))
 	return exitOK
-}
-
-// wsField mirrors `grep -iE <find> | head -1 | sed -E s/<strip>//`: the first line
-// matching find (case-insensitive) with strip removed (case-sensitive).
-func wsField(lines []string, find, strip *regexp.Regexp) string {
-	for _, line := range lines {
-		if find.MatchString(line) {
-			return strip.ReplaceAllString(line, "")
-		}
-	}
-	return ""
 }
 
 // wsGateCount mirrors `grep -ciE '^\s*status:\s*open' questions.md || echo 0`,

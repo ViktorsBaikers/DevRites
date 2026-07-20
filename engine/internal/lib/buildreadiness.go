@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/workflow"
 )
 
@@ -67,22 +68,15 @@ func BuildReadiness(root string, args []string, stdout, stderr io.Writer) int {
 // state.md field value.
 var fieldAnnotation = regexp.MustCompile(`[[:space:]]*(#|\|).*$`)
 
-// readinessField reads a `Key: value` field from state.md, tolerating a leading
-// "- " bullet and trimming any trailing annotation and blanks. It returns the
-// first match, or "" when the key is absent. A key may contain spaces (e.g.
-// "Plan approved") — it is matched literally.
+// readinessField reads canonical cursor tables and legacy bullet fields, then
+// trims the legacy trailing annotations accepted by the original command.
 func readinessField(lines []string, key string) string {
-	field := regexp.MustCompile(`^[[:space:]]*-?[[:space:]]*` + key + `:[[:space:]]*`)
-	for _, line := range lines {
-		loc := field.FindStringIndex(line)
-		if loc == nil {
-			continue
-		}
-		value := line[loc[1]:]
-		if m := fieldAnnotation.FindStringIndex(value); m != nil {
-			value = value[:m[0]]
-		}
-		return strings.TrimRight(value, spaceChars)
+	value, ok := state.CursorField(lines, key)
+	if !ok {
+		return ""
 	}
-	return ""
+	if m := fieldAnnotation.FindStringIndex(value); m != nil {
+		value = value[:m[0]]
+	}
+	return strings.TrimRight(value, spaceChars)
 }

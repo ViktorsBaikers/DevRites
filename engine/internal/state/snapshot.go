@@ -121,7 +121,7 @@ func Snapshot(root, slug string) (*WorkspaceSnapshot, error) {
 	}
 
 	workDir := featureDir(root, report.Slug)
-	next := workflow.ForPhase(string(report.Phase))
+	next := nextCommand(workDir, report.Phase)
 	snap := &WorkspaceSnapshot{
 		SchemaVersion:  WorkspaceSnapshotSchema,
 		Slug:           report.Slug,
@@ -152,13 +152,24 @@ func Snapshot(root, slug string) (*WorkspaceSnapshot, error) {
 	if snap.RunMode == "AFK" && len(snap.MissingSections) > 0 {
 		snap.Warnings = append(snap.Warnings, "AFK workspace has missing required sections")
 	}
-	if snap.Evidence.Status == "missing" && (report.Phase == PhaseProve || report.Phase == PhaseSeal || report.Phase == PhaseShip) {
+	if report.Required[SectionProof] && snap.Evidence.Status != "fresh" {
 		snap.Warnings = append(snap.Warnings, "proof phase requires fresh evidence")
 	}
 	if snap.Drift.Open > 0 {
 		snap.Warnings = append(snap.Warnings, fmt.Sprintf("%d open drift item(s)", snap.Drift.Open))
 	}
 	return snap, nil
+}
+
+func nextCommand(workDir string, phase Phase) workflow.Command {
+	if raw, err := os.ReadFile(filepath.Join(workDir, LedgerFile)); err == nil {
+		if action, ok := CursorField(strings.Split(string(raw), "\n"), "next_action"); ok {
+			if command := workflow.ForAction(action); command.Verb != "" {
+				return command
+			}
+		}
+	}
+	return workflow.ForPhase(string(phase))
 }
 
 func readActiveSlug(root string) string {

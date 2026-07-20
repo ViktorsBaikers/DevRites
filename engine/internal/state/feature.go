@@ -124,11 +124,11 @@ func CandidateFiles(root, slug string) []string {
 	return files
 }
 
-// LoadFeature reads feature <slug> under root. The phase comes from the manifest
-// (feature.md) frontmatter when present, otherwise from the working-state ledger
-// (state.md, a "- Phase: <p>" line) the live pack writes. A feature with neither a
-// manifest nor a ledger does not exist. Section content is read from the canonical
-// section files or their transitional aliases (see sectionFiles).
+// LoadFeature reads feature <slug> under root. The phase comes from the live
+// working-state ledger when it declares one, otherwise from feature.md
+// frontmatter. A feature with neither a manifest nor a ledger does not exist.
+// Section content is read from the canonical section files or their transitional
+// aliases (see sectionFiles).
 func LoadFeature(root, slug string) (*Feature, error) {
 	dir := featureDir(root, slug)
 
@@ -142,7 +142,7 @@ func LoadFeature(root, slug string) (*Feature, error) {
 		return nil, fmt.Errorf("feature %q not found", slug)
 	}
 
-	var phase Phase
+	var manifestPhase Phase
 	if hasManifest {
 		fm, _ := splitFrontmatter(manifest)
 		if v := strings.TrimSpace(fm["schemaVersion"]); v != "" {
@@ -154,12 +154,16 @@ func LoadFeature(root, slug string) (*Feature, error) {
 				return nil, fmt.Errorf("feature %q: schemaVersion %d is newer than this engine supports (%d); upgrade devrites", slug, n, SchemaVersion)
 			}
 		}
-		phase = Phase(strings.TrimSpace(fm["phase"]))
+		manifestPhase = Phase(strings.TrimSpace(fm["phase"]))
 	}
-	// Ledger fallback: only when the manifest did not declare a phase, so a manifest
-	// with an explicit-but-unknown phase still surfaces as that error below.
-	if phase == "" {
-		phase = PhaseFromLedger(filepath.Join(dir, LedgerFile))
+
+	// state.md is the mutable runtime cursor, so it must win over the manifest,
+	// which migration and compatibility flows may leave stale. Preserve an
+	// explicitly unknown ledger value so the validation below reports it rather
+	// than silently falling back to feature.md.
+	phase, ledgerDeclared := declaredPhaseFromLedger(filepath.Join(dir, LedgerFile))
+	if !ledgerDeclared {
+		phase = manifestPhase
 	}
 	if phase == "" {
 		return nil, fmt.Errorf("feature %q: no phase in feature.md frontmatter or %s ledger", slug, LedgerFile)
@@ -186,31 +190,30 @@ func sectionPresentAny(dir string, s Section) bool {
 	return false
 }
 
-// PhaseFromLedger reads a phase from the working-state ledger: the value of a
-// "- Phase: <p>" line (leading list markers tolerated), taking the first token
-// and accepting it only if it is a phase the engine understands. Returns "" when
-// the file is absent or declares no recognized phase. Unlike migrate's tolerant
-// legacy mapping, this accepts only canonical phase words — the live pack's form.
+// PhaseFromLedger reads a phase from the canonical cursor table or the legacy
+// "- Phase: <p>" form, accepting only phases the engine understands.
 func PhaseFromLedger(path string) Phase {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	for _, line := range strings.Split(string(raw), "\n") {
-		t := strings.TrimLeft(strings.TrimSpace(line), "-*+ \t")
-		key, val, ok := strings.Cut(t, ":")
-		if !ok || !strings.EqualFold(strings.TrimSpace(key), "phase") {
-			continue
-		}
-		word := strings.ToLower(strings.TrimSpace(val))
-		if i := strings.IndexAny(word, " \t"); i > 0 {
-			word = word[:i]
-		}
-		if p := Phase(word); KnownPhase(p) {
-			return p
-		}
+	phase, declared := declaredPhaseFromLedger(path)
+	if declared && KnownPhase(phase) {
+		return phase
 	}
 	return ""
+}
+
+func declaredPhaseFromLedger(path string) (Phase, bool) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+	value, ok := CursorField(strings.Split(string(raw), "\n"), "phase")
+	if !ok {
+		return "", false
+	}
+	word := strings.ToLower(strings.TrimSpace(value))
+	if i := strings.IndexAny(word, " \t"); i > 0 {
+		word = word[:i]
+	}
+	return Phase(word), true
 }
 
 // ReadDeclaredSchemaVersion returns the schemaVersion declared in a feature's

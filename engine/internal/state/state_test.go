@@ -126,6 +126,52 @@ func TestLoadFeatureFromLedgerAndAliases(t *testing.T) {
 	}
 }
 
+func TestLedgerPhaseOverridesStaleManifestPhase(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeWorkSection(t, root, "live", "feature.md", "---\nphase: spec\nschemaVersion: 1\n---\n")
+	writeWorkSection(t, root, "live", "state.md", "| Key | Value |\n| --- | --- |\n| phase | temper |\n")
+	writeWorkSection(t, root, "live", "spec.md", "# Spec\n\nReady.\n")
+
+	rep, err := Status(root, "live")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Phase != PhaseTemper {
+		t.Fatalf("phase=%q, want current ledger phase %q", rep.Phase, PhaseTemper)
+	}
+}
+
+func TestSnapshotUsesCanonicalNextActionAndWarnsWhenRequiredProofMissing(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeWorkSection(t, root, "live", "state.md", `# State
+
+| Key | Value |
+| --- | --- |
+| phase | review |
+| status | running |
+| next_action | /rite-seal after review is clean |
+`)
+	for name, body := range map[string]string{
+		"spec.md":      "# Spec\n\nReady.\n",
+		"plan.md":      "# Plan\n\nReady.\n",
+		"decisions.md": "# Decisions\n\nReady.\n",
+		"tasks.md":     "# Tasks\n\nReady.\n",
+	} {
+		writeWorkSection(t, root, "live", name, body)
+	}
+
+	snap, err := Snapshot(root, "live")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap.NextCommands.Verb != "seal" || snap.NextCommand != "/rite-seal" {
+		t.Fatalf("next commands=%+v legacy=%q, want canonical next_action seal", snap.NextCommands, snap.NextCommand)
+	}
+	if got := strings.Join(snap.Warnings, "\n"); !strings.Contains(got, "requires fresh evidence") {
+		t.Fatalf("warnings=%v, want missing required-proof warning", snap.Warnings)
+	}
+}
+
 func TestWorkLayoutIsCanonicalAndFeaturesIsAlias(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	writeWorkSection(t, root, "live", "state.md", "- Phase: build\n")
@@ -148,9 +194,8 @@ func TestWorkLayoutIsCanonicalAndFeaturesIsAlias(t *testing.T) {
 	}
 }
 
-// An unknown phase word in the ledger is ignored (not accepted as a phase), so a
-// ledger-only feature with no recognizable phase is a clear error, not a silent
-// mis-load.
+// An unknown phase word in the ledger is rejected, so a ledger-only feature is a
+// clear error rather than silently falling back or mis-loading.
 func TestLedgerPhaseRejectsUnknownWord(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	writeSection(t, root, "bogus", "state.md", "- Phase: banana\n")

@@ -38,6 +38,13 @@ func TestCheckAndRenderReadiness(t *testing.T) {
 	}
 }
 
+func TestStateAwaitingHumanReadsCanonicalCursor(t *testing.T) {
+	data := []byte("| Key | Value |\n| --- | --- |\n| status | awaiting_human |\n")
+	if !stateAwaitingHuman(data) {
+		t.Fatal("stateAwaitingHuman ignored canonical cursor table")
+	}
+}
+
 func TestStopGateRestPointInvariants(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
@@ -78,6 +85,15 @@ func TestStopGateRestPointInvariants(t *testing.T) {
 			files: map[string]string{
 				"feature.md": "---\nphase: seal\nschemaVersion: 1\n---\n",
 				"state.md":   "- Phase: seal\n",
+			},
+			wantBlocked:   true,
+			wantReasonSub: "proof.md is empty",
+		},
+		{
+			name: "done without proof blocks",
+			files: map[string]string{
+				"feature.md": "---\nphase: ship\nschemaVersion: 1\n---\n",
+				"state.md":   "| Key | Value |\n| --- | --- |\n| phase | done |\n",
 			},
 			wantBlocked:   true,
 			wantReasonSub: "proof.md is empty",

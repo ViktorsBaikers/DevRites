@@ -4,16 +4,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/devrites/devrites/internal/fsutil"
+	"github.com/devrites/devrites/internal/state"
 )
-
-// budgetField matches an "AFK slices remaining:" line and captures the value that
-// follows. The optional leading "- " tolerates state.md's markdown-bullet form.
-var budgetField = regexp.MustCompile(`^[[:space:]]*-?[[:space:]]*AFK slices remaining:[[:space:]]*`)
 
 // TickAfk spends one slice from a run's AFK budget: it reads the "AFK slices
 // remaining" count from the state.md at args[0], decrements it, and writes the
@@ -69,31 +65,18 @@ func TickAfk(args []string, stdout, stderr io.Writer) int {
 // readBudget returns the current "AFK slices remaining" value — the first blank-
 // delimited token after the field — and whether the field is present at all.
 func readBudget(lines []string) (value string, found bool) {
-	for _, line := range lines {
-		loc := budgetField.FindStringIndex(line)
-		if loc == nil {
-			continue
-		}
-		value = line[loc[1]:]
-		if i := strings.IndexAny(value, spaceChars); i >= 0 {
-			value = value[:i]
-		}
-		return value, true
+	value, found = state.CursorField(lines, "afk_slices_remaining")
+	if !found {
+		return "", false
 	}
-	return "", false
+	if i := strings.IndexAny(value, spaceChars); i >= 0 {
+		value = value[:i]
+	}
+	return value, true
 }
 
-// setBudget rewrites every budget line to the canonical bullet form with the new
-// count, passing all other lines through. The result is newline-terminated.
+// setBudget preserves the cursor's canonical-table or legacy-bullet format.
 func setBudget(lines []string, n int) []byte {
-	var b strings.Builder
-	for _, line := range lines {
-		if budgetField.MatchString(line) {
-			fmt.Fprintf(&b, "- AFK slices remaining: %d", n)
-		} else {
-			b.WriteString(line)
-		}
-		b.WriteByte('\n')
-	}
-	return []byte(b.String())
+	updated, _ := state.SetCursorField(lines, "afk_slices_remaining", strconv.Itoa(n))
+	return []byte(strings.Join(updated, "\n") + "\n")
 }
