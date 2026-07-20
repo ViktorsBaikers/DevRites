@@ -219,6 +219,16 @@ fi
 
 # ---- 11b. generated workspace schema fixtures ----------------------------
 section "workspace artifact schema"
+if command -v go >/dev/null 2>&1; then
+  if (cd "$ROOT/engine" && go run ./internal/state/cmd/workflowmanifest -check -out internal/state/workflow_manifest.json) >/tmp/dr_workflow_manifest 2>&1; then
+    good "workflow manifest is fresh"
+  else
+    cat /tmp/dr_workflow_manifest
+    bad "workflow manifest drifted from the typed state registry"
+  fi
+else
+  echo "skip: go not found; workflow manifest freshness not checked"
+fi
 if command -v python3 >/dev/null 2>&1; then
   if python3 "$ROOT/scripts/validate-workspace-schema.py" "$ROOT/tests/fixtures/workspace-schema" >/tmp/dr_workspace_schema 2>&1; then
     cat /tmp/dr_workspace_schema

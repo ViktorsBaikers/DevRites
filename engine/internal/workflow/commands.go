@@ -12,22 +12,6 @@ type Command struct {
 	Codex  string
 }
 
-var phaseToVerb = map[string]string{
-	"frame":    "frame",
-	"spec":     "spec",
-	"temper":   "temper",
-	"define":   "define",
-	"plan":     "define", // plan is the artifact state produced by rite-define.
-	"vet":      "vet",
-	"build":    "build",
-	"converge": "converge",
-	"prove":    "prove",
-	"polish":   "polish",
-	"review":   "review",
-	"seal":     "seal",
-	"ship":     "ship",
-}
-
 // ForVerb returns the Claude and Codex forms for a public rite verb. The empty
 // verb returns an empty command so callers can omit suggestions safely.
 func ForVerb(verb string) Command {
@@ -52,30 +36,10 @@ func ForAction(action string) Command {
 	return Command{}
 }
 
-// ForPhase returns the next public command for a workflow phase.
-func ForPhase(phase string) Command {
-	verb := phaseToVerb[strings.TrimSpace(strings.ToLower(phase))]
-	return ForVerb(verb)
-}
-
 // Both renders a command in host-neutral prose for engine stderr/stdout messages.
 func (c Command) Both() string {
 	if c.Verb == "" {
 		return ""
 	}
 	return c.Claude + " (Claude) / " + c.Codex + " (Codex)"
-}
-
-// ClaudeOrCodex returns the command for a known harness. Empty/unknown harnesses
-// deliberately get the host-neutral rendering so CLI output remains safe when the
-// engine is run outside a hook.
-func (c Command) ClaudeOrCodex(harness string) string {
-	switch strings.ToLower(strings.TrimSpace(harness)) {
-	case "claude", "claude-code", "claudecode":
-		return c.Claude
-	case "codex":
-		return c.Codex
-	default:
-		return c.Both()
-	}
 }

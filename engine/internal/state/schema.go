@@ -1,5 +1,7 @@
 package state
 
+//go:generate go run ./cmd/workflowmanifest -out workflow_manifest.json
+
 // SchemaVersion is the .devrites state-schema version this engine understands.
 // A feature.md may declare its own schemaVersion in frontmatter; the engine
 // refuses a version newer than this (see LoadFeature) and otherwise reads the
@@ -70,36 +72,149 @@ const (
 	PhaseDone     Phase = "done"     // archived completion
 )
 
-// requiredByPhase lists the sections that must have real content to complete a
-// phase. Completeness is phase-relative: a section not yet required (e.g. proof
-// during the spec phase) never blocks. The set is additive down the arc.
-var requiredByPhase = map[Phase][]Section{
-	PhaseFrame:    {},
-	PhaseSpec:     {SectionSpec},
-	PhaseTemper:   {SectionSpec},
-	PhaseDefine:   {SectionSpec, SectionPlan},
-	PhasePlan:     {SectionSpec, SectionPlan},
-	PhaseVet:      {SectionSpec, SectionPlan, SectionDecisions, SectionTasks},
-	PhaseBuild:    {SectionSpec, SectionPlan, SectionDecisions, SectionTasks},
-	PhaseConverge: {SectionSpec, SectionPlan, SectionDecisions, SectionTasks},
-	PhaseProve:    {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof},
-	PhasePolish:   {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof},
-	PhaseReview:   {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof},
-	PhaseSeal:     {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus},
-	PhaseShip:     {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus},
-	PhaseDone:     {SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus},
+// phaseDefinition is the single source of truth for lifecycle order and
+// phase-specific behavior. Workflow topology is versioned application logic,
+// rather than deploy-time configuration, so keeping it typed and ordered makes
+// additions compile-visible and lets every consumer derive the same arc.
+type phaseDefinition struct {
+	phase               Phase
+	resumeVerb          string
+	required            []Section
+	aliases             []string
+	workspaceRequired   []string
+	proofRequired       bool
+	blocksOpenQuestions bool
+	shippable           bool
+}
+
+var (
+	sectionsSpec     = []Section{SectionSpec}
+	sectionsPlan     = []Section{SectionSpec, SectionPlan}
+	sectionsBuild    = []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks}
+	sectionsProof    = []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof}
+	sectionsComplete = []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus}
+
+	workspaceFrame = []string{"state.md"}
+	workspaceSpec  = []string{"brief.md", "spec.md", "state.md", "decisions.md", "assumptions.md", "questions.md"}
+	workspacePlan  = []string{"brief.md", "spec.md", "architecture.md", "plan.md", "tasks.md", "traceability.md", "state.md", "decisions.md", "assumptions.md", "questions.md"}
+	workspaceProof = append(append([]string(nil), workspacePlan...), "evidence.md", "touched-files.md")
+)
+
+// Completeness is phase-relative: a section not yet required (e.g. proof during
+// spec) never blocks. Requirements are additive down the arc. Plan resumes at
+// define because plan is the artifact state produced by rite-define; done has no
+// resume command.
+var phaseDefinitions = []phaseDefinition{
+	{phase: PhaseFrame, resumeVerb: "frame", workspaceRequired: workspaceFrame},
+	{phase: PhaseSpec, resumeVerb: "spec", required: sectionsSpec, aliases: []string{"specced", "specifying"}, workspaceRequired: workspaceSpec},
+	{phase: PhaseTemper, resumeVerb: "temper", required: sectionsSpec, aliases: []string{"tempered", "tempering"}, workspaceRequired: workspaceSpec},
+	{phase: PhaseDefine, resumeVerb: "define", required: sectionsPlan, aliases: []string{"defined", "defining"}, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
+	{phase: PhasePlan, resumeVerb: "define", required: sectionsPlan, aliases: []string{"planned", "planning"}, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
+	{phase: PhaseVet, resumeVerb: "vet", required: sectionsBuild, aliases: []string{"vetted", "vetting"}, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
+	{phase: PhaseBuild, resumeVerb: "build", required: sectionsBuild, aliases: []string{"building", "wip", "in", "in-progress"}, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
+	{phase: PhaseConverge, resumeVerb: "converge", required: sectionsBuild, aliases: []string{"converged", "converging"}, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
+	{phase: PhaseProve, resumeVerb: "prove", required: sectionsProof, aliases: []string{"proving", "proven", "testing"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
+	{phase: PhasePolish, resumeVerb: "polish", required: sectionsProof, aliases: []string{"polished", "polishing"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
+	{phase: PhaseReview, resumeVerb: "review", required: sectionsProof, aliases: []string{"reviewed", "reviewing"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
+	{phase: PhaseSeal, resumeVerb: "seal", required: sectionsComplete, aliases: []string{"sealed", "sealing"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true, shippable: true},
+	{phase: PhaseShip, resumeVerb: "ship", required: sectionsComplete, aliases: []string{"shipped", "shipping"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true, shippable: true},
+	{phase: PhaseDone, required: sectionsComplete, aliases: []string{"closed", "complete", "completed"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true, shippable: true},
+}
+
+// WorkflowPhase is the read-only cross-format view used to generate the compact
+// manifest consumed by non-Go release tooling.
+type WorkflowPhase struct {
+	ID                  Phase    `json:"id"`
+	ResumeVerb          string   `json:"resumeVerb,omitempty"`
+	Aliases             []string `json:"aliases,omitempty"`
+	WorkspaceRequired   []string `json:"workspaceRequired"`
+	ProofRequired       bool     `json:"proofRequired,omitempty"`
+	BlocksOpenQuestions bool     `json:"blocksOpenQuestions,omitempty"`
+	Shippable           bool     `json:"shippable,omitempty"`
+}
+
+// WorkflowPhases returns copied metadata suitable for deterministic generation.
+func WorkflowPhases() []WorkflowPhase {
+	out := make([]WorkflowPhase, 0, len(phaseDefinitions))
+	for _, definition := range phaseDefinitions {
+		out = append(out, WorkflowPhase{
+			ID:                  definition.phase,
+			ResumeVerb:          definition.resumeVerb,
+			Aliases:             append([]string(nil), definition.aliases...),
+			WorkspaceRequired:   append([]string(nil), definition.workspaceRequired...),
+			ProofRequired:       definition.proofRequired,
+			BlocksOpenQuestions: definition.blocksOpenQuestions,
+			Shippable:           definition.shippable,
+		})
+	}
+	return out
+}
+
+// LifecyclePhases returns the ordered lifecycle. The returned slice is a copy,
+// so callers cannot mutate the registry.
+func LifecyclePhases() []Phase {
+	phases := make([]Phase, len(phaseDefinitions))
+	for i, definition := range phaseDefinitions {
+		phases[i] = definition.phase
+	}
+	return phases
+}
+
+func definitionFor(p Phase) (phaseDefinition, bool) {
+	for _, definition := range phaseDefinitions {
+		if definition.phase == p {
+			return definition, true
+		}
+	}
+	return phaseDefinition{}, false
 }
 
 // KnownPhase reports whether p is a phase the engine understands.
 func KnownPhase(p Phase) bool {
-	_, ok := requiredByPhase[p]
+	_, ok := definitionFor(p)
 	return ok
+}
+
+// ResumeVerb returns the public rite verb that resumes p. Terminal and unknown
+// phases return an empty string.
+func ResumeVerb(p Phase) string {
+	definition, ok := definitionFor(p)
+	if !ok {
+		return ""
+	}
+	return definition.resumeVerb
+}
+
+// ShippablePhase reports whether p is allowed to claim a sealed/shipped result.
+func ShippablePhase(p Phase) bool {
+	definition, ok := definitionFor(p)
+	return ok && definition.shippable
+}
+
+// PhaseForName resolves a canonical phase ID or compatibility alias. Callers
+// should normalize surrounding syntax before querying it.
+func PhaseForName(name string) (Phase, bool) {
+	for _, definition := range phaseDefinitions {
+		if string(definition.phase) == name {
+			return definition.phase, true
+		}
+		for _, alias := range definition.aliases {
+			if alias == name {
+				return definition.phase, true
+			}
+		}
+	}
+	return "", false
 }
 
 // RequiredSections returns the sections required to complete the given phase,
 // in canonical Sections order.
 func RequiredSections(p Phase) []Section {
-	want := requiredByPhase[p]
+	definition, ok := definitionFor(p)
+	if !ok {
+		return nil
+	}
+	want := definition.required
 	set := make(map[Section]bool, len(want))
 	for _, s := range want {
 		set[s] = true

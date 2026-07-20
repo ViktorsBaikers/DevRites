@@ -1,9 +1,47 @@
 package state
 
 import (
+	"sort"
 	"strings"
 	"unicode"
 )
+
+// Canonical cursor keys. Callers use these constants so schema spelling changes
+// remain local to the cursor package; normalizeCursorKey still accepts legacy
+// presentation aliases at the text boundary.
+const (
+	CursorPhase              = "phase"
+	CursorStatus             = "status"
+	CursorNextAction         = "next_action"
+	CursorQuestionID         = "question_id"
+	CursorActiveSlice        = "active_slice"
+	CursorAFKSlicesRemaining = "afk_slices_remaining"
+)
+
+var cursorKeyAliases = map[string]string{
+	"nextstep": CursorNextAction,
+	"qid":      CursorQuestionID,
+}
+
+// CursorKeyAlias is the generated-manifest view of a compatibility key.
+type CursorKeyAlias struct {
+	Alias     string `json:"alias"`
+	Canonical string `json:"canonical"`
+}
+
+// CursorKeyAliases returns compatibility keys in deterministic order.
+func CursorKeyAliases() []CursorKeyAlias {
+	aliases := make([]string, 0, len(cursorKeyAliases))
+	for alias := range cursorKeyAliases {
+		aliases = append(aliases, alias)
+	}
+	sort.Strings(aliases)
+	out := make([]CursorKeyAlias, 0, len(aliases))
+	for _, alias := range aliases {
+		out = append(out, CursorKeyAlias{Alias: alias, Canonical: cursorKeyAliases[alias]})
+	}
+	return out
+}
 
 type cursorLineKind uint8
 
@@ -73,12 +111,9 @@ func normalizeCursorKey(key string) string {
 			b.WriteRune(r)
 		}
 	}
-	switch b.String() {
-	case "nextstep":
-		return "nextaction"
-	case "qid":
-		return "questionid"
-	default:
-		return b.String()
+	normalized := b.String()
+	if canonical, ok := cursorKeyAliases[normalized]; ok {
+		return normalizeCursorKey(canonical)
 	}
+	return normalized
 }

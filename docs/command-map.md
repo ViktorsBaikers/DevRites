@@ -167,7 +167,7 @@ when available, falling back to file reads otherwise:
 See [`flow.md`](flow.md) for the Mermaid diagrams. The text path:
 
 ```
-/rite-spec → /rite-define → /rite-build ×N → /rite-prove → /rite-polish → /rite-review → /rite-seal → /rite-ship
+/rite-frame → /rite-spec → /rite-temper → /rite-define → /rite-vet → /rite-build ×N → /rite-converge → /rite-prove → /rite-polish → /rite-review → /rite-seal → /rite-ship
    │            │                │  ▲              │                          │             (decide)   (execute+close)
    │            │                │  └ Spec Drift Guard → /rite-plan repair ────┘
    │            │                └ devrites-frontend-craft / source-driven / doubt

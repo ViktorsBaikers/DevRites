@@ -77,9 +77,11 @@ fi
 
 # 7 — state phase / status
 if [ -f "$st" ]; then
-  sfield() { awk -v k="$1" 'match($0,"^[[:space:]]*-?[[:space:]]*" k ":[[:space:]]*"){r=substr($0,RLENGTH+1); sub(/[[:space:]]*(#|\|).*$/,"",r); sub(/[[:space:]]+$/,"",r); print r; exit}' "$st"; }
-  ph="$(sfield Phase)"; stt="$(sfield Status)"
-  case "$ph" in seal|ship|done) ;; *) problems+=("state.md Phase='${ph}' (expected seal/ship/done)") ;; esac
+  ph="$(python3 "$ROOT/scripts/workflow_schema.py" field "$st" phase 2>/dev/null || true)"
+  stt="$(python3 "$ROOT/scripts/workflow_schema.py" field "$st" status 2>/dev/null || true)"
+  if ! python3 "$ROOT/scripts/workflow_schema.py" phase-property "$ph" shippable; then
+    problems+=("state.md Phase='${ph}' (expected a shippable phase)")
+  fi
   case "$stt" in awaiting_human|blocked) problems+=("state.md Status='${stt}' (not shippable)") ;; esac
 else
   problems+=("state.md missing")

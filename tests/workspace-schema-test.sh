@@ -42,6 +42,23 @@ fi
 
 grep -q 'legacy acceptance id AC1' /tmp/devrites-workspace-schema-bad.txt
 
+CANONICAL_PHASE="$(mktemp -d)"
+mkdir -p "$CANONICAL_PHASE/.devrites/work/converging"
+cat > "$CANONICAL_PHASE/.devrites/work/converging/state.md" <<'MD'
+# State
+
+## Cursor
+| Key | Value |
+| --- | --- |
+| phase | converge |
+| status | running |
+MD
+if python3 "$VALIDATOR" "$CANONICAL_PHASE" >/tmp/devrites-workspace-schema-canonical-phase.txt 2>&1; then
+  echo "FAIL: incomplete canonical converge workspace passed schema validation"
+  exit 1
+fi
+grep -q 'phase converge requires architecture.md' /tmp/devrites-workspace-schema-canonical-phase.txt
+
 MISSING_FIELD="$(mktemp -d)"
 mkdir -p "$MISSING_FIELD/.devrites/work/missing-slice-field"
 cat > "$MISSING_FIELD/.devrites/work/missing-slice-field/README.md" <<'MD'

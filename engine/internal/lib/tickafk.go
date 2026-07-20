@@ -65,7 +65,7 @@ func TickAfk(args []string, stdout, stderr io.Writer) int {
 // readBudget returns the current "AFK slices remaining" value — the first blank-
 // delimited token after the field — and whether the field is present at all.
 func readBudget(lines []string) (value string, found bool) {
-	value, found = state.CursorField(lines, "afk_slices_remaining")
+	value, found = state.CursorField(lines, state.CursorAFKSlicesRemaining)
 	if !found {
 		return "", false
 	}
@@ -77,6 +77,6 @@ func readBudget(lines []string) (value string, found bool) {
 
 // setBudget preserves the cursor's canonical-table or legacy-bullet format.
 func setBudget(lines []string, n int) []byte {
-	updated, _ := state.SetCursorField(lines, "afk_slices_remaining", strconv.Itoa(n))
+	updated, _ := state.SetCursorField(lines, state.CursorAFKSlicesRemaining, strconv.Itoa(n))
 	return []byte(strings.Join(updated, "\n") + "\n")
 }

@@ -108,22 +108,6 @@ func regularFileExists(path string) bool {
 	return err == nil && info.Mode().IsRegular()
 }
 
-// CandidateFiles returns the paths that make up feature <slug>: its feature.md
-// manifest plus every file that can satisfy a section (canonical names and the
-// transitional aliases), in a stable order. Not all need exist; callers that
-// fingerprint the feature stat and hash the ones that do, so including the alias
-// names means a change to either the canonical or the alias file is detected.
-func CandidateFiles(root, slug string) []string {
-	dir := featureDir(root, slug)
-	files := []string{filepath.Join(dir, "feature.md")}
-	for _, s := range Sections {
-		for _, name := range sectionFiles[s] {
-			files = append(files, filepath.Join(dir, name))
-		}
-	}
-	return files
-}
-
 // LoadFeature reads feature <slug> under root. The phase comes from the live
 // working-state ledger when it declares one, otherwise from feature.md
 // frontmatter. A feature with neither a manifest nor a ledger does not exist.
@@ -190,22 +174,12 @@ func sectionPresentAny(dir string, s Section) bool {
 	return false
 }
 
-// PhaseFromLedger reads a phase from the canonical cursor table or the legacy
-// "- Phase: <p>" form, accepting only phases the engine understands.
-func PhaseFromLedger(path string) Phase {
-	phase, declared := declaredPhaseFromLedger(path)
-	if declared && KnownPhase(phase) {
-		return phase
-	}
-	return ""
-}
-
 func declaredPhaseFromLedger(path string) (Phase, bool) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return "", false
 	}
-	value, ok := CursorField(strings.Split(string(raw), "\n"), "phase")
+	value, ok := CursorField(strings.Split(string(raw), "\n"), CursorPhase)
 	if !ok {
 		return "", false
 	}

@@ -88,4 +88,33 @@ func TestClearAwaitingSupportsCanonicalCursor(t *testing.T) {
 	if strings.Contains(text, "## Awaiting human") || !strings.Contains(text, "| status | running |") {
 		t.Fatalf("canonical awaiting state was not cleared:\n%s", text)
 	}
+	if !strings.Contains(text, "$rite-temper") || strings.Contains(text, "$rite-build") {
+		t.Fatalf("canonical awaiting state resumed the wrong phase:\n%s", text)
+	}
+}
+
+func TestProgressReadsCanonicalSlicesAndShowsPlanPhase(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "work", "demo")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stateText := strings.Replace(canonicalCursor, "| phase | temper |", "| phase | plan |", 1)
+	stateText = strings.Replace(stateText, "| afk_slices_remaining | 2 |", "| active_slice | SLICE-002 |", 1)
+	if err := os.WriteFile(filepath.Join(dir, "state.md"), []byte(stateText), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tasks := "## SLICE-001 First\nStatus: built\n\n## SLICE-002 Second\nStatus: pending\n"
+	if err := os.WriteFile(filepath.Join(dir, "tasks.md"), []byte(tasks), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	if code := Progress(root, []string{"demo"}, &stdout, &bytes.Buffer{}); code != 0 {
+		t.Fatalf("code=%d", code)
+	}
+	text := stdout.String()
+	if !strings.Contains(text, "Slice 1/2") || !strings.Contains(text, "plan ◉") || strings.Contains(text, "build ◉") {
+		t.Fatalf("progress missed canonical slice/plan state:\n%s", text)
+	}
 }

@@ -39,6 +39,15 @@ func TestResolveCompletesMissingAnswerFieldsInSingleRewrite(t *testing.T) {
 	}
 }
 
+func TestResolveAcceptsCanonicalUppercaseQuestionID(t *testing.T) {
+	root := resolveWorkspace(t, "## Q-001 blocking\nstatus: open\n")
+	var stdout, stderr bytes.Buffer
+
+	if code := Resolve(root, []string{"Q-001", "canonical answer"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code = %d, want 0; stderr=%q", code, stderr.String())
+	}
+}
+
 func resolveWorkspace(t *testing.T, questions string) string {
 	t.Helper()
 	root := t.TempDir()

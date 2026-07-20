@@ -117,7 +117,7 @@ func tallyOpenQuestions(data []byte) (blocking, validating, advisory, escalating
 	}
 	for _, line := range splitLinesNoTrailing(data) {
 		switch {
-		case strings.HasPrefix(line, "## q-"):
+		case strings.HasPrefix(strings.ToLower(line), "## q-"):
 			finalize()
 			inQ, status, gate = true, "", ""
 		case inQ && strings.HasPrefix(line, "status:"):

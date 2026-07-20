@@ -132,7 +132,7 @@ This project has DevRites installed for both Claude Code and Codex.
 ## Workflow contract
 
 - Keep all feature state in `.devrites/work/<slug>/` and preserve `.devrites/ACTIVE`.
-- Follow the DevRites lifecycle: spec -> define -> build -> prove -> polish -> review -> seal -> ship.
+- Follow the DevRites lifecycle: frame -> spec -> temper -> define -> plan -> vet -> build -> converge -> prove -> polish -> review -> seal -> ship -> done.
 - Claims of completion need recorded evidence in the feature workspace, not confidence alone.
 <!-- END DEVRITES CODEX -->
 EOF

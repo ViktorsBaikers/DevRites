@@ -146,8 +146,8 @@ func TestStopGateUsesWorkspaceOverride(t *testing.T) {
 }
 
 func TestOpenBlockingQuestionGates(t *testing.T) {
-	got := openBlockingQuestionGates([]byte("## q-1\nstatus: open\ngate: blocking\n\n## Not a question\n\n## q-2\nstatus: open\ngate: validating\n\n## q-3\nstatus: resolved\ngate: blocking\n\n## q-4\nstatus: open\ngate: blocking\n"))
-	want := []string{"blocking", "validating"}
+	got := openBlockingQuestionGates([]byte("## Q-1\nstatus: open\ngate: blocking\n\n## Not a question\n\n## q-2\nstatus: open\ngate: validating\n\n## q-3\nstatus: resolved\ngate: blocking\n\n## q-4\nstatus: open\ngate: blocking\n\n## Q-5\nstatus: open\ngate: escalating\n"))
+	want := []string{"blocking", "validating", "escalating"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("openBlockingQuestionGates=%v, want %v", got, want)
 	}

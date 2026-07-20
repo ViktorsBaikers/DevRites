@@ -151,7 +151,7 @@ func derivePhase(statePath string) state.Phase {
 		return state.PhaseBuild
 	}
 	lines := strings.Split(string(raw), "\n")
-	for _, key := range []string{"phase", "status"} {
+	for _, key := range []string{state.CursorPhase, state.CursorStatus} {
 		if value, found := state.CursorField(lines, key); found {
 			if p, ok := mapLegacyPhase(value); ok {
 				return p
@@ -168,38 +168,7 @@ func mapLegacyPhase(word string) (state.Phase, bool) {
 	if i := strings.IndexAny(word, " \t—-"); i > 0 {
 		word = word[:i]
 	}
-	switch word {
-	case "frame":
-		return state.PhaseFrame, true
-	case "spec", "specced", "specifying":
-		return state.PhaseSpec, true
-	case "temper", "tempered", "tempering":
-		return state.PhaseTemper, true
-	case "define", "defined", "defining":
-		return state.PhaseDefine, true
-	case "plan", "planned", "planning":
-		return state.PhasePlan, true
-	case "vet", "vetted", "vetting":
-		return state.PhaseVet, true
-	case "build", "building", "wip", "in", "in-progress":
-		return state.PhaseBuild, true
-	case "converge", "converged", "converging":
-		return state.PhaseConverge, true
-	case "prove", "proving", "proven", "testing":
-		return state.PhaseProve, true
-	case "polish", "polished", "polishing":
-		return state.PhasePolish, true
-	case "review", "reviewed", "reviewing":
-		return state.PhaseReview, true
-	case "seal", "sealed", "sealing":
-		return state.PhaseSeal, true
-	case "ship", "shipped", "shipping":
-		return state.PhaseShip, true
-	case "done", "closed", "complete", "completed":
-		return state.PhaseDone, true
-	default:
-		return "", false
-	}
+	return state.PhaseForName(word)
 }
 
 // backupWorkspace snapshots mutable state (work/, features/, and the ACTIVE pointer) into
