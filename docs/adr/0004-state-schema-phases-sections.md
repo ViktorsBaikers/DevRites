@@ -3,6 +3,10 @@
 - **Status:** Accepted
 - **Date:** 2026-07-08 (backfilled)
 
+> Artifact filename direction was amended by
+> [ADR-0007](0007-canonical-live-workspace-filenames.md). Phase-relative section
+> completeness remains unchanged.
+
 ## Context
 
 A feature's working state must be legible to both humans and the engine, and
@@ -13,9 +17,8 @@ that don't exist yet (there's no proof during framing).
 
 ## Decision
 
-Model feature state as **six single-concern section files** — `spec`, `plan`,
-`decisions`, `tasks`, `proof`, `status` (with transitional aliases
-`evidence→proof`, `state→status` that `migrate` normalizes). Drive the lifecycle
+Model feature state as **six single-concern sections** — `spec`, `plan`,
+`decisions`, `tasks`, `proof`, `status`. Drive the lifecycle
 through the ordered rite-\* arc:
 `frame → spec → temper → define → plan → vet → build → converge → prove → polish → review → seal → ship → done`.
 Completeness is **phase-relative and additive**: the typed phase registry maps

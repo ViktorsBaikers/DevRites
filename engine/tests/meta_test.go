@@ -1,7 +1,7 @@
 package main_test
 
-// Cross-cutting assertions the spec calls out explicitly: the engine makes zero
-// network calls, and the inline fail-open guard no-ops when the binary is absent.
+// Cross-cutting assertions: network I/O stays inside the one sanctioned package,
+// and the inline fail-open guard no-ops when the binary is absent.
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 )
 
 // TestFirstPartyMakesNoNetworkCalls asserts that no first-party package imports a
-// network client EXCEPT internal/iohooks — the ONE sanctioned network surface,
+// network client EXCEPT internal/iohooks — the one sanctioned network surface,
 // where the source-citation cache does conditional-HEAD revalidation. Confining
 // network to that single, auditable package keeps the rest of the engine a
 // network-free control plane that makes zero model calls (PRD: "zero API"). The

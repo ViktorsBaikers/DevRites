@@ -90,11 +90,11 @@ func featureDirsNeedingNormalization(root string) ([]normalizationTarget, error)
 }
 
 func needsNormalizeFeature(dir string) bool {
-	if !regularFileExists(filepath.Join(dir, "feature.md")) {
+	if !regularFileExists(filepath.Join(dir, state.WorkspaceMapFile)) {
 		return true
 	}
-	return regularFileExists(filepath.Join(dir, "evidence.md")) && !regularFileExists(filepath.Join(dir, "proof.md")) ||
-		regularFileExists(filepath.Join(dir, state.LedgerFile)) && !regularFileExists(filepath.Join(dir, "status.md"))
+	return regularFileExists(filepath.Join(dir, "proof.md")) && !regularFileExists(filepath.Join(dir, state.EvidenceFile)) ||
+		regularFileExists(filepath.Join(dir, "status.md")) && !regularFileExists(filepath.Join(dir, state.LedgerFile))
 }
 
 func regularFileExists(path string) bool {
@@ -103,16 +103,21 @@ func regularFileExists(path string) bool {
 }
 
 func normalizeFeatureDir(dir, slug string) error {
-	if !regularFileExists(filepath.Join(dir, "feature.md")) {
-		phase := derivePhase(filepath.Join(dir, state.LedgerFile))
-		if err := state.AtomicWrite(filepath.Join(dir, "feature.md"), []byte(featureIndex(slug, phase)), 0o644); err != nil {
-			return fmt.Errorf("write feature index: %w", err)
+	for _, alias := range state.WorkspaceMapFiles()[1:] {
+		if err := copyAliasFile(dir, alias, state.WorkspaceMapFile); err != nil {
+			return fmt.Errorf("copy %s to %s: %w", alias, state.WorkspaceMapFile, err)
 		}
 	}
-	if err := copyAliasFile(dir, "evidence.md", "proof.md"); err != nil {
-		return fmt.Errorf("copy evidence.md to proof.md: %w", err)
+	if !regularFileExists(filepath.Join(dir, state.WorkspaceMapFile)) {
+		phase := derivePhase(filepath.Join(dir, state.LedgerFile))
+		if err := state.AtomicWrite(filepath.Join(dir, state.WorkspaceMapFile), []byte(workspaceIndex(slug, phase)), 0o644); err != nil {
+			return fmt.Errorf("write workspace index: %w", err)
+		}
 	}
-	return copyAliasFile(dir, state.LedgerFile, "status.md")
+	if err := copyAliasFile(dir, "proof.md", state.EvidenceFile); err != nil {
+		return fmt.Errorf("copy proof.md to evidence.md: %w", err)
+	}
+	return copyAliasFile(dir, "status.md", state.LedgerFile)
 }
 
 func copyAliasFile(dir, alias, canonical string) error {
@@ -128,8 +133,8 @@ func copyAliasFile(dir, alias, canonical string) error {
 	return state.AtomicWrite(dst, data, 0o644)
 }
 
-// featureIndex renders the manifest added to a normalized workspace.
-func featureIndex(slug string, phase state.Phase) string {
+// workspaceIndex renders the compact map added to a normalized workspace.
+func workspaceIndex(slug string, phase state.Phase) string {
 	return fmt.Sprintf(`---
 slug: %s
 title: %s

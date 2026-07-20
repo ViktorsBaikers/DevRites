@@ -54,9 +54,10 @@ Backward compatibility: `.devrites/features/<slug>/` remains readable as a legac
 workspace location. `feature.md` / `index.md` may stand in for `README.md`, and
 `proof.md` may stand in for `evidence.md`.
 
-### `feature.md`
+### Workspace maps
 
-The per-feature index. Its YAML frontmatter carries:
+The canonical per-feature index is `README.md`; `feature.md` and `index.md` are
+readable aliases. A map may carry YAML frontmatter with:
 
 | field           | meaning                                        |
 | --------------- | ---------------------------------------------- |
@@ -65,9 +66,9 @@ The per-feature index. Its YAML frontmatter carries:
 | `phase`         | current workflow phase (see below)             |
 | `schemaVersion` | schema version the file was written against    |
 
-A feature exists when it has either a live `state.md` ledger or the transitional
-`feature.md` manifest. The mutable `state.md` cursor is authoritative when both
-declare a phase; an unknown declared phase is an error.
+A feature exists when it has either a live `state.md` ledger or a workspace map.
+The mutable `state.md` cursor is authoritative when both declare a phase; an
+unknown declared phase is an error.
 
 ## Sections
 

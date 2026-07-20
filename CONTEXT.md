@@ -14,25 +14,27 @@ the LLM). See [ADR-0001](docs/adr/0001-go-engine-as-control-plane.md).
 ## The two planes
 
 - **Control plane — the engine** (`engine/`): a single stdlib-only Go binary
-  (`CGO_ENABLED=0`, no network, no model calls). It owns every deterministic
-  operation over the workspace: state transitions, gates, hooks, derivations,
-  migration. ~35 subcommands via a hand-rolled `switch` (`main.go`).
-- **Data plane — the workspace** (`.devrites/`): git-diffable markdown. Feature
-  state is six single-concern **sections** (`spec`, `plan`, `decisions`,
-  `tasks`, `proof`, `status`). See
-  [ADR-0004](docs/adr/0004-state-schema-phases-sections.md).
+  (`CGO_ENABLED=0`, no model calls). It owns every deterministic operation over
+  the workspace: state transitions, gates, hooks, derivations, migration. Those
+  operations are network-free; explicit update/source-cache I/O is isolated in
+  `internal/iohooks` (ADR-0008). ~35 subcommands use a hand-rolled `switch`.
+- **Data plane — the workspace** (`.devrites/`): git-diffable Markdown. Feature
+  completeness uses six single-concern **sections** (`spec`, `plan`,
+  `decisions`, `tasks`, `proof`, `status`); the canonical live map/cursor/proof
+  files are `README.md`, `state.md`, and `evidence.md` (ADR-0007).
 
 ## The lifecycle (rites → phases)
 
-Eight phases mirror the `rite-*` skill arc:
+Fourteen ordered states mirror the `rite-*` skill arc:
 
 ```
-frame → spec → plan → build → prove → vet → seal → ship
+frame → spec → temper → define → plan → vet → build → converge → prove
+→ polish → review → seal → ship → done
 ```
 
-Completeness is **phase-relative**: `requiredByPhase` (in
-`engine/internal/state/schema.go`) says which sections must have real content to
-leave each phase; the set grows down the arc. A **gate** checks that
+Completeness is **phase-relative**: the typed `phaseDefinitions` registry in
+`engine/internal/state/schema.go` says which sections and workspace artifacts
+must have real content at each phase; the set grows down the arc. A **gate** checks that
 completeness at a phase boundary. A blocked gate is a **human-in-the-loop
 pause** — a "missing X" message and reserved **exit code 3**, never a crash. See
 [ADR-0003](docs/adr/0003-gate-model-hitl-pause.md).
@@ -63,7 +65,8 @@ pause** — a "missing X" message and reserved **exit code 3**, never a crash. S
 
 ## Invariants worth knowing
 
-- The engine makes **no** network or model calls — determinism is the contract.
+- Workspace control-plane operations make **no** network or model calls;
+  explicit network I/O is confined to `internal/iohooks` (ADR-0008).
 - Version is **single-sourced** from `package.json`; the engine binary is stamped
   via `-ldflags` at build; install.sh + `bin/devrites.mjs` read it at runtime.
   There are no hand-maintained embedded version literals to drift.

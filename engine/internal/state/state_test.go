@@ -138,9 +138,9 @@ func writeWorkSection(t *testing.T, root, slug, name, body string) {
 	}
 }
 
-// A live workspace the pack creates has no feature.md manifest: the phase lives in
-// the state.md ledger and the proof/status sections are satisfied by their aliases
-// (evidence.md / state.md). The engine must load, list, and report it anyway.
+// A live workspace map need not carry frontmatter: the phase lives in
+// the canonical state.md ledger and the proof/status concepts are satisfied by
+// evidence.md/state.md. The engine must load, list, and report it anyway.
 func TestLoadFeatureFromLedgerAndAliases(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	writeSection(t, root, "live", "state.md", "- Phase: prove\n- Status: running\n")
@@ -148,7 +148,7 @@ func TestLoadFeatureFromLedgerAndAliases(t *testing.T) {
 	writeSection(t, root, "live", "plan.md", "# Plan\n\nApproach.\n")
 	writeSection(t, root, "live", "decisions.md", "# Decisions\n\nChose X.\n")
 	writeSection(t, root, "live", "tasks.md", "# Tasks\n\n- [x] slice 1\n")
-	writeSection(t, root, "live", "evidence.md", "# Evidence\n\nTests pass.\n") // alias for proof
+	writeSection(t, root, "live", "evidence.md", "# Evidence\n\nTests pass.\n")
 
 	rep, err := Status(root, "live")
 	if err != nil {
@@ -158,10 +158,10 @@ func TestLoadFeatureFromLedgerAndAliases(t *testing.T) {
 		t.Errorf("phase = %q, want prove (from the state.md ledger)", rep.Phase)
 	}
 	if !rep.Present[SectionProof] {
-		t.Error("proof section should be present via its evidence.md alias")
+		t.Error("proof section should be present via canonical evidence.md")
 	}
 	if !rep.Present[SectionStatus] {
-		t.Error("status section should be present via its state.md alias")
+		t.Error("status section should be present via canonical state.md")
 	}
 	if !rep.Complete() {
 		t.Errorf("prove-phase feature should be complete, missing: %v", rep.Missing)
