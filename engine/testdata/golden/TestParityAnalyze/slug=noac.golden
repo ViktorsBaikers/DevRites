@@ -2,7 +2,7 @@ exit 0
 # Cross-artifact analysis: noac
 
 ## Coverage
-- [warn] spec.md — no [ACn] acceptance ids found; tag criteria as '[AC1] ...' for a machine-checkable gate.
+- [warn] spec.md — no AC-### acceptance ids found; tag criteria for a machine-checkable gate.
 
 ## Consistency
 

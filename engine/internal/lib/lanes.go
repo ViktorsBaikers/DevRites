@@ -83,7 +83,7 @@ func parseLaneSlices(md string) []laneSlice {
 	}
 	for _, line := range strings.Split(md, "\n") {
 		trim := strings.TrimSpace(line)
-		if strings.HasPrefix(trim, "## Slice") {
+		if sliceHeadRe.MatchString(trim) {
 			flush()
 			cur = &laneSlice{name: strings.TrimPrefix(trim, "## ")}
 			continue

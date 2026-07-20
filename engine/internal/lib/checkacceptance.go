@@ -10,17 +10,17 @@ import (
 )
 
 // Executable acceptance criteria — a port of check-acceptance.sh. Grades the
-// [ACn]-tagged acceptance criteria in spec.md against seal.md: each spec
+// AC-### acceptance criteria in spec.md against seal.md: each spec
 // criterion must be checked ([x]) in seal.md. Without ids it falls back to a
 // count/unchecked heuristic. The spec-time mirror is SpecValidate (shape); this
-// grades proof.
+// grades proof. Legacy [ACn] ids remain supported for existing workspaces.
 //
 // Exit codes: 0 every criterion proven · 1 gap (uncovered/unproven) · 2 usage ·
 // 5 missing spec.md or seal.md.
 var (
 	acHeadingRe = regexp.MustCompile(`^##[[:space:]]+[Aa]cceptance [Cc]riteria`)
 	h2Re        = regexp.MustCompile(`^##[[:space:]]`)
-	acIDRe      = regexp.MustCompile(`\[AC[0-9]+\]`)
+	acIDRe      = regexp.MustCompile(`\[AC[0-9]+\]|\bAC-[0-9]{3}\b`)
 	checkedRe   = regexp.MustCompile(`^[[:space:]]*-[[:space:]]*\[[xX]\]`)
 	bulletRe    = regexp.MustCompile(`^[[:space:]]*-[[:space:]]`)
 	checkboxRe  = regexp.MustCompile(`^[[:space:]]*-[[:space:]]*\[[ xX]\]`)
@@ -64,7 +64,7 @@ func CheckAcceptance(ws string, stdout, stderr io.Writer) int {
 	specIDs := sortedUniqueIDs(specBody)
 
 	if len(specIDs) > 0 {
-		// ID mode — each spec [ACn] must be checked ([x]) in seal.md.
+		// ID mode — each spec AC id must be checked ([x]) in seal.md.
 		checkedIDs := map[string]bool{}
 		for _, line := range sealBody {
 			if checkedRe.MatchString(line) {
@@ -96,15 +96,15 @@ func CheckAcceptance(ws string, stdout, stderr io.Writer) int {
 	sealUnchecked := countMatching(sealBody, uncheckedRe)
 
 	if sealTotal < specN {
-		fmt.Fprintf(stderr, "check-acceptance: seal.md lists %d acceptance items but spec.md has %d criteria — %d dropped. (Tag criteria [AC1].. to grade by id.)\n",
+		fmt.Fprintf(stderr, "check-acceptance: seal.md lists %d acceptance items but spec.md has %d criteria — %d dropped. (Tag criteria AC-### to grade by id.)\n",
 			sealTotal, specN, specN-sealTotal)
 		return 1
 	}
 	if sealUnchecked > 0 {
-		fmt.Fprintf(stderr, "check-acceptance: %d acceptance criterion(s) unchecked in seal.md (unproven). (Tag criteria [AC1].. to grade by id.)\n", sealUnchecked)
+		fmt.Fprintf(stderr, "check-acceptance: %d acceptance criterion(s) unchecked in seal.md (unproven). (Tag criteria AC-### to grade by id.)\n", sealUnchecked)
 		return 1
 	}
-	fmt.Fprintf(stdout, "check-acceptance: OK — %d acceptance items all checked in seal.md (no ids; add [AC1].. for id-level grading)\n", sealTotal)
+	fmt.Fprintf(stdout, "check-acceptance: OK — %d acceptance items all checked in seal.md (no ids; add AC-### for id-level grading)\n", sealTotal)
 	return 0
 }
 
@@ -145,8 +145,8 @@ func sectionEmpty(lines []string) bool {
 	return strings.TrimRight(strings.Join(lines, "\n"), "\n") == ""
 }
 
-// sortedUniqueIDs extracts every [ACn] id from the lines and returns them sorted
-// and de-duplicated, matching `grep -oE '\[AC[0-9]+\]' | sort -u`.
+// sortedUniqueIDs extracts canonical AC-### and legacy [ACn] ids from the lines,
+// then returns them sorted and de-duplicated.
 func sortedUniqueIDs(lines []string) []string {
 	set := map[string]bool{}
 	for _, line := range lines {

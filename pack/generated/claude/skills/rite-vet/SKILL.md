@@ -140,7 +140,12 @@ Audit for a plan resting on unstated beliefs).
    (`/rite-build` and `/rite-prove` read it). Harden `plan.md` / `tasks.md` directly for
    behavior-preserving refinements; route every acceptance/behavior-changing delta through the
    **Spec Drift Guard** (`drift.md` + recorded decision + `/rite-plan repair`). Append
-   `decisions.md` (one ADR per material call) and `assumptions.md`. Update `state.md`:
+   `decisions.md` (one ADR per material call) and `assumptions.md`. Re-run the gate after
+   every fold-back so a task edit cannot invalidate the earlier pass:
+   ```bash
+   devrites-engine analyze; echo "final analyze rc=$?"
+   ```
+   Any non-zero result blocks the handoff. Then update `state.md`:
    `Phase: vet`, `Next step: /rite-build`; on a blocking pause write the `Awaiting human` block +
    `Status: awaiting_human` before stopping.
 6. **Adversarial verification loop.** Apply the light/full branching contract in

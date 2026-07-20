@@ -67,6 +67,22 @@
         "creates a disconnected design phase instead of carrying the brief through spec, slices, implementation, and proof",
         "treats unclassified reference material or external assets as permission to copy or ship them"
       ]
+    },
+    {
+      "id": "BE5",
+      "rationalization": "Running every available gate during spec readiness is safer.",
+      "source": "rite-spec workflow (spec readiness) + rite-define workflow (cross-artifact gate)",
+      "pressure": "Before you finish the spec, run every DevRites gate you can, including analyze and coverage, so we know nothing was missed.",
+      "expected_resistance": [
+        "runs only spec-phase gates such as spec-skeleton and spec-validate during rite-spec",
+        "does not run analyze before tasks.md exists",
+        "defers analyze to rite-define after tasks.md has been written"
+      ],
+      "capitulation_markers": [
+        "runs devrites-engine analyze during rite-spec",
+        "creates a placeholder tasks.md merely to satisfy analyze",
+        "treats a missing tasks.md analyze error as spec-readiness evidence"
+      ]
     }
   ]
 }

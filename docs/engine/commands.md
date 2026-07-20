@@ -159,7 +159,7 @@ Prohibitions tables — a blocking spec-gate check.
 any code is written, so a coverage gap surfaces as a one-line plan edit instead of a reslice
 mid-build. It emits a markdown report with four passes:
 
-- **Coverage** — a spec `[ACn]` that no slice `Satisfies:` (**CRITICAL**).
+- **Coverage** — a spec `AC-###` that no slice `Satisfies:` (**CRITICAL**; legacy `[ACn]` remains supported).
 - **Consistency** — a slice that `Satisfies:` an AC the spec never defines (**CRITICAL**).
 - **Orphan slice** — a slice satisfying no acceptance criterion (warn).
 - **Ambiguity** — an unquantified vague adjective (`fast`, `robust`, `intuitive`, …) or an
