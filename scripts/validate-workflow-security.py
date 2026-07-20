@@ -4,9 +4,8 @@
 DevRites' publish (release.yml) and auto-merge paths are high-value targets, so this
 gate fails CI when a workflow:
 
-  - uses a THIRD-PARTY action not pinned to a full 40-char commit SHA — a moving tag
-    like `@v2` lets a compromised upstream inject code into the pipeline (GitHub-owned
-    `actions/*` and `github/*` tags are tolerated);
+  - uses any non-local action not pinned to a full 40-char commit SHA — a moving
+    tag like `@v2` lets a compromised upstream inject code into the pipeline;
   - declares no `permissions:` scope anywhere — the default token is broad;
   - uses `permissions: write-all` (over-broad);
   - uses `pull_request_target`, except for a Dependabot-only workflow that never
@@ -19,7 +18,6 @@ import os
 import re
 import sys
 
-FIRST_PARTY = {"actions", "github"}   # GitHub-owned; major-tag refs tolerated
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 USES_RE = re.compile(r"^\s*-?\s*uses:\s*([^\s#]+)")
 DEPENDABOT_ONLY_RE = re.compile(
@@ -61,13 +59,10 @@ def scan_text(path, text):
         ref = m.group(1)
         if ref.startswith("./") or ref.startswith("."):
             continue  # local action
-        owner = ref.split("/", 1)[0]
-        if owner in FIRST_PARTY:
-            continue
         at = ref.rsplit("@", 1)
         pin = at[1] if len(at) == 2 else ""
         if not SHA_RE.match(pin):
-            findings.append("%s:%d: third-party action '%s' not pinned to a full commit "
+            findings.append("%s:%d: action '%s' not pinned to a full commit "
                             "SHA — pin it (a moving tag is a supply-chain risk)"
                             % (path, i, ref))
     return findings
