@@ -1,0 +1,34 @@
+{
+  "skill": "rite-dogfood",
+  "description": "Direct-invocation evals for explicit browser dogfood QA.",
+  "queries": [
+    {
+      "text": "/rite-dogfood",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation."
+    },
+    {
+      "text": "$rite-dogfood --port 3000",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite dogfood checkout",
+      "expected": "should_trigger",
+      "rationale": "Router invocation."
+    },
+    {
+      "text": "Dogfood the changed user journey.",
+      "expected": "should_not_trigger",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility; natural language must not invoke it.",
+      "rationale": "Explicit-only boundary."
+    },
+    {
+      "text": "Prove every acceptance criterion.",
+      "expected": "should_not_trigger",
+      "owner": "rite-prove",
+      "rationale": "Acceptance proof belongs to rite-prove."
+    }
+  ]
+}

@@ -2,25 +2,117 @@
   "skill": "rite-pressure-test",
   "description": "Trigger evals for /rite-pressure-test — user-invocable utility that pressure-tests a rough idea by diverging into 3-5 genuinely different options, then converging on one with the trade-off and the decision's hinge.",
   "queries": [
-    {"text": "/rite-pressure-test", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "ideate with me on this", "expected": "should_trigger", "rationale": "Description names 'ideate' as trigger."},
-    {"text": "refine this idea before I commit to it", "expected": "should_trigger", "rationale": "Description names 'refine this idea'."},
-    {"text": "stress-test my plan", "expected": "should_trigger", "rationale": "Description names 'stress-test my plan'."},
-    {"text": "I have a vague idea — can you push on it?", "expected": "should_trigger", "rationale": "Description names 'I have a vague idea'."},
-    {"text": "diverge then converge on three approaches for this", "expected": "should_trigger", "rationale": "Description names 'diverge then converge'."},
-    {"text": "the concept is still rough — give me genuinely different options", "expected": "should_trigger", "rationale": "Rough concept + multiple options = pressure-test's purpose."},
-    {"text": "I'm torn between 3-5 ways to approach this, which one and why", "expected": "should_trigger", "rationale": "Diverge into options + pick one with rationale matches output shape."},
-    {"text": "what are the radically different shapes this feature could take", "expected": "should_trigger", "rationale": "Radically different shapes = diverge phase."},
-    {"text": "I don't even know what I want yet — help me explore", "expected": "should_trigger", "rationale": "Concept-stage exploration is pressure-test's lane."},
-    {"text": "give me the hinge of the decision between option A and option B", "expected": "should_trigger", "rationale": "Decision hinge is in the output shape."},
-    {"text": "before I spec this, I want to make sure the direction is right", "expected": "should_trigger", "rationale": "Pre-spec direction-check = pressure-test."},
-    {"text": "write the spec for this feature", "expected": "should_not_trigger", "rationale": "Writing the actual spec is /rite-spec, not pressure-test."},
-    {"text": "I'm picking between two near-identical variations — just choose one", "expected": "should_not_trigger", "rationale": "Description explicitly excludes near-identical variations."},
-    {"text": "plan the next slice", "expected": "should_not_trigger", "rationale": "Slice planning is /rite-define or /rite-plan."},
-    {"text": "implement the next slice", "expected": "should_not_trigger", "rationale": "Implementation is /rite-build."},
-    {"text": "prototype a UI to play with", "expected": "should_not_trigger", "rationale": "Throwaway prototyping is /rite-prototype."},
-    {"text": "interview me about my requirements", "expected": "should_not_trigger", "rationale": "1-Q-at-a-time underspec extraction is devrites-interview, not idea exploration."},
-    {"text": "review the diff against the spec", "expected": "should_not_trigger", "rationale": "Review is /rite-review, not ideation."},
-    {"text": "What time is it?", "expected": "should_not_trigger", "rationale": "Off-topic; no DevRites skill should fire."}
+    {
+      "text": "/rite-pressure-test",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "ideate with me on this",
+      "expected": "should_trigger",
+      "rationale": "Description names 'ideate' as trigger."
+    },
+    {
+      "text": "refine this idea before I commit to it",
+      "expected": "should_trigger",
+      "rationale": "Description names 'refine this idea'."
+    },
+    {
+      "text": "stress-test my plan",
+      "expected": "should_trigger",
+      "rationale": "Description names 'stress-test my plan'."
+    },
+    {
+      "text": "I have a vague idea — can you push on it?",
+      "expected": "should_trigger",
+      "rationale": "Description names 'I have a vague idea'."
+    },
+    {
+      "text": "diverge then converge on three approaches for this",
+      "expected": "should_trigger",
+      "rationale": "Description names 'diverge then converge'."
+    },
+    {
+      "text": "the concept is still rough — give me genuinely different options",
+      "expected": "should_trigger",
+      "rationale": "Rough concept + multiple options = pressure-test's purpose."
+    },
+    {
+      "text": "I'm torn between 3-5 ways to approach this, which one and why",
+      "expected": "should_trigger",
+      "rationale": "Diverge into options + pick one with rationale matches output shape."
+    },
+    {
+      "text": "what are the radically different shapes this feature could take",
+      "expected": "should_trigger",
+      "rationale": "Radically different shapes = diverge phase."
+    },
+    {
+      "text": "I don't even know what I want yet — help me explore",
+      "expected": "should_trigger",
+      "rationale": "Concept-stage exploration is pressure-test's lane."
+    },
+    {
+      "text": "give me the hinge of the decision between option A and option B",
+      "expected": "should_trigger",
+      "rationale": "Decision hinge is in the output shape."
+    },
+    {
+      "text": "before I spec this, I want to make sure the direction is right",
+      "expected": "should_trigger",
+      "rationale": "Pre-spec direction-check = pressure-test."
+    },
+    {
+      "text": "write the spec for this feature",
+      "expected": "should_not_trigger",
+      "rationale": "Writing the actual spec is /rite-spec, not pressure-test.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "I'm picking between two near-identical variations — just choose one",
+      "expected": "should_not_trigger",
+      "rationale": "Description explicitly excludes near-identical variations.",
+      "owner": null,
+      "owner_rationale": "Description explicitly excludes near-identical variations."
+    },
+    {
+      "text": "plan the next slice",
+      "expected": "should_not_trigger",
+      "rationale": "Slice planning is /rite-define or /rite-plan.",
+      "owner": null,
+      "owner_rationale": "Slice planning is /rite-define or /rite-plan."
+    },
+    {
+      "text": "implement the next slice",
+      "expected": "should_not_trigger",
+      "rationale": "Implementation is /rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "prototype a UI to play with",
+      "expected": "should_not_trigger",
+      "rationale": "Throwaway prototyping is /rite-prototype.",
+      "owner": null,
+      "owner_rationale": "Throwaway prototyping is /rite-prototype. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "interview me about my requirements",
+      "expected": "should_not_trigger",
+      "rationale": "1-Q-at-a-time underspec extraction is devrites-interview, not idea exploration.",
+      "owner": "devrites-interview"
+    },
+    {
+      "text": "review the diff against the spec",
+      "expected": "should_not_trigger",
+      "rationale": "Review is /rite-review, not ideation.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "What time is it?",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic; no DevRites skill should fire.",
+      "owner": null,
+      "owner_rationale": "Off-topic; no DevRites skill should fire."
+    }
   ]
 }

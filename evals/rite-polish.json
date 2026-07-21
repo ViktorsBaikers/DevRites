@@ -2,25 +2,119 @@
   "skill": "rite-polish",
   "description": "Trigger evals for /rite-polish — finish before review, code polish always + UI normalize + polish when UI is involved.",
   "queries": [
-    {"text": "/rite-polish", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "Polish the dashboard page before review.", "expected": "should_trigger", "rationale": "Polish phrase + UI context."},
-    {"text": "Normalize and polish the settings UI.", "expected": "should_trigger", "rationale": "Normalize + polish = rite-polish."},
-    {"text": "Simplify the diff and clean up dead code.", "expected": "should_trigger", "rationale": "Phase 1 code polish."},
-    {"text": "Make the UI consistent with the rest of the app.", "expected": "should_trigger", "rationale": "Normalize-as-consistency phrasing."},
-    {"text": "Remove the AI slop from the new components.", "expected": "should_trigger", "rationale": "Anti-AI-slop trigger."},
-    {"text": "Run the polish phase on the new endpoint.", "expected": "should_trigger", "rationale": "Backend polish (Phase 2)."},
-    {"text": "Tidy up before review.", "expected": "should_trigger", "rationale": "Tidy-before-review = polish."},
-    {"text": "/polish dashboard", "expected": "should_trigger", "rationale": "Alias path."},
-    {"text": "/normalize settings", "expected": "should_trigger", "rationale": "Alias path emphasizing normalize."},
-    {"text": "Investigate a new feature idea.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Plan the slices.", "expected": "should_not_trigger", "rationale": "/rite-define."},
-    {"text": "Build slice 3.", "expected": "should_not_trigger", "rationale": "/rite-build."},
-    {"text": "Run the test suite.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
-    {"text": "Review the security of the diff.", "expected": "should_not_trigger", "rationale": "/rite-review."},
-    {"text": "Seal and ship the feature.", "expected": "should_not_trigger", "rationale": "/rite-seal."},
-    {"text": "Where am I in DevRites?", "expected": "should_not_trigger", "rationale": "/rite-status."},
-    {"text": "Refactor the auth middleware.", "expected": "should_not_trigger", "rationale": "Out-of-scope refactor."},
-    {"text": "Add a new button to the navbar.", "expected": "should_not_trigger", "rationale": "New feature, not polish — /rite-spec → /rite-build."},
-    {"text": "How do I configure ESLint?", "expected": "should_not_trigger", "rationale": "Tooling Q, off-topic."}
+    {
+      "text": "/rite-polish",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "Polish the dashboard page before review.",
+      "expected": "should_trigger",
+      "rationale": "Polish phrase + UI context."
+    },
+    {
+      "text": "Normalize and polish the settings UI.",
+      "expected": "should_trigger",
+      "rationale": "Normalize + polish = rite-polish."
+    },
+    {
+      "text": "Simplify the diff and clean up dead code.",
+      "expected": "should_trigger",
+      "rationale": "Phase 1 code polish."
+    },
+    {
+      "text": "Make the UI consistent with the rest of the app.",
+      "expected": "should_trigger",
+      "rationale": "Normalize-as-consistency phrasing."
+    },
+    {
+      "text": "Remove the AI slop from the new components.",
+      "expected": "should_trigger",
+      "rationale": "Anti-AI-slop trigger."
+    },
+    {
+      "text": "Run the polish phase on the new endpoint.",
+      "expected": "should_trigger",
+      "rationale": "Backend polish (Phase 2)."
+    },
+    {
+      "text": "Tidy up before review.",
+      "expected": "should_trigger",
+      "rationale": "Tidy-before-review = polish."
+    },
+    {
+      "text": "/polish dashboard",
+      "expected": "should_trigger",
+      "rationale": "Alias path."
+    },
+    {
+      "text": "/normalize settings",
+      "expected": "should_trigger",
+      "rationale": "Alias path emphasizing normalize."
+    },
+    {
+      "text": "Investigate a new feature idea.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Plan the slices.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-define.",
+      "owner": "rite-define"
+    },
+    {
+      "text": "Build slice 3.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Run the test suite.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Review the security of the diff.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Seal and ship the feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Where am I in DevRites?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-status.",
+      "owner": null,
+      "owner_rationale": "/rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Refactor the auth middleware.",
+      "expected": "should_not_trigger",
+      "rationale": "Out-of-scope refactor.",
+      "owner": null,
+      "owner_rationale": "Out-of-scope refactor."
+    },
+    {
+      "text": "Add a new button to the navbar.",
+      "expected": "should_not_trigger",
+      "rationale": "New feature, not polish — /rite-spec → /rite-build.",
+      "owner": null,
+      "owner_rationale": "New feature, not polish — /rite-spec → /rite-build."
+    },
+    {
+      "text": "How do I configure ESLint?",
+      "expected": "should_not_trigger",
+      "rationale": "Tooling Q, off-topic.",
+      "owner": null,
+      "owner_rationale": "Tooling Q, off-topic."
+    }
   ]
 }

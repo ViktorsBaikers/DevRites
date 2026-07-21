@@ -1,0 +1,9 @@
+## q-1 blocking
+status: answered
+answered_at: TS
+answer: answer one
+
+## q-2 advisory
+status: dropped
+answered_at: TS
+answer: reason two

@@ -2,25 +2,118 @@
   "skill": "rite-ship",
   "description": "Trigger evals for /rite-ship — the final phase: render type-GO, run the irreversible git commit/push/tag, write ship.md, then archive the workspace and close the task. Requires a GO in seal.md.",
   "queries": [
-    {"text": "/rite-ship", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "Ship it.", "expected": "should_trigger", "rationale": "\"Ship it\" is the action of shipping → /rite-ship."},
-    {"text": "Ship this feature.", "expected": "should_trigger", "rationale": "Direct ship verb on the active feature."},
-    {"text": "Push it out.", "expected": "should_trigger", "rationale": "\"Push it out\" = run the irreversible git ladder → /rite-ship."},
-    {"text": "Close the task.", "expected": "should_trigger", "rationale": "Closing/archiving the task is /rite-ship's job."},
-    {"text": "Commit and tag the release.", "expected": "should_trigger", "rationale": "The irreversible git commit/push/tag lives in /rite-ship."},
-    {"text": "Archive the finished feature.", "expected": "should_trigger", "rationale": "Archiving .devrites/work → .devrites/archive is /rite-ship's close-out."},
-    {"text": "Finalize and ship.", "expected": "should_trigger", "rationale": "Finalize-and-ship = the final phase → /rite-ship."},
-    {"text": "Type-GO and push.", "expected": "should_trigger", "rationale": "Rendering the type-GO prompt then pushing is /rite-ship."},
-    {"text": "We got a GO — ship it.", "expected": "should_trigger", "rationale": "Right after /rite-seal returns GO, /rite-ship executes the ship."},
-    {"text": "GO or NO-GO on the active feature?", "expected": "should_not_trigger", "rationale": "→ /rite-seal — the GO/NO-GO decision, not the ship action."},
-    {"text": "Is it safe to merge?", "expected": "should_not_trigger", "rationale": "→ /rite-seal — safe-to-merge is the decision gate."},
-    {"text": "Decide if we can ship.", "expected": "should_not_trigger", "rationale": "→ /rite-seal — deciding (not executing) the ship."},
-    {"text": "Investigate a new feature idea.", "expected": "should_not_trigger", "rationale": "→ /rite-spec."},
-    {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "→ /rite-build."},
-    {"text": "Run all the tests end-to-end.", "expected": "should_not_trigger", "rationale": "→ /rite-prove."},
-    {"text": "Multi-axis review of the diff.", "expected": "should_not_trigger", "rationale": "→ /rite-review."},
-    {"text": "Status check.", "expected": "should_not_trigger", "rationale": "→ /rite-status."},
-    {"text": "Why did test X fail?", "expected": "should_not_trigger", "rationale": "Debugging."},
-    {"text": "What's the time in Tokyo?", "expected": "should_not_trigger", "rationale": "Off-topic Q."}
+    {
+      "text": "/rite-ship",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "Ship it.",
+      "expected": "should_trigger",
+      "rationale": "\"Ship it\" is the action of shipping → /rite-ship."
+    },
+    {
+      "text": "Ship this feature.",
+      "expected": "should_trigger",
+      "rationale": "Direct ship verb on the active feature."
+    },
+    {
+      "text": "Push it out.",
+      "expected": "should_trigger",
+      "rationale": "\"Push it out\" = run the irreversible git ladder → /rite-ship."
+    },
+    {
+      "text": "Close the task.",
+      "expected": "should_trigger",
+      "rationale": "Closing/archiving the task is /rite-ship's job."
+    },
+    {
+      "text": "Commit and tag the release.",
+      "expected": "should_trigger",
+      "rationale": "The irreversible git commit/push/tag lives in /rite-ship."
+    },
+    {
+      "text": "Archive the finished feature.",
+      "expected": "should_trigger",
+      "rationale": "Archiving .devrites/work → .devrites/archive is /rite-ship's close-out."
+    },
+    {
+      "text": "Finalize and ship.",
+      "expected": "should_trigger",
+      "rationale": "Finalize-and-ship = the final phase → /rite-ship."
+    },
+    {
+      "text": "Type-GO and push.",
+      "expected": "should_trigger",
+      "rationale": "Rendering the type-GO prompt then pushing is /rite-ship."
+    },
+    {
+      "text": "We got a GO — ship it.",
+      "expected": "should_trigger",
+      "rationale": "Right after /rite-seal returns GO, /rite-ship executes the ship."
+    },
+    {
+      "text": "GO or NO-GO on the active feature?",
+      "expected": "should_not_trigger",
+      "owner": "rite-seal",
+      "rationale": "→ /rite-seal — the GO/NO-GO decision, not the ship action."
+    },
+    {
+      "text": "Is it safe to merge?",
+      "expected": "should_not_trigger",
+      "owner": "rite-seal",
+      "rationale": "→ /rite-seal — safe-to-merge is the decision gate."
+    },
+    {
+      "text": "Decide if we can ship.",
+      "expected": "should_not_trigger",
+      "owner": "rite-seal",
+      "rationale": "→ /rite-seal — deciding (not executing) the ship."
+    },
+    {
+      "text": "Investigate a new feature idea.",
+      "expected": "should_not_trigger",
+      "rationale": "→ /rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Build the next slice.",
+      "expected": "should_not_trigger",
+      "rationale": "→ /rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Run all the tests end-to-end.",
+      "expected": "should_not_trigger",
+      "rationale": "→ /rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Multi-axis review of the diff.",
+      "expected": "should_not_trigger",
+      "rationale": "→ /rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Status check.",
+      "expected": "should_not_trigger",
+      "rationale": "→ /rite-status.",
+      "owner": null,
+      "owner_rationale": "→ /rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Why did test X fail?",
+      "expected": "should_not_trigger",
+      "rationale": "Debugging.",
+      "owner": null,
+      "owner_rationale": "Debugging."
+    },
+    {
+      "text": "What's the time in Tokyo?",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic Q.",
+      "owner": null,
+      "owner_rationale": "Off-topic Q."
+    }
   ]
 }

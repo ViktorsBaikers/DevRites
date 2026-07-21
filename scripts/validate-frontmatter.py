@@ -16,6 +16,12 @@ KNOWN_AGENT_FIELDS = {
     "mcpServers", "hooks", "maxTurns", "skills", "initialPrompt", "memory",
     "effort", "background", "isolation", "color",
 }
+DESCRIPTION_WORD_LIMITS = {
+    "public": 90,
+    "internal": 75,
+    "library": 60,
+    "explicit": 30,
+}
 
 
 def extract_frontmatter(text):
@@ -130,14 +136,44 @@ def main(argv):
             print("ERROR %s: description must be a single line (no newlines)" % path)
             errors += 1
             continue
-        if "when_to_use" in data:
-            dlen += len(str(data.get("when_to_use", "")))
-            if dlen > 1536:
-                warn += " [warn: description+when_to_use %d>1536 chars]" % dlen
+        desc_words = len(desc.strip().split())
+        explicit_only = str(data.get("disable-model-invocation", "")).lower() == "true"
+        if not is_agent(path):
+            if str(data.get("name", "")) == "devrites-lib":
+                budget = DESCRIPTION_WORD_LIMITS["library"]
+            elif explicit_only:
+                budget = DESCRIPTION_WORD_LIMITS["explicit"]
+            elif str(data.get("user-invocable", "")) == "true":
+                budget = DESCRIPTION_WORD_LIMITS["public"]
+            else:
+                budget = DESCRIPTION_WORD_LIMITS["internal"]
+            if desc_words > budget:
+                print("ERROR %s: description %d words > %d budget (keep triggers tight; move workflow into the body)"
+                      % (path, desc_words, budget))
+                errors += 1
+                continue
+            failed = False
+            for phrase in ("Use when", "Not for"):
+                count = desc.count(phrase)
+                if count > 1:
+                    print("ERROR %s: description repeats %r %d times (collapse duplicate trigger branches)"
+                          % (path, phrase, count))
+                    errors += 1
+                    failed = True
+                    break
+            if failed:
+                continue
+            if explicit_only and str(data.get("name", "")) != "devrites-lib":
+                for phrase in ("Use when", "Not for"):
+                    if phrase in desc:
+                        print("ERROR %s: explicit-only description contains %r; keep it a human summary" % (path, phrase))
+                        errors += 1
+                        failed = True
+                        break
+                if failed:
+                    continue
         ui = data.get("user-invocable", "(default)")
-        ctx = data.get("context", "")
-        flag = (" context=%s" % ctx) if ctx else ""
-        print("OK    %s  (user-invocable=%s%s)%s" % (path, ui, flag, warn))
+        print("OK    %s  (user-invocable=%s)%s" % (path, ui, warn))
     if errors:
         print("\n%d file(s) failed frontmatter validation." % errors)
         return 1

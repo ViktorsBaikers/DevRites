@@ -1,0 +1,34 @@
+{
+  "skill": "rite-pr-feedback",
+  "description": "Direct-invocation evals for resolving GitHub PR review feedback.",
+  "queries": [
+    {
+      "text": "/rite-pr-feedback 42",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation."
+    },
+    {
+      "text": "$rite-pr-feedback",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite pr-feedback current",
+      "expected": "should_trigger",
+      "rationale": "Router invocation."
+    },
+    {
+      "text": "Resolve the review threads on this PR.",
+      "expected": "should_not_trigger",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility; natural language must not invoke it.",
+      "rationale": "Explicit-only boundary."
+    },
+    {
+      "text": "Review my pending diff.",
+      "expected": "should_not_trigger",
+      "owner": "rite-review",
+      "rationale": "Creating review findings belongs to rite-review."
+    }
+  ]
+}

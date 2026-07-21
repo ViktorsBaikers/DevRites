@@ -12,9 +12,6 @@ section() { printf '\n=== %s ===\n' "$1"; }
 bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
 good() { printf 'ok: %s\n' "$*"; }
 
-PUBLIC="rite rite-spec rite-adopt rite-temper rite-define rite-vet rite-plan rite-build rite-prove rite-polish rite-review rite-seal rite-ship rite-status rite-doctor rite-resolve rite-pressure-test rite-zoom-out rite-prototype rite-handoff rite-autocomplete"
-INTERNAL="devrites-interview devrites-source-driven devrites-doubt devrites-ux-shape devrites-frontend-craft devrites-browser-proof devrites-debug-recovery devrites-api-interface devrites-audit"
-AGENT_FILES="devrites-spec-reviewer devrites-code-reviewer devrites-test-analyst devrites-frontend-reviewer devrites-security-auditor devrites-performance-reviewer devrites-devex-reviewer devrites-doubt-reviewer devrites-simplifier-reviewer devrites-strategy-reviewer devrites-plan-reviewer devrites-retrospector devrites-slice-wright"
 
 # ---- 1. bash -n on every shell script ------------------------------------
 section "bash syntax (bash -n)"
@@ -36,34 +33,36 @@ else
   echo "skip: python3 not found"
 fi
 
-# ---- 2b. MCP server syntax (node --check) --------------------------------
-section "mcp server syntax (node --check)"
-if command -v node >/dev/null 2>&1; then
-  found=0
-  for f in "$ROOT"/mcp/*.mjs; do
-    [ -f "$f" ] || continue; found=1
-    if node --check "$f" 2>/tmp/dr_mjs; then good "node --check ${f#$ROOT/}"; else bad "node --check ${f#$ROOT/}: $(cat /tmp/dr_mjs)"; fi
-  done
-  [ "$found" -eq 0 ] && echo "skip: no mcp/*.mjs"
+
+# ---- 2d. shell install helper ownership ----------------------------------
+section "shell install helper ownership"
+INSTALL_LIB_HITS="$(grep -nE 'dr_(write_manifest|ver_gt|packaged_release_tag|strip_marker_block|merge_marker_block|strip_codex_|merge_codex_|codex_hooks_all_devrites)' "$ROOT/scripts/install-lib.sh" 2>/dev/null || true)"
+if [ -n "$INSTALL_LIB_HITS" ]; then
+  bad "scripts/install-lib.sh contains install/update/uninstall-era helpers:"
+  printf '%s\n' "$INSTALL_LIB_HITS" | sed "s|$ROOT/||"
 else
-  echo "skip: node not found"
+  good "scripts/install-lib.sh has no install semantics helpers; install semantics stay in devrites-engine"
 fi
 
 # ---- 3. required skills exist, each with SKILL.md ------------------------
 section "skills present + SKILL.md"
-for s in $PUBLIC $INTERNAL; do
-  if [ -f "$SKILLS/$s/SKILL.md" ]; then good "$s"; else bad "missing skill or SKILL.md: $s"; fi
-done
-# any stray skill dir without SKILL.md?
+skill_count=0
 for d in "$SKILLS"/*/; do
-  [ -f "${d}SKILL.md" ] || bad "skill dir without SKILL.md: ${d#$PACK/}"
+  [ -d "$d" ] || continue
+  skill_count=$((skill_count + 1))
+  [ -f "${d}SKILL.md" ] && good "$(basename "$d")" || bad "skill dir without SKILL.md: ${d#$PACK/}"
 done
+[ "$skill_count" -gt 0 ] || bad "no skills found in ${SKILLS#$ROOT/}"
 
 # ---- 4. agents present ---------------------------------------------------
 section "agents present"
-for a in $AGENT_FILES; do
-  if [ -f "$AGENTS/$a.md" ]; then good "$a"; else bad "missing agent: $a"; fi
+agent_count=0
+for agent_file in "$AGENTS"/*.md; do
+  [ -f "$agent_file" ] || continue
+  agent_count=$((agent_count + 1))
+  good "$(basename "$agent_file" .md)"
 done
+[ "$agent_count" -gt 0 ] || bad "no agents found in ${AGENTS#$ROOT/}"
 
 # ---- 5. frontmatter validation ------------------------------------------
 section "frontmatter"
@@ -76,12 +75,76 @@ else
   echo "skip: python3 not found"
 fi
 
+section "generated skill payload budget"
+if command -v node >/dev/null 2>&1; then
+  if node "$ROOT/scripts/check-generated-skill-budget.mjs" "$SKILLS"; then good "generated skill payload budget passed"; else bad "generated skill payload budget failed"; fi
+else
+  echo "skip: node not found"
+fi
+
+section "instruction size ratchet"
+if command -v node >/dev/null 2>&1; then
+  if node "$ROOT/scripts/check-instruction-size-baseline.mjs"; then good "instruction size baseline passed"; else bad "instruction size baseline failed"; fi
+else
+  echo "skip: node not found"
+fi
+
+section "reference reachability governance"
+if command -v node >/dev/null 2>&1; then
+  if node "$ROOT/scripts/check-reference-governance.mjs"; then good "reference reachability governance passed"; else bad "reference reachability governance failed"; fi
+else
+  echo "skip: node not found"
+fi
+
 # ---- 6. /rite-polish orchestrator references its phase reference files ---
 section "rite-polish orchestrator → reference files"
 for s in reference/code.md reference/ui.md; do
   if grep -q "$s" "$SKILLS/rite-polish/SKILL.md" 2>/dev/null; then good "rite-polish references $s"; else bad "rite-polish does not reference $s"; fi
   if [ -f "$SKILLS/rite-polish/$s" ]; then good "$s present"; else bad "$s missing"; fi
 done
+
+# ---- 6b. skill inventory / documentation counts --------------------------
+section "skills inventory"
+if command -v node >/dev/null 2>&1; then
+  if node "$ROOT/scripts/skills-inventory.mjs" >/tmp/dr_skills_inventory 2>&1; then
+    cat /tmp/dr_skills_inventory
+    good "skills inventory matches docs"
+  else
+    cat /tmp/dr_skills_inventory
+    bad "skills inventory drifted"
+  fi
+else
+  echo "skip: node not found"
+fi
+
+# ---- 6c. skill anatomy + routing + host parity ----------------------------
+section "skill anatomy"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/validate-skill-anatomy.py" >/tmp/dr_skill_anatomy 2>&1; then cat /tmp/dr_skill_anatomy; good "skill anatomy contracts passed"; else cat /tmp/dr_skill_anatomy; bad "skill anatomy validation failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+section "deterministic routing/collision evals"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/run-routing-evals.py" >/tmp/dr_routing_evals 2>&1; then cat /tmp/dr_routing_evals; good "routing/collision evals passed"; else cat /tmp/dr_routing_evals; bad "routing/collision evals failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+section "command host parity"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/validate-command-parity.py" >/tmp/dr_command_parity 2>&1; then cat /tmp/dr_command_parity; good "command host parity passed"; else cat /tmp/dr_command_parity; bad "command host parity failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+section "agent composition"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/validate-agent-composition.py" >/tmp/dr_agent_composition 2>&1; then cat /tmp/dr_agent_composition; good "agent composition contracts passed"; else cat /tmp/dr_agent_composition; bad "agent composition validation failed"; fi
+else
+  echo "skip: python3 not found"
+fi
 
 # ---- 7. broken reference links -------------------------------------------
 section "reference links resolve"
@@ -116,23 +179,31 @@ else
   echo "skip: python3 not found"
 fi
 
-# ---- 8. size advisory (not a hard failure) -------------------------------
-section "SKILL.md size advisory"
-for d in "$SKILLS"/*/; do
-  n=$(wc -l < "${d}SKILL.md" | tr -d ' ')
-  [ "$n" -gt 200 ] && printf 'warn: %s is %s lines (recommended <=180 public / <=160 internal)\n' "$(basename "$d")" "$n"
-done
-echo "ok: size advisory complete"
+# ---- 8. skill pruning + step contracts ----------------------------------
+section "skill pruning + step contracts"
+if command -v node >/dev/null 2>&1 && [ -f "$ROOT/scripts/skill-pruning-audit.mjs" ]; then
+  if node "$ROOT/scripts/skill-pruning-audit.mjs"; then good "skill pruning and step contracts passed"; else bad "skill pruning step contracts failed"; fi
+else
+  echo "skip: node or skill-pruning-audit.mjs not found"
+fi
 
 # ---- 9. DevRites engineering rules present -------------------------------
 section "DevRites rules present"
-if [ -f "$ROOT/pack/.claude/rules/README.md" ] && [ -f "$ROOT/pack/.claude/rules/security.md" ]; then
-  good "pack/.claude/rules present ($(find "$ROOT/pack/.claude/rules" -name '*.md' | wc -l | tr -d ' ') rule files)"
+if [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/README.md" ] && [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/security.md" ]; then
+  good "pack/.claude/skills/devrites-lib/reference/standards present ($(find "$ROOT/pack/.claude/skills/devrites-lib/reference/standards" -name '*.md' | wc -l | tr -d ' ') markdown files)"
 else
-  bad "DevRites rules missing (need pack/.claude/rules/*.md)"
+  bad "DevRites rules missing (need pack/.claude/skills/devrites-lib/reference/standards/*.md)"
 fi
 
 # ---- 10. no global writes ------------------------------------------------
+section "no personal paths in shipped artifacts"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/check-no-personal-paths.py" >/tmp/dr_personal_paths 2>&1; then cat /tmp/dr_personal_paths; good "no personal paths check passed"; else cat /tmp/dr_personal_paths; bad "personal path check failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+# ---- 10b. no global writes ------------------------------------------------
 section "no global ~/.claude writes"
 if bash "$ROOT/scripts/check-no-global-writes.sh" >/tmp/dr_glob 2>&1; then good "no-global-writes check passed"; else bad "no-global-writes check failed"; cat /tmp/dr_glob; fi
 
@@ -146,24 +217,58 @@ else
   bad "rule-uniqueness check failed (see scripts/check-rule-uniqueness.sh)"
 fi
 
+# ---- 11b. generated workspace schema fixtures ----------------------------
+section "workspace artifact schema"
+if command -v go >/dev/null 2>&1; then
+  if (cd "$ROOT/engine" && go run ./internal/state/cmd/workflowmanifest -check -out internal/state/workflow_manifest.json) >/tmp/dr_workflow_manifest 2>&1; then
+    good "workflow manifest is fresh"
+  else
+    cat /tmp/dr_workflow_manifest
+    bad "workflow manifest drifted from the typed state registry"
+  fi
+else
+  echo "skip: go not found; workflow manifest freshness not checked"
+fi
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/validate-workspace-schema.py" "$ROOT/tests/fixtures/workspace-schema" >/tmp/dr_workspace_schema 2>&1; then
+    cat /tmp/dr_workspace_schema
+    good "workspace artifact schema fixtures valid"
+  else
+    cat /tmp/dr_workspace_schema
+    bad "workspace artifact schema fixtures failed"
+  fi
+else
+  echo "skip: python3 not found"
+fi
+
+# ---- 11c. user-facing completion reply contract --------------------------
+section "rite completion reply contract"
+if bash "$ROOT/scripts/check-reply-contract.sh" >/tmp/dr_reply_contract 2>&1; then
+  cat /tmp/dr_reply_contract
+  good "reply-contract check passed"
+else
+  cat /tmp/dr_reply_contract
+  bad "reply-contract check failed (see scripts/check-reply-contract.sh)"
+fi
+
 # ---- 12. no runtime-broken pack/.claude/ path in installed prose ---------
-# After install the leading pack/ is stripped, so any literal pack/.claude/rules/
+# After install the leading pack/ is stripped, so any literal pack/.claude/skills/devrites-lib/reference/standards/
 # or pack/.claude/skills/ in shipped SKILL.md / reference prose is a dead path
 # at runtime. (Repo README/docs links are out of scope — they're GitHub links.)
 section "no literal pack/.claude/ paths in shipped skill prose"
 # Exclude the intentional resolution-snippet fallback (`... || P=pack/.claude/...`): the
 # preamble snippet tries the installed `.claude/` path first, then `${CLAUDE_SKILL_DIR}`
 # (plugin, best-effort), then the repo `pack/.claude/...` for DevRites self-development.
-PACKPATH_HITS="$(grep -rnI -e 'pack/\.claude/rules/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
+PACKPATH_HITS="$(grep -rnI -e 'pack/\.claude/skills/devrites-lib/reference/standards/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
 if [ -n "$PACKPATH_HITS" ]; then
   bad "literal pack/.claude/ path in shipped skill prose (strips to .claude/ on install):"
   printf '%s\n' "$PACKPATH_HITS" | sed "s|$ROOT/||"
 else
-  good "no literal pack/.claude/rules/ or pack/.claude/skills/ in shipped skill prose"
+  good "no literal pack/.claude/skills/devrites-lib/reference/standards/ or pack/.claude/skills/ in shipped skill prose"
 fi
 
 # ---- 14. no false session-start autoload claim ---------------------------
-# DevRites ships no autoload wiring; skills Read .claude/rules/core.md at step 0.
+# DevRites ships no autoload wiring; skills Read .claude/skills/devrites-lib/reference/standards/core.md at step 0.
 # Fail if any shipped skill or doc asserts native/session-start autoload.
 section "no false session-start autoload claim"
 AUTOLOAD_HITS="$(grep -rl 'autoloaded by Claude Code' "$ROOT/pack" "$ROOT/docs" "$ROOT/README.md" 2>/dev/null || true)"
@@ -172,6 +277,51 @@ if [ -n "$AUTOLOAD_HITS" ]; then
   printf '%s\n' "$AUTOLOAD_HITS" | sed "s|$ROOT/||"
 else
   good "no false session-start autoload claim in pack/ docs/ README.md"
+fi
+
+# ---- 14b. no deleted shell-helper guidance -------------------------------
+# The workflow control plane moved from devrites-lib/*.sh helpers to the
+# installed `devrites-engine` binary. Public docs and generated installer
+# guidance must not direct users or agents back to deleted helper files.
+section "no deleted shell-helper guidance"
+DELETED_HELPER_HITS="$(grep -rnI \
+  -e 'analyze\.sh' \
+  -e 'preamble\.sh' \
+  -e 'readiness\.sh' \
+  -e 'evidence-fresh\.sh' \
+  -e 'check-acceptance\.sh' \
+  -e 'coverage\.sh' \
+  -e 'doubt-coverage\.sh' \
+  -e 'footprint\.sh' \
+  -e 'learnings\.sh' \
+  -e 'mutation-gate\.sh' \
+  -e 'package-existence\.sh' \
+  -e 'progress\.sh' \
+  -e 'reconcile\.sh' \
+  -e 'tick-afk\.sh' \
+  -e 'test-integrity\.sh' \
+  -e 'resolve\.sh' \
+  -e 'close-out\.sh' \
+  -e 'stuck\.sh' \
+  -e 'spec-validate\.sh' \
+  -e 'devrites\.sh' \
+  -e 'devrites-a1-guard\.sh' \
+  -e 'devrites-allow\.sh' \
+  -e 'devrites-cursor\.sh' \
+  -e 'devrites-orient\.sh' \
+  -e 'devrites-redwatch\.sh' \
+  -e 'devrites-refresh-indexes\.sh' \
+  -e 'devrites-reviewer-readonly\.sh' \
+  -e 'devrites-statusline\.sh' \
+  -e 'devrites-stop-gate\.sh' \
+  -e 'devrites-wright-scope\.sh' \
+  -e '\.codex/hooks/' \
+  "$ROOT/README.md" "$ROOT/SECURITY.md" "$ROOT/docs" "$ROOT/evals" "$ROOT/install.sh" "$ROOT/b"*"in" 2>/dev/null || true)"
+if [ -n "$DELETED_HELPER_HITS" ]; then
+  bad "deleted helper/control-plane guidance found:"
+  printf '%s\n' "$DELETED_HELPER_HITS" | sed "s|$ROOT/||"
+else
+  good "public/generated guidance points at the devrites-engine binary, not deleted shell helpers"
 fi
 
 # ---- 15. shellcheck (error = blocking, warning = advisory) ---------------

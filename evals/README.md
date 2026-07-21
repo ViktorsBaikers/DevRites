@@ -1,10 +1,11 @@
 # Trigger evals
 
-Every DevRites skill has a `<skill-name>.json` eval file in this directory —
-the 20 user-invocable `rite-*` phases **and** the 9 model-invoked `devrites-*`
-specialists (29 files). Each contains **20 queries** — a mix of `should_trigger`
-and `should_not_trigger` — that exercise the skill's `description` field. The
-`devrites-*` evals lean on adversarial `should_not_trigger` cases against the
+Every executable DevRites skill has a `<skill-name>.json` eval file in this directory;
+the non-workflow `devrites-lib` library is exempt. Model-invoked corpora exercise the
+description with implicit positive and negative queries. Explicit-only corpora use
+direct-command positives plus an implicit-invocation negative boundary. Corpus size
+follows distinct routing branches instead of a fixed quota. The `devrites-*` evals lean
+on adversarial `should_not_trigger` cases against the
 sibling skills and bundled globals (`diagnose`, `grill-me`, `code-review`, `tdd`,
 `prototype`, `handoff`) their trigger surfaces collide with.
 
@@ -29,30 +30,37 @@ The methodology mirrors Anthropic's `skill-creator` 2.0:
 - **`ci.yml`** runs `scripts/run-evals.sh` (trigger-eval schema + shape) **and**
   `scripts/run-outcome-evals.sh` (the deterministic outcome grader on the golden
   fixtures) on every PR — no API key required. Catches broken JSON, wrong query
-  counts, missing keys, and a golden workspace that no longer grades as expected.
+  coverage, missing keys, and a golden workspace that no longer grades as expected.
 - **`evals.yml`** runs `scripts/eval-runner.py` against the live Anthropic
   API on a nightly schedule (and on PRs that carry the `run-evals` label).
   Requires the repo secret `ANTHROPIC_API_KEY`. For each query, the runner
   asks Claude to predict which DevRites skill would fire and compares the
   prediction to the expected verdict. Per-skill budget gate:
-  - accuracy ≥ **0.90** (≈ 18 / 20 correct)
+  - accuracy ≥ **0.90** (small corpora therefore require every query correct)
   - false-positives ≤ **2** (`should_not_trigger` queries that fired)
 
   Per-skill failures fail the job; the workflow renders a markdown summary
   (skill / correct / accuracy / FP / FN / passed) and uploads
   `eval-summary.jsonl` + `eval-output.txt` as artifacts.
 
-Local execution (same script CI uses):
+Local live execution is manual-only; schema validation never runs a model just because
+`CLAUDE_API_KEY` exists:
 
 ```bash
 pip install anthropic
-CLAUDE_API_KEY=sk-... python3 scripts/eval-runner.py \
-  --min-accuracy 0.90 --max-false-positives 2 \
-  --verbose evals/*.json
+CLAUDE_API_KEY=sk-... scripts/run-evals.sh --live evals/*.json
 ```
 
-Override the model with `DEVRITES_EVAL_MODEL=claude-...`. Pass
-`--summary-file out.jsonl` to dump a machine-readable per-skill report.
+Override the model with `DEVRITES_EVAL_MODEL=claude-...`. For custom thresholds or
+summary output, call `python3 scripts/eval-runner.py --summary-file out.jsonl ...`
+directly.
+
+## Routing ratchet
+
+`scripts/run-routing-evals.py` compares deterministic routing metrics with
+[`routing-baseline.json`](routing-baseline.json). The first gate is no regression:
+rank-1/top-3 cannot drop, and false-positive / public-internal / host-wording confusion cannot
+increase. Raise the baseline only after description tuning improves the run.
 
 ## Outcome evals (deterministic grader)
 
@@ -71,8 +79,8 @@ Two golden fixtures pin it — `evals/golden/shippable-feature/` (must grade GO)
 scripts/run-outcome-evals.sh
 ```
 
-No API key required; runs in CI. (Live evidence-freshness by mtime is a separate
-runtime gate: `pack/.claude/skills/devrites-lib/scripts/evidence-fresh.sh`.)
+No API key required; runs in CI. Live evidence-freshness by mtime is a separate
+runtime gate exposed as `devrites-engine evidence-fresh`.
 
 ## Behavioral evals (discipline under pressure)
 
@@ -80,7 +88,7 @@ Trigger evals test *which skill fires*; outcome evals test *did a run reach a sh
 state*. Behavioral evals test the third thing: *does a gating skill's discipline hold when
 the user pushes it toward the exact shortcut the skill exists to prevent* — claim a pass it
 didn't observe, ship past a Critical, skip the doubt loop, defer a test. Each scenario turns
-a row from `../pack/.claude/rules/anti-patterns.md` (asserted in prose) into a graded case:
+a row from `../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md` (asserted in prose) into a graded case:
 a pressure prompt plus the resistance a holding response shows and the capitulation a failed
 one shows.
 
@@ -106,14 +114,18 @@ trigger evals. Full schema, methodology, and the grading contract:
     {
       "text": "<user query>",
       "expected": "should_trigger | should_not_trigger",
+      "owner": "<skill-name or null; required for should_not_trigger>",
+      "owner_rationale": "<required when owner is null>",
       "rationale": "<why>"
     }
   ]
 }
 ```
 
-Each file should have exactly 20 queries. Aim for ~12 should_trigger and ~8
-should_not_trigger, including:
+Every corpus must be non-empty and contain both verdicts. A `should_not_trigger` query
+must name its `owner`; when no DevRites skill owns it, use `owner: null` plus
+`owner_rationale`. The deterministic router asserts that a named owner outranks the
+target, so negatives are pairwise rather than vacuous. Include:
 
 - Direct slash-command invocation (always should_trigger).
 - Natural-language paraphrases that match the description's intent.

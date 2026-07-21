@@ -1,15 +1,16 @@
 # Release pipeline
 
-Releases are **fully automated** via [semantic-release](https://semantic-release.gitbook.io/): every push to `main` is analyzed; if the merged commits carry a `feat:`, `fix:`, `perf:`, `refactor:`, `build:`, `docs(README):` (or a `BREAKING CHANGE:` footer) the `.github/workflows/release.yml` job determines the next SemVer version and:
+Releases are **fully automated** via [semantic-release](https://semantic-release.gitbook.io/): every push to `main` is analyzed; if the merged commits carry a `feat:`, `fix:`, `perf:`, `refactor:`, `build:`, `docs(README):` (or a `BREAKING CHANGE:` footer), the `release` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) determines the next SemVer version and:
 
-1. Runs `scripts/validate.sh` + install / uninstall smoke tests.
-2. Syncs the new version into `package.json` and the README status line (`scripts/sync-version.sh`).
-3. Builds a `dist/devrites-v<version>.tar.gz` release artifact via `scripts/build-release-tarball.sh` — the extractable bundle end-users get from the `curl | bash` installer.
-4. Regenerates `CHANGELOG.md` from the commits.
-5. Publishes the `devrites` package to the npm registry (`@semantic-release/npm`, needs the `NPM_TOKEN` secret) — this is what `npx devrites@latest` resolves.
-6. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates a git tag `v<version>`, and publishes a GitHub Release with the tarball attached.
+1. Waits for the workflow's validation, full shell suite, strict Go-engine checks, Linux cross-compile smoke, and Windows Go tests.
+2. Regenerates `CHANGELOG.md` from the commits.
+3. Syncs the new version into `package.json` and the README status line (`scripts/sync-version.sh`).
+4. Builds `dist/devrites-v<version>.tar.gz` plus its SHA-256 sidecar via `scripts/build-release-tarball.sh`. The extractable bundle used by `curl | bash` includes host-native Claude/Codex artifacts regenerated from `pack/.claude/` into `pack/generated/`.
+5. Cross-compiles five `devrites-engine` release binaries (macOS arm64/amd64, Linux arm64/amd64, Windows amd64) plus a SHA-256 sidecar for each.
+6. Publishes the `devrites` package to npm (`@semantic-release/npm`, requiring `NPM_TOKEN`) — this is what `npx devrites@latest` resolves. `npm pack` regenerates the same `pack/generated/` artifacts during `prepack`; there is no `postpack` cleanup step.
+7. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates tag `v<version>`, and publishes a GitHub Release with the tarball, checksum, binaries, and binary checksum sidecars attached.
 
-Local dry-run: `npm run release:dry` (shows the version bump + draft notes without publishing). The release job is gated by passing CI — a broken `main` won't ship.
+Local dry-run: `npm run release:dry` (shows the proposed version + notes without publishing). For a manual preflight, `bash scripts/release-check.sh` builds an evidence packet covering generated-pack freshness, tarball checksum presence, `npx-pack-smoke`, install/update/uninstall, `validate-pack`, behavioral-eval schema, and the documented npm distribution path. This preflight is available to maintainers but is not a hidden semantic-release step. DevRites is not shipped through Claude or Codex plugin stores. The release job is gated by passing CI — a broken `main` won't ship.
 
 ## Authoring commits that trigger releases
 
@@ -25,6 +26,6 @@ Husky + commitlint reject non-conventional messages at commit time, so you can't
 
 ## Dependency updates
 
-Dependabot watches the `npm` and `github-actions` ecosystems and opens a **weekly grouped PR** with all patch + minor bumps (see [`.github/dependabot.yml`](../.github/dependabot.yml)). The [`dependabot-auto-merge.yml`](../.github/workflows/dependabot-auto-merge.yml) workflow auto-approves + enables auto-merge (squash) on those PRs so they land the instant CI is green — no manual click. Major-version bumps stay open with a `needs-review` label so a human can scan the changelog before merging.
+Dependabot watches the `npm` and `github-actions` ecosystems and opens **weekly grouped PRs** for routine patch + minor bumps (see [`.github/dependabot.yml`](../.github/dependabot.yml)). The [`dependabot-auto-merge.yml`](../.github/workflows/dependabot-auto-merge.yml) workflow auto-approves + enables auto-merge (squash) on those PRs so they land when required checks are green. Major-version bumps stay open with a `needs-review` label so a human can scan the changelog before merging.
 
 > GitHub does not allow Dependabot to push directly to `main` — a PR is always opened. Auto-merge is the closest equivalent. Required CI checks still gate the merge.

@@ -1,26 +1,130 @@
 {
   "skill": "rite-status",
-  "description": "Trigger evals for /rite-status — read-only show of active feature phase, slice, next action, evidence, drift, risks.",
+  "description": "Explicit-only evals for /rite-status — read-only active feature report.",
   "queries": [
-    {"text": "/rite-status", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "Where am I in DevRites?", "expected": "should_trigger", "rationale": "Description names this phrase."},
-    {"text": "What's the status of the active feature?", "expected": "should_trigger", "rationale": "Description names this phrase."},
-    {"text": "What's next?", "expected": "should_trigger", "rationale": "Description names this phrase."},
-    {"text": "Show me the active phase and the next action.", "expected": "should_trigger", "rationale": "Phase + next = rite-status."},
-    {"text": "Any open drift or questions on the active feature?", "expected": "should_trigger", "rationale": "Drift/questions are rite-status fields."},
-    {"text": "List touched files and recorded evidence for this feature.", "expected": "should_trigger", "rationale": "Read-only inventory."},
-    {"text": "What's the active slice?", "expected": "should_trigger", "rationale": "Active slice = rite-status."},
-    {"text": "Start a new feature.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Plan from the spec.", "expected": "should_not_trigger", "rationale": "/rite-define."},
-    {"text": "Build slice 2.", "expected": "should_not_trigger", "rationale": "/rite-build."},
-    {"text": "Prove the feature.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
-    {"text": "Polish the UI.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
-    {"text": "Review the diff.", "expected": "should_not_trigger", "rationale": "/rite-review."},
-    {"text": "Final go/no-go.", "expected": "should_not_trigger", "rationale": "/rite-seal."},
-    {"text": "List all DevRites commands.", "expected": "should_not_trigger", "rationale": "/rite (menu)."},
-    {"text": "Edit the spec.md.", "expected": "should_not_trigger", "rationale": "Status is read-only — editing = /rite-spec."},
-    {"text": "What does this codebase do?", "expected": "should_not_trigger", "rationale": "Generic Q, not DevRites status."},
-    {"text": "Run git status.", "expected": "should_not_trigger", "rationale": "Git, not DevRites."},
-    {"text": "Open the active workspace folder in my editor.", "expected": "should_not_trigger", "rationale": "Off-topic action."}
+    {
+      "text": "/rite-status",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-status",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite status",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "$rite status",
+      "expected": "should_trigger",
+      "rationale": "Codex menu-style invocation."
+    },
+    {
+      "text": "Where am I in DevRites?",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility."
+    },
+    {
+      "text": "What is the status of the active feature?",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only utility.",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility."
+    },
+    {
+      "text": "What should I do next?",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only status request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only status request."
+    },
+    {
+      "text": "Show open questions and blockers.",
+      "expected": "should_not_trigger",
+      "rationale": "Explicit-only status request.",
+      "owner": null,
+      "owner_rationale": "Explicit-only status request."
+    },
+    {
+      "text": "Start a new feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Build slice 2.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "List all DevRites commands.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite menu.",
+      "owner": null,
+      "owner_rationale": "/rite menu. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Resolve the open question with yes.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-resolve.",
+      "owner": null,
+      "owner_rationale": "/rite-resolve. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Run proof for the feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Review the diff.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Seal this feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Ship it.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-ship.",
+      "owner": "rite-ship"
+    },
+    {
+      "text": "Doctor my DevRites install.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-doctor.",
+      "owner": "rite-doctor"
+    },
+    {
+      "text": "Write a handoff.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-handoff.",
+      "owner": null,
+      "owner_rationale": "/rite-handoff. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Debug failing tests.",
+      "expected": "should_not_trigger",
+      "rationale": "devrites-debug-recovery.",
+      "owner": "devrites-debug-recovery"
+    },
+    {
+      "text": "Explain this file.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-explain.",
+      "owner": null,
+      "owner_rationale": "/rite-explain. The functional owner is explicit-only, so natural language has no implicit owner."
+    }
   ]
 }

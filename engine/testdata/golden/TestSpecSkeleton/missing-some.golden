@@ -1,0 +1,2 @@
+exit 3
+spec-skeleton: BLOCKED — missing/spec.md: missing top-level section(s): Non-goals, Users / actors, Acceptance criteria, Edge Coverage, Prohibitions (must-NOT), Edge cases, Measurable success, Scope boundaries

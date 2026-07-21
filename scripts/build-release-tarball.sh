@@ -13,7 +13,7 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DIST="$ROOT/dist"
+DIST="${DEVRITES_RELEASE_DIST_DIR:-$ROOT/dist}"
 NAME="devrites-v${VERSION}"
 STAGE="$DIST/$NAME"
 
@@ -27,6 +27,7 @@ mkdir -p "$STAGE"
 # Files and directories shipped to end-users.
 PAYLOAD=(
   pack
+  engine
   scripts
   mcp
   docs
@@ -45,9 +46,22 @@ PAYLOAD=(
 
 for item in "${PAYLOAD[@]}"; do
   if [[ -e "$item" ]]; then
-    cp -R "$item" "$STAGE/"
+    if [[ "$item" == "engine" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      while IFS= read -r -d '' path; do
+        if [[ "$path" == engine/testdata/golden/* ]]; then
+          continue
+        fi
+        mkdir -p "$STAGE/$(dirname "$path")"
+        cp "$path" "$STAGE/$path"
+      done < <(git ls-files -z -- "$item")
+    else
+      cp -R "$item" "$STAGE/"
+    fi
   fi
 done
+
+# Ship the same prebuilt host-native artifacts that npm pack includes.
+DEVRITES_HOST_ARTIFACT_DIR="$STAGE/pack/generated" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null
 
 # Drop dev-only artifacts that may have been copied transitively.
 rm -rf "$STAGE/docs/internal" "$STAGE/scripts/.cache" 2>/dev/null || true

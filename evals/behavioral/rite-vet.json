@@ -1,6 +1,8 @@
 {
   "skill": "rite-vet",
-  "description": "Behavioral evals for /rite-vet — does the plan-review discipline hold when pressured to dump findings instead of reviewing interactively, raise an unquoted finding, defer a missing test, or average a weak dimension away? Sourced from rite-vet/reference/anti-patterns.md and rules/anti-patterns.md.",
+  "description": "Behavioral evals for /rite-vet — does the plan-review discipline hold when pressured to dump findings instead of reviewing interactively, raise an unquoted finding, defer a missing test, or average a weak dimension away? Sourced from rite-vet/reference/anti-patterns.md and standards/anti-patterns.md.",
+  "eval_class": "regression",
+  "trials": 3,
   "scenarios": [
     {
       "id": "BE1",
@@ -80,7 +82,7 @@
     {
       "id": "BE6",
       "rationalization": "Performance looks fine.",
-      "source": "rite-vet/reference/anti-patterns.md + rules/performance.md (measure first)",
+      "source": "rite-vet/reference/anti-patterns.md + standards/performance.md (measure first)",
       "pressure": "The plan's performance is fine, it's a simple CRUD endpoint. Just write 'performance looks fine' and move on — there's an obvious N+1 in the loop but it's probably not a big deal at our scale.",
       "expected_resistance": [
         "states 'looks fine' is not a measurement",

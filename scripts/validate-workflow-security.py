@@ -4,12 +4,12 @@
 DevRites' publish (release.yml) and auto-merge paths are high-value targets, so this
 gate fails CI when a workflow:
 
-  - uses a THIRD-PARTY action not pinned to a full 40-char commit SHA — a moving tag
-    like `@v2` lets a compromised upstream inject code into the pipeline (GitHub-owned
-    `actions/*` and `github/*` tags are tolerated);
+  - uses any non-local action not pinned to a full 40-char commit SHA — a moving
+    tag like `@v2` lets a compromised upstream inject code into the pipeline;
   - declares no `permissions:` scope anywhere — the default token is broad;
   - uses `permissions: write-all` (over-broad);
-  - uses `pull_request_target` (runs with secrets on untrusted PR code — review required).
+  - uses `pull_request_target`, except for a Dependabot-only workflow that never
+    checks out PR code.
 
 Usage: validate-workflow-security.py [DIR]   (default: .github/workflows)
 Exit: 0 clean; 1 on any finding.
@@ -18,14 +18,30 @@ import os
 import re
 import sys
 
-FIRST_PARTY = {"actions", "github"}   # GitHub-owned; major-tag refs tolerated
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 USES_RE = re.compile(r"^\s*-?\s*uses:\s*([^\s#]+)")
+DEPENDABOT_ONLY_RE = re.compile(
+    r"^\s*if:\s*(?:\$\{\{\s*)?"
+    r"(?:github\.actor|github\.event\.pull_request\.user\.login)\s*==\s*"
+    r"['\"]dependabot\[bot\]['\"]",
+    re.MULTILINE,
+)
+
+
+def safe_dependabot_target(text):
+    if re.search(r"^\s*-?\s*uses:\s*actions/checkout@", text, re.MULTILINE):
+        return False
+    jobs = text.split("\njobs:", 1)
+    if len(jobs) != 2:
+        return False
+    blocks = re.split(r"(?m)^  [A-Za-z0-9_-]+:\s*(?:#.*)?$", jobs[1])[1:]
+    return bool(blocks) and all(DEPENDABOT_ONLY_RE.search(block) for block in blocks)
 
 
 def scan_text(path, text):
     findings = []
     lines = text.splitlines()
+    dependabot_target_is_safe = safe_dependabot_target(text)
     if not re.search(r"^\s*permissions:", text, re.MULTILINE):
         findings.append("%s: no permissions: scope — the default GITHUB_TOKEN is broad; "
                         "add an explicit least-privilege permissions block" % path)
@@ -33,22 +49,20 @@ def scan_text(path, text):
         if "write-all" in line:
             findings.append("%s:%d: permissions: write-all is over-broad — scope to the "
                             "minimum needed" % (path, i))
-        if "pull_request_target" in line:
+        if "pull_request_target" in line and not dependabot_target_is_safe:
             findings.append("%s:%d: pull_request_target runs with secrets on untrusted PR "
-                            "code — review carefully or use pull_request" % (path, i))
+                            "code — only a Dependabot-only workflow without checkout is allowed"
+                            % (path, i))
         m = USES_RE.match(line)
         if not m:
             continue
         ref = m.group(1)
         if ref.startswith("./") or ref.startswith("."):
             continue  # local action
-        owner = ref.split("/", 1)[0]
-        if owner in FIRST_PARTY:
-            continue
         at = ref.rsplit("@", 1)
         pin = at[1] if len(at) == 2 else ""
         if not SHA_RE.match(pin):
-            findings.append("%s:%d: third-party action '%s' not pinned to a full commit "
+            findings.append("%s:%d: action '%s' not pinned to a full commit "
                             "SHA — pin it (a moving tag is a supply-chain risk)"
                             % (path, i, ref))
     return findings

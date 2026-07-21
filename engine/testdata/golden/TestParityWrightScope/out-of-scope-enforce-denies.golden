@@ -1,0 +1,2 @@
+exit 0
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"DevRites scope: this path is not in touched-files.md. Build only the slice contract; if the slice genuinely needs this file, return an Escalation so the orchestrator routes it through the Spec Drift Guard — do not widen scope yourself. (devrites-wright-scope)"}}

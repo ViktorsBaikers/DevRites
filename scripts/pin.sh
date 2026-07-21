@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # scripts/pin.sh — manage user-pinned slash aliases for DevRites.
 #
-# Adopts the same "thin wrapper SKILL.md that delegates" pattern as install.sh
-# uses for --short-aliases=all, but exposes it as a runtime verb so users can
-# add / remove arbitrary aliases against any rite-*  skill without re-running
-# the installer.
+# Adopts the same "thin wrapper SKILL.md that delegates" pattern as the engine
+# installer uses for --short-aliases=all, but exposes it as a runtime verb so
+# users can add / remove arbitrary aliases against any rite-* skill without
+# re-running the installer.
 #
 # Usage:
 #   scripts/pin.sh add    <alias> <target>      # /alias → /target (target = rite-spec | rite-build | ...)
@@ -18,11 +18,12 @@
 #   ./scripts/pin.sh remove b
 #
 # Targets:
-#   - Default: $PWD (the installed project, which holds .claude/skills/).
+#   - Default: $PWD (the installed project, which holds .claude/skills/
+#     and may also hold .agents/skills/ for Codex).
 #   - --target <dir> to operate on a project elsewhere.
 #
 # Safety:
-#   - Refuses to write inside ~/.claude (DevRites is project-local only).
+#   - Refuses to write inside global Claude/Codex homes (DevRites is project-local only).
 #   - Refuses to overwrite a non-alias skill at .claude/skills/<alias>/.
 #   - Refuses if <target> is not a known rite-* skill in the target's pack.
 #   - Manifest-managed: pinned wrappers are recorded in .claude/devrites.manifest
@@ -66,8 +67,10 @@ done
 
 TARGET="$(dr_abspath_dir "$TARGET")" || dr_die "target dir not found: $TARGET"
 dr_is_global_claude "$TARGET" && dr_die "refusing to operate on ~/.claude — DevRites is project-local only"
+dr_is_global_codex "$TARGET" && dr_die "refusing to operate on ~/.codex — DevRites is project-local only"
 
 SKILLS_DIR="$TARGET/.claude/skills"
+CODEX_SKILLS_DIR="$TARGET/.agents/skills"
 MF="$TARGET/$DR_MANIFEST_NAME"
 
 [ -d "$SKILLS_DIR" ] || dr_die "no .claude/skills at $TARGET — run install.sh first?"
@@ -97,6 +100,11 @@ is_pinned_alias() {
   grep -q 'description: Alias of DevRites /' "$SKILLS_DIR/$1/SKILL.md"
 }
 
+is_pinned_alias_file() {
+  [ -f "$1" ] || return 1
+  grep -q 'description: Alias of DevRites /' "$1"
+}
+
 # ---- subcommands ---------------------------------------------------------
 do_add() {
   valid_alias_name "$ALIAS"    || dr_die "invalid alias name '$ALIAS' (lowercase / digits / hyphens; not 'rite' or 'rite-*')"
@@ -106,6 +114,9 @@ do_add() {
   ALIAS_DIR="$SKILLS_DIR/$ALIAS"
   ALIAS_FILE="$ALIAS_DIR/SKILL.md"
   ALIAS_REL=".claude/skills/$ALIAS/SKILL.md"
+  CODEX_ALIAS_DIR="$CODEX_SKILLS_DIR/$ALIAS"
+  CODEX_ALIAS_FILE="$CODEX_ALIAS_DIR/SKILL.md"
+  CODEX_ALIAS_REL=".agents/skills/$ALIAS/SKILL.md"
 
   if [ -e "$ALIAS_FILE" ]; then
     if is_pinned_alias "$ALIAS"; then
@@ -114,15 +125,33 @@ do_add() {
       dr_die "$ALIAS_FILE exists and is NOT a pinned alias — refusing to overwrite"
     fi
   fi
+  if [ -d "$CODEX_SKILLS_DIR" ] && [ -e "$CODEX_ALIAS_FILE" ]; then
+    if is_pinned_alias_file "$CODEX_ALIAS_FILE"; then
+      dr_warn "already pinned for Codex: /$ALIAS — overwriting"
+    else
+      dr_die "$CODEX_ALIAS_FILE exists and is NOT a pinned alias — refusing to overwrite"
+    fi
+  fi
 
   mkdir -p "$ALIAS_DIR"
   dr_gen_alias_wrapper "$ALIAS" "$DEST" "$ALIAS_FILE"
+  if [ -d "$CODEX_SKILLS_DIR" ]; then
+    mkdir -p "$CODEX_ALIAS_DIR"
+    dr_gen_alias_wrapper "$ALIAS" "$DEST" "$CODEX_ALIAS_FILE"
+  fi
 
   if ! dr_manifest_contains "$MF" "$ALIAS_REL"; then
     printf '%s\n' "$ALIAS_REL" >> "$MF"
   fi
+  if [ -d "$CODEX_SKILLS_DIR" ] && ! dr_manifest_contains "$MF" "$CODEX_ALIAS_REL"; then
+    printf '%s\n' "$CODEX_ALIAS_REL" >> "$MF"
+  fi
 
-  dr_ok "pinned: /$ALIAS → /$DEST   ($ALIAS_FILE)"
+  if [ -d "$CODEX_SKILLS_DIR" ]; then
+    dr_ok "pinned: /$ALIAS → /$DEST   ($ALIAS_FILE, $CODEX_ALIAS_FILE)"
+  else
+    dr_ok "pinned: /$ALIAS → /$DEST   ($ALIAS_FILE)"
+  fi
 }
 
 do_remove() {
@@ -130,16 +159,24 @@ do_remove() {
   ALIAS_DIR="$SKILLS_DIR/$ALIAS"
   ALIAS_FILE="$ALIAS_DIR/SKILL.md"
   ALIAS_REL=".claude/skills/$ALIAS/SKILL.md"
+  CODEX_ALIAS_DIR="$CODEX_SKILLS_DIR/$ALIAS"
+  CODEX_ALIAS_FILE="$CODEX_ALIAS_DIR/SKILL.md"
+  CODEX_ALIAS_REL=".agents/skills/$ALIAS/SKILL.md"
 
   [ -f "$ALIAS_FILE" ]      || dr_die "no pinned alias at $ALIAS_FILE"
   is_pinned_alias "$ALIAS"  || dr_die "$ALIAS_FILE exists but is not a pinned alias — refusing to remove"
 
   rm -f "$ALIAS_FILE"
   rmdir "$ALIAS_DIR" 2>/dev/null || true
+  if [ -f "$CODEX_ALIAS_FILE" ]; then
+    is_pinned_alias_file "$CODEX_ALIAS_FILE" || dr_die "$CODEX_ALIAS_FILE exists but is not a pinned alias — refusing to remove"
+    rm -f "$CODEX_ALIAS_FILE"
+    rmdir "$CODEX_ALIAS_DIR" 2>/dev/null || true
+  fi
 
   # Drop the alias line from the manifest (preserve header + the rest)
   TMP="$(mktemp)"
-  grep -Fvx "$ALIAS_REL" "$MF" > "$TMP" && mv "$TMP" "$MF"
+  grep -Fvx "$ALIAS_REL" "$MF" | grep -Fvx "$CODEX_ALIAS_REL" > "$TMP" && mv "$TMP" "$MF"
 
   dr_ok "unpinned: /$ALIAS"
 }

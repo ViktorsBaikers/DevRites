@@ -55,11 +55,11 @@ of the above.
 | Feature request | GitHub Issues / Discussions | Explain the problem first; suggest a shape, not a finished design. |
 | New / improved skill | `pack/.claude/skills/<skill>/SKILL.md` | Must have frontmatter, body discipline, and ≥1 eval file. |
 | Review agent | `pack/.claude/agents/<agent>.md` | Read-only, fresh-context, severity-labeled output. |
-| Engineering rule | `pack/.claude/rules/<rule>.md` | Stack-agnostic. Project conventions always win. |
+| Engineering rule | `pack/.claude/skills/devrites-lib/reference/standards/<rule>.md` | Stack-agnostic. Project conventions always win. |
 | Docs | `docs/` or `README.md` | Keep cross-links current. |
-| Eval query | `evals/<skill>.json` | Trigger phrasing that should/shouldn't load the skill (20 per public skill). |
+| Eval query | `evals/<skill>.json` | Trigger phrasing that covers the skill's positive, negative, and boundary routing branches; corpus size follows the branch shape rather than a fixed quota. |
 | Behavioral eval | `evals/behavioral/<skill>.json` | Pressure scenario that tests whether a gating skill resists a documented rationalization. Opt-in; sourced from `anti-patterns.md`. |
-| Installer / scripts | `install.sh`, `scripts/*` | Must respect "project-local only" — refuses `~/.claude`. |
+| Installer / scripts | `install.sh`, `scripts/*`, `engine/internal/install/` | Host artifacts stay project-local and manifest-managed; only the optional shared engine binary may be installed globally. |
 
 If you're not sure where a change belongs, open a discussion or draft issue
 first.
@@ -72,11 +72,14 @@ A 60-second checklist that saves review round-trips:
 - [ ] You've read the relevant section of [`docs/architecture.md`](docs/architecture.md).
 - [ ] Commit messages follow the **strict** Conventional Commits policy below.
 - [ ] `npm run validate` passes.
+- [ ] `npm run audit` reports no moderate-or-higher dependency advisories.
 - [ ] `npm test` passes (install/uninstall smoke + pack validation).
 - [ ] If you touched a skill, you ran the matching eval (`scripts/run-evals.sh`).
 - [ ] If you touched a **gating** skill's discipline (or its `anti-patterns.md`), you ran / updated its behavioral eval (`scripts/run-behavioral-evals.sh`).
-- [ ] No writes to `~/.claude` anywhere in code or tests.
-- [ ] No new network calls in installer / skills.
+- [ ] No skill, agent, or hook artifacts are written to `~/.claude` or
+  `~/.codex`; any global write is limited to the shared engine-binary lifecycle.
+- [ ] No new network calls exist outside the sanctioned bootstrap, update, and
+  source-cache boundary in `engine/internal/iohooks`; skill research uses explicit host tools.
 - [ ] You've updated docs and cross-links touched by the change.
 
 ## Local development setup
@@ -86,6 +89,7 @@ git clone https://github.com/ViktorsBaikers/DevRites devrites
 cd devrites
 npm install            # installs husky + commitlint + semantic-release toolchain
 npm run validate       # static validation of pack structure
+npm run audit          # known dependency vulnerabilities (moderate+ blocks)
 npm test               # install + uninstall smoke + fixture install + pack validation
 ```
 
@@ -104,14 +108,13 @@ To try your changes inside a real project:
 
 A quick map — the [README "Layout" section](README.md#layout) has the full version.
 
-- `pack/.claude/skills/` — 28 skills (19 user-invocable `rite-*` + 9 model-invoked `devrites-*`), plus the internal `devrites-lib` script library.
-- `pack/.claude/agents/` — 11 agents: 10 fresh-context read-only reviewers + 1 writer (`devrites-slice-wright`).
-- `pack/.claude/rules/` — 20 engineering rules; each `rite-*` skill reads `core.md` at step 0, the rest on demand.
-- `evals/` — trigger evals (20 queries per public skill), `golden/` fixtures for the deterministic outcome grader, and `behavioral/` discipline-under-pressure scenarios for gating rites.
+- `pack/.claude/skills/` — canonical public rites, internal specialists, and the `devrites-lib` reference library.
+- `pack/.claude/agents/` — fresh-context reviewers plus the write-capable `devrites-slice-wright`.
+- `pack/.claude/skills/devrites-lib/reference/standards/` — shared engineering rules loaded by the workflows that need them.
+- `evals/` — routing corpora, `golden/` fixtures for the deterministic outcome grader, and `behavioral/` discipline-under-pressure scenarios for gating rites.
 - `scripts/` — install lib, validators, eval runner, the outcome grader (`grade-feature.sh` / `run-outcome-evals.sh`), release tooling.
-- `mcp/` — `devrites-mcp.mjs`, an MCP stdio server over the `devrites` CLI.
-- `docs/` — architecture, skills, command map, flow diagrams, usage, release, `cli-mcp`.
-- `tests/` — install/uninstall smoke + fixture install + pack validation.
+- `docs/` — architecture, skills, command map, flow diagrams, usage, release, CLI.
+- `tests/` — auto-discovered shell suite covering install/update/uninstall, runtime behavior, pack validation, and release invariants.
 
 ## Authoring guidelines
 
@@ -119,16 +122,18 @@ A quick map — the [README "Layout" section](README.md#layout) has the full ver
 
 Every skill **must** have:
 
-- YAML frontmatter with `name`, `description` (the trigger — fold the *Use when* /
-  *Not for* phrasing into it; there is **no** separate `when-to-use` field), and
-  `user-invocable` (true/false). Optional: `argument-hint`, `disable-model-invocation`.
+- YAML frontmatter with `name`, `description`, and `user-invocable` (true/false).
+  Model-invoked descriptions carry *Use when* / *Not for* triggers; explicit-only
+  descriptions are human summaries. Optional: `argument-hint`, `disable-model-invocation`.
 - A short body — operating rules, anti-rationalization tables where useful,
   red flags. **Body discipline:** if it doesn't change the model's behavior
   for this phase, it doesn't belong in the body.
 - A **failure-mode section** — a `## Gotchas` (or an equivalent `Hard rules` /
   `NEVER` / `Mid-flight discipline` pointer). Convention: [`docs/skills.md`](docs/skills.md).
-- A matching eval file under `evals/` with positive + negative trigger
-  phrasings (the validator enforces exactly 20 queries for public skills).
+- A matching eval file under `evals/`: model-invoked skills need implicit positive and
+  negative queries; explicit-only public skills need direct-command positives plus an
+  implicit-invocation negative boundary. Corpus size follows the distinct routing branches;
+  it is not padded to a fixed query count. `devrites-lib` is exempt.
 - For a **gating** skill (one whose job is to hold a line — prove, build, seal, vet,
   peers): a behavioral eval under `evals/behavioral/<skill>.json` that pressure-tests
   whether the discipline resists the rationalizations in its `anti-patterns.md`. Opt-in
@@ -145,11 +150,11 @@ Run `python3 scripts/validate-frontmatter.py <files>` (or `npm run validate`) an
 - Emit severity-labeled findings: Critical / Important / Suggestion / Nit / FYI.
 - One file per agent; keep them focused (Spec vs Standards vs Test vs …).
 
-### Engineering rules (`pack/.claude/rules/<rule>.md`)
+### Engineering rules (`pack/.claude/skills/devrites-lib/reference/standards/<rule>.md`)
 
 - Stack-agnostic. No language-specific assumptions.
 - "Project conventions always win" — these are defaults, not laws.
-- Add to `pack/.claude/rules/README.md` index when you add a file.
+- Add to `pack/.claude/skills/devrites-lib/reference/standards/README.md` index when you add a file.
 
 ## Commit message format (strict)
 
@@ -205,6 +210,7 @@ Draft PRs are welcome and encouraged for early feedback.
 
 ```bash
 npm run validate                # pack structure + frontmatter
+npm run audit                   # dependency advisory gate
 npm test                        # install/uninstall + fixture install + validation
 bash scripts/run-evals.sh       # run all eval files
 bash scripts/run-evals.sh rite-spec   # run a single skill's evals
@@ -246,3 +252,15 @@ disclosure channels documented in [`SECURITY.md`](SECURITY.md):
 
 Thanks again for contributing. Every well-scoped issue, sharp PR, and
 thoughtful eval query makes DevRites better.
+
+
+## Skill and agent contribution preflight
+
+Before adding a DevRites skill or agent:
+
+1. Search the catalog and open work for an existing surface. Prefer extending an existing skill/reference over creating a near-duplicate.
+2. Justify why the behavior cannot live as a reference file inside an existing skill.
+3. A new public `rite-*` requires command map entries, docs table entry, trigger evals, host parity across Claude (`/rite-*`) and Codex (`$rite-*`), generated artifacts, and reply-contract compliance or a documented exception.
+4. A new internal `devrites-*` requires trigger evals and proof it should be a skill rather than an agent or reference.
+5. A new agent requires orchestration justification, read/write mode, output format, and composition block. Only `devrites-slice-wright` may write code.
+6. Run `npm run validate` and the relevant targeted tests before proposing the change.

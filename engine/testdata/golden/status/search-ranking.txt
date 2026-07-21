@@ -1,0 +1,9 @@
+feature: search-ranking
+phase: spec
+  spec       present  required
+  plan       empty
+  decisions  empty
+  tasks      empty
+  proof      empty
+  status     empty
+result: complete

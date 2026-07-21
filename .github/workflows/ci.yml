@@ -22,64 +22,54 @@ jobs:
     name: validate pack
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.11'
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install npm deps
-        run: npm install --no-audit --no-fund
+        run: npm ci
+
+      - name: Generate host artifacts (tracked files fresh — BLOCKING)
+        run: |
+          bash scripts/build-host-artifacts.sh
+          git diff --exit-code -- pack/generated || {
+            echo "tracked pack/generated files drifted from pack/.claude sources; rerun scripts/build-host-artifacts.sh and commit the result" >&2
+            exit 1
+          }
 
       - name: Validate pack structure
         run: bash scripts/validate.sh
 
-      - name: Frontmatter validator rejects unknown fields
-        run: bash tests/validate-frontmatter-rejects-unknown.sh
-
       - name: Check cross-references (no dead pointers)
         run: python3 scripts/check-cross-refs.py
+
+      - name: Check invocation integrity (named skills/rules resolve, both harnesses)
+        run: python3 scripts/check-invocation-integrity.py
 
       - name: Pack security scan (injection + hidden unicode — BLOCKING)
         run: python3 scripts/scan-pack-security.py pack/.claude
 
-      - name: Pack security scanner tests
-        run: bash tests/scan-pack-security-test.sh
-
-      - name: Injection-resistance baseline present in agents
-        run: bash tests/injection-baseline-present.sh
-
-      - name: Conventions ledger (scorer + store)
-        run: bash tests/conventions-ledger-test.sh
-
-      - name: Doctor health diagnose
-        run: bash tests/doctor-test.sh
-
       - name: Workflow security (SHA-pinned actions + scoped permissions — BLOCKING)
         run: python3 scripts/validate-workflow-security.py
-
-      - name: Workflow security validator tests
-        run: bash tests/workflow-security-test.sh
 
       - name: Supply-chain IOC scan (npm lockfile — BLOCKING)
         run: python3 scripts/scan-supply-chain-iocs.py package-lock.json
 
-      - name: Supply-chain IOC scanner tests
-        run: bash tests/supply-chain-iocs-test.sh
+      - name: Audit npm dependency advisories (BLOCKING)
+        run: npm run audit
 
-      - name: Fan-out footprint collector
-        run: bash tests/footprint-test.sh
-
-      - name: Validate trigger evals
+      - name: Validate trigger eval schemas
         run: bash scripts/run-evals.sh
 
       - name: Validate outcome evals (deterministic grader)
@@ -88,60 +78,136 @@ jobs:
       - name: Validate behavioral evals (shape gate)
         run: bash scripts/run-behavioral-evals.sh
 
-      - name: Behavioral eval validator tests
-        run: bash tests/behavioral-evals-test.sh
-
-      - name: Evidence-freshness gate test
-        run: bash tests/evidence-fresh-test.sh
-
-      - name: A1 pre-block hook test
-        run: bash tests/a1-guard-test.sh
-
       - name: Anti-slop detector (advisory)
         run: bash scripts/devrites-detect.sh || true
 
-  install-smoke:
-    name: install / uninstall smoke (node ${{ matrix.node }})
+  # Every tests/*.sh through the same runner developers use locally (npm test).
+  # run-tests.mjs auto-discovers the suite, so a new test file is gated here
+  # without touching this workflow — no more hand-enumerated steps drifting
+  # behind the tests/ directory.
+  tests:
+    name: shell test suite (node ${{ matrix.node }})
     runs-on: ubuntu-latest
     needs: validate
     strategy:
       fail-fast: false
       matrix:
-        node: ['18', '22']   # engines floor + current; brackets the supported range
+        node: ['18', '24']   # engines floor + current LTS; brackets the supported range
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.11'
 
+      # Go is needed so run-tests.mjs can build the shared engine binary the
+      # install/update/uninstall + binary-lifecycle + conventions-ledger tests exercise.
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.5'
+          cache-dependency-path: engine/go.sum
+
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
 
-      - name: install smoke
-        run: bash tests/install-smoke.sh
+      - name: Run full shell test suite (tests/*.sh)
+        run: node scripts/run-tests.mjs
 
-      - name: cli (npx entry point) smoke
-        run: bash tests/cli-smoke.sh
+  engine:
+    name: engine (go test + cross-compile)
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      - name: npx packaged-artifact install smoke
-        run: bash tests/npx-pack-smoke.sh
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.5'
+          cache-dependency-path: engine/go.sum
 
-      - name: uninstall smoke
-        run: bash tests/uninstall-smoke.sh
+      - name: gofmt (no diffs)
+        working-directory: engine
+        run: |
+          diff=$(gofmt -l . )
+          if [ -n "$diff" ]; then echo "gofmt needed:"; echo "$diff"; exit 1; fi
 
-      - name: update smoke
-        run: bash tests/update-smoke.sh
+      - name: go vet
+        working-directory: engine
+        run: go vet ./...
 
-      - name: fixture install
-        run: bash tests/fixture-install.sh
+      - name: Install analysis tools (staticcheck + govulncheck + gosec)
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
+          go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
 
-      - name: pack validation script
-        run: bash tests/validate-pack.sh
+      - name: staticcheck (static analysis — BLOCKING)
+        working-directory: engine
+        run: staticcheck ./...
+
+      - name: govulncheck (known-CVE scan of the reachable call graph — BLOCKING)
+        working-directory: engine
+        run: govulncheck ./...
+
+      # G204/G304 and their taint variants G702/G703 are excluded: this is a project-local
+      # CLI that by design execs git/go and reads paths the operator passes in, so every
+      # subprocess argument and file path is "tainted". Permission expectations for the
+      # files the engine writes (0644 files / 0755 dirs+binaries) live in .gosec.json.
+      - name: gosec (security static analysis — BLOCKING)
+        working-directory: engine
+        run: gosec -conf .gosec.json -exclude=G204,G304,G702,G703 ./...
+
+      - name: go test -race (control plane + parity oracle)
+        working-directory: engine
+        run: go test ./... -race -count=1
+
+      - name: Validate pack hook wiring (known ids + schema shape — BLOCKING)
+        working-directory: engine
+        run: go run . validate-pack ../pack/.claude
+
+      - name: Harness compliance matrix in sync (generated doc drift-check)
+        working-directory: engine
+        run: go run . harness-matrix --check ../docs/harness-compliance.md
+
+      - name: Cross-compile matrix smoke (all release targets build)
+        run: bash scripts/build-binaries.sh 0.0.0-ci
+
+      # Same script semantic-release's prepare step runs — prove the release
+      # tarball (+ sha256 sidecar) builds BEFORE publish time, not during it.
+      - name: Release tarball smoke (build + checksum present)
+        run: |
+          bash scripts/build-release-tarball.sh 0.0.0-ci
+          test -f dist/devrites-v0.0.0-ci.tar.gz.sha256 || {
+            echo "release tarball checksum sidecar missing" >&2
+            exit 1
+          }
+
+  # DevRites ships a Windows engine binary; run the Go tests where path
+  # separators, file locking, and %USERPROFILE% semantics actually differ.
+  # Ubuntu stays the full strict gate (staticcheck/govulncheck/gosec/-race);
+  # this job only proves the binary logic on Windows.
+  engine-windows:
+    name: engine (go test, windows)
+    runs-on: windows-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.5'
+          cache-dependency-path: engine/go.sum
+
+      - name: go test (path / root / workspace / ledger behavior)
+        working-directory: engine
+        run: go test ./... -count=1
 
   # Release runs in the same workflow as a final gate — so it (a) shows up as a
   # commit check, and (b) runs on the exact commit CI validated, on the real
@@ -151,7 +217,7 @@ jobs:
   release:
     name: semantic-release
     runs-on: ubuntu-latest
-    needs: [validate, install-smoke]
+    needs: [validate, tests, engine, engine-windows]
     # Push to main (the chore(release) commit carries [skip ci] so it never
     # re-triggers) or a manual dispatch — never on a PR.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -165,17 +231,34 @@ jobs:
       group: release-main
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
           fetch-tags: true        # semantic-release needs every release tag to compute the next version
           persist-credentials: false
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
+
+      # prepack (npm publish path) regenerates pack/generated via
+      # scripts/build-host-artifacts.sh, which needs python3 on PATH.
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+
+      # semantic-release's prepare step cross-compiles the engine binary matrix
+      # (scripts/build-binaries.sh) — pure-Go, CGO_ENABLED=0, so one Linux runner
+      # produces every target (darwin/linux/windows × amd64/arm64) with no
+      # cross-toolchain. The binaries + sha256 sidecars are attached to the Release.
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.5'
+          cache-dependency-path: engine/go.sum
 
       - name: Install dependencies
         run: npm ci

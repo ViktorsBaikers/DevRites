@@ -13,12 +13,35 @@ good="$ROOT/evals/golden/shippable-feature"
 bad="$ROOT/evals/golden/blocked-feature"
 nearmiss="$ROOT/evals/golden/near-miss-unproven-ac"
 fail=0
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
 
 echo "== grade golden/shippable-feature (expect GO) =="
 if bash "$GRADER" "$good"; then
   echo "  PASS — graded GO"
 else
   echo "  FAIL — a known-shippable workspace should grade GO"; fail=1
+fi
+
+echo
+echo "== grade synthetic/canonical-cursor (expect GO) =="
+canonical="$tmp/canonical-cursor"
+mkdir -p "$canonical"
+cp -R "$good/." "$canonical/"
+cat > "$canonical/state.md" <<'MD'
+# State
+
+## Cursor
+| Key | Value |
+| --- | --- |
+| phase | done |
+| status | done |
+| next_action | archived |
+MD
+if bash "$GRADER" "$canonical"; then
+  echo "  PASS — canonical cursor graded GO"
+else
+  echo "  FAIL — canonical cursor should grade GO"; fail=1
 fi
 
 echo
@@ -38,6 +61,31 @@ if bash "$GRADER" "$nearmiss"; then
   echo "  FAIL — an unproven acceptance criterion must grade NO-GO"; fail=1
 else
   echo "  PASS — correctly graded NO-GO on the lone unchecked AC"
+fi
+
+echo
+echo "== grade synthetic/checked-wrong-ac (expect NO-GO on id coverage) =="
+wrongac="$tmp/checked-wrong-ac"
+mkdir -p "$wrongac"
+cp -R "$good/." "$wrongac/"
+cat > "$wrongac/seal.md" <<'MD'
+# Seal: checked-wrong-ac
+
+Verdict: GO
+
+## Acceptance Criteria
+- [x] [AC999] An unrelated item is checked.
+
+## Verification Evidence
+Evidence exists.
+
+## Blockers
+none
+MD
+if bash "$GRADER" "$wrongac"; then
+  echo "  FAIL — checked unrelated acceptance items must not prove spec [ACn] criteria"; fail=1
+else
+  echo "  PASS — correctly graded NO-GO when spec [ACn] ids are missing from seal.md"
 fi
 
 echo

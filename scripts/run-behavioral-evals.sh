@@ -3,16 +3,21 @@
 #
 # Trigger evals (run-evals.sh) test whether the right skill *fires*. Behavioral
 # evals test whether a gating skill's discipline *holds under pressure* — does it
-# resist the rationalizations it documents in `rules/anti-patterns.md` (and its own
+# resist the rationalizations it documents in `standards/anti-patterns.md` (and its own
 # `reference/anti-patterns.md`), or does the agent talk itself past the gate. Each
 # scenario pairs a pressure prompt with the resistance a holding response shows and
 # the capitulation markers a failed one shows.
 #
 # This script is the DETERMINISTIC, zero-token CI gate — the analog of run-evals.sh's
-# schema path and spec-validate.sh: it checks that every behavioral eval is well-formed
+# schema path and the engine spec-validate gate: it checks that every behavioral eval is well-formed
 # so a malformed one can't reach the live grader. It does NOT invoke a model. Executing
 # the scenarios against a live Claude (does the skill actually resist?) is the labeled /
 # nightly rung documented in evals/behavioral/README.md.
+#
+# In addition to the original DevRites pressure schema, scenarios may carry the
+# portable agent-skills / Anthropic skill-creator shape:
+#   prompt, expected_output, expectations[], trust_level, fixtures[]
+# Those fields are validated when present and normalized by the live-grader layer.
 #
 # Usage:
 #   scripts/run-behavioral-evals.sh                                  # validate every evals/behavioral/*.json
@@ -86,6 +91,16 @@ if not isinstance(scenarios, list):
 elif len(scenarios) == 0:
     errors.append("scenarios is empty — a behavioral eval needs at least one")
 
+# Metric fields (optional — default to the regression discipline). A behavioral
+# eval is a regression gate by nature (the discipline must hold every trial ->
+# pass^k = 100%); a capability eval is the exploratory pass@k variant.
+ec = data.get("eval_class", "regression")
+if ec not in ("regression", "capability"):
+    errors.append(f"eval_class must be 'regression' or 'capability', got {ec!r}")
+tr = data.get("trials", 3)
+if isinstance(tr, bool) or not isinstance(tr, int) or tr < 1:
+    errors.append(f"trials must be an integer >= 1, got {tr!r}")
+
 seen_ids = {}
 for i, s in enumerate(scenarios):
     if not isinstance(s, dict):
@@ -104,6 +119,21 @@ for i, s in enumerate(scenarios):
         v = s.get(k)
         if not isinstance(v, str) or not v.strip():
             errors.append(f"scenario {where} missing non-empty {k}")
+    # Optional portable behavioral-eval fields borrowed from agent-skills /
+    # Anthropic skill-creator. When one is present, validate the full portable
+    # row so fixtures and transcript/tool-call graders can consume it later.
+    portable_present = any(k in s for k in ("prompt", "expected_output", "expectations", "trust_level", "fixtures"))
+    if portable_present:
+        for k in ("prompt", "expected_output", "trust_level"):
+            v = s.get(k)
+            if not isinstance(v, str) or not v.strip():
+                errors.append(f"scenario {where} missing non-empty portable field {k}")
+        expectations = s.get("expectations")
+        if not isinstance(expectations, list) or not expectations or not all(isinstance(x, str) and x.strip() for x in expectations):
+            errors.append(f"scenario {where} portable expectations must be a non-empty string list")
+        fixtures = s.get("fixtures", [])
+        if not isinstance(fixtures, list) or not all(isinstance(x, str) and x.strip() for x in fixtures):
+            errors.append(f"scenario {where} portable fixtures must be a string list when present")
     # Non-empty list-of-string fields.
     for k in ("expected_resistance", "capitulation_markers"):
         v = s.get(k)
@@ -117,7 +147,9 @@ if errors:
         print(f"  FAIL: {e}")
     sys.exit(1)
 
+gate = "pass^k (all trials must hold)" if ec == "regression" else "pass@k (any trial holds)"
 print(f"  skill: {data['skill']}")
+print(f"  class: {ec} · trials: {tr} · gate: {gate}")
 print(f"  scenarios: {len(scenarios)}")
 print(f"__COUNT__ {len(scenarios)}")
 PY

@@ -2,7 +2,7 @@
 
 How DevRites coordinates multiple agents — the patterns it uses, the ones it deliberately avoids,
 and where Claude Code's Agent Teams and worktree isolation fit. The rule that governs this lives in
-[`pack/.claude/rules/agents.md`](../pack/.claude/rules/agents.md); this doc is the map.
+[`pack/.claude/skills/devrites-lib/reference/standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md); this doc is the map.
 
 ## The model
 
@@ -12,8 +12,10 @@ DevRites separates three roles and never blurs them:
   the gates and the `.devrites/` workspace, dispatches the other agents, and is the *single
   canonical writer* of workspace state.
 - **Reviewers** — fresh-context, **read-only** subagents under `.claude/agents/`. Each gets the
-  workspace path + the diff and returns labelled findings; read-only is enforced at the tool layer
-  (`devrites-reviewer-readonly.sh`), not merely promised.
+  workspace path + the diff and returns labelled findings. The generated host hooks observe this
+  boundary by default; set the documented strict-enforcement environment switch when a blocking
+  tool-layer boundary is required. Without strict mode, the agent contract and reconciliation gate
+  remain part of the control, rather than a fail-closed sandbox guarantee.
 - **Executor** — `devrites-slice-wright`, the one **write-capable** agent. It implements a single
   fully-specified slice in a fresh context and returns code + tests; it never writes the `.devrites/`
   bookkeeping (the orchestrator does).
@@ -75,7 +77,7 @@ Two Claude Code capabilities sit adjacent to DevRites' model; the stance on each
 
 ## See also
 
-- [`pack/.claude/rules/agents.md`](../pack/.claude/rules/agents.md) — the reviewer / executor roster
+- [`pack/.claude/skills/devrites-lib/reference/standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md) — the reviewer / executor roster
   and the when-to-fan-out rules.
 - [`architecture.md`](architecture.md) — the full layer model.
 - [`flow.md`](flow.md) — phase-by-phase flow and the public/internal namespace.

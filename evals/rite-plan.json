@@ -2,25 +2,120 @@
   "skill": "rite-plan",
   "description": "Trigger evals for /rite-plan — decompose, reslice, repair, reorder, split, or unblock an active plan.",
   "queries": [
-    {"text": "/rite-plan reslice", "expected": "should_trigger", "rationale": "Direct slash invocation with mode arg."},
-    {"text": "The plan is stale; the slices are too big now.", "expected": "should_trigger", "rationale": "Stale/big plan trigger."},
-    {"text": "We had a Spec Drift Guard stop — repair the plan.", "expected": "should_trigger", "rationale": "Drift repair = rite-plan."},
-    {"text": "Split this slice into thinner end-to-end slices.", "expected": "should_trigger", "rationale": "Reslicing trigger."},
-    {"text": "I'm blocked on slice 2; reroute around it.", "expected": "should_trigger", "rationale": "Unblock mode."},
-    {"text": "Reorder the slices so the risky one comes first.", "expected": "should_trigger", "rationale": "Reorder mode."},
-    {"text": "The current plan is wrong; let's re-plan from scratch.", "expected": "should_trigger", "rationale": "Wrong plan = rite-plan decompose."},
-    {"text": "Re-plan the feature given that the API contract changed.", "expected": "should_trigger", "rationale": "Re-plan post-contract-change."},
-    {"text": "We need to separate backend and frontend contracts.", "expected": "should_trigger", "rationale": "Split mode."},
-    {"text": "Start a new feature for OAuth login.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Plan from the approved spec.", "expected": "should_not_trigger", "rationale": "First plan = /rite-define."},
-    {"text": "Build the next slice.", "expected": "should_not_trigger", "rationale": "/rite-build."},
-    {"text": "Run the test suite for the active feature.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
-    {"text": "Polish the dashboard.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
-    {"text": "Where am I in the workflow?", "expected": "should_not_trigger", "rationale": "/rite-status."},
-    {"text": "Final go/no-go review.", "expected": "should_not_trigger", "rationale": "/rite-seal."},
-    {"text": "Investigate a vague idea about gamification.", "expected": "should_not_trigger", "rationale": "Investigation = /rite-spec."},
-    {"text": "Suggest a different framework for this project.", "expected": "should_not_trigger", "rationale": "Out of scope."},
-    {"text": "Write a CHANGELOG entry.", "expected": "should_not_trigger", "rationale": "Off-topic."},
-    {"text": "Format this JSON.", "expected": "should_not_trigger", "rationale": "Off-topic."}
+    {
+      "text": "/rite-plan reslice",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation with mode arg."
+    },
+    {
+      "text": "The plan is stale; the slices are too big now.",
+      "expected": "should_trigger",
+      "rationale": "Stale/big plan trigger."
+    },
+    {
+      "text": "We had a Spec Drift Guard stop — repair the plan.",
+      "expected": "should_trigger",
+      "rationale": "Drift repair = rite-plan."
+    },
+    {
+      "text": "Split this slice into thinner end-to-end slices.",
+      "expected": "should_trigger",
+      "rationale": "Reslicing trigger."
+    },
+    {
+      "text": "I'm blocked on slice 2; reroute around it.",
+      "expected": "should_trigger",
+      "rationale": "Unblock mode."
+    },
+    {
+      "text": "Reorder the slices so the risky one comes first.",
+      "expected": "should_trigger",
+      "rationale": "Reorder mode."
+    },
+    {
+      "text": "The current plan is wrong; let's re-plan from scratch.",
+      "expected": "should_trigger",
+      "rationale": "Wrong plan = rite-plan decompose."
+    },
+    {
+      "text": "Re-plan the feature given that the API contract changed.",
+      "expected": "should_trigger",
+      "rationale": "Re-plan post-contract-change."
+    },
+    {
+      "text": "We need to separate backend and frontend contracts.",
+      "expected": "should_trigger",
+      "rationale": "Split mode."
+    },
+    {
+      "text": "Start a new feature for OAuth login.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Plan from the approved spec.",
+      "expected": "should_not_trigger",
+      "owner": "rite-define",
+      "rationale": "First plan = /rite-define."
+    },
+    {
+      "text": "Build the next slice.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Run the test suite for the active feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Polish the dashboard.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-polish.",
+      "owner": "rite-polish"
+    },
+    {
+      "text": "Where am I in the workflow?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-status.",
+      "owner": null,
+      "owner_rationale": "/rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Final go/no-go review.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "Investigate a vague idea about gamification.",
+      "expected": "should_not_trigger",
+      "rationale": "Investigation = /rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Suggest a different framework for this project.",
+      "expected": "should_not_trigger",
+      "rationale": "Out of scope.",
+      "owner": null,
+      "owner_rationale": "Out of scope."
+    },
+    {
+      "text": "Write a CHANGELOG entry.",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic.",
+      "owner": null,
+      "owner_rationale": "Off-topic."
+    },
+    {
+      "text": "Format this JSON.",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic.",
+      "owner": null,
+      "owner_rationale": "Off-topic."
+    }
   ]
 }

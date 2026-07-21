@@ -1,0 +1,39 @@
+{
+  "skill": "rite-pov",
+  "description": "Routing evals for a project-grounded external technology verdict.",
+  "queries": [
+    {
+      "text": "/rite-pov Bun",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation."
+    },
+    {
+      "text": "Should this project adopt this external library or reject it?",
+      "expected": "should_trigger",
+      "rationale": "Adoption verdict branch."
+    },
+    {
+      "text": "Revisit whether we should switch platforms given this CVE.",
+      "expected": "should_trigger",
+      "rationale": "External option reconsideration."
+    },
+    {
+      "text": "Implement the already-approved SDK integration.",
+      "expected": "should_not_trigger",
+      "owner": "rite-build",
+      "rationale": "Implementation belongs to rite-build."
+    },
+    {
+      "text": "Review our code for security vulnerabilities.",
+      "expected": "should_not_trigger",
+      "owner": "rite-review",
+      "rationale": "Code review belongs to rite-review."
+    },
+    {
+      "text": "Decide whether the completed feature can ship.",
+      "expected": "should_not_trigger",
+      "owner": "rite-seal",
+      "rationale": "Release verdict belongs to rite-seal."
+    }
+  ]
+}

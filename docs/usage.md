@@ -1,36 +1,44 @@
 # DevRites — usage
 
-Worked workflows. Every feature starts with `/rite-spec` (it investigates,
-writes the spec, and creates the workspace). Every later phase reads the
-active workspace (`.devrites/ACTIVE` → `.devrites/work/<slug>/`) first; if
-none exists it tells you to run `/rite-spec <feature>`.
+Worked workflows. A full greenfield lifecycle starts with `/rite-spec`; a
+brownfield codebase may enter through `/rite-adopt`, while `/rite-quick` and
+`/rite-frame` deliberately handle bounded work outside the full feature arc.
+Workspace-operating phases read the active workspace (`.devrites/ACTIVE` →
+`.devrites/work/<slug>/`) first and report the appropriate on-ramp when none exists.
 
 - **Full command reference** → [`command-map.md`](command-map.md)
 - **Flow diagrams** → [`flow.md`](flow.md)
 - **Architecture rationale** → [`architecture.md`](architecture.md)
+- **Workspace schema** → [`engine/workspace-schema.md`](engine/workspace-schema.md)
 
 ## The workspace
 
 `/rite-spec` creates `.devrites/work/<slug>/` and writes the spec;
-`/rite-define` adds the plan and tasks. All human-readable Markdown that
+`/rite-define` adds architecture, the plan, tasks, and traceability. All human-readable Markdown that
 survives compaction and new sessions:
 
 | File | Created by | Holds |
 |---|---|---|
+| `README.md` / `index.md` / `feature.md` | `/rite-spec` | compact workspace map: phase, status, next action, artifact map, read-next table, gates |
 | `brief.md` | `/rite-spec` | one-line objective + definition of done |
-| `spec.md` | `/rite-spec` | what to build + why, placement, acceptance, gaps/decisions |
+| `spec.md` | `/rite-spec` | product WHAT/WHY, requirements, acceptance, boundaries, measurable success |
+| `architecture.md` | `/rite-define` | owning module/layer, integration points, data/API/events, dependencies, risks |
+| `flows.md` | `/rite-spec` or `/rite-define` | optional Mermaid diagrams when sequence/state/data flow clarifies behavior |
 | `references/` + `references.md` | `/rite-spec` | saved design refs — screenshots, Figma, video, links |
 | `strategy.md` | `/rite-temper` | strategic spec review (optional): scope mode, pre-mortem, dimension scores |
 | `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback |
-| `tasks.md` | `/rite-define` | ordered vertical slices, each tagged `Mode: AFK \| HITL` + `Gate` / `SLA` / `Checkpoint` when HITL |
-| `eng-review.md` | `/rite-vet` | engineering plan review (optional): scope challenge, axis findings, failure modes, parallelization |
+| `tasks.md` | `/rite-define` | ordered `SLICE-###` vertical slices, each mapped to `AC-###` and tagged `Mode: AFK \| HITL` + gate fields |
+| `traceability.md` | `/rite-define` | AC/REQ → slices → tests/proofs → evidence → touched files matrix |
+| `eng-review.md` | `/rite-vet` | mandatory engineering plan review, light or full by stakes: scope challenge, axis findings, failure modes, parallelization |
 | `test-plan.md` | `/rite-vet` | build-readable coverage target: coverage diagram, per-gap test requirements, acceptance→test map (read by `/rite-build` + `/rite-prove`) |
-| `state.md` | every phase | phase, status, active slice + slice mode, risk, next step (the cursor); plus `Awaiting human` block when paused (run mode is derived from `.devrites/AFK`, not stored here) |
+| `state.md` | every phase | working ledger: phase, active slice + slice mode, risk, next step; plus `Awaiting human` block when paused (run mode is derived from `.devrites/AFK`, not stored here) |
+| `status.md` | every phase | compatibility alias for the canonical `state.md` cursor |
 | `questions.md` | every phase | append-only Q&A — qid, slice, gate, status (`open` / `answered` / `dropped`), proposed answer, raised/answered timestamps |
 | `decisions.md` / `assumptions.md` | every phase | running logs |
 | `drift.md` | Spec Drift Guard | drift events + resolutions |
 | `touched-files.md` | `/rite-build` | what files this feature touched |
-| `evidence.md` | `/rite-build`, `/rite-prove` | recorded commands + output |
+| `evidence.md` | `/rite-build`, `/rite-prove` | canonical `EVID-###` command/action proof |
+| `proof.md` | `/rite-build`, `/rite-prove` | transition alias for `evidence.md` |
 | `browser-evidence.md` | `/rite-prove`, `/rite-polish` (UI) | screenshots, console, network, viewport runs |
 | `design-brief.md` | `devrites-frontend-craft` | shape, states, design references match |
 | `polish-report.md` | `/rite-polish` | Phase 1-4 findings + fixes |
@@ -43,11 +51,18 @@ When `/rite-ship` closes the task it **archives** the whole workspace —
 preserved, never deleted) — and clears `.devrites/ACTIVE`. The audit trail lives
 on under `.devrites/archive/<slug>/`.
 
+Backward compatibility: older `.devrites/features/<slug>/` workspaces remain
+readable; migration should add the canonical `.devrites/work` shape without
+deleting the old files. `feature.md`/`index.md` can still act as the workspace
+map, `status.md` as the cursor alias for `state.md`, and `proof.md` as the proof
+alias for `evidence.md`.
+
 Project-root sentinel (outside the workspace):
 
 | File | Created by | Holds |
 |---|---|---|
-| `.devrites/AFK` | you (presence = AFK mode active) | optional YAML: `max_slices`, `notify`, `allow_gates`. Empty file = AFK with defaults. See [`pack/.claude/rules/afk-hitl.md`](../pack/.claude/rules/afk-hitl.md). |
+| `.devrites/AFK` | you (presence = AFK mode active) | optional YAML: `max_slices`, `notify`, `allow_gates`. Empty file = AFK with defaults. See [`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md). |
+| `.devrites/CHECKPOINT` | you or `/rite-autocomplete` (presence = checkpoint mode) | empty sentinel. When set, `/rite-build` commits each proven slice local-only as `WIP(<slug>)` so a crash mid-build loses neither source nor reasoning; `/rite-ship` collapses the WIP run into the one feature commit. See [`pack/.claude/skills/rite-build/reference/checkpoint.md`](../pack/.claude/skills/rite-build/reference/checkpoint.md). |
 
 The shape of this directory is also documented in
 [`flow.md` § Workspace state model](flow.md#7-workspace-state-model).
@@ -69,6 +84,10 @@ You: I want some kind of reporting thing for admins.
   → reads the approved spec
   → writes plan.md + vertical task slices + state
   → stops for confirmation
+
+/rite-vet
+  → reviews every defined plan; uses a light or full pass based on stakes
+  → writes eng-review.md + test-plan.md before build
 ```
 
 ## 2) Normal feature — the build loop
@@ -76,6 +95,7 @@ You: I want some kind of reporting thing for admins.
 ```text
 /rite-spec add-csv-export    # investigate → spec.md
 /rite-define                 # spec → plan + vertical slices + state
+/rite-vet                    # mandatory plan review; light or full based on stakes
 /rite-build                  # slice 1 ("export endpoint returns CSV"); stops with evidence
 /rite-build                  # slice 2 ("download button + states"); repeat for each slice
 /rite-prove                  # ONCE all slices built: full tests + browser proof
@@ -115,7 +135,7 @@ You: 2
 /rite-build          # resumes on the corrected plan
 ```
 
-## 4) UI feature with browser-harness
+## 4) UI feature with Playwright MCP
 
 ```text
 /rite-spec settings-theme-toggle
@@ -126,6 +146,9 @@ You: 2
 /rite-define
   → spec → slices; UI slice marked frontend-craft + browser-proof
 
+/rite-vet
+  → hardens the UI plan + acceptance-to-test coverage before code
+
 /rite-build
   → UI slice → devrites-frontend-craft: register = product surface, **match
     the saved references**, shape the states (default/loading/empty/error/
@@ -133,7 +156,7 @@ You: 2
     anti-AI-slop
 
 /rite-prove
-  → devrites-browser-proof: browser-harness detected → new_tab(route),
+  → devrites-browser-proof: Playwright MCP detected → browser_navigate(route),
     screenshot at 375 + 1280, exercise the toggle, check console clean,
     **compare to references/**, record to browser-evidence.md
 
@@ -154,6 +177,7 @@ with exact steps — the seal then weighs the UI risk.
 ```text
 /rite-spec rate-limit-api    # investigate → spec.md (no UI)
 /rite-define                 # spec → plan + slices
+/rite-vet                    # mandatory plan review; checks architecture, tests, perf
 /rite-build                  # no UI → no frontend craft / browser proof
 /rite-prove                  # targeted tests + build/typecheck; runtime check of the limiter
 /rite-polish                 # reference/code.md only (no UI scope detected)
@@ -209,7 +233,7 @@ Run before `/clear` if leaving for > a few hours.
   → reads tasks.md slice 03; Mode: HITL, Gate: blocking
   → STOPS before writing any code:
 
-    Slice 03 — list endpoint is HITL (blocking, SLA 15m).
+    SLICE-003 — list endpoint is HITL (blocking, SLA 15m).
     Checkpoint: Composite (user_id, created_at) index, or two single-col indexes?
     Proposed approach: composite — single read path, both columns used together
     in the most common filter; downside is rebuild cost on bulk updates.
@@ -266,7 +290,7 @@ EOF
 The loop refuses to mark a slice `built` if tests / types / lint go red — it
 writes a blocking question and stops regardless of `allow_gates`. AFK never
 silently accepts irreversible risk; see
-[`pack/.claude/rules/afk-hitl.md`](../pack/.claude/rules/afk-hitl.md) for the
+[`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md) for the
 full list.
 
 ## 11) Full unattended lifecycle — `/rite-autocomplete`
@@ -311,15 +335,14 @@ it stops. Args: `[idea] [--ship|--yolo] [--max-slices N]`.
   read-only config: it toggles your local session mode and sets the initial
   `max_slices` budget; nothing else. The mutable remaining-slice count lives
   in `state.md` (`AFK slices remaining`), never in the sentinel.
-- One feature active at a time (`ACTIVE`). To start or switch, run
-  `/rite-spec <other>` (it creates/selects that workspace and writes its
-  spec).
+- One feature active at a time (`ACTIVE`). Start a new workspace with
+  `/rite-spec <feature>`; switch to an existing one with `/rite use <slug>`.
 - **Recommended AFK progression**: HITL first to refine the prompt and plan,
   then drop the sentinel for the bulk stretch. Always cap iterations
   (`max_slices: 10` is a reasonable default).
-- Let the specialists fire on their triggers — you don't invoke `devrites-*`
-  directly. The exceptions are the three public utilities: `/rite-zoom-out`,
-  `/rite-prototype`, `/rite-handoff`.
-- The `devrites-` prefix is a namespace, not a privacy marker — whether a
-  skill is public is the `user-invocable:` flag, documented for each in
-  [`command-map.md`](command-map.md).
+- Invoke public `rite` / `rite-*` skills directly; let the model-invocable
+  `devrites-*` specialists fire from their documented triggers. `devrites-lib`
+  is an internal reference library, not a workflow.
+- Prefixes are namespaces, not invocation policy. `user-invocable` and
+  `disable-model-invocation` frontmatter are authoritative; the effective policy
+  for every skill is catalogued in [`command-map.md`](command-map.md).

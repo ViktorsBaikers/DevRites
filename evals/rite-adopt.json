@@ -2,25 +2,119 @@
   "skill": "rite-adopt",
   "description": "Trigger evals for /rite-adopt — onboarding an EXISTING codebase: reverse-derive a spec + seed the conventions ledger. Adversarial against /rite-spec (new idea), /rite-zoom-out (map only), and /rite-define.",
   "queries": [
-    {"text": "/rite-adopt the billing service", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "We already have a codebase — onboard it into DevRites.", "expected": "should_trigger", "rationale": "'already have code' + 'onboard' match the description."},
-    {"text": "Adopt this existing project into the rite lifecycle.", "expected": "should_trigger", "rationale": "'adopt this project' is the canonical trigger."},
-    {"text": "Reverse-engineer a spec from the existing app.", "expected": "should_trigger", "rationale": "Reverse-derive a spec from existing code."},
-    {"text": "Bring this repo under DevRites so we can use the workflow.", "expected": "should_trigger", "rationale": "'bring this repo into DevRites' phrasing."},
-    {"text": "Can you onboard our legacy Django app to DevRites?", "expected": "should_trigger", "rationale": "Onboard an existing app."},
-    {"text": "We inherited this code and want to start using rites on it.", "expected": "should_trigger", "rationale": "Existing inherited code → onboarding, not a new idea."},
-    {"text": "Document the current behavior of the payments module and seed conventions so we can build on it.", "expected": "should_trigger", "rationale": "Current-behavior baseline + seed conventions = adoption."},
-    {"text": "Start using DevRites on a project that already has lots of code.", "expected": "should_trigger", "rationale": "'already has code' distinguishes from rite-spec's new start."},
-    {"text": "Generate a spec from what this service already does.", "expected": "should_trigger", "rationale": "Spec derived from existing behavior."},
-    {"text": "Start a new feature for CSV export.", "expected": "should_not_trigger", "rationale": "New feature from scratch = /rite-spec, not adoption (adversarial on 'start')."},
-    {"text": "I have an idea for a dashboard — flesh it out.", "expected": "should_not_trigger", "rationale": "A new idea = /rite-spec."},
-    {"text": "Map this unfamiliar module — what calls what?", "expected": "should_not_trigger", "rationale": "Look-only structural map = /rite-zoom-out; no workspace or ledger (key adversarial)."},
-    {"text": "Plan the approved spec into task slices.", "expected": "should_not_trigger", "rationale": "Planning an existing spec = /rite-define."},
-    {"text": "Build the next slice of the active feature.", "expected": "should_not_trigger", "rationale": "/rite-build territory."},
-    {"text": "Where am I in DevRites?", "expected": "should_not_trigger", "rationale": "/rite-status."},
-    {"text": "Review my pending PR.", "expected": "should_not_trigger", "rationale": "/rite-review or vanilla review."},
-    {"text": "Spec out a notification system.", "expected": "should_not_trigger", "rationale": "New-feature spec = /rite-spec (adversarial on 'spec')."},
-    {"text": "What DevRites commands are available?", "expected": "should_not_trigger", "rationale": "/rite menu."},
-    {"text": "What's the capital of France?", "expected": "should_not_trigger", "rationale": "Off-topic; nothing DevRites should fire."}
+    {
+      "text": "/rite-adopt the billing service",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "We already have a codebase — onboard it into DevRites.",
+      "expected": "should_trigger",
+      "rationale": "'already have code' + 'onboard' match the description."
+    },
+    {
+      "text": "Adopt this existing project into the rite lifecycle.",
+      "expected": "should_trigger",
+      "rationale": "'adopt this project' is the canonical trigger."
+    },
+    {
+      "text": "Reverse-engineer a spec from the existing app.",
+      "expected": "should_trigger",
+      "rationale": "Reverse-derive a spec from existing code."
+    },
+    {
+      "text": "Bring this repo under DevRites so we can use the workflow.",
+      "expected": "should_trigger",
+      "rationale": "'bring this repo into DevRites' phrasing."
+    },
+    {
+      "text": "Can you onboard our legacy Django app to DevRites?",
+      "expected": "should_trigger",
+      "rationale": "Onboard an existing app."
+    },
+    {
+      "text": "We inherited this code and want to start using rites on it.",
+      "expected": "should_trigger",
+      "rationale": "Existing inherited code → onboarding, not a new idea."
+    },
+    {
+      "text": "Document the current behavior of the payments module and seed conventions so we can build on it.",
+      "expected": "should_trigger",
+      "rationale": "Current-behavior baseline + seed conventions = adoption."
+    },
+    {
+      "text": "Start using DevRites on a project that already has lots of code.",
+      "expected": "should_trigger",
+      "rationale": "'already has code' distinguishes from rite-spec's new start."
+    },
+    {
+      "text": "Generate a spec from what this service already does.",
+      "expected": "should_trigger",
+      "rationale": "Spec derived from existing behavior."
+    },
+    {
+      "text": "Start a new feature for CSV export.",
+      "expected": "should_not_trigger",
+      "rationale": "New feature from scratch = /rite-spec, not adoption (adversarial on 'start').",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "I have an idea for a dashboard — flesh it out.",
+      "expected": "should_not_trigger",
+      "rationale": "A new idea = /rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Map this unfamiliar module — what calls what?",
+      "expected": "should_not_trigger",
+      "rationale": "Look-only structural map = /rite-zoom-out; no workspace or ledger (key adversarial).",
+      "owner": null,
+      "owner_rationale": "Look-only structural map = /rite-zoom-out; no workspace or ledger (key adversarial). The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Plan the approved spec into task slices.",
+      "expected": "should_not_trigger",
+      "rationale": "Planning an existing spec = /rite-define.",
+      "owner": "rite-define"
+    },
+    {
+      "text": "Build the next slice of the active feature.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-build territory.",
+      "owner": "rite-build"
+    },
+    {
+      "text": "Where am I in DevRites?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-status.",
+      "owner": null,
+      "owner_rationale": "/rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Review my pending PR.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review or vanilla review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Spec out a notification system.",
+      "expected": "should_not_trigger",
+      "rationale": "New-feature spec = /rite-spec (adversarial on 'spec').",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "What DevRites commands are available?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite menu.",
+      "owner": null,
+      "owner_rationale": "/rite menu. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "What's the capital of France?",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic; nothing DevRites should fire.",
+      "owner": null,
+      "owner_rationale": "Off-topic; nothing DevRites should fire."
+    }
   ]
 }

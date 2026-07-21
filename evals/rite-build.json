@@ -2,25 +2,121 @@
   "skill": "rite-build",
   "description": "Trigger evals for /rite-build — implement exactly ONE vertical slice, then stop with evidence.",
   "queries": [
-    {"text": "/rite-build", "expected": "should_trigger", "rationale": "Direct slash invocation."},
-    {"text": "Build slice 2 of the active feature.", "expected": "should_trigger", "rationale": "Explicit build-a-slice."},
-    {"text": "Implement the next pending slice.", "expected": "should_trigger", "rationale": "Build-next-slice phrasing."},
-    {"text": "Code up the next part of this feature.", "expected": "should_trigger", "rationale": "Code-the-feature framing."},
-    {"text": "Let's start building. The plan is ready.", "expected": "should_trigger", "rationale": "Plan-ready → build."},
-    {"text": "Write the code for the API endpoint slice.", "expected": "should_trigger", "rationale": "Write-code = build."},
-    {"text": "Apply TDD and build slice 1.", "expected": "should_trigger", "rationale": "TDD framing matches description."},
-    {"text": "Build the next slice but skip tests.", "expected": "should_trigger", "rationale": "Still triggers; skill enforces tests internally."},
-    {"text": "Implement the feature in one go, all slices.", "expected": "should_trigger", "rationale": "Triggers but skill stops after one slice."},
-    {"text": "Investigate this feature and write the spec.", "expected": "should_not_trigger", "rationale": "/rite-spec."},
-    {"text": "Re-plan because slice 2 is too big.", "expected": "should_not_trigger", "rationale": "/rite-plan."},
-    {"text": "Prove the feature is working.", "expected": "should_not_trigger", "rationale": "/rite-prove."},
-    {"text": "Polish the UI to match the design system.", "expected": "should_not_trigger", "rationale": "/rite-polish."},
-    {"text": "Review the diff for security.", "expected": "should_not_trigger", "rationale": "/rite-review."},
-    {"text": "Final seal — ship it?", "expected": "should_not_trigger", "rationale": "/rite-seal."},
-    {"text": "What's the active feature?", "expected": "should_not_trigger", "rationale": "/rite-status."},
-    {"text": "Refactor the auth module.", "expected": "should_not_trigger", "rationale": "Outside DevRites slice scope."},
-    {"text": "Fix a bug in the date formatter.", "expected": "should_not_trigger", "rationale": "Bug fix is not a slice."},
-    {"text": "Set up a new repo for this project.", "expected": "should_not_trigger", "rationale": "Off-topic infra."},
-    {"text": "Explain how React's reconciler works.", "expected": "should_not_trigger", "rationale": "Off-topic."}
+    {
+      "text": "/rite-build",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "Build slice 2 of the active feature.",
+      "expected": "should_trigger",
+      "rationale": "Explicit build-a-slice."
+    },
+    {
+      "text": "Implement the next pending slice.",
+      "expected": "should_trigger",
+      "rationale": "Build-next-slice phrasing."
+    },
+    {
+      "text": "Code up the next part of this feature.",
+      "expected": "should_trigger",
+      "rationale": "Code-the-feature framing."
+    },
+    {
+      "text": "Let's start building. The plan is ready.",
+      "expected": "should_trigger",
+      "rationale": "Plan-ready → build."
+    },
+    {
+      "text": "Write the code for the API endpoint slice.",
+      "expected": "should_trigger",
+      "rationale": "Write-code = build."
+    },
+    {
+      "text": "Apply TDD and build slice 1.",
+      "expected": "should_trigger",
+      "rationale": "TDD framing matches description."
+    },
+    {
+      "text": "Build the next slice but skip tests.",
+      "expected": "should_trigger",
+      "rationale": "Still triggers; skill enforces tests internally."
+    },
+    {
+      "text": "Implement the feature in one go, all slices.",
+      "expected": "should_trigger",
+      "rationale": "Triggers but skill stops after one slice."
+    },
+    {
+      "text": "Investigate this feature and write the spec.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-spec.",
+      "owner": "rite-spec"
+    },
+    {
+      "text": "Re-plan because slice 2 is too big.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-plan.",
+      "owner": "rite-plan"
+    },
+    {
+      "text": "Prove the feature is working.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-prove.",
+      "owner": "rite-prove"
+    },
+    {
+      "text": "Polish the UI to match the design system.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-polish.",
+      "owner": "rite-polish"
+    },
+    {
+      "text": "Review the diff for security.",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-review.",
+      "owner": "rite-review"
+    },
+    {
+      "text": "Final seal — ship it?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-seal.",
+      "owner": "rite-seal"
+    },
+    {
+      "text": "What's the active feature?",
+      "expected": "should_not_trigger",
+      "rationale": "/rite-status.",
+      "owner": null,
+      "owner_rationale": "/rite-status. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Refactor the auth module.",
+      "expected": "should_not_trigger",
+      "rationale": "Outside DevRites slice scope.",
+      "owner": null,
+      "owner_rationale": "Outside DevRites slice scope."
+    },
+    {
+      "text": "Fix a bug in the date formatter.",
+      "expected": "should_not_trigger",
+      "rationale": "Bug fix is not a slice.",
+      "owner": null,
+      "owner_rationale": "Bug fix is not a slice."
+    },
+    {
+      "text": "Set up a new repo for this project.",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic infra.",
+      "owner": null,
+      "owner_rationale": "Off-topic infra."
+    },
+    {
+      "text": "Explain how React's reconciler works.",
+      "expected": "should_not_trigger",
+      "rationale": "Off-topic.",
+      "owner": null,
+      "owner_rationale": "Off-topic."
+    }
   ]
 }

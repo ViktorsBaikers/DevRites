@@ -3,12 +3,13 @@ name: evals
 # Live trigger-eval execution against Anthropic's API.
 #
 # Schema validation runs in `ci.yml` on every PR (no API key needed).
-# This workflow actually executes the evals: for each public skill, ask
+# This workflow actually executes the evals: for each executable skill, ask
 # Claude to predict which DevRites skill would fire for each query, then
-# score against the expected verdict. Per-skill budget gate per the brutal
-# review (REVIEW.md issue #9):
-#   * accuracy ≥ 0.90 (≈ 18/20 correct)
-#   * false-positives ≤ 2  (≤ 2 should_not_trigger queries that fired)
+# score against the expected verdict. Corpus sizes follow invocation policy:
+# model-invoked skills carry implicit positives/negatives; explicit-only skills
+# carry direct-command positives plus an implicit negative boundary. Per-skill gate:
+#   * accuracy ≥ 0.90 (small corpora therefore require every query correct)
+#   * false-positives ≤ 2
 #
 # Triggers:
 #   - nightly schedule (catch description drift / model updates).
@@ -45,7 +46,7 @@ jobs:
       github.event_name != 'pull_request' ||
       contains(github.event.pull_request.labels.*.name, 'run-evals')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Skip when secret is missing
         id: secret-check
@@ -59,13 +60,13 @@ jobs:
 
       - name: Set up Python
         if: steps.secret-check.outputs.secret_set == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.11'
 
       - name: Install Anthropic SDK
         if: steps.secret-check.outputs.secret_set == 'true'
-        run: python3 -m pip install --upgrade anthropic
+        run: python3 -m pip install anthropic==0.116.0
 
       - name: Schema validate eval JSONs
         if: steps.secret-check.outputs.secret_set == 'true'
@@ -102,7 +103,7 @@ jobs:
 
       - name: Upload eval artifacts
         if: always() && steps.secret-check.outputs.secret_set == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: eval-results
           path: |

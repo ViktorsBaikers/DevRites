@@ -10,21 +10,27 @@ For the full per-skill table, see [`command-map.md`](command-map.md). For the
 
 The happy path. Every arrow assumes the readiness gate of the previous phase
 passed; failures route through `/rite-plan repair` or `devrites-debug-recovery`.
-HITL slices pause before code is written; `/rite-resolve` is the resume verb.
+`/rite-temper` is the optional strategic branch; `/rite-vet` runs on every
+defined plan, with depth scaled to risk. HITL slices pause before code is
+written; `/rite-resolve` is the resume verb.
 
 ```mermaid
 flowchart LR
     Start([user has an idea]) --> Spec[/rite-spec/]
     Spec -.->|UI detected| Shape[devrites-ux-shape<br/>plan UX/UI → design-brief.md]
     Shape -.->|brief confirmed| Spec
+    Spec -.->|big / risky| Temper[/rite-temper/] -.->|strategy.md| Define
     Spec -->|spec.md ready| Define[/rite-define/]
-    Define -->|plan.md + tasks.md<br/>each slice tagged AFK/HITL| Build[/rite-build/]
+    Define -->|plan.md + tasks.md<br/>each slice tagged AFK/HITL| Vet[/rite-vet/]
+    Vet -->|every plan; light or full<br/>eng-review.md + test-plan.md| Build[/rite-build/]
     Build -->|one slice done<br/>+ evidence| Build
     Build -.->|"Forge: yes slice"| Forge[forge: K candidates<br/>→ devrites-forge-judge → 1 winner]
     Forge -.->|winner lands<br/>forge-report.md| Build
     Build -->|HITL gate fires| Await{{Awaiting human<br/>state.md + questions.md}}
     Await -->|"/rite-resolve &lt;qid&gt; &lt;answer&gt;"| Build
     Build -->|all slices built| Prove[/rite-prove/]
+    Build -.->|resumed / adopted / stalled<br/>code vs intent| Converge[/rite-converge/]
+    Converge -.->|appends remaining slices| Build
     Prove -->|evidence captured| Polish[/rite-polish/]
     Polish -->|polish-report.md| Review[/rite-review/]
     Review -->|review.md<br/>Critical == 0| Seal[/rite-seal/]
@@ -43,7 +49,7 @@ flowchart LR
     classDef repair fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef gate fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef internal fill:#0f172a,stroke:#9ca3af,color:#f9fafb
-    class Spec,Define,Build,Prove,Polish,Review,Seal,Ship2 phase
+    class Spec,Temper,Define,Vet,Build,Prove,Polish,Review,Seal,Ship2 phase
     class Shipped done
     class Repair repair
     class Await gate
@@ -107,8 +113,7 @@ flowchart LR
 The seal fans out **all** relevant reviewers in parallel and reconciles their
 findings, then **decides** GO / NO-GO and stops. It no longer runs git — on GO
 it hands off to `/rite-ship`, which renders the type-GO prompt and runs the
-irreversible commit · push · tag · archive. The advisory `/20` score has been
-removed — the gate is severity + acceptance + drift.
+irreversible commit · push · tag · archive. The old advisory score has been removed — the gate is severity + acceptance + drift.
 
 ```mermaid
 flowchart TB
@@ -149,41 +154,43 @@ flowchart TB
     class VV artifact
 ```
 
-## 5. `devrites-debug-recovery` six-phase loop
+## 5. `devrites-debug-recovery` seven-step loop
 
 Failure recovery — the loop construction in Phase 1 is the load-bearing piece.
 
 ```mermaid
 flowchart LR
-    F([failing test /<br/>build / runtime]) --> L1[Phase 1<br/>Build the loop]
-    L1 -->|fast deterministic signal| R[Phase 2<br/>Reproduce]
-    R -->|exact error text| H[Phase 3<br/>Ranked hypotheses 3-5]
-    H -->|show user before testing| I[Phase 4<br/>Instrument]
-    I -->|change one variable| Fix[Phase 5<br/>Fix + regression test]
-    Fix --> C[Phase 6<br/>Cleanup + classify]
+    F([failing test /<br/>build / runtime]) --> L1[Step 1<br/>Build the loop]
+    L1 -->|fast deterministic signal| R[Step 2<br/>Reproduce]
+    R -->|exact error text| H[Step 3<br/>Ranked hypotheses 3-5]
+    H --> T[Step 4<br/>Trace when ambiguous]
+    T -->|discriminating probe| I[Step 5<br/>Instrument]
+    I -->|change one variable| Fix[Step 6<br/>Fix + regression test]
+    Fix --> C[Step 7<br/>Cleanup + classify]
     L1 -.->|can't build loop| Ask([STOP — ask user])
 
     classDef phase fill:#1f2937,stroke:#60a5fa,color:#f9fafb
     classDef stop fill:#7f1d1d,stroke:#f87171,color:#fee2e2
-    class L1,R,H,I,Fix,C phase
+    class L1,R,H,T,I,Fix,C phase
     class Ask stop
 ```
 
-Each phase's detail lives in a separate reference file under
+Each step's detail lives in a separate reference file under
 `pack/.claude/skills/devrites-debug-recovery/reference/` so the SKILL.md body
 stays small.
 
 ## 6. Engineering-rules carrier
 
-Each `rite-*` skill Reads `.claude/rules/core.md` (the always-on subset) as
-its first step (step 0); the other rule files load on demand. Per-phase
+Workspace-operating lifecycle skills read
+`.claude/skills/devrites-lib/reference/standards/core.md` in step 0; compact utilities
+keep their narrower contract local. The other rule files load on demand. Per-phase
 skills pull additional rule files via plain `Read` as their workflow
 demands. No carrier skill, no session-start autoload.
 
 ```mermaid
 flowchart TD
-    R[rite-* skill<br/>step 0] -->|always-on| Core[.claude/rules/core.md]
-    R -->|on demand index| Idx[(.claude/rules/README.md<br/>19 specialist rule files)]
+    R[rite-* skill<br/>step 0] -->|always-on| Core[.claude/skills/devrites-lib/reference/standards/core.md]
+    R -->|on demand index| Idx[(.claude/skills/devrites-lib/reference/standards/README.md<br/>on-demand rule files)]
     Idx --> CS[coding-style.md]
     Idx --> EH[error-handling.md]
     Idx --> T[testing.md]
@@ -267,7 +274,7 @@ erDiagram
         string slug PK ".devrites/work/<slug>/"
     }
     state {
-        string phase "spec | plan | build | prove | polish | review | seal | ship | done"
+        string phase "frame | spec | temper | define | plan | vet | build | converge | prove | polish | review | seal | ship | done"
         string status "running | awaiting_human | blocked | done"
         string active_slice "N — name"
         int afk_slices_remaining "from .devrites/AFK max_slices on first AFK build"
@@ -282,17 +289,18 @@ erDiagram
 
 The exact list of files per workspace and what each holds is in
 [`usage.md`](usage.md#the-workspace). The full pause/resume contract is in
-[`pack/.claude/rules/afk-hitl.md`](../pack/.claude/rules/afk-hitl.md).
+[`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md).
 
 ## 8. Public vs internal namespace
 
 The `devrites-` prefix is collision-avoidance against bundled Claude Code
 skills (`prototype`, `handoff`, `triage`, `diagnose`). Visibility is the
-`user-invocable:` flag, not the prefix.
+`user-invocable:` flag, not the prefix; automatic model loading is controlled
+separately by `disable-model-invocation`.
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true) — 24 skills"]
+    subgraph Public["Public (user-invocable: true) — 30 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
@@ -301,6 +309,7 @@ flowchart TB
         RV[/rite-vet/]
         R4[/rite-plan/]
         R5[/rite-build/]
+        RC[/rite-converge/]
         R6[/rite-prove/]
         R7[/rite-polish/]
         R8[/rite-review/]
@@ -314,6 +323,11 @@ flowchart TB
         RA[/rite-adopt/]
         RL[/rite-learn/]
         RD[/rite-doctor/]
+        RE[/rite-explain/]
+        RCU[/rite-customize/]
+        RDO[/rite-dogfood/]
+        RPOV[/rite-pov/]
+        RPF[/rite-pr-feedback/]
         IPT[/rite-pressure-test/]
         D1[/rite-zoom-out/]
         D2[/rite-prototype/]
@@ -337,7 +351,7 @@ flowchart TB
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
-    class R1,R2,RT,R3,RV,R4,R5,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,IPT,D1,D2,D3 pub
+    class R1,R2,RT,R3,RV,R4,R5,RC,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,RE,RCU,RDO,RPOV,RPF,IPT,D1,D2,D3 pub
     class I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11,I12 int
 ```
 

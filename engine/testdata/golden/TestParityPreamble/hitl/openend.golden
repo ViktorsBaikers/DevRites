@@ -1,0 +1,13 @@
+exit 0
+## openend
+### state.md
+- Phase: spec
+
+### artifacts present
+  ✓ questions.md
+
+### run mode
+  HITL (no sentinel)
+
+### questions
+  open: 0 blocking, 0 validating, 0 advisory, 1 escalating

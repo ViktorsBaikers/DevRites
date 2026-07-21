@@ -1,0 +1,14 @@
+exit 0
+## a
+### state.md
+- Phase: prove
+
+### artifacts present
+
+### run mode
+  AFK (sentinel present)
+    max-slices: 3
+    escalate: true
+
+### questions
+  (no questions.md yet)

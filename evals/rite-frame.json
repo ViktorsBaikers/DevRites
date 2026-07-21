@@ -1,0 +1,39 @@
+{
+  "skill": "rite-frame",
+  "description": "Routing evals for framing underspecified ad-hoc work and auditing its diff.",
+  "queries": [
+    {
+      "text": "/rite-frame clean up this handler",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation."
+    },
+    {
+      "text": "Frame this underspecified coding ask before touching the code.",
+      "expected": "should_trigger",
+      "rationale": "Ad-hoc framing branch."
+    },
+    {
+      "text": "Audit this raw diff against the goal I gave you.",
+      "expected": "should_trigger",
+      "rationale": "Raw-diff self-audit branch."
+    },
+    {
+      "text": "Investigate and write a full feature spec.",
+      "expected": "should_not_trigger",
+      "owner": "rite-spec",
+      "rationale": "Feature discovery belongs to rite-spec."
+    },
+    {
+      "text": "Build the next planned slice.",
+      "expected": "should_not_trigger",
+      "owner": "rite-build",
+      "rationale": "Lifecycle implementation belongs to rite-build."
+    },
+    {
+      "text": "Review the finished feature across all axes.",
+      "expected": "should_not_trigger",
+      "owner": "rite-review",
+      "rationale": "Full review belongs to rite-review."
+    }
+  ]
+}
