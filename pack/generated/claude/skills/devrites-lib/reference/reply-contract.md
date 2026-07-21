@@ -59,9 +59,17 @@ Rules:
 
 ```text
 Awaiting human: <qid> · <gate> · <slice/phase>
-Question: <one-line question>
-Recommended: <option 1 + short reason>
-Options: <2-4 compact choices, if already generated>
+
+Question
+  <question>
+
+Recommended
+  1. <option 1 + short reason>
+
+Other options
+  2. <option 2>
+  3. <option 3 if any>
+
 Resume: /rite-resolve <qid> "<answer>"
 Record: .devrites/work/<slug>/questions.md
 ↻ Hygiene: no /clear until the answer is persisted
