@@ -91,9 +91,8 @@ upholds invariants worth proposing as project principles (step 4a).
    ([`principles.md`](../devrites-lib/reference/standards/principles.md)). Propose, don't impose — an unratified candidate
    stays a convention, not a gate. Skip cleanly when nothing rises to an invariant (common — a
    fresh adopt may declare zero principles, and that's valid).
-5. **Hand off.** The project is now in the lifecycle with a spec and a head-start ledger.
-   Point the user at `$rite-temper` (big/risky) or `$rite-define` (straightforward) — do not
-   plan or build here.
+5. **Hand off.** Spec and ledger are ready. Next: `$rite-temper` if big/risky,
+   else `$rite-define`; every plan then runs `$rite-vet` before build. Do not plan/build here.
    **Completion:** one next rite is reported and no plan or application code was written.
 
 > **Mid-flight discipline.** Don't invent conventions the code doesn't actually follow, don't

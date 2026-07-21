@@ -1,11 +1,14 @@
 # `devrites-engine` commands (engine core)
 
 The `devrites-engine` binary is the deterministic control plane over a project's
-`.devrites/` state. It makes **zero model or network calls** — the in-session
-LLM stays the judgment data plane; the engine only sequences, gates, and reads.
+`.devrites/` state. Workspace state, gate, and derivation commands make no model
+calls and are network-free; explicit install/update/source-cache I/O is isolated under
+`engine/internal/iohooks` (ADR-0008). The in-session LLM remains the judgment
+data plane.
 
-This covers the commands added in issues 03–07, on top of `status`
-(see [state-schema.md](state-schema.md)).
+This page expands selected contracts. Run `devrites-engine help` for the
+exhaustive current command and hook inventory; see
+[state-schema.md](state-schema.md) for `status` and the underlying state model.
 
 ## Exit codes
 
@@ -49,8 +52,8 @@ $ echo $?
 one legible verdict:
 
 ```
-binary: 2.6.1
-pack: 2.6.1
+binary: X.Y.Z
+pack: X.Y.Z
 state-schema: v1 (binary supports v1)
 verdict: ok: binary, pack, and state schema are compatible
 ```
@@ -90,7 +93,8 @@ readable, and the migration path is:
   timestamped `.migrate-backup-*` directory before anything changes;
 - **lossless** — canonical files are added without deleting aliases. `README.md`
   is the preferred workspace map while `feature.md` / `index.md` remain readable;
-  `evidence.md` is preferred while `proof.md` remains a proof alias.
+  `state.md` is preferred while `status.md` remains a cursor alias; `evidence.md`
+  is preferred while `proof.md` remains a proof alias.
 
 The phase is derived from the legacy `state.md`, defaulting to `build` when it
 can't be read.
@@ -199,14 +203,22 @@ Records are JSONL, append-only, and safe for concurrent short-lived engine calls
 update DevRites through the npm flow (`npx devrites ...`); this command is part of the installed
 engine, not a Claude/Codex plugin distribution path.
 
-## `health` — compact quality history
+## `health` — code-health dashboard and history
 
-`devrites-engine health record|list` keeps `.devrites/health-history.jsonl`, a small longitudinal
-quality signal for the workspace. The score is intentionally caller-owned: an agent, CI job, or
-human can record the observed health after a review, quality gate, or cleanup pass without the
-engine pretending to infer a universal metric.
+`devrites-engine health`, `health run`, and `health check` run the known project
+checks (available npm test/lint/typecheck/build scripts, `go test`, `pytest`, and
+DevRites scans where present), print a PASS/WARN/FAIL dashboard, and append the
+result to `.devrites/health.jsonl`. These commands execute project checks; they
+are not a substitute for reviewing those scripts before use.
+
+The legacy `health record|list` surface remains available for manual scores.
+`record` appends `.devrites/health-history.jsonl`; `list` tails
+`.devrites/health.jsonl` when dashboard history exists, otherwise the legacy file.
+Manual scores are intentionally caller-owned: name the observed evidence rather
+than asking the engine to infer a universal metric.
 
 ```bash
+devrites-engine health run
 devrites-engine health record 8.5 "tests green; one follow-up" --note "review-fingerprints stable"
 devrites-engine health list --limit 10
 ```
@@ -240,8 +252,9 @@ outcome to `.devrites/reviewer-stats.jsonl` (cross-feature, append-only).
 - `run (insurance — never gated)` — `security-auditor` and `doubt-reviewer`: a dry streak is
   success, never a reason to skip.
 - `gate-candidate` — a conditional reviewer with zero surviving findings in its last 10+
-  dispatches; the fan-out may skip it as a *recorded* skip (see
-  `parallel-dispatch.md § Hit-rate gating`).
+  dispatches; the fan-out may skip it as a *recorded* skip (see the shared
+  `pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md` contract,
+  § Hit-rate gating).
 - `run` — everything else.
 
 ```bash

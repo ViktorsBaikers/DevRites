@@ -17,7 +17,9 @@ the LLM). See [ADR-0001](docs/adr/0001-go-engine-as-control-plane.md).
   (`CGO_ENABLED=0`, no model calls). It owns every deterministic operation over
   the workspace: state transitions, gates, hooks, derivations, migration. Those
   operations are network-free; explicit update/source-cache I/O is isolated in
-  `internal/iohooks` (ADR-0008). ~35 subcommands use a hand-rolled `switch`.
+  `internal/iohooks` (ADR-0008). The command inventory is defined by the
+  hand-rolled dispatcher in `engine/main.go`; `devrites-engine help` is the
+  exhaustive user-facing list.
 - **Data plane — the workspace** (`.devrites/`): git-diffable Markdown. Feature
   completeness uses six single-concern **sections** (`spec`, `plan`,
   `decisions`, `tasks`, `proof`, `status`); the canonical live map/cursor/proof
@@ -55,9 +57,9 @@ pause** — a "missing X" message and reserved **exit code 3**, never a crash. S
 
 | Path | What |
 |------|------|
-| `engine/` | The Go control plane. `internal/{state,gate,harness,orient,migrate,lib,version}`. |
+| `engine/` | The Go control plane. `internal/` owns state, gates, harness adapters, install/update semantics, explicit I/O hooks, and shared command logic. |
 | `engine/tests/` | Parity/golden + unit tests, incl. `adr_NNNN_*` guard tests. |
-| `pack/.claude/` | Agents (14 `devrites-*` reviewers/judges + builder), `rite-*` skills, hook wiring. |
+| `pack/.claude/` | Canonical pack: 42 skills and 14 agents (13 read-only, one write-capable builder), plus Claude hook wiring. |
 | `install.sh` / `bin/` | Installer + npx entry; version is single-sourced from `package.json`. |
 | `evals/` | Trigger / outcome / behavioral eval tiers with golden fixtures. |
 | `docs/adr/` | Architecture decisions (start here for "why"). |

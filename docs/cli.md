@@ -9,6 +9,9 @@ project root.
 
 Install DevRites normally, then run the engine from the project root:
 
+The examples below are a curated working set. `devrites-engine help` is the
+exhaustive current command and hook inventory.
+
 ```bash
 devrites-engine preamble                 # workspace digest for the active feature
 devrites-engine snapshot [slug]          # machine-readable workspace/status snapshot
@@ -19,8 +22,10 @@ devrites-engine ledger sync <dir>        # fold a feature's spec deltas into the
 devrites-engine ledger list|show <cap>   # read the ledger — what the system already does
 devrites-engine context show --json      # report root, active workspace, and host command forms
 devrites-engine timeline log|list        # append/list session events, decisions, and state moves
-devrites-engine health record|list       # append/list compact workspace health history
+devrites-engine health run               # run known project checks + record a code-health dashboard
+devrites-engine health record|list       # append/list manual or dashboard health history
 devrites-engine review-fingerprints [slug] # stable IDs for review findings; --write saves JSONL
+devrites-engine reviewer-stats report --json # direct structured reviewer-dispatch verdicts
 devrites-engine progress [slug]          # compact phase/slice footer
 devrites-engine resolve <qid> "<answer>" # answer a HITL gate
 devrites-engine close-out <slug>         # archive a shipped feature and clear ACTIVE
@@ -34,7 +39,9 @@ The AFK-parsed read commands (`status`, `readiness`, `seal`, `spec-validate`,
 structured JSON contract and emits `schemaVersion: devrites.workspace.v1`
 directly rather than wrapping human text. Snapshot consumers should read
 `nextCommands.claude` or `nextCommands.codex` for the current host instead of
-hardcoding a `/rite-*` or `$rite-*` command form.
+hardcoding a `/rite-*` or `$rite-*` command form. `context show --json` and
+`reviewer-stats report --json` are also direct structured reports rather than
+envelopes.
 
 The npm `devrites` shim remains the installer/updater/uninstaller entry point and
 proxies these engine subcommands when `devrites-engine` is installed. Install and

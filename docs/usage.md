@@ -1,9 +1,10 @@
 # DevRites — usage
 
-Worked workflows. Every feature starts with `/rite-spec` (it investigates,
-writes the spec, and creates the workspace). Every later phase reads the
-active workspace (`.devrites/ACTIVE` → `.devrites/work/<slug>/`) first; if
-none exists it tells you to run `/rite-spec <feature>`.
+Worked workflows. A full greenfield lifecycle starts with `/rite-spec`; a
+brownfield codebase may enter through `/rite-adopt`, while `/rite-quick` and
+`/rite-frame` deliberately handle bounded work outside the full feature arc.
+Workspace-operating phases read the active workspace (`.devrites/ACTIVE` →
+`.devrites/work/<slug>/`) first and report the appropriate on-ramp when none exists.
 
 - **Full command reference** → [`command-map.md`](command-map.md)
 - **Flow diagrams** → [`flow.md`](flow.md)
@@ -28,10 +29,10 @@ survives compaction and new sessions:
 | `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback |
 | `tasks.md` | `/rite-define` | ordered `SLICE-###` vertical slices, each mapped to `AC-###` and tagged `Mode: AFK \| HITL` + gate fields |
 | `traceability.md` | `/rite-define` | AC/REQ → slices → tests/proofs → evidence → touched files matrix |
-| `eng-review.md` | `/rite-vet` | engineering plan review (optional): scope challenge, axis findings, failure modes, parallelization |
+| `eng-review.md` | `/rite-vet` | mandatory engineering plan review, light or full by stakes: scope challenge, axis findings, failure modes, parallelization |
 | `test-plan.md` | `/rite-vet` | build-readable coverage target: coverage diagram, per-gap test requirements, acceptance→test map (read by `/rite-build` + `/rite-prove`) |
-| `status.md` | every phase | canonical status checkpoint |
 | `state.md` | every phase | working ledger: phase, active slice + slice mode, risk, next step; plus `Awaiting human` block when paused (run mode is derived from `.devrites/AFK`, not stored here) |
+| `status.md` | every phase | compatibility alias for the canonical `state.md` cursor |
 | `questions.md` | every phase | append-only Q&A — qid, slice, gate, status (`open` / `answered` / `dropped`), proposed answer, raised/answered timestamps |
 | `decisions.md` / `assumptions.md` | every phase | running logs |
 | `drift.md` | Spec Drift Guard | drift events + resolutions |
@@ -53,7 +54,8 @@ on under `.devrites/archive/<slug>/`.
 Backward compatibility: older `.devrites/features/<slug>/` workspaces remain
 readable; migration should add the canonical `.devrites/work` shape without
 deleting the old files. `feature.md`/`index.md` can still act as the workspace
-map, and `proof.md` can still act as the proof alias for `evidence.md`.
+map, `status.md` as the cursor alias for `state.md`, and `proof.md` as the proof
+alias for `evidence.md`.
 
 Project-root sentinel (outside the workspace):
 
@@ -82,6 +84,10 @@ You: I want some kind of reporting thing for admins.
   → reads the approved spec
   → writes plan.md + vertical task slices + state
   → stops for confirmation
+
+/rite-vet
+  → reviews every defined plan; uses a light or full pass based on stakes
+  → writes eng-review.md + test-plan.md before build
 ```
 
 ## 2) Normal feature — the build loop
@@ -89,6 +95,7 @@ You: I want some kind of reporting thing for admins.
 ```text
 /rite-spec add-csv-export    # investigate → spec.md
 /rite-define                 # spec → plan + vertical slices + state
+/rite-vet                    # mandatory plan review; light or full based on stakes
 /rite-build                  # slice 1 ("export endpoint returns CSV"); stops with evidence
 /rite-build                  # slice 2 ("download button + states"); repeat for each slice
 /rite-prove                  # ONCE all slices built: full tests + browser proof
@@ -139,6 +146,9 @@ You: 2
 /rite-define
   → spec → slices; UI slice marked frontend-craft + browser-proof
 
+/rite-vet
+  → hardens the UI plan + acceptance-to-test coverage before code
+
 /rite-build
   → UI slice → devrites-frontend-craft: register = product surface, **match
     the saved references**, shape the states (default/loading/empty/error/
@@ -167,6 +177,7 @@ with exact steps — the seal then weighs the UI risk.
 ```text
 /rite-spec rate-limit-api    # investigate → spec.md (no UI)
 /rite-define                 # spec → plan + slices
+/rite-vet                    # mandatory plan review; checks architecture, tests, perf
 /rite-build                  # no UI → no frontend craft / browser proof
 /rite-prove                  # targeted tests + build/typecheck; runtime check of the limiter
 /rite-polish                 # reference/code.md only (no UI scope detected)
@@ -324,15 +335,14 @@ it stops. Args: `[idea] [--ship|--yolo] [--max-slices N]`.
   read-only config: it toggles your local session mode and sets the initial
   `max_slices` budget; nothing else. The mutable remaining-slice count lives
   in `state.md` (`AFK slices remaining`), never in the sentinel.
-- One feature active at a time (`ACTIVE`). To start or switch, run
-  `/rite-spec <other>` (it creates/selects that workspace and writes its
-  spec).
+- One feature active at a time (`ACTIVE`). Start a new workspace with
+  `/rite-spec <feature>`; switch to an existing one with `/rite use <slug>`.
 - **Recommended AFK progression**: HITL first to refine the prompt and plan,
   then drop the sentinel for the bulk stretch. Always cap iterations
   (`max_slices: 10` is a reasonable default).
-- Let the specialists fire on their triggers — you don't invoke `devrites-*`
-  directly. The exceptions are the three public utilities: `/rite-zoom-out`,
-  `/rite-prototype`, `/rite-handoff`.
-- The `devrites-` prefix is a namespace, not a privacy marker — whether a
-  skill is public is the `user-invocable:` flag, documented for each in
-  [`command-map.md`](command-map.md).
+- Invoke public `rite` / `rite-*` skills directly; let the model-invocable
+  `devrites-*` specialists fire from their documented triggers. `devrites-lib`
+  is an internal reference library, not a workflow.
+- Prefixes are namespaces, not invocation policy. `user-invocable` and
+  `disable-model-invocation` frontmatter are authoritative; the effective policy
+  for every skill is catalogued in [`command-map.md`](command-map.md).

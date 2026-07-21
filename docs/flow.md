@@ -10,22 +10,26 @@ For the full per-skill table, see [`command-map.md`](command-map.md). For the
 
 The happy path. Every arrow assumes the readiness gate of the previous phase
 passed; failures route through `/rite-plan repair` or `devrites-debug-recovery`.
-HITL slices pause before code is written; `/rite-resolve` is the resume verb.
+`/rite-temper` is the optional strategic branch; `/rite-vet` runs on every
+defined plan, with depth scaled to risk. HITL slices pause before code is
+written; `/rite-resolve` is the resume verb.
 
 ```mermaid
 flowchart LR
     Start([user has an idea]) --> Spec[/rite-spec/]
     Spec -.->|UI detected| Shape[devrites-ux-shape<br/>plan UX/UI → design-brief.md]
     Shape -.->|brief confirmed| Spec
+    Spec -.->|big / risky| Temper[/rite-temper/] -.->|strategy.md| Define
     Spec -->|spec.md ready| Define[/rite-define/]
-    Define -->|plan.md + tasks.md<br/>each slice tagged AFK/HITL| Build[/rite-build/]
+    Define -->|plan.md + tasks.md<br/>each slice tagged AFK/HITL| Vet[/rite-vet/]
+    Vet -->|every plan; light or full<br/>eng-review.md + test-plan.md| Build[/rite-build/]
     Build -->|one slice done<br/>+ evidence| Build
     Build -.->|"Forge: yes slice"| Forge[forge: K candidates<br/>→ devrites-forge-judge → 1 winner]
     Forge -.->|winner lands<br/>forge-report.md| Build
     Build -->|HITL gate fires| Await{{Awaiting human<br/>state.md + questions.md}}
     Await -->|"/rite-resolve &lt;qid&gt; &lt;answer&gt;"| Build
     Build -->|all slices built| Prove[/rite-prove/]
-    Define -.->|resumed / adopted / stalled<br/>code vs intent| Converge[/rite-converge/]
+    Build -.->|resumed / adopted / stalled<br/>code vs intent| Converge[/rite-converge/]
     Converge -.->|appends remaining slices| Build
     Prove -->|evidence captured| Polish[/rite-polish/]
     Polish -->|polish-report.md| Review[/rite-review/]
@@ -45,7 +49,7 @@ flowchart LR
     classDef repair fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef gate fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef internal fill:#0f172a,stroke:#9ca3af,color:#f9fafb
-    class Spec,Define,Build,Prove,Polish,Review,Seal,Ship2 phase
+    class Spec,Temper,Define,Vet,Build,Prove,Polish,Review,Seal,Ship2 phase
     class Shipped done
     class Repair repair
     class Await gate
@@ -291,11 +295,12 @@ The exact list of files per workspace and what each holds is in
 
 The `devrites-` prefix is collision-avoidance against bundled Claude Code
 skills (`prototype`, `handoff`, `triage`, `diagnose`). Visibility is the
-`user-invocable:` flag, not the prefix.
+`user-invocable:` flag, not the prefix; automatic model loading is controlled
+separately by `disable-model-invocation`.
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true) — 24 skills"]
+    subgraph Public["Public (user-invocable: true) — 30 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
@@ -304,6 +309,7 @@ flowchart TB
         RV[/rite-vet/]
         R4[/rite-plan/]
         R5[/rite-build/]
+        RC[/rite-converge/]
         R6[/rite-prove/]
         R7[/rite-polish/]
         R8[/rite-review/]
@@ -317,6 +323,11 @@ flowchart TB
         RA[/rite-adopt/]
         RL[/rite-learn/]
         RD[/rite-doctor/]
+        RE[/rite-explain/]
+        RCU[/rite-customize/]
+        RDO[/rite-dogfood/]
+        RPOV[/rite-pov/]
+        RPF[/rite-pr-feedback/]
         IPT[/rite-pressure-test/]
         D1[/rite-zoom-out/]
         D2[/rite-prototype/]
@@ -340,7 +351,7 @@ flowchart TB
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
-    class R1,R2,RT,R3,RV,R4,R5,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,IPT,D1,D2,D3 pub
+    class R1,R2,RT,R3,RV,R4,R5,RC,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,RE,RCU,RDO,RPOV,RPF,IPT,D1,D2,D3 pub
     class I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11,I12 int
 ```
 
