@@ -3,10 +3,13 @@
 import type { ReactNode } from "react";
 import { Reveal } from "@/components/ui";
 
-export function H2({ id, children }: { id?: string; children: ReactNode }) {
+export function H2({ id, first = false, children }: { id?: string; first?: boolean; children: ReactNode }) {
   return (
     <Reveal>
-      <h2 id={id} className="mt-14 scroll-mt-24 text-2xl font-bold first:mt-0">
+      <h2
+        id={id}
+        className={`${first ? "mt-0" : "mt-20"} scroll-mt-28 text-3xl font-bold tracking-[-0.035em] md:text-4xl`}
+      >
         {children}
       </h2>
     </Reveal>
@@ -16,7 +19,7 @@ export function H2({ id, children }: { id?: string; children: ReactNode }) {
 export function H3({ children }: { children: ReactNode }) {
   return (
     <Reveal>
-      <h3 className="mt-8 text-lg font-bold text-ink">{children}</h3>
+      <h3 className="mt-10 text-xl font-bold text-ink">{children}</h3>
     </Reveal>
   );
 }
@@ -24,7 +27,7 @@ export function H3({ children }: { children: ReactNode }) {
 export function P({ children }: { children: ReactNode }) {
   return (
     <Reveal delay={0.04}>
-      <p className="mt-3 text-pretty text-ink-muted leading-relaxed">{children}</p>
+      <p className="mt-4 max-w-3xl text-pretty text-ink-muted leading-[1.75]">{children}</p>
     </Reveal>
   );
 }
@@ -32,7 +35,7 @@ export function P({ children }: { children: ReactNode }) {
 export function Panel({ children }: { children: ReactNode }) {
   return (
     <Reveal delay={0.06}>
-      <div className="mt-5 overflow-hidden rounded-tile border border-line">{children}</div>
+      <div className="mt-7 overflow-hidden rounded-card border border-line bg-surface">{children}</div>
     </Reveal>
   );
 }
@@ -56,7 +59,7 @@ export function Row({ left, tag, body }: { left: string; tag?: string; body: str
 export function Code({ children }: { children: ReactNode }) {
   return (
     <Reveal delay={0.06}>
-      <pre className="mono mt-5 overflow-x-auto rounded-tile border border-line bg-bg-deep/60 p-4 text-[0.82rem] leading-relaxed text-ink-muted">
+      <pre className="mono mt-7 overflow-x-auto rounded-xl border border-line bg-bg-deep p-5 text-[0.82rem] leading-relaxed text-ink-muted md:p-6">
         {children}
       </pre>
     </Reveal>
@@ -66,7 +69,7 @@ export function Code({ children }: { children: ReactNode }) {
 export function Callout({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Reveal delay={0.06}>
-      <div className="tile--lit mt-6 rounded-tile p-5">
+      <div className="mt-8 rounded-card border border-line-bright bg-surface p-6 md:p-7">
         <h3 className="font-bold text-ink">{title}</h3>
         <p className="mt-2 text-[0.9rem] leading-relaxed text-ink-muted">{children}</p>
       </div>

@@ -1,171 +1,117 @@
-"use client";
-
-import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
-import { Reveal, SectionHead } from "./ui";
+import { ArrowRight, FolderGit2, LockKeyhole, ShieldCheck } from "lucide-react";
 import { PHASES } from "@/lib/site";
-import { gsap, useGSAP } from "@/lib/gsap";
 
-const ACTS = [
-  { key: "shape", label: "shape", span: 4, tone: "text-accent" },
-  { key: "build", label: "build", span: 4, tone: "text-warn" },
-  { key: "ship", label: "ship", span: 2, tone: "text-go" },
-] as const;
-
-// the lit state a node tweens into as the scrubbed rail passes it
-const LIT = {
-  borderColor: "#3ccfe0",
-  backgroundColor: "rgba(60, 207, 224, 0.15)",
-  color: "#3ccfe0",
-  scale: 1.12,
-};
+const STAGE_DEFS = [
+  {
+    key: "shape",
+    label: "Shape",
+    title: "Agree on the contract.",
+    body: "Scope, acceptance criteria, and the build plan are agreed before implementation starts.",
+    names: ["spec", "define", "vet"],
+    gate: "Implementation starts after vet passes.",
+  },
+  {
+    key: "build",
+    label: "Build",
+    title: "Build one slice.",
+    body: "A fresh-context writer implements one bounded slice, runs focused tests, records its work, then stops.",
+    names: ["build"],
+    gate: "Unclaimed source writes are rejected.",
+  },
+  {
+    key: "prove",
+    label: "Prove",
+    title: "Update the evidence.",
+    body: "Tests, runtime checks, browser evidence, polish, and independent review are tied to the current diff.",
+    names: ["prove", "polish", "review"],
+    gate: "A code change expires old evidence.",
+  },
+  {
+    key: "release",
+    label: "Release",
+    title: "Record the release decision.",
+    body: "DevRites seals the evidence first. Commit, push, and tag remain locked until a human types GO.",
+    names: ["seal", "ship"],
+    gate: "A missing criterion means NO-GO.",
+  },
+].map((stage) => ({
+  ...stage,
+  phases: stage.names.map((name) => PHASES.find((phase) => phase.name === name)!).filter(Boolean),
+}));
 
 export default function Pipeline() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const railRef = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion() ?? false;
-
-  useGSAP(
-    () => {
-      if (reduce) {
-        gsap.set(".pl-fill", { scaleX: 1 });
-        gsap.set(".pl-dot", LIT);
-        return;
-      }
-      const dots = gsap.utils.toArray<HTMLElement>(".pl-dot");
-      const mm = gsap.matchMedia();
-
-      // tablet/desktop: pin the rail, scrub the fill + light nodes in sequence
-      mm.add("(min-width: 768px)", () => {
-        const tl = gsap.timeline({
-          defaults: { ease: "none" },
-          scrollTrigger: {
-            trigger: railRef.current,
-            start: "center 65%",
-            end: "+=85%",
-            pin: true,
-            scrub: 0.5,
-          },
-        });
-        tl.to(".pl-fill", { scaleX: 1, duration: 1 }, 0);
-        dots.forEach((d, i) => {
-          tl.to(d, { ...LIT, duration: 0.4, ease: "power2.out" }, (i / dots.length) * 0.9);
-        });
-      });
-
-      // mobile: same choreography, no pin
-      mm.add("(max-width: 767px)", () => {
-        const tl = gsap.timeline({
-          defaults: { ease: "none" },
-          scrollTrigger: {
-            trigger: railRef.current,
-            start: "top 80%",
-            end: "bottom 45%",
-            scrub: 0.5,
-          },
-        });
-        tl.to(".pl-fill", { scaleX: 1, duration: 1 }, 0);
-        dots.forEach((d, i) => {
-          tl.to(d, { ...LIT, duration: 0.4, ease: "power2.out" }, (i / dots.length) * 0.9);
-        });
-      });
-    },
-    { dependencies: [reduce], scope: sectionRef },
-  );
-
   return (
-    <section ref={sectionRef} id="workflow" className="wrap py-20 sm:py-28">
-      <SectionHead
-        title="Ten phases. One verified slice at a time."
-        lead="Every feature walks the same path, grouped into three acts. Each phase reads the last one's files and writes its own, so nothing important lives only in a chat window you can lose."
-      />
+    <section id="workflow" className="release-process py-28 md:py-40" aria-labelledby="workflow-title">
+      <div className="wrap">
+        <header className="release-heading">
+          <h2
+            id="workflow-title"
+            className="font-bold text-ink [font-size:clamp(3rem,5.4vw,5.4rem)] leading-[0.92] tracking-[-0.04em]"
+          >
+            Keep the full release record with the feature.
+          </h2>
+          <p className="mt-7 max-w-2xl text-ink-muted [font-size:var(--text-lead)] leading-relaxed">
+            One project-local folder holds the agreed scope, implementation record, checks, review, and release decision.
+          </p>
+        </header>
 
-      {/* the rail — pins and scrubs as you scroll through it */}
-      <div ref={railRef} className="relative mt-14">
-        {/* act labels */}
-        <div className="mb-3 hidden grid-cols-10 sm:grid">
-          {ACTS.map((a) => (
-            <div
-              key={a.key}
-              className={`mono text-xs uppercase tracking-[0.16em] ${a.tone}`}
-              style={{ gridColumn: `span ${a.span}` }}
-            >
-              {a.label}
+        <div className="release-conveyor mt-12">
+          <div className="release-conveyor-head">
+            <div className="release-feature">
+              <FolderGit2 className="size-6" strokeWidth={1.7} aria-hidden />
+              <span>Feature workspace</span>
+              <strong>auth-tokens</strong>
             </div>
-          ))}
-        </div>
+            <div className="release-path">
+              <span>Stored in the repository</span>
+              <code>.devrites/work/auth-tokens/</code>
+            </div>
+          </div>
 
-        {/* track */}
-        <div className="relative h-1.5 rounded-full bg-line/60">
-          <div
-            className="pl-fill blade absolute inset-y-0 left-0 w-full origin-left rounded-full"
-            style={{ transform: "scaleX(0)" }}
-          />
-        </div>
+          <div className="release-route" aria-hidden="true">
+            <span className="release-route-line" />
+            {STAGE_DEFS.map((stage) => (
+              <span key={stage.key} className="release-route-node" />
+            ))}
+          </div>
 
-        {/* nodes */}
-        <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-10">
-          {PHASES.map((p, i) => (
-            <Reveal
-              key={p.name}
-              delay={Math.min(i * 0.04, 0.3)}
-              className="flex flex-col items-center gap-1.5 text-center"
-            >
-              <span className="pl-dot flex size-7 items-center justify-center rounded-full border border-line bg-surface text-[0.65rem] font-bold text-ink-muted">
-                {i + 1}
-              </span>
-              <span className="mono text-[0.65rem] text-ink-faint">{p.name}</span>
-            </Reveal>
-          ))}
+          <ol className="release-panels">
+            {STAGE_DEFS.map((stage) => (
+              <li key={stage.key} className={`release-panel release-panel--${stage.key}`}>
+                <div className="release-panel-copy">
+                  <span>{stage.label}</span>
+                  <h3>{stage.title}</h3>
+                  <p>{stage.body}</p>
+                  <div className="release-panel-commands" aria-label={`${stage.label} commands`}>
+                    {stage.phases.map((phase) => <code key={phase.name}>{phase.cmd}</code>)}
+                  </div>
+                </div>
+
+                <div className="release-panel-writes">
+                  <span>Written to disk</span>
+                  <div>
+                    {stage.phases.map((phase) => <code key={phase.name}>{phase.out}</code>)}
+                  </div>
+                </div>
+
+                <p className="release-panel-gate">
+                  <LockKeyhole className="size-3.5" strokeWidth={2} aria-hidden />
+                  {stage.gate}
+                </p>
+              </li>
+            ))}
+          </ol>
+
+          <div className="release-conveyor-foot">
+            <p>
+              <ShieldCheck className="size-5" strokeWidth={1.8} aria-hidden />
+              <span>Release record is complete</span>
+              <strong>A human still has to approve it.</strong>
+            </p>
+            <a href="/docs/flow/">Read the full flow <ArrowRight className="size-4" aria-hidden /></a>
+          </div>
         </div>
       </div>
-
-      {/* phase detail cards */}
-      <div className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {PHASES.map((p, i) => {
-          const ship = p.act === "ship";
-          return (
-            <Reveal
-              key={p.name}
-              delay={Math.min(i * 0.04, 0.25)}
-              className={`tile flex flex-col gap-2.5 p-6 ${ship ? "tile--lit" : ""}`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="mono text-sm font-medium text-accent">
-                  {p.n} · {p.name}
-                </span>
-                <span
-                  className={`mono rounded-md border border-line px-1.5 py-0.5 text-[0.62rem] uppercase tracking-wide ${
-                    p.act === "shape"
-                      ? "text-accent"
-                      : p.act === "build"
-                        ? "text-warn"
-                        : "text-go"
-                  }`}
-                >
-                  {p.act}
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-ink">{p.title}</h3>
-              <p className="text-[0.92rem] leading-relaxed text-ink-muted">{p.body}</p>
-              <div className="mono mt-auto flex items-center gap-2 pt-2 text-[0.78rem]">
-                <b className="text-ink">{p.cmd}</b>
-                <span className="text-ink-faint">→ {p.out}</span>
-              </div>
-            </Reveal>
-          );
-        })}
-      </div>
-
-      <Reveal delay={0.1}>
-        <p className="mt-8 text-pretty text-center text-ink-muted">
-          In a hurry?{" "}
-          <code className="k k--accent">/rite-autocomplete</code> drives the whole lifecycle
-          unattended, pausing only at irreversible gates. Lost?{" "}
-          <code className="k">/rite-status</code> shows where the active feature stands. Dropping
-          into an existing codebase? <code className="k">/rite-adopt</code> reads it first.
-        </p>
-      </Reveal>
     </section>
   );
 }

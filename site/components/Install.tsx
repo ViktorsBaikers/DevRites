@@ -1,79 +1,66 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import { CopyButton, Reveal, GithubMark, MagneticLink } from "./ui";
-import { INSTALL_CMD, REPO } from "@/lib/site";
+import { CopyButton, Reveal, MagneticLink } from "./ui";
+import { CURL_CMD, INSTALL_CMD, REPO } from "@/lib/site";
 
 const POINTS = [
-  ["No global writes, ever.", "Installs into the target project; ~/.claude is refused."],
-  ["Every file is recorded", "in .claude/devrites.manifest. Uninstall removes exactly those."],
-  ["Your work is preserved.", "Feature data in .devrites/work/ is never touched by uninstall."],
-  ["Preview first", "with --dry-run. Pin a release with DEVRITES_REF=v2.3.0."],
+  ["Installed in the project", "Skills, agents, standards, and hooks stay in the target repository."],
+  ["Tracked by a manifest", "Install, update, and uninstall use the same list of managed host files."],
+  ["Feature work stays", "Uninstall leaves the work under .devrites/work/ in place."],
+  ["Preview before installing", "Use --dry-run to preview the changes, or --no-binary to skip the shared executable."],
 ];
 
 export default function Install() {
   return (
-    <section id="install" className="relative overflow-hidden py-24 sm:py-32">
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="grid-field absolute inset-0 rotate-180 opacity-50" />
-        <div className="absolute left-1/2 top-10 size-[40rem] -translate-x-1/2 rounded-full bg-accent/[0.07] blur-[150px]" />
-      </div>
+    <section id="install" className="wrap py-32 md:py-48">
+      <Reveal>
+        <div className="install-stage overflow-hidden rounded-card p-7 md:p-12 lg:p-16">
+          <div className="grid gap-16 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+            <div>
+              <h2 className="max-w-4xl font-bold [font-size:clamp(3rem,5.8vw,5.8rem)] leading-[0.9] tracking-[-0.04em]">
+                Use DevRites for your next feature.
+              </h2>
+              <p className="mt-7 max-w-xl text-lg leading-relaxed opacity-80">
+                DevRites is free and open source. It gives Claude Code and Codex the same project-local workflow.
+              </p>
 
-      <div className="wrap text-center">
-        <Reveal>
-          <h2 className="mx-auto mt-3 max-w-2xl font-bold [font-size:var(--text-h2)]">
-            One command. One project. Zero babysitting.
-          </h2>
-        </Reveal>
-        <Reveal delay={0.12}>
-          <p className="mx-auto mt-4 max-w-xl text-pretty text-ink-muted [font-size:var(--text-lead)]">
-            Free and open source. Read every line before you run it, then feel the difference on
-            your first feature.
-          </p>
-        </Reveal>
-
-        <Reveal delay={0.18}>
-          <div className="mx-auto mt-8 flex max-w-xl items-center gap-2 rounded-xl border border-line-bright bg-surface/80 py-3 pl-5 pr-3 backdrop-blur">
-            <code className="mono flex-1 text-left text-sm text-ink sm:text-[0.95rem]">
-              <span className="text-accent">npx</span> devrites@latest
-            </code>
-            <CopyButton text={INSTALL_CMD} />
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.24}>
-          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <MagneticLink href={REPO} rel="noopener" className="btn btn-primary group px-6 py-3">
-              <GithubMark className="size-4" />
-              Star it on GitHub
-              <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-1" />
-            </MagneticLink>
-            <a href="/docs/" className="btn btn-ghost px-6 py-3 font-medium">
-              Read the docs
-            </a>
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.3}>
-          <p className="mt-6 text-sm text-ink-faint">
-            No Node? <code className="k">curl -fsSL https://devrites.com | bash</code> runs the same
-            installer. Then run <code className="k k--accent">/rite-spec &lt;feature&gt;</code> to begin.
-          </p>
-        </Reveal>
-
-        <div className="mx-auto mt-12 grid max-w-3xl gap-3 text-left sm:grid-cols-2">
-          {POINTS.map(([h, b], i) => (
-            <Reveal key={h} delay={Math.min(i * 0.06, 0.3)}>
-              <div className="flex gap-3 rounded-tile border border-line bg-surface/40 p-4">
-                <span className="mono mt-0.5 text-accent">→</span>
-                <p className="text-sm leading-relaxed text-ink-muted">
-                  <b className="text-ink">{h}</b> {b}
-                </p>
+              <div className="mt-9 flex max-w-xl items-center gap-2 rounded-xl bg-bg-deep py-3 pl-5 pr-3 text-ink">
+                <code className="mono min-w-0 flex-1 truncate text-left text-sm sm:text-base">
+                  <span className="text-accent">npx</span> devrites@latest
+                </code>
+                <CopyButton text={INSTALL_CMD} label="copy" className="border-line-bright bg-surface text-ink" />
               </div>
-            </Reveal>
-          ))}
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <MagneticLink href={REPO} rel="noopener" className="btn btn-dark group px-6 py-3">
+                  GitHub
+                  <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden />
+                </MagneticLink>
+                <a href="/docs/getting-started/" className="btn px-5 py-3 text-accent-ink hover:bg-bg-deep/10">
+                  Installation guide
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-semibold">What installation changes</h3>
+              <div className="mt-5 border-t border-current/25">
+                {POINTS.map(([title, body]) => (
+                  <div key={title} className="grid gap-1 border-b border-current/20 py-4 sm:grid-cols-[0.4fr_0.6fr] sm:gap-5">
+                    <h4 className="font-semibold">{title}</h4>
+                    <p className="text-sm leading-relaxed opacity-80">{body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <p className="mt-12 border-t border-current/25 pt-5 text-sm opacity-80">
+            If you do not use Node, run <code className="break-all font-mono">{CURL_CMD}</code>
+          </p>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

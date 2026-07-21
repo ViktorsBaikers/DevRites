@@ -1,27 +1,30 @@
 // Single source of truth for site copy + structured data.
-// Selling, concrete, proof-anchored — every claim ties to a named mechanism.
+// Selling, concrete, proof-anchored - every claim ties to a named mechanism.
 
 export const SITE_URL = "https://devrites.com";
-export const VERSION = "2.3.0";
+export const VERSION = process.env.NEXT_PUBLIC_DEVRITES_VERSION ?? "unreleased";
 export const REPO = "https://github.com/ViktorsBaikers/DevRites";
 export const INSTALL_CMD = "npx devrites@latest";
-export const CURL_CMD = "curl -fsSL https://devrites.com | bash";
+const RAW_INSTALLER_BASE = "https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main";
+export const CURL_CMD = `curl -fsSL ${RAW_INSTALLER_BASE}/install.sh | bash`;
+export const CURL_PIN_CMD = `curl -fsSL ${RAW_INSTALLER_BASE}/install.sh | DEVRITES_REF=vX.Y.Z bash`;
+export const CURL_UPDATE_CMD = `curl -fsSL ${RAW_INSTALLER_BASE}/update.sh | bash`;
+export const CURL_UNINSTALL_CMD = `curl -fsSL ${RAW_INSTALLER_BASE}/uninstall.sh | bash`;
 
 export type Stat = { value: number; suffix?: string; prefix?: string; label: string };
 
 export const STATS: Stat[] = [
-  { value: 10, label: "phases per feature, and each is proven before the next begins" },
-  { value: 0, label: "files written outside your project. ~/.claude is never touched" },
-  { value: 7, label: "independent reviewers fan out on the diff at seal" },
-  { value: 100, suffix: "%", label: "open source under MIT. Read every line before you run it" },
+  { value: 42, label: "skills for the public workflow and focused specialist work" },
+  { value: 14, label: "agents running in fresh context: 13 read-only reviewers and one slice writer" },
+  { value: 2, label: "supported hosts with generated project-local surfaces: Claude and Codex" },
+  { value: 0, label: "skills, agents, or hooks installed in global agent directories" },
 ];
 
 export const TOOLS = [
   "Claude Code",
-  "Cursor",
   "Codex",
-  "Gemini CLI",
   "CI",
+  "local scripts",
   "a human",
 ];
 
@@ -33,19 +36,20 @@ export type Phase = {
   body: string;
   cmd: string;
   out: string;
+  optional?: boolean;
 };
 
 export const PHASES: Phase[] = [
-  { n: "01", act: "shape", name: "spec", title: "Read first, write second", body: "A deep read of your codebase before a single line lands: where the feature fits, what it resolves, and acceptance criteria you can actually measure.", cmd: "/rite-spec", out: "spec.md · references/" },
-  { n: "02", act: "shape", name: "temper", title: "Pressure-test the scope", body: "A strategic review of the spec: pick a scope mode, run a pre-mortem, and harden the contract so you build the right thing, not just a thing.", cmd: "/rite-temper", out: "strategy.md" },
-  { n: "03", act: "shape", name: "define", title: "Slice it into vertical wins", body: "The approved spec becomes a plan and small vertical slices, each tagged for a checkpoint. Every acceptance criterion maps to a slice.", cmd: "/rite-define", out: "plan.md · tasks.md" },
-  { n: "04", act: "shape", name: "vet", title: "Review the plan before any code", body: "A confidence-banded engineering review of the architecture, scope, and coverage. It writes the test plan the build will have to satisfy.", cmd: "/rite-vet", out: "eng-review.md · test-plan.md" },
-  { n: "05", act: "build", name: "build", title: "One slice, then it stops", body: "A fresh-context agent builds exactly one vertical slice, test-first, and stops with evidence. Turn on forge and rival versions compete, then an independent judge picks the strongest. The Spec Drift Guard catches a wrong plan mid-build.", cmd: "/rite-build", out: "code · evidence.md" },
-  { n: "06", act: "build", name: "prove", title: "Show the receipts", body: "Tests, build, types, lint, and real browser proof, walked against every acceptance criterion. Claims get backed by output, not adjectives.", cmd: "/rite-prove", out: "browser-evidence.md" },
-  { n: "07", act: "build", name: "polish", title: "Tidy without breaking", body: "Behavior-preserving cleanup first, then UI polish against your design system. Nothing changes silently; stale evidence is re-proven.", cmd: "/rite-polish", out: "polish-report.md" },
-  { n: "08", act: "build", name: "review", title: "Fresh eyes, in parallel", body: "Independent reviewers read the diff against the spec and your standards at once. None of them wrote the code.", cmd: "/rite-review", out: "review.md" },
-  { n: "09", act: "ship", name: "seal", title: "GO or NO-GO", body: "Walk the acceptance criteria against the evidence, fan out the reviewers, block on a single Critical, and write the verdict before anything ships.", cmd: "/rite-seal", out: "seal.md" },
-  { n: "10", act: "ship", name: "ship", title: "The irreversible step, gated", body: "Only after you type GO: the commit, push, and tag (or PR). Then the workspace is archived and the cursor cleared. Nothing irreversible happens on a hunch.", cmd: "/rite-ship", out: "ship.md" },
+  { n: "01", act: "shape", name: "spec", title: "Investigate before writing the spec", body: "Read the codebase, capability ledger, and shipped archive before writing the product contract and measurable acceptance criteria.", cmd: "/rite-spec", out: "brief.md · spec.md" },
+  { n: "02", act: "shape", name: "temper", title: "Test the scope", body: "For an optional strategic pass, choose a scope posture, run a pre-mortem, and strengthen the contract before planning. Autocomplete runs this step automatically.", cmd: "/rite-temper", out: "strategy.md", optional: true },
+  { n: "03", act: "shape", name: "define", title: "Plan vertical slices", body: "Turn the approved spec into an architecture, a plan, traceable vertical slices, and a matrix linking acceptance criteria to proof.", cmd: "/rite-define", out: "plan.md · tasks.md" },
+  { n: "04", act: "shape", name: "vet", title: "Review the plan before coding", body: "Review reuse, architecture, test coverage, performance, and reversibility at a depth that matches the stakes. Vet is required.", cmd: "/rite-vet", out: "eng-review.md · test-plan.md" },
+  { n: "05", act: "build", name: "build", title: "Build one slice", body: "A fresh-context writer implements one vertical slice test-first. The engine reconciles source changes, checks imports and test integrity, then records the evidence.", cmd: "/rite-build", out: "code · evidence.md" },
+  { n: "06", act: "build", name: "prove", title: "Match claims to evidence", body: "Check each acceptance criterion against tests, the build, the running application, and real browser results. Traceability links every claim to its evidence.", cmd: "/rite-prove", out: "evidence.md · browser-evidence.md" },
+  { n: "07", act: "build", name: "polish", title: "Polish without changing behavior", body: "Clean up the code, then polish the UI when the feature has one. Refresh any evidence affected by those changes before moving on.", cmd: "/rite-polish", out: "polish-report.md" },
+  { n: "08", act: "build", name: "review", title: "Run an independent review", body: "Spec and standards reviewers inspect the feature diff in fresh contexts. The engine also rejects a review axis that records neither findings nor a clean result.", cmd: "/rite-review", out: "review.md" },
+  { n: "09", act: "ship", name: "seal", title: "Decide GO or NO-GO", body: "Compare acceptance criteria with the evidence, run the relevant review panel, block on any Critical finding, and record the decision without changing git.", cmd: "/rite-seal", out: "seal.md" },
+  { n: "10", act: "ship", name: "ship", title: "Ship after approval", body: "After a human types GO, run the approved git steps, update the capability ledger, archive the workspace, and clear the active-feature cursor.", cmd: "/rite-ship", out: "ship.md · archive/" },
 ];
 
 export type Mechanism = {
@@ -60,9 +64,25 @@ export type Mechanism = {
 
 export const MECHANISMS: Mechanism[] = [
   {
+    key: "engine",
+    title: "A deterministic Go control plane",
+    body: "The stdlib-only devrites-engine binary owns state transitions, gates, hooks, installation, updates, migration, and derived workspace data. Workspace commands run without model or network calls, so the same input produces the same result.",
+    span: "wide",
+    tone: "accent",
+    demo: "devrites-engine readiness · snapshot · evidence-fresh",
+  },
+  {
+    key: "harnesses",
+    title: "One contract for Claude and Codex",
+    body: "The canonical pack generates project-local skills, agents, standards, aliases, and hook adapters for both hosts. Each host has its own syntax but uses the same workspace and gates.",
+    span: "std",
+    tone: "go",
+    tags: ["Claude Code", "Codex", "hooks", "generated"],
+  },
+  {
     key: "paper-trail",
-    title: "The paper trail survives /clear",
-    body: "Every feature gets a folder under .devrites/work/. When the context window fills and you clear it, the next agent reads these files and resumes exactly where the last one stopped. No summary, no re-explaining, no lost decisions.",
+    title: "Project files survive /clear",
+    body: "Each feature has a folder under .devrites/work/. After you clear the context, the next agent reads those files and resumes from the recorded state instead of relying on a chat summary.",
     span: "wide",
     tone: "accent",
     demo: ".devrites/work/auth-tokens/ → next agent resumes cold",
@@ -70,23 +90,23 @@ export const MECHANISMS: Mechanism[] = [
   {
     key: "drift",
     title: "Spec Drift Guard",
-    body: "When the build reveals the plan was wrong, it stops, records the drift, and routes through plan repair before resuming. A wrong turn never compounds into a wasted day.",
+    body: "When implementation shows that the plan is wrong, the build stops, records the mismatch, and routes through plan repair before resuming.",
     span: "std",
     tone: "warn",
-    demo: "⚠ drift detected · build paused → drift.md",
+    demo: "drift detected · build paused → drift.md",
   },
   {
     key: "type-go",
     title: "type-GO",
-    body: "No commit, push, or tag on a hunch. Ship demands a literal typed GO before anything irreversible touches your git history.",
+    body: "The ship phase requires a human to type GO before it can commit, push, or tag anything in git.",
     span: "std",
     tone: "go",
     demo: "seal: GO · awaiting confirmation → type GO",
   },
   {
     key: "fanout",
-    title: "Reviewer fan-out",
-    body: "At seal a panel of independent, fresh-context reviewers reads the diff in parallel, each on its own axis. None of them wrote the code, so none inherits its blind spots.",
+    title: "Independent review panel",
+    body: "At seal, fresh-context reviewers inspect the diff in parallel, each on a separate axis. They did not write the code and do not receive the builder's reasoning.",
     span: "std",
     tone: "accent",
     tags: ["spec", "code", "tests", "frontend", "security", "perf", "devex"],
@@ -94,23 +114,31 @@ export const MECHANISMS: Mechanism[] = [
   {
     key: "security",
     title: "Security audit at the gate",
-    body: "A security auditor reads the diff for the OWASP Top 10, plus the OWASP LLM Top 10 when the feature drives a model. The pack itself ships injection-resistant and is scanned in CI.",
+    body: "When the feature crosses an input, auth, data, secret, permission, or integration boundary, a security auditor reads the diff for the OWASP Top 10 and the LLM Top 10 on AI surfaces. The pack is scanned in CI too.",
     span: "std",
     tone: "danger",
     tags: ["OWASP Top 10", "LLM Top 10", "secrets", "supply chain"],
   },
   {
     key: "learn",
-    title: "It learns your codebase's rules",
-    body: "At seal, DevRites writes the conventions it just saw into a ledger. The next feature reads it at the start, so the agent follows your patterns instead of guessing them again. You promote the keepers with /rite-learn.",
+    title: "Learn from shipped work without rewriting rules",
+    body: "DevRites stores observed conventions separately from prescriptive principles. /rite-learn looks through shipped work for recurring mistakes and dismissed findings, then proposes project-local lessons for later reviews.",
     span: "wide",
     tone: "go",
-    demo: "seal → conventions.md · promote with /rite-learn",
+    demo: "archive → /rite-learn → learnings.md",
+  },
+  {
+    key: "ledger",
+    title: "Capability specs stay current",
+    body: "Feature specs declare ADDED, MODIFIED, and REMOVED requirements. At ship, the engine applies those changes to .devrites/specs/, giving the next feature an up-to-date record of current behavior.",
+    span: "std",
+    tone: "accent",
+    demo: "devrites-engine ledger diff · sync · validate",
   },
   {
     key: "afk",
     title: "AFK mode",
-    body: "Drop a .devrites/AFK file and it runs unattended. But destructive migrations, auth changes, public-API breaks, and red tests always pause, and it pings your phone when it needs you.",
+    body: "Add a .devrites/AFK file to run unattended. Destructive migrations, auth changes, public API breaks, and failing tests still pause the run. You can configure a notification for those pauses.",
     span: "std",
     tone: "accent",
     demo: ".devrites/AFK · pauses + pings on risk",
@@ -122,19 +150,19 @@ export type Faq = { q: string; a: string };
 export const FAQ: Faq[] = [
   {
     q: "Does DevRites send my code anywhere?",
-    a: "No. DevRites is a pack of local Markdown skills and shell scripts. Feature state lives in .devrites/ on disk in your repo. Nothing is uploaded. The only network call the site itself makes is to the public GitHub release API to show the latest version.",
+    a: "The engine does not upload code or call a model. It stores workspace state as local Markdown under .devrites/. Install and update download release artifacts, and the optional source-cache hook handles only pages your host has already requested. Claude and Codex keep their own network behavior.",
   },
   {
     q: "Does it touch my global ~/.claude directory?",
-    a: "Never. DevRites installs project-local and refuses a global target. Every file it writes is recorded in .claude/devrites.manifest, and uninstall removes exactly those. Your feature data in .devrites/work/ is never touched.",
+    a: "The installer does not put skills, agents, standards, or hooks in ~/.claude or ~/.codex. It keeps those files in the target project and tracks them in a manifest. Unless you pass --no-binary, it may place the shared devrites-engine executable in a user or system bin directory. Uninstall leaves .devrites/work/ feature data in place.",
   },
   {
     q: "Which tools does it work with?",
-    a: "It is built for Claude Code as slash commands. The state core is a tool-agnostic devrites CLI and a dependency-free MCP server, so Cursor, Codex, Gemini CLI, a CI job, or a human can drive the same workflow against the same files.",
+    a: "DevRites supports Claude Code and Codex with generated project-local skills, agents, guidance, and hooks. CI, local scripts, other tools, and humans can use the same workspace gates through the devrites-engine CLI.",
   },
   {
     q: "How is it different from spec-kit, task-master, or BMAD?",
-    a: "Those orchestrate work across many agents. DevRites keeps the discipline in tool-agnostic files plus deterministic gates (ready, evidence-fresh, acceptance), so one verdict agrees whether it comes from the CLI, the MCP server, or /rite-seal.",
+    a: "DevRites separates model judgment from deterministic bookkeeping. It keeps human-readable feature state on disk, while one Go engine handles phase completeness, evidence freshness, acceptance checks, hooks, and migration. Claude, Codex, CI, and the lifecycle skills all use that same contract.",
   },
   {
     q: "Is it free?",
@@ -142,10 +170,10 @@ export const FAQ: Faq[] = [
   },
   {
     q: "How do I install and uninstall?",
-    a: "Run npx devrites@latest in your project, or curl -fsSL https://devrites.com | bash. The npx path installs offline and pins to the version you ask for; preview either with --dry-run. Uninstall with npx devrites@latest uninstall or curl -fsSL https://devrites.com/remove | bash. It removes only what DevRites installed and preserves your feature data.",
+    a: `Run ${INSTALL_CMD} in your project, or use the raw GitHub install.sh command when Node is unavailable. Preview either path with --dry-run and use --no-binary if you do not want the shared engine installed. Update with npx devrites@latest update and uninstall with npx devrites@latest uninstall. Managed project files are removed while .devrites/work/ is preserved.`,
   },
   {
     q: "Has the pack itself been hardened against prompt injection?",
-    a: "Yes. The agents run on a prompt-injection-resistant baseline, and CI scans the pack on every change for injection strings, hidden unicode, and supply-chain indicators in the lockfile, with third-party actions pinned. At seal a security auditor reviews the diff for the OWASP Top 10, and the OWASP LLM Top 10 when the feature has an AI surface.",
+    a: "Yes. The agents use a prompt-injection-resistant baseline. CI checks each pack change for injection strings, hidden Unicode, and lockfile supply-chain indicators, and third-party actions are pinned. At seal, a security auditor reviews the diff against the OWASP Top 10 and, for AI features, the OWASP LLM Top 10.",
   },
 ];

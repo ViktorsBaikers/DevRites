@@ -1,76 +1,61 @@
 import Image from "next/image";
-import { REPO, VERSION } from "@/lib/site";
+import { REPO } from "@/lib/site";
 
-const COLS = [
-  {
-    h: "Product",
-    links: [
-      ["Workflow", "#workflow"],
-      ["Mechanisms", "#mechanisms"],
-      ["Drive anywhere", "#anywhere"],
-      ["FAQ", "#faq"],
-      ["Install", "#install"],
-    ],
-  },
-  {
-    h: "Docs",
-    links: [
-      ["Overview", "/docs/"],
-      ["Command map", "/docs/command-map/"],
-      ["Flow", "/docs/flow/"],
-      ["Architecture", "/docs/architecture/"],
-    ],
-  },
-  {
-    h: "Source",
-    links: [
-      ["GitHub", REPO],
-      ["Releases", `${REPO}/releases`],
-      ["License (MIT)", `${REPO}/blob/main/LICENSE`],
-    ],
-  },
+const PRIMARY_LINKS = [
+  ["Workflow", "#workflow"],
+  ["Mechanisms", "#mechanisms"],
+  ["Hosts", "#anywhere"],
+  ["Docs", "/docs/"],
+  ["Install", "#install"],
+];
+
+const SOURCE_LINKS = [
+  ["GitHub", REPO],
+  ["Releases", `${REPO}/releases`],
+  ["MIT license", `${REPO}/blob/main/LICENSE`],
 ];
 
 export default function Footer() {
   return (
-    <footer className="border-t border-line bg-bg-deep">
-      <div className="wrap py-14">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_2fr]">
+    <footer className="border-t border-line bg-bg-deep/80">
+      <div className="wrap py-20 md:py-28">
+        <p className="max-w-5xl font-semibold text-ink [font-size:clamp(2.5rem,5vw,5.5rem)] leading-[0.95] tracking-[-0.04em]">
+          AI can write the diff. You decide whether it ships.
+        </p>
+
+        <div className="mt-20 grid gap-12 border-t border-line pt-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
           <div>
-            <a href="#top" className="flex items-center gap-2.5">
+            <a href="#top" className="inline-flex items-center gap-2.5">
               <Image src="/assets/img/mark-64.png" width={28} height={28} alt="" />
               <b className="text-lg">DevRites</b>
             </a>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-ink-muted">
-              A disciplined senior-engineer workflow for Claude Code. Spec, build, prove, seal,
-              ship, with the receipts on disk.
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-ink-muted">
+              A shared engineering workflow for Claude Code and Codex, with recorded checks, independent review, and human approval before release.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
-            {COLS.map((c) => (
-              <div key={c.h}>
-                <h3 className="mono text-xs uppercase tracking-[0.14em] text-ink-faint">{c.h}</h3>
-                <ul className="mt-3 space-y-2.5">
-                  {c.links.map(([label, href]) => (
-                    <li key={label}>
-                      <a
-                        href={href}
-                        rel={href.startsWith("http") ? "noopener" : undefined}
-                        className="text-sm text-ink-muted transition-colors duration-200 hover:text-ink"
-                      >
-                        {label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+
+          <nav aria-label="Footer" className="flex flex-wrap gap-x-7 gap-y-4 lg:justify-end">
+            {PRIMARY_LINKS.map(([label, href]) => (
+              <a
+                key={label}
+                href={href}
+                className="text-sm font-medium text-ink-muted transition-colors duration-200 hover:text-ink"
+              >
+                {label}
+              </a>
             ))}
-          </div>
+          </nav>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-line pt-6 text-sm text-ink-faint sm:flex-row">
-          <span>© 2026 Viktors Baikers · DevRites v{VERSION}</span>
-          <span className="mono">spec → build → prove → seal → ship</span>
+        <div className="mt-12 flex flex-col items-start justify-between gap-5 border-t border-line pt-6 text-sm text-ink-faint md:flex-row md:items-center">
+          <span>© 2026 Viktors Baikers</span>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            {SOURCE_LINKS.map(([label, href]) => (
+              <a key={label} href={href} rel="noopener" className="transition-colors duration-200 hover:text-ink">
+                {label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

@@ -1,93 +1,81 @@
 "use client";
 
-import {
-  Files,
-  ShieldAlert,
-  KeyRound,
-  Network,
-  ShieldCheck,
-  BookMarked,
-  Plane,
-  type LucideIcon,
-} from "lucide-react";
 import { Reveal, SectionHead } from "./ui";
-import { MECHANISMS, type Mechanism } from "@/lib/site";
+import { MECHANISMS } from "@/lib/site";
 
-const ICONS: Record<string, LucideIcon> = {
-  "paper-trail": Files,
-  drift: ShieldAlert,
-  "type-go": KeyRound,
-  fanout: Network,
-  security: ShieldCheck,
-  learn: BookMarked,
-  afk: Plane,
-};
-
-const TONE: Record<Mechanism["tone"], string> = {
-  accent: "text-accent",
-  go: "text-go",
-  warn: "text-warn",
-  danger: "text-danger",
-};
-
-const SPAN: Record<Mechanism["span"], string> = {
-  wide: "md:col-span-2 lg:col-span-4",
-  tall: "md:col-span-1 lg:col-span-2 lg:row-span-2",
-  std: "md:col-span-1 lg:col-span-2",
-};
+const GROUPS = [
+  {
+    title: "Model judgment, deterministic gates",
+    lead: "The model handles engineering judgment. The engine applies the same state, completeness, evidence, and install rules every time.",
+    proof: "readiness: blocked, missing acceptance proof",
+    keys: ["engine", "drift", "ledger"],
+    span: "lg:col-span-4",
+    treatment: "bento-feature--signal",
+  },
+  {
+    title: "Project state survives a cleared chat",
+    lead: "The next agent reads the git-diffable project files instead of relying on a reconstructed chat summary.",
+    proof: ".devrites/work/<feature>/",
+    keys: ["harnesses", "paper-trail"],
+    span: "lg:col-span-2",
+    treatment: "bento-feature--path",
+  },
+  {
+    title: "Reviewers start with the evidence",
+    lead: "Fresh-context specialists inspect the diff independently before release. They do not receive the builder's reasoning.",
+    proof: "spec, code, tests, security, performance",
+    keys: ["fanout", "security", "learn"],
+    span: "lg:col-span-2",
+    treatment: "bento-feature--review",
+  },
+  {
+    title: "Git changes wait for a human",
+    lead: "AFK runs can keep working on their own, but risky boundaries and release actions still require a human decision.",
+    proof: "seal: GO, awaiting literal confirmation",
+    keys: ["type-go", "afk"],
+    span: "lg:col-span-4",
+    treatment: "bento-feature--gate",
+  },
+];
 
 export default function Bento() {
   return (
-    <section id="mechanisms" className="wrap py-20 sm:py-28">
+    <section id="mechanisms" className="wrap py-32 md:py-48">
       <SectionHead
-        title="Every guarantee is a real mechanism."
-        lead="No vibes. Each one is a named gate you can read in the repo. It's the reason an unattended agent won't do the expensive, irreversible thing on its own."
+        title="Use firm boundaries where they matter."
+        lead="DevRites backs each workflow rule with an engine result, a file in the repository, an independent review, or a human decision."
       />
 
-      <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:auto-rows-[minmax(0,1fr)] lg:grid-cols-6">
-        {MECHANISMS.map((m, i) => (
-          <Tile key={m.key} m={m} index={i} />
-        ))}
+      <div className="mt-16 grid grid-flow-dense grid-cols-1 gap-4 lg:grid-cols-6">
+        {GROUPS.map((group, index) => {
+          const mechanisms = group.keys.map((key) => MECHANISMS.find((item) => item.key === key)!);
+
+          return (
+            <Reveal key={group.title} delay={index * 0.06} className={group.span}>
+              <article className={`bento-feature relative h-full overflow-hidden rounded-card p-7 md:p-9 ${group.treatment}`}>
+                <div className="relative">
+                  <code className="mono block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-accent">
+                    {group.proof}
+                  </code>
+                  <h3 className="mt-8 max-w-xl text-3xl font-semibold leading-[1.02] tracking-[-0.035em] text-ink md:text-4xl">
+                    {group.title}
+                  </h3>
+                  <p className="mt-4 max-w-xl leading-relaxed text-ink-muted">{group.lead}</p>
+                </div>
+
+                <div className="relative mt-10 border-t border-line">
+                  {mechanisms.map((mechanism) => (
+                    <div key={mechanism.key} className="grid gap-2 border-b border-line py-5 last:border-0 md:grid-cols-[0.38fr_0.62fr] md:gap-6">
+                      <h4 className="font-semibold text-ink">{mechanism.title}</h4>
+                      <p className="text-sm leading-relaxed text-ink-muted">{mechanism.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </Reveal>
+          );
+        })}
       </div>
     </section>
-  );
-}
-
-function Tile({ m, index }: { m: Mechanism; index: number }) {
-  const Icon = ICONS[m.key] ?? Files;
-
-  return (
-    <Reveal delay={Math.min(index * 0.06, 0.3)} className={`${SPAN[m.span]} group`}>
-      <div className="tile bento-tile relative flex h-full flex-col gap-3 overflow-hidden p-6">
-        {/* hover wash — the only motion left on the tile; the CSS lift handles the rest */}
-        <div className="blade-soft pointer-events-none absolute -right-16 -top-16 size-40 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
-
-        <div className={`flex size-11 items-center justify-center rounded-xl border border-line bg-surface-2/60 ${TONE[m.tone]}`}>
-          <Icon className="size-5" strokeWidth={1.8} />
-        </div>
-
-        <h3 className="text-lg font-bold text-ink">{m.title}</h3>
-        <p className="text-[0.94rem] leading-relaxed text-ink-muted">{m.body}</p>
-
-        {m.tags && (
-          <div className="mt-auto flex flex-wrap gap-1.5 pt-2">
-            {m.tags.map((t) => (
-              <span
-                key={t}
-                className="mono rounded-md border border-line bg-surface-2/50 px-2 py-1 text-[0.7rem] text-ink-muted"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {m.demo && (
-          <div className="mono mt-auto rounded-lg border border-line bg-bg-deep/60 px-3 py-2 text-[0.72rem] text-ink-muted">
-            {m.demo}
-          </div>
-        )}
-      </div>
-    </Reveal>
   );
 }

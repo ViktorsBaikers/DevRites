@@ -1,8 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, RotateCcw, Check } from "lucide-react";
-import { Reveal, EASE } from "@/components/ui";
+import { Reveal } from "@/components/ui";
 import { PHASES } from "@/lib/site";
 
 const ACT_TONE: Record<string, { text: string; ring: string; bg: string; track: string }> = {
@@ -11,9 +10,8 @@ const ACT_TONE: Record<string, { text: string; ring: string; bg: string; track: 
   ship: { text: "text-go", ring: "border-go/60", bg: "bg-go/15", track: "bg-go/60" },
 };
 
-/* ---- 1. The 10-phase pipeline, grouped into 3 acts ---- */
+/* ---- 1. Public lifecycle, grouped into 3 acts ---- */
 export function PipelineDiagram() {
-  const reduce = useReducedMotion() ?? false;
   const acts = [
     { key: "shape", label: "shape", span: 4 },
     { key: "build", label: "build", span: 4 },
@@ -44,19 +42,12 @@ export function PipelineDiagram() {
               const last = i === PHASES.length - 1;
               return (
                 <div key={p.name} className="flex flex-1 items-start">
-                  <motion.div
-                    initial={reduce ? false : { opacity: 0, scale: 0.5 }}
-                    whileInView={reduce ? undefined : { opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, ease: EASE, delay: i * 0.06 }}
-                    className="flex flex-col items-center gap-1.5 text-center"
-                    style={{ width: 48 }}
-                  >
+                  <div className="flex w-12 flex-col items-center gap-1.5 text-center">
                     <span className={`flex size-9 items-center justify-center rounded-full border ${t.ring} ${t.bg} ${t.text} text-sm font-bold ${last ? "rotate-45" : ""}`}>
                       <span className={last ? "-rotate-45" : ""}>{last ? <Check className="size-4" strokeWidth={3} /> : i + 1}</span>
                     </span>
                     <span className="mono text-[0.62rem] text-ink-muted">{p.name}</span>
-                  </motion.div>
+                  </div>
                   {!last && (
                     <div className="mt-4 h-px flex-1 bg-line" />
                   )}
@@ -94,7 +85,7 @@ export function PhaseLoop() {
           ))}
         </div>
         <div className="mono mt-4 rounded-lg border border-dashed border-line bg-bg-deep/50 px-4 py-2.5 text-center text-[0.78rem] text-ink-faint">
-          all of it on disk under <span className="text-accent">.devrites/work/&lt;slug&gt;/</span>. It survives /clear and new sessions
+          each step reads and writes <span className="text-accent">.devrites/work/&lt;slug&gt;/</span>, so /clear does not erase the feature state
         </div>
       </div>
     </Reveal>
@@ -104,9 +95,9 @@ export function PhaseLoop() {
 /* ---- 3. Architecture: who drives what, down to the source of truth ---- */
 export function StackDiagram() {
   const layers = [
-    { label: "Anyone drives it", items: ["Claude Code", "Cursor", "Codex", "Gemini CLI", "CI", "a human"], tone: "text-ink-muted" },
-    { label: "Three surfaces", items: ["rite-* commands", "devrites CLI", "MCP server"], tone: "text-accent" },
-    { label: "Orchestration", items: ["13 review agents", "internal specialists", "engineering rules"], tone: "text-warn" },
+    { label: "Host adapters", items: ["Claude Code", "Codex", "CI", "local scripts", "a human"], tone: "text-ink-muted" },
+    { label: "Judgment plane", items: ["42 focused skills", "13 read-only agents", "1 slice writer"], tone: "text-warn" },
+    { label: "Deterministic control plane", items: ["devrites-engine", "gates", "hooks", "install + migrate"], tone: "text-accent" },
   ];
   return (
     <Reveal>
@@ -156,7 +147,7 @@ export function DriftLoop() {
         </div>
         <div className="mt-3 flex items-center justify-center gap-2 text-[0.78rem] text-ink-faint">
           <RotateCcw className="size-3.5 text-accent" />
-          repaired plan loops back into <span className="mono text-accent">build</span>, so the wrong turn never compounds
+          after plan repair, <span className="mono text-accent">build</span> resumes with the corrected slices
         </div>
       </div>
     </Reveal>
@@ -166,9 +157,9 @@ export function DriftLoop() {
 /* ---- 5. The evidence (proof) ladder ---- */
 export function ProofLadder() {
   const rungs = [
-    { t: "browser-harness", n: "real browser: screenshots, console, network, viewport" },
-    { t: "Chrome DevTools MCP", n: "scripted browser checks" },
-    { t: "/run + /verify", n: "Claude Code's built-in runtime checks" },
+    { t: "Playwright MCP", n: "real browser: screenshots, console, network, viewport" },
+    { t: "Chrome DevTools MCP", n: "browser diagnostics, Lighthouse, performance traces" },
+    { t: "host runtime checks", n: "the active harness runs and verifies the real application" },
     { t: "project E2E", n: "Playwright · Cypress · Capybara" },
     { t: "manual fallback", n: "exact steps recorded; seal weighs the risk" },
   ];
@@ -193,8 +184,8 @@ export function ProofLadder() {
           ))}
         </div>
         <p className="mt-3 text-[0.8rem] leading-relaxed text-ink-faint">
-          A screenshot path counts as unproven until it is opened and described. DevRites detects what is
-          available and degrades down the ladder; it never installs tooling for you.
+          A screenshot path remains unproven until someone opens and describes it. DevRites uses the
+          strongest available level and does not install extra tools.
         </p>
       </div>
     </Reveal>

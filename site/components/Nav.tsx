@@ -1,101 +1,127 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import { useScroll, useMotionValueEvent } from "framer-motion";
-import { Menu, X } from "lucide-react";
-import { GithubMark, MagneticLink } from "./ui";
-import { REPO, VERSION } from "@/lib/site";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
+import { MagneticLink } from "./ui";
+import ThemeToggle from "./ThemeToggle";
+import { REPO } from "@/lib/site";
 
 const LINKS = [
   { href: "#workflow", label: "Workflow" },
   { href: "#mechanisms", label: "Mechanisms" },
-  { href: "#anywhere", label: "Drive anywhere" },
+  { href: "#anywhere", label: "Hosts" },
   { href: "#faq", label: "FAQ" },
   { href: "/docs/", label: "Docs" },
 ];
 
 export default function Nav() {
-  const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [active, setActive] = useState<string | null>(null);
 
-  // Motion's useScroll instead of a raw window scroll listener (no per-frame work)
-  const { scrollY } = useScroll();
-  useMotionValueEvent(scrollY, "change", (y) => setScrolled(y > 12));
+  useEffect(() => {
+    const sections = LINKS.flatMap((link) => {
+      if (!link.href.startsWith("#")) return [];
+      const section = document.querySelector<HTMLElement>(link.href);
+      return section ? [section] : [];
+    });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const current = entries.find((entry) => entry.isIntersecting);
+        if (current) setActive(`#${current.target.id}`);
+      },
+      { rootMargin: "-30% 0px -60% 0px" },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 flex justify-center px-3 pt-3">
-      <div
-        className={`wrap flex items-center justify-between rounded-2xl px-4 py-2.5 transition-all duration-300 ${
-          scrolled ? "glass shadow-lg shadow-black/20" : "border border-transparent"
-        }`}
-      >
-        <a href="#top" className="flex items-center gap-2.5" aria-label="DevRites home">
+    <header className="pointer-events-none fixed inset-x-0 top-3 z-30">
+      <div className="nav-shell wrap pointer-events-auto flex h-16 items-center justify-between gap-5 rounded-card px-3 sm:px-4">
+        <a href="#top" className="flex shrink-0 items-center gap-2.5" aria-label="DevRites home">
           <Image src="/assets/img/mark-64.png" width={28} height={28} alt="" priority />
           <b className="text-[1.05rem] tracking-tight">DevRites</b>
-          <span className="mono hidden rounded-full border border-line bg-surface-2/60 px-2 py-0.5 text-[0.65rem] text-ink-faint sm:inline">
-            v{VERSION}
-          </span>
         </a>
 
-        <nav className="hidden items-center gap-7 md:flex" aria-label="Primary">
-          {LINKS.map((l) => (
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
+          {LINKS.map((link) => (
             <a
-              key={l.href}
-              href={l.href}
-              className="text-sm text-ink-muted transition-colors duration-200 hover:text-ink"
+              key={link.href}
+              href={link.href}
+              aria-current={active === link.href ? "location" : undefined}
+              className={`rounded-full px-3.5 py-2 text-sm transition-colors ${
+                active === link.href
+                  ? "bg-surface-2 text-ink"
+                  : "text-ink-muted hover:bg-surface-2/65 hover:text-ink"
+              }`}
             >
-              {l.label}
+              {link.label}
             </a>
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
           <a
             href={REPO}
             rel="noopener"
-            className="hidden items-center gap-1.5 rounded-xl border border-line px-3 py-1.5 text-sm text-ink-muted transition-colors duration-200 hover:border-line-bright hover:text-ink sm:inline-flex"
+            className="hidden items-center gap-1 rounded-full px-3 py-2 text-sm text-ink-muted transition-colors hover:bg-surface-2/65 hover:text-ink sm:inline-flex"
           >
-            <GithubMark className="size-4" /> GitHub
+            GitHub <ArrowUpRight className="size-3.5" aria-hidden />
           </a>
-          <MagneticLink href="#install" className="btn btn-primary px-3.5 py-1.5 text-sm">
+          <ThemeToggle />
+          <MagneticLink href="#install" className="btn btn-primary px-4 py-2 text-sm">
             Install
           </MagneticLink>
           <button
             type="button"
-            className="ml-1 cursor-pointer rounded-lg border border-line p-1.5 text-ink-muted md:hidden"
+            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-line text-ink-muted lg:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
+            aria-controls="mobile-menu"
             aria-expanded={open}
-            onClick={() => setOpen((o) => !o)}
+            onClick={() => setOpen((value) => !value)}
           >
-            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+            {open ? <X className="size-4" aria-hidden /> : <Menu className="size-4" aria-hidden />}
           </button>
         </div>
       </div>
 
-      {open && (
-        <div className="glass absolute inset-x-3 top-[4.5rem] z-30 rounded-2xl p-3 md:hidden">
-          <nav className="flex flex-col" aria-label="Mobile">
-            {LINKS.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-ink-muted transition-colors hover:bg-surface-2/60 hover:text-ink"
-              >
-                {l.label}
-              </a>
-            ))}
+      {open ? (
+        <nav
+          id="mobile-menu"
+          aria-label="Mobile"
+          className="pointer-events-auto absolute inset-x-3 top-[4.5rem] grid rounded-card bg-surface p-2 lg:hidden"
+        >
+          {LINKS.map((link) => (
             <a
-              href={REPO}
-              rel="noopener"
-              className="rounded-lg px-3 py-2.5 text-ink-muted transition-colors hover:bg-surface-2/60 hover:text-ink"
+              key={link.href}
+              href={link.href}
+              aria-current={active === link.href ? "location" : undefined}
+              onClick={() => {
+                setActive(link.href.startsWith("#") ? link.href : null);
+                setOpen(false);
+              }}
+              className={`rounded-xl px-4 py-3 text-base transition-colors ${
+                active === link.href ? "bg-surface-2 text-ink" : "text-ink-muted hover:bg-surface-2/65 hover:text-ink"
+              }`}
             >
-              GitHub
+              {link.label}
             </a>
-          </nav>
-        </div>
-      )}
+          ))}
+          <a href={REPO} rel="noopener" className="rounded-xl px-4 py-3 text-ink-muted hover:bg-surface-2/65 hover:text-ink">
+            GitHub
+          </a>
+        </nav>
+      ) : null}
     </header>
   );
 }

@@ -1,7 +1,7 @@
-# Deploying the v3 site
+# Deploying the website
 
 The new marketing site is a **Next.js static export** in `site/`. `next build` emits plain
-HTML/CSS/JS to `site/out/` — no server, same as before. The Cloudflare worker (`worker.js`)
+HTML/CSS/JS to `site/out/` - no server, same as before. The Cloudflare worker (`worker.js`)
 is unchanged: it still serves the install/update/uninstall scripts to CLI clients and the
 static site to browsers.
 
@@ -13,13 +13,13 @@ npm ci
 npm run build        # -> site/out/
 ```
 
-## Cutover (when you're ready to replace the old web/ site)
+## Cloudflare configuration
 
 1. Point the worker's static assets at the export. In `wrangler.jsonc` (repo root):
 
    ```jsonc
    "assets": {
-     "directory": "./site/out",   // was: "./web"
+     "directory": "./site/out",
      ...
    }
    ```
@@ -31,17 +31,16 @@ npm run build        # -> site/out/
 
 3. Deploy from a built tree: `npm run build` in `site/`, then `wrangler deploy` at the repo root.
 
-`site/out/` is git-ignored, so it must be built in CI — do not commit it.
+`site/out/` is git-ignored, so it must be built in CI - do not commit it.
 
 ## Rollback
 
-Revert step 1 (`"directory": "./web"`). The old hand-written site in `web/` is untouched and
-deploys instantly with no build step.
+Redeploy the last known-good `site/web` commit and its static export. The old `web/` cutover target
+no longer exists.
 
 ## What carried over
 
 - SEO: title/description/canonical/OG/Twitter + JSON-LD (`@graph`: WebSite, SoftwareApplication,
   Organization, Person, FAQPage) live in `app/layout.tsx`.
-- `robots.txt`, `sitemap.xml`, `llms.txt`, `_headers`, `404` and `/docs/*` are in `site/public/`
-  and ship in the export.
-- Fonts: self-hosted Schibsted Grotesk + JetBrains Mono via `next/font/local`.
+- `robots.txt`, `sitemap.xml`, `llms.txt`, `_headers`, and `/docs/*` ship in the export.
+- Fonts: Geist via `next/font/google` and self-hosted JetBrains Mono via `next/font/local`.

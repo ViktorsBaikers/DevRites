@@ -7,7 +7,7 @@ import { CONCEPTS, WORKSPACE_FILES } from "@/lib/docs";
 
 export const metadata: Metadata = {
   title: "Concepts",
-  description: "The mental model behind DevRites: slices, gates, the evidence ladder, the Spec Drift Guard, forge, and the on-disk workspace.",
+  description: "How DevRites uses slices, gates, evidence, drift handling, forge builds, and an on-disk workspace.",
   alternates: { canonical: "/docs/concepts/" },
 };
 
@@ -17,15 +17,15 @@ export default function Concepts() {
       <DocsHeader
         crumb="concepts"
         title="Concepts"
-        lead="A handful of ideas explain everything DevRites does. Learn these once and the commands read themselves."
+        lead="These concepts explain how DevRites divides work, records state, checks evidence, and recovers when a plan is wrong."
       />
 
-      <H2 id="big-idea">The big idea</H2>
+      <H2 id="big-idea" first>The big idea</H2>
       <P>
-        DevRites is a set of small, project-local Claude Code skills, one per phase, that share a single
-        source of truth: Markdown files on disk under <code className="k">.devrites/</code>. Because the
-        state lives in files instead of the chat, any phase can resume cold after you clear the context,
-        and the same files can be driven by Claude Code, another agent, a CI job, or a human.
+        DevRites separates engineering judgment from workflow bookkeeping. Project-local Claude and Codex
+        skills make engineering decisions. A stdlib-only Go engine manages state, gates, hooks, migration,
+        and derived data in the Markdown files under <code className="k">.devrites/</code>. A new context,
+        another host, CI, or a human can resume from those same files.
       </P>
 
       <div className="mt-6">
@@ -46,8 +46,8 @@ export default function Concepts() {
 
       <H2 id="proof">The evidence ladder</H2>
       <P>
-        Every claim is backed by proof, ranked from strongest to weakest. DevRites climbs as high as your
-        tooling allows and records exactly which rung it reached.
+        DevRites ranks evidence from strongest to weakest. It uses the strongest check available in your
+        project and records which level it reached.
       </P>
       <div className="mt-5">
         <ProofLadder />
@@ -55,9 +55,9 @@ export default function Concepts() {
 
       <H2 id="workspace">The workspace, file by file</H2>
       <P>
-        Every feature gets its own directory under <code className="k">.devrites/work/&lt;slug&gt;/</code>.
-        Each phase reads the previous phase&rsquo;s files and writes its own. Nothing here depends on a
-        chat summary you can lose.
+        Each feature gets its own directory under <code className="k">.devrites/work/&lt;slug&gt;/</code>.
+        A phase starts with the compact workspace map, then loads only the files it needs. Resuming work
+        depends on these files rather than the previous chat.
       </P>
       <Panel>
         {WORKSPACE_FILES.map((f) => (
@@ -66,7 +66,7 @@ export default function Concepts() {
       </Panel>
       <P>
         When <code className="k">/rite-ship</code> closes a feature it archives the whole workspace to{" "}
-        <code className="k">.devrites/archive/&lt;slug&gt;/</code> (every file preserved, never deleted) and
+        <code className="k">.devrites/archive/&lt;slug&gt;/</code> and preserves every file. It then
         clears <code className="k">.devrites/ACTIVE</code>. One feature is active at a time; start or switch
         with <code className="k">/rite-spec &lt;other&gt;</code>.
       </P>

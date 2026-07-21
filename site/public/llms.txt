@@ -1,43 +1,67 @@
 # DevRites
 
-> DevRites turns Claude Code into a disciplined senior engineer: it specs a feature, plans it, builds one verified slice at a time, proves the work with on-disk evidence, reviews it with fresh-context agents, and refuses to claim "done" without proof. Free and open source (MIT).
+> DevRites gives Claude Code and Codex the same project-local engineering workflow. Focused skills handle engineering judgment, while a Go control plane manages workflow state and checks. DevRites is free and open source under the MIT license.
 
-DevRites is a project-local pack of Claude Code skills (slash commands like /rite-spec, /rite-build, /rite-seal) plus engineering rules, review subagents, a tool-agnostic CLI, and an MCP server. Feature state lives on disk under .devrites/work/<slug>/ as Markdown, so a fresh agent resumes exactly where the last one stopped. A Spec Drift Guard halts the build when the plan is revealed wrong; type-GO requires a typed confirmation before any irreversible git operation; AFK mode runs unattended but never silently accepts destructive migrations, auth changes, public-API breaks, or red tests.
+DevRites ships 42 skills and 14 fresh-context agents as generated project-local files for Claude and Codex. A CGO-free, stdlib-only `devrites-engine` binary manages workspace state, gates, hooks, derived data, migration, installation, updates, and uninstall. Feature state lives as git-diffable Markdown under `.devrites/work/<slug>/`, so a new agent or another host can resume from the recorded project state.
 
 ## Lifecycle
 
-The ten-phase feature lifecycle, each phase reading the last one's files and writing its own:
+The normal feature path is:
 
-- spec (/rite-spec): investigate the codebase, write spec.md with measurable acceptance criteria
-- temper (/rite-temper): strategic review and pre-mortem of the spec before planning
-- define (/rite-define): decompose the spec into a plan and vertical task slices
-- vet (/rite-vet): engineering review of the plan, writes the test plan the build must satisfy
-- build (/rite-build): implement exactly one verified slice, test-first, then stop with evidence
-- prove (/rite-prove): full tests, build, types, lint, and browser proof against acceptance criteria
-- polish (/rite-polish): behavior-preserving cleanup, then UI polish against the design system
-- review (/rite-review): parallel fresh-context reviewers check the diff against spec and standards
-- seal (/rite-seal): GO / NO-GO decision gate over the evidence
-- ship (/rite-ship): the gated, irreversible commit/push/tag, then archive the workspace
+- spec (`/rite-spec` or `$rite-spec`): investigate the codebase and living capability ledger; write the product contract and measurable acceptance criteria
+- define (`/rite-define` or `$rite-define`): write architecture, plan, traceable vertical slices, and the acceptance-to-proof matrix
+- vet (`/rite-vet` or `$rite-vet`): mandatory stakes-scaled engineering review before code
+- build (`/rite-build` or `$rite-build`): implement exactly one verified slice test-first, then stop with evidence
+- prove (`/rite-prove` or `$rite-prove`): tests, build, runtime, and browser proof against every acceptance criterion
+- polish (`/rite-polish` or `$rite-polish`): behavior-preserving code cleanup and UI polish when relevant
+- review (`/rite-review` or `$rite-review`): independent spec and standards axes over the feature diff
+- seal (`/rite-seal` or `$rite-seal`): GO / NO-GO decision; no git mutation
+- ship (`/rite-ship` or `$rite-ship`): literal type-GO, approved git ladder, capability-ledger sync, and workspace archive
 
-## Tool-agnostic core
+`rite-temper` is the optional strategy review before planning and runs automatically in autocomplete. `rite-plan repair` fixes recorded drift. `rite-converge` compares live code with the recorded spec and plan, then adds the remaining work as traceable slices.
 
-- The `devrites` CLI exposes deterministic gates where the exit code is the verdict: `orient`, `ready`, `evidence-fresh`, `acceptance`, `active`, `list`, `use`, `resolve`.
-- A dependency-free MCP stdio server exposes the same operations as tools (devrites_ready, devrites_acceptance, devrites_orient, ...). Register it in a project's .mcp.json.
-- The same files and gates are drivable from Claude Code, Cursor, Codex, Gemini CLI, a CI job, or a human.
+## Control plane
+
+`devrites-engine help` lists every command and hook. Common commands:
+
+- `devrites-engine preamble [slug]`: active workspace digest
+- `devrites-engine snapshot [slug]`: stable `devrites.workspace.v1` JSON
+- `devrites-engine build-readiness [slug]`: build-readiness gate
+- `devrites-engine evidence-fresh [slug]`: proof freshness gate
+- `devrites-engine check-acceptance <dir>`: acceptance gate
+- `devrites-engine resolve <qid> "<answer>"`: resolve a human gate
+- `devrites-engine doctor`: binary, pack, and workspace-schema compatibility
+- `devrites-engine ledger diff|sync|validate|list|show`: living capability specs
+
+Exit 3 is a structured human-in-the-loop pause, not a crash. Workspace state and gate commands make no model or network calls. Explicit install, update, and source-cache I/O is isolated behind named engine boundaries.
+
+## Hosts and safety
+
+- Claude Code uses `/rite <verb>` or `/rite-<verb>`.
+- Codex uses `$rite <verb>` or `$rite-<verb>`.
+- CI, local scripts, other tools, and humans call `devrites-engine` directly.
+- Skills, agents, standards, guidance, and hooks stay in the target project rather than global agent directories.
+- The optional shared `devrites-engine` executable may be installed in a user or system bin directory; pass `--no-binary` to skip it.
+- Spec Drift Guard records a plan mismatch and routes it through repair before the build resumes.
+- AFK mode runs unattended but pauses on destructive migrations, auth/authz changes, public-API breaks, red checks, and hard gates.
+- Type-GO protects irreversible git operations.
 
 ## Docs
 
-- [Documentation](https://devrites.com/docs/): quick start, the on-disk workspace, where to go next
-- [Command map](https://devrites.com/docs/command-map.html): every command and skill, what it reads and writes
-- [Flow](https://devrites.com/docs/flow.html): the lifecycle, the Spec Drift Guard loop, and the two run modes
-- [Architecture](https://devrites.com/docs/architecture.html): the layers, the naming convention, and the design rationale
+- [Documentation](https://devrites.com/docs/): overview and workspace model
+- [Getting started](https://devrites.com/docs/getting-started/): install, flags, optional tools, and first feature
+- [Command map](https://devrites.com/docs/command-map/): every shipped skill and agent
+- [Flow](https://devrites.com/docs/flow/): lifecycle, recovery loops, HITL, and AFK
+- [Engine CLI](https://devrites.com/docs/cli-mcp/): commands, JSON contracts, hooks, and exit codes
+- [Architecture](https://devrites.com/docs/architecture/): judgment plane, control plane, host adapters, and durable state
 
 ## Install
 
-- Install into a project: `curl -fsSL https://devrites.com | bash`
-- Update: `curl -fsSL https://devrites.com/update | bash`
-- Uninstall: `curl -fsSL https://devrites.com/remove | bash`
-- DevRites is project-local and never writes to ~/.claude.
+- Install: `npx devrites@latest`
+- Update: `npx devrites@latest update`
+- Uninstall: `npx devrites@latest uninstall`
+- Without Node: `curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash`
+- Preview any install path with `--dry-run`; skip the shared binary with `--no-binary`.
 
 ## Source
 

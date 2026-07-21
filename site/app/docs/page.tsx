@@ -9,18 +9,23 @@ import { INSTALL_CMD } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Overview · DevRites docs",
   description:
-    "DevRites is a project-local pack of Claude Code skills that runs a disciplined senior-engineer workflow with state on disk.",
+    "Learn how Claude Code and Codex use the same DevRites workflow, Go control plane, and project-local feature files.",
   alternates: { canonical: "/docs/" },
 };
 
 const TREE = `.devrites/
   ACTIVE                      which feature is active
   AFK                         presence = AFK mode (max_slices / notify)
+  principles.md               prescriptive project invariants
+  conventions.md             observed project idioms
+  learnings.md                recurring lessons and dismissed findings
+  specs/<capability>/spec.md  living proven behavior
   work/<slug>/
-    spec.md  strategy.md  plan.md  tasks.md  state.md
-    eng-review.md  test-plan.md  evidence.md  drift.md
-    decisions.md  assumptions.md  questions.md
-    references/  browser-evidence.md  touched-files.md
+    README.md  brief.md  spec.md  strategy.md
+    architecture.md  flows.md  plan.md  tasks.md  traceability.md
+    state.md  decisions.md  assumptions.md  questions.md  drift.md
+    eng-review.md  test-plan.md  evidence.md  touched-files.md
+    references.md  references/  design-brief.md  browser-evidence.md
     polish-report.md  review.md  seal.md  ship.md  handoff.md`;
 
 const NEXT = [
@@ -34,16 +39,17 @@ export default function DocsOverview() {
     <>
       <DocsHeader
         crumb="overview"
-        title="Documentation"
-        lead="DevRites is a project-local pack of Claude Code skills that runs a disciplined senior-engineer workflow: spec and temper the idea, plan and vet it, build one verified slice, prove it, polish, review, seal, and ship. Every phase reads the last one's files and writes its own, so your state lives on disk instead of in a chat window."
+        title="How DevRites works"
+        lead="DevRites gives Claude Code and Codex the same process for planning a feature, building it in slices, recording checks, reviewing the diff, and asking a human to approve the release."
       />
 
       <Reveal>
-        <h2 className="text-2xl font-bold">The lifecycle at a glance</h2>
+        <h2 id="lifecycle" className="scroll-mt-28 text-2xl font-bold">The lifecycle at a glance</h2>
       </Reveal>
       <Reveal delay={0.05}>
         <p className="mt-3 text-ink-muted leading-relaxed">
-          Ten phases in three acts. Shape the idea, build it one verified slice at a time, then ship.
+          Nine core rites take a feature from spec to ship. Temper adds an optional strategy review.
+          Converge repairs resumed or adopted work by adding only the slices that are still missing.
         </p>
       </Reveal>
       <div className="mt-5 mb-14">
@@ -51,7 +57,7 @@ export default function DocsOverview() {
       </div>
 
       <Reveal>
-        <h2 className="text-2xl font-bold">Quick start</h2>
+        <h2 id="quick-start" className="scroll-mt-28 text-2xl font-bold">Quick start</h2>
       </Reveal>
       <Reveal delay={0.05}>
         <p className="mt-3 text-ink-muted leading-relaxed">
@@ -67,7 +73,7 @@ export default function DocsOverview() {
           </div>
           <pre className="mono overflow-x-auto px-4 py-3.5 text-sm leading-relaxed text-ink">
             <span className="text-accent">npx</span> devrites@latest{"\n"}
-            <span className="text-ink-faint"># then, inside Claude Code:</span>
+            <span className="text-ink-faint"># then, in Claude Code (use $rite-spec in Codex):</span>
             {"\n"}
             <span className="text-go">/rite-spec</span> &quot;add refresh-token rotation&quot;
           </pre>
@@ -75,7 +81,7 @@ export default function DocsOverview() {
       </Reveal>
       <Reveal delay={0.12}>
         <p className="mt-4 text-ink-muted leading-relaxed">
-          From there each phase has a menu form (<code className="k">/rite &lt;verb&gt;</code>) and a
+          Each phase has a menu form (<code className="k">/rite &lt;verb&gt;</code>) and a
           direct shortcut (<code className="k">/rite-&lt;verb&gt;</code>). They run the same skill. Run{" "}
           <code className="k">/rite</code> for the menu, or <code className="k">/rite-status</code> to
           see where the active feature stands.
@@ -83,13 +89,13 @@ export default function DocsOverview() {
       </Reveal>
 
       <Reveal>
-        <h2 className="mt-14 text-2xl font-bold">The workspace</h2>
+        <h2 id="workspace" className="mt-14 scroll-mt-28 text-2xl font-bold">The workspace</h2>
       </Reveal>
       <Reveal delay={0.05}>
         <p className="mt-3 text-ink-muted leading-relaxed">
-          Every feature gets its own directory under <code className="k">.devrites/work/&lt;slug&gt;/</code>.
+          Each feature gets its own directory under <code className="k">.devrites/work/&lt;slug&gt;/</code>.
           When the context window fills and you <code className="k">/clear</code>, the next agent reads
-          these files and resumes exactly where the last one stopped.
+          these files and resumes from the recorded state.
         </p>
       </Reveal>
       <Reveal delay={0.1}>
@@ -102,12 +108,12 @@ export default function DocsOverview() {
           <code className="k">spec.md</code> holds the contract. <code className="k">decisions.md</code>{" "}
           and <code className="k">assumptions.md</code> hold the reasoning.{" "}
           <code className="k">evidence.md</code> holds the proof. <code className="k">drift.md</code>{" "}
-          records where the plan was wrong and why. None of it depends on a chat summary you can lose.
+          records where the plan was wrong and why. Recovery uses these project files instead of a chat summary.
         </p>
       </Reveal>
 
       <Reveal>
-        <h2 className="mt-14 text-2xl font-bold">Where to go next</h2>
+        <h2 id="next" className="mt-14 scroll-mt-28 text-2xl font-bold">Where to go next</h2>
       </Reveal>
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {NEXT.map((n, i) => (

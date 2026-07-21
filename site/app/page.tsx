@@ -19,12 +19,12 @@ export default function Home() {
         Skip to content
       </a>
       <Nav />
-      <main id="main">
+      <main id="main" className="w-full max-w-full overflow-x-hidden">
         <Hero />
         <Trust />
+        <Pipeline />
         <Contrast />
         <Bento />
-        <Pipeline />
         <Anywhere />
         <Faq />
         <Install />

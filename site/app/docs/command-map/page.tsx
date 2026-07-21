@@ -10,15 +10,15 @@ import {
 
 export const metadata: Metadata = {
   title: "Command map",
-  description: "Every shipped DevRites skill and agent: what triggers it, and what it reads and writes.",
+  description: "A reference for DevRites skills, agents, triggers, and engine commands.",
   alternates: { canonical: "/docs/command-map/" },
 };
 
 function Section({ id, title, intro, children }: { id: string; title: string; intro?: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="mt-14 scroll-mt-24 first:mt-0">
+    <section aria-labelledby={id} className="mt-14 first:mt-0">
       <Reveal>
-        <h2 className="text-2xl font-bold">{title}</h2>
+        <h2 id={id} className="scroll-mt-28 text-2xl font-bold">{title}</h2>
       </Reveal>
       {intro && (
         <Reveal delay={0.05}>
@@ -54,10 +54,10 @@ export default function CommandMap() {
       <DocsHeader
         crumb="command map"
         title="Command map"
-        lead="Every shipped skill and agent: what triggers it, and what it reads and writes. Each phase has a menu form (/rite <verb>) and a direct shortcut (/rite-<verb>); both run the same skill."
+        lead="DevRites ships 42 skills, 13 read-only agents, one slice writer, and a shared engine CLI. Claude uses /rite-* and Codex uses $rite-* to run the same generated skills."
       />
 
-      <Section id="public" title="Public commands" intro="Invoke any of these yourself. They map to the workflow one to one.">
+      <Section id="public" title="Public commands" intro="You can run these commands directly. Each one maps to a workflow skill.">
         {PUBLIC_COMMANDS.map((c) => (
           <Row key={c.cmd} left={c.cmd} tag={c.phase} body={c.desc} />
         ))}
@@ -66,7 +66,7 @@ export default function CommandMap() {
       <Section
         id="internal"
         title="Internal skills"
-        intro="Model-invoked specialists, hidden from the menu. They fire automatically when a phase needs them."
+        intro="The model invokes these specialists when a phase needs them. They do not appear in the menu."
       >
         {INTERNAL_SKILLS.map((s) => (
           <Row key={s.name} left={s.name} tag={s.trigger} body={s.role} />
@@ -75,8 +75,8 @@ export default function CommandMap() {
 
       <Section
         id="agents"
-        title="Review agents"
-        intro="Fresh-context reviewers spawned by /rite-review, /rite-seal, and the strategic gates. None of them wrote the code, so none inherits its blind spots."
+        title="Fresh-context agents"
+        intro="Thirteen read-only reviewers, judges, and the archive retrospector. They receive bounded evidence rather than the orchestrator's reasoning."
       >
         {REVIEW_AGENTS.map((a) => (
           <Row key={a.name} left={a.name} body={a.checks} />
@@ -88,18 +88,18 @@ export default function CommandMap() {
           The one write-capable agent is <code className="k k--accent">devrites-slice-wright</code>:{" "}
           <code className="k">/rite-build</code> dispatches it in a fresh context to implement a single
           slice test-first, then it returns a structured artifact for the orchestrator to doubt, record,
-          and gate. It writes code and tests, never the workspace bookkeeping.
+          and gate. It writes code and tests; the engine handles workspace bookkeeping.
         </p>
       </Reveal>
 
       <Section
         id="cli"
-        title="CLI & MCP"
-        intro="The discipline lives in the .devrites/ files and the state scripts, not in the harness, so any tool can drive the workflow through the same gates. The exit code is the verdict."
+        title="Go control-plane CLI"
+        intro="The stdlib-only devrites-engine binary handles workspace operations. Claude, Codex, CI, scripts, and humans call the same commands, and the exit code reports the result."
       >
         <div className="border-b border-line p-4">
-          <code className="mono text-sm text-accent">devrites</code>{" "}
-          <span className="text-ink-faint">CLI</span>
+          <code className="mono text-sm text-accent">devrites-engine</code>{" "}
+          <span className="text-ink-faint">common commands</span>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {CLI_GATES.map((g) => (
               <span key={g} className="mono rounded-md border border-line bg-surface-2/50 px-2 py-1 text-[0.72rem] text-ink-muted">
@@ -108,17 +108,18 @@ export default function CommandMap() {
             ))}
           </div>
           <p className="mt-3 text-[0.9rem] leading-relaxed text-ink-muted">
-            Scriptable in any agent loop or a pre-merge CI step.
+            Run <code className="k">devrites-engine help</code> for the full list of commands and hooks.
+            Exit 3 is a structured HITL pause; resolve the named gap and retry.
           </p>
         </div>
         <div className="p-4">
-          <code className="mono text-sm text-accent">MCP server</code>{" "}
-          <span className="text-ink-faint">dependency-free stdio</span>
+          <code className="mono text-sm text-accent">structured automation</code>{" "}
+          <span className="text-ink-faint">JSON + generated hooks</span>
           <p className="mt-2 text-[0.9rem] leading-relaxed text-ink-muted">
-            Exposes <code className="k">devrites_ready</code>, <code className="k">devrites_acceptance</code>,{" "}
-            <code className="k">devrites_orient</code> and the rest as MCP tools. Register it in a project&rsquo;s{" "}
-            <code className="k">.mcp.json</code> and Cursor, Codex, Gemini CLI, CI, or a human can ask the
-            same question of the same files.
+            <code className="k">snapshot</code> emits the stable <code className="k">devrites.workspace.v1</code>{" "}
+            contract; AFK-parsed read commands support <code className="k">--json</code>. Generated Claude
+            and Codex hooks call the same binary for orientation, cursors, red-test watching, source
+            boundaries, reviewer read-only enforcement, and compaction handoffs.
           </p>
         </div>
       </Section>
@@ -127,9 +128,9 @@ export default function CommandMap() {
         <div className="tile mt-8 p-5">
           <h3 className="font-bold text-ink">Naming</h3>
           <p className="mt-2 text-[0.9rem] leading-relaxed text-ink-muted">
-            The <code className="k">devrites-</code> prefix is a namespace for collision avoidance against
-            bundled Claude Code skills. It does not mean &ldquo;internal&rdquo;: visibility is set by the
-            user-invocable flag in each skill.
+            The <code className="k">devrites-</code> prefix prevents name collisions with bundled host
+            skills. It does not mean &quot;internal&quot;. Visibility is set by the
+            user-invocable flag in each skill, and generation preserves it for Claude and Codex.
           </p>
         </div>
       </Reveal>

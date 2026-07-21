@@ -1,104 +1,70 @@
-"use client";
+import { Bot, Braces, Check, Cpu, LockKeyhole } from "lucide-react";
 
-import { Reveal, SectionHead } from "./ui";
-import { TOOLS } from "@/lib/site";
-
-const CLI = [
-  { cmd: "devrites orient", note: "workspace digest", tone: "text-ink-faint" },
-  { cmd: "devrites ready", note: "exit 0 · ready", tone: "text-go" },
-  { cmd: "devrites evidence-fresh", note: "exit 3 · stale", tone: "text-warn" },
-  { cmd: "devrites acceptance", note: "exit 0 · proven", tone: "text-go" },
-];
-
-const MCP_TOOLS = [
-  "devrites_orient", "devrites_ready", "devrites_evidence_fresh", "devrites_acceptance",
-  "devrites_status", "devrites_active", "devrites_list", "devrites_use",
-];
+const WORKSPACE_FILES = ["spec.md", "tasks.md", "evidence.md", "seal.md"];
 
 export default function Anywhere() {
   return (
-    <section id="anywhere" className="wrap py-20 sm:py-28">
-      <SectionHead
-        eyebrow="Tool-agnostic core"
-        title="The discipline lives in files, not in one harness."
-        lead="A portable CLI and a dependency-free MCP server expose the same deterministic gates to any agent, CI job, or human. One verdict, everywhere."
-      />
+    <section id="anywhere" className="hosts-section" aria-labelledby="hosts-title">
+      <div className="wrap">
+        <header className="hosts-heading">
+          <h2 id="hosts-title">Use Claude or Codex without losing release state.</h2>
+          <p>
+            Each host uses its native command syntax, but both read the same project files and call the same engine.
+          </p>
+        </header>
 
-      <div className="mt-12 grid gap-4 lg:grid-cols-2">
-        {/* CLI panel */}
-        <Reveal className="glass overflow-hidden rounded-card">
-          <div className="flex items-center gap-2 border-b border-line bg-surface-2/40 px-4 py-3">
-            <span className="flex gap-1.5">
-              <i className="size-2.5 rounded-full bg-danger/60" />
-              <i className="size-2.5 rounded-full bg-warn/60" />
-              <i className="size-2.5 rounded-full bg-go/60" />
-            </span>
-            <span className="mono ml-2 text-xs text-ink-muted">
-              the <b className="text-ink">devrites</b> CLI · exit code is the gate
-            </span>
+        <div className="host-router" aria-label="Claude Code and Codex converge on one DevRites engine and workspace">
+          <article className="host-node host-node--claude">
+            <Bot className="size-6" strokeWidth={1.7} aria-hidden />
+            <div>
+              <span>Project skill</span>
+              <strong>Claude Code</strong>
+            </div>
+            <code>/rite-prove</code>
+          </article>
+
+          <div className="host-route host-route--claude" aria-hidden="true">
+            <span><code>/rite-prove</code></span>
           </div>
-          <div className="space-y-2.5 p-5 font-mono text-sm">
-            {CLI.map((r) => (
-              <div key={r.cmd} className="flex items-center justify-between gap-3">
-                <span className="text-ink">
-                  <span className="text-accent">$</span> {r.cmd}
-                </span>
-                <span className={r.tone}>{r.note}</span>
+
+          <article className="host-engine-node">
+            <Cpu className="size-7" strokeWidth={1.6} aria-hidden />
+            <span>Shared control plane</span>
+            <strong>devrites-engine</strong>
+            <code>evidence-fresh</code>
+          </article>
+
+          <div className="host-route host-route--codex" aria-hidden="true">
+            <span><code>$rite-prove</code></span>
+          </div>
+
+          <article className="host-node host-node--codex">
+            <Braces className="size-6" strokeWidth={1.7} aria-hidden />
+            <div>
+              <span>Project skill</span>
+              <strong>Codex</strong>
+            </div>
+            <code>$rite-prove</code>
+          </article>
+
+          <article className="host-workspace">
+            <div className="host-workspace-head">
+              <div>
+                <span>Shared on disk</span>
+                <code>.devrites/work/auth-tokens/</code>
               </div>
-            ))}
-            <p className="mono pt-2 text-[0.78rem] leading-relaxed text-ink-faint">
-              A non-zero ready, evidence-fresh, or acceptance is a hard stop you can script into
-              any agent loop or a pre-merge CI step.
-            </p>
-          </div>
-        </Reveal>
-
-        {/* MCP panel */}
-        <Reveal delay={0.1} className="glass overflow-hidden rounded-card">
-          <div className="flex items-center gap-2 border-b border-line bg-surface-2/40 px-4 py-3">
-            <span className="flex gap-1.5">
-              <i className="size-2.5 rounded-full bg-danger/60" />
-              <i className="size-2.5 rounded-full bg-warn/60" />
-              <i className="size-2.5 rounded-full bg-go/60" />
-            </span>
-            <span className="mono ml-2 text-xs text-ink-muted">
-              the MCP server · dependency-free stdio
-            </span>
-          </div>
-          <div className="p-5">
-            <div className="flex flex-wrap gap-1.5">
-              {MCP_TOOLS.map((t) => (
-                <span
-                  key={t}
-                  className="mono rounded-md border border-line bg-surface-2/50 px-2 py-1 text-[0.72rem] text-ink-muted"
-                >
-                  {t}
-                </span>
+              <p><LockKeyhole className="size-4" strokeWidth={1.8} aria-hidden /> Human approval is still required</p>
+            </div>
+            <div className="host-workspace-files">
+              {WORKSPACE_FILES.map((file) => (
+                <span key={file}><Check className="size-3.5" strokeWidth={2.3} aria-hidden /><code>{file}</code></span>
               ))}
             </div>
-            <p className="mono pt-3 text-[0.78rem] leading-relaxed text-ink-faint">
-              Register it in a project&rsquo;s .mcp.json and any MCP client can ask &ldquo;is this
-              feature ready to ship?&rdquo; and get the same verdict /rite-seal would compute.
-            </p>
-          </div>
-        </Reveal>
-      </div>
-
-      <Reveal delay={0.15}>
-        <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="mono text-xs uppercase tracking-[0.16em] text-ink-faint">
-            same files, same gates, from
-          </span>
-          {TOOLS.map((t) => (
-            <span
-              key={t}
-              className="rounded-full border border-line bg-surface/50 px-3 py-1 text-sm text-ink-muted"
-            >
-              {t}
-            </span>
-          ))}
+          </article>
         </div>
-      </Reveal>
+
+        <p className="hosts-note">Workspace commands run without model or network calls.</p>
+      </div>
     </section>
   );
 }

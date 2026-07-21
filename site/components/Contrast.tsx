@@ -1,83 +1,87 @@
-"use client";
+import { ArrowUpRight, FileWarning, RefreshCw, ScanSearch, ShieldCheck } from "lucide-react";
 
-import { Reveal, SectionHead } from "./ui";
-import { X, Check, ArrowRight } from "lucide-react";
-
-const BEFORE = [
-  "Writes plausible code, then calls it done.",
-  "“Done” with no tests run and a half-finished migration.",
-  "Loses the thread the moment you /clear.",
-  "Quietly changes auth or drops a column.",
-  "Hands you one giant diff to review.",
-];
-
-const AFTER = [
-  "Asks the right questions before writing a line.",
-  "Proof on disk: tests, build, browser evidence.",
-  "Resumes cold from .devrites/ after a clear.",
-  "Stops at a typed gate before anything irreversible.",
-  "Ships one verified slice at a time.",
+const CHECKS = [
+  {
+    command: "readiness auth-tokens",
+    title: "Required files exist",
+    body: "Stops a phase change when its contract, decisions, or tasks are missing.",
+    icon: ScanSearch,
+  },
+  {
+    command: "evidence-fresh auth-tokens",
+    title: "Proof matches the diff",
+    body: "Stops GO when a touched source file is newer than the recorded evidence.",
+    icon: RefreshCw,
+  },
+  {
+    command: "check-acceptance .devrites/work/auth-tokens",
+    title: "Acceptance coverage is complete",
+    body: "Names each acceptance ID that is still unproven or unchecked in seal.md.",
+    icon: FileWarning,
+  },
+  {
+    command: "review-integrity auth-tokens",
+    title: "Review has a recorded result",
+    body: "Flags an adversarial review axis with neither findings nor a clean justification.",
+    icon: ShieldCheck,
+  },
 ];
 
 export default function Contrast() {
   return (
-    <section id="why" className="wrap py-20 sm:py-28">
-      <SectionHead
-        eyebrow="Plausible is not correct"
-        title="The difference shows up on the first feature."
-        lead="A wrong turn three steps back costs you a day. DevRites makes the agent work like a careful engineer: one slice at a time, with decisions recorded and receipts on disk."
-      />
+    <section id="why" className="engine-proof" aria-labelledby="proof-title">
+      <div className="wrap py-28 md:py-40">
+        <header className="max-w-4xl">
+          <h2
+            id="proof-title"
+            className="font-bold [font-size:clamp(3rem,5.4vw,5.4rem)] leading-[0.92] tracking-[-0.04em]"
+          >
+            See why a release is blocked.
+          </h2>
+          <p className="mt-7 max-w-2xl text-lg leading-relaxed text-ink-muted md:text-xl">
+            The Go engine checks the repository, names the failed rule, and shows what to fix.
+          </p>
+        </header>
 
-      <div className="mt-12 grid items-stretch gap-4 md:grid-cols-[1fr_auto_1fr]">
-        <Reveal className="rounded-card border border-line bg-surface/40 p-6 sm:p-7">
-          <span className="chip chip--danger">
-            <span className="dot" />
-            your agent today
-          </span>
-          <ul className="mt-5 space-y-3.5">
-            {BEFORE.map((t) => (
-              <li key={t} className="flex gap-3 text-ink-muted">
-                <X className="mt-0.5 size-4 shrink-0 text-danger" strokeWidth={2.4} />
-                <span className="[&_:where(code)]:font-mono">{render(t)}</span>
-              </li>
+        <div className="engine-proof-layout mt-12">
+          <article className="engine-output" aria-label="Example blocked acceptance check">
+            <header>
+              <span>Example engine result</span>
+              <strong>exit 1</strong>
+            </header>
+            <div className="engine-output-body">
+              <code className="engine-command">$ devrites-engine check-acceptance .devrites/work/auth-tokens</code>
+              <div className="engine-verdict">
+                <span>BLOCKED</span>
+                <strong>2 / 3 criteria proven</strong>
+              </div>
+              <dl>
+                <div><dt>Missing</dt><dd><code>AC-003</code></dd></div>
+                <div><dt>Record</dt><dd><code>seal.md</code></dd></div>
+                <div><dt>Next</dt><dd>Prove AC-003, check it in the seal, then rerun.</dd></div>
+              </dl>
+            </div>
+            <footer>The result names the failed rule without calling a model.</footer>
+          </article>
+
+          <div className="engine-checks" aria-label="Deterministic release checks">
+            {CHECKS.map(({ command, title, body, icon: Icon }) => (
+              <article key={command}>
+                <Icon className="size-5" strokeWidth={1.8} aria-hidden />
+                <div>
+                  <code>devrites-engine {command}</code>
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                </div>
+              </article>
             ))}
-          </ul>
-        </Reveal>
-
-        <div className="flex items-center justify-center" aria-hidden>
-          <div className="flex size-11 items-center justify-center rounded-full border border-line-bright bg-surface text-accent">
-            <ArrowRight className="size-5 max-md:rotate-90" />
           </div>
         </div>
 
-        <Reveal delay={0.12} className="tile--lit rounded-card p-6 sm:p-7">
-          <span className="chip chip--go">
-            <Check className="size-3" strokeWidth={3} />
-            with DevRites
-          </span>
-          <ul className="mt-5 space-y-3.5">
-            {AFTER.map((t) => (
-              <li key={t} className="flex gap-3 text-ink">
-                <Check className="mt-0.5 size-4 shrink-0 text-go" strokeWidth={2.6} />
-                <span>{render(t)}</span>
-              </li>
-            ))}
-          </ul>
-        </Reveal>
+        <a className="engine-proof-link" href="/docs/cli-mcp/">
+          Read the engine CLI reference <ArrowUpRight className="size-4" aria-hidden />
+        </a>
       </div>
     </section>
-  );
-}
-
-/* render inline /commands and .files in mono */
-function render(text: string) {
-  return text.split(/(\/clear|\.devrites\/)/g).map((part, i) =>
-    part === "/clear" || part === ".devrites/" ? (
-      <code key={i} className="k">
-        {part}
-      </code>
-    ) : (
-      <span key={i}>{part}</span>
-    ),
   );
 }

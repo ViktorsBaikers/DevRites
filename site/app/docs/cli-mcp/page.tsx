@@ -5,8 +5,8 @@ import { H2, P, Panel, Code, Callout } from "@/components/docs/DocsBits";
 import { CLI_COMMANDS } from "@/lib/docs";
 
 export const metadata: Metadata = {
-  title: "CLI & MCP",
-  description: "Drive the same deterministic DevRites gates from any tool: the portable devrites CLI and a dependency-free MCP server.",
+  title: "Engine CLI",
+  description: "Use the portable devrites-engine CLI to work with DevRites state, gates, hooks, and structured reports.",
   alternates: { canonical: "/docs/cli-mcp/" },
 };
 
@@ -14,18 +14,17 @@ export default function CliMcp() {
   return (
     <>
       <DocsHeader
-        crumb="cli & mcp"
-        title="CLI & MCP"
-        lead="The discipline lives in the .devrites/ files and the state scripts, not in the Claude Code harness. Two portable surfaces expose the same gates, so Cursor, Codex, a CI job, or a human can drive the workflow against the same files."
+        crumb="engine cli"
+        title="The devrites-engine CLI"
+        lead="DevRites uses one CGO-free Go binary for workflow bookkeeping. Claude and Codex call it through generated hooks and skills. CI, scripts, and humans can call it directly against the same .devrites/ workspace."
       />
 
-      <H2 id="cli">The devrites CLI</H2>
+      <H2 id="cli" first>Common commands</H2>
       <P>
-        Installed at <code className="k">.claude/skills/devrites-lib/scripts/devrites.sh</code>. Each
-        command is a thin wrapper over a state script, so the exit code is the gate: a non-zero{" "}
-        <code className="k">ready</code>, <code className="k">evidence-fresh</code>, or{" "}
-        <code className="k">acceptance</code> is a hard stop you can script into any agent loop or a
-        pre-merge CI step.
+        Install DevRites normally, then run the engine from the project root. The npm{" "}
+        <code className="k">devrites</code> shim owns install, update, and uninstall and proxies engine
+        subcommands when the binary is available. <code className="k">devrites-engine help</code> is the
+        full current inventory.
       </P>
       <Panel>
         {CLI_COMMANDS.map((c) => (
@@ -37,34 +36,32 @@ export default function CliMcp() {
         ))}
       </Panel>
 
-      <H2 id="mcp">The MCP server</H2>
+      <H2 id="json">Structured output</H2>
       <P>
-        <code className="k">devrites-mcp.mjs</code> is a dependency-free MCP stdio server that exposes the
-        read and gate operations as MCP tools (<code className="k">devrites_ready</code>,{" "}
-        <code className="k">devrites_acceptance</code>, <code className="k">devrites_orient</code>, and the
-        rest). It shells out to the CLI, so it stays a thin surface over the same scripts. Register it in a
-        project&rsquo;s <code className="k">.mcp.json</code>:
+        <code className="k">snapshot</code> emits a direct <code className="k">devrites.workspace.v1</code>{" "}
+        JSON document. AFK-parsed read commands such as status, readiness, seal, spec-validate,
+        evidence-fresh, preamble, coverage, analyze, doctor, and ledger accept <code className="k">--json</code>{" "}
+        with a stable envelope for automation.
       </P>
       <Code>
-{`{
-  "mcpServers": {
-    "devrites": {
-      "command": "node",
-      "args": ["/abs/path/to/mcp/devrites-mcp.mjs"]
-    }
-  }
-}`}
+{`devrites-engine snapshot auth-tokens
+devrites-engine status auth-tokens --json
+devrites-engine context show --json
+devrites-engine reviewer-stats report --json`}
       </Code>
+
+      <H2 id="hooks">Host adapters</H2>
       <P>
-        Now any MCP client can ask &ldquo;is this feature ready to ship?&rdquo; and the server runs the
-        deterministic gates against <code className="k">.devrites/</code>. That is the same verdict the
-        lifecycle skills compute, available to tools that don&rsquo;t speak DevRites&rsquo; skill prose.
+        Generated Claude and Codex hook wiring calls <code className="k">devrites-engine hook &lt;id&gt;</code>{" "}
+        with a host adapter. Profiles select the active set: minimal handles orientation and approval,
+        standard adds gates, guards, and caches, and strict enforces every observe-default boundary.
+        If the binary is missing, the hook exits without blocking the host, so a teammate can still work.
       </P>
 
-      <Callout title="One verdict, everywhere">
-        Spec-kit, task-master, and BMAD run across many agents; DevRites keeps the discipline in
-        tool-agnostic data. Because the CLI, the MCP server, and <code className="k">/rite-seal</code> all
-        call the same scripts, their verdict agrees no matter who asks.
+      <Callout title="Exit 3 means pause">
+        A blocked gate or incompatible state-schema version exits 3 and names the problem. This means
+        the workflow is waiting for a person. Resolve the gap and retry. Usage errors exit 2, and a
+        passing gate exits 0.
       </Callout>
     </>
   );

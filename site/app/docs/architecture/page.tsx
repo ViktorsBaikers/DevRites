@@ -17,7 +17,7 @@ export default function Architecture() {
       <DocsHeader
         crumb="architecture"
         title="Architecture"
-        lead="DevRites is a distributed but coordinated set of project-local Claude Code skills. Each phase is its own skill; none is a monolith. The pieces share one thing: state on disk under .devrites/."
+        lead="DevRites separates engineering judgment from workflow bookkeeping. Focused Claude and Codex skills make engineering decisions, while one stdlib-only Go engine manages workspace state, gates, hooks, derived data, migration, and installation."
       />
 
       <div className="mb-12">
@@ -25,7 +25,7 @@ export default function Architecture() {
       </div>
 
       <Reveal>
-        <h2 className="text-2xl font-bold">Layers</h2>
+        <h2 id="layers" className="scroll-mt-28 text-2xl font-bold">Layers</h2>
       </Reveal>
       <div className="mt-6 space-y-3">
         {LAYERS.map((l, i) => (
@@ -44,7 +44,7 @@ export default function Architecture() {
       </div>
 
       <Reveal>
-        <h2 className="mt-14 text-2xl font-bold">Design rationale</h2>
+        <h2 id="rationale" className="mt-14 scroll-mt-28 text-2xl font-bold">Design rationale</h2>
       </Reveal>
       <div className="mt-6 space-y-3">
         {RATIONALE.map((r, i) => (
@@ -58,14 +58,15 @@ export default function Architecture() {
       </div>
 
       <Reveal>
-        <h2 className="mt-14 text-2xl font-bold">Engineering rules</h2>
+        <h2 id="rules" className="mt-14 scroll-mt-28 text-2xl font-bold">Engineering rules</h2>
       </Reveal>
       <Reveal delay={0.05}>
         <p className="mt-3 text-ink-muted leading-relaxed">
-          DevRites ships its own stack-agnostic rules to <code className="k">.claude/rules/</code>. Each
-          phase reads <code className="k">core.md</code> first; the rest load on demand. A project&rsquo;s
-          own conventions win where they exist, and its <code className="k">.devrites/principles.md</code>{" "}
-          outranks both.
+          DevRites includes stack-agnostic standards inside{" "}
+          <code className="k">devrites-lib/reference/standards/</code>, mirrored for both hosts. Workspace
+          phases load <code className="k">core.md</code> first; specialized standards and checklists load
+          only when needed. Prescriptive <code className="k">.devrites/principles.md</code> outranks
+          shipped guidance, while observed conventions and mined learnings remain separate inputs.
         </p>
       </Reveal>
       <Reveal delay={0.1}>
@@ -87,7 +88,7 @@ export default function Architecture() {
       </Reveal>
 
       <Reveal>
-        <h2 className="mt-14 text-2xl font-bold">Safety &amp; scope</h2>
+        <h2 id="safety" className="mt-14 scroll-mt-28 text-2xl font-bold">Safety &amp; scope</h2>
       </Reveal>
       <div className="mt-5 space-y-3">
         {SAFETY.map((s, i) => (
@@ -103,15 +104,16 @@ export default function Architecture() {
       </div>
 
       <Reveal>
-        <h2 className="mt-14 text-2xl font-bold">Security model</h2>
+        <h2 id="security" className="mt-14 scroll-mt-28 text-2xl font-bold">Security model</h2>
       </Reveal>
       <Reveal delay={0.05}>
         <p className="mt-3 text-ink-muted leading-relaxed">
-          DevRites is auditable Markdown and a small set of shell scripts. It is project-local only (the
-          installer refuses any target under <code className="k">~/.claude</code>), makes no network calls
-          in the installer or skills, and ships no{" "}
-          <code className="k">defaultMode: bypassPermissions</code>. Irreversible git actions sit behind the
-          interactive <code className="k">type-GO</code> confirmation. Full policy and private reporting:{" "}
+          DevRites uses auditable Markdown and a CGO-free Go control plane. Workspace state and gate
+          commands make no model or network calls; explicit install, update, and source-cache I/O is
+          isolated behind named engine boundaries. Host artifacts remain project-local, hook guards
+          fail open when the binary is unavailable, and strict profiles can enforce source/reviewer
+          boundaries. Irreversible git actions still require interactive <code className="k">type-GO</code>.
+          Full policy and private reporting:{" "}
           <a href={`${REPO}/blob/main/SECURITY.md`} rel="noopener" className="text-accent underline-offset-2 hover:underline">
             SECURITY.md
           </a>
@@ -123,11 +125,12 @@ export default function Architecture() {
         <div className="tile--lit mt-10 rounded-tile p-6">
           <h3 className="font-bold text-ink">Read the source</h3>
           <p className="mt-2 text-[0.9rem] leading-relaxed text-ink-muted">
-            Every skill, agent, and rule ships in the repo as plain Markdown. See the{" "}
+            The canonical skills, agents, and standards are plain Markdown. The engine and generated
+            host adapters are in the same repository. Browse the{" "}
             <a href={REPO} rel="noopener" className="text-accent underline-offset-2 hover:underline">
               GitHub repository
             </a>{" "}
-            for the full set.
+            to inspect them.
           </p>
         </div>
       </Reveal>

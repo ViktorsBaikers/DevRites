@@ -1,16 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { FAQ, SITE_URL, REPO, VERSION } from "@/lib/site";
 
-const schibsted = localFont({
-  src: [
-    { path: "./fonts/schibsted-grotesk-latin.woff2", weight: "400 900", style: "normal" },
-    { path: "./fonts/schibsted-grotesk-latin-ext.woff2", weight: "400 900", style: "normal" },
-  ],
-  variable: "--font-schibsted",
-  display: "swap",
-  fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+  display: "optional",
 });
 
 const jbmono = localFont({
@@ -23,9 +20,9 @@ const jbmono = localFont({
   fallback: ["ui-monospace", "monospace"],
 });
 
-const title = "DevRites: a disciplined senior engineer for Claude Code";
+const title = "DevRites: verify AI-written code before release";
 const description =
-  "DevRites turns Claude Code into a disciplined senior engineer: spec, build one verified slice, prove with evidence, review, seal, ship. State lives on disk. Free and open source.";
+  "Give Claude Code and Codex a shared workflow for specs, bounded builds, recorded checks, independent review, and human approval before release.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -34,8 +31,8 @@ export const metadata: Metadata = {
   applicationName: "DevRites",
   authors: [{ name: "Viktors Baikers", url: "https://github.com/ViktorsBaikers" }],
   keywords: [
-    "Claude Code", "AI coding agent", "spec-driven development", "agentic workflow",
-    "AI pair programming", "Claude Code skills", "slash commands", "MCP server",
+    "Claude Code", "Codex", "AI coding agent", "spec-driven development", "agentic workflow",
+    "AI pair programming", "Claude Code skills", "Codex skills", "Go control plane",
     "spec kit alternative", "AI code review", "test-driven AI", "OWASP LLM Top 10",
     "brownfield AI onboarding",
   ],
@@ -52,21 +49,22 @@ export const metadata: Metadata = {
     url: SITE_URL,
     title,
     description:
-      "Spec, build one verified slice, prove with evidence, review, seal, ship. The agent that refuses to claim done without proof.",
-    images: [{ url: "/assets/img/og.png", width: 1200, height: 630, alt: "DevRites: a senior engineer on every feature." }],
+      "Move Claude Code and Codex work through bounded builds, recorded checks, independent review, and human approval.",
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title,
     description:
-      "Spec, build one verified slice, prove with evidence, review, seal, ship. The agent that refuses to claim done without proof.",
-    images: ["/assets/img/og.png"],
+      "Move Claude Code and Codex work through bounded builds, recorded checks, independent review, and human approval.",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0c1330",
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f1f3f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#111722" },
+  ],
+  colorScheme: "light dark",
 };
 
 const jsonLd = {
@@ -77,7 +75,7 @@ const jsonLd = {
       "@id": `${SITE_URL}/#website`,
       url: `${SITE_URL}/`,
       name: "DevRites",
-      description: "A disciplined senior-engineer workflow for Claude Code.",
+      description: "A shared engineering workflow for Claude Code and Codex.",
       inLanguage: "en",
       publisher: { "@id": `${SITE_URL}/#org` },
     },
@@ -90,7 +88,7 @@ const jsonLd = {
       operatingSystem: "macOS, Linux, Windows",
       softwareVersion: VERSION,
       description:
-        "A project-local pack of Claude Code skills that runs a disciplined senior-engineer workflow: spec, build one verified slice, prove with evidence, review, seal, ship. State lives on disk so a fresh agent resumes where the last one stopped.",
+        "A spec-driven engineering system for Claude Code and Codex. Generated project-local host artifacts use the same Go control plane and git-diffable workspace, so a new agent can resume from the recorded project state.",
       license: `${REPO}/blob/main/LICENSE`,
       codeRepository: REPO,
       isAccessibleForFree: true,
@@ -125,7 +123,14 @@ const jsonLd = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${schibsted.variable} ${jbmono.variable}`}>
+    <html lang="en" className={`${outfit.variable} ${jbmono.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var saved=localStorage.getItem('devrites-theme');var theme=saved==='light'||saved==='dark'?saved:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=theme;}catch(_){}})();`,
+          }}
+        />
+      </head>
       <body>
         <script
           type="application/ld+json"
