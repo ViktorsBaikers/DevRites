@@ -793,7 +793,6 @@ func packageJSONDeclares(pkg, manifest string) bool {
 }
 
 func importMatchesPathAlias(gitRoot, sourcePath, specifier string) bool {
-	gitRoot = filepath.Clean(gitRoot)
 	dir := filepath.Dir(filepath.Join(gitRoot, sourcePath))
 	for {
 		foundConfig := false
