@@ -54,7 +54,7 @@ must say who runs them.
 | Command | Phase | Argument | What it does | Reads | Writes |
 |---|---|---|---|---|---|
 | [`/rite`](../pack/.claude/skills/rite/SKILL.md) | menu | `[subcommand]` | Compact menu + suggested next command. Pure router; does **not** read state — that's `/rite-status`. | — | — |
-| [`/rite-spec`](../pack/.claude/skills/rite-spec/SKILL.md) | spec | `<feature>` | **Start here.** Deep investigation → writes a product-focused `spec.md` (WHAT/WHY, requirements, ACs, boundaries, gaps closed with options, design references). Checks the shipped archive for prior art before speccing. Creates the workspace map. | codebase + codegraph/graphify + shipped archive (`devrites-engine archive-search`) | `README.md`/`feature.md`, `brief.md`, `spec.md`, `references/`, `references.md`, `questions.md`, `decisions.md`, `assumptions.md`, `state.md` |
+| [`/rite-spec`](../pack/.claude/skills/rite-spec/SKILL.md) | spec | `<feature>` | **New feature.** Deep investigation → writes a product-focused `spec.md` (WHAT/WHY, requirements, ACs, boundaries, gaps closed with options, design references). Checks the shipped archive for prior art before speccing. Creates the workspace map. | codebase + codegraph/graphify + shipped archive (`devrites-engine archive-search`) | `README.md`/`feature.md`, `brief.md`, `spec.md`, `references/`, `references.md`, `questions.md`, `decisions.md`, `assumptions.md`, `state.md` |
 | [`/rite-temper`](../pack/.claude/skills/rite-temper/SKILL.md) | temper | `[slug] [--mode]` | **Optional, before define.** Strategic review of the readied spec: scope mode (expand / selective / hold-rigor / reduce-to-MVP) + pre-mortem + 9-dimension floor-gate; folds decisions into the spec via the Spec Drift Guard. Significance-gated; **mandatory in `/rite-autocomplete`**. Reviewer: `devrites-strategy-reviewer`. | `spec.md` + decisions/assumptions + design-brief | `strategy.md`, `spec.md`, `decisions.md`, `assumptions.md` |
 | [`/rite-define`](../pack/.claude/skills/rite-define/SKILL.md) | plan | `[slug]` | Turns the approved `spec.md` into architecture, plan, vertical `SLICE-###` task slices, traceability, and state. Reads `strategy.md` if present. | `spec.md` (+ `strategy.md`) + references | `architecture.md`, `plan.md`, `tasks.md`, `traceability.md`, `state.md`, `decisions.md` |
 | [`/rite-vet`](../pack/.claude/skills/rite-vet/SKILL.md) | vet | `[slug] [--cross-model] [--full]` | **Before build — every feature.** Engineering review of the defined plan: scope challenge (reuse / minimum-diff / complexity smell) + architecture / plan code-quality / test-coverage design / performance, confidence-banded with a quote-the-source verification gate; failure-mode + parallelization map. Hardens `plan.md` / `tasks.md` in place; writes the build-readable `test-plan.md`; acceptance-changing deltas route via the Spec Drift Guard. Runs on every plan — depth scales to stakes (light pass on simple plans, full on big/risky), never skipped; **always in `/rite-autocomplete`**. Reviewer: `devrites-plan-reviewer` (+ optional `--cross-model`). | `plan.md` + `tasks.md` + `spec.md` (+ `strategy.md`) | `eng-review.md`, `test-plan.md`, `plan.md`, `tasks.md`, `decisions.md`, `state.md` |
@@ -84,7 +84,11 @@ must say who runs them.
 | [`/rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | utility | `[idea]` | Pressure-test a rough idea: 3–5 genuinely different options → converge on one with trade-off + hinge. | spec / surrounding code | `decisions.md` (optional) |
 | [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | `[--code \| --reindex]` | Diagnose DevRites install, workspace, and optional index health. `--reindex` explicitly runs the internal synchronous refresh. Triggers: "rite doctor", "is DevRites healthy", "reindex". | install + workspace + optional indexes | — |
 
-## Internal skills (`user-invocable: false`, model-invoked)
+## Internal specialist skills (`user-invocable: false`, model-invoked)
+
+The 11 specialist skills below are model-invoked. `devrites-lib` is the twelfth
+internal skill, but it sets `disable-model-invocation: true` and serves only as
+the shared reference library.
 
 | Skill | Triggered by | Role | Notable |
 |---|---|---|---|

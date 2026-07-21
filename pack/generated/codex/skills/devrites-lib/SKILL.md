@@ -19,14 +19,13 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 # devrites-lib — internal shared helpers (not a command)
 
-This is **not** a skill you run. It is the manifest for DevRites'
-cross-cutting helper operations, each exposed as a subcommand of the global
-`devrites` binary. A skill invokes one as `devrites <op>` — the same call from
-any workspace, with no install layout or script path to resolve.
+This is **not** a skill you run. It is DevRites' manifest for shared references
+and control-plane operations. Skills call `devrites-engine <command>` from any
+workspace; no pack script path is required.
 
 ## Operations
 
-Each is a subcommand of the global `devrites` binary, run as `devrites <op>`.
+These are selected `devrites-engine` contracts; `devrites-engine help` is exhaustive.
 
 **Read-only — orient / gate (never mutate the workspace):**
 
@@ -88,7 +87,6 @@ devrites-engine progress
 
 **Unified entrypoint (tool-agnostic):**
 
-- The `devrites` binary is that unified CLI, dispatching to all of the above (`orient` / `ready` /
-  `evidence-fresh` / `acceptance` / `spec-validate` / `tick-afk` / `resolve` / `close` /
-  `active` / `list` / `use`), so any agent or human can drive `.devrites/` without the skill
-  prose. See [`docs/cli.md`](../../../../docs/cli.md).
+- `devrites-engine` is the shared CLI for agents, CI, and humans. The npm
+  `devrites` shim acquires it, owns install/update/uninstall bootstrap, and
+  proxies other commands.

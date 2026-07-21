@@ -23,25 +23,19 @@ the acknowledgement unless a shorter or longer window is mutually agreed.
 
 ## Supported versions
 
-DevRites is pre-1.0. Only the latest minor release line receives security
-updates.
-
-| Version | Supported |
-|---|---|
-| `0.1.x` | yes |
-| earlier | no |
-
-Once a `1.0` release ships, the latest two minor lines will be supported.
+Only the latest published DevRites release receives security fixes. Older
+releases are unsupported; upgrade before reporting a version-specific finding
+unless the issue also reproduces on the latest release.
 
 ## DevRites security model
 
 ### Scope
 
 DevRites is a skills pack plus the local `devrites-engine` control-plane binary:
-Markdown skill files, helper scripts, a bash installer, and a thin `npx` CLI
-wrapper (`bin/devrites.mjs`) that bootstraps or proxies the engine. It ships no
-network service. The attack surface is the content of the skill files, the
-installer, generated host artifacts, hooks, and the local engine binary.
+Markdown skill files, helper scripts, Bash bootstrap shims, and a native Node
+`npx` shim (`bin/devrites.mjs`) that acquires and proxies the engine. It ships no
+network service. The attack surface is the content of the skill files, bootstrap
+and install paths, generated host artifacts, hooks, and the local engine binary.
 
 ### Supply-chain self-scan (shipped pack)
 
@@ -65,10 +59,11 @@ reviewable; never suppress a hidden-unicode finding you can't explain.
 
 ### State loading (engine subcommands, no `!` injection)
 
-`/rite`, `/rite-status`, and every workspace-operating skill load state by running
-a **read-only `devrites-engine` subcommand via the `Bash` tool** — *not* Claude Code's
+`/rite-status` and workspace-operating skills load state by running a **read-only
+`devrites-engine` subcommand via the `Bash` tool** — *not* Claude Code's
 preprocessing-only `` !`<command>` `` dynamic-context injection, which DevRites
-**removed** for cross-harness portability:
+**removed** for cross-harness portability. The no-argument `/rite` menu runs
+`devrites-engine first-task` instead; a routed verb hands control to its owning skill.
 
 ```bash
 command -v devrites-engine >/dev/null 2>&1 && devrites-engine preamble || echo "(unavailable — read state.md directly)"
@@ -77,20 +72,23 @@ command -v devrites-engine >/dev/null 2>&1 && devrites-engine preamble || echo "
 `devrites-engine preamble` is a project-local read of DevRites' own `.devrites/`
 state: no user input is concatenated into a command, no network access, no write
 side effects. The gate subcommands (`build-readiness`, `evidence-fresh`,
-`check-acceptance`) are likewise read-only; only explicit mutators (`resolve`,
-`tick-afk`, `close-out`, and the MCP `use` helper) write, and only under
-`.devrites/`.
+`check-acceptance`) are likewise read-only. Mutating commands are explicit and
+scoped: for example, `resolve`, `tick-afk`, and `close-out` write only DevRites
+state, while `/rite use <slug>` deliberately repoints `.devrites/ACTIVE` inline.
 
-If your environment disallows skill-initiated shell execution, the scripts simply
+If your environment disallows skill-initiated shell execution, the commands simply
 don't run — each skill degrades gracefully to reading `state.md` directly (the
 `|| echo "(… unavailable …)"` fallback above), and the rest of the pack is
 unaffected.
 
-### Auto-trigger is deliberate
+### Model invocation is per skill
 
-All `rite-*` skills are **auto-invocable** by Claude when their descriptions
-match the user's intent. This is a conscious DevRites design choice (see
-`DECISIONS.md` Q3). The safety nets are:
+Public skills are always user-invocable, but model invocation is set per skill.
+Skills without `disable-model-invocation: true` may be selected when their
+descriptions match the user's intent; explicit utilities carry that frontmatter
+flag and load only when the user invokes them. The checked-in frontmatter and
+[`docs/command-map.md`](docs/command-map.md) are the source of truth. The safety
+nets for model-invocable rites are:
 
 - **Body discipline**: every skill stops at its phase boundary. `rite-build`
   stops after one slice, `rite-prove` runs proofs only when all slices are
@@ -100,31 +98,39 @@ match the user's intent. This is a conscious DevRites design choice (see
 - **Spec Drift Guard**: any deviation from the spec halts and routes to
   `rite-plan`.
 - **Interactive type-GO confirmation** in `rite-ship` before irreversible
-  git actions (commit, push, tag) — present even with auto-trigger; `rite-seal`
+  git actions (commit, push, tag) — present even after model invocation; `rite-seal`
   only decides GO/NO-GO.
 
-If you prefer explicit-only invocation in a given project, add a Claude Code
-`permissions` rule disabling `Skill(rite-*)` auto-invocation in that
-project's `.claude/settings.json`.
+Claude documents the invocation controls in its official
+[skills reference](https://code.claude.com/docs/en/slash-commands). DevRites uses
+`disable-model-invocation: true` rather than an undocumented settings key.
 
 ### Installer safety
 
-The bash installer (`install.sh`) refuses any target under `~/.claude`
-(`GUARD:no-global` block) and writes only to a manifest-tracked file list.
-`./uninstall.sh` removes exactly the manifested files. The
+The Bash installer (`install.sh`) refuses any target under `~/.claude`
+(`GUARD:no-global` block). Project host files are manifest-tracked;
+`./uninstall.sh` removes exactly those managed files. The
 `.devrites/` runtime state in the target project is preserved across
 uninstall.
 
-The installer touches no global state. It does not invoke `sudo`, modify
-shell rc files, fetch remote code, or alter Claude Code settings.
+Skills, agents, standards, and hook configuration stay in the target project.
+The installer merges DevRites entries into project-local `.claude/settings.json`
+and `.codex/hooks.json` without replacing unrelated user settings. Its only
+sanctioned global artifact is the shared `devrites-engine` executable, installed
+to `DEVRITES_BIN_DIR`, a writable `~/.local/bin`, or a writable
+`/usr/local/bin`; `--no-binary` / `DEVRITES_NO_BINARY=1` skips it. The bootstrap
+path may fetch the release bundle and checksummed engine assets. It never invokes
+`sudo` or edits shell startup files.
 
 ### npx install path
 
 When installed via `npx devrites@latest`, the CLI (`bin/devrites.mjs`) is a thin
-shim that runs the **bundled** `install.sh` against the pack shipped inside the npm
-package — no remote code is fetched at install time, and the install is pinned to
-the requested package version. It has no runtime npm dependencies and makes no
-global writes; the same project-local guarantees as the bash installer apply.
+Node shim that delegates directly to `devrites-engine`; it does not execute
+`install.sh`. The host payload is bundled and pinned to the requested npm package
+version. To start the engine, the shim tries the matching release binary plus its
+SHA-256 sidecar, then a local Go build, then an existing engine. It has no runtime
+npm dependencies. Project-artifact and optional shared-binary boundaries are the
+same as the Bash path.
 
 ### Recommended Claude Code permissions for managed deployments
 
@@ -133,44 +139,50 @@ For organizations evaluating DevRites under a managed Claude Code policy:
 ```jsonc
 {
   "permissions": {
-    "Skill(rite-seal)": "ask",
-    "Bash(git push *)": "ask",
-    "Bash(git tag *)": "ask"
-  },
-  "disableSkillShellExecution": true
+    "ask": [
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git tag *)"
+    ]
+  }
 }
 ```
 
-The first three lines surface a confirmation prompt before any irreversible
-git action; the last disables the `/rite` and `/rite-status` dynamic-state
-read described above (DevRites still works).
+This follows the current
+[Claude Code permissions schema](https://code.claude.com/docs/en/permissions)
+and surfaces a host confirmation before the git mutation ladder. DevRites'
+separate type-`GO` workflow gate still applies.
 
 ### Hooks (approval, orientation, and local guards)
 
-DevRites ships JSON-configured hooks installed by the npm flow into the
+DevRites ships JSON-configured hooks installed by the engine-owned flow into the
 project-local host artifacts (`.claude/settings.json` for Claude Code and
 `.codex/hooks.json` for Codex). They call `devrites-engine` behind an inline
 fail-open guard:
 
 - **`allow` (PreToolUse/Bash)** — auto-approves *only* the read-only engine
-  orientation/gate subcommands (`preamble`, `progress`, `readiness`,
-  `evidence-fresh`, `check-acceptance`) so they stop prompting on every skill run.
+  orientation/gate subcommands (`check-acceptance`, `doubt-coverage`,
+  `evidence-fresh`, `preamble`, `progress`, `readiness`, `review-integrity`),
+  `footprint render|roster`, `ledger diff|validate|list|show`, and
+  `reviewer-stats report`, so they stop prompting on every skill run.
   It never denies, and it emits `allow` only when the parsed command is one of those
   subcommands and contains no dangerous/exfiltration tokens (`rm`, redirects,
   `curl`/`wget`, `sudo`, `chmod`, command substitution, `eval`, package managers,
   `git push/commit/reset`, etc.). Mutating subcommands (`resolve`, `tick-afk`,
   `close-out`) are deliberately excluded and still prompt.
-- **Read-only context hooks** — `orient`, `cursor`, and `subagent-orient` inject
-  active-workspace context and stay silent when no `.devrites/` workspace is active.
-- **Local guard hooks** — `a1-guard`, `redwatch`, `stop-gate`, `source-cache-*`,
-  and `refresh-indexes` run through the engine and are fail-open by default. New
-  blocking guards are observe-first unless explicitly enforced with the documented
-  `DEVRITES_*` environment switches.
+- **Context and continuity hooks** — `orient`, `cursor`, `subagent-orient`,
+  `statusline`, and `handoff-snapshot` inject bounded workspace context; `event`
+  and `auq` append lifecycle/HITL events. They stay silent when no workspace is active.
+- **Local guards and caches** — `a1-guard`, `wright-scope`,
+  `reviewer-readonly`, `redwatch`, `stop-gate`, `source-cache-*`, and
+  `refresh-indexes` run through the engine. Guard hooks are fail-open or
+  observe-first unless explicitly enforced with the documented `DEVRITES_*`
+  controls; source-cache network I/O is the bounded exception in ADR-0008.
 
 Delete the project-local hook file (`.claude/settings.json` for Claude Code, or
 the DevRites-managed entries in `.codex/hooks.json` for Codex) to remove hooks.
-The seeded settings file is never overwritten on update, so your own permission
-rules are safe.
+Updates merge DevRites entries rather than replacing unrelated project settings,
+so user permission rules remain intact.
 
 ### Third-party trust
 
@@ -206,10 +218,12 @@ visibly justified.
 
 ### Known non-issues
 
-- **`!` injection in `/rite`** — local read of own state; safe. See above.
+- **Historical `!` injection in `/rite`** — no longer present; current state
+  orientation uses structurally bounded, read-only engine commands.
 - **`Write` / `Edit` tool allowance in `rite-*` skills** — required to
   author `.devrites/` and project files. No skill grants `Bash(*)`.
-- **Auto-trigger** — deliberate design choice; mitigated as above.
+- **Per-skill model invocation** — deliberate and frontmatter-controlled;
+  model-invocable rites remain bounded by the gates above.
 
 ### CVE relevance
 

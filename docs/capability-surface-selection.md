@@ -12,7 +12,9 @@ Pick the smallest surface that keeps the behavior deterministic:
 
 Rules:
 
-- Install and update through npm: `npx devrites ...`. No Claude/Codex plugin path.
+- npm (`npx devrites ...`) is the canonical distribution path. The supported
+  `curl | bash` bootstrap exists for environments without Node; neither path is
+  a Claude/Codex plugin or marketplace install.
 - Prefer the engine for gates; prompts may call gates, not reimplement them.
 - Prefer scripts for repo-local release/build glue that is not part of the user contract.
 - Do not add a dependency for what the Go engine or shell can do in a few lines.

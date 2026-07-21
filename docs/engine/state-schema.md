@@ -52,7 +52,8 @@ proven contract is shared, not per-clone. Grammar and delta rules:
 
 Backward compatibility: `.devrites/features/<slug>/` remains readable as a legacy
 workspace location. `feature.md` / `index.md` may stand in for `README.md`, and
-`proof.md` may stand in for `evidence.md`.
+`status.md` may stand in for `state.md`, while `proof.md` may stand in for
+`evidence.md`.
 
 ### Workspace maps
 
@@ -128,9 +129,12 @@ result: incomplete (missing: tasks)
   does not gate — gating is issue 04).
 - Unknown or missing slug → non-zero exit with a clear message on stderr.
 
-The engine makes **zero model or network calls**; `status` is a pure read of the
-files under `DEVRITES_ROOT` (or the nearest `.devrites/` above the working
-directory). A hand edit wins immediately because there is no status cache.
+`status` makes no model or network calls; it is a pure read of the files under
+`DEVRITES_ROOT` (or the nearest `.devrites/` above the working directory). A
+hand edit wins immediately because there is no status cache. Other workspace
+control-plane commands share that deterministic boundary; explicit
+install/update/source-cache I/O is isolated under `engine/internal/iohooks` as
+defined by ADR-0008.
 
 `.devrites/` is ignored **except** the capability ledger at `specs/`, which is
 committed shared truth — the recommended pattern is `.devrites/*` +

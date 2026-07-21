@@ -70,12 +70,10 @@ Both forms hit the same skill — the menu form for discovery, the `/rite-<verb>
 the now-active feature. It is cheap context-switching only — no re-spec, no phase run. If
 the workspace is missing, list the slugs under `.devrites/work/` and stop.
 
-`guide` is also inline — a first-feature walkthrough that teaches the lifecycle by running
-it. Agree on one **real, genuinely small** change, then dispatch the normal phases in order
-(spec → define → build → prove → seal → ship). Per phase, exactly two narration beats:
-before, what it will decide; after, what it wrote in `.devrites/work/<slug>/` and why. Walk
-every phase — the small change is what makes the full ceremony affordable to watch. Pause
-at each boundary for the user's go-ahead. Teach without lecturing.
+`guide` is an inline first-feature walkthrough. Agree on one **real, genuinely small**
+change, then run spec → temper → define → vet → build → prove → polish → review → seal →
+ship. Before each phase, say what it decides; after, name what it wrote and why. Pause at
+every boundary. Teach without lecturing.
 
 Specialist triggers (model-invoked inside the above):
 `devrites-frontend-craft` (UI) · `devrites-browser-proof` (UI verify) ·
@@ -106,9 +104,10 @@ SPEC          /rite spec               ≡    /rite-spec        investigate deep
 ADOPT         /rite adopt              ≡    /rite-adopt       onboard existing code → reverse-derive spec.md + seed conventions
 TEMPER        /rite temper             ≡    /rite-temper      optional — strategic review: scope mode + pre-mortem, harden the spec
 PLAN          /rite define             ≡    /rite-define      turn the spec into plan + task slices + state
-VET           /rite vet                ≡    /rite-vet         optional — engineering plan review: scope · architecture · tests · perf, harden the plan
+VET           /rite vet                ≡    /rite-vet         mandatory every plan — light/full engineering review by stakes
 REPLAN        /rite plan               ≡    /rite-plan        decompose / reslice / repair an active plan
 BUILD         /rite build              ≡    /rite-build       implement exactly one verified vertical slice, then stop
+CONVERGE      /rite converge           ≡    /rite-converge    recovery — append work needed to meet intent
 PROVE         /rite prove              ≡    /rite-prove       tests + build + runtime + browser evidence
 POLISH        /rite polish             ≡    /rite-polish      code polish always; UI normalize + polish if UI
 REVIEW        /rite review             ≡    /rite-review      feature-scoped multi-axis review

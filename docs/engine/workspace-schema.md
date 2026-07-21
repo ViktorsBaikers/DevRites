@@ -34,7 +34,7 @@ Canonical live workspace:
       plan.md                   # technical approach and slice strategy
       tasks.md                  # vertical slices
       traceability.md           # AC/REQ -> slices -> tests/evidence/files matrix
-      state.md                  # compact cursor
+      state.md                  # compact cursor; status.md alias allowed
       evidence.md               # command/action proof; proof.md alias allowed
       browser-evidence.md       # optional UI/runtime browser proof
       drift.md                  # optional spec/plan drift register
@@ -49,8 +49,9 @@ Canonical live workspace:
 
 Backward compatibility: `.devrites/features/<slug>/` remains readable as an alias
 for `.devrites/work/<slug>/`; `feature.md` and `index.md` remain valid workspace
-maps; `proof.md` remains a proof alias for `evidence.md`. Migration should add the
-canonical files without deleting aliases.
+maps; `status.md` remains a cursor alias for `state.md`; `proof.md` remains a
+proof alias for `evidence.md`. Migration should add the canonical files without
+deleting aliases.
 
 ## Read Order
 
@@ -80,7 +81,7 @@ canonical files without deleting aliases.
 | `plan.md` | required from plan | `/rite-define` | implementation approach | 220 lines | Approach, Slice strategy, Validation strategy, Rollback | HOW lives here, not in `spec.md`. `Validation strategy` names the Key links — cross-slice wiring `/rite-prove` walks (or `none` for single-slice features). |
 | `tasks.md` | required from plan | `/rite-define` | build one slice | 280 lines | Slice index | Each `SLICE-###` has goal, AC IDs, likely files, tests/proof, mode, gate, dependencies, done condition. |
 | `traceability.md` | required from plan | `/rite-define` | coverage/review/seal | 220 lines | Coverage matrix | Matrix maps AC/REQ ID, slice IDs, test/proof, evidence ID, touched files, status. |
-| `state.md` | required | all phases | current cursor | 120 lines | Cursor | Compact table/key-value cursor; not an append-only narrative. |
+| `state.md` / `status.md` | required | all phases | current cursor | 120 lines | Cursor | `state.md` is canonical; `status.md` is a compatibility alias. Compact table/key-value cursor; not an append-only narrative. |
 | `evidence.md` / `proof.md` | required from prove | `/rite-build`, `/rite-prove` | proof and seal | 280 lines | Evidence log | `EVID-###`, command/action, result, related AC/slice IDs, limitations. Each acceptance criterion carries a proof class — `test` / `command` / `browser` / `judgment` (untagged reads `judgment`; `judgment` needs its one-line why). |
 | `browser-evidence.md` | UI only | `/rite-prove`, `/rite-polish` | UI/browser proof | 220 lines | Browser evidence, Visual Verdict | Must reference real route/viewports/actions and related IDs. |
 | `drift.md` | drift only | Spec Drift Guard | spec/plan reality mismatch | 160 lines | Drift register | `DRIFT-###`, status, evidence found, resolution, related IDs. |

@@ -1,8 +1,7 @@
 # Development workflow
 
-Ship small, integrate often, keep the main branch releasable. This is the general
-engineering loop the DevRites feature lifecycle (spec → define → build → prove → polish →
-review → seal → ship) runs on top of.
+Ship small, integrate often, keep the main branch releasable. DevRites runs this
+lifecycle atop that loop: spec → define → vet → build → prove → polish → review → seal → ship.
 
 ## Work in small batches
 - Break work into thin, independently shippable slices and integrate them frequently —

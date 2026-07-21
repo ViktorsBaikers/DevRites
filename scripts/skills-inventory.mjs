@@ -7,6 +7,7 @@ const root = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const skillsDir = join(root, 'pack', '.claude', 'skills');
 const docsSkills = join(root, 'docs', 'skills.md');
 const docsCommandMap = join(root, 'docs', 'command-map.md');
+const docsFlow = join(root, 'docs', 'flow.md');
 const readme = join(root, 'README.md');
 const arch = join(root, 'docs', 'architecture.md');
 
@@ -82,6 +83,17 @@ function assertPublicSkillLinks(path, label) {
   }
 }
 
+function assertPublicSkillMentions(path, label) {
+  const text = readFileSync(path, 'utf8');
+  for (const skill of skills.filter((s) => s.invocable === 'true')) {
+    const escaped = skill.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const token = new RegExp(`(^|[^a-z0-9-])${escaped}([^a-z0-9-]|$)`, 'im');
+    if (!token.test(text)) {
+      fail(`${relative(root, path)}: missing ${label} entry for ${skill.name}`);
+    }
+  }
+}
+
 assertDocContains(docsSkills, `# All ${total} skills`, 'total skill heading');
 assertDocContains(docsSkills, `**${total} skills total**`, 'total skill prose');
 assertDocContains(docsSkills, `${publicRiteCount} user-invocable \`rite-*\``, 'public rite-* count');
@@ -90,9 +102,15 @@ assertDocContains(docsSkills, 'npx devrites', 'npx distribution contract');
 assertDocContains(docsCommandMap, 'npx devrites', 'npx distribution contract');
 assertDocContains(readme, `**${total} skills total**`, 'README total skill prose');
 assertDocContains(readme, `# skills/  ${total} skills`, 'README layout total count');
+assertDocContains(readme, `— ${publicCount} public + ${internalCount} internal`, 'README public/internal count');
 assertDocContains(arch, `${publicRiteCount} public \`rite-*\` skills (${total} total)`, 'architecture surface count');
+assertDocContains(docsFlow, `— ${publicCount} skills`, 'flow public count');
+assertDocContains(docsFlow, `— ${internalCount} skills`, 'flow internal count');
 assertPublicSkillLinks(docsSkills, 'skills catalogue');
 assertPublicSkillLinks(docsCommandMap, 'command map');
+assertPublicSkillMentions(readme, 'README catalogue');
+assertPublicSkillMentions(docsFlow, 'flow namespace');
+assertPublicSkillMentions(arch, 'architecture surface');
 
 console.log(`skills total: ${total}`);
 console.log(`public skills: ${publicCount}`);

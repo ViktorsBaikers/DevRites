@@ -16,9 +16,11 @@ Other subcommands (hooks, `footprint`, `tick-afk`, mutating commands) do not acc
 `--json` — they are not parsed for a decision. This is deliberate scope, not an
 oversight; the flag is added where a machine reads the result.
 
-Exception: `snapshot` and `context show --json` are already direct structured reports, not
-envelopes. `context show --json` emits `root`, `project`, `activeWorkspace`, `source`,
-`hostCommands`, and `status` so wrappers can tell where DevRites will act.
+Exception: `snapshot`, `context show --json`, and
+`reviewer-stats report --json` are already direct structured reports, not
+envelopes. `context show --json` emits `root`, `project`, `activeWorkspace`,
+`source`, `hostCommands`, and `status` so wrappers can tell where DevRites will
+act; reviewer stats emits the deterministic per-reviewer dispatch verdicts.
 
 ## Envelope
 
