@@ -28,8 +28,8 @@ var (
 )
 
 // WorkspaceSnapshot is the machine-readable DevRites workspace/status contract.
-// It models DevRites' native unit of work — a feature workspace at a phase with
-// section completeness — rather than a generic harness session/worker shape.
+// It models DevRites' native unit of work: a feature workspace at a phase with
+// section completeness: rather than a generic harness session/worker shape.
 type WorkspaceSnapshot struct {
 	SchemaVersion   string               `json:"schemaVersion"`
 	Slug            string               `json:"slug"`

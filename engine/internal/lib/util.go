@@ -14,7 +14,7 @@ func gitToplevel(dir string) string {
 	if err != nil {
 		return ""
 	}
-	return strings.TrimSpace(string(out))
+	return filepath.Clean(strings.TrimSpace(string(out)))
 }
 
 // gitDiffNames lists the paths that differ, relative to gitRoot. With one ref it

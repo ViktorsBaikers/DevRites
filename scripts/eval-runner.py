@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """DevRites trigger-eval runner.
 
-Wraps the Anthropic SDK to actually execute a trigger eval against a Claude
+Wraps the Anthropic SDK to execute a trigger eval against a Claude
 model. Off by default in CI (schema-only validation lives in
 `scripts/run-evals.sh`); this runner is invoked explicitly when
 `CLAUDE_API_KEY` is set.
@@ -26,10 +26,10 @@ What it does per query
 1. Loads each skill's `name` + `description` from `pack/.claude/skills/*/SKILL.md`.
 2. Sends the query as a `user` message to Claude with a system prompt
    instructing it to pick exactly one skill name from the candidate list, or
-   "none" if no skill applies. We do NOT ask the model to invoke a tool — we
+   "none" if no skill applies. We do NOT ask the model to invoke a tool: we
    ask it to predict which skill the harness would have triggered. That keeps
    the eval cheap (no agentic loop, one round-trip per query) and faithful to
-   what skill discovery actually decides.
+   what skill discovery decides.
 3. Compares the predicted skill name to the expected verdict:
    - `should_trigger`  → predicted name must equal the eval's `skill` field.
    - `should_not_trigger` → predicted name must NOT equal the eval's `skill`.
@@ -45,7 +45,7 @@ Usage
     CLAUDE_API_KEY=sk-... ./scripts/eval-runner.py --min-accuracy 0.9 evals/*.json
 
 The runner is intentionally thin (~200 lines). It is not the eval-viewer in
-Anthropic's `skill-creator` — it just provides the missing "did the model
+Anthropic's `skill-creator`: it just provides the missing "did the model
 pick the right skill" signal so we can answer that question without firing
 up the full Claude Code harness.
 """
@@ -67,7 +67,7 @@ SYSTEM_TEMPLATE = """\
 You are the DevRites skill router. Your job is to predict which DevRites
 skill (if any) should fire for a given user message.
 
-Each candidate skill is described below. Read the descriptions carefully —
+Each candidate skill is described below. Read the descriptions carefully:
 DevRites' triggers are encoded in them.
 
 For the user message at the end, respond with exactly one line of the form:
@@ -113,7 +113,7 @@ def load_skills() -> list[Skill]:
         if not skill_md.is_file():
             continue
         body = skill_md.read_text(encoding="utf-8")
-        # Lightweight YAML frontmatter parse — we only need name + description.
+        # Lightweight YAML frontmatter parse: we only need name + description.
         m = re.match(r"^---\n(.*?)\n---", body, re.DOTALL)
         if not m:
             continue
@@ -129,7 +129,7 @@ def load_skills() -> list[Skill]:
 def render_system(skills: list[Skill]) -> str:
     lines = []
     for s in skills:
-        lines.append(f"- **{s.name}** — {s.description}")
+        lines.append(f"- **{s.name}**: {s.description}")
     return SYSTEM_TEMPLATE.format(skills="\n".join(lines))
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate-frontmatter-rejects-unknown.sh — assert validate-frontmatter.py
+# validate-frontmatter-rejects-unknown.sh: assert validate-frontmatter.py
 # fails (non-zero) on any non-canonical SKILL.md field, on a description > 1024
 # chars, and on a multi-line description.
 set -u
@@ -18,20 +18,20 @@ fail=0
 assert_fail() {
   _label="$1"; _file="$2"
   if python3 "$PY" "$_file" >"$TMP/out" 2>&1; then
-    printf 'FAIL: %s — validator should have failed but exited 0\n' "$_label"
+    printf 'FAIL: %s: validator should have failed but exited 0\n' "$_label"
     cat "$TMP/out"
     fail=1
   else
-    printf 'ok: %s — validator rejected as expected\n' "$_label"
+    printf 'ok: %s: validator rejected as expected\n' "$_label"
   fi
 }
 
 assert_ok() {
   _label="$1"; _file="$2"
   if python3 "$PY" "$_file" >"$TMP/out" 2>&1; then
-    printf 'ok: %s — validator accepted canonical skill\n' "$_label"
+    printf 'ok: %s: validator accepted canonical skill\n' "$_label"
   else
-    printf 'FAIL: %s — validator rejected canonical skill\n' "$_label"
+    printf 'FAIL: %s: validator rejected canonical skill\n' "$_label"
     cat "$TMP/out"
     fail=1
   fi

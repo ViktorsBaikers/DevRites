@@ -1,4 +1,4 @@
-# Browser proof — evidence schema
+# Browser proof: evidence schema
 
 What `browser-evidence.md` must capture for a UI slice. Delegates to
 `devrites-browser-proof`; this is the record contract.
@@ -33,7 +33,7 @@ What `browser-evidence.md` must capture for a UI slice. Delegates to
 ```
 
 ## Rules
-- Open every screenshot path and describe it — never assert from the filename.
+- Open every screenshot path and describe it: never assert from the filename.
 - Read `design-brief.md` + `references.md` first. Compare fidelity only with references
   classified **target**; check constraints as rules and never pixel-match inspiration.
 - Render every proof target named by the brief/slice. At minimum check a small (375) and a

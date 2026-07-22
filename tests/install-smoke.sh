@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-smoke.sh — default dry-run, temp install, idempotent reinstall,
+# install-smoke.sh: default dry-run, temp install, idempotent reinstall,
 # and generated Codex mirror checks. Exits non-zero on any failure.
 set -u
 export DEVRITES_NO_BINARY=1   # pack smoke: the engine binary has its own lifecycle test (binary-lifecycle-test.sh)

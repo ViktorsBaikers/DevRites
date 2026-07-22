@@ -1,31 +1,31 @@
-# Convergence assessment — built / partial / absent
+# Convergence assessment: built / partial / absent
 
-The rubric `$rite-converge` applies to every unit of intent. Load when running step 2–5.
+The rubric `$rite-converge` applies to every unit of intent. Load when running step 2-5.
 
 ## The unit set
 
 Assess three kinds of unit against the live code:
 
-1. **Acceptance criteria / scenarios** — each buildable `AC-###` and each `#### Scenario:`
-   (WHEN/THEN) in `spec.md`. `## Success metrics` lines are **not** units — they carry no
+1. **Acceptance criteria / scenarios:** each buildable `AC-###` and each `#### Scenario:`
+   (WHEN/THEN) in `spec.md`. `## Success metrics` lines are **not** units. They carry no
    `AC-###` id, no slice can satisfy them, and this pass never enqueues one (`spec-grammar.md`).
-2. **Plan touch-points** — the files/components/modules `plan.md` says get built or edited, and
+2. **Plan touch-points:** the files/components/modules `plan.md` says get built or edited, and
    each existing slice's stated **Produces** (the interface it was meant to expose).
-3. **Principles** — each invariant in `.devrites/principles.md`, checked against the code as it
+3. **Principles:** each invariant in `.devrites/principles.md`, checked against the code as it
    stands.
 
 ## The three verdicts
 
-For each unit, decide **built / partial / absent** — and only *partial* and *absent* enqueue a
+For each unit, decide **built / partial / absent**, and only *partial* and *absent* enqueue a
 slice.
 
 | Verdict | Test | Action |
 |---|---|---|
-| **built** | The behavior exists in the code **and** a test covers it (a criterion with code but no covering test is not built — `testing.md`). | Nothing — do not append. |
+| **built** | The behavior exists in the code **and** a test covers it (a criterion with code but no covering test is not built: `testing.md`). | Nothing: do not append. |
 | **partial** | Some of it exists: happy path only, un-wired, untested, a TODO stub, or an edge case from the scenario's WHEN/THEN missing. | Append a slice for the **remainder**, its `Known-Gotchas` naming what's already there so `$rite-build` extends rather than rebuilds. |
 | **absent** | No code implements it. | Append a full slice. |
 
-Read the code to decide — do not infer from the plan. Use the code-intelligence index
+Read the code to decide: do not infer from the plan. Use the code-intelligence index
 (codebase-memory-mcp → codegraph → graphify, else LSP / grep) so the verdict reflects live
 code, not the artifacts' claims. `devrites-engine analyze` / `devrites-engine coverage` tell you what's
 *mapped*; only reading the code tells you what's *built*.
@@ -34,16 +34,16 @@ code, not the artifacts' claims. `devrites-engine analyze` / `devrites-engine co
 
 A live violation of a declared invariant (secret in logs, money as float, a datastore added
 with no ADR) is the **top-severity** gap regardless of coverage. It sorts **first** in the
-appended batch as a remediation slice, and — because reshaping to honor an invariant can be an
-irreversible-risk change — it pauses for a human even under AFK. Absent/empty principles file →
+appended batch as a remediation slice, and (because reshaping to honor an invariant can be an
+irreversible-risk change) it pauses for a human even under AFK. Absent/empty principles file →
 none declared → skip, never block.
 
 ## Spec drift vs code gap
 
 Before appending a slice, separate the two failure directions:
 
-- **Code gap** — the spec is right, the code falls short. → append a slice. (This skill's job.)
-- **Spec drift** — the code is right, the requirement is stale or wrong. → **do not** append a
+- **Code gap:** the spec is right, the code falls short. → append a slice. (This skill's job.)
+- **Spec drift:** the code is right, the requirement is stale or wrong. → **do not** append a
   slice that bends correct code to a wrong spec. Stop, route through the Spec Drift Guard
   (`rite-build/reference/spec-drift-guard.md`) + a recorded decision, and let `$rite-plan
   repair` reshape intent. Convergence enqueues work; it never launders a spec bug into a code
@@ -51,7 +51,7 @@ Before appending a slice, separate the two failure directions:
 
 ## Numbering + ordering the appended batch
 
-- **Continue the ids** — the highest existing `SLICE-###` + 1, ascending. Never reuse or
+- **Continue the ids:** the highest existing `SLICE-###` + 1, ascending. Never reuse or
   renumber an existing id.
 - **Order after the existing slices**, dependency-first among the new ones (`depends_on`);
   a principle-remediation slice sorts before feature gaps.

@@ -1,6 +1,6 @@
 {
   "skill": "devrites-prose-craft",
-  "description": "Trigger evals for devrites-prose-craft — the model-invoked specialist that humanizes DevRites artifacts and replies while preserving technical content.",
+  "description": "Trigger evals for devrites-prose-craft: the model-invoked specialist that humanizes DevRites artifacts and replies while preserving technical content.",
   "queries": [
     {
       "text": "Humanize this prose without losing any technical content or identifiers.",

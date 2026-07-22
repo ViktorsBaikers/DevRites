@@ -4,9 +4,12 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -195,7 +198,7 @@ func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
 }`+"\n")
 	target := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(target, ".claude", "settings.json"), `{
-  "$comment": "DevRites hooks — keep my local notes",
+  "$comment": "DevRites hooks: keep my local notes",
   "theme": "dark",
   "statusLine": {"type":"command","command":"DEVRITES_THEME=dark echo user-status"},
   "hooks": {"Stop":[{"hooks":[
@@ -209,7 +212,7 @@ func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
 	runInstall(t, target, payload, func(o *Options) { o.Stderr = &stderr })
 
 	settings := testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	for _, preserved := range []string{"DevRites hooks — keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
+	for _, preserved := range []string{"DevRites hooks: keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
 		if !strings.Contains(settings, preserved) {
 			t.Fatalf("Claude settings lost user content %q:\n%s", preserved, settings)
 		}
@@ -229,7 +232,7 @@ func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
 
 	runUninstall(t, target)
 	settings = testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	for _, preserved := range []string{"DevRites hooks — keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
+	for _, preserved := range []string{"DevRites hooks: keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
 		if !strings.Contains(settings, preserved) {
 			t.Fatalf("Claude settings uninstall lost user content %q:\n%s", preserved, settings)
 		}
@@ -344,6 +347,111 @@ func TestInstallBinaryUsesEngineHandoff(t *testing.T) {
 	}
 	if runtime.GOOS != "windows" && info.Mode()&0o111 == 0 {
 		t.Fatalf("installed binary is not executable: %v", info.Mode())
+	}
+}
+
+func TestAcquireBinaryBuildsWithoutVCSMetadata(t *testing.T) {
+	t.Setenv("DEVRITES_ENGINE_CLI", "")
+	t.Setenv("DEVRITES_UPDATE_BUNDLE", "")
+	t.Setenv("GOFLAGS", "-buildvcs=true")
+	source := t.TempDir()
+	if err := os.Mkdir(filepath.Join(source, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	testutil.WriteFile(t, filepath.Join(source, "engine", "go.mod"), "module github.com/devrites/devrites\n\ngo 1.23\n")
+	testutil.WriteFile(t, filepath.Join(source, "engine", "main.go"), "package main\nfunc main() {}\n")
+
+	r := runner{source: source}
+	staged, cleanup, err := r.acquireBinary("v1.2.3", githubBaseURL)
+	defer cleanup()
+	if err != nil {
+		t.Fatalf("acquireBinary with unavailable VCS metadata: %v", err)
+	}
+	if !exists(staged) {
+		t.Fatalf("acquireBinary did not build %s", staged)
+	}
+}
+
+func TestAcquireBinaryPrefersVerifiedReleaseOverStaleHandoff(t *testing.T) {
+	stale := filepath.Join(t.TempDir(), "devrites-engine")
+	testutil.WriteExecutable(t, stale, "#!/bin/sh\nif [ \"$1\" = version ]; then echo v1.2.2; fi\n")
+	t.Setenv("DEVRITES_ENGINE_CLI", stale)
+	t.Setenv("DEVRITES_UPDATE_BUNDLE", "")
+	t.Setenv("DEVRITES_REPO", "owner/repo")
+	tag := "v1.2.3"
+	asset := fmt.Sprintf("devrites-%s-%s", runtime.GOOS, runtime.GOARCH)
+	if runtime.GOOS == "windows" {
+		asset += ".exe"
+	}
+	path := "/owner/repo/releases/download/" + tag + "/" + asset
+	body := []byte("verified release binary")
+	sum := fmt.Sprintf("%x  %s\n", sha256.Sum256(body), asset)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case path:
+			_, _ = w.Write(body)
+		case path + ".sha256":
+			_, _ = w.Write([]byte(sum))
+		default:
+			http.NotFound(w, req)
+		}
+	}))
+	defer server.Close()
+
+	r := runner{releaseBinaryTag: tag}
+	staged, cleanup, err := r.acquireBinary(tag, server.URL)
+	defer cleanup()
+	if err != nil {
+		t.Fatalf("acquire verified release binary: %v", err)
+	}
+	got, err := os.ReadFile(staged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, body) {
+		t.Fatalf("acquired binary = %q, want %q", got, body)
+	}
+}
+
+func TestAcquireBinaryRejectsReleaseChecksumMismatch(t *testing.T) {
+	t.Setenv("DEVRITES_ENGINE_CLI", "")
+	t.Setenv("DEVRITES_UPDATE_BUNDLE", "")
+	t.Setenv("DEVRITES_REPO", "owner/repo")
+	tag := "v1.2.3"
+	source := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(source, "engine", "go.mod"), "module github.com/devrites/devrites\n\ngo 1.23\n")
+	testutil.WriteFile(t, filepath.Join(source, "engine", "main.go"), "package main\nfunc main() {}\n")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if strings.HasSuffix(req.URL.Path, ".sha256") {
+			_, _ = w.Write([]byte("deadbeef\n"))
+			return
+		}
+		_, _ = w.Write([]byte("tampered release binary"))
+	}))
+	defer server.Close()
+
+	r := runner{source: source, releaseBinaryTag: tag}
+	_, cleanup, err := r.acquireBinary(tag, server.URL)
+	defer cleanup()
+	if err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
+		t.Fatalf("acquireBinary error = %v, want checksum mismatch", err)
+	}
+}
+
+func TestInstallBinaryFailsWhenPreparedUpdateCannotBeWritten(t *testing.T) {
+	prepared := filepath.Join(t.TempDir(), "devrites-engine")
+	testutil.WriteExecutable(t, prepared, "#!/bin/sh\n")
+	blocked := filepath.Join(t.TempDir(), "not-a-directory")
+	testutil.WriteFile(t, blocked, "file\n")
+	t.Setenv("DEVRITES_BIN_DIR", filepath.Join(blocked, "bin"))
+	t.Setenv("DEVRITES_REF", "v1.2.3")
+
+	r := runner{
+		opts:           DefaultOptions(ModeInstall),
+		preparedBinary: prepared,
+	}
+	if err := r.installBinary(); err == nil {
+		t.Fatal("installBinary accepted a prepared update it could not write")
 	}
 }
 

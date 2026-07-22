@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-flag-parser-smoke.sh — keep core install.sh replayable flags parseable.
+# install-flag-parser-smoke.sh: keep core install.sh replayable flags parseable.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0

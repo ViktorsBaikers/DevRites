@@ -76,7 +76,7 @@ func TestConcurrentStatusProcessesStayConsistent(t *testing.T) {
 
 // TestConcurrentStopGateAppendsNeverTear spawns many concurrent stop-gate
 // processes (observe mode) that each append a would-block record to the same
-// per-feature log. Every record must land exactly once and intact — the
+// per-feature log. Every record must land exactly once and intact: the
 // multi-PROCESS proof of the O_APPEND log path (the in-process proof lives in
 // internal/state/concurrency_test.go).
 func TestConcurrentStopGateAppendsNeverTear(t *testing.T) {

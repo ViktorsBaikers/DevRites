@@ -1,9 +1,8 @@
-# Architecture Decision Records
+# Architecture decision records
 
-An ADR captures **one** load-bearing decision: the context that forced it, the
-decision itself, the alternatives that were rejected and *why*, and the
-consequences accepted. The rejected-alternatives table is the point — it keeps
-the "why not X" from being re-litigated every quarter.
+An ADR records one architectural decision, the context behind it, the options
+that were rejected, and the consequences the team accepted. Recording why an
+option lost prevents the same debate from starting again later.
 
 `CLAUDE.md` points every agent here (`CONTEXT.md` + `docs/adr/` are the
 single-context domain record). Keep this directory the source of truth for
@@ -17,9 +16,8 @@ architecture; per-feature `decisions.md` files stay scoped to that feature.
 - Sections: **Context** → **Decision** → **Alternatives considered** (a table:
   option · why rejected) → **Consequences**.
 - **Guard test:** an accepted ADR that asserts a runtime invariant SHOULD have a
-  named regression test — `engine/tests/adr_NNNN_*_test.go` — so the decision
-  has an executable proof it still holds. Reference the ADR number in the test's
-  doc comment.
+  named regression test such as `engine/tests/adr_NNNN_*_test.go`. Reference the
+  ADR number in the test's doc comment so the decision has executable proof.
 
 ## Template
 
@@ -48,7 +46,7 @@ architecture; per-feature `decisions.md` files stay scoped to that feature.
 
 | ADR | Title | Status | Guard test |
 |-----|-------|--------|-----------|
-| [0001](0001-go-engine-as-control-plane.md) | Go engine as deterministic control plane | Accepted | — |
+| [0001](0001-go-engine-as-control-plane.md) | Go engine as deterministic control plane | Accepted | none |
 | [0002](0002-dual-host-harness.md) | Dual-host harness (Claude + Codex) | Accepted | `tests/parity_*_test.go` |
 | [0003](0003-gate-model-hitl-pause.md) | Gates block as HITL pause, never crash | Accepted | `tests/adr_0003_gate_exit_code_test.go` |
 | [0004](0004-state-schema-phases-sections.md) | Phase-relative section completeness | Accepted | `tests/adr_0004_required_by_phase_test.go` |

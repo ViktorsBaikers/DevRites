@@ -2,7 +2,7 @@
 
 The seal verdict is binary and evidence-based. When in doubt, NO-GO with a clear blocker
 list beats a hopeful GO. The **authoritative gate is the severity table in
-[`../SKILL.md`](../SKILL.md) ("Severity gate")**; this file is the rationale behind it — keep
+[`../SKILL.md`](../SKILL.md) ("Severity gate")**; this file is the rationale behind it: keep
 the two in sync.
 
 ## NO-GO if any of these hold
@@ -14,20 +14,20 @@ the two in sync.
 - A **security-critical issue** remains (auth bypass, data exposure, injection).
 - A **data migration or destructive change lacks a rollback plan**.
 - A **declared project principle is violated** (`.devrites/principles.md`) with no recorded,
-  human-approved exception — same standing as an unproven criterion (absent / empty file →
+  human-approved exception: same standing as an unproven criterion (absent / empty file →
   none declared → not a blocker).
-- A **stood decision was never independently doubted** — a `## Decisions stood` entry in
-  `decisions.md` carrying `doubt: MISSING` (or `devrites-engine doubt-coverage` rc=3) — when that decision
+- A **stood decision was never independently doubted**. This means a `## Decisions stood` entry in
+  `decisions.md` carries `doubt: MISSING`, or `devrites-engine doubt-coverage` returns rc=3, when that decision
   is irreversible-risk (auth / public-API / migration). Severity rides the undoubted decision,
   not the exit code.
-- Any `questions.md` entry with `gate: validating` and `status: open` — **NO-GO
+- Any `questions.md` entry with `gate: validating` and `status: open`. **NO-GO
   regardless of behavior impact** (an open validating gate is merge-blocking by
   definition). A slice marked `built (pending review)` is not done.
-- A **test was weakened to go green** (`devrites-engine test-integrity` exit 3 — a test deleted, skipped,
+- A **test was weakened to go green** (`devrites-engine test-integrity` exit 3: a test deleted, skipped,
   `xfail`-ed, or de-asserted since the slice base). A suite that passes on a lowered bar is not
   proof; this is a Critical NO-GO.
 - Under `DEVRITES_MUTATION=enforce`, a **mutation score below threshold** (`devrites-engine mutation-gate`
-  exit 3 — survived mutants are behaviours no test actually checks).
+  exit 3: survived mutants are behaviours no test checks).
 
 ## GO requires
 - Every critical acceptance criterion checked with evidence attached.
@@ -39,12 +39,12 @@ the two in sync.
 
 ## Important findings (`Critical == 0`, `Important > 0`)
 Open `Important` findings do not auto-pass. With acceptance proven and drift resolved, render
-the interactive prompt *"`Important > 0` open. Proceed to seal? [y/N]"* — default **N**. `y`
+the interactive prompt *"`Important > 0` open. Proceed to seal? [y/N]"*: default **N**. `y`
 → GO; otherwise NO-GO with the open Important findings listed as blockers-by-policy. Don't
 silently fold Important findings into a GO.
 
 ## Conditional GO
-If only **non-blocking follow-ups** remain, it's a GO with a recorded follow-up list —
+If only **non-blocking follow-ups** remain, it's a GO with a recorded follow-up list:
 not a NO-GO. Distinguish "must fix to ship" (blocker) from "should do next" (follow-up).
 
 ## Honesty

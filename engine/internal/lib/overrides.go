@@ -11,7 +11,7 @@ import (
 
 // subversionPhrase matches an override trying to talk a reviewer OUT of a gate
 // rather than adding emphasis to it. Overrides are advisory reviewer input; they
-// can raise the bar, never lower it. This is a heuristic tripwire, not a parser —
+// can raise the bar, never lower it. This is a heuristic tripwire, not a parser:
 // it exists so a human notices an override that reads like "waive the gate".
 var subversionPhrase = regexp.MustCompile(`(?i)\b(disable|skip|waive|bypass|ignore|suppress|turn off|don'?t (?:block|flag|enforce))\b[^.\n]{0,40}\b(gate|critical|no-?go|review|principle|check|severity|finding)\b|` +
 	`\b(downgrade|lower|relax|treat)\b[^.\n]{0,40}\b(critical|severity|no-?go|blocker)\b`)
@@ -19,7 +19,7 @@ var subversionPhrase = regexp.MustCompile(`(?i)\b(disable|skip|waive|bypass|igno
 // Overrides is the linter for the project's reviewer-override layer:
 // .devrites/overrides/<agent-name>.md, advisory text a reviewer reads AFTER its
 // governing standards to pick up house rules. The layer lets a project tune a
-// shipped reviewer without forking the pack; this command keeps it honest — an
+// shipped reviewer without forking the pack; this command keeps it honest: an
 // override may add checks, never relax a gate.
 //
 //	list       enumerate override files and the agent each targets
@@ -40,7 +40,7 @@ func Overrides(root string, args []string, stdout, stderr io.Writer) int {
 }
 
 // overrideFiles returns the *.md override files under dir, sorted. A missing dir
-// means the project declares no overrides — not an error.
+// means the project declares no overrides: not an error.
 func markdownFiles(dir, kind string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -79,7 +79,7 @@ func overridesList(dir string, stdout io.Writer) int {
 
 // overridesValidate checks each override is a non-empty file that reads as added
 // emphasis, not a gate waiver. An orphan (no matching agent in the installed pack)
-// is a warning, not a failure — the pack layout differs across harnesses. A
+// is a warning, not a failure: the pack layout differs across harnesses. A
 // subversion phrase is a hard finding, since an override that waives a gate is the
 // one thing this layer must never do.
 //
@@ -105,7 +105,7 @@ func overridesValidate(dir, projectDir string, stdout, stderr io.Writer) int {
 	for _, f := range files {
 		body, _ := readFileOK(filepath.Join(dir, f))
 		if strings.TrimSpace(body) == "" {
-			fmt.Fprintf(stdout, "  warning: %s is empty — no override applied\n", f)
+			fmt.Fprintf(stdout, "  warning: %s is empty: no override applied\n", f)
 			continue
 		}
 		agent := strings.TrimSuffix(f, ".md")
@@ -113,7 +113,7 @@ func overridesValidate(dir, projectDir string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "  warning: %s targets %q, which is not an installed agent (orphan override)\n", f, agent)
 		}
 		if subversionPhrase.MatchString(body) {
-			fmt.Fprintf(stderr, "  VIOLATION: %s reads like it waives a gate — an override may add checks, never relax one.\n", f)
+			fmt.Fprintf(stderr, "  VIOLATION: %s reads like it waives a gate: an override may add checks, never relax one.\n", f)
 			subversions++
 		}
 	}
@@ -121,11 +121,11 @@ func overridesValidate(dir, projectDir string, stdout, stderr io.Writer) int {
 		rel := filepath.ToSlash(filepath.Join("templates", f))
 		body, _ := readFileOK(filepath.Join(dir, "templates", f))
 		if strings.TrimSpace(body) == "" {
-			fmt.Fprintf(stdout, "  warning: %s is empty — no template override applied\n", rel)
+			fmt.Fprintf(stdout, "  warning: %s is empty: no template override applied\n", rel)
 			continue
 		}
 		if subversionPhrase.MatchString(body) {
-			fmt.Fprintf(stderr, "  VIOLATION: %s reads like it waives a gate — a template override may add structure, never relax one.\n", rel)
+			fmt.Fprintf(stderr, "  VIOLATION: %s reads like it waives a gate: a template override may add structure, never relax one.\n", rel)
 			subversions++
 		}
 		for _, term := range requiredTemplateGateTerms(f) {
@@ -140,7 +140,7 @@ func overridesValidate(dir, projectDir string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "overrides: %d override(s) attempt to relax a gate. A gate stays authoritative; remove the waiver.\n", subversions)
 		return 1
 	}
-	fmt.Fprintf(stdout, "overrides: OK — %d reviewer override(s), %d template override(s), none relaxing a gate\n", len(files), len(templates))
+	fmt.Fprintf(stdout, "overrides: OK: %d reviewer override(s), %d template override(s), none relaxing a gate\n", len(files), len(templates))
 	return 0
 }
 

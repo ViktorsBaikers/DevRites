@@ -15,14 +15,14 @@ import (
 // Extensions is the project-local extension surface: user-authored rites and
 // reviewers that live under .devrites/extensions/<name>/ and are held to the same
 // schema as the shipped pack, then mirrored into the harness's skill/agent dirs.
-// It is DevRites' answer to "add a rite or reviewer without forking the pack" —
+// It is DevRites' answer to "add a rite or reviewer without forking the pack":
 // deliberately project-scoped, with no channel/marketplace/registry apparatus.
 //
 // Layout of one extension:
 //
 //	.devrites/extensions/<name>/
-//	  skill/SKILL.md      (optional) a user skill — must carry name + description frontmatter
-//	  agent.md            (optional) a user reviewer agent — must carry name + description
+//	  skill/SKILL.md      (optional) a user skill: must carry name + description frontmatter
+//	  agent.md            (optional) a user reviewer agent: must carry name + description
 //	  extension.yaml      (optional) metadata: aliases (prior names, so a rename doesn't orphan)
 //
 // base is the .devrites root; the project directory (where .claude lives) is its
@@ -60,7 +60,7 @@ type extension struct {
 }
 
 // discoverExtensions returns the extensions under extDir, sorted by name. A
-// missing extensions dir is not an error — it means the project declares none.
+// missing extensions dir is not an error: it means the project declares none.
 func discoverExtensions(extDir string) ([]extension, error) {
 	entries, err := os.ReadDir(extDir)
 	if err != nil {
@@ -124,7 +124,7 @@ func extensionsList(extDir string, stdout io.Writer) int {
 		if len(provides) == 0 {
 			provides = []string{"(empty)"}
 		}
-		line := fmt.Sprintf("  %s — %s", e.name, strings.Join(provides, "+"))
+		line := fmt.Sprintf("  %s: %s", e.name, strings.Join(provides, "+"))
 		if len(e.aliases) > 0 {
 			line += " · aliases: " + strings.Join(e.aliases, ", ")
 		}
@@ -139,7 +139,7 @@ func extensionsList(extDir string, stdout io.Writer) int {
 // name. Reserved pack prefixes (rite-, devrites-) are a collision warning.
 //
 //	0  every extension well-formed (or none)
-//	1  a schema violation — an extension that would install broken
+//	1  a schema violation: an extension that would install broken
 func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 	exts, err := discoverExtensions(extDir)
 	if err != nil {
@@ -179,7 +179,7 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 				}
 				seenSkill[name] = e.name
 				if reservedPackName(name) {
-					fmt.Fprintf(stdout, "  warning: %s skill name %q uses a reserved pack prefix (rite-/devrites-) — it will shadow or collide with the shipped pack\n", e.name, name)
+					fmt.Fprintf(stdout, "  warning: %s skill name %q uses a reserved pack prefix (rite-/devrites-): it will shadow or collide with the shipped pack\n", e.name, name)
 				}
 			}
 		}
@@ -207,7 +207,7 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 		}
 		return 1
 	}
-	fmt.Fprintf(stdout, "extensions: OK — %d extension(s) well-formed, %d manifest(s) checked\n", len(exts), manifestCount)
+	fmt.Fprintf(stdout, "extensions: OK: %d extension(s) well-formed, %d manifest(s) checked\n", len(exts), manifestCount)
 	return 0
 }
 
@@ -479,7 +479,7 @@ func allowedComponentWriteRoot(root string) bool {
 // Claude-to-Codex generation path.
 func extensionsSync(extDir, projectDir string, stdout, stderr io.Writer) int {
 	if code := extensionsValidate(extDir, io.Discard, stderr); code != 0 {
-		fmt.Fprintln(stderr, "extensions: not syncing — validation failed (run `devrites-engine extensions validate`)")
+		fmt.Fprintln(stderr, "extensions: not syncing: validation failed (run `devrites-engine extensions validate`)")
 		return code
 	}
 	exts, _ := discoverExtensions(extDir)

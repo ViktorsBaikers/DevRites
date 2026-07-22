@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Reconcile enforces that the orchestrator never edits source itself — only the
+// Reconcile enforces that the orchestrator never edits source itself: only the
 // dispatched slice-wright writes code and tests, while the orchestrator writes
 // bookkeeping under .devrites/. `snapshot` records the working tree just before
 // the wright runs; `check` diffs it afterward and flags any changed path that is
@@ -17,8 +17,8 @@ import (
 // <root>/features/<slug>.
 //
 //	0  clean check, snapshot written, inline fallback, or skipped (not a git repo)
-//	5  VIOLATION — source changed outside the wright's claimed set
-//	6  setup error — bad args, missing snapshot, or missing claimed manifest
+//	5  VIOLATION: source changed outside the wright's claimed set
+//	6  setup error: bad args, missing snapshot, or missing claimed manifest
 func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	mode := argAt(args, 0)
 	slug := argAt(args, 1)
@@ -29,7 +29,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	cwd, _ := os.Getwd()
 	gitRoot := gitToplevel(cwd)
 	if gitRoot == "" {
-		fmt.Fprintln(stderr, "reconcile: not a git repo — gate skipped, verify the diff by hand.")
+		fmt.Fprintln(stderr, "reconcile: not a git repo: gate skipped, verify the diff by hand.")
 		return 0
 	}
 
@@ -37,28 +37,37 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	base := filepath.Join(d, ".reconcile-base")
 	claimed := filepath.Join(d, ".reconcile-claimed")
 	inline := filepath.Join(d, ".reconcile-inline")
+	objects := filepath.Join(d, ".reconcile-objects")
 
 	if slug == "" || !isDir(d) {
 		s := slug
 		if s == "" {
 			s = "<unset>"
 		}
-		fmt.Fprintf(stderr, "reconcile: no active workspace (slug=%s) — nothing to reconcile.\n", s)
+		fmt.Fprintf(stderr, "reconcile: no active workspace (slug=%s): nothing to reconcile.\n", s)
 		return 6
 	}
 
-	closeWindow := func() { _ = os.Remove(base); _ = os.Remove(claimed); _ = os.Remove(inline) }
+	closeWindow := func() {
+		_ = os.Remove(base)
+		_ = os.Remove(claimed)
+		_ = os.Remove(inline)
+		_ = os.RemoveAll(objects)
+	}
 
 	switch mode {
 	case "snapshot":
 		_ = os.Remove(inline) // clear any stale sentinel / prior-slice manifest
 		_ = os.Remove(claimed)
-		tree, err := worktreeTree(gitRoot)
+		_ = os.RemoveAll(objects)
+		tree, err := worktreeTree(gitRoot, objects)
 		if err != nil {
+			_ = os.RemoveAll(objects)
 			fmt.Fprintf(stderr, "reconcile: cannot snapshot worktree: %v\n", err)
 			return 6
 		}
 		if err := os.WriteFile(base, []byte(tree+"\n"), 0o644); err != nil {
+			_ = os.RemoveAll(objects)
 			fmt.Fprintf(stderr, "reconcile: cannot write snapshot: %v\n", err)
 			return 6
 		}
@@ -67,16 +76,16 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 
 	case "check":
 		if isFile(inline) {
-			fmt.Fprintln(stderr, "reconcile: inline-fallback run (no wright dispatched) — gate skipped.")
+			fmt.Fprintln(stderr, "reconcile: inline-fallback run (no wright dispatched): gate skipped.")
 			closeWindow()
 			return 0
 		}
 		if !isFile(base) {
-			fmt.Fprintln(stderr, `reconcile: no snapshot (.reconcile-base) — run "devrites-engine reconcile snapshot" before dispatch.`)
+			fmt.Fprintln(stderr, `reconcile: no snapshot (.reconcile-base): run "devrites-engine reconcile snapshot" before dispatch.`)
 			return 6
 		}
 		if !isFile(claimed) {
-			fmt.Fprintln(stderr, "reconcile: no claimed manifest (.reconcile-claimed) — write the wright Files-changed paths first.")
+			fmt.Fprintln(stderr, "reconcile: no claimed manifest (.reconcile-claimed): write the wright Files-changed paths first.")
 			return 6
 		}
 		baseBytes, err := os.ReadFile(base)
@@ -86,19 +95,34 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		baseTree := strings.TrimSpace(string(baseBytes))
 		if baseTree == "" {
-			fmt.Fprintln(stderr, "reconcile: empty snapshot (.reconcile-base) — re-run \"devrites-engine reconcile snapshot\" before dispatch.")
+			fmt.Fprintln(stderr, "reconcile: empty snapshot (.reconcile-base): re-run \"devrites-engine reconcile snapshot\" before dispatch.")
 			return 6
 		}
-		nowTree, err := worktreeTree(gitRoot)
+		if !isDir(objects) {
+			fmt.Fprintln(stderr, "reconcile: missing snapshot object database (.reconcile-objects): re-run \"devrites-engine reconcile snapshot\" before dispatch.")
+			return 6
+		}
+		nowTree, err := worktreeTree(gitRoot, objects)
 		if err != nil {
 			fmt.Fprintf(stderr, "reconcile: cannot capture worktree: %v\n", err)
+			return 6
+		}
+		diff := exec.Command("git", "-C", gitRoot, "diff", "--name-only", baseTree, nowTree)
+		diff.Env, err = reconcileGitEnv(gitRoot, objects)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot compare worktree: %v\n", err)
+			return 6
+		}
+		diffOut, err := diff.CombinedOutput()
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot compare worktree: git diff --name-only: %v: %s\n", err, strings.TrimSpace(string(diffOut)))
 			return 6
 		}
 
 		claimedSet := claimedPaths(claimed)
 		viol := 0
 		var violist strings.Builder
-		for _, f := range gitDiffNames(gitRoot, baseTree, nowTree) {
+		for _, f := range splitLinesNoTrailing(diffOut) {
 			if f == "" || strings.HasPrefix(f, ".devrites/") {
 				continue
 			}
@@ -108,13 +132,13 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 			}
 		}
 		if viol > 0 {
-			fmt.Fprintf(stderr, "reconcile: STOP — %d source file(s) changed OUTSIDE the wright (A1 breach):\n", viol)
+			fmt.Fprintf(stderr, "reconcile: STOP: %d source file(s) changed OUTSIDE the wright (A1 breach):\n", viol)
 			fmt.Fprint(stderr, violist.String())
 			fmt.Fprintln(stderr, "The orchestrator must NOT edit source. Re-dispatch the wright (continue it once) or revert these.")
 			return 5
 		}
 		closeWindow()
-		fmt.Fprintln(stdout, "reconcile: OK — every source change is the wright's; orchestrator touched only bookkeeping.")
+		fmt.Fprintln(stdout, "reconcile: OK: every source change is the wright's; orchestrator touched only bookkeeping.")
 		return 0
 
 	default:
@@ -132,23 +156,36 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 // snapshot and the check would then record that same sha, the diff would come
 // back empty, and the gate would report OK on precisely the A1 breach it exists
 // to catch. Surface the error and let the caller fail closed.
-func worktreeTree(gitRoot string) (string, error) {
+func worktreeTree(gitRoot, objectDir string) (string, error) {
 	idx := filepath.Join(os.TempDir(), fmt.Sprintf("devrites-reconcile-%d.idx", os.Getpid()))
 	_ = os.Remove(idx)
 	defer func() { _ = os.Remove(idx) }()
-	env := append(os.Environ(), "GIT_INDEX_FILE="+idx)
+	if err := os.MkdirAll(objectDir, 0o700); err != nil {
+		return "", fmt.Errorf("create object directory: %w", err)
+	}
+	env, err := reconcileGitEnv(gitRoot, objectDir)
+	if err != nil {
+		return "", err
+	}
+	env = append(env, "GIT_INDEX_FILE="+idx)
 
 	add := exec.Command("git", "-C", gitRoot, "add", "-A")
 	add.Env = env
-	add.Stdout, add.Stderr = io.Discard, io.Discard
-	if err := add.Run(); err != nil {
+	addOut, err := add.CombinedOutput()
+	if err != nil {
+		if detail := strings.TrimSpace(string(addOut)); detail != "" {
+			return "", fmt.Errorf("git add -A: %w: %s", err, detail)
+		}
 		return "", fmt.Errorf("git add -A: %w", err)
 	}
 
 	write := exec.Command("git", "-C", gitRoot, "write-tree")
 	write.Env = env
-	out, err := write.Output()
+	out, err := write.CombinedOutput()
 	if err != nil {
+		if detail := strings.TrimSpace(string(out)); detail != "" {
+			return "", fmt.Errorf("git write-tree: %w: %s", err, detail)
+		}
 		return "", fmt.Errorf("git write-tree: %w", err)
 	}
 	tree := strings.TrimSpace(string(out))
@@ -156,6 +193,29 @@ func worktreeTree(gitRoot string) (string, error) {
 		return "", fmt.Errorf("git write-tree: empty tree sha")
 	}
 	return tree, nil
+}
+
+func reconcileGitEnv(gitRoot, objectDir string) ([]string, error) {
+	common := exec.Command("git", "-C", gitRoot, "rev-parse", "--git-common-dir")
+	out, err := common.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("git rev-parse --git-common-dir: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+	commonDir := strings.TrimSpace(string(out))
+	if !filepath.IsAbs(commonDir) {
+		commonDir = filepath.Join(gitRoot, commonDir)
+	}
+	alternates := []string{filepath.Join(commonDir, "objects")}
+	if inherited := os.Getenv("GIT_OBJECT_DIRECTORY"); inherited != "" {
+		alternates = append(alternates, inherited)
+	}
+	if inherited := os.Getenv("GIT_ALTERNATE_OBJECT_DIRECTORIES"); inherited != "" {
+		alternates = append(alternates, inherited)
+	}
+	return append(os.Environ(),
+		"GIT_OBJECT_DIRECTORY="+objectDir,
+		"GIT_ALTERNATE_OBJECT_DIRECTORIES="+strings.Join(alternates, string(os.PathListSeparator)),
+	), nil
 }
 
 // claimedPaths reads the .reconcile-claimed manifest into a set of the exact

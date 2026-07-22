@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# codex-runtime-smoke.sh — verify a DevRites install is visible to Codex.
+# codex-runtime-smoke.sh: verify a DevRites install is visible to Codex.
 #
 # Default mode uses `codex debug prompt-input`, which does not call the model.
 # Set DEVRITES_CODEX_MODEL_SMOKE=1 to also run a real `codex exec` read-only

@@ -1,6 +1,6 @@
 {
   "skill": "devrites-frontend-craft",
-  "description": "Trigger evals for devrites-frontend-craft — model-invoked specialist that implements frontend at senior designer-engineer quality (every state, anti-AI-slop, WCAG 2.2 AA), routed from /rite-build when UI is detected.",
+  "description": "Trigger evals for devrites-frontend-craft: model-invoked specialist that implements frontend at senior designer-engineer quality (every state, anti-AI-slop, WCAG 2.2 AA), routed from /rite-build when UI is detected.",
   "queries": [
     {
       "text": "Build the UI for the new settings page.",

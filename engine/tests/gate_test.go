@@ -155,7 +155,7 @@ func TestStopGateEnforceBlocksClaimedDoneButUnproven(t *testing.T) {
 
 func TestStopGateDoesNotBlockNormalInProgress(t *testing.T) {
 	root := newWorkspace(t)
-	writeActive(t, root, "auth-tokens") // phase build — in progress, not claiming done
+	writeActive(t, root, "auth-tokens") // phase build: in progress, not claiming done
 	out, _, code := runDevritesIO(t, root, "{}", []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0", code)
@@ -216,11 +216,11 @@ Need validation.
 	}
 }
 
-// A .red sentinel (written by redwatch) is a rest-point violation on its own —
+// A .red sentinel (written by redwatch) is a rest-point violation on its own:
 // even in an otherwise in-progress build phase.
 func TestStopGateEnforceBlocksOnRed(t *testing.T) {
 	root := newWorkspace(t)
-	writeActive(t, root, "auth-tokens") // phase build — normally NOT blocked
+	writeActive(t, root, "auth-tokens") // phase build: normally NOT blocked
 	if err := os.WriteFile(filepath.Join(root, "features", "auth-tokens", ".red"), []byte("npm test\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +237,7 @@ func TestStopGateObserveModeNeverBlocks(t *testing.T) {
 	root := newWorkspace(t)
 	setPhase(t, root, "auth-tokens", "seal")
 	writeActive(t, root, "auth-tokens")
-	// Default mode (observe) — even a violated invariant must not emit a block.
+	// Default mode (observe): even a violated invariant must not emit a block.
 	out, _, code := runDevritesIO(t, root, "{}", nil, "hook", "stop-gate", "--harness=claude")
 	if code != 0 || strings.TrimSpace(out) != "" {
 		t.Errorf("observe mode emitted a block: exit=%d out=%q", code, out)

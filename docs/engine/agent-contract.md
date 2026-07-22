@@ -1,19 +1,19 @@
 # `devrites-engine` agent contract (`--json`)
 
 An unattended driver (the AFK loop, a CI step, or a local script) needs to read a
-command's result **structurally** — never by scraping prose that may reword. The
+command's result **structurally** instead of scraping prose that may change. The
 AFK-parsed read commands accept `--json` and emit a stable envelope on stdout; the
 command's own logic and exit code are unchanged, so `--json` is a pure add-on.
 
 ## Which commands accept `--json`
 
-The set an unattended run actually branches on:
+An unattended run branches on this set:
 
 `status` · `readiness` · `seal` · `spec-validate` · `evidence-fresh` · `preamble` ·
 `coverage` · `analyze` · `doctor` · `ledger` (`diff` / `validate` / `list` / `show`)
 
 Other subcommands (hooks, `footprint`, `tick-afk`, mutating commands) do not accept
-`--json` — they are not parsed for a decision. This is deliberate scope, not an
+`--json` because no driver parses them for a decision. This is deliberate scope, not an
 oversight; the flag is added where a machine reads the result.
 
 Exception: `snapshot`, `context show --json`, and
@@ -45,7 +45,7 @@ act; reviewer stats emits the deterministic per-reviewer dispatch verdicts.
 | field | meaning |
 | ----- | ------- |
 | `command` | the subcommand that ran |
-| `ok` | `exitCode == 0` — the one boolean a driver branches on |
+| `ok` | `exitCode == 0`: the one boolean a driver branches on |
 | `exitCode` | the process exit code (authoritative; see the table below) |
 | `data.text` | the command's human-readable stdout, verbatim and lossless (omitted when empty) |
 | `diagnostics[]` | one entry per stderr line, classified (omitted when none) |
@@ -69,9 +69,9 @@ and ignore `data.text`; a human reads `data.text` and ignores the rest.
 | code | meaning |
 | ---- | ------- |
 | `0` | ok / gate passed / valid |
-| `1` | a content violation — a grammar or delta error (`spec-validate`, `ledger validate`) |
+| `1` | a content violation: a grammar or delta error (`spec-validate`, `ledger validate`) |
 | `2` | usage error (bad args, unknown command) |
-| `3` | blocked — a completeness-gate pause or a `doctor` version-skew refuse; a **pause, not a crash** |
+| `3` | blocked: a completeness-gate pause or a `doctor` version-skew refuse; a **pause, not a crash** |
 | `5` | a required input is missing (e.g. no `spec.md`) |
 
 Exit `3` is the AFK pause signal: resolve the reported gap and retry.

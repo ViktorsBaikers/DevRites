@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# workflow-security-test.sh — fixtures for validate-workflow-security.py:
+# workflow-security-test.sh: fixtures for validate-workflow-security.py:
 # unpinned/broad/pull_request_target → findings; SHA-pinned + scoped → none.
 # Plus a regression: the repo's own workflows must pass.
 set -u
@@ -38,6 +38,17 @@ jobs:
   a:
     steps:
       - uses: marocchino/sticky-pull-request-comment@v2
+EOF
+
+cat > "$TMP/unquoted-name-colon.yml" <<'EOF'
+name: bad
+permissions:
+  contents: read
+jobs:
+  a:
+    steps:
+      - name: Security scan: BLOCKING
+        run: echo unreachable
 EOF
 
 cat > "$TMP/unpinned-first-party.yml" <<'EOF'
@@ -120,6 +131,7 @@ EOF
 
 clean "SHA-pinned + scoped"        "$TMP/clean.yml"
 finds "unpinned third-party"       "$TMP/unpinned.yml"
+finds "unquoted name colon"        "$TMP/unquoted-name-colon.yml"
 finds "unpinned first-party"       "$TMP/unpinned-first-party.yml"
 finds "no permissions block"       "$TMP/noperm.yml"
 finds "write-all over-broad"       "$TMP/writeall.yml"

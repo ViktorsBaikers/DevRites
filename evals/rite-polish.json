@@ -1,6 +1,6 @@
 {
   "skill": "rite-polish",
-  "description": "Trigger evals for /rite-polish — finish before review, code polish always + UI normalize + polish when UI is involved.",
+  "description": "Trigger evals for /rite-polish: finish before review, code polish always + UI normalize + polish when UI is involved.",
   "queries": [
     {
       "text": "/rite-polish",
@@ -105,9 +105,9 @@
     {
       "text": "Add a new button to the navbar.",
       "expected": "should_not_trigger",
-      "rationale": "New feature, not polish — /rite-spec → /rite-build.",
+      "rationale": "New feature, not polish: /rite-spec → /rite-build.",
       "owner": null,
-      "owner_rationale": "New feature, not polish — /rite-spec → /rite-build."
+      "owner_rationale": "New feature, not polish: /rite-spec → /rite-build."
     },
     {
       "text": "How do I configure ESLint?",

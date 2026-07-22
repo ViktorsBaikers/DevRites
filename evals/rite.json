@@ -1,6 +1,6 @@
 {
   "skill": "rite",
-  "description": "Explicit-only evals for /rite — compact menu and router.",
+  "description": "Explicit-only evals for /rite: compact menu and router.",
   "queries": [
     {
       "text": "/rite",

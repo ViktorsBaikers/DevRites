@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-flag-parser-invalid-smoke.sh — parser warnings and unknown flag rejection.
+# install-flag-parser-invalid-smoke.sh: parser warnings and unknown flag rejection.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0

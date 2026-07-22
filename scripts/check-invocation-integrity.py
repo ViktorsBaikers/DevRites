@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Invocation-integrity gate — every skill/rule an agent or skill NAMES must resolve, both harnesses.
+"""Invocation-integrity gate: every skill/rule an agent or skill NAMES must resolve, both harnesses.
 
 `check-cross-refs.py` validates markdown links. This validates the thing it can't: a **bare
 skill-name invocation** (`$devrites-frontend-craft`, `Skill(devrites-source-driven)`, "invoke the
 `devrites-api-interface` skill") and a **rule read** (`.claude/skills/devrites-lib/reference/standards/security.md`) must each point
-at something that actually exists — on Claude Code AND on the Codex-translated tree — or the agent
+at something that exists (on Claude Code AND on the Codex-translated tree) or the agent
 calls into the void at runtime. Also asserts the Claude→Codex skill/rule mirror is complete.
 
 Self-contained: installs DevRites into a temp dir to get the Codex tree, sweeps, cleans up.
@@ -15,7 +15,7 @@ import os, re, sys, glob, subprocess, tempfile, shutil
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACK = os.path.join(REPO, "pack/.claude")
 
-# devrites-* tokens that are scripts/hooks/mcp, not skills — legitimate non-skill references.
+# devrites-* tokens that are scripts/hooks/mcp, not skills: legitimate non-skill references.
 NONSKILL = {
     "devrites-mcp", "devrites-lib", "devrites-reviewer-readonly", "devrites-wright-scope",
     "devrites-a1-guard", "devrites-allow", "devrites-redwatch", "devrites-orient",
@@ -103,7 +103,7 @@ def main():
         if problems or mirror:
             print("INVOCATION-INTEGRITY: FAIL")
             return 1
-        print("INVOCATION-INTEGRITY: PASS — every named skill/rule resolves on both harnesses.")
+        print("INVOCATION-INTEGRITY: PASS: every named skill/rule resolves on both harnesses.")
         return 0
     finally:
         shutil.rmtree(target, ignore_errors=True)

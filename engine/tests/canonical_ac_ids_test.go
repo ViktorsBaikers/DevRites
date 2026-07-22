@@ -12,11 +12,11 @@ func TestCanonicalAcceptanceIDsAcrossGates(t *testing.T) {
 	writeFeatureFile(t, work, "canonical", "tasks.md",
 		"## SLICE-001 alpha\nSatisfies: AC-001\n## SLICE-002 beta\nSatisfies: AC-002\n## SLICE-003 orphan\n")
 	writeFeatureFile(t, work, "canonical", "seal.md",
-		"## Acceptance Criteria\n- [x] AC-001: alpha — evidence: t1\n- [x] AC-002: beta — evidence: t2\n")
+		"## Acceptance Criteria\n- [x] AC-001: alpha: evidence t1\n- [x] AC-002: beta: evidence t2\n")
 
 	t.Run("analyze", func(t *testing.T) {
 		stdout, stderr, code := runGo(t, work, "analyze", "canonical")
-		if code != 0 || !strings.Contains(stdout, "AC-001 — covered") || !strings.Contains(stdout, "slice 'SLICE-003 orphan'") {
+		if code != 0 || !strings.Contains(stdout, "AC-001: covered") || !strings.Contains(stdout, "slice 'SLICE-003 orphan'") {
 			t.Fatalf("exit=%d stdout=%q stderr=%q", code, stdout, stderr)
 		}
 	})

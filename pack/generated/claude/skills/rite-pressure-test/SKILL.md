@@ -5,37 +5,37 @@ argument-hint: "[rough idea or plan to stress-test]"
 user-invocable: true
 ---
 
-# /rite-pressure-test — diverge then converge
+# /rite-pressure-test: diverge then converge
 
 Use when the *idea* (not just the requirements) is rough. Generate options, then commit
-to one — so `/rite-spec` has a real direction to specify.
+to one, so `/rite-spec` has a real direction to specify.
 
-A thinking stance, not a build phase — capturing thinking is not implementing. Write
+A thinking stance, not a build phase: capturing thinking is not implementing. Write
 workspace/ticket artifacts freely; source edits wait for `/rite-build`, via `/rite-spec`.
 
-Read `.claude/skills/devrites-lib/reference/standards/core.md` first — its operating rules (no silent assumptions, prefer
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first: its operating rules (no silent assumptions, prefer
 existing conventions) shape the divergence. The other rule files load on demand.
 
 ## Diverge (widen)
 - Load the `rejected-direction` entries from `.devrites/learnings.md` first. A recorded
-  rejection re-enters the option set only with new evidence against its recorded *why* —
+  rejection re-enters the option set only with new evidence against its recorded *why*:
   name that evidence when you bring one back.
-- Generate 3–5 genuinely different approaches to the underlying goal, not variations of
+- Generate 3-5 genuinely different approaches to the underlying goal, not variations of
   one. Cover at least: the obvious approach, a simpler/smaller approach, and a
   different-shape approach (different data model, flow, or boundary).
 - Generate from **named lenses** so each option exists for a reason, not to pad the count:
   *inversion* (do the opposite), *constraint-removal* (what if the hard limit vanished),
   *audience-shift* (build it for a different user), *10×* (what if it had to handle ten times
   the scale or scope), *expert-lens* (how a specialist in the domain would do it). Borrow the
-  *structure* of an analogous product, not its surface — "Uber for X" copies the veneer, not
+  *structure* of an analogous product, not its surface. "Uber for X" copies the veneer, not
   the mechanism that made it work.
 - For each: one-line description, what it optimizes for, rough cost, main risk.
-- Stay concrete — name real entities, flows, and surfaces, not abstractions.
+- Stay concrete: name real entities, flows, and surfaces, not abstractions.
 
 ## Converge (commit)
 - Weigh options against the goal, constraints, and existing codebase conventions.
 - **Painkiller or vitamin?** Score each on whether it removes a real, felt pain (a painkiller
-  users seek out) or is merely nice-to-have (a vitamin they forget). Prefer the painkiller — a
+  users seek out) or is merely nice-to-have (a vitamin they forget). Prefer the painkiller: a
   vitamin dressed as a painkiller is the most common ideation trap.
 - **Rank the differentiation**, strongest to weakest: a new capability > a 10× improvement > a
   new audience > a new context > better UX > cheaper. The higher an option sits, the more
@@ -44,18 +44,18 @@ existing conventions) shape the divergence. The other rule files load on demand.
 - Note what would change the recommendation (the decision's hinge).
 
 ## Boundaries
-- This is exploration, not specification. Output a **direction**, not a finished spec —
+- This is exploration, not specification. Output a **direction**, not a finished spec:
   `/rite-spec` writes the spec.
-- Don't over-explore: 3–5 options, one pass of convergence. If the user already knows
+- Don't over-explore: 3-5 options, one pass of convergence. If the user already knows
   the direction, skip this and go straight to `/rite-spec`. If the effort is too foggy for
   one pass, start an investigation map at `.devrites/work/<slug>/investigation-map.md`
   with `Destination`, `Decisions so far`, `Not yet specified`, `Out of scope`, plus one
   frontier question per session.
 - Ask the user to pick when two options are close and the choice changes the product.
-- Name a **"Not doing" list** — the good options you deliberately cut. It's the highest-value
+- Name a **"Not doing" list**: the good options you deliberately cut. It's the highest-value
   output of convergence: it hands `/rite-spec` its scope boundary and stops the rejected ideas
-  from creeping back in later. When a cut is durable — rejected for a reason that outlives this
-  feature — offer to record it: `devrites-engine learnings add <slug> "<direction> — <why>"
+  from creeping back in later. When a cut is durable (rejected for a reason that outlives this
+  feature) offer to record it: `devrites-engine learnings add <slug> "<direction>: <why>"
   rejected-direction`.
 
 ## Output

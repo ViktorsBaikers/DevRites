@@ -1,6 +1,6 @@
 # Spec Drift Guard (build phase)
 
-Active throughout `/rite-build`. The spec is living, not sacred — but you may not
+Active throughout `/rite-build`. The spec is living, not sacred, but you may not
 silently code against a plan you know is wrong. This is the canonical Spec Drift Guard;
 other phases reference it here.
 

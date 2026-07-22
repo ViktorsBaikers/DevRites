@@ -11,13 +11,13 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence.
+- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
+- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
 - Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers — NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
+- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
-# $rite-ship — ship + close the task
+# $rite-ship: ship + close the task
 
 The final phase. `$rite-seal` **decides** GO/NO-GO; `$rite-ship` **executes** the
 irreversible git actions and **closes** the feature. **Read the active workspace
@@ -27,10 +27,10 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
 **Step 0:** Read `.agents/skills/devrites-lib/reference/standards/core.md` first. Then pull on demand:
-- `git-workflow.md` — Conventional Commits, atomic commits, the never-commit list.
-- `afk-hitl.md` — type-GO is the irreversible-action gate.
-- `definition-of-done.md` — final acceptance, evidence, drift, rollback, and documentation bar.
-- [`release/ship-checklist.md`](../devrites-lib/reference/standards/release/ship-checklist.md) — compact final ship and archive pass/fail sweep.
+- `git-workflow.md`: Conventional Commits, atomic commits, the never-commit list.
+- `afk-hitl.md`: type-GO is the irreversible-action gate.
+- `definition-of-done.md`: final acceptance, evidence, drift, rollback, and documentation bar.
+- [`release/ship-checklist.md`](../devrites-lib/reference/standards/release/ship-checklist.md): compact final ship and archive pass/fail sweep.
 
 ## Operating rules
 - **Seal GO is a precondition.** No GO in `seal.md` → stop, point at `$rite-seal`.
@@ -39,14 +39,14 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
   deterministically by `devrites-engine evidence-fresh` in step 1 (exit 3 = STALE), not by eyeballing
   mtimes (see `.agents/skills/devrites-lib/reference/standards/development-workflow.md`).
 - **type-GO before anything irreversible.** Render the prompt verbatim and wait for
-  the literal `GO`. Last safety net — render it every time, even under auto-trigger.
+  the literal `GO`. Last safety net: render it every time, even under auto-trigger.
 - **Never delete the audit trail.** Closing *archives* the workspace; it never erases
   the `.md` files.
 
 ## Workflow
 1. **Orient.** Run `devrites-engine preamble` for deterministic workspace orientation.
    Then read `seal.md`, `state.md`, `spec.md`, `touched-files.md`, `evidence.md`, and
-   `design-brief.md` (if the feature is UI — the design-memory rollup in step 2a reads it).
+   `design-brief.md` (if the feature is UI: the design-memory rollup in step 2a reads it).
    Confirm the verdict is **GO**, then run the deterministic evidence-freshness gate rather than
    eyeballing mtimes (mirrors `$rite-seal`):
    ```bash
@@ -54,7 +54,7 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    ```
    **Exit 3 → STALE proof: STOP**, point at `$rite-prove` (a polish/review edit made after
    `$rite-prove` invalidates the proof). Not GO → stop with the single resume command.
-1a. **Health re-check (advisory).** Run the DevRites doctor before the irreversible ladder —
+1a. **Health re-check (advisory).** Run the DevRites doctor before the irreversible ladder:
    a stale `ACTIVE` or corrupt workspace here risks shipping or closing the wrong feature.
    Advisory: surface issues, don't block.
    ```bash
@@ -82,9 +82,9 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
    ```
    **rc=3 → STOP**: do not type-GO, commit, push, or archive.
 3. **Render the type-GO prompt** ([reference/git-ship.md](reference/git-ship.md)) and
-   wait. Only the literal `GO` proceeds; anything else cancels — record the cancel in
+   wait. Only the literal `GO` proceeds; anything else cancels: record the cancel in
    `ship.md` and stop (do not retry without the user asking).
-4. On `GO`: run the git ladder — commit → push → tag / PR as applicable
+4. On `GO`: run the git ladder: commit → push → tag / PR as applicable
    ([reference/git-ship.md](reference/git-ship.md)). Capture the commit SHA(s),
    branch, and tag/PR URL.
 4a. **PR branch only.** Render the structured body from
@@ -111,12 +111,12 @@ Refuses to ship unless `seal.md` records a **GO** verdict.
 
 > **Mid-flight discipline.** When tempted to ship without a GO seal, skip the type-GO,
 > stage files outside `touched-files.md`, or delete the workspace instead of archiving
-> it — stop. See [`anti-patterns`](reference/anti-patterns.md); the gate exists for the
+> it: stop. See [`anti-patterns`](reference/anti-patterns.md); the gate exists for the
 > failure mode the ask misses.
 
 ## Output
 
-**Progress first** — run `devrites-engine progress`, then use the Shipped typed template from
+**Progress first**: run `devrites-engine progress`, then use the Shipped typed template from
 the shared completion reply contract
 ([`reply-contract.md` § Shipped](../devrites-lib/reference/reply-contract.md#shipped)).
 If the user declined type-GO: state that nothing shipped, the seal still reads GO, and

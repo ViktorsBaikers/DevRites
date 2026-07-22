@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# supply-chain-iocs-test.sh — fixtures for scan-supply-chain-iocs.py:
+# supply-chain-iocs-test.sh: fixtures for scan-supply-chain-iocs.py:
 # a lockfile pinning a known-malicious version → finding; a safe version → clean.
 # Offline only (bundled IOC dataset) so it's deterministic in CI.
 set -u

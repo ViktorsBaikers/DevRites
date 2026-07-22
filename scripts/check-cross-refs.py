@@ -5,11 +5,11 @@ Catches the maintenance-drift class the skills audit surfaced: a SKILL.md or
 reference file pointing at another file that has moved, been renamed, or never
 existed. Three checks, tuned for near-zero false positives:
 
-  1. Markdown links to local .md targets  — `](path.md)` resolved relative to the
+  1. Markdown links to local .md targets : `](path.md)` resolved relative to the
      containing file; the target must exist.
-  2. Bare backtick .md filenames          — `` `name.md` `` must exist SOMEWHERE in
+  2. Bare backtick .md filenames         : `` `name.md` `` must exist SOMEWHERE in
      the pack (by basename). Catches references to a file that exists nowhere.
-  3. "canonical version: `path`" claims    — the named path (relative to the skills
+  3. "canonical version: `path`" claims   : the named path (relative to the skills
      root) must exist. Catches a file disclaiming itself secondary to a missing one.
 
 Scans pack/.claude/. Exit 1 on any dead reference. Read-only.
@@ -35,7 +35,7 @@ WORKSPACE_ARTIFACTS = {
     "questions.md", "drift.md", "evidence.md", "browser-evidence.md", "touched-files.md",
     "review.md", "seal.md", "ship.md", "brief.md", "design-brief.md", "strategy.md",
     "polish-report.md", "handoff.md", "eng-review.md", "test-plan.md", "references.md",
-    # forge competition record (work/<slug>/forge-report.md) — written when a Forge: yes slice competes candidates
+    # forge competition record (work/<slug>/forge-report.md): written when a Forge: yes slice competes candidates
     "forge-report.md",
     "conventions.md", "coverage.md", "analysis.md", "learnings.md",
     # developer-experience scorecard (work/<slug>/devex.md) + project-level retro ledger (.devrites/retro.md)
@@ -107,11 +107,11 @@ for path in md_files:
         base = os.path.basename(tok)
         if base in WORKSPACE_ARTIFACTS or base in PROJECT_DOCS or base in all_basenames:
             continue
-        if "/" in tok:  # a path inside the pack must actually resolve
+        if "/" in tok:  # a path inside the pack must resolve
             if not os.path.isfile(resolve(here, tok)):
                 errors.append(f"{path}: backtick `{tok}` does not resolve")
             continue
-        errors.append(f"{path}: backtick `{tok}` — no `{base}` exists anywhere in the pack")
+        errors.append(f"{path}: backtick `{tok}`: no `{base}` exists anywhere in the pack")
 
     # 4. "(see X.md)" prose pointers: slash form resolves (install-aware);
     #    bare form must exist in the pack (or be a workspace artifact / project doc).
@@ -122,7 +122,7 @@ for path in md_files:
             if not os.path.isfile(resolved):
                 errors.append(f"{path}: (see {tok}) (resolved {resolved}) does not exist")
         elif base not in WORKSPACE_ARTIFACTS and base not in PROJECT_DOCS and base not in all_basenames:
-            errors.append(f"{path}: (see {tok}) — no `{base}` exists anywhere in the pack")
+            errors.append(f"{path}: (see {tok}): no `{base}` exists anywhere in the pack")
 
     # 3. "canonical version: `path`" must resolve against the skills root
     for claim in CANONICAL_RE.findall(text):
@@ -136,4 +136,4 @@ if errors:
         print("  " + e)
     sys.exit(1)
 
-print(f"check-cross-refs: OK — {len(md_files)} markdown files, no dead references.")
+print(f"check-cross-refs: OK: {len(md_files)} markdown files, no dead references.")

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# agent-skills-refresh-validation-test.sh — regression coverage for the
+# agent-skills-refresh-validation-test.sh: regression coverage for the
 # agent-skills refresh hardening layer: deterministic routing reports, skill
 # anatomy, host command parity, and agent composition.
 set -u

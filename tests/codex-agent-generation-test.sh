@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# codex-agent-generation-test.sh — verify every Claude DevRites agent is converted
+# codex-agent-generation-test.sh: verify every Claude DevRites agent is converted
 # to a Codex-native custom agent with Codex-native runtime paths.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"

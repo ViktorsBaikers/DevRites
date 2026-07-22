@@ -1,10 +1,10 @@
 # `strategy.md` template + fold-back rules
 
 `/rite-temper` produces two kinds of output. The `strategy.md` artifact is the durable
-**record** of the review; the **fold-back edits** are what the build actually follows. The
-record without the fold-back is dead prose — the build reads `spec.md`, not `strategy.md`.
+**record** of the review; the **fold-back edits** are what the build follows. The
+record without the fold-back is dead prose: the build reads `spec.md`, not `strategy.md`.
 
-## `strategy.md` — the record
+## `strategy.md`: the record
 Write to `.devrites/work/<slug>/strategy.md`. If one exists for the slug, **update** it, don't
 clobber.
 
@@ -58,33 +58,33 @@ Floor verdict: <weakest band> on <dimension> → pass | blocked
 - Final: floor = <band>; unresolved → <none | blocking qid>
 ```
 
-## Fold-back — the part the build follows
+## Fold-back: the part the build follows
 Apply through the **Spec Drift Guard** (these are spec changes, not free edits). If a plan
 already exists, record in `drift.md` and route via `/rite-plan repair` instead of editing
 `spec.md` blind.
 
-- **`spec.md`** (these are the spec template's actual section headings — edit each named one,
-  don't collapse pairs):
-  - *Success criteria* **and** *Acceptance criteria* (separate sections) — add to **both** for
+- **`spec.md`:** these are the spec template's actual section headings. Edit each named one;
+  don't collapse pairs.
+  - Add to *Success criteria* **and** *Acceptance criteria* (separate sections) for
     every opt-in **expansion**; remove (via the Guard) from both for every **reduction**. Each
     must stay measurable + technology-agnostic.
-  - *Non-goals* — append every deferred item (from the YAGNI ledger + the Deferred register), so
+  - *Non-goals*: append every deferred item (from the YAGNI ledger + the Deferred register), so
     it is neither silently dropped nor silently re-injected mid-build.
-  - *Constraints* **and** *Risks* (separate sections) — tighten *Constraints* where the pre-mortem
+  - *Constraints* **and** *Risks* (separate sections): tighten *Constraints* where the pre-mortem
     demands; add the top failure modes + mitigations to *Risks*.
-  - *Gaps, issues & decisions* table — one row per scope call (options offered → decision → owner).
+  - *Gaps, issues & decisions* table: one row per scope call (options offered → decision → owner).
   - **Re-run the Readiness gate** at the bottom of the spec after edits; it must still pass, and
     **every folded scope delta must trace to a recorded decision** (a `questions.md` qid or a
-    `decisions.md` ADR) — an untraceable change is the batch-dump failure.
-- **`decisions.md`** — one ADR-style entry per scope call and accepted trade-off:
+    `decisions.md` ADR): an untraceable change is the batch-dump failure.
+- **`decisions.md`:** one ADR-style entry per scope call and accepted trade-off:
   `context · decision · why-not-the-alternative · what-would-change-it`.
-- **`assumptions.md`** — every "we'll probably need X" demoted to an explicit
+- **`assumptions.md`:** every "we'll probably need X" demoted to an explicit
   **assumption-to-verify**, never smuggled into scope as a fact.
 
 ## Write discipline
 - **Single canonical writer.** The skill writes `strategy.md` and edits the canonical files; the
   `devrites-strategy-reviewer` agent is **read-only** and only returns findings + bands.
 - **No silent scope.** An expansion that the human didn't opt into, or a reduction that drops an
-  acceptance criterion without a recorded decision, is a defect — not a convenience.
+  acceptance criterion without a recorded decision, is a defect, not a convenience.
 - Add `strategy.md` to the workspace between `spec.md` and `plan.md`; `/rite-define`,
   `/rite-review`, and `/rite-seal` read it.

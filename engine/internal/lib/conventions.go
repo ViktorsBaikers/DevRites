@@ -162,7 +162,7 @@ func conventionsPromote(args []string, stdout, stderr io.Writer) int {
 	}
 	if !already {
 		e.Corroborations++
-		e.Proofs = append(e.Proofs, fmt.Sprintf("%s %s — %s", slug, conventionDate(date), evidence))
+		e.Proofs = append(e.Proofs, fmt.Sprintf("%s %s: %s", slug, conventionDate(date), evidence))
 	}
 	entries[key] = e
 	if err := saveConventions(root, entries); err != nil {
@@ -202,7 +202,7 @@ func conventionsContradict(args []string, stdout, stderr io.Writer) int {
 	}
 	when := conventionDate(date)
 	e.Contradictions++
-	e.Proofs = append(e.Proofs, fmt.Sprintf("%s %s — CONTRADICTED: %s", slug, when, evidence))
+	e.Proofs = append(e.Proofs, fmt.Sprintf("%s %s: CONTRADICTED: %s", slug, when, evidence))
 	entries[key] = e
 	if err := saveConventions(root, entries); err != nil {
 		fmt.Fprintln(stderr, err)
@@ -240,7 +240,7 @@ func conventionsContradict(args []string, stdout, stderr io.Writer) int {
 			return 1
 		}
 	}
-	fmt.Fprintf(stdout, "DRIFT: convention '%s' contradicted by %s — now %s\n", key, slug, state)
+	fmt.Fprintf(stdout, "DRIFT: convention '%s' contradicted by %s: now %s\n", key, slug, state)
 	return 0
 }
 

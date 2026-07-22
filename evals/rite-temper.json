@@ -1,6 +1,6 @@
 {
   "skill": "rite-temper",
-  "description": "Trigger evals for /rite-temper — strategic review of a readied spec (scope mode + pre-mortem), folds decisions back into the spec before /rite-define.",
+  "description": "Trigger evals for /rite-temper: strategic review of a readied spec (scope mode + pre-mortem), folds decisions back into the spec before /rite-define.",
   "queries": [
     {
       "text": "/rite-temper",

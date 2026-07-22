@@ -41,7 +41,7 @@ func resolveWorkspaceDir(root, slug string) string {
 }
 
 // resolveWorkspace resolves the active feature's directory.
-// ok is false — a silent no-op — when there is no .devrites root or no active
+// ok is false (a silent no-op) when there is no .devrites root or no active
 // feature, keeping the hooks fail-open outside a DevRites workspace.
 func resolveWorkspace() (root, slug, dir string, ok bool) {
 	root, err := orient.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
@@ -74,8 +74,8 @@ type auqEventJSON struct {
 // bloats the timeline.
 const auqFieldMax = 300
 
-// hookAUQ deterministically captures an AskUserQuestion exchange — every
-// question with the user's chosen answer — into the session trace, so HITL
+// hookAUQ deterministically captures an AskUserQuestion exchange: every
+// question with the user's chosen answer: into the session trace, so HITL
 // decisions are recorded at the substrate rather than trusted to the model's
 // bookkeeping. Capture only: it never tunes, blocks, or replies. Fail-open like
 // every workspace hook: unparseable payload, unknown response shape, or no
@@ -192,7 +192,7 @@ func hookHandoffSnapshot(stdin io.Reader, stdout, stderr io.Writer) int {
 	next, _ := state.CursorField(stateLines, state.CursorNextAction)
 	stamp := time.Now().UTC().Format(time.RFC3339)
 	var b strings.Builder
-	fmt.Fprintf(&b, "\n## Handoff snapshot — %s\n", stamp)
+	fmt.Fprintf(&b, "\n## Handoff snapshot: %s\n", stamp)
 	fmt.Fprintf(&b, "- Feature: %s\n", slug)
 	if phase != "" {
 		fmt.Fprintf(&b, "- Phase: %s\n", phase)
@@ -229,7 +229,7 @@ func hookCursor(stdin io.Reader, stdout, stderr io.Writer) int {
 		afk, _ = state.CursorField(stateLines, state.CursorAFKSlicesRemaining)
 	}
 
-	fmt.Fprintf(stdout, "DevRites cursor — active feature: %s\n", slug)
+	fmt.Fprintf(stdout, "DevRites cursor: active feature: %s\n", slug)
 	if status != "" {
 		fmt.Fprintf(stdout, "  status: %s\n", status)
 	}
@@ -241,7 +241,7 @@ func hookCursor(stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "  AFK slices remaining: %s\n", afk)
 	}
 	if wsIsFile(filepath.Join(dir, ".red")) {
-		fmt.Fprintln(stdout, "  ⚠ tests/build RED — resolve before stopping")
+		fmt.Fprintln(stdout, "  ⚠ tests/build RED: resolve before stopping")
 	}
 	return exitOK
 }
@@ -281,7 +281,7 @@ var (
 	redPassRe    = regexp.MustCompile(`(?im)PASS(ED)?|0[[:space:]]+(failed|failing|errors?)|all tests passed|BUILD SUCC(ESS|EEDED)|succeeded|no (errors|problems|issues)|(^|[^a-z])ok([^a-z]|$)|✓`)
 )
 
-const redReasonFmt = "DevRites: tests/build are RED (%s). Fix to green or record the failure + next step in state.md before stopping — the Stop gate blocks an end-of-turn while .red is set."
+const redReasonFmt = "DevRites: tests/build are RED (%s). Fix to green or record the failure + next step in state.md before stopping: the Stop gate blocks an end-of-turn while .red is set."
 
 // hookRedwatch is the fail-on-red sentinel (PostToolUse Bash). After a test / build
 // / lint command it sets or clears <featureDir>/.red so the Stop gate can refuse to
@@ -339,7 +339,7 @@ func redwatchSafe(cmd string) string {
 // node regex the shell guards use.
 var patchPathRe = regexp.MustCompile(`(?m)^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+)$`)
 
-// isEditTool reports whether a tool can write source — the Edit family plus
+// isEditTool reports whether a tool can write source: the Edit family plus
 // Codex's apply_patch.
 func isEditTool(tool string) bool {
 	switch tool {
@@ -364,10 +364,10 @@ func underDevrites(abs, root string) bool {
 	return strings.HasPrefix(abs, root+string(filepath.Separator))
 }
 
-const a1DenyReason = "DevRites A1: the orchestrator must not edit source mid-build — the slice-wright is the only writer. Re-dispatch the wright (continue it once) or stop + escalate; do not patch the code yourself. (devrites-a1-guard)"
+const a1DenyReason = "DevRites A1: the orchestrator must not edit source mid-build: the slice-wright is the only writer. Re-dispatch the wright (continue it once) or stop + escalate; do not patch the code yourself. (devrites-a1-guard)"
 
 // hookA1Guard keeps the /rite-build orchestrator from editing source while a slice
-// is mid-build — the slice-wright (a subagent) is the only sanctioned writer of
+// is mid-build: the slice-wright (a subagent) is the only sanctioned writer of
 // code. Ported from devrites-a1-guard.sh onto the new schema: FAIL-OPEN, OBSERVE by
 // default (logs to .a1-guard.log), blocking only when the build window is open, the
 // edit is source from the MAIN thread, and enforce mode is on.
@@ -451,7 +451,7 @@ func hookA1Guard(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) i
 	return exitOK
 }
 
-const wrightDenyReason = "DevRites scope: this path is not in touched-files.md. Build only the slice contract; if the slice genuinely needs this file, return an Escalation so the orchestrator routes it through the Spec Drift Guard — do not widen scope yourself. (devrites-wright-scope)"
+const wrightDenyReason = "DevRites scope: this path is not in touched-files.md. Build only the slice contract; if the slice genuinely needs this file, return an Escalation so the orchestrator routes it through the Spec Drift Guard: do not widen scope yourself. (devrites-wright-scope)"
 
 // hookWrightScope fences the slice-wright to its slice: it denies an Edit/Write to a
 // path not listed in the feature's touched-files.md. Ported from

@@ -45,7 +45,7 @@ var Sections = []Section{
 }
 
 // sectionFiles lists the filenames that can satisfy each section, canonical name
-// first, then supported aliases — the same mapping `devrites-engine migrate`
+// first, then supported aliases: the same mapping `devrites-engine migrate`
 // normalizes (proof→evidence, status→state). A section
 // counts as present if ANY of its files has real content, so the engine reads a
 // live workspace before the pack sweep converges the filenames. The workspace

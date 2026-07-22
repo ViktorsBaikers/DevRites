@@ -9,21 +9,21 @@ recoverable.
   later.
 
 ## No silent catches
-- Never swallow an error to make a problem "go away" — that hides bugs and corrupts
+- Never swallow an error to make a problem "go away", that hides bugs and corrupts
   state silently.
-- Catch the **narrowest** error you can actually handle, not a blanket catch-all. A
+- Catch the **narrowest** error you can handle, not a blanket catch-all. A
   bare/broad catch masks unrelated failures.
 - If you catch, either recover meaningfully, or rethrow/wrap with added context. Don't
   log-and-continue past an error you didn't handle.
 
 ## Meaningful messages
-- Error messages state what failed, the relevant context (ids, inputs — not secrets),
+- Error messages state what failed, the relevant context (ids, inputs, not secrets),
   and ideally how to recover. Cryptic messages cost hours.
 - Distinguish *expected* failures (validation, not-found) from *unexpected* (bugs);
   handle the first as flow, surface the second.
 
 ## Fail closed (security-relevant paths)
-- On error in an auth/permission/transaction path, **deny and roll back** — never
+- On error in an auth/permission/transaction path, **deny and roll back**: never
   default to granting access or committing partial state.
 
 ## Logging

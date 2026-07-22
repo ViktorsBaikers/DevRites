@@ -1,7 +1,7 @@
 version: 2
 
 updates:
-  # JS toolchain — husky, commitlint, semantic-release plugins, etc.
+  # JS toolchain: husky, commitlint, semantic-release plugins, etc.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:

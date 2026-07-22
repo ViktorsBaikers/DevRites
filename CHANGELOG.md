@@ -2,6 +2,58 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.0.7](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.6...v3.0.7) (2026-07-22)
+
+### Fixed
+
+* **installer:** harden binary acquisition ([7534198](https://github.com/ViktorsBaikers/DevRites/commit/7534198dd3f6a29f065fe715e763e02bdc8a71c0))
+
+## [3.0.6](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.5...v3.0.6) (2026-07-22)
+
+### Fixed
+
+* **ci:** reject invalid workflow names ([8535414](https://github.com/ViktorsBaikers/DevRites/commit/853541455fcc79e28ca4d7044024da219683d700))
+* **devrites:** align compliance matrix wording ([0bb1f28](https://github.com/ViktorsBaikers/DevRites/commit/0bb1f287c1ae2874a73669c1c35b081083f389af))
+* **devrites:** isolate reconcile snapshot objects ([c02b1f1](https://github.com/ViktorsBaikers/DevRites/commit/c02b1f19a4717454f9e0194bf015fcc170dd37fc))
+* **docs:** repair rite-ship standard link ([49db43c](https://github.com/ViktorsBaikers/DevRites/commit/49db43cdd6b42f15c7a7aaec3c47bcf7e9ceaa8d))
+
+### Documentation
+
+* **repo:** humanize repository documentation ([a5de735](https://github.com/ViktorsBaikers/DevRites/commit/a5de735db9cd3958a544df9802c6d1c7981470e8))
+* **repo:** refresh README banner ([45b48c9](https://github.com/ViktorsBaikers/DevRites/commit/45b48c92f181e7c37b616993c2a98606b8984ee1))
+* **repo:** streamline README guide ([932588f](https://github.com/ViktorsBaikers/DevRites/commit/932588f3fd1749d81e358f2be96873e59bdac8c1))
+
+## [3.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.4...v3.0.5) (2026-07-21)
+
+### Fixed
+
+* **deps:** update fast-uri ([1e14101](https://github.com/ViktorsBaikers/DevRites/commit/1e14101284496277f56d4560d5a59d87297f7daf))
+* **devrites:** normalize Git root centrally ([a89ec40](https://github.com/ViktorsBaikers/DevRites/commit/a89ec408b6133629db3547dcb7960f29bec6a723))
+* **devrites:** normalize Git root path ([38dccf0](https://github.com/ViktorsBaikers/DevRites/commit/38dccf0bac0bdf58f5fdcf171cac231c296af171))
+* **devrites:** resolve packages by source ([ae21d9b](https://github.com/ViktorsBaikers/DevRites/commit/ae21d9b50b0b631fb4352e5820f1176213614b78))
+* **release:** reconnect v3.0.4 lineage ([7b6f853](https://github.com/ViktorsBaikers/DevRites/commit/7b6f853a73bcd3bc6ea72fd4b6b10c024c69a468))
+* **skills:** format human gate decisions clearly ([0781d99](https://github.com/ViktorsBaikers/DevRites/commit/0781d99ce081f76f5e69237396e99e78e1b027f9))
+
+### Documentation
+
+* **repo:** sync current behavior ([9555fbb](https://github.com/ViktorsBaikers/DevRites/commit/9555fbbe26ce896a5c99723e46a8c04b7fba06f4))
+
+## [3.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.3...v3.0.4) (2026-07-21)
+
+### Fixed
+
+* **ci:** harden supply chain checks ([d902574](https://github.com/ViktorsBaikers/DevRites/commit/d902574a7d30168fcef94aa4a3dae7707191fe8d))
+* **deps:** update fast-uri ([1e14101](https://github.com/ViktorsBaikers/DevRites/commit/1e14101284496277f56d4560d5a59d87297f7daf))
+* **devrites:** normalize canonical workspace files ([e70221f](https://github.com/ViktorsBaikers/DevRites/commit/e70221f5dd9fbda0f3a73c500a493497bc023a91))
+* **devrites:** normalize Git root centrally ([a89ec40](https://github.com/ViktorsBaikers/DevRites/commit/a89ec408b6133629db3547dcb7960f29bec6a723))
+* **devrites:** normalize Git root path ([38dccf0](https://github.com/ViktorsBaikers/DevRites/commit/38dccf0bac0bdf58f5fdcf171cac231c296af171))
+* **devrites:** resolve packages by source ([ae21d9b](https://github.com/ViktorsBaikers/DevRites/commit/ae21d9b50b0b631fb4352e5820f1176213614b78))
+* **skills:** format human gate decisions clearly ([0781d99](https://github.com/ViktorsBaikers/DevRites/commit/0781d99ce081f76f5e69237396e99e78e1b027f9))
+
+### Documentation
+
+* **repo:** sync current behavior ([9555fbb](https://github.com/ViktorsBaikers/DevRites/commit/9555fbbe26ce896a5c99723e46a8c04b7fba06f4))
+
 ## [3.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.2...v3.0.3) (2026-07-20)
 
 ### Fixed

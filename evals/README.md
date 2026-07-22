@@ -10,9 +10,9 @@ sibling skills and bundled globals (`diagnose`, `grill-me`, `code-review`, `tdd`
 `prototype`, `handoff`) their trigger surfaces collide with.
 
 **Coverage boundary.** These are *routing* evals (which skill fires) plus the
-outcome grader below (did a finished run reach a shippable state). What they do
-**not** yet cover: running the `.claude/agents/` subagents end-to-end (the wright
-+ reviewers) — that needs a live model and is exercised on the `evals.yml` API
+outcome grader below, which checks whether a finished run reached a shippable
+state. They do not yet run the `.claude/agents/` subagents end to end. The wright
+and reviewers need a live model, so `evals.yml` exercises them through the API
 path, not in the no-key CI gate. Per-phase *contract* behavior (e.g. build's
 stop-after-one-slice) beyond the seal outcome remains a scoped follow-up.
 
@@ -29,7 +29,7 @@ The methodology mirrors Anthropic's `skill-creator` 2.0:
 
 - **`ci.yml`** runs `scripts/run-evals.sh` (trigger-eval schema + shape) **and**
   `scripts/run-outcome-evals.sh` (the deterministic outcome grader on the golden
-  fixtures) on every PR — no API key required. Catches broken JSON, wrong query
+  fixtures) on every PR: no API key required. Catches broken JSON, wrong query
   coverage, missing keys, and a golden workspace that no longer grades as expected.
 - **`evals.yml`** runs `scripts/eval-runner.py` against the live Anthropic
   API on a nightly schedule (and on PRs that carry the `run-evals` label).
@@ -65,14 +65,14 @@ increase. Raise the baseline only after description tuning improves the run.
 ## Outcome evals (deterministic grader)
 
 Trigger evals test whether the right skill *fires*. They do **not** test whether
-a finished run reached a *shippable* state — the product claim ("won't claim done
+a finished run reached a *shippable* state: the product claim ("won't claim done
 without proof"). `scripts/grade-feature.sh` is a deterministic grader that reads
 only the committed Markdown artifacts of a workspace and checks the GO invariants
 from `rite-seal/reference/{seal-template,go-no-go,final-evidence}.md`: sealed GO,
 every acceptance criterion checked, no blockers, evidence present, review present,
 no open `gate: validating`, and a shippable `state.md` phase/status.
 
-Two golden fixtures pin it — `evals/golden/shippable-feature/` (must grade GO) and
+Two golden fixtures pin it: `evals/golden/shippable-feature/` (must grade GO) and
 `evals/golden/blocked-feature/` (must grade NO-GO, see-it-fail-first):
 
 ```bash
@@ -86,13 +86,13 @@ runtime gate exposed as `devrites-engine evidence-fresh`.
 
 Trigger evals test *which skill fires*; outcome evals test *did a run reach a shippable
 state*. Behavioral evals test the third thing: *does a gating skill's discipline hold when
-the user pushes it toward the exact shortcut the skill exists to prevent* — claim a pass it
+the user pushes it toward the exact shortcut the skill exists to prevent*: claim a pass it
 didn't observe, ship past a Critical, skip the doubt loop, defer a test. Each scenario turns
 a row from `../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md` (asserted in prose) into a graded case:
 a pressure prompt plus the resistance a holding response shows and the capitulation a failed
 one shows.
 
-They live in [`behavioral/`](behavioral/) and are **opt-in** — earned by gating rites
+They live in [`behavioral/`](behavioral/) and are **opt-in**: earned by gating rites
 (`rite-prove`, `rite-build`, `rite-seal`, `rite-vet`, peers), never required of every skill.
 The deterministic shape gate runs in `ci.yml` with no API key:
 
@@ -100,7 +100,7 @@ The deterministic shape gate runs in `ci.yml` with no API key:
 scripts/run-behavioral-evals.sh
 ```
 
-Live execution (does the skill actually resist?) is the same API-gated rung as the live
+Live execution (does the skill resist?) is the same API-gated rung as the live
 trigger evals. Full schema, methodology, and the grading contract:
 [`behavioral/README.md`](behavioral/README.md).
 

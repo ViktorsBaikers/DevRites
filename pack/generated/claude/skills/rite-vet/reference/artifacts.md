@@ -2,10 +2,10 @@
 
 `/rite-vet` produces two artifacts and a set of fold-back edits. `eng-review.md` is the durable
 **record** of the review; `test-plan.md` is the build-readable **coverage target**; the
-fold-back edits to `plan.md` / `tasks.md` are what the build actually follows. The record
-without the fold-back is dead prose — the build reads `plan.md` + `test-plan.md`, not `eng-review.md`.
+fold-back edits to `plan.md` / `tasks.md` are what the build follows. The record
+without the fold-back is dead prose: the build reads `plan.md` + `test-plan.md`, not `eng-review.md`.
 
-## `eng-review.md` — the record
+## `eng-review.md`: the record
 Write to `.devrites/work/<slug>/eng-review.md`. If one exists for the slug, **update** it, don't
 clobber.
 
@@ -52,7 +52,7 @@ Sequential — no opportunity   # OR the dependency table + lanes + order + conf
 - Plan: hardened in place | <n> deltas via Spec Drift Guard
 ```
 
-## `test-plan.md` — the build-readable coverage target
+## `test-plan.md`: the build-readable coverage target
 Write to `.devrites/work/<slug>/test-plan.md`. `/rite-build` (the slice-wright) reads it to write
 tests alongside the code; `/rite-prove` walks it against `evidence.md`. Keep it about *what to
 test and where*, not implementation detail.
@@ -101,11 +101,11 @@ Order:  launch A + B in parallel worktrees → merge → C
 Conflicts: Lanes A and B both touch models/ — sequential or coordinate.
 ```
 
-## Fold-back — the part the build follows
+## Fold-back: the part the build follows
 Vet *is* the plan-hardening phase, so behavior-preserving refinements are written **directly**;
 acceptance/behavior changes route through the **Spec Drift Guard**.
 
-- **Write directly into `plan.md` / `tasks.md`** (single canonical writer — you, not the reviewer):
+- **Write directly into `plan.md` / `tasks.md`** (single canonical writer: you, not the reviewer):
   - `plan.md` §Scope boundaries ← "NOT in scope" items.
   - `plan.md` §Architecture decisions ← reuse-over-rebuild calls + named failure scenarios.
   - `plan.md` §Dependency graph / §Implementation order ← the parallel lanes + any ordering fix
@@ -117,18 +117,18 @@ acceptance/behavior changes route through the **Spec Drift Guard**.
   - Re-run the `plan.md` Readiness gate after edits; it must still pass.
 - **Route through the Spec Drift Guard** (record `drift.md` + a recorded decision, then `/rite-plan
   repair` for any structural reslice) for anything that **changes an acceptance criterion, product
-  behavior, or the spec** — including a scope reduction that drops a criterion. A folded change with
+  behavior, or the spec**, including a scope reduction that drops a criterion. A folded change with
   no recorded decision is the batch-dump failure.
-- **`decisions.md`** — one ADR per material call: `context · decision · why-not-the-alternative ·
+- **`decisions.md`:** one ADR per material call: `context · decision · why-not-the-alternative ·
   what-would-change-it`.
-- **`assumptions.md`** — every "we'll probably need X" demoted to an explicit assumption-to-verify,
+- **`assumptions.md`:** every "we'll probably need X" demoted to an explicit assumption-to-verify,
   never smuggled into scope as a fact.
 
 ## Write discipline
 - **Single canonical writer.** The skill writes `eng-review.md` / `test-plan.md` and edits
   `plan.md` / `tasks.md`; `devrites-plan-reviewer` is **read-only** and only returns findings + bands.
 - **No silent scope.** A plan refinement that grows acceptance without a recorded decision, or a
-  deferral that drops a criterion without the Guard, is a defect — not a convenience.
+  deferral that drops a criterion without the Guard, is a defect, not a convenience.
 - Add `eng-review.md` + `test-plan.md` to the workspace between `tasks.md` and `state.md`.
   `/rite-build` (the slice-wright) and `/rite-prove` **read `test-plan.md`** as the coverage
   target; `/rite-review` and `/rite-seal` may consult `eng-review.md` for the failure-mode +

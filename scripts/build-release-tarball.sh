@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the DevRites release tarball — the artifact attached to the GitHub Release
+# Build the DevRites release tarball: the artifact attached to the GitHub Release
 # by semantic-release. Extracting yields a `devrites-v<version>/` directory with
 # everything an end-user needs (pack/, install.sh, uninstall.sh, scripts/, docs).
 #

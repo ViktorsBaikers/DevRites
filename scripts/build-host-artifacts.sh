@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build-host-artifacts.sh — render host-native Claude and Codex artifacts from
+# build-host-artifacts.sh: render host-native Claude and Codex artifacts from
 # the canonical pack.
 #
 # Default output is pack/generated/ so npm pack can ship prebuilt surfaces.

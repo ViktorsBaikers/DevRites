@@ -3,7 +3,7 @@
 // One binary serves both Claude Code and Codex. The shared gate/orientation
 // logic lives in the middle (internal/orient, internal/gate); this package
 // translates each harness's hook stdin schema and its exit/decision convention.
-// The engine never calls a model — these adapters only shape stdin/stdout.
+// The engine never calls a model: these adapters only shape stdin/stdout.
 package harness
 
 import (
@@ -93,7 +93,7 @@ type StopInput struct {
 }
 
 // ParseStopInput decodes a Stop hook's stdin. An empty or malformed payload is
-// not an error — it decodes to the zero value (StopHookActive false), so a
+// not an error: it decodes to the zero value (StopHookActive false), so a
 // harness that sends nothing simply gets a first-pass gate check. This keeps the
 // hook fail-open: bad stdin never crashes it.
 func (h Harness) ParseStopInput(r io.Reader) StopInput {
@@ -107,8 +107,8 @@ func (h Harness) ParseStopInput(r io.Reader) StopInput {
 }
 
 // PreToolInput is the subset of a PreToolUse hook's stdin the reviewer-readonly
-// guard reads: which tool is about to run, its command, and — for the optional
-// agent-scoping gate — the calling subagent's name. Every field is best-effort:
+// guard reads: which tool is about to run, its command, and: for the optional
+// agent-scoping gate: the calling subagent's name. Every field is best-effort:
 // a hook that can't identify the tool simply falls through to its silent no-op.
 type PreToolInput struct {
 	ToolName  string
@@ -118,7 +118,7 @@ type PreToolInput struct {
 
 // ParsePreToolInput decodes a PreToolUse payload. Like ParseStopInput it never
 // errors: an empty or malformed payload decodes to the zero value so a guard hook
-// stays fail-open. AgentType reads `agent_type` ONLY — matching
+// stays fail-open. AgentType reads `agent_type` ONLY: matching
 // devrites-reviewer-readonly.sh's node parse exactly (it does not consult the
 // subagent_type / agentType aliases; SubagentAgentType does, for the subagent
 // hook that needs them).
@@ -145,7 +145,7 @@ func (h Harness) ParsePreToolInput(r io.Reader) PreToolInput {
 
 // SubagentAgentType decodes just the spawned subagent's name from a SubagentStart
 // payload, reading whichever of agent_type / subagent_type / agentType the harness
-// populates (Claude and Codex differ) — the exact 3-way fallback
+// populates (Claude and Codex differ): the exact 3-way fallback
 // devrites-subagent-orient.sh uses. Never errors: bad stdin yields "".
 func (h Harness) SubagentAgentType(r io.Reader) string {
 	var raw struct {
@@ -198,7 +198,7 @@ type preToolEnvelope struct {
 // GuardInput is the fuller PreToolUse / PostToolUse payload the write-guards read:
 // the tool + its command / target path, the calling subagent's identity (both the
 // agent_id Claude sends and the agent_type Codex sends), and the tool's response
-// text (for the post-hooks that inspect output). Best-effort — bad stdin yields
+// text (for the post-hooks that inspect output). Best-effort: bad stdin yields
 // the zero value so a guard stays fail-open.
 type GuardInput struct {
 	ToolName     string

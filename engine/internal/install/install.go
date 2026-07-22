@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"sort"
 	"strings"
@@ -30,6 +31,7 @@ import (
 
 const ManifestName = devritespaths.ManifestName
 const defaultRepo = "ViktorsBaikers/DevRites"
+const githubBaseURL = "https://github.com"
 
 type Mode string
 
@@ -69,15 +71,17 @@ type stats struct {
 }
 
 type runner struct {
-	opts      Options
-	target    string
-	payload   string
-	payloadFS fs.FS
-	source    string
-	manifest  []string
-	records   map[string]string
-	prev      map[string]bool
-	stats     stats
+	opts             Options
+	target           string
+	payload          string
+	payloadFS        fs.FS
+	source           string
+	manifest         []string
+	records          map[string]string
+	prev             map[string]bool
+	stats            stats
+	releaseBinaryTag string
+	preparedBinary   string
 }
 
 func DefaultOptions(mode Mode) Options {
@@ -849,7 +853,20 @@ func runUpdate(opts Options) error {
 	if opts.DryRun {
 		next.DryRun = true
 	}
-	return Apply(next)
+	r, err := newRunner(next)
+	if err != nil {
+		return fmt.Errorf("prepare installer: %w", err)
+	}
+	r.releaseBinaryTag = latestTag
+	if next.WithBinary && os.Getenv("DEVRITES_NO_BINARY") != "1" && !next.DryRun {
+		staged, cleanup, err := r.acquireBinary(latestTag, githubBaseURL)
+		if err != nil {
+			return fmt.Errorf("prepare engine binary: %w", err)
+		}
+		defer cleanup()
+		r.preparedBinary = staged
+	}
+	return r.install()
 }
 
 func resolveUpdateTag(opts Options) (string, error) {
@@ -1185,6 +1202,8 @@ func containsDevritesHook(v any) bool {
 
 func isDevritesHooksComment(comment string) bool {
 	return comment == "DevRites hooks" ||
+		strings.HasPrefix(comment, "DevRites hooks: every event invokes the global `devrites-engine` engine binary") ||
+		strings.HasPrefix(comment, "DevRites hooks: auto-approve the read-only orientation/gate scripts") ||
 		strings.HasPrefix(comment, "DevRites hooks — every event invokes the global `devrites-engine` engine binary") ||
 		strings.HasPrefix(comment, "DevRites hooks — auto-approve the read-only orientation/gate scripts") ||
 		strings.HasPrefix(comment, "DevRites hooks for Codex. Project hooks load only after")
@@ -1295,24 +1314,24 @@ func (r *runner) installBinary() error {
 			return nil
 		}
 	}
-	staged, cleanup, err := r.acquireBinary(tag)
-	if err != nil {
-		fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %v - hooks fail open until you install it.\n", err)
-		return nil
+	staged, cleanup := r.preparedBinary, func() {}
+	if staged == "" {
+		var err error
+		staged, cleanup, err = r.acquireBinary(tag, githubBaseURL)
+		if err != nil {
+			return r.binaryInstallFailure(err)
+		}
 	}
 	defer cleanup()
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
-		fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %v - hooks fail open until you install it.\n", err)
-		return nil
+		return r.binaryInstallFailure(err)
 	}
 	data, err := os.ReadFile(staged)
 	if err != nil {
-		fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %v - hooks fail open until you install it.\n", err)
-		return nil
+		return r.binaryInstallFailure(err)
 	}
 	if err := fsutil.WriteFileAtomic(dest, data, 0o755); err != nil {
-		fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %v - hooks fail open until you install it.\n", err)
-		return nil
+		return r.binaryInstallFailure(err)
 	}
 	_ = os.Chmod(dest, 0o755)
 	fmt.Fprintf(r.opts.Stdout, "  engine binary: installed %s\n", dest)
@@ -1322,12 +1341,23 @@ func (r *runner) installBinary() error {
 	return nil
 }
 
-func (r *runner) acquireBinary(tag string) (string, func(), error) {
+func (r *runner) binaryInstallFailure(err error) error {
+	if r.preparedBinary != "" {
+		return err
+	}
+	fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %v - hooks fail open until you install it.\n", err)
+	return nil
+}
+
+func (r *runner) acquireBinary(tag, baseURL string) (string, func(), error) {
 	if v := os.Getenv("DEVRITES_ENGINE_CLI"); v != "" {
 		if exists(v) {
-			return v, func() {}, nil
+			if r.releaseBinaryTag == "" || strings.TrimPrefix(engineVersion(v), "v") == strings.TrimPrefix(r.releaseBinaryTag, "v") {
+				return v, func() {}, nil
+			}
+		} else {
+			return "", func() {}, fmt.Errorf("DEVRITES_ENGINE_CLI points to a missing binary: %s", v)
 		}
-		return "", func() {}, fmt.Errorf("DEVRITES_ENGINE_CLI points to a missing binary: %s", v)
 	}
 	tmp, err := os.MkdirTemp("", "devrites-engine-*")
 	if err != nil {
@@ -1335,17 +1365,58 @@ func (r *runner) acquireBinary(tag string) (string, func(), error) {
 	}
 	cleanup := func() { _ = os.RemoveAll(tmp) }
 	staged := filepath.Join(tmp, "devrites-engine")
+	var releaseErr error
+	if r.releaseBinaryTag != "" && os.Getenv("DEVRITES_UPDATE_BUNDLE") == "" {
+		repo := os.Getenv("DEVRITES_REPO")
+		if repo == "" {
+			repo = defaultRepo
+		}
+		downloaded, err := downloadReleaseBinary(baseURL, repo, r.releaseBinaryTag, staged)
+		if err == nil {
+			return staged, cleanup, nil
+		}
+		if downloaded {
+			return "", cleanup, err
+		}
+		releaseErr = err
+	}
 	if r.source != "" && exists(filepath.Join(r.source, "engine", "go.mod")) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, "go", "build", "-trimpath", "-ldflags", "-s -w -X github.com/devrites/devrites/internal/version.Version="+tag, "-o", staged, ".")
+		cmd := exec.CommandContext(ctx, "go", "build", "-buildvcs=false", "-trimpath", "-ldflags", "-s -w -X github.com/devrites/devrites/internal/version.Version="+tag, "-o", staged, ".")
 		cmd.Dir = filepath.Join(r.source, "engine")
 		if out, err := cmd.CombinedOutput(); err != nil {
+			if releaseErr != nil {
+				return "", cleanup, fmt.Errorf("could not download release binary: %v; source fallback failed: %w: %s", releaseErr, err, strings.TrimSpace(string(out)))
+			}
 			return "", cleanup, fmt.Errorf("could not build from source: %w: %s", err, strings.TrimSpace(string(out)))
 		}
 		return staged, cleanup, nil
 	}
+	if releaseErr != nil {
+		return "", cleanup, fmt.Errorf("could not obtain a binary: %v; no Go source fallback", releaseErr)
+	}
 	return "", cleanup, fmt.Errorf("could not obtain a binary (no DEVRITES_ENGINE_CLI handoff, no Go source)")
+}
+
+func downloadReleaseBinary(baseURL, repo, tag, dest string) (bool, error) {
+	asset := fmt.Sprintf("devrites-%s-%s", runtime.GOOS, runtime.GOARCH)
+	if runtime.GOOS == "windows" {
+		asset += ".exe"
+	}
+	url := fmt.Sprintf("%s/%s/releases/download/%s/%s", strings.TrimRight(baseURL, "/"), repo, tag, asset)
+	if err := iohooks.DownloadFile(url, dest); err != nil {
+		return false, fmt.Errorf("download %s: %w", asset, err)
+	}
+	sumPath := dest + ".sha256"
+	defer os.Remove(sumPath)
+	if err := iohooks.DownloadFile(url+".sha256", sumPath); err != nil {
+		return true, fmt.Errorf("could not verify release binary %s: missing checksum: %w", asset, err)
+	}
+	if err := verifySHA256(dest, sumPath); err != nil {
+		return true, fmt.Errorf("could not verify release binary %s: %w", asset, err)
+	}
+	return true, nil
 }
 
 func (r *runner) removeBinary() error {

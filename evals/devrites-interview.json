@@ -1,6 +1,6 @@
 {
   "skill": "devrites-interview",
-  "description": "Trigger evals for devrites-interview — model-invoked one-question-at-a-time intent extraction (best-guess + structured options, stop at ~95% confidence) when the ask is underspecified, before any spec/plan/code exists.",
+  "description": "Trigger evals for devrites-interview: model-invoked one-question-at-a-time intent extraction (best-guess + structured options, stop at ~95% confidence) when the ask is underspecified, before any spec/plan/code exists.",
   "queries": [
     {
       "text": "interview me about what I actually want before we start",
@@ -50,7 +50,7 @@
     {
       "text": "close the gap between what I said and what I actually want before any code exists",
       "expected": "should_trigger",
-      "rationale": "Restates the skill's own purpose — extract intent at the cheapest moment."
+      "rationale": "Restates the skill's own purpose: extract intent at the cheapest moment."
     },
     {
       "text": "I keep flip-flopping on requirements — interrogate me until it's nailed down",

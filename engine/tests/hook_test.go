@@ -99,7 +99,7 @@ func TestHookOrientStaleActivePointerIsSilent(t *testing.T) {
 }
 
 func TestHookOrientNonDevRitesDirIsSilent(t *testing.T) {
-	// Point at a directory with no .devrites — fail-open: silent, exit 0.
+	// Point at a directory with no .devrites: fail-open: silent, exit 0.
 	empty := t.TempDir()
 	out, _, code := runDevrites(t, empty, "hook", "orient", "--harness=claude")
 	if code != 0 {
@@ -302,7 +302,7 @@ func TestHookReviewerReadonlyObserveLogsWouldBlock(t *testing.T) {
 }
 
 // The bash hook's `read -r tool cmd agent_type` truncates the command at its
-// first newline, so it only ever scans line 1 — a latent bug. The Go port scans
+// first newline, so it only ever scans line 1: a latent bug. The Go port scans
 // the whole command, so a mutating LATER line is denied. This asserts the
 // deliberate hardening (documented on reviewerMutateRe); it is a Go-only test, not
 // a parity case, because it is where the two are meant to diverge.
@@ -321,7 +321,7 @@ func TestHookReviewerReadonlyScansWholeMultilineCommand(t *testing.T) {
 
 // The agent-required gate reads agent_type ONLY (matching the bash node parse), so
 // a payload that carries the subagent name under subagent_type but not agent_type
-// has no identity and is allowed — no false deny from the aliases.
+// has no identity and is allowed: no false deny from the aliases.
 func TestHookReviewerReadonlyAgentRequiredIgnoresSubagentTypeAlias(t *testing.T) {
 	root := newWorkspace(t)
 	in := `{"tool_name":"Bash","tool_input":{"command":"rm -rf x"},"subagent_type":"devrites-code-reviewer"}`

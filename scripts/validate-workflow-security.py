@@ -4,12 +4,14 @@
 DevRites' publish (release.yml) and auto-merge paths are high-value targets, so this
 gate fails CI when a workflow:
 
-  - uses any non-local action not pinned to a full 40-char commit SHA — a moving
+  - uses any non-local action not pinned to a full 40-char commit SHA: a moving
     tag like `@v2` lets a compromised upstream inject code into the pipeline;
-  - declares no `permissions:` scope anywhere — the default token is broad;
+  - declares no `permissions:` scope anywhere: the default token is broad;
   - uses `permissions: write-all` (over-broad);
   - uses `pull_request_target`, except for a Dependabot-only workflow that never
     checks out PR code.
+  - leaves an internal `: ` unquoted in a workflow or step name, which makes the
+    workflow invalid YAML and prevents every job from starting.
 
 Usage: validate-workflow-security.py [DIR]   (default: .github/workflows)
 Exit: 0 clean; 1 on any finding.
@@ -26,6 +28,7 @@ DEPENDABOT_ONLY_RE = re.compile(
     r"['\"]dependabot\[bot\]['\"]",
     re.MULTILINE,
 )
+UNQUOTED_NAME_COLON_RE = re.compile(r"^\s*(?:-\s*)?name:\s+[^'\"].*:\s+\S")
 
 
 def safe_dependabot_target(text):
@@ -43,15 +46,18 @@ def scan_text(path, text):
     lines = text.splitlines()
     dependabot_target_is_safe = safe_dependabot_target(text)
     if not re.search(r"^\s*permissions:", text, re.MULTILINE):
-        findings.append("%s: no permissions: scope — the default GITHUB_TOKEN is broad; "
+        findings.append("%s: no permissions: scope: the default GITHUB_TOKEN is broad; "
                         "add an explicit least-privilege permissions block" % path)
     for i, line in enumerate(lines, 1):
+        if UNQUOTED_NAME_COLON_RE.match(line):
+            findings.append("%s:%d: name contains an unquoted colon: quote the complete "
+                            "name so GitHub can parse the workflow" % (path, i))
         if "write-all" in line:
-            findings.append("%s:%d: permissions: write-all is over-broad — scope to the "
+            findings.append("%s:%d: permissions: write-all is over-broad: scope to the "
                             "minimum needed" % (path, i))
         if "pull_request_target" in line and not dependabot_target_is_safe:
             findings.append("%s:%d: pull_request_target runs with secrets on untrusted PR "
-                            "code — only a Dependabot-only workflow without checkout is allowed"
+                            "code: only a Dependabot-only workflow without checkout is allowed"
                             % (path, i))
         m = USES_RE.match(line)
         if not m:
@@ -63,7 +69,7 @@ def scan_text(path, text):
         pin = at[1] if len(at) == 2 else ""
         if not SHA_RE.match(pin):
             findings.append("%s:%d: action '%s' not pinned to a full commit "
-                            "SHA — pin it (a moving tag is a supply-chain risk)"
+                            "SHA: pin it (a moving tag is a supply-chain risk)"
                             % (path, i, ref))
     return findings
 

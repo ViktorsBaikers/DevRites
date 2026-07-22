@@ -30,7 +30,7 @@ func TestADR0006NextQIDHonorsClockSeam(t *testing.T) {
 			t.Fatalf("DEVRITES_NOW=%s: exit = %d, want 0\n%s", c.now, code, out)
 		}
 		if got := strings.TrimSpace(out); got != c.want {
-			t.Errorf("DEVRITES_NOW=%s: qid = %q, want %q — clock seam not honored", c.now, got, c.want)
+			t.Errorf("DEVRITES_NOW=%s: qid = %q, want %q: clock seam not honored", c.now, got, c.want)
 		}
 	}
 }

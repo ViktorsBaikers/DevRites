@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://devrites.dev/schemas/hooks.schema.json",
   "title": "DevRites hooks configuration",
-  "description": "Structure of a Claude Code settings.json / hooks.json that wires the devrites-engine hooks. Ships as the editor-facing contract; enforcement lives in `devrites-engine validate-pack`, which additionally checks that every command references a real hook id.",
+    "description": "Structure of a Claude Code settings.json / hooks.json that wires the devrites-engine hooks. Ships as the editor-facing contract; enforcement lives in `devrites-engine validate-pack`, which also checks that every command references a real hook id.",
   "type": "object",
   "properties": {
     "$comment": { "type": "string" },

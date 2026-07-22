@@ -27,7 +27,7 @@ if (!user.active) return Forbidden
 ## Comments explain *why*, not *what*
 - Self-explanatory code beats a comment restating it. Rename before you comment.
 - Reserve comments for intent, trade-offs, non-obvious constraints, and "here be
-  dragons" warnings. Delete commented-out code — that's what version control is for.
+  dragons" warnings. Delete commented-out code. That's what version control is for.
 
 ## Simplicity
 - Prefer the simplest thing that works. Don't add abstraction before you have two real
@@ -39,17 +39,17 @@ if (!user.active) return Forbidden
 Before adding a new util, helper, hook, type, component, or formatter, **search** for an
 existing one. **Reuse → extend → build new**, in that order. Don't re-implement what the
 project (or stdlib) already provides. If forcing reuse would distort the existing thing's
-shape, build a sibling and consolidate later — duplication is cheaper than the wrong
+shape, build a sibling and consolidate later: duplication is cheaper than the wrong
 abstraction (AHA).
 
 ## Edit reliably, change only what's asked
 - **No elision.** Never write `// ... rest unchanged` / `# ... existing code` in place of an
-  edit — emit the whole coherent function. Don't anchor an edit on line numbers; match on the
-  surrounding code. If an edit fails to apply, **re-read the file before retrying** — it may
+  edit: emit the whole coherent function. Don't anchor an edit on line numbers; match on the
+  surrounding code. If an edit fails to apply, **re-read the file before retrying**. It may
   have changed under you.
-- **Do what's asked, no more — and no less.** Don't improve, comment, or refactor code unrelated
+- **Do what's asked, no more, and no less.** Don't improve, comment, or refactor code unrelated
   to the task while you're in the file (feature scope). And never leave a comment describing code
-  you didn't write — implement it.
+  you didn't write: implement it.
 - **Never hand-edit a manifest or lockfile.** Add / update / remove dependencies through the
   package manager (`npm install`, `pip install`, `go get`, `cargo add`) so the lockfile stays
-  consistent — don't paste a version into `package.json` / `requirements.txt` by hand.
+  consistent: don't paste a version into `package.json` / `requirements.txt` by hand.

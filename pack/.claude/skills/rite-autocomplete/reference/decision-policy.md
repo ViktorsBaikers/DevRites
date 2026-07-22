@@ -1,8 +1,8 @@
-# Decision policy — how autocomplete "chooses the best option"
+# Decision policy: how autocomplete "chooses the best option"
 
 Unattended ≠ careless. Every discretionary choice is made the way a senior engineer
 would, then **recorded** so the seal can audit it. The difference from interactive mode
-is only *who answers* a discretionary question — not whether it's reasoned.
+is only *who answers* a discretionary question, not whether it's reasoned.
 
 ## The rule
 
@@ -20,7 +20,7 @@ not pick the option that's merely easiest to implement.
 
 ## Defaults autocomplete may assume (record them)
 
-- Follow the project's existing conventions, components, and test commands — always.
+- Follow the project's existing conventions, components, and test commands: always.
 - Prefer the smallest vertical slice that proves the acceptance criterion.
 - Reuse → extend → build new, in that order (`coding-style.md`).
 - When two options are equivalent on the evidence, choose the lower-risk / more
@@ -29,7 +29,7 @@ not pick the option that's merely easiest to implement.
 ## When a choice is NOT autocomplete's to make
 
 If a discretionary choice would change **product behaviour, scope, data model, security
-posture, or acceptance criteria**, it is no longer discretionary — it is a material
+posture, or acceptance criteria**, it is no longer discretionary. It is a material
 question. Route it through the Spec Drift Guard / a `blocking` question and **stop**
 (see [stop-conditions.md](stop-conditions.md)). Autocomplete answers *how*, never
 *what to build* beyond what the up-front interview settled.

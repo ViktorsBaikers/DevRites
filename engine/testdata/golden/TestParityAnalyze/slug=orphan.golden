@@ -2,10 +2,10 @@ exit 0
 # Cross-artifact analysis: orphan
 
 ## Coverage
-- [ok] AC1 — covered
+- [ok] AC1: covered
 
 ## Consistency
-- [warn] slice 'Slice 2: bar' — satisfies no acceptance criterion (add Satisfies: or justify)
+- [warn] slice 'Slice 2: bar': satisfies no acceptance criterion (add Satisfies, or justify)
 
 ## Ambiguity
 - [ok] no unquantified adjectives or unresolved placeholders found
@@ -13,4 +13,4 @@ exit 0
 ## Metrics
 - Acceptance criteria: 1 · covered 1/1 (100%) · orphan slices 1 · ambiguity flags 0
 
-## Verdict: clear — spec/tasks consistent and fully mapped.
+## Verdict: clear: spec/tasks consistent and fully mapped.

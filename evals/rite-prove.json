@@ -1,6 +1,6 @@
 {
   "skill": "rite-prove",
-  "description": "Trigger evals for /rite-prove — full targeted tests, build/typecheck/lint, browser evidence once all slices are built.",
+  "description": "Trigger evals for /rite-prove: full targeted tests, build/typecheck/lint, browser evidence once all slices are built.",
   "queries": [
     {
       "text": "/rite-prove",
@@ -45,9 +45,9 @@
     {
       "text": "Just one slice built so far; can you prove it?",
       "expected": "should_not_trigger",
-      "rationale": "Skill stops if slices are pending — but description is explicit so it should not auto-fire.",
+      "rationale": "Skill stops if slices are pending, but description is explicit so it should not auto-fire.",
       "owner": null,
-      "owner_rationale": "Skill stops if slices are pending — but description is explicit so it should not auto-fire."
+      "owner_rationale": "Skill stops if slices are pending, but description is explicit so it should not auto-fire."
     },
     {
       "text": "Start a new feature.",

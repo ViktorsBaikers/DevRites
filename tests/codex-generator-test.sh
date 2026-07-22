@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# codex-generator-test.sh — focused tests for the shared Claude-to-Codex
+# codex-generator-test.sh: focused tests for the shared Claude-to-Codex
 # generation helper used by host-artifact packaging.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"

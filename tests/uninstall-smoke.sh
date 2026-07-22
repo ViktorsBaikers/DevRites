@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# uninstall-smoke.sh — install into a temp project, then uninstall, asserting that
+# uninstall-smoke.sh: install into a temp project, then uninstall, asserting that
 # DevRites files are removed, empty dirs pruned, and runtime state preserved.
 # Binary lifecycle coverage lives in binary-lifecycle-test.sh; this smoke test
 # always passes --keep-binary so it cannot delete a developer's global binary.

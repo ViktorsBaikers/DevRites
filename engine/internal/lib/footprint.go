@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// Footprint reports the fan-out footprint of a feature run — how many subagents
-// were dispatched, of which kinds, across how many slices and minutes — from the
+// Footprint reports the fan-out footprint of a feature run: how many subagents
+// were dispatched, of which kinds, across how many slices and minutes: from the
 // append-only dispatch log at .devrites/work/<slug>/footprint.log. It never
 // derives a token or dollar figure: those cannot be sourced truthfully, and
 // inventing one would violate the proof thesis.
@@ -53,7 +53,7 @@ func Footprint(root string, args []string, stdout, stderr io.Writer) int {
 }
 
 // footprintLog appends one dispatch record. Recording is best-effort: with no
-// workspace, or an unwritable log, it silently succeeds — bookkeeping must never
+// workspace, or an unwritable log, it silently succeeds: bookkeeping must never
 // fail the orchestrator it instruments.
 func footprintLog(dir, logPath string, rest []string, stderr io.Writer) int {
 	kind, label := "", ""
@@ -78,7 +78,7 @@ func footprintLog(dir, logPath string, rest []string, stderr io.Writer) int {
 
 	// Match footprint.sh's `printf '%s %s %s\n'` exactly: three fields always,
 	// so an empty label still writes its trailing space. render/roster tokenize
-	// on whitespace, so the extra field is harmless — but keeping the byte format
+	// on whitespace, so the extra field is harmless, but keeping the byte format
 	// identical means the persisted log is parity-clean too.
 	record := strconv.FormatInt(time.Now().Unix(), 10) + " " + kind + " " + label
 	fmt.Fprintln(f, record)
@@ -87,8 +87,8 @@ func footprintLog(dir, logPath string, rest []string, stderr io.Writer) int {
 
 // footprintRender prints the one-line footprint: the subagent count with a
 // per-kind breakdown, the slice count (one per wright dispatch), and the active
-// span in whole minutes between the first and last record. A "skip" record — a
-// conscious non-dispatch — is not a subagent and never counts.
+// span in whole minutes between the first and last record. A "skip" record: a
+// conscious non-dispatch: is not a subagent and never counts.
 func footprintRender(logPath string, stdout io.Writer) int {
 	f, err := os.Open(logPath)
 	if err != nil {
@@ -129,8 +129,8 @@ func footprintRender(logPath string, stdout io.Writer) int {
 	return 0
 }
 
-// kindBreakdown renders the dispatched kinds in a fixed order — wright, reviewer,
-// audit, doubt — each with its count, joined by " · ". Only kinds actually
+// kindBreakdown renders the dispatched kinds in a fixed order: wright, reviewer,
+// audit, doubt: each with its count, joined by " · ". Only kinds
 // present appear; reviewers and audits pluralize, wright and doubt do not.
 func kindBreakdown(byKind map[string]int) string {
 	kinds := []struct {
@@ -158,7 +158,7 @@ func kindBreakdown(byKind map[string]int) string {
 }
 
 // footprintRoster is the review fan-out accounting gate. Every reviewer on the
-// roster must carry a recorded decision — dispatched, or a conscious skip. An
+// roster must carry a recorded decision: dispatched, or a conscious skip. An
 // unaccounted reviewer is the silent omission this catches. The roster mirrors
 // devrites-lib/reference/parallel-dispatch.md, its single source of truth.
 //
@@ -171,7 +171,7 @@ func footprintRoster(logPath string, stdout io.Writer) int {
 
 	f, err := os.Open(logPath)
 	if err != nil {
-		fmt.Fprintln(stdout, "roster: n/a (no dispatch records — fan-out did not run)")
+		fmt.Fprintln(stdout, "roster: n/a (no dispatch records: fan-out did not run)")
 		return 0
 	}
 	defer f.Close()
@@ -198,7 +198,7 @@ func footprintRoster(logPath string, stdout io.Writer) int {
 		case dispatched[r]:
 			fmt.Fprintf(stdout, "  %s: dispatched\n", r)
 		case skipped[r]:
-			fmt.Fprintf(stdout, "  %s: skipped (always-on — verify carry-forward)\n", r)
+			fmt.Fprintf(stdout, "  %s: skipped (always-on: verify carry-forward)\n", r)
 			alwaysOnSkipped = append(alwaysOnSkipped, r)
 		default:
 			fmt.Fprintf(stdout, "  %s: UNACCOUNTED\n", r)
@@ -219,10 +219,10 @@ func footprintRoster(logPath string, stdout io.Writer) int {
 
 	switch {
 	case len(unaccounted) > 0:
-		fmt.Fprintf(stdout, "roster: UNACCOUNTED — %s\n", strings.Join(unaccounted, " "))
+		fmt.Fprintf(stdout, "roster: UNACCOUNTED: %s\n", strings.Join(unaccounted, " "))
 		return 3
 	case len(alwaysOnSkipped) > 0:
-		fmt.Fprintf(stdout, "roster: always-on skipped — %s\n", strings.Join(alwaysOnSkipped, " "))
+		fmt.Fprintf(stdout, "roster: always-on skipped: %s\n", strings.Join(alwaysOnSkipped, " "))
 		return 1
 	default:
 		fmt.Fprintln(stdout, "roster: complete (every reviewer accounted for)")

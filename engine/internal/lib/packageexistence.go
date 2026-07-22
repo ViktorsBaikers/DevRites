@@ -65,7 +65,7 @@ var fallbackPackageResolver = packageResolver{extract: quotedModulesFromAddedLin
 
 // PackageExistence catches hallucinated or typo-squatted dependencies: every new
 // third-party import in the slice diff must be DECLARED in a project manifest, not
-// merely imported. It is deterministic and offline — it checks the manifest, not a
+// merely imported. It is deterministic and offline: it checks the manifest, not a
 // package registry. The workspace is <root>/features/<slug>.
 //
 //	0  clean, nothing to check, or skipped (not a git repo / no manifest)
@@ -86,7 +86,7 @@ func PackageExistence(root string, args []string, stdout, stderr io.Writer) int 
 	cwd, _ := os.Getwd()
 	gitRoot := gitToplevel(cwd)
 	if gitRoot == "" {
-		fmt.Fprintln(stderr, "package-existence: not a git repo — skipped.")
+		fmt.Fprintln(stderr, "package-existence: not a git repo: skipped.")
 		return 0
 	}
 	ref := "HEAD"
@@ -122,7 +122,7 @@ func PackageExistence(root string, args []string, stdout, stderr io.Writer) int 
 	}
 
 	if !hasManifest {
-		fmt.Fprintln(stderr, "package-existence: no recognized manifest — skipped.")
+		fmt.Fprintln(stderr, "package-existence: no recognized manifest: skipped.")
 		return 0
 	}
 
@@ -132,14 +132,14 @@ func PackageExistence(root string, args []string, stdout, stderr io.Writer) int 
 			packages = append(packages, pkg)
 		}
 		sort.Strings(packages)
-		fmt.Fprintf(stderr, "package-existence: %d imported package(s) are NOT declared in a manifest — verify each exists and add it via the package manager:\n", len(packages))
+		fmt.Fprintf(stderr, "package-existence: %d imported package(s) are NOT declared in a manifest: verify each exists and add it via the package manager:\n", len(packages))
 		for _, pkg := range packages {
 			fmt.Fprintf(stderr, "  - %s: imported but not declared in any manifest\n", pkg)
 		}
 		fmt.Fprintln(stderr, "An undeclared import is how hallucinated/typo-squatted packages slip in. Confirm the name on the registry before trusting it.")
 		return 3
 	}
-	fmt.Fprintln(stdout, "package-existence: OK — every new third-party import is declared in a manifest.")
+	fmt.Fprintln(stdout, "package-existence: OK: every new third-party import is declared in a manifest.")
 	return 0
 }
 

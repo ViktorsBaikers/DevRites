@@ -10,7 +10,7 @@ import (
 )
 
 // ArchiveSearch surfaces shipped features whose spec.md overlaps a query, so
-// /rite-spec can spot prior art before writing a new spec — an extension, a
+// /rite-spec can spot prior art before writing a new spec: an extension, a
 // conflict, or a re-spec of solved work. It is advisory, not a gate: it always
 // exits 0 when it runs (empty output means no overlap), and reserves exit 2 for
 // a missing query. The query is the feature's key nouns, one or many args; a
@@ -36,7 +36,7 @@ func ArchiveSearch(root string, args []string, stdout, stderr io.Writer) int {
 
 	entries, err := os.ReadDir(filepath.Join(root, "archive"))
 	if err != nil {
-		// No archive yet — no prior art to surface. Silent, successful no-op.
+		// No archive yet: no prior art to surface. Silent, successful no-op.
 		return 0
 	}
 
@@ -80,7 +80,7 @@ func ArchiveSearch(root string, args []string, stdout, stderr io.Writer) int {
 }
 
 // specTitle returns the spec's first Markdown heading, or its first non-empty
-// line, as a one-line label — empty when the spec has neither.
+// line, as a one-line label: empty when the spec has neither.
 func specTitle(b []byte) string {
 	for _, line := range strings.Split(string(b), "\n") {
 		line = strings.TrimSpace(line)

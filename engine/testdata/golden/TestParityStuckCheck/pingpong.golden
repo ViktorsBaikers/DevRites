@@ -1,2 +1,2 @@
 exit 3
-stuck: A<->B ping-pong over last 6 — STUCK.
+stuck: A<->B ping-pong over last 6: STUCK.

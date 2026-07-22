@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
-# /rite-dogfood — diff-scoped browser QA
+# /rite-dogfood: diff-scoped browser QA
 
 Dogfood what changed as a user journey. This complements `/rite-prove`: prove checks acceptance; dogfood finds journey breaks and paper cuts.
 
@@ -46,4 +46,4 @@ required, use `Stopped / blocked` or `Awaiting human`; do not recommend `/rite-p
 ## Gotchas
 - A page list is not a journey map; draw the flow first.
 - A screenshot path is not proof; open it and describe what changed.
-- Do not “fix” ambiguous UX intent just to clear the matrix.
+- Do not "fix" ambiguous UX intent just to clear the matrix.

@@ -1,6 +1,6 @@
 # Recording proven conventions (the ledger, on GO)
 
-Loaded on demand by `$rite-seal` step 9. On a **GO** seal — and only then — promote the
+Loaded on demand by `$rite-seal` step 9. On a **GO** seal (and only then) promote the
 durable project conventions this feature *proved* into the local conventions ledger
 (`.devrites/conventions.md`). Orient reads it on later slices so the wright stops
 re-deriving the same idioms every time.
@@ -11,14 +11,14 @@ The discipline mirrors DevRites' whole thesis: a convention is not "learned" unt
 ## What to promote
 
 Durable, reusable facts about *this codebase* that a future slice would otherwise
-re-discover — each as one entry:
+re-discover: each as one entry:
 
-- **Commands** — the real build / test / typecheck / lint commands and how tests are run
+- **Commands:** the real build / test / typecheck / lint commands and how tests are run
   (runner, file layout, co-location).
-- **Idioms** — naming + casing, layering, the error model, the result/exception style, the
+- **Idioms:** naming + casing, layering, the error model, the result/exception style, the
   http/client/data-access pattern.
-- **Placement** — where a kind of thing lives (where new endpoints / components / migrations go).
-- **Gotchas** — a non-obvious constraint this feature hit and proved (ordering requirement,
+- **Placement:** where a kind of thing lives (where new endpoints / components / migrations go).
+- **Gotchas:** a non-obvious constraint this feature hit and proved (ordering requirement,
   a "don't call X before Y", a framework quirk verified against the source).
 
 Do **not** promote: feature-specific details, one-off decisions (those live in
@@ -27,8 +27,8 @@ If it isn't both *durable* and *proven by the evidence*, leave it out.
 
 ## How (deterministic band, idempotent, graceful)
 
-For each convention, run the store. The confidence band is **earned** — computed from how
-many independent sealed slices corroborated the entry — never set by you. Re-sealing the
+For each convention, run the store. The confidence band is **earned** (computed from how
+many independent sealed slices corroborated the entry) never set by you. Re-sealing the
 same slice is idempotent (it won't double-count). If the `devrites-engine` binary is absent
 the step is skipped with a notice; the ledger is an enhancement, never a gate.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# binary-lifecycle-test.sh — the global devrites-engine binary's install / update / downgrade
+# binary-lifecycle-test.sh: the global devrites-engine binary's install / update / downgrade
 # / uninstall lifecycle (issue 10), exercised hermetically. DEVRITES_BIN_DIR points
 # the installer at a throwaway bin dir (never the real /usr/local/bin or ~/.local/bin)
 # and DEVRITES_REF pins the stamped version; the release download 404s and falls back
@@ -62,7 +62,7 @@ DEVRITES_REF="v9.9.9" bash "$ROOT/install.sh" --target "$TGT" --force >/dev/null
 bash "$ROOT/uninstall.sh" --target "$TGT" --keep-binary >/dev/null 2>&1
 [ -x "$BIN/devrites-engine" ] && ok "uninstall --keep-binary keeps it" || no "--keep-binary removed the binary"
 
-# 8) an unstamped source build (version "dev") must be UPGRADABLE to a release —
+# 8) an unstamped source build (version "dev") must be UPGRADABLE to a release:
 #    the downgrade guard only compares real semver, so "dev" is never "newest".
 ( cd "$ROOT/engine" && GOCACHE="$BIN/go-cache-dev" CGO_ENABLED=0 go build -o "$BIN/devrites-engine" . ) >/dev/null 2>&1
 [ "$("$BIN/devrites-engine" version 2>/dev/null)" = "dev" ] && ok "planted a dev build" || no "could not plant a dev build"

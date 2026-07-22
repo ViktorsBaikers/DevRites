@@ -75,7 +75,7 @@ func runReconcile(t *testing.T, root string, args ...string) (int, string) {
 
 func TestWorktreeTreeErrorsOutsideGitRepo(t *testing.T) {
 	dir := t.TempDir()
-	tree, err := worktreeTree(dir)
+	tree, err := worktreeTree(dir, t.TempDir())
 	if err == nil {
 		t.Fatalf("worktreeTree(%q) = %q, nil; want an error outside a git repo", dir, tree)
 	}
@@ -86,13 +86,14 @@ func TestWorktreeTreeErrorsOutsideGitRepo(t *testing.T) {
 
 func TestWorktreeTreeCapturesUntrackedFiles(t *testing.T) {
 	dir := newGitRepo(t)
+	objects := t.TempDir()
 
-	before, err := worktreeTree(dir)
+	before, err := worktreeTree(dir, objects)
 	if err != nil {
 		t.Fatalf("worktreeTree: %v", err)
 	}
 	writeFile(t, filepath.Join(dir, "untracked.go"), "package main\n")
-	after, err := worktreeTree(dir)
+	after, err := worktreeTree(dir, objects)
 	if err != nil {
 		t.Fatalf("worktreeTree: %v", err)
 	}
@@ -100,7 +101,7 @@ func TestWorktreeTreeCapturesUntrackedFiles(t *testing.T) {
 		t.Errorf("worktreeTree did not observe the untracked file: both trees = %s", before)
 	}
 
-	// The user's real index must be untouched — the file stays untracked.
+	// The user's real index must be untouched: the file stays untracked.
 	out, err := exec.Command("git", "-C", dir, "status", "--porcelain", "untracked.go").Output()
 	if err != nil {
 		t.Fatalf("git status: %v", err)
@@ -113,6 +114,13 @@ func TestWorktreeTreeCapturesUntrackedFiles(t *testing.T) {
 func TestReconcileSnapshotThenCleanCheck(t *testing.T) {
 	gitRoot := newGitRepo(t)
 	root := workspace(t, "feat")
+	objects := t.TempDir()
+	if err := os.Chmod(objects, 0o500); err != nil {
+		t.Fatalf("make git objects read-only: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(objects, 0o700) })
+	t.Setenv("GIT_OBJECT_DIRECTORY", objects)
+	writeFile(t, filepath.Join(gitRoot, "untracked.go"), "package main\n")
 
 	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
 		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
@@ -137,7 +145,7 @@ func TestReconcileCheckFlagsUnclaimedChange(t *testing.T) {
 	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
 		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
 	}
-	// The orchestrator edits source it never claimed — the A1 breach.
+	// The orchestrator edits source it never claimed: the A1 breach.
 	writeFile(t, filepath.Join(gitRoot, "rogue.go"), "package main\n")
 	writeFile(t, filepath.Join(root, "work", "feat", ".reconcile-claimed"), "seed.go\n")
 

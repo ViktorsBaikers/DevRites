@@ -38,4 +38,4 @@ For a **forged slice**, the `Built` line names the competition and points at the
 `Done: built slice 3 — csv-streaming (forged: 3 candidates, winner B).` and
 `Record: .devrites/work/<slug>/forge-report.md`.
 
-**DO NOT continue to the next slice automatically** — even at `✅ ALL BUILT`, `$rite-prove` is the user's call.
+**DO NOT continue to the next slice automatically**: even at `✅ ALL BUILT`, `$rite-prove` is the user's call.

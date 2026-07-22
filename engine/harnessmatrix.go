@@ -12,7 +12,7 @@ import (
 // cmdHarnessMatrix renders the harness adapter-compliance matrix, or (with
 // --check FILE) verifies the generated block committed in FILE still matches the
 // engine's frozen matrix. The check is the drift guard: an edit to the matrix
-// data without regenerating the doc — or vice versa — fails CI.
+// data without regenerating the doc (or vice versa) fails CI.
 //
 // Exit: 0 rendered / in-sync · 2 usage · 3 drift (regenerate + commit).
 func cmdHarnessMatrix(args []string, stdout, stderr io.Writer) int {
@@ -38,7 +38,7 @@ func cmdHarnessMatrix(args []string, stdout, stderr io.Writer) int {
 		return exitBlocked
 	}
 	if strings.TrimSpace(got) != strings.TrimSpace(block) {
-		fmt.Fprintf(stderr, "harness-matrix: %s is out of date — run `devrites-engine harness-matrix` and commit the regenerated block.\n", path)
+		fmt.Fprintf(stderr, "harness-matrix: %s is out of date: run `devrites-engine harness-matrix` and commit the regenerated block.\n", path)
 		return exitBlocked
 	}
 	fmt.Fprintf(stdout, "harness-matrix: %s is in sync.\n", path)

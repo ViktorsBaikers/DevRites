@@ -49,11 +49,11 @@ func Coverage(root string, args []string, stdout, stderr io.Writer) int {
 
 	specBytes, err := os.ReadFile(filepath.Join(dir, "spec.md"))
 	if err != nil {
-		fmt.Fprintln(stderr, "coverage: no spec.md — nothing to map.")
+		fmt.Fprintln(stderr, "coverage: no spec.md: nothing to map.")
 		return 2
 	}
 
-	// tasks.md / seal.md are optional inputs — a missing one just yields
+	// tasks.md / seal.md are optional inputs: a missing one just yields
 	// UNCOVERED slices / pending proof, never an error.
 	tasks, haveTasks := readFileOK(filepath.Join(dir, "tasks.md"))
 	seal, haveSeal := readFileOK(filepath.Join(dir, "seal.md"))
@@ -69,7 +69,7 @@ func Coverage(root string, args []string, stdout, stderr io.Writer) int {
 			slices = slicesForAC(tasks, ac)
 		}
 		if slices == "" {
-			slices = "— (UNCOVERED)"
+			slices = "(UNCOVERED)"
 		}
 		proven := "pending"
 		if haveSeal && provenInSeal(seal, ac) {
@@ -108,7 +108,7 @@ func acIDs(spec string) []string {
 // slicesForAC returns the `;`-joined slice headers whose `Satisfies:` line names
 // ac, in file order. It reproduces the script's awk exactly, including its two
 // quirks: the current `## Slice …` header persists to the next Satisfies line,
-// and the match is a substring test — so ac "AC1" also matches a slice that
+// and the match is a substring test, so ac "AC1" also matches a slice that
 // satisfies "AC10". Faithful parity requires preserving both.
 func slicesForAC(tasks, ac string) string {
 	var matched []string

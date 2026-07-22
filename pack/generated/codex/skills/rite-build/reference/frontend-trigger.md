@@ -12,7 +12,7 @@ A slice is **frontend/UI** if it touches or plans to touch any of:
 
 ## When triggered
 - `$rite-spec` applies **`devrites-ux-shape`** (spec step 3a) to write the feature-level
-  **`design-brief.md`** before any code — design direction, key states, interaction model,
+  **`design-brief.md`** before any code: design direction, key states, interaction model,
   optional Figma/image visual-direction probe.
 - `$rite-build` applies **`devrites-frontend-craft`**, building **to** that `design-brief.md`
   (register detection, refine the brief per slice, existing design system, all states,
@@ -31,7 +31,7 @@ If the slice spans both layers, it's both a frontend **and** a backend slice. De
 `devrites-frontend-craft/reference/fullstack.md`.
 
 ## When NOT triggered
-Pure backend/data/CLI/infra slices skip craft and browser proof — but still get tests
+Pure backend/data/CLI/infra slices skip craft and browser proof, but still get tests
 and evidence. If unsure whether a slice is "UI enough", treat copy/empty/error states
 and any rendered output as UI.
 

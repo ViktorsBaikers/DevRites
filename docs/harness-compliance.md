@@ -2,7 +2,7 @@
 
 DevRites drives more than one agent runtime from a single `devrites-engine`
 binary, but the runtimes do not expose identical enforcement surfaces. This page
-states — per surface — whether each supported harness enforces it natively,
+states, for each surface, whether a supported harness enforces it natively,
 through an adapter, or only by instruction the model may ignore. It is the honest
 answer to "does DevRites work the same on Codex as on Claude Code?"
 
@@ -40,6 +40,6 @@ the table and the code can never silently drift apart.
 | Standards step-0 load | Native | Instruction-backed | all phases | explicit standards read | partial | medium | Claude: skill Reads core.md. Codex: an AGENTS.md directive to read it. |
 | Project activation | Native | Conditional | Codex-only startup | inspect hooks/config, decide trust, then rerun doctor | yes | medium | Codex silently skips every .codex/ layer in an untrusted project; trust remains an operator decision after inspection. |
 
-Tiers: **Native** (the harness exposes and delivers the surface directly; policy notes state whether it blocks) · **Adapter-backed** (supported through a translation shim) · **Instruction-backed** (no runtime surface — rides on a directive the model may under-fire) · **Conditional** (native but gated on an operator precondition).
+Tiers: **Native** (the harness exposes and delivers the surface directly; policy notes state whether it blocks) · **Adapter-backed** (supported through a translation shim) · **Instruction-backed** (no runtime surface: rides on a directive the model may under-fire) · **Conditional** (native but gated on an operator precondition).
 
 <!-- END harness-matrix -->

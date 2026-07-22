@@ -11,7 +11,7 @@ import (
 )
 
 // TestFirstPartyMakesNoNetworkCalls asserts that no first-party package imports a
-// network client EXCEPT internal/iohooks — the one sanctioned network surface,
+// network client EXCEPT internal/iohooks: the one sanctioned network surface,
 // where the source-citation cache does conditional-HEAD revalidation. Confining
 // network to that single, auditable package keeps the rest of the engine a
 // network-free control plane that makes zero model calls (PRD: "zero API"). The
@@ -40,7 +40,7 @@ func TestFirstPartyMakesNoNetworkCalls(t *testing.T) {
 		}
 		for _, imp := range imports {
 			if forbidden[imp] {
-				t.Errorf("first-party package %s imports network package %q — only %s may make network calls", pkg, imp, sanctioned)
+				t.Errorf("first-party package %s imports network package %q: only %s may make network calls", pkg, imp, sanctioned)
 			}
 		}
 	}

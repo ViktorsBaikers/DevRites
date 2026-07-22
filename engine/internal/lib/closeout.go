@@ -9,7 +9,7 @@ import (
 
 // CloseOut retires a shipped feature: it moves the feature directory into the
 // archive and, when the feature is still the active one, clears the ACTIVE cursor
-// so the next /rite-spec starts clean. The workspace is relocated, never deleted —
+// so the next /rite-spec starts clean. The workspace is relocated, never deleted:
 // the audit trail is preserved under archive/<slug>.
 //
 // args is `<slug> [devrites-dir]`. The optional second argument overrides the
@@ -18,7 +18,7 @@ import (
 //
 //	0  archived (ACTIVE cleared if it pointed here)
 //	4  no slug given, or the feature has no workspace
-//	5  an archive already exists at the destination — refuse to clobber it
+//	5  an archive already exists at the destination: refuse to clobber it
 func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 	slug := argAt(args, 0)
 	dv := argAt(args, 1)
@@ -41,12 +41,12 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 	// A broken symlink at the destination still counts as "already there", so use
 	// Lstat rather than Stat to avoid silently overwriting it.
 	if _, err := os.Lstat(arch); err == nil {
-		fmt.Fprintf(stderr, "close-out: archive already exists at %s — refusing to clobber\n", arch)
+		fmt.Fprintf(stderr, "close-out: archive already exists at %s: refusing to clobber\n", arch)
 		return 5
 	}
 
 	// Fail closed: if the move does not happen, leave the cursor alone and do not
-	// claim success — a lost audit trail must never look like a clean close-out.
+	// claim success: a lost audit trail must never look like a clean close-out.
 	if err := os.MkdirAll(filepath.Join(dv, "archive"), 0o755); err != nil {
 		fmt.Fprintf(stderr, "close-out: cannot create archive dir: %v\n", err)
 		return 1
@@ -64,6 +64,6 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 			return 0
 		}
 	}
-	fmt.Fprintf(stdout, "close-out: archived %s -> %s (ACTIVE pointed elsewhere — left as-is)\n", slug, filepath.ToSlash(arch))
+	fmt.Fprintf(stdout, "close-out: archived %s -> %s (ACTIVE pointed elsewhere: left as-is)\n", slug, filepath.ToSlash(arch))
 	return 0
 }

@@ -1,7 +1,7 @@
 // Command devrites-engine is the DevRites control-plane engine: a single static,
 // pure-Go binary that owns the deterministic workflow state (phases, gates,
 // completeness) over a project's .devrites/ directory. It makes zero model or
-// network calls — the in-session LLM remains the judgment data plane.
+// network calls: the in-session LLM remains the judgment data plane.
 //
 // Command dispatch is intentionally a small stdlib switch (no third-party deps)
 // so the binary cross-compiles trivially with CGO_ENABLED=0; it can be swapped
@@ -24,7 +24,7 @@ import (
 	"github.com/devrites/devrites/internal/version"
 )
 
-const usage = `devrites — DevRites control-plane engine
+const usage = `devrites: DevRites control-plane engine
 
 Usage:
   devrites-engine install [flags]          Install DevRites skills/agents/hooks into a project
@@ -106,7 +106,7 @@ Hooks:
 Exit codes:
   0  ok / gate passed
   2  usage error
-  3  blocked — a gate pause or a version-skew refuse; resolve the reported
+  3  blocked: a gate pause or a version-skew refuse; resolve the reported
      gap and retry (HITL, never a crash)
 
 Environment:
@@ -118,7 +118,7 @@ Environment:
 Hook control plane:
   DEVRITES_HOOK_PROFILE   minimal | standard (default) | strict. minimal runs
                           orientation/approval hooks only; standard adds the
-                          gates, guards and caches; strict additionally flips
+                          gates, guards and caches; strict also enables
                           every OBSERVE-default guard (a1-guard, stop-gate,
                           reviewer-readonly, wright-scope) to enforce at once.
   DEVRITES_DISABLED_HOOKS Comma-separated hook ids to force off, e.g.
@@ -297,7 +297,7 @@ func cmdStatus(args []string, stdout, stderr io.Writer) int {
 
 // cmdGate runs a completeness gate (readiness or seal). A complete phase passes
 // (exit 0); an incomplete one prints a structured, actionable "missing X" and
-// exits with the HITL pause code — never a crash.
+// exits with the HITL pause code: never a crash.
 func cmdGate(kind gate.Kind, args []string, stdout, stderr io.Writer) int {
 	if len(args) != 1 {
 		fmt.Fprintf(stderr, "usage: devrites-engine %s <slug>\n", kind)

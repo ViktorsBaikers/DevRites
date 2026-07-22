@@ -6,8 +6,8 @@ import (
 )
 
 // TestParityMutationGate runs mutation-gate in a NON-git temp dir with no
-// manifests so it resolves gitroot="" and detects no runner — the deterministic
-// advisory-skip path — and checks stdout + exit against the golden snapshot. (If
+// manifests so it resolves gitroot="" and detects no runner: the deterministic
+// advisory-skip path, and checks stdout + exit against the golden snapshot. (If
 // the host happens to have a runner on PATH, it is detected via the same lookup,
 // so the golden check still holds.)
 func TestParityMutationGate(t *testing.T) {

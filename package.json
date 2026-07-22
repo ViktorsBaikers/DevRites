@@ -1,7 +1,7 @@
 {
   "name": "devrites",
-  "version": "3.0.3",
-  "description": "DevRites — disciplined senior-engineer workflow skills pack for Claude Code and Codex",
+  "version": "3.0.7",
+  "description": "DevRites: a disciplined senior-engineer workflow pack for Claude Code and Codex",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://github.com/ViktorsBaikers/DevRites#readme",
   "repository": {

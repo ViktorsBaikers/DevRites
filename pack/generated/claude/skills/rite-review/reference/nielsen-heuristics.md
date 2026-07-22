@@ -1,14 +1,14 @@
-# Nielsen's 10 usability heuristics — DevRites scoring rubric
+# Nielsen's 10 usability heuristics: DevRites scoring rubric
 
 A structured UX rubric for `/rite-review` when the feature touches UI. Score each
-heuristic on a **0–4** scale; the per-heuristic scores feed the UX axis of the
+heuristic on a **0-4** scale; the per-heuristic scores feed the UX axis of the
 multi-axis review and shape the severity labels on UX findings.
 
-**Score honestly.** 4 means *genuinely excellent* — not "good enough", not "no
-findings". 3 is "good with minor gaps". 2 is "partial — significant gaps". 0–1 is a
+**Score honestly.** 4 means *genuinely excellent*, not "good enough", not "no
+findings". 3 is "good with minor gaps". 2 is "partial: significant gaps". 0-1 is a
 Critical / Important.
 
-Heuristics are Jakob Nielsen's 10 (1994, refreshed 2020) — public usability canon,
+Heuristics are Jakob Nielsen's 10 (1994, refreshed 2020): public usability canon,
 referenced by every serious design discipline.
 
 ## 1. Visibility of system status
@@ -25,19 +25,19 @@ Users know what's happening, when, and where.
 
 ## 2. Match between system and the real world
 The UI speaks the user's language and follows real-world conventions.
-- Domain vocabulary the *user* shares — not the team's internal names.
+- Domain vocabulary the *user* shares, not the team's internal names.
 - Familiar metaphors where they help (cart, inbox, draft).
 - Information ordered the way the user thinks about it, not the way the DB stores it.
 
 | 0 | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|
-| Jargon throughout. | Mostly internal vocabulary. | Mixed — some user terms, some internal. | Clear user terms; a couple of leaks. | Reads like the user's own words. |
+| Jargon throughout. | Mostly internal vocabulary. | Mixed: some user terms, some internal. | Clear user terms; a couple of leaks. | Reads like the user's own words. |
 
 ## 3. User control and freedom
 Easy escape, undo, and back-out from any state.
 - Cancel / close / back on every modal, route, and form.
 - Undo on destructive operations (delete, archive, reset).
-- No dead-end states ("Error — refresh the page" with no recovery).
+- No dead-end states ("Error: refresh the page" with no recovery).
 
 | 0 | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|
@@ -74,7 +74,7 @@ Show options; don't force the user to remember them.
 
 | 0 | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|
-| Heavy recall required. | Critical flows demand recall. | Mixed — some visible, some hidden. | Mostly recognition; minor recall asks. | Pure recognition; nothing the user needs is hidden. |
+| Heavy recall required. | Critical flows demand recall. | Mixed: some visible, some hidden. | Mostly recognition; minor recall asks. | Pure recognition; nothing the user needs is hidden. |
 
 ## 7. Flexibility and efficiency of use
 Novices and experts both productive.
@@ -101,8 +101,8 @@ Every element earns its place. No decorative noise.
 Error states are designed, not afterthoughts.
 - Errors named in user language ("Your card was declined") not codes ("Stripe 4002").
 - A concrete next step ("Try a different card" + "Use PayPal instead").
-- Inline location — the error appears next to the field / action that caused it.
-- No blame — the message describes the situation, not the user.
+- Inline location: the error appears next to the field / action that caused it.
+- No blame: the message describes the situation, not the user.
 
 | 0 | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|
@@ -112,7 +112,7 @@ Error states are designed, not afterthoughts.
 Users can find what they need without leaving the surface.
 - Inline hints on novel patterns.
 - Search-friendly help for deeper questions.
-- No help is needed for the common path — and that's documented as a goal.
+- No help is needed for the common path, and that's documented as a goal.
 
 | 0 | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|
@@ -121,8 +121,8 @@ Users can find what they need without leaving the surface.
 ## Reporting
 
 In `/rite-review` output, surface only the heuristics scoring **≤2** as findings,
-plus any 3 with a specific noted gap. Heuristics at 4 are not reported individually
-— they roll up into the UX axis. Heuristics at 3 with no specific gap are not
+plus any 3 with a specific noted gap. Heuristics at 4 are not reported individually.
+They roll up into the UX axis. Heuristics at 3 with no specific gap are not
 reported. Each surfaced finding gets a severity label per `rite-review/SKILL.md`.
 
 The rubric is descriptive, not gating. A score of 2 on aesthetic-minimalist isn't

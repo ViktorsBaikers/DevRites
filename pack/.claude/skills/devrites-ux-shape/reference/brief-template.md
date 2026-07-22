@@ -1,4 +1,4 @@
-# `design-brief.md` template — the UX/UI contract
+# `design-brief.md` template: the UX/UI contract
 
 The feature-level design decision, produced **before** code by `devrites-ux-shape` (at
 `/rite-spec` when UI is detected) and the **target** the build, polish, and seal check
@@ -97,12 +97,12 @@ Genuinely unresolved only. If you'd write "Recommend: X", decide X instead.
 ```
 
 ## How downstream phases use it
-- `/rite-define` — UI slices map to the **Key states**, **Interaction model**, and **Proof
+- `/rite-define`: UI slices map to the **Key states**, **Interaction model**, and **Proof
   targets**; each UI slice names the visual acceptance it proves.
-- `/rite-build` + `devrites-frontend-craft` — build **to** the brief; refine per slice;
+- `/rite-build` + `devrites-frontend-craft`: build **to** the brief; refine per slice;
   append refinements above instead of re-deriving.
-- `/rite-prove` + `browser-evidence.md` — render the proof targets, compare against the
+- `/rite-prove` + `browser-evidence.md`: render the proof targets, compare against the
   brief + target references, and close material deltas.
-- `/rite-polish` — Phase 4 reads the brief so polish honors the agreed direction.
-- `/rite-seal` + `devrites-frontend-reviewer` — check the UI matches the brief (states
+- `/rite-polish`: Phase 4 reads the brief so polish honors the agreed direction.
+- `/rite-seal` + `devrites-frontend-reviewer`: check the UI matches the brief (states
   covered, direction held, references matched).

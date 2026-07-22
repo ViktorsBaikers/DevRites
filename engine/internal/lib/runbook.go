@@ -44,7 +44,7 @@ func Runbook(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "runbook: %v\n", err)
 			return 1
 		}
-		fmt.Fprintf(stdout, "runbook: OK — %d step(s) in %s\n", len(steps), displayRunbookPath(root, path))
+		fmt.Fprintf(stdout, "runbook: OK: %d step(s) in %s\n", len(steps), displayRunbookPath(root, path))
 		return 0
 	case "run":
 		return runbookRun(root, args[1:], stdout, stderr)

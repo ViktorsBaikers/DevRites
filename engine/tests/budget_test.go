@@ -7,7 +7,7 @@ import (
 
 // TestStatusLiveWorkspace is the P2 acceptance check: `devrites-engine status <slug>`
 // must report a canonical work/<slug> feature the live pack created without a
-// workspace-map frontmatter — phase from the canonical state.md ledger and proof/status
+// workspace-map frontmatter: phase from the canonical state.md ledger and proof/status
 // completeness from canonical evidence.md/state.md files. Before schema unification this returned
 // "feature not found".
 func TestStatusLiveWorkspace(t *testing.T) {

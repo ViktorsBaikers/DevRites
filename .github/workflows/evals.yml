@@ -3,7 +3,7 @@ name: evals
 # Live trigger-eval execution against Anthropic's API.
 #
 # Schema validation runs in `ci.yml` on every PR (no API key needed).
-# This workflow actually executes the evals: for each executable skill, ask
+# This workflow executes the evals: for each executable skill, ask
 # Claude to predict which DevRites skill would fire for each query, then
 # score against the expected verdict. Corpus sizes follow invocation policy:
 # model-invoked skills carry implicit positives/negatives; explicit-only skills
@@ -53,7 +53,7 @@ jobs:
         run: |
           if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
             echo "secret_set=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::ANTHROPIC_API_KEY is not configured — skipping live eval execution."
+            echo "::notice::ANTHROPIC_API_KEY is not configured: skipping live eval execution."
           else
             echo "secret_set=true" >> "$GITHUB_OUTPUT"
           fi

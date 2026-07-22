@@ -1,6 +1,6 @@
 {
   "skill": "rite-spec",
-  "description": "Trigger evals for /rite-spec — starting a feature, investigation + spec writing.",
+  "description": "Trigger evals for /rite-spec: starting a feature, investigation + spec writing.",
   "queries": [
     {
       "text": "/rite-spec add CSV export",

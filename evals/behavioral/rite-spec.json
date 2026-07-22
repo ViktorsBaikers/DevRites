@@ -1,6 +1,6 @@
 {
   "skill": "rite-spec",
-  "description": "Behavioral evals for /rite-spec — does the gap-closing discipline hold when pressured to decide material gaps on the agent's own confidence instead of putting them to the human as a ranked option set, to skip the option set as 'over-asking', or to guess an external fact instead of searching for it? Sourced from rite-spec/reference/anti-patterns.md and standards/anti-patterns.md.",
+  "description": "Behavioral evals for /rite-spec: does the gap-closing discipline hold when pressured to decide material gaps on the agent's own confidence instead of putting them to the human as a ranked option set, to skip the option set as 'over-asking', or to guess an external fact instead of searching for it? Sourced from rite-spec/reference/anti-patterns.md and standards/anti-patterns.md.",
   "eval_class": "regression",
   "trials": 3,
   "scenarios": [

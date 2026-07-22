@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Executable acceptance criteria — a port of check-acceptance.sh. Grades the
+// Executable acceptance criteria: a port of check-acceptance.sh. Grades the
 // AC-### acceptance criteria in spec.md against seal.md: each spec
 // criterion must be checked ([x]) in seal.md. Without ids it falls back to a
 // count/unchecked heuristic. The spec-time mirror is SpecValidate (shape); this
@@ -41,7 +41,7 @@ func CheckAcceptance(ws string, stdout, stderr io.Writer) int {
 		return 5
 	}
 	if !isFile(seal) {
-		fmt.Fprintf(stderr, "check-acceptance: no seal.md in %s — feature not sealed\n", ws)
+		fmt.Fprintf(stderr, "check-acceptance: no seal.md in %s: feature not sealed\n", ws)
 		return 5
 	}
 
@@ -57,14 +57,14 @@ func CheckAcceptance(ws string, stdout, stderr io.Writer) int {
 	}
 
 	if sectionEmpty(specBody) {
-		fmt.Fprintln(stderr, "check-acceptance: spec.md has no \"## Acceptance criteria\" section — nothing to grade")
+		fmt.Fprintln(stderr, "check-acceptance: spec.md has no \"## Acceptance criteria\" section: nothing to grade")
 		return 1
 	}
 
 	specIDs := sortedUniqueIDs(specBody)
 
 	if len(specIDs) > 0 {
-		// ID mode — each spec AC id must be checked ([x]) in seal.md.
+		// ID mode: each spec AC id must be checked ([x]) in seal.md.
 		checkedIDs := map[string]bool{}
 		for _, line := range sealBody {
 			if checkedRe.MatchString(line) {
@@ -85,18 +85,18 @@ func CheckAcceptance(ws string, stdout, stderr io.Writer) int {
 				total-len(missing), total, " "+strings.Join(missing, " "))
 			return 1
 		}
-		fmt.Fprintf(stdout, "check-acceptance: OK — all %d acceptance criteria (%s) proven + checked in seal.md\n",
+		fmt.Fprintf(stdout, "check-acceptance: OK: all %d acceptance criteria (%s) proven + checked in seal.md\n",
 			total, strings.Join(specIDs, " "))
 		return 0
 	}
 
-	// Fallback (no ids) — count spec criteria vs seal checked/unchecked items.
+	// Fallback (no ids): count spec criteria vs seal checked/unchecked items.
 	specN := countMatching(specBody, bulletRe)
 	sealTotal := countMatching(sealBody, checkboxRe)
 	sealUnchecked := countMatching(sealBody, uncheckedRe)
 
 	if sealTotal < specN {
-		fmt.Fprintf(stderr, "check-acceptance: seal.md lists %d acceptance items but spec.md has %d criteria — %d dropped. (Tag criteria AC-### to grade by id.)\n",
+		fmt.Fprintf(stderr, "check-acceptance: seal.md lists %d acceptance items but spec.md has %d criteria: %d dropped. (Tag criteria AC-### to grade by id.)\n",
 			sealTotal, specN, specN-sealTotal)
 		return 1
 	}
@@ -104,12 +104,12 @@ func CheckAcceptance(ws string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "check-acceptance: %d acceptance criterion(s) unchecked in seal.md (unproven). (Tag criteria AC-### to grade by id.)\n", sealUnchecked)
 		return 1
 	}
-	fmt.Fprintf(stdout, "check-acceptance: OK — %d acceptance items all checked in seal.md (no ids; add AC-### for id-level grading)\n", sealTotal)
+	fmt.Fprintf(stdout, "check-acceptance: OK: %d acceptance items all checked in seal.md (no ids; add AC-### for id-level grading)\n", sealTotal)
 	return 0
 }
 
 // acSection returns the body lines under an "## Acceptance Criteria" heading
-// (case-insensitive on the words), up to the next "## " heading — mirroring the
+// (case-insensitive on the words), up to the next "## " heading: mirroring the
 // awk one-liner in check-acceptance.sh.
 func acSection(file string) ([]string, error) {
 	f, err := os.Open(file)
@@ -140,7 +140,7 @@ func acSection(file string) ([]string, error) {
 // sectionEmpty reports whether the acceptance body is empty in the bash sense:
 // awk emits each in-section line with a trailing newline, $() strips the trailing
 // newlines, and `[ -z ]` tests the remainder. A body of only blank lines collapses
-// to "" — so a heading followed by blanks is "nothing to grade", not a fallback.
+// to "", so a heading followed by blanks is "nothing to grade", not a fallback.
 func sectionEmpty(lines []string) bool {
 	return strings.TrimRight(strings.Join(lines, "\n"), "\n") == ""
 }
