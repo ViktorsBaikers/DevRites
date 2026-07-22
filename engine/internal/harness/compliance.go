@@ -95,7 +95,7 @@ func RenderMatrix() string {
 	}
 	b.WriteString("\nTiers: **Native** (the harness exposes and delivers the surface directly; policy notes state whether it blocks) · **Adapter-backed** ")
 	b.WriteString("(supported through a translation shim) · **Instruction-backed** ")
-	b.WriteString("(no runtime surface — rides on a directive the model may under-fire) · ")
+	b.WriteString("(no runtime surface: rides on a directive the model may under-fire) · ")
 	b.WriteString("**Conditional** (native but gated on an operator precondition).\n\n")
 	b.WriteString(MatrixEndMarker)
 	return b.String()
