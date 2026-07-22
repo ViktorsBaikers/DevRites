@@ -24,9 +24,13 @@ const GUARANTEES = [
 
 export default function Trust() {
   return (
-    <section aria-labelledby="alignment-title" className="pb-28 pt-20 md:pb-40 md:pt-28">
+    <section
+      data-scroll-scene="manual"
+      aria-labelledby="alignment-title"
+      className="pb-28 pt-20 md:pb-40 md:pt-28"
+    >
       <div className="wrap">
-        <div className="max-w-5xl">
+        <div className="alignment-heading max-w-5xl">
           <h2
             id="alignment-title"
             className="font-bold text-ink [font-size:clamp(2.8rem,5.4vw,5.6rem)] leading-[0.94] tracking-[-0.04em]"
@@ -71,34 +75,38 @@ export default function Trust() {
 
             <div className="alignment-transfer" aria-hidden><span /></div>
 
-            <section aria-labelledby="alignment-record" className="alignment-record min-w-0">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="mono text-[0.68rem] text-accent-ink/80">What every actor reads</p>
-                  <h3 id="alignment-record" className="mt-2 text-2xl font-semibold text-accent-ink">Shared feature files</h3>
+            <div className="alignment-record-stage min-w-0">
+              <span className="alignment-record-layer alignment-record-layer--back" aria-hidden />
+              <span className="alignment-record-layer alignment-record-layer--front" aria-hidden />
+              <section aria-labelledby="alignment-record" className="alignment-record min-w-0">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="mono text-[0.68rem] text-accent-ink/80">What every actor reads</p>
+                    <h3 id="alignment-record" className="mt-2 text-2xl font-semibold text-accent-ink">Shared feature files</h3>
+                  </div>
+                  <LockKeyhole className="size-5 shrink-0 text-accent-ink/75" strokeWidth={1.8} aria-hidden />
                 </div>
-                <LockKeyhole className="size-5 shrink-0 text-accent-ink/75" strokeWidth={1.8} aria-hidden />
-              </div>
 
-              <div className="mt-7">
-                {ARTIFACTS.map(([file, state]) => (
-                  <div key={file} className="alignment-artifact">
-                    <code className="mono text-sm font-medium text-accent-ink">{file}</code>
+                <div className="mt-7">
+                  {ARTIFACTS.map(([file, state]) => (
+                    <div key={file} className="alignment-artifact">
+                      <code className="mono text-sm font-medium text-accent-ink">{file}</code>
+                      <span className="flex items-center gap-2 text-xs text-accent-ink/75">
+                        {state}
+                        <Check className="size-3.5" strokeWidth={2.4} aria-hidden />
+                      </span>
+                    </div>
+                  ))}
+                  <div className="alignment-artifact">
+                    <code className="mono text-sm font-medium text-accent-ink">seal.md</code>
                     <span className="flex items-center gap-2 text-xs text-accent-ink/75">
-                      {state}
-                      <Check className="size-3.5" strokeWidth={2.4} aria-hidden />
+                      human decision pending
+                      <LockKeyhole className="size-3.5" strokeWidth={2} aria-hidden />
                     </span>
                   </div>
-                ))}
-                <div className="alignment-artifact">
-                  <code className="mono text-sm font-medium text-accent-ink">seal.md</code>
-                  <span className="flex items-center gap-2 text-xs text-accent-ink/75">
-                    human decision pending
-                    <LockKeyhole className="size-3.5" strokeWidth={2} aria-hidden />
-                  </span>
                 </div>
-              </div>
-            </section>
+              </section>
+            </div>
 
             <div className="alignment-transfer alignment-transfer--delay" aria-hidden><span /></div>
 
@@ -123,7 +131,7 @@ export default function Trust() {
 
         <dl className="mt-10 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-line pt-8 lg:grid-cols-4">
           {STATS.map((stat) => (
-            <div key={stat.label}>
+            <div key={stat.label} className="alignment-stat">
               <dt className="mono text-3xl font-semibold leading-none text-ink tabular-nums md:text-4xl">
                 {stat.prefix}{stat.value}{stat.suffix}
               </dt>

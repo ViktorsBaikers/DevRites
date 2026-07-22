@@ -19,7 +19,7 @@ export default function Home() {
         Skip to content
       </a>
       <Nav />
-      <main id="main" className="w-full max-w-full overflow-x-hidden">
+      <main id="main" className="w-full max-w-full overflow-x-clip">
         <Hero />
         <Trust />
         <Pipeline />

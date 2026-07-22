@@ -1065,7 +1065,7 @@
 .release-route-line {
   z-index: 1;
   background: var(--color-accent);
-  transform: translateX(-100%);
+  opacity: 0.42;
 }
 
 .release-route-line::after {
@@ -1099,12 +1099,53 @@
 }
 
 .release-panel {
+  --release-phase: 0s;
+
+  position: relative;
+  isolation: isolate;
   display: flex;
   min-width: 0;
   min-height: 28rem;
   flex-direction: column;
+  overflow: hidden;
   padding: clamp(1.4rem, 2.4vw, 2.2rem);
   background: color-mix(in oklch, var(--color-accent) 3%, var(--color-surface));
+}
+
+.release-panel:nth-child(2) { --release-phase: -8s; }
+.release-panel:nth-child(3) { --release-phase: -6s; }
+.release-panel:nth-child(4) { --release-phase: -4s; }
+
+.release-panel::before,
+.release-panel::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.release-panel::before {
+  inset: -38% -24%;
+  background: radial-gradient(
+    circle at 50% 100%,
+    color-mix(in oklch, var(--color-accent) 34%, transparent),
+    transparent 58%
+  );
+  opacity: 0;
+  transform: translate3d(0, 18%, 0) scale(0.72);
+}
+
+.release-panel::after {
+  inset: 0.65rem;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 52%, transparent);
+  border-radius: calc(var(--radius-card) - 0.55rem);
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+.release-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 .release-panel + .release-panel {
@@ -1201,6 +1242,8 @@
 }
 
 .release-conveyor-foot {
+  --release-phase: -2s;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1242,66 +1285,73 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .release-route-line {
-    animation: release-write-trace 5.2s var(--ease-out-soft) infinite;
+  .release-panel::before {
+    animation: release-panel-aura 10s var(--ease-out-soft) var(--release-phase) infinite;
+  }
+
+  .release-panel::after {
+    animation: release-panel-frame 10s var(--ease-out-soft) var(--release-phase) infinite;
+  }
+
+  .release-panel-copy,
+  .release-panel-writes,
+  .release-panel-gate {
+    animation: release-panel-content 10s var(--ease-out-soft) var(--release-phase) infinite;
+  }
+
+  .release-panel-writes {
+    animation-delay: calc(var(--release-phase) + 120ms);
+  }
+
+  .release-panel-gate {
+    animation-delay: calc(var(--release-phase) + 240ms);
   }
 
   .release-route-node {
-    animation: release-node-beat 5.2s ease-in-out infinite;
+    animation: release-node-focus 10s var(--ease-out-soft) infinite;
   }
 
-  .release-route-node:nth-of-type(2) { animation-delay: 0.7s; }
-  .release-route-node:nth-of-type(3) { animation-delay: 1.4s; }
-  .release-route-node:nth-of-type(4) { animation-delay: 2.1s; }
-  .release-route-node:nth-of-type(5) { animation-delay: 2.8s; }
+  .release-route-node:nth-of-type(3) { animation-delay: -8s; }
+  .release-route-node:nth-of-type(4) { animation-delay: -6s; }
+  .release-route-node:nth-of-type(5) { animation-delay: -4s; }
 
-  .release-conveyor-foot svg {
-    animation: release-seal-breathe 2.8s ease-in-out infinite;
+  .release-conveyor-foot p svg {
+    animation: release-approval-arrive 10s var(--ease-out-soft) var(--release-phase) infinite;
   }
 
-  @supports (animation-timeline: view()) {
-    .release-conveyor {
-      animation: release-conveyor-enter linear both;
-      animation-timeline: view();
-      animation-range: entry 4% cover 28%;
-    }
-
-    .release-panel {
-      animation: release-panel-enter linear both;
-      animation-timeline: view();
-    }
-
-    .release-panel:nth-child(1) { animation-range: entry 7% cover 23%; }
-    .release-panel:nth-child(2) { animation-range: entry 10% cover 27%; }
-    .release-panel:nth-child(3) { animation-range: entry 13% cover 31%; }
-    .release-panel:nth-child(4) { animation-range: entry 16% cover 35%; }
+  .release-conveyor-foot p strong {
+    animation: release-approval-copy 10s var(--ease-out-soft) var(--release-phase) infinite;
   }
 }
 
-@keyframes release-write-trace {
-  0%, 12% { opacity: 0; transform: translateX(-100%); }
-  24%, 70% { opacity: 1; }
-  82%, 100% { opacity: 0; transform: translateX(0); }
+@keyframes release-panel-aura {
+  0%, 20%, 100% { opacity: 0; transform: translate3d(0, 18%, 0) scale(0.72); }
+  7%, 14% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
-@keyframes release-node-beat {
-  0%, 30%, 100% { opacity: 0.55; transform: scale(1); }
-  42%, 55% { opacity: 1; transform: scale(1.35); }
+@keyframes release-panel-frame {
+  0%, 20%, 100% { opacity: 0; transform: scale(0.97); }
+  7%, 14% { opacity: 0.82; transform: scale(1); }
 }
 
-@keyframes release-seal-breathe {
-  0%, 100% { opacity: 0.72; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.08); }
+@keyframes release-panel-content {
+  0%, 20%, 100% { transform: translate3d(0, 0, 0); }
+  7%, 14% { transform: translate3d(0, -0.42rem, 0); }
 }
 
-@keyframes release-conveyor-enter {
-  from { opacity: 0; transform: translateY(2.5rem) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes release-node-focus {
+  0%, 20%, 100% { opacity: 0.48; transform: scale(1); }
+  7%, 14% { opacity: 1; transform: scale(1.55); }
 }
 
-@keyframes release-panel-enter {
-  from { opacity: 0.22; transform: translateY(2rem); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes release-approval-arrive {
+  0%, 20%, 100% { opacity: 0.72; transform: translate3d(0, 0, 0) scale(1); }
+  7%, 14% { opacity: 1; transform: translate3d(0.18rem, 0, 0) scale(1.08); }
+}
+
+@keyframes release-approval-copy {
+  0%, 20%, 100% { transform: translate3d(0, 0, 0); }
+  7%, 14% { transform: translate3d(0.18rem, 0, 0); }
 }
 
 @media (max-width: 63.999rem) {
@@ -1608,6 +1658,326 @@
   padding-inline: clamp(1.1rem, 4vw, 2.2rem);
 }
 
+#main {
+  --scroll-shift: 4.5rem;
+  --scroll-shift-negative: -4.5rem;
+  --scroll-depth: -4rem;
+  --scroll-tilt: 7deg;
+  --scroll-tilt-negative: -7deg;
+  --scroll-scale: 0.94;
+}
+
+@media (max-width: 47.999rem) {
+  #main {
+    --scroll-shift: 2rem;
+    --scroll-shift-negative: -2rem;
+    --scroll-depth: -1.5rem;
+    --scroll-tilt: 3deg;
+    --scroll-tilt-negative: -3deg;
+    --scroll-scale: 0.975;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .release-process {
+      view-timeline: --release-scroll block;
+    }
+
+    .engine-proof {
+      view-timeline: --proof-scroll block;
+    }
+
+    .release-heading > *,
+    #mechanisms > :first-child > *,
+    .hosts-heading > * {
+      animation: scroll-copy-rise linear both;
+      animation-range: entry 0% cover 28%;
+      animation-timeline: view();
+    }
+
+    .engine-proof .wrap > header > * {
+      animation: scroll-copy-rise linear both;
+      animation-range: entry 0% cover 28%;
+      animation-timeline: --proof-scroll;
+    }
+
+    .release-heading > p,
+    #mechanisms > :first-child > :last-child,
+    .hosts-heading > p {
+      animation-range: entry 8% cover 32%;
+    }
+
+    .release-heading > * {
+      animation-timeline: --release-scroll;
+    }
+
+    .engine-proof .wrap > header > p {
+      animation-range: entry 8% cover 32%;
+    }
+
+    .release-conveyor-head {
+      animation: scroll-drop-in linear both;
+      animation-range: entry 2% cover 25%;
+      animation-timeline: --release-scroll;
+    }
+
+    .release-route {
+      animation: scroll-route-draw linear both;
+      animation-range: entry 0% cover 28%;
+      animation-timeline: --release-scroll;
+      transform-origin: left center;
+    }
+
+    .release-panel {
+      animation: scroll-panel-dock linear both;
+      animation-timeline: --release-scroll;
+      transform-origin: 50% 100%;
+    }
+
+    .release-panel:nth-child(1) { animation-range: entry 2% cover 22%; }
+    .release-panel:nth-child(2) { animation-range: entry 7% cover 27%; }
+    .release-panel:nth-child(3) { animation-range: entry 12% cover 32%; }
+    .release-panel:nth-child(4) { animation-range: entry 17% cover 37%; }
+
+    .release-conveyor-foot {
+      animation: scroll-footer-dock linear both;
+      animation-range: entry 0% cover 24%;
+      animation-timeline: --release-scroll;
+    }
+
+    .engine-output {
+      animation: scroll-proof-left linear both;
+      animation-range: entry 0% cover 34%;
+      animation-timeline: --proof-scroll;
+      transform-origin: right center;
+    }
+
+    .engine-checks article {
+      animation: scroll-proof-right linear both;
+      animation-timeline: --proof-scroll;
+      transform-origin: left center;
+    }
+
+    .engine-checks article:nth-child(1) { animation-range: entry 2% cover 24%; }
+    .engine-checks article:nth-child(2) { animation-range: entry 7% cover 29%; }
+    .engine-checks article:nth-child(3) { animation-range: entry 12% cover 34%; }
+
+    .engine-proof-link {
+      animation: scroll-copy-rise linear both;
+      animation-range: entry 0% cover 24%;
+      animation-timeline: --proof-scroll;
+    }
+
+    #mechanisms > .grid > div {
+      animation: scroll-tile-left linear both;
+      animation-timeline: view();
+      transform-origin: 50% 100%;
+    }
+
+    #mechanisms > .grid > div:nth-child(even) {
+      animation-name: scroll-tile-right;
+    }
+
+    #mechanisms > .grid > div:nth-child(1) { animation-range: entry 0% cover 27%; }
+    #mechanisms > .grid > div:nth-child(2) { animation-range: entry 6% cover 33%; }
+    #mechanisms > .grid > div:nth-child(3) { animation-range: entry 2% cover 29%; }
+    #mechanisms > .grid > div:nth-child(4) { animation-range: entry 8% cover 35%; }
+
+    .host-node--claude,
+    .host-node--codex {
+      animation: scroll-host-left linear both;
+      animation-range: entry 0% cover 32%;
+      animation-timeline: view();
+      transform-origin: center;
+    }
+
+    .host-node--codex {
+      animation-name: scroll-host-right;
+    }
+
+    .host-route {
+      animation: scroll-route-draw linear both;
+      animation-range: entry 8% cover 30%;
+      animation-timeline: view();
+      transform-origin: left center;
+    }
+
+    .host-route--codex { transform-origin: right center; }
+
+    .host-engine-node {
+      animation: scroll-engine-focus linear both;
+      animation-range: entry 8% cover 36%;
+      animation-timeline: view();
+    }
+
+    .host-workspace {
+      animation: scroll-workspace-rise linear both;
+      animation-range: entry 0% cover 34%;
+      animation-timeline: view();
+      transform-origin: 50% 0%;
+    }
+
+    .hosts-note {
+      animation: scroll-copy-rise linear both;
+      animation-range: entry 0% cover 22%;
+      animation-timeline: view();
+    }
+
+    #faq > .grid > div:first-child {
+      animation: scroll-faq-left linear both;
+      animation-range: entry 0% cover 36%;
+      animation-timeline: view();
+    }
+
+    #faq > .grid > div:last-child {
+      animation: scroll-faq-right linear both;
+      animation-range: entry 8% cover 40%;
+      animation-timeline: view();
+    }
+
+    #install > div {
+      animation: scroll-install-stage linear both;
+      animation-range: entry 0% cover 38%;
+      animation-timeline: view();
+      transform-origin: 50% 100%;
+    }
+
+  }
+}
+
+@keyframes scroll-copy-rise {
+  from { opacity: 0; transform: translate3d(0, calc(var(--scroll-shift) * 0.7), 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes scroll-drop-in {
+  from { opacity: 0; transform: translate3d(0, var(--scroll-shift-negative), 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes scroll-route-draw {
+  from { opacity: 0; transform: scaleX(0); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes scroll-panel-dock {
+  from {
+    transform: perspective(60rem) translate3d(0, var(--scroll-shift), var(--scroll-depth)) rotateX(var(--scroll-tilt)) scale(var(--scroll-scale));
+  }
+  to {
+    transform: perspective(60rem) translate3d(0, 0, 0) rotateX(0) scale(1);
+  }
+}
+
+@keyframes scroll-footer-dock {
+  from { transform: translate3d(0, var(--scroll-shift), 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes scroll-proof-left {
+  from {
+    opacity: 0.08;
+    transform: perspective(70rem) translate3d(var(--scroll-shift-negative), var(--scroll-shift), var(--scroll-depth)) rotateY(var(--scroll-tilt)) scale(var(--scroll-scale));
+  }
+  to {
+    opacity: 1;
+    transform: perspective(70rem) translate3d(0, 0, 0) rotateY(0) scale(1);
+  }
+}
+
+@keyframes scroll-proof-right {
+  from {
+    opacity: 0;
+    transform: perspective(70rem) translate3d(var(--scroll-shift), 0, var(--scroll-depth)) rotateY(var(--scroll-tilt-negative));
+  }
+  to {
+    opacity: 1;
+    transform: perspective(70rem) translate3d(0, 0, 0) rotateY(0);
+  }
+}
+
+@keyframes scroll-tile-left {
+  from {
+    opacity: 0.08;
+    transform: perspective(75rem) translate3d(var(--scroll-shift-negative), var(--scroll-shift), var(--scroll-depth)) rotateY(var(--scroll-tilt)) rotateZ(-1deg) scale(var(--scroll-scale));
+  }
+  to {
+    opacity: 1;
+    transform: perspective(75rem) translate3d(0, 0, 0) rotateY(0) rotateZ(0) scale(1);
+  }
+}
+
+@keyframes scroll-tile-right {
+  from {
+    opacity: 0.08;
+    transform: perspective(75rem) translate3d(var(--scroll-shift), var(--scroll-shift), var(--scroll-depth)) rotateY(var(--scroll-tilt-negative)) rotateZ(1deg) scale(var(--scroll-scale));
+  }
+  to {
+    opacity: 1;
+    transform: perspective(75rem) translate3d(0, 0, 0) rotateY(0) rotateZ(0) scale(1);
+  }
+}
+
+@keyframes scroll-host-left {
+  from { opacity: 0; translate: var(--scroll-shift-negative) var(--scroll-shift); rotate: -2deg; scale: var(--scroll-scale); }
+  to { opacity: 1; translate: 0 0; rotate: 0deg; scale: 1; }
+}
+
+@keyframes scroll-host-right {
+  from { opacity: 0; translate: var(--scroll-shift) var(--scroll-shift); rotate: 2deg; scale: var(--scroll-scale); }
+  to { opacity: 1; translate: 0 0; rotate: 0deg; scale: 1; }
+}
+
+@keyframes scroll-engine-focus {
+  from {
+    opacity: 0.08;
+    transform: perspective(75rem) translate3d(0, var(--scroll-shift), calc(var(--scroll-depth) * 1.4)) rotateX(var(--scroll-tilt)) scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(75rem) translate3d(0, 0, 0) rotateX(0) scale(1);
+  }
+}
+
+@keyframes scroll-workspace-rise {
+  from {
+    opacity: 0.08;
+    transform: perspective(75rem) translate3d(0, var(--scroll-shift), var(--scroll-depth)) rotateX(var(--scroll-tilt-negative)) scale(var(--scroll-scale));
+  }
+  to {
+    opacity: 1;
+    transform: perspective(75rem) translate3d(0, 0, 0) rotateX(0) scale(1);
+  }
+}
+
+@keyframes scroll-faq-left {
+  from { opacity: 0; transform: translate3d(var(--scroll-shift-negative), var(--scroll-shift), 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes scroll-faq-right {
+  from {
+    opacity: 0;
+    transform: perspective(65rem) translate3d(var(--scroll-shift), var(--scroll-shift), var(--scroll-depth)) rotateY(var(--scroll-tilt-negative));
+  }
+  to {
+    opacity: 1;
+    transform: perspective(65rem) translate3d(0, 0, 0) rotateY(0);
+  }
+}
+
+@keyframes scroll-install-stage {
+  from {
+    opacity: 0.08;
+    transform: perspective(75rem) translate3d(0, var(--scroll-shift), calc(var(--scroll-depth) * 1.35)) rotateX(var(--scroll-tilt)) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(75rem) translate3d(0, 0, 0) rotateX(0) scale(1);
+  }
+}
+
 .alignment-board {
   overflow: hidden;
   border: 1px solid var(--color-line);
@@ -1646,10 +2016,39 @@
 }
 
 .alignment-record {
+  position: relative;
+  z-index: 2;
   border-radius: var(--radius-card);
   background: var(--color-accent);
   padding: clamp(1.25rem, 2.8vw, 2rem);
   box-shadow: 0 2rem 4rem -3rem color-mix(in oklch, var(--color-accent) 75%, transparent);
+  transform-style: preserve-3d;
+}
+
+.alignment-record-stage {
+  position: relative;
+  isolation: isolate;
+  perspective: 1200px;
+}
+
+.alignment-record-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 34%, var(--color-line));
+  border-radius: var(--radius-card);
+  background: color-mix(in oklch, var(--color-accent) 18%, var(--color-surface));
+  pointer-events: none;
+}
+
+.alignment-record-layer--back {
+  opacity: 0.42;
+  transform: translate3d(-0.8rem, 0.8rem, -3rem) rotate(-1.5deg);
+}
+
+.alignment-record-layer--front {
+  opacity: 0.66;
+  transform: translate3d(0.7rem, 0.45rem, -1.5rem) rotate(1deg);
 }
 
 .alignment-artifact {
@@ -1671,6 +2070,166 @@
   height: 0.5rem;
   background: var(--color-accent);
   transform: translate(35%, -50%) rotate(45deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .alignment-record {
+    animation: alignment-record-float 7.2s var(--ease-out-soft) infinite;
+  }
+
+  .alignment-record-layer--back {
+    animation: alignment-layer-back 7.2s var(--ease-out-soft) infinite;
+  }
+
+  .alignment-record-layer--front {
+    animation: alignment-layer-front 7.2s var(--ease-out-soft) infinite;
+  }
+
+  .alignment-artifact > span,
+  .alignment-guarantee > svg {
+    animation: alignment-confirm 7.2s var(--ease-out-soft) infinite;
+    transform-origin: right center;
+  }
+
+  .alignment-artifact:nth-child(2) > span,
+  .alignment-guarantee:nth-child(2) > svg { animation-delay: 0.12s; }
+  .alignment-artifact:nth-child(3) > span,
+  .alignment-guarantee:nth-child(3) > svg { animation-delay: 0.24s; }
+  .alignment-artifact:nth-child(4) > span,
+  .alignment-guarantee:nth-child(4) > svg { animation-delay: 0.36s; }
+  .alignment-artifact:nth-child(5) > span { animation-delay: 0.48s; }
+
+  @supports (animation-timeline: view()) {
+    [data-scroll-scene="manual"] {
+      view-timeline: --alignment-scroll block;
+    }
+
+    .alignment-heading > * {
+      animation: alignment-copy-reveal linear both;
+      animation-range: entry 0% cover 28%;
+      animation-timeline: --alignment-scroll;
+    }
+
+    .alignment-heading > p {
+      animation-range: entry 0% cover 24%;
+    }
+
+    .alignment-board {
+      animation: alignment-board-reveal linear both;
+      animation-range: entry 0% cover 32%;
+      animation-timeline: --alignment-scroll;
+      transform-origin: 50% 0%;
+    }
+
+    .alignment-row {
+      animation: alignment-source-reveal linear both;
+      animation-range: entry 0% cover 38%;
+      animation-timeline: --alignment-scroll;
+    }
+
+    .alignment-transfer {
+      animation: alignment-path-reveal linear both;
+      animation-range: entry 0% cover 34%;
+      animation-timeline: --alignment-scroll;
+      transform-origin: left center;
+    }
+
+    .alignment-record-stage {
+      animation: alignment-record-reveal linear both;
+      animation-range: entry 0% cover 38%;
+      animation-timeline: --alignment-scroll;
+    }
+
+    .alignment-artifact {
+      animation: alignment-artifact-reveal linear both;
+      animation-range: entry 0% cover 42%;
+      animation-timeline: --alignment-scroll;
+    }
+
+    .alignment-guarantee {
+      animation: alignment-guarantee-reveal linear both;
+      animation-range: entry 0% cover 38%;
+      animation-timeline: --alignment-scroll;
+    }
+
+    .alignment-stat {
+      animation: alignment-stat-reveal linear both;
+      animation-range: entry 0% cover 34%;
+      animation-timeline: --alignment-scroll;
+    }
+  }
+}
+
+@keyframes alignment-copy-reveal {
+  from { opacity: 0; transform: translate3d(0, 3.25rem, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes alignment-board-reveal {
+  from {
+    opacity: 0.08;
+    transform: perspective(75rem) translate3d(0, 5.25rem, -4rem) rotateX(8deg) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(75rem) translate3d(0, 0, 0) rotateX(0) scale(1);
+  }
+}
+
+@keyframes alignment-source-reveal {
+  from { opacity: 0; transform: translate3d(-2rem, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes alignment-path-reveal {
+  from { opacity: 0; transform: scaleX(0); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes alignment-record-reveal {
+  from {
+    opacity: 0;
+    transform: perspective(75rem) translate3d(0, 3rem, -5rem) rotateY(-8deg) scale(0.84);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(75rem) translate3d(0, 0, 0) rotateY(0) scale(1);
+  }
+}
+
+@keyframes alignment-artifact-reveal {
+  from { opacity: 0; transform: translate3d(0, 1.15rem, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes alignment-guarantee-reveal {
+  from { opacity: 0; transform: translate3d(2rem, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes alignment-stat-reveal {
+  from { opacity: 0; transform: translate3d(0, 1.8rem, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes alignment-record-float {
+  0%, 18%, 46%, 100% { transform: translate3d(0, 0, 0) rotateX(0) rotateY(0) scale(1); }
+  30% { transform: translate3d(0, -0.6rem, 0) rotateX(-0.8deg) rotateY(1.6deg) scale(1.012); }
+}
+
+@keyframes alignment-layer-back {
+  0%, 18%, 46%, 100% { transform: translate3d(-0.8rem, 0.8rem, -3rem) rotate(-1.5deg); }
+  30% { transform: translate3d(-1.15rem, 1.05rem, -3rem) rotate(-2.4deg); }
+}
+
+@keyframes alignment-layer-front {
+  0%, 18%, 46%, 100% { transform: translate3d(0.7rem, 0.45rem, -1.5rem) rotate(1deg); }
+  30% { transform: translate3d(1rem, 0.7rem, -1.5rem) rotate(1.8deg); }
+}
+
+@keyframes alignment-confirm {
+  0%, 27%, 43%, 100% { opacity: 0.72; transform: translate3d(0, 0, 0) scale(1); }
+  34% { opacity: 1; transform: translate3d(0.28rem, 0, 0) scale(1.035); }
 }
 
 @media (max-width: 63.999rem) {
@@ -1982,14 +2541,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    .host-router {
-      animation: host-router-enter linear both;
-      animation-timeline: view();
-      animation-range: entry 4% cover 32%;
-    }
-  }
-
   .host-route--claude span {
     animation: host-packet-right 3.4s var(--ease-out-soft) infinite;
   }
@@ -2006,11 +2557,6 @@
     animation: host-workspace-feed 2.4s ease-in-out infinite;
     transform-origin: top;
   }
-}
-
-@keyframes host-router-enter {
-  from { opacity: 0; transform: translateY(3rem) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes host-packet-right {
@@ -2139,6 +2685,13 @@
   }
 
   @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .host-route {
+        animation-name: scroll-route-drop;
+        transform-origin: center top;
+      }
+    }
+
     .host-route--claude span,
     .host-route--codex span {
       animation: host-packet-down 2.4s ease-in-out infinite;
@@ -2148,6 +2701,11 @@
       animation-delay: 1.2s;
     }
   }
+}
+
+@keyframes scroll-route-drop {
+  from { opacity: 0; transform: scaleY(0); }
+  to { opacity: 1; transform: scaleY(1); }
 }
 
 @keyframes host-packet-down {
