@@ -107,7 +107,7 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 				if err := clearAwaiting(sfile, bid); err != nil {
 					return fail(stderr, err.Error(), 1)
 				}
-				fmt.Fprintf(stdout, "Dropped:  %s — %s\n", bid, reason)
+				fmt.Fprintf(stdout, "Dropped:  %s: %s\n", bid, reason)
 			} else {
 				bid, ans := splitColon(line)
 				ans = strings.TrimPrefix(ans, " ")
@@ -169,7 +169,7 @@ func clockNow() time.Time {
 func nowUTC() string { return clockNow().UTC().Format("2006-01-02T15:04:05Z") }
 
 // resolveNextQID prints the next sequential question id for today, refusing (exit
-// 6) an id that already has a header — a sign questions.md was hand-edited.
+// 6) an id that already has a header: a sign questions.md was hand-edited.
 func resolveNextQID(qpath string, stdout, stderr io.Writer) int {
 	if qpath == "" {
 		return fail(stderr, "Usage: devrites-engine resolve next-qid <questions.md path>", 5)
@@ -363,7 +363,7 @@ func clearAwaiting(sfile, qid string) error {
 		out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePhase, qid))
 	}
 	out, _ = state.SetCursorField(out, state.CursorStatus, "running")
-	out, _ = state.SetCursorField(out, state.CursorNextAction, "(resume — `"+resumeCommand.Both()+"` to continue the workflow)")
+	out, _ = state.SetCursorField(out, state.CursorNextAction, "(resume: `"+resumeCommand.Both()+"` to continue the workflow)")
 	if err := fsutil.WriteFileAtomic(sfile, joinRecords(out), 0o644); err != nil {
 		return fmt.Errorf("update state %s: %w", sfile, err)
 	}

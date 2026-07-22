@@ -2,7 +2,7 @@ package main_test
 
 // CLI black-box tests: build the real binary, run it as a subprocess against a
 // fixture .devrites/, and assert stdout + exit code. This is the primary test
-// seam — it exercises external behavior only, never internals.
+// seam: it exercises external behavior only, never internals.
 //
 // Each test runs against a fresh COPY of the fixture in a temp dir, so a test
 // may hand-edit files without disturbing the committed fixture or another test.

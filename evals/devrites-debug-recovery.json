@@ -1,6 +1,6 @@
 {
   "skill": "devrites-debug-recovery",
-  "description": "Trigger evals for devrites-debug-recovery — systematic recovery when tests/build/typecheck/runtime/browser checks go red, vs sibling phases and bundled debug/review/interview/tdd/prototype/handoff skills.",
+  "description": "Trigger evals for devrites-debug-recovery: systematic recovery when tests/build/typecheck/runtime/browser checks go red, vs sibling phases and bundled debug/review/interview/tdd/prototype/handoff skills.",
   "queries": [
     {
       "text": "Debug this — the tests just started failing.",

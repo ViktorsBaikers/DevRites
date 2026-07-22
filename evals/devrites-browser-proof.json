@@ -1,6 +1,6 @@
 {
   "skill": "devrites-browser-proof",
-  "description": "Trigger evals for devrites-browser-proof — model-invoked runtime UI proof via the browser-proof ladder (screenshots, viewports, console, network, interactions, design-reference match) recorded to browser-evidence.md.",
+  "description": "Trigger evals for devrites-browser-proof: model-invoked runtime UI proof via the browser-proof ladder (screenshots, viewports, console, network, interactions, design-reference match) recorded to browser-evidence.md.",
   "queries": [
     {
       "text": "Check the UI in the browser for me.",
@@ -20,7 +20,7 @@
     {
       "text": "Open the dashboard in a real browser and capture what it looks like.",
       "expected": "should_trigger",
-      "rationale": "Playwright MCP rung — live browser screenshot of UI."
+      "rationale": "Playwright MCP rung: live browser screenshot of UI."
     },
     {
       "text": "Grab screenshots of this layout at mobile and desktop widths.",

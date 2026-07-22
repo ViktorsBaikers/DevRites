@@ -45,11 +45,11 @@ func SpecSkeleton(arg, cwd string, stdout, stderr io.Writer) int {
 		}
 	}
 	if len(missing) > 0 {
-		fmt.Fprintf(stdout, "spec-skeleton: BLOCKED — %s: missing top-level section(s): %s\n", rel, strings.Join(missing, ", "))
+		fmt.Fprintf(stdout, "spec-skeleton: BLOCKED: %s: missing top-level section(s): %s\n", rel, strings.Join(missing, ", "))
 		return 3
 	}
 
-	fmt.Fprintf(stdout, "spec-skeleton: OK — %s: all required top-level sections present\n", rel)
+	fmt.Fprintf(stdout, "spec-skeleton: OK: %s: all required top-level sections present\n", rel)
 	return 0
 }
 

@@ -10,7 +10,7 @@ import (
 // The context-budget lint. A feature is deliberately a directory of small,
 // single-concern files rather than one long document: each file stays
 // context-cheap to read, and completeness is self-evident from which files
-// exist. That discipline only holds if the files stay small — a spec.md that
+// exist. That discipline only holds if the files stay small: a spec.md that
 // grows to 800 lines is a "sausage" that an agent must load whole, spending the
 // context window it was meant to conserve. Budget measures every workspace file
 // against a per-file line ceiling and flags the overgrown ones.
@@ -107,10 +107,10 @@ func Budget(root string, args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 	if strict {
-		fmt.Fprintf(stdout, "budget: %d file(s) over the line budget — split or trim them\n", over)
+		fmt.Fprintf(stdout, "budget: %d file(s) over the line budget: split or trim them\n", over)
 		return 3
 	}
-	fmt.Fprintf(stdout, "budget: %d file(s) over the line budget (advisory — pass --strict to fail)\n", over)
+	fmt.Fprintf(stdout, "budget: %d file(s) over the line budget (advisory: pass --strict to fail)\n", over)
 	return 0
 }
 

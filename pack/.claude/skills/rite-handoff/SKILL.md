@@ -6,14 +6,14 @@ disable-model-invocation: true
 argument-hint: "[what the next session will focus on]"
 ---
 
-# /rite-handoff — chat-only context, into a fresh-agent doc
+# /rite-handoff: chat-only context, into a fresh-agent doc
 
 DevRites' workspace `.devrites/work/<slug>/` already captures everything that *should*
 persist (spec, plan, tasks, decisions, evidence, drift, review). This skill captures
-what the **chat** is holding that is **not** in the workspace, so a fresh agent — or
-the same user after `/clear` — can pick the work up without re-reading the transcript.
+what the **chat** is holding that is **not** in the workspace, so a fresh agent (or
+the same user after `/clear`) can pick the work up without re-reading the transcript.
 
-Read `.claude/skills/devrites-lib/reference/standards/core.md` first — its "Persistence before stopping" discipline is
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first: its "Persistence before stopping" discipline is
 exactly what this skill executes. The other rule files load on demand.
 
 Then run `devrites-engine preamble` for deterministic workspace orientation.
@@ -25,7 +25,7 @@ Then run `devrites-engine preamble` for deterministic workspace orientation.
 - **No active feature** → OS temp dir (`$TMPDIR` / `/tmp` / `%TEMP%`) as
   `rite-handoff-<ISO-timestamp>.md`. Print the absolute path after writing.
 
-## Before you write — sync, don't duplicate
+## Before you write: sync, don't duplicate
 
 For each of these, write the content into its **canonical home** first, then merely
 *note* in the handoff that the sync happened:
@@ -51,20 +51,20 @@ themselves. The workspace is the canonical store; the handoff is the chat-only d
    to the named focus. Where you were mid-thought, **quote the most recent next-step
    verbatim** from the chat (the exact sentence describing what to do next) so no nuance
    is lost to paraphrase.
-2. **What just happened in this chat** (3–5 bullets). Distil — do not transcribe.
+2. **What just happened in this chat** (3-5 bullets). Distil: do not transcribe.
 3. **External references** that exist only in chat: URLs, Figma links, screenshot paths,
    video timestamps the user pasted. List as references; do not embed.
 4. **Live assumptions the agent is acting on** that the workspace doesn't reflect yet
-   (after the sync above, this section should be near-empty — flag anything that
+   (after the sync above, this section should be near-empty: flag anything that
    remains).
-5. **How to resume** — fixed boilerplate (see template below).
+5. **How to resume:** fixed boilerplate (see template below).
 
 ## What NOT to include
 
 - Anything already in `spec.md`, `plan.md`, `tasks.md`, `state.md`, `decisions.md`,
-  `evidence.md`, `review.md` — link by path instead.
-- `git diff` output — the next agent runs `git diff` themselves.
-- The full conversation transcript — distil.
+  `evidence.md`, `review.md`: link by path instead.
+- `git diff` output: the next agent runs `git diff` themselves.
+- The full conversation transcript: distil.
 - Secrets (API keys, tokens, PII, credentials). Redact aggressively.
 - **New ideas the user didn't confirm.** A handoff records what *happened* and what's *next*.
   Leave out fresh suggestions, scope the user didn't agree to, and redesigns you thought of. Capture
@@ -90,7 +90,7 @@ Record: <absolute path to handoff.md>
 Print the absolute path in `Record:` so the user or next agent can open it without searching.
 
 ## Session hygiene
-Close with the one-line hygiene advisory + the single resume command — this skill *is* the
+Close with the one-line hygiene advisory + the single resume command. This skill *is* the
 pre-`/clear` bridge, so it's where the advisory matters most (`context-hygiene.md`):
 ```
 ↻ Hygiene: /clear

@@ -16,7 +16,7 @@ SLICE-006 (config)  -> independent
 ```
 
 ## Within a tier: risk-first
-Among slices that are equally unblocked, do the **riskiest** first — the one most
+Among slices that are equally unblocked, do the **riskiest** first: the one most
 likely to invalidate the plan (new integration, uncertain library behavior, migration).
 Finding drift early is cheap; finding it at seal time is not.
 

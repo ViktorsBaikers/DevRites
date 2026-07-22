@@ -8,14 +8,14 @@ import (
 	"strings"
 )
 
-// findingLabel matches a bold severity label — the shape a *real* finding carries
-// in review.md (`- **Critical** — ...`). A plain summary count ("Critical 0 /
+// findingLabel matches a bold severity label: the shape a *real* finding carries
+// in review.md (`- **Critical**: ...`). A plain summary count ("Critical 0 /
 // Important 0") is deliberately NOT matched: an all-zero tally is the rubber-stamp
 // this gate exists to catch, not evidence that review happened.
 var findingLabel = regexp.MustCompile(`\*\*(Critical|Important|Suggestion|Nit|FYI)\*\*`)
 
 // noFindingsMarker matches the justification an adversarial reviewer must leave
-// when it genuinely finds nothing — the axis stayed clean, and here is the
+// when it genuinely finds nothing: the axis stayed clean, and here is the
 // account of the passes that came back empty. Presence is all this gate checks;
 // the quality of the account is the reviewer fan-out's job (same contract as
 // doubt-coverage's `doubt: MISSING` and footprint's roster).
@@ -34,14 +34,14 @@ var reviewAxes = []struct {
 
 // ReviewIntegrity guards the opposite failure from the rest of review discipline:
 // not the noisy false positive (which confidence-banding suppresses) but the
-// silent false negative — a reviewer that returns "looks good, nothing found".
+// silent false negative: a reviewer that returns "looks good, nothing found".
 // An empty findings list is treated as suspicious, not as a pass: an adversarial
 // axis that reports nothing must justify the emptiness, exactly as it must quote a
 // line to raise a finding. Read-only; the workspace is <root>/work/<slug>.
 //
-//	0  every axis accounted for — has findings, has a no-findings justification, or review.md absent/freeform
+//	0  every axis accounted for: has findings, has a no-findings justification, or review.md absent/freeform
 //	2  usage (no slug)
-//	1  an adversarial axis is silent AND unjustified — a suspected rubber-stamp
+//	1  an adversarial axis is silent AND unjustified: a suspected rubber-stamp
 func ReviewIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	slug := argAt(args, 0)
 	if slug == "" {
@@ -55,15 +55,15 @@ func ReviewIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	dir := featureDir(root, slug)
 	review, ok := readFileOK(filepath.Join(dir, "review.md"))
 	if !ok {
-		fmt.Fprintln(stdout, "review-integrity: no review.md — nothing to assess (pass)")
+		fmt.Fprintln(stdout, "review-integrity: no review.md: nothing to assess (pass)")
 		return 0
 	}
 
 	sections := axisSections(review)
 	if len(sections) == 0 {
 		// A freeform review with no `## Spec` / `## Code review` headings can't be
-		// assessed mechanically — say so and pass rather than flag a format choice.
-		fmt.Fprintln(stdout, "review-integrity: no per-axis sections in review.md — heading-based check n/a (pass)")
+		// assessed mechanically: say so and pass rather than flag a format choice.
+		fmt.Fprintln(stdout, "review-integrity: no per-axis sections in review.md: heading-based check n/a (pass)")
 		return 0
 	}
 
@@ -71,7 +71,7 @@ func ReviewIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	for _, ax := range reviewAxes {
 		body, present := sections[ax.label]
 		if !present {
-			continue // axis not written as its own section — nothing to check here
+			continue // axis not written as its own section: nothing to check here
 		}
 		hasFinding := findingLabel.MatchString(body)
 		justified := noFindingsMarker.MatchString(body)
@@ -79,7 +79,7 @@ func ReviewIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 		case hasFinding:
 			fmt.Fprintf(stdout, "  %s: findings present\n", ax.label)
 		case justified:
-			fmt.Fprintf(stdout, "  %s: clean — no-findings justification present\n", ax.label)
+			fmt.Fprintf(stdout, "  %s: clean: no-findings justification present\n", ax.label)
 		default:
 			fmt.Fprintf(stdout, "  %s: SILENT (no finding, no justification)\n", ax.label)
 			silent = append(silent, ax.label)
@@ -87,12 +87,12 @@ func ReviewIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	if len(silent) > 0 {
-		fmt.Fprintf(stdout, "review-integrity: SILENT — %s reviewed nothing and justified nothing.\n", strings.Join(silent, ", "))
+		fmt.Fprintf(stdout, "review-integrity: SILENT: %s reviewed nothing and justified nothing.\n", strings.Join(silent, ", "))
 		fmt.Fprintln(stdout, "A zero-findings axis is suspicious, not a pass. Re-run the axis, or record a")
 		fmt.Fprintln(stdout, "'No-findings:' justification naming the adversarial passes that came back empty.")
 		return 1
 	}
-	fmt.Fprintln(stdout, "review-integrity: OK — every adversarial axis has findings or a justified clean bill.")
+	fmt.Fprintln(stdout, "review-integrity: OK: every adversarial axis has findings or a justified clean bill.")
 	return 0
 }
 

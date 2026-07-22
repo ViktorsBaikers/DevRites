@@ -189,7 +189,7 @@ to run Phase 4 before Phase 3 because detail work would otherwise reinforce
 patterns that do not match the project's design system.
 
 ### Why seal and ship are separate phases (`/rite-seal`, `/rite-ship`)
-Deciding "is this safe to ship" and *actually shipping* are different acts with
+Deciding "is this safe to ship" and *shipping it* are different acts with
 different blast radii. `/rite-seal` is a **pure decision gate**: it walks acceptance
 against evidence, fans out the fresh-context reviewers, and writes the GO / NO-GO
 verdict to `seal.md` and runs no git. On GO it sets `state.md` `Next step:

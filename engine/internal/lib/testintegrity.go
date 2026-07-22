@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// skipMarkers matches a test that has been muted — a skip/focus/ignore marker
+// skipMarkers matches a test that has been muted: a skip/focus/ignore marker
 // across the common test frameworks. assertMarkers matches an assertion. Both are
 // counted per file to detect a test being weakened rather than fixed.
 var (
@@ -26,7 +26,7 @@ var (
 //
 //	0  clean, or skipped because this is not a git repo
 //	2  no active workspace / bad args
-//	3  WEAKENED — a test was deleted, skipped, or de-asserted since the base
+//	3  WEAKENED: a test was deleted, skipped, or de-asserted since the base
 func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	// Accept both `test-integrity [slug]` and the `check [slug]` alias; a leading
 	// dash is treated as "no slug".
@@ -56,7 +56,7 @@ func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	cwd, _ := os.Getwd()
 	gitRoot := gitToplevel(cwd)
 	if gitRoot == "" {
-		fmt.Fprintln(stderr, "test-integrity: not a git repo — gate skipped, eyeball the test diff by hand.")
+		fmt.Fprintln(stderr, "test-integrity: not a git repo: gate skipped, eyeball the test diff by hand.")
 		return 0
 	}
 
@@ -85,7 +85,7 @@ func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 		testChanged++
 		old, ok := gitShow(gitRoot, ref+":"+f)
 		if !ok || old == "" {
-			continue // new test file — adding tests is never a weakening
+			continue // new test file: adding tests is never a weakening
 		}
 		if !isFile(filepath.Join(gitRoot, f)) {
 			weak++
@@ -110,17 +110,17 @@ func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	// Verification-gap advisory: source changed but no test file did. Not a
-	// weakening and never a verdict on its own — a pointer to run the
+	// weakening and never a verdict on its own: a pointer to run the
 	// verification-gap trace (testing.md), since a green suite can pass identically
 	// with the change reverted. Printed on both the clean and weakened paths.
 	gapAdvisory := ""
 	if srcChanged > 0 && testChanged == 0 {
-		gapAdvisory = fmt.Sprintf("test-integrity: advisory — %d source file(s) changed, 0 test file(s) touched; "+
+		gapAdvisory = fmt.Sprintf("test-integrity: advisory: %d source file(s) changed, 0 test file(s) touched; "+
 			"run the verification-gap trace (testing.md) to confirm each changed behavior is asserted.", srcChanged)
 	}
 
 	if weak > 0 {
-		fmt.Fprintf(stderr, "test-integrity: WEAKENED — %d test file(s) lost coverage since the slice base:\n", weak)
+		fmt.Fprintf(stderr, "test-integrity: WEAKENED: %d test file(s) lost coverage since the slice base:\n", weak)
 		fmt.Fprint(stderr, report.String())
 		fmt.Fprintln(stderr, "A test weakened to pass a gate is a Critical finding. Revert it; fix the code or raise a blocking question.")
 		if gapAdvisory != "" {
@@ -128,14 +128,14 @@ func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		return 3
 	}
-	fmt.Fprintln(stdout, "test-integrity: OK — no test deleted, skipped, or de-asserted since the base.")
+	fmt.Fprintln(stdout, "test-integrity: OK: no test deleted, skipped, or de-asserted since the base.")
 	if gapAdvisory != "" {
 		fmt.Fprintln(stdout, gapAdvisory)
 	}
 	return 0
 }
 
-// isSourceFile recognises a path as project source worth pairing with a test —
+// isSourceFile recognises a path as project source worth pairing with a test:
 // a code file that is not itself a test. It filters out the common non-code
 // changes (docs, config, lockfiles) so the verification-gap advisory keys on
 // behavior-bearing edits, not a README or a manifest bump.

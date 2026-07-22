@@ -1,6 +1,6 @@
 {
   "skill": "rite-learn",
-  "description": "Explicit-only evals for /rite-learn — human-gated learning-ledger promotion.",
+  "description": "Explicit-only evals for /rite-learn: human-gated learning-ledger promotion.",
   "queries": [
     {
       "text": "/rite-learn",

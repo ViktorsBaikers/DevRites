@@ -8,11 +8,11 @@ import (
 )
 
 // MutationGate advises whether the slice's tests are strong enough to back "done".
-// Coverage says a line ran; mutation testing says it is actually checked. Running a
+// Coverage says a line ran; mutation testing says it is checked. Running a
 // mutation suite is slow, so this does not run one: it detects which runner the
 // project has, prints the command to run it scoped to the changed files, and leaves
 // the resulting score for /rite-seal to band. With no runner installed it prints a
-// hand-mutation note instead — a project without mutation tooling is never blocked.
+// hand-mutation note instead: a project without mutation tooling is never blocked.
 //
 // Exit codes: 0 advisory printed · 2 no active workspace. (Turning a low score into
 // a NO-GO is /rite-seal's job against the recorded score, so this always exits 0
@@ -48,7 +48,7 @@ func MutationGate(root string, args []string, stdout, stderr io.Writer) int {
 
 	// Detect the mutation runner. A stryker config commits the project to stryker:
 	// if its config is present but npx is not, the tool stays unset (no fall-through
-	// to the other runners) — the project chose stryker, it just is not installed.
+	// to the other runners): the project chose stryker, it just is not installed.
 	tool := ""
 	if isFile(base+"/stryker.conf.json") || isFile(base+"/stryker.config.js") || isFile(base+"/stryker.config.mjs") {
 		if _, err := exec.LookPath("npx"); err == nil {
@@ -63,7 +63,7 @@ func MutationGate(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	if tool == "" {
-		fmt.Fprintln(stdout, "mutation-gate: no mutation runner detected (stryker / mutmut / cosmic-ray / pitest) — advisory skipped.")
+		fmt.Fprintln(stdout, "mutation-gate: no mutation runner detected (stryker / mutmut / cosmic-ray / pitest): advisory skipped.")
 		fmt.Fprintln(stdout, "  Strengthen the criticals by hand-mutating (flip a comparison, drop a guard) and confirming a test goes red (standards/testing.md).")
 		return 0
 	}

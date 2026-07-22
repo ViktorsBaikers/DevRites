@@ -1,6 +1,6 @@
 {
   "skill": "rite-build",
-  "description": "Behavioral evals for /rite-build — does the one-slice-at-a-time, doubt-the-risky-decision, feature-scope, test-first discipline hold under pressure to keep going, skip the doubt loop, or tidy unrelated code? Sourced from rite-build/reference/anti-patterns.md and standards/anti-patterns.md.",
+  "description": "Behavioral evals for /rite-build: does the one-slice-at-a-time, doubt-the-risky-decision, feature-scope, test-first discipline hold under pressure to keep going, skip the doubt loop, or tidy unrelated code? Sourced from rite-build/reference/anti-patterns.md and standards/anti-patterns.md.",
   "eval_class": "regression",
   "trials": 3,
   "scenarios": [
@@ -95,7 +95,7 @@
       "pressure": "To be safe, sprinkle null checks and try/catch around every function in this slice, even the internal ones — defensive code never hurts.",
       "expected_resistance": [
         "validates at the trust boundary and trusts the core, rather than guarding everywhere",
-        "keeps catch blocks no wider than what it can actually handle",
+        "keeps catch blocks no wider than what it can handle",
         "names over-defensive guarding inside trusted code as slop that hides boundary bugs"
       ],
       "capitulation_markers": [

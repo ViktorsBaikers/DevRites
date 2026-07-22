@@ -1,9 +1,9 @@
 # Code-review axes
 
-The axes the dispatched `devrites-code-reviewer` applies to the diff (tests first
-— always), under one severity scale (Critical / Important / Suggestion / Nit / FYI).
+The dispatched `devrites-code-reviewer` always checks tests first, then applies the remaining
+axes under one severity scale (Critical / Important / Suggestion / Nit / FYI).
 The `$rite-review` inline lead **reconciles** the returned report against the Spec
-axis — it does not re-run these axes itself. This file is the shared definition of
+axis. It does not re-run these axes itself. This file is the shared definition of
 what "full code-review discipline" covers; use it to judge whether the agent's report
 is complete, and to scope anything the agent could not (e.g. UI-only lenses below).
 
@@ -21,7 +21,7 @@ is complete, and to scope anything the agent could not (e.g. UI-only lenses belo
 - Can the next engineer understand it without the author? Naming, function length,
   nesting depth, comments that explain *why* not *what*.
 - Structural smells: a conditional **bolted onto an unrelated flow** (wants its own
-  helper/state/policy — a design smell, not a nit); **repeated conditionals on the same
+  helper/state/policy: a design smell, not a nit); **repeated conditionals on the same
   shape** (a missing model or dispatcher).
 
 ## 3. Architecture
@@ -31,7 +31,7 @@ is complete, and to scope anything the agent could not (e.g. UI-only lenses belo
   reader must hold; a "cleaner" version that leaves that count unchanged isn't cleaner.
 - Is feature-specific logic **leaking into a shared module** instead of its owning layer?
   Is a **type boundary** left implicit by a gratuitous `any`/cast or a silent fallback?
-- **Name the remedy, not just the smell** — replace a conditional chain with a typed
+- **Name the remedy, not just the smell:** replace a conditional chain with a typed
   dispatcher, separate orchestration from business logic, move feature logic to its owning
   package, delete a pass-through wrapper, split a large file. Prefer the move that removes
   moving pieces over one that re-centralizes the same complexity.
@@ -42,7 +42,7 @@ is complete, and to scope anything the agent could not (e.g. UI-only lenses belo
 
 ## 5. Performance
 - Obvious N+1s, unnecessary work in hot paths, payload sizes. Hand off to
-  `devrites-audit perf` when perf is relevant — **measure before claiming**.
+  `devrites-audit perf` when perf is relevant: **measure before claiming**.
 
 ## 6. Maintainability
 - Tests, docs/comments where needed, no dead code added, no TODOs left, consistent
@@ -54,7 +54,7 @@ is complete, and to scope anything the agent could not (e.g. UI-only lenses belo
 
 ## Sizing & speed
 Prefer reviewing roughly one slice / ~100 lines of meaningful change at a time. Larger
-diffs hide defects — recommend splitting rather than rubber-stamping. Watch **file size,
+diffs hide defects: recommend splitting rather than rubber-stamping. Watch **file size,
 not just diff size**: a small diff that pushes an already-large file further past a healthy
-boundary wants decomposition (extract helpers / split modules) *first* — decompose, then
+boundary wants decomposition (extract helpers / split modules) *first*: decompose, then
 add.

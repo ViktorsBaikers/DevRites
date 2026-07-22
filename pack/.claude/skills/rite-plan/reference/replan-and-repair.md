@@ -8,7 +8,7 @@ First (or fresh) breakdown into vertical slices. Use `task-breakdown.md` +
 
 ## reslice
 A slice proved too large (couldn't build+prove in one cycle, or its goal has multiple
-"and"s). Split into thinner end-to-end slices, preserving acceptance coverage — split
+"and"s). Split into thinner end-to-end slices, preserving acceptance coverage: split
 **by the sizing rule, not to a target count**. Update `tasks.md`; renumber; fix
 dependency edges.
 
@@ -20,7 +20,7 @@ A drift event stopped the build. Steps:
    reality. Adjust acceptance criteria if they were wrong.
 4. Mark the `drift.md` entry **resolved** with the resolution + date.
 5. Resume at the corrected slice.
-Never repair by quietly deleting the inconvenient requirement — if behavior changes,
+Never repair by quietly deleting the inconvenient requirement, if behavior changes,
 that was a user question.
 
 ## reorder
@@ -29,7 +29,7 @@ re-sort risk-first within tiers, update `plan.md`'s implementation order.
 
 ## split (backend/frontend contract)
 A slice couples two sides too tightly. Define the contract first (shape, status codes,
-errors — `devrites-api-interface`), then split into a backend slice (can land with a
+errors: `devrites-api-interface`), then split into a backend slice (can land with a
 stub consumer) and a frontend slice (can land against a mock/real contract).
 
 ## unblock

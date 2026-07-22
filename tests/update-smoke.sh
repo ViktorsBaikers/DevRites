@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# update-smoke.sh — exercise update.sh without hitting the network:
+# update-smoke.sh: exercise update.sh without hitting the network:
 #   - default installs survive an update --force,
 #   - .devrites/ feature state is preserved across the upgrade,
 #   - the retired --rules-only install shape still updates cleanly.

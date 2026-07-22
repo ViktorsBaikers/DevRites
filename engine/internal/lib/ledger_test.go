@@ -29,7 +29,7 @@ func TestLedgerSyncFoldLifecycle(t *testing.T) {
 		return string(b)
 	}
 
-	// 1. ADD a new requirement — seeds the capability.
+	// 1. ADD a new requirement: seeds the capability.
 	code, out, errs := sync(t, "add-dark-mode", `## ADDED Requirements — capability: theming
 ### Requirement: Dark mode honors the system preference
 The system SHALL default to the OS colour-scheme.
@@ -46,7 +46,7 @@ The system SHALL default to the OS colour-scheme.
 		t.Fatal("ledger missing the added requirement")
 	}
 
-	// 2. Re-sync the SAME feature — idempotent (ADDED becomes an in-place upsert).
+	// 2. Re-sync the SAME feature: idempotent (ADDED becomes an in-place upsert).
 	code, out, _ = sync(t, "add-dark-mode-again", `## ADDED Requirements — capability: theming
 ### Requirement: Dark mode honors the system preference
 The system SHALL default to the OS colour-scheme.
@@ -57,7 +57,7 @@ The system SHALL default to the OS colour-scheme.
 		t.Fatalf("re-sync should upsert, not re-add: %q", out)
 	}
 
-	// 3. MODIFY the requirement — replaces in place.
+	// 3. MODIFY the requirement: replaces in place.
 	_, out, _ = sync(t, "persist-choice", `## MODIFIED Requirements — capability: theming
 ### Requirement: Dark mode honors the system preference
 The system SHALL default to the OS colour-scheme and persist an override.
@@ -71,10 +71,10 @@ The system SHALL default to the OS colour-scheme and persist an override.
 		t.Fatalf("modify did not replace the block: %q", body)
 	}
 
-	// 4. REMOVE it — the empty capability spec is dropped.
+	// 4. REMOVE it: the empty capability spec is dropped.
 	_, out, _ = sync(t, "drop-dark-mode", `## REMOVED Requirements — capability: theming
 ### Requirement: Dark mode honors the system preference
-Removed — theming moved to a plugin.
+Removed: theming moved to a plugin.
 `)
 	if !strings.Contains(out, "-1 removed") {
 		t.Fatalf("want -1 removed, got %q", out)

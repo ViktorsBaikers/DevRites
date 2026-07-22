@@ -1,5 +1,5 @@
 exit 0
-DevRites cursor — active feature: red
+DevRites cursor: active feature: red
   status: running
   open questions: 0
-  ⚠ tests/build RED — resolve before stopping
+  ⚠ tests/build RED: resolve before stopping

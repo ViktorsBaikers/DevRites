@@ -101,7 +101,7 @@ func TestWorktreeTreeCapturesUntrackedFiles(t *testing.T) {
 		t.Errorf("worktreeTree did not observe the untracked file: both trees = %s", before)
 	}
 
-	// The user's real index must be untouched — the file stays untracked.
+	// The user's real index must be untouched: the file stays untracked.
 	out, err := exec.Command("git", "-C", dir, "status", "--porcelain", "untracked.go").Output()
 	if err != nil {
 		t.Fatalf("git status: %v", err)
@@ -145,7 +145,7 @@ func TestReconcileCheckFlagsUnclaimedChange(t *testing.T) {
 	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
 		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
 	}
-	// The orchestrator edits source it never claimed — the A1 breach.
+	// The orchestrator edits source it never claimed: the A1 breach.
 	writeFile(t, filepath.Join(gitRoot, "rogue.go"), "package main\n")
 	writeFile(t, filepath.Join(root, "work", "feat", ".reconcile-claimed"), "seed.go\n")
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# scripts/check-rule-uniqueness.sh — assert each canonical principle heading
+# scripts/check-rule-uniqueness.sh: assert each canonical principle heading
 # appears in exactly one canonical file under pack/.claude/.
 #
 # Drift catcher: if someone re-duplicates a principle's full treatment, this
-# script fails and names the offenders. Cross-link summaries are fine — they
+# script fails and names the offenders. Cross-link summaries are fine: they
 # don't use the canonical heading.
 #
 # Usage:

@@ -4,7 +4,7 @@ description: Humanize prose without losing technical content. Use when asked to 
 user-invocable: false
 ---
 
-# devrites-prose-craft — prose that reads human
+# devrites-prose-craft: prose that reads human
 
 Write for a teammate who will rely on the result. Remove model-shaped filler without sanding
 off the author's voice or weakening technical content.
@@ -14,15 +14,15 @@ off the author's voice or weakening technical content.
   `/rite-define` / `/rite-plan` (plan narrative), `/rite-temper` / `/rite-vet` (review prose),
   `/rite-review` / `/rite-seal` (findings + verdict prose), `/rite-ship` (commit/PR body),
   `devrites-doubt` / `rite-handoff` (notes).
-- Any phase composes a substantive **user-facing reply** (not the deterministic progress
-  footers — those are script-rendered and exact by design).
+- Any phase composes a substantive **user-facing reply**. Deterministic progress footers are
+  script-rendered and exact by design.
 - `/rite-polish` Phase 1 as the **catch** pass on prose that slipped through at write time.
 
 ## Two modes
 - **Rewrite (default).** When DevRites writes the artifact/reply or polishes it, fix the prose
   in place.
-- **Detect-only.** When auditing prose you shouldn't silently change — a user's existing
-  `spec.md` at `/rite-adopt`, text under `/rite-review` — list the tells with quotes and leave
+- **Detect-only.** When auditing prose you shouldn't silently change, such as a user's existing
+  `spec.md` at `/rite-adopt` or text under `/rite-review`, list the tells with quotes and leave
   the text untouched. Mirrors `devrites-audit`'s read-only stance.
 
 Order findings by severity: **P0** credibility-killers (vague attribution, a marketing

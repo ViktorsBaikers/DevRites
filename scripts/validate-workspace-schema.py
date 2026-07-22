@@ -170,7 +170,7 @@ def existing_or_alias(workspace: Path, name: str) -> bool:
 
 def find_local_workspaces(root: Path) -> list[Path]:
     # A devrites workspace is identified by its devrites-specific artifacts, NOT by
-    # README.md — every repo root has a README.md, and matching on it here both
+    # README.md: every repo root has a README.md, and matching on it here both
     # misclassifies the repo root as a workspace and short-circuits the .devrites/work
     # scan below (return [root] before the loop ever runs).
     if root.is_dir() and any((root / name).exists() for name in ("spec.md", "state.md", "feature.md")):
@@ -440,7 +440,7 @@ def main(argv: list[str]) -> int:
         print(f"workspace-schema: {len(errors)} error(s) across {len(set(workspaces))} workspace(s)", file=sys.stderr)
         return 1
 
-    print(f"workspace-schema: OK — {len(set(workspaces))} workspace(s) validated")
+    print(f"workspace-schema: OK: {len(set(workspaces))} workspace(s) validated")
     return 0
 
 

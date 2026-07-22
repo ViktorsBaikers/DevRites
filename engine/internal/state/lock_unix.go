@@ -10,7 +10,7 @@ import (
 
 // fileLock is an exclusive advisory lock held on an open lock file. On unix it
 // uses flock(2), which the kernel releases automatically when the file is closed
-// or the process exits — so a crashed writer never strands the lock.
+// or the process exits, so a crashed writer never strands the lock.
 type fileLock struct{ f *os.File }
 
 func acquireLock(path string) (*fileLock, error) {

@@ -76,10 +76,10 @@ func TestReviewFingerprintsStableAndWritable(t *testing.T) {
 	writeReview(t, root, "feat", `# Review
 
 ## Spec
-- **Critical** — AC-003 is unproven.
+- **Critical**: AC-003 is unproven.
 
 ## Code review
-- **Important** — missing error handling.`)
+- **Important**: missing error handling.`)
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	code := ReviewFingerprints(root, []string{"--write", "feat"}, stdout, stderr)
 	if code != 0 {

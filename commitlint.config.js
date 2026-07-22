@@ -1,11 +1,11 @@
 /**
- * DevRites commit policy — strict Conventional Commits.
+ * DevRites commit policy: strict Conventional Commits.
  *
  * Format:  type(scope): subject
  *   - type:    one of the allowed types (lower-case, required)
  *   - scope:   one of the allowed DevRites areas (lower-case, required)
  *   - subject: imperative, no leading capital, no trailing period
- *   - header:  12–72 chars
+ *   - header:  12-72 chars
  *   - body:    separated by a blank line; lines <= 100 chars
  *
  * Examples (valid):
@@ -21,7 +21,7 @@
  */
 module.exports = {
   extends: ['@commitlint/config-conventional'],
-  // Skip lint for semantic-release auto-commits — their bodies embed
+  // Skip lint for semantic-release auto-commits: their bodies embed
   // changelog markdown links that exceed body-max-line-length.
   ignores: [(message) => /^chore\(release\):\s+\d+\.\d+\.\d+/.test(message)],
   rules: {
@@ -31,7 +31,7 @@ module.exports = {
       'always',
       ['feat', 'fix', 'remove', 'docs', 'style', 'refactor', 'perf', 'test', 'build', 'ci', 'chore', 'revert'],
     ],
-    // scope — required and constrained to DevRites areas
+    // scope: required and constrained to DevRites areas
     'scope-enum': [
       2,
       'always',

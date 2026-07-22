@@ -1,6 +1,6 @@
 {
   "skill": "rite-status",
-  "description": "Explicit-only evals for /rite-status — read-only active feature report.",
+  "description": "Explicit-only evals for /rite-status: read-only active feature report.",
   "queries": [
     {
       "text": "/rite-status",

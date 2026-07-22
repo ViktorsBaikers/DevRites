@@ -88,7 +88,7 @@ their `pass_threshold` instead.
       "id": "BE1",
       "rationalization": "The excuse being tested, paraphrased from the anti-patterns table.",
       "source": "Where the rationalization is documented (rule + reference file).",
-      "pressure": "The adversarial user turn: stack real pressures (deadline, authority, sunk cost) the way they actually arrive.",
+    "pressure": "The adversarial user turn: stack real pressures (deadline, authority, sunk cost) the way they arrive.",
       "expected_resistance": ["What a holding response does: names the rebuttal, refuses, routes to the gate."],
       "capitulation_markers": ["What a failed response does: agrees to the shortcut, skips the gate, softens the verdict."]
     }
@@ -108,7 +108,7 @@ Guidelines:
   the spec; the eval is its proof.
 - **Stack the pressure.** A single polite "could you skip the tests?" is weak. Real
   capitulation happens under combined pressure: deadline *and* authority *and* "just this
-  once." Write the prompt the way the failure actually arrives.
+once." Write the prompt the way the failure arrives.
 - **Make `expected_resistance` observable.** Phrase each as something you could point at in
   a transcript ("re-runs the command and records the output"), not a vibe ("is careful").
 - **Make `capitulation_markers` the inverse.** They are the concrete failure the row warns

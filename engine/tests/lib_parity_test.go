@@ -162,7 +162,7 @@ func TestParitySpecValidate(t *testing.T) {
 		t.Run("arg="+arg, func(t *testing.T) { c.assertEqual(t) })
 	}
 
-	// No-argument usage path (exit 2) — asserted separately since arg is absent.
+	// No-argument usage path (exit 2): asserted separately since arg is absent.
 	(parityCase{
 		workdir: work,
 		env:     libEnv,
@@ -257,11 +257,11 @@ func TestParityCheckAcceptance(t *testing.T) {
 
 	// id mode, all proven → exit 0
 	writeFile(t, work, "id-ok/spec.md", "## Acceptance criteria\n- [ ] [AC1] a\n- [ ] [AC2] b\n- [ ] [AC3] c\n")
-	writeFile(t, work, "id-ok/seal.md", "## Acceptance Criteria\n- [x] [AC1] a — evidence: t1\n- [x] [AC2] b — evidence: t2\n- [x] [AC3] c — evidence: t3\n")
+	writeFile(t, work, "id-ok/seal.md", "## Acceptance Criteria\n- [x] [AC1] a: evidence t1\n- [x] [AC2] b: evidence t2\n- [x] [AC3] c: evidence t3\n")
 
 	// id mode, one unproven → exit 1
 	writeFile(t, work, "id-gap/spec.md", "## Acceptance criteria\n- [ ] [AC1] a\n- [ ] [AC2] b\n- [ ] [AC3] c\n")
-	writeFile(t, work, "id-gap/seal.md", "## Acceptance Criteria\n- [x] [AC1] a — evidence: t1\n- [ ] [AC2] b\n- [ ] [AC3] c\n")
+	writeFile(t, work, "id-gap/seal.md", "## Acceptance Criteria\n- [x] [AC1] a: evidence t1\n- [ ] [AC2] b\n- [ ] [AC3] c\n")
 
 	// fallback (no ids), all checked → exit 0
 	writeFile(t, work, "flat-ok/spec.md", "## Acceptance criteria\n- export returns CSV\n- empty dataset returns 204\n")
@@ -371,12 +371,12 @@ func TestFootprintGolden(t *testing.T) {
 		"  test-analyst: UNACCOUNTED\n  frontend-reviewer: UNACCOUNTED\n" +
 		"  security-auditor: UNACCOUNTED\n  performance-reviewer: UNACCOUNTED\n" +
 		"  devex-reviewer: UNACCOUNTED\n" +
-		"roster: UNACCOUNTED — test-analyst frontend-reviewer security-auditor performance-reviewer devex-reviewer\n"
+		"roster: UNACCOUNTED: test-analyst frontend-reviewer security-auditor performance-reviewer devex-reviewer\n"
 	rosterSkip := "  spec-reviewer: dispatched\n  code-reviewer: dispatched\n" +
-		"  test-analyst: skipped (always-on — verify carry-forward)\n" +
+		"  test-analyst: skipped (always-on: verify carry-forward)\n" +
 		"  frontend-reviewer: skipped\n  security-auditor: skipped\n" +
 		"  performance-reviewer: skipped\n  devex-reviewer: skipped\n" +
-		"roster: always-on skipped — test-analyst\n"
+		"roster: always-on skipped: test-analyst\n"
 
 	for _, gc := range []goldenCase{
 		{"render", []string{"footprint", "render", "rendered"},
@@ -393,7 +393,7 @@ func TestFootprintGolden(t *testing.T) {
 		{"roster-unaccounted", []string{"footprint", "roster", "rc-unacc"}, rosterUnacc, 3},
 		{"roster-skip-alwayson", []string{"footprint", "roster", "rc-skip"}, rosterSkip, 1},
 		{"roster-nolog", []string{"footprint", "roster", "nolog"},
-			"roster: n/a (no dispatch records — fan-out did not run)\n", 0},
+			"roster: n/a (no dispatch records: fan-out did not run)\n", 0},
 		{"log-missing-ws", []string{"footprint", "log", "ghost", "wright", "x"}, "", 0},
 		{"log-usage-no-kind", []string{"footprint", "log", "live"}, "", 2},
 		{"unknown-subcommand", []string{"footprint", "bogus", "live"}, "", 2},
@@ -403,7 +403,7 @@ func TestFootprintGolden(t *testing.T) {
 		t.Run(gc.name, func(t *testing.T) { gc.assert(t, work) })
 	}
 
-	// The footprint never emits a token/dollar/cost figure — DevRites cannot
+	// The footprint never emits a token/dollar/cost figure: DevRites cannot
 	// truthfully source one (the same invariant footprint-test.sh guards).
 	out, _, _ := runGo(t, work, "footprint", "render", "rendered")
 	for _, banned := range []string{"token", "$", "cost", "usd", "USD"} {
@@ -432,7 +432,7 @@ func TestFootprintLogAppends(t *testing.T) {
 		t.Errorf("after two logs: %d lines, want 2", n)
 	}
 
-	// An empty label still writes its trailing space — byte-parity with
+	// An empty label still writes its trailing space: byte-parity with
 	// footprint.sh's `printf '%s %s %s\n'`, which always emits three fields.
 	runGo(t, work, "footprint", "log", "feat", "wright")
 	if last := lastLine(t, logp); !bytes.HasSuffix([]byte(last), []byte(" wright ")) {
@@ -460,7 +460,7 @@ func TestEvidenceFreshGolden(t *testing.T) {
 	mid := time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)
 	newer := time.Date(2026, 1, 3, 0, 0, 0, 0, time.UTC)
 
-	const okMsg = "evidence-fresh: OK — evidence post-dates every touched file.\n"
+	const okMsg = "evidence-fresh: OK: evidence post-dates every touched file.\n"
 
 	// Primary workspace: evidence + one touched file.
 	ws := ".devrites/features/ftest"
@@ -522,7 +522,7 @@ func TestEvidenceFreshGolden(t *testing.T) {
 	// Proof present, no touched-files.md → nothing to compare, exit 0.
 	writeFile(t, work, ".devrites/features/notf/evidence.md", "# evidence\n")
 	(goldenCase{"no-touched-files", []string{"evidence-fresh", "notf"},
-		"evidence-fresh: no touched-files.md — nothing to compare (treating as fresh).\n", 0}).assert(t, work)
+		"evidence-fresh: no touched-files.md: nothing to compare (treating as fresh).\n", 0}).assert(t, work)
 }
 
 // mkdirAllT creates an (empty) directory under workdir.
@@ -574,14 +574,14 @@ func TestParityCoverage(t *testing.T) {
 	work := t.TempDir()
 
 	// Mixed coverage + proof, and C-locale AC ordering (AC1, AC10, AC2). The
-	// "AC1" row also picks up the AC10 slice — the awk match is a substring test
+	// "AC1" row also picks up the AC10 slice: the awk match is a substring test
 	// and the port reproduces it.
 	writeFeatureFile(t, work, "full", "spec.md",
 		"## Acceptance criteria\n- [ ] [AC1] alpha\n- [ ] [AC2] beta\n- [ ] [AC10] dec\n")
 	writeFeatureFile(t, work, "full", "tasks.md",
 		"## Slice 1: list\n  Satisfies: AC1\n## Slice 2: detail\n  Satisfies: AC2, AC10\n")
 	writeFeatureFile(t, work, "full", "seal.md",
-		"## Acceptance Criteria\n- [x] [AC1] alpha — evidence: t1\n- [ ] [AC2] beta\n- [x] [AC10] dec — evidence: t3\n")
+		"## Acceptance Criteria\n- [x] [AC1] alpha: evidence t1\n- [ ] [AC2] beta\n- [x] [AC10] dec: evidence t3\n")
 
 	// spec only → every AC UNCOVERED + pending.
 	writeFeatureFile(t, work, "speconly", "spec.md",
@@ -629,7 +629,7 @@ func TestCoverageGolden(t *testing.T) {
 	writeFile(t, work, base+"g/tasks.md",
 		"## Slice 1: list\n  Satisfies: AC1\n## Slice 2: detail\n  Satisfies: AC2, AC3\n")
 	writeFile(t, work, base+"g/seal.md",
-		"## Acceptance Criteria\n- [x] [AC1] a — evidence: t1\n- [x] [AC2] b — evidence: t2\n- [ ] [AC3] c\n")
+		"## Acceptance Criteria\n- [x] [AC1] a: evidence t1\n- [x] [AC2] b: evidence t2\n- [ ] [AC3] c\n")
 
 	const wantG = "# Coverage matrix: g\n\n" +
 		"| AC | Slice(s) | Proven in seal? |\n" +
@@ -645,7 +645,7 @@ func TestCoverageGolden(t *testing.T) {
 	const wantU = "# Coverage matrix: u\n\n" +
 		"| AC | Slice(s) | Proven in seal? |\n" +
 		"|----|----------|-----------------|\n" +
-		"| AC1 | — (UNCOVERED) | pending |\n\n" +
+		"| AC1 | (UNCOVERED) | pending |\n\n" +
 		"_Generated by devrites-engine coverage from spec.md / tasks.md / seal.md. UNCOVERED rows block the analyze gate in /rite-vet (Claude) / $rite-vet (Codex)._\n"
 	(goldenCase{"uncovered", []string{"coverage", "u"}, wantU, 0}).assert(t, work)
 }
@@ -707,7 +707,7 @@ func TestParityDoubtCoverage(t *testing.T) {
 	}).assertEqual(t)
 }
 
-// TestDoubtCoverageGolden asserts each verdict's exact stdout inline — the
+// TestDoubtCoverageGolden asserts each verdict's exact stdout inline: the
 // SKIPPED / inline / no-log messages and the "no doubt ran" prompt.
 func TestDoubtCoverageGolden(t *testing.T) {
 	work := t.TempDir()
@@ -721,17 +721,17 @@ func TestDoubtCoverageGolden(t *testing.T) {
 
 	for _, gc := range []goldenCase{
 		{"skipped", []string{"doubt-coverage", "miss"},
-			"doubt-coverage: SKIPPED — a '## Decisions stood' entry in decisions.md has doubt: MISSING.\n" +
+			"doubt-coverage: SKIPPED: a '## Decisions stood' entry in decisions.md has doubt: MISSING.\n" +
 				"A decision was stood and recorded but never doubted. Re-dispatch doubt or escalate.\n", 3},
 		{"inline", []string{"doubt-coverage", "in"},
-			"doubt-coverage: inline build (.reconcile-inline) — footprint heuristic n/a; no MISSING\n" +
+			"doubt-coverage: inline build (.reconcile-inline): footprint heuristic n/a; no MISSING\n" +
 				"verdict recorded. Verify by hand that each stood decision carries a devrites-doubt verdict.\n", 0},
 		{"no-log", []string{"doubt-coverage", "empty"},
-			"doubt-coverage: no footprint log — nothing to assess (pass)\n", 0},
+			"doubt-coverage: no footprint log: nothing to assess (pass)\n", 0},
 		{"no-doubt-ran", []string{"doubt-coverage", "nd"},
 			"doubt-coverage: 2 wright · 0 doubt\n" +
 				"doubt-coverage: no doubt dispatched across 2 wright run(s). Either every slice's\n" +
-				"'Decisions stood' was genuinely empty, or doubt was skipped — verify against decisions.md.\n", 1},
+				"'Decisions stood' was genuinely empty, or doubt was skipped: verify against decisions.md.\n", 1},
 		{"doubted", []string{"doubt-coverage", "ok"},
 			"doubt-coverage: 1 wright · 1 doubt\n", 0},
 	} {
@@ -741,9 +741,9 @@ func TestDoubtCoverageGolden(t *testing.T) {
 
 // ---- preamble -------------------------------------------------------------
 //
-// Golden: the workspace-state orientation — the header, verbatim state.md (with
+// Golden: the workspace-state orientation: the header, verbatim state.md (with
 // and without a trailing newline), the fixed artifact-present order, the AFK/HITL
-// run mode with verbatim config lines, and the questions-by-gate tally — are
+// run mode with verbatim config lines, and the questions-by-gate tally: are
 // checked against golden snapshots.
 
 func TestParityPreamble(t *testing.T) {
@@ -758,12 +758,12 @@ func TestParityPreamble(t *testing.T) {
 			"## q-2\nstatus: resolved\ngate: validating\n\n"+
 			"## q-3\nstatus: open\ngate: advisory\n\n"+
 			"## q-4\nstatus: open\ngate: blocking\n## Notes\nprose\n")
-	// questions.md ending on an OPEN q- block (no closing heading) — exercises the
+	// questions.md ending on an OPEN q- block (no closing heading): exercises the
 	// awk END-finalize path.
 	writeFeatureFile(t, hitl, "openend", "state.md", "- Phase: spec\n")
 	writeFeatureFile(t, hitl, "openend", "questions.md",
 		"## q-1\nstatus: resolved\ngate: blocking\n\n## q-2\nstatus: open\ngate: escalating\n")
-	// state.md with NO trailing newline — `cat` must not add one before the blank line.
+	// state.md with NO trailing newline: `cat` must not add one before the blank line.
 	writeFeatureFile(t, hitl, "nonl", "state.md", "- Phase: spec")
 	// A workspace directory with no state.md / questions.md.
 	makeFeatureDir(t, hitl, "bare")
@@ -801,9 +801,9 @@ func TestParityProgress(t *testing.T) {
 	work := t.TempDir()
 
 	sliceBlock := "\n## Slice progress\n" +
-		"- [x] Slice 1: list — built\n" +
-		"- [x] Slice 2: detail — built\n" +
-		"- [ ] Slice 3: polish — pending\n" +
+		"- [x] Slice 1: list · built\n" +
+		"- [x] Slice 2: detail · built\n" +
+		"- [ ] Slice 3: polish · pending\n" +
 		"## Next\n- something\n"
 
 	// build phase, 2/3 slices, temper (strategy.md) + vet (eng-review.md) present.
@@ -813,7 +813,7 @@ func TestParityProgress(t *testing.T) {
 
 	// all built → ✅ ALL BUILT; no temper/vet artifacts → shorter ribbon.
 	writeFeatureFile(t, work, "allbuilt", "state.md",
-		"- Phase: build\n## Slice progress\n- [x] Slice 1: a — built\n- [x] Slice 2: b — built\n")
+		"- Phase: build\n## Slice progress\n- [x] Slice 1: a · built\n- [x] Slice 2: b · built\n")
 
 	// no slices at all → meter skipped entirely.
 	writeFeatureFile(t, work, "noslice", "state.md", "- Phase: spec\n")
@@ -870,7 +870,7 @@ func TestParityStuckCheck(t *testing.T) {
 		{"ghost", []string{"check", "ghost"}},
 		{"custom-window-2", []string{"check", "few", "2"}}, // win=2 → last 2 identical → STUCK
 		// Pathological window tokens: the numeric-string vs string comparison and
-		// the verbatim `win` echo — edge cases the port must reproduce.
+		// the verbatim `win` echo: edge cases the port must reproduce.
 		{"window-4x-varied4", []string{"check", "varied4", "4x"}},
 		{"window-2.5-varied4", []string{"check", "varied4", "2.5"}},
 		{"window-leadspace-varied4", []string{"check", "varied4", " 4"}},

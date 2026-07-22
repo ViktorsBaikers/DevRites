@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read
 
-# Cancel an in-flight run when a new commit lands on the same ref — but only for
+# Cancel an in-flight run when a new commit lands on the same ref, but only for
 # PRs. On main, cancel-in-progress stays false so a push can never abort an
 # in-flight release job mid-publish (the old tag-collision/duplicate-release failure mode).
 concurrency:
@@ -40,7 +40,7 @@ jobs:
       - name: Install npm deps
         run: npm ci
 
-      - name: Generate host artifacts (tracked files fresh — BLOCKING)
+      - name: Generate host artifacts (tracked files fresh: BLOCKING)
         run: |
           bash scripts/build-host-artifacts.sh
           git diff --exit-code -- pack/generated || {
@@ -57,13 +57,13 @@ jobs:
       - name: Check invocation integrity (named skills/rules resolve, both harnesses)
         run: python3 scripts/check-invocation-integrity.py
 
-      - name: Pack security scan (injection + hidden unicode — BLOCKING)
+      - name: Pack security scan (injection + hidden unicode: BLOCKING)
         run: python3 scripts/scan-pack-security.py pack/.claude
 
-      - name: Workflow security (SHA-pinned actions + scoped permissions — BLOCKING)
+      - name: Workflow security (SHA-pinned actions + scoped permissions: BLOCKING)
         run: python3 scripts/validate-workflow-security.py
 
-      - name: Supply-chain IOC scan (npm lockfile — BLOCKING)
+      - name: Supply-chain IOC scan (npm lockfile: BLOCKING)
         run: python3 scripts/scan-supply-chain-iocs.py package-lock.json
 
       - name: Audit npm dependency advisories (BLOCKING)
@@ -83,7 +83,7 @@ jobs:
 
   # Every tests/*.sh through the same runner developers use locally (npm test).
   # run-tests.mjs auto-discovers the suite, so a new test file is gated here
-  # without touching this workflow — no more hand-enumerated steps drifting
+  # without touching this workflow: no more hand-enumerated steps drifting
   # behind the tests/ directory.
   tests:
     name: shell test suite (node ${{ matrix.node }})
@@ -147,11 +147,11 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
           go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
 
-      - name: staticcheck (static analysis — BLOCKING)
+      - name: staticcheck (static analysis: BLOCKING)
         working-directory: engine
         run: staticcheck ./...
 
-      - name: govulncheck (known-CVE scan of the reachable call graph — BLOCKING)
+      - name: govulncheck (known-CVE scan of the reachable call graph: BLOCKING)
         working-directory: engine
         run: govulncheck ./...
 
@@ -159,7 +159,7 @@ jobs:
       # CLI that by design execs git/go and reads paths the operator passes in, so every
       # subprocess argument and file path is "tainted". Permission expectations for the
       # files the engine writes (0644 files / 0755 dirs+binaries) live in .gosec.json.
-      - name: gosec (security static analysis — BLOCKING)
+      - name: gosec (security static analysis: BLOCKING)
         working-directory: engine
         run: gosec -conf .gosec.json -exclude=G204,G304,G702,G703 ./...
 
@@ -167,7 +167,7 @@ jobs:
         working-directory: engine
         run: go test ./... -race -count=1
 
-      - name: Validate pack hook wiring (known ids + schema shape — BLOCKING)
+      - name: Validate pack hook wiring (known ids + schema shape: BLOCKING)
         working-directory: engine
         run: go run . validate-pack ../pack/.claude
 
@@ -178,7 +178,7 @@ jobs:
       - name: Cross-compile matrix smoke (all release targets build)
         run: bash scripts/build-binaries.sh 0.0.0-ci
 
-      # Same script semantic-release's prepare step runs — prove the release
+      # Same script semantic-release's prepare step runs: prove the release
       # tarball (+ sha256 sidecar) builds BEFORE publish time, not during it.
       - name: Release tarball smoke (build + checksum present)
         run: |
@@ -189,7 +189,7 @@ jobs:
           }
 
   # DevRites ships a Windows engine binary; run the Go tests where path
-  # separators, file locking, and %USERPROFILE% semantics actually differ.
+  # separators, file locking, and %USERPROFILE% semantics differ.
   # Ubuntu stays the full strict gate (staticcheck/govulncheck/gosec/-race);
   # this job only proves the binary logic on Windows.
   engine-windows:
@@ -209,7 +209,7 @@ jobs:
         working-directory: engine
         run: go test ./... -count=1
 
-  # Release runs in the same workflow as a final gate — so it (a) shows up as a
+  # Release runs in the same workflow as a final gate, so it (a) shows up as a
   # commit check, and (b) runs on the exact commit CI validated, on the real
   # branch tip, with tags fetched. No workflow_run hand-off, no detached
   # head_sha checkout: the two failure modes that orphaned the v2.1.0 tag and
@@ -219,14 +219,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate, tests, engine, engine-windows]
     # Push to main (the chore(release) commit carries [skip ci] so it never
-    # re-triggers) or a manual dispatch — never on a PR.
+    # re-triggers) or a manual dispatch: never on a PR.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
       issues: write
       pull-requests: write
       id-token: write
-    # Serial, never cancelled mid-flight — a second push waits, it doesn't abort.
+    # Serial, never cancelled mid-flight: a second push waits, it doesn't abort.
     concurrency:
       group: release-main
       cancel-in-progress: false
@@ -251,7 +251,7 @@ jobs:
           python-version: '3.11'
 
       # semantic-release's prepare step cross-compiles the engine binary matrix
-      # (scripts/build-binaries.sh) — pure-Go, CGO_ENABLED=0, so one Linux runner
+      # (scripts/build-binaries.sh): pure-Go, CGO_ENABLED=0, so one Linux runner
       # produces every target (darwin/linux/windows × amd64/arm64) with no
       # cross-toolchain. The binaries + sha256 sidecars are attached to the Release.
       - name: Set up Go

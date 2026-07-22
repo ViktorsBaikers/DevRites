@@ -4,10 +4,10 @@ description: Refresh stale optional indexes. Use when structural lookup disagree
 user-invocable: false
 ---
 
-# devrites-refresh-indexes — keep the code-intelligence indexes fresh
+# devrites-refresh-indexes: keep the code-intelligence indexes fresh
 
 `tooling.md` says to cross-verify structural claims across codebase-memory-mcp, codegraph, and
-graphify, and that **a disagreement between indexes is a signal** — a fresh read of live code
+graphify, and that **a disagreement between indexes is a signal**: a fresh read of live code
 beats any index. A *stale* index manufactures exactly that disagreement. This keeps the three
 mechanical indexes current after edits so the next lookup is trustworthy.
 
@@ -21,7 +21,7 @@ anything, never blocks. Same incremental shape for all three; no LLM needed for 
 | **codegraph** | `.codegraph/` exists + `codegraph` on PATH | `codegraph sync` |
 | **graphify** | `graphify-out/` exists + `graphify` on PATH | `graphify update .` |
 
-## Automatic (already wired — no action needed)
+## Automatic (already wired: no action needed)
 
 The `Stop` hook `devrites-engine hook refresh-indexes` runs at end of turn. It self-guards: exits
 instantly unless an index tracks the repo, exits instantly if no source file changed since the
@@ -30,7 +30,7 @@ ON by default; disable with `DEVRITES_REFRESH_INDEXES=off`.
 
 ## Manual / thorough refresh (this skill)
 
-Force a synchronous refresh now and print the report — resolve the hook across install layouts:
+Force a synchronous refresh now and print the report: resolve the hook across install layouts:
 
 ```bash
 devrites-engine hook refresh-indexes --force .
@@ -46,6 +46,6 @@ Then the one case the hook can't cover:
 - codegraph and codebase-memory-mcp each have their own background watcher; the explicit
   reindex is the belt-and-suspenders fallback for when a watcher isn't running. graphify has no
   default watcher, so this is its primary freshness path.
-- The index lags writes by ~1s after a refresh — don't re-query in the same instant you edit.
-- Output hygiene (`prose-style.md`): don't name these tools to the user — say what changed
+- The index lags writes by ~1s after a refresh: don't re-query in the same instant you edit.
+- Output hygiene (`prose-style.md`): don't name these tools to the user: say what changed
   ("re-indexed the edited files"), not which tool did it.

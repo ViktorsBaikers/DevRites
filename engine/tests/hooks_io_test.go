@@ -110,7 +110,7 @@ func TestHookSourceCachePreFallsThroughOnChange(t *testing.T) {
 
 func TestHookSourceCachePreNoValidatorNeverServes(t *testing.T) {
 	proj := t.TempDir()
-	// A seeded entry with no etag/last_modified can't be proven fresh — no network,
+	// A seeded entry with no etag/last_modified can't be proven fresh: no network,
 	// no serve. (No server needed: the hook returns before any request.)
 	seedSourceCache(t, proj, "http://example.test/x", map[string]string{"url": "http://example.test/x", "content": "X"})
 	payload := `{"tool_input":{"url":"http://example.test/x"}}`

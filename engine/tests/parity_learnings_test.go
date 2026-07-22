@@ -16,7 +16,7 @@ func TestParityLearnings(t *testing.T) {
 
 	// --- add: fresh workspace. bash creates the ledger + a dated entry; Go then
 	// appends a second entry. Only stdout ("learnings: recorded.") + exit 0 are the
-	// contract — the dated file line is a nondeterministic side effect, not stdout.
+	// contract: the dated file line is a nondeterministic side effect, not stdout.
 	addw := t.TempDir()
 	t.Run("add", func(t *testing.T) {
 		(parityCase{
@@ -55,7 +55,7 @@ func TestParityLearnings(t *testing.T) {
 			"- second dead end: retry backoff exceeded 9 attempts\n"+
 			"- a one-off dismiss note about the flaky linter run\n")
 
-	// mine: default archive (bash .devrites/archive, Go <root>/archive — same dir).
+	// mine: default archive (bash .devrites/archive, Go <root>/archive: same dir).
 	t.Run("mine", func(t *testing.T) {
 		(parityCase{
 			workdir: arch, env: libRootEnv(arch),

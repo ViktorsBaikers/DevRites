@@ -1,4 +1,4 @@
-# Gate taxonomy — advisory · validating · blocking · escalating
+# Gate taxonomy: advisory · validating · blocking · escalating
 
 DevRites uses a four-gate model for HITL pauses, adapted from the regulated-agentic-workflow
 governance pattern. Picking the right gate for each `Mode: HITL` slice is the difference
@@ -22,29 +22,29 @@ audit / future record / FYI.
 **Example:** "We picked option A from the prototype's verdict but option B is also viable.
 Recording the choice for posterity."
 
-**SLA:** `none` — there is no waiting time because nothing is waiting.
+**SLA:** `none`. There is no waiting time because nothing is waiting.
 
 ### validating
 
 **Stakes:** medium. The slice can be built but should not merge before a human signs off.
-Async — the human reviews when they get to it, but the loop does not stall.
+Async: the human reviews when they get to it, but the loop does not stall.
 
 **Behavior:** in HITL mode, `$rite-build` pauses on this gate and writes
 `Awaiting human` to `state.md`. In AFK mode with `allow_gates: [advisory, validating]`,
 `$rite-build` builds the slice but marks it `built (pending review)` and writes the
 validating question; the feature does not seal until the entry is resolved. An open
-`gate: validating` entry is **merge-blocking by definition** — a slice marked
+`gate: validating` entry is **merge-blocking by definition**: a slice marked
 `built (pending review)` is not done, and seal is a NO-GO while it stands open.
 
 **Example:** "Schema migration adds a non-null column with a default. Backfill plan is
 recorded; reviewer should confirm the default is the right one for archived rows."
 
-**SLA:** `4h` — the work continues but the validating queue should drain within hours,
+**SLA:** `4h`: the work continues but the validating queue should drain within hours,
 not days.
 
 ### blocking
 
-**Stakes:** high. The slice cannot proceed safely without the answer. Synchronous —
+**Stakes:** high. The slice cannot proceed safely without the answer. Synchronous:
 the loop stops.
 
 **Behavior:** **always pauses regardless of `.devrites/AFK` config.** `$rite-build`
@@ -59,7 +59,7 @@ STOPs. The slice is not built until `$rite-resolve` lands.
 - Tests / types / lint are red and the agent cannot tell whether the slice's contract is
   wrong or the failing code is.
 
-**SLA:** `15m` — synchronous gates demand fast turnaround; otherwise treat the work as
+**SLA:** `15m`: synchronous gates demand fast turnaround; otherwise treat the work as
 genuinely blocked and re-plan around it.
 
 ### escalating
@@ -71,11 +71,11 @@ needs to route to a specialist (legal, security, principal engineer, designer-of
 `route:` field naming the specialist tag. `$rite-status` shows it under a separate
 "Escalating" line so it doesn't compete with synchronous blockers for the same reviewer.
 
-**Example:** "Slice introduces a contract with an external partner — needs legal review
+**Example:** "Slice introduces a contract with an external partner: needs legal review
 of the data-sharing language."
 
-**SLA:** `24h` — specialist routing implies the SLA is loose; if it needs to be tight,
-it's actually `blocking`.
+**SLA:** `24h`: specialist routing implies the SLA is loose; if it needs to be tight,
+it's `blocking`.
 
 ## Picking the gate
 
@@ -95,7 +95,7 @@ Apply this decision tree per HITL slice:
 
 | Gate | SLA | Synchronous? |
 |---|---|---|
-| advisory | `none` | — (does not pause) |
+| advisory | `none` |: (does not pause) |
 | validating | `4h` | no (async; build continues, merge blocks) |
 | blocking | `15m` | yes |
 | escalating | `24h` | yes, but to a specialist |
@@ -118,11 +118,11 @@ defaults and the always-pause rules:
 | `[advisory, validating, blocking]` | log + proceed | build + queue | log + proceed* | pause |
 
 \* but **never** for destructive migrations, auth/authz boundary changes, public API
-breaks, or red tests/types/lint — those always pause. See
+breaks, or red tests/types/lint. Those always pause. See
 [`.agents/skills/devrites-lib/reference/standards/afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) for the irreversible-risk
 list.
 
-`escalating` is never in `allow_gates` — specialist routing is not something AFK can
+`escalating` is never in `allow_gates`: specialist routing is not something AFK can
 shortcut.
 
 ## Anti-patterns

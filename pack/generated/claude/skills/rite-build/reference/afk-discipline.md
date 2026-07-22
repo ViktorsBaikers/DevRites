@@ -1,4 +1,4 @@
-# AFK discipline — running `/rite-build` unattended without burning the trunk
+# AFK discipline: running `/rite-build` unattended without burning the trunk
 
 AFK mode is `.devrites/AFK` present. It lets `/rite-build` chain slices without per-slice
 user input. The discipline below is what keeps an AFK loop from drifting into damage.
@@ -25,13 +25,13 @@ notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human trans
 allow_gates: [advisory, validating]  # gate severities AFK may auto-handle
 ```
 
-`.devrites/AFK` is **read-only config** — never rewritten in place. `max_slices` is the
+`.devrites/AFK` is **read-only config**: never rewritten in place. `max_slices` is the
 initial budget; the mutable remaining count lives in `state.md` as `AFK slices remaining:
 <n>`, seeded from `max_slices` on the first AFK build and decremented by `devrites-engine tick-afk`
 (see "Iteration cap").
 
 Defaults when keys are omitted:
-- `max_slices`: unlimited (a missing cap is risky — see "Always cap iterations").
+- `max_slices`: unlimited (a missing cap is risky: see "Always cap iterations").
 - `notify`: none.
 - `allow_gates`: `[advisory]`.
 
@@ -44,13 +44,13 @@ into HITL.
 remaining` by 1 each time a slice is marked `built`, by running
 `devrites-engine tick-afk <state.md path>`. The script reads the
 field, decrements, writes it back, prints the new value, and **exits `3` when it hits 0**.
-The cap is enforced by `devrites-engine tick-afk`, not by prose — when it exits 3:
+The cap is enforced by `devrites-engine tick-afk`, not by prose, when it exits 3:
 
 - `/rite-build` treats exit 3 as a forced HITL stop:
   ```
   AFK cap reached. Raise `state.md` `AFK slices remaining` or remove the sentinel to continue.
   ```
-- The workspace stays consistent — no half-built slice, no pending question.
+- The workspace stays consistent: no half-built slice, no pending question.
 
 Step 0 re-derives the remaining budget from `state.md` (seeding it from `.devrites/AFK`
 `max_slices` on the first AFK build); `max_slices` itself is read-only and never rewritten.
@@ -66,7 +66,7 @@ types / lint are red. The reasoning:
 
 - A red signal means either the slice's contract is wrong or the failing code is. Neither
   is something AFK can resolve.
-- Marking it `built` and letting the AFK loop chain to the next slice burns the trunk —
+- Marking it `built` and letting the AFK loop chain to the next slice burns the trunk:
   the next slice builds on broken state.
 
 The fail-on-red path:
@@ -92,7 +92,7 @@ any of:
   rewriting `.gitignore`-listed paths, deleting fixtures).
 - Anything the slice's `Gate: blocking` plus `tasks.md` `Why HITL:` flags as irreversible.
 
-The list is the same one Claude Code auto-mode's transcript classifier protects — adapted
+The list is the same one Claude Code auto-mode's transcript classifier protects: adapted
 to DevRites's workspace shape.
 
 ## The `notify:` hook contract
@@ -117,13 +117,13 @@ Example targets:
 - `osascript -e "display notification \"$DEVRITES_QUESTION\" with title \"DevRites: $DEVRITES_GATE\""`
 - `pb push "$DEVRITES_SLUG: $DEVRITES_QUESTION"` (via pushbullet CLI)
 
-DevRites owns no notification logic — the hook is a seam, not a feature.
+DevRites owns no notification logic: the hook is a seam, not a feature.
 
 ## When to leave AFK
 
 Drop the sentinel before:
 
-- A novel feature where you have not yet seen `/rite-build` work on this codebase HITL —
+- A novel feature where you have not yet seen `/rite-build` work on this codebase HITL:
   Ralph's progression: HITL first → refine prompt → AFK once trusted.
 - A risky slice you marked `Mode: HITL` and want to walk through interactively even if
   the gate is technically `validating`.

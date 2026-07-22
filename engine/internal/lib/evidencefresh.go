@@ -23,8 +23,8 @@ var touchedPathRe = regexp.MustCompile("`([^`]+)`")
 // base is the project directory that contains the .devrites tree. slug defaults
 // to the active feature named in .devrites/ACTIVE.
 //
-//	0  fresh — the proof post-dates every touched file, or there is nothing to compare
-//	3  stale — a touched file is newer than the proof
+//	0  fresh: the proof post-dates every touched file, or there is nothing to compare
+//	3  stale: a touched file is newer than the proof
 //	5  no workspace, or no proof to check
 func EvidenceFresh(root string, args []string, stdout, stderr io.Writer) int {
 	slug := ""
@@ -51,13 +51,13 @@ func EvidenceFresh(root string, args []string, stdout, stderr io.Writer) int {
 		filepath.Join(workDir, "browser-evidence.md"),
 	)
 	if !haveProof {
-		fmt.Fprintf(stderr, "evidence-fresh: no evidence.md / proof.md / browser-evidence.md in %s — run %s\n", workDir, workflow.ForVerb("prove").Both())
+		fmt.Fprintf(stderr, "evidence-fresh: no evidence.md / proof.md / browser-evidence.md in %s: run %s\n", workDir, workflow.ForVerb("prove").Both())
 		return 5
 	}
 
 	touched, err := os.ReadFile(filepath.Join(workDir, "touched-files.md"))
 	if err != nil {
-		fmt.Fprintln(stdout, "evidence-fresh: no touched-files.md — nothing to compare (treating as fresh).")
+		fmt.Fprintln(stdout, "evidence-fresh: no touched-files.md: nothing to compare (treating as fresh).")
 		return 0
 	}
 
@@ -77,9 +77,9 @@ func EvidenceFresh(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	if newestCode > newestProof {
-		fmt.Fprintf(stderr, "evidence-fresh: STALE — %s is newer than the proof. Re-run %s before GO.\n", newestPath, workflow.ForVerb("prove").Both())
+		fmt.Fprintf(stderr, "evidence-fresh: STALE: %s is newer than the proof. Re-run %s before GO.\n", newestPath, workflow.ForVerb("prove").Both())
 		return 3
 	}
-	fmt.Fprintln(stdout, "evidence-fresh: OK — evidence post-dates every touched file.")
+	fmt.Fprintln(stdout, "evidence-fresh: OK: evidence post-dates every touched file.")
 	return 0
 }

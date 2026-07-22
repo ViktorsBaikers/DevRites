@@ -1,6 +1,6 @@
 {
   "skill": "rite-vet",
-  "description": "Trigger eval for /rite-vet — the engineering review of a defined plan before build (scope challenge + architecture/code-quality/test-coverage/performance lenses). Must fire on plan-review intent; must NOT fire for the spec's strategy (rite-temper), one mid-build decision (devrites-doubt), a code diff (rite-review), the final gate (rite-seal), or initial planning (rite-define).",
+  "description": "Trigger eval for /rite-vet: the engineering review of a defined plan before build (scope challenge + architecture/code-quality/test-coverage/performance lenses). Must fire on plan-review intent; must NOT fire for the spec's strategy (rite-temper), one mid-build decision (devrites-doubt), a code diff (rite-review), the final gate (rite-seal), or initial planning (rite-define).",
   "queries": [
     {
       "text": "/rite-vet",

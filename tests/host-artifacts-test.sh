@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# host-artifacts-test.sh — validate prebuilt Claude/Codex host artifacts.
+# host-artifacts-test.sh: validate prebuilt Claude/Codex host artifacts.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-option-matrix-smoke.sh — independent install.sh option behavior.
+# install-option-matrix-smoke.sh: independent install.sh option behavior.
 set -u
 export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"

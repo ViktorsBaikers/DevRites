@@ -10,13 +10,13 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence.
+- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
+- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
 - Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers — NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
+- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
-# devrites-prose-craft — prose that reads human
+# devrites-prose-craft: prose that reads human
 
 Write for a teammate who will rely on the result. Remove model-shaped filler without sanding
 off the author's voice or weakening technical content.
@@ -26,15 +26,15 @@ off the author's voice or weakening technical content.
   `$rite-define` / `$rite-plan` (plan narrative), `$rite-temper` / `$rite-vet` (review prose),
   `$rite-review` / `$rite-seal` (findings + verdict prose), `$rite-ship` (commit/PR body),
   `devrites-doubt` / `rite-handoff` (notes).
-- Any phase composes a substantive **user-facing reply** (not the deterministic progress
-  footers — those are script-rendered and exact by design).
+- Any phase composes a substantive **user-facing reply**. Deterministic progress footers are
+  script-rendered and exact by design.
 - `$rite-polish` Phase 1 as the **catch** pass on prose that slipped through at write time.
 
 ## Two modes
 - **Rewrite (default).** When DevRites writes the artifact/reply or polishes it, fix the prose
   in place.
-- **Detect-only.** When auditing prose you shouldn't silently change — a user's existing
-  `spec.md` at `$rite-adopt`, text under `$rite-review` — list the tells with quotes and leave
+- **Detect-only.** When auditing prose you shouldn't silently change, such as a user's existing
+  `spec.md` at `$rite-adopt` or text under `$rite-review`, list the tells with quotes and leave
   the text untouched. Mirrors `devrites-audit`'s read-only stance.
 
 Order findings by severity: **P0** credibility-killers (vague attribution, a marketing

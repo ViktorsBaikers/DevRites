@@ -12,17 +12,17 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence.
+- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
+- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
 - Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers — NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
+- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
-# $rite — DevRites menu + router
+# $rite: DevRites menu + router
 
 You are the DevRites entry point. Two modes:
 
-- **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a phase or read `state.md` — status is `$rite-status`.
+- **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a phase or read `state.md`: status is `$rite-status`.
 - **Verb arg** → pass-through dispatch to the matching `rite-<verb>` skill (`$rite spec foo` ≡ `$rite-spec foo`); the called skill owns the output.
 
 When the user asks which rite fits, load [`devrites-lib/reference/intent-map.md`](../devrites-lib/reference/intent-map.md).
@@ -75,11 +75,11 @@ What each verb does lives once, in the Menu below; this table is the dispatch ma
 | `quick [change]` | `$rite-quick` |
 | `frame [task]` | `$rite-frame` |
 
-Both forms hit the same skill — the menu form for discovery, the `/rite-<verb>` shortcut for muscle memory.
+Both forms hit the same skill: the menu form for discovery, the `/rite-<verb>` shortcut for muscle memory.
 
-`use <slug>` is handled **inline** — there is no `rite-use` skill. Confirm
+`use <slug>` is handled **inline**. There is no `rite-use` skill. Confirm
 `.devrites/work/<slug>/` exists, then re-point `.devrites/ACTIVE` to `<slug>` and report
-the now-active feature. It is cheap context-switching only — no re-spec, no phase run. If
+the now-active feature. It is cheap context-switching only: no re-spec, no phase run. If
 the workspace is missing, list the slugs under `.devrites/work/` and stop.
 
 `guide` is an inline first-feature walkthrough. Agree on one **real, genuinely small**
@@ -104,7 +104,7 @@ Called phase skills own the shared completion reply contract
 1. **Verb in `$ARGUMENTS`** → dispatch per the table above.
 2. **No args** → menu mode, as above.
 3. **Unrecognized first token** → tell the user the known verbs and stop. Don't guess.
-4. **No active feature** and the user asked "where am I" or named no verb → point at `$rite spec <feature>` (or `$rite-spec`). Don't summarize state yourself — `$rite status` (or `$rite-status`) owns that.
+4. **No active feature** and the user asked "where am I" or named no verb → point at `$rite spec <feature>` (or `$rite-spec`). Don't summarize state yourself: `$rite status` (or `$rite-status`) owns that.
 
 ## Menu
 
@@ -144,7 +144,7 @@ UTILITY       $rite frame | prototype | handoff | zoom-out | pressure-test  (or 
 > **Small one-off change?** A typo, copy tweak, config bump, or one-function fix → **`$rite-quick`**
 > (express lane: one contract → build → prove → ship, no full workspace). It escalates to
 > `$rite-spec` the instant the change grows past small / reversible / unambiguous. The full
-> lifecycle above is for real features — don't pay its ceremony for a one-off.
+> lifecycle above is for real features: don't pay its ceremony for a one-off.
 
 ## Core operating rules (every DevRites skill enforces)
 

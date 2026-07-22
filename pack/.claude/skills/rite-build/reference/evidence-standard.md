@@ -26,7 +26,7 @@ Evidence beats confidence. A slice isn't built until there's a record that prove
 ```
 
 ## Honesty rules
-- If a test fails, record the failure and the output — don't hide it.
+- If a test fails, record the failure and the output: don't hide it.
 - If a step was skipped (no browser available, command not found), say so and record
   the manual verification steps instead.
 - Unproven acceptance criteria stay unchecked. The seal will catch them.

@@ -29,7 +29,7 @@ type reviewerStatEntry struct {
 
 var reviewerAgentRe = regexp.MustCompile(`^devrites-[a-z][a-z-]*$`)
 
-// alwaysOnReviewers are the roster's unconditional axes — stats are recorded for
+// alwaysOnReviewers are the roster's unconditional axes: stats are recorded for
 // visibility but the verdict is always run.
 var alwaysOnReviewers = map[string]bool{
 	"devrites-spec-reviewer": true,
@@ -183,7 +183,7 @@ func reviewerVerdict(agent string, zeroStreak int) string {
 	case alwaysOnReviewers[agent]:
 		return "run (always-on)"
 	case insuranceReviewers[agent]:
-		return "run (insurance — never gated)"
+		return "run (insurance: never gated)"
 	case zeroStreak >= gateStreak:
 		return "gate-candidate"
 	default:

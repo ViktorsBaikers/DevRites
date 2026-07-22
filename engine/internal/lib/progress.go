@@ -12,18 +12,18 @@ import (
 )
 
 // State-parsing patterns ported verbatim from progress.sh's awk. Each name-strip
-// sub is anchored (^ or $), so it matches at most once per line — ReplaceAllString
+// sub is anchored (^ or $), so it matches at most once per line: ReplaceAllString
 // is therefore equivalent to awk's single-match sub.
 var (
 	sliceCheckRe   = regexp.MustCompile(`^- \[[^\]]*\][[:space:]]*`)             // drop "- [x] "
 	sliceNameRe    = regexp.MustCompile(`^Slice[[:space:]]*[0-9]+:[[:space:]]*`) // drop "Slice N: "
 	sliceStateRe   = regexp.MustCompile(`[[:space:]]+(built|pending)[[:space:]]*$`)
-	sliceSepRe     = regexp.MustCompile(`[[:space:]]+[^[:alnum:][:space:]]+[[:space:]]*$`) // drop " — "
+	sliceSepRe     = regexp.MustCompile(`[[:space:]]+[^[:alnum:][:space:]]+[[:space:]]*$`) // drop " · "
 	sliceCheckedRe = regexp.MustCompile(`\[[xX]\]`)
 	sliceHeadingRe = regexp.MustCompile(`^##[[:space:]]+(SLICE-[0-9]{3})(?:[[:space:]]+(.*))?$`)
 )
 
-// Progress renders the active feature's position — the deterministic footer every
+// Progress renders the active feature's position: the deterministic footer every
 // workspace-operating rite-* skill prints last. Read-only. Prints nothing and
 // exits 0 when there is no active workspace, so pre-spec callers stay silent. root
 // is the .devrites directory; slug defaults to the active feature at <root>/ACTIVE.
@@ -38,7 +38,7 @@ func Progress(root string, args []string, stdout, stderr io.Writer) int {
 	workDir := featureDir(root, slug)
 	statePath := filepath.Join(workDir, "state.md")
 	if slug == "" || !isFile(statePath) {
-		return 0 // silent — no active workspace
+		return 0 // silent: no active workspace
 	}
 	stateBytes, err := os.ReadFile(statePath)
 	if err != nil {
@@ -180,7 +180,7 @@ func parsePhase(lines []string) string {
 }
 
 // tallySlices reads the "## Slice progress" block: total slice lines, how many are
-// checked, and the display name of the last checked one — the awk in progress.sh.
+// checked, and the display name of the last checked one: the awk in progress.sh.
 func tallySlices(lines []string) (total, built int, lastbuilt string) {
 	inp := false
 	for _, line := range lines {

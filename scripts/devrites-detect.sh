@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/devrites-detect.sh — deterministic anti-slop detector.
+# scripts/devrites-detect.sh: deterministic anti-slop detector.
 #
 # Greps the current git diff (or a passed file list) for ~25 actionable
 # anti-slop patterns from rite-polish/reference/anti-ai-slop.md +
@@ -76,43 +76,43 @@ fi
 # Severity = critical (auth/safety), high (slop tell), low (style nit).
 RULES=(
   # --- UI anti-slop (CSS-ish) ---
-  '#000([^0-9a-f]|$)|#fff([^0-9a-f]|$)|#000000|#ffffff'                            'high'  'Pure #000 / #fff — use near-black / near-white tokens.'
-  '#6366f1|#8b5cf6|#a855f7|#d946ef|#ec4899'                                        'high'  'Purple/blue gradient hex range — likely default AI palette.'
-  'background-clip:[[:space:]]*text|-webkit-background-clip:[[:space:]]*text'      'high'  'Gradient text decoration — likely AI slop.'
-  'backdrop-filter:[[:space:]]*blur'                                               'high'  'Glassmorphism `backdrop-filter: blur(...)` — banned default surface.'
-  'border-left:[[:space:]]*[1-6]px[[:space:]]+solid|border-l-[2-8]'                'low'   'Side-stripe accent border — common templating tell; confirm vs design system.'
-  'cubic-bezier\([^)]*0\.34[[:space:]]*,[[:space:]]*1\.56'                         'high'  'Bounce/elastic easing curve — banned unless design system uses it.'
-  'animation-duration:[[:space:]]*[5-9][0-9]{2}ms[[:space:]]*;[[:space:]]*animation-delay'  'low'   'Long animation durations stacked — verify motion budget.'
-  'z-index:[[:space:]]*[0-9]{4,}'                                                  'high'  'Raw z-index in the 1000s — use semantic z scale.'
-  'font-family:[[:space:]]*"?(DM Sans|Plus Jakarta|Fraunces|Newsreader)'           'high'  'Reflex font choice — use the project type system.'
-  'text-transform:[[:space:]]*uppercase[[:space:]]*;[^}]*letter-spacing'           'low'   'All-CAPS with letter-spacing — verify register; banned for body text.'
+  '#000([^0-9a-f]|$)|#fff([^0-9a-f]|$)|#000000|#ffffff'                            'high'  'Pure #000 / #fff: use near-black / near-white tokens.'
+  '#6366f1|#8b5cf6|#a855f7|#d946ef|#ec4899'                                        'high'  'Purple/blue gradient hex range: likely default AI palette.'
+  'background-clip:[[:space:]]*text|-webkit-background-clip:[[:space:]]*text'      'high'  'Gradient text decoration: likely AI slop.'
+  'backdrop-filter:[[:space:]]*blur'                                               'high'  'Glassmorphism `backdrop-filter: blur(...)`: banned default surface.'
+  'border-left:[[:space:]]*[1-6]px[[:space:]]+solid|border-l-[2-8]'                'low'   'Side-stripe accent border: common templating tell; confirm vs design system.'
+  'cubic-bezier\([^)]*0\.34[[:space:]]*,[[:space:]]*1\.56'                         'high'  'Bounce/elastic easing curve: banned unless design system uses it.'
+  'animation-duration:[[:space:]]*[5-9][0-9]{2}ms[[:space:]]*;[[:space:]]*animation-delay'  'low'   'Long animation durations stacked: verify motion budget.'
+  'z-index:[[:space:]]*[0-9]{4,}'                                                  'high'  'Raw z-index in the 1000s: use semantic z scale.'
+  'font-family:[[:space:]]*"?(DM Sans|Plus Jakarta|Fraunces|Newsreader)'           'high'  'Reflex font choice: use the project type system.'
+  'text-transform:[[:space:]]*uppercase[[:space:]]*;[^}]*letter-spacing'           'low'   'All-CAPS with letter-spacing: verify register; banned for body text.'
   # --- Code anti-slop ---
-  '\bconsole\.log\('                                                               'high'  'console.log left in code — remove before polish.'
-  'if[[:space:]]*\([[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*&&[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*\.length[[:space:]]*>[[:space:]]*0' 'high' 'Over-defensive `x && x.length > 0` — validate at boundaries.'
-  '\bcatch[[:space:]]*\([[:space:]]*\)[[:space:]]*\{[^}]*\}'                       'high'  'Blanket catch with no narrow handling — likely swallowing errors.'
-  '\bcatch[[:space:]]*\([[:space:]]*[A-Za-z][A-Za-z0-9_]*[[:space:]]*\)[[:space:]]*\{[[:space:]]*\}'  'high'  'Empty catch body — silently swallows errors. Catch narrow; recover or rethrow.'
-  '//[[:space:]]*helper function|//[[:space:]]*increment'                          'low'   'Tutorial-style comment — restates code; remove.'
-  '^[[:space:]]*(//|#)[[:space:]]*(Now (I('"'"'ll| will)|we('"'"'ll| will))|Updated|Added|Changed|Modified|As requested|Step [0-9]+:)'  'low'   'Diff-narrating comment — describe the current constraint or delete it.'
-  '\bfunction[[:space:]]+(process|handle|do)(Data|Item|Thing|It)?\b'               'high'  'Generic AI naming (`processData` / `handleItem` / `doIt`) — name for intent.'
-  '\bfunction[[:space:]]+get[A-Z][a-zA-Z]*\([^)]*\)[[:space:]]*\{[[:space:]]*return[[:space:]]+[A-Z][a-zA-Z]+\.find'  'low'   'Useless wrapper around a single ORM call — inline.'
-  '//[[:space:]]*TODO:[[:space:]]*(improve|cleanup|refactor)[[:space:]]+(this|later)'  'low'   '"TODO: improve this later" — without owner/issue, this rots.'
-  '\btemp\s*=|\bresult\s*=|\bdata\s*=[^=]'                                         'low'   'Generic local name (temp/result/data) — name for intent.'
-  '\binterface[[:space:]]+I[A-Z][a-zA-Z]+\b'                                       'low'   '`IFoo` prefix on interfaces — most modern style guides prefer `Foo`.'
-  '/\*\s*eslint-disable\s*\*/'                                                     'high'  'Global eslint-disable — explain or remove.'
+  '\bconsole\.log\('                                                               'high'  'console.log left in code: remove before polish.'
+  'if[[:space:]]*\([[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*&&[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*\.length[[:space:]]*>[[:space:]]*0' 'high' 'Over-defensive `x && x.length > 0`: validate at boundaries.'
+  '\bcatch[[:space:]]*\([[:space:]]*\)[[:space:]]*\{[^}]*\}'                       'high'  'Blanket catch with no narrow handling: likely swallowing errors.'
+  '\bcatch[[:space:]]*\([[:space:]]*[A-Za-z][A-Za-z0-9_]*[[:space:]]*\)[[:space:]]*\{[[:space:]]*\}'  'high'  'Empty catch body: silently swallows errors. Catch narrow; recover or rethrow.'
+  '//[[:space:]]*helper function|//[[:space:]]*increment'                          'low'   'Tutorial-style comment: restates code; remove.'
+  '^[[:space:]]*(//|#)[[:space:]]*(Now (I('"'"'ll| will)|we('"'"'ll| will))|Updated|Added|Changed|Modified|As requested|Step [0-9]+:)'  'low'   'Diff-narrating comment: describe the current constraint or delete it.'
+  '\bfunction[[:space:]]+(process|handle|do)(Data|Item|Thing|It)?\b'               'high'  'Generic AI naming (`processData` / `handleItem` / `doIt`): name for intent.'
+  '\bfunction[[:space:]]+get[A-Z][a-zA-Z]*\([^)]*\)[[:space:]]*\{[[:space:]]*return[[:space:]]+[A-Z][a-zA-Z]+\.find'  'low'   'Useless wrapper around a single ORM call: inline.'
+  '//[[:space:]]*TODO:[[:space:]]*(improve|cleanup|refactor)[[:space:]]+(this|later)'  'low'   '"TODO: improve this later": without owner/issue, this rots.'
+  '\btemp\s*=|\bresult\s*=|\bdata\s*=[^=]'                                         'low'   'Generic local name (temp/result/data): name for intent.'
+  '\binterface[[:space:]]+I[A-Z][a-zA-Z]+\b'                                       'low'   '`IFoo` prefix on interfaces: most modern style guides prefer `Foo`.'
+  '/\*\s*eslint-disable\s*\*/'                                                     'high'  'Global eslint-disable: explain or remove.'
   # --- Security ---
-  '\bnew Function\('                                                               'critical' '`new Function(...)` — dynamic code construction.'
-  '\beval\s*\('                                                                    'critical' '`eval(...)` — avoid.'
-  '\bdangerouslySetInnerHTML\b'                                                    'high'  'dangerouslySetInnerHTML — confirm XSS-safe.'
-  'process\.env\.[A-Z_]+(.{0,40}(?:console|res\.send|res\.json))'                  'high'  'env var possibly echoed to response/log — re-check for secret leakage.'
+  '\bnew Function\('                                                               'critical' '`new Function(...)`: dynamic code construction.'
+  '\beval\s*\('                                                                    'critical' '`eval(...)`: avoid.'
+  '\bdangerouslySetInnerHTML\b'                                                    'high'  'dangerouslySetInnerHTML: confirm XSS-safe.'
+  'process\.env\.[A-Z_]+(.{0,40}(?:console|res\.send|res\.json))'                  'high'  'env var possibly echoed to response/log: re-check for secret leakage.'
   # --- Performance pitfalls ---
-  '\.forEach\([^)]+\)\s*\.\s*forEach\('                                            'low'   'Nested `forEach` — accidental quadratic loop?'
+  '\.forEach\([^)]+\)\s*\.\s*forEach\('                                            'low'   'Nested `forEach`: accidental quadratic loop?'
 )
 
 # Markdown-only rules. Run against SCAN_MD, not SCAN.
-# Em-dash overuse: 2+ em-dashes (U+2014) on the same line — the per-line proxy
+# Em-dash overuse: 2+ em-dashes (U+2014) on the same line: the per-line proxy
 # for the "multiple em-dashes per paragraph" rule in anti-ai-slop.md.
 MD_RULES=(
-  $'.*\xe2\x80\x94.*\xe2\x80\x94'  'high'  'Em-dash overuse on one line (2+ em-dashes) — a common AI tell; prefer comma, period, or parenthetical.'
+  $'.*\xe2\x80\x94.*\xe2\x80\x94'  'high'  'Em-dash overuse on one line (2+ em-dashes): a common AI tell; prefer comma, period, or parenthetical.'
 )
 
 FOUND=0
@@ -133,7 +133,7 @@ if [[ ${#SCAN[@]} -gt 0 ]]; then
     while IFS= read -r line; do
       [[ -z "$line" ]] && continue
       FOUND=$((FOUND + 1))
-      printf '[%s] %s — %s\n' "$sev" "$line" "$msg"
+      printf '[%s] %s: %s\n' "$sev" "$line" "$msg"
     done <<<"$HITS"
   done
 fi
@@ -154,7 +154,7 @@ if [[ ${#SCAN_MD[@]} -gt 0 ]]; then
     while IFS= read -r line; do
       [[ -z "$line" ]] && continue
       FOUND=$((FOUND + 1))
-      printf '[%s] %s — %s\n' "$sev" "$line" "$msg"
+      printf '[%s] %s: %s\n' "$sev" "$line" "$msg"
     done <<<"$HITS"
   done
 fi
@@ -163,7 +163,7 @@ TOTAL=$(( ${#SCAN[@]} + ${#SCAN_MD[@]} ))
 
 echo
 if [[ $FOUND -eq 0 ]]; then
-  echo "devrites-detect: clean — scanned $TOTAL files (${#SCAN[@]} code, ${#SCAN_MD[@]} md)."
+  echo "devrites-detect: clean: scanned $TOTAL files (${#SCAN[@]} code, ${#SCAN_MD[@]} md)."
   exit 0
 fi
 

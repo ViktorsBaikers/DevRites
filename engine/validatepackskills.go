@@ -9,26 +9,26 @@ import (
 )
 
 // This file extends validate-pack (see validatepack.go) from linting the pack's
-// JSON hook wiring to linting its markdown *contracts* — the SKILL.md / agent
+// JSON hook wiring to linting its markdown *contracts*: the SKILL.md / agent
 // frontmatter that Claude and Codex parse, and the docs → pack links that drift
 // silently when a skill is renamed. Same output shape as the JSON pass
 // (`rel: message`, appended to the shared issues slice, sorted, exit 1 if any).
 //
 // It is deliberately stdlib-only: the frontmatter parser is a minimal
 // top-level-key scanner (no nesting, no YAML dependency), which is all the
-// contract needs — name/description/user-invocable are always scalar top-level
+// contract needs: name/description/user-invocable are always scalar top-level
 // keys.
 //
 // Checks:
 //
-//	A. Frontmatter contract — every skills/*/SKILL.md and agents/*.md opens with
+//	A. Frontmatter contract: every skills/*/SKILL.md and agents/*.md opens with
 //	   a terminated `---` block carrying non-empty name + description (skills also
 //	   user-invocable), and its name matches the directory (skills) or filename
 //	   (agents).
-//	B. Naming invariant (docs/command-map.md "Naming convention") — a devrites-*
+//	B. Naming invariant (docs/command-map.md "Naming convention"): a devrites-*
 //	   skill is model-invoked only (never user-invocable:true); a user-invocable
 //	   skill lives under a rite-* directory (the bare `rite` router included).
-//	C. Doc-claims — every ../pack/.claude/... link in docs/command-map.md must
+//	C. Doc-claims: every ../pack/.claude/... link in docs/command-map.md must
 //	   resolve to a file on disk, catching stale docs after a rename/move.
 
 // docLinkRe pulls the target out of any markdown link `](target)`. We filter to
@@ -104,7 +104,7 @@ func frontmatterIssues(rel, path, expectName string, isSkill bool) []string {
 		userInvocable := keys["user-invocable"] == "true"
 		// B4: a devrites-* skill is model-invoked only.
 		if strings.HasPrefix(expectName, "devrites-") && userInvocable {
-			issues = append(issues, fmt.Sprintf("%s: devrites-* skills are model-invoked only — must not set user-invocable: true", rel))
+			issues = append(issues, fmt.Sprintf("%s: devrites-* skills are model-invoked only: must not set user-invocable: true", rel))
 		}
 		// B5: a user-invocable skill lives under rite-* (the bare `rite` router included).
 		if userInvocable && expectName != "rite" && !strings.HasPrefix(expectName, "rite-") {
@@ -132,7 +132,7 @@ func parseFrontmatter(data []byte) (keys map[string]string, opened, terminated b
 			return keys, true, true
 		}
 		if line == "" || line[0] == ' ' || line[0] == '\t' || line[0] == '#' {
-			continue // blank / nested / comment — not a top-level key
+			continue // blank / nested / comment: not a top-level key
 		}
 		idx := strings.Index(line, ":")
 		if idx <= 0 {
@@ -155,7 +155,7 @@ func docClaimIssues(dir string) []string {
 	docPath := filepath.Join(repoRoot, "docs", "command-map.md")
 	data, err := os.ReadFile(docPath)
 	if err != nil {
-		return nil // no command-map to cross-check — skip silently
+		return nil // no command-map to cross-check: skip silently
 	}
 	docDir := filepath.Dir(docPath)
 	seen := map[string]bool{}
@@ -174,7 +174,7 @@ func docClaimIssues(dir string) []string {
 		seen[link] = true
 		resolved := filepath.Clean(filepath.Join(docDir, link))
 		if _, err := os.Stat(resolved); err != nil {
-			issues = append(issues, fmt.Sprintf("docs/command-map.md: stale link — %q does not exist on disk", link))
+			issues = append(issues, fmt.Sprintf("docs/command-map.md: stale link: %q does not exist on disk", link))
 		}
 	}
 	return issues

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/pin.sh — manage user-pinned slash aliases for DevRites.
+# scripts/pin.sh: manage user-pinned slash aliases for DevRites.
 #
 # Adopts the same "thin wrapper SKILL.md that delegates" pattern as the engine
 # installer uses for --short-aliases=all, but exposes it as a runtime verb so
@@ -66,15 +66,15 @@ done
 [ -z "$SUBCMD" ] && dr_die "missing subcommand (add | remove | list)"
 
 TARGET="$(dr_abspath_dir "$TARGET")" || dr_die "target dir not found: $TARGET"
-dr_is_global_claude "$TARGET" && dr_die "refusing to operate on ~/.claude — DevRites is project-local only"
-dr_is_global_codex "$TARGET" && dr_die "refusing to operate on ~/.codex — DevRites is project-local only"
+dr_is_global_claude "$TARGET" && dr_die "refusing to operate on ~/.claude: DevRites is project-local only"
+dr_is_global_codex "$TARGET" && dr_die "refusing to operate on ~/.codex: DevRites is project-local only"
 
 SKILLS_DIR="$TARGET/.claude/skills"
 CODEX_SKILLS_DIR="$TARGET/.agents/skills"
 MF="$TARGET/$DR_MANIFEST_NAME"
 
-[ -d "$SKILLS_DIR" ] || dr_die "no .claude/skills at $TARGET — run install.sh first?"
-[ -f "$MF" ]         || dr_die "no manifest at $MF — run install.sh first?"
+[ -d "$SKILLS_DIR" ] || dr_die "no .claude/skills at $TARGET: run install.sh first?"
+[ -f "$MF" ]         || dr_die "no manifest at $MF: run install.sh first?"
 
 # ---- helpers -------------------------------------------------------------
 valid_alias_name() {
@@ -108,7 +108,7 @@ is_pinned_alias_file() {
 # ---- subcommands ---------------------------------------------------------
 do_add() {
   valid_alias_name "$ALIAS"    || dr_die "invalid alias name '$ALIAS' (lowercase / digits / hyphens; not 'rite' or 'rite-*')"
-  is_known_target "$DEST"      || dr_die "unknown target '$DEST' — not a rite-* skill in $SKILLS_DIR"
+  is_known_target "$DEST"      || dr_die "unknown target '$DEST': not a rite-* skill in $SKILLS_DIR"
   [ "$ALIAS" = "$DEST" ]       && dr_die "alias and target are the same"
 
   ALIAS_DIR="$SKILLS_DIR/$ALIAS"
@@ -120,16 +120,16 @@ do_add() {
 
   if [ -e "$ALIAS_FILE" ]; then
     if is_pinned_alias "$ALIAS"; then
-      dr_warn "already pinned: /$ALIAS — overwriting"
+      dr_warn "already pinned: /$ALIAS: overwriting"
     else
-      dr_die "$ALIAS_FILE exists and is NOT a pinned alias — refusing to overwrite"
+      dr_die "$ALIAS_FILE exists and is NOT a pinned alias: refusing to overwrite"
     fi
   fi
   if [ -d "$CODEX_SKILLS_DIR" ] && [ -e "$CODEX_ALIAS_FILE" ]; then
     if is_pinned_alias_file "$CODEX_ALIAS_FILE"; then
-      dr_warn "already pinned for Codex: /$ALIAS — overwriting"
+      dr_warn "already pinned for Codex: /$ALIAS: overwriting"
     else
-      dr_die "$CODEX_ALIAS_FILE exists and is NOT a pinned alias — refusing to overwrite"
+      dr_die "$CODEX_ALIAS_FILE exists and is NOT a pinned alias: refusing to overwrite"
     fi
   fi
 
@@ -164,12 +164,12 @@ do_remove() {
   CODEX_ALIAS_REL=".agents/skills/$ALIAS/SKILL.md"
 
   [ -f "$ALIAS_FILE" ]      || dr_die "no pinned alias at $ALIAS_FILE"
-  is_pinned_alias "$ALIAS"  || dr_die "$ALIAS_FILE exists but is not a pinned alias — refusing to remove"
+  is_pinned_alias "$ALIAS"  || dr_die "$ALIAS_FILE exists but is not a pinned alias: refusing to remove"
 
   rm -f "$ALIAS_FILE"
   rmdir "$ALIAS_DIR" 2>/dev/null || true
   if [ -f "$CODEX_ALIAS_FILE" ]; then
-    is_pinned_alias_file "$CODEX_ALIAS_FILE" || dr_die "$CODEX_ALIAS_FILE exists but is not a pinned alias — refusing to remove"
+    is_pinned_alias_file "$CODEX_ALIAS_FILE" || dr_die "$CODEX_ALIAS_FILE exists but is not a pinned alias: refusing to remove"
     rm -f "$CODEX_ALIAS_FILE"
     rmdir "$CODEX_ALIAS_DIR" 2>/dev/null || true
   fi

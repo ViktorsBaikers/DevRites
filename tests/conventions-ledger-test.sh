@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# conventions-ledger-test.sh — fixture tests for the B1 conventions ledger:
+# conventions-ledger-test.sh: fixture tests for the B1 conventions ledger:
 # M1 deterministic corroboration scorer + M2 ledger store (promote/contradict/read).
 set -u
 

@@ -11,7 +11,7 @@ import (
 	"github.com/devrites/devrites/internal/workflow"
 )
 
-// spaceChars is the POSIX [[:space:]] set under the C locale — the collation the
+// spaceChars is the POSIX [[:space:]] set under the C locale: the collation the
 // parity oracle pins (LC_ALL=C), so trimming matches the bash awk/sed exactly.
 const spaceChars = " \t\n\v\f\r"
 
@@ -22,7 +22,7 @@ func featureDir(root, slug string) string {
 }
 
 // activeSlug reads the active-feature pointer at <root>/ACTIVE (trimmed), or ""
-// when absent — the new-schema replacement for the old .devrites/ACTIVE lookup.
+// when absent: the new-schema replacement for the old .devrites/ACTIVE lookup.
 func activeSlug(root string) string {
 	slug, err := devritespaths.ActiveSlug(root)
 	if err != nil {
@@ -32,7 +32,7 @@ func activeSlug(root string) string {
 }
 
 // preambleArtifacts is the fixed order preamble.sh scans for present artifacts.
-// It is NOT sorted — the display order is the workflow order, so the port keeps
+// It is NOT sorted: the display order is the workflow order, so the port keeps
 // the literal list.
 var preambleArtifacts = []string{
 	"brief", "spec", "references", "strategy", "plan", "tasks", "eng-review",
@@ -41,7 +41,7 @@ var preambleArtifacts = []string{
 	"polish-report", "review", "seal", "ship", "handoff",
 }
 
-// Preamble prints the active feature's workspace state — the orientation every
+// Preamble prints the active feature's workspace state: the orientation every
 // workspace-operating rite-* skill runs first (step 0). Read-only. root is the
 // .devrites directory; slug defaults to the active feature at <root>/ACTIVE.
 // Always exits 0: orientation is never a hard dependency.
@@ -63,7 +63,7 @@ func Preamble(root string, args []string, stdout, stderr io.Writer) int {
 
 	if state, err := os.ReadFile(filepath.Join(workDir, "state.md")); err == nil {
 		fmt.Fprintln(stdout, "### state.md")
-		// Emit the file verbatim, like `cat` — no added trailing newline.
+		// Emit the file verbatim, like `cat`: no added trailing newline.
 		_, _ = stdout.Write(state)
 	}
 
@@ -148,7 +148,7 @@ func isHeadingLine(line string) bool {
 
 // splitLinesNoTrailing splits data into lines on '\n', dropping a single trailing
 // newline's empty final element so a "\n"-terminated file yields N lines, not N+1
-// — matching how awk/grep iterate records.
+// : matching how awk/grep iterate records.
 func splitLinesNoTrailing(data []byte) []string {
 	s := string(data)
 	s = strings.TrimSuffix(s, "\n")

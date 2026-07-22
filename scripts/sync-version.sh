@@ -39,7 +39,7 @@ for (const u of updates) {
 const readmePath = path.resolve('README.md');
 const readme = fs.readFileSync(readmePath, 'utf8');
 const statusLine =
-  `**Status:** [\`v${version}\`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v${version}) — ` +
+  `**Status:** [\`v${version}\`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v${version}): ` +
   "see [`CHANGELOG.md`](CHANGELOG.md) for release notes.";
 const re = /\*\*Status:\*\*[^\n]*(?:\n(?!\n)[^\n]*)*/;
 if (re.test(readme)) {
@@ -49,6 +49,6 @@ if (re.test(readme)) {
     console.log('  → README.md');
   }
 } else {
-  console.warn('  ! README.md status line not found — skipping');
+  console.warn('  ! README.md status line not found: skipping');
 }
 NODE

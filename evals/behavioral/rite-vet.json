@@ -1,6 +1,6 @@
 {
   "skill": "rite-vet",
-  "description": "Behavioral evals for /rite-vet — does the plan-review discipline hold when pressured to dump findings instead of reviewing interactively, raise an unquoted finding, defer a missing test, or average a weak dimension away? Sourced from rite-vet/reference/anti-patterns.md and standards/anti-patterns.md.",
+  "description": "Behavioral evals for /rite-vet: does the plan-review discipline hold when pressured to dump findings instead of reviewing interactively, raise an unquoted finding, defer a missing test, or average a weak dimension away? Sourced from rite-vet/reference/anti-patterns.md and standards/anti-patterns.md.",
   "eval_class": "regression",
   "trials": 3,
   "scenarios": [

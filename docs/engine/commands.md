@@ -125,7 +125,7 @@ Every hook is **fail-open and read-only unless it explicitly gates**.
   empty `evidence.md` or `proof.md`. It does not check whole-feature completeness,
   so normal in-progress work is never blocked. It observes by default: a would-be block is
   appended to the feature's `.stop-gate.log` (mirroring `devrites-engine hook stop-gate`)
-  rather than gating; set `DEVRITES_STOP_GATE=enforce` to actually block.
+rather than gating; set `DEVRITES_STOP_GATE=enforce` to block.
   Loop-guarded by the harness's `stop_hook_active` so it can never wedge a
   session.
 

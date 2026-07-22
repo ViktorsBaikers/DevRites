@@ -1,6 +1,6 @@
 {
   "skill": "rite-prototype",
-  "description": "Explicit-only evals for /rite-prototype — throwaway logic/UI prototypes.",
+  "description": "Explicit-only evals for /rite-prototype: throwaway logic/UI prototypes.",
   "queries": [
     {
       "text": "/rite-prototype",

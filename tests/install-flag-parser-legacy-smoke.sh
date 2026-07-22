@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-flag-parser-legacy-smoke.sh — retired/no-op flags still parse.
+# install-flag-parser-legacy-smoke.sh: retired/no-op flags still parse.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0

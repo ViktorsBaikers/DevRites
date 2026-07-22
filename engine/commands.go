@@ -81,7 +81,7 @@ func cmdDoctor(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
 	}
-	// The project directory is the parent of the .devrites root — that is where
+	// The project directory is the parent of the .devrites root: that is where
 	// an installed pack's version marker (.claude/devrites.version, package.json)
 	// lives.
 	projectDir := filepath.Dir(root)
@@ -92,7 +92,7 @@ func cmdDoctor(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprint(stdout, report.Render())
 	if op := gitOperation(projectDir); op != "" {
-		fmt.Fprintf(stdout, "git-state: %s in progress — resolve with .claude/skills/devrites-lib/reference/standards/git-workflow.md#merge-conflict-recovery\n", op)
+		fmt.Fprintf(stdout, "git-state: %s in progress: resolve with .claude/skills/devrites-lib/reference/standards/git-workflow.md#merge-conflict-recovery\n", op)
 	}
 	for _, warning := range extensionProvenanceWarnings(root) {
 		fmt.Fprintf(stdout, "warning: %s\n", warning)
@@ -105,7 +105,7 @@ func cmdDoctor(args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "  evidence: %s\n", snap.Evidence.Status)
 			fmt.Fprintf(stdout, "  drift: %s\n", snap.Drift.Status)
 			fmt.Fprintf(stdout, "  review: %s\n", snap.Review.Status)
-			fmt.Fprintf(stdout, "  harness: %s — %s\n", snap.Harness.Status, snap.Harness.Detail)
+			fmt.Fprintf(stdout, "  harness: %s: %s\n", snap.Harness.Status, snap.Harness.Detail)
 			fmt.Fprintf(stdout, "  extensions: %s (%d)\n", snap.Extensions.Status, snap.Extensions.Count)
 			fmt.Fprintf(stdout, "  worktree: %s (%d changed)\n", snap.DirtyWorkspace.Status, snap.DirtyWorkspace.Changed)
 			fmt.Fprintln(stdout, "  capabilities:")

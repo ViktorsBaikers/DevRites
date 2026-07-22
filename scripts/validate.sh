@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate.sh — static validation of the DevRites pack (no install required).
+# validate.sh: static validation of the DevRites pack (no install required).
 # Run from anywhere. Exits non-zero if any hard check fails.
 
 set -u
@@ -207,7 +207,7 @@ fi
 section "no global ~/.claude writes"
 if bash "$ROOT/scripts/check-no-global-writes.sh" >/tmp/dr_glob 2>&1; then good "no-global-writes check passed"; else bad "no-global-writes check failed"; cat /tmp/dr_glob; fi
 
-# ---- 11. principle uniqueness — each canonical heading appears exactly once
+# ---- 11. principle uniqueness: each canonical heading appears exactly once
 section "principle uniqueness"
 if bash "$ROOT/scripts/check-rule-uniqueness.sh" >/tmp/dr_uniq 2>&1; then
   cat /tmp/dr_uniq
@@ -254,7 +254,7 @@ fi
 # ---- 12. no runtime-broken pack/.claude/ path in installed prose ---------
 # After install the leading pack/ is stripped, so any literal pack/.claude/skills/devrites-lib/reference/standards/
 # or pack/.claude/skills/ in shipped SKILL.md / reference prose is a dead path
-# at runtime. (Repo README/docs links are out of scope — they're GitHub links.)
+# at runtime. (Repo README/docs links are out of scope: they're GitHub links.)
 section "no literal pack/.claude/ paths in shipped skill prose"
 # Exclude the intentional resolution-snippet fallback (`... || P=pack/.claude/...`): the
 # preamble snippet tries the installed `.claude/` path first, then `${CLAUDE_SKILL_DIR}`
@@ -273,7 +273,7 @@ fi
 section "no false session-start autoload claim"
 AUTOLOAD_HITS="$(grep -rl 'autoloaded by Claude Code' "$ROOT/pack" "$ROOT/docs" "$ROOT/README.md" 2>/dev/null || true)"
 if [ -n "$AUTOLOAD_HITS" ]; then
-  bad "false 'autoloaded by Claude Code' claim — the pack ships no autoload wiring:"
+  bad "false 'autoloaded by Claude Code' claim: the pack ships no autoload wiring:"
   printf '%s\n' "$AUTOLOAD_HITS" | sed "s|$ROOT/||"
 else
   good "no false session-start autoload claim in pack/ docs/ README.md"
@@ -327,18 +327,18 @@ fi
 # ---- 15. shellcheck (error = blocking, warning = advisory) ---------------
 # CI runners ship shellcheck, so the error-level gate is enforced on every PR.
 # Locally it self-skips when shellcheck is absent (the gate is non-blocking only
-# where the tool isn't installed — never silently downgraded where it is).
+# where the tool isn't installed: never silently downgraded where it is).
 section "shellcheck (-S error blocking · -S warning advisory)"
 if command -v shellcheck >/dev/null 2>&1; then
   for f in $SH_LIST; do
     if shellcheck -S error "$f"; then good "shellcheck ${f#"$ROOT"/}"; else bad "shellcheck (error) ${f#"$ROOT"/}"; fi
   done
-  # warning-level is informational — surfaced per file, never fails the build.
+  # warning-level is informational: surfaced per file, never fails the build.
   for f in $SH_LIST; do
     shellcheck -S warning "$f" >/dev/null 2>&1 || echo "  advisory (warning-level): ${f#"$ROOT"/}"
   done
 else
-  echo "skip: shellcheck not installed locally (optional — CI enforces the error-level gate)"
+  echo "skip: shellcheck not installed locally (optional: CI enforces the error-level gate)"
 fi
 
 # ---- summary -------------------------------------------------------------

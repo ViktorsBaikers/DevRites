@@ -1,4 +1,4 @@
-# Close-out — archive the workspace, free the active slot
+# Close-out: archive the workspace, free the active slot
 
 Closing a feature means it stops being the *active* work, not that its record is
 deleted. DevRites keeps the full audit trail; it just moves out of the live path.
@@ -28,7 +28,7 @@ deleted. DevRites keeps the full audit trail; it just moves out of the live path
 
 To resume archived work, move it back:
 `mv .devrites/archive/<slug> .devrites/work/<slug>` and write `<slug>` into
-`.devrites/ACTIVE`. Nothing is lost — close-out is reversible by design.
+`.devrites/ACTIVE`. Nothing is lost: close-out is reversible by design.
 
 ## Cross-feature retro
 

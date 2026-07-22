@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# scripts/run-behavioral-evals.sh — validate the SHAPE of DevRites behavioral evals.
+# scripts/run-behavioral-evals.sh: validate the SHAPE of DevRites behavioral evals.
 #
 # Trigger evals (run-evals.sh) test whether the right skill *fires*. Behavioral
-# evals test whether a gating skill's discipline *holds under pressure* — does it
+# evals test whether a gating skill's discipline *holds under pressure*: does it
 # resist the rationalizations it documents in `standards/anti-patterns.md` (and its own
 # `reference/anti-patterns.md`), or does the agent talk itself past the gate. Each
 # scenario pairs a pressure prompt with the resistance a holding response shows and
 # the capitulation markers a failed one shows.
 #
-# This script is the DETERMINISTIC, zero-token CI gate — the analog of run-evals.sh's
+# This script is the DETERMINISTIC, zero-token CI gate: the analog of run-evals.sh's
 # schema path and the engine spec-validate gate: it checks that every behavioral eval is well-formed
 # so a malformed one can't reach the live grader. It does NOT invoke a model. Executing
-# the scenarios against a live Claude (does the skill actually resist?) is the labeled /
+# the scenarios against a live Claude (does the skill resist?) is the labeled /
 # nightly rung documented in evals/behavioral/README.md.
 #
 # In addition to the original DevRites pressure schema, scenarios may carry the
@@ -23,7 +23,7 @@
 #   scripts/run-behavioral-evals.sh                                  # validate every evals/behavioral/*.json
 #   scripts/run-behavioral-evals.sh evals/behavioral/rite-prove.json # validate one file
 #
-# Exit: 0 all valid (or no behavioral evals present — opt-in, never a failure) ·
+# Exit: 0 all valid (or no behavioral evals present: opt-in, never a failure) ·
 #       1 shape violation(s) · 2 missing parser
 
 set -euo pipefail
@@ -37,7 +37,7 @@ if [[ $# -gt 0 ]]; then
   FILES=("$@")
 else
   if [[ ! -d "$BEHAVIORAL_DIR" ]]; then
-    echo "No evals/behavioral/ directory — behavioral evals are opt-in; nothing to validate."
+    echo "No evals/behavioral/ directory: behavioral evals are opt-in; nothing to validate."
     exit 0
   fi
   FILES=()
@@ -48,7 +48,7 @@ else
 fi
 
 if [[ ${#FILES[@]} -eq 0 ]]; then
-  echo "No behavioral eval files — behavioral evals are opt-in; nothing to validate."
+  echo "No behavioral eval files: behavioral evals are opt-in; nothing to validate."
   exit 0
 fi
 
@@ -89,9 +89,9 @@ if not isinstance(scenarios, list):
     errors.append("scenarios is not a list")
     scenarios = []
 elif len(scenarios) == 0:
-    errors.append("scenarios is empty — a behavioral eval needs at least one")
+    errors.append("scenarios is empty: a behavioral eval needs at least one")
 
-# Metric fields (optional — default to the regression discipline). A behavioral
+# Metric fields (optional: default to the regression discipline). A behavioral
 # eval is a regression gate by nature (the discipline must hold every trial ->
 # pass^k = 100%); a capability eval is the exploratory pass@k variant.
 ec = data.get("eval_class", "regression")
@@ -196,7 +196,7 @@ if [[ $FAILED -gt 0 ]]; then
 fi
 
 echo
-echo "Note: this is shape validation only — it does not execute the scenarios."
-echo "To grade whether the skills actually resist under pressure (live model):"
-echo "  see evals/behavioral/README.md — the labeled / nightly rung."
+echo "Note: this is shape validation only: it does not execute the scenarios."
+echo "To grade whether the skills resist under pressure (live model):"
+echo "  see evals/behavioral/README.md: the labeled / nightly rung."
 exit 0

@@ -148,7 +148,7 @@ Normalized by DevRites migration.
 
 // derivePhase reads state.md in either canonical cursor-table or legacy form and
 // maps its recorded phase/status onto the current lifecycle. An unreadable or
-// unrecognised state defaults to build — the safe middle of the arc, from which
+// unrecognised state defaults to build: the safe middle of the arc, from which
 // the completeness gates re-derive what's missing.
 func derivePhase(statePath string) state.Phase {
 	raw, err := os.ReadFile(statePath)
@@ -169,7 +169,7 @@ func derivePhase(statePath string) state.Phase {
 // mapLegacyPhase maps a current or legacy phase/status word onto the lifecycle.
 func mapLegacyPhase(word string) (state.Phase, bool) {
 	word = strings.ToLower(strings.TrimSpace(word))
-	// Take the first token, so "done — shipped 2024" maps on "done".
+	// Take the first token, so a legacy "done" status with trailing notes still maps to "done".
 	if i := strings.IndexAny(word, " \t—-"); i > 0 {
 		word = word[:i]
 	}

@@ -63,11 +63,11 @@ jobs:
           {
             echo 'body<<COMMENT_EOF'
             if [ "$LINT_STATUS" = "0" ]; then
-              echo '### commitlint — all commits valid'
+              echo '### commitlint: all commits valid'
               echo ''
               echo 'Every commit in this PR matches the DevRites Conventional Commit policy.'
             else
-              echo '### commitlint — one or more commits need a rewrite'
+              echo '### commitlint: one or more commits need a rewrite'
               echo ''
               echo 'Raw output:'
               echo ''
@@ -85,7 +85,7 @@ jobs:
               echo ''
               echo '- `type` ∈ feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert'
               echo '- `scope` ∈ skills, rite, devrites, agents, rules, installer, uninstall, scripts, docs, tests, deps, release, repo, ci'
-              echo '- `subject` imperative, lower-case, no trailing period; header 12–72 chars'
+              echo '- `subject` imperative, lower-case, no trailing period; header 12-72 chars'
               echo '- body lines ≤ 100 chars, leading blank line'
               echo ''
               echo '#### Rewrite locally'
@@ -114,5 +114,5 @@ jobs:
       - name: Fail job if lint failed
         if: steps.lint.outputs.status != '0'
         run: |
-          echo "commitlint failed — see PR comment for details" >&2
+          echo "commitlint failed: see PR comment for details" >&2
           exit 1

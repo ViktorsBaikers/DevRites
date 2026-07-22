@@ -3,12 +3,12 @@
 
 Dependabot manages version *updates*; this gate catches a *known-malicious* installed
 version (a compromised release that slipped in). It checks every name@version in the
-lockfile against the bundled IOC dataset (scripts/supply-chain-iocs.json) — an offline,
+lockfile against the bundled IOC dataset (scripts/supply-chain-iocs.json): an offline,
 always-available advisory source, so CI is deterministic and needs no network.
 
-`--online` additionally queries the OSV API per package and is best-effort: if the
+`--online` also queries the OSV API per package and is best-effort: if the
 advisory source is unreachable it prints a notice and falls back to the bundled dataset
-(it never fails the build on a network error — only on a real IOC match).
+(it never fails the build on a network error: only on a real IOC match).
 
 Usage: scan-supply-chain-iocs.py [LOCKFILE] [--iocs FILE] [--online]
   LOCKFILE defaults to package-lock.json.
@@ -87,7 +87,7 @@ def main(argv):
     lockfile = args[0] if args else "package-lock.json"
 
     if not os.path.isfile(lockfile):
-        print("OK    no lockfile at %s — nothing to scan" % lockfile)
+        print("OK    no lockfile at %s: nothing to scan" % lockfile)
         return 0
     try:
         index = load_iocs(iocs_path)
@@ -100,7 +100,7 @@ def main(argv):
     for name, ver in pkgs:
         e = index.get(name)
         if e and ver in e.get("versions", []):
-            findings.append("FINDING %s@%s — %s (%s)" % (name, ver, e["note"], e["source"]))
+            findings.append("FINDING %s@%s: %s (%s)" % (name, ver, e["note"], e["source"]))
 
     if online:
         offline_notice = False
@@ -110,9 +110,9 @@ def main(argv):
                 offline_notice = True
                 break
             if res:
-                findings.append("FINDING %s@%s — %s" % (name, ver, res))
+                findings.append("FINDING %s@%s: %s" % (name, ver, res))
         if offline_notice:
-            print("note: OSV unreachable — fell back to the bundled IOC dataset only")
+            print("note: OSV unreachable: fell back to the bundled IOC dataset only")
 
     if findings:
         for f in sorted(set(findings)):

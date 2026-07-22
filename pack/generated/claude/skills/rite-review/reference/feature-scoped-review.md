@@ -16,8 +16,8 @@ current diff. This is a hard rule, not a guideline.
 - Expand the review into a project audit.
 
 ## When you spot a real problem outside scope
-Record it as an **[FYI] follow-up** in `review.md` (and suggest a separate feature/issue)
-— don't fix it inline. Drive-by changes balloon the diff, dodge their own review, and
+Record it as an **[FYI] follow-up** in `review.md` (and suggest a separate feature/issue).
+Don't fix it inline. Drive-by changes balloon the diff, dodge their own review, and
 mix concerns the seal can't cleanly evaluate.
 
 ## Why scope discipline matters

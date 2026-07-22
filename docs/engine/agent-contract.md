@@ -7,7 +7,7 @@ command's own logic and exit code are unchanged, so `--json` is a pure add-on.
 
 ## Which commands accept `--json`
 
-The set an unattended run actually branches on:
+An unattended run branches on this set:
 
 `status` · `readiness` · `seal` · `spec-validate` · `evidence-fresh` · `preamble` ·
 `coverage` · `analyze` · `doctor` · `ledger` (`diff` / `validate` / `list` / `show`)

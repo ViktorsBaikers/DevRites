@@ -1,6 +1,6 @@
 {
   "skill": "rite-zoom-out",
-  "description": "Explicit-only evals for /rite-zoom-out — read-only structural map utility.",
+  "description": "Explicit-only evals for /rite-zoom-out: read-only structural map utility.",
   "queries": [
     {
       "text": "/rite-zoom-out",

@@ -16,7 +16,7 @@ var Version = "dev"
 // Compare returns -1, 0, or +1 as semantic version a is less than, equal to, or
 // greater than b, and ok=false when either side is not a plain dotted-number
 // version (e.g. "dev"). A leading "v" is tolerated; pre-release/build suffixes
-// are ignored. Callers use ok=false to mean "not comparable — do not warn".
+// are ignored. Callers use ok=false to mean "not comparable: do not warn".
 func Compare(a, b string) (cmp int, ok bool) {
 	pa, oka := parse(a)
 	pb, okb := parse(b)

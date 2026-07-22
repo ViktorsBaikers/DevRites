@@ -1,6 +1,6 @@
 {
   "skill": "devrites-doubt",
-  "description": "Trigger eval for devrites-doubt — the model-invoked CLAIM→EXTRACT→DOUBT→RECONCILE→STOP pre-mortem on a SINGLE non-trivial decision about to commit (boundary / data-model / auth / public-API / migration / load-bearing-abstraction). Must fire on 'are we sure / double-check / what could go wrong' intent on one imminent decision; must NOT fire for building (tdd/rite-build), reviewing a finished diff (code-review/rite-review), polishing (rite-polish), proving (rite-prove), debugging (diagnose), interviewing (grill-me), prototyping (prototype), or handoff.",
+  "description": "Trigger eval for devrites-doubt: the model-invoked CLAIM→EXTRACT→DOUBT→RECONCILE→STOP pre-mortem on a SINGLE non-trivial decision about to commit (boundary / data-model / auth / public-API / migration / load-bearing-abstraction). Must fire on 'are we sure / double-check / what could go wrong' intent on one imminent decision; must NOT fire for building (tdd/rite-build), reviewing a finished diff (code-review/rite-review), polishing (rite-polish), proving (rite-prove), debugging (diagnose), interviewing (grill-me), prototyping (prototype), or handoff.",
   "queries": [
     {
       "text": "are we sure this is the right call before I commit it?",

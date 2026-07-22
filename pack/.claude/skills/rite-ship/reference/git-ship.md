@@ -1,4 +1,4 @@
-# The irreversible ship — type-GO + git ladder
+# The irreversible ship: type-GO + git ladder
 
 `/rite-ship` is the only DevRites phase that runs actions that cannot be undone
 silently. The seal verdict authorizes the *decision*; this prompt authorizes the
@@ -17,7 +17,7 @@ Type "GO" exactly to proceed. Anything else cancels.
 ```
 
 Rules for the prompt:
-- Render it **every time**, even with auto-trigger enabled — this is the last net.
+- Render it **every time**, even with auto-trigger enabled. This is the last net.
 - Only the literal string `GO` (no quotes) proceeds. `y`, `yes`, `go` (lowercase),
   `ok`, `sure`, `do it`, or anything else → cancel, record the cancel in `ship.md`
   as "user declined irreversible step at <ts>", and stop.
@@ -29,10 +29,10 @@ Rules for the prompt:
 Follow `.claude/skills/devrites-lib/reference/standards/git-workflow.md` and the project's own convention. Do not invent
 a release flow the project doesn't use.
 
-0. **Collapse checkpoints** (only if checkpoint mode ran — see
+0. **Collapse checkpoints** (only if checkpoint mode ran: see
    [rite-build/reference/checkpoint.md](../../rite-build/reference/checkpoint.md)). Local
    `WIP(<slug>)` commits are scratch; fold them into the working tree so the ship is one
-   atomic feature commit. `reset --soft` moves only the branch pointer — index and worktree
+   atomic feature commit. `reset --soft` moves only the branch pointer: index and worktree
    are untouched, so no change is ever lost:
    ```bash
    base=$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null) || base=main
@@ -47,7 +47,7 @@ a release flow the project doesn't use.
 1. **Stage** only the files in `touched-files.md`. Never `git add -A`; never stage
    secrets, `.env`, or out-of-scope files (see the never-commit list in `git-workflow.md`).
 2. **Commit** with a Conventional Commit message derived from the feature (`feat(scope):
-   …` / `fix(scope): …`). Atomic — one logical change. Put the *why* in the body.
+   …` / `fix(scope): …`). Atomic: one logical change. Put the *why* in the body.
    For non-trivial features, append trailers from the workspace record:
    `Constraint:` from binding principles/irreversible risks, `Rejected:` from material alternatives,
    `Confidence:` from `seal.md`, `Scope-risk:` from the blast-radius scan, and `Not-tested:` for
@@ -55,7 +55,7 @@ a release flow the project doesn't use.
 3. **Push** to the target branch (the feature branch, or per the project's trunk
    convention).
 4. **Tag / PR** only if the project does it: cut a tag when the project tags releases,
-   or open a PR when the project reviews via PRs. Otherwise skip — pushing the branch
+   or open a PR when the project reviews via PRs. Otherwise skip: pushing the branch
    is the ship.
 
 Capture the resulting commit SHA(s), branch, and tag/PR URL for `ship.md`.
@@ -64,10 +64,10 @@ Capture the resulting commit SHA(s), branch, and tag/PR URL for `ship.md`.
 
 When this ship opens a PR, include only applicable sections:
 
-- **Summary** — what shipped and acceptance proven.
-- **Risk & rollback** — migration/auth/destructive risk and reversal from `seal.md`.
-- **What to scrutinize** — highest-blast-radius review stops.
-- **Evidence** — condensed proof plus the archived evidence bundle.
+- **Summary:** what shipped and acceptance proven.
+- **Risk & rollback:** migration/auth/destructive risk and reversal from `seal.md`.
+- **What to scrutinize:** highest-blast-radius review stops.
+- **Evidence:** condensed proof plus the archived evidence bundle.
 
 For an agent-owned staged rollout, apply [`rollout.md`](rollout.md). CI-owned deploys
 skip that branch. Delete empty sections rather than writing `N/A`.

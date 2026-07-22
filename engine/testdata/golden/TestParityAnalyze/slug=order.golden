@@ -2,9 +2,9 @@ exit 0
 # Cross-artifact analysis: order
 
 ## Coverage
-- [ok] AC1 — covered
-- [ok] AC10 — covered
-- [ok] AC2 — covered
+- [ok] AC1: covered
+- [ok] AC10: covered
+- [ok] AC2: covered
 
 ## Consistency
 
@@ -14,4 +14,4 @@ exit 0
 ## Metrics
 - Acceptance criteria: 3 · covered 3/3 (100%) · orphan slices 0 · ambiguity flags 0
 
-## Verdict: clear — spec/tasks consistent and fully mapped.
+## Verdict: clear: spec/tasks consistent and fully mapped.

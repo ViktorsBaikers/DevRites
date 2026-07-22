@@ -1,2 +1,2 @@
 exit 0
-learnings: a pattern recurs 3x across shipped features ("recurring finding: stale cache after deploy time…") — review + maybe promote it to a rule with /rite-learn (Claude) / $rite-learn (Codex).
+learnings: a pattern recurs 3x across shipped features ("recurring finding: stale cache after deploy time…"): review + maybe promote it to a rule with /rite-learn (Claude) / $rite-learn (Codex).

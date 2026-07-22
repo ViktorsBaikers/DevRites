@@ -10,7 +10,7 @@ import (
 )
 
 // AtomicWrite writes data to path via a temp file in the same directory followed
-// by an atomic rename, so a concurrent reader — or a writer killed mid-write —
+// by an atomic rename, so a concurrent reader, or a writer killed mid-write:
 // never observes a half-written structured file. The temp file is fsync'd before
 // the rename so the content is durable before it becomes visible.
 func AtomicWrite(path string, data []byte, perm os.FileMode) error {

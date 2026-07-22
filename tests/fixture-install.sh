@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# fixture-install.sh — DevRites installs identically regardless of project stack.
+# fixture-install.sh: DevRites installs identically regardless of project stack.
 # Rules are common / stack-agnostic, so there is one fixture, not one per language:
 # it proves a clean install and that the installed rule set does not vary by stack.
 set -u

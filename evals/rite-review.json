@@ -1,6 +1,6 @@
 {
   "skill": "rite-review",
-  "description": "Trigger evals for /rite-review — feature-scoped multi-axis quality review of the finished, polished feature.",
+  "description": "Trigger evals for /rite-review: feature-scoped multi-axis quality review of the finished, polished feature.",
   "queries": [
     {
       "text": "/rite-review",

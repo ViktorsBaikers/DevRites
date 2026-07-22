@@ -2,8 +2,8 @@ exit 1
 # Cross-artifact analysis: uncovered
 
 ## Coverage
-- [ok] AC1 — covered
-- [CRITICAL] AC2 (spec.md) — no slice Satisfies it (uncovered)
+- [ok] AC1: covered
+- [CRITICAL] AC2 (spec.md): no slice Satisfies it (uncovered)
 
 ## Consistency
 
@@ -13,4 +13,4 @@ exit 1
 ## Metrics
 - Acceptance criteria: 2 · covered 1/2 (50%) · orphan slices 0 · ambiguity flags 0
 
-## Verdict: BLOCKED — 1 CRITICAL finding(s). Resolve before /rite-build (Claude) / $rite-build (Codex).
+## Verdict: BLOCKED: 1 CRITICAL finding(s). Resolve before /rite-build (Claude) / $rite-build (Codex).

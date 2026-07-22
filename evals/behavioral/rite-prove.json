@@ -1,6 +1,6 @@
 {
   "skill": "rite-prove",
-  "description": "Behavioral evals for /rite-prove — does the proof discipline hold when pressured to claim a pass it didn't observe, skip a browser-proof rung, or leave an acceptance criterion unproven? Sourced from rite-prove/reference/anti-patterns.md and standards/anti-patterns.md.",
+  "description": "Behavioral evals for /rite-prove: does the proof discipline hold when pressured to claim a pass it didn't observe, skip a browser-proof rung, or leave an acceptance criterion unproven? Sourced from rite-prove/reference/anti-patterns.md and standards/anti-patterns.md.",
   "eval_class": "regression",
   "trials": 3,
   "scenarios": [

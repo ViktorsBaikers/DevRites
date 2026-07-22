@@ -2,7 +2,7 @@ package main_test
 
 // Golden snapshot for the ported close-out command (lib.CloseOut).
 //
-// close-out MUTATES the tree — it moves .devrites/features/<slug> to
+// close-out MUTATES the tree: it moves .devrites/features/<slug> to
 // .devrites/archive/<slug> and, when it is the active slug, clears
 // .devrites/ACTIVE. Each case snapshots the command's stdout + exit code (stderr
 // is diagnostic, not contract) and then asserts the post-move filesystem shape

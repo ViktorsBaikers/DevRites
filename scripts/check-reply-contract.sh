@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-reply-contract.sh — keep user-facing rite-* completion replies normalized.
+# check-reply-contract.sh: keep user-facing rite-* completion replies normalized.
 
 set -u
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-no-global-writes.sh — static guard that the installer/uninstaller never
+# check-no-global-writes.sh: static guard that the installer/uninstaller never
 # writes to the user's global ~/.claude or ~/.codex, and that the global guard is present.
 # Exits non-zero on violation.
 
@@ -40,7 +40,7 @@ done
 #    engine-binary path (the devrites-engine control-plane binary; issue 10). Anything else
 #    writing to /usr/bin, /usr/local/bin, /bin, /sbin, or ~/.local/bin is a global
 #    write the installer must not do. The carve-out is exactly a `devrites-engine` (or
-#    `devrites.exe`) leaf under /usr/local/bin or ~/.local/bin — never /usr/bin.
+#    `devrites.exe`) leaf under /usr/local/bin or ~/.local/bin: never /usr/bin.
 BIN_RE='((\$HOME|~)/\.local/bin|/usr/local/bin|/usr/bin|/bin|/sbin)'
 # Sanctioned: the write's bin path ends in .../devrites-engine (optionally .exe) and sits
 # under /usr/local/bin or ~/.local/bin. The trailing boundary keeps `devrites-lib`

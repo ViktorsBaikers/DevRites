@@ -11,12 +11,12 @@ rebuild host artifacts, then validate.
 
 ## Surface lifecycle
 
-- **Promoted** — shipped in `pack/`, documented in `docs/skills.md` and
+- **Promoted:** shipped in `pack/`, documented in `docs/skills.md` and
   `docs/command-map.md`, and covered by validation.
-- **Draft** — local/research material outside the shipped pack.
-- **Deprecated** — shipped only as a compatibility bridge with a replacement and
+- **Draft:** local/research material outside the shipped pack.
+- **Deprecated:** shipped only as a compatibility bridge with a replacement and
   removal note.
-- **Research** — notes under `docs/research/`; never installed.
+- **Research:** notes under `docs/research/`; never installed.
 
 ## Description
 
@@ -33,7 +33,7 @@ The description is an invocation pointer, not documentation.
 - Front-load one stable leading word that is also used in prompts/docs when that concept
   should trigger the skill.
 - Use one clear trigger branch per phrase; repeated `Use when` or `Not for` means the branch should collapse or move into the body.
-- State the **defining constraint** — the one fact that separates this skill from its nearest sibling (e.g. `$rite-seal` decides, `$rite-ship` mutates git). It is the strongest trigger discriminator the routing evals measure.
+- State the **defining constraint**: the one fact that separates this skill from its nearest sibling (e.g. `$rite-seal` decides, `$rite-ship` mutates git). It is the strongest trigger discriminator the routing evals measure.
 - Put examples, edge cases, and rationale in `SKILL.md` body or a reference file, not in frontmatter.
 
 ## Body
@@ -43,7 +43,7 @@ The description is an invocation pointer, not documentation.
 - Keep one meaning in one place; prefer a shared reference over repeated prose.
 - Add an explicit setup/engine pointer only where the skill produces *wrong* output without
   the config; where it merely sharpens output, plain prose ("the conventions ledger, if
-  present") is enough — cargo-culted pointers spread as sediment.
+  present") is enough: cargo-culted pointers spread as sediment.
 
 ## Router and docs
 
@@ -73,7 +73,7 @@ Pick the instruction form from the *observed* failure, not by habit:
 - Agent **violates a rule under pressure** → hard guardrail + rationalization rebuttal
   (the `anti-patterns.md` table form) + a red-flag stop list.
 - Output has the **wrong shape** (bloated, buried, missing emphasis) → a positive recipe or
-  template with REQUIRED slots. Prohibitions backfire here — wording tests show a "don't"
+  template with REQUIRED slots. Prohibitions backfire here: wording tests show a "don't"
   list produces *more* of the unwanted shape than no guidance at all.
 - Agent **omits a required element** → a structural slot in the artifact template, not a
   prose reminder.
@@ -83,12 +83,12 @@ Pick the instruction form from the *observed* failure, not by habit:
 
 ## Wording evals
 
-A wording change to behavior-shaping content is a code change — prove it:
+A wording change to behavior-shaping content is a code change: prove it:
 
 1. **Baseline first (no-guidance control).** Run the scenario without the new wording; if
-   the control doesn't exhibit the failure, the guidance is a no-op — don't author it.
+   the control doesn't exhibit the failure, the guidance is a no-op: don't author it.
 2. **≥5 reps per variant, fresh context each.** Single samples lie; read every flagged run.
-3. **Variance is a signal.** Five runs, five interpretations = the wording isn't binding —
+3. **Variance is a signal.** Five runs, five interpretations = the wording isn't binding:
    rewrite, don't average.
 
 ## Pruning
@@ -96,7 +96,7 @@ A wording change to behavior-shaping content is a code change — prove it:
 Delete no-op instructions the model already follows. Keep positive target behavior; use prohibitions only for hard guardrails.
 
 Read a draft for its **negative space**: every decision the skill declines to make is
-delegated to the model's priors, not left neutral. Decide each silence deliberately — fill
+delegated to the model's priors, not left neutral. Decide each silence deliberately: fill
 it, or leave it open as a real branch.
 
 

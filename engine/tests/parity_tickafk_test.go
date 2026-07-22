@@ -73,7 +73,7 @@ func TestParityTickAfk(t *testing.T) {
 	}
 
 	// Missing file: no state.md to write; the command must exit non-zero with empty
-	// stdout. Only stdout+exit is snapshotted — there is no file to read.
+	// stdout. Only stdout+exit is snapshotted: there is no file to read.
 	t.Run("missingFile", func(t *testing.T) {
 		gw := t.TempDir()
 		state := filepath.Join(gw, "state.md")

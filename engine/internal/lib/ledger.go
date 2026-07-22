@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// The capability ledger — DevRites' living "what the system does now" layer.
+// The capability ledger: DevRites' living "what the system does now" layer.
 // Each capability owns `<root>/specs/<capability>/spec.md`, a flat list of proven
 // Requirement blocks. A feature's spec.md carries deltas (ADDED/MODIFIED/REMOVED,
 // per standards/spec-grammar.md); on ship, `ledger sync` folds those deltas in.
@@ -15,7 +15,7 @@ import (
 //
 // The fold is a plain upsert/delete keyed on requirement header identity, and so
 // is idempotent: re-syncing the same feature is a no-op. ADDED vs MODIFIED is a
-// classification the spec-validate `--against` check enforces at the spec gate —
+// classification the spec-validate `--against` check enforces at the spec gate:
 // the fold itself does not need the distinction, which keeps re-runs safe.
 //
 // Exit codes: 0 ok · 1 grammar violation (validate) or nothing to do where a
@@ -181,7 +181,7 @@ func ledgerSync(root string, args []string, stdout, stderr io.Writer, dryRun boo
 			continue
 		}
 		any = true
-		fmt.Fprintf(stdout, "ledger %s: capability %q — +%d added, ~%d modified, -%d removed\n",
+		fmt.Fprintf(stdout, "ledger %s: capability %q: +%d added, ~%d modified, -%d removed\n",
 			verb, f.capability, len(f.added), len(f.modified), len(f.removed))
 		for _, n := range f.added {
 			fmt.Fprintf(stdout, "  + %s\n", n)
@@ -201,7 +201,7 @@ func ledgerSync(root string, args []string, stdout, stderr io.Writer, dryRun boo
 		}
 	}
 	if !any {
-		fmt.Fprintf(stdout, "ledger %s: no changes — the ledger already reflects this feature\n", verb)
+		fmt.Fprintf(stdout, "ledger %s: no changes: the ledger already reflects this feature\n", verb)
 	}
 	return 0
 }
@@ -209,7 +209,7 @@ func ledgerSync(root string, args []string, stdout, stderr io.Writer, dryRun boo
 func writeLedgerCapability(root string, f capabilityFold) error {
 	dir := ledgerSpecsDir(root) + "/" + f.capability
 	if len(f.blocks) == 0 {
-		// The last requirement was removed — drop the now-empty capability spec.
+		// The last requirement was removed: drop the now-empty capability spec.
 		_ = os.Remove(ledgerCapabilityPath(root, f.capability))
 		return nil
 	}
@@ -222,7 +222,7 @@ func writeLedgerCapability(root string, f capabilityFold) error {
 func ledgerValidate(root string, stdout, stderr io.Writer) int {
 	caps := ledgerCapabilities(root)
 	if len(caps) == 0 {
-		fmt.Fprintln(stdout, "ledger validate: no capabilities in the ledger yet — nothing to lint")
+		fmt.Fprintln(stdout, "ledger validate: no capabilities in the ledger yet: nothing to lint")
 		return 0
 	}
 	violations := 0
@@ -241,7 +241,7 @@ func ledgerValidate(root string, stdout, stderr io.Writer) int {
 			violations += len(findings)
 			continue
 		}
-		fmt.Fprintf(stdout, "ledger validate: OK — %s: %d requirement(s) / %d scenario(s)\n", capability, reqs, scens)
+		fmt.Fprintf(stdout, "ledger validate: OK: %s: %d requirement(s) / %d scenario(s)\n", capability, reqs, scens)
 	}
 	if violations > 0 {
 		fmt.Fprintf(stderr, "ledger validate: %d grammar error(s) across the ledger (see standards/spec-grammar.md)\n", violations)
@@ -253,7 +253,7 @@ func ledgerValidate(root string, stdout, stderr io.Writer) int {
 func ledgerList(root string, stdout, stderr io.Writer) int {
 	caps := ledgerCapabilities(root)
 	if len(caps) == 0 {
-		fmt.Fprintln(stdout, "ledger: empty — no proven capabilities recorded yet")
+		fmt.Fprintln(stdout, "ledger: empty: no proven capabilities recorded yet")
 		return 0
 	}
 	for _, capability := range caps {

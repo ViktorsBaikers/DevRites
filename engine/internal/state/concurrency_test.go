@@ -18,7 +18,7 @@ import (
 
 // TestAppendLogConcurrentNoInterleaveNoLoss spawns many concurrent appenders,
 // each writing a distinct small record, and asserts every record landed exactly
-// once and intact — no interleaving, no lost writes.
+// once and intact: no interleaving, no lost writes.
 func TestAppendLogConcurrentNoInterleaveNoLoss(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "events.log")
 	const n = 64
@@ -57,8 +57,8 @@ func TestAppendLogConcurrentNoInterleaveNoLoss(t *testing.T) {
 
 // TestAtomicWriteReaderNeverSeesPartial has many writers overwrite one path with
 // distinct full-size contents while readers read concurrently. A reader must
-// always observe a complete, self-consistent file — never a half-written or
-// mixed one — which is exactly what temp-file + atomic rename guarantees.
+// always observe a complete, self-consistent file: never a half-written or
+// mixed one: which is exactly what temp-file + atomic rename guarantees.
 func TestAtomicWriteReaderNeverSeesPartial(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Windows does not allow replacing a file while another handle is reading it")
@@ -166,7 +166,7 @@ func TestWithFeatureLockSerializesReadModifyWrite(t *testing.T) {
 
 	raw, _ := os.ReadFile(counter)
 	if got := strings.TrimSpace(string(raw)); got != strconv.Itoa(n) {
-		t.Fatalf("counter = %s, want %d — lost updates under contention", got, n)
+		t.Fatalf("counter = %s, want %d: lost updates under contention", got, n)
 	}
 }
 

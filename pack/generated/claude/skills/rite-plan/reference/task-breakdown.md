@@ -24,10 +24,10 @@ This reference owns decomposition; the shared schema owns field names and meanin
 ## Keep it honest
 - **Interfaces prevent cross-slice drift.** A slice-wright sees only its own contract; the
   `Interfaces` line is how it learns the names and types neighboring slices use. A function
-  called `clearLayers()` in slice 3 and `clearFullLayers()` in slice 7 is a planning bug —
+  called `clearLayers()` in slice 3 and `clearFullLayers()` in slice 7 is a planning bug:
   name shared symbols once, here.
-- Don't pre-write code in the task — describe the outcome, not the implementation.
+- Don't pre-write code in the task: describe the outcome, not the implementation.
 - Don't bundle "while we're here" work into a slice. That's scope creep; log it as a
   follow-up instead.
-- Don't slice to a target number — the count comes from the capabilities + the sizing
+- Don't slice to a target number: the count comes from the capabilities + the sizing
   rule (`slicing.md`), not a figure anyone named.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# workflow-security-test.sh — fixtures for validate-workflow-security.py:
+# workflow-security-test.sh: fixtures for validate-workflow-security.py:
 # unpinned/broad/pull_request_target → findings; SHA-pinned + scoped → none.
 # Plus a regression: the repo's own workflows must pass.
 set -u

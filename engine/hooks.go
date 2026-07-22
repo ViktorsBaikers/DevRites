@@ -22,13 +22,13 @@ import (
 // The engine's inline shell guard handles a missing binary; this handles a
 // present binary run outside a workspace.
 func hookOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) int {
-	// The SessionStart payload is drained but unused — orientation is a pure read
+	// The SessionStart payload is drained but unused: orientation is a pure read
 	// of the workspace files, not a function of the harness's stdin.
 	_, _ = io.Copy(io.Discard, stdin)
 
 	root, err := orient.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
 	if err != nil {
-		return exitOK // not a DevRites workspace — silent no-op
+		return exitOK // not a DevRites workspace: silent no-op
 	}
 	text, has, err := orient.Digest(root)
 	if err != nil {
@@ -58,7 +58,7 @@ func hookOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) in
 func hookStopGate(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) int {
 	in := h.ParseStopInput(stdin)
 	if in.StopHookActive {
-		return exitOK // already re-entered this stop cycle — let it stop
+		return exitOK // already re-entered this stop cycle: let it stop
 	}
 	root, err := orient.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
 	if err != nil {
@@ -89,7 +89,7 @@ func hookStopGate(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) 
 }
 
 // allowReason is the auto-approval message the allow hook emits.
-const allowReason = "DevRites read-only orientation/gate command — auto-approved by the devrites-allow hook"
+const allowReason = "DevRites read-only orientation/gate command: auto-approved by the devrites-allow hook"
 
 var allowReadonlyCommands = map[string]bool{
 	"check-acceptance": true,
@@ -213,10 +213,10 @@ func safeAllowArg(arg string) bool {
 // reviewerReadonlyDenyReason is the exact denial message
 // devrites-reviewer-readonly.sh emits. It must stay byte-identical to keep the
 // parity oracle green.
-const reviewerReadonlyDenyReason = "DevRites: reviewers are read-only. This Bash command can mutate or exfiltrate; inspect with Read/Grep/Glob and return findings — do not modify the tree or reach the network. (devrites-reviewer-readonly)"
+const reviewerReadonlyDenyReason = "DevRites: reviewers are read-only. This Bash command can mutate or exfiltrate; inspect with Read/Grep/Glob and return findings: do not modify the tree or reach the network. (devrites-reviewer-readonly)"
 
 // reviewerMutateRe matches a Bash command that could mutate the tree or reach the
-// network — the deny-list ported verbatim from devrites-reviewer-readonly.sh. A
+// network: the deny-list ported verbatim from devrites-reviewer-readonly.sh. A
 // fresh-context reviewer reads untrusted source, so a silent write/exfil path is
 // a prompt-injection surface (standards/security.md). pack-scan-ignore: this is
 // the hook's own defensive deny-list, not a payload.
@@ -225,7 +225,7 @@ const reviewerReadonlyDenyReason = "DevRites: reviewers are read-only. This Bash
 // this matches against the WHOLE command, while the bash hook's
 // `read -r tool cmd agent_type` truncates the command at its first newline and so
 // only ever scans line 1. A reviewer running a multi-line Bash whose later lines
-// mutate (e.g. `cat x\nsed -i …`) slips past the bash hook but is denied here —
+// mutate (e.g. `cat x\nsed -i …`) slips past the bash hook but is denied here:
 // intentional hardening of a latent bash bug, not a parity regression. (RE2's
 // `[[:space:]]` already matches `\n`, so no `(?m)` flag is needed for the `-i$`
 // alternative to fire at an interior line break.)
@@ -240,7 +240,7 @@ func hookReviewerReadonly(h harness.Harness, stdin io.Reader, stdout, stderr io.
 	if err != nil {
 		return exitOK
 	}
-	// Fast path: a payload with no tool call is not ours — mirrors the script's
+	// Fast path: a payload with no tool call is not ours: mirrors the script's
 	// `case "$input" in *'"tool_name"'*`.
 	if !bytes.Contains(data, []byte(`"tool_name"`)) {
 		return exitOK
@@ -300,19 +300,19 @@ var subagentOrientContext string
 // hookSubagentOrient injects the DevRites discipline into every devrites-* subagent
 // at spawn: a spawned subagent starts in a fresh context and neither auto-loads the
 // rite-* framework nor discovers skills the way the main thread does. It mirrors
-// devrites-subagent-orient.sh — fire only for devrites-* agents, emit a fixed
+// devrites-subagent-orient.sh: fire only for devrites-* agents, emit a fixed
 // context envelope, stay silent + fail-open otherwise.
 func hookSubagentOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) int {
 	agentType := h.SubagentAgentType(stdin)
 	if !strings.HasPrefix(agentType, "devrites-") {
-		return exitOK // not a DevRites subagent (or no identity) — silent no-op
+		return exitOK // not a DevRites subagent (or no identity): silent no-op
 	}
 	out, err := h.SubagentStartContext(strings.ReplaceAll(subagentOrientContext, "\r\n", "\n"))
 	if err != nil {
 		debugf(stderr, "subagent-orient: %v", err)
 		return exitOK
 	}
-	// No trailing newline — matches the script's `node ... process.stdout.write`.
+	// No trailing newline: matches the script's `node ... process.stdout.write`.
 	fmt.Fprint(stdout, out)
 	return exitOK
 }

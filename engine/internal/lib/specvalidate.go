@@ -1,6 +1,6 @@
 // Package lib holds native Go implementations of the deterministic, zero-token
 // workflow checks DevRites used to run as individual .sh helpers. Each exported
-// function owns its logic outright — it does not shell out — and reproduces the
+// function owns its logic outright (it does not shell out) and reproduces the
 // legacy behavior (stdout + exit code) exactly, verified in the CLI test suite
 // by golden assertions or, transitionally, a bash-parity comparison.
 package lib
@@ -15,11 +15,11 @@ import (
 	"strings"
 )
 
-// Spec-grammar validator — deterministic lint of the structured
+// Spec-grammar validator: deterministic lint of the structured
 // Requirement/Scenario acceptance grammar in a spec.md. A port of
 // spec-validate.sh; see standards/spec-grammar.md for the grammar.
 //
-// Exit codes: 0 valid (or no structured requirements — nothing to lint) ·
+// Exit codes: 0 valid (or no structured requirements: nothing to lint) ·
 // 1 grammar violation(s) · 2 usage · 5 missing spec.md.
 var (
 	reqHeaderRe  = regexp.MustCompile(`^[[:space:]]*###[[:space:]]+[Rr]equirement:`)
@@ -57,13 +57,13 @@ func SpecValidate(arg, against, cwd string, stdout, stderr io.Writer) int {
 	rel := strings.TrimPrefix(spec, cwd+"/")
 
 	if reqs == 0 && len(findings) == 0 {
-		fmt.Fprintf(stdout, "spec-validate: %s uses the simple acceptance form (no \"### Requirement:\" blocks) — nothing to lint\n", rel)
+		fmt.Fprintf(stdout, "spec-validate: %s uses the simple acceptance form (no \"### Requirement:\" blocks): nothing to lint\n", rel)
 		return 0
 	}
 
 	// Delta cross-check (opt-in via --against): a spec written as deltas against a
 	// living ledger must classify each requirement correctly. Skipped for a flat
-	// snapshot (no delta sections) — there is nothing to reconcile.
+	// snapshot (no delta sections): there is nothing to reconcile.
 	if against != "" {
 		findings = append(findings, checkAgainstLedger(spec, against, defaultCapability(arg))...)
 	}
@@ -72,12 +72,12 @@ func SpecValidate(arg, against, cwd string, stdout, stderr io.Writer) int {
 		for _, f := range findings {
 			fmt.Fprintln(stderr, f)
 		}
-		fmt.Fprintf(stderr, "spec-validate: %s — %d requirement(s) / %d scenario(s); %d grammar error(s) (see standards/spec-grammar.md)\n",
+		fmt.Fprintf(stderr, "spec-validate: %s: %d requirement(s) / %d scenario(s); %d grammar error(s) (see standards/spec-grammar.md)\n",
 			rel, reqs, scens, len(findings))
 		return 1
 	}
 
-	fmt.Fprintf(stdout, "spec-validate: OK — %s: %d requirement(s) / %d scenario(s) well-formed (SHALL + WHEN/THEN, unique headers)\n",
+	fmt.Fprintf(stdout, "spec-validate: OK: %s: %d requirement(s) / %d scenario(s) well-formed (SHALL + WHEN/THEN, unique headers)\n",
 		rel, reqs, scens)
 	return 0
 }
@@ -220,7 +220,7 @@ func lintSpec(file string) (reqCount, scenCount int, findings []string, err erro
 			}
 			if scenInReq == 0 {
 				if looseWhenThen {
-					findings = append(findings, fmt.Sprintf("ERROR:%s: Requirement \"%s\" (line %d) has WHEN/THEN lines but no \"#### Scenario:\" header — wrap them in a scenario", file, curReq, reqLine))
+					findings = append(findings, fmt.Sprintf("ERROR:%s: Requirement \"%s\" (line %d) has WHEN/THEN lines but no \"#### Scenario:\" header: wrap them in a scenario", file, curReq, reqLine))
 				} else {
 					findings = append(findings, fmt.Sprintf("ERROR:%s: Requirement \"%s\" (line %d) has no \"#### Scenario:\" block", file, curReq, reqLine))
 				}
@@ -245,7 +245,7 @@ func lintSpec(file string) (reqCount, scenCount int, findings []string, err erro
 			looseWhenThen = false
 			key := strings.ToLower(name)
 			if first, dup := seen[key]; dup {
-				findings = append(findings, fmt.Sprintf("ERROR:%s: duplicate Requirement header \"%s\" (lines %d and %d) — headers must be unique", file, name, first, nr))
+				findings = append(findings, fmt.Sprintf("ERROR:%s: duplicate Requirement header \"%s\" (lines %d and %d): headers must be unique", file, name, first, nr))
 			} else {
 				seen[key] = nr
 			}
@@ -311,7 +311,7 @@ func resolveSpecPath(command, arg string, stderr io.Writer) (string, int, bool) 
 	var spec string
 	switch {
 	case isDir(arg):
-		spec = arg + "/spec.md" // string concat, not filepath.Join — preserve the exact path bytes
+		spec = arg + "/spec.md" // string concat, not filepath.Join: preserve the exact path bytes
 	case isFile(arg):
 		spec = arg
 	default:
@@ -359,11 +359,11 @@ func checkAgainstLedger(spec, ledgerRoot, defaultCap string) []string {
 		switch r.Kind {
 		case DeltaAdded:
 			if exists {
-				findings = append(findings, fmt.Sprintf("ERROR:%s: Requirement %q (line %d) is marked ADDED but already exists in ledger capability %q — use MODIFIED, or drop the delta", spec, r.Name, r.HeaderLine, capability))
+				findings = append(findings, fmt.Sprintf("ERROR:%s: Requirement %q (line %d) is marked ADDED but already exists in ledger capability %q: use MODIFIED, or drop the delta", spec, r.Name, r.HeaderLine, capability))
 			}
 		case DeltaModified, DeltaRemoved:
 			if !exists {
-				findings = append(findings, fmt.Sprintf("ERROR:%s: Requirement %q (line %d) is marked %s but is absent from ledger capability %q — use ADDED, or fix the capability tag", spec, r.Name, r.HeaderLine, strings.ToUpper(r.Kind), capability))
+				findings = append(findings, fmt.Sprintf("ERROR:%s: Requirement %q (line %d) is marked %s but is absent from ledger capability %q: use ADDED, or fix the capability tag", spec, r.Name, r.HeaderLine, strings.ToUpper(r.Kind), capability))
 			}
 		}
 	}
@@ -371,7 +371,7 @@ func checkAgainstLedger(spec, ledgerRoot, defaultCap string) []string {
 }
 
 // defaultCapability derives the fallback capability for an untagged delta section:
-// the workspace slug — the basename of the workspace dir, or of the spec.md's
+// the workspace slug: the basename of the workspace dir, or of the spec.md's
 // parent directory when a bare file path was given.
 func defaultCapability(arg string) string {
 	if isDir(arg) {

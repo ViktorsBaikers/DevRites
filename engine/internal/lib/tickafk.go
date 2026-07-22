@@ -19,7 +19,7 @@ import (
 // any workspace. Exit codes:
 //
 //	0  a slice was spent and budget remains, or no budget is set (nothing to do)
-//	3  the budget is now exhausted — the caller must stop and hand back to a human
+//	3  the budget is now exhausted: the caller must stop and hand back to a human
 //	5  the file is missing, or the field holds a non-numeric value
 func TickAfk(args []string, stdout, stderr io.Writer) int {
 	path := argAt(args, 0)
@@ -37,7 +37,7 @@ func TickAfk(args []string, stdout, stderr io.Writer) int {
 
 	remaining, found := readBudget(lines)
 	if !found || remaining == "none" {
-		fmt.Fprintf(stdout, "tick-afk: no \"AFK slices remaining\" budget set in %s — no-op\n", path)
+		fmt.Fprintf(stdout, "tick-afk: no \"AFK slices remaining\" budget set in %s: no-op\n", path)
 		return 0
 	}
 	if !isAllDigits(remaining) {
@@ -62,8 +62,8 @@ func TickAfk(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// readBudget returns the current "AFK slices remaining" value — the first blank-
-// delimited token after the field — and whether the field is present at all.
+// readBudget returns the current "AFK slices remaining" value: the first blank-
+// delimited token after the field, and whether the field is present at all.
 func readBudget(lines []string) (value string, found bool) {
 	value, found = state.CursorField(lines, state.CursorAFKSlicesRemaining)
 	if !found {

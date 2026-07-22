@@ -1,6 +1,6 @@
 # Fix + regression test
 
-Write the regression test **before the fix** — *but only if there is a correct
+Write the regression test **before the fix**, *but only if there is a correct
 seam for it*.
 
 A correct seam exercises the **real failure pattern** as it occurs at the call
@@ -13,8 +13,8 @@ confidence.
 Note it in `evidence.md` and append a follow-up in the active feature's
 `decisions.md` (or open a `/rite-plan` repair item if the spec is affected): the
 codebase architecture is preventing this class of failure from being locked
-down. Frame it as a *deepening opportunity* — "this module needs a seam at <X>
-so this failure can be regression-tested" — so the next `/rite-plan` repair or
+down. Frame it as a *deepening opportunity* ("this module needs a seam at <X>
+so this failure can be regression-tested") so the next `/rite-plan` repair or
 architecture cleanup pass has a concrete target.
 
 Do **not** invent an artificial seam just to host a test: a shallow seam that

@@ -13,7 +13,7 @@ Exits non-zero if any finding is reported.
 
 Two finding classes:
 
-  1. Hidden unicode (always a finding — no legitimate reason to exist in a
+  1. Hidden unicode (always a finding: no legitimate reason to exist in a
      Markdown/shell instruction file): bidi controls, zero-width characters,
      other invisibles, and homoglyph confusables (a word that mixes ASCII with
      look-alike Cyrillic/Greek letters).
@@ -23,7 +23,7 @@ Two finding classes:
      permission escalation, and data-exfiltration phrasing.
 
 Suppression (for DevRites' own files that legitimately *discuss* injection
-defensively — e.g. security.md, the reviewer agents): put a marker on the same
+defensively: e.g. security.md, the reviewer agents): put a marker on the same
 line OR anywhere in the file:
 
     ... ignore previous instructions ...   <!-- pack-scan-ignore: defensive doc -->
@@ -33,7 +33,7 @@ A whole file can opt a class out with a top-of-file marker:
     <!-- pack-scan-ignore-file: injection -->
 
 Suppressions live in the file, so every exception is visible in the diff and
-reviewable — consistent with DevRites' "no silent state" thesis. Hidden-unicode
+reviewable: consistent with DevRites' "no silent state" thesis. Hidden-unicode
 findings can be suppressed the same way but should essentially never be.
 """
 import os
@@ -132,7 +132,7 @@ def find_injection(text, file_suppressed):
 
 
 _LINE_SUPPRESS = re.compile(r"pack-scan-ignore\b(?!-file)", re.IGNORECASE)
-# Class list is word/comma/space only — a trailing "-->" comment closer must not
+# Class list is word/comma/space only: a trailing "-->" comment closer must not
 # get swallowed into the captured class name.
 _FILE_SUPPRESS = re.compile(r"pack-scan-ignore-file\s*:\s*([\w, ]+)", re.IGNORECASE)
 

@@ -1185,6 +1185,8 @@ func containsDevritesHook(v any) bool {
 
 func isDevritesHooksComment(comment string) bool {
 	return comment == "DevRites hooks" ||
+		strings.HasPrefix(comment, "DevRites hooks: every event invokes the global `devrites-engine` engine binary") ||
+		strings.HasPrefix(comment, "DevRites hooks: auto-approve the read-only orientation/gate scripts") ||
 		strings.HasPrefix(comment, "DevRites hooks — every event invokes the global `devrites-engine` engine binary") ||
 		strings.HasPrefix(comment, "DevRites hooks — auto-approve the read-only orientation/gate scripts") ||
 		strings.HasPrefix(comment, "DevRites hooks for Codex. Project hooks load only after")

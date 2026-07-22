@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/run-evals.sh — validate the structure of DevRites trigger evals.
+# scripts/run-evals.sh: validate the structure of DevRites trigger evals.
 #
 # Schema check + summary. Does NOT invoke a model unless --live is passed.
 # Live execution requires CLAUDE_API_KEY and is manual-only, never CI default.
