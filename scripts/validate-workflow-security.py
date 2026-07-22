@@ -10,6 +10,8 @@ gate fails CI when a workflow:
   - uses `permissions: write-all` (over-broad);
   - uses `pull_request_target`, except for a Dependabot-only workflow that never
     checks out PR code.
+  - leaves an internal `: ` unquoted in a workflow or step name, which makes the
+    workflow invalid YAML and prevents every job from starting.
 
 Usage: validate-workflow-security.py [DIR]   (default: .github/workflows)
 Exit: 0 clean; 1 on any finding.
@@ -26,6 +28,7 @@ DEPENDABOT_ONLY_RE = re.compile(
     r"['\"]dependabot\[bot\]['\"]",
     re.MULTILINE,
 )
+UNQUOTED_NAME_COLON_RE = re.compile(r"^\s*(?:-\s*)?name:\s+[^'\"].*:\s+\S")
 
 
 def safe_dependabot_target(text):
@@ -46,6 +49,9 @@ def scan_text(path, text):
         findings.append("%s: no permissions: scope: the default GITHUB_TOKEN is broad; "
                         "add an explicit least-privilege permissions block" % path)
     for i, line in enumerate(lines, 1):
+        if UNQUOTED_NAME_COLON_RE.match(line):
+            findings.append("%s:%d: name contains an unquoted colon: quote the complete "
+                            "name so GitHub can parse the workflow" % (path, i))
         if "write-all" in line:
             findings.append("%s:%d: permissions: write-all is over-broad: scope to the "
                             "minimum needed" % (path, i))

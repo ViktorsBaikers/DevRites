@@ -40,7 +40,7 @@ jobs:
       - name: Install npm deps
         run: npm ci
 
-      - name: Generate host artifacts (tracked files fresh: BLOCKING)
+      - name: "Generate host artifacts (tracked files fresh: BLOCKING)"
         run: |
           bash scripts/build-host-artifacts.sh
           git diff --exit-code -- pack/generated || {
@@ -57,13 +57,13 @@ jobs:
       - name: Check invocation integrity (named skills/rules resolve, both harnesses)
         run: python3 scripts/check-invocation-integrity.py
 
-      - name: Pack security scan (injection + hidden unicode: BLOCKING)
+      - name: "Pack security scan (injection + hidden unicode: BLOCKING)"
         run: python3 scripts/scan-pack-security.py pack/.claude
 
-      - name: Workflow security (SHA-pinned actions + scoped permissions: BLOCKING)
+      - name: "Workflow security (SHA-pinned actions + scoped permissions: BLOCKING)"
         run: python3 scripts/validate-workflow-security.py
 
-      - name: Supply-chain IOC scan (npm lockfile: BLOCKING)
+      - name: "Supply-chain IOC scan (npm lockfile: BLOCKING)"
         run: python3 scripts/scan-supply-chain-iocs.py package-lock.json
 
       - name: Audit npm dependency advisories (BLOCKING)
@@ -147,11 +147,11 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
           go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
 
-      - name: staticcheck (static analysis: BLOCKING)
+      - name: "staticcheck (static analysis: BLOCKING)"
         working-directory: engine
         run: staticcheck ./...
 
-      - name: govulncheck (known-CVE scan of the reachable call graph: BLOCKING)
+      - name: "govulncheck (known-CVE scan of the reachable call graph: BLOCKING)"
         working-directory: engine
         run: govulncheck ./...
 
@@ -159,7 +159,7 @@ jobs:
       # CLI that by design execs git/go and reads paths the operator passes in, so every
       # subprocess argument and file path is "tainted". Permission expectations for the
       # files the engine writes (0644 files / 0755 dirs+binaries) live in .gosec.json.
-      - name: gosec (security static analysis: BLOCKING)
+      - name: "gosec (security static analysis: BLOCKING)"
         working-directory: engine
         run: gosec -conf .gosec.json -exclude=G204,G304,G702,G703 ./...
 
@@ -167,7 +167,7 @@ jobs:
         working-directory: engine
         run: go test ./... -race -count=1
 
-      - name: Validate pack hook wiring (known ids + schema shape: BLOCKING)
+      - name: "Validate pack hook wiring (known ids + schema shape: BLOCKING)"
         working-directory: engine
         run: go run . validate-pack ../pack/.claude
 
