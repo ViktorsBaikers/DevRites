@@ -1,9 +1,9 @@
-# Tool-agnostic state core — the `devrites-engine` CLI
+# Tool-agnostic state core: the `devrites-engine` CLI
 
-DevRites' discipline lives in `.devrites/` Markdown files and the `devrites-engine`
-engine binary, not in one chat harness. Any tool — Claude Code, Codex, Cursor,
-Gemini CLI, CI, or a human — can drive the same deterministic gates from the
-project root.
+DevRites stores its workflow in `.devrites/` Markdown files and the
+`devrites-engine` binary rather than tying it to one chat harness. Claude Code,
+Codex, Cursor, Gemini CLI, CI, and human operators can all run the same
+deterministic gates from the project root.
 
 ## The `devrites-engine` CLI
 
@@ -19,7 +19,7 @@ devrites-engine build-readiness [slug]   # build-readiness gate      (exit 0 rea
 devrites-engine evidence-fresh [slug]    # proof freshness gate      (exit 0 fresh · 3 stale)
 devrites-engine check-acceptance <dir>   # acceptance gate           (exit 0 proven · 1 gap)
 devrites-engine ledger sync <dir>        # fold a feature's spec deltas into the living capability ledger
-devrites-engine ledger list|show <cap>   # read the ledger — what the system already does
+devrites-engine ledger list|show <cap>   # read the ledger: what the system already does
 devrites-engine context show --json      # report root, active workspace, and host command forms
 devrites-engine timeline log|list        # append/list session events, decisions, and state moves
 devrites-engine health run               # run known project checks + record a code-health dashboard
@@ -34,7 +34,7 @@ devrites-engine help
 
 The AFK-parsed read commands (`status`, `readiness`, `seal`, `spec-validate`,
 `evidence-fresh`, `preamble`, `coverage`, `analyze`, `doctor`, `ledger`) accept
-`--json`, which wraps the result in a stable envelope — see
+`--json`, which wraps the result in a stable envelope: see
 [`engine/agent-contract.md`](engine/agent-contract.md). `snapshot` is already a
 structured JSON contract and emits `schemaVersion: devrites.workspace.v1`
 directly rather than wrapping human text. Snapshot consumers should read
@@ -54,7 +54,7 @@ in an agent loop, a local script, or pre-merge CI.
 
 ## Why this exists
 
-DevRites workspaces and standards are tool-agnostic data. The CLI makes that
-workflow drivable from agent loops, local scripts, CI, and humans without
-reimplementing the discipline. A verdict from the CLI or a `rite-*` workflow
-should agree because they run the same engine gates.
+DevRites workspaces and standards are tool-agnostic data. The CLI lets agent
+loops, local scripts, CI, and humans use that data without rebuilding the
+workflow. CLI verdicts and `rite-*` verdicts agree because both run the same
+engine gates.

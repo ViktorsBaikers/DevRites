@@ -5,7 +5,7 @@
 If you believe you have found a security issue in DevRites, please report it
 **privately**. Do not open a public GitHub issue.
 
-- **Preferred channel:** open a private security advisory on GitHub —
+- **Preferred channel:** open a private security advisory on GitHub:
   <https://github.com/ViktorsBaikers/DevRites/security/advisories/new>.
 - **Alternate channel:** email the maintainer via the contact link on the
   GitHub profile <https://github.com/ViktorsBaikers>.
@@ -42,9 +42,9 @@ and install paths, generated host artifacts, hooks, and the local engine binary.
 Because the skill files **are** the attack surface, CI scans the shipped pack
 (`pack/.claude/`) on every PR and fails the build (blocking, not advisory) on:
 
-- **Prompt-injection patterns** — the "ignore previous instructions" family,
+- **Prompt-injection patterns**: the "ignore previous instructions" family,
   system-prompt overrides, permission-escalation, and data-exfiltration phrasing.
-- **Hidden unicode** — bidi controls, zero-width characters, and homoglyph
+- **Hidden unicode**: bidi controls, zero-width characters, and homoglyph
   confusables (a word mixing ASCII with look-alike Cyrillic/Greek letters) that a
   human reviewer can't see in a diff.
 
@@ -52,21 +52,22 @@ Run it locally with `python3 scripts/scan-pack-security.py pack/.claude`. A
 finding prints as `FINDING <file>:<line>: <class>: <excerpt>`. If the match is
 DevRites' own *defensive* content (e.g. a rule that quotes an attack string, or a
 QA checklist that demonstrates an adversarial character), add an auditable
-suppression on the line — `<!-- pack-scan-ignore: <reason> -->` — or opt a whole
-file out of one class with `<!-- pack-scan-ignore-file: injection -->`.
+suppression on the same line with `<!-- pack-scan-ignore: <reason> -->`. To opt
+an entire file out of one class, use
+`<!-- pack-scan-ignore-file: injection -->`.
 Suppressions live in the file, so every exception is visible in the diff and
 reviewable; never suppress a hidden-unicode finding you can't explain.
 
 ### State loading (engine subcommands, no `!` injection)
 
 `/rite-status` and workspace-operating skills load state by running a **read-only
-`devrites-engine` subcommand via the `Bash` tool** — *not* Claude Code's
+`devrites-engine` subcommand through the `Bash` tool**. It does not use Claude Code's
 preprocessing-only `` !`<command>` `` dynamic-context injection, which DevRites
 **removed** for cross-harness portability. The no-argument `/rite` menu runs
 `devrites-engine first-task` instead; a routed verb hands control to its owning skill.
 
 ```bash
-command -v devrites-engine >/dev/null 2>&1 && devrites-engine preamble || echo "(unavailable — read state.md directly)"
+command -v devrites-engine >/dev/null 2>&1 && devrites-engine preamble || echo "(unavailable: read state.md directly)"
 ```
 
 `devrites-engine preamble` is a project-local read of DevRites' own `.devrites/`
@@ -76,10 +77,9 @@ side effects. The gate subcommands (`build-readiness`, `evidence-fresh`,
 scoped: for example, `resolve`, `tick-afk`, and `close-out` write only DevRites
 state, while `/rite use <slug>` deliberately repoints `.devrites/ACTIVE` inline.
 
-If your environment disallows skill-initiated shell execution, the commands simply
-don't run — each skill degrades gracefully to reading `state.md` directly (the
-`|| echo "(… unavailable …)"` fallback above), and the rest of the pack is
-unaffected.
+If your environment disallows shell commands started by skills, each skill reads
+`state.md` directly through the `|| echo "(… unavailable …)"` fallback above.
+The rest of the pack continues to work.
 
 ### Model invocation is per skill
 
@@ -98,8 +98,8 @@ nets for model-invocable rites are:
 - **Spec Drift Guard**: any deviation from the spec halts and routes to
   `rite-plan`.
 - **Interactive type-GO confirmation** in `rite-ship` before irreversible
-  git actions (commit, push, tag) — present even after model invocation; `rite-seal`
-  only decides GO/NO-GO.
+  git actions such as commit, push, or tag. This prompt remains after model
+  invocation; `rite-seal` only decides GO/NO-GO.
 
 Claude documents the invocation controls in its official
 [skills reference](https://code.claude.com/docs/en/slash-commands). DevRites uses
@@ -160,7 +160,7 @@ project-local host artifacts (`.claude/settings.json` for Claude Code and
 `.codex/hooks.json` for Codex). They call `devrites-engine` behind an inline
 fail-open guard:
 
-- **`allow` (PreToolUse/Bash)** — auto-approves *only* the read-only engine
+- **`allow` (PreToolUse/Bash)**: auto-approves *only* the read-only engine
   orientation/gate subcommands (`check-acceptance`, `doubt-coverage`,
   `evidence-fresh`, `preamble`, `progress`, `readiness`, `review-integrity`),
   `footprint render|roster`, `ledger diff|validate|list|show`, and
@@ -170,10 +170,10 @@ fail-open guard:
   `curl`/`wget`, `sudo`, `chmod`, command substitution, `eval`, package managers,
   `git push/commit/reset`, etc.). Mutating subcommands (`resolve`, `tick-afk`,
   `close-out`) are deliberately excluded and still prompt.
-- **Context and continuity hooks** — `orient`, `cursor`, `subagent-orient`,
+- **Context and continuity hooks**: `orient`, `cursor`, `subagent-orient`,
   `statusline`, and `handoff-snapshot` inject bounded workspace context; `event`
   and `auq` append lifecycle/HITL events. They stay silent when no workspace is active.
-- **Local guards and caches** — `a1-guard`, `wright-scope`,
+- **Local guards and caches**: `a1-guard`, `wright-scope`,
   `reviewer-readonly`, `redwatch`, `stop-gate`, `source-cache-*`, and
   `refresh-indexes` run through the engine. Guard hooks are fail-open or
   observe-first unless explicitly enforced with the documented `DEVRITES_*`
@@ -187,25 +187,25 @@ so user permission rules remain intact.
 ### Third-party trust
 
 DevRites vendors no third-party code (see `NOTICE.md`). It depends on Claude
-Code itself and, optionally and at the user's choice, on codegraph /
-graphify / Playwright MCP — each of which is invoked through its own
-documented interface, not bundled.
+Code itself. Codegraph, graphify, and Playwright MCP are optional user-selected
+tools that DevRites calls through their documented interfaces rather than
+bundling them.
 
 ### Agentic trust boundaries
 
 Treat every instruction-bearing file as supply chain:
 
-1. **Shipped pack** — `pack/.claude/**`, generated host artifacts, hooks, and the
+1. **Shipped pack**: `pack/.claude/**`, generated host artifacts, hooks, and the
    engine are release-managed and scanned before publish.
-2. **Project-local state** — `.devrites/work/**`, learnings, principles, and
+2. **Project-local state**: `.devrites/work/**`, learnings, principles, and
    review artifacts are evidence, not authority. Live source and engine gates win
    over stale state.
-3. **User extensions/overrides** — `.devrites/extensions/**` and
+3. **User extensions/overrides**: `.devrites/extensions/**` and
    `.devrites/overrides/**` are untrusted until `devrites-engine extensions
    validate` / `overrides validate` pass. Extensions may add checks or reviewers;
    they must not weaken type-GO, seal/ship, AFK/HITL, security, or evidence
    gates.
-4. **External capability configs** — MCP/tool configs are optional and
+4. **External capability configs**: MCP/tool configs are optional and
    project-local. `/rite-doctor`/`devrites-engine doctor` reports readiness, but
    missing tools degrade to file-system/engine gates instead of silently changing
    workflow semantics.
@@ -218,11 +218,11 @@ visibly justified.
 
 ### Known non-issues
 
-- **Historical `!` injection in `/rite`** — no longer present; current state
+- **Historical `!` injection in `/rite`**: no longer present; current state
   orientation uses structurally bounded, read-only engine commands.
-- **`Write` / `Edit` tool allowance in `rite-*` skills** — required to
+- **`Write` / `Edit` tool allowance in `rite-*` skills**: required to
   author `.devrites/` and project files. No skill grants `Bash(*)`.
-- **Per-skill model invocation** — deliberate and frontmatter-controlled;
+- **Per-skill model invocation**: deliberate and frontmatter-controlled;
   model-invocable rites remain bounded by the gates above.
 
 ### CVE relevance

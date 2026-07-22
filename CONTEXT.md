@@ -1,26 +1,27 @@
-# DevRites — domain context
+# DevRites domain context
 
-Single-context domain record. Read this with `docs/adr/` for the "why";
-`docs/` for the "how". `CLAUDE.md` points every agent here.
+This is the repository's domain record. Read it with `docs/adr/` for the
+reasoning behind the design and `docs/` for operating guidance. `CLAUDE.md`
+points every agent here.
 
 ## What DevRites is
 
-A spec-driven-development system for AI coding agents. It drives a model through
-a disciplined lifecycle — the **rites** — so that shipping software is a
-reproducible *process*, not a one-off improvisation. The core bet: separate
-**deterministic bookkeeping** (owned by a Go engine) from **judgment** (owned by
-the LLM). See [ADR-0001](docs/adr/0001-go-engine-as-control-plane.md).
+DevRites is a spec-driven development system for AI coding agents. It gives the
+model an ordered lifecycle called the rites, so feature work follows a process
+that another session can inspect and resume. A Go engine owns deterministic
+bookkeeping, while the model handles judgment. See
+[ADR-0001](docs/adr/0001-go-engine-as-control-plane.md).
 
 ## The two planes
 
-- **Control plane — the engine** (`engine/`): a single stdlib-only Go binary
+- **Control plane: the engine** (`engine/`): a single stdlib-only Go binary
   (`CGO_ENABLED=0`, no model calls). It owns every deterministic operation over
   the workspace: state transitions, gates, hooks, derivations, migration. Those
   operations are network-free; explicit update/source-cache I/O is isolated in
   `internal/iohooks` (ADR-0008). The command inventory is defined by the
   hand-rolled dispatcher in `engine/main.go`; `devrites-engine help` is the
   exhaustive user-facing list.
-- **Data plane — the workspace** (`.devrites/`): git-diffable Markdown. Feature
+- **Data plane: the workspace** (`.devrites/`): git-diffable Markdown. Feature
   completeness uses six single-concern **sections** (`spec`, `plan`,
   `decisions`, `tasks`, `proof`, `status`); the canonical live map/cursor/proof
   files are `README.md`, `state.md`, and `evidence.md` (ADR-0007).
@@ -38,7 +39,8 @@ Completeness is **phase-relative**: the typed `phaseDefinitions` registry in
 `engine/internal/state/schema.go` says which sections and workspace artifacts
 must have real content at each phase; the set grows down the arc. A **gate** checks that
 completeness at a phase boundary. A blocked gate is a **human-in-the-loop
-pause** — a "missing X" message and reserved **exit code 3**, never a crash. See
+pause**. It reports the missing item and returns reserved **exit code 3** rather
+than crashing. See
 [ADR-0003](docs/adr/0003-gate-model-hitl-pause.md).
 
 ## Key concepts
@@ -51,7 +53,7 @@ pause** — a "missing X" message and reserved **exit code 3**, never a crash. S
 | **Gate** | Deterministic completeness check; blocks as exit-3 HITL pause. |
 | **Hook** | An engine subcommand (`hook <id>`) wired through Claude `settings.json` or generated Codex `hooks.json`; profiles select which fire. See [ADR-0005](docs/adr/0005-hooks-as-engine-subcommands.md). |
 | **Harness** | Per-host edge adapter. Two hosts: Claude + Codex. See [ADR-0002](docs/adr/0002-dual-host-harness.md). |
-| **Pack** | `pack/.claude/` — the installed bundle: reviewer/judge agents, `rite-*` skills, and `settings.json` hook wiring. |
+| **Pack** | The installed bundle under `pack/.claude/`: reviewer and judge agents, `rite-*` skills, and `settings.json` hook wiring. |
 
 ## Repository map
 

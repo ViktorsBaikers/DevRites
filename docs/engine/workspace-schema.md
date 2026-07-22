@@ -1,4 +1,4 @@
-# DevRites Workspace Artifact Schema
+# DevRites workspace artifact schema
 
 DevRites workspaces are durable source-of-truth folders for a feature. Chat is
 temporary; the workspace must be enough for a fresh human or AI to resume without
@@ -53,7 +53,7 @@ maps; `status.md` remains a cursor alias for `state.md`; `proof.md` remains a
 proof alias for `evidence.md`. Migration should add the canonical files without
 deleting aliases.
 
-## Read Order
+## Read order
 
 | Phase / role | Read first | Then read | Usually skip |
 | --- | --- | --- | --- |
@@ -65,7 +65,7 @@ deleting aliases.
 | Review / seal | `README.md`, `traceability.md` | `spec.md`, `evidence.md`, `decisions.md`, `drift.md`, `touched-files.md` | raw logs unless needed |
 | Handoff | `README.md`, `state.md` | `handoff.md`, then linked source files | duplicated summaries |
 
-## Artifact Contracts
+## Artifact contracts
 
 | Artifact | Required? | Owner phase | Read trigger | Budget | Required headings | Validation rules |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -78,11 +78,11 @@ deleting aliases.
 | `assumptions.md` | required | all phases | assumption is not yet verified | 160 lines | Assumption register | Confidence, owner, and validation status are explicit. |
 | `questions.md` | required | all phases | human input or gate | 180 lines | Question register | `Q-###`; no open blocking/escalating questions before plan/build/prove gates. |
 | `ai-spec.md` | conditional | `/rite-spec` or `/rite-define` | AI/LLM annex | 160 lines | AI surface, model/runtime choice, evals, guardrails, monitoring | Required only for model calls, RAG, agents, evals, or LLM output. |
-| `plan.md` | required from plan | `/rite-define` | implementation approach | 220 lines | Approach, Slice strategy, Validation strategy, Rollback | HOW lives here, not in `spec.md`. `Validation strategy` names the Key links — cross-slice wiring `/rite-prove` walks (or `none` for single-slice features). |
+| `plan.md` | required from plan | `/rite-define` | implementation approach | 220 lines | Approach, Slice strategy, Validation strategy, Rollback | HOW lives here, not in `spec.md`. `Validation strategy` names the Key links: cross-slice wiring `/rite-prove` walks (or `none` for single-slice features). |
 | `tasks.md` | required from plan | `/rite-define` | build one slice | 280 lines | Slice index | Each `SLICE-###` has goal, AC IDs, likely files, tests/proof, mode, gate, dependencies, done condition. |
 | `traceability.md` | required from plan | `/rite-define` | coverage/review/seal | 220 lines | Coverage matrix | Matrix maps AC/REQ ID, slice IDs, test/proof, evidence ID, touched files, status. |
 | `state.md` / `status.md` | required | all phases | current cursor | 120 lines | Cursor | `state.md` is canonical; `status.md` is a compatibility alias. Compact table/key-value cursor; not an append-only narrative. |
-| `evidence.md` / `proof.md` | required from prove | `/rite-build`, `/rite-prove` | proof and seal | 280 lines | Evidence log | `EVID-###`, command/action, result, related AC/slice IDs, limitations. Each acceptance criterion carries a proof class — `test` / `command` / `browser` / `judgment` (untagged reads `judgment`; `judgment` needs its one-line why). |
+| `evidence.md` / `proof.md` | required from prove | `/rite-build`, `/rite-prove` | proof and seal | 280 lines | Evidence log | `EVID-###`, command/action, result, related AC/slice IDs, limitations. Each acceptance criterion carries a proof class: `test` / `command` / `browser` / `judgment` (untagged reads `judgment`; `judgment` needs its one-line why). |
 | `browser-evidence.md` | UI only | `/rite-prove`, `/rite-polish` | UI/browser proof | 220 lines | Browser evidence, Visual Verdict | Must reference real route/viewports/actions and related IDs. |
 | `drift.md` | drift only | Spec Drift Guard | spec/plan reality mismatch | 160 lines | Drift register | `DRIFT-###`, status, evidence found, resolution, related IDs. |
 | `touched-files.md` | required from build/prove | `/rite-build` | impact/evidence freshness | 160 lines | Touched files | File, slice ownership, and reason per row. |
@@ -92,7 +92,7 @@ deleting aliases.
 
 Files may exceed budgets only with a visible `Budget override: <reason>` line.
 
-## Required vs Optional
+## Required vs optional
 
 Required at `/rite-spec`: workspace map, `brief.md`, `spec.md`, `state.md`,
 `decisions.md`, `assumptions.md`, `questions.md`.
@@ -108,7 +108,7 @@ Optional/conditional files are generated only by their producing phase:
 `browser-evidence.md` for UI, `drift.md` for drift, `handoff.md` for handoff,
 and `references.md` / `references/` when references exist.
 
-## Compactness Rules
+## Compactness rules
 
 - Put summaries first and deep details behind file links.
 - Use tables for matrices, gates, and checklists.

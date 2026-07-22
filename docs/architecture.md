@@ -1,4 +1,4 @@
-# DevRites Architecture
+# DevRites architecture
 
 DevRites is a **distributed but coordinated** set of project-local Claude Code
 and Codex skill surfaces backed by one Go control plane. It makes an AI coding
@@ -13,7 +13,7 @@ traceability rules, and phase-relative completeness model, see
 
 ## Layers
 
-1. **Public lifecycle and workspace skills** — `.claude/skills/rite-*`,
+1. **Public lifecycle and workspace skills**: `.claude/skills/rite-*`,
    `user-invocable: true`. Each owns one bounded phase or workspace transition.
    Sequence: `rite-spec`, optional `rite-temper`, `rite-define`, mandatory
    `rite-vet`, `rite-build`, recovery `rite-converge`, `rite-prove`,
@@ -27,11 +27,11 @@ traceability rules, and phase-relative completeness model, see
    irreversible git ladder and **closes** the task (archives the workspace,
    clears `ACTIVE`). Keeping the decision and the irreversible action as two
    separately-auditable steps is the point.
-2. **Public utility and on-ramp skills** — `rite-adopt`, `rite-quick`,
+2. **Public utility and on-ramp skills**: `rite-adopt`, `rite-quick`,
    `rite-frame`, `rite-status`, `rite-doctor`, `rite-learn`, `rite-explain`,
    `rite-customize`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
    `rite-pressure-test`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`, and
-   `rite-autocomplete` — public commands. `rite-autocomplete` is the
+   `rite-autocomplete`. These are public commands. `rite-autocomplete` is the
    unattended orchestrator: it drives the whole lifecycle (spec → … → seal →
    ship) end-to-end, choosing the best option at each soft gate, pausing only
    on hard irreversible-risk / blocking / escalating gates or a NO-GO. The
@@ -39,7 +39,7 @@ traceability rules, and phase-relative completeness model, see
    Claude Code skill names like `prototype`, `handoff`, `triage`, `diagnose`),
    not a visibility marker; `rite-pressure-test` carries no prefix because it
    doesn't collide.
-3. **Internal specialist skills** — `.claude/skills/devrites-*` with
+3. **Internal specialist skills**: `.claude/skills/devrites-*` with
    `user-invocable: false`: `devrites-interview`, `-source-driven`,
    `-doubt`, `-ux-shape` (plans UX/UI into `design-brief.md` at `/rite-spec`),
    `-frontend-craft`, `-browser-proof`, `-debug-recovery`,
@@ -55,21 +55,21 @@ traceability rules, and phase-relative completeness model, see
    files on demand; compact utilities keep a narrower local contract. Parallel
    reviewer fan-out at `/rite-seal` is the shared reference file
    `devrites-lib/reference/parallel-dispatch.md`, not a skill.
-4. **Supporting references** — `reference/*.md` inside each skill. Long checklists,
+4. **Supporting references**: `reference/*.md` inside each skill. Long checklists,
    templates, and anti-rationalization tables loaded on demand (progressive
    disclosure) so `SKILL.md` bodies stay small.
-5. **Agents** — `.claude/agents/devrites-*` fresh-context subagents: **13 read-only + 1
-   write-capable**. The read-only set is twelve reviewers — the post-build fan-out used by
+5. **Agents**: `.claude/agents/devrites-*` fresh-context subagents: **13 read-only + 1
+   write-capable**. The read-only set is twelve reviewers: the post-build fan-out used by
    `/rite-seal` and the doubt loop (`devrites-spec-reviewer`, `-code-reviewer`, `-test-analyst`,
    `-frontend-reviewer`, `-security-auditor`, `-performance-reviewer`, `-devex-reviewer`,
    `-doubt-reviewer`, `-simplifier-reviewer`), the **pre-plan** `devrites-strategy-reviewer`
    (`/rite-temper`), the **pre-build** `devrites-plan-reviewer` (`/rite-vet`), and the
    **build-time** `devrites-forge-judge` (scores competing candidate builds on a `Forge: yes`
-   slice) — plus the cross-feature `devrites-retrospector` (mines the shipped archive at
+   slice), plus the cross-feature `devrites-retrospector` (mines the shipped archive at
    `/rite-ship` close). The one **write-capable** executor, `devrites-slice-wright`, is
    dispatched by `/rite-build` to write one slice in a clean context (the write-side mirror of
    the reviewers).
-6. **Engineering rules** — DevRites' own stack-agnostic rules installed to
+6. **Engineering rules**: DevRites' own stack-agnostic rules installed to
    `.claude/skills/devrites-lib/reference/standards/`. Workspace-operating lifecycle
    skills read `core.md` in step 0; compact utilities load only their local or conditional
    rules. On-demand files load by the phase that needs them:
@@ -96,8 +96,8 @@ capabilities belong.
 ## Design rationale
 
 ### Why the engine owns shared orientation (`devrites-lib`)
-Every workspace-operating skill's first move is the same: orient on the active feature —
-slug, phase, artifacts present, run mode, open-question tally — before acting. Re-deriving
+Every workspace-operating skill starts by reading the active feature's slug,
+phase, present artifacts, run mode, and open-question tally. Re-deriving
 that from raw Markdown in each skill was duplicated (step-0 prose across ~20 skills),
 token-heavy (counting open gates meant re-reading the append-only `questions.md`, which
 only grows), and error-prone (a missed AFK sentinel or a miscounted gate changes behavior).
@@ -143,7 +143,7 @@ Built-in / bundled Claude Code commands include `/plan`, `/review`, `/run`, `/ve
 recommended-start guidance from `devrites-engine first-task`, and dispatches a
 named verb to its owning skill. Menu mode does not read raw workspace state;
 `/rite-status` owns detailed status. `/rite` deliberately does **not** duplicate
-workflow logic — that would recreate the mega-command problem. DevRites keeps
+workflow logic. Doing so would recreate the mega-command problem. DevRites keeps
 selection thin and lets each phase own its context.
 
 ### Why internal skills exist
@@ -156,8 +156,9 @@ skills they:
 - keep each public `SKILL.md` small by housing the heavy process elsewhere.
 
 ### Why spec, architecture, plan, tasks, and traceability are separate artifacts
-Doing investigation, spec, plan, and slicing in one batch lets things slip — a gap goes
-unasked, placement is guessed, a slice misses a requirement. DevRites splits them so each
+Combining investigation, specification, planning, and slicing makes it easier
+to miss a question, guess at placement, or leave a requirement out of a slice.
+DevRites splits them so each
 is focused and gated. `/rite-spec` **investigates deeply and writes `spec.md`** (product
 what/why, requirements, acceptance, non-goals, measurable success) and must pass its
 readiness gate. `/rite-define` then turns that **approved spec** into `architecture.md`
@@ -168,14 +169,14 @@ is the separate repair/reslice/re-order tool for an *active* plan when it goes s
 drifts.
 
 ### Why `/rite-polish` is one skill with two progressive-disclosure halves
-Polish has two natural halves — **code** (simplify, dead code, naming, plus
+Polish has two natural halves: **code** (simplify, dead code, naming, plus
 backend if BE was touched) and **UI** (normalize to the design system, then
 ship-quality detail). The earlier design split them into `rite-polish-code`
 and `rite-polish-ui` sub-skills, but a skill-on-skill dispatch is fragile
 (the caller has to re-discover the callee by description) and the two halves
 share the same operating rules. They now live as `reference/code.md` and
 `reference/ui.md` inside the same skill, loaded only when their phase
-trigger fires — the supporting-files pattern from Claude Code's current
+trigger fires. This follows the supporting-files pattern from Claude Code's current
 [skills reference](https://code.claude.com/docs/en/slash-commands#add-supporting-files).
 `/rite-polish` is the orchestrator: always reads `reference/code.md`
 (Phase 1 + 2), detects UI scope from the diff and reads `reference/ui.md`
@@ -183,19 +184,19 @@ trigger fires — the supporting-files pattern from Claude Code's current
 `quieter`, `distill`, `harden`, `normalize-only`) that pass through to
 Phase 4.
 
-Normalization remains the entry gate of UI polish — polishing UI that hasn't
-been aligned to the project's design system is "decoration on drift," and
-the UI reference refuses to run Phase 4 before Phase 3.
+Normalization remains the entry gate for UI polish. The UI reference refuses
+to run Phase 4 before Phase 3 because detail work would otherwise reinforce
+patterns that do not match the project's design system.
 
 ### Why seal and ship are separate phases (`/rite-seal`, `/rite-ship`)
 Deciding "is this safe to ship" and *actually shipping* are different acts with
 different blast radii. `/rite-seal` is a **pure decision gate**: it walks acceptance
 against evidence, fans out the fresh-context reviewers, and writes the GO / NO-GO
-verdict to `seal.md` — it runs no git. On GO it sets `state.md` `Next step:
+verdict to `seal.md` and runs no git. On GO it sets `state.md` `Next step:
 /rite-ship` and stops. `/rite-ship` is the eighth core lifecycle rite: it refuses to run
 without a GO recorded in `seal.md`, renders the type-`GO` prompt, runs the irreversible
 git ladder (commit → push → tag/PR per the project's convention), writes `ship.md`,
-then **closes the task** — sets phase `done` and archives `.devrites/work/<slug>/` →
+then **closes the task** by setting phase `done` and archiving `.devrites/work/<slug>/` →
 `.devrites/archive/<slug>/` (every `.md` preserved, never deleted) and clears
 `.devrites/ACTIVE`. A GO seal is a verdict, not an authorization to push; keeping the
 decision and the irreversible action as two separately-auditable steps is the point.
@@ -206,8 +207,8 @@ Some features are routine enough to run end-to-end without per-phase human itera
 build×N → prove → polish → review → seal → ship) by reading each phase's
 `SKILL.md` and executing its
 workflow, carrying state through the workspace files rather than chat. A vague prompt
-triggers an up-front `devrites-interview` — the only interactive window — after which it
-runs unattended, choosing the best option at each soft gate and recording the rationale
+triggers an up-front `devrites-interview`, which is the only interactive window.
+After that it runs unattended, choosing the best option at each soft gate and recording the rationale
 in `decisions.md`. It does **not** weaken the safety gates: hard irreversible-risk
 (auth / migration / public-API / red tests), blocking / escalating gates, an open
 `gate: validating`, a NO-GO, exhausted `max_slices`, or low confidence all still pause.
@@ -215,44 +216,43 @@ By default it stops at the final type-`GO`; the `--ship` flag (alias `--yolo`)
 auto-confirms it for a zero-touch push.
 
 ### Why persistent `.devrites/` state
-Long features outlive a single context window. Durable Markdown (spec/plan/tasks/
-state/evidence/drift/decisions) lets any phase — in any session, after any compaction
-— reload exactly where work stands. This is the main thing DevRites adds over typical
+Long features outlive a single context window. Durable Markdown for the spec,
+plan, tasks, state, evidence, drift, and decisions lets any phase reload the
+current position in any session, even after compaction. This is the main thing DevRites adds over typical
 session-scoped workflows, which don't persist feature state.
 
-### Run modes — HITL & AFK
+### Run modes: HITL & AFK
 
 DevRites runs the same lifecycle two ways, configured at two levels:
 
-- **Per-slice** (planning-time) — each `tasks.md` slice declares `Mode: AFK | HITL`.
+- **Per-slice** (planning-time): each `tasks.md` slice declares `Mode: AFK | HITL`.
   HITL slices add `Gate: advisory | validating | blocking | escalating`, `SLA`, and
   `Checkpoint` so the agent knows how disruptive the pause should be.
-- **Per-session** (run-time) — the presence of `.devrites/AFK` flips the session-level
+- **Per-session** (run-time): the presence of `.devrites/AFK` flips the session-level
   default. Empty file = AFK with safe defaults; YAML body widens behavior
   (`max_slices`, `notify`, `allow_gates`).
 
-The pause primitive is a **pre-action interrupt**, not a post-action review queue —
-inspired by LangGraph's `interrupt()` / `Command(resume=)` model. `/rite-build` writes
+The pause primitive is a **pre-action interrupt**, not a post-action review queue.
+It follows LangGraph's `interrupt()` / `Command(resume=)` model. `/rite-build` writes
 an `Awaiting human` block to `state.md` and a question to `questions.md`, then stops.
 `/rite-resolve` is the canonical resume verb. Restarting a session reads the workspace
 back into a consistent state because the pause is durable Markdown, not chat memory.
 
 Why a four-gate taxonomy (instead of a single "ask the user" pause): a single gate
 becomes a queue under load. Mixing `advisory` (audit-only log) with `validating`
-(async — build continues, merge blocks) and reserving `blocking` for synchronous halts
-keeps the loop alive when the answer can wait, and pauses hard when it can't. The
-"AFK never silently accepts irreversible risk" rule — destructive migrations,
-auth/authz boundaries, public API breaks, red tests/types/lint — always pauses
-regardless of the sentinel. See
+(async: build continues, merge blocks) and reserving `blocking` for synchronous halts
+keeps the loop alive when the answer can wait, and pauses hard when it cannot.
+AFK always pauses for destructive migrations, auth/authz boundaries, public API
+breaks, and failed tests, type checks, or lint, regardless of the sentinel. See
 [`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md) for the full
 contract.
 
 ## Design choices at a glance
 
-- **Surface**: 29 public `rite-*` skills (42 total) — the thin `/rite` menu
+- **Surface**: 29 public `rite-*` skills (42 total): the thin `/rite` menu
   (carries the routing) + 8 lifecycle phases (`rite-spec`, `rite-define`,
   `rite-build`, `rite-prove`, `rite-polish`, `rite-review`, `rite-seal`,
-  `rite-ship` — seal **decides**, ship **executes + closes**) + the
+  `rite-ship`: seal **decides**, ship **executes + closes**) + the
   `rite-temper` (strategic, optional) and `rite-vet` (engineering, every plan)
   reviews + the `rite-quick` express lane and `rite-frame` pre-flight/self-audit
   lens + `rite-adopt` (onboard an existing codebase) + `rite-learn` (cross-feature
@@ -265,9 +265,9 @@ contract.
   resume verb + 4 ideation /
   handoff utilities (`rite-zoom-out`, `rite-prototype`, `rite-handoff`,
   `rite-pressure-test`) + `rite-autocomplete` (the unattended full-lifecycle
-  orchestrator) — plus 11 internal model-invoked `devrites-*` specialists and the
+  orchestrator), plus 11 internal model-invoked `devrites-*` specialists and the
   `devrites-lib` library, not one mega-command. The `devrites-` prefix is a
-  namespace (collision avoidance), not a public/internal marker —
+  namespace (collision avoidance), not a public/internal marker.
   `user-invocable:` is. The 11 specialists are model-invoked;
   `devrites-lib` explicitly disables model invocation.
 - **Selection**: the `/rite` menu skill carries the routing table; every
@@ -278,13 +278,13 @@ contract.
 - **Run modes**: same lifecycle runs HITL (default; pause at typed gate) or AFK
   (drop `.devrites/AFK`; loop continues, discretionary pauses downgrade to
   advisory log, irreversible risk always pauses).
-- **Slice rule**: build **one vertical slice, then stop** — no auto-continue.
+- **Slice rule**: build **one vertical slice, then stop**. There is no automatic continuation.
 - **Drift**: an explicit **Spec Drift Guard** in build/prove/polish/review/seal.
 - **Design**: `devrites-frontend-craft` + a four-phase `/rite-polish` orchestrator (code + backend always; UI normalize + polish when UI is in scope).
 - **Review**: **feature-scoped** multi-axis review with severity labels +
   fresh-context subagents at the seal.
-- **Scope**: clarify → seal (decide) → ship (the irreversible git ladder —
-  commit → push → tag/PR — per the project's own convention) → close; the CI
+- **Scope**: clarify → seal (decide) → ship (commit → push → tag or PR,
+  following the project's convention) → close. The CI
   pipeline stays with the project.
 - **Install**: project-local, manifest-managed host artifacts; the optional
   shared engine binary is the sole sanctioned global artifact.

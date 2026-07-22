@@ -1,4 +1,4 @@
-# Go Authoritative Workflow Schema and Quality Research
+# Go authoritative workflow schema and quality research
 
 Date: 2026-07-20
 
@@ -182,8 +182,8 @@ govulncheck ./...
 ```
 
 Run race-enabled tests for concurrency changes and a bounded fuzz job for state
-parsers. Run `deadcode` for every supported build configuration—at minimum the
-supported Unix and Windows targets—before deleting reported code. Review each
+parsers. Run `deadcode` for every supported build configuration, including the
+supported Unix and Windows targets, before deleting reported code. Review each
 finding; generated files, reflection, build tags, assembly, and external entry
 points can change reachability assumptions.
 

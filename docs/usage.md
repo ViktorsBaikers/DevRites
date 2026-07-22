@@ -1,8 +1,8 @@
-# DevRites — usage
+# Using DevRites
 
-Worked workflows. A full greenfield lifecycle starts with `/rite-spec`; a
-brownfield codebase may enter through `/rite-adopt`, while `/rite-quick` and
-`/rite-frame` deliberately handle bounded work outside the full feature arc.
+These examples show the common DevRites workflows. A greenfield feature starts
+with `/rite-spec`; an existing codebase may enter through `/rite-adopt`.
+`/rite-quick` and `/rite-frame` handle bounded work outside the full feature arc.
 Workspace-operating phases read the active workspace (`.devrites/ACTIVE` →
 `.devrites/work/<slug>/`) first and report the appropriate on-ramp when none exists.
 
@@ -13,9 +13,10 @@ Workspace-operating phases read the active workspace (`.devrites/ACTIVE` →
 
 ## The workspace
 
-`/rite-spec` creates `.devrites/work/<slug>/` and writes the spec;
-`/rite-define` adds architecture, the plan, tasks, and traceability. All human-readable Markdown that
-survives compaction and new sessions:
+`/rite-spec` creates `.devrites/work/<slug>/` and writes the spec.
+`/rite-define` adds the architecture, plan, tasks, and traceability. Together,
+these human-readable Markdown files carry the work across compaction and new
+sessions:
 
 | File | Created by | Holds |
 |---|---|---|
@@ -24,7 +25,7 @@ survives compaction and new sessions:
 | `spec.md` | `/rite-spec` | product WHAT/WHY, requirements, acceptance, boundaries, measurable success |
 | `architecture.md` | `/rite-define` | owning module/layer, integration points, data/API/events, dependencies, risks |
 | `flows.md` | `/rite-spec` or `/rite-define` | optional Mermaid diagrams when sequence/state/data flow clarifies behavior |
-| `references/` + `references.md` | `/rite-spec` | saved design refs — screenshots, Figma, video, links |
+| `references/` + `references.md` | `/rite-spec` | saved design refs: screenshots, Figma, video, links |
 | `strategy.md` | `/rite-temper` | strategic spec review (optional): scope mode, pre-mortem, dimension scores |
 | `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback |
 | `tasks.md` | `/rite-define` | ordered `SLICE-###` vertical slices, each mapped to `AC-###` and tagged `Mode: AFK \| HITL` + gate fields |
@@ -33,7 +34,7 @@ survives compaction and new sessions:
 | `test-plan.md` | `/rite-vet` | build-readable coverage target: coverage diagram, per-gap test requirements, acceptance→test map (read by `/rite-build` + `/rite-prove`) |
 | `state.md` | every phase | working ledger: phase, active slice + slice mode, risk, next step; plus `Awaiting human` block when paused (run mode is derived from `.devrites/AFK`, not stored here) |
 | `status.md` | every phase | compatibility alias for the canonical `state.md` cursor |
-| `questions.md` | every phase | append-only Q&A — qid, slice, gate, status (`open` / `answered` / `dropped`), proposed answer, raised/answered timestamps |
+| `questions.md` | every phase | append-only Q&A: qid, slice, gate, status (`open` / `answered` / `dropped`), proposed answer, raised/answered timestamps |
 | `decisions.md` / `assumptions.md` | every phase | running logs |
 | `drift.md` | Spec Drift Guard | drift events + resolutions |
 | `touched-files.md` | `/rite-build` | what files this feature touched |
@@ -44,12 +45,12 @@ survives compaction and new sessions:
 | `polish-report.md` | `/rite-polish` | Phase 1-4 findings + fixes |
 | `review.md` | `/rite-review` | Spec + Standards axes, severity-labelled findings |
 | `seal.md` | `/rite-seal` | GO/NO-GO verdict + acceptance walk + blockers |
-| `ship.md` | `/rite-ship` | what shipped — commit SHA(s), branch, tag/PR, acceptance summary, follow-ups |
+| `ship.md` | `/rite-ship` | what shipped: commit SHA(s), branch, tag/PR, acceptance summary, follow-ups |
 
-When `/rite-ship` closes the task it **archives** the whole workspace —
-`.devrites/work/<slug>/` → `.devrites/archive/<slug>/` (every `.md` above is
-preserved, never deleted) — and clears `.devrites/ACTIVE`. The audit trail lives
-on under `.devrites/archive/<slug>/`.
+When `/rite-ship` closes the task, it archives the whole workspace from
+`.devrites/work/<slug>/` to `.devrites/archive/<slug>/` and clears
+`.devrites/ACTIVE`. It preserves every Markdown file, so the audit trail remains
+under `.devrites/archive/<slug>/`.
 
 Backward compatibility: older `.devrites/features/<slug>/` workspaces remain
 readable; migration should add the canonical `.devrites/work` shape without
@@ -67,7 +68,7 @@ Project-root sentinel (outside the workspace):
 The shape of this directory is also documented in
 [`flow.md` § Workspace state model](flow.md#7-workspace-state-model).
 
-## 1) Start a feature — spec then plan
+## 1) Start a feature: spec then plan
 
 ```text
 You: I want some kind of reporting thing for admins.
@@ -90,7 +91,7 @@ You: I want some kind of reporting thing for admins.
   → writes eng-review.md + test-plan.md before build
 ```
 
-## 2) Normal feature — the build loop
+## 2) Normal feature: the build loop
 
 ```text
 /rite-spec add-csv-export    # investigate → spec.md
@@ -105,7 +106,7 @@ You: I want some kind of reporting thing for admins.
 /rite-ship                   # type-GO + irreversible git ladder + close the task (archive + clear ACTIVE)
 ```
 
-`/rite-build` never auto-advances — you decide when the next slice runs.
+`/rite-build` never auto-advances: you decide when the next slice runs.
 `/rite-seal` **decides**; `/rite-ship` **executes + closes**. To run the whole
 sequence unattended, see `/rite-autocomplete` (§11).
 
@@ -170,7 +171,7 @@ You: 2
 ```
 
 If no browser tooling is available, proof is recorded as **pending (manual)**
-with exact steps — the seal then weighs the UI risk.
+with exact steps: the seal then weighs the UI risk.
 
 ## 5) Backend-only feature
 
@@ -186,7 +187,7 @@ with exact steps — the seal then weighs the UI risk.
 /rite-ship                   # type-GO + commit/push/tag + close the task
 ```
 
-## 6) UI-direction prompt — refinement modes
+## 6) UI-direction prompt: refinement modes
 
 ```text
 /rite-polish bolder
@@ -226,16 +227,16 @@ Other modes: `quieter` · `distill` · `harden`.
 
 Run before `/clear` if leaving for > a few hours.
 
-## 9) HITL gate — pre-code pause and resume
+## 9) HITL gate: pre-code pause and resume
 
 ```text
 /rite-build
   → reads tasks.md slice 03; Mode: HITL, Gate: blocking
   → STOPS before writing any code:
 
-    SLICE-003 — list endpoint is HITL (blocking, SLA 15m).
+    SLICE-003: list endpoint is HITL (blocking, SLA 15m).
     Checkpoint: Composite (user_id, created_at) index, or two single-col indexes?
-    Proposed approach: composite — single read path, both columns used together
+    Proposed approach: composite: single read path, both columns used together
     in the most common filter; downside is rebuild cost on bulk updates.
     Decision needed before this slice can build.
     Resume: /rite-resolve q-2026-05-28-001 "<answer>"
@@ -243,7 +244,7 @@ Run before `/clear` if leaving for > a few hours.
   → appends q-...-001 to questions.md (status: open, gate: blocking)
   → writes `Awaiting human` block to state.md, sets Status: awaiting_human
 
-You: /rite-resolve q-2026-05-28-001 "composite — single-col is fine for now"
+You: /rite-resolve q-2026-05-28-001 "composite: single-col is fine for now"
 
 /rite-resolve
   → flips q-...-001 status → answered (with answered_at + answer)
@@ -260,7 +261,7 @@ If the answer changes acceptance criteria or scope, `/rite-resolve` recommends
 ## 10) AFK overnight run
 
 ```text
-# Drop the sentinel before bed. Keys are optional — empty file works.
+# Drop the sentinel before bed. Keys are optional: empty file works.
 cat > .devrites/AFK <<'EOF'
 max_slices: 10
 notify: "curl -d \"$DEVRITES_QID: $DEVRITES_QUESTION\" ntfy.sh/my-topic"
@@ -287,13 +288,13 @@ EOF
 /rite-build                    # continue
 ```
 
-The loop refuses to mark a slice `built` if tests / types / lint go red — it
+The loop refuses to mark a slice `built` if tests / types / lint go red: it
 writes a blocking question and stops regardless of `allow_gates`. AFK never
 silently accepts irreversible risk; see
 [`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md) for the
 full list.
 
-## 11) Full unattended lifecycle — `/rite-autocomplete`
+## 11) Full unattended lifecycle: `/rite-autocomplete`
 
 ```text
 /rite-autocomplete "add CSV export for admins" --max-slices 8
@@ -311,26 +312,26 @@ You: GO                        # → commit · push · tag, then archive + clear
 ```
 
 Add `--ship` (alias `--yolo`) to auto-confirm the final type-`GO` for a
-zero-touch push — autocomplete then proceeds straight to `/rite-ship`. It still
+zero-touch push: autocomplete then proceeds straight to `/rite-ship`. It still
 pauses on hard irreversible-risk (auth / migration / public-API / red tests),
 blocking / escalating gates, an open `gate: validating`, a NO-GO, exhausted
-`max_slices`, or low confidence — writing `state.md` and surfacing *why* before
+`max_slices`, or low confidence: writing `state.md` and surfacing *why* before
 it stops. Args: `[idea] [--ship|--yolo] [--max-slices N]`.
 
 ## Checking in
 
-- `/rite` — compact menu + suggested next command. **Does not** read state.
-- `/rite-status` — detailed status: phase, **run mode (AFK / HITL)**, status
+- `/rite`: compact menu + suggested next command. **Does not** read state.
+- `/rite-status`: detailed status: phase, **run mode (AFK / HITL)**, status
   (`running` / `awaiting_human` / `blocked` / `done`), next action, evidence,
   open questions broken down by gate, drift, risks, **handoff readiness**.
-- `/rite-resolve <qid> "<answer>"` — answer / `--drop` / `--batch`-resolve an
+- `/rite-resolve <qid> "<answer>"`: answer / `--drop` / `--batch`-resolve an
   open question; the canonical writer for `status: open → answered` and the
   only thing that clears `Awaiting human`.
 
 ## Tips
 
 - Commit `.devrites/` so the team and future sessions share feature state.
-- **`.devrites/AFK` is per-developer, not per-repo** — gitignore it (or commit
+- **`.devrites/AFK` is per-developer, not per-repo**: gitignore it (or commit
   it deliberately if the team agrees on AFK defaults). The sentinel is
   read-only config: it toggles your local session mode and sets the initial
   `max_slices` budget; nothing else. The mutable remaining-slice count lives

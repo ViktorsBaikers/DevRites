@@ -1,7 +1,7 @@
-# DevRites — flow diagrams
+# DevRites flow diagrams
 
 Visual reference for how the skills, agents, and rules fit together. GitHub
-renders Mermaid natively — open this file on the repo to see the graphs.
+renders Mermaid natively: open this file on the repo to see the graphs.
 
 For the full per-skill table, see [`command-map.md`](command-map.md). For the
 "why" behind each piece, see [`architecture.md`](architecture.md).
@@ -111,9 +111,9 @@ flowchart LR
 ## 4. `/rite-seal` fan-out
 
 The seal fans out **all** relevant reviewers in parallel and reconciles their
-findings, then **decides** GO / NO-GO and stops. It no longer runs git — on GO
+findings, then **decides** GO / NO-GO and stops. It no longer runs git: on GO
 it hands off to `/rite-ship`, which renders the type-GO prompt and runs the
-irreversible commit · push · tag · archive. The old advisory score has been removed — the gate is severity + acceptance + drift.
+irreversible commit · push · tag · archive. The old advisory score has been removed: the gate is severity + acceptance + drift.
 
 ```mermaid
 flowchart TB
@@ -156,7 +156,7 @@ flowchart TB
 
 ## 5. `devrites-debug-recovery` seven-step loop
 
-Failure recovery — the loop construction in Phase 1 is the load-bearing piece.
+Failure recovery: the loop construction in Phase 1 is the load-bearing piece.
 
 ```mermaid
 flowchart LR
@@ -167,7 +167,7 @@ flowchart LR
     T -->|discriminating probe| I[Step 5<br/>Instrument]
     I -->|change one variable| Fix[Step 6<br/>Fix + regression test]
     Fix --> C[Step 7<br/>Cleanup + classify]
-    L1 -.->|can't build loop| Ask([STOP — ask user])
+    L1 -.->|can't build loop| Ask([STOP: ask user])
 
     classDef phase fill:#1f2937,stroke:#60a5fa,color:#f9fafb
     classDef stop fill:#7f1d1d,stroke:#f87171,color:#fee2e2
@@ -238,18 +238,18 @@ run mode for all skills.
 ```mermaid
 erDiagram
     ACTIVE ||--o| WORKSPACE : points-to
-    AFK_SENTINEL }|..|| RUN_MODE : "presence is authoritative — skills re-read at decision time"
+    AFK_SENTINEL }|..|| RUN_MODE : "presence is authoritative: skills re-read at decision time"
     WORKSPACE ||--|| state : has
     WORKSPACE ||--|| brief : has
     WORKSPACE ||--|| spec : has
-    WORKSPACE ||--o| strategy : "has (optional — from /rite-temper)"
+    WORKSPACE ||--o| strategy : "has (optional: from /rite-temper)"
     WORKSPACE ||--|| plan : "has (from /rite-define)"
-    WORKSPACE ||--|| tasks : "has — slices tagged Mode + Gate"
-    WORKSPACE ||--o| eng-review : "has (from /rite-vet — every plan, light or full)"
+    WORKSPACE ||--|| tasks : "has: slices tagged Mode + Gate"
+    WORKSPACE ||--o| eng-review : "has (from /rite-vet: every plan, light or full)"
     WORKSPACE ||--o| test-plan : "has (from /rite-vet; build + prove read it)"
     WORKSPACE ||--o{ references : "has (design refs)"
-    WORKSPACE ||--o| design-brief : "has (UI features — from /rite-spec via devrites-ux-shape; the build target)"
-    WORKSPACE ||--|| questions : "has — qid, gate, status (open/answered/dropped)"
+    WORKSPACE ||--o| design-brief : "has (UI features: from /rite-spec via devrites-ux-shape; the build target)"
+    WORKSPACE ||--|| questions : "has: qid, gate, status (open/answered/dropped)"
     WORKSPACE ||--|| decisions : has
     WORKSPACE ||--|| assumptions : has
     WORKSPACE ||--|| drift : has
@@ -266,7 +266,7 @@ erDiagram
     }
     AFK_SENTINEL {
         bool present "presence = AFK active"
-        int max_slices "read-only initial budget — copied to state.md once"
+        int max_slices "read-only initial budget: copied to state.md once"
         string notify "optional shell command on pause"
         list allow_gates "gate severities AFK may auto-handle"
     }
@@ -276,7 +276,7 @@ erDiagram
     state {
         string phase "frame | spec | temper | define | plan | vet | build | converge | prove | polish | review | seal | ship | done"
         string status "running | awaiting_human | blocked | done"
-        string active_slice "N — name"
+        string active_slice "N: name"
         int afk_slices_remaining "from .devrites/AFK max_slices on first AFK build"
         block awaiting_human "qid, gate, question, proposed, raised_at (only when paused)"
     }
@@ -300,7 +300,7 @@ separately by `disable-model-invocation`.
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true) — 30 skills"]
+    subgraph Public["Public (user-invocable: true): 30 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
@@ -333,7 +333,7 @@ flowchart TB
         D2[/rite-prototype/]
         D3[/rite-handoff/]
     end
-    subgraph Internal["Internal (user-invocable: false) — 12 skills (11 specialists + devrites-lib library)"]
+    subgraph Internal["Internal (user-invocable: false): 12 skills (11 specialists + devrites-lib library)"]
         direction TB
         I1[devrites-api-interface]
         I2[devrites-audit<br/>security · perf · simplify]
@@ -384,5 +384,5 @@ stateDiagram-v2
 ```
 
 `AFK` mode (`.devrites/AFK` present) widens which transitions stay in
-`running` via `allow_gates` — but `blocking`, `escalating`, fail-on-red, and
+`running` via `allow_gates`, but `blocking`, `escalating`, fail-on-red, and
 the irreversible-risk list always transition to `awaiting_human` regardless.

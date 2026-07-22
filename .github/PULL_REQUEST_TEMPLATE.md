@@ -29,4 +29,4 @@ Skill or agent wording changed?
 
 ## Human review
 
-- [ ] A human reviewed the complete diff, not only the agent summary
+- [ ] A human reviewed the complete diff instead of relying on the agent summary

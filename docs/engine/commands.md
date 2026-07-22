@@ -16,11 +16,11 @@ exhaustive current command and hook inventory; see
 | ---- | ------------------------------------------------------------- |
 | `0`  | ok / gate passed                                              |
 | `2`  | usage error (bad args, unknown command, unknown `--harness`)  |
-| `3`  | blocked — a gate pause or a version-skew refuse (`doctor`)    |
+| `3`  | blocked: a gate pause or a version-skew refuse (`doctor`)    |
 
 Exit `3` is always a **pause, not a crash**: a structured, actionable message
 naming exactly what to resolve, then retry. This keeps enforcement safe under
-AFK — a run pauses rather than hard-failing. Both a completeness gate
+AFK. A run pauses rather than hard-failing. Both a completeness gate
 (`readiness`/`seal`) and a `doctor` refuse (state schema newer than the binary
 supports) use it.
 
@@ -29,11 +29,11 @@ supports) use it.
 Deterministic completeness gates. Enforcement is **phase-relative** and
 **gate-scoped**: a gate checks only the sections it needs, only when run.
 
-- `devrites-engine readiness <slug>` — are the sections required to **leave the
-  feature's current phase** complete? A section that is not yet required (e.g.
+- `devrites-engine readiness <slug>` asks whether the sections required to **leave the
+  feature's current phase** are complete. A section that is not yet required (e.g.
   `proof` during the `spec` phase) never blocks.
-- `devrites-engine seal <slug>` — is the feature complete against the **full seal-phase
-  requirement set**, regardless of its current phase?
+- `devrites-engine seal <slug>` asks whether the feature is complete against the **full seal-phase
+  requirement set**, regardless of its current phase.
 
 ```
 $ devrites-engine readiness auth-tokens
@@ -46,7 +46,7 @@ $ echo $?
 3
 ```
 
-## `doctor` — version triangle
+## `doctor`: version triangle
 
 `devrites-engine doctor` reports the three versions that can drift out of alignment and
 one legible verdict:
@@ -69,11 +69,11 @@ The pack version is discovered from `.claude/devrites.version` or the project
 asserted. Doctor also warns when project extensions have artifacts but no optional
 `provenance.json`.
 
-## `snapshot` — workspace status JSON
+## `snapshot`: workspace status JSON
 
 `devrites-engine snapshot [slug]` emits the `devrites.workspace.v1` JSON contract.
 
-## `profile` — stable repo facts cache
+## `profile`: stable repo facts cache
 
 `devrites-engine profile get|refresh` caches question-agnostic repo facts for grounding skills: top-level layout, manifests, and digests for root docs, ADRs, CI/deploy files, and `.devrites` principles/conventions. It never calls a model or the network.
 
@@ -82,16 +82,16 @@ asserted. Doctor also warns when project extensions have artifacts but no option
 
 The cache lives under `/tmp/compound-engineering/devrites/repo-profile` by default and is invalidated when profile-input files are dirty or newly added. Skills still re-scan candidate-specific code fresh.
 
-## `migrate` — legacy aliases and old layouts
+## `migrate`: legacy aliases and old layouts
 
 `devrites-engine migrate` preserves old workspaces while the canonical live location is
 `.devrites/work/<slug>/`. Older `.devrites/features/<slug>/` workspaces remain
 readable, and the migration path is:
 
-- **idempotent** — a second run is a no-op (`already up to date`);
-- **backed up** — the pre-migration `work/` and `ACTIVE` are snapshotted to a
+- **idempotent**: a second run is a no-op (`already up to date`);
+- **backed up**: the pre-migration `work/` and `ACTIVE` are snapshotted to a
   timestamped `.migrate-backup-*` directory before anything changes;
-- **lossless** — canonical files are added without deleting aliases. `README.md`
+- **lossless**: canonical files are added without deleting aliases. `README.md`
   is the preferred workspace map while `feature.md` / `index.md` remain readable;
   `state.md` is preferred while `status.md` remains a cursor alias; `evidence.md`
   is preferred while `proof.md` remains a proof alias.
@@ -104,7 +104,7 @@ can't be read.
 One binary serves both Claude Code and Codex through thin per-harness adapters.
 Every hook is **fail-open and read-only unless it explicitly gates**.
 
-- `devrites-engine hook orient --harness=H` — emits the SessionStart orientation for the
+- `devrites-engine hook orient --harness=H` emits the SessionStart orientation for the
   active feature (named by `.devrites/ACTIVE`) as the harness's
   `hookSpecificOutput.additionalContext` envelope. With no active feature (or a
   stale pointer), the first-ever such session instead gets a one-time starting
@@ -112,18 +112,18 @@ Every hook is **fail-open and read-only unless it explicitly gates**.
   brownfield → `/rite-adopt`, …); the `.devrites/.first-run-shown` marker keeps
   it from repeating. Silent (exit `0`, no output) outside a workspace or once
   the marker exists.
-- `devrites-engine hook auq` — PostToolUse capture of an `AskUserQuestion`
-  exchange: appends each question + chosen answer to `.devrites/timeline.jsonl`
+- `devrites-engine hook auq` captures an `AskUserQuestion` exchange after tool use.
+  It appends each question + chosen answer to `.devrites/timeline.jsonl`
   and the feature's `events.jsonl`, so HITL decisions are recorded at the
-  substrate instead of trusted to the model's bookkeeping. Capture only — never
+  substrate instead of trusting the model's bookkeeping. It only captures data and never
   tunes, blocks, or replies; silent outside an active workspace. Claude-only by
-  design: Codex has an equivalent tool (`request_user_input`) but emits no hook
-  event for it — its PostToolUse matches only Bash/`apply_patch`/MCP calls, and
+  design. Codex has an equivalent tool (`request_user_input`) but emits no hook
+  event for it. Codex PostToolUse matches only Bash/`apply_patch`/MCP calls, and
   the user-input-requested event was declined upstream (openai/codex#12524).
-- `devrites-engine hook stop-gate --harness=H` — refuses to end a turn at a provably
-  inconsistent **rest point** (a feature claiming completion — phase `seal`/`ship`
-  — with empty `evidence.md` / `proof.md`). NOT whole-feature completeness, so normal
-  in-progress work is never blocked. **Observe by default** — a would-block is
+- `devrites-engine hook stop-gate --harness=H` refuses to end a turn at a provably
+  inconsistent **rest point**, such as a feature in phase `seal` or `ship` with
+  empty `evidence.md` or `proof.md`. It does not check whole-feature completeness,
+  so normal in-progress work is never blocked. It observes by default: a would-be block is
   appended to the feature's `.stop-gate.log` (mirroring `devrites-engine hook stop-gate`)
   rather than gating; set `DEVRITES_STOP_GATE=enforce` to actually block.
   Loop-guarded by the harness's `stop_hook_active` so it can never wedge a
@@ -139,54 +139,55 @@ blocked):
 command -v devrites-engine >/dev/null 2>&1 && devrites-engine hook orient --harness=claude || exit 0
 ```
 
-## `ledger` — the living capability store
+## `ledger`: the living capability store
 
 `devrites-engine ledger <sub>` maintains `.devrites/specs/<capability>/spec.md`, the cumulative
-record of proven behavior (see [state-schema.md § Capability ledger](state-schema.md#capability-ledger--specs)).
-Feature specs carry deltas (`## ADDED/MODIFIED/REMOVED Requirements — capability: <c>`); the fold
-is a header-identity upsert/delete, so it is **idempotent** — re-syncing a feature is a no-op.
+record of proven behavior (see [state-schema.md § Capability ledger](state-schema.md#capability-ledger-specs)).
+Feature specs carry deltas under an `ADDED`, `MODIFIED`, or `REMOVED`
+Requirements heading tagged with `capability: <c>`. The fold uses header identity
+for upserts and deletes, so re-syncing a feature is a no-op.
 
-- `ledger sync <workspace-dir>` — fold a feature's deltas into every capability they touch (ADDED
+- `ledger sync <workspace-dir>`: fold a feature's deltas into every capability they touch (ADDED
   append, MODIFIED replace, REMOVED delete). Called from `/rite-ship` on GO. Exit `0`.
-- `ledger diff <workspace-dir>` — dry-run the fold (the change preview shown before sync). Exit `0`.
-- `ledger validate` — grammar-lint every ledger spec. Exit `0` clean · `1` on a violation.
-- `ledger list` / `ledger show <capability>` — read the ledger (used by `/rite-spec` and
+- `ledger diff <workspace-dir>`: dry-run the fold (the change preview shown before sync). Exit `0`.
+- `ledger validate`: grammar-lint every ledger spec. Exit `0` clean · `1` on a violation.
+- `ledger list` / `ledger show <capability>`: read the ledger (used by `/rite-spec` and
   `/rite-adopt` to write deltas against the current contract). Exit `0` · `1` unknown capability.
 
 `spec-validate <dir> --against .devrites/specs` cross-checks a spec's delta classification against
 the ledger (ADDED must be new; MODIFIED/REMOVED must already exist) and validates Edge Coverage /
-Prohibitions tables — a blocking spec-gate check.
+Prohibitions tables as a blocking spec-gate check.
 
-## `analyze` — cross-artifact coverage & consistency
+## `analyze`: cross-artifact coverage & consistency
 
 `devrites-engine analyze [slug]` cross-checks a feature's `spec.md` against its `tasks.md` before
 any code is written, so a coverage gap surfaces as a one-line plan edit instead of a reslice
 mid-build. It emits a markdown report with four passes:
 
-- **Coverage** — a spec `AC-###` that no slice `Satisfies:` (**CRITICAL**; legacy `[ACn]` remains supported).
-- **Consistency** — a slice that `Satisfies:` an AC the spec never defines (**CRITICAL**).
-- **Orphan slice** — a slice satisfying no acceptance criterion (warn).
-- **Ambiguity** — an unquantified vague adjective (`fast`, `robust`, `intuitive`, …) or an
+- **Coverage**: a spec `AC-###` that no slice `Satisfies:` (**CRITICAL**; legacy `[ACn]` remains supported).
+- **Consistency**: a slice that `Satisfies:` an AC the spec never defines (**CRITICAL**).
+- **Orphan slice**: a slice satisfying no acceptance criterion (warn).
+- **Ambiguity**: an unquantified vague adjective (`fast`, `robust`, `intuitive`, …) or an
   unresolved placeholder (`TODO`, `TKTK`, `???`) in the spec (warn).
 
 It closes with a **Metrics** line (criteria count, coverage %, orphan + ambiguity counts) so the
-vet gate reports a number, not just a pass/fail. Exit `0` clear · `1` at least one CRITICAL ·
+vet gate reports a number instead of only pass or fail. Exit `0` clear · `1` at least one CRITICAL ·
 `2` no workspace (no active slug, or `spec.md`/`tasks.md` missing). `/rite-vet` runs it in its
-cross-artifact gate (step 2a) and layers the semantic passes the engine can't do — terminology
-drift, duplicated/conflicting requirements — on top of this deterministic floor.
+cross-artifact gate (step 2a) and adds semantic checks for terminology drift and
+duplicated or conflicting requirements on top of this deterministic floor.
 
-## `review-integrity` — the silent-reviewer gate
+## `review-integrity`: the silent-reviewer gate
 
 `devrites-engine review-integrity [slug]` guards the failure opposite to noise: a reviewer that
 returns "looks good, nothing found". It parses `review.md`'s `## Spec` / `## Code review` axis
 sections and flags any that carry neither a bold-labeled finding nor a `No-findings:` justification.
-A zero-count summary line does **not** count as findings — an all-zero tally is the rubber-stamp
+A zero-count summary line does **not** count as a finding. An all-zero tally is the rubber-stamp
 this catches. Exit `0` every axis accounted for (or no/freeform `review.md`) · `1` an axis is silent
 and unjustified. `/rite-review` runs it after writing `review.md`; `/rite-seal` treats `rc=1` as an
 Important on the review's completeness. The honesty contract mirrors `doubt-coverage` and the
-footprint roster — it checks the *account* is present, not its quality.
+footprint roster: it checks the *account* is present, not its quality.
 
-## `timeline` — append-only session trace
+## `timeline`: append-only session trace
 
 `devrites-engine timeline log|list` records compact session events in `.devrites/timeline.jsonl`.
 It is for reconstructing what happened across long agent runs: which rite or skill acted, what
@@ -203,7 +204,7 @@ Records are JSONL, append-only, and safe for concurrent short-lived engine calls
 update DevRites through the npm flow (`npx devrites ...`); this command is part of the installed
 engine, not a Claude/Codex plugin distribution path.
 
-## `health` — code-health dashboard and history
+## `health`: code-health dashboard and history
 
 `devrites-engine health`, `health run`, and `health check` run the known project
 checks (available npm test/lint/typecheck/build scripts, `go test`, `pytest`, and
@@ -227,7 +228,7 @@ Scores must be `0..10`. The label should name the evidence, not a vibe. Skill he
 until DevRites records per-skill run outcomes; use `scripts/skill-pruning-audit.mjs` for pruning
 signals instead of inventing telemetry.
 
-## `review-fingerprints` — stable IDs for findings
+## `review-fingerprints`: stable IDs for findings
 
 `devrites-engine review-fingerprints [--write] [slug]` scans `.devrites/work/<slug>/review.md` for
 bold severity labels (`Critical`, `Important`, `Suggestion`, `Nit`, `FYI`) and emits stable
@@ -242,20 +243,20 @@ The IDs make recurring findings, dismissals, and later learning easier to correl
 copying full review text into every downstream surface. `review-integrity` remains the gate; this
 command only records stable references.
 
-## `reviewer-stats` — dispatch outcomes that gate the fan-out
+## `reviewer-stats`: dispatch outcomes that gate the fan-out
 
 `devrites-engine reviewer-stats record <agent> <surviving-findings> [slug]` appends one dispatch
 outcome to `.devrites/reviewer-stats.jsonl` (cross-feature, append-only).
 `devrites-engine reviewer-stats report [--json]` grades each reviewer deterministically:
 
-- `run (always-on)` — the unconditional axes (`spec-reviewer`, `code-reviewer`, `test-analyst`).
-- `run (insurance — never gated)` — `security-auditor` and `doubt-reviewer`: a dry streak is
+- `run (always-on)`: the unconditional axes (`spec-reviewer`, `code-reviewer`, `test-analyst`).
+- `run (insurance; never gated)`: `security-auditor` and `doubt-reviewer`. A dry streak is
   success, never a reason to skip.
-- `gate-candidate` — a conditional reviewer with zero surviving findings in its last 10+
+- `gate-candidate`: a conditional reviewer with zero surviving findings in its last 10+
   dispatches; the fan-out may skip it as a *recorded* skip (see the shared
   `pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md` contract,
   § Hit-rate gating).
-- `run` — everything else.
+- `run`: everything else.
 
 ```bash
 devrites-engine reviewer-stats record devrites-performance-reviewer 0 auth-tokens
@@ -265,7 +266,7 @@ devrites-engine reviewer-stats report
 Thresholds live in the engine, not the prompt: the caller reads the verdict, it never re-derives
 or overrides the streak math (a user-requested full panel dispatches everything regardless).
 
-## `reviewers list` — bounded reviewer aliases
+## `reviewers list`: bounded reviewer aliases
 
 `devrites-engine reviewers list` validates same-adapter reviewer aliases from `.devrites/config.json`
 or flat `.devrites/config*` keys. It never executes a reviewer; it only checks the bounded config
@@ -281,19 +282,19 @@ surface (`cli` must be `claude` or `codex`; `model` and `agent` are opaque strin
 }
 ```
 
-## `extensions` / `overrides` — project extensibility
+## `extensions` / `overrides`: project extensibility
 
-Two project-local surfaces let a team extend the pack without forking it — full contract in
-[extensions.md](../extensions.md).
+Two project-local surfaces let a team extend the pack without forking it. The
+full contract is in [extensions.md](../extensions.md).
 
-- `extensions list|validate|sync` — user rites/reviewers under `.devrites/extensions/<name>/`, held
+- `extensions list|validate|sync`: user rites/reviewers under `.devrites/extensions/<name>/`, held
   to the pack's schema (`validate`, exit `1` on a malformed extension) and mirrored into `.claude/`
   (`sync`, validates first, refuses a broken set).
-- `overrides list|validate` — reviewer overrides under `.devrites/overrides/<agent>.md`, advisory
+- `overrides list|validate`: reviewer overrides under `.devrites/overrides/<agent>.md`, advisory
   house rules a shipped reviewer reads after its standards. `validate` exits `1` when an override
-  reads like it waives a gate — an override may add checks, never relax one.
+  reads like it waives a gate. An override may add checks but never relax one.
 
-## `context sync|show` — agent context
+## `context sync|show`: agent context
 
 `devrites-engine context sync [file ...]` upserts only the block delimited by
 `<!-- DEVRITES START -->` / `<!-- DEVRITES END -->` in project context files. With no file args it
@@ -305,7 +306,7 @@ active workspace, the source of that selection (`ACTIVE`, `DEVRITES_WORKSPACE`, 
 `none`), and the Claude/Codex menu forms. `--json` emits one direct JSON document for wrappers that
 need to know where a command will act.
 
-## `runbook` — tiny local automation
+## `runbook`: tiny local automation
 
 `devrites-engine runbook list|validate|run|resume` executes flat YAML runbooks from
 `.devrites/runbooks/*.yaml`. Supported step forms are deliberately small:
@@ -328,9 +329,9 @@ replacement lifecycle.
 DevRites fans out reviewer subagents that each spawn the binary, so the real
 contention is between short-lived **processes**. State writes are hardened for it:
 
-- **append-only logs** use `O_APPEND` with small records — parallel writers never
+- **append-only logs** use `O_APPEND` with small records, so parallel writers never
   interleave or lose records;
-- **structured files** are written via temp-file + atomic rename — a reader (or a
+- **structured files** use a temporary file and atomic rename, so a reader (or a
   writer killed mid-write) never sees a half-written file;
-- **read-modify-write** takes a per-feature advisory `flock` (unix) — no lost
-  updates.
+- **read-modify-write** takes a per-feature advisory `flock` on Unix to avoid
+  lost updates.
