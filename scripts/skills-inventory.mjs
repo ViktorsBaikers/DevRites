@@ -101,14 +101,13 @@ assertDocContains(docsSkills, `${modelInvokedInternalCount} model-invoked \`devr
 assertDocContains(docsSkills, 'npx devrites', 'npx distribution contract');
 assertDocContains(docsCommandMap, 'npx devrites', 'npx distribution contract');
 assertDocContains(readme, `The pack ships ${total} skills`, 'README total skill prose');
-assertDocContains(readme, `# skills/  ${total} skills`, 'README layout total count');
-assertDocContains(readme, `${publicCount} public + ${internalCount} internal`, 'README public/internal count');
+assertDocContains(readme, `${publicCount} public and ${internalCount} internal`, 'README public/internal count');
+assertDocContains(readme, '[skills catalogue](docs/skills.md)', 'README skills catalogue link');
 assertDocContains(arch, `${publicRiteCount} public \`rite-*\` skills (${total} total)`, 'architecture surface count');
 assertDocContains(docsFlow, `: ${publicCount} skills`, 'flow public count');
 assertDocContains(docsFlow, `: ${internalCount} skills`, 'flow internal count');
 assertPublicSkillLinks(docsSkills, 'skills catalogue');
 assertPublicSkillLinks(docsCommandMap, 'command map');
-assertPublicSkillMentions(readme, 'README catalogue');
 assertPublicSkillMentions(docsFlow, 'flow namespace');
 assertPublicSkillMentions(arch, 'architecture surface');
 
