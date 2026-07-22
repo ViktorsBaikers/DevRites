@@ -297,7 +297,9 @@ configured engine or a local `engine/devrites-engine`, can download a
 checksummed release binary, can build a temporary engine from the local Go
 source, and finally falls back to an existing `devrites-engine` on `PATH`. Use `--no-binary` or
 `DEVRITES_NO_BINARY=1` if you do not want the installer to keep the shared
-binary outside the project.
+binary outside the project. `devrites-engine update` also prefers the
+checksummed platform release binary and only builds from source as a fallback,
+without reading Git metadata from the target project.
 
 Workflow state is read through the engine rather than shell injection. The
 installer never writes `defaultMode: bypassPermissions`. Skills use networked
