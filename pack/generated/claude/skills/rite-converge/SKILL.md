@@ -5,11 +5,11 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
-# /rite-converge — make the code and the intent converge
+# /rite-converge: make the code and the intent converge
 
 Read `spec.md` + `plan.md` + `tasks.md` as the **sole source of intent** (with
 `.devrites/principles.md` as governing constraints), assess what the **live codebase**
-actually implements, and **append every unmet piece as a new traceable `SLICE-###`** at the
+implements, and **append every unmet piece as a new traceable `SLICE-###`** at the
 bottom of `tasks.md` so `/rite-build` can finish it. The recovery bridge for work that fell
 out of sync with its plan: a half-built feature picked up cold, a `/rite-adopt`'d codebase
 that drifted from its derived spec, or a build that stalled mid-slice. **Read the active
@@ -17,37 +17,37 @@ workspace first**; if there's no `spec.md`/`plan.md`/`tasks.md`, tell the user w
 prerequisite skill to run.
 
 > **Not a diff tool.** `/rite-converge` assesses the **present state** of the code against
-> intent — no git, no branch comparison, no history. "What does this codebase do *now* vs
-> what the artifacts asked for" — not "what changed since commit X". For a change-scoped
+> intent: no git, no branch comparison, no history. "What does this codebase do *now* vs
+> what the artifacts asked for", not "what changed since commit X". For a change-scoped
 > review use `/rite-review`; to prove a finished feature use `/rite-prove`.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 Pull on demand:
-- `principles.md` — the project invariants (`.devrites/principles.md`); code that violates a
+- `principles.md`: the project invariants (`.devrites/principles.md`); code that violates a
   MUST principle is the highest-severity gap and produces a remediation slice.
-- `spec-grammar.md` — buildable acceptance criteria vs `## Success metrics` (outcome KPIs the
+- `spec-grammar.md`: buildable acceptance criteria vs `## Success metrics` (outcome KPIs the
   code can't make true and this pass never enqueues); structured `### Requirement:` /
   `#### Scenario:` blocks, each scenario one behavior to check as built / partial / absent.
-- `tooling.md` — prefer a code-intelligence index (codebase-memory-mcp → codegraph → graphify,
+- `tooling.md`: prefer a code-intelligence index (codebase-memory-mcp → codegraph → graphify,
   else LSP / Read/Grep/Glob) to read the live code, not assumptions.
-- `testing.md` — a criterion with code but no covering test is *partial*, not done.
+- `testing.md`: a criterion with code but no covering test is *partial*, not done.
 
 ## Operating rules
 - **APPEND-ONLY, never rewrite.** The only write to `tasks.md` is **appending** new
   `SLICE-###` entries. Never rewrite, renumber, reorder, or delete an existing slice
   (including slices a prior convergence appended). Never edit `spec.md` or `plan.md`. Never
-  touch application code — completing the appended slices is `/rite-build`'s job, not this
+  touch application code: completing the appended slices is `/rite-build`'s job, not this
   skill's.
 - **Clean means byte-for-byte unchanged.** When the code already satisfies everything, leave
-  `tasks.md` untouched — no empty convergence header — and report a clean result. Recommend
+  `tasks.md` untouched (no empty convergence header) and report a clean result. Recommend
   `/rite-prove`.
 - **Intent is the artifacts, not your memory.** The spec/plan/tasks (+ principles) are the
   contract. If assessing reveals the *spec* is wrong (the code is right and the requirement is
-  stale), that's **Spec Drift** — stop and route it through the Spec Drift Guard
+  stale), that's **Spec Drift**: stop and route it through the Spec Drift Guard
   (`rite-build/reference/spec-drift-guard.md`) + a recorded decision; never paper over a spec
   bug by appending a task that "fixes" the code to a wrong requirement.
 - **Partial is not done.** Code that exists but is untested, half-wired, or covers only the
-  happy path is an unmet gap — enqueue the remainder, don't round it up.
+  happy path is an unmet gap: enqueue the remainder, don't round it up.
 - **Principles are non-negotiable.** A live violation of a declared invariant with no recorded
   exception is the top-severity gap, walked first. Absent/empty principles file → none declared
   → skip the check gracefully, never block for its absence.
@@ -59,7 +59,7 @@ Pull on demand:
    any is missing, **STOP** and name the prerequisite (`/rite-spec` for a missing spec,
    `/rite-define` for a missing plan/tasks, `/rite-adopt` to onboard existing code). Do not
    produce partial output.
-2. **Load intent** — [`reference/convergence-assessment.md`](reference/convergence-assessment.md).
+2. **Load intent:** [`reference/convergence-assessment.md`](reference/convergence-assessment.md).
    From `spec.md`: buildable `AC-###` / `### Requirement:` scenarios (skip `## Success metrics`);
    from `plan.md`: architecture decisions + named touch-points (files/components the plan says
    get built); from `tasks.md`: existing slices + their `Satisfies:`; from
@@ -67,7 +67,7 @@ Pull on demand:
    **Completion:** every buildable criterion, touch-point, slice output, and principle is in the assessment inventory.
 3. **Run the mechanical backbone**, then read the code. `devrites-engine analyze` gives coverage +
    consistency; `devrites-engine coverage` gives the AC→slice→proven matrix. They catch *unmapped*
-   criteria; they do **not** see whether mapped code is actually built and correct — for that,
+   criteria; they do **not** see whether mapped code is built and correct, for that,
    read the live code (code-intelligence index per `tooling.md`).
    ```bash
    S="$(cat .devrites/ACTIVE 2>/dev/null)"
@@ -107,13 +107,13 @@ Convergence: 2026-07-07      # marks this as a convergence-appended slice, not a
 
 > **Mid-flight discipline.** When tempted to rewrite an existing slice instead of appending, to
 > edit the code directly "while you're in there", to mark a happy-path-only implementation as
-> built, or to enqueue a task that bends the code to a spec you suspect is wrong — see
+> built, or to enqueue a task that bends the code to a spec you suspect is wrong: see
 > [`reference/anti-patterns.md`](reference/anti-patterns.md). Load it the moment you reach for
 > the excuse.
 
 ## Output
 
-**Progress first** — run `devrites-engine progress`, then use the shared completion reply contract
+**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
 ([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 Default success shape:
 ```
@@ -128,4 +128,4 @@ Record: .devrites/work/<slug>/tasks.md
 When nothing was unmet, render the same green form with `Next: /rite-prove`.
 If spec drift or another blocker remains, use the shared `Stopped / blocked` form
 and route `Fix:` to `/rite-plan`; do not recommend `/rite-build`.
-**DO NOT write application code, rewrite existing slices, or edit spec.md/plan.md here** — convergence assesses and enqueues; `/rite-build` implements.
+**DO NOT write application code, rewrite existing slices, or edit spec.md/plan.md here**: convergence assesses and enqueues; `/rite-build` implements.

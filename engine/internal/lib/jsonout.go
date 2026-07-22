@@ -11,7 +11,7 @@ import (
 // The machine-readable agent contract. A `--json` run of an AFK-parsed command
 // wraps its normal text output in a stable envelope so an unattended driver reads
 // a structured result instead of scraping prose. The command's own logic is
-// unchanged — the envelope captures its stdout (as data.text), its stderr (parsed
+// unchanged: the envelope captures its stdout (as data.text), its stderr (parsed
 // into diagnostics), and the exit code. Full contract: docs/engine/agent-contract.md.
 
 // Envelope is the top-level JSON result of a `--json` command run.
@@ -92,7 +92,7 @@ func parseDiagnostic(command, line string) Diagnostic {
 }
 
 // diagnosticCode assigns a stable, greppable code. It is intentionally coarse in
-// v1 — a `<command>_<severity>` slug — so the catalog in agent-contract.md can grow
+// v1 (a `<command>_<severity>` slug) so the catalog in agent-contract.md can grow
 // specific codes over time without breaking consumers that match on the prefix.
 func diagnosticCode(command, severity, message string) string {
 	base := diagCodeWord.ReplaceAllString(strings.ToLower(command), "_")

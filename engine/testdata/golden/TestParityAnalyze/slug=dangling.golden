@@ -2,10 +2,10 @@ exit 1
 # Cross-artifact analysis: dangling
 
 ## Coverage
-- [ok] AC1 — covered
+- [ok] AC1: covered
 
 ## Consistency
-- [CRITICAL] AC9 (tasks.md) — referenced by a slice but not defined in spec.md (dangling)
+- [CRITICAL] AC9 (tasks.md): referenced by a slice but not defined in spec.md (dangling)
 
 ## Ambiguity
 - [ok] no unquantified adjectives or unresolved placeholders found
@@ -13,4 +13,4 @@ exit 1
 ## Metrics
 - Acceptance criteria: 1 · covered 1/1 (100%) · orphan slices 0 · ambiguity flags 0
 
-## Verdict: BLOCKED — 1 CRITICAL finding(s). Resolve before /rite-build (Claude) / $rite-build (Codex).
+## Verdict: BLOCKED: 1 CRITICAL finding(s). Resolve before /rite-build (Claude) / $rite-build (Codex).

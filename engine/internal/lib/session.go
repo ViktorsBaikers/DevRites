@@ -227,7 +227,7 @@ func ReviewFingerprints(root string, args []string, stdout, stderr io.Writer) in
 	dir := featureDir(root, slug)
 	review, ok := readFileOK(filepath.Join(dir, "review.md"))
 	if !ok {
-		fmt.Fprintln(stdout, "review-fingerprints: no review.md — nothing to fingerprint.")
+		fmt.Fprintln(stdout, "review-fingerprints: no review.md: nothing to fingerprint.")
 		return 0
 	}
 	records := reviewFindingFingerprints(review)

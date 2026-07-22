@@ -5,7 +5,7 @@ argument-hint: "[candidate/link/question]"
 user-invocable: true
 ---
 
-# /rite-pov — project-grounded external verdict
+# /rite-pov: project-grounded external verdict
 
 Decide whether **this project** should adopt, trial, hold, reject, or ignore a named outside candidate. Chat verdict first; durable record only when the user asks or the decision changes an active feature.
 
@@ -14,7 +14,7 @@ Step 0: Read `.claude/skills/devrites-lib/reference/standards/core.md`. Pull `so
 
 ## Operating rules
 - Verdict only after two floors clear: one verified project fact and one verified external source.
-- Named candidate only. If the user asks “what should we use?” over an open field, route to `/rite-pressure-test` or `/rite-spec` to surface criteria first.
+- Named candidate only. If the user asks "what should we use?" over an open field, route to `/rite-pressure-test` or `/rite-spec` to surface criteria first.
 - Reversibility sizes rigor: two-way config/dependency < bounded internal migration < public/security/legal/data decision.
 
 ## Workflow
@@ -41,6 +41,6 @@ Record: <path|not written>
 ```
 
 ## Gotchas
-- No project floor, no verdict. A generic “X is good” answer is failure.
+- No project floor, no verdict. A generic "X is good" answer is failure.
 - Do not let a strong blog post compensate for no local call site, incumbent, or integration point.
 - Do not enumerate a whole market here; bounded candidate decisions only.

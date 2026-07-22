@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# npx-pack-smoke.sh — verify the PACKAGED npm artifact installs and runs, the way
-# `npx devrites` actually resolves it.
+# npx-pack-smoke.sh: verify the PACKAGED npm artifact installs and runs, the way
+# `npx devrites` resolves it.
 #
 # cli-smoke.sh runs bin/devrites.mjs straight from the repo tree, so it never sees
 # what npm publish would ship. This test closes that gap: it packs the package
 # (npm pack → the same files/.npmignore/prepack path publish uses), installs the
 # tarball into an isolated global prefix, and drives the resolved `devrites` bin.
-# It catches the regressions the in-tree smoke can't — a dropped entry in
+# It catches the regressions the in-tree smoke can't: a dropped entry in
 # package.json "files", an over-broad .npmignore, a broken prepack, or a bad
-# bin/shebang — each of which silently breaks real `npx devrites`.
+# bin/shebang: each of which silently breaks real `npx devrites`.
 #
 # Packs a throwaway tree, so prepack's `rm -rf` runs there and never mutates your
 # working copy. By default it copies the current tracked working tree so local
@@ -43,7 +43,7 @@ elif git -C "$ROOT" rev-parse --show-toplevel >/dev/null 2>&1; then
     && ok "exported current working tree to a clean tree" \
     || { no "working-tree export failed"; echo "npx-pack-smoke: FAIL"; exit 1; }
 else
-  cp -R "$ROOT"/. "$WORK"/ 2>/dev/null && ok "no git HEAD — copied working tree"
+  cp -R "$ROOT"/. "$WORK"/ 2>/dev/null && ok "no git HEAD: copied working tree"
 fi
 
 ( cd "$WORK" && env -u DEVRITES_HOST_ARTIFACT_DIR npm pack --pack-destination "$PACKDIR" ) >/dev/null 2>&1 \
@@ -72,14 +72,14 @@ done
 echo "$contents" | grep -q '__pycache__' && no "tarball ships __pycache__ (prepack didn't clean)" \
   || ok "no __pycache__ in tarball"
 
-# 3) Install the tarball into an isolated global prefix — offline, real ~/.npm global untouched.
+# 3) Install the tarball into an isolated global prefix: offline, real ~/.npm global untouched.
 npm install -g --prefix "$PREFIX" --no-audit --no-fund "$TGZ" >/dev/null 2>&1 \
   || { no "npm install -g of the tarball failed"; echo "npx-pack-smoke: FAIL"; exit 1; }
 BIN="$PREFIX/bin/devrites"
 [ -x "$BIN" ] && ok "bin shim installed + executable (\$PREFIX/bin/devrites)" \
   || no "bin shim missing/not executable (bin field? shebang? exec bit?)"
 
-# 4) Drive the resolved bin as npx would — no `node` prefix, so this exercises the shebang.
+# 4) Drive the resolved bin as npx would: no `node` prefix, so this exercises the shebang.
 want="$(node -e "process.stdout.write(require('$ROOT/package.json').version)")"
 got="$("$BIN" --version 2>/dev/null)"
 [ "$got" = "$want" ] && ok "--version reports $got" || no "--version ($got) != package.json ($want)"

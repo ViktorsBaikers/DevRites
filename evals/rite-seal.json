@@ -1,6 +1,6 @@
 {
   "skill": "rite-seal",
-  "description": "Trigger evals for /rite-seal — final GO / NO-GO senior review with acceptance criteria walked one-by-one against evidence.",
+  "description": "Trigger evals for /rite-seal: final GO / NO-GO senior review with acceptance criteria walked one-by-one against evidence.",
   "queries": [
     {
       "text": "/rite-seal",
@@ -89,19 +89,19 @@
       "text": "Push the branch.",
       "expected": "should_not_trigger",
       "owner": "rite-ship",
-      "rationale": "→ /rite-ship — the irreversible git push lives in /rite-ship, not /rite-seal."
+      "rationale": "→ /rite-ship: the irreversible git push lives in /rite-ship, not /rite-seal."
     },
     {
       "text": "Tag a release.",
       "expected": "should_not_trigger",
       "owner": "rite-ship",
-      "rationale": "→ /rite-ship — release tagging is part of /rite-ship's irreversible git ladder."
+      "rationale": "→ /rite-ship: release tagging is part of /rite-ship's irreversible git ladder."
     },
     {
       "text": "Ship it and close the task.",
       "expected": "should_not_trigger",
       "owner": "rite-ship",
-      "rationale": "→ /rite-ship — shipping + closing/archiving the task is /rite-ship; /rite-seal only decides GO/NO-GO."
+      "rationale": "→ /rite-ship: shipping + closing/archiving the task is /rite-ship; /rite-seal only decides GO/NO-GO."
     },
     {
       "text": "Why did test X fail?",

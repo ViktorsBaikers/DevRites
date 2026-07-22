@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scan-pack-security-test.sh — assert scripts/scan-pack-security.py flags injection
+# scan-pack-security-test.sh: assert scripts/scan-pack-security.py flags injection
 # payloads and hidden unicode, passes clean files, honors suppression markers, and
 # keeps the real shipped pack clean. Mirrors tests/validate-frontmatter-rejects-unknown.sh.
 set -u
@@ -42,8 +42,8 @@ EOF
 cat > "$TMP/clean.md" <<'EOF'
 # A normal reference
 
-Handle empty input and very large currency — `1.000.000`. Words like café and
-naïve are fine, and an em-dash — is not a finding.
+Handle empty input and very large currency: `1.000.000`. Words like café and
+naïve are fine, and an em-dash: is not a finding.
 EOF
 
 cat > "$TMP/suppressed.md" <<'EOF'

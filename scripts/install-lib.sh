@@ -142,7 +142,7 @@ dr_manifest_contains() {
 }
 
 # Is $1 (canonical) equal to, or inside, a global agent home?
-# Used to refuse global writes. No write verbs here — read-only comparison.
+# Used to refuse global writes. No write verbs here: read-only comparison.
 dr_is_global_claude() {
   _t="$1"
   _home_claude="$HOME/.claude"
@@ -178,7 +178,7 @@ argument-hint: "[args]"
 user-invocable: true
 ---
 
-# /$_name — alias of /$_to
+# /$_name: alias of /$_to
 
 This command **delegates to DevRites \`/$_to\`**. State that to the user, then load and
 run \`$_to/SKILL.md\` with the given arguments, following it exactly.

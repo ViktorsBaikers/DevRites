@@ -1,6 +1,6 @@
 {
   "skill": "rite-doctor",
-  "description": "Trigger evals for /rite-doctor — diagnosing DevRites install + workspace health. Adversarial against /rite-status (feature progress) and devrites-debug-recovery (the user's own code).",
+  "description": "Trigger evals for /rite-doctor: diagnosing DevRites install + workspace health. Adversarial against /rite-status (feature progress) and devrites-debug-recovery (the user's own code).",
   "queries": [
     {
       "text": "/rite-doctor",
@@ -30,7 +30,7 @@
     {
       "text": "Why isn't the workflow picking up my active feature?",
       "expected": "should_trigger",
-      "rationale": "Stale ACTIVE / corrupt-workspace symptom — a doctor check."
+      "rationale": "Stale ACTIVE / corrupt-workspace symptom: a doctor check."
     },
     {
       "text": "Something's off with my .devrites state — check the setup.",

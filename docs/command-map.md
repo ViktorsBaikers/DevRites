@@ -119,7 +119,7 @@ the shared reference library.
 | [`devrites-forge-judge`](../pack/.claude/agents/devrites-forge-judge.md) | `/rite-build` on a `Forge: yes` slice | Comparative judge of K=2 to 3 competing candidate builds (acceptance / test strength / principle fit / simplicity / reuse / anti-slop); picks the single winner to land, names grafts; read-only |
 | [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | `/rite-review` Spec axis; `/rite-seal` | Does the diff implement the spec? Missing/partial/wrong criteria; scope creep |
 | [`devrites-code-reviewer`](../pack/.claude/agents/devrites-code-reviewer.md) | `/rite-review` Standards axis; `/rite-seal` | Correctness / readability / architecture / maintainability |
-| [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | `/rite-seal` | Do the tests actually prove the acceptance criteria? |
+| [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | `/rite-seal` | Do the tests prove the acceptance criteria? |
 | [`devrites-frontend-reviewer`](../pack/.claude/agents/devrites-frontend-reviewer.md) | `/rite-seal` on UI features | UX, a11y, responsive, design-system, anti-AI-slop; reads the **Visual Verdict** |
 | [`devrites-security-auditor`](../pack/.claude/agents/devrites-security-auditor.md) | `/rite-seal` when input/auth/data in scope | OWASP Top 10, trust boundary, secrets, deps |
 | [`devrites-performance-reviewer`](../pack/.claude/agents/devrites-performance-reviewer.md) | `/rite-seal` when perf relevant | N+1s, hot paths, payload size |

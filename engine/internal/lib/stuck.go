@@ -14,7 +14,7 @@ import (
 )
 
 // awkNumRe recognises an awk "numeric string" (optional surrounding blanks, sign,
-// int/float/exponent) — the class that makes a comparison numeric. awkLeadNumRe
+// int/float/exponent): the class that makes a comparison numeric. awkLeadNumRe
 // captures the leading numeric prefix strtod would convert (so "4x" → 4).
 var (
 	awkNumRe     = regexp.MustCompile(`^[ \t\n]*[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?[ \t\n]*$`)
@@ -62,9 +62,9 @@ func sameWindow(h []string, winVal float64) bool {
 // Matching is by (tool,target) sha1, timestamps ignored. root is the .devrites
 // directory; the log lives at <root>/features/<slug>/action.log.
 //
-//	0  ok — not stuck (or logging, or no workspace: never fail the caller on log)
+//	0  ok: not stuck (or logging, or no workspace: never fail the caller on log)
 //	2  bad args
-//	3  STUCK — the recent window is a loop
+//	3  STUCK: the recent window is a loop
 func Stuck(root string, args []string, stdout, stderr io.Writer) int {
 	cmd := argAt(args, 0)
 	slug := argAt(args, 1)
@@ -84,7 +84,7 @@ func Stuck(root string, args []string, stdout, stderr io.Writer) int {
 			return 2
 		}
 		if !isDir(dir) {
-			return 0 // no workspace — never fail the caller
+			return 0 // no workspace: never fail the caller
 		}
 		record := fmt.Sprintf("%d %s %s\n", time.Now().Unix(), tool, sha1Hex(tool+"|"+target))
 		f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
@@ -102,7 +102,7 @@ func Stuck(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		data, err := os.ReadFile(logPath)
 		if err != nil {
-			fmt.Fprintln(stdout, "stuck: no actions logged — not stuck.")
+			fmt.Fprintln(stdout, "stuck: no actions logged: not stuck.")
 			return 0
 		}
 		return checkStuck(actionHashes(data), rawWin, stdout)
@@ -128,14 +128,14 @@ func actionHashes(data []byte) []string {
 
 // checkStuck evaluates the hash column for identical-repeat,
 // A<->B ping-pong (last 6), and one-action-dominates (≥6 of last 8). The window
-// arg is handled with awk-compatible semantics — see awkNum / sameWindow — because
+// arg is handled with awk-compatible semantics (see awkNum / sameWindow) because
 // the prior shell helper passed it verbatim to `awk -v win=`.
 func checkStuck(h []string, rawWin string, stdout io.Writer) int {
 	n := len(h)
 	winVal, isNumericString := awkNum(rawWin)
 
 	// `NR < win`: a numeric comparison when the token is a numeric string, else a
-	// string comparison of str(NR) against the raw token — awk's comparison rule.
+	// string comparison of str(NR) against the raw token: awk's comparison rule.
 	tooFew := false
 	if isNumericString {
 		tooFew = float64(n) < winVal
@@ -143,13 +143,13 @@ func checkStuck(h []string, rawWin string, stdout io.Writer) int {
 		tooFew = strconv.Itoa(n) < rawWin
 	}
 	if tooFew {
-		fmt.Fprintf(stdout, "stuck: only %d action(s) — not stuck.\n", n)
+		fmt.Fprintf(stdout, "stuck: only %d action(s): not stuck.\n", n)
 		return 0
 	}
 	// The last `win` actions are identical. The message echoes the raw token, as
 	// awk prints the `win` variable verbatim (so "04"/"+4" render unchanged).
 	if sameWindow(h, winVal) {
-		fmt.Fprintf(stdout, "stuck: last %s actions identical — STUCK.\n", rawWin)
+		fmt.Fprintf(stdout, "stuck: last %s actions identical: STUCK.\n", rawWin)
 		return 3
 	}
 	// A<->B ping-pong over the last 6 actions.
@@ -166,7 +166,7 @@ func checkStuck(h []string, rawWin string, stdout io.Writer) int {
 			}
 		}
 		if pp && h[n-1] != h[n-2] {
-			fmt.Fprintln(stdout, "stuck: A<->B ping-pong over last 6 — STUCK.")
+			fmt.Fprintln(stdout, "stuck: A<->B ping-pong over last 6: STUCK.")
 			return 3
 		}
 	}
@@ -183,11 +183,11 @@ func checkStuck(h []string, rawWin string, stdout io.Writer) int {
 			}
 		}
 		if top >= 6 {
-			fmt.Fprintf(stdout, "stuck: one action %d/8 of recent window — STUCK.\n", top)
+			fmt.Fprintf(stdout, "stuck: one action %d/8 of recent window: STUCK.\n", top)
 			return 3
 		}
 	}
-	fmt.Fprintln(stdout, "stuck: recent window varied — not stuck.")
+	fmt.Fprintln(stdout, "stuck: recent window varied: not stuck.")
 	return 0
 }
 
@@ -197,7 +197,7 @@ func sha1Hex(s string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// argAt returns args[i] or "" — the Go analogue of bash's ${N:-} positional reads.
+// argAt returns args[i] or "": the Go analogue of bash's ${N:-} positional reads.
 func argAt(args []string, i int) string {
 	if i < len(args) {
 		return args[i]

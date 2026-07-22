@@ -1,6 +1,6 @@
 {
   "skill": "rite-autocomplete",
-  "description": "Trigger evals for /rite-autocomplete — runs the whole DevRites lifecycle unattended (spec→…→seal→ship), choosing the best option at each soft gate and pausing only on hard-risk / blocking gates / NO-GO.",
+  "description": "Trigger evals for /rite-autocomplete: runs the whole DevRites lifecycle unattended (spec→…→seal→ship), choosing the best option at each soft gate and pausing only on hard-risk / blocking gates / NO-GO.",
   "queries": [
     {
       "text": "/rite-autocomplete",

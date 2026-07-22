@@ -1,6 +1,6 @@
 {
   "skill": "rite-define",
-  "description": "Trigger evals for /rite-define — turning an approved spec.md into plan.md + task slices + state.",
+  "description": "Trigger evals for /rite-define: turning an approved spec.md into plan.md + task slices + state.",
   "queries": [
     {
       "text": "/rite-define",

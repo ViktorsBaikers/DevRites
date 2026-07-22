@@ -1,6 +1,6 @@
 {
   "skill": "rite-build",
-  "description": "Trigger evals for /rite-build — implement exactly ONE vertical slice, then stop with evidence.",
+  "description": "Trigger evals for /rite-build: implement exactly ONE vertical slice, then stop with evidence.",
   "queries": [
     {
       "text": "/rite-build",

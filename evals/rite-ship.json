@@ -1,6 +1,6 @@
 {
   "skill": "rite-ship",
-  "description": "Trigger evals for /rite-ship — the final phase: render type-GO, run the irreversible git commit/push/tag, write ship.md, then archive the workspace and close the task. Requires a GO in seal.md.",
+  "description": "Trigger evals for /rite-ship: the final phase: render type-GO, run the irreversible git commit/push/tag, write ship.md, then archive the workspace and close the task. Requires a GO in seal.md.",
   "queries": [
     {
       "text": "/rite-ship",
@@ -56,19 +56,19 @@
       "text": "GO or NO-GO on the active feature?",
       "expected": "should_not_trigger",
       "owner": "rite-seal",
-      "rationale": "→ /rite-seal — the GO/NO-GO decision, not the ship action."
+      "rationale": "→ /rite-seal: the GO/NO-GO decision, not the ship action."
     },
     {
       "text": "Is it safe to merge?",
       "expected": "should_not_trigger",
       "owner": "rite-seal",
-      "rationale": "→ /rite-seal — safe-to-merge is the decision gate."
+      "rationale": "→ /rite-seal: safe-to-merge is the decision gate."
     },
     {
       "text": "Decide if we can ship.",
       "expected": "should_not_trigger",
       "owner": "rite-seal",
-      "rationale": "→ /rite-seal — deciding (not executing) the ship."
+      "rationale": "→ /rite-seal: deciding (not executing) the ship."
     },
     {
       "text": "Investigate a new feature idea.",

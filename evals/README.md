@@ -100,7 +100,7 @@ The deterministic shape gate runs in `ci.yml` with no API key:
 scripts/run-behavioral-evals.sh
 ```
 
-Live execution (does the skill actually resist?) is the same API-gated rung as the live
+Live execution (does the skill resist?) is the same API-gated rung as the live
 trigger evals. Full schema, methodology, and the grading contract:
 [`behavioral/README.md`](behavioral/README.md).
 

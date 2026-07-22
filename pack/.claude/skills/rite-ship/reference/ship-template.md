@@ -28,6 +28,6 @@ workspace **before** close-out, so it travels into `.devrites/archive/<slug>/shi
 - <recorded follow-up + where it's tracked> | none
 ```
 
-Keep it short — it points at the existing audit files rather than restating them.
+Keep it short. It points at the existing audit files rather than restating them.
 The acceptance count must match `seal.md`; if they disagree, the seal is the source of
 truth and the ship should not have proceeded.

@@ -22,7 +22,7 @@ fmt-check:
 test:
 	go test ./...
 
-# Race-enabled run — the engine has concurrent index/source-cache paths; the
+# Race-enabled run. The engine has concurrent index/source-cache paths; the
 # detector is free signal on every test that touches them.
 test-race:
 	go test -race -count=1 ./...
@@ -30,7 +30,7 @@ test-race:
 vet:
 	go vet ./...
 
-# quality is the full local gate — mirror it in CI so a green `make quality`
+# quality is the full local gate. Mirror it in CI so a green `make quality`
 # means a green pipeline (the date-sensitive parity golden aside; see ADR-0006).
 quality: fmt-check vet staticcheck govulncheck gosec test-race
 

@@ -1,6 +1,6 @@
 # `plan.md` template
 
-Write **how** to build what `spec.md` defines. The plan is **living, not sacred** —
+Write **how** to build what `spec.md` defines. The plan is **living, not sacred**:
 `$rite-plan` repairs it when reality disagrees. This is where technology choices live
 (they're banned from the spec).
 

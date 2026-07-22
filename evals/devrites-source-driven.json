@@ -1,6 +1,6 @@
 {
   "skill": "devrites-source-driven",
-  "description": "Trigger eval for devrites-source-driven — verifying uncertain framework/library behavior against official docs or installed source before relying on it. Must fire on \"check the docs\" / \"don't guess\" / \"cite the source\" / \"is this still the API\" / \"verify this assumption\" intents; must NOT fire for sibling DevRites phases (build/review/polish/prove) or the bundled skills it name-collides with (diagnose, grill-me, code-review, tdd, prototype, handoff).",
+  "description": "Trigger eval for devrites-source-driven: verifying uncertain framework/library behavior against official docs or installed source before relying on it. Must fire on \"check the docs\" / \"don't guess\" / \"cite the source\" / \"is this still the API\" / \"verify this assumption\" intents; must NOT fire for sibling DevRites phases (build/review/polish/prove) or the bundled skills it name-collides with (diagnose, grill-me, code-review, tdd, prototype, handoff).",
   "queries": [
     {
       "text": "check the docs before you use that method",
@@ -10,17 +10,17 @@
     {
       "text": "is this still the API in the version we're on?",
       "expected": "should_trigger",
-      "rationale": "\"Is this still the API\" — verify a possibly-stale signature against the pinned version."
+      "rationale": "\"Is this still the API\": verify a possibly-stale signature against the pinned version."
     },
     {
       "text": "don't guess at the function signature, verify it",
       "expected": "should_trigger",
-      "rationale": "\"Don't guess\" — confirm the signature at the source of truth."
+      "rationale": "\"Don't guess\": confirm the signature at the source of truth."
     },
     {
       "text": "cite the source for that default value",
       "expected": "should_trigger",
-      "rationale": "\"Cite the source\" — record the fact's origin in evidence/decisions."
+      "rationale": "\"Cite the source\": record the fact's origin in evidence/decisions."
     },
     {
       "text": "verify this assumption about how the library behaves",
@@ -40,17 +40,17 @@
     {
       "text": "before we rely on this React hook's behavior, check the official docs for our version",
       "expected": "should_trigger",
-      "rationale": "Behavior matters and isn't certain — consult version-specific docs first."
+      "rationale": "Behavior matters and isn't certain: consult version-specific docs first."
     },
     {
       "text": "the lockfile pins an older release, does this option even exist there?",
       "expected": "should_trigger",
-      "rationale": "Version-specific behavior — find the version, then verify the option."
+      "rationale": "Version-specific behavior: find the version, then verify the option."
     },
     {
       "text": "I think this call returns a promise but I'm not certain, make sure before we build on it",
       "expected": "should_trigger",
-      "rationale": "Oblique but clear — an uncertain framework behavior that drives implementation."
+      "rationale": "Oblique but clear: an uncertain framework behavior that drives implementation."
     },
     {
       "text": "this error mentions framework behavior I don't fully understand — pin down what it actually does",

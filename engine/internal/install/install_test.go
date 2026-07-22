@@ -195,7 +195,7 @@ func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
 }`+"\n")
 	target := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(target, ".claude", "settings.json"), `{
-  "$comment": "DevRites hooks — keep my local notes",
+  "$comment": "DevRites hooks: keep my local notes",
   "theme": "dark",
   "statusLine": {"type":"command","command":"DEVRITES_THEME=dark echo user-status"},
   "hooks": {"Stop":[{"hooks":[
@@ -209,7 +209,7 @@ func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
 	runInstall(t, target, payload, func(o *Options) { o.Stderr = &stderr })
 
 	settings := testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	for _, preserved := range []string{"DevRites hooks — keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
+	for _, preserved := range []string{"DevRites hooks: keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
 		if !strings.Contains(settings, preserved) {
 			t.Fatalf("Claude settings lost user content %q:\n%s", preserved, settings)
 		}
@@ -229,7 +229,7 @@ func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
 
 	runUninstall(t, target)
 	settings = testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	for _, preserved := range []string{"DevRites hooks — keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
+	for _, preserved := range []string{"DevRites hooks: keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
 		if !strings.Contains(settings, preserved) {
 			t.Fatalf("Claude settings uninstall lost user content %q:\n%s", preserved, settings)
 		}

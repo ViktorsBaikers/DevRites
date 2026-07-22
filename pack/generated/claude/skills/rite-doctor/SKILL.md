@@ -5,11 +5,11 @@ argument-hint: "[--code | --reindex]"
 user-invocable: true
 ---
 
-# /rite-doctor — health check
+# /rite-doctor: health check
 
 The on-demand deep report. The same checks run **silently at session start** (the orient
-hook surfaces issues only when there are any); `/rite-doctor` runs them **verbosely** —
-printing every check, pass or fail — so you can inspect health even when nothing is broken.
+hook surfaces issues only when there are any); `/rite-doctor` runs them **verbosely**:
+printing every check, pass or fail, so you can inspect health even when nothing is broken.
 It covers version drift, Claude Code wiring, optional Codex mirrors/hooks, stale host artifacts, and missing install markers when those files are present. With `--code`, it also runs the read-only project code-health dashboard (`devrites-engine health`).
 It also reports an in-progress git merge/rebase and points to `git-workflow.md`'s conflict
 recovery playbook.
@@ -21,7 +21,7 @@ It is **read-only**: it never edits the workspace, never advances a phase, never
    ```bash
    devrites-engine doctor --verbose; echo "doctor rc=$?"
    ```
-1a. **Surface the learnings nudge** — point the user at `/rite-learn` when a pattern recurs across
+1a. **Surface the learnings nudge**: point the user at `/rite-learn` when a pattern recurs across
    shipped features (read-only; silent when there's nothing to say):
    ```bash
    devrites-engine learnings nudge
@@ -30,18 +30,18 @@ It is **read-only**: it never edits the workspace, never advances a phase, never
    ```bash
    devrites-engine health; echo "health rc=$?"
    ```
-1c. **Validate project extensions + overrides** (read-only — report, don't sync). A user rite/
+1c. **Validate project extensions + overrides** (read-only: report, don't sync). A user rite/
    reviewer under `.devrites/extensions/` is held to the same schema as the shipped pack; a
    reviewer override under `.devrites/overrides/` may add emphasis but never relax a gate:
    ```bash
    devrites-engine extensions validate; echo "extensions rc=$?"
    devrites-engine overrides validate;  echo "overrides rc=$?"
    ```
-   - **extensions rc=1** — an extension is malformed (missing frontmatter, empty, duplicate name).
+   - **extensions rc=1:** an extension is malformed (missing frontmatter, empty, duplicate name).
      Fix the named file; once valid, the user mirrors it into the harness with
      `devrites-engine extensions sync`.
-   - **overrides rc=1** — an override reads like it waives a gate. That is the one thing overrides
-     must not do — hand the user the offending file to rewrite as added emphasis, not a waiver.
+   - **overrides rc=1:** an override reads like it waives a gate. That is the one thing overrides
+     must not do: hand the user the offending file to rewrite as added emphasis, not a waiver.
 1d. **Refresh indexes only when `$ARGUMENTS` includes `--reindex`.** Load and execute
    `devrites-refresh-indexes`; report its synchronous refresh result, then continue the
    diagnostic. This changes optional indexes, never project source or DevRites state.
@@ -51,12 +51,12 @@ It is **read-only**: it never edits the workspace, never advances a phase, never
    `/rite-resolve <qid>`; an incomplete install → reinstall). If the output includes
    `git-state: merge in progress` or `git-state: rebase in progress`, make the next action the
    `git-workflow.md` merge-conflict recovery playbook.
-3. **Do not fix anything yourself** — doctor is diagnostic. Hand the user the fix command.
+3. **Do not fix anything yourself:** doctor is diagnostic. Hand the user the fix command.
    **Completion:** exactly one highest-priority fix command is reported and no source/workspace file changed.
 
 ## Gotchas
-- Read-only — never write the workspace or advance a phase (that's the lifecycle skills' job).
-- It diagnoses **DevRites** health, not the user's application — code bugs go to
+- Read-only: never write the workspace or advance a phase (that's the lifecycle skills' job).
+- It diagnoses **DevRites** health, not the user's application: code bugs go to
   `devrites-debug-recovery`; feature progress goes to `/rite-status`.
 - Healthy is the common case; say so plainly and stop. Don't invent issues.
 

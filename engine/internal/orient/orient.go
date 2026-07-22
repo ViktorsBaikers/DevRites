@@ -20,7 +20,7 @@ import (
 const ActiveFile = "ACTIVE"
 
 // Digest returns the orientation text for the workspace at root and whether
-// there is anything to say. It returns ("", false, nil) — silent, not an error —
+// there is anything to say. It returns ("", false, nil): silent, not an error:
 // when no feature is active or the active pointer is stale, so a session is never
 // disrupted by a missing or half-set-up workspace.
 func Digest(root string) (text string, has bool, err error) {
@@ -33,21 +33,21 @@ func Digest(root string) (text string, has bool, err error) {
 	}
 
 	// A stale pointer (names a feature that no longer exists) stays silent
-	// rather than erroring — orientation must never be a session dependency.
+	// rather than erroring: orientation must never be a session dependency.
 	report, err := state.Status(root, slug)
 	if err != nil {
 		return "", false, nil
 	}
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "DevRites workflow active — feature %q at phase %q.\n\n", report.Slug, report.Phase)
+	fmt.Fprintf(&b, "DevRites workflow active: feature %q at phase %q.\n\n", report.Slug, report.Phase)
 	b.WriteString(report.Render())
 
 	// Surface only the high-confidence, human-promoted learnings, capped so a
 	// growing ledger never bloats the session. Bounds come from
 	// DEVRITES_LEARNING_CONFIDENCE_THRESHOLD / DEVRITES_MAX_INJECTED_LEARNINGS.
 	if picks := lib.TopLearnings(root, lib.InjectMax(), lib.InjectThreshold()); len(picks) > 0 {
-		b.WriteString("\n\nHigh-confidence learnings (untrusted prior — live code always wins):\n")
+		b.WriteString("\n\nHigh-confidence learnings (untrusted prior: live code always wins):\n")
 		for _, p := range picks {
 			b.WriteString(p)
 			b.WriteByte('\n')
@@ -59,7 +59,7 @@ func Digest(root string) (text string, has bool, err error) {
 }
 
 // ActiveSlug reads and trims the active-feature pointer. A missing pointer file
-// is not an error — it yields the empty slug (no active feature).
+// is not an error: it yields the empty slug (no active feature).
 func ActiveSlug(root string) (string, error) {
 	return devritespaths.ActiveSlug(root)
 }

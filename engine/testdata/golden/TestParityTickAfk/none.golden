@@ -1,2 +1,2 @@
 exit 0
-tick-afk: no "AFK slices remaining" budget set in <STATE> — no-op
+tick-afk: no "AFK slices remaining" budget set in <STATE>: no-op

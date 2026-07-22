@@ -5,7 +5,7 @@ Acceptance criteria are the contract the seal checks. Write them so each is
 
 ## A good criterion
 - Is observable: a test passes, a command outputs X, a screenshot shows Y.
-- Is binary: met or not — no "mostly".
+- Is binary: met or not: no "mostly".
 - Names the evidence: "`npm test path/x.test.ts` passes" or "POST /export returns 200
   with a CSV body" or "empty state renders 'No exports yet' at 375px".
 - Belongs to a slice: every criterion maps to at least one slice (mapped in `/rite-define`).
@@ -21,10 +21,10 @@ Acceptance criteria are the contract the seal checks. Write them so each is
 | Negative | "<invalid input> is rejected with <message>, no <side effect>." |
 
 ## Anti-patterns
-- "Works well" / "is fast" / "looks good" — unverifiable. Attach a number or an
+- "Works well" / "is fast" / "looks good": unverifiable. Attach a number or an
   observation.
-- Criteria with no slice — orphaned scope.
-- Criteria only provable by reading the code — require runtime/test evidence instead.
+- Criteria with no slice: orphaned scope.
+- Criteria only provable by reading the code: require runtime/test evidence instead.
 
 ## At seal time
 Each criterion gets a checkbox + the evidence that proves it. Unproven critical

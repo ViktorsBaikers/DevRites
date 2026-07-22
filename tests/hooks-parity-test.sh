@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# hooks-parity-test.sh — DevRites hook coverage must stay in sync across Claude and Codex.
+# hooks-parity-test.sh: DevRites hook coverage must stay in sync across Claude and Codex.
 #
 # Post-cutover every hook invokes the global `devrites-engine` binary (behind the inline fail-open
 # guard) as `devrites-engine hook <name> --harness=<h>`, so coverage is compared by hook NAME, not
@@ -11,12 +11,12 @@
 #                              web_search, which self-caches), so there is nothing to revalidate.
 #   - statusline            : Claude settings statusLine surface; Codex has no matching hook event.
 #   - auq                   : fires on Claude's AskUserQuestion tool. Codex HAS an equivalent
-#                             tool (request_user_input) but emits NO hook event for it — its
+#                             tool (request_user_input) but emits NO hook event for it: its
 #                             PostToolUse matches only Bash/apply_patch/MCP calls, and the
 #                             user-input-requested event was declined (openai/codex#12524,
 #                             closed not-planned). Re-check if Codex hooks gain that event.
 # subagent-orient IS shared. reviewer-readonly + wright-scope live in Claude SUBAGENT FRONTMATTER
-# but in the Codex hooks.json (Codex agent TOML can't carry frontmatter hooks) — same enforcement.
+# but in the Codex hooks.json (Codex agent TOML can't carry frontmatter hooks): same enforcement.
 set -u
 export DEVRITES_NO_BINARY=1   # only the pack config is under test; no engine binary needed
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -61,7 +61,7 @@ if fail:
     print("HOOKS-PARITY: FAIL")
     for f in fail: print("  " + f)
     sys.exit(1)
-print(f"HOOKS-PARITY: PASS — Claude settings has {len(names(f'{root}/pack/.claude/settings.json'))} hooks; "
+print(f"HOOKS-PARITY: PASS: Claude settings has {len(names(f'{root}/pack/.claude/settings.json'))} hooks; "
       f"Codex carries all {len(shared)} shared enforcement hooks (incl. subagent-orient); "
       f"{len(CLAUDE_ONLY)} Claude-only by design (source-cache x2 + statusline + auq).")
 PY

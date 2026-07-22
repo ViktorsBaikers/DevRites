@@ -4,23 +4,23 @@ Load the moment you reach for one of these excuses.
 
 ## Common rationalizations
 
-- *"I'll just fix this existing slice instead of appending a new one."* — No. The append-only
+- *"I'll just fix this existing slice instead of appending a new one."*. No. The append-only
   rule is what makes convergence **re-runnable** and its output **auditable**: a reader diffs
   `tasks.md` and sees exactly what this pass added. Rewriting an existing slice destroys that
   and can silently drop coverage. Append; never edit an existing `SLICE-###`.
-- *"The gap is tiny — I'll just patch the code while I'm here."* — No. Convergence **assesses
+- *"The gap is tiny. I'll just patch the code while I'm here."*. No. Convergence **assesses
   and enqueues**; `$rite-build` implements. The moment you edit application code you've skipped
   the build's slice discipline, tests, and reviewer. Enqueue it, however small.
-- *"It's basically built — I'll call it done."* — Happy-path-only, untested, or half-wired is
+- *"It's basically built. I'll call it done."*. Happy-path-only, untested, or half-wired is
   **partial**, not built (`convergence-assessment.md`). Rounding partial up to built is how a
   feature ships with the edge cases that were the whole reason for the scenario.
-- *"The code does X, the spec says Y — I'll enqueue a slice to make the code match the spec."* —
+- *"The code does X, the spec says Y. I'll enqueue a slice to make the code match the spec."*:
   Only if you're sure the **spec** is right. If the code is right and the requirement is stale,
-  that's **Spec Drift** — route it through the guard, don't launder a spec bug into a code task.
-- *"The spec has no `AC-###` ids, so there's nothing to converge."* — Assess plan touch-points
+  that's **Spec Drift**: route it through the guard, don't launder a spec bug into a code task.
+- *"The spec has no `AC-###` ids, so there's nothing to converge."*. Assess plan touch-points
   and existing-slice Produces directly against the code; a coverage id is convenient, not
   required. (And flag the untagged spec so `$rite-spec` can add ids.)
-- *"I'll rewrite the whole tasks.md to be clean while I'm at it."* — That is a **reslice**, and
+- *"I'll rewrite the whole tasks.md to be clean while I'm at it."*, That is a **reslice**, and
   it belongs to `$rite-plan`, not here. Convergence only ever *appends*.
 
 ## Red flags in your own output

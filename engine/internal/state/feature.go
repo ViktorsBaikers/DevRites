@@ -64,8 +64,8 @@ func featureDir(root, slug string) string {
 	return devritespaths.FeatureDir(root, slug)
 }
 
-// ListFeatures returns the slugs of every feature under root — directories under
-// canonical work/ plus compatibility features/ recognized as a feature — sorted.
+// ListFeatures returns the slugs of every feature under root: directories under
+// canonical work/ plus compatibility features/ recognized as a feature: sorted.
 // A directory is a feature if it has a workspace map OR the working-state
 // ledger (state.md), so a live workspace the pack created without a map
 // still lists. Missing layout directories yield an empty list, not an error.
@@ -178,7 +178,7 @@ func LoadFeature(root, slug string) (*Feature, error) {
 }
 
 // sectionPresentAny reports whether any file that can satisfy section s has real
-// content — the canonical name or a transitional alias.
+// content: the canonical name or a transitional alias.
 func sectionPresentAny(dir string, s Section) bool {
 	for _, name := range sectionFiles[s] {
 		if sectionPresent(filepath.Join(dir, name)) {
@@ -207,7 +207,7 @@ func declaredPhaseFromLedger(path string) (Phase, bool) {
 // ReadDeclaredSchemaVersion returns the schemaVersion declared in a feature's
 // feature.md frontmatter, or 0 if the file, frontmatter, or field is
 // absent/unparseable. Unlike LoadFeature it does NOT refuse a version newer than
-// the engine supports — doctor needs to observe a newer version to report skew,
+// the engine supports: doctor needs to observe a newer version to report skew,
 // not fail on it.
 func ReadDeclaredSchemaVersion(root, slug string) int {
 	raw, err := os.ReadFile(filepath.Join(featureDir(root, slug), "feature.md"))
@@ -239,7 +239,7 @@ func MaxDeclaredSchemaVersion(root string) (int, error) {
 	return max, nil
 }
 
-// blankOrHash reports whether a trimmed line carries no meaningful content —
+// blankOrHash reports whether a trimmed line carries no meaningful content:
 // it is empty or starts with '#' (a Markdown ATX heading, or a comment inside a
 // frontmatter block). Both the section-content scan and the frontmatter parser
 // skip such lines.
@@ -285,7 +285,7 @@ func splitFrontmatter(raw []byte) (map[string]string, []byte) {
 		}
 	}
 	if end < 0 {
-		return fm, raw // no closing fence — treat as if there were no frontmatter
+		return fm, raw // no closing fence: treat as if there were no frontmatter
 	}
 	for _, line := range lines[:end] {
 		t := strings.TrimSpace(line)

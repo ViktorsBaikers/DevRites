@@ -1,6 +1,6 @@
 package iohooks
 
-// IO hooks: the ported bash hooks that do network or process-orchestration IO —
+// IO hooks: the ported bash hooks that do network or process-orchestration IO:
 // the source-citation cache (a conditional-HEAD revalidation cache) and the
 // code-index refresher (a detached background reindex). Unlike the deterministic
 // control-plane hooks these reach the network / spawn processes; they are kept in
@@ -47,7 +47,7 @@ type sourceCacheEntry struct {
 
 func sourceCacheOff() bool { return os.Getenv("DEVRITES_SOURCE_CACHE") == "off" }
 
-// ioProjectDir is the repo root the IO hooks key off — CLAUDE_PROJECT_DIR or CWD,
+// ioProjectDir is the repo root the IO hooks key off: CLAUDE_PROJECT_DIR or CWD,
 // like the shell hooks. (The cache is project-global under .devrites/, not
 // feature-scoped, so it does not use the feature-dir resolver.)
 func ioProjectDir() string {
@@ -61,7 +61,7 @@ func ioProjectDir() string {
 }
 
 // sourceCachePath is the entry path for a URL: .devrites/source-cache/<key>.json,
-// keyed on the first 32 hex chars of sha256(url) — matching the shell hooks.
+// keyed on the first 32 hex chars of sha256(url): matching the shell hooks.
 func sourceCachePath(url string) string {
 	sum := sha256.Sum256([]byte(url))
 	key := hex.EncodeToString(sum[:])[:32]
@@ -69,7 +69,7 @@ func sourceCachePath(url string) string {
 }
 
 // hookSourceCachePre serves a cached page reading ONLY after revalidating it with a
-// conditional HEAD that returns 304 — a fresh verification, not a memory read.
+// conditional HEAD that returns 304: a fresh verification, not a memory read.
 // Ported from devrites-source-cache-pre.sh. Cache hit → the reading on stderr +
 // exit 2 (Claude hands that to the agent in place of the fetch); miss/uncertain →
 // exit 0 (the real WebFetch proceeds). Fail-open on every uncertainty.
@@ -124,7 +124,7 @@ func SourceCachePre(stdin io.Reader, stdout, stderr io.Writer) int {
 		fetched = "a previous fetch"
 	}
 	fmt.Fprintf(stderr, "[devrites-source-cache] Cache hit for %s\n", url)
-	fmt.Fprintf(stderr, "Revalidated via HTTP 304 — the page is unchanged since %s, so this cached reading is still a valid citation.\n", fetched)
+	fmt.Fprintf(stderr, "Revalidated via HTTP 304: the page is unchanged since %s, so this cached reading is still a valid citation.\n", fetched)
 	if e.Prompt != "" {
 		fmt.Fprintf(stderr, "Cached under the prompt: %q. If your angle differs, judge whether this reading still covers it before re-fetching.\n", e.Prompt)
 	}
@@ -135,7 +135,7 @@ func SourceCachePre(stdin io.Reader, stdout, stderr io.Writer) int {
 }
 
 // hookSourceCachePost stores a completed WebFetch keyed on sha256(url) together with
-// the origin's validator headers — but only when the origin supplies a validator
+// the origin's validator headers, but only when the origin supplies a validator
 // (else a later 304 could never prove freshness). Ported from
 // devrites-source-cache-post.sh. Always exit 0.
 func SourceCachePost(stdin io.Reader, stdout, stderr io.Writer) int {
@@ -390,7 +390,7 @@ func computeRefreshState(root string) refreshState {
 }
 
 // repoChangedSince reports whether any tracked file under root is newer than the
-// stamp, skipping the excluded directories — the Go form of the script's `find
+// stamp, skipping the excluded directories: the Go form of the script's `find
 // -newer`. It returns on the first newer file found.
 func repoChangedSince(root, stamp string) bool {
 	info, err := os.Stat(stamp)
@@ -505,7 +505,7 @@ func runIndexTool(out io.Writer, timeout time.Duration, name string, args ...str
 	}
 }
 
-// cbmRegistered reports whether codebase-memory-mcp is installed AND tracks root —
+// cbmRegistered reports whether codebase-memory-mcp is installed AND tracks root:
 // a cheap repo-local marker first, then the project registry.
 func cbmRegistered(root string) bool {
 	if !hasTool("codebase-memory-mcp") {

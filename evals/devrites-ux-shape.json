@@ -1,6 +1,6 @@
 {
   "skill": "devrites-ux-shape",
-  "description": "Trigger evals for devrites-ux-shape — model-invoked specialist that plans UX/UI into design-brief.md (direction, key states, interaction model) BEFORE any code; adversarial near-misses route to build/polish/prototype/review siblings and bundled skills.",
+  "description": "Trigger evals for devrites-ux-shape: model-invoked specialist that plans UX/UI into design-brief.md (direction, key states, interaction model) BEFORE any code; adversarial near-misses route to build/polish/prototype/review siblings and bundled skills.",
   "queries": [
     {
       "text": "Let's shape the UX before we write any code.",

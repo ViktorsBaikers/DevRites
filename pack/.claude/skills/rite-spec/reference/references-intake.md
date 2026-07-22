@@ -1,4 +1,4 @@
-# Reference intake — design/style materials from the human
+# Reference intake: design/style materials from the human
 
 During spec, the human may supply screenshots, Figma, video, sites, or docs showing how the
 feature should look or behave. When present, inspect them, save local copies, and classify
@@ -6,14 +6,14 @@ each as a fidelity **target**, hard **constraint**, or **inspiration** so a mood
 cannot become a pixel-match contract. No references is valid; skip this intake.
 
 ## Gather + understand each reference
-- **Images / screenshots / mockups** — open and **view** them (the Read tool renders
+- **Images / screenshots / mockups:** open and **view** them (the Read tool renders
   images). Describe what they show: layout, components, spacing, states, the target look.
-- **Figma link** — if a Figma integration is available, pull its design context (frames,
+- **Figma link:** if a Figma integration is available, pull its design context (frames,
   tokens, components); otherwise record the link and ask the human for an export/screenshot
   so there's something concrete to match offline.
-- **Links / reference sites / docs** — fetch and read for the relevant intent (tone,
+- **Links / reference sites / docs:** fetch and read for the relevant intent (tone,
   layout, interaction, quality bar). Capture *why* it's a reference, not just the URL.
-- **Video** — note what it demonstrates (the expected interaction/flow). Save it; later
+- **Video:** note what it demonstrates (the expected interaction/flow). Save it; later
   phases can step through it as tooling allows.
 
 ## Save local assets into the workspace
@@ -45,14 +45,14 @@ composition, copy, or distinctive assets. Usage is normative too: only **may shi
 enter product code.
 
 ## Feed them into the spec + the design brief
-- Use references to sharpen `spec.md` (UI impact, success/acceptance — e.g. "matches R1").
+- Use references to sharpen `spec.md` (UI impact, success/acceptance: e.g. "matches R1").
 - When the feature touches UI, these references are the primary input to **`devrites-ux-shape`**
   (spec step 3a): they anchor the design direction and can seed the visual-direction probe
   (a Figma link → pulled design context; reference sites → screenshots). The resulting
   `design-brief.md` cites them by R-id **and role**.
-- A reference can *resolve a gap* ("which layout?") — record that in the gaps table.
+- A reference can *resolve a gap* ("which layout?"): record that in the gaps table.
 - If a reference **conflicts** with the existing design system, that's an issue to raise
-  with the human (match the system, or adopt the reference — their call).
+  with the human (match the system, or adopt the reference: their call).
 
 ## Later phases use them (wire-through)
 `devrites-frontend-craft` builds to the approved brief and its **target** references,

@@ -1,4 +1,4 @@
-# AFK & HITL — the pause/resume contract
+# AFK & HITL: the pause/resume contract
 
 The rule layer for DevRites's two run modes. Every `rite-*` and `devrites-*` skill that
 might pause for a human reads from this contract; `/rite-build`, `/rite-status`,
@@ -8,28 +8,28 @@ The contract is intentionally small: one sentinel, one queue, one verb.
 
 ## Run modes
 
-- **HITL (default)** — human is present. At a gap/checkpoint the skill **asks inline** via
-  the harness `AskUserQuestion` tool — a ranked **option set** (recommended first, each with
+- **HITL (default):** human is present. At a gap/checkpoint the skill **asks inline** via
+  the harness `AskUserQuestion` tool: a ranked **option set** (recommended first, each with
   dimension-tagged rationale; see [Option set](#option-set--how-every-gap-is-presented)). The
   human picks; the skill records the pick to `questions.md` (`answered`) + `decisions.md` and
-  **continues in place — no `/rite-resolve` round-trip**. `/rite-resolve` is only for answering
+  **continues in place: no `/rite-resolve` round-trip**. `/rite-resolve` is only for answering
   **async** (a pause that already stopped the session) or in **batch**.
-  **No interactive question tool in the current surface?** (Codex outside Plan mode —
+  **No interactive question tool in the current surface?** (Codex outside Plan mode:
   `request_user_input` is Plan-mode-only.) Render the same option set as a plain numbered
   list in chat and **end the turn**; the human's reply is the pick. Auto-picking an option
-  is **AFK's contract, gated by the `.devrites/AFK` sentinel** — a missing tool never
+  is **AFK's contract, gated by the `.devrites/AFK` sentinel**: a missing tool never
   converts a HITL gap into a self-answered one.
-- **AFK** — `.devrites/AFK` is present. For any gate AFK may auto-handle (severity in
+- **AFK:** `.devrites/AFK` is present. For any gate AFK may auto-handle (severity in
   `allow_gates`), the skill **auto-picks the recommended option** (option 1 of the set), records
   it (`gate: advisory` + a `decisions.md` ADR), and continues unattended. Gates above the
-  ceiling — and every irreversible-risk item — pause and queue a `questions.md` entry for
+  ceiling (and every irreversible-risk item) pause and queue a `questions.md` entry for
   `/rite-resolve`.
 
 `.devrites/AFK` presence is authoritative for run mode; gate-deciding skills re-read the
 sentinel at decision time (the shared preamble derives the mode from it). There is no
 `state.md` run-mode field to drift out of sync.
 
-## The sentinel — `.devrites/AFK`
+## The sentinel: `.devrites/AFK`
 
 Presence = AFK active. The file body is optional YAML:
 
@@ -39,7 +39,7 @@ notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human trans
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
 ```
 
-The file is **read-only config** — never rewritten in place. `max_slices` is the initial
+The file is **read-only config**: never rewritten in place. `max_slices` is the initial
 budget; the mutable remaining count lives in `state.md` as `AFK slices remaining: <n>`,
 seeded from `max_slices` on the first AFK build and decremented by `devrites-engine tick-afk` (which
 exits non-zero at 0, forcing a HITL stop). The cap is enforced by the script, not prose.
@@ -64,8 +64,8 @@ for the full taxonomy. Summary:
 |---|---|---|---|---|
 | advisory | low | no | none | yes (log + proceed) |
 | validating | medium | async | 4h | yes (build + queue, no merge until resolved) |
-| blocking | high | sync | 15m | **no** — always pauses |
-| escalating | novel pattern | sync to specialist | 24h | **no** — always pauses |
+| blocking | high | sync | 15m | **no** (always pauses) |
+| escalating | novel pattern | sync to specialist | 24h | **no** (always pauses) |
 
 `blocking` and `escalating` always pause regardless of `allow_gates`. They are the
 "AFK never silently accepts" guarantees in protocol form.
@@ -75,25 +75,25 @@ An open `gate: validating` entry is **merge-blocking by definition**: at `/rite-
 its behavior impact. A slice marked `built (pending review)` is **not done** until that
 validating gate resolves.
 
-## Option set — how every gap is presented
+## Option set: how every gap is presented
 
 Wherever a gap, checkpoint, or non-trivial decision surfaces (`/rite-spec`, `/rite-define`,
 `/rite-build`, `/rite-temper`, `/rite-vet`, `devrites-doubt`, `devrites-interview`), present a
 **ranked option set**, never a single bare guess:
 
-- **2–4 concrete options**, the **recommended one first**, labelled `(Recommended)`.
-- Each option carries a **one-line rationale tagged by the dimensions that matter** —
+- **2-4 concrete options**, the **recommended one first**, labelled `(Recommended)`.
+- Each option carries a **one-line rationale tagged by the dimensions that matter**:
   `logic · infra · business · architecture` (add `security` / `UX` / `risk` when in scope).
   Name the trade-off, not just the choice.
 - Always include an escape hatch (`Something else — I'll describe it`).
 - The recommendation reflects what's best for *this* project (its conventions, stack, scale,
-  domain) — not a generic default.
+  domain), not a generic default.
 
 **HITL** renders the set via `AskUserQuestion` (recommended option first; rationale in each
 option's description); the human's pick resolves the gate **in place**. **AFK** auto-picks
 option 1 (the recommendation) for gates it may auto-handle. Either way the chosen option is
 recorded verbatim and the **rejected options stay in `questions.md`** as the considered-alternatives
-trail — the audit shows what was weighed, not just what was decided.
+trail: the audit shows what was weighed, not just what was decided.
 
 ## Irreversible-risk list (always pause)
 
@@ -136,10 +136,10 @@ answer: <chosen option (or human's verbatim reply / drop reason)>
 ```
 
 Rules:
-- `NNN` is sequential per date — the next-available 3-digit integer.
+- `NNN` is sequential per date: the next-available 3-digit integer.
 - `status: open` is the only state `/rite-resolve` can mutate; `answered` and `dropped`
   are terminal.
-- The file is the audit trail. Don't edit answered/dropped entries — open a new qid that
+- The file is the audit trail. Don't edit answered/dropped entries: open a new qid that
   references the old one (`supersedes: q-...-OLD`) and resolve it.
 
 ## `state.md` `Awaiting human` block
@@ -161,7 +161,7 @@ When a HITL gate fires, `/rite-build` writes:
 
 `/rite-resolve` removes the block on success and flips `Status: running`.
 
-## The resume verb — `/rite-resolve`
+## The resume verb: `/rite-resolve`
 
 Three shapes:
 
@@ -171,14 +171,14 @@ Three shapes:
 /rite-resolve --batch <path-to-yaml>
 ```
 
-`/rite-resolve` is the canonical writer for **async** resume — a gate that already paused and
+`/rite-resolve` is the canonical writer for **async** resume: a gate that already paused and
 stopped the session (an AFK blocking/escalating/irreversible queue, or a HITL pause the human
 walked away from), plus `--batch`. In an **interactive HITL** session the skill resolves the
 `AskUserQuestion` pick **in place** (the same `questions.md` `answered` write + `state.md`
 clear), so you don't type `/rite-resolve` for gaps you answer live. Both paths flip
-`status: open → answered` and clear `Awaiting human` through the **same `devrites-engine resolve` writer** —
+`status: open → answered` and clear `Awaiting human` through the **same `devrites-engine resolve` writer**:
 one source of truth, two entry points (live pick vs typed verb). Manual edits work but the
-script is the contract — use it.
+script is the contract: use it.
 
 When `/rite-resolve` does resume a stopped session, the skill does **not** auto-run the next
 `/rite-build`. The user types the next command explicitly so:
@@ -198,35 +198,35 @@ When `/rite-resolve` does resume a stopped session, the skill does **not** auto-
   log to `questions.md` as `gate: blocking`, set `state.md` `Status: awaiting_human`,
   fire `notify:`, STOP.
 
-The loop limits of the calling skill still apply — after the limit, the unresolved
+The loop limits of the calling skill still apply: after the limit, the unresolved
 doubt becomes a blocking question regardless of AFK config.
 
 ## Retry cap, stuck loops, and self-resolve
 
 - **Cap retries.** At most **3 attempts** on the same failing check (test, lint, type, build).
-  On the third failure, stop guessing and convert it to a `gate: blocking` question — a fourth
+  On the third failure, stop guessing and convert it to a `gate: blocking` question: a fourth
   identical attempt is thrash, not progress.
-- **Stuck loops pause even in AFK.** A detected loop — the same action repeating, or an
-  action↔error ping-pong — pauses regardless of `allow_gates` (`devrites-engine stuck`), the same standing as
+- **Stuck loops pause even in AFK.** A detected loop (the same action repeating, or an
+  action↔error ping-pong) pauses regardless of `allow_gates` (`devrites-engine stuck`), the same standing as
   the irreversible-risk list. AFK widens what's automatic, never what's looping.
 - **Bias to self-resolve.** Before raising a question, try to answer it from the code, the docs,
   or `decisions.md`. Communicate only for a blocked environment, a deliverable to hand over,
   critical info you genuinely can't access, or a credential / permission you lack. This narrows
   needless pauses and never weakens the blocking / escalating / irreversible gates.
 - **Human time is for human-only work.** A `human_intervention` pause is for what the agent
-  literally cannot do (create a cloud account, click a console button) — never for writing code,
+  literally cannot do (create a cloud account, click a console button): never for writing code,
   writing tests, or reviewing. Punting the agent's own job to the human is not a valid gate.
 
 ## What the rule does NOT cover
 
 This contract is about **human pauses**. It does not weaken or replace:
 
-- `/rite-prove`, `/rite-review`, `/rite-seal` — feature-scoped gates that always run.
-- Spec Drift Guard — answer that changes acceptance criteria routes through
+- `/rite-prove`, `/rite-review`, `/rite-seal`: feature-scoped gates that always run.
+- Spec Drift Guard: answer that changes acceptance criteria routes through
   `/rite-plan repair`, not silently into the slice.
-- `evidence.md` writes — every AFK iteration still records evidence; un-recorded passes
+- `evidence.md` writes: every AFK iteration still records evidence; un-recorded passes
   are unproven at `/rite-prove`.
-- `/clear` / `/compact` advice — context-hygiene rules are unchanged.
+- `/clear` / `/compact` advice: context-hygiene rules are unchanged.
 
 AFK shifts the boundary between automatic and "ask"; nothing else.
 
@@ -234,7 +234,7 @@ AFK shifts the boundary between automatic and "ask"; nothing else.
 
 - Skill: `/rite-resolve` (`.claude/skills/rite-resolve/SKILL.md`).
 - Workflow integration: `/rite-build` (`.claude/skills/rite-build/SKILL.md`),
-  workflow steps 0 + 2a (readiness / HITL pre-flight) and steps 4–6 (doubt / fail-on-red /
+  workflow steps 0 + 2a (readiness / HITL pre-flight) and steps 4-6 (doubt / fail-on-red /
   record) on the wright's return.
 - Render contract: `.claude/skills/rite-build/reference/checkpoint-protocol.md`.
 - Loop discipline: `.claude/skills/rite-build/reference/afk-discipline.md`.

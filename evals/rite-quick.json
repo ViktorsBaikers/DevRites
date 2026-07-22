@@ -1,6 +1,6 @@
 {
   "skill": "rite-quick",
-  "description": "Trigger evals for /rite-quick — express lane for a SMALL, reversible change (one short artifact → build → prove → ship), escalating to /rite-spec the moment scope/risk/ambiguity grows.",
+  "description": "Trigger evals for /rite-quick: express lane for a SMALL, reversible change (one short artifact → build → prove → ship), escalating to /rite-spec the moment scope/risk/ambiguity grows.",
   "queries": [
     {
       "text": "/rite-quick",

@@ -2,4 +2,4 @@ exit 0
 learnings: repeated finding/decision phrases across archived features (count >= 2):
    3×  recurring finding: stale cache after deploy times on
    2×  second dead end: retry backoff exceeded attempts
-(review these — a stable recurring class is a candidate for a project rule or a ledger entry.)
+(review these: a stable recurring class is a candidate for a project rule or a ledger entry.)

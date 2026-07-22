@@ -27,12 +27,12 @@ STOP      → report + recommend next; do not start slice N+1
 ## Why stop after one slice
 - Keeps the diff reviewable (~one capability, roughly ≤100 lines of meaningful change).
 - Surfaces integration/drift problems while they're cheap.
-- Gives the user a decision point — they may reprioritize, reslice, or polish now.
-- Prevents the "90% done" pile-up where nothing is actually proven.
+- Gives the user a decision point. They may reprioritize, reslice, or polish now.
+- Prevents the "90% done" pile-up where nothing is proven.
 
 ## Restate the scope boundary
 Before coding, write what this slice will and will **not** touch. This is the contract
-you check yourself against — anything outside it is scope creep or a drift event.
+you check yourself against: anything outside it is scope creep or a drift event.
 
 ## When the slice can't be completed cleanly
 - Discovered the plan is wrong → **Spec Drift Guard** (stop, record, classify, maybe

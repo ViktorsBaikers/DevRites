@@ -36,7 +36,7 @@ Everything matches the spec. Nothing to report.
 Critical 0 / Important 0 / Suggestion 0
 
 ## Code review
-- **Important** — off-by-one in pagination at api/list.go:42.
+- **Important**: off-by-one in pagination at api/list.go:42.
 `)
 	code, out := runReviewIntegrity(t, root, "feat")
 	if code != 1 {
@@ -59,13 +59,13 @@ No-findings: ran the missing/partial/incorrect passes against each AC; every
 criterion is implemented and no scope creep found.
 
 ## Code review
-- **Nit** — rename tmp to buf at util.go:9.
+- **Nit**: rename tmp to buf at util.go:9.
 `)
 	code, out := runReviewIntegrity(t, root, "feat")
 	if code != 0 {
 		t.Fatalf("justified clean axis should pass, got %d\n%s", code, out)
 	}
-	if !contains(out, "Spec: clean — no-findings justification present") {
+	if !contains(out, "Spec: clean: no-findings justification present") {
 		t.Fatalf("want Spec recognised as justified, got:\n%s", out)
 	}
 }
@@ -73,10 +73,10 @@ criterion is implemented and no scope creep found.
 func TestReviewIntegrityBothWithFindingsPasses(t *testing.T) {
 	root := t.TempDir()
 	writeReview(t, root, "feat", `## Spec
-- **Critical** — AC-003 unimplemented.
+- **Critical**: AC-003 unimplemented.
 
 ## Code review
-- **Important** — missing error path.
+- **Important**: missing error path.
 `)
 	if code, out := runReviewIntegrity(t, root, "feat"); code != 0 {
 		t.Fatalf("both-with-findings should pass, got %d\n%s", code, out)
@@ -95,7 +95,7 @@ func TestReviewIntegrityNoReviewPasses(t *testing.T) {
 
 func TestReviewIntegrityFreeformPasses(t *testing.T) {
 	root := t.TempDir()
-	// No per-axis headings — can't assess mechanically, must not false-positive.
+	// No per-axis headings: can't assess mechanically, must not false-positive.
 	writeReview(t, root, "feat", "# Review\n\nLooks fine overall, shipping.\n")
 	if code, out := runReviewIntegrity(t, root, "feat"); code != 0 {
 		t.Fatalf("freeform review should pass, got %d\n%s", code, out)

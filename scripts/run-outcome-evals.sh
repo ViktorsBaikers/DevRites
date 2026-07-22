@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Outcome-eval harness — proves the deterministic feature grader BOTH passes a
+# Outcome-eval harness: proves the deterministic feature grader BOTH passes a
 # known-shippable workspace AND fails a known-blocked one (see-it-fail-first:
 # a grader that never returns NO-GO proves nothing). Runs in CI; no API key.
 #
@@ -18,9 +18,9 @@ trap 'rm -rf "$tmp"' EXIT
 
 echo "== grade golden/shippable-feature (expect GO) =="
 if bash "$GRADER" "$good"; then
-  echo "  PASS — graded GO"
+  echo "  PASS: graded GO"
 else
-  echo "  FAIL — a known-shippable workspace should grade GO"; fail=1
+  echo "  FAIL: a known-shippable workspace should grade GO"; fail=1
 fi
 
 echo
@@ -39,28 +39,28 @@ cat > "$canonical/state.md" <<'MD'
 | next_action | archived |
 MD
 if bash "$GRADER" "$canonical"; then
-  echo "  PASS — canonical cursor graded GO"
+  echo "  PASS: canonical cursor graded GO"
 else
-  echo "  FAIL — canonical cursor should grade GO"; fail=1
+  echo "  FAIL: canonical cursor should grade GO"; fail=1
 fi
 
 echo
 echo "== grade golden/blocked-feature (expect NO-GO) =="
 if bash "$GRADER" "$bad"; then
-  echo "  FAIL — a known-blocked workspace should NOT grade GO"; fail=1
+  echo "  FAIL: a known-blocked workspace should NOT grade GO"; fail=1
 else
-  echo "  PASS — correctly graded NO-GO"
+  echo "  PASS: correctly graded NO-GO"
 fi
 
 echo
 echo "== grade golden/near-miss-unproven-ac (expect NO-GO on ONE invariant) =="
 # Isolates invariant 2 (every acceptance criterion proven): identical to the
 # shippable fixture except a single AC is left unchecked. Proves that gate fails
-# independently — not only when six invariants trip at once.
+# independently: not only when six invariants trip at once.
 if bash "$GRADER" "$nearmiss"; then
-  echo "  FAIL — an unproven acceptance criterion must grade NO-GO"; fail=1
+  echo "  FAIL: an unproven acceptance criterion must grade NO-GO"; fail=1
 else
-  echo "  PASS — correctly graded NO-GO on the lone unchecked AC"
+  echo "  PASS: correctly graded NO-GO on the lone unchecked AC"
 fi
 
 echo
@@ -83,9 +83,9 @@ Evidence exists.
 none
 MD
 if bash "$GRADER" "$wrongac"; then
-  echo "  FAIL — checked unrelated acceptance items must not prove spec [ACn] criteria"; fail=1
+  echo "  FAIL: checked unrelated acceptance items must not prove spec [ACn] criteria"; fail=1
 else
-  echo "  PASS — correctly graded NO-GO when spec [ACn] ids are missing from seal.md"
+  echo "  PASS: correctly graded NO-GO when spec [ACn] ids are missing from seal.md"
 fi
 
 echo

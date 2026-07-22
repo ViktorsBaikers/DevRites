@@ -28,7 +28,7 @@ import (
 // entries at or above DEVRITES_LEARNING_CONFIDENCE_THRESHOLD (default 0.7) are
 // injected into the SessionStart orientation, capped at
 // DEVRITES_MAX_INJECTED_LEARNINGS (default 5). An unmarked entry defaults to 0.5
-// — below the floor — so nothing auto-injects until a human promotes it via
+// (below the floor) so nothing auto-injects until a human promotes it via
 // /rite-learn. The human gate is preserved; only the bounded surfacing is new.
 //
 // Exit codes: 0 ok · 2 bad args.
@@ -118,7 +118,7 @@ func Learnings(root string, args []string, stdout, stderr io.Writer) int {
 	case "mine":
 		arch := archiveDir(root, args)
 		if !isDir(arch) {
-			fmt.Fprintf(stdout, "learnings: no archive at %s — nothing to mine.\n", arch)
+			fmt.Fprintf(stdout, "learnings: no archive at %s: nothing to mine.\n", arch)
 			return 0
 		}
 		fmt.Fprintln(stdout, "learnings: repeated finding/decision phrases across archived features (count >= 2):")
@@ -134,7 +134,7 @@ func Learnings(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "  %2d×  %s\n", c.count, c.phrase)
 			printed++
 		}
-		fmt.Fprintln(stdout, "(review these — a stable recurring class is a candidate for a project rule or a ledger entry.)")
+		fmt.Fprintln(stdout, "(review these: a stable recurring class is a candidate for a project rule or a ledger entry.)")
 		return 0
 
 	case "nudge":
@@ -166,7 +166,7 @@ func Learnings(root string, args []string, stdout, stderr io.Writer) int {
 		if len(phrase) > 48 {
 			phrase = phrase[:48]
 		}
-		fmt.Fprintf(stdout, "learnings: a pattern recurs %sx across shipped features (\"%s…\") — review + maybe promote it to a rule with %s.\n",
+		fmt.Fprintf(stdout, "learnings: a pattern recurs %sx across shipped features (\"%s…\"): review + maybe promote it to a rule with %s.\n",
 			strconv.Itoa(top.count), phrase, workflow.ForVerb("learn").Both())
 		return 0
 
@@ -176,7 +176,7 @@ func Learnings(root string, args []string, stdout, stderr io.Writer) int {
 	}
 }
 
-// Injection defaults — the threshold + cap that bound how much of the ledger
+// Injection defaults: the threshold + cap that bound how much of the ledger
 // reaches the SessionStart orientation, so a growing ledger can never bloat the
 // context window.
 const (
@@ -260,7 +260,7 @@ func InjectMax() int {
 	return defaultInjectMax
 }
 
-// archiveDir is the archive to mine — an explicit second argument, or archive/
+// archiveDir is the archive to mine: an explicit second argument, or archive/
 // under root by default.
 func archiveDir(root string, args []string) string {
 	if arch := argAt(args, 1); arch != "" {
@@ -271,14 +271,14 @@ func archiveDir(root string, args []string) string {
 
 // learningsHeader is the ledger preamble written when `add` first creates it.
 const learningsHeader = "# DevRites learnings ledger\n\n" +
-	"Project-local lessons mined from shipped features — recurring corrections,\n" +
+	"Project-local lessons mined from shipped features: recurring corrections,\n" +
 	"dismissed-finding classes, and dead-ends. Loaded by the review skills before a fan-out so\n" +
 	"the same false positive or the same mistake does not recur. Untrusted prior: live code\n" +
 	"always overrides a ledger entry (see standards/security.md).\n\n"
 
 var (
 	// findingLine matches a bullet, or a line mentioning a finding/dead-end/drift/
-	// dismissal — the candidate lines worth clustering.
+	// dismissal: the candidate lines worth clustering.
 	findingLine = regexp.MustCompile(`(?i)^[-*] |finding|dead end|drift|dismiss`)
 	// Normalisers applied to each candidate line so wording clusters despite
 	// incidental differences.
@@ -380,7 +380,7 @@ func anyFileNewerThan(arch string, t time.Time) bool {
 	return newer
 }
 
-// asciiLower lowercases ASCII A–Z, leaving every other byte untouched.
+// asciiLower lowercases ASCII A-Z, leaving every other byte untouched.
 func asciiLower(s string) string {
 	return strings.Map(func(r rune) rune {
 		if r >= 'A' && r <= 'Z' {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cli-smoke.sh — exercise the npx entry point (bin/devrites.mjs): version/help,
+# cli-smoke.sh: exercise the npx entry point (bin/devrites.mjs): version/help,
 # subcommand routing, flag passthrough, and that it drives the bundled bash
 # installers (install / uninstall) correctly. Exits non-zero on any failure.
 set -u

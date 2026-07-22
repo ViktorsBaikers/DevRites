@@ -1,6 +1,6 @@
 {
   "skill": "rite-adopt",
-  "description": "Trigger evals for /rite-adopt — onboarding an EXISTING codebase: reverse-derive a spec + seed the conventions ledger. Adversarial against /rite-spec (new idea), /rite-zoom-out (map only), and /rite-define.",
+  "description": "Trigger evals for /rite-adopt: onboarding an EXISTING codebase: reverse-derive a spec + seed the conventions ledger. Adversarial against /rite-spec (new idea), /rite-zoom-out (map only), and /rite-define.",
   "queries": [
     {
       "text": "/rite-adopt the billing service",

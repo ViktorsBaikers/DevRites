@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-shared-file-merge-smoke.sh — shared Codex files merge, prune, and preserve user content.
+# install-shared-file-merge-smoke.sh: shared Codex files merge, prune, and preserve user content.
 set -u
 export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"

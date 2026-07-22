@@ -1,6 +1,6 @@
 # Documentation
 
-Write the documentation that saves the next person time — no more, no less.
+Write the documentation that saves the next person time: no more, no less.
 
 ## Explain why, keep it current
 - Document **intent and decisions**, not a restatement of the code. The *why* is what
@@ -17,14 +17,14 @@ Write the documentation that saves the next person time — no more, no less.
   code; only the ADR records the options you weighed and *why each lost*. List them with the reason
   each was rejected, or the note answers nothing the source doesn't already show.
 - **An ADR has a lifecycle:** `PROPOSED → ACCEPTED → SUPERSEDED / DEPRECATED`. When a decision
-  changes, write a **new** ADR that references and supersedes the old one — never edit or delete the
+  changes, write a **new** ADR that references and supersedes the old one: never edit or delete the
   original, or you erase the record of why the project once chose differently.
 
 ## What to document
-- **Public surfaces**: APIs, module boundaries, and config — inputs, outputs, errors,
+- **Public surfaces**: APIs, module boundaries, and config: inputs, outputs, errors,
   and gotchas. Writing the contract down is the first test of the design: documenting a public
   interface surfaces its rough edges before the code sets around them.
-- **READMEs that actually run**: setup, the real commands to build/test/run, and how to
+- **READMEs that run**: setup, the real commands to build/test/run, and how to
   get a working environment. Keep examples copy-pasteable and correct.
 - **Non-obvious constraints**: invariants, ordering requirements, "do not call X before
   Y", and known limitations.

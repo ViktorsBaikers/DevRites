@@ -320,7 +320,7 @@ func Decisions(root string, args []string, stdout, stderr io.Writer) int {
 			}
 		}
 		for _, e := range matches {
-			fmt.Fprintf(stdout, "%s:%d %s — %s\n", e.Path, e.Line, e.Slug, e.Text)
+			fmt.Fprintf(stdout, "%s:%d %s: %s\n", e.Path, e.Line, e.Slug, e.Text)
 		}
 		if len(matches) == 0 {
 			fmt.Fprintln(stdout, "decisions: no matches.")

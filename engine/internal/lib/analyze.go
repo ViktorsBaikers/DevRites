@@ -15,10 +15,10 @@ import (
 // written, so a coverage gap surfaces as a one-line plan edit rather than a reslice
 // mid-build. It emits a markdown report and flags:
 //
-//	Coverage     — a spec AC id that no slice Satisfies                 (CRITICAL)
-//	Consistency  — a slice that Satisfies an AC the spec never defines (CRITICAL)
-//	Orphan slice — a slice that satisfies no acceptance criterion       (warn)
-//	Ambiguity    — an unquantified vague adjective or unresolved
+//	Coverage    : a spec AC id that no slice Satisfies                 (CRITICAL)
+//	Consistency : a slice that Satisfies an AC the spec never defines (CRITICAL)
+//	Orphan slice: a slice that satisfies no acceptance criterion       (warn)
+//	Ambiguity   : an unquantified vague adjective or unresolved
 //	               placeholder in the spec                              (warn)
 //
 // It closes with a Metrics line (criteria count, coverage %, orphan + ambiguity
@@ -69,14 +69,14 @@ func Analyze(root string, args []string, stdout, stderr io.Writer) int {
 	covered := 0
 	fmt.Fprintln(stdout, "## Coverage")
 	if len(specACs) == 0 {
-		fmt.Fprintln(stdout, "- [warn] spec.md — no AC-### acceptance ids found; tag criteria for a machine-checkable gate.")
+		fmt.Fprintln(stdout, "- [warn] spec.md: no AC-### acceptance ids found; tag criteria for a machine-checkable gate.")
 	} else {
 		for _, ac := range specACs {
 			if taskSet[ac] {
 				covered++
-				fmt.Fprintf(stdout, "- [ok] %s — covered\n", ac)
+				fmt.Fprintf(stdout, "- [ok] %s: covered\n", ac)
 			} else {
-				fmt.Fprintf(stdout, "- [CRITICAL] %s (spec.md) — no slice Satisfies it (uncovered)\n", ac)
+				fmt.Fprintf(stdout, "- [CRITICAL] %s (spec.md): no slice Satisfies it (uncovered)\n", ac)
 				crit++
 			}
 		}
@@ -88,7 +88,7 @@ func Analyze(root string, args []string, stdout, stderr io.Writer) int {
 	if len(taskACs) > 0 {
 		for _, ac := range taskACs {
 			if !specSet[ac] {
-				fmt.Fprintf(stdout, "- [CRITICAL] %s (tasks.md) — referenced by a slice but not defined in spec.md (dangling)\n", ac)
+				fmt.Fprintf(stdout, "- [CRITICAL] %s (tasks.md): referenced by a slice but not defined in spec.md (dangling)\n", ac)
 				crit++
 			}
 		}
@@ -99,7 +99,7 @@ func Analyze(root string, args []string, stdout, stderr io.Writer) int {
 	for _, name := range orphanSlices(tasksData) {
 		if name != "" {
 			orphans++
-			fmt.Fprintf(stdout, "- [warn] slice '%s' — satisfies no acceptance criterion (add Satisfies: or justify)\n", name)
+			fmt.Fprintf(stdout, "- [warn] slice '%s': satisfies no acceptance criterion (add Satisfies, or justify)\n", name)
 		}
 	}
 
@@ -127,17 +127,17 @@ func Analyze(root string, args []string, stdout, stderr io.Writer) int {
 
 	fmt.Fprintln(stdout)
 	if crit > 0 {
-		fmt.Fprintf(stdout, "## Verdict: BLOCKED — %d CRITICAL finding(s). Resolve before %s.\n", crit, workflow.ForVerb("build").Both())
+		fmt.Fprintf(stdout, "## Verdict: BLOCKED: %d CRITICAL finding(s). Resolve before %s.\n", crit, workflow.ForVerb("build").Both())
 		return 1
 	}
-	fmt.Fprintln(stdout, "## Verdict: clear — spec/tasks consistent and fully mapped.")
+	fmt.Fprintln(stdout, "## Verdict: clear: spec/tasks consistent and fully mapped.")
 	return 0
 }
 
 // ambiguityFindings scans spec text for unfalsifiable criteria: a vague quality
 // adjective (fast, robust, secure …) on a line with no number to pin it down, or an
 // unresolved placeholder (TODO, ???, <placeholder> …). Code fences are skipped. One
-// finding per line — a placeholder takes precedence over an adjective. 1-based lines.
+// finding per line: a placeholder takes precedence over an adjective. 1-based lines.
 func ambiguityFindings(specData []byte) []string {
 	var out []string
 	inFence := false
@@ -151,16 +151,16 @@ func ambiguityFindings(specData []byte) []string {
 		}
 		ln := i + 1
 		if m := placeholderRe.FindString(line); m != "" {
-			out = append(out, fmt.Sprintf("- [warn] spec.md:L%d — unresolved placeholder %q", ln, m))
+			out = append(out, fmt.Sprintf("- [warn] spec.md:L%d: unresolved placeholder %q", ln, m))
 			continue
 		}
-		// Strip the AC id before the digit gate — else the id's own digit masks
+		// Strip the AC id before the digit gate: else the id's own digit masks
 		// a vague adjective on the very criterion line it tags.
 		bare := acIDRe.ReplaceAllString(line, "")
 		bare = taskACRe.ReplaceAllString(bare, "")
 		if !analyzeDigitRe.MatchString(bare) {
 			if m := vagueAdjRe.FindString(bare); m != "" {
-				out = append(out, fmt.Sprintf("- [warn] spec.md:L%d — %q is not quantified; state a measurable target", ln, m))
+				out = append(out, fmt.Sprintf("- [warn] spec.md:L%d: %q is not quantified; state a measurable target", ln, m))
 			}
 		}
 	}

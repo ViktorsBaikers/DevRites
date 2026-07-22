@@ -11,13 +11,13 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here — Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review** — an inline pass shares the calling context and is weaker evidence.
+- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
+- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
 - Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers — NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
+- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
-# $rite-pov — project-grounded external verdict
+# $rite-pov: project-grounded external verdict
 
 Decide whether **this project** should adopt, trial, hold, reject, or ignore a named outside candidate. Chat verdict first; durable record only when the user asks or the decision changes an active feature.
 
@@ -26,7 +26,7 @@ Step 0: Read `.agents/skills/devrites-lib/reference/standards/core.md`. Pull `so
 
 ## Operating rules
 - Verdict only after two floors clear: one verified project fact and one verified external source.
-- Named candidate only. If the user asks “what should we use?” over an open field, route to `$rite-pressure-test` or `$rite-spec` to surface criteria first.
+- Named candidate only. If the user asks "what should we use?" over an open field, route to `$rite-pressure-test` or `$rite-spec` to surface criteria first.
 - Reversibility sizes rigor: two-way config/dependency < bounded internal migration < public/security/legal/data decision.
 
 ## Workflow
@@ -53,6 +53,6 @@ Record: <path|not written>
 ```
 
 ## Gotchas
-- No project floor, no verdict. A generic “X is good” answer is failure.
+- No project floor, no verdict. A generic "X is good" answer is failure.
 - Do not let a strong blog post compensate for no local call site, incumbent, or integration point.
 - Do not enumerate a whole market here; bounded candidate decisions only.

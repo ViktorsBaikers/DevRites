@@ -1,5 +1,5 @@
-// Package doctor reports the version triangle — the engine binary, the installed
-// DevRites pack, and the on-disk .devrites state schema — and a clear skew
+// Package doctor reports the version triangle: the engine binary, the installed
+// DevRites pack, and the on-disk .devrites state schema, and a clear skew
 // verdict. Version skew is a leading cause of silent breakage; doctor turns it
 // into one legible line. Everything here is a read; doctor never mutates state.
 package doctor
@@ -16,7 +16,7 @@ import (
 )
 
 // Unknown is the pack value reported when the installed pack version can't be
-// discovered — skew against an unknown pack is not asserted.
+// discovered: skew against an unknown pack is not asserted.
 const Unknown = "unknown"
 
 // Report is the resolved version triangle plus its verdict.
@@ -45,7 +45,7 @@ func Diagnose(projectDir, root string) (*Report, error) {
 		return nil, fmt.Errorf("read state schema: %w", err)
 	}
 	if stateSchema == 0 {
-		// Nothing on disk declares a version — treat it as the current schema;
+		// Nothing on disk declares a version: treat it as the current schema;
 		// undeclared state is read as the engine's own version.
 		stateSchema = state.SchemaVersion
 	}
@@ -61,10 +61,10 @@ func Diagnose(projectDir, root string) (*Report, error) {
 	switch {
 	case r.StateSchema > r.BinarySchema:
 		r.Refuse = true
-		r.Verdict = fmt.Sprintf("REFUSE: state schema v%d is newer than this binary supports (v%d) — update devrites",
+		r.Verdict = fmt.Sprintf("REFUSE: state schema v%d is newer than this binary supports (v%d): update devrites",
 			r.StateSchema, r.BinarySchema)
 	case r.packSkew():
-		r.Verdict = fmt.Sprintf("WARN: binary %s is older than the installed pack %s — update the devrites-engine binary",
+		r.Verdict = fmt.Sprintf("WARN: binary %s is older than the installed pack %s: update the devrites-engine binary",
 			r.Binary, r.Pack)
 	default:
 		r.Verdict = "ok: binary, pack, and state schema are compatible"
@@ -131,7 +131,7 @@ func driftChecks(projectDir string) []string {
 			checks = append(checks, "WARN: .claude/settings.json exists but does not reference devrites-engine hooks")
 		}
 	} else if isDir(filepath.Join(projectDir, ".claude")) {
-		checks = append(checks, "WARN: .claude/settings.json missing — Claude hooks/statusline may be absent")
+		checks = append(checks, "WARN: .claude/settings.json missing: Claude hooks/statusline may be absent")
 	}
 	if isDir(filepath.Join(projectDir, ".claude", "skills")) && !isDir(filepath.Join(projectDir, ".agents", "skills")) {
 		checks = append(checks, "WARN: Claude skills installed but Codex skill mirror .agents/skills is missing")

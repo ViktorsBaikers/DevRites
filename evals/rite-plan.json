@@ -1,6 +1,6 @@
 {
   "skill": "rite-plan",
-  "description": "Trigger evals for /rite-plan — decompose, reslice, repair, reorder, split, or unblock an active plan.",
+  "description": "Trigger evals for /rite-plan: decompose, reslice, repair, reorder, split, or unblock an active plan.",
   "queries": [
     {
       "text": "/rite-plan reslice",

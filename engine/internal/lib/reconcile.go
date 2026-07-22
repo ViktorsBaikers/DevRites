@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Reconcile enforces that the orchestrator never edits source itself — only the
+// Reconcile enforces that the orchestrator never edits source itself: only the
 // dispatched slice-wright writes code and tests, while the orchestrator writes
 // bookkeeping under .devrites/. `snapshot` records the working tree just before
 // the wright runs; `check` diffs it afterward and flags any changed path that is
@@ -17,8 +17,8 @@ import (
 // <root>/features/<slug>.
 //
 //	0  clean check, snapshot written, inline fallback, or skipped (not a git repo)
-//	5  VIOLATION — source changed outside the wright's claimed set
-//	6  setup error — bad args, missing snapshot, or missing claimed manifest
+//	5  VIOLATION: source changed outside the wright's claimed set
+//	6  setup error: bad args, missing snapshot, or missing claimed manifest
 func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	mode := argAt(args, 0)
 	slug := argAt(args, 1)
@@ -29,7 +29,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	cwd, _ := os.Getwd()
 	gitRoot := gitToplevel(cwd)
 	if gitRoot == "" {
-		fmt.Fprintln(stderr, "reconcile: not a git repo — gate skipped, verify the diff by hand.")
+		fmt.Fprintln(stderr, "reconcile: not a git repo: gate skipped, verify the diff by hand.")
 		return 0
 	}
 
@@ -44,7 +44,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		if s == "" {
 			s = "<unset>"
 		}
-		fmt.Fprintf(stderr, "reconcile: no active workspace (slug=%s) — nothing to reconcile.\n", s)
+		fmt.Fprintf(stderr, "reconcile: no active workspace (slug=%s): nothing to reconcile.\n", s)
 		return 6
 	}
 
@@ -76,16 +76,16 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 
 	case "check":
 		if isFile(inline) {
-			fmt.Fprintln(stderr, "reconcile: inline-fallback run (no wright dispatched) — gate skipped.")
+			fmt.Fprintln(stderr, "reconcile: inline-fallback run (no wright dispatched): gate skipped.")
 			closeWindow()
 			return 0
 		}
 		if !isFile(base) {
-			fmt.Fprintln(stderr, `reconcile: no snapshot (.reconcile-base) — run "devrites-engine reconcile snapshot" before dispatch.`)
+			fmt.Fprintln(stderr, `reconcile: no snapshot (.reconcile-base): run "devrites-engine reconcile snapshot" before dispatch.`)
 			return 6
 		}
 		if !isFile(claimed) {
-			fmt.Fprintln(stderr, "reconcile: no claimed manifest (.reconcile-claimed) — write the wright Files-changed paths first.")
+			fmt.Fprintln(stderr, "reconcile: no claimed manifest (.reconcile-claimed): write the wright Files-changed paths first.")
 			return 6
 		}
 		baseBytes, err := os.ReadFile(base)
@@ -95,11 +95,11 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		baseTree := strings.TrimSpace(string(baseBytes))
 		if baseTree == "" {
-			fmt.Fprintln(stderr, "reconcile: empty snapshot (.reconcile-base) — re-run \"devrites-engine reconcile snapshot\" before dispatch.")
+			fmt.Fprintln(stderr, "reconcile: empty snapshot (.reconcile-base): re-run \"devrites-engine reconcile snapshot\" before dispatch.")
 			return 6
 		}
 		if !isDir(objects) {
-			fmt.Fprintln(stderr, "reconcile: missing snapshot object database (.reconcile-objects) — re-run \"devrites-engine reconcile snapshot\" before dispatch.")
+			fmt.Fprintln(stderr, "reconcile: missing snapshot object database (.reconcile-objects): re-run \"devrites-engine reconcile snapshot\" before dispatch.")
 			return 6
 		}
 		nowTree, err := worktreeTree(gitRoot, objects)
@@ -132,13 +132,13 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 			}
 		}
 		if viol > 0 {
-			fmt.Fprintf(stderr, "reconcile: STOP — %d source file(s) changed OUTSIDE the wright (A1 breach):\n", viol)
+			fmt.Fprintf(stderr, "reconcile: STOP: %d source file(s) changed OUTSIDE the wright (A1 breach):\n", viol)
 			fmt.Fprint(stderr, violist.String())
 			fmt.Fprintln(stderr, "The orchestrator must NOT edit source. Re-dispatch the wright (continue it once) or revert these.")
 			return 5
 		}
 		closeWindow()
-		fmt.Fprintln(stdout, "reconcile: OK — every source change is the wright's; orchestrator touched only bookkeeping.")
+		fmt.Fprintln(stdout, "reconcile: OK: every source change is the wright's; orchestrator touched only bookkeeping.")
 		return 0
 
 	default:

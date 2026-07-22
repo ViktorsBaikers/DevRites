@@ -196,7 +196,7 @@ Spawned by `/rite-review`, `/rite-seal` (post-build), `/rite-temper` (pre-plan),
 | [`devrites-forge-judge`](../pack/.claude/agents/devrites-forge-judge.md) | **Build-time** comparative judge of two or three candidate builds of one slice (acceptance / test strength / principle fit / simplicity / reuse / anti-slop). Used by `/rite-build` on a `Forge: yes` slice; picks the single winner to land and names grafts. |
 | [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | Does the diff implement the spec? Missing / partial / wrong criteria; scope creep. |
 | [`devrites-code-reviewer`](../pack/.claude/agents/devrites-code-reviewer.md) | Correctness / readability / architecture / maintainability. |
-| [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | Do the tests actually prove the acceptance criteria? |
+| [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | Do the tests prove the acceptance criteria? |
 | [`devrites-frontend-reviewer`](../pack/.claude/agents/devrites-frontend-reviewer.md) | UX, a11y, responsive, design-system, anti-AI-slop. |
 | [`devrites-security-auditor`](../pack/.claude/agents/devrites-security-auditor.md) | OWASP Top 10, trust boundary, secrets, deps. |
 | [`devrites-performance-reviewer`](../pack/.claude/agents/devrites-performance-reviewer.md) | N+1s, hot paths, payload size. |

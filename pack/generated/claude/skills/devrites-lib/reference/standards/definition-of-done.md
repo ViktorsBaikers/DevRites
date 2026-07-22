@@ -1,6 +1,6 @@
 # Definition of Done
 
-DevRites acceptance criteria answer “did we build the requested thing?” Definition of Done answers “is the change finished to DevRites quality?”
+DevRites acceptance criteria answer "did we build the requested thing?" Definition of Done answers "is the change finished to DevRites quality?"
 
 A feature is done only when:
 

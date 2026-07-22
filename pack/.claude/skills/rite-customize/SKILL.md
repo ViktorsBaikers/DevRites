@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
-# /rite-customize — guided project customization
+# /rite-customize: guided project customization
 
 Create, list, validate, or scaffold one project-local DevRites customization without forking the pack.
 
@@ -63,5 +63,5 @@ Record: <path(s)>
 ## Gotchas
 
 - **Do not fork by accident.** If a reviewer override is enough, do not create a copied reviewer agent.
-- **Do not weaken gates.** “Ignore”, “waive”, “lower severity”, or “skip type-GO” means rewrite the customization or refuse it.
+- **Do not weaken gates.** "Ignore", "waive", "lower severity", or "skip type-GO" means rewrite the customization or refuse it.
 - **Do not invent an extension surface.** If the user wants behavior outside DevRites' extension contract, say what the contract supports and stop.

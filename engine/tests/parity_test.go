@@ -58,7 +58,7 @@ func assertGoldenKey(t *testing.T, key, got string) {
 	}
 	want, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("missing golden %s — regenerate with UPDATE_GOLDEN=1: %v", path, err)
+		t.Fatalf("missing golden %s: regenerate with UPDATE_GOLDEN=1: %v", path, err)
 	}
 	wantText := strings.ReplaceAll(string(want), "\r\n", "\n")
 	if got != wantText {
@@ -343,7 +343,7 @@ func TestParityWrightScope(t *testing.T) {
 }
 
 // setActiveAFK points .devrites/ACTIVE at slug (or removes it) and toggles the
-// .devrites/AFK sentinel — the two files bash (via CWD) and the migrated Go (via
+// .devrites/AFK sentinel: the two files bash (via CWD) and the migrated Go (via
 // <root>) both read from the same shared location.
 func setActiveAFK(t *testing.T, work, slug string, afk bool) {
 	t.Helper()
@@ -365,7 +365,7 @@ func setActiveAFK(t *testing.T, work, slug string, afk bool) {
 
 // TestParityOrientSilentPath checks `hook orient` against a golden snapshot for
 // the common session-start case: outside any DevRites workspace (a directory with
-// no .devrites), orient must stay silent — exit 0, no stdout.
+// no .devrites), orient must stay silent: exit 0, no stdout.
 func TestParityOrientSilentPath(t *testing.T) {
 	dir := t.TempDir() // a directory with no .devrites
 

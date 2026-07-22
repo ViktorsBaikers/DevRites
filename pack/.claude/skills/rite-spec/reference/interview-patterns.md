@@ -5,7 +5,7 @@ Each question still follows the protocol: one at a time, best guess attached.
 
 ## Vague ask? Map the decision tree first
 For a fuzzy one-liner (`"design a contact page"`, `"add reporting"`), sketch the branches
-the answer splits into, then resolve each **depth-first** — one branch to a decision before
+the answer splits into, then resolve each **depth-first**: one branch to a decision before
 opening the next:
 
 ```text
@@ -17,7 +17,7 @@ contact page
 ```
 
 Once per interview you may **challenge the premise** instead of refining it
-(*"is a form even the right answer, or a mailto / booking link?"*) — a good reframe
+(*"is a form even the right answer, or a mailto / booking link?"*): a good reframe
 collapses whole branches. Then use the domain ladders below for each open branch.
 
 ## Objective / problem
@@ -49,7 +49,7 @@ collapses whole branches. Then use the domain ladders below for each open branch
 - "Auth/permission rules? Anything sensitive (PII, secrets, payments)?"
 
 ## Acceptance
-- "How will we *prove* this works — what's the test or observation?"
+- "How will we *prove* this works: what's the test or observation?"
 - "What would make you reject the PR?"
 
 ## Anti-references (taste)

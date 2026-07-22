@@ -1,6 +1,6 @@
 {
   "skill": "rite-customize",
-  "description": "Explicit-only evals for /rite-customize — author DevRites overrides/extensions.",
+  "description": "Explicit-only evals for /rite-customize: author DevRites overrides/extensions.",
   "queries": [
     {
       "text": "/rite-customize override devrites-code-reviewer",

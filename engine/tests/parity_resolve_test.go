@@ -132,7 +132,7 @@ answer: prior
 	t.Run("next-qid", func(t *testing.T) {
 		// Read-only: computes the next qid for an explicit questions.md path.
 		// DEVRITES_NOW pins the clock so the golden is stable across day
-		// boundaries — without it the qid tracks the real date and the snapshot
+		// boundaries: without it the qid tracks the real date and the snapshot
 		// fails every day but the one it was recorded on (ADR-0006, clock seam).
 		dir := t.TempDir()
 		writeFile(t, dir, "questions.md", "## q-2024-01-01-001\nstatus: open\n")

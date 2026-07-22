@@ -1,24 +1,24 @@
 ---
 name: rite-explain
 description: User-invoked explainer that teaches one concept, diff, idea, or recent-work recap with an optional retrieval check-in.
-argument-hint: "[a concept | a diff ref | an idea | \"what did I do this week?\"] — or bare to be asked"
+argument-hint: "[a concept | a diff ref | an idea | \"what did I do this week?\"], or bare to be asked"
 user-invocable: true
 disable-model-invocation: true
 ---
 
-# /rite-explain — the human half of the learning loop
+# /rite-explain: the human half of the learning loop
 
 Agent-driven development removed the learning that writing code by hand used to give the
 developer. When the agent writes the code, the human stops absorbing the codebase. `/rite-explain`
-is the replacement: it teaches the developer **one** thing well — a concept, a change, an idea, or
-a window of their own recent work — so they keep learning while the agents do the writing. For a
+is the replacement: it teaches the developer **one** thing well (a concept, a change, an idea, or
+a window of their own recent work) so they keep learning while the agents do the writing. For a
 specific change, it can instead write a **walkthrough**: a human review guide organized by concern,
 risk stops, and manual observations.
 
 This is the **complement of [`/rite-learn`](../rite-learn/SKILL.md)**, and the two together are
-the whole compounding story. `/rite-learn` teaches the **repo** — it promotes recurring lessons
-into rules and principles the next feature reads. `/rite-explain` teaches the **person** — the
-mental model the next feature needs a human to actually hold. A team that only runs `/rite-learn`
+the whole compounding story. `/rite-learn` teaches the **repo**. It promotes recurring lessons
+into rules and principles the next feature reads. `/rite-explain` teaches the **person**: the
+mental model the next feature needs a human to hold. A team that only runs `/rite-learn`
 compounds a codebase whose own maintainers understand it less each week. Run both.
 
 Read-only against source. It reads artifacts and code; it writes exactly one explainer file to
@@ -26,9 +26,9 @@ Read-only against source. It reads artifacts and code; it writes exactly one exp
 
 ## Who the explainer is for
 
-The developer, personally. Dense, technical, one voice — no audience adaptation, no "for
+The developer, personally. Dense, technical, one voice: no audience adaptation, no "for
 beginners" softening, no executive summary. It is a display artifact: no embedded quizzes or
-widgets — the check-in (below) happens live in the session, where an answer can actually be
+widgets: the check-in (below) happens live in the session, where an answer can be
 graded. If the user asked for prep for a meeting or a teammate, it preps **them** to explain the
 thing; it does not produce the deck.
 
@@ -36,10 +36,10 @@ thing; it does not produce the deck.
 
 Dispatch by task shape, per [`devrites-lib/reference/model-tiers.md`](../devrites-lib/reference/model-tiers.md):
 
-- **extraction tier** — the work-recap scout and any repo-profiling: search-and-quote, run under a
+- **extraction tier:** the work-recap scout and any repo-profiling: search-and-quote, run under a
   read budget, write findings to the run's scratch dossier, return only a gist.
-- **ceiling tier** — the explainer composition and the check-in reasoning. These run inline in the
-  orchestrator's own model; nothing is dispatched down. Teaching quality is the whole product — do
+- **ceiling tier:** the explainer composition and the check-in reasoning. These run inline in the
+  orchestrator's own model; nothing is dispatched down. Teaching quality is the whole product: do
   not cheapen it.
 
 The degradation rule in that file applies: no per-agent model control → run the scout inline under
@@ -47,26 +47,26 @@ the same budget.
 
 ## Workflow
 
-### 1. Classify the input — load the intake reference
+### 1. Classify the input: load the intake reference
 
 The four input shapes (concept · diff · idea · work-recap) each ground and compose differently,
 and each drives a different check-in. Diff inputs also branch into explainer vs walkthrough
 composition. Getting the shape wrong wastes the whole artifact.
 
-**Load [`reference/intake.md`](reference/intake.md) now** — it owns the classification rules, the
+**Load [`reference/intake.md`](reference/intake.md) now**. It owns the classification rules, the
 `diff:` / `since:` / `output:` token table, the concept-vs-diff tiebreak, and the check-in
 mechanics per shape. Do not improvise classification from this file; the detail lives there so this
 one stays legible, and skipping it means guessing the shape.
 
 **Bare invocation** (no input): ask **one** blocking question (`AskUserQuestion` when the harness
-has it, else the harness's blocking-question tool — `request_user_input` on Codex) — "What should I
-explain?" — offering "a recap of my recent work in this repo" as a shortcut option alongside free
+has it, else the harness's blocking-question tool: `request_user_input` on Codex). "What should I
+explain?": offering "a recap of my recent work in this repo" as a shortcut option alongside free
 text. Never emit a default explainer unprompted.
 
 ### 2. Ground
 
 Match grounding to the shape (full rules in the intake reference). DevRites gives you grounding for
-free — prefer it over re-deriving:
+free: prefer it over re-deriving:
 
 - A **diff** or **recap** → the workspace and archive: `seal.md`, `evidence.md`, `decisions.md`,
   `traceability.md`, the shipped `.devrites/archive/<slug>/`, and `git log` / `git diff`.
@@ -93,13 +93,13 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
    teach the highest-leverage slice and say what you cut.
    **Completion:** the first two lines state one takeaway and any deferred topics.
 2. **Build the model, don't list facts.** Start from what the developer already knows in *this*
-   codebase and move to the new thing. Concrete before abstract — a real symbol, file, or line
+   codebase and move to the new thing. Concrete before abstract: a real symbol, file, or line
    from the grounding beats a generic example every time.
    **Completion:** the explanation connects a known project anchor to the new model without a fact dump.
 3. **Show the load-bearing detail.** Quote the actual diff hunk, the real function, the specific
-   config — with `file:line` pointers so the developer can go read it.
+   config, with `file:line` pointers so the developer can go read it.
 4. **Visual where it earns it.** A small diagram, a before/after, or a worked trace when the shape
-   is spatial or sequential. Not decoration — only when it carries the idea faster than prose.
+   is spatial or sequential. Not decoration: only when it carries the idea faster than prose.
    **Completion:** the visual carries a named relationship faster than prose, or this branch is explicitly skipped.
 5. **Human voice.** Follow [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md):
    no throat-clearing, no false-binary contrast, no marketing adjectives. One senior engineer
@@ -108,7 +108,7 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
 ### 4. Offer the check-in (optional, active recall)
 
 Retention comes from *retrieving*, not re-reading. After the explainer, offer one check-in via the
-harness's blocking-question tool (`AskUserQuestion`, or `request_user_input` on Codex) — the user
+harness's blocking-question tool (`AskUserQuestion`, or `request_user_input` on Codex): the user
 answers **first**, then you confirm or correct. The shape sets the
 form (mechanics in the intake reference):
 
@@ -126,7 +126,7 @@ not force it; offer once.
   rest as "next time".
 - **Ground it or don't claim it.** A concept explainer with no `file:line` or real example is a
   Wikipedia paragraph. If it has footprint in this repo, quote the repo.
-- **Not a review.** `/rite-explain` never judges the code or files findings — that is `/rite-review`.
+- **Not a review.** `/rite-explain` never judges the code or files findings, that is `/rite-review`.
   It explains what *is*, adversarially neutral.
 - **Not `/rite-learn`.** It writes to `.devrites/explainers/`, never to `learnings.md`,
   `principles.md`, or any rule file. Teaching the human is not promoting a repo rule.

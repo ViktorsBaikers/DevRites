@@ -1,6 +1,6 @@
 {
   "skill": "devrites-api-interface",
-  "description": "Trigger evals for devrites-api-interface — designing stable API/interface contracts before implementation (REST/GraphQL endpoints, module boundaries, type contracts, FE/BE splits); must NOT fire for internal helpers, post-ship review, or sibling build/review/polish/prove/debug/tdd/prototype work.",
+  "description": "Trigger evals for devrites-api-interface: designing stable API/interface contracts before implementation (REST/GraphQL endpoints, module boundaries, type contracts, FE/BE splits); must NOT fire for internal helpers, post-ship review, or sibling build/review/polish/prove/debug/tdd/prototype work.",
   "queries": [
     {
       "text": "Design the API for this feature before we start coding.",

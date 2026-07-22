@@ -3,4 +3,4 @@ budget: big
   spec.md          300 lines  ~  150 tok  limit  260  OVER by 40
   tasks.md         160 lines  ~   80 tok  limit  280  ok
   state.md           5 lines  ~    3 tok  limit  120  ok
-budget: 1 file(s) over the line budget (advisory — pass --strict to fail)
+budget: 1 file(s) over the line budget (advisory: pass --strict to fail)

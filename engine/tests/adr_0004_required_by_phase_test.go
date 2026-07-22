@@ -21,13 +21,13 @@ func TestADR0004RequiredSectionsAreAdditiveDownTheArc(t *testing.T) {
 	}
 
 	// Each phase's required set must contain everything the previous phase
-	// required — completeness only accumulates, never regresses.
+	// required: completeness only accumulates, never regresses.
 	for i := 1; i < len(phaseArc); i++ {
 		prev := asSet(state.RequiredSections(phaseArc[i-1]))
 		cur := asSet(state.RequiredSections(phaseArc[i]))
 		for s := range prev {
 			if !cur[s] {
-				t.Errorf("phase %q dropped section %q that %q required — arc must be additive",
+				t.Errorf("phase %q dropped section %q that %q required: arc must be additive",
 					phaseArc[i], s, phaseArc[i-1])
 			}
 		}

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# behavioral-evals-test.sh — unit-test the behavioral-eval shape validator
+# behavioral-evals-test.sh: unit-test the behavioral-eval shape validator
 # (scripts/run-behavioral-evals.sh) in isolation. Asserts it PASSES the shipped
 # seed evals and a hand-built well-formed file, and FAILS (exit 1) on each shape
 # violation: invalid JSON, missing scenarios key, empty scenarios, a scenario

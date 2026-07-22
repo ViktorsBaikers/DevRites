@@ -104,6 +104,7 @@ func TestMapLegacyPhase(t *testing.T) {
 		{word: "in-progress", want: state.PhaseBuild, ok: true},
 		{word: "reviewing", want: state.PhaseReview, ok: true},
 		{word: "done - shipped", want: state.PhaseDone, ok: true},
+		{word: "done — shipped", want: state.PhaseDone, ok: true},
 		{word: "mystery"},
 	} {
 		got, ok := mapLegacyPhase(tc.word)

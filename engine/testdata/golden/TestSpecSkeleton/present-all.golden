@@ -1,2 +1,2 @@
 exit 0
-spec-skeleton: OK — present/spec.md: all required top-level sections present
+spec-skeleton: OK: present/spec.md: all required top-level sections present

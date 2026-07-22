@@ -12,7 +12,7 @@ import (
 // — capability: <c>" section they sit under. It is the shared reader behind two
 // consumers: the spec-validate `--against` ledger cross-check (specvalidate.go)
 // and the capability-ledger fold (ledger.go). The grammar linter (lintSpec) is
-// deliberately left untouched — delta H2 headers are transparent to it — so this
+// deliberately left untouched (delta H2 headers are transparent to it) so this
 // parser adds delta-awareness without perturbing the flat-spec lint contract.
 
 // Delta kinds, lower-cased. A requirement outside any delta section has kind "".
@@ -35,7 +35,7 @@ var (
 // Requirement is one "### Requirement: <name>" block with its delta context.
 type Requirement struct {
 	Name       string // header text after "Requirement:", trailing space trimmed
-	Key        string // strings.ToLower(Name) — the identity used to match across specs
+	Key        string // strings.ToLower(Name): the identity used to match across specs
 	Kind       string // added | modified | removed | "" (flat, no delta section)
 	Capability string // from the section tag; "" when untagged
 	HeaderLine int    // 1-based line of the "### Requirement:" header
@@ -48,7 +48,7 @@ type SpecDoc struct {
 	HasDelta     bool // at least one "## … Requirements" delta section was seen
 }
 
-// ParseSpec reads and structures a spec.md. It never fails on grammar problems —
+// ParseSpec reads and structures a spec.md. It never fails on grammar problems:
 // that is lintSpec's job; ParseSpec only extracts blocks and their delta context.
 func ParseSpec(file string) (*SpecDoc, error) {
 	f, err := os.Open(file)
@@ -109,7 +109,7 @@ func ParseSpec(file string) (*SpecDoc, error) {
 }
 
 // requirementKeys returns the set of lower-cased requirement names present in a
-// spec file — the identity index a cross-spec existence check consults. A missing
+// spec file: the identity index a cross-spec existence check consults. A missing
 // or unreadable file yields an empty set (the caller decides whether that is an
 // error), matching how the ledger treats an unseeded capability.
 func requirementKeys(file string) map[string]bool {

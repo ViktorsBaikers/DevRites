@@ -1,2 +1,2 @@
 exit 0
-spec-validate: OK — valid/spec.md: 2 requirement(s) / 3 scenario(s) well-formed (SHALL + WHEN/THEN, unique headers)
+spec-validate: OK: valid/spec.md: 2 requirement(s) / 3 scenario(s) well-formed (SHALL + WHEN/THEN, unique headers)

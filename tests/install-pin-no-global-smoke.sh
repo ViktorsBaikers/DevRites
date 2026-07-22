@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-pin-no-global-smoke.sh — pin aliases stay project-local.
+# install-pin-no-global-smoke.sh: pin aliases stay project-local.
 set -u
 export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"

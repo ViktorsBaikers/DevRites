@@ -6,13 +6,13 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
-# /rite-resolve — answer the human gate
+# /rite-resolve: answer the human gate
 
-`/rite-resolve` is the canonical resume verb for **async** human gates — a checkpoint that
+`/rite-resolve` is the canonical resume verb for **async** human gates: a checkpoint that
 already paused and **stopped the session** (an AFK blocking/escalating/irreversible queue, or a
 HITL pause the human walked away from), plus `--batch`. When `/rite-build` asks a gap **inline**
 via `AskUserQuestion` and the human is present, that pick resolves the gate **in place** through
-the same `devrites-engine resolve` writer — you don't type `/rite-resolve` for it. For the async case this
+the same `devrites-engine resolve` writer. You don't type `/rite-resolve` for it. For the async case this
 skill takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
 `state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next command.
 
@@ -24,8 +24,8 @@ It is **deliberately small**: one verb, one source of truth (`questions.md`), on
 
 Pull these via `Read` when shaping the resolve:
 
-- `afk-hitl.md` — gate taxonomy, `questions.md` schema, AFK exception rules.
-- `documentation.md` — record decisions and rationale where the answer changes scope.
+- `afk-hitl.md`: gate taxonomy, `questions.md` schema, AFK exception rules.
+- `documentation.md`: record decisions and rationale where the answer changes scope.
 
 ## Operating rules
 
@@ -37,16 +37,16 @@ Pull these via `Read` when shaping the resolve:
   `dropped`, refuse with the existing answer; ask the user to open a new qid that
   references the old one (the file is the audit trail).
 - **If the answer materially changes scope, architecture, or acceptance**, route it
-  through the Spec Drift Guard (`/rite-plan repair`) **after** writing the answer — do
+  through the Spec Drift Guard (`/rite-plan repair`) **after** writing the answer: do
   not modify `spec.md` / `plan.md` inside this skill.
 - **The script is the source of truth.** Always invoke
-  `devrites-engine resolve` — it keeps `questions.md` + `state.md` consistent and emits the
+  `devrites-engine resolve`. It keeps `questions.md` + `state.md` consistent and emits the
   next-action recommendation. The one `state.md` field this skill may write by hand is the
   unblocked slice's `Slice mode` (step 4, the named exception); everything else goes through
   the script, never by hand.
 - **Human gates are for human-only decisions, not the agent's work.** A `questions.md` entry the
-  human must answer is a genuine *decision* (a scope / design / risk call only the human can make)
-  — not a task the agent can do itself. If a question is really agent-doable ("should I write the
+  human must answer is a genuine *decision* (a scope / design / risk call only the human can make).
+  Not a task the agent can do itself. If a question is really agent-doable ("should I write the
   test?", "go implement X"), don't record a human answer that punts the agent's own job back to it:
   flag the mis-tag and route it to the right skill (`/rite-build`, `/rite-plan unblock`,
   `devrites-debug-recovery`). The human resolves decisions; the agent does the work.
@@ -57,16 +57,16 @@ Pull these via `Read` when shaping the resolve:
    touching the workspace.
    Then run `devrites-engine preamble` for deterministic workspace orientation.
 1. **Parse arguments.** `$ARGUMENTS` is one of:
-   - `<qid> "<answer>"` — answer the single open question.
-   - `--drop <qid>` (optional `"<reason>"`) — mark the question `dropped`; record
+   - `<qid> "<answer>"`: answer the single open question.
+   - `--drop <qid>` (optional `"<reason>"`): mark the question `dropped`; record
      the reason inline.
-   - `--batch <path-to-yaml>` — bulk resolve, one entry per qid (see
+   - `--batch <path-to-yaml>`: bulk resolve, one entry per qid (see
      [`reference/answer-protocol.md`](reference/answer-protocol.md) for the batch
      format).
 2. **Load context.** Read `state.md`, `questions.md`, and the relevant slice from
    `tasks.md`. Confirm the qid is `status: open`. If `state.md` `Status` is not
    `awaiting_human` and the question's `gate` is `blocking`, surface the inconsistency
-   before proceeding (don't auto-repair — flag it).
+   before proceeding (don't auto-repair: flag it).
 3. **Render preview.** Echo the qid, the question, the proposed answer (if any), the
    user's answer, and which slice unblocks. Stop here and ask `confirm? (y/N)` **unless**
    the answer was provided non-interactively via `--batch`.
@@ -85,17 +85,17 @@ Pull these via `Read` when shaping the resolve:
    recommend `/rite-plan repair`. Otherwise → recommend the slice's natural next action
    (typically `/rite-build` for the slice that was awaiting).
    **Completion:** the resolved state contains exactly one next command.
-6. **STOP.** This skill does not run `/rite-build` itself — the user re-enters the
+6. **STOP.** This skill does not run `/rite-build` itself: the user re-enters the
    workflow explicitly.
 
 > **Mid-flight discipline.** Don't edit `spec.md` / `plan.md` to "incorporate" the
-> answer — that's `/rite-plan repair`. Don't silently retry a build after the answer
-> lands — the user types the next command. Don't merge two open questions into one
-> answered entry — each question is independently auditable.
+> answer. That's `/rite-plan repair`. Don't silently retry a build after the answer
+> lands: the user types the next command. Don't merge two open questions into one
+> answered entry: each question is independently auditable.
 
 ## Output
 
-**Progress first** — run `devrites-engine progress`, then use the shared completion reply contract
+**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
 ([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 Default success shape:
 ```

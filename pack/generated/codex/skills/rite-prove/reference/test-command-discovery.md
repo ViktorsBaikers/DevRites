@@ -12,7 +12,7 @@ these sources, in roughly this order of authority:
 | `pyproject.toml` / `tox.ini` / `noxfile.py` | `pytest`, `tox`, `nox` |
 | `go.mod` | `go test ./...`, `go build ./...`, `go vet` |
 | `Cargo.toml` | `cargo test`, `cargo build`, `cargo clippy` |
-| CI configs (`.github/workflows`, `.gitlab-ci.yml`, `circleci`) | the exact commands CI runs — the source of truth for "green" |
+| CI configs (`.github/workflows`, `.gitlab-ci.yml`, `circleci`) | the exact commands CI runs: the source of truth for "green" |
 | README / CONTRIBUTING | documented dev/test workflow |
 | framework conventions | Rails/Django/Next/etc. defaults when nothing else is set |
 

@@ -30,7 +30,7 @@ func Lanes(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	tasks, ok := readFileOK(filepath.Join(featureDir(root, slug), "tasks.md"))
 	if !ok {
-		fmt.Fprintf(stdout, "lanes: no tasks.md for %s — no parallel write lanes.\n", slug)
+		fmt.Fprintf(stdout, "lanes: no tasks.md for %s: no parallel write lanes.\n", slug)
 		return 0
 	}
 	slices := parseLaneSlices(tasks)
@@ -62,7 +62,7 @@ func Lanes(root string, args []string, stdout, stderr io.Writer) int {
 		if len(s.paths) > 0 {
 			conflict = strings.Join(s.paths, ", ")
 		}
-		fmt.Fprintf(stdout, "- %s: %s — %s\n", s.name, kind, conflict)
+		fmt.Fprintf(stdout, "- %s: %s: %s\n", s.name, kind, conflict)
 	}
 	return 0
 }

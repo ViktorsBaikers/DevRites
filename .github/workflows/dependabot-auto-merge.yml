@@ -4,7 +4,7 @@ name: dependabot-auto-merge
 # patch + minor. Major version bumps, including security updates, stay open
 # for a human to review.
 #
-# Note: GitHub does not allow bypassing pull requests entirely — Dependabot
+# Note: GitHub does not allow bypassing pull requests entirely: Dependabot
 # always opens one. This workflow gets as close to "straight to main" as
 # possible: PR is opened, CI runs, workflow approves + enables auto-merge,
 # GitHub merges it the instant required checks are green.
@@ -48,5 +48,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          gh pr comment "$PR_URL" --body "Major version bump — auto-merge skipped. A human needs to review the changelog before merging."
+          gh pr comment "$PR_URL" --body "Major version bump: auto-merge skipped. A human needs to review the changelog before merging."
           gh pr edit "$PR_URL" --add-label "needs-review"

@@ -17,13 +17,13 @@ import (
 // deterministic zero-token counterpart to spec-validate, but for DevRites' OWN
 // config rather than a user's spec. Two checks:
 //
-//  1. Structural — every settings.json / generated hooks.json parses, and each hook
+//  1. Structural: every settings.json / generated hooks.json parses, and each hook
 //     entry is a well-formed {type:"command", command:"…"} (mirrors
 //     schemas/hooks.schema.json, hand-checked to keep the engine dependency-free).
-//  2. Referential — every `devrites-engine hook <id>` in any JSON file names a
-//     hook the binary actually dispatches. A typo'd id (`hook stopgate`) would
+//  2. Referential: every `devrites-engine hook <id>` in any JSON file names a
+//     hook the binary dispatches. A typo'd id (`hook stopgate`) would
 //     otherwise no-op forever; this is the highest-value catch.
-//  3. Markdown contracts (see validatepackskills.go) — SKILL.md / agent
+//  3. Markdown contracts (see validatepackskills.go): SKILL.md / agent
 //     frontmatter is well-formed and the naming invariant holds, and every
 //     docs/command-map.md link into the pack resolves on disk.
 //
@@ -81,7 +81,7 @@ func cmdValidatePack(args []string, stdout, stderr io.Writer) int {
 		// Referential: every wired hook id must be one the binary dispatches.
 		for _, id := range hookIDsInCommands(data) {
 			if _, ok := hookRegistry[id]; !ok {
-				issues = append(issues, fmt.Sprintf("%s: unknown hook id %q — not a command the engine dispatches", rel, id))
+				issues = append(issues, fmt.Sprintf("%s: unknown hook id %q: not a command the engine dispatches", rel, id))
 			}
 		}
 		// Structural: only files that carry a `hooks` object in the .claude shape.

@@ -1,6 +1,6 @@
 {
   "skill": "rite-resolve",
-  "description": "Explicit-only evals for /rite-resolve — answer, drop, or batch-resolve open questions.md gates.",
+  "description": "Explicit-only evals for /rite-resolve: answer, drop, or batch-resolve open questions.md gates.",
   "queries": [
     {
       "text": "/rite-resolve q-2026-05-28-001 \"use UUIDv7\"",

@@ -1,7 +1,7 @@
-# rite-ship — anti-patterns
+# rite-ship: anti-patterns
 
-Load this before any irreversible action — `git commit`, `push`, `tag`, publish, deploy
-— or when tempted to skip the close-out.
+Load this before any irreversible action: `git commit`, `push`, `tag`, publish, deploy,
+or when tempted to skip the close-out.
 
 Pack-wide rationalizations + red flags: see
 [standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
@@ -11,9 +11,9 @@ Pack-wide rationalizations + red flags: see
 | Excuse | Rebuttal |
 |---|---|
 | "Seal said GO, so I can just push." | A GO verdict is a decision, not authorization. **Render the type-GO prompt every time** and wait for the literal `GO`. |
-| "I'll push the tag now; type-GO is a formality." | Type-GO is the last safety net before an irreversible action. Always render it — even under auto-trigger. |
+| "I'll push the tag now; type-GO is a formality." | Type-GO is the last safety net before an irreversible action. Always render it: even under auto-trigger. |
 | "`git add -A` is faster than listing touched files." | Stage only what's in `touched-files.md`. `-A` sweeps secrets, scratch files, and out-of-scope edits into the ship. |
-| "The evidence is probably still good." | If any touched file changed after `evidence.md`, the proof is stale — stop and re-prove. Ship on fresh evidence only. |
+| "The evidence is probably still good." | If any touched file changed after `evidence.md`, the proof is stale: stop and re-prove. Ship on fresh evidence only. |
 | "Delete the workspace, the feature's done." | Closing **archives** the workspace (`.devrites/archive/<slug>/`); it never deletes the audit trail. |
 
 ## Red Flags

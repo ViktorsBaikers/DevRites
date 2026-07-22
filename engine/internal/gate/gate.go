@@ -2,7 +2,7 @@
 //
 // Enforcement is phase-relative, gate-scoped, and transition-fired: a gate
 // checks only the sections required to make its transition, and only when it is
-// run — never on every tool call. A block is a HITL pause (a structured
+// run: never on every tool call. A block is a HITL pause (a structured
 // "missing X" the human resolves and retries), never a crash. Judgment gates
 // stay advisory; these deterministic gates are the ones allowed to block.
 package gate
@@ -23,10 +23,10 @@ type Kind string
 
 const (
 	// Readiness checks the sections required to LEAVE the feature's current
-	// phase — the gate fired when advancing to the next phase.
+	// phase: the gate fired when advancing to the next phase.
 	Readiness Kind = "readiness"
 	// Seal checks the full seal-phase requirement set regardless of the
-	// feature's current phase — the final completeness gate before shipping.
+	// feature's current phase: the final completeness gate before shipping.
 	Seal Kind = "seal"
 )
 
@@ -44,7 +44,7 @@ type Result struct {
 // Check runs a gate against feature <slug> under root, reading the files
 // directly (the files are always the source of truth, so a gate never trusts a
 // possibly-stale cache). It returns an error only for a genuinely broken request
-// (unknown slug, unreadable state) — a legitimately incomplete feature is a
+// (unknown slug, unreadable state): a legitimately incomplete feature is a
 // Result with Blocked set, not an error.
 func Check(kind Kind, root, slug string) (*Result, error) {
 	f, err := state.LoadFeature(root, slug)
@@ -68,7 +68,7 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 
 // Render produces the deterministic, greppable gate output (with a trailing
 // newline). A block names exactly the missing sections and the resolve step, so
-// a human — or an AFK agent — knows precisely what to fix.
+// a human (or an AFK agent) knows precisely what to fix.
 func (r *Result) Render() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "gate: %s\n", r.Kind)
@@ -92,10 +92,10 @@ func (r *Result) Render() string {
 // StopGate evaluates the stop-hook rest-point invariant for the active feature:
 // a feature that CLAIMS completion (it has advanced to seal, ship, or done)
 // must not have an empty proof section. This is a rest-point check, NOT
-// whole-feature completeness — normal in-progress incompleteness never trips it,
+// whole-feature completeness: normal in-progress incompleteness never trips it,
 // so a mid-build turn is never blocked.
 //
-// It returns a zero StopResult (Blocked false) — silent, no block — when there
+// It returns a zero StopResult (Blocked false) (silent, no block) when there
 // is no active feature or the workspace can't be read, keeping the stop hook
 // fail-open.
 func StopGate(root string) (StopResult, error) {
@@ -108,7 +108,7 @@ func StopGate(root string) (StopResult, error) {
 		return StopResult{}, nil // fail-open: a broken workspace never wedges Stop
 	}
 	// Fail-on-red: the redwatch hook marks a known-red suite by writing .red. A turn
-	// must not rest while it is set — evidence over confidence. This is a rest-point
+	// must not rest while it is set: evidence over confidence. This is a rest-point
 	// invariant (a concrete, provable inconsistency), not whole-feature completeness.
 	featureDir := devritespaths.FeatureDir(root, slug)
 	if _, statErr := os.Stat(filepath.Join(featureDir, ".red")); statErr == nil {
@@ -116,7 +116,7 @@ func StopGate(root string) (StopResult, error) {
 			Slug:    slug,
 			Blocked: true,
 			Reason: fmt.Sprintf(
-				"feature %q has tests/build RED (.red is set) — fix to green, or record the failure and next step, before stopping",
+				"feature %q has tests/build RED (.red is set): fix to green, or record the failure and next step, before stopping",
 				slug),
 		}, nil
 	}
@@ -125,7 +125,7 @@ func StopGate(root string) (StopResult, error) {
 			Slug:    slug,
 			Blocked: true,
 			Reason: fmt.Sprintf(
-				"feature %q has open %s human question(s) in questions.md but state.md is not awaiting_human — surface the gate before stopping",
+				"feature %q has open %s human question(s) in questions.md but state.md is not awaiting_human: surface the gate before stopping",
 				slug, strings.Join(gates, "/")),
 		}, nil
 	}
@@ -135,7 +135,7 @@ func StopGate(root string) (StopResult, error) {
 			Slug:    slug,
 			Blocked: true,
 			Reason: fmt.Sprintf(
-				"feature %q is at phase %q but proof.md is empty — record acceptance evidence, or move the phase back, before stopping",
+				"feature %q is at phase %q but proof.md is empty: record acceptance evidence, or move the phase back, before stopping",
 				slug, f.Phase),
 		}, nil
 	}
