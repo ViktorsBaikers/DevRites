@@ -2,6 +2,21 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.0.6](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.5...v3.0.6) (2026-07-22)
+
+### Fixed
+
+* **ci:** reject invalid workflow names ([8535414](https://github.com/ViktorsBaikers/DevRites/commit/853541455fcc79e28ca4d7044024da219683d700))
+* **devrites:** align compliance matrix wording ([0bb1f28](https://github.com/ViktorsBaikers/DevRites/commit/0bb1f287c1ae2874a73669c1c35b081083f389af))
+* **devrites:** isolate reconcile snapshot objects ([c02b1f1](https://github.com/ViktorsBaikers/DevRites/commit/c02b1f19a4717454f9e0194bf015fcc170dd37fc))
+* **docs:** repair rite-ship standard link ([49db43c](https://github.com/ViktorsBaikers/DevRites/commit/49db43cdd6b42f15c7a7aaec3c47bcf7e9ceaa8d))
+
+### Documentation
+
+* **repo:** humanize repository documentation ([a5de735](https://github.com/ViktorsBaikers/DevRites/commit/a5de735db9cd3958a544df9802c6d1c7981470e8))
+* **repo:** refresh README banner ([45b48c9](https://github.com/ViktorsBaikers/DevRites/commit/45b48c92f181e7c37b616993c2a98606b8984ee1))
+* **repo:** streamline README guide ([932588f](https://github.com/ViktorsBaikers/DevRites/commit/932588f3fd1749d81e358f2be96873e59bdac8c1))
+
 ## [3.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.4...v3.0.5) (2026-07-21)
 
 ### Fixed
