@@ -1,7 +1,7 @@
 # `.devrites/` state schema (v1)
 
 The `devrites-engine` binary reads a project's workflow state from plain files under
-`.devrites/`. Those files are the source of truth and are hand-editable — a
+`.devrites/`. Those files are the source of truth and are hand-editable. A
 human edit always wins.
 
 `schemaVersion: 1`.
@@ -15,7 +15,7 @@ phase-required section matrix, see [`workspace-schema.md`](workspace-schema.md).
 .devrites/
   work/
     <slug>/
-      README.md       workspace map — phase, status, next action, read-next
+      README.md       workspace map: phase, status, next action, read-next
       brief.md        objective, non-goals, success definition
       spec.md         product WHAT/WHY, requirements, acceptance, boundaries
       architecture.md feature technical map
@@ -28,24 +28,24 @@ phase-required section matrix, see [`workspace-schema.md`](workspace-schema.md).
       state.md        compact cursor
       evidence.md     EVID-### command/action proof
       touched-files.md implementation file map
-  specs/              capability ledger — the living "what the system does now"
+  specs/              capability ledger: the living "what the system does now"
     <capability>/
       spec.md         proven Requirement blocks for this capability
 ```
 
-Each feature is a directory of **small single-concern files**. Splitting the
-work this way (rather than one long document) keeps every file context-cheap and
-makes completeness self-evident: an empty or missing section is visibly empty.
+Each feature is a directory of small files with one concern apiece. This keeps
+the context for each file small and makes missing content easy to spot.
 
-### Capability ledger — `specs/`
+### Capability ledger: `specs/`
 
 `work/<slug>/` is **ephemeral** (archived on ship); `specs/` is **durable**. It is
 the cumulative record of proven behavior, one `spec.md` per capability, so a new
 feature starts from the system's current contract instead of re-deriving it from
-code. A feature's spec carries deltas (`## ADDED/MODIFIED/REMOVED Requirements —
-capability: <c>`); on ship, `devrites-engine ledger sync` folds them in — ADDED
-appends, MODIFIED replaces by header identity, REMOVED deletes. Living outside
-`work/`, the ledger survives close-out's archival — and unlike the rest of
+code. A feature's spec groups deltas under `ADDED`, `MODIFIED`, or `REMOVED`
+Requirements headings tagged with `capability: <c>`. On ship,
+`devrites-engine ledger sync` folds them in: ADDED appends, MODIFIED replaces by
+header identity, and REMOVED deletes. Because it lives outside `work/`, the
+ledger survives close-out archival. Unlike the rest of
 `.devrites/`, it is **git-tracked** (`.devrites/*` + `!.devrites/specs/`), so the
 proven contract is shared, not per-clone. Grammar and delta rules:
 [`spec-grammar.md`](../../pack/.claude/skills/devrites-lib/reference/standards/spec-grammar.md).
@@ -80,10 +80,10 @@ The legacy engine completeness sections, in canonical order:
 A section is **present** (has real content) when its `<section>.md` file exists
 and, after removing any leading YAML frontmatter, ATX (`#`) headings, and
 whitespace, some content remains. A stub that is only a heading counts as
-**empty** — scaffolding a file never fakes completeness.
+**empty**. Scaffolding a file never fakes completeness.
 
 The 2026 Markdown workspace schema is stricter and lives in
-[`workspace-schema.md`](workspace-schema.md): it validates required phase-owned
+[`workspace-schema.md`](workspace-schema.md). It validates required phase-owned
 artifacts, stable IDs (`AC-###`, `SLICE-###`, `EVID-###`), traceability, evidence,
 compactness budgets, Mermaid fences, and stale local links.
 
@@ -126,7 +126,7 @@ result: incomplete (missing: tasks)
 ```
 
 - Found feature → exit `0`, whether complete or incomplete (`status` reports, it
-  does not gate — gating is issue 04).
+  does not gate; gating is issue 04).
 - Unknown or missing slug → non-zero exit with a clear message on stderr.
 
 `status` makes no model or network calls; it is a pure read of the files under
@@ -137,6 +137,6 @@ install/update/source-cache I/O is isolated under `engine/internal/iohooks` as
 defined by ADR-0008.
 
 `.devrites/` is ignored **except** the capability ledger at `specs/`, which is
-committed shared truth — the recommended pattern is `.devrites/*` +
+committed shared truth. The recommended pattern is `.devrites/*` +
 `!.devrites/specs/` (so `work/`, `archive/`, and `ACTIVE` stay per-clone runtime
 state while `specs/` is tracked).

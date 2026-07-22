@@ -1,7 +1,7 @@
 # Contributing to DevRites
 
-Thanks for your interest in DevRites. Contributions — bug reports, fixes, new
-skills, docs improvements, eval queries — are very welcome.
+DevRites welcomes bug reports, fixes, new skills, documentation improvements,
+and eval queries.
 
 This guide covers how to file an issue, set up a local dev environment, author a
 change that passes CI, and open a pull request that's easy to review.
@@ -44,8 +44,8 @@ other proposed material), you agree that:
    perpetual, worldwide, royalty-free license to use, modify, and redistribute
    it under the DevRites License.
 
-No separate CLA signature is required — opening a PR constitutes acceptance
-of the above.
+You do not need to sign a separate CLA. Opening a PR constitutes acceptance of
+the terms above.
 
 ## Ways to contribute
 
@@ -93,8 +93,8 @@ npm run audit          # known dependency vulnerabilities (moderate+ blocks)
 npm test               # install + uninstall smoke + fixture install + pack validation
 ```
 
-You don't need Claude Code installed to develop most changes — the validators
-and tests run as plain shell scripts.
+You do not need Claude Code for most development work. The validators and tests
+run as plain shell scripts.
 
 To try your changes inside a real project:
 
@@ -106,15 +106,16 @@ To try your changes inside a real project:
 
 ## Project layout (what lives where)
 
-A quick map — the [README "Layout" section](README.md#layout) has the full version.
+This is the short map. The [README layout section](README.md#layout) has the
+full version.
 
-- `pack/.claude/skills/` — canonical public rites, internal specialists, and the `devrites-lib` reference library.
-- `pack/.claude/agents/` — fresh-context reviewers plus the write-capable `devrites-slice-wright`.
-- `pack/.claude/skills/devrites-lib/reference/standards/` — shared engineering rules loaded by the workflows that need them.
-- `evals/` — routing corpora, `golden/` fixtures for the deterministic outcome grader, and `behavioral/` discipline-under-pressure scenarios for gating rites.
-- `scripts/` — install lib, validators, eval runner, the outcome grader (`grade-feature.sh` / `run-outcome-evals.sh`), release tooling.
-- `docs/` — architecture, skills, command map, flow diagrams, usage, release, CLI.
-- `tests/` — auto-discovered shell suite covering install/update/uninstall, runtime behavior, pack validation, and release invariants.
+- `pack/.claude/skills/`: canonical public rites, internal specialists, and the `devrites-lib` reference library.
+- `pack/.claude/agents/`: fresh-context reviewers plus the write-capable `devrites-slice-wright`.
+- `pack/.claude/skills/devrites-lib/reference/standards/`: shared engineering rules loaded by the workflows that need them.
+- `evals/`: routing corpora, `golden/` fixtures for the deterministic outcome grader, and `behavioral/` discipline-under-pressure scenarios for gating rites.
+- `scripts/`: install lib, validators, eval runner, the outcome grader (`grade-feature.sh` / `run-outcome-evals.sh`), release tooling.
+- `docs/`: architecture, skills, command map, flow diagrams, usage, release, CLI.
+- `tests/`: auto-discovered shell suite covering install/update/uninstall, runtime behavior, pack validation, and release invariants.
 
 ## Authoring guidelines
 
@@ -125,19 +126,19 @@ Every skill **must** have:
 - YAML frontmatter with `name`, `description`, and `user-invocable` (true/false).
   Model-invoked descriptions carry *Use when* / *Not for* triggers; explicit-only
   descriptions are human summaries. Optional: `argument-hint`, `disable-model-invocation`.
-- A short body — operating rules, anti-rationalization tables where useful,
+- A short body: operating rules, anti-rationalization tables where useful,
   red flags. **Body discipline:** if it doesn't change the model's behavior
   for this phase, it doesn't belong in the body.
-- A **failure-mode section** — a `## Gotchas` (or an equivalent `Hard rules` /
+- A **failure-mode section**: a `## Gotchas` (or an equivalent `Hard rules` /
   `NEVER` / `Mid-flight discipline` pointer). Convention: [`docs/skills.md`](docs/skills.md).
 - A matching eval file under `evals/`: model-invoked skills need implicit positive and
   negative queries; explicit-only public skills need direct-command positives plus an
   implicit-invocation negative boundary. Corpus size follows the distinct routing branches;
   it is not padded to a fixed query count. `devrites-lib` is exempt.
-- For a **gating** skill (one whose job is to hold a line — prove, build, seal, vet,
+- For a **gating** skill (one whose job is to hold a line: prove, build, seal, vet,
   peers): a behavioral eval under `evals/behavioral/<skill>.json` that pressure-tests
   whether the discipline resists the rationalizations in its `anti-patterns.md`. Opt-in
-  and progressive — not required of every skill; see [`evals/behavioral/README.md`](evals/behavioral/README.md).
+  and progressive: not required of every skill; see [`evals/behavioral/README.md`](evals/behavioral/README.md).
 
 Run `python3 scripts/validate-frontmatter.py <files>` (or `npm run validate`) and
 `scripts/validate.sh` before pushing.
@@ -145,7 +146,7 @@ Run `python3 scripts/validate-frontmatter.py <files>` (or `npm run validate`) an
 ### Review agents (`pack/.claude/agents/<name>.md`)
 
 - Read-only. No edits, no commits, no network.
-- Take a workspace path + diff. **Never the author's reasoning** — that's
+- Take a workspace path + diff. **Never the author's reasoning**: that's
   the point of fresh-context review.
 - Emit severity-labeled findings: Critical / Important / Suggestion / Nit / FYI.
 - One file per agent; keep them focused (Spec vs Standards vs Test vs …).
@@ -153,13 +154,13 @@ Run `python3 scripts/validate-frontmatter.py <files>` (or `npm run validate`) an
 ### Engineering rules (`pack/.claude/skills/devrites-lib/reference/standards/<rule>.md`)
 
 - Stack-agnostic. No language-specific assumptions.
-- "Project conventions always win" — these are defaults, not laws.
+- "Project conventions always win": these are defaults, not laws.
 - Add to `pack/.claude/skills/devrites-lib/reference/standards/README.md` index when you add a file.
 
 ## Commit message format (strict)
 
 DevRites enforces Conventional Commits via husky + commitlint. Non-conforming
-messages are rejected at commit time — there is no bypass.
+messages are rejected at commit time. There is no bypass.
 
 **Format:** `type(scope): subject`
 
@@ -168,7 +169,7 @@ messages are rejected at commit time — there is no bypass.
 - **scope** (required, lower-case): one of
   `skills | rite | devrites | agents | rules | installer | uninstall | scripts | docs | tests | deps | release | repo | ci`
 - **subject:** imperative mood, no leading capital, no trailing period.
-- **Header length:** 12–72 chars total.
+- **Header length:** 12 to 72 chars total.
 - **Body:** blank line after header; lines ≤ 100 chars.
 
 **Valid examples:**
@@ -199,8 +200,8 @@ Full policy: [`commitlint.config.js`](commitlint.config.js).
    - A description covering: *what* changed, *why*, how it was verified, and
      any follow-ups intentionally left out.
    - Linked issue (`Closes #N`) where applicable.
-6. **Address review feedback** with new commits — don't force-push during
-   review. The maintainer will squash on merge.
+6. **Address review feedback** with new commits. Do not force-push during
+   review; the maintainer will squash on merge.
 7. **CI must be green** before merge. CI runs `scripts/validate.sh`,
    install/uninstall smoke, fixture install, commitlint, and the eval suite.
 
@@ -247,11 +248,9 @@ disclosure channels documented in [`SECURITY.md`](SECURITY.md):
 
 - **Questions about the workflow / skills:** open a GitHub Discussion.
 - **Confused about where a change belongs:** open a draft issue.
-- **Found a typo or broken link:** open a small PR directly — those are easy
-  wins.
+- **Found a typo or broken link:** open a small PR directly.
 
-Thanks again for contributing. Every well-scoped issue, sharp PR, and
-thoughtful eval query makes DevRites better.
+Small, well-scoped changes are easier to review and merge.
 
 
 ## Skill and agent contribution preflight

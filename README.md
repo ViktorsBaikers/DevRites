@@ -3,82 +3,84 @@
 </p>
 
 
-**If you only remember one thing:** `SPEC -> DEFINE -> VET -> BUILD -> PROVE -> POLISH -> REVIEW -> SEAL -> SHIP`. Seal decides; Ship mutates git. Build one slice at a time; Autocomplete is opt-in and starts from a clean baseline. DevRites installs via `npx devrites ...`; Claude/Codex support is generated project-local surface, not plugin distribution.
+DevRites gives Claude Code and Codex a repeatable way to plan, build, prove,
+and ship a feature. The workflow lives in your repository, so another agent can
+resume the work without relying on chat history.
 
-**Per-feature workspace on disk.** Every feature gets its own `.devrites/work/<slug>/`
-directory: a compact workspace map → `brief.md` + `spec.md` → (`strategy.md`) →
-`architecture.md` + `plan.md` + `tasks.md` + `traceability.md` → (`eng-review.md` +
-`test-plan.md`) → `state.md` → `evidence.md` (plus `decisions.md`, `assumptions.md`,
-`drift.md`, `questions.md`, `touched-files.md`, `design-brief.md`,
-`browser-evidence.md`, `review.md`, `seal.md`, `ship.md`, `handoff.md`, and
-`references/`; `strategy.md` is from the optional `/rite-temper`, `eng-review.md` +
-`test-plan.md` from `/rite-vet`). When the task ships it is archived intact to
-`.devrites/archive/<slug>/`. When you `/clear`, the next agent picks up from those
-files — no chat-context summary required. **Spec Drift Guard** catches the wrong turn
-before it costs you a day. **AFK mode** runs unattended without silently accepting
-destructive migrations, auth changes, or red tests. **`type-GO`** demands a literal
-typed confirmation before any irreversible commit / push / tag. **Project principles**
-(`.devrites/principles.md`) — the invariants you declare once ("money in integer cents",
-"no PII in logs", "never break the v1 API") — then gate every plan, build, and seal, with a
-recorded-exception escape hatch instead of silent work-arounds.
+If you remember one sequence, use this one:
+`SPEC -> DEFINE -> VET -> BUILD -> PROVE -> POLISH -> REVIEW -> SEAL -> SHIP`.
+Seal makes the release decision. Ship changes git. Build handles one slice at a
+time, while Autocomplete is an opt-in loop that starts from a clean baseline.
+
+Each feature gets its own `.devrites/work/<slug>/` directory. It contains a
+workspace map, the brief and spec, the plan and slices, the current state, and
+the evidence collected along the way. Optional files record strategy, design,
+reviews, decisions, assumptions, drift, questions, and handoff context. When the
+task ships, DevRites moves the directory intact to `.devrites/archive/<slug>/`.
+
+The Spec Drift Guard stops a build when implementation no longer matches the
+plan. AFK mode can run unattended, but it still pauses for destructive
+migrations, auth changes, public API breaks, and failed checks. Before Ship can
+commit, push, or tag, you must type `GO`. Project principles in
+`.devrites/principles.md` apply your standing rules to every plan, build, and
+seal. Recorded exceptions remain possible when a feature genuinely needs one.
 
 ```
 .devrites/
   ACTIVE                    # which feature is active
   AFK                       # presence = AFK mode; YAML body sets max_slices / notify / allow_gates
-  principles.md             # project invariants — authored, prescriptive, GATING (the 4th knowledge layer)
-  conventions.md            # learned project idioms — descriptive, an untrusted prior
-  learnings.md              # dismissed-finding classes + dead ends — suppresses recurring false positives
+  principles.md             # project invariants: authored, prescriptive, GATING (the 4th knowledge layer)
+  conventions.md            # learned project idioms: descriptive, an untrusted prior
+  learnings.md              # dismissed-finding classes + dead ends: suppresses recurring false positives
   work/<slug>/
     README.md  brief.md  spec.md  references.md  references/  # workspace map + spec
     strategy.md                                          # temper (optional)
     architecture.md  flows.md  plan.md  tasks.md  traceability.md  # define
     eng-review.md  test-plan.md                          # vet
-    forge-report.md                                      # build (only a Forge: yes slice — competed candidates → winner)
+    forge-report.md                                      # build (Forge candidates → winner)
     state.md  questions.md  decisions.md  assumptions.md  drift.md
     touched-files.md  evidence.md  browser-evidence.md  design-brief.md
     polish-report.md  review.md  seal.md  ship.md  handoff.md
   archive/<slug>/             # shipped task, moved here intact (all .md preserved)
 ```
 
-**Stop your AI from shipping half-baked code.** DevRites turns Claude Code or Codex into a
-disciplined senior engineer — one that asks the right questions before writing a line,
-ships features you can actually trust, and refuses to claim "done" without proof.
+DevRites makes the agent ask questions before it writes code and requires proof
+before it calls the feature complete.
 
 **Two run modes, same workflow:**
 
-- **HITL** (default, human-in-the-loop) — you're at the keyboard. Slices marked
+- **HITL** (default, human-in-the-loop): you're at the keyboard. Slices marked
   `Mode: HITL` pause **before** code is written at a typed checkpoint (`advisory` /
   `validating` / `blocking` / `escalating`); resume on
   [`/rite-resolve <qid> "<answer>"`](pack/.claude/skills/rite-resolve/SKILL.md).
-- **AFK** (away-from-keyboard) — drop `.devrites/AFK` in the project. AFK slices run
+- **AFK** (away-from-keyboard): drop `.devrites/AFK` in the project. AFK slices run
   unattended; discretionary pauses downgrade to advisory entries in `questions.md` so
   the loop keeps moving. **Destructive migrations, auth/authz changes, public-API
-  breaks, and red tests/types/lint always pause regardless** — AFK never silently
-  accepts irreversible risk. Optional `max_slices` caps the loop; optional `notify:`
+  breaks, and red tests/types/lint always pause regardless**. AFK does not
+  accept irreversible risk on its own. Optional `max_slices` caps the loop; optional `notify:`
   pings your phone on a pause.
 
-Jump to the full contract → [Modes — HITL & AFK](#modes--hitl--afk).
+See [Run modes](#run-modes) for the full contract.
 
 Every phase is available **two ways**: the menu form `/rite <verb>` (one entry,
 discoverable from `/rite`) and the direct shortcut `/rite-<verb>` (muscle
-memory). Both hit the same skill — `/rite spec foo` ≡ `/rite-spec foo`.
+memory). Both hit the same skill: `/rite spec foo` ≡ `/rite-spec foo`.
 
 | # | Phase | Menu form | Direct shortcut | Does |
 |---|---|---|---|---|
 | 1 | SPEC | `/rite spec` | [`/rite-spec`](pack/.claude/skills/rite-spec/SKILL.md) | investigate + write spec.md |
-| — | TEMPER | `/rite temper` | [`/rite-temper`](pack/.claude/skills/rite-temper/SKILL.md) | _optional, big features_ — strategic review: scope mode + pre-mortem, hardens the spec (always run by autocomplete) |
+| optional | TEMPER | `/rite temper` | [`/rite-temper`](pack/.claude/skills/rite-temper/SKILL.md) | strategic review for larger features; covers scope and pre-mortem, then updates the spec (always run by autocomplete) |
 | 2 | PLAN | `/rite define` | [`/rite-define`](pack/.claude/skills/rite-define/SKILL.md) | spec → plan + slices (each tagged AFK \| HITL + gate) |
-| — | VET | `/rite vet` | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | _mandatory, every plan_ — engineering review: scope · architecture · tests · perf, hardens the plan + writes `test-plan.md`; depth scales from light to full |
+| required | VET | `/rite vet` | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | engineering review of scope, architecture, tests, and performance; updates the plan and writes `test-plan.md` |
 | 3 | BUILD ×N | `/rite build` | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | one slice, then stop (HITL slices pause pre-code) |
-| — | CONVERGE | `/rite converge` | [`/rite-converge`](pack/.claude/skills/rite-converge/SKILL.md) | _recovery_ — assess live code vs intent, append the remaining work as new slices (resumed / adopted / stalled feature) |
+| recovery | CONVERGE | `/rite converge` | [`/rite-converge`](pack/.claude/skills/rite-converge/SKILL.md) | compare live code with the feature intent and append the remaining work as new slices |
 | 4 | PROVE | `/rite prove` | [`/rite-prove`](pack/.claude/skills/rite-prove/SKILL.md) | tests + browser proof |
 | 5 | POLISH | `/rite polish` | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | code + UI polish |
 | 6 | REVIEW | `/rite review` | [`/rite-review`](pack/.claude/skills/rite-review/SKILL.md) | multi-axis, parallel |
 | 7 | SEAL | `/rite seal` | [`/rite-seal`](pack/.claude/skills/rite-seal/SKILL.md) | GO / NO-GO decision (no git) |
 | 8 | SHIP | `/rite ship` | [`/rite-ship`](pack/.claude/skills/rite-ship/SKILL.md) | type-GO + commit/push/tag, then archive + close |
-| — | RESUME | `/rite resolve` | [`/rite-resolve`](pack/.claude/skills/rite-resolve/SKILL.md) | answer a HITL gate, clears `Awaiting human`, resumes |
-| — | AUTO | `/rite autocomplete` | [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md) | run the whole lifecycle unattended (`--ship` to push) |
+| resume | RESUME | `/rite resolve` | [`/rite-resolve`](pack/.claude/skills/rite-resolve/SKILL.md) | answer a HITL gate, clear `Awaiting human`, and resume |
+| automatic | AUTO | `/rite autocomplete` | [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md) | run the whole lifecycle unattended (`--ship` allows a push) |
 
 Common utilities that sit outside the main lifecycle:
 
@@ -115,15 +117,16 @@ Full diagram set (lifecycle, polish orchestrator, review fan-out, debug loop,
 rules carrier, workspace state, namespace map) →
 [`docs/flow.md`](docs/flow.md).
 
-**Status:** [`v3.0.5`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v3.0.5) — see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+Current release: [`v3.0.5`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v3.0.5).
+See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
 ## Contents
 
 - [Why distributed skills](#why-distributed-skills-not-one-engine)
-- [Modes — HITL & AFK](#modes--hitl--afk)
-- [Install](#install) — [npx / bash](#installing) · [upgrade](#upgrading-an-existing-install)
-- [Recommended setup](#recommended-setup-optional-but-devrites-is-much-sharper-with-it) — codegraph · graphify · Playwright MCP
-- [Skills](#skills) — 42 total · full catalogue in [`docs/skills.md`](docs/skills.md)
+- [Run modes](#run-modes)
+- [Install](#install): [npx / bash](#installing) · [upgrade](#upgrading-an-existing-install)
+- [Recommended setup](#recommended-setup): codegraph · graphify · Playwright MCP
+- [Skills](#skills): 42 total · full catalogue in [`docs/skills.md`](docs/skills.md)
 - [Typical workflow](#typical-workflow) · [Worked examples](docs/usage.md)
 - [Engineering rules](#engineering-rules) · [Browser proof ladder](#browser-proof-ladder) · [Frontend & fullstack](#frontend--fullstack)
 - [Safety & scope](#safety--scope) · [Security model](#security-model)
@@ -141,15 +144,15 @@ rules carrier, workspace state, namespace map) →
 
 ## Why distributed skills, not one `/engine`
 
-A single command that does everything loads every phase's instructions at once, creates
-constant context pressure, and hides the intent of each step. DevRites splits the
-lifecycle into 21 small public skills (`rite-*`) that each own one phase and load only
-what that phase needs — including [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md),
-the unattended orchestrator that drives the full cycle end-to-end — plus internal
-specialists (`devrites-*`) that fire on triggers.
+A single command would load every phase's instructions at once and make each
+step harder to inspect. DevRites instead splits the lifecycle across small
+`rite-*` skills. Each skill loads only the guidance its phase needs.
+[`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md) coordinates
+the full unattended loop, and `devrites-*` specialists load only when a matching
+task calls for them.
 
 **Naming:** the `devrites-` prefix is a **namespace** for collision avoidance against
-bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`, …) —
+bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`, and others).
 it does not signal "internal." Visibility is governed by each skill's
 `user-invocable:` flag, while `disable-model-invocation` independently controls
 automatic loading. See
@@ -159,7 +162,7 @@ Full rationale: [`docs/architecture.md`](docs/architecture.md).
 
 ## Install
 
-DevRites installs its host artifacts **into a project** — it never writes skills,
+DevRites installs host artifacts into the project. It never writes skills,
 agents, or hooks to `~/.claude` or `~/.codex`. Install with `npx` (recommended)
 or the `curl | bash` bootstrap. Both delegate to the same engine-owned install
 semantics and ship Claude Code/Codex skills, agents, standards, hooks, and aliases;
@@ -167,7 +170,7 @@ the optional shared engine binary is the only global artifact.
 
 ### Installing
 
-**Fastest — `npx` (Node 18+):**
+With Node 18 or later, use `npx`:
 
 ```bash
 # Install the full pack into the current project
@@ -191,7 +194,7 @@ stay in the target project; unless `--no-binary` is set, the installer may also
 place the shared engine binary in the configured user/system bin directory.
 Prebuilt binaries ship for macOS arm64/amd64, Linux arm64/amd64, and Windows amd64.
 
-**One-liner over the network** — no `git clone` or Node required:
+Without Node or a local clone, use the Bash bootstrap:
 
 ```bash
 # Install latest release into the current directory
@@ -241,9 +244,9 @@ Common flags:
 
 Every installed project file is recorded in `.claude/devrites.manifest` (with the
 installed version and the original install flags in the header). `./uninstall.sh`
-removes exactly those files (and prunes empty dirs) plus the shared `devrites-engine`
-binary unless `--keep-binary` is passed — your feature data in `.devrites/work/` and
-`.devrites/ACTIVE` is preserved.
+removes exactly those files, prunes empty directories, and removes the shared
+`devrites-engine` binary unless you pass `--keep-binary`. It preserves your
+feature data in `.devrites/work/` and `.devrites/ACTIVE`.
 
 ### Upgrading an existing install
 
@@ -294,26 +297,26 @@ Removes only files listed in `.claude/devrites.manifest` and prunes empty dirs,
 including Codex mirrors when they were installed.
 `.devrites/work/` (your feature data) is always preserved.
 
-## Recommended setup (optional, but DevRites is much sharper with it)
+## Recommended setup
 
-DevRites runs with zero extra tooling, but three tools make it meaningfully better.
-**Install and configure them in your project before you start** — DevRites detects each
-one and **degrades gracefully** when it's absent.
+DevRites works without extra tooling. These integrations give it better code
+navigation and stronger browser evidence. Configure the ones your project uses;
+DevRites falls back to files, project tests, or manual steps when they are absent.
 
 | Tool | What it gives DevRites | Set up |
 |---|---|---|
-| **codegraph** | A code-intelligence index. `/rite-spec`, `/rite-define`, and `/rite-plan` use it to understand structure, **placement**, callers, and **impact** cheaply — deeper investigation and sharper specs, at a fraction of the tokens of reading files. | Build the index in your project (e.g. `codegraph init`) so its `codegraph_*` tools / a `.codegraph/` are present. |
-| **graphify** | A codebase → knowledge-graph (`graphify-out/`) — same benefit for "where is X / what calls Y / what would Z break". | Generate it for your project (the `/graphify` skill). |
-| **[Playwright MCP](https://github.com/microsoft/playwright-mcp)** | Drives a real browser so `/rite-prove` and `/rite-polish` capture **real UI evidence** — screenshots, console, network, responsive — the top rung of the proof ladder (paired with **Chrome DevTools MCP** for Lighthouse / perf trace). | Configure the Playwright MCP server in Claude Code; DevRites detects it, never installs it. |
+| **codegraph** | Gives `/rite-spec`, `/rite-define`, and `/rite-plan` an index of project structure, symbol placement, callers, and impact. | Build the index in your project (for example, `codegraph init`) so its `codegraph_*` tools or a `.codegraph/` directory are present. |
+| **graphify** | Generates a knowledge graph in `graphify-out/` for questions about definitions, callers, and change impact. | Generate it with the `/graphify` skill. |
+| **[Playwright MCP](https://github.com/microsoft/playwright-mcp)** | Lets `/rite-prove` and `/rite-polish` collect screenshots, console output, network activity, and responsive checks from a real browser. Chrome DevTools MCP can add Lighthouse and performance traces. | Configure the Playwright MCP server in Claude Code. DevRites detects it but does not install it. |
 
-Without them, DevRites reads files instead of a code graph and uses Claude Code's built-in
-`/run`+`/verify` (or documented manual steps) instead of a browser. With them: deeper
-investigation, cheaper context, and real browser proof. None are required.
+Without these tools, DevRites reads files instead of a code graph and uses
+Claude Code's built-in `/run` and `/verify`, project-native tests, or documented
+manual steps instead of a browser.
 
 ## Skills
 
-The pack ships **42 skills total** — the `rite` menu, 29 user-invocable `rite-*`
-workflow + utility skills, 11 model-invoked `devrites-*` specialists, plus the internal
+The pack ships 42 skills: the `rite` menu, 29 user-invocable `rite-*`
+workflow and utility skills, 11 model-invoked `devrites-*` specialists, plus the internal
 `devrites-lib` reference library. The installed `devrites-engine` owns workflow control;
 the npm `devrites` shim owns install/update/uninstall and proxies engine subcommands.
 `rite-*` and `devrites-*` are namespaces, not visibility rules: frontmatter is
@@ -329,7 +332,10 @@ phase rules on demand; compact utilities keep their narrower contract local.
 instructions, not Codex command-approval `.rules` files. Generated guidance points at the
 mirror; each skill's own contract decides whether `core.md` or a conditional standard loads.
 
-**Custom pinned aliases** (optional). Add your own one-word shortcuts to any `rite-*` skill at runtime with `scripts/pin.sh` — useful for muscle-memory commands like `/b` → `/rite-build` or `/ship` → `/rite-ship`. The wrapper is a thin delegate (same shape the installer uses for `--short-aliases=all`); pinned aliases are manifest-tracked so `./uninstall.sh` cleans them up.
+You can add one-word aliases for any `rite-*` skill with `scripts/pin.sh`. For
+example, map `/b` to `/rite-build` or `/ship` to `/rite-ship`. The installer uses
+the same thin wrapper for `--short-aliases=all`, and the manifest records each
+alias so `./uninstall.sh` can remove it.
 
 ```bash
 ./scripts/pin.sh add b rite-build      # /b == /rite-build
@@ -342,21 +348,21 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md` and mirror to `.agents/
 
 ### Full skill + agent inventory
 
-**Public command skills (30: `rite` + 29 `rite-*`)** — slash-command surface:
+The public command surface contains `rite` and 29 `rite-*` skills:
 
 | Group | Skills |
 |---|---|
 | Core lifecycle (8) | `rite-spec` · `rite-define` · `rite-build` · `rite-prove` · `rite-polish` · `rite-review` · `rite-seal` · `rite-ship` |
-| On-ramp (optional) | `rite-adopt` — onboard an existing codebase: reverse-derive `spec.md`, seed the conventions ledger + propose project principles, then hand off to the lifecycle |
-| Strategic (optional) | `rite-temper` — strategic spec review between spec and define; mandatory in `rite-autocomplete` |
-| Engineering (every feature) | `rite-vet` — engineering plan review between define and build; depth scales to stakes, never skipped; always in `rite-autocomplete` |
+| On-ramp (optional) | `rite-adopt` onboards an existing codebase, derives `spec.md`, seeds the conventions ledger, proposes project principles, and hands off to the lifecycle. |
+| Strategic (optional) | `rite-temper` reviews the spec between spec and define. `rite-autocomplete` always runs it. |
+| Engineering (every feature) | `rite-vet` reviews the engineering plan between define and build. Its depth scales with the stakes, but it always runs. |
 | Recovery / replan | `rite-resolve` · `rite-plan` · `rite-converge` |
 | Express / pre-flight | `rite-quick` · `rite-frame` |
 | Utility | `rite-status` · `rite-doctor` · `rite-customize` · `rite-explain` · `rite-pov` · `rite-dogfood` · `rite-pr-feedback` · `rite-zoom-out` · `rite-prototype` · `rite-handoff` · `rite-pressure-test` · `rite-autocomplete` |
-| Learning (optional) | `rite-learn` — cross-feature learning loop: mine shipped features for recurring mistakes + dismissed-finding classes, propose project-local lessons into `.devrites/learnings.md`, and promote recurring invariants to `.devrites/principles.md` |
+| Learning (optional) | `rite-learn` finds recurring mistakes and dismissed findings in shipped features, proposes project-local lessons in `.devrites/learnings.md`, and promotes recurring invariants to `.devrites/principles.md`. |
 | Menu | `rite` |
 
-**Internal `devrites-*` specialists** — model-invoked, hidden from menu:
+The model-invoked `devrites-*` specialists stay hidden from the menu:
 
 `devrites-interview` · `devrites-source-driven` · `devrites-doubt` ·
 `devrites-ux-shape` · `devrites-frontend-craft` · `devrites-browser-proof` ·
@@ -364,7 +370,7 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md` and mirror to `.agents/
 `devrites-audit` (axes: `security` · `perf` · `simplify`) ·
 `devrites-prose-craft` · `devrites-refresh-indexes`.
 
-**Review agents (12)** — fresh-context reviewers under `.claude/agents/`:
+Twelve fresh-context review agents live under `.claude/agents/`:
 
 `devrites-strategy-reviewer` (pre-plan, via `/rite-temper`) ·
 `devrites-plan-reviewer` (pre-build, via `/rite-vet`) · `devrites-spec-reviewer` ·
@@ -372,46 +378,48 @@ Pinned aliases live at `.claude/skills/<alias>/SKILL.md` and mirror to `.agents/
 `devrites-security-auditor` · `devrites-performance-reviewer` ·
 `devrites-devex-reviewer` (developer-facing surface, predict at `/rite-vet` + measure-the-boomerang at `/rite-seal`) ·
 `devrites-doubt-reviewer` · `devrites-simplifier-reviewer` ·
-`devrites-forge-judge` (build-time, via `/rite-build` — scores competing candidate builds on a `Forge: yes` slice, picks the winner).
+`devrites-forge-judge` (used by `/rite-build` to score competing candidates for a
+`Forge: yes` slice and pick the winner).
 
-**Cross-feature analyst (1)** — fresh-context, read-only, scope is the archive not a diff:
+The read-only `devrites-retrospector` looks across the shipped archive rather
+than one diff. `/rite-ship` dispatches it on a cadence to find recurring patterns
+and draft candidates for `/rite-learn`; it proposes changes but does not apply
+them.
 
-`devrites-retrospector` — dispatched at `/rite-ship` close (cadence-gated) to mine shipped features for recurring patterns + trends and **draft** graduation candidates for `/rite-learn`; proposes, never imposes.
-
-**Executor agent (1)** — fresh-context, **write-capable** writer under `.claude/agents/`:
-
-`devrites-slice-wright` — dispatched by `/rite-build` to write one slice (orient → TDD → verify, anti-AI-slop, project idiom); the write-side mirror of the read-only reviewers.
+`devrites-slice-wright` is the one write-capable agent. `/rite-build` dispatches
+it to orient itself, build one slice with TDD, verify the result, and match the
+project's existing style.
 
 Full catalogue with per-phase tables and interactions → [`docs/skills.md`](docs/skills.md). Trigger phrases + interactions → [`docs/command-map.md`](docs/command-map.md). Diagrams (polish orchestrator, review fan-out, seal fan-out, namespace map) → [`docs/flow.md`](docs/flow.md).
 
-## Modes — HITL & AFK
+## Run modes
 
 DevRites runs the same lifecycle two ways. The mode is per-slice (declared in
 `tasks.md` at planning time) and per-session (`.devrites/AFK` sentinel toggles the
 session-level default). Skills consult both.
 
-### HITL — human-in-the-loop (default)
+### HITL (default)
 
 Slices marked `Mode: HITL` pause **before any code is written**. `/rite-build`
 renders the checkpoint, writes `Awaiting human` to `state.md`, appends the question
 to `questions.md`, and stops. You answer with
 [`/rite-resolve <qid> "<answer>"`](pack/.claude/skills/rite-resolve/SKILL.md) and the
-workflow resumes. The pause is pre-action by design — no half-built slice, no
-"approve after the fact" loop.
+workflow resumes. The pause happens before any action, so approval never comes
+after a half-built slice.
 
 Each HITL slice declares a **gate type** that controls how much it disrupts the loop:
 
 | Gate | Stakes | Behavior | SLA |
 |---|---|---|---|
 | `advisory` | low | log + proceed; surface for audit | none |
-| `validating` | medium | async — build continues, merge blocks until reviewed | 4h |
+| `validating` | medium | build continues, but merge waits for review | 4h |
 | `blocking` | high | synchronous pause; loop stops | 15m |
 | `escalating` | novel pattern | synchronous pause, route to specialist tag | 24h |
 
 Full taxonomy + decision tree:
 [`pack/.claude/skills/rite-define/reference/gates.md`](pack/.claude/skills/rite-define/reference/gates.md).
 
-### AFK — away-from-keyboard
+### AFK
 
 Drop `.devrites/AFK` in the project. AFK slices run unattended;
 [`devrites-doubt`](pack/.claude/skills/devrites-doubt/SKILL.md) and other
@@ -419,7 +427,7 @@ discretionary pauses downgrade to advisory entries in `questions.md` so the loop
 keeps moving. The sentinel is plain YAML (all keys optional):
 
 ```yaml
-# .devrites/AFK — presence = AFK active.
+# .devrites/AFK: presence = AFK active.
 max_slices: 10                       # /rite-build decrements per built slice; 0 → forced HITL stop
 notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human; qid / gate / slice in env
 allow_gates: [advisory, validating]  # gate severities AFK may auto-handle
@@ -429,8 +437,8 @@ allow_gates: [advisory, validating]  # gate severities AFK may auto-handle
 workflow pauses on: destructive data migration · auth/authz boundary change · public
 API break · external-service contract change · filesystem destruction outside the
 workspace · red tests / types / lint at slice end. The same `blocking` + `escalating`
-gates always pause in AFK too — `allow_gates` only widens what's automatic, not what's
-irreversible.
+gates always pause in AFK too. `allow_gates` can widen the automatic cases, but
+it cannot make irreversible work automatic.
 
 ```bash
 # Run unattended for the next stretch:
@@ -453,7 +461,7 @@ drop the sentinel for the bulk stretch. Always cap iterations. Full contract:
 /rite-define                  # spec → plan.md + tasks.md + state.md
 /rite-vet                     # mandatory plan review; light or full based on stakes
 
-# build loop — one slice at a time
+# build loop: one slice at a time
 /rite-build                   # slice 1, stops with evidence
 /rite-build                   # slice 2 ... repeat for each slice
 /rite-prove                   # ONCE all slices built: full tests + browser proof
@@ -482,14 +490,15 @@ Playwright MCP, backend-only, polish modes, zoom-out, mid-flight handoff):
 
 ## Engineering rules
 
-DevRites ships its own stack-agnostic engineering rules and installs them to
-`.claude/skills/devrites-lib/reference/standards/` — common rule files plus a README index. They're **common** by design
-(no language assumptions); a project's own conventions always win where they exist, and a
-project's own **principles** (`.devrites/principles.md`) outrank both. Standards ship inside
-the `devrites-lib` skill; the retired `--no-rules` and `--rules-only` flags are compatibility
-no-ops. Use `--no-skills` only when you intentionally want to skip skills and the bundled
-standards together. Loading model: each `rite-*` skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first
-step; the remaining rule files load on demand via `Read` from the skill body that needs them.
+DevRites installs its stack-agnostic engineering rules under
+`.claude/skills/devrites-lib/reference/standards/`, along with a README index.
+The rules make no assumptions about language or framework. Project conventions
+take precedence, and project principles in `.devrites/principles.md` take
+precedence over both. The standards ship inside `devrites-lib`; the retired
+`--no-rules` and `--rules-only` flags remain as compatibility no-ops. Use
+`--no-skills` only when you want to skip both the skills and their standards.
+Each `rite-*` skill reads `core.md` first and loads other rule files only when
+the phase needs them.
 
 | Always-on | On-demand |
 |---|---|
@@ -509,21 +518,19 @@ until it's opened and described.
 
 ## Frontend & fullstack
 
-UI work is **planned before it's coded**. When `/rite-spec` detects UI, `devrites-ux-shape`
-turns the request + any references (screenshots, Figma, video) into a feature-level
-**`design-brief.md`** — design direction (color strategy · scene sentence · named anchor
-references), key states, interaction model, and an optional Figma/image **visual-direction
-probe** — and pauses for you to confirm the direction (HITL) or asserts a best guess (AFK).
-That brief is the **build target**, woven into spec → define → vet → build, not a separate phase.
+UI planning starts in `/rite-spec`. When the spec includes UI work,
+`devrites-ux-shape` writes `design-brief.md` from the request and any screenshots,
+Figma files, or video references. The brief records the visual direction, key
+states, interaction model, and an optional visual probe. HITL pauses for your
+confirmation; AFK records its chosen direction. The rest of the workflow treats
+the brief as part of the feature, not as a separate design phase.
 
-Then `devrites-frontend-craft` builds **to** the brief: detect the surface register (brand
-vs product), refine the brief per slice (all states — default / loading / empty / error /
-success / disabled), build from the existing design system, avoid generic-AI tells, and
-meet the **2026 quality bar** — Core Web Vitals (LCP ≤ 2.5 s / INP ≤ 200 ms / CLS ≤ 0.1)
-and WCAG 2.2 AA. **Fullstack features** go **contract-first**: define the API/data contract, build
-one **vertical slice** through the layers (DB → service → API → UI), apply the
-engineering rules to the backend and the craft to the UI, map every contract error to a
-real UI state, and **prove both layers** (contract tests + browser proof).
+`devrites-frontend-craft` then works from the brief and the project's existing
+design system. It covers default, loading, empty, error, success, and disabled
+states, while checking WCAG 2.2 AA and Core Web Vitals targets of LCP ≤ 2.5 s,
+INP ≤ 200 ms, and CLS ≤ 0.1. Fullstack features start with the API and data
+contract, then build one vertical slice from the database through the UI.
+Contract tests cover the backend, and browser proof covers the UI.
 
 ## Safety & scope
 
@@ -531,7 +538,7 @@ real UI state, and **prove both layers** (contract tests + browser proof).
   `~/.claude` or `~/.codex`. Install/uninstall is manifest-managed; the shared
   `devrites-engine` binary is the sole optional global artifact (`--no-binary` skips it).
 - **Feature scope only.** Review/simplify/polish/security stay within the active feature
-  and touched files — no project-wide refactors, no drive-by cleanup.
+  and touched files. They do not start project-wide refactors or unrelated cleanup.
 - **One slice at a time.** `/rite-build` stops after a single verified slice.
 - **Evidence over confidence.** Claims need recorded commands, output, or screenshots.
 - **Ask before danger.** Material assumptions, dependency additions, a second design
@@ -541,7 +548,7 @@ real UI state, and **prove both layers** (contract tests + browser proof).
 
 ```
 devrites/
-  bin/                 # devrites.mjs — npx CLI entry point (acquires/proxies devrites-engine)
+  bin/                 # devrites.mjs: npx CLI entry point (acquires/proxies devrites-engine)
   .github/             # ci (including release job) · evals · commitlint · Dependabot automation
   .husky/              # commit-msg hook (Conventional Commits via commitlint)
   .releaserc.json      # semantic-release config (CHANGELOG, version sync, tarball, GitHub Release)
@@ -549,7 +556,7 @@ devrites/
   scripts/             # install-lib (shim + pin helpers) · validate · validate-frontmatter · run-evals
                        # grade-feature · run-outcome-evals · devrites-detect · check-no-global-writes
                        # sync-version · build-release-tarball
-  pack/.claude/        # skills/  42 skills — 30 public + 12 internal          ─┐
+  pack/.claude/        # skills/  42 skills: 30 public + 12 internal          ─┐
                        # agents/  13 read-only + 1 writer (slice-wright)         ├─ the pack
                        # settings.json  (canonical Claude engine hook wiring)   ┘
                        # (standards live inside skills/devrites-lib/reference/standards/)
@@ -574,39 +581,38 @@ Cross-links: [architecture](docs/architecture.md) ·
 
 ## Security model
 
-DevRites is auditable Markdown + a small engine binary. The complete security
-policy, including private vulnerability reporting and recommended managed-deployment
-settings, lives in [`SECURITY.md`](SECURITY.md). Highlights: **project-local host artifacts**
-(installer refuses global Claude/Codex agent homes; only the shared engine binary may be global);
-**bounded installer network access**
-for the release tarball and verified `devrites-engine` asset, with `--no-binary` /
-`DEVRITES_NO_BINARY=1` available for fully project-file-only installs; **no hidden
-skill-side networking** (external research goes through explicit host tools);
-**`!` shell injection removed** from `/rite` and `/rite-status`
-(state loaded via read-only engine subcommands over DevRites' own state under
-`.devrites/`); **model invocation is per-skill frontmatter** and bounded by body
-discipline + readiness gates + the interactive `type-GO` confirmation in `/rite-ship`
-before irreversible git actions; **no `defaultMode: bypassPermissions`** is shipped or
-written by the installer (cf. CVE-2026-33068).
+DevRites consists of auditable Markdown and a small engine binary. The installer
+keeps host artifacts inside the project; only the optional shared engine binary
+may be global. Network access is limited to release assets and the verified
+engine download, and `--no-binary` or `DEVRITES_NO_BINARY=1` keeps the install
+project-only. Skills do not open hidden network connections. External research
+uses explicit host tools.
+
+`/rite` and `/rite-status` load state through read-only engine commands instead
+of `!` shell injection. Per-skill frontmatter controls model invocation, and
+readiness gates plus the interactive `type-GO` prompt protect irreversible git
+actions. The installer does not ship or write `defaultMode:
+bypassPermissions` (see CVE-2026-33068). Read [`SECURITY.md`](SECURITY.md) for
+private reporting instructions and managed-deployment guidance.
 
 ## Community & quality
 
-- **Changelog:** [`CHANGELOG.md`](CHANGELOG.md) — Keep-a-Changelog + SemVer, regenerated by semantic-release on every release.
+- **Changelog:** [`CHANGELOG.md`](CHANGELOG.md), generated by semantic-release for each SemVer release.
 - **Code of conduct:** [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) (Contributor Covenant 2.1).
-- **Code owners:** [`CODEOWNERS`](CODEOWNERS) — maintainer review covers all tracked paths.
+- **Code owners:** [`CODEOWNERS`](CODEOWNERS), with maintainer review for all tracked paths.
 - **Notices:** [`NOTICE.md`](NOTICE.md).
 - **CI:** GitHub Actions runs validation, the full shell suite, routing evals,
   commitlint, strict Go quality/security checks, Windows tests, and release-target
   cross-compilation on every PR.
 - **Commits:** Conventional Commits enforced via husky + commitlint.
-- **Release pipeline:** semantic-release on every push to `main` — full details in [`docs/release.md`](docs/release.md).
+- **Release pipeline:** semantic-release checks every push to `main`. See [`docs/release.md`](docs/release.md).
 
 ## License
 
-**Free to use, with approval gating redistribution.** Personal use and *listing this
-repository in package registries* are permitted without approval. DevRites is installed via
-`npx devrites ...`, not Claude/Codex plugin marketplaces. Any other use —
-distributing it, distributing modified versions, mirroring as a fork, or commercial /
-organizational use — requires **approval on request** (ask via
-[the repo](https://github.com/ViktorsBaikers/DevRites)). Source-available. See
-[`LICENSE`](LICENSE). DevRites is independent software for use with Claude Code and Codex.
+You may use DevRites personally and list this repository in package registries
+without approval. Distribution, modified distribution, fork mirrors, and
+commercial or organizational use require approval. Request it through
+[the repository](https://github.com/ViktorsBaikers/DevRites) and read
+[`LICENSE`](LICENSE) for the full terms. DevRites is source-available software
+for use with Claude Code and Codex. It is installed with `npx devrites ...`, not
+through Claude or Codex plugin marketplaces.

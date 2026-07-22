@@ -95,17 +95,17 @@ function assertPublicSkillMentions(path, label) {
 }
 
 assertDocContains(docsSkills, `# All ${total} skills`, 'total skill heading');
-assertDocContains(docsSkills, `**${total} skills total**`, 'total skill prose');
+assertDocContains(docsSkills, `The pack contains ${total} skills`, 'total skill prose');
 assertDocContains(docsSkills, `${publicRiteCount} user-invocable \`rite-*\``, 'public rite-* count');
 assertDocContains(docsSkills, `${modelInvokedInternalCount} model-invoked \`devrites-*\` specialists`, 'model-invoked internal count');
 assertDocContains(docsSkills, 'npx devrites', 'npx distribution contract');
 assertDocContains(docsCommandMap, 'npx devrites', 'npx distribution contract');
-assertDocContains(readme, `**${total} skills total**`, 'README total skill prose');
+assertDocContains(readme, `The pack ships ${total} skills`, 'README total skill prose');
 assertDocContains(readme, `# skills/  ${total} skills`, 'README layout total count');
-assertDocContains(readme, `— ${publicCount} public + ${internalCount} internal`, 'README public/internal count');
+assertDocContains(readme, `${publicCount} public + ${internalCount} internal`, 'README public/internal count');
 assertDocContains(arch, `${publicRiteCount} public \`rite-*\` skills (${total} total)`, 'architecture surface count');
-assertDocContains(docsFlow, `— ${publicCount} skills`, 'flow public count');
-assertDocContains(docsFlow, `— ${internalCount} skills`, 'flow internal count');
+assertDocContains(docsFlow, `: ${publicCount} skills`, 'flow public count');
+assertDocContains(docsFlow, `: ${internalCount} skills`, 'flow internal count');
 assertPublicSkillLinks(docsSkills, 'skills catalogue');
 assertPublicSkillLinks(docsCommandMap, 'command map');
 assertPublicSkillMentions(readme, 'README catalogue');
