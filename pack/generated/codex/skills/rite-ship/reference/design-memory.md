@@ -17,7 +17,8 @@ language → feature N+1 builds to it.
   the full staged change set (code + `DESIGN.md`) under the single type-GO that ships it.
 - **Opt-in and confirmed.** Persisting to a project-wide artifact is outside feature scope
   (`standards/core.md` rule 7), so it is *never silent*. Present a ranked option set
-  (see `standards/afk-hitl.md`, "Option set"); **default is skip**. The user opts to persist.
+  (see [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md), "Option set");
+  **default is skip**. The user opts to persist.
 - **AFK**: first-time `DESIGN.md` *creation* is treated as a `validating` gate (a new
   persistent project artifact): propose + queue, don't auto-create. An *append* to an
   existing `DESIGN.md` is `advisory` and may auto-proceed when `allow_gates` permits, since
