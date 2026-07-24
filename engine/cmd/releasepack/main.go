@@ -91,14 +91,12 @@ func writeArchive(root, output, prefix string, epoch time.Time) error {
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName)
 	if err := tmp.Chmod(0o644); err != nil {
-		tmp.Close()
-		return fmt.Errorf("set archive mode: %w", err)
+		return errors.Join(fmt.Errorf("set archive mode: %w", err), tmp.Close())
 	}
 
 	gz, err := gzip.NewWriterLevel(tmp, gzip.BestCompression)
 	if err != nil {
-		tmp.Close()
-		return fmt.Errorf("create gzip writer: %w", err)
+		return errors.Join(fmt.Errorf("create gzip writer: %w", err), tmp.Close())
 	}
 	gz.Header.ModTime = epoch
 	gz.Header.OS = 255

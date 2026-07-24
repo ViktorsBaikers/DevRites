@@ -235,8 +235,14 @@ func generatedClaudeDrift(projectDir string) bool {
 }
 
 func fileDigests(root string, skip func(string) bool) (map[string][sha256.Size]byte, error) {
+	rootDir, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rootDir.Close() }()
+
 	files := map[string][sha256.Size]byte{}
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -259,7 +265,7 @@ func fileDigests(root string, skip func(string) bool) (map[string][sha256.Size]b
 		if entry.Type()&os.ModeSymlink != 0 || !entry.Type().IsRegular() {
 			return fmt.Errorf("generated tree contains non-regular file %s", rel)
 		}
-		body, err := os.ReadFile(path)
+		body, err := rootDir.ReadFile(rel)
 		if err != nil {
 			return err
 		}
