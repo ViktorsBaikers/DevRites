@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -19,6 +18,7 @@ import (
 const (
 	forgeAcceptanceHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	forgeTestPlanHash   = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	forgeWorkerTestEnv  = "DEVRITES_FORGE_CLI_TEST_WORKER"
 )
 
 func TestForgeCLIPlanRequiresSupportedWorkerBinding(t *testing.T) {
@@ -285,10 +285,8 @@ type forgeCLIWorker struct {
 
 func startForgeCLIWorker(t *testing.T, repo, runID string, candidate forge.CandidateID, id string) *forgeCLIWorker {
 	t.Helper()
-	if runtime.GOOS == "windows" {
-		t.Skip("Forge liveness currently requires ps")
-	}
-	cmd := exec.Command("sleep", "60")
+	cmd := exec.Command(os.Args[0], "-test.run=^TestForgeCLIWorkerProcess$")
+	cmd.Env = append(os.Environ(), forgeWorkerTestEnv+"=1")
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -315,6 +313,15 @@ func startForgeCLIWorker(t *testing.T, repo, runID string, candidate forge.Candi
 		"--pid", strconv.Itoa(cmd.Process.Pid),
 		"--process-start", token)
 	return &forgeCLIWorker{repo: repo, runID: runID, cand: candidate, id: id, token: token, cmd: cmd}
+}
+
+func TestForgeCLIWorkerProcess(t *testing.T) {
+	if os.Getenv(forgeWorkerTestEnv) != "1" {
+		return
+	}
+	for {
+		time.Sleep(time.Hour)
+	}
 }
 
 func (w *forgeCLIWorker) finish(t *testing.T, state string) {

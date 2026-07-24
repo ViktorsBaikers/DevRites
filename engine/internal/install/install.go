@@ -1739,7 +1739,7 @@ func (r *runner) acquireBinary(tag, baseURL string) (string, func(), error) {
 		return "", func() {}, fmt.Errorf("create temp dir: %w", err)
 	}
 	cleanup := func() { _ = os.RemoveAll(tmp) }
-	staged := filepath.Join(tmp, "devrites-engine")
+	staged := filepath.Join(tmp, engineBinaryName())
 	var releaseErr error
 	if r.releaseBinaryTag != "" && os.Getenv("DEVRITES_UPDATE_BUNDLE") == "" {
 		repo := os.Getenv("DEVRITES_REPO")
@@ -1820,24 +1820,31 @@ func (r *runner) removeBinary() error {
 
 func binaryDest() string {
 	if dir := os.Getenv("DEVRITES_BIN_DIR"); dir != "" {
-		return filepath.Join(dir, "devrites-engine")
+		return filepath.Join(dir, engineBinaryName())
 	}
 	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, ".local", "bin", "devrites-engine")
+		return filepath.Join(home, ".local", "bin", engineBinaryName())
 	}
-	return "/usr/local/bin/devrites-engine"
+	return filepath.Join("/usr/local/bin", engineBinaryName())
+}
+
+func engineBinaryName() string {
+	if runtime.GOOS == "windows" {
+		return "devrites-engine.exe"
+	}
+	return "devrites-engine"
 }
 
 func binaryCandidates() []string {
 	candidates := []string{}
 	if dir := os.Getenv("DEVRITES_BIN_DIR"); dir != "" {
-		candidates = append(candidates, filepath.Join(dir, "devrites-engine"))
+		candidates = append(candidates, filepath.Join(dir, engineBinaryName()))
 	}
 	home, _ := os.UserHomeDir()
 	if home != "" {
-		candidates = append(candidates, filepath.Join(home, ".local", "bin", "devrites-engine"))
+		candidates = append(candidates, filepath.Join(home, ".local", "bin", engineBinaryName()))
 	}
-	return append(candidates, "/usr/local/bin/devrites-engine")
+	return append(candidates, filepath.Join("/usr/local/bin", engineBinaryName()))
 }
 
 func binaryReachableFromPATH(dest string) bool {

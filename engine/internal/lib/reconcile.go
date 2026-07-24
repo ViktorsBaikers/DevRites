@@ -780,7 +780,7 @@ type sliceTreeRange struct {
 // standalone gate it captures the current dirty tree in a temporary private
 // object database and compares it with HEAD.
 func captureSliceTreeRange(gitRoot, devritesRoot, workspace string) (sliceTreeRange, error) {
-	base, env, objectDir, active, err := loadReconcileBaseline(gitRoot, workspace)
+	base, _, objectDir, active, err := loadReconcileBaseline(gitRoot, workspace)
 	if err != nil {
 		return sliceTreeRange{}, err
 	}
@@ -798,7 +798,7 @@ func captureSliceTreeRange(gitRoot, devritesRoot, workspace string) (sliceTreeRa
 		cleanup()
 		return sliceTreeRange{}, err
 	}
-	env, err = reconcileGitEnv(gitRoot, objectDir)
+	env, err := reconcileGitEnv(gitRoot, objectDir)
 	if err != nil {
 		cleanup()
 		return sliceTreeRange{}, err

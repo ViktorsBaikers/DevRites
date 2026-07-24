@@ -264,11 +264,11 @@ func normalizeGitAuthorityResolution(data []byte, qid, status, answer string) (s
 		}
 		if duplicate != "" || unknown != "" || fields["schema"] != GitAuthoritySchemaV1 ||
 			fields["kind"] != GitAuthorityKind {
-			return "", fmt.Errorf("Git authority question is invalid")
+			return "", fmt.Errorf("git authority question is invalid")
 		}
 		q, err := validateGitAuthorityQuestion(qid, fields)
 		if err != nil {
-			return "", fmt.Errorf("Git authority question is invalid")
+			return "", fmt.Errorf("git authority question is invalid")
 		}
 		if q.Status != "open" {
 			return answer, nil
@@ -276,7 +276,7 @@ func normalizeGitAuthorityResolution(data []byte, qid, status, answer string) (s
 		switch status {
 		case "answered":
 			if strings.TrimSpace(answer) != GitAuthorityAnswer {
-				return "", fmt.Errorf(`Git authority answer must exactly equal %q`, GitAuthorityAnswer)
+				return "", fmt.Errorf(`git authority answer must exactly equal %q`, GitAuthorityAnswer)
 			}
 			return GitAuthorityAnswer, nil
 		case "dropped":
@@ -492,7 +492,7 @@ func readGitAuthorityLedger(path string) ([]gitAuthorityConsumption, []byte, err
 		return nil, nil, fmt.Errorf("invalid Git authority ledger")
 	}
 	if info.Size() > maxGitAuthorityLedgerBytes {
-		return nil, nil, fmt.Errorf("Git authority ledger exceeds bound")
+		return nil, nil, fmt.Errorf("git authority ledger exceeds bound")
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -554,7 +554,7 @@ func appendGitAuthorityConsumption(path string, current []byte, entry gitAuthori
 	out = append(out, line...)
 	out = append(out, '\n')
 	if len(out) > maxGitAuthorityLedgerBytes {
-		return fmt.Errorf("Git authority ledger exceeds bound")
+		return fmt.Errorf("git authority ledger exceeds bound")
 	}
 	return state.AtomicWrite(path, out, 0o600)
 }
