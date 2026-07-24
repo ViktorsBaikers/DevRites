@@ -2,6 +2,18 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.7...v3.1.0) (2026-07-24)
+
+### Added
+
+* **devrites:** harden planning and agent orchestration ([50be03b](https://github.com/ViktorsBaikers/DevRites/commit/50be03b90f1d5004ea010cf68ff07b74bab491c6))
+
+### Fixed
+
+* **ci:** correct invocation and eval discovery gates ([0a0d7d2](https://github.com/ViktorsBaikers/DevRites/commit/0a0d7d27546b90a7f5a2dd72bc9326f29416cc54))
+* **devrites:** clear security and Windows mode gates ([59fcfc6](https://github.com/ViktorsBaikers/DevRites/commit/59fcfc6c1806975e36a69cde4e8a2c504657161a))
+* **devrites:** restore static and Windows engine gates ([8aeb479](https://github.com/ViktorsBaikers/DevRites/commit/8aeb4793adf0ce57ba4dba7ddcb7e56f9f612f40))
+
 ## [3.0.7](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.6...v3.0.7) (2026-07-22)
 
 ### Fixed
