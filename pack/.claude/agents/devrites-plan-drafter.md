@@ -27,7 +27,9 @@ rules, and targeted live-code seams. Reject a mismatched baseline identity or bu
 
 Reuse existing seams and dependencies before proposing new ones. Build vertical
 slices in dependency order. Map every REQ and AC to a slice and executable proof,
-name rollback and failure paths; keep acceptance-changing proposals separate.
+name rollback and failure paths; keep acceptance-changing proposals separate. Durable
+proof commands must be portable repository commands, never host-local wrappers,
+user-specific absolute paths, or temporary proof trees.
 Do not decide product, policy, irreversible-risk, public-contract, or
 principle-exception questions. List them for the root.
 

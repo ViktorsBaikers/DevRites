@@ -14,8 +14,8 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    ```bash
    devrites-engine build-readiness; echo "readiness rc=$?"
    ```
-   Any non-zero result is a hard STOP at the gate's reported route; `6` → `$rite-clarify`
-   and `7` → `$rite-vet`. Under AFK, also
+   Any non-zero result is a hard STOP at the gate's reported route; `6` → `$rite-clarify`,
+   `7` → `$rite-vet`, and `8` → `$rite-upgrade`. Under AFK, also
    enforce the mutable `state.md` budget from
    [`afk-discipline.md`](afk-discipline.md); zero remaining slices forces a HITL stop.
 1. Read `spec.md`, `decision-coverage.md`, `plan.md`, `tasks.md`, `assumptions.md`,
@@ -102,7 +102,7 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    After recovery:
    - green → continue to record;
    - product-contract/acceptance ambiguity or irreversible risk → open the genuine human gate
-     (and use `$rite-plan repair` only when behavior/scope/acceptance changes);
+     (and use `$rite-plan repair` only when the durable plan or contract changes);
    - human-only access/action → gate with the exact needed input;
    - exhausted objective failure → preserve reproduction/dead ends, set `Status: blocked` and
      `Next step: $rite-plan unblock`, then STOP without a question or `$rite-resolve`.

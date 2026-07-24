@@ -12,7 +12,7 @@ import (
 )
 
 // BuildReadiness decides whether a feature is ready to build from its recorded
-// state plus the two upstream readiness artifacts. An open HITL question, a
+// state plus the upstream readiness artifacts. An open HITL question, a
 // blocked or unapproved plan, incomplete decision coverage, or an unvetted plan
 // each stops the build with a distinct, actionable exit code rather than
 // trusting the model to honour a prose checklist. It never mutates the workspace.
@@ -52,6 +52,10 @@ func BuildReadiness(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "readiness: STOP: decision coverage is not buildable (%v). Run %s.\n", err, workflow.ForVerb("clarify").Both())
 		return readinessCode("coverage-not-clear")
 	}
+	if err := validateArtifactContract(root, slug, readinessContract.Coverage); err != nil {
+		fmt.Fprintf(stderr, "readiness: STOP: planning artifacts need a semantic upgrade (%v). Run %s.\n", err, workflow.ForVerb("upgrade").Both())
+		return readinessCode("upgrade-required")
+	}
 
 	approved := readinessField(lines, "Plan approved")
 	if approved == "" || approved == "none" {
@@ -71,6 +75,10 @@ func BuildReadiness(root string, args []string, stdout, stderr io.Writer) int {
 	if err := validateEngineeringReadiness(root, slug); err != nil {
 		fmt.Fprintf(stderr, "readiness: STOP: implementation readiness is not buildable (%v). Run %s.\n", err, workflow.ForVerb("vet").Both())
 		return readinessCode("engineering-not-ready")
+	}
+	if err := validateArtifactContract(root, slug, readinessContract.TestPlan, readinessContract.Engineering); err != nil {
+		fmt.Fprintf(stderr, "readiness: STOP: planning artifacts need a semantic upgrade (%v). Run %s.\n", err, workflow.ForVerb("upgrade").Both())
+		return readinessCode("upgrade-required")
 	}
 
 	shownStatus := status

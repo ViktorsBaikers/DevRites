@@ -127,6 +127,12 @@ Migration is:
 The phase is derived from the legacy `state.md`, defaulting to `build` when it
 can't be read.
 
+`devrites-engine update` refreshes the installed binary and pack. Migration
+stops at structural compatibility and does not certify old planning artifacts
+against current workflow rules. Build readiness routes an active workspace with
+stale semantic artifacts to `/rite-upgrade [slug]`; that public rite preserves
+completed work and reconciles only unfinished planning.
+
 ## Hooks: `hook <name> --harness=claude|codex`
 
 One binary serves Claude Code and Codex through thin per-harness adapters.

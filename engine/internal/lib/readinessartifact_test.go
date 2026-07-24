@@ -10,6 +10,12 @@ import (
 )
 
 func TestReadinessContractOwnsUniqueExitReasons(t *testing.T) {
+	if readinessContract.Schema != "devrites.readiness-artifacts.v2" {
+		t.Fatalf("schema=%q, want devrites.readiness-artifacts.v2", readinessContract.Schema)
+	}
+	if readinessContract.ContractField != "DevRites contract" {
+		t.Fatalf("contractField=%q, want DevRites contract", readinessContract.ContractField)
+	}
 	want := map[string]int{
 		"ready":                 0,
 		"plan-unapproved":       2,
@@ -18,6 +24,7 @@ func TestReadinessContractOwnsUniqueExitReasons(t *testing.T) {
 		"workspace-missing":     5,
 		"coverage-not-clear":    6,
 		"engineering-not-ready": 7,
+		"upgrade-required":      8,
 	}
 	seenCodes := map[int]string{}
 	for _, reason := range readinessContract.Reasons {
@@ -104,6 +111,93 @@ Technical approach: reuse the existing layer, as delegated by the coverage matri
 			t.Fatalf("code=%d, want vet exit 7", code)
 		}
 	})
+}
+
+func TestBuildReadinessRoutesSemanticContractUpgrade(t *testing.T) {
+	t.Run("current contract", func(t *testing.T) {
+		root, slug := readyWorkspace(t)
+		if code := BuildReadiness(root, []string{slug}, &bytes.Buffer{}, &bytes.Buffer{}); code != 0 {
+			t.Fatalf("code=%d, want ready", code)
+		}
+	})
+
+	for _, tc := range []struct {
+		name        string
+		replacement string
+	}{
+		{name: "missing contract", replacement: ""},
+		{name: "older contract", replacement: "DevRites contract: devrites.readiness-artifacts.v1\n"},
+		{name: "future contract", replacement: "DevRites contract: devrites.readiness-artifacts.v99\n"},
+		{name: "duplicate contract", replacement: readinessContractDeclaration() + "\n" + readinessContractDeclaration() + "\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, slug := readyWorkspace(t)
+			path := filepath.Join(root, "work", slug, "decision-coverage.md")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			body := strings.Replace(string(data), readinessContractDeclaration()+"\n", tc.replacement, 1)
+			if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			var stderr bytes.Buffer
+			if code := BuildReadiness(root, []string{slug}, &bytes.Buffer{}, &stderr); code != 8 {
+				t.Fatalf("code=%d, want upgrade exit 8", code)
+			}
+			if !strings.Contains(stderr.String(), "/rite-upgrade") || !strings.Contains(stderr.String(), "$rite-upgrade") {
+				t.Fatalf("stderr=%q, want both upgrade command forms", stderr.String())
+			}
+		})
+	}
+
+	t.Run("mismatched artifact contracts", func(t *testing.T) {
+		root, slug := readyWorkspace(t)
+		path := filepath.Join(root, "work", slug, "test-plan.md")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body := strings.Replace(
+			string(data),
+			readinessContractDeclaration(),
+			"DevRites contract: devrites.readiness-artifacts.v1",
+			1,
+		)
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		digest, err := readinessInputsDigest(root, slug, readinessContract.Engineering.Inputs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		writeReadinessFile(t, root, slug, "eng-review.md", validEngineeringReview(digest))
+		if code := BuildReadiness(root, []string{slug}, &bytes.Buffer{}, &bytes.Buffer{}); code != 8 {
+			t.Fatalf("code=%d, want upgrade exit 8", code)
+		}
+	})
+}
+
+func TestBuildReadinessPreservesMissingArtifactRoutes(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		file string
+		code int
+	}{
+		{name: "coverage", file: "decision-coverage.md", code: 6},
+		{name: "test plan", file: "test-plan.md", code: 7},
+		{name: "engineering review", file: "eng-review.md", code: 7},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, slug := readyWorkspace(t)
+			if err := os.Remove(filepath.Join(root, "work", slug, tc.file)); err != nil {
+				t.Fatal(err)
+			}
+			if code := BuildReadiness(root, []string{slug}, &bytes.Buffer{}, &bytes.Buffer{}); code != tc.code {
+				t.Fatalf("code=%d, want %d", code, tc.code)
+			}
+		})
+	}
 }
 
 func TestBuildReadinessRejectsMarkerOnlyAndContradictoryArtifacts(t *testing.T) {
@@ -236,6 +330,7 @@ func writeValidReadinessArtifacts(t *testing.T, root, slug string) {
 func validCoverage(digest string) string {
 	return fmt.Sprintf(`# Decision coverage
 
+%s
 Decision coverage: CLEAR
 Coverage inputs SHA-256: %s
 
@@ -262,12 +357,13 @@ Coverage inputs SHA-256: %s
 
 ## Readiness verdict
 No unresolved material decision remains.
-`, digest)
+`, readinessContractDeclaration(), digest)
 }
 
 func validTestPlan() string {
-	return `# Test plan
+	return fmt.Sprintf(`# Test plan
 
+%s
 ## Build-entry preflight
 | Gate | Command | Cwd | Expected | Prerequisites | Provenance to recapture |
 | --- | --- | --- | --- | --- | --- |
@@ -280,12 +376,13 @@ func validTestPlan() string {
 
 ## Acceptance → test map
 - AC-001 → T1
-`
+`, readinessContractDeclaration())
 }
 
 func validEngineeringReview(digest string) string {
 	return fmt.Sprintf(`# Eng review
 
+%s
 Implementation readiness: READY
 Readiness inputs SHA-256: %s
 
@@ -306,7 +403,11 @@ Readiness inputs SHA-256: %s
 
 ## 7. Completion summary
 - All required surfaces are ready.
-`, digest)
+`, readinessContractDeclaration(), digest)
+}
+
+func readinessContractDeclaration() string {
+	return readinessContract.ContractField + ": " + readinessContract.Schema
 }
 
 func writeReadinessFile(t *testing.T, root, slug, name, body string) {

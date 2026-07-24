@@ -10,6 +10,7 @@ clobber.
 ```markdown
 # Eng review: <slug>
 Vetted: <iso>   Cross-model: ran (codex) | off
+DevRites contract: devrites.readiness-artifacts.v2
 Implementation readiness: <READY | NEEDS CLARIFICATION | NEEDS REPLAN>
 Readiness inputs SHA-256: <exact value from `devrites-engine readiness-digest engineering <slug>`>
 
@@ -74,6 +75,7 @@ test and where*, not implementation detail.
 ```markdown
 # Test plan: <slug>
 From $rite-vet on <iso>. Runner + conventions: <detected framework + command>.
+DevRites contract: devrites.readiness-artifacts.v2
 
 ## Build-entry preflight
 | Gate | Command | Cwd | Expected | Prerequisites | Provenance to recapture |
@@ -82,6 +84,10 @@ From $rite-vet on <iso>. Runner + conventions: <detected framework + command>.
 
 Link any disposable parser fixture. Build evidence recomputes every digest; preflight values
 are not post-build proof.
+
+Commands in this durable artifact are portable repository commands: no RTK or local shell
+aliases, user-specific absolute paths, or temporary proof trees. A runtime packet may name
+an execution adapter, and evidence may record the portable and executed forms.
 
 ## Coverage diagram
 <the ASCII code-paths + user-flows diagram from review-axes.md, with COVERAGE / GAPS / REGRESSIONS line>
@@ -163,6 +169,8 @@ acceptance/behavior changes route through the **Spec Drift Guard**.
   `devrites-engine readiness-digest coverage <slug>` and replace the complete
   `Coverage inputs SHA-256` line in `decision-coverage.md`. Only then run
   `devrites-engine readiness-digest engineering <slug>` and copy its complete
-  field line into `eng-review.md`. The build gate rejects a stale digest,
+  field line into `eng-review.md`. Write
+  `DevRites contract: devrites.readiness-artifacts.v2` exactly once in both artifacts
+  only after their current-contract review is complete. The build gate rejects a stale digest,
   placeholders, non-passing preflight/readiness rows, empty tables, or an
   acceptance criterion with no test mapping.

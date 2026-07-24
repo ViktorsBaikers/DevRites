@@ -48,11 +48,15 @@ that must contain real content in each phase. Later phases require more. A
 human can resolve becomes a **human-in-the-loop pause** and uses reserved
 **exit code 3**. Missing artifacts and technical readiness failures instead
 return the work to the phase that owns the fix. For example, build-readiness
-`6` routes to `/rite-clarify` and `7` routes to `/rite-vet`. The build gate
-validates the content and input digests of `Decision coverage: CLEAR` and
-`Implementation readiness: READY`; marker strings alone do not pass. See
+`6` routes to `/rite-clarify`, `7` routes to `/rite-vet`, and `8` routes
+semantically stale workspaces to `/rite-upgrade`. The build gate validates the
+content, current `devrites.readiness-artifacts.v2` contract, and input digests
+of `Decision coverage: CLEAR` and `Implementation readiness: READY`; marker
+strings alone do not pass. See
 [ADR-0003](docs/adr/0003-gate-model-hitl-pause.md)
 and [ADR-0009](docs/adr/0009-prebuild-decision-coverage-and-readiness.md).
+Structural workspace migration remains separate from semantic upgrade; see
+[ADR-0012](docs/adr/0012-semantic-workspace-upgrades.md).
 
 ## Key concepts
 
@@ -72,7 +76,7 @@ and [ADR-0009](docs/adr/0009-prebuild-decision-coverage-and-readiness.md).
 |------|------|
 | `engine/` | The Go control plane. `internal/` owns state, gates, harness adapters, install/update semantics, explicit I/O hooks, and shared command logic. |
 | `engine/tests/` | Parity/golden + unit tests, incl. `adr_NNNN_*` guard tests. |
-| `pack/.claude/` | Canonical pack: 43 shipped skills and 17 agents (16 read-only leaves, one source/test wright), plus Claude hook wiring. |
+| `pack/.claude/` | Canonical pack: 44 shipped skills and 18 agents (17 read-only leaves, one source/test wright), plus Claude hook wiring. |
 | `install.sh` / `bin/` | Installer + npx entry; version is single-sourced from `package.json`. |
 | `evals/` | Trigger / outcome / behavioral eval tiers with golden fixtures. |
 | `docs/adr/` | Architecture decisions (start here for "why"). |

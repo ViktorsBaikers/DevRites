@@ -1,5 +1,6 @@
 {
-  "schema": "devrites.readiness-artifacts.v1",
+  "schema": "devrites.readiness-artifacts.v2",
+  "contractField": "DevRites contract",
   "coverage": {
     "artifact": "decision-coverage.md",
     "verdictField": "Decision coverage",
@@ -106,6 +107,12 @@
       "code": 7,
       "condition": "Plan is not vetted or implementation readiness is not READY",
       "remediationVerb": "vet"
+    },
+    {
+      "id": "upgrade-required",
+      "code": 8,
+      "condition": "Planning artifacts use an older or unknown DevRites contract",
+      "remediationVerb": "upgrade"
     }
   ]
 }

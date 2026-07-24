@@ -23,6 +23,7 @@ what each command does or how phases connect.
 | Ship | `$rite-ship` | Type-GO → commit/push/tag, then archive the task + clear ACTIVE. |
 | Status | `$rite-status` | See where the active feature stands. |
 | Doctor | `$rite-doctor` | Health check: install integrity, stale ACTIVE, orphaned gates, hook wiring, merge/rebase state. |
+| Upgrade | `$rite-upgrade` | _Explicit recovery._ Reconcile an active legacy workspace with the installed semantic workflow contract; preserve completed work and history. |
 | Learn | `$rite-learn` | Review the captured learning ledger → promote recurring lessons to project rules / principles. |
 
 ## Typical orderings
@@ -33,7 +34,10 @@ what each command does or how phases connect.
   `$rite-build` ×N (all slices) → `$rite-prove` (once all built) →
   `$rite-polish` (always: code + UI if UI) → `$rite-review` → `$rite-seal` → `$rite-ship`.
 - **Existing codebase**: `$rite-adopt` → `$rite-clarify` → `$rite-define` → `$rite-vet` → build.
-- **Drift mid-build**: stop → drift question → `$rite-plan` (repair) → resume build.
+- **Drift mid-build**: classify → bounded recovery for objective defects, `$rite-plan`
+  repair for a wrong durable plan, or one user decision for real product/risk drift.
+- **Workspace from older DevRites rules**: `$rite-upgrade` → current Clarify/Plan/Vet
+  gates → resume the snapshot's next command. Structural migration alone is not enough.
 - **Resumed / adopted / stalled**: `$rite-converge` (assess live code vs intent → append the
   remaining slices) → `$rite-vet` → `$rite-build` ×N → continue at `$rite-prove`.
 

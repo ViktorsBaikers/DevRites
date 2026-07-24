@@ -63,6 +63,7 @@ What each verb does lives once, in the Menu below; this table is the invocation 
 | `ship` | `$rite-ship` |
 | `status [slug]` | `$rite-status` |
 | `doctor [--code | --reindex]` | `$rite-doctor` |
+| `upgrade [slug]` | `$rite-upgrade` |
 | `learn [--mine \| "<lesson>"]` | `$rite-learn` |
 | `explain [concept \| diff \| idea \| recap]` | `$rite-explain` |
 | `pov [candidate]` | `$rite-pov` |
@@ -133,6 +134,7 @@ SEAL          $rite seal               ≡    $rite-seal        final GO / NO-GO
 SHIP          $rite ship               ≡    $rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
 STATUS        $rite status             ≡    $rite-status      active feature, next action, evidence, risks
 DOCTOR        $rite doctor ...         ≡    $rite-doctor      health check; --reindex refreshes structural indexes
+UPGRADE       $rite upgrade ...        ≡    $rite-upgrade     reconcile an active legacy workspace with current contracts
 LEARN         $rite learn ...          ≡    $rite-learn       review captured lessons → promote to project rules / principles
 EXPLAIN       $rite explain ...        ≡    $rite-explain     grounded concept/diff/idea/recap explainer
 POV           $rite pov ...            ≡    $rite-pov         decide adopt / trial / hold / reject for an external option

@@ -20,8 +20,9 @@ visibility. Public utilities use the `rite-*` prefix: `rite-quick`,
 `rite-frame`, `rite-adopt`, `rite-learn`, `rite-doctor`, `rite-customize`,
 `rite-zoom-out`, `rite-prototype`, `rite-handoff`, `rite-pressure-test`,
 `rite-autocomplete`, `rite-explain`, `rite-pov`, `rite-dogfood`, and
-`rite-pr-feedback`. The host may invoke `devrites-*` specialists through the
-model. `devrites-lib` is the non-workflow library exception.
+`rite-pr-feedback`, plus the semantic workspace maintenance command
+`rite-upgrade`. The host may invoke `devrites-*` specialists through the model.
+`devrites-lib` is the non-workflow library exception.
 
 ## Surface lifecycle
 
@@ -49,6 +50,11 @@ Workflow-owned commands should have a concrete call site in a `rite-*` skill,
 phase contract, shared reply contract, or installed hook. Operator-owned commands
 must say who runs them.
 
+These similarly named operations have separate owners: `devrites-engine update`
+replaces the installed engine and pack, `devrites-engine migrate` normalizes
+workspace layout and structural state schema, and `/rite-upgrade` reconciles an
+active workspace with the current semantic planning contract.
+
 ## Public commands (`user-invocable: true`)
 
 | Command | Phase | Argument | What it does | Reads | Writes |
@@ -62,6 +68,7 @@ must say who runs them.
 | [`/rite-plan`](../pack/.claude/skills/rite-plan/SKILL.md) | repair → plan | `[mode]` | Reslice / repair / re-order / split / unblock an active plan and return to the `plan` checkpoint; `revise` is artifact-only and `/rite-vet` is the normal resume. | spec/plan/tasks/state/drift + diff | `plan.md`, `tasks.md`, `state.md`, `decisions.md` |
 | [`/rite-build`](../pack/.claude/skills/rite-build/SKILL.md) | build | `[slice]` | Orchestrate **exactly one** vertical slice through the sole wright. The root writes an exact `.wright-allowlist`, retains the original slice baseline through snapshot → reconcile check → test/package integrity → close, and refreshes only the dispatch boundary on bounded retries. Objective failures stay agent-owned; only product/scope/policy choices, irreversible risk, or human-only access/actions become questions. | workspace + diff + `.devrites/CHECKPOINT` | code + `.wright-allowlist`, `recovery-attempts.jsonl`, `state.md`, `evidence.md`, `traceability.md`, `touched-files.md` (+ local `WIP(<slug>)` commit in checkpoint mode) |
 | [`/rite-converge`](../pack/.claude/skills/rite-converge/SKILL.md) | converge | `[slug]` | **Recovery.** Compare live code with clarified intent, append each unmet piece as a traceable `SLICE-###`, and invalidate the old vet verdict so changed work returns through `/rite-vet`. `tasks.md` stays byte-identical when already converged. | clarified spec + plan/tasks + principles + live code | `tasks.md` (appended), `traceability.md`, `state.md`, `eng-review.md` (invalidated), `decisions.md` |
+| [`/rite-upgrade`](../pack/.claude/skills/rite-upgrade/SKILL.md) | maintenance | `[slug]` | **Conditional recovery.** Bring an active unfinished workspace onto `devrites.readiness-artifacts.v2`. A fresh read-only planner identifies the smallest change; the rite preserves completed source, slices, decisions, and evidence, removes stale engine-proof recipes and machine-local wrappers from active plans, then reruns current readiness gates. Already-current workspaces that pass readiness, completed workspaces, and archives are no-ops. | active workspace + current readiness contract | active unfinished planning artifacts only |
 | [`/rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | prove | `[scope]` | Tests + build + runtime + browser proof of the completed feature. | `traceability.md` + workspace + diff | `evidence.md`, `browser-evidence.md`, `traceability.md`, `state.md` |
 | [`/rite-polish`](../pack/.claude/skills/rite-polish/SKILL.md) | polish | `[target \| mode]` | Orchestrator. Reads `reference/code.md` always (Phase 1 + 2); reads `reference/ui.md` when UI is touched (Phase 3 + 4). Mode tokens: `bolder \| quieter \| distill \| harden \| normalize-only`. | workspace + design system + diff | `polish-report.md`, `browser-evidence.md` |
 | [`/rite-review`](../pack/.claude/skills/rite-review/SKILL.md) | review | `[scope]` | Feature-scoped multi-axis review. Parallel fresh-context Spec + Standards agents (`devrites-spec-reviewer`, `devrites-code-reviewer`). | workspace + diff | `review.md`, `evidence.md`, `state.md` |
@@ -110,7 +117,7 @@ the shared reference library.
 
 ## Agents (`.claude/agents/devrites-*`, fresh-context leaves)
 
-**Seventeen roles:** 16 read-only leaves plus one source/test writer,
+**Eighteen roles:** 17 read-only leaves plus one source/test writer,
 `devrites-slice-wright`.
 
 | Agent | Spawned by | Purpose |
@@ -118,6 +125,7 @@ the shared reference library.
 | [`devrites-evidence-scout`](../pack/.claude/agents/devrites-evidence-scout.md) | `/rite-spec`, `/rite-clarify`, `/rite-converge` | Read-only bounded evidence dossier from live code, project records, or cited external facts |
 | [`devrites-plan-drafter`](../pack/.claude/agents/devrites-plan-drafter.md) | `/rite-define`, `/rite-plan repair` | Read-only planning candidate; the root makes decisions and writes planning artifacts |
 | [`devrites-proof-runner`](../pack/.claude/agents/devrites-proof-runner.md) | `/rite-prove`, affected re-proof | Read-only tree plus non-destructive command execution; returns a proof report, never the verdict |
+| [`devrites-upgrade-planner`](../pack/.claude/agents/devrites-upgrade-planner.md) | `/rite-upgrade` | Fresh read-only assessment of semantic contract gaps; returns a bounded preservation-first upgrade plan |
 | [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) | `/rite-build` (the build core) | **Sole source/test writer**: implement one exact allowlisted slice (orient → TDD → verify); returns a typed artifact and writes no bookkeeping |
 | [`devrites-strategy-reviewer`](../pack/.claude/agents/devrites-strategy-reviewer.md) | `/rite-temper` (pre-plan) | Spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention); read-only; **not** part of the seal fan-out |
 | [`devrites-plan-reviewer`](../pack/.claude/agents/devrites-plan-reviewer.md) | `/rite-vet` (pre-build) | Plan-vs-rubric engineering review (architecture / scope-reuse / plan code-quality / test-coverage design / performance / reversibility / failure-mode coverage), confidence-banded with a quote-the-source verification gate; read-only; **not** part of the seal fan-out |
@@ -196,9 +204,10 @@ See [`flow.md`](flow.md) for the Mermaid diagrams. The text form is:
 
 - Every phase **reads the active workspace first**; if none, it stops and tells
   the user to run `/rite-spec <feature>`.
-- **Spec Drift Guard** lives in build/prove/polish/review/seal: on drift,
-  stop, record in `drift.md`, classify, ask the user if product behavior
-  changes, then `/rite-plan repair` before resuming.
+- **Spec Drift Guard** lives in build/prove/polish/review/seal: on drift, stop,
+  record in `drift.md`, and classify. Objective implementation and tool defects
+  use bounded recovery; a wrong durable plan uses `/rite-plan repair`; only a
+  product, policy, or irreversible-risk choice asks the user.
 - `/rite-seal` fans out to `.claude/agents/devrites-*` reviewers **in
   parallel** for independent, fresh-context judgment, then writes the GO /
   NO-GO verdict: it runs no git. On GO it hands off to `/rite-ship`, which

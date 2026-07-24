@@ -19,15 +19,17 @@ traceability rules, and phase-relative completeness model, see
    `rite-vet`, `rite-build`, recovery `rite-converge`, `rite-prove`,
    `rite-polish`, `rite-review`, `rite-seal`, and `rite-ship`. `rite-plan`
    repairs or reslices an active plan. The resume verb `rite-resolve` answers a
-   HITL gate and clears `Awaiting human`. The thin `/rite` menu and read-only
-   `rite-status` live in the public utility layer below.
+   HITL gate and clears `Awaiting human`. `rite-upgrade` is a conditional
+   maintenance route for semantically stale active workspaces, not a lifecycle
+   phase. The thin `/rite` menu and read-only `rite-status` live in the public
+   utility layer below.
    `/rite-seal` **decides** GO/NO-GO and writes the verdict to `seal.md`;
    `/rite-ship` is the final core lifecycle rite that **executes** the
    irreversible git ladder and **closes** the task by archiving the workspace
    and clearing `ACTIVE`. Separate steps let users audit the release decision
    before any irreversible action.
 2. **Public utility and on-ramp skills**: `rite-adopt`, `rite-quick`,
-   `rite-frame`, `rite-status`, `rite-doctor`, `rite-learn`, `rite-explain`,
+   `rite-frame`, `rite-status`, `rite-doctor`, `rite-upgrade`, `rite-learn`, `rite-explain`,
    `rite-customize`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
    `rite-pressure-test`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`, and
    `rite-autocomplete`. These are public commands. `rite-autocomplete` is the
@@ -56,12 +58,13 @@ traceability rules, and phase-relative completeness model, see
 4. **Supporting references**: `reference/*.md` inside each skill. Long checklists,
    templates, and anti-rationalization tables loaded on demand (progressive
    disclosure) so `SKILL.md` bodies stay small.
-5. **Agents**: `.claude/agents/devrites-*` contains **17 flat depth-one roles**:
-   16 read-only leaves and the sole source/test writer,
+5. **Agents**: `.claude/agents/devrites-*` contains **18 flat depth-one roles**:
+   17 read-only leaves and the sole source/test writer,
    `devrites-slice-wright`. The read-only set includes three bounded work
    leaves (`devrites-evidence-scout`, `devrites-plan-drafter`, and
-   `devrites-proof-runner`) plus the existing reviewers, auditors, judge, and
-   retrospector. Public rites remain authoritative: leaves return typed
+   `devrites-proof-runner`), the fresh `devrites-upgrade-planner`, plus the
+   existing reviewers, auditors, judge, and retrospector. Public rites remain
+   authoritative: leaves return typed
    evidence, never ask the human, change phase, or write canonical
    `.devrites/**` state. See [`orchestration.md`](orchestration.md) for the
    dispatch, fallback, identity, and reconciliation contract.
@@ -137,6 +140,24 @@ generated into `pack/generated/**` and installed to `.agents/skills`, `.codex/ag
 `.codex/hooks.json`, and `AGENTS.md` because Codex and Claude use
 different project-local conventions. Those generated host artifacts are delivered by the
 npm installer; Claude/Codex plugin packaging is intentionally not a distribution path.
+
+### Why semantic upgrade is separate from update and migration
+
+Three operations solve different problems. `devrites-engine update` refreshes
+the installed binary and pack. `devrites-engine migrate` normalizes workspace
+layout and structural state schema. Neither one can claim that an active plan
+still follows the current planning rules.
+
+`/rite-upgrade [slug]` owns that semantic reconciliation. Build readiness uses
+the `devrites.readiness-artifacts.v2` contract declared by
+`decision-coverage.md`, `eng-review.md`, and `test-plan.md`; it returns code `8`
+when those existing artifacts are stale. The rite then asks a fresh read-only
+`devrites-upgrade-planner` to classify the gap before the root changes anything.
+It preserves completed source, slice bodies, decisions, and evidence, repairs
+only active unfinished planning, removes obsolete proof recipes and local
+wrappers, and reruns the current readiness gates. Already-current workspaces
+that pass readiness, completed workspaces, and archives remain untouched. See
+[ADR-0012](adr/0012-semantic-workspace-upgrades.md).
 
 ### Why `/engine` was rejected
 A single `/engine` (or `/devrites`) command would load every phase's
@@ -278,8 +299,8 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 30 public `rite-*` skills (43 total), plus the thin `/rite`
-  menu: 31 public and 12 internal. The lifecycle
+- **Surface**: 31 public `rite-*` skills (44 total), plus the thin `/rite`
+  menu: 32 public and 12 internal. The lifecycle
   includes mandatory adaptive Clarify, optional Temper, mandatory Vet, and
   Converge recovery; Seal **decides** and Ship **executes + closes**. Eleven
   `devrites-*` specialists are model-invoked and `devrites-lib` is the shared
@@ -296,7 +317,7 @@ contract.
 - **Slice rule**: build **one vertical slice, then stop**. There is no automatic continuation.
 - **Drift**: an explicit **Spec Drift Guard** in build/prove/polish/review/seal.
 - **Design**: `devrites-frontend-craft` + a four-phase `/rite-polish` orchestrator (code + backend always; UI normalize + polish when UI is in scope).
-- **Agents**: 17 fresh-context roles at flat depth one: 16 read-only leaves and
+- **Agents**: 18 fresh-context roles at flat depth one: 17 read-only leaves and
   one wright. Fallback order is named, generic, then labelled inline.
 - **Review**: **feature-scoped** multi-axis review with severity labels and
   fresh-context agents at the seal.

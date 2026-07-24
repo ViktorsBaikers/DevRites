@@ -83,11 +83,13 @@ stage_workspace() {
   mkdir -p "$ws"
   cp -R "$GOOD/." "$ws/"
   if [ "$mode" = "readiness" ]; then
-    python3 - "$ws/state.md" <<'PY'
+    python3 - "$ws" "$READINESS" <<'PY'
 from pathlib import Path
+import json
 import sys
 
-path = Path(sys.argv[1])
+workspace, contract_path = map(Path, sys.argv[1:])
+path = workspace / "state.md"
 text = path.read_text()
 for old, new in (
     ("| phase | done |", "| phase | build |"),
@@ -97,6 +99,35 @@ for old, new in (
         raise SystemExit(f"{path}: expected exactly one {old!r}")
     text = text.replace(old, new)
 path.write_text(text)
+
+contract = json.loads(contract_path.read_text())
+field = contract["contractField"]
+declaration = f"{field}: {contract['schema']}"
+for name in ("decision-coverage.md", "test-plan.md", "eng-review.md"):
+    artifact = workspace / name
+    lines = [
+        line for line in artifact.read_text().splitlines()
+        if not line.startswith(f"{field}:")
+    ]
+    lines[1:1] = ["", declaration]
+    artifact.write_text("\n".join(lines) + "\n")
+PY
+    local engineering_digest
+    engineering_digest="$(
+      env DEVRITES_ROOT="$project" "$ENGINE" readiness-digest engineering "$slug"
+    )"
+    python3 - "$ws/eng-review.md" "$engineering_digest" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+field = sys.argv[2]
+lines = path.read_text().splitlines()
+matches = [i for i, line in enumerate(lines) if line.startswith("Readiness inputs SHA-256:")]
+if len(matches) != 1:
+    raise SystemExit(f"{path}: expected exactly one engineering digest")
+lines[matches[0]] = field
+path.write_text("\n".join(lines) + "\n")
 PY
   fi
 

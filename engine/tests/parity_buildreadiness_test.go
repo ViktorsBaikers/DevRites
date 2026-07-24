@@ -5,7 +5,9 @@ package main_test
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/devrites/devrites/internal/lib"
@@ -27,6 +29,8 @@ func TestParityBuildReadiness(t *testing.T) {
 			"tasks.md":        "# Tasks\n\n## SLICE-001\nBuild.\n",
 			"traceability.md": "# Traceability\n\nAC-001 -> SLICE-001.\n",
 			"test-plan.md": `# Test plan
+
+DevRites contract: devrites.readiness-artifacts.v2
 
 ## Build-entry preflight
 | Gate | Command | Cwd | Expected | Prerequisites | Provenance to recapture |
@@ -51,6 +55,7 @@ func TestParityBuildReadiness(t *testing.T) {
 		}
 		writeFeatureFile(t, work, slug, "eng-review.md", fmt.Sprintf(`# Eng review
 
+DevRites contract: devrites.readiness-artifacts.v2
 Implementation readiness: READY
 Readiness inputs SHA-256: %s
 
@@ -115,11 +120,16 @@ Readiness inputs SHA-256: %s
 	writeReadyArtifacts("stalevet")
 	writeFeatureFile(t, work, "stalevet", "state.md", "- Phase: plan\n- Plan approved: 2024-01-01\n- Status: running\n") // exit 7
 
+	writeCoverageArtifacts(t, work, "legacycontract")
+	writeFeatureFile(t, work, "legacycontract", "state.md", "- Phase: vet\n- Plan approved: 2024-01-01\n- Status: running\n") // exit 8
+	legacyCoverage := filepath.Join(work, ".devrites", "features", "legacycontract", "decision-coverage.md")
+	replaceInFile(t, legacyCoverage, "DevRites contract: devrites.readiness-artifacts.v2\n", "")
+
 	// "ghost" is intentionally never created → no workspace/state.md (exit 5).
 	for _, arg := range []string{
 		"await", "blocked", "approved", "noapprove", "approvenone",
 		"trailpipe", "trailhash", "emptystatus", "noclarify", "clarifyopen",
-		"novet", "vetnotready", "stalevet", "ghost",
+		"novet", "vetnotready", "stalevet", "legacycontract", "ghost",
 	} {
 		c := parityCase{
 			workdir: work,
@@ -127,6 +137,21 @@ Readiness inputs SHA-256: %s
 			goArgs:  []string{"build-readiness", arg},
 		}
 		t.Run("arg="+arg, func(t *testing.T) { c.assertEqual(t) })
+	}
+}
+
+func replaceInFile(t *testing.T, path, old, replacement string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(data)
+	if strings.Count(body, old) != 1 {
+		t.Fatalf("%s: expected exactly one %q", path, old)
+	}
+	if err := os.WriteFile(path, []byte(strings.Replace(body, old, replacement, 1)), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -144,6 +169,7 @@ func writeCoverageArtifacts(t *testing.T, work, slug string) {
 	}
 	writeFeatureFile(t, work, slug, "decision-coverage.md", fmt.Sprintf(`# Decision coverage
 
+DevRites contract: devrites.readiness-artifacts.v2
 Decision coverage: CLEAR
 Coverage inputs SHA-256: %s
 

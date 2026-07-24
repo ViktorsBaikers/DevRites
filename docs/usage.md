@@ -5,7 +5,9 @@ These examples cover the common DevRites workflows. Start a new feature with
 `/rite-quick` and `/rite-frame` handle bounded work outside the full feature
 lifecycle. Workspace phases first read the active workspace from
 `.devrites/ACTIVE` and `.devrites/work/<slug>/`. If none exists, they report the
-command that can create or select one.
+command that can create or select one. `/rite-upgrade [slug]` is the
+conditional maintenance route for an active workspace planned under older
+DevRites rules.
 
 - **Full command reference** → [`command-map.md`](command-map.md)
 - **Flow diagrams** → [`flow.md`](flow.md)
@@ -24,7 +26,7 @@ the work across compaction and new sessions:
 | `README.md` / `index.md` / `feature.md` | `/rite-spec` | compact workspace map: phase, status, next action, artifact map, read-next table, gates |
 | `brief.md` | `/rite-spec` | one-line objective + definition of done |
 | `spec.md` | `/rite-spec` | product WHAT/WHY, requirements, acceptance, boundaries, measurable success |
-| `decision-coverage.md` | `/rite-clarify` | topology-first coverage plus semantic `CLEAR` verdict bound to all decision inputs |
+| `decision-coverage.md` | `/rite-clarify` | topology-first coverage plus semantic `CLEAR` verdict bound to all decision inputs and the current readiness-artifact contract |
 | `architecture.md` | `/rite-define` | owning module/layer, integration points, data/API/events, dependencies, risks |
 | `flows.md` | `/rite-spec` or `/rite-define` | optional Mermaid diagrams when sequence/state/data flow clarifies behavior |
 | `references/` + `references.md` | `/rite-spec` | saved design refs: screenshots, Figma, video, links |
@@ -32,8 +34,8 @@ the work across compaction and new sessions:
 | `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback |
 | `tasks.md` | `/rite-define` | ordered `SLICE-###` vertical slices, each mapped to `AC-###` and tagged `Mode: AFK \| HITL` + gate fields |
 | `traceability.md` | `/rite-define` | AC/REQ → slices → tests/proofs → evidence → touched files matrix |
-| `eng-review.md` | `/rite-vet` | mandatory engineering review with semantic, input-digest-bound readiness verdict |
-| `test-plan.md` | `/rite-vet` | build-readable coverage target: coverage diagram, per-gap test requirements, acceptance→test map (read by `/rite-build` + `/rite-prove`) |
+| `eng-review.md` | `/rite-vet` | mandatory engineering review with semantic, input-digest-bound readiness verdict and readiness-artifact contract |
+| `test-plan.md` | `/rite-vet` | build-readable coverage target and readiness-artifact contract: coverage diagram, per-gap test requirements, acceptance→test map (read by `/rite-build` + `/rite-prove`) |
 | `state.md` | every phase | working cursor: phase, status, next action, slice, AFK budget, durable clarification return fields, and `Awaiting human` only when paused |
 | `recovery-attempts.jsonl` | technical recovery | durable three-failure budget per root-cause fingerprint |
 | `.wright-allowlist` | `/rite-build` root | exact normalized source/test paths the sole wright may change |
@@ -62,7 +64,10 @@ deleting the old files. `feature.md`/`index.md` can still act as the workspace
 map, `status.md` as the cursor alias for `state.md`, and `proof.md` as the proof
 alias for `evidence.md`. Workspace maps use schema v2; migration upgrades
 compatible declarations but never fabricates clarification, readiness, or proof
-evidence.
+evidence. That structural schema is separate from the semantic planning
+contract. `/rite-upgrade` reconciles active unfinished planning with
+`devrites.readiness-artifacts.v2`; it does not rewrite current, completed, or
+archived workspaces.
 
 Project-root sentinel (outside the workspace):
 
@@ -123,6 +128,27 @@ reconciliation check, test/package integrity, and close steps use the same
 original baseline. A retry snapshot refreshes only the dispatch boundary.
 `/rite-seal` **decides**; `/rite-ship` **executes + closes**. To run the whole
 sequence unattended, see `/rite-autocomplete` (§11).
+
+## 2a) Continue a workspace planned under older rules
+
+Run the upgrade after updating DevRites when build readiness reports code `8`,
+or invoke it directly for an older active workspace:
+
+```text
+/rite-upgrade ark-panda-redesign
+  → a fresh read-only devrites-upgrade-planner compares the active unfinished
+    planning surface with devrites.readiness-artifacts.v2
+  → completed source, slices, decisions, and evidence stay unchanged
+  → stale old-engine proof recipes and machine-local command wrappers leave the
+    active canonical plan
+  → current coverage and engineering-readiness gates run again
+  → an already-current workspace that passes readiness is a no-op; completed
+    workspaces and archives are also left alone
+```
+
+This is not the same as `devrites-engine update`, which refreshes the installed
+engine and pack, or `devrites-engine migrate`, which normalizes workspace layout
+and structural state schema.
 
 ## 3) Spec drift mid-build
 

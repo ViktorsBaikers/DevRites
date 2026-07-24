@@ -1,6 +1,6 @@
-# All 43 skills
+# All 44 skills
 
-The pack contains 43 skills: the `rite` menu, 30 user-invocable `rite-*`
+The pack contains 44 skills: the `rite` menu, 31 user-invocable `rite-*`
 workflow and utility skills, 11 model-invoked `devrites-*` specialists, and the
 internal `devrites-lib` library. `devrites-lib` is not a command. It holds shared
 references and the few explicit script exceptions.
@@ -23,7 +23,8 @@ only when needed; small utilities keep their narrower contract local. The npm
 `rite-*` is the namespace for lifecycle and utility commands. Its utilities are
 `rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`, `rite-customize`,
 `rite-explain`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`, `rite-doctor`,
-`rite-prototype`, `rite-handoff`, `rite-zoom-out`, and `rite-pressure-test`.
+`rite-upgrade`, `rite-prototype`, `rite-handoff`, `rite-zoom-out`, and
+`rite-pressure-test`.
 Some specialized utilities set `disable-model-invocation: true` and run only
 when explicitly invoked, which keeps the always-loaded skill surface small.
 `devrites-*` is the specialist and library namespace used to avoid collisions.
@@ -89,6 +90,7 @@ blocks obvious multi-command `Next:` wording.
 | [`rite-status`](../pack/.claude/skills/rite-status/SKILL.md) | Read-only report: phase, run mode (AFK/HITL), status, active slice, next action, evidence, open questions by gate, drift, risks. | Explicit-only: type `/rite-status` / `/rite status`. |
 | [`rite-resolve`](../pack/.claude/skills/rite-resolve/SKILL.md) | Answer / drop / batch-resolve open `questions.md` entries; clears `state.md` `Awaiting human` and resumes the workflow. | Explicit-only: type `/rite-resolve <qid> "<answer>"`. |
 | [`rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | Diagnose DevRites install, workspace, and optional index health. `--reindex` runs the internal synchronous refresh. | "rite doctor", "is DevRites healthy", "reindex". |
+| [`rite-upgrade`](../pack/.claude/skills/rite-upgrade/SKILL.md) | Reconcile an active unfinished workspace with the current semantic planning contract while preserving completed source, slices, decisions, and evidence. | Explicit-only: build readiness returns code `8`, or you need to continue a workspace planned under older DevRites rules. |
 | [`rite-customize`](../pack/.claude/skills/rite-customize/SKILL.md) | Guided authoring for project-local reviewer overrides and extensions; validates before stopping. | Explicit-only: `/rite-customize` / `/rite customize`. |
 
 ### Express and ad hoc: small or unguarded work
@@ -203,8 +205,8 @@ blocks obvious multi-command `Next:` wording.
 
 ## Fresh-context agents
 
-DevRites ships 17 roles at depth one: 16 read-only leaves and one source/test
-writer. Three read-only roles handle bounded work while the root keeps
+DevRites ships 18 roles at depth one: 17 read-only leaves and one source/test
+writer. Four read-only roles handle bounded work while the root keeps
 authority:
 
 | Agent | Purpose |
@@ -212,6 +214,7 @@ authority:
 | [`devrites-evidence-scout`](../pack/.claude/agents/devrites-evidence-scout.md) | Build a bounded evidence dossier for spec, clarify, converge, or cited external facts. |
 | [`devrites-plan-drafter`](../pack/.claude/agents/devrites-plan-drafter.md) | Draft a planning candidate for define or plan repair; the root decides and writes artifacts. |
 | [`devrites-proof-runner`](../pack/.claude/agents/devrites-proof-runner.md) | Run non-destructive proof commands against a read-only tree and return a proof report. |
+| [`devrites-upgrade-planner`](../pack/.claude/agents/devrites-upgrade-planner.md) | Read an old workspace from scratch, classify semantic contract gaps, and return a bounded upgrade plan without changing files. |
 | [`devrites-strategy-reviewer`](../pack/.claude/agents/devrites-strategy-reviewer.md) | **Pre-plan** spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention). Used by `/rite-temper`, not the seal fan-out. |
 | [`devrites-plan-reviewer`](../pack/.claude/agents/devrites-plan-reviewer.md) | **Pre-build** plan-vs-rubric engineering review (architecture / scope-reuse / plan code-quality / test-coverage design / performance / reversibility / failure-mode coverage), confidence-banded with a quote-the-source verification gate. Used by `/rite-vet`, not the seal fan-out. |
 | [`devrites-forge-judge`](../pack/.claude/agents/devrites-forge-judge.md) | **Build-time** comparative judge of two or three candidate builds of one slice (acceptance / test strength / principle fit / simplicity / reuse / anti-slop). Used by `/rite-build` on a `Forge: yes` slice; picks the single winner to land and names grafts. |
