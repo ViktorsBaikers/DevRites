@@ -25,6 +25,21 @@ func TestDoctorPrintsTriangle(t *testing.T) {
 	}
 }
 
+func TestDoctorVerboseMatchesPlainDoctor(t *testing.T) {
+	root := newWorkspace(t)
+	plainOut, plainErr, plainCode := runDevrites(t, root, "doctor")
+	verboseOut, verboseErr, verboseCode := runDevrites(t, root, "doctor", "--verbose")
+	if plainCode != 0 || verboseCode != 0 {
+		t.Fatalf("doctor exits: plain=%d verbose=%d", plainCode, verboseCode)
+	}
+	if verboseCode != plainCode || verboseOut != plainOut || verboseErr != plainErr {
+		t.Fatalf(
+			"doctor --verbose differs from doctor:\nplain: code=%d stdout=%q stderr=%q\nverbose: code=%d stdout=%q stderr=%q",
+			plainCode, plainOut, plainErr, verboseCode, verboseOut, verboseErr,
+		)
+	}
+}
+
 func TestDoctorReportsStaleActiveWithPasteableRepair(t *testing.T) {
 	root := newWorkspace(t)
 	if err := os.WriteFile(filepath.Join(root, "ACTIVE"), []byte("ghost\n"), 0o644); err != nil {

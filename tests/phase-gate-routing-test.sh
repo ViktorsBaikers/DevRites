@@ -11,6 +11,7 @@ PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
 CONVERGE="$ROOT/pack/.claude/skills/rite-converge/SKILL.md"
 BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
 DRIFT="$ROOT/pack/.claude/skills/rite-build/reference/spec-drift-guard.md"
+DOCTOR="$ROOT/pack/.claude/skills/rite-doctor/SKILL.md"
 UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
 UPGRADE_PLANNER="$ROOT/pack/.claude/agents/devrites-upgrade-planner.md"
 RESOLVE="$ROOT/pack/.claude/skills/rite-resolve/SKILL.md"
@@ -98,6 +99,14 @@ if grep -q 'devrites.readiness-artifacts.v2' "$CLARIFY" \
   ok "rite-upgrade reconciles legacy workspaces to the stamped current contract"
 else
   no "rite-upgrade lacks a current-contract, fresh-agent, idempotent readiness path"
+fi
+
+if grep -q 'devrites-engine doctor; echo' "$DOCTOR" \
+   && grep -q 'devrites-engine doctor; echo' "$UPGRADE" \
+   && ! grep -q 'doctor --verbose' "$DOCTOR" "$UPGRADE"; then
+  ok "doctor and upgrade use the engine's stable doctor contract"
+else
+  no "doctor or upgrade depends on an unsupported doctor flag"
 fi
 
 if grep -q 'Implementation readiness: NEEDS REPLAN' "$PLAN" \
