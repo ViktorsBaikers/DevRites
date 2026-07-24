@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.1](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.0...v3.2.1) (2026-07-24)
+
+### Fixed
+
+* **ci:** govern temporary npm audit exceptions ([c2219e0](https://github.com/ViktorsBaikers/DevRites/commit/c2219e0ff11f11ee3f2e2ffa7c5d35b480c5eb76))
+* **rite:** repair doctor compatibility ([811f339](https://github.com/ViktorsBaikers/DevRites/commit/811f339d22d3ec079549a5d50838d7596c72c7da))
+
 ## [3.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v3.1.0...v3.2.0) (2026-07-24)
 
 ### Added
