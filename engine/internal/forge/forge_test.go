@@ -35,9 +35,7 @@ func TestForgeFullTreeMergeCleanupAndIdempotence(t *testing.T) {
 	if err := os.Remove(filepath.Join(a.Worktree, "delete.txt")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(filepath.Join(a.Worktree, "script.sh"), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	setGitExecutable(t, a.Worktree, "script.sh")
 	if runtime.GOOS != "windows" {
 		if err := os.Symlink("tracked.txt", filepath.Join(a.Worktree, "tracked.link")); err != nil {
 			t.Fatal(err)
@@ -87,8 +85,8 @@ func TestForgeFullTreeMergeCleanupAndIdempotence(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(repo, "delete.txt")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("deletion did not land: %v", err)
 	}
-	if mode := fileMode(t, filepath.Join(repo, "script.sh")); mode.Perm() != 0o755 {
-		t.Fatalf("script mode=%o", mode.Perm())
+	if got := string(gitRaw(t, repo, "ls-tree", "HEAD", "--", "script.sh")); !strings.HasPrefix(got, "100755 blob ") {
+		t.Fatalf("merged script mode is not executable: %s", got)
 	}
 
 	if _, err := RecordVerification(repo, m.RunID, true, "verifier-1"); err != nil {
@@ -535,6 +533,14 @@ func gitRaw(t *testing.T, dir string, args ...string) []byte {
 	return out
 }
 
+func setGitExecutable(t *testing.T, dir, path string) {
+	t.Helper()
+	if err := os.Chmod(filepath.Join(dir, path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	gitOK(t, dir, "update-index", "--chmod=+x", "--", path)
+}
+
 func writeFile(t *testing.T, path string, data []byte, mode os.FileMode) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -567,13 +573,4 @@ func readFile(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return string(raw)
-}
-
-func fileMode(t *testing.T, path string) os.FileMode {
-	t.Helper()
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return info.Mode()
 }

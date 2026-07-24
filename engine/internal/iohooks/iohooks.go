@@ -42,7 +42,7 @@ const (
 
 	ingestReasonHiddenControl       = "ingest_hidden_control"
 	ingestReasonInstructionRedirect = "ingest_instruction_redirect"
-	ingestReasonCredentialShape     = "ingest_credential_shape"
+	ingestReasonCredentialShape     = "ingest_credential_shape" // #nosec G101 -- finding category, not a credential
 )
 
 var (

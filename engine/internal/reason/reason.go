@@ -12,9 +12,9 @@ type ID string
 const (
 	RootSelected ID = "DRV-ROOT-SELECTED"
 
-	GateReadinessPassed  ID = "DRV-GATE-READINESS-PASSED"
+	GateReadinessPassed  ID = "DRV-GATE-READINESS-PASSED" // #nosec G101 -- stable decision ID, not a credential
 	GateReadinessMissing ID = "DRV-GATE-READINESS-MISSING"
-	GateSealPassed       ID = "DRV-GATE-SEAL-PASSED"
+	GateSealPassed       ID = "DRV-GATE-SEAL-PASSED" // #nosec G101 -- stable decision ID, not a credential
 	GateSealMissing      ID = "DRV-GATE-SEAL-MISSING"
 
 	HookDisabled                 ID = "DRV-HOOK-DISABLED"
@@ -22,7 +22,7 @@ const (
 	HookStopClear                ID = "DRV-HOOK-STOP-CLEAR"
 	HookStopInputInvalid         ID = "DRV-HOOK-STOP-INPUT-INVALID"
 	HookStopReentry              ID = "DRV-HOOK-STOP-REENTRY"
-	HookStopWorkspaceUnavailable ID = "DRV-HOOK-STOP-WORKSPACE-UNAVAILABLE"
+	HookStopWorkspaceUnavailable ID = "DRV-HOOK-STOP-WORKSPACE-UNAVAILABLE" // #nosec G101 -- stable decision ID, not a credential
 	HookStopRed                  ID = "DRV-HOOK-STOP-RED"
 	HookStopUnsurfacedHumanGate  ID = "DRV-HOOK-STOP-UNSURFACED-HUMAN-GATE"
 	HookStopMissingProof         ID = "DRV-HOOK-STOP-MISSING-PROOF"
