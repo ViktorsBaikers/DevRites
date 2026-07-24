@@ -26,6 +26,8 @@ NONSKILL = {
     "devrites-engine",
     # a git commit-trailer marker ("[devrites-context]" body in a WIP checkpoint), not a skill
     "devrites-context",
+    # typed contract schemas and a generated-hook diagnostic marker, not skills
+    "devrites-forge", "devrites-git-authority", "devrites-codex-leaf-guard",
 }
 # names a skill deliberately mentions as NON-existent (self-documenting prose).
 DOCUMENTED_NONEXISTENT = {"rite-use"}
