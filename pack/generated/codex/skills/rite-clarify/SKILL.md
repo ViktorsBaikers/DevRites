@@ -79,7 +79,8 @@ dispatch uses
    `not-applicable`, or justified `deferred-nonblocking` with owner and validation gate.
    Partial/Missing, an unowned material assumption, or an open blocking/escalating question
    means `NEEDS CLARIFICATION`.
-7. **Write the verdict.** Update `decision-coverage.md`; success requires exactly
+7. **Write the verdict.** Update `decision-coverage.md`; success requires exactly one
+   `DevRites contract: devrites.readiness-artifacts.v2` field and exactly
    `Decision coverage: CLEAR`. Normal state is `Phase: clarify`, `Next step: $rite-temper`.
    A contract-neutral retrofit runs `devrites-engine clarify-return restore <slug>`; a
    changed behavior/acceptance contract leaves the return cursor unconsumed, writes

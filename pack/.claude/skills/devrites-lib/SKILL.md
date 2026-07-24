@@ -45,7 +45,8 @@ These are selected `devrites-engine` contracts. Run `devrites-engine help` for t
   remember: `2` no `Plan approved` (→ `/rite-define`), `3` `awaiting_human`
   (→ `/rite-resolve`), `4` `blocked` (→ `/rite-plan`), `5` no workspace
   (→ `/rite-spec`), `6` decision coverage missing/not CLEAR (→ `/rite-clarify`),
-  `7` implementation readiness missing/not READY (→ `/rite-vet`), `0` ready.
+  `7` implementation readiness missing/not READY (→ `/rite-vet`), `8` older or unknown
+  semantic readiness contract (→ `/rite-upgrade`), `0` ready.
 - `devrites-engine evidence-fresh`: evidence-freshness gate for `/rite-seal`. Exits `3`
   when any file in `touched-files.md` is newer than `evidence.md` /
   `browser-evidence.md` (stale proof = NO-GO until re-proven), `0` when fresh.

@@ -136,7 +136,9 @@ low-stakes work.
 
 - It does not bypass `/rite-prove`, `/rite-review`, or `/rite-seal`. Those gates are
   feature-scoped and always run when their phase runs.
-- It does not skip `/rite-plan repair` on Spec Drift Guard fires.
+- It does not skip `/rite-plan repair` when the Spec Drift Guard finds that the
+  durable plan is wrong. Objective implementation and tool failures stay in
+  bounded recovery instead.
 - It does not skip `devrites-source-driven` checks. Uncertain framework behavior still
   triggers the doc lookup.
 - It does not skip `evidence.md` writes. AFK runs that don't record evidence are

@@ -27,11 +27,12 @@ type readinessArtifactContract struct {
 }
 
 type readinessContractFile struct {
-	Schema      string                    `json:"schema"`
-	Coverage    readinessArtifactContract `json:"coverage"`
-	Engineering readinessArtifactContract `json:"engineering"`
-	TestPlan    readinessArtifactContract `json:"testPlan"`
-	Reasons     []readinessReason         `json:"reasons"`
+	Schema        string                    `json:"schema"`
+	ContractField string                    `json:"contractField"`
+	Coverage      readinessArtifactContract `json:"coverage"`
+	Engineering   readinessArtifactContract `json:"engineering"`
+	TestPlan      readinessArtifactContract `json:"testPlan"`
+	Reasons       []readinessReason         `json:"reasons"`
 }
 
 type readinessReason struct {
@@ -49,6 +50,9 @@ var readinessContract = func() readinessContractFile {
 	if err := json.Unmarshal(readinessContractJSON, &contract); err != nil {
 		panic(fmt.Sprintf("parse embedded readiness contract: %v", err))
 	}
+	if contract.Schema == "" || contract.ContractField == "" {
+		panic("parse embedded readiness contract: schema and contractField are required")
+	}
 	if len(contract.Reasons) == 0 {
 		panic("parse embedded readiness contract: no readiness reasons")
 	}
@@ -62,6 +66,25 @@ func readinessCode(id string) int {
 		}
 	}
 	panic("readiness contract has no reason " + id)
+}
+
+func validateArtifactContract(root, slug string, contracts ...readinessArtifactContract) error {
+	for _, contract := range contracts {
+		data, err := os.ReadFile(featureFile(root, slug, contract.Artifact))
+		if err != nil {
+			return fmt.Errorf("read %s: %w", contract.Artifact, err)
+		}
+		values := artifactFieldValues(data, readinessContract.ContractField)
+		if len(values) != 1 || strings.TrimSpace(values[0]) != readinessContract.Schema {
+			return fmt.Errorf(
+				"%s must contain exactly one %s: %s",
+				contract.Artifact,
+				readinessContract.ContractField,
+				readinessContract.Schema,
+			)
+		}
+	}
+	return nil
 }
 
 var (

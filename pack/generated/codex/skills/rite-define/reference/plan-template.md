@@ -58,6 +58,8 @@ slices above the cut, and no slice above it depends on one below.
 After which slices to run tests / build / browser proof. For UI slices, name the visual
 acceptance targets from `design-brief.md`, not a generic "looks good" check.
 Each proof names exact command/cwd/signal, prerequisites, and mutable provenance inputs.
+Use portable repository commands; runtime wrappers and local absolute/temp paths do not
+belong in a durable plan.
 
 **Key links** — the wiring the assembled feature must exhibit, one row each:
 `<from> → <to> via <mechanism>` (route → handler via registration; producer → consumer via
@@ -93,7 +95,7 @@ decisions.md / evidence.md when used.
 - [ ] Every `Mode: HITL` slice has `Gate`, `SLA`, and `Checkpoint` populated
 - [ ] Human-owned choices are resolved; surviving checkpoints need unavailable pre-code
       evidence or action-time approval
-- [ ] Slice proof commands, cwd, prerequisites, and provenance inputs are preflightable
+- [ ] Slice proof commands, cwd, prerequisites, and provenance inputs are portable and preflightable
 - [ ] Every UI slice names `Design brief states` and binary `Visual acceptance`
 - [ ] `Key links` rows cover every cross-slice wiring (or state `none`)
 - [ ] Cross-boundary contracts name producer, consumer, invariants/errors/order, and proof

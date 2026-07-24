@@ -10,6 +10,9 @@ VET_ARTIFACTS="$ROOT/pack/.claude/skills/rite-vet/reference/artifacts.md"
 PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
 CONVERGE="$ROOT/pack/.claude/skills/rite-converge/SKILL.md"
 BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
+DRIFT="$ROOT/pack/.claude/skills/rite-build/reference/spec-drift-guard.md"
+UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
+UPGRADE_PLANNER="$ROOT/pack/.claude/agents/devrites-upgrade-planner.md"
 RESOLVE="$ROOT/pack/.claude/skills/rite-resolve/SKILL.md"
 AUTOCOMPLETE="$ROOT/pack/.claude/skills/rite-autocomplete/SKILL.md"
 fail=0
@@ -77,10 +80,24 @@ else
 fi
 
 if grep -q '`6` → `/rite-clarify`' "$BUILD" \
-   && grep -q '`7` → `/rite-vet`' "$BUILD"; then
+   && grep -q '`7` → `/rite-vet`' "$BUILD" \
+   && grep -q '`8` → `/rite-upgrade`' "$BUILD"; then
   ok "rite-build routes missing upstream evidence to its owning phase"
 else
   no "rite-build does not route clarification/vet readiness gaps upstream"
+fi
+
+if grep -q 'devrites.readiness-artifacts.v2' "$CLARIFY" \
+   && grep -q 'devrites.readiness-artifacts.v2' "$VET" \
+   && grep -q 'devrites-engine migrate' "$UPGRADE" \
+   && grep -q 'devrites-upgrade-planner' "$UPGRADE" \
+   && grep -q 'devrites-engine build-readiness' "$UPGRADE" \
+   && grep -q 'second `/rite-upgrade`' "$UPGRADE" \
+   && grep -q 'no-op path' "$UPGRADE" \
+   && grep -q 'Read-only' "$UPGRADE_PLANNER"; then
+  ok "rite-upgrade reconciles legacy workspaces to the stamped current contract"
+else
+  no "rite-upgrade lacks a current-contract, fresh-agent, idempotent readiness path"
 fi
 
 if grep -q 'Implementation readiness: NEEDS REPLAN' "$PLAN" \
@@ -110,7 +127,9 @@ fi
 
 if grep -q 'devrites-debug-recovery' "$BUILD" \
    && grep -q 'three total attempts' "$BUILD" \
-   && ! grep -q 'Still red after the one retry' "$BUILD"; then
+   && ! grep -q 'Still red after the one retry' "$BUILD" \
+   && grep -q 'Do not ask for retry authorization' "$DRIFT" \
+   && grep -q 'Re-plan only when the durable plan changed' "$DRIFT"; then
   ok "rite-build routes objective failures through bounded debug recovery"
 else
   no "rite-build still converts the first retry failure directly into a human gate"

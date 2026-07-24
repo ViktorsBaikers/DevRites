@@ -85,6 +85,7 @@ the same skill.
 | 10 | Review | [`/rite-review`](pack/.claude/skills/rite-review/SKILL.md) | Reviews the completed feature against its spec and engineering standards. |
 | 11 | Seal | [`/rite-seal`](pack/.claude/skills/rite-seal/SKILL.md) | Writes the final `GO` or `NO-GO` decision without changing git. |
 | 12 | Ship | [`/rite-ship`](pack/.claude/skills/rite-ship/SKILL.md) | On `GO`, asks for typed confirmation, performs the approved git actions, and archives the workspace. |
+| n/a | Upgrade *(conditional)* | [`/rite-upgrade [slug]`](pack/.claude/skills/rite-upgrade/SKILL.md) | Brings an active unfinished workspace onto the current planning contract without rewriting completed work or evidence. Build readiness sends stale workspaces here automatically. |
 
 Some work needs a different route:
 
@@ -93,7 +94,15 @@ Some work needs a different route:
 - [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md) runs
   the lifecycle unattended. With `--ship`, it auto-confirms the final typed
   `GO`; without that flag, it stops and waits for you.
+- [`/rite-upgrade [slug]`](pack/.claude/skills/rite-upgrade/SKILL.md) is a
+  maintenance route for an active workspace planned under older DevRites
+  rules. It is not a mandatory lifecycle phase.
 - [`/rite`](pack/.claude/skills/rite/SKILL.md) shows the command menu.
+
+`devrites-engine update` refreshes the installed engine and pack.
+`devrites-engine migrate` normalizes workspace layout and structural state.
+Neither replaces `/rite-upgrade`, which reconciles unfinished planning
+semantics while preserving completed work.
 
 The [command map](docs/command-map.md) covers every command, trigger, input, and
 output. The [worked examples](docs/usage.md) show normal features, plan drift,
@@ -146,9 +155,11 @@ Some phases add focused artifacts such as `strategy.md`, `design-brief.md`,
   its proof before returning control. Before dispatching the sole writer, the
   root writes an exact `.wright-allowlist`. Reconciliation and integrity gates
   use the same pre-slice baseline.
-- **Stop on drift.** If implementation no longer matches the plan, the Spec
-  Drift Guard records the mismatch in `drift.md` and routes through
-  [`/rite-plan repair`](pack/.claude/skills/rite-plan/SKILL.md).
+- **Classify drift before routing.** The Spec Drift Guard records the mismatch
+  in `drift.md`. Build handles objective implementation and tool failures with
+  bounded recovery; it uses
+  [`/rite-plan repair`](pack/.claude/skills/rite-plan/SKILL.md) only when the
+  durable plan is wrong, and asks you only for a real product or risk decision.
 - **Prove claims.** Tests, commands, output, and opened screenshots support
   completion claims. A screenshot path by itself is not proof.
 - **Separate the decision from the action.** Seal makes the release decision.
@@ -275,14 +286,15 @@ through Claude Code or Codex plugin stores.
 
 ## Skills and agents
 
-The pack ships 43 skills: 31 public and 12 internal. The public surface contains
-the `rite` menu and 30 `rite-*` workflows and utilities. Eleven `devrites-*`
+The pack ships 44 skills: 32 public and 12 internal. The public surface contains
+the `rite` menu and 31 `rite-*` workflows and utilities. Eleven `devrites-*`
 specialists load when a matching task needs them; `devrites-lib` carries the
 shared contracts and engineering standards.
 
-Seventeen fresh-context agents ship with the pack. Sixteen are read-only,
+Eighteen fresh-context agents ship with the pack. Seventeen are read-only,
 including the evidence scout, plan drafter, proof runner, reviewers, judges,
-and retrospector. `devrites-slice-wright` is the only source/test writer.
+upgrade planner, and retrospector. `devrites-slice-wright` is the only
+source/test writer.
 
 The authoritative [skills catalogue](docs/skills.md) lists every skill and
 agent. The [flow diagrams](docs/flow.md) show routing, reviewer fan-out, and

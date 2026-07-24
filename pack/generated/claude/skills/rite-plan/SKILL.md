@@ -64,7 +64,10 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
      scope, not a new negotiation.
    - **revise:** apply a requested planning-artifact revision and reconcile existing artifacts in
      any direction; propose the file edit set first, confirm each file before writing, and **never
-     edit source code**. **Gate first: revise or new?** Same intent? More than 50% of existing scope
+     edit source code**. The one confirmation exception is an explicit `/rite-upgrade`: its
+     validated `upgrade-assessment` authorizes one atomic, behavior-neutral normalization of
+     active planning artifacts, provided source, completed slices, answered questions, and
+     historical evidence remain unchanged. **Gate first: revise or new?** Same intent? More than 50% of existing scope
      survives? original *not* completable without this? Two "no"s → new work: recommend
      sealing/shipping the current workspace (MVP cut if named) then `/rite-spec` for the new
      intent, and stop. Revise preserves context; a new workspace separates the work.

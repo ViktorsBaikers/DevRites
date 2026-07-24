@@ -126,7 +126,8 @@ Pull these via `Read` when shaping the plan:
    **Visual acceptance** target (state × viewport × input + target R-id/brief rule)**, so
    the design contract maps to slices as well as acceptance criteria.
    `Tests/proof` names exact command, cwd, expected signal, prerequisites, and mutable
-   provenance inputs; `$rite-vet` preflights them.
+   provenance inputs; `$rite-vet` preflights them. Write the portable repository command,
+   never RTK/local wrappers, user-specific absolute paths, or temporary proof trees.
 4. **Map coverage and wiring:** every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
    criterion. Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`

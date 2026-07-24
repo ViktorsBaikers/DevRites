@@ -33,6 +33,10 @@ engine reads missing/v1 declarations and legacy aliases additively, refuses a
 version newer than it supports, and keeps the snapshot wire schema separate.
 `devrites-engine migrate` upgrades the declaration and layout metadata; it does
 not manufacture decision coverage, vet readiness, test plans, or proof.
+Semantic planning compatibility uses a separate readiness-artifact contract.
+The current value is `devrites.readiness-artifacts.v2`; `/rite-upgrade [slug]`
+reconciles an active unfinished workspace when build readiness reports an older
+or unknown contract.
 
 Canonical live workspace:
 
@@ -141,6 +145,8 @@ Files may exceed budgets only with a visible `Budget override: <reason>` line.
 
 The typed verdict is necessary but not sufficient:
 
+- `decision-coverage.md`, `eng-review.md`, and `test-plan.md` declare
+  `DevRites contract: devrites.readiness-artifacts.v2`.
 - `Coverage inputs SHA-256` binds `decision-coverage.md` to `brief.md`,
   `spec.md`, `decisions.md`, `assumptions.md`, and `questions.md`.
 - `Readiness inputs SHA-256` binds `eng-review.md` to `spec.md`,
@@ -149,7 +155,10 @@ The typed verdict is necessary but not sufficient:
 
 `devrites-engine readiness-digest coverage|engineering [slug]` emits the
 canonical field line. `build-readiness` rejects stale digests, malformed or
-contradictory content, and missing markers. A later-phase clarification
+contradictory content, missing markers, and older or unknown semantic contracts.
+Contract failures use code `8` and route to `/rite-upgrade`; missing coverage or
+vet artifacts keep their existing `/rite-clarify` and `/rite-vet` routes. A
+later-phase clarification
 retrofit uses `clarify-return enter|restore`; restore requires fresh `CLEAR`
 coverage, while an acceptance-changing result keeps the cursor for plan repair.
 

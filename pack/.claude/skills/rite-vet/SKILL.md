@@ -110,7 +110,9 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
    ```
    Completion: every scenario and acceptance criterion maps to planned proof, every slice is
    one-pass implementable, the Build-entry preflight is green or names an owned prerequisite,
-   and developer-facing plans have a predicted `devex.md` scorecard.
+   and developer-facing plans have a predicted `devex.md` scorecard. Durable proof commands
+   are portable repository commands; host-local wrappers belong only in runtime packets and
+   recorded execution evidence.
 4a. **Forge gate.** `/rite-define` leaves `no` / `none` / `none`; Vet alone promotes under
    [`rite-build/reference/forge.md`](../rite-build/reference/forge.md). Require a costly
    unresolved architecture fork, 2–3 distinct complete contiguous `A`–`C` strategies, every
@@ -133,7 +135,9 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
    devrites-engine analyze; echo "final analyze rc=$?"
    ```
    Any non-zero result blocks the handoff. Then update `state.md`:
-   write one typed field to `eng-review.md`: `Implementation readiness: READY`,
+   write exactly one `DevRites contract: devrites.readiness-artifacts.v2` field to both
+   `test-plan.md` and `eng-review.md`, plus one typed field to `eng-review.md`:
+   `Implementation readiness: READY`,
    `NEEDS CLARIFICATION`, or `NEEDS REPLAN`. Only READY sets `Phase: vet` and
    `Next step: /rite-build`, after a final sweep leaves no foreseeable human choice except a
    justified action-time checkpoint. Technical failure records its reproduction and

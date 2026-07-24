@@ -14,12 +14,12 @@ this page summarizes that model.
   dispatch leaves.
 - Normally at most three read-only leaves run concurrently against one frozen
   candidate. The root awaits every required return before mutation.
-- There are **17 named roles**: 16 read-only leaves and one source/test writer,
+- There are **18 named roles**: 17 read-only leaves and one source/test writer,
   `devrites-slice-wright`.
 
 | Group | Roles |
 |---|---|
-| Bounded work leaves | `devrites-evidence-scout`, `devrites-plan-drafter`, `devrites-proof-runner` |
+| Bounded work leaves | `devrites-evidence-scout`, `devrites-plan-drafter`, `devrites-proof-runner`, `devrites-upgrade-planner` |
 | Strategic/claim challenge | `devrites-strategy-reviewer`, `devrites-plan-reviewer`, `devrites-doubt-reviewer` |
 | Review/audit | `devrites-spec-reviewer`, `devrites-code-reviewer`, `devrites-test-analyst`, `devrites-frontend-reviewer`, `devrites-security-auditor`, `devrites-performance-reviewer`, `devrites-devex-reviewer`, `devrites-simplifier-reviewer` |
 | Comparison/history | `devrites-forge-judge`, `devrites-retrospector` |

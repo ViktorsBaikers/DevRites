@@ -47,6 +47,23 @@ workspace map; `proof.md` may stand in for `evidence.md`.
 
 Files can exceed the budget only with `Budget override: <reason>`.
 
+## Semantic readiness contract
+
+`decision-coverage.md`, `test-plan.md`, and `eng-review.md` each contain exactly one:
+
+```text
+DevRites contract: devrites.readiness-artifacts.v2
+```
+
+Clarify writes the decision-coverage field after re-closing current intent. Vet writes
+the test-plan and engineering fields after current-contract hardening. A missing, older,
+unknown, duplicate, or future field is not current readiness; `$rite-build` routes it to
+`$rite-upgrade` rather than guessing or downgrading.
+
+Durable proof commands are portable from the repository and must not contain host-local
+wrappers, user-specific absolute paths, or temporary proof trees. Runtime agent packets may
+name an execution adapter; evidence may record the logical and actually executed commands.
+
 ## Canonical slice grammar
 
 Every producer of `tasks.md` uses this field set. `Dependencies` is slice

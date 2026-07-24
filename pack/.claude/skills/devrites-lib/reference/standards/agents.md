@@ -28,6 +28,7 @@ become a second control plane.
 |---|---|---|
 | `devrites-evidence-scout` | read-only evidence dossier | spec, clarify, converge, bounded external facts |
 | `devrites-plan-drafter` | read-only planning candidate | define, plan repair |
+| `devrites-upgrade-planner` | read-only semantic upgrade assessment | upgrade |
 | `devrites-proof-runner` | read-only tree; non-destructive command execution | prove and affected re-proof |
 | `devrites-strategy-reviewer` | read-only strategic challenge | temper |
 | `devrites-plan-reviewer` | read-only plan challenge | vet |
@@ -126,7 +127,7 @@ side_effects:
   repo_writes: []
   scratch_writes: [] # exact path/kind/sha256 if the packet allowed any
 payload:
-  type: <evidence-dossier|plan-candidate|proof-report|review-findings|wright-report>
+  type: <evidence-dossier|plan-candidate|upgrade-assessment|proof-report|review-findings|wright-report>
   content: <role-specific structured result>
 gates: <commands and observed results | n/a>
 decisions_stood: <facts/technical calls for root review | none>
@@ -177,6 +178,7 @@ normal post-edit maximum.
 | spec / clarify | evidence scout for independent facts/topology | interview, questions, decisions, spec/workspace writes |
 | temper | strategy reviewer | scope walk, fold-back, verdict |
 | define / plan repair | plan drafter candidate | architecture choices, approval, all artifact writes |
+| upgrade | upgrade planner; evidence scout/plan drafter/plan reviewer only when its accepted route needs them | preservation checks, questions, reconciliation, all artifact writes |
 | vet (light and full) | plan reviewer on the initial frozen candidate; at most one narrow recheck after accepted edits | hardening, decisions, readiness |
 | build | slice wright; doubt reviewer; forge judge when eligible | slice choice, gates, bookkeeping |
 | converge | evidence scout for live-code evidence | classification, append-only write, invalidation |

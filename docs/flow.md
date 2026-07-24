@@ -10,10 +10,12 @@ For the full per-skill table, see [`command-map.md`](command-map.md). For the
 
 This diagram shows the normal path. Each arrow assumes that the previous
 phase's readiness gate passed. Failures route through `/rite-clarify`,
-`/rite-plan repair`, or `devrites-debug-recovery`. `/rite-clarify` always runs
-but may ask zero questions; `/rite-temper` is the optional strategic branch;
-`/rite-vet` runs on every defined plan, with depth scaled to risk. Build asks
-the human only for genuine
+`/rite-plan repair`, `/rite-upgrade`, or `devrites-debug-recovery`.
+`/rite-upgrade` is conditional maintenance rather than a lifecycle phase: build
+readiness uses it only when existing semantic artifacts are stale.
+`/rite-clarify` always runs but may ask zero questions; `/rite-temper` is the
+optional strategic branch; `/rite-vet` runs on every defined plan, with depth
+scaled to risk. Build asks the human only for genuine
 product/scope/policy decisions, irreversible risk, or human-only access/actions;
 `/rite-resolve` is the resume verb.
 
@@ -28,6 +30,8 @@ flowchart LR
     Define -->|plan.md + tasks.md<br/>approved| Plan[(plan checkpoint)]
     Plan -->|normal resume| Vet[/rite-vet/]
     Vet -->|fresh digest-bound READY<br/>+ test-plan.md| Build[/rite-build/]
+    Build -.->|build-readiness code 8<br/>stale semantic contract| Upgrade[/rite-upgrade/]
+    Upgrade -.->|contract v2<br/>current gates pass| Build
     Build -.->|exact .wright-allowlist<br/>retained baseline| Wright[devrites-slice-wright]
     Wright -.->|typed result| Build
     Build -->|one slice done<br/>+ evidence| Build
@@ -59,7 +63,7 @@ flowchart LR
     classDef internal fill:#0f172a,stroke:#9ca3af,color:#f9fafb
     class Spec,Clarify,Temper,Define,Plan,Vet,Build,Prove,Polish,Review,Seal,Ship2 phase
     class Shipped done
-    class Repair repair
+    class Repair,Upgrade repair
     class Await gate
     class Shape,Forge,Wright internal
 ```
@@ -325,7 +329,7 @@ separately by `disable-model-invocation`.
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true): 31 skills"]
+    subgraph Public["Public (user-invocable: true): 32 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
@@ -349,6 +353,7 @@ flowchart TB
         RA[/rite-adopt/]
         RL[/rite-learn/]
         RD[/rite-doctor/]
+        RU[/rite-upgrade/]
         RE[/rite-explain/]
         RCU[/rite-customize/]
         RDO[/rite-dogfood/]
@@ -377,7 +382,7 @@ flowchart TB
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
-    class R1,R2,RCL,RT,R3,RV,R4,R5,RC,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,RE,RCU,RDO,RPOV,RPF,IPT,D1,D2,D3 pub
+    class R1,R2,RCL,RT,R3,RV,R4,R5,RC,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,RU,RE,RCU,RDO,RPOV,RPF,IPT,D1,D2,D3 pub
     class I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11,I12 int
 ```
 

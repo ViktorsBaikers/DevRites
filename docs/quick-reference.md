@@ -12,6 +12,10 @@ Claude Code and Codex artifacts; plugin stores do not distribute them.
 Seal makes the release decision, Ship mutates git, Build handles one slice per
 run, and Autocomplete is opt-in.
 
+Conditional maintenance: `/rite-upgrade [slug]` reconciles an active unfinished
+workspace with the current semantic planning contract when build readiness
+returns code `8`. It is not a lifecycle phase.
+
 ## Standing checklists
 
 - Definition of Done: `pack/.claude/skills/devrites-lib/reference/standards/definition-of-done.md`

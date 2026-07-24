@@ -69,6 +69,7 @@ objective gaps to their owner:
 | `5` | `workspace-missing` | Workspace or state.md is missing | `/rite-spec` |
 | `6` | `coverage-not-clear` | Decision coverage is not CLEAR and fresh | `/rite-clarify` |
 | `7` | `engineering-not-ready` | Plan is not vetted or implementation readiness is not READY | `/rite-vet` |
+| `8` | `upgrade-required` | Planning artifacts use an older or unknown DevRites contract | `/rite-upgrade` |
 <!-- authority:readiness-reasons:end -->
 
 A non-zero `build-readiness`,
@@ -76,10 +77,15 @@ A non-zero `build-readiness`,
 in an agent loop, a local script, or pre-merge CI.
 
 `build-readiness` does not trust `CLEAR` or `READY` text alone. It validates the
-required sections, tables, ownership and test mappings, and compares each
-artifact's SHA-256 field with the digest of its canonical inputs. Migration may
-upgrade a workspace declaration to schema v2, but it never creates or blesses
-clarification, vet, or proof evidence.
+required sections, tables, ownership and test mappings, requires the current
+`devrites.readiness-artifacts.v2` declaration, and compares each artifact's
+SHA-256 field with the digest of its canonical inputs.
+
+`devrites-engine update` refreshes the installed binary and pack.
+`devrites-engine migrate` may upgrade a workspace declaration to structural
+schema v2, but it never creates or blesses clarification, vet, or proof
+evidence. `/rite-upgrade [slug]` is the separate semantic reconciliation route
+for an active unfinished workspace.
 
 ## Why this exists
 

@@ -21,9 +21,14 @@ other phases reference it here.
    mismatch | design-system mismatch | test/evidence mismatch | external-doc mismatch
    | user-decision required.
 4. Local repair that preserves behavior/scope/architecture/data/UX/security/migration?
-     YES → log in drift.md + decisions.md, $rite-plan repair, resume.
-     NO  → ask the user (format below). Don't continue on the old plan.
-5. Run $rite-plan repair before resuming.
+     YES, active-slice technical/tool failure → log it and use Build's bounded debug
+       recovery. Do not ask for retry authorization and do not re-plan unless the
+       durable remaining-work instructions are wrong.
+     YES, durable plan is wrong → log it, run $rite-plan repair without a question,
+       re-vet, then resume.
+     NO, product/policy/irreversible-risk decision → ask the user (format below).
+5. Never continue on a known-wrong durable plan. A repaired active-slice implementation
+   may continue only after the normal recovery, reconciliation, and integrity gates pass.
 ```
 
 ## User question format
@@ -40,4 +45,5 @@ Which direction should DevRites take?
 4. Custom: describe the intended behavior
 ```
 
-Never continue coding on a known-wrong plan. Always re-plan before resuming.
+Never turn an objective defect, environment repair, tool bug, or proof rerun into a
+human permission question. Re-plan only when the durable plan changed.
