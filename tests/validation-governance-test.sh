@@ -51,6 +51,19 @@ cat > "$T/orphans.json" <<'JSON'
 JSON
 run_ok "reference governance accepts owned expiring exception" node "$ROOT/scripts/check-reference-governance.mjs" --skills-dir "$T/refs" --allowlist "$T/orphans.json"
 
+# Dependency audit exceptions are exact, owner-bound, expiring, and stale-intolerant.
+cat > "$T/npm-audit.json" <<'JSON'
+{"auditReportVersion":2,"vulnerabilities":{"npm":{"severity":"moderate","via":["tar"],"nodes":["node_modules/npm"]},"tar":{"severity":"moderate","via":[{"name":"tar","url":"https://github.com/advisories/GHSA-r292-9mhp-454m","severity":"moderate","range":"<=7.5.20"}],"nodes":["node_modules/npm/node_modules/tar"]}}}
+JSON
+cat > "$T/npm-audit-exceptions.json" <<'JSON'
+[{"id":"GHSA-r292-9mhp-454m","package":"tar","range":"<=7.5.20","nodes":["node_modules/npm/node_modules/tar"],"source":"https://github.com/advisories/GHSA-r292-9mhp-454m","owner":"security","reason":"fixture","expires":"2099-01-01"}]
+JSON
+run_ok "npm audit accepts one exact temporary exception" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-exceptions.json"
+node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p[0].expires="2000-01-01";fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit-exceptions.json" "$T/npm-audit-expired.json"
+run_fail_contains "npm audit rejects an expired exception" "expired" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-expired.json"
+node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p.vulnerabilities.other={severity:"moderate",via:[{name:"other",url:"https://github.com/advisories/GHSA-aaaa-bbbb-cccc",severity:"moderate",range:"<2"}],nodes:["node_modules/other"]};fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit.json" "$T/npm-audit-extra.json"
+run_fail_contains "npm audit rejects an unexcepted advisory" "not excepted" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit-extra.json" --exceptions "$T/npm-audit-exceptions.json"
+
 # The advertised local quality gate must be self-contained and pin the same
 # three external analyzers used by CI.
 make -C "$ROOT/engine" -n quality > "$T/make-quality" 2>&1 || true

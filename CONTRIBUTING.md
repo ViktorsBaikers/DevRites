@@ -70,7 +70,7 @@ first.
 - [ ] You've read the relevant section of [`docs/architecture.md`](docs/architecture.md).
 - [ ] Commit messages follow the **strict** Conventional Commits policy below.
 - [ ] `npm run validate` passes.
-- [ ] `npm run audit` reports no moderate-or-higher dependency advisories.
+- [ ] `npm run audit` reports no unexcepted moderate-or-higher dependency advisories.
 - [ ] `npm test` passes (install/uninstall smoke + pack validation).
 - [ ] If you touched a skill, you ran the matching eval (`scripts/run-evals.sh`).
 - [ ] If you touched a **gating** skill's discipline (or its `anti-patterns.md`), you ran / updated its behavioral eval (`scripts/run-behavioral-evals.sh`).
@@ -90,6 +90,12 @@ npm run validate       # static validation of pack structure
 npm run audit          # known dependency vulnerabilities (moderate+ blocks)
 npm test               # install + uninstall smoke + fixture install + pack validation
 ```
+
+`npm run audit` still blocks every moderate-or-higher advisory by default.
+When an upstream tool bundles a vulnerable dependency and no patched ancestor
+release exists, `scripts/npm-audit-exceptions.json` may carry one exact,
+owner-bound, reasoned exception with an expiry date. Unknown, mismatched, stale,
+or expired exceptions fail the gate.
 
 You do not need Claude Code for most development work. The validators and tests
 run as plain shell scripts.
