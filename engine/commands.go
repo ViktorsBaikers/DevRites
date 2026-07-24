@@ -218,8 +218,8 @@ func gitOperation(projectDir, resolvedGitDir string) string {
 // versions. It exits nonzero for an unsafe root or newer state schema. Missing
 // optional data and warnings remain diagnostic.
 func cmdDoctor(args []string, stdout, stderr io.Writer) int {
-	if len(args) != 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine doctor")
+	if len(args) > 1 || len(args) == 1 && args[0] != "--verbose" {
+		fmt.Fprintln(stderr, "usage: devrites-engine doctor [--verbose]")
 		return exitUsage
 	}
 	facts, resolveErr := rootfacts.Resolve(os.Getenv("DEVRITES_ROOT"))

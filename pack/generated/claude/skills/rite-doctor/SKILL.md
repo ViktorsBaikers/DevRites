@@ -19,7 +19,7 @@ It is **read-only**: it never edits the workspace, never advances a phase, never
 ## Workflow
 1. Run the diagnose core verbosely (resolve across install layouts):
    ```bash
-   devrites-engine doctor --verbose; echo "doctor rc=$?"
+   devrites-engine doctor; echo "doctor rc=$?"
    ```
 1a. **Surface the learnings nudge**: point the user at `/rite-learn` when a pattern recurs across
    shipped features (read-only; silent when there's nothing to say):
@@ -68,7 +68,7 @@ progress`, but it follows the compact labels and one-next-action rule from
 ```
 Done: DevRites health checked; <OK | n issues>.
 Changed: workspace only
-Evidence: devrites-engine doctor --verbose rc=<0|1>; health <skipped|PASS|WARN|FAIL>; reindex <skipped|result>; learnings nudge <summary|none>; extensions/overrides <ok|n issues>
+Evidence: devrites-engine doctor rc=<0|1>; health <skipped|PASS|WARN|FAIL>; reindex <skipped|result>; learnings nudge <summary|none>; extensions/overrides <ok|n issues>
 Open: <none | issue count and top issue>
 Next: <single command for the most urgent issue>
 Record: not applicable

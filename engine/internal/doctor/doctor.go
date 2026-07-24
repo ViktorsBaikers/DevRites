@@ -5,13 +5,13 @@ package doctor
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/rootfacts"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/version"
@@ -160,18 +160,30 @@ func (r *Report) Render() string {
 	return b.String()
 }
 
-// packVersion discovers the installed DevRites pack version. It prefers an
-// explicit marker (.claude/devrites.version) and falls back to the npm
-// package.json at the project root; either absent leaves the pack Unknown so no
-// false skew is asserted.
+// packVersion discovers the installed DevRites pack version from the install
+// manifest. The old standalone marker remains readable for compatibility.
 func packVersion(projectDir string) string {
+	if v := manifestVersion(filepath.Join(projectDir, filepath.FromSlash(devritespaths.ManifestName))); v != "" {
+		return v
+	}
 	if v := firstLine(filepath.Join(projectDir, ".claude", "devrites.version")); v != "" {
 		return v
 	}
-	if v := packageJSONVersion(filepath.Join(projectDir, "package.json")); v != "" {
-		return v
-	}
 	return Unknown
+}
+
+func manifestVersion(path string) string {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	const prefix = "# devrites-version:"
+	for _, line := range strings.Split(string(raw), "\n") {
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
+		}
+	}
+	return ""
 }
 
 func firstLine(path string) string {
@@ -200,8 +212,8 @@ func driftChecks(projectDir string) []string {
 	if isDir(filepath.Join(projectDir, ".claude", "agents")) && !isDir(filepath.Join(projectDir, ".codex", "agents")) {
 		checks = append(checks, "WARN: Claude agents installed but Codex agent mirror .codex/agents is missing")
 	}
-	if firstLine(filepath.Join(projectDir, ".claude", "devrites.version")) == "" && isDir(filepath.Join(projectDir, ".claude", "skills")) {
-		checks = append(checks, "WARN: installed skills have no .claude/devrites.version marker")
+	if packVersion(projectDir) == Unknown && isDir(filepath.Join(projectDir, ".claude", "skills")) {
+		checks = append(checks, "WARN: installed skills have no versioned .claude/devrites.manifest provenance")
 	}
 	if generatedClaudeDrift(projectDir) {
 		checks = append(checks, "[DRV-GENERATED-DRIFT] WARN: pack/generated/claude differs from canonical pack/.claude; run `bash scripts/build-host-artifacts.sh`")
@@ -291,18 +303,4 @@ func isFile(path string) bool {
 func isDir(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
-}
-
-func packageJSONVersion(path string) string {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	var pkg struct {
-		Version string `json:"version"`
-	}
-	if err := json.Unmarshal(raw, &pkg); err != nil {
-		return ""
-	}
-	return strings.TrimSpace(pkg.Version)
 }

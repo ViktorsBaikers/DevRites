@@ -64,12 +64,13 @@ func TestDiagnoseOKWhenAligned(t *testing.T) {
 func TestDiagnoseWarnsWhenBinaryOlderThanPack(t *testing.T) {
 	withBinaryVersion(t, "1.0.0")
 	projectDir := t.TempDir()
-	// Pack marker newer than the binary → warn, not refuse.
+	// Installed pack newer than the binary → warn, not refuse.
 	claude := filepath.Join(projectDir, ".claude")
 	if err := os.MkdirAll(claude, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(claude, "devrites.version"), []byte("2.0.0\n"), 0o644); err != nil {
+	manifest := "# devrites-version: 2.0.0\n.claude/skills/rite/SKILL.md\tabc\n"
+	if err := os.WriteFile(filepath.Join(claude, "devrites.manifest"), []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
@@ -87,6 +88,33 @@ func TestDiagnoseWarnsWhenBinaryOlderThanPack(t *testing.T) {
 	}
 	if want := "WARN"; len(r.Verdict) < 4 || r.Verdict[:4] != want {
 		t.Errorf("verdict = %q, want a WARN verdict", r.Verdict)
+	}
+}
+
+func TestPackVersionUsesManifestBeforeLegacyMarker(t *testing.T) {
+	projectDir := t.TempDir()
+	claude := filepath.Join(projectDir, ".claude")
+	if err := os.MkdirAll(claude, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(claude, "devrites.manifest"), []byte("# devrites-version: 3.2.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(claude, "devrites.version"), []byte("2.9.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := packVersion(projectDir); got != "3.2.0" {
+		t.Fatalf("packVersion() = %q, want installer manifest version 3.2.0", got)
+	}
+}
+
+func TestPackVersionIgnoresProjectPackageJSON(t *testing.T) {
+	projectDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(projectDir, "package.json"), []byte(`{"version":"99.0.0"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := packVersion(projectDir); got != Unknown {
+		t.Fatalf("packVersion() = %q, want %q without DevRites install provenance", got, Unknown)
 	}
 }
 
@@ -143,7 +171,7 @@ func TestDiagnoseReportsHostArtifactDrift(t *testing.T) {
 		t.Fatal("expected drift checks")
 	}
 	out := r.Render()
-	for _, want := range []string{"devrites-engine hooks", "Codex skill mirror", "devrites.version marker"} {
+	for _, want := range []string{"devrites-engine hooks", "Codex skill mirror", "devrites.manifest provenance"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("doctor output missing %q:\n%s", want, out)
 		}

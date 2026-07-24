@@ -58,7 +58,7 @@ Plan, Vet, Converge, and Build phase contracts needed by the assessment.
 
 0. **Orient and normalize structure.** Read the active slug or `$ARGUMENTS`. Run:
    ```bash
-   devrites-engine doctor --verbose; echo "doctor rc=$?"
+   devrites-engine doctor; echo "doctor rc=$?"
    ```
    A binary/pack integrity mismatch stops at `$rite-doctor`; do not run migration or
    mutate semantic artifacts. Once healthy, orient without writing:

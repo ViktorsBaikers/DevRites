@@ -77,11 +77,13 @@ hazards: ok
   `3`): the binary won't silently mis-parse newer state.
 - Additive schema changes (older state read by a newer binary) are always fine.
 
-The pack version is discovered from `.claude/devrites.version` or the project
-`package.json`; when neither exists the pack is reported `unknown` and no skew is
-asserted. Doctor also reports linked-worktree/submodule identity, merge/rebase
-state, host-artifact drift, and project extensions that have artifacts but no
-optional `provenance.json`.
+The pack version comes from the installer-owned
+`.claude/devrites.manifest`. The old `.claude/devrites.version` marker remains
+readable for compatibility; without either source the pack is reported
+`unknown` and no skew is asserted. The project's own `package.json` is never
+treated as DevRites provenance. Doctor also reports linked-worktree/submodule
+identity, merge/rebase state, host-artifact drift, and project extensions that
+have artifacts but no optional `provenance.json`.
 
 ### Root safety at command dispatch
 
