@@ -11,27 +11,33 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
+- For every DevRites specialist or writer dispatch, first call `spawn_agent` with the named `devrites-<role>` custom role. The matching project contract is `.codex/agents/devrites-<role>.toml`.
+- If `spawn_agent` is callable but a named read-only role is unavailable, use generic `explorer` only when the host proves that run has a runtime-enforced read-only sandbox. Tell it to read `.codex/agents/devrites-<role>.toml`, follow its `developer_instructions`, and execute the unchanged packet. A missing read-only custom role is not evidence that spawning is unavailable.
+- Never dispatch generic `worker` for `devrites-slice-wright` unless the host proves that worker run carries exact DevRites identity and the same `.wright-allowlist` enforcement as the named role. Codex reports a generic run as `agent_type=worker`, so the generated global hooks cannot prove that binding. Reject that unsafe rung and use the documented labelled inline wright path with `.reconcile-inline` plus the full reconcile gate.
+- If the host cannot prove the generic explorer is runtime read-only, reject that rung too. Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn may the root run the documented discipline inline. Label it `independence: fallback`, never call it independent, and apply every fallback risk gate. An unbound generic wright or unconfined generic explorer is such a safety rejection, not evidence that no agents exist.
+- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
+- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
 - When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # $rite-polish: finish before review
 
-The "finish" phase. **Always** code-polishes; **and** runs UI normalize +
-design polish when the feature touches UI. Self-review the work to ship
-quality *before* handing it to `$rite-review`. The two-phase split (code,
-UI) lives in `reference/code.md` and `reference/ui.md`: read each on demand,
-don't load both up front.
+Polish code for every feature. When the feature touches UI, normalize and polish the
+UI as well. Complete this self-review before `$rite-review`. The code and UI phases
+live in `reference/code.md` and `reference/ui.md`; read only the phase in scope.
 
 ## Operating rules
 
 - **Functionality complete first.** Polish runs after `$rite-prove` (full
   feature proven).
 - Feature scope only.
-- For UI: **NEVER polish without normalizing first**: decoration on drift is
-  banned.
+- For UI, **normalize before polishing**. Do not add decoration on top of drift.
+- **Root selects; wright edits.** The controlling chat assesses and reconciles, but every
+  accepted source/test correction is dispatched to the sole writer,
+  `devrites-slice-wright`, through
+  [`agents.md`](../devrites-lib/reference/standards/agents.md). Never edit source inline or
+  run two correction writers concurrently.
 
 ## Orchestration
 
@@ -48,21 +54,25 @@ don't load both up front.
    `pages/`, `routes/`, `app/`, `views/`, `screens/`), Storybook stories,
    or design-token files. When in doubt, look for visual changes that need
    verification.
-3. **Always** read [`reference/code.md`](reference/code.md) and run **Phase 1
-   (code polish)**; if backend was touched, continue into **Phase 2 (backend
-   polish)** from the same file.
+3. **Always** read [`reference/code.md`](reference/code.md) and assess **Phase 1
+   (code polish)**; if backend was touched, assess **Phase 2 (backend polish)** from
+   the same file. Reconcile the findings, then send accepted corrections as one bounded
+   wright contract.
 4. **If UI scope detected** read [`reference/ui.md`](reference/ui.md), and read
-   `design-brief.md` if present (the UX/UI contract `devrites-ux-shape` shaped at spec and
-   `devrites-frontend-craft` refined while building) so the polish honors the agreed
-   direction + states. **Read the `## Visual Verdict` table in `browser-evidence.md` if present:
-   its `FAIL` and `PARTIAL` rows are the normalize/quality-bar worklist**: fix the root cause of
-   each (a missing state, an off-token CTA, an anti-slop hit), don't decorate around it. Then run
-   **Phase 3 (normalize)** → **Phase 4 (UI polish)**. Honor argument modes:
+   `design-brief.md` if present so the polish follows the direction and states established
+   by `devrites-ux-shape` and refined by `devrites-frontend-craft`. **Read the
+   `## Visual Verdict` table in `browser-evidence.md` if present:
+   its `FAIL` and `PARTIAL` rows are the normalize/quality-bar worklist**: identify the root
+   cause of each (a missing state, an off-token CTA, or an anti-slop hit) rather than
+   hiding it with decoration. Assess **Phase 3 (normalize)** → **Phase 4 (UI polish)**,
+   then send accepted UI
+   corrections to the wright (which invokes the relevant craft skill). Honor argument modes:
    - `bolder | quieter | distill | harden`: passed to Phase 4 as the
      emphasis dial.
-   - `normalize-only`: run Phase 3 and stop (no Phase 4).
-5. **Re-verify after any code edit:** polish edits code, so the proof from
-   `$rite-prove` no longer post-dates it. Run the relevant fast checks (the
+   - `normalize-only`: assess Phase 3 and stop (no Phase 4).
+5. **Re-verify after any code edit:** a wright correction invalidates prior proof, so
+   `$rite-prove` no longer post-dates it. Dispatch `devrites-proof-runner` for the affected
+   fast checks (the
    targeted tests for the touched files + typecheck/lint; browser re-check if UI
    changed) and record a **`Re-verification:`** line in `polish-report.md`. A
    polish that changed code without a green re-verification isn't finished.
@@ -70,10 +80,8 @@ don't load both up front.
 
 ## Refinement modes
 
-When the user (or your own assessment) names a direction the UI should move,
-pass it through to Phase 4. Modes don't bypass normalize + quality-bar work:
-they shape the polish *after* the system is aligned. See `reference/ui.md` for
-the mode table.
+Pass the requested UI direction to Phase 4. Modes do not bypass normalization or the
+quality bar; they apply after the system is aligned. See `reference/ui.md`.
 
 > **Mid-flight discipline.** When tempted to polish UI without normalize, cite
 > clean lint as proof of quality, skip Phase 2 on a backend diff, or delete a

@@ -40,8 +40,7 @@ additively.
 - Completeness is a table lookup, not a judgment call — cheap and reproducible.
 - Small files stay context-cheap and make "what's missing" self-evident.
 - `SchemaVersion = 1` is young; migration is single-version. Hardening the
-  writer into one pure transition function is a recorded follow-up
-  (`docs/research/gsd-core-adoption.md` §3.2).
+  writer into one pure transition function is a recorded follow-up.
 - The typed registry in `engine/internal/state/schema.go` is the lifecycle
   authority. Its invariant tests lock order, aliases, commands, requirements,
   and cross-format manifest freshness.

@@ -230,6 +230,13 @@ else
   echo "skip: go not found; workflow manifest freshness not checked"
 fi
 if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/check-authority-drift.py" >/tmp/dr_authority_drift 2>&1; then
+    cat /tmp/dr_authority_drift
+    good "authority-derived docs are current"
+  else
+    cat /tmp/dr_authority_drift
+    bad "authority-derived docs drifted"
+  fi
   if python3 "$ROOT/scripts/validate-workspace-schema.py" "$ROOT/tests/fixtures/workspace-schema" >/tmp/dr_workspace_schema 2>&1; then
     cat /tmp/dr_workspace_schema
     good "workspace artifact schema fixtures valid"
@@ -252,13 +259,13 @@ else
 fi
 
 # ---- 12. no runtime-broken pack/.claude/ path in installed prose ---------
-# After install the leading pack/ is stripped, so any literal pack/.claude/skills/devrites-lib/reference/standards/
-# or pack/.claude/skills/ in shipped SKILL.md / reference prose is a dead path
-# at runtime. (Repo README/docs links are out of scope: they're GitHub links.)
+# Installed paths omit the leading pack/. A literal pack/.claude/skills/ path
+# in shipped skill or reference prose will not resolve. Repository README and
+# documentation links are GitHub links, so this check ignores them.
 section "no literal pack/.claude/ paths in shipped skill prose"
-# Exclude the intentional resolution-snippet fallback (`... || P=pack/.claude/...`): the
-# preamble snippet tries the installed `.claude/` path first, then `${CLAUDE_SKILL_DIR}`
-# (plugin, best-effort), then the repo `pack/.claude/...` for DevRites self-development.
+# Keep the resolution-snippet fallback (`... || P=pack/.claude/...`). It checks
+# the installed `.claude/` path first, then `${CLAUDE_SKILL_DIR}` as a
+# best-effort plugin path, and finally the repository path during development.
 PACKPATH_HITS="$(grep -rnI -e 'pack/\.claude/skills/devrites-lib/reference/standards/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
 if [ -n "$PACKPATH_HITS" ]; then
   bad "literal pack/.claude/ path in shipped skill prose (strips to .claude/ on install):"
@@ -268,8 +275,9 @@ else
 fi
 
 # ---- 14. no false session-start autoload claim ---------------------------
-# DevRites ships no autoload wiring; skills Read .claude/skills/devrites-lib/reference/standards/core.md at step 0.
-# Fail if any shipped skill or doc asserts native/session-start autoload.
+# DevRites has no autoload wiring. Skills read
+# .claude/skills/devrites-lib/reference/standards/core.md at step 0. Reject any
+# shipped skill or document that claims native session-start autoloading.
 section "no false session-start autoload claim"
 AUTOLOAD_HITS="$(grep -rl 'autoloaded by Claude Code' "$ROOT/pack" "$ROOT/docs" "$ROOT/README.md" 2>/dev/null || true)"
 if [ -n "$AUTOLOAD_HITS" ]; then
@@ -280,9 +288,8 @@ else
 fi
 
 # ---- 14b. no deleted shell-helper guidance -------------------------------
-# The workflow control plane moved from devrites-lib/*.sh helpers to the
-# installed `devrites-engine` binary. Public docs and generated installer
-# guidance must not direct users or agents back to deleted helper files.
+# Public docs and generated installer guidance must use the installed
+# `devrites-engine` binary, not the retired devrites-lib/*.sh helpers.
 section "no deleted shell-helper guidance"
 DELETED_HELPER_HITS="$(grep -rnI \
   -e 'analyze\.sh' \
@@ -325,15 +332,14 @@ else
 fi
 
 # ---- 15. shellcheck (error = blocking, warning = advisory) ---------------
-# CI runners ship shellcheck, so the error-level gate is enforced on every PR.
-# Locally it self-skips when shellcheck is absent (the gate is non-blocking only
-# where the tool isn't installed: never silently downgraded where it is).
+# CI runners include shellcheck and enforce the error-level gate on every PR.
+# Local validation skips this gate only when shellcheck is not installed.
 section "shellcheck (-S error blocking · -S warning advisory)"
 if command -v shellcheck >/dev/null 2>&1; then
   for f in $SH_LIST; do
     if shellcheck -S error "$f"; then good "shellcheck ${f#"$ROOT"/}"; else bad "shellcheck (error) ${f#"$ROOT"/}"; fi
   done
-  # warning-level is informational: surfaced per file, never fails the build.
+  # Warnings are advisory. Print them per file without failing the build.
   for f in $SH_LIST; do
     shellcheck -S warning "$f" >/dev/null 2>&1 || echo "  advisory (warning-level): ${f#"$ROOT"/}"
   done

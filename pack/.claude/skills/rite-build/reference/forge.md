@@ -1,180 +1,210 @@
-# Forge: competing candidate builds for one slice
+# Forge: isolated candidate builds
 
-How `/rite-build` builds a slice that `/rite-vet` flagged `Forge: yes`: instead of one wright,
-**K = 2-3 candidate wrights** each build the slice a genuinely different way in **isolation**, a
-read-only judge scores them, and exactly **one** winner's diff lands in the working tree. Loaded
-on demand by `/rite-build` step 3; the sibling of single-path
-[`wright-dispatch.md`](wright-dispatch.md).
+Forge is the rare `/rite-build` branch for a vetted architecture fork. Two or
+three wrights implement the same slice in separate, manifest-owned worktrees; a
+read-only judge selects one; only that candidate lands.
 
-Forge is the **rare** path. Most slices are single-path (cheaper, and the default). A slice
-forges only when the work is a genuine architecture fork: two or three approaches that differ, no clear winner on paper, at high enough stakes that building the wrong one costs more
-than building all of them. That judgment is made at `/rite-vet` and recorded as the slice's
-`Forge:` field; build acts on the flag, it does not invent it.
+The engine manifest (`devrites-forge/v1`) is the sole authority for run,
+candidate, branch, worktree, worker, merge, verification, and cleanup identity.
+`forge-report.md`, names, paths, and prompts are records or inputs, never
+ownership.
 
-## Why this doesn't break the single-writer invariant
+## Entry contract
 
-DevRites forbids a parallel fan-out of writers **sharing one tree**: concurrent writers on one
-working tree make conflicting implicit decisions and produce incoherent code
-([`wright-dispatch.md`](wright-dispatch.md)). Forge keeps that invariant intact by **isolation**:
-every candidate writes in its own worktree (or its own throwaway branch), never touching another
-candidate's tree, and the orchestrator lands exactly one. No tree ever has two authors; exactly
-one author's work ships. "N isolated complete attempts, winner-takes-all" is not "N writers on
-one slice."
-
-## Trust the flag, but clear a stale one
-
-Before competing anything, confirm the flag still earns its cost: `/rite-vet` set it, but the
-plan may have moved:
-
-- **No objective scorecard:** the slice has no acceptance criteria and no `test-plan.md`
-  coverage the judge can score against → clear `Forge` to `no`, build single-path. A competition
-  with no rubric is a coin toss with K× the cost.
-- **Can't name two genuinely different strategies:** if the candidates would be variations of
-  one approach, there is nothing to compete → single-path.
-- **Slice shrank below the bar** (now Complexity ≤3, or a dependency landed that picks the
-  approach) → single-path.
-
-A cleared flag is recorded in `decisions.md` (one line: why forge was dropped). Never forge a
-slice you can't score, and never forge to avoid making a decision the plan already made.
-
-## Mechanics
-
-The orchestrator runs F1-F7. Steps 4-7 of the [one-slice-cycle](one-slice-cycle.md) (doubt,
-fail-on-red, reconcile, record, stop) then run **unchanged** on the winner.
-
-### F1: Confirm the K strategies
-Take the 2-3 candidate strategies `/rite-vet` named (in the slice brief). Each must be a
-**distinct, complete approach** to the same slice contract (a different seam, data shape,
-reuse-vs-build call, or algorithm) not a tweak of one. Name them `A`, `B`, (`C`) with a
-one-line description each. K is capped at 3: a fourth candidate rarely changes the winner and
-multiplies cost.
-
-### F2: Snapshot, then isolate each candidate
-Snapshot the working tree first (the winner's landing is reconciled against it later), then give
-each candidate its own isolated tree. **Prefer parallel isolated worktrees** when the harness can
-dispatch a sub-agent with worktree isolation; the **always-available** path is one throwaway git
-branch per candidate, built sequentially (slower, universally works: the
-[`tooling.md`](../../devrites-lib/reference/standards/tooling.md) "fallback is first-class" discipline):
-
-```bash
-SLUG="$(cat .devrites/ACTIVE 2>/dev/null)"
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || echo "(not a git repo — forge needs git for isolation; degrade to single-path)"
-BASE="$(git rev-parse --abbrev-ref HEAD)"
-# one isolated worktree per candidate (parallel-capable); falls back to branches if worktrees are unavailable
-for C in A B; do
-  git worktree add ".devrites/work/$SLUG/forge/cand-$C" -b "forge/$SLUG/cand-$C" 2>/dev/null \
-    || git branch "forge/$SLUG/cand-$C" "$BASE"
-done
-```
-
-### F3: Dispatch K candidate wrights
-Send **each** candidate the identical single-path slice contract from
-[`wright-dispatch.md`](wright-dispatch.md), with **one** line added naming its assigned strategy
-and its isolated tree:
-
-```
-Forge candidate <A|B|C> of <K>. Build this slice using ONLY this approach:
-  Strategy: <the distinct approach, one or two sentences — the seam / data shape / reuse call>
-Work in your isolated tree: <worktree path | branch name>. Do not consult or merge another
-candidate's work. Same discipline as always — orient → RED → implement smallest complete →
-verify → return your structured artifact. Code + tests only.
-```
-
-Each is still **one wright, one tree**: the invariant holds per candidate. Parallel where the
-harness isolates them; otherwise build candidate A to green, capture its diff, reset to `BASE`,
-then candidate B. A candidate that hits an irreversible-risk item escalates exactly as a
-single-path wright does: **forge never bypasses a gate** (see AFK below).
-
-### F4: Judge (read-only, fresh context)
-Dispatch [`devrites-forge-judge`](../../../agents/devrites-forge-judge.md) with the K finished
-candidate diffs and the scorecard inputs (slice acceptance, `test-plan.md`, `.devrites/principles.md`,
-the anti-slop charter). It scores each candidate, ranks them, names the **winner** and the
-specific runner-up ideas worth grafting, and returns the structured verdict. The judge **never
-writes code**. It reads the diffs and returns findings, like every reviewer agent. If sub-agent
-dispatch is unavailable, do the judge's rubric pass yourself in a fresh read, discarding your
-authoring reasoning (a flagged fallback, not an independent judgment).
-
-### F5: Land the winner, graft sparingly
-Apply **only** the winner's diff to the working tree (merge its worktree / cherry-pick its
-branch). If the judge named a cheap, specific improvement in a runner-up, graft it by
-**continuing the winning wright once** with that instruction: never hand-merge two candidates'
-code (that re-creates the incoherent-tree failure the invariant exists to prevent). The landed
-tree has exactly one author: the winner (plus its own grafted follow-up).
-
-### F6: Write `forge-report.md`
-The durable record of the competition (template below). One per forged slice; archived with the
-feature.
-
-### F7: Clean up, then return to the cycle
-Remove only clean losing worktrees / delete their candidate branches. If a losing worktree is dirty,
-preserve it and record the path in `forge-report.md`; never `--force` away unlanded work.
-
-```bash
-SLUG="$(cat .devrites/ACTIVE 2>/dev/null)"
-for C in A B; do
-  WT=".devrites/work/$SLUG/forge/cand-$C"
-  if [ -d "$WT/.git" ] || git -C "$WT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    if git -C "$WT" diff --quiet && git -C "$WT" diff --cached --quiet; then
-      git worktree remove "$WT" 2>/dev/null || true
-      git branch -D "forge/$SLUG/cand-$C" 2>/dev/null || true
-    else
-      echo "preserved dirty forge worktree: $WT"
-    fi
-  else
-    git branch -D "forge/$SLUG/cand-$C" 2>/dev/null || true
-  fi
-done
-```
-
-Then hand the **winner's** structured artifact to [one-slice-cycle](one-slice-cycle.md) step 4 as
-if a single wright produced it. Doubt, fail-on-red, reconcile (against the F2 snapshot, claimed =
-the winner's files), record, and stop all run unchanged.
-
-## `forge-report.md` template
+`/rite-vet` may set `Forge: yes` only when the slice has all three:
 
 ```markdown
-# Forge report: <slice id — name>
-Forged on <iso>. Reason: <the architecture fork /rite-vet flagged>.
-
-## Candidates
-| # | Strategy | Gates | Score | Notes |
-|---|---|---|---|---|
-| A | <approach> | green/red | <judge score> | <one line> |
-| B | <approach> | green/red | <judge score> | <one line> |
-
-## Verdict
-Winner: <A|B|C> — <why it won, in the judge's terms: acceptance coverage, simplicity, principle
-fit, anti-slop, reuse>.
-Grafted from runner-up: <specific idea + which candidate | none>.
-Discarded: <the losing approaches + the one-line reason each lost — load-bearing for a later
-slice that might be tempted to retry one>.
+Forge: yes — <why building the wrong architecture costs more than 2–3 attempts>
+Forge strategies: A=<complete approach> | B=<complete approach> [| C=<complete approach>]
+Forge scorecard: acceptance=<AC-### list>; test-plan=<exact test-plan.md rows/commands>
 ```
 
-The **Discarded** section matters: it is a dead-end record at the slice level, the same role
-`decisions.md` "Dead ends" plays for the feature: a later slice shouldn't re-litigate an
-approach forge already rejected.
+Strategies are distinct seams, data shapes, reuse choices, or algorithms, not
+wording variants. The scorecard covers every slice AC and every required test.
+Otherwise set `Forge: no`, both Forge detail fields to `none`, and dispatch one
+wright.
 
-## AFK & budget
+Before `forge plan`, also require a Git checkout and a real host adapter that can
+declare `manifest-env-v1` and:
 
-- **Cost.** Forge multiplies the build by K. Under `.devrites/AFK`, each candidate counts against
-  the slice budget (`devrites-engine tick-afk` once per candidate dispatched), so a forge slice can exhaust the
-  cap faster, that is intended back-pressure, not a bug.
-- **Gates are unchanged.** Forge changes *how many candidates build*, never *what pauses*. An
-  irreversible-risk item, a blocking/escalating gate, or a red-on-completion in **any** candidate
-  pauses per [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) exactly as single-path. AFK widens what is
-  automatic, never what is irreversible: forge included.
-- **Stuck loop still applies.** Re-dispatching the same candidate without progress trips
-  `devrites-engine stuck` the same as a single wright.
+- start each candidate in its exact worktree;
+- expose its stable worker ID, live PID, and matching process-start token before
+  its first tool call;
+- set all five Forge binding variables; and
+- end that process before extraction.
 
-## When isolation is impossible
+Never claim that binding on the adapter's behalf. Without it, an unbound
+`forge plan` returns typed `degraded` / `serial` JSON and creates nothing; accept
+that result and use the normal serial wright.
 
-No git, or neither worktrees nor throwaway branches are usable → **degrade to single-path** and
-say so. Forge is an accelerator for choosing between real alternatives; it is never a requirement
-for building the slice. A slice always has a single-path build available: the competition is the
-optional part.
+## Lifecycle
 
-## Anti-patterns
+### 1. Plan, then snapshot
 
-See [`anti-patterns.md`](anti-patterns.md) § Forge: the short version: don't forge a decided or
-trivial slice, don't forge to dodge a decision, don't hand-merge candidates, don't exceed K=3,
-and don't let a forged slice skip the post-return doubt because "the judge already looked."
+Write the normal root-owned `.wright-allowlist`. Hash the complete scorecard
+owners, not excerpts:
+
+```bash
+SLUG="$(cat .devrites/ACTIVE)"
+WORK=".devrites/work/$SLUG"
+hash_file() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    return 127
+  fi
+}
+ACCEPTANCE_HASH="$(hash_file "$WORK/spec.md")"
+TEST_PLAN_HASH="$(hash_file "$WORK/test-plan.md")"
+
+devrites-engine forge plan "<SLICE-###>" "$SLUG" \
+  --strategy "A=<strategy A>" \
+  --strategy "B=<strategy B>" \
+  --acceptance-hash "$ACCEPTANCE_HASH" \
+  --test-plan-hash "$TEST_PLAN_HASH" \
+  --worker-binding=manifest-env-v1
+```
+
+Add `--strategy "C=<strategy C>"` only for a third vetted strategy. Both hashes
+must be the complete 64-hex SHA-256 values of the current files. The command
+shown is only for an adapter that really provides the binding. Otherwise omit
+`--worker-binding`; the engine returns the side-effect-free serial result.
+
+Read the JSON result:
+
+- `status: planned`: take the run ID and every candidate path from its
+  manifest; then run `devrites-engine reconcile snapshot`.
+- `status: degraded, mode: serial`: record the reason and use one normal
+  wright. The engine created no Forge state.
+- non-zero exit: classify it as a technical defect. Preserve any manifest
+  state and recover it; never infer paths or silently start a serial writer.
+
+`forge plan` must precede `reconcile snapshot`: validated operational manifests
+are reconciliation-private, while `forge-report.md` and every other `.forge`
+path remain visible.
+
+### 2. Bind and dispatch every candidate
+
+For each candidate, the host starts a fresh worker at the manifest's exact
+`worktree`, pauses it before its first tool call, and obtains the engine token
+for its live PID:
+
+```bash
+devrites-engine forge process-token "$WORKER_PID"
+```
+
+Read `process_start` from the JSON; never reproduce the token algorithm in
+shell. Record that exact identity, then release the worker:
+
+```bash
+devrites-engine forge record "$RUN_ID" "$CANDIDATE" started \
+  --worker-id "$WORKER_ID" \
+  --pid "$WORKER_PID" \
+  --process-start "$PROCESS_START"
+```
+
+The candidate process receives this all-or-none environment:
+
+```text
+DEVRITES_FORGE_RUN_ID=<manifest run_id>
+DEVRITES_FORGE_CANDIDATE=<A|B|C>
+DEVRITES_FORGE_WORKER_ID=<recorded worker id>
+DEVRITES_FORGE_WORKER_PID=<recorded live pid>
+DEVRITES_FORGE_PROCESS_START=<recorded start token>
+```
+
+Its cwd is the exact manifest worktree. Give it the normal
+[`wright-dispatch.md`](wright-dispatch.md) packet plus its one recorded
+strategy. The same project-relative allowlist applies inside that candidate
+tree. Any missing, partial, stale, wrong-tree, wrong-branch, or wrong-worker
+binding is a denial, not a reason to widen scope.
+
+After the worker returns and its process exits:
+
+```bash
+devrites-engine forge record "$RUN_ID" "$CANDIDATE" finished \
+  --worker-id "$WORKER_ID"
+devrites-engine forge extract "$RUN_ID" "$CANDIDATE"
+```
+
+Extraction makes the complete tracked, staged, unstaged, untracked, deletion,
+mode, and symlink delta reachable by the recorded candidate commit and binds
+its SHA-256. Ignored, dirty, mismatched, live, or ambiguous content is
+preserved. A crashed worker is recorded `failed`; the run stays preserved for
+technical recovery and does not degrade in place.
+
+### 3. Judge, record, and merge
+
+After **every** candidate is extracted, dispatch
+[`devrites-forge-judge`](../../../agents/devrites-forge-judge.md) in fresh,
+read-only context. Give it the manifest, slice scorecard, base commit, and each
+recorded candidate commit/tree/delta hash. It scores the immutable diffs against
+the same acceptance, tests, principles, reuse, simplicity, and anti-slop bar.
+
+For one qualifying winner:
+
+```bash
+devrites-engine forge record "$RUN_ID" winner "<A|B|C>" \
+  --worker-id "<judge result id>"
+devrites-engine forge merge "$RUN_ID" "<A|B|C>"
+```
+
+Merge revalidates every extract and the unchanged primary baseline, performs a
+no-side-effect conflict preflight, then fast-forwards to exactly the recorded
+winner. A mismatch or conflict leaves the primary tree unchanged. Runner-up
+ideas remain report notes; never hand-merge candidates or mutate the landed
+winner inside this run.
+
+If no candidate qualifies, preserve the run and route the actual finding:
+product/acceptance ambiguity returns to planning; implementation or proof
+defects use bounded technical recovery. Retry authorization is not a human
+decision.
+
+### 4. Verify, clean, then record
+
+Hand the winner's structured artifact to the normal cycle. Run immediate
+reconciliation, doubt every stood decision, and complete test-integrity,
+package-existence, targeted, browser, and other slice proof. Only after every
+required gate is green:
+
+```bash
+devrites-engine forge record "$RUN_ID" verification verified \
+  --worker-id "<verifier result id>"
+devrites-engine forge cleanup "$RUN_ID"
+devrites-engine reconcile close
+```
+
+Cleanup reads only the manifest. It removes an exact terminal, dead, clean,
+reachable worktree; preserves live, dirty, mismatched, unreachable, or
+ambiguous state with a reason; and never deletes candidate branches.
+
+Now write `.devrites/work/<slug>/forge-report.md` alongside the normal Build
+records. The report is written after reconciliation and verification, includes
+cleanup preservation results, and never authorizes merge, cleanup, or reap.
+
+```markdown
+# Forge report: <SLICE-### — name>
+Run: <run-id> · scorecard: <acceptance hash> / <test-plan hash>
+
+## Candidates
+| # | Strategy | Gates | Delta SHA-256 | Judge result |
+|---|---|---|---|---|
+| A | <approach> | <green/red> | <hash> | <score + decisive evidence> |
+| B | <approach> | <green/red> | <hash> | <score + decisive evidence> |
+
+## Verdict
+Winner: <A|B|C> — <rubric-based reason>
+Discarded: <one reason per loser>
+Runner-up notes: <ideas for later | none>
+Cleanup: <complete | preserved candidate + exact engine reason>
+```
+
+## Interrupted runs
+
+Use `devrites-engine forge reap [slug]` only for recovery. It enumerates
+validated manifests rather than matching directories or branch names. It applies the
+same exact identity, liveness, cleanliness, and reachability checks as cleanup.
+Foreign, live, dirty, malformed, mismatched, or ambiguous state is reported and
+preserved. Never infer a path, suppress a failure, or delete a branch.

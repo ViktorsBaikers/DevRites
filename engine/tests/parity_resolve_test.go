@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-// Golden snapshot for resolve: it MUTATES questions.md + state.md. Each case
-// snapshots the command's stdout + exit code and, for the mutating cases, the
+// Golden snapshots for resolve include its changes to questions.md and state.md.
+// Each case records stdout and the exit code. Mutating cases also record the
 // resulting file bytes. The two nondeterministic timestamp fields (answered_at
 // and the Log entry) are masked out before the file content is snapshotted so the
 // golden is deterministic across runs.
@@ -45,8 +45,8 @@ const resolveState = `- Status: awaiting_human
 `
 
 func TestParityResolve(t *testing.T) {
-	// setup writes the fixtures into a Go tree (.devrites/features/feat) and returns
-	// the workspace root.
+	// setup writes fixtures under .devrites/features/feat and returns the
+	// workspace root.
 	setup := func(t *testing.T, questions, state string) (gwork string) {
 		t.Helper()
 		gwork = t.TempDir()
@@ -55,7 +55,7 @@ func TestParityResolve(t *testing.T) {
 		writeFile(t, gwork, filepath.Join(".devrites", "ACTIVE"), "feat\n")
 		return gwork
 	}
-	// run executes resolve in gwork and snapshots its stdout + exit code under the
+	// run executes resolve in gwork and snapshots stdout and the exit code under the
 	// current subtest's golden.
 	run := func(t *testing.T, gwork string, args ...string) {
 		t.Helper()
@@ -124,16 +124,17 @@ answer: prior
 	})
 
 	t.Run("no-workspace", func(t *testing.T) {
-		// Bare tree: no ACTIVE, no questions.md -> exit 2.
+		// A bare tree with no explicit root, ACTIVE, or questions.md exits 2.
+		// Pointing DEVRITES_ROOT at the nonexistent .devrites child would instead
+		// be an explicit unsafe-root refusal, which is a different contract.
 		gwork := t.TempDir()
-		run(t, gwork, "q-1", "x")
+		out, code := runArgv(t, gwork, libEnv, "", binPath, "resolve", "q-1", "x")
+		assertGolden(t, out, code)
 	})
 
 	t.Run("next-qid", func(t *testing.T) {
-		// Read-only: computes the next qid for an explicit questions.md path.
-		// DEVRITES_NOW pins the clock so the golden is stable across day
-		// boundaries: without it the qid tracks the real date and the snapshot
-		// fails every day but the one it was recorded on (ADR-0006, clock seam).
+		// DEVRITES_NOW fixes the date used by next-qid so the snapshot stays stable.
+		// See ADR-0006.
 		dir := t.TempDir()
 		writeFile(t, dir, "questions.md", "## q-2024-01-01-001\nstatus: open\n")
 		qpath := filepath.Join(dir, "questions.md")

@@ -1,13 +1,14 @@
 package main_test
 
-// Issue 03: `hook orient` dual-harness + fail-open, and issue 04's `hook
-// stop-gate`. CLI black-box: run the binary as a subprocess against a fixture
-// workspace and assert stdout + exit. The parity oracle lives in parity_test.go.
+// CLI coverage for Issue 03's dual-harness `hook orient` behavior and Issue 04's
+// `hook stop-gate`. These tests run the binary against a fixture workspace and
+// check stdout and exit status. parity_test.go owns the parity oracle.
 
 import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -128,7 +129,7 @@ func TestHookMissingHarnessExitsUsage(t *testing.T) {
 	}
 }
 
-// --- issue 09: allow (migrated to engine subcommands) ---
+// --- Issue 09: allow ---
 
 func TestHookAllowApprovesReadonlySubcommand(t *testing.T) {
 	root := newWorkspace(t)
@@ -213,7 +214,7 @@ func bashHookInput(t *testing.T, cmd string) string {
 // --- issue 09: reviewer-readonly guard ---
 
 // parsePermissionDecision decodes a PreToolUse decision envelope and returns the
-// permissionDecision + reason, failing if the shape is wrong.
+// permissionDecision and reason, failing if the shape is wrong.
 func parsePermissionDecision(t *testing.T, stdout string) (decision, reason string) {
 	t.Helper()
 	var env struct {
@@ -319,9 +320,9 @@ func TestHookReviewerReadonlyScansWholeMultilineCommand(t *testing.T) {
 	}
 }
 
-// The agent-required gate reads agent_type ONLY (matching the bash node parse), so
-// a payload that carries the subagent name under subagent_type but not agent_type
-// has no identity and is allowed: no false deny from the aliases.
+// The agent-required gate reads only agent_type, matching the Bash hook's Node
+// parser. A payload that carries the subagent name under subagent_type but not
+// agent_type has no identity and is allowed, avoiding a false deny from aliases.
 func TestHookReviewerReadonlyAgentRequiredIgnoresSubagentTypeAlias(t *testing.T) {
 	root := newWorkspace(t)
 	in := `{"tool_name":"Bash","tool_input":{"command":"rm -rf x"},"subagent_type":"devrites-code-reviewer"}`
@@ -343,6 +344,257 @@ func TestHookReviewerReadonlyAgentRequiredSkipsNonDevrites(t *testing.T) {
 		"hook", "reviewer-readonly", "--harness=claude")
 	if code != 0 || strings.TrimSpace(out) != "" {
 		t.Errorf("want silent exit 0 for a non-devrites agent; got exit=%d out=%q", code, out)
+	}
+}
+
+func TestHookReviewerReadonlyActiveLeafDeniesEveryMutationSurface(t *testing.T) {
+	root := newWorkspace(t)
+	env := []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-code-reviewer",
+	}
+	for _, input := range []string{
+		`{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"}}`,
+		`{"tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Add File: src/app.go\n+x\n*** End Patch"}}`,
+		`{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`,
+		`{"tool_name":"spawn_agent","tool_input":{"message":"do work"}}`,
+		`{"tool_name":"exec","tool_input":{"code":"writeFile()"}}`,
+	} {
+		out, errOut, code := runDevritesIO(t, root, input, env,
+			"hook", "reviewer-readonly", "--harness=codex")
+		if code != 0 {
+			t.Fatalf("exit=%d stderr=%q for %s", code, errOut, input)
+		}
+		if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+			t.Errorf("mutation surface was not denied: %s", input)
+		}
+	}
+}
+
+func TestHookReviewerReadonlyActiveLeafAllowsBoundedProof(t *testing.T) {
+	root := newWorkspace(t)
+	in := `{"tool_name":"Bash","tool_input":{"command":"go test ./... -count=1"}}`
+	out, _, code := runDevritesIO(t, root, in, []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-proof-runner",
+	}, "hook", "reviewer-readonly", "--harness=claude")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("bounded proof should be allowed: exit=%d out=%q", code, out)
+	}
+	out, _, code = runDevritesIO(t, root, in, []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-proof-runner",
+	}, "hook", "wright-scope", "--harness=claude")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("wright hook must not shadow reviewer policy: exit=%d out=%q", code, out)
+	}
+}
+
+func TestHookWrightScopeUsesExactOrchestratorAllowlist(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	if err := os.WriteFile(filepath.Join(workspace, ".wright-allowlist"), []byte("src/app.go\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-slice-wright",
+	}
+	tests := []struct {
+		name  string
+		input string
+		deny  bool
+	}{
+		{"listed edit", `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"}}`, false},
+		{"listed freeform patch", `{"tool_name":"apply_patch","tool_input":"*** Begin Patch\n*** Update File: src/app.go\n@@\n-old\n+new\n*** End Patch\n"}`, false},
+		{"listed redirect", `{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`, false},
+		{"unlisted edit", `{"tool_name":"Write","tool_input":{"file_path":"src/other.go"}}`, true},
+		{"substring is not scope", `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go.bak"}}`, true},
+		{"workspace state forbidden", `{"tool_name":"Edit","tool_input":{"file_path":".devrites/features/auth-tokens/state.md"}}`, true},
+		{"nested dispatch forbidden", `{"tool_name":"spawn_agent","tool_input":{"message":"do work"}}`, true},
+		{"dependency install forbidden", `{"tool_name":"Bash","tool_input":{"command":"npm install left-pad"}}`, true},
+		{"cp target directory forbidden", `{"tool_name":"Bash","tool_input":{"command":"cp --target-directory=/tmp src/app.go"}}`, true},
+		{"mv target directory forbidden", `{"tool_name":"Bash","tool_input":{"command":"mv --target-directory=/tmp src/app.go"}}`, true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			out, errOut, code := runDevritesIO(t, root, test.input, env,
+				"hook", "wright-scope", "--harness=codex")
+			if code != 0 {
+				t.Fatalf("exit=%d stderr=%q", code, errOut)
+			}
+			if test.deny {
+				if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+					t.Fatalf("expected deny, got %q", out)
+				}
+			} else if strings.TrimSpace(out) != "" {
+				t.Fatalf("expected allow, got %q", out)
+			}
+		})
+	}
+}
+
+func TestHookWrightScopeFailsClosedWhenWorkspaceResolutionFails(t *testing.T) {
+	root := newWorkspace(t)
+	if err := os.Remove(filepath.Join(root, "ACTIVE")); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+
+	wrightEnv := []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-slice-wright",
+	}
+	for _, test := range []struct {
+		name  string
+		input string
+		env   []string
+		deny  bool
+	}{
+		{"declared wright edit", `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"}}`, wrightEnv, true},
+		{"declared wright opaque execution", `{"tool_name":"exec","tool_input":{"code":"writeFile()"}}`, wrightEnv, true},
+		{"declared wright nested dispatch", `{"tool_name":"spawn_agent","tool_input":{"message":"do work"}}`, wrightEnv, true},
+		{"invalid declared identity", `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"}}`,
+			[]string{"DEVRITES_AGENT_RUN=1", "DEVRITES_ACTIVE_AGENT=invalid"}, true},
+		{"undeclared root observation", `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"}}`,
+			[]string{"DEVRITES_AGENT_RUN=0", "DEVRITES_ACTIVE_AGENT=", "DEVRITES_WRIGHT_SCOPE="}, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			out, errOut, code := runDevritesIO(t, root, test.input, test.env,
+				"hook", "wright-scope", "--harness=codex")
+			if code != 0 {
+				t.Fatalf("exit=%d stderr=%q", code, errOut)
+			}
+			if test.deny {
+				if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+					t.Fatalf("expected deny, got %q", out)
+				}
+			} else if strings.TrimSpace(out) != "" {
+				t.Fatalf("expected non-shadowing allow, got %q", out)
+			}
+		})
+	}
+}
+
+func TestHookWrightScopeFailsClosedOnMissingOrInvalidAllowlist(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	env := []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-slice-wright",
+	}
+	in := `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"}}`
+
+	out, _, _ := runDevritesIO(t, root, in, env, "hook", "wright-scope", "--harness=claude")
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Fatal("missing allowlist did not fail closed")
+	}
+
+	if err := os.WriteFile(filepath.Join(workspace, ".wright-allowlist"), []byte("src/app.go\nsrc/app.go\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out, _, _ = runDevritesIO(t, root, in, env, "hook", "wright-scope", "--harness=claude")
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Fatal("duplicate allowlist entry did not fail closed")
+	}
+}
+
+func TestHookWrightScopeBindsForgeCandidateManifestIdentity(t *testing.T) {
+	repo := newForgeCLIRepo(t)
+	manifest := planForgeCLI(t, repo)
+	candidate, err := manifest.Candidate("A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	worker := startForgeCLIWorker(t, repo, manifest.RunID, "A", "worker-a")
+	baseEnv := []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-slice-wright",
+		"DEVRITES_FORGE_RUN_ID=" + manifest.RunID,
+		"DEVRITES_FORGE_CANDIDATE=A",
+		"DEVRITES_FORGE_WORKER_ID=" + worker.id,
+		"DEVRITES_FORGE_WORKER_PID=" + strconv.Itoa(worker.cmd.Process.Pid),
+		"DEVRITES_FORGE_PROCESS_START=" + worker.token,
+	}
+	input := `{"tool_name":"Edit","agent_id":"worker-a","tool_input":{"file_path":"tracked.txt"}}`
+	out, stderr, code := runDevritesAt(t, repo, candidate.Worktree, input, baseEnv,
+		"hook", "wright-scope", "--harness=codex")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("valid Forge candidate was denied: exit=%d stdout=%s stderr=%s", code, out, stderr)
+	}
+
+	replaceEnv := func(name, value string) []string {
+		env := append([]string(nil), baseEnv...)
+		prefix := name + "="
+		for i := range env {
+			if strings.HasPrefix(env[i], prefix) {
+				env[i] = prefix + value
+			}
+		}
+		return env
+	}
+	foreign := newForgeCLIRepo(t)
+	for _, test := range []struct {
+		name  string
+		cwd   string
+		input string
+		env   []string
+	}{
+		{"primary root", repo, input, baseEnv},
+		{"sibling candidate", manifest.Candidates[1].Worktree, input, baseEnv},
+		{"foreign repository", foreign, input, baseEnv},
+		{"wrong candidate", candidate.Worktree, input, replaceEnv("DEVRITES_FORGE_CANDIDATE", "B")},
+		{"wrong worker", candidate.Worktree, input, replaceEnv("DEVRITES_FORGE_WORKER_ID", "worker-x")},
+		{"wrong pid", candidate.Worktree, input, replaceEnv("DEVRITES_FORGE_WORKER_PID", "1")},
+		{"wrong token", candidate.Worktree, input, replaceEnv("DEVRITES_FORGE_PROCESS_START", strings.Repeat("0", 64))},
+		{"partial binding", candidate.Worktree, input, replaceEnv("DEVRITES_FORGE_PROCESS_START", "")},
+		{"missing binding", candidate.Worktree, input, baseEnv[:2]},
+		{"wrong hook agent", candidate.Worktree,
+			`{"tool_name":"Edit","agent_id":"worker-x","tool_input":{"file_path":"tracked.txt"}}`, baseEnv},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			out, stderr, code := runDevritesAt(t, repo, test.cwd, test.input, test.env,
+				"hook", "wright-scope", "--harness=codex")
+			if code != 0 {
+				t.Fatalf("exit=%d stderr=%s", code, stderr)
+			}
+			if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+				t.Fatalf("invalid Forge binding was not denied: %s", out)
+			}
+		})
+	}
+
+	forgeGit(t, candidate.Worktree, "switch", "-c", "wrong-forge-branch")
+	out, _, _ = runDevritesAt(t, repo, candidate.Worktree, input, baseEnv,
+		"hook", "wright-scope", "--harness=codex")
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Fatal("wrong candidate branch was not denied")
+	}
+	forgeGit(t, candidate.Worktree, "switch", candidate.Branch)
+
+	manifestPath := filepath.Join(repo, ".devrites", "work", "alpha", ".forge", manifest.RunID, "manifest.json")
+	raw, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tampered map[string]any
+	if err := json.Unmarshal(raw, &tampered); err != nil {
+		t.Fatal(err)
+	}
+	candidates := tampered["candidates"].([]any)
+	candidates[0].(map[string]any)["worktree"] = foreign
+	raw, err = json.MarshalIndent(tampered, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(manifestPath, append(raw, '\n'), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out, _, _ = runDevritesAt(t, repo, candidate.Worktree, input, baseEnv,
+		"hook", "wright-scope", "--harness=codex")
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Fatal("tampered Forge manifest was not denied")
 	}
 }
 

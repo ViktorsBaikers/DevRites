@@ -1,6 +1,9 @@
 package state
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestCursorFieldReadsCanonicalTableAndLegacyLines(t *testing.T) {
 	table := []string{
@@ -54,5 +57,43 @@ func TestSetCursorFieldPreservesCanonicalAndLegacyFormats(t *testing.T) {
 				t.Fatalf("SetCursorField() = %v, %v; want [%q], true", got, ok, tc.want)
 			}
 		})
+	}
+}
+
+func TestUpsertAndDeleteCursorFieldStayInsideCursorTable(t *testing.T) {
+	lines := []string{
+		"# State",
+		"",
+		"## Cursor",
+		"| Key | Value |",
+		"| --- | --- |",
+		"| phase | build |",
+		"| status | running |",
+		"",
+		"## Awaiting human",
+		"| Key | Value |",
+		"| --- | --- |",
+		"| question_id | q-1 |",
+	}
+	lines = UpsertCursorField(lines, CursorReturnPhase, "build")
+	value, ok := CursorField(lines, CursorReturnPhase)
+	if !ok || value != "build" {
+		t.Fatalf("return phase=(%q,%v), want build", value, ok)
+	}
+	returnIndex, questionIndex := -1, -1
+	for i, line := range lines {
+		if strings.Contains(line, CursorReturnPhase) {
+			returnIndex = i
+		}
+		if strings.Contains(line, CursorQuestionID) {
+			questionIndex = i
+		}
+	}
+	if returnIndex < 0 || questionIndex < 0 || returnIndex > questionIndex {
+		t.Fatalf("upsert inserted outside cursor table:\n%s", strings.Join(lines, "\n"))
+	}
+	lines = DeleteCursorField(lines, CursorReturnPhase)
+	if _, ok := CursorField(lines, CursorReturnPhase); ok {
+		t.Fatalf("DeleteCursorField left return phase:\n%s", strings.Join(lines, "\n"))
 	}
 }

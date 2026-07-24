@@ -1,14 +1,15 @@
 # State: add-csv-export
 
-- Phase: done
-- Status: done
-- Active slice: none
-- Slice mode: none
-- Spec gate: passed 2026-06-10T09:00:00Z
-- Plan approved: 2026-06-10T11:30:00Z
-- AFK slices remaining: none
-- Risk: none
-- Next step: archived — feature shipped
+## Cursor
+| Key | Value |
+| --- | --- |
+| phase | done |
+| status | done |
+| next_action | archived |
+| plan_approved | 2026-06-10T11:30:00Z |
+| active_slice | none |
+| slice_mode | none |
+| afk_slices_remaining | none |
 
 ## Slice progress
 - [x] Slice 1: stream endpoint — built

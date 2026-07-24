@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# agent-skills-refresh-validation-test.sh: regression coverage for the
-# agent-skills refresh hardening layer: deterministic routing reports, skill
-# anatomy, host command parity, and agent composition.
+# Regression checks for the agent-skills refresh validators: routing reports,
+# skill anatomy, host command parity, and agent composition.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
@@ -41,13 +40,13 @@ python3 "$ROOT/scripts/run-routing-evals.py" --json-out "$T/routing.json" --quie
   && grep -q '"host_wording_confusion"' "$T/routing.json" \
   && ok "routing eval writes machine-readable rank report" \
   || no "routing eval missing JSON report fields"
-run_ok "live behavioral eval dry-run plans shipped portable scenarios" python3 "$ROOT/scripts/run-live-behavioral-evals.py" --dry-run "$ROOT/evals/behavioral/rite-ship.json"
+run_ok "controlled behavioral dry-run validates the frozen 20-session trial" python3 "$ROOT/scripts/run-live-behavioral-evals.py" --dry-run
 run_ok "skill pruning audit runs" node "$ROOT/scripts/skill-pruning-audit.mjs" --quiet
 run_ok "skill anatomy validator passes shipped pack" python3 "$ROOT/scripts/validate-skill-anatomy.py" --quiet
 run_ok "host command parity validator passes" python3 "$ROOT/scripts/validate-command-parity.py" --quiet
 run_ok "agent composition validator passes" python3 "$ROOT/scripts/validate-agent-composition.py" --quiet
 
-# Fixtures: schema validation accepts policy-sized corpora and rejects empty ones.
+# The schema accepts policy-sized corpora and rejects empty ones.
 cat > "$T/small-eval.json" <<'JSON'
 {"skill":"rite-demo","description":"Small direct-command corpus.","queries":[{"text":"/rite-demo","expected":"should_trigger","rationale":"Direct invocation."},{"text":"run something else","expected":"should_not_trigger","rationale":"Negative boundary."}]}
 JSON
@@ -57,7 +56,7 @@ cat > "$T/empty-eval.json" <<'JSON'
 JSON
 run_fail_contains "trigger eval schema rejects empty corpus" "queries is empty" bash "$ROOT/scripts/run-evals.sh" "$T/empty-eval.json"
 
-# Fixtures: Done is green-only across the blocked/unproven/awaiting state table.
+# "Done" is valid only for green states, not blocked, unproven, or awaiting ones.
 reply_case() {
   label="$1" line="$2" expected="$3"
   dir="$T/reply-$label/rite-demo"
@@ -89,8 +88,8 @@ reply_case blocked "Open: blocker remains" fail
 reply_case unproven "Evidence: acceptance unproven" fail
 reply_case awaiting "Open: awaiting human" fail
 
-# Fixture: an ordered step needs either an explicit completion signal or an
-# observable action + target; generic exhortation is not a contract.
+# An ordered step needs an explicit completion signal or an observable action
+# and target. A generic exhortation is not a contract.
 mkdir -p "$T/pruning-skills/rite-demo"
 cat > "$T/pruning-skills/rite-demo/SKILL.md" <<'SKILL'
 ---
@@ -104,7 +103,7 @@ user-invocable: true
 SKILL
 run_fail_contains "step audit rejects vague ordered step" "needs a checkable completion criterion" node "$ROOT/scripts/skill-pruning-audit.mjs" --skills-dir "$T/pruning-skills" --quiet
 
-# Fixture: anatomy validator rejects a public skill without a stop/output contract.
+# The anatomy validator rejects a public skill without a stop or output contract.
 mkdir -p "$T/skills/rite-demo"
 cat > "$T/skills/rite-demo/SKILL.md" <<'SKILL'
 ---
@@ -125,8 +124,8 @@ Read core.md.
 SKILL
 run_fail_contains "skill anatomy rejects missing output contract" "output/reply contract" python3 "$ROOT/scripts/validate-skill-anatomy.py" --skills-dir "$T/skills" --quiet
 
-# A legacy skill exemption may waive named sections, but must not bypass every
-# other anatomy contract.
+# A legacy exemption may waive named sections, but the other anatomy rules
+# still apply.
 mkdir -p "$T/exempt-skills/rite-doctor"
 cat > "$T/exempt-skills/rite-doctor/SKILL.md" <<'SKILL'
 ---
@@ -138,7 +137,7 @@ user-invocable: true
 SKILL
 run_fail_contains "skill anatomy exemptions are section-scoped" "output/reply contract" python3 "$ROOT/scripts/validate-skill-anatomy.py" --skills-dir "$T/exempt-skills" --quiet
 
-# Fixture: routing eval owner negatives are pairwise, not vacuous.
+# Routing eval owner negatives must compare a real pair.
 mkdir -p "$T/routing-skills/alpha" "$T/routing-skills/beta" "$T/routing-evals"
 cat > "$T/routing-skills/alpha/SKILL.md" <<'SKILL'
 ---
@@ -161,7 +160,7 @@ cat > "$T/routing-evals/alpha.json" <<'JSON'
 JSON
 run_fail_contains "routing eval rejects owner that does not outrank target" "declared owner" python3 "$ROOT/scripts/run-routing-evals.py" --skills-dir "$T/routing-skills" --evals-dir "$T/routing-evals" --baseline "$T/no-baseline.json"
 
-# Fixtures: invocation policy determines the required routing corpus shape.
+# Invocation policy determines the required routing corpus shape.
 mkdir -p "$T/explicit-skills/rite-explicit" "$T/explicit-evals"
 cat > "$T/explicit-skills/rite-explicit/SKILL.md" <<'SKILL'
 ---
@@ -196,7 +195,7 @@ cat > "$T/routing-baseline.json" <<'JSON'
 JSON
 run_fail_contains "routing eval rejects stale baseline metadata" "baseline metadata: skills" python3 "$ROOT/scripts/run-routing-evals.py" --skills-dir "$T/routing-skills" --evals-dir "$T/routing-evals" --baseline "$T/routing-baseline.json"
 
-# Fixture: host parity rejects a missing canonical command-map entry.
+# Host parity rejects a missing canonical command-map entry.
 cp -R "$ROOT/pack/.claude/skills" "$T/parity-skills"
 cp "$ROOT/docs/skills.md" "$T/skills.md"
 cp "$ROOT/docs/command-map.md" "$T/command-map.md"
@@ -209,7 +208,7 @@ p.write_text(s)
 PY
 run_fail_contains "host parity rejects missing command-map entry" "docs/command-map Claude direct" python3 "$ROOT/scripts/validate-command-parity.py" --skills-dir "$T/parity-skills" --docs-skills "$T/skills.md" --docs-command-map "$T/command-map.md" --readme "$ROOT/README.md" --quiet
 
-# Fixture: agent validator rejects a write-capable reviewer.
+# The agent validator rejects a write-capable reviewer.
 mkdir -p "$T/agents"
 cat > "$T/agents/devrites-code-reviewer.md" <<'AGENT'
 ---

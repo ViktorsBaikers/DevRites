@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -18,14 +17,13 @@ var (
 	assertMarkers = regexp.MustCompile(`assert|expect\(|\.should\b|\brequire\.|EXPECT_|ASSERT_|XCTAssert|t\.Error|t\.Fatal`)
 )
 
-// TestIntegrity guards against reaching green by weakening tests instead of fixing
-// code. It diffs the test files against the slice's base tree (the reconcile
-// snapshot if present, else HEAD) and flags any test file that was deleted, gained
-// a skip/focus marker, or lost assertions. Read-only; the workspace is
-// <root>/features/<slug>.
+// TestIntegrity detects tests that were weakened instead of fixing the code. It
+// compares test files in the retained reconcile tree with the current tree, or
+// uses HEAD as the base outside a slice lifecycle. It does not modify the
+// workspace at <root>/features/<slug>.
 //
 //	0  clean, or skipped because this is not a git repo
-//	2  no active workspace / bad args
+//	2  no active workspace, bad args, or missing/corrupt baseline state
 //	3  WEAKENED: a test was deleted, skipped, or de-asserted since the base
 func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	// Accept both `test-integrity [slug]` and the `check [slug]` alias; a leading
@@ -56,23 +54,26 @@ func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	cwd, _ := os.Getwd()
 	gitRoot := gitToplevel(cwd)
 	if gitRoot == "" {
-		fmt.Fprintln(stderr, "test-integrity: not a git repo: gate skipped, eyeball the test diff by hand.")
+		fmt.Fprintln(stderr, "test-integrity: not a git repo: gate skipped; inspect the test diff manually.")
 		return 0
 	}
 
-	baseTree := ""
-	if b, err := os.ReadFile(filepath.Join(d, ".reconcile-base")); err == nil {
-		baseTree = strings.TrimSpace(string(b))
+	trees, err := captureSliceTreeRange(gitRoot, root, d)
+	if err != nil {
+		fmt.Fprintf(stderr, "test-integrity: cannot capture slice range: %v\n", err)
+		return 2
 	}
-	ref := baseTree
-	if ref == "" {
-		ref = "HEAD"
+	defer trees.cleanup()
+	changedPaths, err := changedTreePaths(gitRoot, trees.env, trees.base, trees.current)
+	if err != nil {
+		fmt.Fprintf(stderr, "test-integrity: cannot compare slice trees: %v\n", err)
+		return 2
 	}
 
 	weak := 0
 	srcChanged, testChanged := 0, 0
 	var report strings.Builder
-	for _, f := range gitDiffNames(gitRoot, ref) {
+	for _, f := range changedPaths {
 		if f == "" {
 			continue
 		}
@@ -83,19 +84,25 @@ func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 			continue
 		}
 		testChanged++
-		old, ok := gitShow(gitRoot, ref+":"+f)
-		if !ok || old == "" {
+		oldBytes, oldExists, err := treeFileContent(gitRoot, trees.env, trees.base, f)
+		if err != nil {
+			fmt.Fprintf(stderr, "test-integrity: cannot read baseline %s: %v\n", f, err)
+			return 2
+		}
+		if !oldExists || len(oldBytes) == 0 {
 			continue // new test file: adding tests is never a weakening
 		}
-		if !isFile(filepath.Join(gitRoot, f)) {
+		newBytes, newExists, err := treeFileContent(gitRoot, trees.env, trees.current, f)
+		if err != nil {
+			fmt.Fprintf(stderr, "test-integrity: cannot read current %s: %v\n", f, err)
+			return 2
+		}
+		if !newExists {
 			weak++
 			fmt.Fprintf(&report, "  - %s: test file DELETED\n", f)
 			continue
 		}
-		newBytes, err := os.ReadFile(filepath.Join(gitRoot, f))
-		if err != nil {
-			continue
-		}
+		old := string(oldBytes)
 		now := string(newBytes)
 		oldSkips, newSkips := countMatches(skipMarkers, old), countMatches(skipMarkers, now)
 		oldAsserts, newAsserts := countMatches(assertMarkers, old), countMatches(assertMarkers, now)
@@ -109,10 +116,9 @@ func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	// Verification-gap advisory: source changed but no test file did. Not a
-	// weakening and never a verdict on its own: a pointer to run the
-	// verification-gap trace (testing.md), since a green suite can pass identically
-	// with the change reverted. Printed on both the clean and weakened paths.
+	// When source changes without a test change, print the verification-gap
+	// advisory from testing.md. This is not a weakening verdict and appears on
+	// both clean and weakened paths.
 	gapAdvisory := ""
 	if srcChanged > 0 && testChanged == 0 {
 		gapAdvisory = fmt.Sprintf("test-integrity: advisory: %d source file(s) changed, 0 test file(s) touched; "+
@@ -122,7 +128,7 @@ func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	if weak > 0 {
 		fmt.Fprintf(stderr, "test-integrity: WEAKENED: %d test file(s) lost coverage since the slice base:\n", weak)
 		fmt.Fprint(stderr, report.String())
-		fmt.Fprintln(stderr, "A test weakened to pass a gate is a Critical finding. Revert it; fix the code or raise a blocking question.")
+		fmt.Fprintln(stderr, "Weakening a test to pass the gate is a Critical finding. Restore the test, then fix the code or raise a blocking question.")
 		if gapAdvisory != "" {
 			fmt.Fprintln(stderr, gapAdvisory)
 		}
@@ -190,14 +196,4 @@ func isTestFile(f string) bool {
 // countMatches counts the non-overlapping matches of re in text.
 func countMatches(re *regexp.Regexp, text string) int {
 	return len(re.FindAllStringIndex(text, -1))
-}
-
-// gitShow returns the content of an object (e.g. "HEAD:path"), and false when it
-// does not exist at that ref.
-func gitShow(gitRoot, spec string) (string, bool) {
-	out, err := exec.Command("git", "-C", gitRoot, "show", spec).Output()
-	if err != nil {
-		return "", false
-	}
-	return string(out), true
 }

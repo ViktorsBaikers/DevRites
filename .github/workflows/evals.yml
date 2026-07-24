@@ -1,113 +1,58 @@
 name: evals
 
-# Live trigger-eval execution against Anthropic's API.
-#
-# Schema validation runs in `ci.yml` on every PR (no API key needed).
-# This workflow executes the evals: for each executable skill, ask
-# Claude to predict which DevRites skill would fire for each query, then
-# score against the expected verdict. Corpus sizes follow invocation policy:
-# model-invoked skills carry implicit positives/negatives; explicit-only skills
-# carry direct-command positives plus an implicit negative boundary. Per-skill gate:
-#   * accuracy ≥ 0.90 (small corpora therefore require every query correct)
-#   * false-positives ≤ 2
-#
-# Triggers:
-#   - nightly schedule (catch description drift / model updates).
-#   - manual workflow_dispatch (run on demand).
-#   - pull-request opt-in via the `run-evals` label (gated by secret).
-#
-# Requires the repo secret `ANTHROPIC_API_KEY`. Without it, the job is
-# skipped automatically.
+# Every evaluation in this workflow is deterministic, network-free, and free to
+# run. DevRites does not accept model credentials or provide paid evaluation
+# jobs.
 
 on:
-  schedule:
-    - cron: '17 7 * * *'   # 07:17 UTC daily
-  workflow_dispatch:
-    inputs:
-      model:
-        description: 'Override DEVRITES_EVAL_MODEL (e.g. claude-haiku-4-5-20251001)'
-        required: false
-        default: ''
   pull_request:
     branches: [main]
-    types: [opened, synchronize, labeled]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 7 * * *'
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
-  evals:
-    name: trigger evals
+  deterministic-contracts:
+    name: deterministic agent and behavioral contracts
     runs-on: ubuntu-latest
-    # On PRs, only run when the `run-evals` label is present (avoids burning
-    # tokens on every push). Schedule + manual always run.
-    if: |
-      github.event_name != 'pull_request' ||
-      contains(github.event.pull_request.labels.*.name, 'run-evals')
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      - name: Skip when secret is missing
-        id: secret-check
-        run: |
-          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-            echo "secret_set=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::ANTHROPIC_API_KEY is not configured: skipping live eval execution."
-          else
-            echo "secret_set=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Set up Python
-        if: steps.secret-check.outputs.secret_set == 'true'
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.11'
 
-      - name: Install Anthropic SDK
-        if: steps.secret-check.outputs.secret_set == 'true'
-        run: python3 -m pip install anthropic==0.116.0
+      - name: Run the 24-cell fake agent-contract matrix
+        run: >-
+          python3 scripts/run-agent-contract-evals.py
+          --fake
+          --results-dir "$RUNNER_TEMP/agent-contract"
 
-      - name: Schema validate eval JSONs
-        if: steps.secret-check.outputs.secret_set == 'true'
-        run: bash scripts/run-evals.sh
+      - name: Check the frozen behavioral trial
+        run: >-
+          python3 scripts/run-live-behavioral-evals.py
+          --dry-run
+          --results-dir "$RUNNER_TEMP/behavioral-dry"
 
-      - name: Run trigger evals against Claude
-        if: steps.secret-check.outputs.secret_set == 'true'
-        env:
-          CLAUDE_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          DEVRITES_EVAL_MODEL: ${{ inputs.model || 'claude-haiku-4-5-20251001' }}
-        run: |
-          python3 scripts/eval-runner.py \
-            --min-accuracy 0.90 \
-            --max-false-positives 2 \
-            --summary-file eval-summary.jsonl \
-            --verbose \
-            evals/*.json | tee eval-output.txt
+      - name: Run the 20-cell fake behavioral trial
+        run: >-
+          python3 scripts/run-live-behavioral-evals.py
+          --fake
+          --results-dir "$RUNNER_TEMP/behavioral-fake"
 
-      - name: Render job summary
-        if: always() && steps.secret-check.outputs.secret_set == 'true'
-        env:
-          DEVRITES_EVAL_MODEL: ${{ inputs.model || 'claude-haiku-4-5-20251001' }}
-        run: |
-          {
-            python3 scripts/render-eval-summary.py eval-summary.jsonl
-            echo ""
-            echo "<details><summary>Full output</summary>"
-            echo ""
-            echo '```'
-            tail -200 eval-output.txt 2>/dev/null || true
-            echo '```'
-            echo "</details>"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload eval artifacts
-        if: always() && steps.secret-check.outputs.secret_set == 'true'
+      - name: Upload metadata-only summaries
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: eval-results
+          name: deterministic-eval-summaries
           path: |
-            eval-summary.jsonl
-            eval-output.txt
+            ${{ runner.temp }}/agent-contract/summary.json
+            ${{ runner.temp }}/behavioral-dry/summary.json
+            ${{ runner.temp }}/behavioral-fake/summary.json
           if-no-files-found: ignore
-          retention-days: 30
+          retention-days: 14

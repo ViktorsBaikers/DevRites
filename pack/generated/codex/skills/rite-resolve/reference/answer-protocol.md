@@ -6,6 +6,9 @@ shapes, the batch file format, and the rules the underlying `devrites-engine res
 
 ## Three input shapes
 
+Each form is an explicit local mutation command. Supplying it is the confirmation; the
+skill applies it once after validation and reports the result instead of asking for `y` again.
+
 ### 1. Single answer
 
 ```

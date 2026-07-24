@@ -1,12 +1,11 @@
 # `plan.md` template
 
-Write **how** to build what `spec.md` defines. The plan is **living, not sacred**:
-`$rite-plan` repairs it when reality disagrees. This is where technology choices live
-(they're banned from the spec).
+Write **how** to build what `spec.md` defines. Use `$rite-plan` when evidence requires
+an update. Technology choices belong here, not in the spec.
 
 ```markdown
 # Plan: <Feature>
-Spec: ./spec.md   Date: <date>
+Spec: ./spec.md   Decision coverage: ./decision-coverage.md   Date: <date>
 
 ## Summary
 1–2 sentences: the primary requirement + the chosen approach.
@@ -17,7 +16,8 @@ Spec: ./spec.md   Date: <date>
 - Storage / data: <...>
 - Testing tools + commands: <from spec "Commands discovered">
 - Target / platform / constraints: <...>
-- `[NEEDS CLARIFICATION: ...]` for any unknown that affects the approach.
+- Any product/constraint unknown that affects the approach routes to `$rite-clarify`;
+  do not carry `[NEEDS CLARIFICATION]` into an approvable plan.
 
 ## Global constraints
 Project-wide requirements from the spec that every slice implicitly includes — version
@@ -26,6 +26,8 @@ values **verbatim from spec.md** (a paraphrased constraint drifts by the time sl
 
 ## Approach
 The strategy in a few sentences. Why this over the alternatives considered.
+For high-cost/hard-to-reverse boundaries, models, contracts, or dependencies compare ≥2
+viable `Option · Drivers · Trade-offs · Consequence`; skip theater for routine choices.
 
 ## Slice strategy
 How the feature is split into vertical `SLICE-###` increments, why the order is
@@ -36,9 +38,9 @@ green, or name the integration branch + final verify slice.
 ## Architecture decisions
 Key decisions + rationale (mirror into decisions.md). New pattern vs reuse — prefer
 reuse of existing project conventions. Record architecture as invariants, not scaffolding:
-include a decision only when two implementing slices could otherwise choose incompatibly. For each
-medium+ decision, include `Binds:` (what future work must follow) and `Prevents:` (the divergence
-or failure it avoids).
+include a decision only when slices could choose incompatibly. Medium+ decisions include
+`Binds:` and `Prevents:`. Cross-boundary interfaces name invariants, I/O, ordering/idempotency,
+errors, versioning, config, and relevant budgets.
 
 ## Dependency graph
 What must exist before what (text is fine):
@@ -55,6 +57,7 @@ slices above the cut, and no slice above it depends on one below.
 ## Validation strategy
 After which slices to run tests / build / browser proof. For UI slices, name the visual
 acceptance targets from `design-brief.md`, not a generic "looks good" check.
+Each proof names exact command/cwd/signal, prerequisites, and mutable provenance inputs.
 
 **Key links** — the wiring the assembled feature must exhibit, one row each:
 `<from> → <to> via <mechanism>` (route → handler via registration; producer → consumer via
@@ -81,14 +84,19 @@ Framework/library docs to consult (triggers devrites-source-driven). Record URLs
 decisions.md / evidence.md when used.
 
 ## Readiness gate  *(must pass before $rite-build)*
+- [ ] `decision-coverage.md` says `Decision coverage: CLEAR`
 - [ ] Every spec acceptance criterion is covered by a slice
 - [ ] Dependency order is acyclic and risk-first
 - [ ] An `MVP cut` is named, self-contained (ACs above the cut proven above the cut, no dependency reaching below), and marks a genuinely shippable scope
 - [ ] No unjustified deviation remains in the complexity gate
 - [ ] Rollback exists for every destructive / migration step
 - [ ] Every `Mode: HITL` slice has `Gate`, `SLA`, and `Checkpoint` populated
+- [ ] Human-owned choices are resolved; surviving checkpoints need unavailable pre-code
+      evidence or action-time approval
+- [ ] Slice proof commands, cwd, prerequisites, and provenance inputs are preflightable
 - [ ] Every UI slice names `Design brief states` and binary `Visual acceptance`
 - [ ] `Key links` rows cover every cross-slice wiring (or state `none`)
+- [ ] Cross-boundary contracts name producer, consumer, invariants/errors/order, and proof
 - [ ] Any wide mechanical refactor is sliced expand → migrate batches → contract, with green migrate batches or an integration branch + final verify slice
 - [ ] No `Gate: blocking` slice is implicitly chained behind an AFK slice without surfacing the dependency
 ```

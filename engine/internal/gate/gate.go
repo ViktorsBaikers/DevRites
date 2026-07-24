@@ -1,10 +1,7 @@
-// Package gate implements DevRites' deterministic completeness gates.
-//
-// Enforcement is phase-relative, gate-scoped, and transition-fired: a gate
-// checks only the sections required to make its transition, and only when it is
-// run: never on every tool call. A block is a HITL pause (a structured
-// "missing X" the human resolves and retries), never a crash. Judgment gates
-// stay advisory; these deterministic gates are the ones allowed to block.
+// Package gate implements deterministic completeness checks. Each gate checks
+// only the files required for its transition when the command runs. Missing
+// content returns a human-resolvable block instead of an error. Judgment gates
+// remain advisory; only deterministic checks can block.
 package gate
 
 import (
@@ -15,6 +12,7 @@ import (
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/orient"
+	"github.com/devrites/devrites/internal/reason"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -33,19 +31,20 @@ const (
 // Result is a gate outcome. Blocked is true iff a required section is missing;
 // Missing lists them in canonical order for an actionable message.
 type Result struct {
-	Kind    Kind
-	Slug    string
-	Phase   state.Phase
-	Target  state.Phase // the phase whose requirements were checked
-	Missing []state.Section
-	Blocked bool
+	Kind         Kind
+	Slug         string
+	Phase        state.Phase
+	Target       state.Phase     // the phase whose requirements were checked
+	Missing      []state.Section // compact legacy view
+	MissingFiles []string        // authoritative per-file view
+	LegacyLayout bool
+	Blocked      bool
+	ReasonID     reason.ID
 }
 
-// Check runs a gate against feature <slug> under root, reading the files
-// directly (the files are always the source of truth, so a gate never trusts a
-// possibly-stale cache). It returns an error only for a genuinely broken request
-// (unknown slug, unreadable state): a legitimately incomplete feature is a
-// Result with Blocked set, not an error.
+// Check runs a gate against feature <slug> under root. It reads workspace files
+// directly instead of trusting a cache. Invalid requests and unreadable state
+// return errors; missing required content returns a blocked Result.
 func Check(kind Kind, root, slug string) (*Result, error) {
 	f, err := state.LoadFeature(root, slug)
 	if err != nil {
@@ -56,19 +55,46 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 		target = state.PhaseSeal
 	}
 	missing := state.MissingFor(f, target)
-	return &Result{
-		Kind:    kind,
-		Slug:    slug,
-		Phase:   f.Phase,
-		Target:  target,
-		Missing: missing,
-		Blocked: len(missing) > 0,
-	}, nil
+	var missingFiles []string
+	blocked := len(missing) > 0
+	if !f.LegacyLayout {
+		missingFiles = state.MissingWorkspaceFiles(f, target)
+		blocked = len(missingFiles) > 0
+	}
+	result := &Result{
+		Kind:         kind,
+		Slug:         slug,
+		Phase:        f.Phase,
+		Target:       target,
+		Missing:      missing,
+		MissingFiles: missingFiles,
+		LegacyLayout: f.LegacyLayout,
+		Blocked:      blocked,
+	}
+	result.ReasonID = ResultReasonID(kind, blocked)
+	return result, nil
 }
 
-// Render produces the deterministic, greppable gate output (with a trailing
-// newline). A block names exactly the missing sections and the resolve step, so
-// a human (or an AFK agent) knows precisely what to fix.
+// ResultReasonID returns the typed outcome owned by the lifecycle gate.
+func ResultReasonID(kind Kind, blocked bool) reason.ID {
+	switch kind {
+	case Readiness:
+		if blocked {
+			return reason.GateReadinessMissing
+		}
+		return reason.GateReadinessPassed
+	case Seal:
+		if blocked {
+			return reason.GateSealMissing
+		}
+		return reason.GateSealPassed
+	default:
+		return ""
+	}
+}
+
+// Render returns stable, greppable output with a trailing newline. A blocked
+// result names the missing files and the command to rerun.
 func (r *Result) Render() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "gate: %s\n", r.Kind)
@@ -78,26 +104,28 @@ func (r *Result) Render() string {
 		b.WriteString("result: pass\n")
 		return b.String()
 	}
-	names := sectionNames(r.Missing)
+	missing := r.MissingFiles
+	if r.LegacyLayout {
+		missing = make([]string, len(r.Missing))
+		for i, section := range r.Missing {
+			missing[i] = string(section)
+		}
+	}
 	if r.Kind == Seal {
-		fmt.Fprintf(&b, "result: blocked (missing to seal: %s)\n", strings.Join(names, ", "))
+		fmt.Fprintf(&b, "result: blocked (missing to seal: %s)\n", strings.Join(missing, ", "))
 	} else {
-		fmt.Fprintf(&b, "result: blocked (missing to leave %q: %s)\n", r.Phase, strings.Join(names, ", "))
+		fmt.Fprintf(&b, "result: blocked (missing to leave %q: %s)\n", r.Phase, strings.Join(missing, ", "))
 	}
 	fmt.Fprintf(&b, "next: add real content to %s, then re-run: devrites-engine %s %s\n",
-		strings.Join(fileNames(r.Missing), ", "), r.Kind, r.Slug)
+		strings.Join(missing, ", "), r.Kind, r.Slug)
 	return b.String()
 }
 
-// StopGate evaluates the stop-hook rest-point invariant for the active feature:
-// a feature that CLAIMS completion (it has advanced to seal, ship, or done)
-// must not have an empty proof section. This is a rest-point check, NOT
-// whole-feature completeness: normal in-progress incompleteness never trips it,
-// so a mid-build turn is never blocked.
+// StopGate checks whether the active feature can end a turn in its current state.
+// A feature in seal, ship, or done must have proof. Normal incompleteness during
+// earlier phases does not block.
 //
-// It returns a zero StopResult (Blocked false) (silent, no block) when there
-// is no active feature or the workspace can't be read, keeping the stop hook
-// fail-open.
+// Missing or unreadable workspace state returns an unblocked zero result.
 func StopGate(root string) (StopResult, error) {
 	slug, err := orient.ActiveSlug(root)
 	if err != nil || slug == "" {
@@ -105,16 +133,17 @@ func StopGate(root string) (StopResult, error) {
 	}
 	f, err := state.LoadFeature(root, slug)
 	if err != nil {
-		return StopResult{}, nil // fail-open: a broken workspace never wedges Stop
+		return StopResult{}, nil // Unreadable state does not block Stop.
 	}
-	// Fail-on-red: the redwatch hook marks a known-red suite by writing .red. A turn
-	// must not rest while it is set: evidence over confidence. This is a rest-point
-	// invariant (a concrete, provable inconsistency), not whole-feature completeness.
+	// redwatch writes .red for a known failing suite. Stop blocks while that file
+	// exists, independently of whole-feature completeness.
 	featureDir := devritespaths.FeatureDir(root, slug)
 	if _, statErr := os.Stat(filepath.Join(featureDir, ".red")); statErr == nil {
 		return StopResult{
-			Slug:    slug,
-			Blocked: true,
+			Slug:          slug,
+			Blocked:       true,
+			ReasonID:      reason.HookStopRed,
+			EvidenceFiles: []string{".red"},
 			Reason: fmt.Sprintf(
 				"feature %q has tests/build RED (.red is set): fix to green, or record the failure and next step, before stopping",
 				slug),
@@ -122,8 +151,10 @@ func StopGate(root string) (StopResult, error) {
 	}
 	if gates, blocked := unsurfacedHumanGates(featureDir); blocked {
 		return StopResult{
-			Slug:    slug,
-			Blocked: true,
+			Slug:          slug,
+			Blocked:       true,
+			ReasonID:      reason.HookStopUnsurfacedHumanGate,
+			EvidenceFiles: []string{"questions.md", "state.md"},
 			Reason: fmt.Sprintf(
 				"feature %q has open %s human question(s) in questions.md but state.md is not awaiting_human: surface the gate before stopping",
 				slug, strings.Join(gates, "/")),
@@ -132,14 +163,16 @@ func StopGate(root string) (StopResult, error) {
 	claimsDone := state.ShippablePhase(f.Phase)
 	if claimsDone && !f.Present[state.SectionProof] {
 		return StopResult{
-			Slug:    slug,
-			Blocked: true,
+			Slug:          slug,
+			Blocked:       true,
+			ReasonID:      reason.HookStopMissingProof,
+			EvidenceFiles: []string{"evidence.md", "proof.md", "state.md"},
 			Reason: fmt.Sprintf(
 				"feature %q is at phase %q but proof.md is empty: record acceptance evidence, or move the phase back, before stopping",
 				slug, f.Phase),
 		}, nil
 	}
-	return StopResult{Slug: slug}, nil
+	return StopResult{Slug: slug, ReasonID: reason.HookStopClear}, nil
 }
 
 const gateSpaceChars = " \t\n\v\f\r"
@@ -216,9 +249,11 @@ func splitLinesNoTrailing(data []byte) []string {
 // none); Blocked is true iff the rest-point invariant is violated; Reason is the
 // actionable explanation when Blocked.
 type StopResult struct {
-	Slug    string
-	Reason  string
-	Blocked bool
+	Slug          string
+	Reason        string
+	ReasonID      reason.ID
+	EvidenceFiles []string
+	Blocked       bool
 }
 
 func sectionNames(ss []state.Section) []string {

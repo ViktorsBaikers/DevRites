@@ -2,6 +2,13 @@
 
 Captured: 2026-06-11T16:40:00Z (post-dates the last code edit)
 
+## Evidence log
+| Evidence ID | Command / action | Result | Related IDs | Limitation |
+| --- | --- | --- | --- | --- |
+| EVID-001 | npm test -- transactions/export | pass | AC-001, SLICE-001 | Synthetic route fixture. |
+| EVID-002 | cross-user export test | pass: 403 | AC-002, SLICE-002 | Synthetic identities. |
+| EVID-003 | 100k-row memory-flat test | pass | AC-003, SLICE-001 | Process-local memory observation. |
+
 ## Tests
 ```
 $ npm test -- transactions/export
@@ -19,6 +26,6 @@ build: ok   typecheck: 0 errors   lint: 0 problems
 ```
 
 ## Acceptance mapping
-- export.csv endpoint → tests above (pass)
-- user-scoped (no IDOR) → 403 cross-user test (pass)
-- streaming, no full-set load → memory-flat test (pass)
+- AC-001 export.csv endpoint → EVID-001, SLICE-001 (pass)
+- AC-002 user-scoped (no IDOR) → EVID-002, SLICE-002 (pass)
+- AC-003 streaming, no full-set load → EVID-003, SLICE-001 (pass)

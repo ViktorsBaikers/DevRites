@@ -11,50 +11,41 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
+- For every DevRites specialist or writer dispatch, first call `spawn_agent` with the named `devrites-<role>` custom role. The matching project contract is `.codex/agents/devrites-<role>.toml`.
+- If `spawn_agent` is callable but a named read-only role is unavailable, use generic `explorer` only when the host proves that run has a runtime-enforced read-only sandbox. Tell it to read `.codex/agents/devrites-<role>.toml`, follow its `developer_instructions`, and execute the unchanged packet. A missing read-only custom role is not evidence that spawning is unavailable.
+- Never dispatch generic `worker` for `devrites-slice-wright` unless the host proves that worker run carries exact DevRites identity and the same `.wright-allowlist` enforcement as the named role. Codex reports a generic run as `agent_type=worker`, so the generated global hooks cannot prove that binding. Reject that unsafe rung and use the documented labelled inline wright path with `.reconcile-inline` plus the full reconcile gate.
+- If the host cannot prove the generic explorer is runtime read-only, reject that rung too. Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn may the root run the documented discipline inline. Label it `independence: fallback`, never call it independent, and apply every fallback risk gate. An unbound generic wright or unconfined generic explorer is such a safety rejection, not evidence that no agents exist.
+- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
+- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
 - When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
-# $rite-vet: vet the plan before you build
+# $rite-vet: review the plan before build
 
-Take a defined plan and **vet** it the way a senior staff engineer would in a plan review:
-challenge the scope, walk architecture / plan code-quality / test-coverage / performance,
-calibrate every finding by confidence (and refuse to emit one you can't trace to a quoted
-line), design the test coverage the build will target, and map the failure modes and
-parallel lanes: *before* `$rite-build` writes a line. The one DevRites step that hardens
-the **implementation plan** at the engineering level and folds the result into the canonical
-contract, so the build follows a reviewed plan. Runs on **every** plan (depth scales to
-stakes; never skipped) and is always part of `$rite-autocomplete`; `--cross-model` adds a
-different-model second opinion. **Read the active workspace first**; if there's no
-`plan.md`, tell the user to run `$rite-define`.
+Review a defined plan for implementation scope, architecture, code quality, test
+coverage, performance, failure modes, and parallel work. Cite the source for every
+finding and design the test coverage that `$rite-build` will use. Fold accepted
+engineering changes into the canonical plan before code is written. Run this step on
+**every** plan; depth varies with risk. `$rite-autocomplete` always includes it, and
+`--cross-model` adds a second opinion from another model. **Read the active workspace
+first**; if there is no `plan.md`, tell the user to run `$rite-define`.
 
-This is the engineering counterpart to `$rite-temper` (which is strategic, on the *spec*).
-Temper decides *the right thing*; vet decides *the right way to build it*.
+`$rite-temper` reviews product scope and strategy in the spec. `$rite-vet` reviews how
+to implement that settled scope.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-Pull on demand: `principles.md` (the project
-invariants gate (how `.devrites/principles.md` is scored pass/fail), `patterns.md` +
-`coding-style.md` (the over-engineering / reuse-first / YAGNI rubric) reuse the pack's
-standard), `testing.md` (the test-coverage axis) + `spec-grammar.md` (when the spec uses
-structured Requirement/Scenario blocks, each scenario is a coverage unit `test-plan.md` must
-map), `performance.md` (the perf axis),
-`error-handling.md` (failure-mode coverage), `development-workflow.md` (parallel lanes,
-definition of done), `afk-hitl.md` (irreversible-risk list + gate ceiling),
-`developer-experience.md` (when the plan ships a developer-facing surface (API / CLI / SDK /
-webhook / config / error messages / getting-started) predict the DX scorecard here),
-`elicitation.md` (the move-set to deepen an axis finding or a risky design choice: selected by
-the section's risk: Tournament for two viable designs, Delphi for a shaky estimate, Assumption
-Audit for a plan resting on unstated beliefs).
-- `definition-of-done.md`: standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+Pull the standard named by the active axis: `principles.md`, `patterns.md`,
+`coding-style.md`, `testing.md`, `spec-grammar.md`, `performance.md`,
+`error-handling.md`, `development-workflow.md`, `afk-hitl.md`,
+`developer-experience.md`, `elicitation.md`, and `definition-of-done.md`.
 
 
 ## Operating rules
-- **Review the plan, not the spec's ambition.** The spec's scope/ambition is `$rite-temper`'s
-  job and is treated as settled here. Vet asks *given this scope, is this the right, simplest,
-  best-tested, lowest-risk way to build it*, and challenges only implementation scope creep.
-- **You harden the plan directly; the reviewer judges.** Vet *is* the plan-hardening phase, so
+- **Review implementation, not product ambition.** Treat the scope established by
+  `$rite-temper` as settled. Check whether the plan is simple, well tested, and low risk,
+  and challenge only implementation scope creep.
+- **The root updates the plan; the reviewer judges.** Vet is the plan-hardening phase, so
   behavior-preserving plan refinements (test requirements, tightened scope boundaries, ordering,
   parallel lanes, error-handling + failure-mode coverage) are written straight into
   `plan.md` / `tasks.md` / `test-plan.md`. You are the single canonical writer. A finding that
@@ -62,80 +53,71 @@ Audit for a plan resting on unstated beliefs).
   through the **Spec Drift Guard** (record in `drift.md`, recorded decision, then `$rite-plan
   repair` for any structural reslice). Nothing that grows the build's scope lands without a
   recorded human decision.
-- **Confidence over assertion.** Every finding carries a confidence band; a finding you cannot
+- **Support every finding.** Every finding carries a confidence band; a finding you cannot
   back by quoting the plan/spec line (or the code it references) is forced to low confidence and
   suppressed from the main report: see the verification gate in [`reference/review-axes.md`](reference/review-axes.md).
-- **Bound rigor by reversibility.** Auth / migration / public-API / data-model touches get
-  maximum conservatism and always pause (irreversible-risk list), regardless of run mode.
-- **Honest verdict, gated on the floor.** Never round "thin" up to "ready"; the axis verdict is
-  the weakest finding, not an average. Record every call's *why*.
+- **Apply maximum caution to hard-to-reverse changes.** Auth, migration, public API, and
+  data-model changes always pause under the irreversible-risk list.
+- **Use the lowest axis band.** Never round `thin` up to `ready`; do not average the
+  axes. Record the reason for every decision.
+- **Search before asking.** Apply `afk-hitl.md` decision ownership: verify facts and fold
+  reversible technical hardening into the plan; ask only about human-owned choices.
+- **Root hardens; reviewer judges.** Dispatch follows the file-backed contract in
+  [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns every
+  question, decision, fold-back, readiness verdict, and workspace write.
 
 ## Workflow
 0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`** first.
-   Then **run the shared orientation preamble**. It prints `state.md`, the artifacts present,
-   the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
-   instead of re-deriving state from raw Markdown:
+   Then run the shared orientation preamble. It prints `state.md`, present artifacts,
+   run mode, and open-question totals:
    ```bash
    devrites-engine preamble
    devrites-engine snapshot
    ```
-   Then the workspace: `plan.md`, `tasks.md`, `spec.md`
+   Then the workspace: `plan.md`, `tasks.md`, `spec.md`, `decision-coverage.md`
    (for intent + acceptance), `strategy.md` (if `$rite-temper` ran), `decisions.md`,
    `assumptions.md`, `design-brief.md` (if UI), `state.md`. Require a `plan.md` whose
-   Readiness gate passes (or `Plan approved`): else STOP → `$rite-define`. Prefer a
+   Readiness gate passes (or `Plan approved`): else STOP → `$rite-define`. Require
+   `Decision coverage: CLEAR`: else STOP → `$rite-clarify`. Prefer a
    code-intelligence index if available (see
    `.agents/skills/devrites-lib/reference/standards/tooling.md`) for placement / blast-radius / reuse checks.
-1. **Calibrate depth. Never skip this step.** See [`reference/depth.md`](reference/depth.md). Every plan is
-   vetted; what scales is the *depth*. A simple, single-module, reversible plan with no
-   irreversible-risk / data-model / new-pattern trigger → **light pass** (brief scope check + a
-   one-line scan per axis + the acceptance→test map). Any full-pass trigger (or `--full`) → the
-   **full pass** below. There is no skip: every feature leaves a recorded engineering verdict and
-   a `test-plan.md` coverage map.
-2. **Scope Challenge (blocking gate):** [`reference/review-axes.md`](reference/review-axes.md)
-   §0. Search prior archived decisions for the plan's main nouns before asking the human to re-decide:
-   `devrites-engine decisions search "<2-4 plan nouns>"` (run `decisions index` first if needed).
-   What already exists that solves a sub-problem (reuse vs rebuild)? The minimum diff for the
-   stated acceptance? Complexity smell (the plan touches **>8 files** or adds **>2 new
-   services/modules**) → **STOP and ask** before any axis. Verify each new pattern / infra choice
-   against a built-in (dispatch `devrites-source-driven`); completeness check (with AI, full
-   coverage is ~100× cheaper than the human-hours saved by a shortcut: prefer complete); and a
-   distribution check for any new artifact.
-2a. **Cross-artifact analyze gate + principles / charter / conventions gate.** Before the axes, run
-   one read-only consistency+coverage pass over `spec.md` + `plan.md` + `tasks.md` (+ `traceability.md`
-   if present); any **CRITICAL**: an acceptance criterion with no slice, a slice satisfying no
-   criterion, a contradiction across artifacts, a requirement stated twice with conflicting terms:
-   **blocks `$rite-build`** until resolved. The engine covers the deterministic floor (AC coverage,
-   orphan slices, vague adjectives); you add the semantic passes it can't: **terminology drift**
-   (the same concept named differently across artifacts: normalize to the spec's term) and
-   **duplicated or conflicting requirements**. Then score
-   the three project gates as explicit **pass/fail** on the planned approach:
-   - **Principles** (`.devrites/principles.md`, rubric in [`principles.md`](../devrites-lib/reference/standards/principles.md)).
-     The authored invariants the project will not break. A plan that bakes in a violation of a
-     declared principle with **no recorded, human-approved exception** is a **top-severity** finding,
-     walked **first**, and **blocks `$rite-build`**. Absent or empty file → none declared → passes;
-     **never block for the absence of principles**. A genuine need to break one routes to a scoped,
-     dated exception in the principles register: never a silent work-around (adding the exception is
-     an irreversible-risk decision: it always pauses for a human, even in AFK).
-   - **The anti-slop charter** (`coding-style.md` + `prose-style.md`) and **the conventions ledger**
-     (`.devrites/conventions.md`): a plan that bakes in a god-module, a speculative abstraction with
-     no second caller, or a dependency where an in-repo option exists is a **top-severity** violation.
-   **Re-check all three after the axes harden the plan** (post-design). Write the result to `analysis.md`.
+1. **Set review depth. Never skip this step.** Apply
+   [`reference/depth.md`](reference/depth.md) exactly. Every plan leaves a recorded
+   engineering verdict and `test-plan.md` coverage map.
+1a. **Required initial independent pass (light and full).** Before hardening or writing,
+   freeze the candidate and dispatch `devrites-plan-reviewer` with the plan/spec packet.
+   Await and validate its report. Light depth reduces the inline hardening, not this
+   independent gate. Dispatch the DevEx predictor alongside it when triggered (within the
+   maximum-three read-only budget).
+2. **Scope challenge (blocking gate):** apply §0 of
+   [`reference/review-axes.md`](reference/review-axes.md). Search prior decisions first:
+   `devrites-engine decisions search "<2-4 plan nouns>"`. Harden to the smallest
+   behavior-preserving plan; ask only when that changes acceptance or explicit architecture policy.
+2a. **Cross-artifact analyze + project gates.** Run the deterministic gate, add the
+   semantic terminology/conflict pass, and score principles, the anti-slop charter, and
+   conventions using their named standards. Any Critical blocks `$rite-build`; a principle
+   exception is always human-owned, while an absent principles file passes. Re-check after
+   hardening and write the result to `analysis.md`.
    ```bash
    devrites-engine analyze; echo "analyze rc=$?"
    ```
-3. **Four-axis review:** [`reference/review-axes.md`](reference/review-axes.md), through the
-   senior-engineer lenses in [`reference/eng-lenses.md`](reference/eng-lenses.md): **Architecture
-   → Plan code-quality → Test-coverage design → Performance**, ≤8 findings per axis, each
-   `[severity] (confidence: N/10) <ref> — finding`. **Walk findings WITH the human, one at a
-   time** via `AskUserQuestion` (best-guess + why + options with effort/risk/maintenance, mapped
-   to a rule): the artifact is the *output* of the review, not a substitute for it.
-   When an axis finding hinges on a genuinely open design choice or a shaky estimate, deepen that
-   one finding with a fitting technique from
-   [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) (Tournament for two viable
-   designs, Delphi for the estimate, Assumption Audit for unstated beliefs) before you band it. (AFK ceiling
-   single-sourced in [`reference/depth.md`](reference/depth.md): hardening /
-   coverage-increasing findings auto-apply; **anything that grows scope or changes acceptance is a
-   blocking pause**; irreversible-risk always pauses.)
+2b. **Build-entry preflight.** Using [`reference/artifacts.md`](reference/artifacts.md), verify
+   each exact proof command/cwd/tool/version and prerequisite; package names against their
+   authoritative source plus nearest manifest/lockfile; parser-sensitive planned syntax in an
+   isolated fixture; and the existing UI/browser harness where applicable. Record complete
+   SHA-256 provenance inputs. This is non-mutating and need not make future behavior pass.
+2c. **Implementation-readiness audit.** Goal-backward map every REQ/AC/NFR, interaction,
+   edge/prohibition, and decision-coverage row to a slice and executable proof. Verify
+   UX/spec/architecture alignment, producer-consumer contracts, slice independence/order and
+   wiring, exact prerequisites, failure paths, operations, observability, rollout, and rollback.
+   Fold technical fixes into the plan. Product/risk gaps are `NEEDS CLARIFICATION` →
+   `$rite-clarify`; technical plan/preflight gaps are `NEEDS REPLAN` → `$rite-plan repair`.
+   Neither becomes a build qid.
+3. **Review four axes:** apply [`reference/review-axes.md`](reference/review-axes.md)
+   through [`reference/eng-lenses.md`](reference/eng-lenses.md). Fold verified,
+   behavior-preserving technical findings into the plan. Walk only human-owned decisions with
+   the human, one coherent option packet at a time. The AFK ceiling remains owned by
+   [`reference/depth.md`](reference/depth.md): scope/acceptance changes and irreversible risk pause.
 4. **Required outputs:** write every shape and fold-back required by
    [`reference/artifacts.md`](reference/artifacts.md), using the review rules in
    [`reference/review-axes.md`](reference/review-axes.md). Ground parallelization in:
@@ -143,34 +125,52 @@ Audit for a plan resting on unstated beliefs).
    devrites-engine lanes plan "$(cat .devrites/ACTIVE 2>/dev/null)"
    ```
    Completion: every scenario and acceptance criterion maps to planned proof, every slice is
-   one-pass implementable, and developer-facing plans have a predicted `devex.md` scorecard.
-4a. **Forge gate (only when `Forge: yes`).** Apply the eligibility and scorecard contract in
-   [`rite-build/reference/forge.md`](../rite-build/reference/forge.md). Confirm and record
-   genuinely distinct strategies, or clear the flag; an ineligible Forge never reaches build.
-5. **Write `eng-review.md` + `test-plan.md`, fold back:** [`reference/artifacts.md`](reference/artifacts.md).
-   `eng-review.md` is the durable record; `test-plan.md` is the build-readable coverage target
-   (`$rite-build` and `$rite-prove` read it). Harden `plan.md` / `tasks.md` directly for
-   behavior-preserving refinements; route every acceptance/behavior-changing delta through the
-   **Spec Drift Guard** (`drift.md` + recorded decision + `$rite-plan repair`). Append
-   `decisions.md` (one ADR per material call) and `assumptions.md`. Re-run the gate after
-   every fold-back so a task edit cannot invalidate the earlier pass:
+   one-pass implementable, the Build-entry preflight is green or names an owned prerequisite,
+   and developer-facing plans have a predicted `devex.md` scorecard.
+4a. **Forge gate.** `$rite-define` leaves `no` / `none` / `none`; Vet alone promotes under
+   [`rite-build/reference/forge.md`](../rite-build/reference/forge.md). Require a costly
+   unresolved architecture fork, 2–3 distinct complete contiguous `A`–`C` strategies, every
+   slice AC plus exact `test-plan.md` rows/commands, and `manifest-env-v1` as an explicit
+   Build-entry prerequisite. After final fold-back the three fields must agree, else clear
+   Forge before READY.
+5. **Write and fold back every artifact required by
+   [`reference/artifacts.md`](reference/artifacts.md).** Route every
+   acceptance/behavior-changing delta through the **Spec Drift Guard** (`drift.md` +
+   recorded decision + `$rite-plan repair`). After any edit to
+   `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`, re-scan the
+   affected coverage rows, assumption audit, residual uncertainty, and closed gates.
+   Partial/Missing, an unowned material assumption, or an open blocking/escalating question is
+   `NEEDS CLARIFICATION` → `$rite-clarify`/HITL; never refresh past it. Only after the matrix is
+   re-closed, run `devrites-engine readiness-digest coverage <slug>` and replace the complete
+   `Coverage inputs SHA-256` line in `decision-coverage.md`. This coverage refresh must precede
+   `devrites-engine readiness-digest engineering <slug>`.
+   Re-run the gate after every fold-back so a task edit cannot invalidate the earlier pass:
    ```bash
    devrites-engine analyze; echo "final analyze rc=$?"
    ```
    Any non-zero result blocks the handoff. Then update `state.md`:
-   `Phase: vet`, `Next step: $rite-build`; on a blocking pause write the `Awaiting human` block +
-   `Status: awaiting_human` before stopping.
-6. **Adversarial verification loop.** Apply the light/full branching contract in
-   [`reference/depth.md`](reference/depth.md). Full mode dispatches the fresh-context plan
-   reviewer, plus the devex predictor when applicable, for at most three repair iterations;
+   write one typed field to `eng-review.md`: `Implementation readiness: READY`,
+   `NEEDS CLARIFICATION`, or `NEEDS REPLAN`. Only READY sets `Phase: vet` and
+   `Next step: $rite-build`, after a final sweep leaves no foreseeable human choice except a
+   justified action-time checkpoint. Technical failure records its reproduction and
+   `$rite-plan repair` without a qid; a human-owned contract gap routes `$rite-clarify` and
+   uses the normal awaiting-human block.
+6. **One narrow recheck after accepted edits.** If steps 2 through 5 changed the frozen candidate,
+   dispatch `devrites-plan-reviewer` once more with only the accepted initial findings,
+   changed planning paths, affected criteria, and the new immutable identity. Do not repeat
+   the full review or start a third loop. If nothing changed, the initial report is final.
+   If the recheck causes an accepted edit, repeat step 5, including coverage refresh and analyze,
+   before generating the engineering digest.
    [`reference/cross-model.md`](reference/cross-model.md) owns the optional outside voice.
-   Completion: the final axis floor clears or a blocking gate is recorded.
-7. **STOP.** Report the scope verdict, the per-axis floor, the coverage gaps closed, and the
-   failure-mode criticals; recommend `$rite-build`.
+   Completion: the final axis floor clears, an objective technical blocker is recorded, or a
+   genuine human-owned gate is recorded.
+7. **STOP.** Report the scope verdict, lowest axis band, coverage gaps closed, the
+   Build-entry preflight, expected action-time checkpoints, and the failure-mode criticals;
+   recommend `$rite-build` only when the entry contract is ready.
 
-> **Mid-flight discipline.** When tempted to batch-dump findings into `eng-review.md` and skip
-> the walk-through, harden the plan past a finding that changes acceptance, score before
-> quoting the source, or wave through a complexity smell "to keep moving": see
+> **Mid-flight discipline.** Do not replace the interactive review with
+> `eng-review.md`, change acceptance through plan hardening, score without source
+> evidence, or ignore unexplained complexity. See
 > [`reference/anti-patterns.md`](reference/anti-patterns.md).
 
 ## Output
@@ -181,12 +181,13 @@ Default success shape:
 ```
 Done: plan vetted for <slug>; depth <light|full> with axis floor <band>.
 Changed: eng-review.md, test-plan.md, plan.md, decisions.md
-Evidence: coverage <x/y> planned; open findings Critical 0 / Important 0 / Suggestion <n>; reviewer loop <n>; outside-voice <ran|skipped-unavailable|disabled>
+Evidence: Implementation readiness: READY; coverage <x/y> planned; build-entry preflight <pass>; open findings Critical 0 / Important 0 / Suggestion <n>; reviewer loop <n>; outside-voice <ran|skipped-unavailable|disabled>
 Open: none
 Next: $rite-build
 Record: .devrites/work/<slug>/eng-review.md
 ↻ Hygiene: /clear before $rite-build
 ```
 If a blocker or Spec Drift Guard delta remains, use the shared `Stopped / blocked`
-form and route `Fix:` to `$rite-plan`; do not recommend `$rite-build`.
+form and route `Fix:` to `$rite-clarify` for product/risk decisions or `$rite-plan`
+for technical replanning; do not recommend `$rite-build`.
 **DO NOT write code, slice, or run the build here**. That's `$rite-build`. Vet reviews and hardens the plan; it never implements.

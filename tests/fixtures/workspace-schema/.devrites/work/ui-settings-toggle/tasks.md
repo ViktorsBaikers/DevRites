@@ -9,6 +9,9 @@
 ## SLICE-001 Render current preference
 Goal: Show current digest state in settings.
 Satisfies: AC-001
+Forge: no
+Forge strategies: none
+Forge scorecard: none
 Files likely touched: app/settings/DigestToggle.tsx
 Tests/proof: EVID-001
 Mode: AFK
@@ -20,6 +23,9 @@ Done condition: AC-001 passes.
 ## SLICE-002 Save changed preference
 Goal: Persist toggles and expose success/error states.
 Satisfies: AC-002
+Forge: no
+Forge strategies: none
+Forge scorecard: none
 Files likely touched: app/settings/DigestToggle.tsx, app/api/preferences.ts
 Tests/proof: EVID-002, EVID-003
 Mode: AFK

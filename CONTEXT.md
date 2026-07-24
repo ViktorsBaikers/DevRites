@@ -24,24 +24,35 @@ bookkeeping, while the model handles judgment. See
 - **Data plane: the workspace** (`.devrites/`): git-diffable Markdown. Feature
   completeness uses six single-concern **sections** (`spec`, `plan`,
   `decisions`, `tasks`, `proof`, `status`); the canonical live map/cursor/proof
-  files are `README.md`, `state.md`, and `evidence.md` (ADR-0007).
+  files are `README.md`, `state.md`, and `evidence.md` (ADR-0007). Workspace
+  schema v2 adds phase-owned clarification and vet artifacts. The engine can
+  still read v1 layouts and aliases.
 
 ## The lifecycle (rites → phases)
 
-Fourteen ordered states mirror the `rite-*` skill arc:
+Fifteen ordered states mirror the `rite-*` skill arc:
 
 ```
-frame → spec → temper → define → plan → vet → build → converge → prove
+frame → spec → clarify → temper → define → plan → vet → build → converge → prove
 → polish → review → seal → ship → done
 ```
 
-Completeness is **phase-relative**: the typed `phaseDefinitions` registry in
-`engine/internal/state/schema.go` says which sections and workspace artifacts
-must have real content at each phase; the set grows down the arc. A **gate** checks that
-completeness at a phase boundary. A blocked gate is a **human-in-the-loop
-pause**. It reports the missing item and returns reserved **exit code 3** rather
-than crashing. See
-[ADR-0003](docs/adr/0003-gate-model-hitl-pause.md).
+Clarify is mandatory but adaptive, and it may ask no questions. Temper is
+optional. Vet is the only final readiness phase; there is no separate `ready`
+rite.
+
+Completeness is **phase-relative**. The typed `phaseDefinitions` registry in
+`engine/internal/state/schema.go` lists the sections and workspace artifacts
+that must contain real content in each phase. Later phases require more. A
+**gate** checks those requirements at a phase boundary. A blocker that only a
+human can resolve becomes a **human-in-the-loop pause** and uses reserved
+**exit code 3**. Missing artifacts and technical readiness failures instead
+return the work to the phase that owns the fix. For example, build-readiness
+`6` routes to `/rite-clarify` and `7` routes to `/rite-vet`. The build gate
+validates the content and input digests of `Decision coverage: CLEAR` and
+`Implementation readiness: READY`; marker strings alone do not pass. See
+[ADR-0003](docs/adr/0003-gate-model-hitl-pause.md)
+and [ADR-0009](docs/adr/0009-prebuild-decision-coverage-and-readiness.md).
 
 ## Key concepts
 
@@ -50,7 +61,7 @@ than crashing. See
 | **Rite** | A lifecycle step, surfaced as a `rite-*` skill in the pack. |
 | **Section** | One single-concern completeness file in a feature dir. |
 | **Phase** | Workflow state; gates are phase-relative. |
-| **Gate** | Deterministic completeness check; blocks as exit-3 HITL pause. |
+| **Gate** | Deterministic boundary check; objective failures route to their owner, while only a genuine human wait uses exit 3. |
 | **Hook** | An engine subcommand (`hook <id>`) wired through Claude `settings.json` or generated Codex `hooks.json`; profiles select which fire. See [ADR-0005](docs/adr/0005-hooks-as-engine-subcommands.md). |
 | **Harness** | Per-host edge adapter. Two hosts: Claude + Codex. See [ADR-0002](docs/adr/0002-dual-host-harness.md). |
 | **Pack** | The installed bundle under `pack/.claude/`: reviewer and judge agents, `rite-*` skills, and `settings.json` hook wiring. |
@@ -61,16 +72,24 @@ than crashing. See
 |------|------|
 | `engine/` | The Go control plane. `internal/` owns state, gates, harness adapters, install/update semantics, explicit I/O hooks, and shared command logic. |
 | `engine/tests/` | Parity/golden + unit tests, incl. `adr_NNNN_*` guard tests. |
-| `pack/.claude/` | Canonical pack: 42 skills and 14 agents (13 read-only, one write-capable builder), plus Claude hook wiring. |
+| `pack/.claude/` | Canonical pack: 43 shipped skills and 17 agents (16 read-only leaves, one source/test wright), plus Claude hook wiring. |
 | `install.sh` / `bin/` | Installer + npx entry; version is single-sourced from `package.json`. |
 | `evals/` | Trigger / outcome / behavioral eval tiers with golden fixtures. |
 | `docs/adr/` | Architecture decisions (start here for "why"). |
-| `docs/research/` | Studies, incl. `gsd-core-adoption.md` (peer-system teardown + roadmap). |
+| `docs/research/` | Focused implementation studies and validation notes. |
 
 ## Invariants worth knowing
 
 - Workspace control-plane operations make **no** network or model calls;
   explicit network I/O is confined to `internal/iohooks` (ADR-0008).
+- Public rites are the authoritative orchestrators. Fresh-context leaves run
+  at depth one. They fail closed if an identity guard is missing or crashes,
+  and they never own human questions, phase changes, or canonical `.devrites/`
+  writes
+  ([ADR-0010](docs/adr/0010-agent-first-fresh-context-orchestration.md)).
+- `/rite-build` derives the exact `.wright-allowlist`; the writer's report cannot
+  expand it. The snapshot, reconciliation check, test/package integrity, and
+  close steps all use the original slice baseline, even after a retry refresh.
 - Version is **single-sourced** from `package.json`; the engine binary is stamped
   via `-ldflags` at build; install.sh + `bin/devrites.mjs` read it at runtime.
   There are no hand-maintained embedded version literals to drift.

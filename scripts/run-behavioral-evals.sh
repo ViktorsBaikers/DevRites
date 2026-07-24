@@ -1,23 +1,20 @@
 #!/usr/bin/env bash
-# scripts/run-behavioral-evals.sh: validate the SHAPE of DevRites behavioral evals.
+# Validate DevRites behavioral eval files without running a model.
 #
-# Trigger evals (run-evals.sh) test whether the right skill *fires*. Behavioral
-# evals test whether a gating skill's discipline *holds under pressure*: does it
-# resist the rationalizations it documents in `standards/anti-patterns.md` (and its own
-# `reference/anti-patterns.md`), or does the agent talk itself past the gate. Each
-# scenario pairs a pressure prompt with the resistance a holding response shows and
-# the capitulation markers a failed one shows.
+# Trigger evals in run-evals.sh check skill selection. Behavioral evals check
+# whether a gating skill holds its boundary under pressure. Each scenario pairs
+# a pressure prompt with markers for an acceptable response and for capitulation.
+# The pressure cases come from standards/anti-patterns.md and each skill's
+# reference/anti-patterns.md.
 #
-# This script is the DETERMINISTIC, zero-token CI gate: the analog of run-evals.sh's
-# schema path and the engine spec-validate gate: it checks that every behavioral eval is well-formed
-# so a malformed one can't reach the live grader. It does NOT invoke a model. Executing
-# the scenarios against a live Claude (does the skill resist?) is the labeled /
-# nightly rung documented in evals/behavioral/README.md.
+# This schema check invokes no model and stops malformed evals before they reach
+# the live grader. The manual live-model trial is documented in
+# evals/behavioral/README.md.
 #
-# In addition to the original DevRites pressure schema, scenarios may carry the
-# portable agent-skills / Anthropic skill-creator shape:
+# Scenarios may also use the portable agent-skills and Anthropic skill-creator
+# fields:
 #   prompt, expected_output, expectations[], trust_level, fixtures[]
-# Those fields are validated when present and normalized by the live-grader layer.
+# The live grader normalizes these fields after validation.
 #
 # Usage:
 #   scripts/run-behavioral-evals.sh                                  # validate every evals/behavioral/*.json
@@ -29,15 +26,15 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# Overridable so the test harness can exercise the opt-in no-op path against a
-# scratch directory; defaults to the real behavioral-eval set.
+# Tests can point this at a scratch directory. Production uses the repository's
+# behavioral evals by default.
 BEHAVIORAL_DIR="${DEVRITES_BEHAVIORAL_DIR:-$ROOT/evals/behavioral}"
 
 if [[ $# -gt 0 ]]; then
   FILES=("$@")
 else
   if [[ ! -d "$BEHAVIORAL_DIR" ]]; then
-    echo "No evals/behavioral/ directory: behavioral evals are opt-in; nothing to validate."
+    echo "Behavioral evals are opt-in, and no eval directory was found. Nothing to validate."
     exit 0
   fi
   FILES=()
@@ -48,7 +45,7 @@ else
 fi
 
 if [[ ${#FILES[@]} -eq 0 ]]; then
-  echo "No behavioral eval files: behavioral evals are opt-in; nothing to validate."
+  echo "Behavioral evals are opt-in, and no eval files were found. Nothing to validate."
   exit 0
 fi
 
@@ -57,7 +54,7 @@ if command -v python3 >/dev/null 2>&1; then
 elif command -v jq >/dev/null 2>&1; then
   PARSER="jq"
 else
-  echo "Need python3 or jq to validate JSON." >&2
+  echo "python3 or jq is required to validate JSON." >&2
   exit 2
 fi
 
@@ -91,9 +88,8 @@ if not isinstance(scenarios, list):
 elif len(scenarios) == 0:
     errors.append("scenarios is empty: a behavioral eval needs at least one")
 
-# Metric fields (optional: default to the regression discipline). A behavioral
-# eval is a regression gate by nature (the discipline must hold every trial ->
-# pass^k = 100%); a capability eval is the exploratory pass@k variant.
+# Regression evals require every trial to pass (pass^k = 100%). Capability
+# evals use the exploratory pass@k rule.
 ec = data.get("eval_class", "regression")
 if ec not in ("regression", "capability"):
     errors.append(f"eval_class must be 'regression' or 'capability', got {ec!r}")
@@ -119,9 +115,8 @@ for i, s in enumerate(scenarios):
         v = s.get(k)
         if not isinstance(v, str) or not v.strip():
             errors.append(f"scenario {where} missing non-empty {k}")
-    # Optional portable behavioral-eval fields borrowed from agent-skills /
-    # Anthropic skill-creator. When one is present, validate the full portable
-    # row so fixtures and transcript/tool-call graders can consume it later.
+    # If one portable field appears, validate the full row so fixture and
+    # transcript or tool-call graders can consume it later.
     portable_present = any(k in s for k in ("prompt", "expected_output", "expectations", "trust_level", "fixtures"))
     if portable_present:
         for k in ("prompt", "expected_output", "trust_level"):
@@ -134,7 +129,7 @@ for i, s in enumerate(scenarios):
         fixtures = s.get("fixtures", [])
         if not isinstance(fixtures, list) or not all(isinstance(x, str) and x.strip() for x in fixtures):
             errors.append(f"scenario {where} portable fixtures must be a string list when present")
-    # Non-empty list-of-string fields.
+    # Fields that must be non-empty lists of strings.
     for k in ("expected_resistance", "capitulation_markers"):
         v = s.get(k)
         if not isinstance(v, list) or len(v) == 0:
@@ -196,7 +191,6 @@ if [[ $FAILED -gt 0 ]]; then
 fi
 
 echo
-echo "Note: this is shape validation only: it does not execute the scenarios."
-echo "To grade whether the skills resist under pressure (live model):"
-echo "  see evals/behavioral/README.md: the labeled / nightly rung."
+echo "This checks the schema only; it does not run the scenarios."
+echo "For a live-model pressure test, follow the manual trial in evals/behavioral/README.md."
 exit 0

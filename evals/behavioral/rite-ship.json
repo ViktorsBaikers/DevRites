@@ -2,7 +2,7 @@
   "skill": "rite-ship",
   "description": "Behavioral evals for /rite-ship \u2014 refuses irreversible git mutation without GO/type-GO and keeps seal/ship separated.",
   "eval_class": "regression",
-  "trials": 3,
+  "trials": 5,
   "scenarios": [
     {
       "id": "SHIP-BE1",

@@ -7,13 +7,13 @@ user-invocable: true
 
 # /rite-build: one verified slice
 
-Build the next single slice, leave it working and proven, then **stop**. **Read the
-active workspace first**; if none, tell the user to run `/rite-spec <feature>`.
+Build and prove one slice, then **stop**. **Read the active workspace first**; if none,
+tell the user to run `/rite-spec <feature>`.
 
-This skill is the **orchestrator**: it owns the gates and the workspace; a fresh-context
-[`devrites-slice-wright`](../../agents/devrites-slice-wright.md) owns the **writing**. You run
-pre-flight (readiness, slice select, HITL pause), dispatch the wright for the build core, then
-run the post-return gates (doubt, fail-on-red, record, stop). See
+This skill owns the gates and workspace. A fresh-context
+[`devrites-slice-wright`](../../agents/devrites-slice-wright.md) writes source and tests.
+Run the readiness, slice-selection, and HITL checks; dispatch the wright; then run the
+doubt, fail-on-red, recording, and stop checks. See
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
@@ -23,6 +23,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 - `coding-style.md`: naming, function shape, guard clauses, comments, reuse-first.
 - `error-handling.md`: fail fast, no silent catches, fail closed.
 - `testing.md`: pyramid, behaviour over implementation, see-it-fail-first.
+- [`reference/tdd.md`](reference/tdd.md): the slice-level Red → Green → Refactor
+  and Prove-It contract.
 - `patterns.md`: composition over inheritance, avoid premature abstraction.
 - `principles.md`: the project invariants (`.devrites/principles.md`) the slice must honor; the wright reads them as **binding**, not priors.
 - `security.md`: when the slice touches user input, auth, data, or external integrations.
@@ -33,23 +35,24 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 - **One slice at a time. DO NOT** start the next slice without the user asking.
 - Evidence over confidence. Prefer existing conventions. Feature scope only: no
   drive-by refactors.
-- **Noticed, not touched.** An adjacent smell the wright sees outside `touched-files.md` is
-  recorded as an FYI follow-up in `decisions.md`, never fixed inline: the slice's change summary
-  states what it *deliberately left alone* ([`git-workflow.md`](../devrites-lib/reference/standards/git-workflow.md) "Things
-  I didn't touch"), so the reviewer reads a feature-scoped diff, not a renovation. The `devrites-engine reconcile`
-  gate (step 6) enforces this by exit code.
-- **Don't re-run an unchanged check.** Re-running the same build/test command on code that hasn't
-  changed since proves nothing new. It's motion, not evidence. Re-verify after an edit, not before.
-- Surface material assumptions; ask before adding dependencies or a second design
-  system. The [Spec Drift Guard](reference/spec-drift-guard.md) is active throughout.
-- **Avoid AI slop while writing.** `devrites-slice-wright` enforces the anti-slop charter **at
-  the source**: the canonical do-not list is `rite-polish/reference/anti-ai-slop.md` (the
-  wright reads it; don't restate it here). It writes the code the *project* would write, in its
-  idiom, reusing before building; **you verify the charter held on return**. You do not re-list
-  it and you do not fix slop by editing source. Polish catches what slips; build prevents.
+- **Record adjacent issues; do not edit them.** An issue outside the captured
+  `.wright-allowlist` becomes an FYI follow-up in `decisions.md`. The slice summary states
+  what it deliberately left alone ([`git-workflow.md`](../devrites-lib/reference/standards/git-workflow.md)
+  "Things I didn't touch"). The `devrites-engine reconcile` gate enforces this boundary.
+- **Don't re-run an unchanged check.** The same build or test on unchanged code provides
+  no new evidence. Re-verify after an edit.
+- Surface material assumptions. Do not introduce an unplanned dependency or second design
+  system: route the objective plan gap to `/rite-vet` (or bounded recovery), not to a human.
+  Ask only if the newly exposed choice changes licensing/cost/security, product behavior,
+  or an explicit architecture policy. The
+  [Spec Drift Guard](reference/spec-drift-guard.md) is active throughout.
+- **Avoid AI slop while writing.** `devrites-slice-wright` applies the anti-slop charter
+  while writing. The canonical list is `rite-polish/reference/anti-ai-slop.md`; do not
+  duplicate it here. The wright follows project idioms and reuses existing code first.
+  **Verify the charter on return.** Do not correct source from the orchestrator.
   The **prose you write yourself** (`evidence.md`, `decisions.md`, the slice report) follows
   the human-voice charter (`.claude/skills/devrites-lib/reference/standards/prose-style.md`; depth in `devrites-prose-craft`): no
-  filler openers, no marketing adjectives, exact commands and identifiers kept verbatim.
+  filler openers or marketing adjectives; preserve exact commands and identifiers.
 - **Honor declared project principles.** The wright reads `.devrites/principles.md` and treats
   each invariant as **binding** (not a prior to weigh like a convention): a slice it cannot build
   without breaking one is an **Escalation**, not a silent violation. On return **you verify no
@@ -58,15 +61,17 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   `.devrites/principles.md` → none declared → nothing to honor.
 - **You never edit source: the wright is the only writer of code + tests.** You write only
   `.devrites/` bookkeeping. On any red gate, doubt finding, or coverage gap your only remedies
-  are **continue the same wright once** (it fixes in its own context) or **stop + escalate**:
-  never patch the code yourself. The `devrites-engine reconcile` gate (step 6) enforces this by exit code:
-  any source file changed outside the wright's claimed set is a hard STOP.
-- **A `Forge: yes` slice competes candidates: one author still lands.** When `/rite-vet`
-  flagged the slice a genuine architecture fork, step 3 runs K=2-3 candidate wrights in
-  **isolated worktrees** and lands exactly one winner's diff; the single-writer invariant holds
-  because no tree ever has two authors and only the winner reaches the working tree. You still
-  never edit source, and reconcile runs against the winner's claimed set. The default slice is
-  single-path: forge is the rare exception ([`reference/forge.md`](reference/forge.md)).
+  are to continue the same wright under bounded `devrites-debug-recovery` (three total attempts
+  per root cause) or stop with the correctly classified blocker: never patch the code yourself
+  and never ask the human to authorize agent-owned repair work. The `devrites-engine reconcile`
+  gate enforces this against the root-owned pre-dispatch allowlist: any source file changed
+  outside that exact set is a hard STOP.
+- **Forge is manifest-owned, winner-takes-all.** For a fully typed `Forge: yes`
+  slice, follow [`reference/forge.md`](reference/forge.md): `forge plan` precedes
+  reconciliation; every candidate is bound to its isolated worktree and live worker;
+  the judge records one winner; normal reconciliation and proof pass before manifest-only
+  cleanup and the human report. Any stale/ineligible flag uses one serial wright before
+  Forge creates state.
 
 ## Workflow
 

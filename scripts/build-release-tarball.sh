@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Build the DevRites release tarball: the artifact attached to the GitHub Release
-# by semantic-release. Extracting yields a `devrites-v<version>/` directory with
-# everything an end-user needs (pack/, install.sh, uninstall.sh, scripts/, docs).
+# Build the archive that semantic-release attaches to a GitHub Release.
+# It extracts to `devrites-v<version>/` with the pack, engine, scripts,
+# documentation, and install tools.
 #
 # Usage: build-release-tarball.sh <version>
 set -euo pipefail
@@ -11,20 +11,31 @@ if [[ -z "$VERSION" ]]; then
   echo "usage: build-release-tarball.sh <version>" >&2
   exit 1
 fi
+if [[ ! "$VERSION" =~ ^[0-9A-Za-z][0-9A-Za-z._+-]*$ ]]; then
+  echo "error: version must be a portable release asset name" >&2
+  exit 1
+fi
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 DIST="${DEVRITES_RELEASE_DIST_DIR:-$ROOT/dist}"
 NAME="devrites-v${VERSION}"
-STAGE="$DIST/$NAME"
 
 cd "$ROOT"
+mkdir -p "$DIST"
+DIST="$(cd "$DIST" && pwd -P)"
+case "$DIST/" in
+  "$ROOT/pack/"* | "$ROOT/engine/"* | "$ROOT/scripts/"* | "$ROOT/mcp/"* | "$ROOT/docs/"*)
+    echo "error: release output directory overlaps the release payload" >&2
+    exit 1
+    ;;
+esac
+STAGE="$(mktemp -d "$DIST/.devrites-release-stage.XXXXXX")"
+cleanup() { rm -rf "$STAGE"; }
+trap cleanup EXIT
 
 echo "Building release tarball: ${NAME}.tar.gz"
 
-rm -rf "$STAGE"
-mkdir -p "$STAGE"
-
-# Files and directories shipped to end-users.
+# Release contents.
 PAYLOAD=(
   pack
   engine
@@ -60,17 +71,23 @@ for item in "${PAYLOAD[@]}"; do
   fi
 done
 
-# Ship the same prebuilt host-native artifacts that npm pack includes.
+# Include the same prebuilt host artifacts as the npm package.
 DEVRITES_HOST_ARTIFACT_DIR="$STAGE/pack/generated" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null
 
-# Drop dev-only artifacts that may have been copied transitively.
+# Remove development files copied with the payload.
 rm -rf "$STAGE/docs/internal" "$STAGE/scripts/.cache" 2>/dev/null || true
 
-tar -C "$DIST" -czf "$DIST/${NAME}.tar.gz" "$NAME"
-rm -rf "$STAGE"
+(
+  cd "$ROOT/engine"
+  go run ./cmd/releasepack \
+    -root "$STAGE" \
+    -output "$DIST/${NAME}.tar.gz" \
+    -prefix "$NAME" \
+    -epoch "${SOURCE_DATE_EPOCH:-0}"
+)
 
-# Emit a sibling checksum so install.sh can verify the artifact when present.
-# Write just "<sha256>  <filename>" (no path) so it verifies from any cwd.
+# Write a sibling checksum for install.sh to verify when available.
+# Store only "<sha256>  <filename>" so verification works from any directory.
 (
   cd "$DIST"
   if command -v shasum >/dev/null 2>&1; then

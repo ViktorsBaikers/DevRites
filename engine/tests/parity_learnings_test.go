@@ -1,10 +1,9 @@
 package main_test
 
 // TestParityLearnings checks the learnings command against the golden snapshots.
-// learnings state is ROOT-LEVEL, read from DEVRITES_ROOT=work/.devrites when the
-// case runs in workdir=work with libRootEnv(work). The mine/nudge pipelines are
-// deterministic from fixtures. Fixture counts are DISTINCT (3 vs 2) so ordering
-// never depends on a platform-specific tie-break.
+// Learning state lives at the root selected by DEVRITES_ROOT. The mine and nudge
+// fixtures use counts of 3 and 2 so sorting never depends on a platform-specific
+// tie.
 
 import (
 	"path/filepath"
@@ -14,10 +13,11 @@ import (
 func TestParityLearnings(t *testing.T) {
 	learn := func(a ...string) []string { return append([]string{"learnings"}, a...) }
 
-	// --- add: fresh workspace. bash creates the ledger + a dated entry; Go then
-	// appends a second entry. Only stdout ("learnings: recorded.") + exit 0 are the
-	// contract: the dated file line is a nondeterministic side effect, not stdout.
+	// Add to a fresh workspace. Bash creates the ledger and a dated entry, then Go
+	// appends another. Only stdout ("learnings: recorded.") and exit 0 belong to
+	// the contract because the dated file entry is nondeterministic.
 	addw := t.TempDir()
+	mkdirAllT(t, addw, ".devrites")
 	t.Run("add", func(t *testing.T) {
 		(parityCase{
 			workdir: addw, env: libRootEnv(addw),
@@ -25,7 +25,7 @@ func TestParityLearnings(t *testing.T) {
 		}).assertEqual(t)
 	})
 
-	// --- list: a pre-written ledger; both sides cat the same file verbatim.
+	// List a prepared ledger. Both implementations print the file unchanged.
 	listw := t.TempDir()
 	writeFile(t, listw, filepath.Join(".devrites", "learnings.md"),
 		"# DevRites learnings ledger\n\n"+
@@ -38,10 +38,9 @@ func TestParityLearnings(t *testing.T) {
 		}).assertEqual(t)
 	})
 
-	// --- mine + nudge: two archived features. The shared "recurring finding" bullet
-	// normalizes identically across features despite differing numbers/paths (the sed
-	// id/path/number stripping), giving count 3; the "second dead end" bullet gives
-	// count 2. Distinct counts ⇒ deterministic order on any `sort`.
+	// Mine and nudge use two archived features. Normalization strips IDs, paths,
+	// and numbers, so "recurring finding" has count 3 and "second dead end" has
+	// count 2. The distinct counts keep sort order stable.
 	arch := t.TempDir()
 	writeFile(t, arch, filepath.Join(".devrites", "archive", "feat-a", "decisions.md"),
 		"# decisions for feat-a\n"+
@@ -55,7 +54,7 @@ func TestParityLearnings(t *testing.T) {
 			"- second dead end: retry backoff exceeded 9 attempts\n"+
 			"- a one-off dismiss note about the flaky linter run\n")
 
-	// mine: default archive (bash .devrites/archive, Go <root>/archive: same dir).
+	// Both implementations resolve the default archive to the same directory.
 	t.Run("mine", func(t *testing.T) {
 		(parityCase{
 			workdir: arch, env: libRootEnv(arch),
@@ -63,8 +62,8 @@ func TestParityLearnings(t *testing.T) {
 		}).assertEqual(t)
 	})
 
-	// mine: no archive. An explicit relative path both sides resolve against workdir,
-	// so the path embedded in the message is identical for bash and Go.
+	// Both implementations resolve an explicit relative path against workdir, so
+	// the missing path in the message is identical.
 	t.Run("mine-no-archive", func(t *testing.T) {
 		(parityCase{
 			workdir: arch, env: libRootEnv(arch),
@@ -72,7 +71,7 @@ func TestParityLearnings(t *testing.T) {
 		}).assertEqual(t)
 	})
 
-	// nudge: >=2 features + a class recurring 3x + no review marker ⇒ the nudge line.
+	// Two features, three occurrences, and no review marker produce a nudge.
 	t.Run("nudge", func(t *testing.T) {
 		(parityCase{
 			workdir: arch, env: libRootEnv(arch),
@@ -80,7 +79,7 @@ func TestParityLearnings(t *testing.T) {
 		}).assertEqual(t)
 	})
 
-	// --- unknown cmd: usage to stderr, exit 2 (stdout empty on both sides).
+	// An unknown command writes usage to stderr and exits 2 without stdout.
 	t.Run("unknown", func(t *testing.T) {
 		(parityCase{
 			workdir: arch, env: libRootEnv(arch),

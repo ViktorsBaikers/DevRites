@@ -11,9 +11,9 @@ import (
 	"github.com/devrites/devrites/internal/state"
 )
 
-// State-parsing patterns ported verbatim from progress.sh's awk. Each name-strip
-// sub is anchored (^ or $), so it matches at most once per line: ReplaceAllString
-// is therefore equivalent to awk's single-match sub.
+// These state parsing patterns match progress.sh's awk expressions. Each
+// name-removal pattern is anchored, so ReplaceAllString behaves like awk's
+// single-match sub.
 var (
 	sliceCheckRe   = regexp.MustCompile(`^- \[[^\]]*\][[:space:]]*`)             // drop "- [x] "
 	sliceNameRe    = regexp.MustCompile(`^Slice[[:space:]]*[0-9]+:[[:space:]]*`) // drop "Slice N: "
@@ -23,10 +23,9 @@ var (
 	sliceHeadingRe = regexp.MustCompile(`^##[[:space:]]+(SLICE-[0-9]{3})(?:[[:space:]]+(.*))?$`)
 )
 
-// Progress renders the active feature's position: the deterministic footer every
-// workspace-operating rite-* skill prints last. Read-only. Prints nothing and
-// exits 0 when there is no active workspace, so pre-spec callers stay silent. root
-// is the .devrites directory; slug defaults to the active feature at <root>/ACTIVE.
+// Progress renders the footer printed by workspace-aware rite-* skills. It reads
+// from the .devrites root and returns 0 without output when no workspace is
+// active. An empty slug uses <root>/ACTIVE.
 func Progress(root string, args []string, stdout, stderr io.Writer) int {
 	slug := ""
 	if len(args) > 0 {
@@ -82,8 +81,8 @@ func Progress(root string, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	// Flow ribbon: the lifecycle spine; optional phases appear once their artifact
-	// exists or while they are the active phase, so the cursor is never omitted.
+	// The flow ribbon includes optional phases when their artifact exists or while
+	// they are active. It always includes the current phase.
 	order := make([]string, 0, len(state.LifecyclePhases()))
 	for _, lifecyclePhase := range state.LifecyclePhases() {
 		name := string(lifecyclePhase)
@@ -128,6 +127,9 @@ func Progress(root string, args []string, stdout, stderr io.Writer) int {
 		ribbon += " " + name + " " + g
 	}
 	fmt.Fprintf(stdout, "%s\n", ribbon)
+	if obs := ObservabilityStatus(root, slug); obs != "" {
+		fmt.Fprintf(stdout, "Obs   %s\n", obs)
+	}
 	return 0
 }
 

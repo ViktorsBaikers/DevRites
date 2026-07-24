@@ -81,11 +81,27 @@ func TestHarnessEnvelopes(t *testing.T) {
 }
 
 func TestHarnessParsersFailOpenAndFallbacks(t *testing.T) {
-	if got := Claude.ParseStopInput(strings.NewReader(`{"stop_hook_active":true}`)); !got.StopHookActive {
-		t.Fatalf("ParseStopInput did not read stop_hook_active")
-	}
-	if got := Claude.ParseStopInput(strings.NewReader(`not-json`)); got.StopHookActive {
-		t.Fatalf("ParseStopInput malformed payload = %#v, want zero value", got)
+	for _, test := range []struct {
+		name    string
+		payload string
+		present bool
+		active  bool
+	}{
+		{"explicit false", `{"stop_hook_active":false}`, true, false},
+		{"explicit true", `{"stop_hook_active":true}`, true, true},
+		{"empty", ``, false, false},
+		{"malformed", `not-json`, false, false},
+		{"missing", `{}`, false, false},
+		{"null", `{"stop_hook_active":null}`, false, false},
+		{"wrong type", `{"stop_hook_active":"false"}`, false, false},
+	} {
+		t.Run("stop/"+test.name, func(t *testing.T) {
+			got := Claude.ParseStopInput(strings.NewReader(test.payload))
+			if got.StopHookActivePresent != test.present || got.StopHookActive != test.active {
+				t.Fatalf("ParseStopInput(%q) = %#v, want present=%v active=%v",
+					test.payload, got, test.present, test.active)
+			}
+		})
 	}
 
 	pre := Codex.ParsePreToolInput(strings.NewReader(`{"tool_name":"Bash","tool_input":{"command":"go test ./..."},"agent_type":"reviewer"}`))

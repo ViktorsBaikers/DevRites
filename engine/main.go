@@ -1,11 +1,7 @@
-// Command devrites-engine is the DevRites control-plane engine: a single static,
-// pure-Go binary that owns the deterministic workflow state (phases, gates,
-// completeness) over a project's .devrites/ directory. It makes zero model or
-// network calls: the in-session LLM remains the judgment data plane.
-//
-// Command dispatch is intentionally a small stdlib switch (no third-party deps)
-// so the binary cross-compiles trivially with CGO_ENABLED=0; it can be swapped
-// for Cobra later without changing the CLI contract.
+// Command devrites-engine runs the DevRites control plane. It manages workflow
+// phases, gates, and completeness under a project's .devrites directory without
+// calling a model or the network. The pure-Go binary uses standard library
+// dispatch so it can cross-compile with CGO_ENABLED=0.
 package main
 
 import (
@@ -13,13 +9,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
+	"github.com/devrites/devrites/internal/forge"
 	"github.com/devrites/devrites/internal/gate"
 	"github.com/devrites/devrites/internal/harness"
 	"github.com/devrites/devrites/internal/install"
 	"github.com/devrites/devrites/internal/iohooks"
 	"github.com/devrites/devrites/internal/lib"
 	"github.com/devrites/devrites/internal/profile"
+	"github.com/devrites/devrites/internal/reason"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/version"
 )
@@ -42,28 +41,31 @@ Usage:
   devrites-engine footprint <sub> <slug>   Fan-out footprint: log|render|roster the dispatch log
   devrites-engine evidence-fresh [slug]    Gate: does the proof post-date every touched file?
   devrites-engine coverage [slug]          Render the AC → slice(s) → proven traceability matrix
-  devrites-engine doubt-coverage <slug>    Did the build doubt the decisions it stood?
+  devrites-engine doubt-coverage <slug>    Check whether the build challenged its recorded decisions
   devrites-engine budget [slug]            Lint each workspace file against its context-size ceiling
   devrites-engine preamble [slug]          Print the active feature's workspace-state orientation
   devrites-engine progress [slug]          Render the active feature's phase/slice/flow footer
   devrites-engine profile get|refresh      Cache stable repo facts for grounding skills
   devrites-engine stuck <sub> <slug>       Unattended-build loop detector: log|check
+  devrites-engine recovery <sub> [...]     Track up to three technical recovery attempts across runs
   devrites-engine tick-afk <state.md>      Decrement the AFK slice budget in a state.md
-  devrites-engine build-readiness [slug]   Gate: is the plan approved and the state build-ready?
-  devrites-engine analyze [slug]           Cross-artifact spec↔tasks coverage/consistency gate
+  devrites-engine build-readiness [slug]   Gate: are plan approval, decision coverage, and implementation readiness build-ready?
+  devrites-engine readiness-digest <coverage|engineering> [slug]  Render the canonical artifact input digest
+  devrites-engine clarify-return <enter|restore> [slug]  Preserve/restore a later-phase clarification cursor
+  devrites-engine analyze [slug]           Check coverage and consistency between the spec and tasks
   devrites-engine mutation-gate [slug]     Advisory: detect the mutation runner and scope it
   devrites-engine test-integrity [slug]    Gate: no test deleted, skipped, or de-asserted
   devrites-engine review-integrity [slug]  Gate: no adversarial review axis is silent (zero findings, no justification)
   devrites-engine package-existence [slug] Gate: every new import is declared in a manifest
-  devrites-engine reconcile <sub> [slug]   A1 gate: snapshot|check the wright's source writes
+  devrites-engine reconcile <sub> [slug]   A1 gate: snapshot|check|close the wright's source writes
   devrites-engine resolve <qid> "<ans>"    Resolve an open question; keep state.md consistent
   devrites-engine close-out <slug>         Archive a shipped feature and clear ACTIVE
-  devrites-engine archive-search "<nouns>" Surface shipped features whose spec.md overlaps the query (prior-art probe)
+  devrites-engine archive-search "<nouns>" Find prior shipped specs that overlap the query
   devrites-engine decisions <sub> [...]    Derived decision memory: index|search
   devrites-engine ledger <sub> [...]       Capability ledger (living specs/): sync|diff|validate|list|show
   devrites-engine learnings <sub> [...]    Cross-feature learning ledger: add|list|top|mine|nudge
-  devrites-engine timeline <sub> [...]     Session trace: log|list skill events, decisions, and state moves
-  devrites-engine health [run|record|list] Code-health dashboard + history
+  devrites-engine timeline <sub> [...]     Local typed trace: log|list|report|purge
+  devrites-engine health [run|record|list] Run the code health dashboard or view its history
   devrites-engine config get <key>         Read project config (outside_voice defaults auto)
   devrites-engine reviewers list           Validate/list configured reviewer aliases
   devrites-engine outside-voice            Detect outside-review availability
@@ -73,6 +75,7 @@ Usage:
   devrites-engine reviewer-stats <sub>     Reviewer dispatch outcomes: record <agent> <n> [slug] | report [--json]
   devrites-engine conventions <sub> [...]  Project convention ledger: band|read|orient|promote|contradict
   devrites-engine lanes plan [slug]       Advisory safe-parallelism/lane plan for slices
+  devrites-engine forge <sub> [...]       Isolated candidate worktrees: plan|record|extract|merge|cleanup|reap
   devrites-engine extensions <sub>         Project extensions (.devrites/extensions/): list|validate|sync
   devrites-engine overrides <sub>          Reviewer-override linter (.devrites/overrides/): list|validate
   devrites-engine context sync [file ...]  Sync managed DevRites block into context files
@@ -80,7 +83,7 @@ Usage:
   devrites-engine runbook <sub> [...]      Local runbooks: list|validate|run|resume
   devrites-engine doctor                   Report the binary / pack / state-schema version triangle
   devrites-engine migrate                  Normalize .devrites workspaces to the current schema
-  devrites-engine validate-pack [dir]      Lint the shipped pack's hook wiring + skill/agent frontmatter contracts + docs/command-map.md links
+  devrites-engine validate-pack [dir]      Check shipped hook wiring, frontmatter contracts, and command-map links
   devrites-engine harness-matrix [--check F] Render (or drift-check) the harness adapter-compliance matrix
   devrites-engine version                  Print the engine binary's version
   devrites-engine hook <name> --harness=H  Run hook <name> for harness H (claude|codex)
@@ -89,13 +92,14 @@ Hooks:
   hook allow              Auto-approve the read-only devrites orientation/gate subcommands
   hook orient             Emit SessionStart orientation for the active feature
   hook stop-gate          Refuse to end a turn at a provably inconsistent rest point
-  hook reviewer-readonly  Deny a reviewer subagent's mutating/exfiltrating Bash command
+  hook reviewer-readonly  Deny every mutation/dispatch surface for read-only DevRites agents
   hook subagent-orient    Inject the DevRites discipline into a spawned devrites-* subagent
   hook cursor             Re-inject the active feature's cursor (UserPromptSubmit)
   hook statusline         One-line workspace HUD (settings.json statusLine)
   hook redwatch           Fail-on-red sentinel: set/clear .red after a test/build command
   hook a1-guard           Block the orchestrator editing source mid-build
-  hook wright-scope       Fence the slice-wright to its touched-files.md
+  hook git-guard          Require exact one-shot authority for destructive Git
+  hook wright-scope       Fence the slice-wright to an exact orchestrator allowlist
   hook source-cache-pre   Serve a cached page reading on a 304 revalidation (WebFetch)
   hook source-cache-post  Store a WebFetch result keyed on its origin validators
   hook refresh-indexes    Refresh the code-intelligence indexes (detached) on Stop
@@ -114,13 +118,20 @@ Environment:
                   the nearest .devrites found walking up from the working directory.
   DEVRITES_WORKSPACE  Explicit feature workspace path for CI/agents; overrides
                   .devrites/ACTIVE when a command defaults to the active feature.
+  DEVRITES_AGENT_RUN=1 declares a DevRites leaf run when hook payloads omit identity.
+  DEVRITES_ACTIVE_AGENT=devrites-<role> supplies that exact leaf identity.
+  DEVRITES_WRIGHT_ALLOWLIST_FILE points to the wright's exact project-relative
+                  path manifest; defaults to the active workspace's .wright-allowlist.
+  DEVRITES_FORGE_RUN_ID, DEVRITES_FORGE_CANDIDATE, DEVRITES_FORGE_WORKER_ID,
+  DEVRITES_FORGE_WORKER_PID, and DEVRITES_FORGE_PROCESS_START bind a candidate
+                  wright to its root-owned manifest. All five are required.
 
 Hook control plane:
   DEVRITES_HOOK_PROFILE   minimal | standard (default) | strict. minimal runs
                           orientation/approval hooks only; standard adds the
                           gates, guards and caches; strict also enables
-                          every OBSERVE-default guard (a1-guard, stop-gate,
-                          reviewer-readonly, wright-scope) to enforce at once.
+                          every legacy OBSERVE-default guard to enforce at once.
+                          Declared DevRites agents are always enforced.
   DEVRITES_DISABLED_HOOKS Comma-separated hook ids to force off, e.g.
                           "stop-gate,redwatch". A disabled hook is a clean
                           fail-open no-op.
@@ -143,6 +154,11 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprint(stderr, usage)
 		return exitUsage
 	}
+	root, rootExit, err := resolveRootFor(args[0], args[1:])
+	if err != nil {
+		fmt.Fprintf(stderr, "devrites: root selection: %v\n", err)
+		return rootExit
+	}
 	switch args[0] {
 	case "install":
 		return install.Run(args[1:], stdout, stderr, install.ModeInstall)
@@ -156,103 +172,121 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "snapshot":
 		return cmdSnapshot(args[1:], stdout, stderr)
 	case "first-task":
-		return lib.FirstTask(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.FirstTask(root, args[1:], stdout, stderr)
 	case "readiness":
 		rest, j := extractFlag(args[1:], "--json")
-		return jsonWrap("readiness", j, stdout, stderr, func(o, e io.Writer) int { return cmdGate(gate.Readiness, rest, o, e) })
+		return jsonWrapReason("readiness", j, stdout, stderr, func(code int) reason.ID {
+			if code == exitOK || code == exitBlocked {
+				return gate.ResultReasonID(gate.Readiness, code == exitBlocked)
+			}
+			return ""
+		}, func(o, e io.Writer) int { return cmdGate(gate.Readiness, rest, o, e) })
 	case "seal":
 		rest, j := extractFlag(args[1:], "--json")
-		return jsonWrap("seal", j, stdout, stderr, func(o, e io.Writer) int { return cmdGate(gate.Seal, rest, o, e) })
+		return jsonWrapReason("seal", j, stdout, stderr, func(code int) reason.ID {
+			if code == exitOK || code == exitBlocked {
+				return gate.ResultReasonID(gate.Seal, code == exitBlocked)
+			}
+			return ""
+		}, func(o, e io.Writer) int { return cmdGate(gate.Seal, rest, o, e) })
 	case "spec-validate":
 		rest, j := extractFlag(args[1:], "--json")
 		return jsonWrap("spec-validate", j, stdout, stderr, func(o, e io.Writer) int { return cmdSpecValidate(rest, o, e) })
 	case "spec-skeleton":
 		return cmdSpecSkeleton(args[1:], stdout, stderr)
 	case "spec-dedupe":
-		return lib.SpecDedupe(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.SpecDedupe(root, args[1:], stdout, stderr)
 	case "check-acceptance":
 		return cmdCheckAcceptance(args[1:], stdout, stderr)
 	case "footprint":
-		return cmdFootprint(args[1:], stdout, stderr)
+		return cmdFootprint(root, args[1:], stdout, stderr)
 	case "evidence-fresh":
 		rest, j := extractFlag(args[1:], "--json")
-		return jsonWrap("evidence-fresh", j, stdout, stderr, func(o, e io.Writer) int { return cmdEvidenceFresh(rest, o, e) })
+		return jsonWrap("evidence-fresh", j, stdout, stderr, func(o, e io.Writer) int { return cmdEvidenceFresh(root, rest, o, e) })
 	case "coverage":
 		rest, j := extractFlag(args[1:], "--json")
-		return jsonWrap("coverage", j, stdout, stderr, func(o, e io.Writer) int { return cmdCoverage(rest, o, e) })
+		return jsonWrap("coverage", j, stdout, stderr, func(o, e io.Writer) int { return cmdCoverage(root, rest, o, e) })
 	case "doubt-coverage":
-		return cmdDoubtCoverage(args[1:], stdout, stderr)
+		return cmdDoubtCoverage(root, args[1:], stdout, stderr)
 	case "budget":
-		return lib.Budget(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Budget(root, args[1:], stdout, stderr)
 	case "preamble":
 		rest, j := extractFlag(args[1:], "--json")
-		return jsonWrap("preamble", j, stdout, stderr, func(o, e io.Writer) int { return cmdPreamble(rest, o, e) })
+		return jsonWrap("preamble", j, stdout, stderr, func(o, e io.Writer) int { return cmdPreamble(root, rest, o, e) })
 	case "progress":
-		return cmdProgress(args[1:], stdout, stderr)
+		return cmdProgress(root, args[1:], stdout, stderr)
 	case "profile":
 		return profile.Run(args[1:], stdout, stderr)
 	case "stuck":
-		return cmdStuck(args[1:], stdout, stderr)
+		return cmdStuck(root, args[1:], stdout, stderr)
+	case "recovery":
+		return lib.RecoveryAttempts(root, args[1:], stdout, stderr)
 	case "tick-afk":
 		return lib.TickAfk(args[1:], stdout, stderr)
 	case "build-readiness":
-		return lib.BuildReadiness(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.BuildReadiness(root, args[1:], stdout, stderr)
+	case "readiness-digest":
+		return lib.ReadinessDigest(root, args[1:], stdout, stderr)
+	case "clarify-return":
+		return lib.ClarifyReturn(root, args[1:], stdout, stderr)
 	case "analyze":
 		rest, j := extractFlag(args[1:], "--json")
-		return jsonWrap("analyze", j, stdout, stderr, func(o, e io.Writer) int { return lib.Analyze(resolveRootLenient(), rest, o, e) })
+		return jsonWrap("analyze", j, stdout, stderr, func(o, e io.Writer) int { return lib.Analyze(root, rest, o, e) })
 	case "mutation-gate":
-		return lib.MutationGate(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.MutationGate(root, args[1:], stdout, stderr)
 	case "test-integrity":
-		return lib.TestIntegrity(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.TestIntegrity(root, args[1:], stdout, stderr)
 	case "review-integrity":
-		return lib.ReviewIntegrity(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.ReviewIntegrity(root, args[1:], stdout, stderr)
 	case "package-existence":
-		return lib.PackageExistence(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.PackageExistence(root, args[1:], stdout, stderr)
 	case "reconcile":
-		return lib.Reconcile(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Reconcile(root, args[1:], stdout, stderr)
 	case "resolve":
-		return lib.Resolve(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Resolve(root, args[1:], stdout, stderr)
 	case "close-out":
-		return lib.CloseOut(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.CloseOut(root, args[1:], stdout, stderr)
 	case "archive-search":
-		return lib.ArchiveSearch(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.ArchiveSearch(root, args[1:], stdout, stderr)
 	case "decisions":
-		return lib.Decisions(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Decisions(root, args[1:], stdout, stderr)
 	case "ledger":
 		rest, j := extractFlag(args[1:], "--json")
-		return jsonWrap("ledger", j, stdout, stderr, func(o, e io.Writer) int { return lib.Ledger(resolveRootLenient(), rest, o, e) })
+		return jsonWrap("ledger", j, stdout, stderr, func(o, e io.Writer) int { return lib.Ledger(root, rest, o, e) })
 	case "learnings":
-		return lib.Learnings(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Learnings(root, args[1:], stdout, stderr)
 	case "timeline":
-		return lib.Timeline(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Timeline(root, args[1:], stdout, stderr)
 	case "health":
-		return lib.Health(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Health(root, args[1:], stdout, stderr)
 	case "config":
-		return lib.Config(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Config(root, args[1:], stdout, stderr)
 	case "reviewers":
-		return lib.Reviewers(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Reviewers(root, args[1:], stdout, stderr)
 	case "outside-voice":
-		return lib.OutsideVoice(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.OutsideVoice(root, args[1:], stdout, stderr)
 	case "docs-stale":
-		return lib.DocsStale(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.DocsStale(root, args[1:], stdout, stderr)
 	case "secret-scan":
-		return lib.SecretScan(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.SecretScan(root, args[1:], stdout, stderr)
 	case "review-fingerprints":
-		return lib.ReviewFingerprints(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.ReviewFingerprints(root, args[1:], stdout, stderr)
 	case "reviewer-stats":
-		return lib.ReviewerStats(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.ReviewerStats(root, args[1:], stdout, stderr)
 	case "conventions":
 		return lib.Conventions(args[1:], stdout, stderr)
 	case "lanes":
-		return lib.Lanes(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Lanes(root, args[1:], stdout, stderr)
+	case "forge":
+		return forge.Run(filepath.Dir(root), args[1:], stdout, stderr)
 	case "extensions":
-		return lib.Extensions(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Extensions(root, args[1:], stdout, stderr)
 	case "overrides":
-		return lib.Overrides(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Overrides(root, args[1:], stdout, stderr)
 	case "context":
-		return lib.Context(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Context(root, args[1:], stdout, stderr)
 	case "runbook":
-		return lib.Runbook(resolveRootLenient(), args[1:], stdout, stderr)
+		return lib.Runbook(root, args[1:], stdout, stderr)
 	case "doctor":
 		rest, j := extractFlag(args[1:], "--json")
 		return jsonWrap("doctor", j, stdout, stderr, func(o, e io.Writer) int { return cmdDoctor(rest, o, e) })
@@ -286,6 +320,7 @@ func cmdStatus(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
 	}
+	recordRootSelection(root, "status", stderr)
 	report, err := state.Status(root, args[0])
 	if err != nil {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
@@ -308,10 +343,28 @@ func cmdGate(kind gate.Kind, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
 	}
+	recordRootSelection(root, string(kind), stderr)
 	result, err := gate.Check(kind, root, args[0])
 	if err != nil {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
+	}
+	evidence := append([]string(nil), result.MissingFiles...)
+	if result.LegacyLayout {
+		evidence = evidence[:0]
+		for _, section := range result.Missing {
+			evidence = append(evidence, string(section)+".md")
+		}
+	}
+	if ev, eventErr := lib.NewLifecycleGateEvent(
+		root, result.Slug, string(result.Kind), result.Phase,
+		result.Blocked, result.ReasonID, evidence,
+	); eventErr == nil {
+		if eventErr = lib.AppendEventV1(root, ev); eventErr != nil {
+			debugf(stderr, "lifecycle-gate event: %v", eventErr)
+		}
+	} else {
+		debugf(stderr, "lifecycle-gate event: %v", eventErr)
 	}
 	fmt.Fprint(stdout, result.Render())
 	if result.Blocked {
@@ -372,47 +425,47 @@ func cmdCheckAcceptance(args []string, stdout, stderr io.Writer) int {
 	return lib.CheckAcceptance(arg, stdout, stderr)
 }
 
-// cmdFootprint renders / logs / rosters the fan-out dispatch footprint for a
-// feature. Workspace state lives under <root>/work/<slug>, with features/ as an
+// cmdFootprint renders, logs, or lists the fan-out dispatch footprint for a
+// feature. Workspace state lives under <root>/work/<slug>, with features as an
 // alias for older workspaces.
-func cmdFootprint(args []string, stdout, stderr io.Writer) int {
-	return lib.Footprint(resolveRootLenient(), args, stdout, stderr)
+func cmdFootprint(root string, args []string, stdout, stderr io.Writer) int {
+	return lib.Footprint(root, args, stdout, stderr)
 }
 
 // cmdEvidenceFresh runs the evidence-freshness gate (0 fresh · 3 stale · 5 no
 // workspace/evidence).
-func cmdEvidenceFresh(args []string, stdout, stderr io.Writer) int {
-	return lib.EvidenceFresh(resolveRootLenient(), args, stdout, stderr)
+func cmdEvidenceFresh(root string, args []string, stdout, stderr io.Writer) int {
+	return lib.EvidenceFresh(root, args, stdout, stderr)
 }
 
 // cmdCoverage renders the AC → slice → proven traceability matrix (0 rendered ·
 // 2 no workspace/spec).
-func cmdCoverage(args []string, stdout, stderr io.Writer) int {
-	return lib.Coverage(resolveRootLenient(), args, stdout, stderr)
+func cmdCoverage(root string, args []string, stdout, stderr io.Writer) int {
+	return lib.Coverage(root, args, stdout, stderr)
 }
 
 // cmdDoubtCoverage runs the doubt-coverage assessment (0 covered/n-a · 1 no doubt
 // ran · 2 usage · 3 doubt: MISSING).
-func cmdDoubtCoverage(args []string, stdout, stderr io.Writer) int {
-	return lib.DoubtCoverage(resolveRootLenient(), args, stdout, stderr)
+func cmdDoubtCoverage(root string, args []string, stdout, stderr io.Writer) int {
+	return lib.DoubtCoverage(root, args, stdout, stderr)
 }
 
 // cmdPreamble prints the active feature's workspace-state orientation (always
 // exit 0).
-func cmdPreamble(args []string, stdout, stderr io.Writer) int {
-	return lib.Preamble(resolveRootLenient(), args, stdout, stderr)
+func cmdPreamble(root string, args []string, stdout, stderr io.Writer) int {
+	return lib.Preamble(root, args, stdout, stderr)
 }
 
 // cmdProgress renders the active feature's phase/slice/flow footer (always exit 0,
 // silent when no workspace).
-func cmdProgress(args []string, stdout, stderr io.Writer) int {
-	return lib.Progress(resolveRootLenient(), args, stdout, stderr)
+func cmdProgress(root string, args []string, stdout, stderr io.Writer) int {
+	return lib.Progress(root, args, stdout, stderr)
 }
 
 // cmdStuck is the unattended-build loop detector: `stuck log|check <slug>` (0 not
 // stuck · 2 bad args · 3 STUCK).
-func cmdStuck(args []string, stdout, stderr io.Writer) int {
-	return lib.Stuck(resolveRootLenient(), args, stdout, stderr)
+func cmdStuck(root string, args []string, stdout, stderr io.Writer) int {
+	return lib.Stuck(root, args, stdout, stderr)
 }
 
 func cmdHook(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -425,6 +478,8 @@ func cmdHook(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	// in DEVRITES_DISABLED_HOOKS is a clean fail-open no-op, indistinguishable from
 	// an absent binary. Consulted before any work, including refresh-indexes.
 	if !hookActive(name) {
+		h, _ := harness.Parse(harnessFlag(args[1:]))
+		recordHookGuard(h, name, reason.HookDisabled, lib.GuardBypassed, lib.OutcomeBypassed)
 		return exitOK
 	}
 	// These hooks carry their own positional args and need no harness parsing, so
@@ -465,12 +520,19 @@ func cmdHook(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return hookRedwatch(h, stdin, stdout, stderr)
 	case "a1-guard":
 		return hookA1Guard(h, stdin, stdout, stderr)
+	case "git-guard":
+		return hookGitGuard(h, stdin, stdout, stderr)
 	case "wright-scope":
 		return hookWrightScope(h, stdin, stdout, stderr)
 	case "source-cache-pre":
 		return iohooks.SourceCachePre(stdin, stdout, stderr)
 	case "source-cache-post":
-		return iohooks.SourceCachePost(stdin, stdout, stderr)
+		var warning bytes.Buffer
+		code := iohooks.SourceCachePost(h, stdin, io.MultiWriter(stdout, &warning), stderr)
+		if warning.Len() > 0 {
+			recordHookGuard(h, "source-cache-post", reason.HookIngestWarning, lib.GuardObserved, lib.OutcomeWarning)
+		}
+		return code
 	default:
 		fmt.Fprintf(stderr, "devrites: unknown hook %q\n", name)
 		return exitUsage
@@ -520,11 +582,32 @@ func extractFlag(args []string, flag string) ([]string, bool) {
 // otherwise. It is applied only to the AFK-parsed read commands (see the
 // --json set in run()); other commands never accept --json.
 func jsonWrap(command string, jsonMode bool, stdout, stderr io.Writer, thunk func(o, e io.Writer) int) int {
+	return jsonWrapReason(command, jsonMode, stdout, stderr, nil, thunk)
+}
+
+func jsonWrapReason(command string, jsonMode bool, stdout, stderr io.Writer, reasonFor func(int) reason.ID, thunk func(o, e io.Writer) int) int {
 	if !jsonMode {
 		return thunk(stdout, stderr)
 	}
 	var out, errb bytes.Buffer
 	code := thunk(&out, &errb)
-	lib.WriteEnvelope(stdout, lib.NewEnvelope(command, code, out.String(), errb.String()))
+	env := lib.NewEnvelope(command, code, out.String(), errb.String())
+	if reasonFor != nil {
+		env = env.WithReason(reasonFor(code))
+	}
+	lib.WriteEnvelope(stdout, env)
 	return code
+}
+
+func recordRootSelection(root, command string, stderr io.Writer) {
+	if root == "" {
+		return
+	}
+	ev, err := lib.NewRootSelectionEvent(root, command)
+	if err == nil {
+		err = lib.AppendEventV1(root, ev)
+	}
+	if err != nil {
+		debugf(stderr, "root-selection event: %v", err)
+	}
 }

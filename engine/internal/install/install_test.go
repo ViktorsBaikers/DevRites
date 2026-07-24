@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/devrites/devrites/internal/testutil"
 )
@@ -257,7 +258,7 @@ func TestInstallKeepsClaudeMergeOwnershipAcrossReinstall(t *testing.T) {
 	if !exists(filepath.Join(target, filepath.FromSlash(markerRel))) {
 		t.Fatal("first install did not create the Claude hook merge marker")
 	}
-	if !readManifest(filepath.Join(target, ManifestName))[markerRel] {
+	if _, ok := readManifest(filepath.Join(target, ManifestName))[markerRel]; !ok {
 		t.Fatalf("first install did not record the Claude hook merge marker:\n%s", testutil.ReadFile(t, filepath.Join(target, ManifestName)))
 	}
 	runInstall(t, target, payload, func(o *Options) {})
@@ -334,6 +335,9 @@ func TestInstallBinaryUsesEngineHandoff(t *testing.T) {
 	t.Setenv("DEVRITES_ENGINE_CLI", engine)
 	t.Setenv("DEVRITES_BIN_DIR", binDir)
 	t.Setenv("DEVRITES_REF", "v1.2.3")
+	conflictDir := t.TempDir()
+	testutil.WriteExecutable(t, filepath.Join(conflictDir, "devrites-engine"), "#!/bin/sh\necho 0.0.1\n")
+	t.Setenv("PATH", conflictDir)
 
 	runInstall(t, target, payload, func(o *Options) {})
 
@@ -440,7 +444,7 @@ func TestAcquireBinaryRejectsReleaseChecksumMismatch(t *testing.T) {
 
 func TestInstallBinaryFailsWhenPreparedUpdateCannotBeWritten(t *testing.T) {
 	prepared := filepath.Join(t.TempDir(), "devrites-engine")
-	testutil.WriteExecutable(t, prepared, "#!/bin/sh\n")
+	testutil.WriteExecutable(t, prepared, "#!/bin/sh\nif [ \"$1\" = version ]; then echo 1.2.3; fi\n")
 	blocked := filepath.Join(t.TempDir(), "not-a-directory")
 	testutil.WriteFile(t, blocked, "file\n")
 	t.Setenv("DEVRITES_BIN_DIR", filepath.Join(blocked, "bin"))
@@ -557,6 +561,361 @@ printf '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"devrites-engine
 	if got := testutil.ReadFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != "source archive codex\n" {
 		t.Fatalf("source archive update did not build generated payload: %q", got)
 	}
+}
+
+func TestManagedFilePolicy(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	const rel = ".claude/skills/rite/SKILL.md"
+
+	t.Run("refresh preserves customized unless forced", func(t *testing.T) {
+		payload := testPayload(t)
+		target := t.TempDir()
+		runInstall(t, target, payload, func(o *Options) {})
+		dest := filepath.Join(target, filepath.FromSlash(rel))
+		testutil.WriteFile(t, dest, "customized\n")
+		testutil.WriteFile(t, filepath.Join(payload, "claude", "skills", "rite", "SKILL.md"), "new\n")
+
+		err := applyInstall(target, payload, false, false, nil)
+		if err == nil || !strings.Contains(err.Error(), "--force") {
+			t.Fatalf("customized refresh error = %v, want --force remediation", err)
+		}
+		if got := testutil.ReadFile(t, dest); got != "customized\n" {
+			t.Fatalf("default refresh changed customized file: %q", got)
+		}
+
+		var out bytes.Buffer
+		if err := applyInstall(target, payload, true, true, &out); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(out.String(), "[overwrite(force-customized)] "+rel) {
+			t.Fatalf("forced dry-run did not predict overwrite:\n%s", out.String())
+		}
+		if got := testutil.ReadFile(t, dest); got != "customized\n" {
+			t.Fatalf("dry-run changed customized file: %q", got)
+		}
+
+		if err := applyInstall(target, payload, true, false, nil); err != nil {
+			t.Fatal(err)
+		}
+		if got := testutil.ReadFile(t, dest); got != "new\n" {
+			t.Fatalf("forced refresh = %q, want new payload", got)
+		}
+	})
+
+	t.Run("legacy manifest requires force", func(t *testing.T) {
+		payload := testPayload(t)
+		target := t.TempDir()
+		runInstall(t, target, payload, func(o *Options) {})
+		manifest := filepath.Join(target, ManifestName)
+		lines := strings.Split(testutil.ReadFile(t, manifest), "\n")
+		var next []string
+		for _, line := range lines {
+			if !strings.HasPrefix(line, "# managed: "+rel+" ") {
+				next = append(next, line)
+			}
+		}
+		testutil.WriteFile(t, manifest, strings.Join(next, "\n"))
+
+		err := applyInstall(target, payload, false, false, nil)
+		if err == nil || !strings.Contains(err.Error(), "legacy manifest entry") {
+			t.Fatalf("legacy refresh error = %v", err)
+		}
+		if err := applyInstall(target, payload, true, false, nil); err != nil {
+			t.Fatalf("forced legacy refresh: %v", err)
+		}
+	})
+
+	t.Run("missing is recreated and absent uninstall is a no-op", func(t *testing.T) {
+		payload := testPayload(t)
+		target := t.TempDir()
+		runInstall(t, target, payload, func(o *Options) {})
+		dest := filepath.Join(target, filepath.FromSlash(rel))
+		if err := os.Remove(dest); err != nil {
+			t.Fatal(err)
+		}
+		if err := applyInstall(target, payload, false, false, nil); err != nil {
+			t.Fatal(err)
+		}
+		if !exists(dest) {
+			t.Fatal("refresh did not recreate missing managed file")
+		}
+		if err := os.Remove(dest); err != nil {
+			t.Fatal(err)
+		}
+		runUninstall(t, target)
+	})
+
+	t.Run("foreign is preserved unless forced", func(t *testing.T) {
+		payload := testPayload(t)
+		target := t.TempDir()
+		dest := filepath.Join(target, filepath.FromSlash(rel))
+		testutil.WriteFile(t, dest, "mine\n")
+		runInstall(t, target, payload, func(o *Options) {})
+		if got := testutil.ReadFile(t, dest); got != "mine\n" {
+			t.Fatalf("default install overwrote foreign file: %q", got)
+		}
+		if err := applyInstall(target, payload, true, false, nil); err != nil {
+			t.Fatal(err)
+		}
+		if got := testutil.ReadFile(t, dest); got != "claude rite\n" {
+			t.Fatalf("forced install did not replace foreign file: %q", got)
+		}
+	})
+}
+
+func TestManagedPruneAndUninstallPolicy(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	const staleRel = ".claude/skills/stale/SKILL.md"
+
+	t.Run("prune", func(t *testing.T) {
+		payload := testPayload(t)
+		target := t.TempDir()
+		runInstall(t, target, payload, func(o *Options) {})
+		stale := filepath.Join(target, filepath.FromSlash(staleRel))
+		testutil.WriteFile(t, stale, "owned\n")
+		addManifestRecord(t, filepath.Join(target, ManifestName), staleRel, []byte("owned\n"))
+		testutil.WriteFile(t, stale, "customized\n")
+
+		err := applyInstall(target, payload, false, false, nil)
+		if err == nil || !strings.Contains(err.Error(), staleRel) || !exists(stale) {
+			t.Fatalf("default prune error = %v, exists = %t", err, exists(stale))
+		}
+		var out bytes.Buffer
+		if err := applyInstall(target, payload, true, true, &out); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(out.String(), "[prune(force-customized)] "+staleRel) || !exists(stale) {
+			t.Fatalf("forced prune dry-run mismatch:\n%s", out.String())
+		}
+		if err := applyInstall(target, payload, true, false, nil); err != nil {
+			t.Fatal(err)
+		}
+		if exists(stale) {
+			t.Fatal("forced prune kept customized dropped file")
+		}
+	})
+
+	t.Run("uninstall", func(t *testing.T) {
+		payload := testPayload(t)
+		target := t.TempDir()
+		runInstall(t, target, payload, func(o *Options) {})
+		dest := filepath.Join(target, ".claude", "skills", "rite", "SKILL.md")
+		testutil.WriteFile(t, dest, "customized\n")
+
+		opts := DefaultOptions(ModeUninstall)
+		opts.Target = target
+		opts.KeepBinary = true
+		opts.Stdout = &bytes.Buffer{}
+		opts.Stderr = &bytes.Buffer{}
+		err := Apply(opts)
+		if err == nil || !strings.Contains(err.Error(), "--force") || !exists(dest) {
+			t.Fatalf("default uninstall error = %v, exists = %t", err, exists(dest))
+		}
+
+		var out bytes.Buffer
+		opts.Force = true
+		opts.DryRun = true
+		opts.Stdout = &out
+		if err := Apply(opts); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(out.String(), "[remove(force-customized)] .claude/skills/rite/SKILL.md") || !exists(dest) {
+			t.Fatalf("forced uninstall dry-run mismatch:\n%s", out.String())
+		}
+		opts.DryRun = false
+		if err := Apply(opts); err != nil {
+			t.Fatal(err)
+		}
+		if exists(dest) {
+			t.Fatal("forced uninstall kept customized managed file")
+		}
+	})
+}
+
+func TestManagedPathsRejectLinksAndRaces(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires privileges on Windows; the same confinement code runs there")
+	}
+	for _, tc := range []struct {
+		name string
+		link func(target, outside string) error
+	}{
+		{
+			name: "final symlink",
+			link: func(target, outside string) error {
+				dest := filepath.Join(target, ".claude", "skills", "rite", "SKILL.md")
+				if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+					return err
+				}
+				return os.Symlink(filepath.Join(outside, "sentinel"), dest)
+			},
+		},
+		{
+			name: "ancestor symlink",
+			link: func(target, outside string) error {
+				return os.Symlink(outside, filepath.Join(target, ".agents"))
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			payload := testPayload(t)
+			target := t.TempDir()
+			outside := t.TempDir()
+			testutil.WriteFile(t, filepath.Join(outside, "sentinel"), "outside\n")
+			if err := tc.link(target, outside); err != nil {
+				t.Fatal(err)
+			}
+			err := applyInstall(target, payload, true, false, nil)
+			if err == nil || !strings.Contains(err.Error(), "refusing") {
+				t.Fatalf("linked install error = %v", err)
+			}
+			if got := testutil.ReadFile(t, filepath.Join(outside, "sentinel")); got != "outside\n" {
+				t.Fatalf("linked install changed outside file: %q", got)
+			}
+		})
+	}
+
+	t.Run("recheck detects change", func(t *testing.T) {
+		target := t.TempDir()
+		const rel = "managed.txt"
+		testutil.WriteFile(t, filepath.Join(target, rel), "before\n")
+		r := runner{target: target, preflight: map[string]pathSnapshot{}}
+		if _, err := r.rememberPath(rel); err != nil {
+			t.Fatal(err)
+		}
+		testutil.WriteFile(t, filepath.Join(target, rel), "after\n")
+		if err := r.recheckPath(rel); err == nil || !strings.Contains(err.Error(), "changed after preflight") {
+			t.Fatalf("recheck error = %v", err)
+		}
+	})
+}
+
+func TestVerifyEngineBinary(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell fixtures are Unix-only")
+	}
+	for _, tc := range []struct {
+		name string
+		body string
+		want string
+		ok   bool
+	}{
+		{name: "exact", body: "echo v1.2.3", want: "1.2.3", ok: true},
+		{name: "wrong", body: "echo 1.2.4", want: "1.2.3"},
+		{name: "dev", body: "echo dev", want: "1.2.3"},
+		{name: "multiline", body: "printf '1.2.3\\nextra\\n'", want: "1.2.3"},
+		{name: "empty", body: ":", want: "1.2.3"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "engine")
+			testutil.WriteExecutable(t, path, "#!/bin/sh\n"+tc.body+"\n")
+			_, err := verifyEngineBinary(path, tc.want, time.Second)
+			if (err == nil) != tc.ok {
+				t.Fatalf("verifyEngineBinary error = %v, ok = %t", err, tc.ok)
+			}
+		})
+	}
+	t.Run("timeout", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "engine")
+		testutil.WriteExecutable(t, path, "#!/bin/sh\nsleep 2\n")
+		_, err := verifyEngineBinary(path, "1.2.3", 20*time.Millisecond)
+		if err == nil || !strings.Contains(err.Error(), "timed out") {
+			t.Fatalf("timeout error = %v", err)
+		}
+	})
+}
+
+func TestInstallBinaryRollsBackVerificationFailure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell fixture is Unix-only; backup/restore portability is covered separately")
+	}
+	for _, hadOld := range []bool{false, true} {
+		t.Run(fmt.Sprintf("had-old-%t", hadOld), func(t *testing.T) {
+			binDir := t.TempDir()
+			dest := filepath.Join(binDir, "devrites-engine")
+			old := "#!/bin/sh\nif [ \"$1\" = version ]; then echo 1.0.0; fi\n"
+			if hadOld {
+				testutil.WriteExecutable(t, dest, old)
+				if err := os.Chmod(dest, 0o700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			staged := filepath.Join(t.TempDir(), "devrites-engine")
+			body := fmt.Sprintf("#!/bin/sh\nif [ \"$1\" = version ]; then case \"$0\" in %q) echo 1.2.4;; *) echo 1.2.3;; esac; fi\n", dest)
+			testutil.WriteExecutable(t, staged, body)
+			t.Setenv("DEVRITES_BIN_DIR", binDir)
+			t.Setenv("DEVRITES_REF", "v1.2.3")
+			t.Setenv("PATH", t.TempDir())
+			r := runner{opts: DefaultOptions(ModeInstall), preparedBinary: staged}
+
+			err := r.installBinary()
+			wantOutcome := "bad binary removed"
+			if hadOld {
+				wantOutcome = "previous binary restored"
+			}
+			if err == nil || !strings.Contains(err.Error(), wantOutcome) {
+				t.Fatalf("installBinary error = %v", err)
+			}
+			if hadOld {
+				if got := testutil.ReadFile(t, dest); got != old {
+					t.Fatalf("rollback bytes = %q, want old binary", got)
+				}
+				info, statErr := os.Stat(dest)
+				if statErr != nil {
+					t.Fatal(statErr)
+				}
+				if info.Mode().Perm() != 0o700 {
+					t.Fatalf("rollback mode = %v, want 0700", info.Mode().Perm())
+				}
+			} else if exists(dest) {
+				t.Fatal("failed first install left bad binary")
+			}
+		})
+	}
+}
+
+func TestBackupRestoreBinaryIsPlatformSafe(t *testing.T) {
+	dest := filepath.Join(t.TempDir(), "devrites-engine")
+	testutil.WriteFile(t, dest, "old\n")
+	if err := os.Chmod(dest, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	backup, mode, hadOld, err := backupBinary(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(backup)
+	if filepath.Dir(backup) != filepath.Dir(dest) {
+		t.Fatalf("backup %s is not beside %s", backup, dest)
+	}
+	testutil.WriteFile(t, dest, "bad\n")
+	if err := restoreBinary(dest, backup, mode, hadOld); err != nil {
+		t.Fatal(err)
+	}
+	if got := testutil.ReadFile(t, dest); got != "old\n" {
+		t.Fatalf("restored bytes = %q", got)
+	}
+}
+
+func applyInstall(target, payload string, force, dryRun bool, out *bytes.Buffer) error {
+	opts := DefaultOptions(ModeInstall)
+	opts.Target = target
+	opts.PayloadDir = payload
+	opts.Force = force
+	opts.DryRun = dryRun
+	if out == nil {
+		out = &bytes.Buffer{}
+	}
+	opts.Stdout = out
+	opts.Stderr = &bytes.Buffer{}
+	return Apply(opts)
+}
+
+func addManifestRecord(t *testing.T, manifest, rel string, data []byte) {
+	t.Helper()
+	hash := fmt.Sprintf("sha256:%x", sha256.Sum256(data))
+	testutil.AppendFile(t, manifest, "# managed: "+rel+" "+hash+"\n"+rel+"\n")
 }
 
 func runInstall(t *testing.T, target, payload string, mutate func(*Options)) {

@@ -16,6 +16,8 @@ const (
 	CursorQuestionID         = "question_id"
 	CursorActiveSlice        = "active_slice"
 	CursorAFKSlicesRemaining = "afk_slices_remaining"
+	CursorReturnPhase        = "return_phase"
+	CursorReturnNextAction   = "return_next_action"
 )
 
 var cursorKeyAliases = map[string]string{
@@ -85,6 +87,62 @@ func SetCursorField(lines []string, key, value string) ([]string, bool) {
 		return out, true
 	}
 	return out, false
+}
+
+// UpsertCursorField replaces key when present or inserts it into the canonical
+// cursor table (falling back to a legacy bullet when no table exists).
+func UpsertCursorField(lines []string, key, value string) []string {
+	if out, ok := SetCursorField(lines, key, value); ok {
+		return out
+	}
+	out := append([]string(nil), lines...)
+	lastTable := -1
+	inCursor := false
+	for i, line := range out {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "## ") {
+			if inCursor {
+				break
+			}
+			inCursor = strings.EqualFold(strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")), "Cursor")
+			continue
+		}
+		if len(trimmed) >= 2 && trimmed[0] == '|' && trimmed[len(trimmed)-1] == '|' {
+			gotKey, _, kind, ok := parseCursorLine(line)
+			normalized := normalizeCursorKey(gotKey)
+			if !inCursor && ok && (normalized == normalizeCursorKey(CursorPhase) ||
+				normalized == normalizeCursorKey(CursorStatus) ||
+				normalized == normalizeCursorKey(CursorNextAction)) {
+				inCursor = true
+			}
+			if inCursor && ok && kind == cursorLineTable {
+				lastTable = i
+			}
+		}
+	}
+	if lastTable >= 0 {
+		insert := "| " + key + " | " + value + " |"
+		out = append(out, "")
+		copy(out[lastTable+2:], out[lastTable+1:])
+		out[lastTable+1] = insert
+		return out
+	}
+	return append(out, "- "+key+": "+value)
+}
+
+// DeleteCursorField removes every presentation of key from canonical or legacy
+// state without disturbing unrelated prose.
+func DeleteCursorField(lines []string, key string) []string {
+	want := normalizeCursorKey(key)
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		gotKey, _, _, ok := parseCursorLine(line)
+		if ok && normalizeCursorKey(gotKey) == want {
+			continue
+		}
+		out = append(out, line)
+	}
+	return out
 }
 
 func parseCursorLine(line string) (key, value string, kind cursorLineKind, ok bool) {

@@ -6,25 +6,30 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/devrites/devrites/internal/reason"
 )
 
-// The machine-readable agent contract. A `--json` run of an AFK-parsed command
-// wraps its normal text output in a stable envelope so an unattended driver reads
-// a structured result instead of scraping prose. The command's own logic is
-// unchanged: the envelope captures its stdout (as data.text), its stderr (parsed
-// into diagnostics), and the exit code. Full contract: docs/engine/agent-contract.md.
+// A `--json` run wraps a command's normal output in the stable machine-readable
+// agent contract without changing command behavior. The envelope stores stdout
+// in data.text, parses stderr into diagnostics, and includes the exit code. See
+// docs/engine/agent-contract.md.
 
 // Envelope is the top-level JSON result of a `--json` command run.
 type Envelope struct {
+	Schema      string        `json:"schema"`
 	Command     string        `json:"command"`
 	OK          bool          `json:"ok"`
 	ExitCode    int           `json:"exitCode"`
+	ReasonID    reason.ID     `json:"reason_id,omitempty"`
 	Data        *EnvelopeData `json:"data,omitempty"`
 	Diagnostics []Diagnostic  `json:"diagnostics,omitempty"`
 }
 
-// EnvelopeData carries the command's human-readable stdout verbatim, so nothing is
-// lost versus the text form while structured consumers key on ok/exitCode/diagnostics.
+const CommandEnvelopeSchemaV1 = "devrites-command/v1"
+
+// EnvelopeData keeps stdout unchanged while structured consumers read ok,
+// exitCode, and diagnostics from the envelope.
 type EnvelopeData struct {
 	Text string `json:"text"`
 }
@@ -48,7 +53,7 @@ var (
 
 // NewEnvelope builds the result envelope from a captured command run.
 func NewEnvelope(command string, code int, stdout, stderr string) Envelope {
-	env := Envelope{Command: command, OK: code == 0, ExitCode: code}
+	env := Envelope{Schema: CommandEnvelopeSchemaV1, Command: command, OK: code == 0, ExitCode: code}
 	if s := strings.TrimRight(stdout, "\n"); s != "" {
 		env.Data = &EnvelopeData{Text: s}
 	}
@@ -58,6 +63,15 @@ func NewEnvelope(command string, code int, stdout, stderr string) Envelope {
 			continue
 		}
 		env.Diagnostics = append(env.Diagnostics, parseDiagnostic(command, line))
+	}
+	return env
+}
+
+// WithReason adds a rule-owned reason without changing the legacy envelope
+// fields. Unknown IDs are ignored rather than written as false provenance.
+func (env Envelope) WithReason(id reason.ID) Envelope {
+	if reason.Known(id) {
+		env.ReasonID = id
 	}
 	return env
 }
@@ -91,9 +105,9 @@ func parseDiagnostic(command, line string) Diagnostic {
 	return d
 }
 
-// diagnosticCode assigns a stable, greppable code. It is intentionally coarse in
-// v1 (a `<command>_<severity>` slug) so the catalog in agent-contract.md can grow
-// specific codes over time without breaking consumers that match on the prefix.
+// diagnosticCode returns a stable `<command>_<severity>` code. Version 1 keeps
+// codes broad so the catalog can add more specific entries without breaking
+// consumers that match the prefix.
 func diagnosticCode(command, severity, message string) string {
 	base := diagCodeWord.ReplaceAllString(strings.ToLower(command), "_")
 	switch {

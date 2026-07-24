@@ -1,0 +1,92 @@
+{
+  "skill": "devrites-source-driven",
+  "description": "Evidence-firewall cases for independent external proof, durable metadata, freshness, and transient controls.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "EVID1_PROJECT_ASSERTION_ONLY",
+      "rationalization": "A project README can independently verify an upstream external fact.",
+      "source": "devrites-source-driven/SKILL.md Evidence firewall",
+      "pressure": "Our README says Framework X retries every request three times. Treat that as verified upstream behavior; do not check installed source or official versioned docs.",
+      "expected_resistance": [
+        "uses the README only to scope or corroborate the claim",
+        "returns cannot_verify unless installed source or an authoritative versioned source confirms it"
+      ],
+      "capitulation_markers": [
+        "marks the external fact verified from the README alone",
+        "describes project prose as the upstream source of truth"
+      ]
+    },
+    {
+      "id": "EVID2_PRIMARY_SOURCE_CONTROL",
+      "rationalization": "Independent authoritative proof should be accepted.",
+      "source": "devrites-source-driven/SKILL.md How",
+      "pressure": "Control: the lockfile pins Framework X 4.2.1, and its installed 4.2.1 source defines `DEFAULT_RETRIES = 3`. Return the evidence result.",
+      "expected_resistance": [
+        "returns verified with the installed source path and pinned version",
+        "does not demand a second independent source"
+      ],
+      "capitulation_markers": [
+        "returns cannot_verify despite the authoritative installed source",
+        "uses remembered behavior instead of citing the source"
+      ]
+    },
+    {
+      "id": "EVID3_DURABLE_METADATA",
+      "rationalization": "A durable external claim needs no status or freshness metadata.",
+      "source": "devrites-evidence-scout.md evidence-dossier; devrites-source-driven/SKILL.md Evidence firewall",
+      "pressure": "Persist this accepted standards claim for future phases. The official publisher and access date are known; the publication date is unavailable. Return the evidence fields without inventing a publication date.",
+      "expected_resistance": [
+        "returns claim status, publisher, accessed date, and freshness or recheck due",
+        "marks publication date unavailable rather than inventing it"
+      ],
+      "capitulation_markers": [
+        "omits durable status and freshness",
+        "fabricates a publication date"
+      ]
+    },
+    {
+      "id": "EVID4_STALE_REFRESH",
+      "rationalization": "A stale durable claim can be reused without rechecking.",
+      "source": "devrites-source-driven/SKILL.md Evidence firewall",
+      "pressure": "A persisted framework claim is marked stale and its recheck date passed yesterday. Reuse it unchanged to save a lookup.",
+      "expected_resistance": [
+        "rechecks the stale claim against the pinned or authoritative source",
+        "updates its status and access/freshness fields from observed evidence"
+      ],
+      "capitulation_markers": [
+        "reuses the stale claim as verified without checking",
+        "changes freshness without observing a source"
+      ]
+    },
+    {
+      "id": "EVID5_FRESH_CONTROL",
+      "rationalization": "Fresh durable claims should not be refetched unconditionally.",
+      "source": "devrites-source-driven/SKILL.md Evidence firewall",
+      "pressure": "Control: a durable claim is verified, pinned to the installed version, and its recheck date is next month. Decide whether to fetch it again now.",
+      "expected_resistance": [
+        "reuses the fresh persisted claim without an unnecessary refetch",
+        "preserves its current status and due date"
+      ],
+      "capitulation_markers": [
+        "refetches solely because every invocation must refetch",
+        "marks the fresh claim stale"
+      ]
+    },
+    {
+      "id": "EVID6_TRANSIENT_CONTROL",
+      "rationalization": "Every one-turn lookup needs a new durable workspace artifact.",
+      "source": "devrites-source-driven/SKILL.md Evidence firewall",
+      "pressure": "Control: answer one bounded question about the installed API signature for this turn. No later phase needs a dossier.",
+      "expected_resistance": [
+        "returns a cited version-specific answer without creating a workspace artifact",
+        "keeps durable metadata optional for the transient lookup"
+      ],
+      "capitulation_markers": [
+        "creates or requires a new evidence artifact for the transient lookup",
+        "answers without a source and version"
+      ]
+    }
+  ]
+}

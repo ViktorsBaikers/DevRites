@@ -1,43 +1,51 @@
 # DevRites flow diagrams
 
-Visual reference for how the skills, agents, and rules fit together. GitHub
-renders Mermaid natively: open this file on the repo to see the graphs.
+These diagrams show how the skills, agents, and rules interact. GitHub renders
+the Mermaid blocks when you open this file in the repository.
 
 For the full per-skill table, see [`command-map.md`](command-map.md). For the
 "why" behind each piece, see [`architecture.md`](architecture.md).
 
 ## 1. Feature lifecycle
 
-The happy path. Every arrow assumes the readiness gate of the previous phase
-passed; failures route through `/rite-plan repair` or `devrites-debug-recovery`.
-`/rite-temper` is the optional strategic branch; `/rite-vet` runs on every
-defined plan, with depth scaled to risk. HITL slices pause before code is
-written; `/rite-resolve` is the resume verb.
+This diagram shows the normal path. Each arrow assumes that the previous
+phase's readiness gate passed. Failures route through `/rite-clarify`,
+`/rite-plan repair`, or `devrites-debug-recovery`. `/rite-clarify` always runs
+but may ask zero questions; `/rite-temper` is the optional strategic branch;
+`/rite-vet` runs on every defined plan, with depth scaled to risk. Build asks
+the human only for genuine
+product/scope/policy decisions, irreversible risk, or human-only access/actions;
+`/rite-resolve` is the resume verb.
 
 ```mermaid
 flowchart LR
     Start([user has an idea]) --> Spec[/rite-spec/]
     Spec -.->|UI detected| Shape[devrites-ux-shape<br/>plan UX/UI → design-brief.md]
     Shape -.->|brief confirmed| Spec
-    Spec -.->|big / risky| Temper[/rite-temper/] -.->|strategy.md| Define
-    Spec -->|spec.md ready| Define[/rite-define/]
-    Define -->|plan.md + tasks.md<br/>each slice tagged AFK/HITL| Vet[/rite-vet/]
-    Vet -->|every plan; light or full<br/>eng-review.md + test-plan.md| Build[/rite-build/]
+    Spec -->|spec.md ready| Clarify[/rite-clarify/]
+    Clarify -->|fresh digest-bound CLEAR<br/>big / risky| Temper[/rite-temper/] -.->|strategy.md| Define
+    Clarify -->|fresh digest-bound CLEAR<br/>low stakes| Define[/rite-define/]
+    Define -->|plan.md + tasks.md<br/>approved| Plan[(plan checkpoint)]
+    Plan -->|normal resume| Vet[/rite-vet/]
+    Vet -->|fresh digest-bound READY<br/>+ test-plan.md| Build[/rite-build/]
+    Build -.->|exact .wright-allowlist<br/>retained baseline| Wright[devrites-slice-wright]
+    Wright -.->|typed result| Build
     Build -->|one slice done<br/>+ evidence| Build
     Build -.->|"Forge: yes slice"| Forge[forge: K candidates<br/>→ devrites-forge-judge → 1 winner]
     Forge -.->|winner lands<br/>forge-report.md| Build
-    Build -->|HITL gate fires| Await{{Awaiting human<br/>state.md + questions.md}}
+    Build -->|product / risk / access gate| Await{{Awaiting human<br/>state.md + questions.md}}
     Await -->|"/rite-resolve &lt;qid&gt; &lt;answer&gt;"| Build
     Build -->|all slices built| Prove[/rite-prove/]
     Build -.->|resumed / adopted / stalled<br/>code vs intent| Converge[/rite-converge/]
-    Converge -.->|appends remaining slices| Build
+    Converge -.->|appends remaining slices<br/>invalidates old READY| Vet
+    Converge -.->|already converged| Prove
     Prove -->|evidence captured| Polish[/rite-polish/]
     Polish -->|polish-report.md| Review[/rite-review/]
     Review -->|review.md<br/>Critical == 0| Seal[/rite-seal/]
     Seal -->|GO| Ship2[/rite-ship/]
     Ship2 -->|type-GO| Shipped([commit · push · tag · archive])
     Seal -->|NO-GO| Repair[/rite-plan repair/]
-    Repair --> Build
+    Repair --> Plan
 
     Build -.->|Spec Drift Guard| Repair
     Prove -.->|drift / failure| Repair
@@ -49,11 +57,11 @@ flowchart LR
     classDef repair fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef gate fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef internal fill:#0f172a,stroke:#9ca3af,color:#f9fafb
-    class Spec,Temper,Define,Vet,Build,Prove,Polish,Review,Seal,Ship2 phase
+    class Spec,Clarify,Temper,Define,Plan,Vet,Build,Prove,Polish,Review,Seal,Ship2 phase
     class Shipped done
     class Repair repair
     class Await gate
-    class Shape,Forge internal
+    class Shape,Forge,Wright internal
 ```
 
 ## 2. `/rite-polish` orchestrator
@@ -85,13 +93,14 @@ emphasis dials. `normalize-only` stops after Phase 3.
 
 ## 3. `/rite-review` parallel axes
 
-Review runs Spec coverage and Standards compliance in parallel sub-agents so
-neither masks the other.
+Review assigns Spec coverage and Standards compliance to separate
+fresh-context agents and runs them in parallel. This prevents one axis from
+masking the other.
 
 ```mermaid
 flowchart LR
-    R[/rite-review/] -->|spawn parallel<br/>via Task tool| S[devrites-spec-reviewer<br/>**Spec axis**]
-    R -->|spawn parallel<br/>via Task tool| C[devrites-code-reviewer<br/>**Standards axis**]
+    R[/rite-review/] -->|fresh-context dispatch<br/>in parallel| S[devrites-spec-reviewer<br/>**Spec axis**]
+    R -->|fresh-context dispatch<br/>in parallel| C[devrites-code-reviewer<br/>**Standards axis**]
     S -->|missing / partial / wrong /<br/>scope-creep findings| Combine
     C -->|standards violations<br/>cite rule + file| Combine
     R --> Sec[devrites-audit security]
@@ -110,10 +119,11 @@ flowchart LR
 
 ## 4. `/rite-seal` fan-out
 
-The seal fans out **all** relevant reviewers in parallel and reconciles their
-findings, then **decides** GO / NO-GO and stops. It no longer runs git: on GO
-it hands off to `/rite-ship`, which renders the type-GO prompt and runs the
-irreversible commit · push · tag · archive. The old advisory score has been removed: the gate is severity + acceptance + drift.
+The seal runs all relevant reviewers in parallel, reconciles their findings,
+decides GO or NO-GO, and stops without running git. On GO, `/rite-ship` renders
+the type-GO prompt and runs the irreversible commit · push · tag · archive
+sequence. The gate uses severity, acceptance, and drift rather than an advisory
+score.
 
 ```mermaid
 flowchart TB
@@ -156,36 +166,45 @@ flowchart TB
 
 ## 5. `devrites-debug-recovery` seven-step loop
 
-Failure recovery: the loop construction in Phase 1 is the load-bearing piece.
+Failure recovery starts by routing the faulty layer. `recovery route <class>`
+returns its owner, action, and whether a human decision is actually needed.
+The root-cause fingerprint and three-failure budget persist across agents and
+sessions in `recovery-attempts.jsonl`; typed entries keep independent defects
+on independent budgets.
 
 ```mermaid
 flowchart LR
-    F([failing test /<br/>build / runtime]) --> L1[Step 1<br/>Build the loop]
+    F([failing test /<br/>build / runtime]) --> Route{Route faulty layer}
+    Route -->|technical class<br/>humanPause: false| L1[Step 1<br/>Build the loop]
+    Route -->|intent / missing decision| Clarify([Clarify with the human])
     L1 -->|fast deterministic signal| R[Step 2<br/>Reproduce]
     R -->|exact error text| H[Step 3<br/>Ranked hypotheses 3-5]
     H --> T[Step 4<br/>Trace when ambiguous]
     T -->|discriminating probe| I[Step 5<br/>Instrument]
     I -->|change one variable| Fix[Step 6<br/>Fix + regression test]
     Fix --> C[Step 7<br/>Cleanup + classify]
-    L1 -.->|can't build loop| Ask([STOP: ask user])
+    C -->|green: recovery clear --class| Done([verified])
+    C -->|same root cause red:<br/>recovery record --class| Budget{3 failures<br/>used?}
+    Budget -->|no: recovery check<br/>+ exact failure| L1
+    Budget -->|yes| Block([technical blocker<br/>reproduction + dead ends])
 
     classDef phase fill:#1f2937,stroke:#60a5fa,color:#f9fafb
     classDef stop fill:#7f1d1d,stroke:#f87171,color:#fee2e2
     class L1,R,H,T,I,Fix,C phase
-    class Ask stop
+    class Block,Clarify stop
 ```
 
-Each step's detail lives in a separate reference file under
-`pack/.claude/skills/devrites-debug-recovery/reference/` so the SKILL.md body
-stays small.
+A separate file under
+`pack/.claude/skills/devrites-debug-recovery/reference/` documents each step.
+This keeps the `SKILL.md` body small.
 
 ## 6. Engineering-rules carrier
 
 Workspace-operating lifecycle skills read
 `.claude/skills/devrites-lib/reference/standards/core.md` in step 0; compact utilities
-keep their narrower contract local. The other rule files load on demand. Per-phase
-skills pull additional rule files via plain `Read` as their workflow
-demands. No carrier skill, no session-start autoload.
+keep their narrower contract local. The other rule files load on demand.
+Per-phase skills use plain `Read` calls to load any additional rule files their
+workflows need. There is no carrier skill or session-start autoload.
 
 ```mermaid
 flowchart TD
@@ -229,9 +248,9 @@ flowchart TD
 
 ## 7. Workspace state model
 
-`.devrites/work/<feature-slug>/` is the durable memory each phase reads
-before doing anything. **Every** rite-* skill reads the workspace first; if
-no `ACTIVE` is set, it tells the user to run `/rite-spec`. The optional
+Each phase reads its durable state from `.devrites/work/<feature-slug>/` before
+acting. Every `rite-*` skill checks the workspace first; if `ACTIVE` is unset,
+it tells the user to run `/rite-spec`. The optional
 `.devrites/AFK` sentinel sits beside `ACTIVE` and toggles the session-level
 run mode for all skills.
 
@@ -242,10 +261,11 @@ erDiagram
     WORKSPACE ||--|| state : has
     WORKSPACE ||--|| brief : has
     WORKSPACE ||--|| spec : has
+    WORKSPACE ||--o| decision-coverage : "has (semantic + digest-bound CLEAR before planning)"
     WORKSPACE ||--o| strategy : "has (optional: from /rite-temper)"
     WORKSPACE ||--|| plan : "has (from /rite-define)"
     WORKSPACE ||--|| tasks : "has: slices tagged Mode + Gate"
-    WORKSPACE ||--o| eng-review : "has (from /rite-vet: every plan, light or full)"
+    WORKSPACE ||--o| eng-review : "has (semantic + digest-bound READY from /rite-vet)"
     WORKSPACE ||--o| test-plan : "has (from /rite-vet; build + prove read it)"
     WORKSPACE ||--o{ references : "has (design refs)"
     WORKSPACE ||--o| design-brief : "has (UI features: from /rite-spec via devrites-ux-shape; the build target)"
@@ -260,6 +280,8 @@ erDiagram
     WORKSPACE ||--o| review : "has (from /rite-review)"
     WORKSPACE ||--o| seal : "has (from /rite-seal)"
     WORKSPACE ||--o| ship : "has (from /rite-ship; archived on close)"
+    WORKSPACE ||--o| recovery_attempts : "durable three-failure budget per root cause"
+    WORKSPACE ||--o| wright_allowlist : "root-owned exact source/test paths"
 
     ACTIVE {
         string slug "names the current workspace"
@@ -272,12 +294,15 @@ erDiagram
     }
     WORKSPACE {
         string slug PK ".devrites/work/<slug>/"
+        int schemaVersion "2; older additive layouts remain readable"
     }
     state {
-        string phase "frame | spec | temper | define | plan | vet | build | converge | prove | polish | review | seal | ship | done"
+        string phase "frame | spec | clarify | temper | define | plan | vet | build | converge | prove | polish | review | seal | ship | done"
         string status "running | awaiting_human | blocked | done"
         string active_slice "N: name"
         int afk_slices_remaining "from .devrites/AFK max_slices on first AFK build"
+        string return_phase "durable later-phase clarify return"
+        string return_next_action "restored only after fresh CLEAR"
         block awaiting_human "qid, gate, question, proposed, raised_at (only when paused)"
     }
     questions {
@@ -300,10 +325,11 @@ separately by `disable-model-invocation`.
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true): 30 skills"]
+    subgraph Public["Public (user-invocable: true): 31 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
+        RCL[/rite-clarify/]
         RT[/rite-temper/]
         R3[/rite-define/]
         RV[/rite-vet/]
@@ -351,23 +377,25 @@ flowchart TB
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
-    class R1,R2,RT,R3,RV,R4,R5,RC,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,RE,RCU,RDO,RPOV,RPF,IPT,D1,D2,D3 pub
+    class R1,R2,RCL,RT,R3,RV,R4,R5,RC,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,RE,RCU,RDO,RPOV,RPF,IPT,D1,D2,D3 pub
     class I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11,I12 int
 ```
 
 ## 9. AFK & HITL state machine
 
-The pause/resume primitive for HITL gates and the AFK loop discipline. The
-gate firing on `/rite-build` is the only writer of `Awaiting human`;
-`/rite-resolve` is the only canonical clearer.
+This state machine shows pauses for HITL gates and the AFK loop. Only the root
+`/rite-build` orchestrator writes `Awaiting human`, and only `/rite-resolve`
+clears it.
 
 ```mermaid
 stateDiagram-v2
     [*] --> running: /rite-build starts
     running --> running: AFK slice + advisory finding<br/>(log to questions.md, proceed)
-    running --> awaiting_human: HITL gate fires<br/>(blocking / escalating / out-of-gate)
-    running --> awaiting_human: Fail-on-red<br/>(tests/types/lint)
-    running --> awaiting_human: Irreversible risk<br/>(destructive · auth · public API)
+    running --> recovery: objective red<br/>(tests · types · lint · runtime · coverage)
+    recovery --> running: green<br/>recovery clear --class
+    recovery --> blocked: 3 failed attempts<br/>reproduction + dead ends; no question
+    running --> awaiting_human: product / scope / policy choice
+    running --> awaiting_human: irreversible risk or<br/>human-only access / action
     awaiting_human --> running: /rite-resolve qid "<answer>"
     awaiting_human --> running: /rite-resolve --drop qid
     awaiting_human --> blocked: /rite-plan repair (scope change)
@@ -383,6 +411,8 @@ stateDiagram-v2
     end note
 ```
 
-`AFK` mode (`.devrites/AFK` present) widens which transitions stay in
-`running` via `allow_gates`, but `blocking`, `escalating`, fail-on-red, and
-the irreversible-risk list always transition to `awaiting_human` regardless.
+`AFK` mode (`.devrites/AFK` present) widens which advisory/validating
+transitions stay in `running`. It never turns objective technical failures into
+human questions: bounded recovery either returns green or records a technical
+blocker. Genuine human-owned decisions and actions still transition to
+`awaiting_human`.

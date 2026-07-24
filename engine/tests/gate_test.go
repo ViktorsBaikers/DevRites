@@ -1,7 +1,7 @@
 package main_test
 
-// Issue 04: completeness gates (readiness, seal) and the stop-gate rest-point
-// invariant. CLI black-box against fixture workspaces.
+// CLI coverage for Issue 04: completeness gates and the stop-gate rest-point
+// invariant against fixture workspaces.
 
 import (
 	"bytes"
@@ -97,6 +97,15 @@ func TestReadinessAcceptsCanonicalTemperCursor(t *testing.T) {
 | next_action | /rite-define |
 `)
 	testutil.WriteFile(t, filepath.Join(root, "work", "tempered", "spec.md"), "# Spec\n\nReady.\n")
+	for name, body := range map[string]string{
+		"brief.md":             "# Brief\n\nReady.\n",
+		"decisions.md":         "# Decisions\n\nNone open.\n",
+		"assumptions.md":       "# Assumptions\n\nNone.\n",
+		"questions.md":         "# Questions\n\nNone.\n",
+		"decision-coverage.md": "# Decision coverage\n\nCLEAR.\n",
+	} {
+		testutil.WriteFile(t, filepath.Join(root, "work", "tempered", name), body)
+	}
 
 	out, errOut, code := runDevrites(t, root, "readiness", "tempered")
 	if code != 0 {
@@ -141,7 +150,7 @@ func TestStopGateEnforceBlocksClaimedDoneButUnproven(t *testing.T) {
 	root := newWorkspace(t)
 	setPhase(t, root, "auth-tokens", "seal") // claims completion
 	writeActive(t, root, "auth-tokens")      // proof.md is empty
-	out, _, code := runDevritesIO(t, root, "{}", []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
+	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0 (a block is a decision, not a crash)", code)
 	}
@@ -156,7 +165,7 @@ func TestStopGateEnforceBlocksClaimedDoneButUnproven(t *testing.T) {
 func TestStopGateDoesNotBlockNormalInProgress(t *testing.T) {
 	root := newWorkspace(t)
 	writeActive(t, root, "auth-tokens") // phase build: in progress, not claiming done
-	out, _, code := runDevritesIO(t, root, "{}", []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
+	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0", code)
 	}
@@ -180,7 +189,7 @@ Need a human answer.
 `), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	out, _, code := runDevritesIO(t, root, "{}", []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
+	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0 (a block is a decision, not a crash)", code)
 	}
@@ -207,7 +216,7 @@ Need validation.
 `), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	out, _, code := runDevritesIO(t, root, "{}", []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
+	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0", code)
 	}
@@ -224,7 +233,7 @@ func TestStopGateEnforceBlocksOnRed(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "features", "auth-tokens", ".red"), []byte("npm test\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	out, _, code := runDevritesIO(t, root, "{}", []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
+	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0", code)
 	}
@@ -238,7 +247,7 @@ func TestStopGateObserveModeNeverBlocks(t *testing.T) {
 	setPhase(t, root, "auth-tokens", "seal")
 	writeActive(t, root, "auth-tokens")
 	// Default mode (observe): even a violated invariant must not emit a block.
-	out, _, code := runDevritesIO(t, root, "{}", nil, "hook", "stop-gate", "--harness=claude")
+	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, nil, "hook", "stop-gate", "--harness=claude")
 	if code != 0 || strings.TrimSpace(out) != "" {
 		t.Errorf("observe mode emitted a block: exit=%d out=%q", code, out)
 	}
@@ -253,5 +262,51 @@ func TestStopGateLoopGuardLetsStop(t *testing.T) {
 		[]string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
 	if code != 0 || strings.TrimSpace(out) != "" {
 		t.Errorf("loop guard failed: exit=%d out=%q", code, out)
+	}
+}
+
+func TestStopGateInvalidInputFailsOpen(t *testing.T) {
+	root := newWorkspace(t)
+	setPhase(t, root, "auth-tokens", "seal")
+	writeActive(t, root, "auth-tokens")
+	for _, test := range []struct {
+		name    string
+		payload string
+	}{
+		{"empty", ""},
+		{"malformed", "not-json"},
+		{"missing", `{}`},
+		{"wrong type", `{"stop_hook_active":"false"}`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for attempt := 1; attempt <= 2; attempt++ {
+				out, _, code := runDevritesIO(t, root, test.payload,
+					[]string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
+				if code != 0 || strings.TrimSpace(out) != "" {
+					t.Errorf("attempt %d: invalid Stop input must fail open: exit=%d out=%q", attempt, code, out)
+				}
+			}
+		})
+	}
+}
+
+func TestStopGateControlPlaneKillPathsAllow(t *testing.T) {
+	root := newWorkspace(t)
+	setPhase(t, root, "auth-tokens", "seal")
+	writeActive(t, root, "auth-tokens")
+	for _, test := range []struct {
+		name string
+		env  []string
+	}{
+		{"disabled id", []string{"DEVRITES_STOP_GATE=enforce", "DEVRITES_DISABLED_HOOKS=stop-gate"}},
+		{"minimal profile", []string{"DEVRITES_STOP_GATE=enforce", "DEVRITES_HOOK_PROFILE=minimal"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, test.env,
+				"hook", "stop-gate", "--harness=claude")
+			if code != 0 || strings.TrimSpace(out) != "" {
+				t.Errorf("control-plane kill must allow: exit=%d out=%q", code, out)
+			}
+		})
 	}
 }

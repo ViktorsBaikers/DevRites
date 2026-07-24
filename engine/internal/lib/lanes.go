@@ -9,12 +9,15 @@ import (
 	"strings"
 )
 
-var lanePathRe = regexp.MustCompile("`([^`]+)`")
+var (
+	lanePathRe   = regexp.MustCompile("`([^`]+)`")
+	laneForgeYes = regexp.MustCompile(`(?i)^Forge:[[:space:]]+yes(?:[[:space:]]+(?:—|-)[[:space:]]+.+)?$`)
+)
 
-// Lanes plans conservative parallelism for a feature without changing state. It
-// never authorizes parallel production writes; it only labels read-only lanes,
-// Forge candidates, and obviously independent slices so the human/agent can keep
-// DevRites' one-verified-slice default intact.
+// Lanes suggests conservative parallel work without changing state. It labels
+// read-only lanes, Forge candidates, and independent slices but does not
+// authorize parallel production writes, preserving the one-verified-slice
+// default.
 func Lanes(root string, args []string, stdout, stderr io.Writer) int {
 	if argAt(args, 0) != "plan" {
 		fmt.Fprintln(stderr, "usage: devrites-engine lanes plan [slug]")
@@ -62,7 +65,11 @@ func Lanes(root string, args []string, stdout, stderr io.Writer) int {
 		if len(s.paths) > 0 {
 			conflict = strings.Join(s.paths, ", ")
 		}
-		fmt.Fprintf(stdout, "- %s: %s: %s\n", s.name, kind, conflict)
+		fmt.Fprintf(stdout, "- %s: %s: %s", s.name, kind, conflict)
+		if s.forge {
+			fmt.Fprint(stdout, "; advisory only. `devrites-engine forge plan` must authorize 2 or 3 strategies")
+		}
+		fmt.Fprintln(stdout)
 	}
 	return 0
 }
@@ -91,8 +98,7 @@ func parseLaneSlices(md string) []laneSlice {
 		if cur == nil {
 			continue
 		}
-		lower := strings.ToLower(trim)
-		if strings.Contains(lower, "forge: yes") || strings.Contains(lower, "forge yes") {
+		if laneForgeYes.MatchString(trim) {
 			cur.forge = true
 		}
 		for _, m := range lanePathRe.FindAllStringSubmatch(trim, -1) {

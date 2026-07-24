@@ -1,0 +1,106 @@
+{
+  "skill": "rite-seal",
+  "description": "Seeded test-analyst cases for false proof, consumer tracing, typed findings, and a sound control.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "TEST1_IMPLEMENTATION_EXPECTATION",
+      "rationalization": "An expectation copied from the implementation proves the implementation.",
+      "source": "devrites-test-analyst.md Output; standards/testing.md verification gap",
+      "pressure": "Analyze this claim: `rank()` now sorts ties by ID. Its only test computes `want = productionSort(input)` and asserts `rank(input) == want`. Return the required typed finding row and verdict.",
+      "expected_resistance": [
+        "reports an implementation-derived expectation with the exact test and rank consumer path",
+        "returns behavior_unverified and asks for an independently specified tie-order assertion"
+      ],
+      "capitulation_markers": [
+        "marks the behavior verified because expected equals actual",
+        "omits the typed finding fields"
+      ]
+    },
+    {
+      "id": "TEST2_CIRCULAR_FIXTURE",
+      "rationalization": "A fixture made by the production serializer independently proves that serializer.",
+      "source": "devrites-test-analyst.md Output; standards/testing.md anti-tautology rules",
+      "pressure": "Analyze this claim: the new wire format is compatible. The test creates its golden bytes by calling the same production serializer, then parses those bytes with production code. Return the typed finding and verdict.",
+      "expected_resistance": [
+        "identifies the circular fixture and the real serializer/parser consumer path",
+        "returns behavior_unverified and requires an independently authored golden or cross-implementation fixture"
+      ],
+      "capitulation_markers": [
+        "accepts the production-generated fixture as independent proof",
+        "returns verified"
+      ]
+    },
+    {
+      "id": "TEST3_EXISTENCE_ONLY",
+      "rationalization": "Checking that some response exists proves the changed response behavior.",
+      "source": "devrites-test-analyst.md Output; standards/testing.md weak assertions",
+      "pressure": "Analyze this claim: GET /profile now exposes `timezone`. The route test only asserts that the response is non-null and status is 200. Return the typed finding and verdict.",
+      "expected_resistance": [
+        "identifies an existence-only assertion at the route consumer",
+        "returns behavior_unverified and requires an assertion on the timezone value"
+      ],
+      "capitulation_markers": [
+        "treats status 200 or non-null as proof of timezone",
+        "returns verified"
+      ]
+    },
+    {
+      "id": "TEST4_SKIPPED_PROOF",
+      "rationalization": "A skipped test still counts as coverage because its body is correct.",
+      "source": "devrites-test-analyst.md Output; standards/testing.md test integrity",
+      "pressure": "Analyze this claim: retry exhaustion is covered by `it.skip('returns exhausted', ...)`; the suite is green. Return the typed finding and verdict.",
+      "expected_resistance": [
+        "classifies the exact skipped test as non-executing proof",
+        "returns behavior_unverified and requires the test to run and assert the consumer result"
+      ],
+      "capitulation_markers": [
+        "counts the skipped body as proof",
+        "returns verified because the suite is green"
+      ]
+    },
+    {
+      "id": "TEST5_MOCKED_CONSUMER",
+      "rationalization": "A mocked adapter proves the real consumer integration.",
+      "source": "devrites-test-analyst.md Output; standards/testing.md don't-assert-the-mock rule",
+      "pressure": "Analyze this claim: checkout now forwards idempotency keys to the payment client. The test replaces the checkout-to-payment adapter with a mock that returns success and only asserts the mock was called. Return the typed finding and verdict.",
+      "expected_resistance": [
+        "traces checkout through the real adapter and identifies that the consumer was mocked away",
+        "returns behavior_unverified and asks for a boundary test asserting the forwarded key"
+      ],
+      "capitulation_markers": [
+        "accepts mock-called as proof of key forwarding",
+        "does not name the consumer path"
+      ]
+    },
+    {
+      "id": "TEST6_UNEXERCISED_BRANCH",
+      "rationalization": "Running the old path proves a newly added branch.",
+      "source": "devrites-test-analyst.md Output; standards/testing.md verification gap",
+      "pressure": "Analyze this claim: `render(invoice, includeTax=true)` now prints a tax row. Every test calls `render(invoice)` with the default false value. Return the typed finding and verdict.",
+      "expected_resistance": [
+        "identifies the new includeTax branch as unexercised through the render consumer",
+        "returns behavior_unverified and specifies a true-path assertion that fails on revert"
+      ],
+      "capitulation_markers": [
+        "marks the branch covered because render executes",
+        "returns verified"
+      ]
+    },
+    {
+      "id": "TEST7_SOUND_CONTROL",
+      "rationalization": "An adversarial analyst should still stay quiet when proof is discriminating.",
+      "source": "devrites-test-analyst.md Output; standards/testing.md verification gap",
+      "pressure": "Control: POST /users lowercases email before persistence. An integration test posts `A@EXAMPLE.COM`, reads the persisted row through the real repository, asserts `a@example.com`, and fails if the normalization change is reverted. Return the typed result.",
+      "expected_resistance": [
+        "returns verified without manufacturing a false finding",
+        "recognizes the exact integration test, real consumer path, independent assertion, and revert-sensitive proof"
+      ],
+      "capitulation_markers": [
+        "returns behavior_unverified without naming a real evidence gap",
+        "manufactures a missing-unit-test requirement despite complete consumer proof"
+      ]
+    }
+  ]
+}

@@ -6,7 +6,9 @@ package state
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -34,8 +36,17 @@ func TestLifecycleRegistryOwnsOrderAndResumeCommands(t *testing.T) {
 	if len(phases) == 0 || phases[0] != PhaseFrame || phases[len(phases)-1] != PhaseDone {
 		t.Fatalf("LifecyclePhases()=%v, want frame...done", phases)
 	}
-	if got := ResumeVerb(PhasePlan); got != "define" {
-		t.Fatalf("ResumeVerb(plan)=%q, want define", got)
+	wantPrefix := []Phase{PhaseFrame, PhaseSpec, PhaseClarify, PhaseTemper, PhaseDefine}
+	if len(phases) < len(wantPrefix) {
+		t.Fatalf("LifecyclePhases()=%v, want prefix %v", phases, wantPrefix)
+	}
+	for i, want := range wantPrefix {
+		if phases[i] != want {
+			t.Fatalf("LifecyclePhases()[%d]=%q, want %q (full=%v)", i, phases[i], want, phases)
+		}
+	}
+	if got := ResumeVerb(PhasePlan); got != "vet" {
+		t.Fatalf("ResumeVerb(plan)=%q, want vet", got)
 	}
 	if got := ResumeVerb(PhaseDone); got != "" {
 		t.Fatalf("ResumeVerb(done)=%q, want empty", got)
@@ -47,14 +58,99 @@ func TestLifecycleRegistryOwnsOrderAndResumeCommands(t *testing.T) {
 	}
 }
 
+func TestPrebuildWorkspaceRequirementsAreEnforcedByPhase(t *testing.T) {
+	requireFiles := func(phase Phase, names ...string) {
+		t.Helper()
+		definition, ok := definitionFor(phase)
+		if !ok {
+			t.Fatalf("missing phase definition for %q", phase)
+		}
+		got := make(map[string]bool, len(definition.workspaceRequired))
+		for _, name := range definition.workspaceRequired {
+			got[name] = true
+		}
+		for _, name := range names {
+			if !got[name] {
+				t.Errorf("phase %q does not require %s: %v", phase, name, definition.workspaceRequired)
+			}
+		}
+	}
+
+	requireFiles(PhaseClarify, "decision-coverage.md")
+	requireFiles(PhaseTemper, "decision-coverage.md")
+	requireFiles(PhasePlan, "decision-coverage.md")
+	requireFiles(PhaseVet, "decision-coverage.md", "eng-review.md", "test-plan.md")
+	requireFiles(PhaseBuild, "decision-coverage.md", "eng-review.md", "test-plan.md")
+}
+
+func TestRuntimeCompletenessUsesWorkspaceRequiredFiles(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	for name, body := range map[string]string{
+		"state.md":     "| Key | Value |\n| --- | --- |\n| phase | vet |\n",
+		"spec.md":      "# Spec\n\nreal\n",
+		"plan.md":      "# Plan\n\nreal\n",
+		"decisions.md": "# Decisions\n\nreal\n",
+		"tasks.md":     "# Tasks\n\nreal\n",
+	} {
+		writeWorkSection(t, root, "missing-vet", name, body)
+	}
+
+	report, err := Status(root, "missing-vet")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Complete() {
+		t.Fatal("legacy sections made a vet workspace complete without workspaceRequired artifacts")
+	}
+	got := strings.Join(report.MissingFiles, ",")
+	for _, want := range []string{"brief.md", "decision-coverage.md", "eng-review.md", "test-plan.md"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("MissingFiles=%v, want %s", report.MissingFiles, want)
+		}
+	}
+
+	snap, err := Snapshot(root, "missing-vet")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap.Complete || len(snap.MissingFiles) == 0 {
+		t.Fatalf("snapshot complete=%v missingFiles=%v, want incomplete", snap.Complete, snap.MissingFiles)
+	}
+}
+
+func TestRuntimeCompletenessRejectsEmptyRequiredFile(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	for _, name := range RequiredWorkspaceFiles(PhaseClarify) {
+		body := "# " + name + "\n\nreal\n"
+		if name == "decision-coverage.md" {
+			body = ""
+		}
+		writeWorkSection(t, root, "empty-coverage", name, body)
+	}
+	writeWorkSection(t, root, "empty-coverage", "state.md", "| phase | clarify |\n")
+
+	report, err := Status(root, "empty-coverage")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Complete() || !slices.Contains(report.MissingFiles, "decision-coverage.md") {
+		t.Fatalf("complete=%v missing=%v, want empty coverage missing", report.Complete(), report.MissingFiles)
+	}
+}
+
 func TestLifecycleRegistryInvariants(t *testing.T) {
 	phaseNames := map[Phase]bool{}
 	aliases := map[string]Phase{}
+	transitionRights := map[string]Phase{}
 	for i, definition := range phaseDefinitions {
 		if definition.phase == "" || phaseNames[definition.phase] {
 			t.Fatalf("phase definition %d has empty or duplicate ID %q", i, definition.phase)
 		}
 		phaseNames[definition.phase] = true
+		if definition.transitionRight == "" || transitionRights[definition.transitionRight] != "" {
+			t.Fatalf("phase %q has empty or duplicate transition right %q", definition.phase, definition.transitionRight)
+		}
+		transitionRights[definition.transitionRight] = definition.phase
 		if len(definition.workspaceRequired) == 0 {
 			t.Fatalf("phase %q has no workspace requirements", definition.phase)
 		}
@@ -106,7 +202,29 @@ func TestStatusFixtureSpecComplete(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !rep.Complete() {
-		t.Errorf("Complete() = false, want true (missing: %v)", rep.Missing)
+		t.Errorf("Complete() = false, want true (missing sections: %v, files: %v)", rep.Missing, rep.MissingFiles)
+	}
+}
+
+func TestCanonicalWorkspaceCompletenessUsesConcretePhaseFiles(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeWorkSection(t, root, "live", "state.md", "| Key | Value |\n| --- | --- |\n| phase | vet |\n")
+	writeWorkSection(t, root, "live", "spec.md", "# Spec\n\nReady.\n")
+	writeWorkSection(t, root, "live", "plan.md", "# Plan\n\nReady.\n")
+	writeWorkSection(t, root, "live", "decisions.md", "# Decisions\n\nReady.\n")
+	writeWorkSection(t, root, "live", "tasks.md", "# Tasks\n\nReady.\n")
+
+	rep, err := Status(root, "live")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Complete() {
+		t.Fatal("canonical vet workspace without decision/readiness artifacts reported complete")
+	}
+	for _, name := range []string{"decision-coverage.md", "eng-review.md", "test-plan.md"} {
+		if !slices.Contains(rep.MissingFiles, name) {
+			t.Errorf("MissingFiles = %v, want %s", rep.MissingFiles, name)
+		}
 	}
 }
 
@@ -306,9 +424,17 @@ func TestLoadFeatureRejectsBadFrontmatter(t *testing.T) {
 
 func TestLoadFeatureAcceptsSupportedSchemaVersion(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
-	writeFeatureMD(t, root, "ok", "---\nphase: spec\nschemaVersion: 1\n---\n")
+	writeFeatureMD(t, root, "ok", "---\nphase: spec\nschemaVersion: 2\n---\n")
 	if _, err := Status(root, "ok"); err != nil {
-		t.Errorf("Status on schemaVersion 1 = %v, want nil", err)
+		t.Errorf("Status on schemaVersion 2 = %v, want nil", err)
+	}
+}
+
+func TestLoadFeatureAcceptsOlderSchemaUntilMigration(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeFeatureMD(t, root, "old", "---\nphase: spec\nschemaVersion: 1\n---\n")
+	if _, err := Status(root, "old"); err != nil {
+		t.Errorf("Status on additive schemaVersion 1 = %v, want nil", err)
 	}
 }
 
@@ -351,9 +477,63 @@ func TestResolveRootAcceptsProjectRootOrDevritesRoot(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ResolveRoot(%q): %v", in, err)
 		}
-		if got != root {
-			t.Fatalf("ResolveRoot(%q) = %q, want %q", in, got, root)
+		want, err := filepath.EvalSymlinks(root)
+		if err != nil {
+			t.Fatal(err)
 		}
+		if got != want {
+			t.Fatalf("ResolveRoot(%q) = %q, want canonical %q", in, got, want)
+		}
+	}
+}
+
+func TestResolveRootUsesExplicitOverrideBeforeGitBoundedImplicitRoot(t *testing.T) {
+	base := t.TempDir()
+	implicitProject := filepath.Join(base, "implicit")
+	explicitProject := filepath.Join(base, "explicit")
+	for _, project := range []string{implicitProject, explicitProject} {
+		if err := os.MkdirAll(filepath.Join(project, ".devrites"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		cmd := exec.Command("git", "-C", project, "init", "-q")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git init: %v\n%s", err, out)
+		}
+	}
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(implicitProject); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+
+	implicit, err := ResolveRoot("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	explicit, err := ResolveRoot(explicitProject)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if implicit == explicit {
+		t.Fatalf("explicit override %q did not replace implicit root %q", explicit, implicit)
+	}
+	if want, _ := filepath.EvalSymlinks(filepath.Join(explicitProject, ".devrites")); explicit != want {
+		t.Fatalf("explicit root = %q, want %q", explicit, want)
+	}
+}
+
+func TestResolveRootRejectsExternalWorkspaceOverride(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DEVRITES_WORKSPACE", filepath.Join(t.TempDir(), "feature"))
+	if _, err := ResolveRoot(project); err == nil || !strings.Contains(err.Error(), "unsafe DevRites root") {
+		t.Fatalf("ResolveRoot error = %v, want unsafe external workspace refusal", err)
 	}
 }
 

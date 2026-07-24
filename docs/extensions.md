@@ -66,7 +66,7 @@ devrites-engine extensions sync        # mirror valid extensions into .claude/ f
 Public schemas live in [`../schemas/`](../schemas/): `extension-component.schema.json` and
 `provenance.schema.json` for extension metadata, plus workspace/hook schemas for editor tooling.
 
-`component.yaml` is the DevRites-native answer to Spec Kit-style extension/preset/bundle metadata.
+`component.yaml` is DevRites' native extension, preset, and bundle metadata.
 It is **not** a plugin package descriptor; it documents what the npm-installed engine may copy or
 validate inside the current project.
 

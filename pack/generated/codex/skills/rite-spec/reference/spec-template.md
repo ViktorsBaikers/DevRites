@@ -1,13 +1,13 @@
 # `spec.md` template
 
 Write the product contract: WHAT users get, WHY it matters, how success is
-measured, and what is out of scope. Keep HOW in `plan.md`; put topology and
+measured, and what is out of scope. Keep HOW in `plan.md`; put technical topology and
 diagrams in `architecture.md` / `flows.md`; put coverage in `traceability.md`.
 
 Rules:
 
 1. Mark unknowns with `[NEEDS CLARIFICATION: <question>]`; blocking unknowns
-   stop `$rite-define`.
+   stop `$rite-clarify`.
 2. Use stable IDs: `REQ-001` for requirements and `AC-001` for acceptance.
 3. Link to source artifacts instead of duplicating them.
 4. Keep the file compact. If it exceeds the schema budget, add
@@ -84,11 +84,17 @@ Use `resolved/test`, `resolved/judgment`, `dismissed`, or `unresolved`.
 - Does not own: <adjacent area>.
 - Placement summary: <one-line module/layer summary>; full technical map lives in `architecture.md`.
 
+## Coverage seed
+- Actors/journeys/components: <material surfaces discovered while authoring>.
+- States/data/contracts/integrations: <material boundaries discovered>.
+- Operations/proof surfaces: <configuration, observability, rollout/rollback, evidence constraints>.
+
 ## References
 - `brief.md` - request, objective, non-goals, success definition.
 - `architecture.md` - technical placement and integration points.
 - `flows.md` - diagrams when useful.
 - `decisions.md` - ADR-style product/technical decisions.
+- `decision-coverage.md` - topology scan and clarity verdict once `$rite-clarify` runs.
 - `traceability.md` - AC/REQ coverage once `$rite-define` runs.
 - `design-brief.md` - UI direction when UI is in scope.
 
@@ -107,4 +113,5 @@ Use `resolved/test`, `resolved/judgment`, `dismissed`, or `unresolved`.
 - [ ] Non-goals and scope boundaries are explicit.
 - [ ] Architecture/flows/decisions are linked out instead of duplicated here.
 - [ ] UI work has `design-brief.md`; non-UI work states UI is out of scope.
+- [ ] Coverage seed names the material surfaces `$rite-clarify` must scan.
 ```

@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -26,6 +27,7 @@ import (
 	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/hostpack"
 	"github.com/devrites/devrites/internal/iohooks"
+	"github.com/devrites/devrites/internal/safepath"
 	"github.com/devrites/devrites/internal/version"
 )
 
@@ -78,10 +80,20 @@ type runner struct {
 	source           string
 	manifest         []string
 	records          map[string]string
-	prev             map[string]bool
+	prev             map[string]managedRecord
+	preflight        map[string]pathSnapshot
 	stats            stats
 	releaseBinaryTag string
 	preparedBinary   string
+}
+
+type managedRecord struct {
+	Hash string
+}
+
+type pathSnapshot struct {
+	missing bool
+	hash    string
 }
 
 func DefaultOptions(mode Mode) Options {
@@ -213,7 +225,7 @@ func flagWasSet(flags *flag.FlagSet, name string) bool {
 func usage(mode Mode) string {
 	switch mode {
 	case ModeUninstall:
-		return "usage: devrites-engine uninstall [--target DIR] [--dry-run] [--keep-binary]\n"
+		return "usage: devrites-engine uninstall [--target DIR] [--dry-run] [--force] [--keep-binary]\n"
 	case ModeUpdate:
 		return "usage: devrites-engine update [--target DIR] [--dry-run] [--force] [--check] [--to TAG] [install flags]\n"
 	default:
@@ -277,7 +289,16 @@ func newRunner(opts Options) (*runner, error) {
 	if payload != "" {
 		payload, _ = filepath.Abs(payload)
 	}
-	r := &runner{opts: opts, target: target, payload: payload, payloadFS: os.DirFS(payload), source: source, prev: map[string]bool{}, records: map[string]string{}}
+	r := &runner{
+		opts:      opts,
+		target:    target,
+		payload:   payload,
+		payloadFS: os.DirFS(payload),
+		source:    source,
+		prev:      map[string]managedRecord{},
+		records:   map[string]string{},
+		preflight: map[string]pathSnapshot{},
+	}
 	if opts.Mode != ModeUninstall {
 		if err := r.validatePayload(); err != nil {
 			return nil, fmt.Errorf("validate payload: %w", err)
@@ -343,6 +364,14 @@ func (r *runner) install() error {
 		fmt.Fprintln(r.opts.Stdout, "  (dry run - no changes will be made)")
 	}
 	fmt.Fprintln(r.opts.Stdout)
+	if r.preparedBinary != "" {
+		if _, err := verifyEngineBinary(r.preparedBinary, r.binaryTag(), 30*time.Second); err != nil {
+			return fmt.Errorf("verify staged engine binary %s: %w", r.preparedBinary, err)
+		}
+	}
+	if err := r.preflightInstall(); err != nil {
+		return err
+	}
 
 	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex) {
 		if err := r.installTree(tree.PayloadPrefix, tree.TargetPrefix); err != nil {
@@ -424,12 +453,233 @@ func (r *runner) installFile(src, rel string) error {
 	return r.installData(data, rel)
 }
 
+func (r *runner) preflightInstall() error {
+	desired, err := r.desiredInstallPaths()
+	if err != nil {
+		return fmt.Errorf("preflight install paths: %w", err)
+	}
+	var conflicts []string
+	for rel := range desired {
+		snapshot, err := r.rememberPath(rel)
+		if err != nil {
+			return err
+		}
+		record, managed := r.prev[rel]
+		if managed && !snapshot.missing {
+			if kind := managedConflict(record, snapshot); kind != "" && !r.opts.Force {
+				conflicts = append(conflicts, fmt.Sprintf("%s: %s", kind, rel))
+			}
+		}
+	}
+	for rel, record := range r.prev {
+		if desired[rel] || hostpack.PreserveOnPrune(rel) {
+			continue
+		}
+		snapshot, err := r.rememberPath(rel)
+		if err != nil {
+			return err
+		}
+		if !snapshot.missing {
+			if kind := managedConflict(record, snapshot); kind != "" && !r.opts.Force {
+				conflicts = append(conflicts, fmt.Sprintf("%s: %s", kind, rel))
+			}
+		}
+		if merge, ok := hostpack.ManagedMergeForMarker(rel); ok {
+			if _, err := r.rememberPath(merge.TargetRel); err != nil {
+				return err
+			}
+		}
+	}
+	for _, rel := range r.installMergeTargets() {
+		if _, err := r.rememberPath(rel); err != nil {
+			return err
+		}
+	}
+	if _, err := r.rememberPath(ManifestName); err != nil {
+		return err
+	}
+	return managedConflictError(conflicts)
+}
+
+func (r *runner) preflightUninstall(entries []string) error {
+	var conflicts []string
+	for _, rel := range entries {
+		if merge, ok := hostpack.ManagedMergeForMarker(rel); ok {
+			if _, err := r.rememberPath(merge.TargetRel); err != nil {
+				return err
+			}
+		}
+		if !hostpack.ShouldRemoveOnUninstall(rel, entries) {
+			continue
+		}
+		snapshot, err := r.rememberPath(rel)
+		if err != nil {
+			return err
+		}
+		if snapshot.missing {
+			continue
+		}
+		if kind := managedConflict(r.prev[rel], snapshot); kind != "" && !r.opts.Force {
+			conflicts = append(conflicts, fmt.Sprintf("%s: %s", kind, rel))
+		}
+	}
+	if _, err := r.rememberPath(ManifestName); err != nil {
+		return err
+	}
+	return managedConflictError(conflicts)
+}
+
+func (r *runner) desiredInstallPaths() (map[string]bool, error) {
+	out := map[string]bool{".devrites/README.md": true}
+	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex) {
+		err := fs.WalkDir(r.payloadFS, tree.PayloadPrefix, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			rel, err := filepath.Rel(tree.PayloadPrefix, path)
+			if err != nil {
+				return err
+			}
+			out[filepath.ToSlash(filepath.Join(tree.TargetPrefix, rel))] = true
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	if r.opts.WithSkills && r.opts.AliasMode == "all" {
+		for _, alias := range hostpack.Aliases {
+			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex) {
+				out[rel] = true
+			}
+		}
+	}
+	if r.opts.WithSkills && r.opts.WithCodex {
+		out[hostpack.CodexAgentsMerge.MarkerRel] = true
+		out[hostpack.CodexHooksMerge.MarkerRel] = true
+	}
+	if r.opts.WithSkills {
+		out[hostpack.ClaudeSettingsMerge.MarkerRel] = true
+	}
+	return out, nil
+}
+
+func (r *runner) installMergeTargets() []string {
+	var out []string
+	if r.opts.WithSkills {
+		out = append(out, hostpack.ClaudeSettingsMerge.TargetRel)
+		if r.opts.WithCodex {
+			out = append(out, hostpack.CodexAgentsMerge.TargetRel, hostpack.CodexHooksMerge.TargetRel)
+		}
+	}
+	return out
+}
+
+func (r *runner) rememberPath(rel string) (pathSnapshot, error) {
+	rel = filepath.ToSlash(rel)
+	if snapshot, ok := r.preflight[rel]; ok {
+		return snapshot, nil
+	}
+	snapshot, err := inspectManagedPath(r.target, rel)
+	if err != nil {
+		return pathSnapshot{}, err
+	}
+	r.preflight[rel] = snapshot
+	return snapshot, nil
+}
+
+func (r *runner) recheckPath(rel string) error {
+	rel = filepath.ToSlash(rel)
+	before, ok := r.preflight[rel]
+	if !ok {
+		return fmt.Errorf("path %s was not preflighted", rel)
+	}
+	now, err := inspectManagedPath(r.target, rel)
+	if err != nil {
+		return err
+	}
+	if now != before {
+		return fmt.Errorf("refusing to change %s: file changed after preflight; retry the operation", rel)
+	}
+	return nil
+}
+
+func inspectManagedPath(target, rel string) (pathSnapshot, error) {
+	native := filepath.FromSlash(rel)
+	if !filepath.IsLocal(native) {
+		return pathSnapshot{}, fmt.Errorf("refusing unsafe managed path %q", rel)
+	}
+	dest := filepath.Join(target, native)
+	if !safepath.WithinResolved(dest, target) {
+		return pathSnapshot{}, fmt.Errorf("refusing managed path outside target: %s", rel)
+	}
+	walk := target
+	parts := strings.Split(native, string(filepath.Separator))
+	for _, part := range parts {
+		walk = filepath.Join(walk, part)
+		info, err := os.Lstat(walk)
+		if os.IsNotExist(err) {
+			return pathSnapshot{missing: true}, nil
+		}
+		if err != nil {
+			return pathSnapshot{}, fmt.Errorf("inspect managed path %s: %w", rel, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return pathSnapshot{}, fmt.Errorf("refusing symlink or junction in managed path: %s", rel)
+		}
+	}
+	info, err := os.Lstat(dest)
+	if os.IsNotExist(err) {
+		return pathSnapshot{missing: true}, nil
+	}
+	if err != nil {
+		return pathSnapshot{}, fmt.Errorf("inspect managed path %s: %w", rel, err)
+	}
+	if !info.Mode().IsRegular() {
+		return pathSnapshot{}, fmt.Errorf("refusing non-regular managed path: %s", rel)
+	}
+	f, err := os.Open(dest)
+	if err != nil {
+		return pathSnapshot{}, fmt.Errorf("read managed path %s: %w", rel, err)
+	}
+	defer f.Close()
+	sum := sha256.New()
+	if _, err := io.Copy(sum, f); err != nil {
+		return pathSnapshot{}, fmt.Errorf("hash managed path %s: %w", rel, err)
+	}
+	return pathSnapshot{hash: "sha256:" + hex.EncodeToString(sum.Sum(nil))}, nil
+}
+
+func managedConflict(record managedRecord, snapshot pathSnapshot) string {
+	if record.Hash == "" {
+		return "legacy manifest entry (no hash)"
+	}
+	if record.Hash != snapshot.hash {
+		return "customized managed file"
+	}
+	return ""
+}
+
+func managedConflictError(conflicts []string) error {
+	if len(conflicts) == 0 {
+		return nil
+	}
+	sort.Strings(conflicts)
+	return fmt.Errorf("managed files differ from the install manifest:\n  %s\nrerun with --force to replace or remove these files", strings.Join(conflicts, "\n  "))
+}
+
 func (r *runner) installData(data []byte, rel string) error {
 	dest := filepath.Join(r.target, filepath.FromSlash(rel))
 	action := "install"
 	if exists(dest) {
+		record, managed := r.prev[rel]
 		switch {
-		case r.prev[rel]:
+		case managed && managedConflict(record, r.preflight[filepath.ToSlash(rel)]) != "" && r.opts.Force:
+			action = "overwrite(force-customized)"
+		case managed:
 			action = "overwrite"
 		case r.opts.Force:
 			action = "overwrite(force)"
@@ -445,8 +695,13 @@ func (r *runner) installData(data []byte, rel string) error {
 	}
 	if r.opts.DryRun {
 		fmt.Fprintf(r.opts.Stdout, "  [%s] %s\n", action, rel)
-	} else if err := fsutil.WriteFileAtomic(dest, data, 0o644); err != nil {
-		return fmt.Errorf("cannot write %s: %w", rel, err)
+	} else {
+		if err := r.recheckPath(rel); err != nil {
+			return err
+		}
+		if err := fsutil.WriteFileAtomic(dest, data, 0o644); err != nil {
+			return fmt.Errorf("cannot write %s: %w", rel, err)
+		}
 	}
 	r.addManifest(rel)
 	r.addInstallRecord(rel, data)
@@ -492,6 +747,9 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 		}
 		fmt.Fprintf(r.opts.Stdout, "  [merge] %s (%s)\n", merge.TargetRel, verb)
 	} else {
+		if err := r.recheckPath(merge.TargetRel); err != nil {
+			return err
+		}
 		next := block
 		if current, err := os.ReadFile(dest); err == nil {
 			next = hostpack.MergeMarkerBlock(current, block, merge.Begin, merge.End)
@@ -512,6 +770,9 @@ func (r *runner) mergeJSONHooks(merge hostpack.JSONMerge) error {
 	if r.opts.DryRun {
 		fmt.Fprintf(r.opts.Stdout, "  [merge] %s\n", merge.DryRunText)
 		return r.installMarker(merge.MarkerRel, merge.MarkerText)
+	}
+	if err := r.recheckPath(merge.TargetRel); err != nil {
+		return err
 	}
 	next := devrites
 	if current, err := readJSON(dest); err == nil {
@@ -546,7 +807,7 @@ func (r *runner) seedClaudeSettings() error {
 		if err != nil {
 			return fmt.Errorf("load Claude settings payload: %w", err)
 		}
-		managed := r.prev[merge.MarkerRel]
+		_, managed := r.prev[merge.MarkerRel]
 		if reflect.DeepEqual(current, devrites) {
 			if managed {
 				return r.installMarker(merge.MarkerRel, merge.MarkerText)
@@ -562,6 +823,9 @@ func (r *runner) seedClaudeSettings() error {
 			if err != nil {
 				return fmt.Errorf("read payload claude/settings.json: %w", err)
 			}
+			if err := r.recheckPath(rel); err != nil {
+				return err
+			}
 			return fsutil.WriteFileAtomic(dest, data, 0o644)
 		}
 		return r.mergeJSONHooks(merge)
@@ -573,6 +837,9 @@ func (r *runner) seedClaudeSettings() error {
 	data, err := fs.ReadFile(r.payloadFS, merge.PayloadRel)
 	if err != nil {
 		return fmt.Errorf("read payload claude/settings.json: %w", err)
+	}
+	if err := r.recheckPath(rel); err != nil {
+		return err
 	}
 	return fsutil.WriteFileAtomic(dest, data, 0o644)
 }
@@ -627,10 +894,20 @@ func (r *runner) pruneDropped() error {
 		if !exists(dead) {
 			continue
 		}
+		action := "prune"
+		if managedConflict(r.prev[rel], r.preflight[rel]) != "" && r.opts.Force {
+			action = "prune(force-customized)"
+		}
 		if r.opts.DryRun {
-			fmt.Fprintf(r.opts.Stdout, "  [prune] %s (dropped from pack)\n", rel)
+			fmt.Fprintf(r.opts.Stdout, "  [%s] %s (dropped from pack)\n", action, rel)
 		} else {
+			if err := r.recheckPath(rel); err != nil {
+				return err
+			}
 			if merge, ok := hostpack.ManagedMergeForMarker(rel); ok {
+				if err := r.recheckPath(merge.TargetRel); err != nil {
+					return err
+				}
 				if merge.TargetRel == hostpack.CodexHooksMerge.TargetRel || merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
 					preserveEmpty := merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel
 					_ = r.stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), preserveEmpty)
@@ -642,7 +919,7 @@ func (r *runner) pruneDropped() error {
 				return fmt.Errorf("remove %s: %w", rel, err)
 			}
 			pruneEmptyDirs(filepath.Dir(dead), r.target)
-			fmt.Fprintf(r.opts.Stdout, "  [prune] %s\n", rel)
+			fmt.Fprintf(r.opts.Stdout, "  [%s] %s\n", action, rel)
 		}
 		r.stats.pruned++
 	}
@@ -665,6 +942,9 @@ func (r *runner) writeManifest() error {
 	}
 	for _, rel := range r.manifest {
 		b.WriteString(rel + "\n")
+	}
+	if err := r.recheckPath(ManifestName); err != nil {
+		return err
 	}
 	return fsutil.WriteFileAtomic(filepath.Join(r.target, ManifestName), []byte(b.String()), 0o644)
 }
@@ -705,6 +985,9 @@ func (r *runner) uninstall() error {
 		fmt.Fprintln(r.opts.Stdout, "  (dry run - no changes)")
 	}
 	fmt.Fprintln(r.opts.Stdout)
+	if err := r.preflightUninstall(entries); err != nil {
+		return err
+	}
 
 	for _, rel := range entries {
 		merge, ok := hostpack.ManagedMergeForMarker(rel)
@@ -714,6 +997,12 @@ func (r *runner) uninstall() error {
 		if r.opts.DryRun {
 			fmt.Fprintf(r.opts.Stdout, "  [merge-remove] %s\n", merge.DryRun)
 			continue
+		}
+		if err := r.recheckPath(rel); err != nil {
+			return err
+		}
+		if err := r.recheckPath(merge.TargetRel); err != nil {
+			return err
 		}
 		if merge.TargetRel == hostpack.CodexHooksMerge.TargetRel || merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
 			preserveEmpty := merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel
@@ -734,10 +1023,19 @@ func (r *runner) uninstall() error {
 		}
 		dest := filepath.Join(r.target, filepath.FromSlash(rel))
 		if exists(dest) {
+			action := "remove"
+			if managedConflict(r.prev[rel], r.preflight[rel]) != "" && r.opts.Force {
+				action = "remove(force-customized)"
+			}
 			if r.opts.DryRun {
-				fmt.Fprintf(r.opts.Stdout, "  [remove] %s\n", rel)
-			} else if err := os.Remove(dest); err != nil && !os.IsNotExist(err) {
-				return fmt.Errorf("remove %s: %w", rel, err)
+				fmt.Fprintf(r.opts.Stdout, "  [%s] %s\n", action, rel)
+			} else {
+				if err := r.recheckPath(rel); err != nil {
+					return err
+				}
+				if err := os.Remove(dest); err != nil && !os.IsNotExist(err) {
+					return fmt.Errorf("remove %s: %w", rel, err)
+				}
 			}
 			dirs = append(dirs, filepath.Dir(dest))
 			r.stats.removed++
@@ -748,6 +1046,9 @@ func (r *runner) uninstall() error {
 	if r.opts.DryRun {
 		fmt.Fprintf(r.opts.Stdout, "  [remove] %s\n", ManifestName)
 	} else {
+		if err := r.recheckPath(ManifestName); err != nil {
+			return err
+		}
 		_ = os.Remove(mf)
 		dirs = append(dirs, filepath.Dir(mf))
 		for _, d := range dirs {
@@ -849,7 +1150,7 @@ func runUpdate(opts Options) error {
 	next.Target = target
 	next.PayloadDir = payload
 	next.SourceDir = source
-	next.Force = true
+	next.Force = opts.Force
 	if opts.DryRun {
 		next.DryRun = true
 	}
@@ -1302,10 +1603,7 @@ func (r *runner) installBinary() error {
 		fmt.Fprintln(r.opts.Stdout, "  would install the global devrites-engine control-plane binary")
 		return nil
 	}
-	tag := os.Getenv("DEVRITES_REF")
-	if tag == "" {
-		tag = "v" + strings.TrimPrefix(installedVersion(r.source), "v")
-	}
+	tag := r.binaryTag()
 	incoming := strings.TrimPrefix(tag, "v")
 	dest := binaryDest()
 	if exists(dest) {
@@ -1323,22 +1621,99 @@ func (r *runner) installBinary() error {
 		}
 	}
 	defer cleanup()
+	if _, err := verifyEngineBinary(staged, tag, 30*time.Second); err != nil {
+		return fmt.Errorf("verify staged engine binary %s: %w", staged, err)
+	}
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
-		return r.binaryInstallFailure(err)
+		return err
 	}
 	data, err := os.ReadFile(staged)
 	if err != nil {
-		return r.binaryInstallFailure(err)
+		return err
+	}
+	backup, oldMode, hadOld, err := backupBinary(dest)
+	if err != nil {
+		return err
+	}
+	if backup != "" {
+		defer os.Remove(backup)
 	}
 	if err := fsutil.WriteFileAtomic(dest, data, 0o755); err != nil {
-		return r.binaryInstallFailure(err)
+		if restoreErr := restoreBinary(dest, backup, oldMode, hadOld); restoreErr != nil {
+			return fmt.Errorf("install binary: %v; restore previous binary: %w", err, restoreErr)
+		}
+		return err
 	}
 	_ = os.Chmod(dest, 0o755)
+	if _, err := verifyEngineBinary(dest, tag, 30*time.Second); err != nil {
+		if restoreErr := restoreBinary(dest, backup, oldMode, hadOld); restoreErr != nil {
+			return fmt.Errorf("verify installed engine binary: %v; restore previous binary: %w", err, restoreErr)
+		}
+		if hadOld {
+			return fmt.Errorf("verify installed engine binary: %w (previous binary restored)", err)
+		}
+		return fmt.Errorf("verify installed engine binary: %w (bad binary removed)", err)
+	}
 	fmt.Fprintf(r.opts.Stdout, "  engine binary: installed %s\n", dest)
 	if !binaryReachableFromPATH(dest) {
 		fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %s is not on PATH; installed hooks will fail open until devrites-engine is reachable.\n", dest)
 	}
 	return nil
+}
+
+func (r *runner) binaryTag() string {
+	if r.releaseBinaryTag != "" {
+		return r.releaseBinaryTag
+	}
+	if tag := os.Getenv("DEVRITES_REF"); tag != "" {
+		return tag
+	}
+	return "v" + strings.TrimPrefix(installedVersion(r.source), "v")
+}
+
+func backupBinary(dest string) (string, fs.FileMode, bool, error) {
+	info, err := os.Lstat(dest)
+	if os.IsNotExist(err) {
+		return "", 0, false, nil
+	}
+	if err != nil {
+		return "", 0, false, fmt.Errorf("inspect existing engine binary: %w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return "", 0, false, fmt.Errorf("refusing to replace non-regular engine binary: %s", dest)
+	}
+	data, err := os.ReadFile(dest)
+	if err != nil {
+		return "", 0, false, fmt.Errorf("read existing engine binary: %w", err)
+	}
+	f, err := os.CreateTemp(filepath.Dir(dest), "."+filepath.Base(dest)+".backup-*")
+	if err != nil {
+		return "", 0, false, fmt.Errorf("create engine binary backup: %w", err)
+	}
+	backup := f.Name()
+	if err := f.Close(); err != nil {
+		_ = os.Remove(backup)
+		return "", 0, false, fmt.Errorf("create engine binary backup: %w", err)
+	}
+	if err := fsutil.WriteFileAtomic(backup, data, info.Mode().Perm()); err != nil {
+		_ = os.Remove(backup)
+		return "", 0, false, fmt.Errorf("write engine binary backup: %w", err)
+	}
+	return backup, info.Mode().Perm(), true, nil
+}
+
+func restoreBinary(dest, backup string, mode fs.FileMode, hadOld bool) error {
+	if !hadOld {
+		if err := os.Remove(dest); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	}
+	data, err := os.ReadFile(backup)
+	if err != nil {
+		return err
+	}
+	return fsutil.WriteFileAtomic(dest, data, mode)
 }
 
 func (r *runner) binaryInstallFailure(err error) error {
@@ -1415,6 +1790,9 @@ func downloadReleaseBinary(baseURL, repo, tag, dest string) (bool, error) {
 	}
 	if err := verifySHA256(dest, sumPath); err != nil {
 		return true, fmt.Errorf("could not verify release binary %s: %w", asset, err)
+	}
+	if err := os.Chmod(dest, 0o755); err != nil && runtime.GOOS != "windows" {
+		return true, fmt.Errorf("make release binary executable: %w", err)
 	}
 	return true, nil
 }
@@ -1493,31 +1871,81 @@ func pathContainsDir(dir string) bool {
 }
 
 func engineVersion(path string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	out, err := exec.CommandContext(ctx, path, "version").Output()
+	got, err := readEngineVersion(path, 30*time.Second)
 	if err != nil {
 		return ""
 	}
-	return strings.TrimSpace(string(out))
+	return got
 }
 
-func readManifest(path string) map[string]bool {
-	out := map[string]bool{}
-	for _, rel := range readManifestList(path) {
-		out[rel] = true
+func verifyEngineBinary(path, want string, timeout time.Duration) (string, error) {
+	want = strings.TrimPrefix(strings.TrimSpace(want), "v")
+	if want == "" || want == "dev" || !semverLike(want) {
+		return "", fmt.Errorf("invalid requested version %q", want)
 	}
-	return out
+	got, err := readEngineVersion(path, timeout)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimPrefix(got, "v") != want {
+		return "", fmt.Errorf("version mismatch: got %s want %s", got, want)
+	}
+	return got, nil
+}
+
+func readEngineVersion(path string, timeout time.Duration) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, path, "version").Output()
+	if err != nil {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return "", fmt.Errorf("version command timed out after %s", timeout)
+		}
+		return "", fmt.Errorf("run exact path %s version: %w", path, err)
+	}
+	line := strings.TrimSuffix(string(out), "\n")
+	line = strings.TrimSuffix(line, "\r")
+	if strings.ContainsAny(line, "\r\n") {
+		return "", fmt.Errorf("invalid multi-line version output")
+	}
+	line = strings.TrimSpace(line)
+	if line == "" || line == "dev" || !semverLike(line) {
+		return "", fmt.Errorf("invalid version output %q", line)
+	}
+	return line, nil
+}
+
+func readManifest(path string) map[string]managedRecord {
+	records, _ := parseManifest(path)
+	return records
 }
 
 func readManifestList(path string) []string {
+	_, entries := parseManifest(path)
+	return entries
+}
+
+func parseManifest(path string) (map[string]managedRecord, []string) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil
+		return map[string]managedRecord{}, nil
 	}
+	hashes := map[string]string{}
 	var out []string
 	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "# managed: ") {
+			record := strings.TrimPrefix(line, "# managed: ")
+			i := strings.LastIndex(record, " sha256:")
+			if i > 0 {
+				rel := strings.TrimSpace(record[:i])
+				hash := "sha256:" + strings.ToLower(strings.TrimSpace(record[i+len(" sha256:"):]))
+				if filepath.IsLocal(filepath.FromSlash(rel)) && validManagedHash(hash) {
+					hashes[rel] = hash
+				}
+			}
+			continue
+		}
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
@@ -1528,7 +1956,20 @@ func readManifestList(path string) []string {
 		}
 		out = append(out, line)
 	}
-	return out
+	records := make(map[string]managedRecord, len(out))
+	for _, rel := range out {
+		records[rel] = managedRecord{Hash: hashes[rel]}
+	}
+	return records, out
+}
+
+func validManagedHash(hash string) bool {
+	const prefix = "sha256:"
+	if !strings.HasPrefix(hash, prefix) || len(hash) != len(prefix)+sha256.Size*2 {
+		return false
+	}
+	_, err := hex.DecodeString(strings.TrimPrefix(hash, prefix))
+	return err == nil
 }
 
 func manifestHeader(path, key string) string {

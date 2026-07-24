@@ -1,12 +1,10 @@
 # Gate taxonomy: advisory · validating · blocking · escalating
 
-DevRites uses a four-gate model for HITL pauses, adapted from the regulated-agentic-workflow
-governance pattern. Picking the right gate for each `Mode: HITL` slice is the difference
-between a workflow that catches real risk and one that becomes a review queue.
+DevRites uses four HITL gates, adapted from the regulated-agentic-workflow governance
+pattern. Choose the gate for each `Mode: HITL` slice by its risk and review needs.
 
-> **Default failure mode:** marking every HITL slice as `blocking`. The same reviewer ends
-> up approving low-stakes and high-stakes items at the same priority and the gate becomes
-> a queue. Mix gate types per slice; most plans use 2-3 of the 4.
+> **Do not mark every HITL slice as `blocking`.** That gives low-stakes and high-stakes
+> items the same priority. Most plans use 2 or 3 gate types.
 
 ## The four gates
 
@@ -39,7 +37,7 @@ validating question; the feature does not seal until the entry is resolved. An o
 **Example:** "Schema migration adds a non-null column with a default. Backfill plan is
 recorded; reviewer should confirm the default is the right one for archived rows."
 
-**SLA:** `4h`: the work continues but the validating queue should drain within hours,
+**SLA:** `4h`: the work continues, but the validating queue should clear within hours,
 not days.
 
 ### blocking
@@ -56,8 +54,8 @@ STOPs. The slice is not built until `/rite-resolve` lands.
 - Auth/authz boundary change.
 - Public API break.
 - Spec drift that changes acceptance criteria.
-- Tests / types / lint are red and the agent cannot tell whether the slice's contract is
-  wrong or the failing code is.
+- Bounded debug recovery proved the remaining red test/type/lint failure is a genuine
+  product-contract ambiguity the human must decide.
 
 **SLA:** `15m`: synchronous gates demand fast turnaround; otherwise treat the work as
 genuinely blocked and re-plan around it.
@@ -79,7 +77,9 @@ it's `blocking`.
 
 ## Picking the gate
 
-Apply this decision tree per HITL slice:
+First apply `afk-hitl.md` decision ownership: an objective implementation/tooling failure
+or reversible technical choice is agent work and gets no human gate. Then apply this
+decision tree per HITL slice:
 
 1. **Can the slice ship safely without the answer?**
    - Yes → `advisory`.
@@ -117,8 +117,9 @@ defaults and the always-pause rules:
 | `[advisory, validating]` | log + proceed | build + queue | pause | pause |
 | `[advisory, validating, blocking]` | log + proceed | build + queue | log + proceed* | pause |
 
-\* but **never** for destructive migrations, auth/authz boundary changes, public API
-breaks, or red tests/types/lint. Those always pause. See
+\* but **never** for destructive migrations, auth/authz boundary changes, or public API
+breaks. Red tests/types/lint remain hard build gates and must clear bounded recovery before
+the next slice; only a resulting human-owned ambiguity becomes a pause. See
 [`.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) for the irreversible-risk
 list.
 
@@ -127,8 +128,7 @@ shortcut.
 
 ## Anti-patterns
 
-- **One gate for everything.** Validates becomes a queue, blocks all work behind one
-  reviewer. Pick gates per slice.
+- **One gate for everything.** This puts all work behind one reviewer. Pick gates per slice.
 - **Marking a destructive migration `validating` to "keep the loop moving".** Destructive
   work is `blocking` regardless of the urge to ship.
 - **`advisory` as a synonym for "I'm not sure but I don't want to ask".** If the slice
@@ -143,7 +143,8 @@ shortcut.
 Mode: HITL
 Gate: blocking
 SLA: 15m
-Checkpoint: Confirm (user_id, created_at) composite index choice vs two single-col indexes.
+Checkpoint: Approve irreversible deletion of legacy records after the dry-run count exists;
+that evidence cannot exist before the migration rehearsal.
 Blocked by: SLICE-002
 ...
 ```

@@ -17,13 +17,17 @@ deferred** (logged and non-blocking), never silently skipped:
 - [ ] **Integration**: external systems / APIs / contracts (or "none").
 - [ ] **Non-functional**: auth, sensitive data, latency / scale (or "n/a").
 - [ ] **Acceptance**: how each requirement is *proven* (test / observation).
+- [ ] **Human prerequisites**: credentials, approval windows, irreversible action-time gates
+  (or "none").
 
 A blocking gap in any dimension keeps the interview open; a deferred one goes to
 `questions.md` and doesn't block. This feeds the `/rite-spec` readiness gate.
 
 ## Spec question boundary
-- Things the codebase answers (read it first).
-- Reversible implementation details (decide and note as an assumption).
+- Things the codebase, prior decisions, or authoritative docs answer (search them first).
+- Reversible implementation and test details (decide and note as an assumption).
+- Objective tooling/environment failures (record the prerequisite or technical blocker; never
+  ask the human to authorize the agent's repair work).
 - Everything at once "to be thorough." Thoroughness is depth on the few that matter.
 
 ## Record

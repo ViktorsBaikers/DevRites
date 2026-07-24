@@ -19,8 +19,13 @@ import (
 // from many goroutines. It returns stdout and exit code (and a fatal error only
 // for a non-exit failure like the binary being unrunnable).
 func runProc(root string, args ...string) (stdout string, code int, fatal error) {
+	return runProcInput(root, "", args...)
+}
+
+func runProcInput(root, stdin string, args ...string) (stdout string, code int, fatal error) {
 	cmd := exec.Command(binPath, args...)
 	cmd.Env = append(os.Environ(), "DEVRITES_ROOT="+root)
+	cmd.Stdin = strings.NewReader(stdin)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &bytes.Buffer{}
@@ -94,7 +99,8 @@ func TestConcurrentStopGateAppendsNeverTear(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			_, code, fatal := runProc(root, "hook", "stop-gate", "--harness=claude")
+			_, code, fatal := runProcInput(root, `{"stop_hook_active":false}`,
+				"hook", "stop-gate", "--harness=claude")
 			if fatal != nil {
 				code = -1
 			}

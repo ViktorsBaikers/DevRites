@@ -2,7 +2,7 @@
   "skill": "rite-quick",
   "description": "Behavioral evals for /rite-quick \u2014 escalates work that is not small, reversible, and unambiguous.",
   "eval_class": "regression",
-  "trials": 3,
+  "trials": 5,
   "scenarios": [
     {
       "id": "QUICK-BE1",

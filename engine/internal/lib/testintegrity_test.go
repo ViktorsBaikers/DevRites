@@ -1,6 +1,12 @@
 package lib
 
-import "testing"
+import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestIsTestFileClassifiesTests(t *testing.T) {
 	cases := []struct {
@@ -68,5 +74,61 @@ func TestIsSourceFileRecognisesCode(t *testing.T) {
 		if got := isSourceFile(tc.path); got != tc.want {
 			t.Errorf("isSourceFile(%q) = %v, want %v", tc.path, got, tc.want)
 		}
+	}
+}
+
+func TestIntegrityDetectsDeletionFromDirtySliceBaseline(t *testing.T) {
+	gitRoot := newGitRepo(t)
+	root := workspace(t, "feat")
+	testPath := "tests/preexisting_test.go"
+	writeFile(t, filepath.Join(gitRoot, testPath), "package tests\n\nfunc TestBaseline(t *testing.T) { t.Fatal(\"assert\") }\n")
+	writeWrightAllowlist(t, root, "feat", testPath)
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+	if err := os.Remove(filepath.Join(gitRoot, testPath)); err != nil {
+		t.Fatal(err)
+	}
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("reconcile check = %d, want 0\n%s", code, out)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := TestIntegrity(root, []string{"feat"}, &stdout, &stderr)
+	if code != 3 {
+		t.Fatalf("test-integrity = %d, want 3\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), testPath+": test file DELETED") {
+		t.Fatalf("deleted dirty-baseline test missing from finding:\n%s", stderr.String())
+	}
+}
+
+func TestIntegrityFailsClosedOnPartialReconcileBaseline(t *testing.T) {
+	newGitRepo(t)
+	root := workspace(t, "feat")
+	writeFile(t, filepath.Join(featureDir(root, "feat"), reconcileBaseName), "deadbeef\n")
+
+	var stdout, stderr bytes.Buffer
+	code := TestIntegrity(root, []string{"feat"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("test-integrity = %d, want 2\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "partial lifecycle") {
+		t.Fatalf("missing fail-closed lifecycle diagnostic:\n%s", stderr.String())
+	}
+}
+
+func TestIntegrityAdvisesWhenSourceChangesWithoutTests(t *testing.T) {
+	gitRoot := newGitRepo(t)
+	root := workspace(t, "feat")
+	writeFile(t, filepath.Join(gitRoot, "src", "feature.go"), "package src\n")
+
+	var stdout, stderr bytes.Buffer
+	code := TestIntegrity(root, []string{"feat"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("test-integrity = %d, want 0\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "source file(s) changed, 0 test file(s) touched") {
+		t.Fatalf("missing verification-gap advisory:\n%s", stdout.String())
 	}
 }

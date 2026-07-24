@@ -8,16 +8,16 @@ disable-model-invocation: true
 
 # /rite-resolve: answer the human gate
 
-`/rite-resolve` is the canonical resume verb for **async** human gates: a checkpoint that
-already paused and **stopped the session** (an AFK blocking/escalating/irreversible queue, or a
-HITL pause the human walked away from), plus `--batch`. When `/rite-build` asks a gap **inline**
+`/rite-resolve` resumes an **async** human gate: a checkpoint that already paused and
+**stopped the session** (an AFK blocking/escalating/irreversible queue, or a HITL pause
+left unanswered), plus `--batch`. When `/rite-build` asks a question **inline**
 via `AskUserQuestion` and the human is present, that pick resolves the gate **in place** through
 the same `devrites-engine resolve` writer. You don't type `/rite-resolve` for it. For the async case this
 skill takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
 `state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next command.
 
-It is **deliberately small**: one verb, one source of truth (`questions.md`), one cursor
-(`state.md`). The full AFK / HITL contract lives in
+It has one verb, one source of truth (`questions.md`), and one cursor (`state.md`). The
+full AFK / HITL contract lives in
 [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md).
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
@@ -45,9 +45,9 @@ Pull these via `Read` when shaping the resolve:
   unblocked slice's `Slice mode` (step 4, the named exception); everything else goes through
   the script, never by hand.
 - **Human gates are for human-only decisions, not the agent's work.** A `questions.md` entry the
-  human must answer is a genuine *decision* (a scope / design / risk call only the human can make).
-  Not a task the agent can do itself. If a question is really agent-doable ("should I write the
-  test?", "go implement X"), don't record a human answer that punts the agent's own job back to it:
+  human must answer is a genuine decision (a scope / design / risk call only the human can make),
+  not a task the agent can do. If a question is really agent-doable ("should I write the
+  test?", "go implement X"), do not record a human answer that returns the agent's work to it:
   flag the mis-tag and route it to the right skill (`/rite-build`, `/rite-plan unblock`,
   `devrites-debug-recovery`). The human resolves decisions; the agent does the work.
 
@@ -67,9 +67,10 @@ Pull these via `Read` when shaping the resolve:
    `tasks.md`. Confirm the qid is `status: open`. If `state.md` `Status` is not
    `awaiting_human` and the question's `gate` is `blocking`, surface the inconsistency
    before proceeding (don't auto-repair: flag it).
-3. **Render preview.** Echo the qid, the question, the proposed answer (if any), the
-   user's answer, and which slice unblocks. Stop here and ask `confirm? (y/N)` **unless**
-   the answer was provided non-interactively via `--batch`.
+3. **Apply explicit consent.** Supplying `<qid> "<answer>"`, `--drop`, or `--batch` is the
+   user's explicit consent for this local workspace mutation. Echo the qid, answer/drop,
+   and slice being unblocked, then continue immediately; do not ask the user to confirm the
+   command they just typed.
 4. **Mutate.** Run `devrites-engine resolve` with the same
    arguments. The script:
    - flips the qid's `status` to `answered` / `dropped` and stamps `answered_at` + `answer`;

@@ -1,8 +1,7 @@
 # Automation hooks
 
-Automate the checks humans forget, at the cheapest stage that can catch the problem.
-The guiding constraint: **the hook nobody runs is worse than a slower hook that still
-catches things, so keep local hooks fast and scoped.**
+Automate easy-to-forget checks at the earliest affordable stage. Keep local hooks fast
+and scoped so developers continue to run them.
 
 ## Stage the work by cost (the 10-second rule)
 - **pre-commit** (must finish in well under ~10s): format, lint, and secret-scan the
@@ -13,18 +12,8 @@ catches things, so keep local hooks fast and scoped.**
 - **CI** (no time pressure): the full test suite, build, integration, and deeper
   security scans. CI is the source of truth for "green", not local hooks.
 
-## What to run where
-| Stage | Run | Don't run |
-|---|---|---|
-| pre-commit | formatter, fast linter, secret scan, changed-files checks | the full test suite |
-| commit-msg | commit-message lint | anything slow |
-| pre-push | affected unit/integration tests | end-to-end matrices |
-| CI | everything (suite, build, e2e, security) |: |
-
 ## Keep hooks fast
-- Operate on **staged/changed files**, not the whole tree.
-- Lean on tool caches (most modern linters/formatters cache and re-run only what changed).
-- Prefer fast tools; a slow check belongs in CI, not the commit path.
+A slow check belongs in CI, not the commit path.
 
 ## Secret scanning
 Scan for credentials/keys/tokens before they enter history: catching a secret

@@ -1,36 +1,5 @@
 # rite-seal phase contract
 
-## Execution spine
-
-Run the engine gates at these moments:
-
-```bash
-devrites-engine preamble
-
-devrites-engine spec-validate .devrites/work/<slug>; echo "spec-validate rc=$?"
-devrites-engine check-acceptance .devrites/work/<slug>; echo "check-acceptance rc=$?"
-devrites-engine evidence-fresh <slug>; echo "evidence-fresh rc=$?"
-devrites-engine doubt-coverage <slug>; echo "doubt-coverage rc=$?"
-
-devrites-engine footprint log <slug> reviewer devrites-<x>-reviewer
-devrites-engine footprint log <slug> skip devrites-<x>-reviewer
-devrites-engine footprint roster <slug>; echo "roster rc=$?"
-devrites-engine review-integrity <slug>; echo "review-integrity rc=$?"
-devrites-engine review-fingerprints --write <slug>
-
-devrites-engine footprint render <slug>
-devrites-engine learnings add "<slug>" "<dismissed-as-intentional class or dead-end>" dismiss
-devrites-engine health record <0..10> "<GO|NO-GO evidence summary>" --note "<top blocker or green proof>"
-devrites-engine timeline log completed --skill rite-seal --slug <slug> --outcome "<go|no-go>" --decision "<verdict>"
-
-devrites-engine progress
-```
-
-Conditional calls still obey the detailed rules below: reviewer and skip
-footprints must account for the whole roster; learnings run only on GO; progress
-is rendered before the final response from [`output.md`](output.md). Seal decides
-only; `$rite-ship` owns irreversible git/publish/deploy actions.
-
 1. **Run the shared orientation preamble:** it prints `state.md`, the artifacts present,
    the run mode (HITL/AFK), and the open-question tally by gate, so you orient deterministically
    instead of re-deriving state from raw Markdown:
@@ -80,50 +49,20 @@ only; `$rite-ship` owns irreversible git/publish/deploy actions.
      verdicts by hand).
    Either way, walk the `## Decisions stood` ledger yourself: severity rides the unverified
    **decision**, never the exit code alone.
-5. Check **security, data, migration, rollback** risk:
-   [risk-and-rollback](risk-and-rollback.md). If `strategy.md` exists (from
-   `$rite-temper`), confirm its **top pre-mortem risks are mitigated** in the diff/evidence and
-   that no **Non-goal / deferred item crept into the diff** (scope creep): either is a finding
-   (an unmitigated top risk or smuggled-in out-of-scope work).
-   - **Principles** (`principles.md`): score the final diff against each declared invariant in
-     `.devrites/principles.md`. A violation with no matching, human-approved exception in the
-     register is a **Critical** finding and a NO-GO; an exception that is stale (past its review
-     trigger) or wider than its stated scope is itself a finding. No file / no principles → skip.
-   - **Observability** (`observability.md`): if the diff added a runtime surface (endpoint,
-     job, integration, user flow, error path), a feature shipping with no way to debug it in
-     prod is an **Important** finding, not a pass: `evidence.md` should show telemetry observed
-     to emit (`$rite-prove` step 5b).
-   - **Developer experience** (`developer-experience.md`): if the diff ships a developer-facing
-     surface, reconcile `devex.md` (the `$rite-vet` predicted scorecard vs the `$rite-prove`
-     measured one: the boomerang). A broken public dev contract (a documented command that errors,
-     a getting-started flow that can't complete) or an unexplained measured DX regression is
-     **Important**. **Critical** on a frozen public surface (`principles.md`). No surface → skip.
-   - **Removal / migration** (`deprecation.md`): if the diff deletes or migrates code, an API,
-     or data, confirm it followed expand→contract, proved the old path unused before removing it,
-     and carries a rollback for every destructive step. A surprise deletion or a one-shot
-     breaking migration is a finding (and trips the irreversible-risk gate, `afk-hitl.md`).
+5. Check **security, data, migration, rollback**, strategy scope, principles,
+   observability, developer experience, and removal using
+   [risk-and-rollback](risk-and-rollback.md) and the named standards. Unmitigated top risks,
+   scope creep, missing runtime diagnostics, broken developer contracts, or unsafe removals
+   are findings. An unexcepted declared-principle violation is Critical and NO-GO.
 6. Check **frontend polish** if UI is involved (states, a11y, responsive, design-system,
    browser evidence).
-7. **Independent review:** seal is the final gate, not a re-run of `$rite-review`.
-   It **always re-spawns** the axes `$rite-review` did not cover: `devrites-test-analyst`,
-   `devrites-security-auditor`, `devrites-performance-reviewer`, and
-   `devrites-frontend-reviewer` (UI). It **only re-runs the Spec and Code-review axes**
-   (`devrites-spec-reviewer`, `devrites-code-reviewer`) when the diff changed since
-   `$rite-review` ran (compare against `review.md`); if the diff is unchanged, carry
-   review's verdicts on those axes forward rather than re-litigating them.
-   If subagents are available, fan out **in parallel** (one `Task` block, multiple tool
-   calls) to the **roster**: the seven reviewers and their checkable triggers are the single
-   source in [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md) (dispatch
-   shape + reconciliation there too; `.agents/skills/devrites-lib/reference/standards/agents.md`. "Run independent reviewers in
-   parallel"). Dispatch every always-on reviewer and every conditional whose trigger the diff
-   meets; `devrites-devex-reviewer` runs in **measure mode**: grade the measured DX scorecard
-   and reconcile the boomerang against the `$rite-vet` prediction. Give each the workspace path +
-   diff *without the author's reasoning*. If subagents are unavailable, run the equivalent
-   reviews sequentially yourself and flag each as a fallback.
-   The reviewer **AGENTS** here (fresh context, no author reasoning) are the seal
-   GATE; `devrites-audit` is the inline single-axis pass run during build/polish.
-   The two paths are intentional, not divergent: the inline audit catches issues
-   early; the fresh-context agents are the independent gate before ship.
+7. **Independent review:** apply the complete roster, triggers, dispatch shape, and
+   reconciliation from
+   [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md). Await
+   fresh-context batches of at most three and give reviewers only the workspace path plus
+   immutable diff, without author reasoning. Use named role → safely enforced generic fresh
+   agent → labelled inline; inline output is never independent. Carry Spec/Code verdicts only
+   for an unchanged post-review diff; rerun the other applicable axes.
    **Footprint: account for the whole roster.** For each reviewer you dispatch, append
    `devrites-engine footprint log <slug> reviewer devrites-<x>-reviewer` (the reviewer's **exact agent name**:
    the roster gate matches on it, so a freehand label like `spec` will read as unaccounted); for
@@ -131,13 +70,12 @@ only; `$rite-ship` owns irreversible git/publish/deploy actions.
    `devrites-engine footprint log <slug> skip devrites-<x>-reviewer` and note the one-line reason in `seal.md`.
    A conditional reviewer that does not apply is a *recorded skip*, never a silent omission: step 7b
    proves the roster complete before the verdict.
-7a. **Reconcile findings: confidence over volume.** Band each reviewer finding by confidence
+7a. **Reconcile findings by confidence.** Band each reviewer finding by confidence
    (1-10); a low-confidence (≤4) finding that can't be verified against the diff is **suppressed**
    to a `Suppressed (low-confidence): n` line, not a blocker. Every Critical/Important must cite
    the `file:line` (or spec line) that proves it. Surface genuine cross-reviewer disagreement
    **explicitly** rather than averaging it away, and don't let a pile of low-confidence nits
-   inflate the verdict: the gate is `Critical == 0` + acceptance + drift, not "few findings".
-   (A seal that fires noise teaches the next one to be ignored.)
+   inflate the verdict. The gate is `Critical == 0` + acceptance + drift, not "few findings".
 7b. **Account for the roster: no reviewer silently skipped.** Before the verdict, prove every
    roster reviewer carries a decision (dispatched or skip-recorded in step 7's footprint):
    ```bash
@@ -158,7 +96,7 @@ only; `$rite-ship` owns irreversible git/publish/deploy actions.
    ```
    - **rc=1:** an axis in `review.md` is silent (no finding, no justification): **Important** on the
      review's completeness. Re-run that axis or record its `No-findings:` account, then re-seal.
-   - **rc=0:** every axis has findings or a justified clean bill; proceed. (No `review.md`, or a
+   - **rc=0:** every axis has findings or a justified no-findings result; proceed. (No `review.md`, or a
      freeform one, is a clean pass: the gate keys on per-axis sections.)
    Then write stable finding IDs for learning and recurring-dismissal correlation:
    ```bash
@@ -178,20 +116,10 @@ only; `$rite-ship` owns irreversible git/publish/deploy actions.
      "acceptance": "<proven>/<total>", "test_integrity": "ok | weakened", "mutation": "<score | n/a>",
      "blockers": ["<one line each, empty on GO>"] }
    ```
-9. **On GO only: record proven conventions** to the local ledger
-   (`.devrites/conventions.md`) so later slices stop re-deriving this project's idioms:
-   the durable, *evidence-proven* commands / idioms / placement / gotchas this feature
-   established. Evidence-gated like the seal itself; the band is earned, not guessed; the
-   step degrades gracefully when unavailable. Full contract + command:
-   [conventions-ledger](conventions-ledger.md). (Skip entirely on NO-GO.)
-9a. **On GO only: auto-capture learnings** (`.devrites/learnings.md`). Learning is automatic, not a
-   command anyone must remember: append this feature's durable signal so the **next** feature's
-   review starts warmer: (a) any reviewer finding the gate **dismissed as intentional here** (a
-   "don't re-flag X in this project" class, tag `dismiss`); (b) a recurring correction or dead-end
-   worth not repeating (tag `note`). The review skills load this ledger **before** they fan out, so a
-   dismissed-finding class stops recurring. It is an untrusted prior: live code always overrides
-   (`.agents/skills/devrites-lib/reference/standards/security.md`). Promotion of a recurring lesson to a *project rule* stays the
-   human's call (`$rite-learn`: propose, don't impose). Skip on NO-GO.
+9. **On GO only:** record evidence-proven conventions through
+   [conventions-ledger](conventions-ledger.md).
+9a. **On GO only:** append durable dismissed-finding or dead-end learnings as untrusted
+   priors. Promotion to a project rule remains human-owned.
    ```bash
    devrites-engine learnings add "<slug>" "<dismissed-as-intentional class or dead-end>" dismiss
    ```
@@ -200,7 +128,14 @@ only; `$rite-ship` owns irreversible git/publish/deploy actions.
     lower for NO-GO or unresolved blockers.
     ```bash
     devrites-engine health record <0..10> "<GO|NO-GO evidence summary>" --note "<top blocker or green proof>"
-    devrites-engine timeline log completed --skill rite-seal --slug <slug> --outcome "<go|no-go>" --decision "<verdict>"
+    devrites-engine timeline log run-finished \
+      --slug <slug> \
+      --outcome "<passed|blocked>" \
+      --execution-mode named \
+      --guard-strength n/a \
+      --reason-id "<DRV-GATE-SEAL-PASSED on GO; otherwise the blocking DRV-* reason>" \
+      --host "<claude|codex>" \
+      --evidence .devrites/work/<slug>/seal.md
     ```
 
 ## `seal.md` template

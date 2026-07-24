@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Read-only-ish release evidence packet. Runs the same checks users get through npx; no Claude/Codex plugin path exists.
+# Gather release evidence without modifying the checkout. These are the same
+# checks users run through npx; there is no Claude or Codex plugin path.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -34,6 +35,9 @@ ok "validate-pack"
 
 bash scripts/run-behavioral-evals.sh >/tmp/devrites-release-behavioral.log
 ok "behavioral eval schema"
+
+bash tests/release-tarball-test.sh >/tmp/devrites-release-tarball.log
+ok "release tarball reproducible and confined"
 
 if compgen -G "dist/devrites-v*.tar.gz" >/dev/null; then
   for tarball in dist/devrites-v*.tar.gz; do

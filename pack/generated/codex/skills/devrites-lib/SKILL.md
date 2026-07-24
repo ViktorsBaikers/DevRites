@@ -11,21 +11,25 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
+- For every DevRites specialist or writer dispatch, first call `spawn_agent` with the named `devrites-<role>` custom role. The matching project contract is `.codex/agents/devrites-<role>.toml`.
+- If `spawn_agent` is callable but a named read-only role is unavailable, use generic `explorer` only when the host proves that run has a runtime-enforced read-only sandbox. Tell it to read `.codex/agents/devrites-<role>.toml`, follow its `developer_instructions`, and execute the unchanged packet. A missing read-only custom role is not evidence that spawning is unavailable.
+- Never dispatch generic `worker` for `devrites-slice-wright` unless the host proves that worker run carries exact DevRites identity and the same `.wright-allowlist` enforcement as the named role. Codex reports a generic run as `agent_type=worker`, so the generated global hooks cannot prove that binding. Reject that unsafe rung and use the documented labelled inline wright path with `.reconcile-inline` plus the full reconcile gate.
+- If the host cannot prove the generic explorer is runtime read-only, reject that rung too. Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn may the root run the documented discipline inline. Label it `independence: fallback`, never call it independent, and apply every fallback risk gate. An unbound generic wright or unconfined generic explorer is such a safety rejection, not evidence that no agents exist.
+- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
+- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
 - When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # devrites-lib: internal shared helpers (not a command)
 
-This is **not** a skill you run. It is DevRites' manifest for shared references
-and control-plane operations. Skills call `devrites-engine <command>` from any
-workspace; no pack script path is required.
+Do **not** run this skill directly. It lists shared references and control-plane
+operations. Skills call `devrites-engine <command>` from any workspace without a pack
+script path.
 
 ## Operations
 
-These are selected `devrites-engine` contracts; `devrites-engine help` is exhaustive.
+These are selected `devrites-engine` contracts. Run `devrites-engine help` for the full list.
 
 **Read-only: orient / gate (never mutate the workspace):**
 
@@ -34,13 +38,13 @@ These are selected `devrites-engine` contracts; `devrites-engine help` is exhaus
   open-question tally by gate. Run first (step 0) by every workspace-operating
   `rite-*` skill so the model orients deterministically instead of re-deriving
   state from raw Markdown.
-- `devrites-engine progress`: progress footer; the mirror of `devrites-engine preamble` (which runs
-  first). Run **last** (output step) by every lifecycle `rite-*` skill to render (from
+- `devrites-engine progress`: progress footer and counterpart to the initial
+  `devrites-engine preamble`. Run it **last** in every lifecycle `rite-*` skill to render from
   `state.md`, with zero model drift) the `── rite-<phase> ──` header rule, the **slice
   meter** (`Slice 3/5  ██████░░░░  <last-built> ✓`, or `Slices 5/5  ██████████  ✅ ALL
   BUILT` at completion), and the **flow ribbon** (`spec ✓ define ✓ build ◉ … ship ○`).
   The meter answers "how many slices left"; the `✅ ALL BUILT` marker answers "is the
-  build done". The skill prints its own what-was-done / next-step / hygiene lines beneath
+  build done". The skill prints its own result, next step, and hygiene lines beneath
   it. Read-only; silent (exit 0) when there is no active workspace. Not for the workspace-less
   utilities (`$rite-prototype`, `$rite-zoom-out`, `$rite-pressure-test`, `$rite-handoff`,
   the `$rite` menu). They have no phase/slice state to render.
@@ -55,7 +59,9 @@ These are selected `devrites-engine` contracts; `devrites-engine help` is exhaus
 - `devrites-engine build-readiness`: build-readiness gate. Exits non-zero on `$rite-build`'s
   step-0 stop conditions so they hold by exit code, not by prose the model must
   remember: `2` no `Plan approved` (→ `$rite-define`), `3` `awaiting_human`
-  (→ `$rite-resolve`), `4` `blocked` (→ `$rite-plan`), `5` no workspace, `0` ready.
+  (→ `$rite-resolve`), `4` `blocked` (→ `$rite-plan`), `5` no workspace
+  (→ `$rite-spec`), `6` decision coverage missing/not CLEAR (→ `$rite-clarify`),
+  `7` implementation readiness missing/not READY (→ `$rite-vet`), `0` ready.
 - `devrites-engine evidence-fresh`: evidence-freshness gate for `$rite-seal`. Exits `3`
   when any file in `touched-files.md` is newer than `evidence.md` /
   `browser-evidence.md` (stale proof = NO-GO until re-proven), `0` when fresh.
@@ -76,7 +82,7 @@ These are selected `devrites-engine` contracts; `devrites-engine help` is exhaus
 - `devrites-engine resolve`: backs the `$rite-resolve` contract (answer / drop / batch).
 - `devrites-engine close-out`: archive the workspace + clear `ACTIVE` on `$rite-ship`.
 
-### Canonical footer snippet
+### Canonical footer
 
 Every lifecycle `rite-*` skill prints this as the **first lines of its output**, then its
 own compact fact lines below per [`reply-contract.md`](reference/reply-contract.md):

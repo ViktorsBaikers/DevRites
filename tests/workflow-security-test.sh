@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# workflow-security-test.sh: fixtures for validate-workflow-security.py:
-# unpinned/broad/pull_request_target → findings; SHA-pinned + scoped → none.
-# Plus a regression: the repo's own workflows must pass.
+# Exercise validate-workflow-security.py with unsafe and safe fixtures. Unsafe
+# workflows must produce findings; SHA-pinned actions with scoped permissions
+# must pass. The repository workflows provide the regression case.
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -129,6 +129,45 @@ jobs:
       - run: echo unguarded
 EOF
 
+cat > "$TMP/dispatch-shell-substitution.yml" <<'EOF'
+name: unsafe-dispatch-shell-substitution
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        default: '$(touch "$RUNNER_TEMP/dispatched")'
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: [self-hosted, linux]
+    environment: live-evals
+    steps:
+      - name: Unsafe direct interpolation
+        run: |
+          python3 runner.py --model "${{ github.event.inputs.model }}"
+EOF
+
+cat > "$TMP/dispatch-input-via-env.yml" <<'EOF'
+name: safe-dispatch-input-via-env
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        default: ''
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: [self-hosted, linux]
+    environment: live-evals
+    steps:
+      - name: Quoted environment transport
+        env:
+          MODEL: ${{ inputs.model }}
+        run: python3 runner.py --model "$MODEL"
+EOF
+
 clean "SHA-pinned + scoped"        "$TMP/clean.yml"
 finds "unpinned third-party"       "$TMP/unpinned.yml"
 finds "unquoted name colon"        "$TMP/unquoted-name-colon.yml"
@@ -139,9 +178,20 @@ finds "pull_request_target"        "$TMP/prtarget.yml"
 clean "Dependabot-only target without checkout" "$TMP/dependabot-target.yml"
 finds "Dependabot target with checkout" "$TMP/dependabot-target-checkout.yml"
 finds "Dependabot target with unguarded job" "$TMP/dependabot-target-unguarded-job.yml"
+finds "dispatch shell substitution in run" "$TMP/dispatch-shell-substitution.yml"
+clean "dispatch input transported through env" "$TMP/dispatch-input-via-env.yml"
 
-# regression: the repo's real workflows must pass
+# The repository's workflows must pass too.
 clean "repo workflows pass"        "$HERE/../.github/workflows"
+
+EVAL_WORKFLOW="$HERE/../.github/workflows/evals.yml"
+if grep -En -- 'secrets\.|--live([[:space:]\\]|$)|RUN-PAID-HOST-CONTRACTS|AUTH_FILE|API_KEY|runs-on:.*self-hosted|environment:[[:space:]]*live-evals' "$EVAL_WORKFLOW" >/dev/null; then
+  echo "FAIL [eval workflow is free]: found a credential or paid-runner path"
+  grep -En -- 'secrets\.|--live([[:space:]\\]|$)|RUN-PAID-HOST-CONTRACTS|AUTH_FILE|API_KEY|runs-on:.*self-hosted|environment:[[:space:]]*live-evals' "$EVAL_WORKFLOW"
+  fail=1
+else
+  echo "ok   [eval workflow is deterministic and free]"
+fi
 
 if [ "$fail" -ne 0 ]; then echo "WORKFLOW-SECURITY TESTS: FAIL"; exit 1; fi
 echo "WORKFLOW-SECURITY TESTS: PASS"

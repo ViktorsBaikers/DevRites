@@ -54,3 +54,6 @@ architecture; per-feature `decisions.md` files stay scoped to that feature.
 | [0006](0006-clock-seam-and-engine-ci-gates.md) | Clock seam + Go static-analysis CI gates | Accepted | `tests/adr_0006_clock_seam_test.go` |
 | [0007](0007-canonical-live-workspace-filenames.md) | Canonical live workspace filenames | Accepted | `internal/migrate/migrate_test.go`, `tests/migrate_cli_test.go` |
 | [0008](0008-sanctioned-engine-network-boundary.md) | Sanctioned engine network boundary | Accepted | `tests/meta_test.go` |
+| [0009](0009-prebuild-decision-coverage-and-readiness.md) | Pre-build decision coverage and implementation readiness | Accepted | `internal/state/state_test.go`, `tests/parity_buildreadiness_test.go` |
+| [0010](0010-agent-first-fresh-context-orchestration.md) | Agent-first fresh-context orchestration | Accepted | `tests/hook_test.go`, `tests/codex-agent-generation-test.sh` |
+| [0011](0011-define-plan-transition-rights.md) | Separate Define authoring from the Plan checkpoint | Accepted | `internal/state/state_test.go`, `tests/adr_0011_define_plan_test.go` |

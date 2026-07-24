@@ -1,9 +1,7 @@
 # `eng-review.md` + `test-plan.md` templates + fold-back rules
 
-`/rite-vet` produces two artifacts and a set of fold-back edits. `eng-review.md` is the durable
-**record** of the review; `test-plan.md` is the build-readable **coverage target**; the
-fold-back edits to `plan.md` / `tasks.md` are what the build follows. The record
-without the fold-back is dead prose: the build reads `plan.md` + `test-plan.md`, not `eng-review.md`.
+`eng-review.md` records the review; `test-plan.md` is the build-readable coverage target.
+Fold findings into `plan.md`/`tasks.md`: review prose alone does not change the build.
 
 ## `eng-review.md`: the record
 Write to `.devrites/work/<slug>/eng-review.md`. If one exists for the slug, **update** it, don't
@@ -12,6 +10,8 @@ clobber.
 ```markdown
 # Eng review: <slug>
 Vetted: <iso>   Cross-model: ran (codex) | off
+Implementation readiness: <READY | NEEDS CLARIFICATION | NEEDS REPLAN>
+Readiness inputs SHA-256: <exact value from `devrites-engine readiness-digest engineering <slug>`>
 
 ## 1. Depth
 light | full (<trigger that escalated it>)     # every plan is vetted — light or full, never skipped (see depth.md)
@@ -21,6 +21,19 @@ light | full (<trigger that escalated it>)     # every plan is vetted — light 
 - Minimum diff: scope accepted as-is | trimmed <n items, listed in NOT-in-scope>
 - Complexity: ok | smell (<n files, m new services) → asked → <reduce|proceed, why>
 - Built-in / completeness / distribution: <flags, with source citations>
+
+## 2a. Build-entry preflight
+| Gate | Command + cwd | Tool/version | Prerequisite owner | Full provenance inputs | Fixture/smoke | Verdict |
+|---|---|---|---|---|---|---|
+| <test/browser/package> | <command · cwd> | <version> | <owner + item> | <tool/manifest/lockfile/config SHA-256> | <what ran> | pass/fail/blocked |
+
+## 2b. Implementation readiness
+| Surface | Requirement/decision | Boundary/wiring | Slice | Proof | Verdict |
+|---|---|---|---|---|---|
+| <journey/data/interface/ops> | <REQ/AC + coverage row> | <contract + key link> | <SLICE-###> | <test-plan row> | ready/gap |
+
+Inventory/currentness: <pass/gaps> · slice order/independence: <pass/gaps> ·
+UX/spec/architecture: <pass/n-a/gaps> · operations/rollout/rollback: <pass/n-a/gaps>
 
 ## 3. Axis findings (floor-gated)
 | Axis | Floor band | Findings (sev · confidence) |
@@ -47,6 +60,7 @@ Sequential — no opportunity   # OR the dependency table + lanes + order + conf
 ## 7. Completion summary
 - Scope: accepted | reduced   · Architecture: <n>   · Code-quality: <n>
 - Coverage: <x/y> planned, <n> gaps, <n> regressions (Critical)
+- Build entry: preflight <pass/fail/blocked>; action-time checkpoints <none/list>
 - Failure modes: <n> mapped, <n> critical gaps
 - NOT in scope: written   · What already exists: written
 - Plan: hardened in place | <n> deltas via Spec Drift Guard
@@ -60,6 +74,14 @@ test and where*, not implementation detail.
 ```markdown
 # Test plan: <slug>
 From /rite-vet on <iso>. Runner + conventions: <detected framework + command>.
+
+## Build-entry preflight
+| Gate | Command | Cwd | Expected | Prerequisites | Provenance to recapture |
+|---|---|---|---|---|---|
+| <test/browser/package> | <exact command> | <path> | <exit/output> | <service/browser/credential owner> | <tool version + full SHA-256s> |
+
+Link any disposable parser fixture. Build evidence recomputes every digest; preflight values
+are not post-build proof.
 
 ## Coverage diagram
 <the ASCII code-paths + user-flows diagram from review-axes.md, with COVERAGE / GAPS / REGRESSIONS line>
@@ -77,11 +99,8 @@ fails any row with no passing result — an unverified element is a NO-GO, like 
 ```markdown
 | Element / flow | Kind (field/checkbox/select/radio/toggle/button/link/flow) | Level | Test file | Asserts (action → expected) |
 |---|---|---|---|---|
-| email field   | field    | unit      | <form.test>  | invalid → error shown; valid → accepted |
-| 'remember me' | checkbox | unit      | <form.test>  | toggles the persisted flag |
-| country       | select   | unit      | <form.test>  | options load; change fires handler |
-| submit        | button   | component | <form.test>  | disabled until valid; click → submits once |
-| login         | flow ★★★ | E2E       | <login.e2e>  | enter → submit → lands on dashboard |
+| email field | field | unit | <form.test> | invalid → error; valid → accepted |
+| login | flow ★★★ | E2E | <login.e2e> | submit → dashboard |
 ```
 Omit the whole section only for a slice with **no** interactive surface (pure backend/logic).
 
@@ -114,6 +133,9 @@ acceptance/behavior changes route through the **Spec Drift Guard**.
   - `tasks.md` slices ← added test requirements (point at `test-plan.md`), added error-handling /
     failure-mode coverage, tightened slice scope, a split of a refactor+behavior slice into two.
     Adjust a slice's `Gate:` upward when vet reveals higher stakes (e.g. an unflagged migration).
+    For an eligible architecture competition, set the canonical `Forge`, `Forge strategies`,
+    and `Forge scorecard` fields only after the acceptance→test map is final; otherwise keep
+    `no` / `none` / `none`.
   - Re-run the `plan.md` Readiness gate after edits; it must still pass.
 - **Route through the Spec Drift Guard** (record `drift.md` + a recorded decision, then `/rite-plan
   repair` for any structural reslice) for anything that **changes an acceptance criterion, product
@@ -133,3 +155,14 @@ acceptance/behavior changes route through the **Spec Drift Guard**.
   `/rite-build` (the slice-wright) and `/rite-prove` **read `test-plan.md`** as the coverage
   target; `/rite-review` and `/rite-seal` may consult `eng-review.md` for the failure-mode +
   scope record.
+- Write `test-plan.md` and finish all fold-back edits and rechecks first. If this pass changed
+  `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`, revalidate the
+  affected decision-coverage rows, assumption audit, residual uncertainty, and closed gates.
+  Partial/Missing, an unowned material assumption, or an open blocking/escalating question routes
+  `/rite-clarify`/HITL; never hide it with a new digest. Once re-closed, run
+  `devrites-engine readiness-digest coverage <slug>` and replace the complete
+  `Coverage inputs SHA-256` line in `decision-coverage.md`. Only then run
+  `devrites-engine readiness-digest engineering <slug>` and copy its complete
+  field line into `eng-review.md`. The build gate rejects a stale digest,
+  placeholders, non-passing preflight/readiness rows, empty tables, or an
+  acceptance criterion with no test mapping.

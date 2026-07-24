@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# update-smoke.sh: exercise update.sh without hitting the network:
+# Exercise update.sh without using the network:
 #   - default installs survive an update --force,
 #   - .devrites/ feature state is preserved across the upgrade,
 #   - the retired --rules-only install shape still updates cleanly.
-# Uses DEVRITES_UPDATE_BUNDLE to feed update.sh a locally-built release tarball.
+# DEVRITES_UPDATE_BUNDLE supplies a locally built release archive.
 set -u
 export DEVRITES_NO_BINARY=1   # pack smoke: the engine binary has its own lifecycle test (binary-lifecycle-test.sh)
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -78,9 +78,29 @@ case_rules_only() {
   exit "$fail"
 }
 
+case_customized() {
+  local d="$T/customized" manifest managed tmp out
+  mkdir -p "$d"; fail=0
+  bash "$ROOT/install.sh" --target "$d" >/dev/null 2>&1 || no "customized: install failed"
+  manifest="$d/.claude/devrites.manifest"
+  tmp="$manifest.tmp"
+  sed 's/^# devrites-version:.*/# devrites-version: 0.0.0/' "$manifest" > "$tmp" && mv "$tmp" "$manifest"
+  managed="$d/.claude/skills/rite/SKILL.md"
+  printf 'local customization\n' > "$managed"
+  out="$(env -u DEVRITES_HOST_ARTIFACT_DIR DEVRITES_UPDATE_BUNDLE="$BUNDLE" bash "$ROOT/update.sh" --target "$d" --to "$TAG" 2>&1)" \
+    && no "customized: default update silently succeeded" \
+    || ok "customized: default update aborts"
+  [ "$(cat "$managed")" = "local customization" ] && ok "customized: default update preserved file" || no "customized: default update changed file"
+  printf '%s' "$out" | grep -q -- 'rerun with --force' && ok "customized: update gives force remediation" || no "customized: update missing force remediation"
+  run_update "$d" || no "customized: forced update failed"
+  [ "$(cat "$managed")" != "local customization" ] && ok "customized: forced update replaced file" || no "customized: forced update kept file"
+  exit "$fail"
+}
+
 pids=()
 case_default & pids+=("$!")
 case_rules_only & pids+=("$!")
+case_customized & pids+=("$!")
 for pid in "${pids[@]}"; do
   wait "$pid" || fail=1
 done

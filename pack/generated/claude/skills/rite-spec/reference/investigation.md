@@ -1,23 +1,21 @@
-# Investigation: understand deeply before specifying
+# Investigation before specification
 
-The spec is only as good as the investigation behind it. Goal: understand the
-requirement **completely**, decide **where it correctly belongs**, name what it
-**resolves**, and surface every **issue and gap**, then drive the gaps to closure with
-the user so the spec ships fully-covered and correctly-placed. A gap found here is cheap;
-a gap found in `/rite-build` is a drift event.
+Understand the requirement, decide where it belongs, define the outcome, and identify
+every issue and gap. Resolve material gaps with the user before the spec is ready. A
+gap first found during `/rite-build` is a drift event.
 
 Use a code-intelligence index if available (see
-`../../devrites-lib/reference/standards/tooling.md`) for the structural parts below; it answers "where does this
-live / what calls it / what would it break" far more cheaply and accurately than reading files.
-With none present, fall back to Read/Grep/Glob. When a gap turns on a fact the codebase can't
-answer: a standard, a prevailing UX pattern, how comparable products solve it: **search the
-web if available** (brave MCP preferred; `../../devrites-lib/reference/standards/tooling.md`) and cite the finding in
-the option you present, so the human's pick is informed rather than guessed.
+`../../devrites-lib/reference/standards/tooling.md`) for structural questions such as
+where code lives, what calls it, and what it could break. With none present, use
+Read/Grep/Glob. When a gap depends on an external fact, such as a standard, UX pattern,
+or comparable product, **search the web if available** (brave MCP preferred;
+`../../devrites-lib/reference/standards/tooling.md`). Cite the finding in the option
+presented to the human.
 
-## Prior art: check our own archive first (cheap, silent when empty)
-Before investigating outward, check whether we already shipped this. Grep the shipped
-archive for the feature's key nouns: a hit means an extension, a conflict, or a re-spec of
-solved work, and you inherit its decisions instead of re-deriving them:
+## Check the archive first
+Before external research, check whether the project already shipped related work. Search
+the archive for the feature's key nouns. A hit may indicate an extension, conflict, or
+replacement and provides prior decisions:
 ```bash
 devrites-engine archive-search "<key nouns>" 2>/dev/null \
   || grep -rliE '<noun1>|<noun2>' .devrites/archive/*/spec.md 2>/dev/null
@@ -29,18 +27,18 @@ devrites-engine archive-search "<key nouns>" 2>/dev/null \
   brownfield / principles no-op discipline).
 
 ## Produce these findings (write into spec.md)
-1. **The real ask:** restate the goal and the *problem behind the request* (people ask
+1. **The request and problem:** restate the goal and the problem behind it (people ask
    for "a dashboard" when they want an answer to a question). Who hits it, how often,
    what they do today instead.
 2. **Current behavior:** how it works today, or what's absent. Read the actual code and
    flows; don't assume.
-3. **Placement, where it should live** *(so it's correctly placed to be used)*
+3. **Placement**
    - Which module / layer / file / component should own this; the right seam.
    - Existing patterns/components/utilities to **extend or reuse** instead of duplicating.
    - **Integration points**: callers and dependents, the data it reads/writes, the
      APIs/events/contracts it touches (interface analysis: how it interacts with the
      rest of the system).
-4. **What it resolves:** the outcome/value and how we'll *observe* it's resolved (feeds
+4. **Outcome:** the result and how to observe it (feeds
    success + acceptance criteria).
 5. **Issues:** conflicts with existing code/UX/data/permissions, constraints, and
    anything that makes the obvious approach wrong. Each issue gets a disposition.
@@ -48,19 +46,22 @@ devrites-engine archive-search "<key nouns>" 2>/dev/null \
    becomes a question** (next section).
 7. **Blast radius:** what this change could break (use the code graph's impact/callers).
    Informs risks, test strategy, and rollback.
+8. **Human prerequisites:** credentials, accounts, approval windows, or irreversible
+   action-time decisions the acceptance path requires. Separate these from agent-owned
+   implementation and diagnostic work.
 
-Also gather any **design/reference materials** the human supplies (screenshots, Figma,
-links, video): see [references-intake](references-intake.md). They're part of
-understanding the requirement and become the target later phases verify against.
+Gather any design or reference materials the human supplies, including screenshots,
+Figma, links, or video. See [references-intake](references-intake.md). Record whether
+each is a target, constraint, or inspiration for later phases.
 
 ## Gap analysis (present → desired)
-State the **present state** and the **desired state**; the delta is the work, and the
-**unknowns in the delta are the gaps**. Drive the count of open gaps toward zero before
-handing off to `/rite-define`. Mark each gap inline with `[NEEDS CLARIFICATION: question]`.
+State the present and desired states. Their delta defines the work; unknowns in that
+delta are gaps. Resolve them before `/rite-define`. Mark each gap inline with
+`[NEEDS CLARIFICATION: question]`.
 
-## Turn gaps & issues into questions WITH options: you recommend, the human decides
-For each material gap/issue (one that changes scope, placement, data model, UX, security,
-migration risk, or acceptance), **put it to the human**: one gap at a time, as a ranked
+## Present gaps and issues as options
+For each material gap or issue that changes scope, placement, data model, UX, security,
+migration risk, or acceptance, **ask the human** one gap at a time with a ranked
 option set with the recommended option **first and marked `(Recommended)`** plus an escape
 hatch (via `AskUserQuestion` in HITL):
 ```
@@ -70,15 +71,18 @@ hatch (via `AskUserQuestion` in HITL):
 3. <alternative> — <implication>
 4. Something else — I'll describe it
 ```
-Investigate and recommend; don't settle a material decision yourself. Confidence in the answer
-lowers the *cost* of the question (a one-pick confirm), not its owner: present the set anyway.
+Investigate and recommend, but do not settle a material decision. High confidence may
+make the answer a one-pick confirmation; it does not change the decision owner.
 Only a **genuinely reversible, low-impact** gap is decided and recorded in `assumptions.md`
 without asking. Full render contract + AFK behaviour: [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md).
 
 ## Done when
 - The shipped archive was checked for prior art; any overlap was surfaced to the human.
-- The real problem, current behavior, placement, and what-it-resolves are written down.
+- The problem, current behavior, placement, and outcome are written down.
 - Every issue has a disposition; every material gap is resolved **by a human pick** from its
   option set (or explicitly deferred as non-blocking), not settled silently on your confidence.
-- No blocking `[NEEDS CLARIFICATION]` remains: the spec is **fully covered and correctly
-  placed**. This is the `/rite-spec` readiness gate before `/rite-define` plans it.
+- Every foreseeable build-time human prerequisite is resolved, assigned, or justified as an
+  action-time gate; objective repair/retry work is not disguised as a question.
+- No blocking `[NEEDS CLARIFICATION]` remains. The spec covers the gaps found during
+  authoring and records correct placement. This is the `/rite-spec` readiness gate
+  before `/rite-clarify` performs the systematic topology scan.

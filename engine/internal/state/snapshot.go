@@ -38,6 +38,8 @@ type WorkspaceSnapshot struct {
 	Complete        bool                 `json:"complete"`
 	Sections        []SectionSnapshot    `json:"sections"`
 	MissingSections []string             `json:"missingSections,omitempty"`
+	Files           []FileSnapshot       `json:"files"`
+	MissingFiles    []string             `json:"missingFiles,omitempty"`
 	CurrentSlice    *SliceSnapshot       `json:"currentSlice,omitempty"`
 	Evidence        EvidenceSnapshot     `json:"evidence"`
 	Drift           DriftSnapshot        `json:"drift"`
@@ -58,6 +60,12 @@ type CommandSnapshot struct {
 }
 
 type SectionSnapshot struct {
+	Name     string `json:"name"`
+	Present  bool   `json:"present"`
+	Required bool   `json:"required"`
+}
+
+type FileSnapshot struct {
 	Name     string `json:"name"`
 	Present  bool   `json:"present"`
 	Required bool   `json:"required"`
@@ -150,8 +158,16 @@ func Snapshot(root, slug string) (*WorkspaceSnapshot, error) {
 	for _, section := range report.Missing {
 		snap.MissingSections = append(snap.MissingSections, string(section))
 	}
-	if snap.RunMode == "AFK" && len(snap.MissingSections) > 0 {
-		snap.Warnings = append(snap.Warnings, "AFK workspace has missing required sections")
+	for _, name := range WorkspaceFiles() {
+		snap.Files = append(snap.Files, FileSnapshot{
+			Name:     name,
+			Present:  report.PresentFiles[name],
+			Required: report.RequiredFiles[name],
+		})
+	}
+	snap.MissingFiles = append(snap.MissingFiles, report.MissingFiles...)
+	if snap.RunMode == "AFK" && len(snap.MissingFiles) > 0 {
+		snap.Warnings = append(snap.Warnings, "AFK workspace has missing required files")
 	}
 	if report.Required[SectionProof] && snap.Evidence.Status != "fresh" {
 		snap.Warnings = append(snap.Warnings, "proof phase requires fresh evidence")

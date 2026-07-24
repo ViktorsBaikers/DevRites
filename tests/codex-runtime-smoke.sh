@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# codex-runtime-smoke.sh: verify a DevRites install is visible to Codex.
+# Check that Codex can see an installed DevRites pack.
 #
 # Default mode uses `codex debug prompt-input`, which does not call the model.
-# Set DEVRITES_CODEX_MODEL_SMOKE=1 to also run a real `codex exec` read-only
-# session; that path requires Codex auth/network and may consume tokens.
-# Set DEVRITES_CODEX_SUBAGENT_SMOKE=1 to run a real custom-subagent spawn
-# assertion from the Codex JSON event stream; that path consumes more tokens.
+# DEVRITES_CODEX_MODEL_SMOKE=1 also runs a read-only `codex exec` session and
+# requires Codex authentication, network access, and a token budget.
+# DEVRITES_CODEX_SUBAGENT_SMOKE=1 checks a live custom-agent spawn in the Codex
+# JSON event stream and uses more tokens.
 set -u
 export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+# shellcheck disable=SC1091
+source "$ROOT/tests/runtime-smoke-lib.sh"
 fail=0
 ok() { printf '  ok: %s\n' "$*"; }
 no() { printf '  FAIL: %s\n' "$*"; fail=1; }
@@ -61,13 +63,10 @@ fi
 [ -e "$PROJECT/.codex/mcp" ] && no "DevRites MCP directory installed" || ok "DevRites MCP directory not installed"
 [ -e "$PROJECT/.codex/config.toml" ] && no "DevRites Codex MCP config installed" || ok "DevRites Codex MCP config not installed"
 
-MODEL_HOME="${DEVRITES_CODEX_MODEL_HOME:-${HOME:-}}"
-MODEL_CODEX_HOME="${DEVRITES_CODEX_MODEL_CODEX_HOME:-${CODEX_HOME:-}}"
-if [ -z "$MODEL_CODEX_HOME" ] && [ -n "$MODEL_HOME" ]; then
-  MODEL_CODEX_HOME="$MODEL_HOME/.codex"
-fi
+MODEL_HOME="${DEVRITES_CODEX_MODEL_HOME:-}"
+MODEL_CODEX_HOME="${DEVRITES_CODEX_MODEL_CODEX_HOME:-}"
 model_env_ready() {
-  [ -n "$MODEL_HOME" ] && [ -n "$MODEL_CODEX_HOME" ] && [ -d "$MODEL_CODEX_HOME" ]
+  runtime_explicit_roots_ready "$MODEL_HOME" "$MODEL_CODEX_HOME"
 }
 
 if [ "${DEVRITES_CODEX_MODEL_SMOKE:-0}" = "1" ]; then
@@ -96,10 +95,27 @@ else
   ok "model-backed codex exec skipped (set DEVRITES_CODEX_MODEL_SMOKE=1 to run)"
 fi
 
+SKILL_DISPATCH_PROMPT='Use $devrites-audit with the security axis to inspect README.md without modifying files. Follow the selected skill completely and wait for all required work to finish. Then reply exactly DEVRITES-SKILL-DISPATCH-OK.'
+SKILL_DISPATCH_ROLE="devrites-security-auditor"
+if printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -Eiq '(^|[^[:alpha:]])(sub)?agents?([^[:alpha:]]|$)'; then
+  no "skill dispatch smoke prompt must not name agents or subagents"
+else
+  ok "skill dispatch smoke activation prompt is skill-only"
+fi
+
 if [ "${DEVRITES_CODEX_SUBAGENT_SMOKE:-0}" = "1" ]; then
   if ! model_env_ready; then
     no "subagent smoke requires real Codex auth/config (set DEVRITES_CODEX_MODEL_HOME and DEVRITES_CODEX_MODEL_CODEX_HOME if needed)"
   else
+    mkdir -p "$PROJECT/.devrites/work/codex-skill-smoke"
+    printf '%s\n' '# Codex skill dispatch smoke' > "$PROJECT/README.md"
+    printf '%s\n' 'codex-skill-smoke' > "$PROJECT/.devrites/ACTIVE"
+    cat > "$PROJECT/.devrites/work/codex-skill-smoke/spec.md" <<'EOF'
+# Spec
+
+Review the installed smoke README without modifying the project.
+EOF
+    printf '%s\n' 'README.md' > "$PROJECT/.devrites/work/codex-skill-smoke/touched-files.md"
     (
       cd "$PROJECT" || exit 1
       HOME="$MODEL_HOME" CODEX_HOME="$MODEL_CODEX_HOME" codex exec \
@@ -108,16 +124,17 @@ if [ "${DEVRITES_CODEX_SUBAGENT_SMOKE:-0}" = "1" ]; then
         --skip-git-repo-check \
         --dangerously-bypass-hook-trust \
         -s read-only \
-        'Use the devrites-code-reviewer custom agent/subagent to inspect AGENTS.md only. Then reply exactly DEVRITES-SUBAGENT-OK if that subagent result was received. Do not edit files.'
+        "$SKILL_DISPATCH_PROMPT"
     ) > "$T/subagent.jsonl" 2> "$T/subagent.err"
     rc=$?
     if [ "$rc" -eq 0 ] \
       && grep -q '"tool":"spawn_agent"' "$T/subagent.jsonl" \
       && grep -q '"tool":"wait"' "$T/subagent.jsonl" \
-      && grep -q 'DEVRITES-SUBAGENT-OK' "$T/subagent.jsonl"; then
-      ok "codex custom subagent smoke passed"
+      && grep -q "$SKILL_DISPATCH_ROLE" "$T/subagent.jsonl" \
+      && grep -q 'DEVRITES-SKILL-DISPATCH-OK' "$T/subagent.jsonl"; then
+      ok "codex skill-triggered custom-role dispatch smoke passed"
     else
-      no "codex custom subagent smoke failed"
+      no "codex skill-triggered custom-role dispatch smoke failed"
       sed -n '1,80p' "$T/subagent.err"
       sed -n '1,120p' "$T/subagent.jsonl"
     fi

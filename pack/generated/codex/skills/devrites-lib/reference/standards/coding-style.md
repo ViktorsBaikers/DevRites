@@ -11,18 +11,11 @@ existing idiom first; these rules fill the gaps.
 
 ## Functions do one thing
 - One responsibility per function; if you need "and" to describe it, split it.
-- Keep functions short enough to hold in your head. Long functions hide bugs.
-- Limit parameters; a long parameter list usually wants a struct/object or a split.
 - Make edge cases explicit rather than implicit in clever control flow.
 
 ## Guard clauses over nested pyramids
-Handle the unwanted cases up front and return early; keep the success path flat.
-```
-# instead of nesting the whole body in if/else, exit early:
-if (!user) return Unauthorized
-if (!user.active) return Forbidden
-# ...happy path here, un-nested
-```
+
+Handle unwanted cases first and return early; keep the success path flat.
 
 ## Comments explain *why*, not *what*
 - Self-explanatory code beats a comment restating it. Rename before you comment.
@@ -32,7 +25,6 @@ if (!user.active) return Forbidden
 ## Simplicity
 - Prefer the simplest thing that works. Don't add abstraction before you have two real
   callers; premature generalization is a cost, not a saving.
-- Don't be clever at the expense of clear. Shorter-but-cryptic is not simpler.
 - Delete dead code you created; don't leave TODOs or stray debug logs in shipped code.
 
 ## Reuse before you write

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+
+	"github.com/devrites/devrites/internal/reason"
 )
 
 func TestNewEnvelopeOK(t *testing.T) {
@@ -11,11 +13,25 @@ func TestNewEnvelopeOK(t *testing.T) {
 	if !env.OK || env.ExitCode != 0 {
 		t.Fatalf("want ok/0, got ok=%v code=%d", env.OK, env.ExitCode)
 	}
+	if env.Schema != CommandEnvelopeSchemaV1 {
+		t.Fatalf("schema=%q", env.Schema)
+	}
 	if env.Data == nil || env.Data.Text != "phase: build\nstatus: running" {
 		t.Fatalf("data.text not captured verbatim: %+v", env.Data)
 	}
 	if len(env.Diagnostics) != 0 {
 		t.Fatalf("clean run should have no diagnostics, got %v", env.Diagnostics)
+	}
+}
+
+func TestEnvelopeReasonIsExplicitAndCatalogBound(t *testing.T) {
+	env := NewEnvelope("seal", 3, "", "").WithReason(reason.GateSealMissing)
+	if env.ReasonID != reason.GateSealMissing {
+		t.Fatalf("reason_id=%q", env.ReasonID)
+	}
+	env = env.WithReason("DRV-UNREGISTERED")
+	if env.ReasonID != reason.GateSealMissing {
+		t.Fatalf("unknown reason replaced typed reason: %q", env.ReasonID)
 	}
 }
 

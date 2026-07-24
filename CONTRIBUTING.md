@@ -66,8 +66,6 @@ first.
 
 ## Before you open a PR
 
-A 60-second checklist that saves review round-trips:
-
 - [ ] Issue exists (or the change is small enough to skip one).
 - [ ] You've read the relevant section of [`docs/architecture.md`](docs/architecture.md).
 - [ ] Commit messages follow the **strict** Conventional Commits policy below.
@@ -250,12 +248,7 @@ disclosure channels documented in [`SECURITY.md`](SECURITY.md):
 - **Confused about where a change belongs:** open a draft issue.
 - **Found a typo or broken link:** open a small PR directly.
 
-Small, well-scoped changes are easier to review and merge.
-
-
 ## Skill and agent contribution preflight
-
-Before adding a DevRites skill or agent:
 
 1. Search the catalog and open work for an existing surface. Prefer extending an existing skill/reference over creating a near-duplicate.
 2. Justify why the behavior cannot live as a reference file inside an existing skill.

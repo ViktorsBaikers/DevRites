@@ -1,12 +1,12 @@
 package main_test
 
 // Golden CLI harness: run `devrites-engine <args>` against a fixture and compare its
-// stdout + exit code to a recorded snapshot under testdata/golden/. The snapshots
+// stdout and exit code to a recorded snapshot under testdata/golden. The snapshots
 // were captured from the commands once they were proven correct, so a later change
 // that alters observable behaviour fails here. Regenerate them deliberately with
 // UPDATE_GOLDEN=1 (e.g. `UPDATE_GOLDEN=1 go test ./...`).
 //
-// stderr is intentionally NOT captured: it is diagnostic, not contract. Only
+// stderr is not captured because it is diagnostic rather than contractual. Only
 // stdout (the output the hook/command consumer reads) and the exit code are.
 
 import (
@@ -28,7 +28,7 @@ type parityCase struct {
 	goArgs  []string // args to the built devrites-engine binary (binPath is prepended)
 }
 
-// assertEqual runs the command and compares its stdout + exit code to the golden
+// assertEqual runs the command and compares its stdout and exit code to the golden
 // snapshot for the current subtest.
 func (c parityCase) assertEqual(t *testing.T) {
 	t.Helper()
@@ -104,8 +104,8 @@ func TestParityReviewerReadonly(t *testing.T) {
 		{"enforce-deny-mutating", []string{"DEVRITES_REVIEWER_RO=enforce"}, `{"tool_name":"Bash","tool_input":{"command":"rm -rf foo"}}`},
 		{"enforce-deny-git-commit", []string{"DEVRITES_REVIEWER_RO=enforce"}, `{"tool_name":"Bash","tool_input":{"command":"git commit -m x"}}`},
 		{"observe-mutating-silent", nil, `{"tool_name":"Bash","tool_input":{"command":"rm -rf foo"}}`},
-		// The agent-required gate reads agent_type ONLY (like the bash node parse),
-		// so a subagent_type-only payload has no identity and is allowed.
+		// The agent-required gate reads only agent_type, matching the Bash hook's
+		// Node parser, so a subagent_type-only payload has no identity and is allowed.
 		{"agent-required-subagent-type-only-allows",
 			[]string{"DEVRITES_REVIEWER_RO=enforce", "DEVRITES_REVIEWER_AGENT_REQUIRED=1"},
 			`{"tool_name":"Bash","tool_input":{"command":"rm -rf foo"},"subagent_type":"devrites-code-reviewer"}`},
@@ -268,7 +268,7 @@ func TestParityRedwatch(t *testing.T) {
 }
 
 // TestParityA1Guard checks `hook a1-guard` against golden snapshots for each
-// payload: it blocks a MAIN-thread source edit only when the build window is open
+// payload. It blocks a main-thread source edit only when the build window is open
 // and enforce is on, and allows subagent edits, .devrites bookkeeping edits, an
 // inline-fallback window, and a closed window.
 func TestParityA1Guard(t *testing.T) {
@@ -308,23 +308,27 @@ func TestParityA1Guard(t *testing.T) {
 }
 
 // TestParityWrightScope checks `hook wright-scope` against golden snapshots for
-// each payload: a path in touched-files.md is allowed, one outside it is denied
-// under enforce, .devrites edits and non-edit tools are allowed, and the
-// agent-required gate skips a non-wright caller.
+// each payload: an exact orchestrator-allowlisted path is allowed, one outside
+// it and every .devrites path are denied for an active wright, read-only tools
+// pass, and the agent-required gate skips a non-DevRites caller.
 func TestParityWrightScope(t *testing.T) {
 	work := t.TempDir()
-	writeFeatureFile(t, work, "ws", "touched-files.md", "# touched\n- `src/app.js`\n")
+	writeFeatureFile(t, work, "ws", ".wright-allowlist", "src/app.js\n")
 
 	enforce := []string{"DEVRITES_WRIGHT_SCOPE=enforce"}
+	activeWright := []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-slice-wright",
+	}
 	for _, tc := range []struct {
 		name  string
 		env   []string
 		stdin string
 	}{
-		{"in-scope-allowed", enforce, `{"tool_name":"Edit","tool_input":{"file_path":"src/app.js"}}`},
-		{"out-of-scope-enforce-denies", enforce, `{"tool_name":"Edit","tool_input":{"file_path":"src/other.js"}}`},
-		{"devrites-edit-allowed", enforce, `{"tool_name":"Edit","tool_input":{"file_path":".devrites/x/y.md"}}`},
-		{"non-edit-tool", enforce, `{"tool_name":"Bash","tool_input":{"command":"ls"}}`},
+		{"in-scope-allowed", activeWright, `{"tool_name":"Edit","tool_input":{"file_path":"src/app.js"}}`},
+		{"out-of-scope-enforce-denies", activeWright, `{"tool_name":"Edit","tool_input":{"file_path":"src/other.js"}}`},
+		{"devrites-edit-denied", activeWright, `{"tool_name":"Edit","tool_input":{"file_path":".devrites/x/y.md"}}`},
+		{"non-edit-tool", activeWright, `{"tool_name":"Bash","tool_input":{"command":"ls"}}`},
 		{"out-of-scope-observe-silent", nil, `{"tool_name":"Edit","tool_input":{"file_path":"src/other.js"}}`},
 		{"agent-required-non-wright", append([]string{"DEVRITES_WRIGHT_AGENT_REQUIRED=1"}, enforce...),
 			`{"tool_name":"Edit","tool_input":{"file_path":"src/other.js"},"agent_type":"Explore"}`},
@@ -343,7 +347,7 @@ func TestParityWrightScope(t *testing.T) {
 }
 
 // setActiveAFK points .devrites/ACTIVE at slug (or removes it) and toggles the
-// .devrites/AFK sentinel: the two files bash (via CWD) and the migrated Go (via
+// .devrites/AFK sentinel: the two files bash (via CWD) and Go (via
 // <root>) both read from the same shared location.
 func setActiveAFK(t *testing.T, work, slug string, afk bool) {
 	t.Helper()
@@ -371,8 +375,8 @@ func TestParityOrientSilentPath(t *testing.T) {
 
 	c := parityCase{
 		workdir: dir,
-		// Ensure DEVRITES_ROOT does not leak in and make the Go side resolve a
-		// real workspace; it must see "not a DevRites project".
+		// Clear DEVRITES_ROOT so the Go side cannot resolve a real workspace. It
+		// must see "not a DevRites project".
 		env:    []string{"DEVRITES_ROOT="},
 		goArgs: []string{"hook", "orient", "--harness=claude"},
 	}

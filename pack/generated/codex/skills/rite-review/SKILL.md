@@ -11,21 +11,25 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
+- For every DevRites specialist or writer dispatch, first call `spawn_agent` with the named `devrites-<role>` custom role. The matching project contract is `.codex/agents/devrites-<role>.toml`.
+- If `spawn_agent` is callable but a named read-only role is unavailable, use generic `explorer` only when the host proves that run has a runtime-enforced read-only sandbox. Tell it to read `.codex/agents/devrites-<role>.toml`, follow its `developer_instructions`, and execute the unchanged packet. A missing read-only custom role is not evidence that spawning is unavailable.
+- Never dispatch generic `worker` for `devrites-slice-wright` unless the host proves that worker run carries exact DevRites identity and the same `.wright-allowlist` enforcement as the named role. Codex reports a generic run as `agent_type=worker`, so the generated global hooks cannot prove that binding. Reject that unsafe rung and use the documented labelled inline wright path with `.reconcile-inline` plus the full reconcile gate.
+- If the host cannot prove the generic explorer is runtime read-only, reject that rung too. Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn may the root run the documented discipline inline. Label it `independence: fallback`, never call it independent, and apply every fallback risk gate. An unbound generic wright or unconfined generic explorer is such a safety rejection, not evidence that no agents exist.
+- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
+- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
 - When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # $rite-review: feature-scoped review
 
-Senior review of the **active feature scope only**. **Read the active workspace first**;
-if none, tell the user to run `$rite-spec <feature>`.
+Review the **active feature scope only**. **Read the active workspace first**; if none,
+tell the user to run `$rite-spec <feature>`.
 
-> **Differs from built-in `/code-review` in:** `/code-review` is a generic
-> diff review with no workspace context. `$rite-review` reads
+> **Scope:** `/code-review` is a generic diff review with no workspace context.
+> `$rite-review` reads
 > `.devrites/work/<slug>/spec.md` first, runs Spec ↔ Code-review axes as
-> parallel subagents (see [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)), and gates feeding
+> parallel fresh-context reviewers (see [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)), and gates feeding
 > into `$rite-seal`. Use `/code-review` for a one-off diff; use
 > `$rite-review` for a DevRites feature where the spec is the contract.
 
@@ -34,7 +38,7 @@ Pull these via `Read` when the diff demands them:
 - `code-review.md`: small PRs, severity labels, tests-first review focus.
 - `review-checklist.md`: compact pass/fail sweep before reporting the verdict.
 - `principles.md`: declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
-- `testing.md`: confirm the tests prove the spec, not just pass.
+- `testing.md`: confirm that passing tests actually prove the spec.
 - `agents.md`: when to fan out to which review subagent.
 - `security.md`: when input / auth / data / integrations / secrets are in scope.
 - `security-checklist.md`: for the same security-sensitive scope, the compact trust-boundary sweep.
@@ -44,10 +48,14 @@ Pull these via `Read` when the diff demands them:
 - **Feature scope only.** Review touched files + the diff. **NO whole-project refactors,
   NO drive-by cleanup.** DO NOT delete suspected dead code outside this feature without
   asking. Spec Drift Guard applies.
-- **Reviews the finished product.** `$rite-polish` has already done **code simplification**
-  + UI normalize/polish. Review judges; if it reveals a real complexity issue polish
-  missed, flag it as a finding: don't re-run a simplification sweep here.
-- Findings are labeled (below). Re-prove after any change you make.
+- **Review the finished product.** `$rite-polish` has already simplified code and
+  normalized or polished UI. If review finds a remaining complexity issue, record it as
+  a finding rather than rerunning a simplification pass.
+- Findings are labeled (below). Re-prove after any accepted correction.
+- **Reviewers judge; root reconciles; wright fixes.** Follow
+  [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns the verdict and
+  canonical writes; every accepted source/test correction routes to
+  `devrites-slice-wright`.
 
 ## Workflow
 0. Read `.agents/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
@@ -64,13 +72,14 @@ Pull these via `Read` when the diff demands them:
 2. **Review tests first:** do they prove the acceptance criteria? Missing,
    weak, or wrong tests are the first findings.
    **Completion:** every acceptance criterion maps to a proven test or a labeled finding.
-3. **Spec ↔ Code-review split (parallel sub-agents, fresh context).** A change can pass
+3. **Review spec and code separately in parallel.** A change can pass
    one axis and fail the other: code that follows every project standard but
    implements the wrong thing (Code-review pass, Spec fail), or code that does exactly
    what the spec asked but breaks project conventions (Spec pass, Code-review fail).
-   Running them serially in one context lets one mask the other. So:
-   - Dispatch **two** read-only reviewers in **parallel** via the `Task` tool, each
-     with its own narrow brief and no cross-pollination:
+   Separate contexts prevent one axis from masking the other:
+   - Freeze the candidate and fresh-context dispatch **two** read-only reviewers in
+     parallel, each with its own `agent-packet/v1`, narrow brief, and no
+     cross-pollination:
      - **Spec axis** → `devrites-spec-reviewer`: "Apply your documented discipline on
        the active feature workspace + diff. Report (a) criteria the spec asked for that
        are missing or partial, (b) behaviour in the diff the spec did not ask for
@@ -113,15 +122,20 @@ Pull these via `Read` when the diff demands them:
 6. **Performance:** apply `devrites-audit perf`
    ([performance-review](reference/performance-review.md)) only when performance is
    relevant or a regression risk is visible (measure first).
-7. Apply only in-scope fixes; **run verification after changes** (`$rite-prove` logic).
-8. Update `review.md`, `evidence.md`, and `state.md`.
-9. **Guard against the silent reviewer.** After `review.md` is written, run:
+7. Reconcile and accept only in-scope fixes. Consolidate them into one bounded wright
+   correction packet; never edit source in the reviewing context. Freeze the new candidate
+   and **run affected verification after changes** (`$rite-prove` logic), then perform at
+   most one narrow recheck of affected findings.
+8. The root updates `review.md`, `evidence.md`, and `state.md`.
+   **Completion:** the records name the reviewed candidate identity and every accepted
+   correction has affected proof plus its narrow recheck.
+9. **Require an account from every reviewer.** After `review.md` is written, run:
    ```bash
    devrites-engine review-integrity
    devrites-engine review-fingerprints --write
    ```
-   Exit 1 means an adversarial axis reported nothing and justified nothing: a suspected
-   rubber-stamp. Re-run that axis or add its `No-findings:` justification; do not carry a silent
+   Exit 1 means an adversarial axis reported neither findings nor a justification. Re-run
+   that axis or add its `No-findings:` justification; do not carry a silent
    axis into `$rite-seal` (where it surfaces as an Important).
 
 ## Finding labels
@@ -131,13 +145,13 @@ Pull these via `Read` when the diff demands them:
 - **Nit:** trivial/style.
 - **FYI:** context, no action implied.
 
-**Action decoration (orthogonal to severity).** Also tag each finding with how to act on it:
+**Action tag (separate from severity).** Tag each finding with how to act on it:
 `blocking` (fix before seal), `non-blocking` (fix when convenient), or `if-minor` (fix only if the
 change is already small: a pure noise-economics lever). Only a **`blocking` Critical** gates the
 seal; a `non-blocking` / `if-minor` finding is recorded, not a stop.
 
-## Confidence + signal-to-noise
-Borrow `$rite-vet`'s discipline so review stays **trusted, not noisy**: a reviewer that posts
+## Confidence and signal-to-noise
+Apply `$rite-vet`'s confidence rules. A reviewer that posts
 18 comments per PR teaches the team to ignore every one (below ~10% false-positive rate devs
 investigate each finding; past ~30% they label the tool noisy and skip it):
 - **Confidence-band each finding** (1-10) and state the band. A low-confidence finding (≤4)
@@ -145,21 +159,20 @@ investigate each finding; past ~30% they label the tool noisy and skip it):
   (low-confidence): n` line, never raised as Critical/Important.
 - **Verify before you escalate.** Every Critical/Important quotes the spec line or cites the
   `file:line` that proves it: no unverified blockers.
-- **Budget the noise.** Roll up trivia ("N style nits") into a single line; tooling already
+- **Limit low-value comments.** Roll up trivia ("N style nits") into a single line; tooling already
   catches style. Review's job is correctness + spec fidelity, not a lint dump.
 - **A silent axis is suspicious, not clean.** An adversarial axis that raises nothing must earn
   it: end its `## Spec` / `## Code review` section with a **`No-findings:`** line naming the
   passes it ran (missing/partial/incorrect for spec; edge cases, error paths, the riskiest
   decision, a changed behavior whose test may not cover it for code) and why each came back
-  empty. This is the mirror of confidence-banding: banding kills the false positive, this catches
-  the false negative ([`code-review.md` § Zero findings is suspicious](../devrites-lib/reference/standards/code-review.md)).
+  empty. Confidence bands suppress false positives; this requirement catches silent false
+  negatives ([`code-review.md` § Zero findings is suspicious](../devrites-lib/reference/standards/code-review.md)).
 
 ## Severity orientation (labels, not score)
 
 After labeling, summarize findings as `Critical / Important / Suggestion / Nit /
-FYI` counts. There is no composite number — `$rite-seal` gates on
-`Critical == 0` and on acceptance + drift. Inventing a number invites gaming;
-the labels do the work.
+FYI` counts. There is no composite number. `$rite-seal` gates on
+`Critical == 0` and on acceptance plus drift. Do not invent a composite score.
 
 > **Mid-flight discipline.** When tempted to demote a Critical, hide a finding, fix without re-verification, or wander out of scope: see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 

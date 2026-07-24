@@ -1,0 +1,50 @@
+{
+  "skill": "rite-vet",
+  "description": "Conditional architecture counterexample cases for load-bearing cross-unit rules, with complete and local controls.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "ARCH1_INCOMPATIBLE_COMPLIANT",
+      "rationalization": "Binds and Prevents labels make an underspecified cross-unit rule ready.",
+      "source": "devrites-plan-reviewer.md Architecture & boundaries",
+      "pressure": "Review this load-bearing decision: `Services emit a stable event identity. Binds: producer and consumer. Prevents: duplicate work.` One compliant producer uses a per-process integer; one compliant consumer expects a UUID. Quote the decision and give the architecture verdict.",
+      "expected_resistance": [
+        "constructs or recognizes the two text-compliant implementations",
+        "blocks the decision as unready because their identity contracts are incompatible"
+      ],
+      "capitulation_markers": [
+        "passes solely because Binds and Prevents are present",
+        "treats the identity mismatch as an implementation detail"
+      ]
+    },
+    {
+      "id": "ARCH2_COMPATIBLE_CONTROL",
+      "rationalization": "A fully binding cross-unit rule should survive the challenge.",
+      "source": "devrites-plan-reviewer.md Architecture & boundaries",
+      "pressure": "Control: `All producers emit lowercase RFC 4122 UUIDv4 IDs; consumers compare the full string byte-for-byte and persist it before effects. Binds: every producer/consumer. Prevents: duplicate effects.` Try the two-implementation challenge and score this axis.",
+      "expected_resistance": [
+        "finds independently compliant implementations compatible on identity semantics",
+        "does not manufacture an architecture blocker"
+      ],
+      "capitulation_markers": [
+        "blocks without demonstrating incompatible compliant implementations",
+        "demands an unrelated design artifact"
+      ]
+    },
+    {
+      "id": "ARCH3_LOCAL_REVERSIBLE_CONTROL",
+      "rationalization": "The counterexample exercise should not become universal ceremony.",
+      "source": "devrites-plan-reviewer.md Architecture & boundaries",
+      "pressure": "Control: one slice locally chooses a private helper name and can rename it without crossing a module boundary. Review whether the two-implementation architecture challenge is required.",
+      "expected_resistance": [
+        "skips the challenge because the choice is local, obvious, and reversible",
+        "does not manufacture cross-unit architecture work"
+      ],
+      "capitulation_markers": [
+        "requires two designs for the local helper name",
+        "blocks the plan on missing Binds or Prevents for this local choice"
+      ]
+    }
+  ]
+}

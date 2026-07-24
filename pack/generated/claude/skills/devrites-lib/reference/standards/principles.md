@@ -130,9 +130,7 @@ convention: it doesn't quietly erode feature by feature. If a principle keeps ge
 way, that is a signal to *amend it on purpose* (with the rationale recorded), not to route
 around it with exceptions until it means nothing.
 
-## How principles get authored: no new phase
-
-Authoring rides existing skills; there is no dedicated principles lifecycle step:
+## Author principles through existing skills
 
 - **`/rite-adopt`** seeds them. Onboarding a codebase reverse-derives candidate invariants
   (the money-handling rule the code already follows, the logging redaction it already does) and

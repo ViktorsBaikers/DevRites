@@ -11,26 +11,27 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
+- For every DevRites specialist or writer dispatch, first call `spawn_agent` with the named `devrites-<role>` custom role. The matching project contract is `.codex/agents/devrites-<role>.toml`.
+- If `spawn_agent` is callable but a named read-only role is unavailable, use generic `explorer` only when the host proves that run has a runtime-enforced read-only sandbox. Tell it to read `.codex/agents/devrites-<role>.toml`, follow its `developer_instructions`, and execute the unchanged packet. A missing read-only custom role is not evidence that spawning is unavailable.
+- Never dispatch generic `worker` for `devrites-slice-wright` unless the host proves that worker run carries exact DevRites identity and the same `.wright-allowlist` enforcement as the named role. Codex reports a generic run as `agent_type=worker`, so the generated global hooks cannot prove that binding. Reject that unsafe rung and use the documented labelled inline wright path with `.reconcile-inline` plus the full reconcile gate.
+- If the host cannot prove the generic explorer is runtime read-only, reject that rung too. Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn may the root run the documented discipline inline. Label it `independence: fallback`, never call it independent, and apply every fallback risk gate. An unbound generic wright or unconfined generic explorer is such a safety rejection, not evidence that no agents exist.
+- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
+- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
 - When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
-# $rite-adopt: brownfield on-ramp
+# $rite-adopt: onboard existing code
 
-The **reverse** of `$rite-spec`. `$rite-spec` goes idea → spec; `$rite-adopt` goes
-**existing code → spec + seeded conventions**, so an already-built project can enter the
-DevRites lifecycle without hand-writing a spec from nothing. It produces the same
-`spec.md` the rest of the lifecycle expects, plus a head start in the conventions ledger
-so the very first new slice already knows the project's idioms.
+`$rite-adopt` derives a spec and initial conventions from existing code. It produces the
+same `spec.md` used by the rest of the lifecycle and seeds the conventions ledger with
+observed project idioms.
 
-Use it once, at the start, to onboard a repo (or a sub-area of one). After it, the normal
-lifecycle (`$rite-temper` → `$rite-define` → `$rite-build` …) takes over.
+Use it once when onboarding a repository or one of its sub-areas. Continue with
+`$rite-clarify`, `$rite-temper`, `$rite-define`, and `$rite-build`.
 
-> **Just want a map, not an onboarding?** `$rite-zoom-out` returns a structural map of
-> unfamiliar code without creating a workspace or ledger. `$rite-adopt` is the heavier move:
-> it *commits the project to the lifecycle*. Pick zoom-out to look, adopt to begin.
+> **Need only a code map?** `$rite-zoom-out` maps unfamiliar code without creating a
+> workspace or ledger. Use `$rite-adopt` when the project should enter the lifecycle.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
 Pull `documentation.md` when recording the adoption decisions (why-not-what) in
@@ -49,7 +50,7 @@ upholds invariants worth proposing as project principles (step 4a).
    if stated: what the user wants to build *next* on top of it. If the next-build objective
    is missing, ask once (it shapes the spec's acceptance); if the area is ambiguous, confirm
    before investigating the whole tree.
-2. **Reverse-investigate the existing code:** the durable shape of the project. Use a
+2. **Inspect the existing code** to establish the project's current structure. Use a
    code-intelligence index if available (codebase-memory-mcp first (its `get_architecture`
    gives a fast overview), cross-checked with codegraph + graphify, else standard methods
    (LSP / Read/Grep/Glob); see `.agents/skills/devrites-lib/reference/standards/tooling.md`) for
@@ -64,10 +65,10 @@ upholds invariants worth proposing as project principles (step 4a).
    **current behavior as the baseline** and the **next objective** (what adoption is for) with
    measurable acceptance. Also write `decisions.md`, `assumptions.md`, `questions.md`, and
    `state.md` (phase: spec).
-3a. **Seed the capability ledger** from the baseline. If the reverse-derived `spec.md` carries
+3a. **Seed the capability ledger** from the baseline. If the derived `spec.md` carries
    structured `### Requirement:` blocks, fold them into the living
-   `.devrites/specs/<capability>/spec.md` ledger so the project's *current* proven behavior is on
-   record before the first new feature: the ledger the next `$rite-spec` writes deltas against
+   `.devrites/specs/<capability>/spec.md` ledger so the project's current proven behavior is
+   recorded before the first new feature. The next `$rite-spec` writes deltas against this ledger
    ([ledger.md](../rite-ship/reference/ledger.md)). A flat baseline folds as all-ADDED into the
    feature slug's capability; tag capabilities in the spec first if you want finer granularity.
    ```bash
@@ -75,29 +76,28 @@ upholds invariants worth proposing as project principles (step 4a).
    devrites-engine ledger sync .devrites/work/<slug>   # seed
    ```
    Skip when the baseline records no structured requirements (nothing to seed).
-4. **Seed the conventions ledger** from what the investigation *observed*:
-   [adoption § seeding](reference/adoption.md). This is the deliberate bootstrap exception to
-   evidence-gated promotion: the seeds start at the base band and are provenance-tagged as
-   onboarding observations, not sealed-slice proofs, so real slices later corroborate or
-   (fresh-wins) contradict them.
+4. **Seed the conventions ledger** from observed behavior:
+   [adoption § seeding](reference/adoption.md). This is the bootstrap exception to
+   evidence-gated promotion. Seeds start at the base band with onboarding provenance;
+   later sealed slices may confirm or contradict them, and fresh evidence wins.
    **Completion:** every seed names observed evidence, provenance, and the base band.
-4a. **Propose candidate principles** (human-ratified; optional). Where the investigation found an
-   invariant the code *consistently and deliberately* upholds (money always in integer cents, PII
-   always redacted from logs, every v1 endpoint preserved) surface it as a **candidate
-   principle**, not a seeded convention. Principles are prescriptive and gating, so they are
-   **ratified by the human, never auto-seeded** the way conventions are: present the candidates via
-   `AskUserQuestion` with the evidence (where the code upholds it), and write the ones the human
-   ratifies to `.devrites/principles.md` with a dated Governance entry
-   ([`principles.md`](../devrites-lib/reference/standards/principles.md)). Propose, don't impose: an unratified candidate
-   stays a convention, not a gate. Skip cleanly when nothing rises to an invariant (common: a
-   fresh adopt may declare zero principles, and that's valid).
-5. **Hand off.** Spec and ledger are ready. Next: `$rite-temper` if big/risky,
-   else `$rite-define`; every plan then runs `$rite-vet` before build. Do not plan/build here.
+4a. **Propose candidate principles** (optional and human-ratified). When the code
+   consistently enforces an invariant, such as integer cents for money, redacted PII in
+   logs, or preserved v1 endpoints, propose it as a **candidate principle** rather than a
+   convention. Principles are prescriptive gates, so **never seed them automatically**.
+   Present each candidate through `AskUserQuestion` with evidence, and write human-ratified
+   candidates to `.devrites/principles.md` with a dated Governance entry
+   ([`principles.md`](../devrites-lib/reference/standards/principles.md)). An unratified
+   candidate remains a convention, not a gate. If no invariant qualifies, declare no
+   principles.
+5. **Hand off.** Continue with `$rite-clarify`. Its topology scan asks no questions when
+   the derived contract is already clear. Every plan then runs `$rite-vet` before build.
+   Do not plan or build here.
    **Completion:** one next rite is reported and no plan or application code was written.
 
-> **Mid-flight discipline.** Don't invent conventions the code doesn't follow, don't
-> seed an idiom you only assumed, and don't expand scope into a rewrite: adoption documents
-> what exists; the *next* feature changes it. See [`anti-patterns`](reference/anti-patterns.md).
+> **Mid-flight discipline.** Do not invent conventions, seed an assumed idiom, or turn
+> adoption into a rewrite. Adoption records existing behavior; a later feature changes it.
+> See [`anti-patterns`](reference/anti-patterns.md).
 
 ## Output
 
@@ -108,8 +108,8 @@ Default success shape:
 Done: adopted existing behavior into <slug>; baseline spec and placement recorded.
 Changed: spec.md, decisions.md, conventions ledger, principles proposals <updated|none>
 Evidence: not applicable; reverse-derived behavior is recorded for review
-Open: <none | adoption questions | Alternative: $rite-define for straightforward follow-up>
-Next: $rite-temper
+Open: <none | adoption questions>
+Next: $rite-clarify
 Record: .devrites/work/<slug>/spec.md
 ↻ Hygiene: /clear before the next phase
 ```

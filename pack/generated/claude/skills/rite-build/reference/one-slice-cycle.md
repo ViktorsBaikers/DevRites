@@ -9,8 +9,8 @@ The orchestrator (`/rite-build`) gates and records; the **wright** writes. See
 ```
 SELECT    → orchestrator: restate slice goal + acceptance + scope boundary; HITL gate (pause pre-code)
 (SHAPE)   → orchestrator: if UI and no design-brief.md, shape it (devrites-ux-shape) before dispatch
-(FORGE)   → orchestrator: if slice is Forge: yes, compete K=2–3 isolated candidate wrights →
-            devrites-forge-judge → land one winner → forge-report.md, then continue at DOUBT (forge.md)
+(FORGE)   → orchestrator: if slice is Forge: yes, engine plan → snapshot → bound isolated
+            candidates → extract → judge → record + merge one winner, then continue at DOUBT (forge.md)
 DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). Inside the wright:
    ORIENT    → load only the files this slice touches; learn the project's idiom; reuse-first
    (RED)     → if behavior change: write the failing test first
@@ -18,7 +18,8 @@ DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). 
    VERIFY    → targeted tests (+ types/lint/build); fail-on-red; return artifact — code + tests only
 (DOUBT)   → orchestrator, on return: devrites-doubt each non-trivial decision the wright stood up
 PROVE     → orchestrator: fail-on-red check on the wright's gates; browser proof for UI
-RECORD    → orchestrator: state.md, evidence.md, touched-files.md (the canonical writer)
+RECORD    → orchestrator: after green verification, Forge cleanup/report if used; then
+            state.md, evidence.md, touched-files.md (the canonical writer)
 (CHECKPOINT) → orchestrator: if .devrites/CHECKPOINT is set, commit the proven slice
             local-only as WIP(<slug>) with a [devrites-context] body → survives a crash (checkpoint.md)
 STOP      → report + recommend next; do not start slice N+1

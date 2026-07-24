@@ -1,10 +1,10 @@
 # Harness adapter compliance
 
-DevRites drives more than one agent runtime from a single `devrites-engine`
-binary, but the runtimes do not expose identical enforcement surfaces. This page
-states, for each surface, whether a supported harness enforces it natively,
-through an adapter, or only by instruction the model may ignore. It is the honest
-answer to "does DevRites work the same on Codex as on Claude Code?"
+A single `devrites-engine` binary supports multiple agent runtimes, but those
+runtimes expose different enforcement surfaces. For each surface, this page
+states whether a supported harness provides native enforcement, uses an
+adapter, or relies on instructions that the model may ignore. The matrix shows
+where Codex and Claude Code behavior differs.
 
 Host support is enumerated in `engine/internal/harness/harness.go`, with the
 frozen capability matrix in `compliance.go`. New hosts must pass
@@ -15,6 +15,8 @@ The table below is **generated**. Its tiers describe whether the host exposes an
 event surface; they do not by themselves mean that every hook blocks. `a1-guard`,
 `reviewer-readonly`, `wright-scope`, and `stop-gate` are observe-only by default and become
 blocking only when the documented strict-enforcement environment switch is enabled.
+`git-guard` is different: standard and strict profiles enforce it; only minimal
+profile or its explicit kill-list entry disables it.
 
 The single source of truth is the frozen matrix
 in `engine/internal/harness/compliance.go`; regenerate this block with:
@@ -32,7 +34,9 @@ the table and the code can never silently drift apart.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | SessionStart orientation | Native | Native | all phases | manual preamble/snapshot | yes | high | Both wire the orient hook; identical additionalContext envelope. |
 | PreToolUse policy (allow, a1-guard, reviewer-readonly, wright-scope) | Conditional | Conditional | build/review safety | observe-only findings + human review | yes | high | Both deliver the event, but these policies are non-blocking by default; DEVRITES_HOOK_PROFILE=strict enables every guard, or each guard can be enabled through its documented specific variable. |
+| Destructive Git authority | Conditional | Conditional | all shell tool calls | human permission review; no exact one-shot proof | yes | high | Both wire git-guard at PreToolUse. Standard and strict profiles enforce exact 15-minute one-shot authority; minimal profile or the explicit kill list disables the hook. |
 | PostToolUse sentinel (redwatch) | Native | Native | prove/build rest points | manual red/green check | yes | high | Fail-on-red sentinel wired on both. |
+| WebFetch ingestion warning trial | Conditional | Instruction-backed | external research | inspect retrieved content as untrusted data | no | medium | Claude WebFetch PostToolUse can emit an opt-in metadata-only warning with DEVRITES_INGEST_WARNING=warn; a flagged result remains in context and is omitted from the local source cache. Codex has no matching result event, so this trial is unavailable and silent. |
 | Stop gate | Conditional | Conditional | all rest points | observe-only finding + manual host-specific rite-status | yes | high | Both deliver Stop; stop-gate blocks with DEVRITES_STOP_GATE=enforce or DEVRITES_HOOK_PROFILE=strict. |
 | SubagentStart discipline injection | Native | Native | review/build fan-out | agent file preamble | yes | high | subagent-orient wired on both. |
 | Skill invocation | Native | Adapter-backed | all public rites | explicit file read | yes | high | Claude: native /rite. Codex: $rite over the mirrored .agents/skills tree. |
@@ -43,3 +47,23 @@ the table and the code can never silently drift apart.
 Tiers: **Native** (the harness exposes and delivers the surface directly; policy notes state whether it blocks) · **Adapter-backed** (supported through a translation shim) · **Instruction-backed** (no runtime surface: rides on a directive the model may under-fire) · **Conditional** (native but gated on an operator precondition).
 
 <!-- END harness-matrix -->
+
+## Contract evidence
+
+The matrix above records what each host can support. The agent-contract eval
+checks whether the complete dispatch path behaves as claimed. Its 12 scenarios
+cover named reviewer and wright runs, generic and inline fallbacks, denial
+paths, stale or malformed results, session orientation, interruption, and
+post-compaction recovery. Every scenario runs once on Claude and once on
+Codex, for 24 isolated cells.
+
+```bash
+python3 scripts/run-agent-contract-evals.py --fake
+```
+
+Fake mode is the only project gate. It uses hermetic host wrappers without a
+network, model, or credential. The matrix verifies transport, isolation,
+fallback, and scoring behavior, but it does not prove behavior on a real Claude
+or Codex host. DevRites records that limit instead of running provider-backed
+sessions. See [the eval guide](../evals/README.md) for the deterministic
+commands.
