@@ -100,7 +100,7 @@ func makeTree(t *testing.T, mtime time.Time) string {
 		mode    os.FileMode
 	}{
 		"README.md":       {"read me\n", 0o644},
-		"install.sh":      {"#!/bin/sh\nexit 0\n", 0o755},
+		"install.sh":      {"#!/bin/sh\nexit 0\n", 0o644},
 		"nested/data.txt": {"payload\n", 0o644},
 	}
 	for name, file := range files {

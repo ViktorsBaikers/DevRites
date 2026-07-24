@@ -255,19 +255,3 @@ type StopResult struct {
 	EvidenceFiles []string
 	Blocked       bool
 }
-
-func sectionNames(ss []state.Section) []string {
-	out := make([]string, len(ss))
-	for i, s := range ss {
-		out[i] = string(s)
-	}
-	return out
-}
-
-func fileNames(ss []state.Section) []string {
-	out := make([]string, len(ss))
-	for i, s := range ss {
-		out[i] = string(s) + ".md"
-	}
-	return out
-}

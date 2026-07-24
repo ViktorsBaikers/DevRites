@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -329,21 +330,23 @@ func TestInstallBinaryUsesEngineHandoff(t *testing.T) {
 	payload := testPayload(t)
 	target := t.TempDir()
 	binDir := t.TempDir()
-	engine := filepath.Join(t.TempDir(), "devrites-engine")
-	engineBody := "#!/bin/sh\nif [ \"$1\" = version ]; then echo 1.2.3; exit 0; fi\necho handoff\n"
-	testutil.WriteExecutable(t, engine, engineBody)
+	engine := buildVersionBinary(t, "1.2.3")
+	engineBody, err := os.ReadFile(engine)
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("DEVRITES_ENGINE_CLI", engine)
 	t.Setenv("DEVRITES_BIN_DIR", binDir)
 	t.Setenv("DEVRITES_REF", "v1.2.3")
 	conflictDir := t.TempDir()
-	testutil.WriteExecutable(t, filepath.Join(conflictDir, "devrites-engine"), "#!/bin/sh\necho 0.0.1\n")
+	testutil.WriteExecutable(t, filepath.Join(conflictDir, engineBinaryName()), "conflict\n")
 	t.Setenv("PATH", conflictDir)
 
 	runInstall(t, target, payload, func(o *Options) {})
 
-	installed := filepath.Join(binDir, "devrites-engine")
-	if got := testutil.ReadFile(t, installed); got != engineBody {
-		t.Fatalf("installed binary did not come from DEVRITES_ENGINE_CLI handoff:\n%s", got)
+	installed := filepath.Join(binDir, engineBinaryName())
+	if got, err := os.ReadFile(installed); err != nil || !bytes.Equal(got, engineBody) {
+		t.Fatalf("installed binary did not come from DEVRITES_ENGINE_CLI handoff: %v", err)
 	}
 	info, err := os.Stat(installed)
 	if err != nil {
@@ -463,8 +466,7 @@ func TestInstallBinaryWarnsWhenHooksCannotResolveEngine(t *testing.T) {
 	payload := testPayload(t)
 	target := t.TempDir()
 	binDir := t.TempDir()
-	engine := filepath.Join(t.TempDir(), "devrites-engine")
-	testutil.WriteExecutable(t, engine, "#!/bin/sh\nif [ \"$1\" = version ]; then echo 1.2.3; exit 0; fi\n")
+	engine := buildVersionBinary(t, "1.2.3")
 	pathDir := t.TempDir()
 	var stderr bytes.Buffer
 
@@ -480,6 +482,18 @@ func TestInstallBinaryWarnsWhenHooksCannotResolveEngine(t *testing.T) {
 	if !strings.Contains(stderr.String(), "not on PATH") {
 		t.Fatalf("missing PATH reachability warning:\n%s", stderr.String())
 	}
+}
+
+func buildVersionBinary(t *testing.T, version string) string {
+	t.Helper()
+	dir := t.TempDir()
+	source := filepath.Join(dir, "main.go")
+	testutil.WriteFile(t, source, fmt.Sprintf("package main\nimport \"fmt\"\nfunc main() { fmt.Println(%q) }\n", version))
+	binary := filepath.Join(dir, engineBinaryName())
+	if out, err := exec.Command("go", "build", "-o", binary, source).CombinedOutput(); err != nil {
+		t.Fatalf("build test engine: %v\n%s", err, out)
+	}
+	return binary
 }
 
 func TestBinaryCandidatesSkipsUnsetBinDir(t *testing.T) {

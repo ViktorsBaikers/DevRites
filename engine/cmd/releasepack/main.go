@@ -185,7 +185,7 @@ func writeEntries(tw *tar.Writer, entries []archiveEntry, epoch time.Time) error
 		size := entry.info.Size()
 		if entry.info.IsDir() {
 			mode, typeflag, size = 0o755, tar.TypeDir, 0
-		} else if entry.info.Mode().Perm()&0o111 != 0 {
+		} else if entry.info.Mode().Perm()&0o111 != 0 || path.Ext(entry.archiveName) == ".sh" {
 			mode = 0o755
 		}
 		header := &tar.Header{

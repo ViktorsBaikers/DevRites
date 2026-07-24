@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -223,34 +222,13 @@ const (
 	livenessDead
 )
 
-// ProcessStartToken returns a stable token for the current incarnation of pid.
-// Callers record it with the worker PID so PID reuse is distinguishable.
-func ProcessStartToken(pid int) (string, error) {
-	if pid <= 0 {
-		return "", errors.New("forge: PID must be positive")
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "ps", "-o", "lstart=,command=", "-p", strconv.Itoa(pid))
-	cmd.Env = append(os.Environ(), "LC_ALL=C")
-	out, err := cmd.Output()
-	if err != nil || strings.TrimSpace(string(out)) == "" {
-		return "", fmt.Errorf("forge: cannot prove process start for PID %d", pid)
-	}
-	sum := sha256.Sum256([]byte(strings.TrimSpace(string(out))))
-	return hex.EncodeToString(sum[:]), nil
-}
-
 func workerLiveness(w Worker) (liveness, string) {
 	if w.PID <= 0 || w.ProcessStart == "" {
 		return livenessUnknown, "worker liveness proof is missing"
 	}
 	token, err := ProcessStartToken(w.PID)
 	if err != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		cmd := exec.CommandContext(ctx, "ps", "-p", strconv.Itoa(w.PID))
-		if runErr := cmd.Run(); runErr != nil {
+		if processLiveness(w.PID) == livenessDead {
 			return livenessDead, ""
 		}
 		return livenessUnknown, "worker process exists but its start token is unverifiable"

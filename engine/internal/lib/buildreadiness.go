@@ -97,12 +97,3 @@ func readinessField(lines []string, key string) string {
 	}
 	return strings.TrimRight(value, spaceChars)
 }
-
-func readinessArtifactHas(path, key, want string) bool {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	value, ok := state.CursorField(splitLinesNoTrailing(data), key)
-	return ok && strings.EqualFold(strings.TrimSpace(value), want)
-}

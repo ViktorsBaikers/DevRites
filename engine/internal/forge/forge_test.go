@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	acceptanceHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	testPlanHash   = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	acceptanceHash     = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	testPlanHash       = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	forgeWorkerTestEnv = "DEVRITES_FORGE_TEST_WORKER"
 )
 
 func TestForgeFullTreeMergeCleanupAndIdempotence(t *testing.T) {
@@ -344,9 +345,6 @@ func TestRunPlanRequiresExactWorkerBindingBeforeSideEffects(t *testing.T) {
 }
 
 func TestRunProcessTokenMatchesAPIAndRejectsInvalidPID(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Forge liveness currently requires ps")
-	}
 	want, err := ProcessStartToken(os.Getpid())
 	if err != nil {
 		t.Fatal(err)
@@ -404,7 +402,8 @@ type workerProcess struct {
 
 func startWorker(t *testing.T, repo, runID string, candidate CandidateID, id string) *workerProcess {
 	t.Helper()
-	cmd := exec.Command("sleep", "30")
+	cmd := exec.Command(os.Args[0], "-test.run=^TestForgeWorkerProcess$")
+	cmd.Env = append(os.Environ(), forgeWorkerTestEnv+"=1")
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -433,6 +432,15 @@ func startWorker(t *testing.T, repo, runID string, candidate CandidateID, id str
 		t.Fatal(err)
 	}
 	return &workerProcess{repo: repo, runID: runID, id: id, cand: candidate, cmd: cmd, token: token}
+}
+
+func TestForgeWorkerProcess(t *testing.T) {
+	if os.Getenv(forgeWorkerTestEnv) != "1" {
+		return
+	}
+	for {
+		time.Sleep(time.Hour)
+	}
 }
 
 func (w *workerProcess) finish(t *testing.T, state CandidateState) {

@@ -1,7 +1,6 @@
 package toolpolicy
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
@@ -380,11 +379,4 @@ func basename(s string) string {
 		return s[i+1:]
 	}
 	return s
-}
-
-func requireWord(words []shellToken, at int, what string) (shellToken, error) {
-	if at >= len(words) {
-		return shellToken{}, fmt.Errorf("%s requires a value", what)
-	}
-	return words[at], nil
 }

@@ -701,14 +701,14 @@ func forgeWrightProjectDir(primaryProject, activeSlug string, in harness.GuardIn
 		return "", err
 	}
 	if manifest.FeatureSlug != activeSlug {
-		return "", fmt.Errorf("Forge run belongs to feature %q, not active feature %q", manifest.FeatureSlug, activeSlug)
+		return "", fmt.Errorf("forge run belongs to feature %q, not active feature %q", manifest.FeatureSlug, activeSlug)
 	}
 	candidate, err := manifest.Candidate(forge.CandidateID(values[forgeCandidateEnvName]))
 	if err != nil {
 		return "", err
 	}
 	if candidate.State != forge.StateRunning {
-		return "", fmt.Errorf("Forge candidate %s is %s, not running", candidate.ID, candidate.State)
+		return "", fmt.Errorf("forge candidate %s is %s, not running", candidate.ID, candidate.State)
 	}
 	pid, err := strconv.Atoi(values[forgePIDEnvName])
 	if err != nil || strconv.Itoa(pid) != values[forgePIDEnvName] {
@@ -717,14 +717,14 @@ func forgeWrightProjectDir(primaryProject, activeSlug string, in harness.GuardIn
 	if candidate.Worker.ID != values[forgeWorkerEnvName] ||
 		candidate.Worker.PID != pid ||
 		candidate.Worker.ProcessStart != values[forgeProcessEnvName] {
-		return "", fmt.Errorf("Forge worker identity does not match the manifest")
+		return "", fmt.Errorf("forge worker identity does not match the manifest")
 	}
 	if in.AgentID != "" && in.AgentID != candidate.Worker.ID {
 		return "", fmt.Errorf("hook agent identity does not match Forge worker %q", candidate.Worker.ID)
 	}
 	liveToken, err := forge.ProcessStartToken(candidate.Worker.PID)
 	if err != nil || liveToken != candidate.Worker.ProcessStart {
-		return "", fmt.Errorf("Forge worker liveness token is no longer valid")
+		return "", fmt.Errorf("forge worker liveness token is no longer valid")
 	}
 
 	cwd, err := physicalWorkingDir()
@@ -736,13 +736,13 @@ func forgeWrightProjectDir(primaryProject, activeSlug string, in harness.GuardIn
 	}
 	facts, _ := rootfacts.ResolveFrom(cwd, "")
 	if facts.Git.TopLevel != candidate.Worktree || facts.Git.CommonDir != manifest.GitCommonDir {
-		return "", fmt.Errorf("Forge candidate Git identity does not match the manifest")
+		return "", fmt.Errorf("forge candidate Git identity does not match the manifest")
 	}
 	cmd := exec.Command("git", "-C", cwd, "symbolic-ref", "--quiet", "--short", "HEAD")
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "LC_ALL=C")
 	branch, err := cmd.Output()
 	if err != nil || strings.TrimSpace(string(branch)) != candidate.Branch {
-		return "", fmt.Errorf("Forge candidate branch does not match the manifest")
+		return "", fmt.Errorf("forge candidate branch does not match the manifest")
 	}
 	return candidate.Worktree, nil
 }

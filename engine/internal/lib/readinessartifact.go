@@ -149,53 +149,53 @@ func validateDecisionCoverage(root, slug string) error {
 
 	topology, err := markdownTable(data, "Topology")
 	if err != nil || len(topology) == 0 {
-		return errors.New("Topology must contain at least one evidence-backed row")
+		return errors.New("topology must contain at least one evidence-backed row")
 	}
 	for i, row := range topology {
 		if len(row) < 4 || !substantiveCells(row, 0, 1, 3) {
-			return fmt.Errorf("Topology row %d is not evidence-backed", i+1)
+			return fmt.Errorf("topology row %d is not evidence-backed", i+1)
 		}
 	}
 	rows, err := markdownTable(data, "Coverage matrix")
 	if err != nil || len(rows) == 0 {
-		return errors.New("Coverage matrix must contain at least one row")
+		return errors.New("coverage matrix must contain at least one row")
 	}
 	allowed := []string{"closed", "agent-owned", "not-applicable", "deferred-nonblocking"}
 	for i, row := range rows {
 		if len(row) < 6 {
-			return fmt.Errorf("Coverage matrix row %d has %d cells; want 6", i+1, len(row))
+			return fmt.Errorf("coverage matrix row %d has %d cells; want 6", i+1, len(row))
 		}
 		status := strings.ToLower(strings.TrimSpace(row[2]))
 		if !substantiveCells(row, 0, 1, 5) {
-			return fmt.Errorf("Coverage matrix row %d is incomplete", i+1)
+			return fmt.Errorf("coverage matrix row %d is incomplete", i+1)
 		}
 		if !slices.Contains(allowed, status) {
-			return fmt.Errorf("Coverage matrix row %d has unresolved status %q", i+1, row[2])
+			return fmt.Errorf("coverage matrix row %d has unresolved status %q", i+1, row[2])
 		}
 		if status == "closed" && !substantiveCells(row, 3) {
-			return fmt.Errorf("Coverage matrix row %d is closed without a canonical reference", i+1)
+			return fmt.Errorf("coverage matrix row %d is closed without a canonical reference", i+1)
 		}
 		if (status == "agent-owned" || status == "deferred-nonblocking") &&
 			emptyOrNA(row[4]) {
-			return fmt.Errorf("Coverage matrix row %d has status %q without an owner/validation gate", i+1, row[2])
+			return fmt.Errorf("coverage matrix row %d has status %q without an owner/validation gate", i+1, row[2])
 		}
 	}
 	assumptions, _ := markdownTable(data, "Assumption audit")
 	for i, row := range assumptions {
 		if len(row) < 6 {
-			return fmt.Errorf("Assumption audit row %d has %d cells; want 6", i+1, len(row))
+			return fmt.Errorf("assumption audit row %d has %d cells; want 6", i+1, len(row))
 		}
 		if !noneRow(row[0]) && !substantiveCells(row, 0, 1, 2, 3, 4, 5) {
-			return fmt.Errorf("Assumption audit row %d is unowned or unverifiable", i+1)
+			return fmt.Errorf("assumption audit row %d is unowned or unverifiable", i+1)
 		}
 	}
 	residual, _ := markdownTable(data, "Residual uncertainty")
 	for i, row := range residual {
 		if len(row) < 4 {
-			return fmt.Errorf("Residual uncertainty row %d has %d cells; want 4", i+1, len(row))
+			return fmt.Errorf("residual uncertainty row %d has %d cells; want 4", i+1, len(row))
 		}
 		if !noneRow(row[0]) && !substantiveCells(row, 0, 1, 2, 3) {
-			return fmt.Errorf("Residual uncertainty row %d is unowned or unverifiable", i+1)
+			return fmt.Errorf("residual uncertainty row %d is unowned or unverifiable", i+1)
 		}
 	}
 	return nil
@@ -213,30 +213,30 @@ func validateEngineeringReadiness(root, slug string) error {
 
 	preflight, err := markdownTable(data, "2a. Build-entry preflight")
 	if err != nil || len(preflight) == 0 {
-		return errors.New("Build-entry preflight must contain at least one row")
+		return errors.New("build-entry preflight must contain at least one row")
 	}
 	for i, row := range preflight {
 		if len(row) < 7 {
-			return fmt.Errorf("Build-entry preflight row %d has %d cells; want 7", i+1, len(row))
+			return fmt.Errorf("build-entry preflight row %d has %d cells; want 7", i+1, len(row))
 		}
 		verdict := strings.ToLower(strings.TrimSpace(row[6]))
 		if verdict != "pass" && verdict != "n/a" {
-			return fmt.Errorf("Build-entry preflight row %d is not passing: %q", i+1, row[6])
+			return fmt.Errorf("build-entry preflight row %d is not passing: %q", i+1, row[6])
 		}
 		if !substantiveCells(row, 0) ||
 			verdict == "pass" && !substantiveCells(row, 1, 2, 4, 5) {
-			return fmt.Errorf("Build-entry preflight row %d lacks executable provenance", i+1)
+			return fmt.Errorf("build-entry preflight row %d lacks executable provenance", i+1)
 		}
 	}
 
 	readiness, err := markdownTable(data, "2b. Implementation readiness")
 	if err != nil || len(readiness) == 0 {
-		return errors.New("Implementation readiness table must contain at least one row")
+		return errors.New("implementation readiness table must contain at least one row")
 	}
 	for i, row := range readiness {
 		if len(row) < 6 || !strings.EqualFold(strings.TrimSpace(row[5]), "ready") ||
 			!substantiveCells(row, 0, 1, 2, 3, 4) {
-			return fmt.Errorf("Implementation readiness row %d is not ready", i+1)
+			return fmt.Errorf("implementation readiness row %d is not ready", i+1)
 		}
 	}
 	return nil
