@@ -51,6 +51,7 @@ cat > "$T/small-eval.json" <<'JSON'
 {"skill":"rite-demo","description":"Small direct-command corpus.","queries":[{"text":"/rite-demo","expected":"should_trigger","rationale":"Direct invocation."},{"text":"run something else","expected":"should_not_trigger","rationale":"Negative boundary."}]}
 JSON
 run_ok "trigger eval schema accepts variable corpus size" bash "$ROOT/scripts/run-evals.sh" "$T/small-eval.json"
+run_ok "default trigger eval scan ignores nested non-trigger schemas" bash "$ROOT/scripts/run-evals.sh"
 cat > "$T/empty-eval.json" <<'JSON'
 {"skill":"rite-demo","description":"Invalid empty corpus.","queries":[]}
 JSON
