@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/devrites/devrites/internal/rootfacts"
 	"github.com/devrites/devrites/internal/version"
 )
 
@@ -146,5 +147,78 @@ func TestDiagnoseReportsHostArtifactDrift(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Fatalf("doctor output missing %q:\n%s", want, out)
 		}
+	}
+}
+
+func TestDiagnoseFactsReportsCanonicalRootAndStaleActive(t *testing.T) {
+	projectDir := t.TempDir()
+	root := filepath.Join(projectDir, ".devrites")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "ACTIVE"), []byte("ghost\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	facts, err := rootfacts.ResolveFrom(projectDir, projectDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := DiagnoseFacts(facts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := r.Render()
+	for _, want := range []string{
+		"root: " + facts.PhysicalRoot,
+		"root-selection: DEVRITES_ROOT",
+		"[DRV-ACTIVE-STALE]",
+		"fix: rm -f",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("doctor output missing %q:\n%s", want, out)
+		}
+	}
+	if r.Refuse {
+		t.Fatal("stale ACTIVE should warn, not turn a read-only doctor run into a refusal")
+	}
+}
+
+func TestDiagnoseReportsCanonicalGeneratedResidue(t *testing.T) {
+	projectDir := t.TempDir()
+	canonical := filepath.Join(projectDir, "pack", ".claude")
+	generated := filepath.Join(projectDir, "pack", "generated", "claude")
+	for _, dir := range []string{canonical, generated} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, path := range []string{
+		filepath.Join(canonical, "settings.json"),
+		filepath.Join(generated, "settings.json"),
+	} {
+		if err := os.WriteFile(path, []byte(`{"hooks":{}}`), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	root := t.TempDir()
+	writeFeature(t, root, "f", 1)
+	aligned, err := Diagnose(projectDir, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(aligned.Render(), "DRV-GENERATED-DRIFT") {
+		t.Fatalf("aligned generated tree reported drift:\n%s", aligned.Render())
+	}
+
+	if err := os.WriteFile(filepath.Join(generated, "legacy.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	drifted, err := Diagnose(projectDir, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(drifted.Render(), "[DRV-GENERATED-DRIFT]") ||
+		!strings.Contains(drifted.Render(), "bash scripts/build-host-artifacts.sh") {
+		t.Fatalf("generated residue not diagnosed:\n%s", drifted.Render())
 	}
 }

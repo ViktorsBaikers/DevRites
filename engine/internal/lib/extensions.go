@@ -211,9 +211,6 @@ func extensionsValidate(extDir string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// validateComponentManifest enforces DevRites' Spec Kit-inspired component
-// contract while keeping distribution npm-first and project-local. It accepts a
-// small YAML subset instead of pulling a YAML dependency into the static engine.
 func validateProvenance(extName, path string) []string {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -245,6 +242,8 @@ func validateProvenance(extName, path string) []string {
 	return problems
 }
 
+// validateComponentManifest enforces the project-local component contract
+// through a small YAML subset instead of adding a dependency to the static engine.
 func validateComponentManifest(extName, path string) []string {
 	content, ok := readFileOK(path)
 	if !ok {

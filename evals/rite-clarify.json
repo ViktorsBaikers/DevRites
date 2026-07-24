@@ -1,0 +1,208 @@
+{
+  "skill": "rite-clarify",
+  "description": "Routing evals for the topology-first decision-coverage phase between spec and strategy.",
+  "queries": [
+    {
+      "text": "/rite-clarify ark-panda-redesign",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-clarify billing-rework",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "Close decision coverage on this written spec before strategy planning.",
+      "expected": "should_trigger",
+      "rationale": "Names the phase's exact lifecycle purpose."
+    },
+    {
+      "text": "The spec is written; run the mandatory clarification pass before architecture.",
+      "expected": "should_trigger",
+      "rationale": "A written spec needs the pre-architecture clarify phase."
+    },
+    {
+      "text": "We finished rite-spec. Which missing product decisions must decision coverage close next?",
+      "expected": "should_trigger",
+      "rationale": "Clarify is the next phase and owns missed decisions."
+    },
+    {
+      "text": "This feature workspace lacks decision-coverage.md.",
+      "expected": "should_trigger",
+      "rationale": "Missing canonical artifact is an explicit trigger."
+    },
+    {
+      "text": "Retrofit decision coverage onto this already planned feature.",
+      "expected": "should_trigger",
+      "rationale": "Later-phase retrofits belong to clarify."
+    },
+    {
+      "text": "A later planning pass exposed a missed pre-build product decision.",
+      "expected": "should_trigger",
+      "rationale": "Missed pre-build decisions route back to clarify."
+    },
+    {
+      "text": "Audit decision coverage across the whole feature topology before architecture.",
+      "expected": "should_trigger",
+      "rationale": "Topology-first audit before architecture is clarify."
+    },
+    {
+      "text": "For decision coverage, enumerate actors, journeys, states, data, integrations, operations, and proof.",
+      "expected": "should_trigger",
+      "rationale": "Lists the clarify topology."
+    },
+    {
+      "text": "Find every Partial or Missing decision-coverage row and close it.",
+      "expected": "should_trigger",
+      "rationale": "Explicit coverage status repair."
+    },
+    {
+      "text": "Can this spec honestly be marked Decision coverage: CLEAR?",
+      "expected": "should_trigger",
+      "rationale": "Asks for the exact clarify verdict."
+    },
+    {
+      "text": "Create the decision coverage matrix for the active feature.",
+      "expected": "should_trigger",
+      "rationale": "Requests the phase artifact."
+    },
+    {
+      "text": "During the decision-coverage scan, search facts before asking remaining product decisions.",
+      "expected": "should_trigger",
+      "rationale": "Matches clarify's search-facts/ask-decisions contract."
+    },
+    {
+      "text": "Which human-owned decision-coverage rows are still unclosed before temper?",
+      "expected": "should_trigger",
+      "rationale": "Clarify closes human-owned decisions before temper."
+    },
+    {
+      "text": "Run the decision-coverage zero-question path if every material surface is clear.",
+      "expected": "should_trigger",
+      "rationale": "Names adaptive clarify behavior."
+    },
+    {
+      "text": "Re-scan decision coverage after this scope edit.",
+      "expected": "should_trigger",
+      "rationale": "Scope edits can invalidate clarify coverage."
+    },
+    {
+      "text": "In decision coverage, audit assumptions for evidence, confidence, owner, validation, and consequence.",
+      "expected": "should_trigger",
+      "rationale": "Names clarify's assumption audit."
+    },
+    {
+      "text": "Classify every feature-surface decision as closed, agent-owned, not-applicable, or deferred-nonblocking.",
+      "expected": "should_trigger",
+      "rationale": "Uses the decision-coverage status vocabulary."
+    },
+    {
+      "text": "The spec gate passed, but we have not done the pre-strategy decision scan.",
+      "expected": "should_trigger",
+      "rationale": "Clarify follows a passing spec gate."
+    },
+    {
+      "text": "Check must-NOT and out-of-scope behavior before technical planning.",
+      "expected": "should_trigger",
+      "rationale": "Clarify scans negative boundaries before define."
+    },
+    {
+      "text": "In the topology decision-coverage scan, find omitted sibling journeys.",
+      "expected": "should_trigger",
+      "rationale": "Tests topology-before-depth routing."
+    },
+    {
+      "text": "Decide whether residual uncertainty is truly nonblocking before build planning.",
+      "expected": "should_trigger",
+      "rationale": "Residual uncertainty is part of the clarify verdict."
+    },
+    {
+      "text": "Before marking decision coverage CLEAR, verify no unowned high-consequence assumption remains.",
+      "expected": "should_trigger",
+      "rationale": "A material assumption gap blocks CLEAR."
+    },
+    {
+      "text": "Close the written contract's decision surface without choosing implementation details.",
+      "expected": "should_trigger",
+      "rationale": "Distinguishes clarify's WHAT from define's HOW."
+    },
+    {
+      "text": "Before strategy, make decision-coverage.md prove every material feature surface was scanned.",
+      "expected": "should_trigger",
+      "rationale": "Requests clarify's durable evidence."
+    },
+    {
+      "text": "Write a new spec for adding invoice export.",
+      "expected": "should_not_trigger",
+      "owner": "rite-spec",
+      "rationale": "Creating the initial spec belongs to rite-spec."
+    },
+    {
+      "text": "Pressure-test this vague product idea before we commit to a feature.",
+      "expected": "should_not_trigger",
+      "owner": "rite-pressure-test",
+      "rationale": "Vague-idea exploration precedes a written spec."
+    },
+    {
+      "text": "Run the strategic scope and interruption pre-mortem on this clear spec.",
+      "expected": "should_not_trigger",
+      "owner": "rite-temper",
+      "rationale": "Strategy and scope hardening belong to temper."
+    },
+    {
+      "text": "Design the architecture and vertical slices for the approved spec.",
+      "expected": "should_not_trigger",
+      "owner": "rite-define",
+      "rationale": "Technical HOW and slicing belong to define."
+    },
+    {
+      "text": "Review the engineering plan and issue the implementation-readiness verdict.",
+      "expected": "should_not_trigger",
+      "owner": "rite-vet",
+      "rationale": "Final plan readiness belongs to vet."
+    },
+    {
+      "text": "Build the next pending slice.",
+      "expected": "should_not_trigger",
+      "owner": "rite-build",
+      "rationale": "Implementation belongs to build."
+    },
+    {
+      "text": "/rite-resolve q-2026-07-23-011 \"Authorize the approved option\"",
+      "expected": "should_not_trigger",
+      "owner": "rite-resolve",
+      "rationale": "Persisting an existing answer belongs to resolve."
+    },
+    {
+      "text": "Are we sure about this one API boundary? Stress-test it with an adversarial independent take.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-doubt",
+      "rationale": "One targeted design doubt belongs to the internal doubt skill."
+    },
+    {
+      "text": "Run all planned proof commands and capture evidence.",
+      "expected": "should_not_trigger",
+      "owner": "rite-prove",
+      "rationale": "Executing the proof plan belongs to prove."
+    },
+    {
+      "text": "Review the completed implementation for defects.",
+      "expected": "should_not_trigger",
+      "owner": "rite-review",
+      "rationale": "Post-build code review belongs to review."
+    },
+    {
+      "text": "Repair the technical task plan without changing product behavior.",
+      "expected": "should_not_trigger",
+      "owner": "rite-plan",
+      "rationale": "Behavior-neutral replanning belongs to rite-plan."
+    },
+    {
+      "text": "/rite-explain the DevRites workflow and available phases",
+      "expected": "should_not_trigger",
+      "owner": "rite-explain",
+      "rationale": "Workflow explanation belongs to rite-explain."
+    }
+  ]
+}

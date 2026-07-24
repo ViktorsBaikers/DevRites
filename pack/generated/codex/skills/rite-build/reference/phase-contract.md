@@ -2,216 +2,137 @@
 
 See also [`one-slice-cycle.md`](one-slice-cycle.md).
 
-## Execution spine
-
-Run the engine gates at these moments:
-
-```bash
-devrites-engine preamble
-devrites-engine snapshot
-devrites-engine build-readiness; echo "readiness rc=$?"
-
-devrites-engine reconcile snapshot
-devrites-engine stuck log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>"
-
-devrites-engine footprint log <slug> doubt "<decision id>"
-
-devrites-engine reconcile check; echo "reconcile rc=$?"
-devrites-engine test-integrity; echo "test-integrity rc=$?"
-devrites-engine package-existence; echo "package-existence rc=$?"
-
-devrites-engine conventions contradict --key <key> --slug <slug> \
-  --evidence "<what the live code does>" --drift-file .devrites/work/<slug>/drift.md
-devrites-engine footprint log <slug> wright "<slice id>"
-devrites-engine tick-afk <state.md path>
-
-devrites-engine progress
-```
-
-Conditional calls still obey the detailed rules below: doubt logging runs for
-each stood decision; convention contradiction runs only when the wright reports
-or exposes a contradiction; `tick-afk` runs only under AFK; forge follows
-[`forge.md`](forge.md) and still returns to the same doubt, record, and stop
-gates.
-
-> **Running the gate helpers.** Each gated `bash` block calls the installed engine
-> directly: `devrites-engine <command> [args]`. It **propagates its exit code**,
-> so the `rc=$?` checks below still hold; host hooks fail open when the binary is absent,
-> but phase gates should treat a missing engine as a setup problem.
-
-0. **Rules + AFK + readiness check.** Read `.agents/skills/devrites-lib/reference/standards/core.md` first. Then **run the
-   shared orientation preamble**. It prints `state.md`, the artifacts present, the run
-   mode (HITL/AFK), and the open-question tally by gate, deterministically:
+0. **Rules + AFK + readiness check.** Read
+   `.agents/skills/devrites-lib/reference/standards/core.md`, then orient and run the
+   deterministic readiness gate:
    ```bash
    devrites-engine preamble
    devrites-engine snapshot
    ```
-   Treat the snapshot as the canonical machine-readable status; if you need to tell the
-   user the next command, use `nextCommands.claude` in Claude Code or `nextCommands.codex`
-   in Codex. Then **run the readiness gate**. It enforces the step-0 stop conditions by exit code,
-   not by memory:
+   Treat the snapshot as canonical machine-readable status and use its host-specific
+   `nextCommands` value:
    ```bash
    devrites-engine build-readiness; echo "readiness rc=$?"
    ```
-   A non-zero `rc` is a hard STOP: `2` → `$rite-define` (plan not approved), `3` →
-   `$rite-resolve` (awaiting human), `4` → `$rite-plan` (blocked). The prose below is the
-   same gate for installs without the script.
-   Orient from its digest. If `Status == awaiting_human` → **STOP**, tell the user to run
-   `$rite-resolve <qid> "<answer>"`. If `state.md` has no `Plan approved: <iso>` field
-   → **STOP**, tell the user the plan isn't approved yet (`$rite-define` writes it when
-   the human confirms). If `.devrites/AFK` is present, re-derive the remaining AFK budget
-   from `state.md`'s `AFK slices remaining: <n>` field (initialized from `.devrites/AFK`
-   `max_slices` on the first AFK build); if it is `0` → **STOP** (forced HITL stop; raise
-   the count in `state.md` or remove the sentinel to continue). See
-   [`afk-discipline.md`](afk-discipline.md).
-1. Read `spec.md`, `plan.md`, `tasks.md`, `assumptions.md`, `drift.md`, and `test-plan.md`
+   Any non-zero result is a hard STOP at the gate's reported route; `6` → `$rite-clarify`
+   and `7` → `$rite-vet`. Under AFK, also
+   enforce the mutable `state.md` budget from
+   [`afk-discipline.md`](afk-discipline.md); zero remaining slices forces a HITL stop.
+1. Read `spec.md`, `decision-coverage.md`, `plan.md`, `tasks.md`, `assumptions.md`,
+   `drift.md`, `eng-review.md`, and `test-plan.md`
    if present (the vetted coverage target from `$rite-vet`: the slice's tests come from
    here when it exists). `state.md` and the open-`questions.md` tally are already in the
    preamble digest from step 0: re-read `questions.md` only for the full text of a flagged
    blocking question.
-   If a **blocking `[NEEDS CLARIFICATION]`** remains or the spec/plan readiness gates
-   don't pass, stop → `$rite-spec` (to resolve) or `$rite-plan` (to repair). Don't build
-   on an unresolved spec.
+   Require `Decision coverage: CLEAR` and `Implementation readiness: READY`. If a
+   **blocking `[NEEDS CLARIFICATION]`** or uncovered decision remains, stop →
+   `$rite-clarify`; if plan readiness does not pass, stop → `$rite-plan` or `$rite-vet`
+   as classified by the gate. Don't build on an unresolved spec or unvetted plan.
 2. Select the next pending slice (or the one in `$ARGUMENTS`). **Restate its goal,
    acceptance criteria, and scope boundary** in one short block. Confirm it's still the
    right next slice. Write the slice's `Mode` to `state.md` as `Slice mode: <HITL|AFK>` on
-   **every** selection (not only on the HITL pause path); `$rite-resolve` clears or updates
+   **every** selection, including the non-HITL path; `$rite-resolve` clears or updates
    it on resume.
-2a. **HITL gate (pre-action pause).** Read the slice's `Mode`. If `HITL`, surface the
-    checkpoint as a ranked **option set** and resolve it **before** any code lands, per
-    [`checkpoint-protocol.md`](checkpoint-protocol.md). Branch on whether
-    a human is here:
-    - **Human present (interactive: no `.devrites/AFK`) → ask inline via `AskUserQuestion`.**
-      This is the default for an interactive build. Render 2-4 options, the recommended one
-      **first and labelled `(Recommended)`**, each with its dimension-tagged rationale + the
-      trade-off it accepts, plus the `Something else — I'll describe it` escape hatch. The
-      human picks; record the pick to `questions.md` (`answered`) + `decisions.md` (through the
-      `devrites-engine resolve` writer), clear the gate, and **continue to step 3 in place**: do **not**
-      STOP, do **not** route through `$rite-resolve`.
-    - **Human absent / AFK (`.devrites/AFK` present) → auto-pick or persist + STOP.** For a gate
-      in `allow_gates`, auto-pick the recommended option (option 1) and proceed; otherwise
-      append the `questions.md` entry, write the `Awaiting human` block to `state.md`, set
-      `Status: awaiting_human`, fire the `notify:` hook, then **STOP**: resume when the user
-      runs `$rite-resolve <qid> "<answer>"`. `blocking` / `escalating` / irreversible-risk gates
-      always take this stop path, never the AFK auto-pick.
-3. **Snapshot the tree, then dispatch the build core to `devrites-slice-wright`:** one `Task`
-   call, fresh context. **First**, capture the pre-dispatch tree so the reconcile gate (step 6)
-   can prove you never touched source: run this immediately before the `Task` call:
-   ```bash
-   devrites-engine reconcile snapshot
-   ```
-   Then log the dispatch so the stuck-loop detector can catch a slice that keeps being
-   re-dispatched without progress (it pauses the build even under AFK):
-   ```bash
-   devrites-engine stuck log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>"
-   ```
-   **Forge branch: only if the selected slice is `Forge: yes`.** Instead of the single dispatch
-   below, run the competitive build per [`forge.md`](forge.md): K=2-3 candidate
-   wrights, each in an **isolated git worktree** on the distinct strategy `$rite-vet` named, then a
-   fresh-context [`devrites-forge-judge`](.codex/agents/devrites-forge-judge.toml) scores them against
-   acceptance + `test-plan.md` + `.devrites/principles.md` + the anti-slop charter, and you land
-   exactly **one** winner's diff in the working tree, graft any cheap runner-up improvement by
-   continuing the winning wright once, and write `forge-report.md`. Forge returns the **same shape**
-   a single wright does (one structured artifact, for the winner), so steps 4-7 (doubt, fail-on-red,
-   reconcile against the winner's claimed set, record, stop) run **unchanged**. If you cannot give
-   the judge an objective scorecard (the slice lacks acceptance / `test-plan.md` coverage) or cannot
-   name two genuinely different strategies, the flag is stale: clear it and build single-path. The
-   single-writer invariant is intact: each candidate owns its own tree, exactly one author's diff
-   lands. Then **stop** here for this slice; the steps below are the default single-path dispatch.
+2a. **HITL gate (pre-action pause).** Resolve any `HITL` slice checkpoint before code,
+    exactly as [`checkpoint-protocol.md`](checkpoint-protocol.md) defines. An interactive
+    human answers inline and the build continues in place. AFK may auto-pick only allowed
+    gates; otherwise persist the question and awaiting-human cursor, notify, and STOP for
+    `$rite-resolve`. Blocking, escalating, and irreversible-risk gates always take that stop path.
+3. **Authorize exact paths, snapshot, then fresh-context dispatch the build core to
+   `devrites-slice-wright`.** First write the root-owned exact project-relative file list to
+   `.devrites/work/<slug>/.wright-allowlist`; mirror it in the packet's
+   `scope.allowed_repo_writes`. The wright's later `Files changed` report cannot widen it.
+   **Forge branch: only for a fully typed `Forge: yes` slice.** Follow
+   [`forge.md`](forge.md) sections 1 through 3: require the scorecard, strategies, and
+   real `manifest-env-v1` host binding; run `forge plan` before reconciliation; snapshot after a
+   planned result; bind, dispatch, record, and extract every candidate; judge the
+   immutable deltas; record one winner; and merge it. A typed serial degradation has
+   no Forge side effects and uses the default branch below. A later error preserves
+   the manifest-owned run for technical recovery; never degrade silently. After merge,
+   validate the winner envelope and enter the common return check at the end of this
+   step. Do not also dispatch a serial wright.
 
-   Then assemble the slice contract and send it per
-   [`wright-dispatch.md`](wright-dispatch.md): the slice goal, acceptance
-   criteria, and **scope boundary**; the paths it may touch (`touched-files.md`); the context
-   paths to read (`spec.md`, `plan.md`, `decisions.md`, `assumptions.md`, `.devrites/principles.md`
-   when present (the binding invariants the slice must honor) plus `test-plan.md`
-   when present (its per-gap test requirements + regression-criticals for this slice are the
-   coverage the wright must write) and `design-brief.md`
-   when the slice touches UI per [`frontend-trigger.md`](frontend-trigger.md)); and the
-   `.agents/skills/devrites-lib/reference/standards/` files in scope. The wright **orients** on the project's idiom (using a
-   code-intelligence index **if available** (`codebase-memory-mcp` first, cross-checked with
-   `codegraph` (`.codegraph/` / `codegraph_*`) + `graphify` (`graphify-out/`), else standard
-   methods (LSP / `Read`/`Grep`/`Glob`); see `.agents/skills/devrites-lib/reference/standards/tooling.md`) for
-   placement/callers/impact), writes the **failing test first** when
-   behaviour changes ([`tdd.md`](tdd.md)), implements the **smallest complete** version in
-   the project's style (applying `devrites-frontend-craft` to `design-brief.md` for UI, and
-   `devrites-source-driven` (with context7 if available) for uncertain framework facts), runs the slice's **targeted tests**
-   (plus typecheck / lint / build where the project has them), and returns a structured artifact
-  : **code + tests only; it does not write the workspace files.** If the slice is UI but no `design-brief.md` exists (e.g. a spec written before
-   shaping), shape it via `devrites-ux-shape` before the wright codes. If the `Task` tool is
-   unavailable, run the wright's discipline **inline** as a flagged fallback (see the reference).
-   Same one-slice cycle, no isolation; in that case write
-   `.devrites/work/<slug>/.reconcile-inline` so the reconcile gate skips (you are legitimately
-   the writer in this fallback).
-4. **Doubt the decisions it stood up.** For each entry in the wright's `Decisions stood`
-   (branching, boundary crossing, data model, auth, public API, migration, user-flow change,
-   "this is safe/scales") apply `devrites-doubt` **before accepting the slice**: the writer
-   doesn't grade its own decisions. Each `devrites-doubt` invocation **dispatches the
-   `devrites-doubt-reviewer` subagent** (doing the adversarial pass inline is the writer grading
-   itself: the thing this step exists to forbid). **Completion criterion (checkable):** step 4
-   is done only when **every** `Decisions stood` entry carries a recorded `devrites-doubt`
-   verdict (`accept`, or `reject` + the required changes) in `decisions.md` (accepted
-   trade-offs) / `questions.md` (open gates). A `Decisions stood` entry with **no verdict on
-   record** means doubt did not run for it: **do not enter step 5 and do not mark the slice
-   `built`.** Log each dispatch so the seal can prove doubt ran (the footprint already counts a
-   `doubt` kind):
+   **Default serial branch.** Follow
+   [`wright-dispatch.md`](wright-dispatch.md) end to end; it owns snapshot timing, stuck
+   logging, the exact packet, conditional skill loading, and return checks. Dispatch through
+   named wright → safely enforced generic fresh worker → labelled inline fallback. Inline is
+   allowed only when no fresh worker preserves recognized wright identity plus exact allowlist
+   enforcement or isolated staging; it never skips reconciliation. Before any canonical
+   `.devrites/` mutation, validate the typed result and require a clean immediate
+   `devrites-engine reconcile check`; exit `5` rejects the writer result.
+4. **Doubt every stood decision before accepting the slice.** The writer never grades its
+   own decisions: invoke `devrites-doubt` and its fresh reviewer for each entry. Do not enter
+   step 5 until every entry has a recorded `accept` or resolved `reject` verdict. Log each dispatch:
    ```bash
    devrites-engine footprint log <slug> doubt "<decision id>"
    ```
-   The doubt loop honours `.devrites/AFK` (see its AFK exception): findings below the slice's gate ceiling become advisory entries in `questions.md`;
-   destructive / auth / public-API concerns always pause regardless. A non-empty `Escalation` in
-   the artifact is handled here too: irreversible-risk / blockers → blocking question + set
-   `Status: awaiting_human`; a scope-changing answer → `$rite-plan repair` (Spec Drift Guard),
-   never silently into the slice. **If an irreversible-risk item shows up under the wright's
-   `Decisions stood` rather than `Escalation`**, treat that misclassification as itself a
-   blocking protocol violation: pause and re-dispatch with the item flagged out-of-bounds, do
-   **not** doubt-and-accept it. (The wright's return is the not-yet-load-bearing moment (the
-   slice isn't `built` or merged yet) so this post-return doubt is still pre-commit.)
+   Apply Doubt's AFK exception. Irreversible-risk or blocking escalations pause; scope-changing
+   answers route through the Spec Drift Guard. An irreversible-risk item misfiled under
+   `Decisions stood` is a blocking protocol violation: re-dispatch it as out of bounds,
+   never doubt-and-accept it.
    **Principle check (same standing):** a wright return that breaks a declared principle
    (reported in its `Principles` field, or that you detect against `.devrites/principles.md`) is
    handled here like an irreversible-risk item: block, route to a human-approved scoped
    exception in the register or stop; never doubt-and-accept a principle violation into the slice.
-5. **Fail-on-red.** If the wright's `Gates` were red (targeted tests / types / lint) or it
-   couldn't verify: do **not** mark the slice `built`, and **do not fix the code yourself**.
-   First remedy: **continue the same wright once** (`SendMessage` to it, carrying the failing
-   gate + its real output) so it fixes in its own context. This retry is for **objective
-   failures only**: red gate / type / lint / missing test coverage / UI browser-proof fail:
-   never a contested decision (that routes to `$rite-plan repair`). **Still red after the one
-   retry** → escalate: AFK → append a blocking question to `questions.md` (gate=blocking,
-   slice's SLA) + set `Status: awaiting_human`; HITL → pause as a blocking gate. Either way,
-   `Next step: $rite-plan unblock` until resolved.
-6. **Record. You are the canonical writer.** **First, run the reconcile gate (A1):** write the
-   wright's reported `Files changed` paths (one per line) to
-   `.devrites/work/<slug>/.reconcile-claimed` (or the active legacy
-   `.devrites/features/<slug>/` workspace during migration), then:
-   ```bash
-   devrites-engine reconcile check; echo "reconcile rc=$?"
-   ```
-   **Exit 5 → hard STOP:** a source file changed outside the wright's claimed set: code was
-   edited by something other than the wright (A1 breach). Revert it and re-dispatch the wright;
-   do **not** mark the slice `built`.
-
-   **Then run the test-integrity gate (anti-reward-hacking)**: prove the slice didn't reach
-   green by weakening its tests:
+5. **Run retained-baseline integrity gates, then recover any objective red.**
    ```bash
    devrites-engine test-integrity; echo "test-integrity rc=$?"
+   devrites-engine package-existence; echo "package-existence rc=$?"
    ```
+   If the wright's `Gates` were red (targeted tests / types / lint), either integrity gate
+   failed, or it
+   couldn't verify: do **not** mark the slice `built`, and **do not fix the code yourself**.
+   Classify each causal fingerprint through
+   [`cleanup-and-classify.md`](../../devrites-debug-recovery/reference/cleanup-and-classify.md),
+   run `devrites-engine recovery route <class>`, and follow the `recovery-route/v1`
+   owner/action. Only `humanPause: true` or an exact human-only predicate opens a question;
+   technical repair, environment stabilization, and proof reruns remain agent-owned.
+   For an agent-owned defect route, continue the same wright under
+   `devrites-debug-recovery`, carrying command/output, attempt count, and dead ends. Wright
+   plus recovery share **three total attempts per root cause** and never
+   rerun an unchanged check. Persist the initial and retry failures with
+   `devrites-engine recovery record --class <class> "<root cause>" "<exact failure>" <slug>`,
+   run `recovery check` before each retry, and
+   `recovery clear --class <class> "<root cause>" <slug>` only after green. Before every
+   re-dispatch, update the root-owned allowlist only for an accepted in-slice path and run
+   `reconcile snapshot`: after a clean check this refreshes canonical-state scope while
+   retaining the original source baseline. Repeat reconcile and both integrity gates on every
+   return. This owns red
+   gates, missing coverage, browser/runtime failures, and workflow-tool defects.
+   After recovery:
+   - green → continue to record;
+   - product-contract/acceptance ambiguity or irreversible risk → open the genuine human gate
+     (and use `$rite-plan repair` only when behavior/scope/acceptance changes);
+   - human-only access/action → gate with the exact needed input;
+   - exhausted objective failure → preserve reproduction/dead ends, set `Status: blocked` and
+     `Next step: $rite-plan unblock`, then STOP without a question or `$rite-resolve`.
+6. **Close the retained baseline, then record. You are the canonical writer.**
+   Reconciliation ran immediately on return and the two integrity gates ran in step 5.
    **Exit 3 → hard STOP:** a test was deleted, skipped, or de-asserted since the slice base: the
    slice went green by weakening its tests, a Critical protocol violation. Revert the weakening and
    re-dispatch the wright; do **not** mark the slice `built`.
 
-   **Then run the package-existence gate (anti-hallucination)**: every new third-party import must
-   be declared in a project manifest, not just imported:
-   ```bash
-   devrites-engine package-existence; echo "package-existence rc=$?"
-   ```
+   The package-existence gate (anti-hallucination) requires every new third-party import
+   to appear in a project manifest:
    **Exit 3 → STOP:** an imported package is not declared in any manifest (`package.json`, `go.mod`,
    `requirements.txt`, `pyproject.toml`, `Pipfile`, `Cargo.toml`): the classic shape of a
    hallucinated or typo-squatted dependency. Confirm the name on the registry and declare it via the
    package manager, or remove the import; do **not** mark the slice `built`. The gate is deterministic
-   and fail-open (not a git repo / no manifest / stdlib-only import → rc 0).
+   and fail-open (not a git repo / no manifest / stdlib-only import → rc 0). If the nearest
+   manifest declares the package, treat the mismatch as a workflow-tool defect under bounded
+   recovery, not a plan repair or retry-authorization question. Once every gate and doubt
+   verdict is accepted, a forged slice records successful verification and runs
+   manifest-only cleanup per [`forge.md`](forge.md). Then close the private window:
+   ```bash
+   devrites-engine reconcile close
+   ```
+   Keep it open across a genuine human wait that resumes the same slice; close it before a
+   scope/plan transition.
 
    Then, from the wright's artifact, update `state.md`,
-   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). Add a `## Review trail`
+   `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI). For a forged
+   slice, write `forge-report.md` after reconciliation, verification, and cleanup;
+   it records the run but owns nothing. Add a `## Review trail`
    to `touched-files.md`: group the slice's important `path:line` stops by concern (design intent,
    not file order), 1-5 concerns, each stop under 15 words. This is for a later human walkthrough;
    keep it factual and skip invented rationale. **Persist every

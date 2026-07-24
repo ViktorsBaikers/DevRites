@@ -2,30 +2,32 @@ package lib
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/reason"
 )
 
-func TestTimelineLogAndList(t *testing.T) {
+func TestTimelineLegacyWritesRejectedAndReadsPreserved(t *testing.T) {
 	t.Setenv("DEVRITES_NOW", "2026-07-09T10:11:12Z")
 	root := t.TempDir()
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
-
-	code := Timeline(root, []string{"log", "completed", "--skill", "rite-review", "--slug", "auth", "--outcome", "ok", "--decision", "ship"}, stdout, stderr)
-	if code != 0 {
-		t.Fatalf("timeline log failed: code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
-	}
-	data, err := os.ReadFile(filepath.Join(root, "timeline.jsonl"))
-	if err != nil {
+	legacy := []byte(`{"ts":"2026-07-09T10:11:12Z","event":"completed","decision":"ship"}` + "\n")
+	path := filepath.Join(root, "timeline.jsonl")
+	if err := os.WriteFile(path, legacy, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	got := string(data)
-	for _, want := range []string{`"ts":"2026-07-09T10:11:12Z"`, `"event":"completed"`, `"skill":"rite-review"`, `"slug":"auth"`, `"decision":"ship"`} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("timeline entry missing %s: %s", want, got)
-		}
+
+	code := Timeline(root, []string{"log", "completed", "--skill", "rite-review", "--slug", "auth", "--outcome", "ok", "--decision", "PRIVATE_RESULT"}, stdout, stderr)
+	if code != 2 || !strings.Contains(stderr.String(), "legacy free-text writes are disabled") {
+		t.Fatalf("legacy timeline write code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(data, legacy) {
+		t.Fatalf("legacy write changed timeline: data=%q err=%v", data, err)
 	}
 
 	stdout.Reset()
@@ -41,6 +43,71 @@ func TestTimelineLogAndList(t *testing.T) {
 	stderr.Reset()
 	if code := Timeline(root, []string{"log", "completed", "--skill"}, stdout, stderr); code != 2 {
 		t.Fatalf("missing timeline option value should be usage error, got %d", code)
+	}
+}
+
+func TestTimelineTypedFactsAreValidatedAndVersioned(t *testing.T) {
+	t.Setenv("DEVRITES_NOW", "2026-07-09T10:11:12Z")
+	t.Setenv("DEVRITES_RUN_ID", testRunID)
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	workspace := filepath.Join(root, "work", "auth")
+	if err := os.MkdirAll(workspace, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("| phase | build |\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DEVRITES_ROOT", root)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	code := Timeline(root, []string{
+		"log", "review-dispatch", "--slug", "auth",
+		"--execution-mode", "generic",
+		"--guard-strength", "observed",
+		"--reason-id", string(reason.AgentGenericFallback),
+		"--host", "codex",
+		"--evidence", ".devrites/work/auth/plan.md",
+	}, stdout, stderr)
+	if code != 0 {
+		t.Fatalf("timeline log code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	raw, err := os.ReadFile(filepath.Join(root, "timeline.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got EventV1
+	if err := json.Unmarshal(raw, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Schema != EventSchemaV1 || got.ExecutionMode != ExecutionGeneric ||
+		got.GuardStrength != GuardObserved || got.ReasonID != reason.AgentGenericFallback ||
+		got.Host != HostCodex || got.Workspace != ".devrites/work/auth" {
+		t.Fatalf("typed event = %+v", got)
+	}
+
+	stderr.Reset()
+	if code := Timeline(root, []string{
+		"log", "bad", "--execution-mode", "named", "--guard-strength", "enforced",
+		"--reason-id", "DRV-UNKNOWN",
+	}, &bytes.Buffer{}, stderr); code != 2 {
+		t.Fatalf("unknown reason code=%d stderr=%q", code, stderr.String())
+	}
+}
+
+func TestTimelineListPreservesAndDistinguishesLegacyAndCorruptRows(t *testing.T) {
+	root := t.TempDir()
+	legacy := `{"ts":"2026-01-01T00:00:00Z","event":"legacy"}`
+	corrupt := `{not-json}`
+	if err := os.WriteFile(filepath.Join(root, "timeline.jsonl"), []byte(legacy+"\n"+corrupt+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := Timeline(root, []string{"list"}, stdout, stderr); code != 0 {
+		t.Fatalf("timeline list code=%d stderr=%q", code, stderr.String())
+	}
+	if got := stdout.String(); !strings.Contains(got, legacy) || !strings.Contains(got, corrupt) ||
+		strings.Contains(legacy, `"schema":"`+EventSchemaV1+`"`) {
+		t.Fatalf("legacy/corrupt history changed: %q", got)
 	}
 }
 

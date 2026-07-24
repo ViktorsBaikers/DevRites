@@ -5,65 +5,65 @@ import (
 	"strings"
 )
 
-// Hook control plane.
-//
-// Every wired hook has a canonical id: its `hook <name>` CLI verb (allow,
-// orient, stop-gate, …). That id is the addressable handle for two orthogonal
-// runtime controls, both read from the environment so an operator tunes safety
-// vs speed without editing any JSON:
+// Hook names are also their canonical IDs. Two environment settings control
+// whether a hook runs:
 //
 //   DEVRITES_HOOK_PROFILE=minimal|standard|strict   which hooks run at all
-//   DEVRITES_DISABLED_HOOKS="stop-gate,a1-guard"     an explicit per-id kill list
+//   DEVRITES_DISABLED_HOOKS="stop-gate,a1-guard"     hook IDs to disable
 //
-// The profile is a floor: a hook runs when its tier is at or below the active
-// profile AND it is not in the kill list. Everything else short-circuits to a
-// clean fail-open no-op in cmdHook: identical to the inline `command -v … ||
-// exit 0` guard, so a disabled hook is indistinguishable from an absent binary.
+// A hook runs when its tier is at or below the selected profile and its ID is
+// not disabled. Disabled hooks return success without doing anything, just as
+// they would if the binary were absent.
 //
-// A SEPARATE axis is enforce-vs-observe: the OBSERVE-by-default guards (a1-guard,
-// stop-gate, reviewer-readonly) only ever log until their specific
-// DEVRITES_*=enforce var is set. The `strict` profile is the ergonomic shortcut
-// that flips ALL of them on at once (see hookEnforce), so a hardened session is
-// one env var, not four.
+// Enforcement is separate from activation. Main-thread guards observe by
+// default until their DEVRITES_*=enforce variable is set. The strict profile
+// enforces every legacy observe path. reviewer-readonly and wright-scope always
+// enforce policy for declared DevRites leaf agents.
 
 // hookTier is the minimum profile level at which a hook is active.
 type hookTier int
 
 const (
-	tierMinimal  hookTier = iota // orientation-only; never blocks or mutates flow
-	tierStandard                 // the default working set: gates, guards, caches
-	tierStrict                   // reserved for experimental/aggressive hooks
+	tierMinimal  hookTier = iota // orientation only; never blocks or changes flow
+	tierStandard                 // default gates, guards, and caches
+	tierStrict                   // experimental or aggressive hooks
 )
 
-// hookRegistry maps each canonical hook id to the profile tier that first
-// activates it. A name absent from the registry is treated as tierMinimal
-// (always active): fail-open: an unrecognised hook is never silently disabled
-// by the profile mechanism.
-var hookRegistry = map[string]hookTier{
-	// minimal: orientation and auto-approval, which never interrupt work.
-	"allow":           tierMinimal,
-	"orient":          tierMinimal,
-	"subagent-orient": tierMinimal,
-	"cursor":          tierMinimal,
-	"statusline":      tierMinimal,
-
-	// standard: the default gates, guards, sentinels and caches.
-	"a1-guard":          tierStandard,
-	"stop-gate":         tierStandard,
-	"reviewer-readonly": tierStandard,
-	"wright-scope":      tierStandard,
-	"redwatch":          tierStandard,
-	"source-cache-pre":  tierStandard,
-	"source-cache-post": tierStandard,
-	"refresh-indexes":   tierStandard,
-	"event":             tierStandard,
-	"auq":               tierStandard,
-	"handoff-snapshot":  tierStandard,
+type hookDefinition struct {
+	tier     hookTier
+	canBlock bool
 }
 
-// hookProfileTier resolves DEVRITES_HOOK_PROFILE to a tier, defaulting to
-// standard on empty or unrecognised input (fail-open: a typo never silently
-// strips the working set below default).
+// hookRegistry records each hook's tier and whether it can block. The blocker
+// audit derives its cases from canBlock, so a new blocker must cover reentry,
+// malformed input, bounds, and the disabled path. Unknown hook names stay
+// active instead of being silently disabled.
+var hookRegistry = map[string]hookDefinition{
+	// Minimal hooks provide orientation and automatic approval without
+	// interrupting work.
+	"allow":           {tier: tierMinimal},
+	"orient":          {tier: tierMinimal},
+	"subagent-orient": {tier: tierMinimal},
+	"cursor":          {tier: tierMinimal},
+	"statusline":      {tier: tierMinimal},
+
+	// Standard hooks add the default gates, guards, sentinels, and caches.
+	"a1-guard":          {tier: tierStandard, canBlock: true},
+	"git-guard":         {tier: tierStandard, canBlock: true},
+	"stop-gate":         {tier: tierStandard, canBlock: true},
+	"reviewer-readonly": {tier: tierStandard, canBlock: true},
+	"wright-scope":      {tier: tierStandard, canBlock: true},
+	"redwatch":          {tier: tierStandard},
+	"source-cache-pre":  {tier: tierStandard},
+	"source-cache-post": {tier: tierStandard},
+	"refresh-indexes":   {tier: tierStandard},
+	"event":             {tier: tierStandard},
+	"auq":               {tier: tierStandard},
+	"handoff-snapshot":  {tier: tierStandard},
+}
+
+// hookProfileTier resolves DEVRITES_HOOK_PROFILE. Empty or unrecognized input
+// uses the standard tier so a typo cannot disable the default hooks.
 func hookProfileTier() hookTier {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv("DEVRITES_HOOK_PROFILE"))) {
 	case "minimal":
@@ -75,21 +75,20 @@ func hookProfileTier() hookTier {
 	}
 }
 
-// hookActive reports whether a hook id may run under the current profile and
-// kill list. It is the single gate consulted at the top of cmdHook.
+// hookActive reports whether the current profile and disabled list allow a hook
+// ID to run. cmdHook checks it before dispatch.
 func hookActive(name string) bool {
 	if hookDisabled(name) {
 		return false
 	}
-	tier, known := hookRegistry[name]
+	def, known := hookRegistry[name]
 	if !known {
-		return true // unknown id: never disabled by profile
+		return true // Profiles do not disable unknown IDs.
 	}
-	return tier <= hookProfileTier()
+	return def.tier <= hookProfileTier()
 }
 
-// hookDisabled reports whether a hook id appears in the DEVRITES_DISABLED_HOOKS
-// comma-separated kill list.
+// hookDisabled reports whether DEVRITES_DISABLED_HOOKS contains the hook ID.
 func hookDisabled(name string) bool {
 	list := os.Getenv("DEVRITES_DISABLED_HOOKS")
 	if list == "" {
@@ -103,9 +102,8 @@ func hookDisabled(name string) bool {
 	return false
 }
 
-// hookEnforce reports whether an OBSERVE-default guard should block rather than
-// log. It is true when the guard's own DEVRITES_*=enforce var is set, OR when
-// the strict profile is active: strict enforces every guard at once.
+// hookEnforce reports whether a guard that normally observes should block. Its
+// own enforce variable or the strict profile enables blocking.
 func hookEnforce(specificVar string) bool {
 	if os.Getenv(specificVar) == "enforce" {
 		return true

@@ -37,6 +37,7 @@ func TestRunNormalizesCanonicalWorkLayout(t *testing.T) {
 	assertFile(t, root, "work/alpha/evidence.md", "proof\n")
 	assertFile(t, root, "work/alpha/state.md", "status: done - shipped\n")
 	assertFileContains(t, root, "work/alpha/README.md", "phase: done")
+	assertFileContains(t, root, "work/alpha/README.md", "schemaVersion: 2")
 	assertMissing(t, root, "work/alpha/proof.md")
 	assertMissing(t, root, "work/alpha/status.md")
 	assertFile(t, root, "work/alpha/review.md", "review\n")
@@ -72,7 +73,8 @@ func TestRunNormalizesLiveFeatureAliases(t *testing.T) {
 	if got := strings.Join(res.Migrated, ","); got != "beta" {
 		t.Fatalf("Run normalized=%q, want beta", got)
 	}
-	assertFile(t, root, "features/beta/README.md", "# Beta\n")
+	assertFileContains(t, root, "features/beta/README.md", "schemaVersion: 2")
+	assertFileContains(t, root, "features/beta/README.md", "# Beta")
 	assertFile(t, root, "features/beta/state.md", "- Phase: prove\n")
 	assertFile(t, root, "features/beta/evidence.md", "evidence\n")
 	assertFile(t, root, "features/beta/status.md", "- Phase: prove\n")
@@ -84,6 +86,24 @@ func TestRunNormalizesLiveFeatureAliases(t *testing.T) {
 	}
 	if f.Phase != state.PhaseProve {
 		t.Fatalf("normalized phase=%q, want %q", f.Phase, state.PhaseProve)
+	}
+}
+
+func TestRunUpgradesV1DeclarationWithoutFabricatingReadiness(t *testing.T) {
+	root := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(root, "work/old/README.md"), "---\nphase: vet\nschemaVersion: 1\n---\n\nOld workspace.\n")
+	testutil.WriteFile(t, filepath.Join(root, "work/old/state.md"), "| phase | vet |\n")
+
+	result, err := Run(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Skipped || strings.Join(result.Migrated, ",") != "old" {
+		t.Fatalf("result=%+v, want old migrated", result)
+	}
+	assertFileContains(t, root, "work/old/README.md", "schemaVersion: 2")
+	for _, name := range []string{"decision-coverage.md", "eng-review.md", "test-plan.md"} {
+		assertMissing(t, root, filepath.Join("work/old", name))
 	}
 }
 
@@ -101,6 +121,7 @@ func TestMapLegacyPhase(t *testing.T) {
 		ok   bool
 	}{
 		{word: "specced", want: state.PhaseSpec, ok: true},
+		{word: "clarified", want: state.PhaseClarify, ok: true},
 		{word: "in-progress", want: state.PhaseBuild, ok: true},
 		{word: "reviewing", want: state.PhaseReview, ok: true},
 		{word: "done - shipped", want: state.PhaseDone, ok: true},

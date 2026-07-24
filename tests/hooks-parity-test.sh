@@ -1,24 +1,23 @@
 #!/usr/bin/env bash
-# hooks-parity-test.sh: DevRites hook coverage must stay in sync across Claude and Codex.
+# Keep DevRites hook coverage in sync across Claude and Codex.
 #
-# Post-cutover every hook invokes the global `devrites-engine` binary (behind the inline fail-open
-# guard) as `devrites-engine hook <name> --harness=<h>`, so coverage is compared by hook NAME, not
-# by script filename. DevRites registers hooks in Claude settings and generated Codex hooks; drift
-# between them silently drops a guard.
+# Both hosts call `devrites-engine hook <name> --harness=<h>`, so the test
+# compares hook names rather than script filenames. Root hooks live in host
+# settings. Project agent profiles carry the leaf guards so leaf work fails
+# closed without hiding root work.
 #
-# Codex has the same core enforcement, minus the hooks that are Claude-only by design:
-#   - source-cache-pre/-post : fire on Claude's WebFetch tool; Codex has no WebFetch (uses
-#                              web_search, which self-caches), so there is nothing to revalidate.
-#   - statusline            : Claude settings statusLine surface; Codex has no matching hook event.
-#   - auq                   : fires on Claude's AskUserQuestion tool. Codex HAS an equivalent
-#                             tool (request_user_input) but emits NO hook event for it: its
-#                             PostToolUse matches only Bash/apply_patch/MCP calls, and the
-#                             user-input-requested event was declined (openai/codex#12524,
-#                             closed not-planned). Re-check if Codex hooks gain that event.
-# subagent-orient IS shared. reviewer-readonly + wright-scope live in Claude SUBAGENT FRONTMATTER
-# but in the Codex hooks.json (Codex agent TOML can't carry frontmatter hooks): same enforcement.
+# Codex provides the same core enforcement except for these Claude-only hooks:
+#   - source-cache-pre/-post: Claude fires these for WebFetch. Codex uses
+#     self-caching web_search and has nothing equivalent to revalidate.
+#   - statusline: Codex has no hook event matching Claude's statusLine setting.
+#   - auq: Codex has request_user_input but emits no hook event for it.
+#     PostToolUse covers only Bash, apply_patch, and MCP calls. The proposed
+#     user-input-requested event was closed as not planned (openai/codex#12524).
+#     Revisit this exception if Codex adds that event.
+# `subagent-orient` is shared. Claude agent frontmatter and generated Codex TOML
+# files both carry `reviewer-readonly` and `wright-scope`.
 set -u
-export DEVRITES_NO_BINARY=1   # only the pack config is under test; no engine binary needed
+export DEVRITES_NO_BINARY=1   # This test covers pack configuration, not the engine binary.
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 target="$(mktemp -d)"; gen=""; trap 'rm -rf "$target"; [ -n "$gen" ] && rm -rf "$gen"' EXIT
 if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
@@ -38,30 +37,142 @@ RE = r"devrites-engine hook ([a-z0-9-]+)"
 def names(path):
     return set(re.findall(RE, json.dumps(json.load(open(path)))))
 
-fail = []
+def json_commands(path):
+    commands = []
+    def walk(value):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key == "command" and isinstance(child, str):
+                    commands.append(child)
+                else:
+                    walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+    walk(json.load(open(path)))
+    return commands
 
-# Codex must carry every shared hook. Shared = all Claude hooks (settings.json + the two
-# subagent-frontmatter guards) minus the documented Claude-only set.
+def hook_locations(path, name):
+    out = []
+    payload = json.load(open(path))
+    for event, entries in payload.get("hooks", {}).items():
+        for entry in entries:
+            for hook in entry.get("hooks", []):
+                if f"devrites-engine hook {name}" in hook.get("command", ""):
+                    out.append((event, entry.get("matcher", ""), hook.get("command", "")))
+    return out
+
+fail = []
+settings = json.load(open(f"{root}/pack/.claude/settings.json"))
+source_post_locations = []
+for event, entries in settings.get("hooks", {}).items():
+    for entry in entries:
+        if "devrites-engine hook source-cache-post" in json.dumps(entry):
+            source_post_locations.append((event, entry.get("matcher", "")))
+if source_post_locations != [("PostToolUse", "WebFetch")]:
+    fail.append(
+        "source-cache-post must remain Claude WebFetch PostToolUse-only; "
+        f"got {source_post_locations}"
+    )
+
+policy = open(f"{root}/engine/hookpolicy.go").read()
+BLOCKERS = set(re.findall(r'"([a-z0-9-]+)":\s*\{[^}]*canBlock:\s*true', policy))
+if not BLOCKERS:
+    fail.append("production hook registry exposes no canBlock hooks")
+
+# Each canonical leaf declares its exact identity and fails closed before the
+# host exposes mutation or nested dispatch.
+agent_files = sorted(glob.glob(f"{root}/pack/.claude/agents/devrites-*.md"))
+for path in agent_files:
+    body = open(path).read()
+    role = re.search(r"(?m)^name:\s*(devrites-[a-z0-9-]+)\s*$", body)
+    if not role:
+        fail.append(f"{path}: missing exact devrites role name")
+        continue
+    role = role.group(1)
+    for required in (
+        "matcher: Edit|Write|MultiEdit|NotebookEdit|Bash|Agent|Task",
+        "DEVRITES_AGENT_RUN=1",
+        f"DEVRITES_ACTIVE_AGENT={role}",
+        "guard unavailable: install devrites-engine",
+    ):
+        if required not in body:
+            fail.append(f"{path}: agent guard missing {required!r}")
+    expected_hook = "wright-scope" if role == "devrites-slice-wright" else "reviewer-readonly"
+    if f"devrites-engine hook {expected_hook} --harness=claude" not in body:
+        fail.append(f"{path}: expected {expected_hook} guard")
+    command = re.search(r"(?m)^\s*command:\s*'([^']+)'\s*$", body)
+    if not command or "|| exit 0" in command.group(1):
+        fail.append(f"{path}: declared leaf guard is missing or fail-open")
+
+# Codex must carry every shared hook: all Claude settings and scoped agent hooks
+# except the documented Claude-only set.
 CLAUDE_ONLY = {"source-cache-pre", "source-cache-post", "statusline", "auq"}
 claude_all = names(f"{root}/pack/.claude/settings.json")
+claude_commands = json_commands(f"{root}/pack/.claude/settings.json")
 for f in glob.glob(f"{root}/pack/.claude/agents/*.md"):
-    claude_all |= set(re.findall(RE, open(f).read()))
+    body = open(f).read()
+    claude_all |= set(re.findall(RE, body))
+    claude_commands += re.findall(r"(?m)^\s*command:\s*'([^']+)'\s*$", body)
 shared = claude_all - CLAUDE_ONLY
 if not shared:
     fail.append("No shared hook names captured; parity regex or hook wiring is broken")
-codex = names(f"{target}/.codex/hooks.json")
+codex_global = names(f"{target}/.codex/hooks.json")
+codex_commands = json_commands(f"{target}/.codex/hooks.json")
+for host, path, required_matchers in (
+    ("Claude", f"{root}/pack/.claude/settings.json", {"Bash"}),
+    ("Codex", f"{target}/.codex/hooks.json", {"Bash", "exec_command"}),
+):
+    locations = hook_locations(path, "git-guard")
+    if len(locations) != 1 or locations[0][0] != "PreToolUse":
+        fail.append(f"{host} git-guard must appear exactly once at PreToolUse: {locations}")
+        continue
+    matcher = set(locations[0][1].split("|"))
+    missing_matchers = required_matchers - matcher
+    if missing_matchers:
+        fail.append(f"{host} git-guard matcher missing {sorted(missing_matchers)}")
+codex_agents = set()
+for f in glob.glob(f"{target}/.codex/agents/*.toml"):
+    body = open(f).read()
+    codex_agents |= set(re.findall(RE, body))
+    codex_commands += re.findall(r"(?s)command\s*=\s*'''(.*?)'''", body)
+if {"reviewer-readonly", "wright-scope"} & codex_global:
+    fail.append("Codex root hooks must not shadow main/generic work with leaf policy")
+codex = codex_global | codex_agents
 missing = shared - codex
 if missing:
-    fail.append(f"Codex hooks.json MISSING shared enforcement: {sorted(missing)}")
+    fail.append(f"Codex hooks.json is missing shared enforcement: {sorted(missing)}")
 leaked = CLAUDE_ONLY & codex
 if leaked:
     fail.append(f"Claude-only hook leaked into Codex: {sorted(leaked)}")
+
+# Both hosts must wire every production blocker. Hook commands inherit the
+# operator's profile and kill-list environment, so generated commands may not
+# clear or replace those control-plane variables before invoking the engine.
+for host, wired, commands in (
+    ("Claude", claude_all, claude_commands),
+    ("Codex", codex, codex_commands),
+):
+    missing_blockers = BLOCKERS - wired
+    if missing_blockers:
+        fail.append(f"{host} missing production blockers: {sorted(missing_blockers)}")
+    for blocker in BLOCKERS:
+        matches = [command for command in commands if f"devrites-engine hook {blocker}" in command]
+        if not matches:
+            continue
+        for command in matches:
+            if (
+                "env -i" in command
+                or re.search(r"\bunset\s+(?:DEVRITES_HOOK_PROFILE|DEVRITES_DISABLED_HOOKS)\b", command)
+                or re.search(r"(?:^|[;\s])(?:DEVRITES_HOOK_PROFILE|DEVRITES_DISABLED_HOOKS)=", command)
+            ):
+                fail.append(f"{host} {blocker} command strips or overrides hook control-plane environment")
 
 if fail:
     print("HOOKS-PARITY: FAIL")
     for f in fail: print("  " + f)
     sys.exit(1)
 print(f"HOOKS-PARITY: PASS: Claude settings has {len(names(f'{root}/pack/.claude/settings.json'))} hooks; "
-      f"Codex carries all {len(shared)} shared enforcement hooks (incl. subagent-orient); "
+      f"Codex global + agent-scoped hooks carry all {len(shared)} shared enforcement hooks; "
       f"{len(CLAUDE_ONLY)} Claude-only by design (source-cache x2 + statusline + auq).")
 PY

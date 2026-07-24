@@ -10,52 +10,28 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/rootfacts"
 )
 
 // ResolveRoot returns the .devrites directory to operate on. A non-empty
 // override (e.g. from DEVRITES_ROOT) may name either the project root or its
 // .devrites directory; otherwise the nearest ancestor .devrites is used.
 func ResolveRoot(override string) (string, error) {
-	if override != "" {
-		info, err := os.Stat(override)
-		if err != nil {
-			return "", fmt.Errorf("DEVRITES_ROOT %q: %w", override, err)
-		}
-		if !info.IsDir() {
-			return "", fmt.Errorf("DEVRITES_ROOT %q is not a directory", override)
-		}
-		if filepath.Base(filepath.Clean(override)) == ".devrites" {
-			return override, nil
-		}
-		child := filepath.Join(override, ".devrites")
-		if info, err := os.Stat(child); err == nil && info.IsDir() {
-			return child, nil
-		}
-		return "", fmt.Errorf("DEVRITES_ROOT %q is not a project root or .devrites directory", override)
-	}
-	cwd, err := os.Getwd()
+	facts, err := rootfacts.Resolve(override)
 	if err != nil {
-		return "", fmt.Errorf("resolve working directory: %w", err)
+		return "", err
 	}
-	for dir := cwd; ; {
-		cand := filepath.Join(dir, ".devrites")
-		if info, err := os.Stat(cand); err == nil && info.IsDir() {
-			return cand, nil
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return "", errors.New("no .devrites directory found (set DEVRITES_ROOT or run inside a DevRites workspace)")
-		}
-		dir = parent
-	}
+	return facts.PhysicalRoot, nil
 }
 
 // Feature is a loaded per-feature workspace: its declared phase plus which
 // completeness sections currently have real content.
 type Feature struct {
-	Slug    string
-	Phase   Phase
-	Present map[Section]bool
+	Slug         string
+	Phase        Phase
+	Present      map[Section]bool
+	PresentFiles map[string]bool
+	LegacyLayout bool
 }
 
 // featureDir is where per-feature state lives under the root. work/ is the
@@ -174,7 +150,17 @@ func LoadFeature(root, slug string) (*Feature, error) {
 	for _, s := range Sections {
 		present[s] = sectionPresentAny(dir, s)
 	}
-	return &Feature{Slug: slug, Phase: phase, Present: present}, nil
+	presentFiles := make(map[string]bool)
+	for _, name := range WorkspaceFiles() {
+		presentFiles[name] = sectionPresent(filepath.Join(dir, name))
+	}
+	return &Feature{
+		Slug:         slug,
+		Phase:        phase,
+		Present:      present,
+		PresentFiles: presentFiles,
+		LegacyLayout: filepath.Clean(dir) == filepath.Clean(filepath.Join(root, "features", slug)),
+	}, nil
 }
 
 // sectionPresentAny reports whether any file that can satisfy section s has real
@@ -204,22 +190,23 @@ func declaredPhaseFromLedger(path string) (Phase, bool) {
 	return Phase(word), true
 }
 
-// ReadDeclaredSchemaVersion returns the schemaVersion declared in a feature's
-// feature.md frontmatter, or 0 if the file, frontmatter, or field is
-// absent/unparseable. Unlike LoadFeature it does NOT refuse a version newer than
-// the engine supports: doctor needs to observe a newer version to report skew,
-// not fail on it.
+// ReadDeclaredSchemaVersion returns the schemaVersion from feature.md
+// frontmatter, or 0 if the file, frontmatter, or field is missing or invalid.
+// Unlike LoadFeature, it returns newer versions so doctor can report the skew.
 func ReadDeclaredSchemaVersion(root, slug string) int {
-	raw, err := os.ReadFile(filepath.Join(featureDir(root, slug), "feature.md"))
-	if err != nil {
-		return 0
+	dir := featureDir(root, slug)
+	for _, name := range workspaceMapFiles {
+		raw, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			continue
+		}
+		fm, _ := splitFrontmatter(raw)
+		n, err := strconv.Atoi(strings.TrimSpace(fm["schemaVersion"]))
+		if err == nil {
+			return n
+		}
 	}
-	fm, _ := splitFrontmatter(raw)
-	n, err := strconv.Atoi(strings.TrimSpace(fm["schemaVersion"]))
-	if err != nil {
-		return 0
-	}
-	return n
+	return 0
 }
 
 // MaxDeclaredSchemaVersion returns the highest schemaVersion declared by any

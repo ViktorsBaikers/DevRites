@@ -1,0 +1,20 @@
+{
+  "schema": "devrites-controlled-behavioral-controls/v1",
+  "trials_per_arm": 5,
+  "scenarios": [
+    {
+      "trial_group_id": "QUICK-BE1",
+      "task_sha256": "63146008c866fc7fb743ca5d00d5321168429a4ae41bacc05bc250d68c725d9c",
+      "fixture_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "control_skill_sha256": "73899d16358a09f5829784b8e1f2f927f114ad11cd2aa605073b5b905872e62b",
+      "grader_sha256": "5faaeba7471c828eae66c5d93c95a6bbcf52252f9f988d24e4f4f493bd70266a"
+    },
+    {
+      "trial_group_id": "SHIP-BE1",
+      "task_sha256": "f8bd289aa2b5609f67b6733f2b63956089a67ce2b14b92f7d27fe59cb93f743e",
+      "fixture_sha256": "53321a921268893a17c3ac1d5b71edf767d76dad7d0c629faec52c20bff54a96",
+      "control_skill_sha256": "e29ba09aaeea6cfbeb6bdc4a11cabb29168251df8b42329d05b31cd707be10bc",
+      "grader_sha256": "8fcbb20e8bede578a968843c35e3e0eadc994eeeaadd2bfda2bf57435dcf9fb2"
+    }
+  ]
+}

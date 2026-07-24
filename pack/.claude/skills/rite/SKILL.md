@@ -33,6 +33,7 @@ What each verb does lives once, in the Menu below; this table is the dispatch ma
 |---|---|
 | `spec [feature]` | `/rite-spec` |
 | `adopt [area]` | `/rite-adopt` |
+| `clarify [feature]` | `/rite-clarify` |
 | `temper [--mode]` | `/rite-temper` |
 | `define` | `/rite-define` |
 | `vet [--cross-model]` | `/rite-vet` |
@@ -63,17 +64,17 @@ What each verb does lives once, in the Menu below; this table is the dispatch ma
 | `quick [change]` | `/rite-quick` |
 | `frame [task]` | `/rite-frame` |
 
-Both forms hit the same skill: the menu form for discovery, the `/rite-<verb>` shortcut for muscle memory.
+Both forms call the same skill. The menu supports discovery; `/rite-<verb>` is the direct form.
 
 `use <slug>` is handled **inline**. There is no `rite-use` skill. Confirm
 `.devrites/work/<slug>/` exists, then re-point `.devrites/ACTIVE` to `<slug>` and report
 the now-active feature. It is cheap context-switching only: no re-spec, no phase run. If
 the workspace is missing, list the slugs under `.devrites/work/` and stop.
 
-`guide` is an inline first-feature walkthrough. Agree on one **real, genuinely small**
-change, then run spec → temper → define → vet → build → prove → polish → review → seal →
+`guide` is an inline walkthrough for the first feature. Agree on one **real, small**
+change, then run spec → clarify → temper → define → vet → build → prove → polish → review → seal →
 ship. Before each phase, say what it decides; after, name what it wrote and why. Pause at
-every boundary. Teach without lecturing.
+every boundary and explain only what the user needs for the next decision.
 
 Specialist triggers (model-invoked inside the above):
 `devrites-frontend-craft` (UI) · `devrites-browser-proof` (UI verify) ·
@@ -102,6 +103,7 @@ Recommended start: <greenfield: /rite spec <feature> | brownfield-unadopted: /ri
                               menu form           direct shortcut
 SPEC          /rite spec               ≡    /rite-spec        investigate deeply → write spec.md
 ADOPT         /rite adopt              ≡    /rite-adopt       onboard existing code → reverse-derive spec.md + seed conventions
+CLARIFY       /rite clarify            ≡    /rite-clarify     close the complete decision surface before planning
 TEMPER        /rite temper             ≡    /rite-temper      optional — strategic review: scope mode + pre-mortem, harden the spec
 PLAN          /rite define             ≡    /rite-define      turn the spec into plan + task slices + state
 VET           /rite vet                ≡    /rite-vet         mandatory every plan — light/full engineering review by stakes
@@ -131,8 +133,8 @@ UTILITY       /rite frame | prototype | handoff | zoom-out | pressure-test  (or 
 
 > **Small one-off change?** A typo, copy tweak, config bump, or one-function fix → **`/rite-quick`**
 > (express lane: one contract → build → prove → ship, no full workspace). It escalates to
-> `/rite-spec` the instant the change grows past small / reversible / unambiguous. The full
-> lifecycle above is for real features: don't pay its ceremony for a one-off.
+> `/rite-spec` when the change is no longer small, reversible, and unambiguous. Use the
+> full lifecycle above for features.
 
 ## Core operating rules (every DevRites skill enforces)
 

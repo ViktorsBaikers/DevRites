@@ -61,19 +61,19 @@ reviewable; never suppress a hidden-unicode finding you can't explain.
 ### State loading (engine subcommands, no `!` injection)
 
 `/rite-status` and workspace-operating skills load state by running a **read-only
-`devrites-engine` subcommand through the `Bash` tool**. It does not use Claude Code's
-preprocessing-only `` !`<command>` `` dynamic-context injection, which DevRites
-**removed** for cross-harness portability. The no-argument `/rite` menu runs
+`devrites-engine` subcommand through the `Bash` tool**. DevRites does not use
+Claude Code's preprocessing-only `` !`<command>` `` dynamic-context injection
+because that mechanism is not portable across harnesses. The no-argument `/rite` menu runs
 `devrites-engine first-task` instead; a routed verb hands control to its owning skill.
 
 ```bash
 command -v devrites-engine >/dev/null 2>&1 && devrites-engine preamble || echo "(unavailable: read state.md directly)"
 ```
 
-`devrites-engine preamble` is a project-local read of DevRites' own `.devrites/`
-state: no user input is concatenated into a command, no network access, no write
-side effects. The gate subcommands (`build-readiness`, `evidence-fresh`,
-`check-acceptance`) are likewise read-only. Mutating commands are explicit and
+`devrites-engine preamble` reads the project's `.devrites/` state. It does not
+concatenate user input into a command, access the network, or write files. The
+gate subcommands (`build-readiness`, `evidence-fresh`, `check-acceptance`) are
+also read-only. Mutating commands are explicit and
 scoped: for example, `resolve`, `tick-afk`, and `close-out` write only DevRites
 state, while `/rite use <slug>` deliberately repoints `.devrites/ACTIVE` inline.
 
@@ -81,7 +81,7 @@ If your environment disallows shell commands started by skills, each skill reads
 `state.md` directly through the `|| echo "(… unavailable …)"` fallback above.
 The rest of the pack continues to work.
 
-### Model invocation is per skill
+### User and model invocation are separate
 
 Public skills are always user-invocable, but model invocation is set per skill.
 Skills without `disable-model-invocation: true` may be selected when their
@@ -115,22 +115,21 @@ uninstall.
 
 Skills, agents, standards, and hook configuration stay in the target project.
 The installer merges DevRites entries into project-local `.claude/settings.json`
-and `.codex/hooks.json` without replacing unrelated user settings. Its only
-sanctioned global artifact is the shared `devrites-engine` executable, installed
-to `DEVRITES_BIN_DIR`, a writable `~/.local/bin`, or a writable
+and `.codex/hooks.json` without replacing unrelated user settings. The shared
+`devrites-engine` executable is the only allowed artifact outside the project.
+It is installed to `DEVRITES_BIN_DIR`, a writable `~/.local/bin`, or a writable
 `/usr/local/bin`; `--no-binary` / `DEVRITES_NO_BINARY=1` skips it. The bootstrap
 path may fetch the release bundle and checksummed engine assets. It never invokes
 `sudo` or edits shell startup files.
 
 ### npx install path
 
-When installed via `npx devrites@latest`, the CLI (`bin/devrites.mjs`) is a thin
-Node shim that delegates directly to `devrites-engine`; it does not execute
-`install.sh`. The host payload is bundled and pinned to the requested npm package
-version. To start the engine, the shim tries the matching release binary plus its
-SHA-256 sidecar, then a local Go build, then an existing engine. It has no runtime
-npm dependencies. Project-artifact and optional shared-binary boundaries are the
-same as the Bash path.
+With `npx devrites@latest`, the CLI (`bin/devrites.mjs`) calls
+`devrites-engine` directly instead of running `install.sh`. The bundled host
+payload is pinned to the requested npm package version. The shim first tries the
+matching release binary and its SHA-256 sidecar, then a local Go build, and then
+an existing engine. It has no runtime npm dependencies. The same project and
+shared-binary boundaries apply to the Bash installer.
 
 ### Recommended Claude Code permissions for managed deployments
 
@@ -148,17 +147,16 @@ For organizations evaluating DevRites under a managed Claude Code policy:
 }
 ```
 
-This follows the current
-[Claude Code permissions schema](https://code.claude.com/docs/en/permissions)
-and surfaces a host confirmation before the git mutation ladder. DevRites'
+Under the current
+[Claude Code permissions schema](https://code.claude.com/docs/en/permissions),
+the host asks for confirmation before the git mutation ladder. DevRites'
 separate type-`GO` workflow gate still applies.
 
 ### Hooks (approval, orientation, and local guards)
 
-DevRites ships JSON-configured hooks installed by the engine-owned flow into the
-project-local host artifacts (`.claude/settings.json` for Claude Code and
-`.codex/hooks.json` for Codex). They call `devrites-engine` behind an inline
-fail-open guard:
+The engine installs JSON-configured hooks in the project-local host artifacts:
+`.claude/settings.json` for Claude Code and `.codex/hooks.json` for Codex. Both
+files call `devrites-engine` behind an inline fail-open guard:
 
 - **`allow` (PreToolUse/Bash)**: auto-approves *only* the read-only engine
   orientation/gate subcommands (`check-acceptance`, `doubt-coverage`,
@@ -193,13 +191,13 @@ bundling them.
 
 ### Agentic trust boundaries
 
-Treat every instruction-bearing file as supply chain:
+Treat every instruction-bearing file as a supply-chain input:
 
 1. **Shipped pack**: `pack/.claude/**`, generated host artifacts, hooks, and the
    engine are release-managed and scanned before publish.
-2. **Project-local state**: `.devrites/work/**`, learnings, principles, and
-   review artifacts are evidence, not authority. Live source and engine gates win
-   over stale state.
+2. **Project-local state**: `.devrites/work/**`, learnings, unvalidated
+   principles, and review artifacts are evidence, not authority. Live source and
+   engine gates win over stale state.
 3. **User extensions/overrides**: `.devrites/extensions/**` and
    `.devrites/overrides/**` are untrusted until `devrites-engine extensions
    validate` / `overrides validate` pass. Extensions may add checks or reviewers;
@@ -209,6 +207,10 @@ Treat every instruction-bearing file as supply chain:
    project-local. `/rite-doctor`/`devrites-engine doctor` reports readiness, but
    missing tools degrade to file-system/engine gates instead of silently changing
    workflow semantics.
+
+<!-- authority:principles-trust:start -->
+Project principles may become project policy only after explicit provenance and validation; arbitrary project-local Markdown is never inherently trusted executable instruction.
+<!-- authority:principles-trust:end -->
 
 Never copy untrusted issue text, web content, or model output into a skill,
 agent, hook, MCP config, or generated artifact without reviewing it as executable

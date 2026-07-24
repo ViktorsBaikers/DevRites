@@ -127,6 +127,169 @@ func TestPackageExistenceJavaScriptWorkspaces(t *testing.T) {
 	}
 }
 
+func TestPackageExistenceCSSImports(t *testing.T) {
+	tests := []struct {
+		name        string
+		imports     string
+		manifest    string
+		wantCode    int
+		wantFinding string
+	}{
+		{
+			name:     "declared multi import ignores comment prefix",
+			imports:  "/* @import \"comment-only\"; */ @import \"tailwindcss\"; @import \"./theme.css\";",
+			manifest: `{"dependencies":{"tailwindcss":"^4.1.0"}}`,
+		},
+		{
+			name:        "undeclared url import",
+			imports:     `@import url("missing-theme");`,
+			manifest:    `{}`,
+			wantCode:    3,
+			wantFinding: "missing-theme",
+		},
+		{
+			name:     "remote imports ignored",
+			imports:  `@import url("https://cdn.example.invalid/theme.css"); @import "//cdn.example.invalid/other.css";`,
+			manifest: `{}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo := t.TempDir()
+			writePackageExistenceFile(t, repo, "package.json", test.manifest+"\n")
+			writePackageExistenceFile(t, repo, "styles/app.css", "/* baseline */\n")
+			gitPackageExistence(t, repo, "init", "-q")
+			gitPackageExistence(t, repo, "config", "user.email", "test@example.com")
+			gitPackageExistence(t, repo, "config", "user.name", "Test")
+			gitPackageExistence(t, repo, "add", ".")
+			gitPackageExistence(t, repo, "commit", "-qm", "baseline")
+			if err := os.MkdirAll(featureDir(repo, "feat"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			writePackageExistenceFile(t, repo, "styles/app.css", "/* baseline */\n"+test.imports+"\n")
+			t.Chdir(repo)
+
+			var stdout, stderr bytes.Buffer
+			gotCode := PackageExistence(repo, []string{"feat"}, &stdout, &stderr)
+			if gotCode != test.wantCode {
+				t.Fatalf("code = %d, want %d\nstdout: %s\nstderr: %s", gotCode, test.wantCode, stdout.String(), stderr.String())
+			}
+			if test.wantFinding != "" && !strings.Contains(stderr.String(), test.wantFinding) {
+				t.Fatalf("stderr does not name %q: %s", test.wantFinding, stderr.String())
+			}
+		})
+	}
+}
+
+func TestPackageExistenceCSSResolvesBareSiblingPath(t *testing.T) {
+	repo := t.TempDir()
+	writePackageExistenceFile(t, repo, "package.json", "{}\n")
+	writePackageExistenceFile(t, repo, "styles/app.css", "/* baseline */\n")
+	writePackageExistenceFile(t, repo, "styles/theme.css", ":root { color-scheme: dark; }\n")
+	gitPackageExistence(t, repo, "init", "-q")
+	gitPackageExistence(t, repo, "config", "user.email", "test@example.com")
+	gitPackageExistence(t, repo, "config", "user.name", "Test")
+	gitPackageExistence(t, repo, "add", ".")
+	gitPackageExistence(t, repo, "commit", "-qm", "baseline")
+	if err := os.MkdirAll(featureDir(repo, "feat"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writePackageExistenceFile(t, repo, "styles/app.css", "/* baseline */\n@import \"theme.css\";\n")
+	t.Chdir(repo)
+
+	var stdout, stderr bytes.Buffer
+	if code := PackageExistence(repo, []string{"feat"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code = %d, want 0\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+}
+
+func TestPackageExistenceCSSHonorsBaselineCommentContext(t *testing.T) {
+	repo := t.TempDir()
+	baseline := "/* comment opened on an unchanged line\nunchanged content\n*/\n"
+	current := "/* comment opened on an unchanged line\n@import \"comment-only-package\";\nunchanged content\n*/\n"
+	writePackageExistenceFile(t, repo, "package.json", "{}\n")
+	writePackageExistenceFile(t, repo, "styles/app.css", baseline)
+	gitPackageExistence(t, repo, "init", "-q")
+	gitPackageExistence(t, repo, "config", "user.email", "test@example.com")
+	gitPackageExistence(t, repo, "config", "user.name", "Test")
+	gitPackageExistence(t, repo, "add", ".")
+	gitPackageExistence(t, repo, "commit", "-qm", "baseline")
+	if err := os.MkdirAll(featureDir(repo, "feat"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writePackageExistenceFile(t, repo, "styles/app.css", current)
+	t.Chdir(repo)
+
+	var stdout, stderr bytes.Buffer
+	if code := PackageExistence(repo, []string{"feat"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code = %d, want 0\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+}
+
+func TestPackageExistenceScansUntrackedSourceFiles(t *testing.T) {
+	repo := t.TempDir()
+	writePackageExistenceFile(t, repo, "package.json", "{}\n")
+	gitPackageExistence(t, repo, "init", "-q")
+	gitPackageExistence(t, repo, "config", "user.email", "test@example.com")
+	gitPackageExistence(t, repo, "config", "user.name", "Test")
+	gitPackageExistence(t, repo, "add", ".")
+	gitPackageExistence(t, repo, "commit", "-qm", "baseline")
+	if err := os.MkdirAll(featureDir(repo, "feat"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writePackageExistenceFile(t, repo, "src/new.ts", `import missing from "untracked-missing-package";`+"\n")
+	t.Chdir(repo)
+
+	var stdout, stderr bytes.Buffer
+	gotCode := PackageExistence(repo, []string{"feat"}, &stdout, &stderr)
+	if gotCode != 3 {
+		t.Fatalf("code = %d, want 3\nstdout: %s\nstderr: %s", gotCode, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "untracked-missing-package") {
+		t.Fatalf("stderr does not name untracked dependency: %s", stderr.String())
+	}
+}
+
+func TestPackageExistenceScansUntrackedFilesAddedAfterSliceSnapshot(t *testing.T) {
+	repo := newGitRepo(t)
+	root := workspace(t, "feat")
+	writePackageExistenceFile(t, repo, "package.json", "{}\n")
+	commitAll(t, repo, "manifest")
+	writeWrightAllowlist(t, root, "feat", "src/new.ts")
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+	writePackageExistenceFile(t, repo, "src/new.ts", `import missing from "slice-untracked-package";`+"\n")
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("reconcile check = %d, want 0\n%s", code, out)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := PackageExistence(root, []string{"feat"}, &stdout, &stderr)
+	if code != 3 {
+		t.Fatalf("code = %d, want 3\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "slice-untracked-package") {
+		t.Fatalf("stderr does not name slice dependency: %s", stderr.String())
+	}
+}
+
+func TestPackageExistenceFailsClosedOnPartialReconcileBaseline(t *testing.T) {
+	newGitRepo(t)
+	root := workspace(t, "feat")
+	writeFile(t, filepath.Join(featureDir(root, "feat"), reconcileBaseName), "deadbeef\n")
+
+	var stdout, stderr bytes.Buffer
+	code := PackageExistence(root, []string{"feat"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("code = %d, want 2\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "partial lifecycle") {
+		t.Fatalf("missing fail-closed lifecycle diagnostic:\n%s", stderr.String())
+	}
+}
+
 func TestPackageExistenceNonJavaScriptWorkspaces(t *testing.T) {
 	tests := []struct {
 		name        string

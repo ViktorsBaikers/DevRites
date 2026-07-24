@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "result_version",
+    "run_id",
+    "cell_id",
+    "host",
+    "role",
+    "status",
+    "baseline_id",
+    "scope_id",
+    "budget",
+    "side_effects",
+    "payload_type",
+    "execution",
+    "signals",
+    "usage",
+    "dispatch_reason_id",
+    "result_reason_id",
+    "outcome",
+    "terminal_sentinel",
+    "host_version",
+    "model"
+  ],
+  "properties": {
+    "result_version": {
+      "const": "agent-result/v1"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^drv-run-v1:[0-9a-f]{32}$"
+    },
+    "cell_id": {
+      "type": "string"
+    },
+    "host": {
+      "enum": [
+        "claude",
+        "codex"
+      ]
+    },
+    "role": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "complete",
+        "partial",
+        "blocked",
+        "failed"
+      ]
+    },
+    "baseline_id": {
+      "type": "string"
+    },
+    "scope_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "files_used",
+        "loaded_lines_used",
+        "result_lines_used"
+      ],
+      "properties": {
+        "files_used": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "loaded_lines_used": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "result_lines_used": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "side_effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repo_writes",
+        "scratch_write_count"
+      ],
+      "properties": {
+        "repo_writes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "kind",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "file",
+                  "symlink",
+                  "deleted"
+                ]
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "scratch_write_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "payload_type": {
+      "enum": [
+        "review-findings",
+        "wright-report"
+      ]
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "guard_strength",
+        "independence"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "named",
+            "generic",
+            "inline"
+          ]
+        },
+        "guard_strength": {
+          "enum": [
+            "enforced",
+            "observed",
+            "unavailable",
+            "bypassed"
+          ]
+        },
+        "independence": {
+          "type": "boolean"
+        }
+      }
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "cost_usd",
+        "cost_provenance"
+      ],
+      "properties": {
+        "input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cost_usd": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]+(\\.[0-9]+)?$"
+        },
+        "cost_provenance": {
+          "enum": [
+            "provider-reported",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "dispatch_reason_id": {
+      "type": "string",
+      "pattern": "^DRV-[A-Z0-9-]+$"
+    },
+    "result_reason_id": {
+      "type": "string",
+      "pattern": "^DRV-[A-Z0-9-]+$"
+    },
+    "outcome": {
+      "enum": [
+        "passed",
+        "denied",
+        "unavailable"
+      ]
+    },
+    "terminal_sentinel": {
+      "enum": [
+        "complete",
+        "interrupted"
+      ]
+    },
+    "host_version": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    }
+  }
+}

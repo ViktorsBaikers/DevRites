@@ -9,4 +9,4 @@ Scope: the export feature diff (3 files).
 - Nit (1): `csv-stream.ts` could use the project's existing `streamRows` helper. Applied.
 
 ## Verdict
-No Critical or Important findings. Spec axis: all three acceptance criteria implemented.
+No Critical or Important findings. AC-001, AC-002, and AC-003 are implemented.

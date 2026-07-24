@@ -1,20 +1,29 @@
 # Trigger evals
 
-Every executable DevRites skill has a `<skill-name>.json` eval file in this directory;
-the non-workflow `devrites-lib` library is exempt. Model-invoked corpora exercise the
-description with implicit positive and negative queries. Explicit-only corpora use
-direct-command positives plus an implicit-invocation negative boundary. Corpus size
-follows distinct routing branches instead of a fixed quota. The `devrites-*` evals lean
-on adversarial `should_not_trigger` cases against the
-sibling skills and bundled globals (`diagnose`, `grill-me`, `code-review`, `tdd`,
-`prototype`, `handoff`) their trigger surfaces collide with.
+Every executable DevRites skill has a `<skill-name>.json` eval file in this
+directory; the non-workflow `devrites-lib` library is exempt. Corpora for
+model-invoked skills exercise the skill description with implicit positive and
+negative queries. Corpora for explicit-only skills use direct-command positives
+and a negative case for implicit invocation. Corpus size follows the number of
+distinct routing branches rather than a fixed quota. The `devrites-*` evals include adversarial
+`should_not_trigger` cases for sibling skills and bundled globals whose triggers
+overlap: `diagnose`, `grill-me`, `code-review`, `tdd`, `prototype`, and
+`handoff`.
 
-**Coverage boundary.** These are *routing* evals (which skill fires) plus the
-outcome grader below, which checks whether a finished run reached a shippable
-state. They do not yet run the `.claude/agents/` subagents end to end. The wright
-and reviewers need a live model, so `evals.yml` exercises them through the API
-path, not in the no-key CI gate. Per-phase *contract* behavior (e.g. build's
-stop-after-one-slice) beyond the seal outcome remains a scoped follow-up.
+## Coverage boundary
+
+Four checks cover different questions:
+
+1. Routing evals ask which skill fires.
+2. Outcome fixtures ask whether a finished workspace is actually shippable.
+3. The agent-contract matrix checks reviewer and wright dispatch, isolation,
+   fallbacks, interruption, and result handling on Claude and Codex.
+4. Controlled behavioral trials check whether high-risk rites keep their
+   safety contract under pressure.
+
+Deterministic runs test each harness and grader without a model. Provider-backed
+evaluations are outside project policy. CI never accepts model credentials or
+starts paid sessions.
 
 The methodology mirrors Anthropic's `skill-creator` 2.0:
 
@@ -25,35 +34,53 @@ The methodology mirrors Anthropic's `skill-creator` 2.0:
    should fire at all).
 3. Run with and without the skill enabled; the delta is the trigger rate.
 
-**Two CI paths:**
+**CI paths:**
 
 - **`ci.yml`** runs `scripts/run-evals.sh` (trigger-eval schema + shape) **and**
   `scripts/run-outcome-evals.sh` (the deterministic outcome grader on the golden
-  fixtures) on every PR: no API key required. Catches broken JSON, wrong query
+  fixtures) on every PR using repository fixtures only. Catches broken JSON, wrong query
   coverage, missing keys, and a golden workspace that no longer grades as expected.
-- **`evals.yml`** runs `scripts/eval-runner.py` against the live Anthropic
-  API on a nightly schedule (and on PRs that carry the `run-evals` label).
-  Requires the repo secret `ANTHROPIC_API_KEY`. For each query, the runner
-  asks Claude to predict which DevRites skill would fire and compares the
-  prediction to the expected verdict. Per-skill budget gate:
-  - accuracy ≥ **0.90** (small corpora therefore require every query correct)
-  - false-positives ≤ **2** (`should_not_trigger` queries that fired)
+- **`evals.yml`** runs the 24-cell fake agent-contract matrix, then checks and
+  runs the 20-cell fake behavioral trial. Pull requests, pushes, and scheduled
+  runs are network-free and receive no model credential. The workflow uploads
+  only each runner's validated `summary.json`, with 14-day retention.
 
-  Per-skill failures fail the job; the workflow renders a markdown summary
-  (skill / correct / accuracy / FP / FN / passed) and uploads
-  `eval-summary.jsonl` + `eval-output.txt` as artifacts.
+That is the complete project evaluation path. The workflow has no manual paid
+job, model secret, self-hosted model runner, or live runner invocation.
 
-Local live execution is manual-only; schema validation never runs a model just because
-`CLAUDE_API_KEY` exists:
+### Agent-contract matrix
+
+The agent-contract matrix contains 12 scenarios for each of the two hosts.
+Fake mode therefore runs 24 isolated cells without network or model use:
 
 ```bash
-pip install anthropic
-CLAUDE_API_KEY=sk-... scripts/run-evals.sh --live evals/*.json
+python3 scripts/run-agent-contract-evals.py \
+  --fake \
+  --results-dir /tmp/devrites-agent-contract
 ```
 
-Override the model with `DEVRITES_EVAL_MODEL=claude-...`. For custom thresholds or
-summary output, call `python3 scripts/eval-runner.py --summary-file out.jsonl ...`
-directly.
+The fake matrix verifies the harness transport, isolation rules, and scorer. It
+does not prove behavior on a real Claude or Codex host. DevRites records that
+limitation instead of running provider-backed cells.
+
+### Controlled behavioral trial
+
+The controlled harness check has two scenarios, two arms, and five isolated
+contexts per arm. A full fake run contains 20 cells:
+
+```bash
+python3 scripts/run-live-behavioral-evals.py --dry-run
+python3 scripts/run-live-behavioral-evals.py \
+  --fake \
+  --results-dir /tmp/devrites-behavioral
+```
+
+The summary keeps only trial and arm IDs, frozen digests, fixed event/tool
+counts, predicate booleans, variance, confidence, redacted failures, and the
+keep/delete decision. Fake evidence validates the harness but cannot justify
+keeping a prompt variant or support a provider-behavior claim. See
+[`behavioral/README.md`](behavioral/README.md) for the exact predicates and
+commands.
 
 ## Routing ratchet
 
@@ -64,13 +91,14 @@ increase. Raise the baseline only after description tuning improves the run.
 
 ## Outcome evals (deterministic grader)
 
-Trigger evals test whether the right skill *fires*. They do **not** test whether
-a finished run reached a *shippable* state: the product claim ("won't claim done
-without proof"). `scripts/grade-feature.sh` is a deterministic grader that reads
-only the committed Markdown artifacts of a workspace and checks the GO invariants
-from `rite-seal/reference/{seal-template,go-no-go,final-evidence}.md`: sealed GO,
-every acceptance criterion checked, no blockers, evidence present, review present,
-no open `gate: validating`, and a shippable `state.md` phase/status.
+Trigger evals test whether the right skill fires. Outcome evals test whether a
+finished run reached a shippable state and therefore support the product rule
+that DevRites does not claim completion without proof.
+`scripts/grade-feature.sh` reads only the committed Markdown artifacts of a
+workspace. It checks the GO invariants from
+`rite-seal/reference/{seal-template,go-no-go,final-evidence}.md`: a sealed GO,
+every acceptance criterion checked, no blockers, evidence and review present,
+no open `gate: validating`, and a shippable phase and status in `state.md`.
 
 Two golden fixtures pin it: `evals/golden/shippable-feature/` (must grade GO) and
 `evals/golden/blocked-feature/` (must grade NO-GO, see-it-fail-first):
@@ -79,29 +107,32 @@ Two golden fixtures pin it: `evals/golden/shippable-feature/` (must grade GO) an
 scripts/run-outcome-evals.sh
 ```
 
-No API key required; runs in CI. Live evidence-freshness by mtime is a separate
-runtime gate exposed as `devrites-engine evidence-fresh`.
+This runs in CI using repository fixtures only. Evidence freshness by mtime is
+a separate runtime gate exposed as `devrites-engine evidence-fresh`.
 
 ## Behavioral evals (discipline under pressure)
 
-Trigger evals test *which skill fires*; outcome evals test *did a run reach a shippable
-state*. Behavioral evals test the third thing: *does a gating skill's discipline hold when
-the user pushes it toward the exact shortcut the skill exists to prevent*: claim a pass it
-didn't observe, ship past a Critical, skip the doubt loop, defer a test. Each scenario turns
-a row from `../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md` (asserted in prose) into a graded case:
-a pressure prompt plus the resistance a holding response shows and the capitulation a failed
-one shows.
+Trigger evals test routing, and outcome evals test whether a run became
+shippable. Behavioral evals test whether a gating skill refuses a known shortcut
+under pressure. Examples include claiming an unobserved pass, shipping past a
+Critical finding, skipping the doubt loop, or deferring a required test. Each
+scenario converts a row from
+`../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md` into a
+graded case from that prose assertion. The case contains a pressure prompt, the
+observable behavior of a response that holds the gate, and markers for a
+response that gives in.
 
-They live in [`behavioral/`](behavioral/) and are **opt-in**: earned by gating rites
-(`rite-prove`, `rite-build`, `rite-seal`, `rite-vet`, peers), never required of every skill.
-The deterministic shape gate runs in `ci.yml` with no API key:
+Behavioral evals live in [`behavioral/`](behavioral/) and are opt-in for gating
+rites such as `rite-prove`, `rite-build`, `rite-seal`, and `rite-vet`. They are
+not required for every skill. The deterministic shape gate runs in `ci.yml`
+using repository fixtures only:
 
 ```bash
 scripts/run-behavioral-evals.sh
 ```
 
-Live execution (does the skill resist?) is the same API-gated rung as the live
-trigger evals. Full schema, methodology, and the grading contract:
+The controlled dry/fake runner, retention rules, full schema, and grading
+contract are documented in
 [`behavioral/README.md`](behavioral/README.md).
 
 ## File schema

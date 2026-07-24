@@ -11,21 +11,25 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
+- For every DevRites specialist or writer dispatch, first call `spawn_agent` with the named `devrites-<role>` custom role. The matching project contract is `.codex/agents/devrites-<role>.toml`.
+- If `spawn_agent` is callable but a named read-only role is unavailable, use generic `explorer` only when the host proves that run has a runtime-enforced read-only sandbox. Tell it to read `.codex/agents/devrites-<role>.toml`, follow its `developer_instructions`, and execute the unchanged packet. A missing read-only custom role is not evidence that spawning is unavailable.
+- Never dispatch generic `worker` for `devrites-slice-wright` unless the host proves that worker run carries exact DevRites identity and the same `.wright-allowlist` enforcement as the named role. Codex reports a generic run as `agent_type=worker`, so the generated global hooks cannot prove that binding. Reject that unsafe rung and use the documented labelled inline wright path with `.reconcile-inline` plus the full reconcile gate.
+- If the host cannot prove the generic explorer is runtime read-only, reject that rung too. Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn may the root run the documented discipline inline. Label it `independence: fallback`, never call it independent, and apply every fallback risk gate. An unbound generic wright or unconfined generic explorer is such a safety rejection, not evidence that no agents exist.
+- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
+- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
 - When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # $rite-build: one verified slice
 
-Build the next single slice, leave it working and proven, then **stop**. **Read the
-active workspace first**; if none, tell the user to run `$rite-spec <feature>`.
+Build and prove one slice, then **stop**. **Read the active workspace first**; if none,
+tell the user to run `$rite-spec <feature>`.
 
-This skill is the **orchestrator**: it owns the gates and the workspace; a fresh-context
-[`devrites-slice-wright`](.codex/agents/devrites-slice-wright.toml) owns the **writing**. You run
-pre-flight (readiness, slice select, HITL pause), dispatch the wright for the build core, then
-run the post-return gates (doubt, fail-on-red, record, stop). See
+This skill owns the gates and workspace. A fresh-context
+[`devrites-slice-wright`](.codex/agents/devrites-slice-wright.toml) writes source and tests.
+Run the readiness, slice-selection, and HITL checks; dispatch the wright; then run the
+doubt, fail-on-red, recording, and stop checks. See
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
@@ -35,6 +39,8 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 - `coding-style.md`: naming, function shape, guard clauses, comments, reuse-first.
 - `error-handling.md`: fail fast, no silent catches, fail closed.
 - `testing.md`: pyramid, behaviour over implementation, see-it-fail-first.
+- [`reference/tdd.md`](reference/tdd.md): the slice-level Red → Green → Refactor
+  and Prove-It contract.
 - `patterns.md`: composition over inheritance, avoid premature abstraction.
 - `principles.md`: the project invariants (`.devrites/principles.md`) the slice must honor; the wright reads them as **binding**, not priors.
 - `security.md`: when the slice touches user input, auth, data, or external integrations.
@@ -45,23 +51,24 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
 - **One slice at a time. DO NOT** start the next slice without the user asking.
 - Evidence over confidence. Prefer existing conventions. Feature scope only: no
   drive-by refactors.
-- **Noticed, not touched.** An adjacent smell the wright sees outside `touched-files.md` is
-  recorded as an FYI follow-up in `decisions.md`, never fixed inline: the slice's change summary
-  states what it *deliberately left alone* ([`git-workflow.md`](../devrites-lib/reference/standards/git-workflow.md) "Things
-  I didn't touch"), so the reviewer reads a feature-scoped diff, not a renovation. The `devrites-engine reconcile`
-  gate (step 6) enforces this by exit code.
-- **Don't re-run an unchanged check.** Re-running the same build/test command on code that hasn't
-  changed since proves nothing new. It's motion, not evidence. Re-verify after an edit, not before.
-- Surface material assumptions; ask before adding dependencies or a second design
-  system. The [Spec Drift Guard](reference/spec-drift-guard.md) is active throughout.
-- **Avoid AI slop while writing.** `devrites-slice-wright` enforces the anti-slop charter **at
-  the source**: the canonical do-not list is `rite-polish/reference/anti-ai-slop.md` (the
-  wright reads it; don't restate it here). It writes the code the *project* would write, in its
-  idiom, reusing before building; **you verify the charter held on return**. You do not re-list
-  it and you do not fix slop by editing source. Polish catches what slips; build prevents.
+- **Record adjacent issues; do not edit them.** An issue outside the captured
+  `.wright-allowlist` becomes an FYI follow-up in `decisions.md`. The slice summary states
+  what it deliberately left alone ([`git-workflow.md`](../devrites-lib/reference/standards/git-workflow.md)
+  "Things I didn't touch"). The `devrites-engine reconcile` gate enforces this boundary.
+- **Don't re-run an unchanged check.** The same build or test on unchanged code provides
+  no new evidence. Re-verify after an edit.
+- Surface material assumptions. Do not introduce an unplanned dependency or second design
+  system: route the objective plan gap to `$rite-vet` (or bounded recovery), not to a human.
+  Ask only if the newly exposed choice changes licensing/cost/security, product behavior,
+  or an explicit architecture policy. The
+  [Spec Drift Guard](reference/spec-drift-guard.md) is active throughout.
+- **Avoid AI slop while writing.** `devrites-slice-wright` applies the anti-slop charter
+  while writing. The canonical list is `rite-polish/reference/anti-ai-slop.md`; do not
+  duplicate it here. The wright follows project idioms and reuses existing code first.
+  **Verify the charter on return.** Do not correct source from the orchestrator.
   The **prose you write yourself** (`evidence.md`, `decisions.md`, the slice report) follows
   the human-voice charter (`.agents/skills/devrites-lib/reference/standards/prose-style.md`; depth in `devrites-prose-craft`): no
-  filler openers, no marketing adjectives, exact commands and identifiers kept verbatim.
+  filler openers or marketing adjectives; preserve exact commands and identifiers.
 - **Honor declared project principles.** The wright reads `.devrites/principles.md` and treats
   each invariant as **binding** (not a prior to weigh like a convention): a slice it cannot build
   without breaking one is an **Escalation**, not a silent violation. On return **you verify no
@@ -70,15 +77,17 @@ writes; read them yourself for the doubt/record gates or in the inline fallback:
   `.devrites/principles.md` → none declared → nothing to honor.
 - **You never edit source: the wright is the only writer of code + tests.** You write only
   `.devrites/` bookkeeping. On any red gate, doubt finding, or coverage gap your only remedies
-  are **continue the same wright once** (it fixes in its own context) or **stop + escalate**:
-  never patch the code yourself. The `devrites-engine reconcile` gate (step 6) enforces this by exit code:
-  any source file changed outside the wright's claimed set is a hard STOP.
-- **A `Forge: yes` slice competes candidates: one author still lands.** When `$rite-vet`
-  flagged the slice a genuine architecture fork, step 3 runs K=2-3 candidate wrights in
-  **isolated worktrees** and lands exactly one winner's diff; the single-writer invariant holds
-  because no tree ever has two authors and only the winner reaches the working tree. You still
-  never edit source, and reconcile runs against the winner's claimed set. The default slice is
-  single-path: forge is the rare exception ([`reference/forge.md`](reference/forge.md)).
+  are to continue the same wright under bounded `devrites-debug-recovery` (three total attempts
+  per root cause) or stop with the correctly classified blocker: never patch the code yourself
+  and never ask the human to authorize agent-owned repair work. The `devrites-engine reconcile`
+  gate enforces this against the root-owned pre-dispatch allowlist: any source file changed
+  outside that exact set is a hard STOP.
+- **Forge is manifest-owned, winner-takes-all.** For a fully typed `Forge: yes`
+  slice, follow [`reference/forge.md`](reference/forge.md): `forge plan` precedes
+  reconciliation; every candidate is bound to its isolated worktree and live worker;
+  the judge records one winner; normal reconciliation and proof pass before manifest-only
+  cleanup and the human report. Any stale/ineligible flag uses one serial wright before
+  Forge creates state.
 
 ## Workflow
 

@@ -5,18 +5,29 @@ import (
 	"testing"
 )
 
-// TestStatusLiveWorkspace is the P2 acceptance check: `devrites-engine status <slug>`
-// must report a canonical work/<slug> feature the live pack created without a
-// workspace-map frontmatter: phase from the canonical state.md ledger and proof/status
-// completeness from canonical evidence.md/state.md files. Before schema unification this returned
+// TestStatusLiveWorkspace checks a canonical work/<slug> feature without
+// workspace-map frontmatter. Status must read the phase from state.md and
+// completeness from evidence.md and state.md instead of reporting
 // "feature not found".
 func TestStatusLiveWorkspace(t *testing.T) {
 	work := t.TempDir()
 	writeFile(t, work, ".devrites/work/live/state.md", "- Phase: build\n- Status: running\n")
-	writeFile(t, work, ".devrites/work/live/spec.md", "# Spec\n\nDo the thing.\n")
-	writeFile(t, work, ".devrites/work/live/plan.md", "# Plan\n\nApproach.\n")
-	writeFile(t, work, ".devrites/work/live/decisions.md", "# Decisions\n\nChose X.\n")
-	writeFile(t, work, ".devrites/work/live/tasks.md", "# Tasks\n\n- [x] slice 1\n")
+	for name, body := range map[string]string{
+		"brief.md":             "# Brief\n\nDo the thing.\n",
+		"spec.md":              "# Spec\n\nDo the thing.\n",
+		"decisions.md":         "# Decisions\n\nChose X.\n",
+		"assumptions.md":       "# Assumptions\n\nNone.\n",
+		"questions.md":         "# Questions\n\nNone.\n",
+		"decision-coverage.md": "# Decision coverage\n\nCLEAR.\n",
+		"architecture.md":      "# Architecture\n\nExisting layer.\n",
+		"plan.md":              "# Plan\n\nApproach.\n",
+		"tasks.md":             "# Tasks\n\n- [x] slice 1\n",
+		"traceability.md":      "# Traceability\n\nMapped.\n",
+		"eng-review.md":        "# Engineering review\n\nREADY.\n",
+		"test-plan.md":         "# Test plan\n\nRun tests.\n",
+	} {
+		writeFile(t, work, ".devrites/work/live/"+name, body)
+	}
 	(parityCase{
 		workdir: work,
 		env:     libRootEnv(work),

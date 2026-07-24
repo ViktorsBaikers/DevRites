@@ -60,6 +60,26 @@ func TestContextSyncRejectsUnsafePath(t *testing.T) {
 	}
 }
 
+func TestContextSyncRefusesExternalWorkspaceOverride(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(project, "AGENTS.md")
+	if err := os.WriteFile(target, []byte("unchanged\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DEVRITES_WORKSPACE", filepath.Join(t.TempDir(), "feature"))
+	stderr := &bytes.Buffer{}
+	if code := Context(root, []string{"sync", "AGENTS.md"}, &bytes.Buffer{}, stderr); code != 3 {
+		t.Fatalf("external workspace context sync = %d, want refusal\n%s", code, stderr)
+	}
+	if got := testutil.ReadFile(t, target); got != "unchanged\n" {
+		t.Fatalf("refused context sync mutated target:\n%s", got)
+	}
+}
+
 func TestRunbookValidateAndGateResume(t *testing.T) {
 	project := t.TempDir()
 	root := filepath.Join(project, ".devrites")

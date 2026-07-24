@@ -11,8 +11,8 @@ Each probe maps to a specific prediction from the hypothesis phase.
 
 ## Tagged prefixes
 
-**Tag every debug log** with a unique prefix, e.g. `[DEBUG-a4f2]`. Cleanup at
-the end is a single grep. Untagged logs survive; tagged logs die.
+Tag every debug log with a unique prefix, such as `[DEBUG-a4f2]`, so one grep
+locates every temporary log for removal during cleanup.
 
 ## Perf branch
 

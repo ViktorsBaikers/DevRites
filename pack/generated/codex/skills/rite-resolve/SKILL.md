@@ -12,24 +12,28 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
+- For every DevRites specialist or writer dispatch, first call `spawn_agent` with the named `devrites-<role>` custom role. The matching project contract is `.codex/agents/devrites-<role>.toml`.
+- If `spawn_agent` is callable but a named read-only role is unavailable, use generic `explorer` only when the host proves that run has a runtime-enforced read-only sandbox. Tell it to read `.codex/agents/devrites-<role>.toml`, follow its `developer_instructions`, and execute the unchanged packet. A missing read-only custom role is not evidence that spawning is unavailable.
+- Never dispatch generic `worker` for `devrites-slice-wright` unless the host proves that worker run carries exact DevRites identity and the same `.wright-allowlist` enforcement as the named role. Codex reports a generic run as `agent_type=worker`, so the generated global hooks cannot prove that binding. Reject that unsafe rung and use the documented labelled inline wright path with `.reconcile-inline` plus the full reconcile gate.
+- If the host cannot prove the generic explorer is runtime read-only, reject that rung too. Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn may the root run the documented discipline inline. Label it `independence: fallback`, never call it independent, and apply every fallback risk gate. An unbound generic wright or unconfined generic explorer is such a safety rejection, not evidence that no agents exist.
+- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
+- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
 - When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
 # $rite-resolve: answer the human gate
 
-`$rite-resolve` is the canonical resume verb for **async** human gates: a checkpoint that
-already paused and **stopped the session** (an AFK blocking/escalating/irreversible queue, or a
-HITL pause the human walked away from), plus `--batch`. When `$rite-build` asks a gap **inline**
+`$rite-resolve` resumes an **async** human gate: a checkpoint that already paused and
+**stopped the session** (an AFK blocking/escalating/irreversible queue, or a HITL pause
+left unanswered), plus `--batch`. When `$rite-build` asks a question **inline**
 via `AskUserQuestion` and the human is present, that pick resolves the gate **in place** through
 the same `devrites-engine resolve` writer. You don't type `$rite-resolve` for it. For the async case this
 skill takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
 `state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next command.
 
-It is **deliberately small**: one verb, one source of truth (`questions.md`), one cursor
-(`state.md`). The full AFK / HITL contract lives in
+It has one verb, one source of truth (`questions.md`), and one cursor (`state.md`). The
+full AFK / HITL contract lives in
 [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md).
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
@@ -57,9 +61,9 @@ Pull these via `Read` when shaping the resolve:
   unblocked slice's `Slice mode` (step 4, the named exception); everything else goes through
   the script, never by hand.
 - **Human gates are for human-only decisions, not the agent's work.** A `questions.md` entry the
-  human must answer is a genuine *decision* (a scope / design / risk call only the human can make).
-  Not a task the agent can do itself. If a question is really agent-doable ("should I write the
-  test?", "go implement X"), don't record a human answer that punts the agent's own job back to it:
+  human must answer is a genuine decision (a scope / design / risk call only the human can make),
+  not a task the agent can do. If a question is really agent-doable ("should I write the
+  test?", "go implement X"), do not record a human answer that returns the agent's work to it:
   flag the mis-tag and route it to the right skill (`$rite-build`, `$rite-plan unblock`,
   `devrites-debug-recovery`). The human resolves decisions; the agent does the work.
 
@@ -79,9 +83,10 @@ Pull these via `Read` when shaping the resolve:
    `tasks.md`. Confirm the qid is `status: open`. If `state.md` `Status` is not
    `awaiting_human` and the question's `gate` is `blocking`, surface the inconsistency
    before proceeding (don't auto-repair: flag it).
-3. **Render preview.** Echo the qid, the question, the proposed answer (if any), the
-   user's answer, and which slice unblocks. Stop here and ask `confirm? (y/N)` **unless**
-   the answer was provided non-interactively via `--batch`.
+3. **Apply explicit consent.** Supplying `<qid> "<answer>"`, `--drop`, or `--batch` is the
+   user's explicit consent for this local workspace mutation. Echo the qid, answer/drop,
+   and slice being unblocked, then continue immediately; do not ask the user to confirm the
+   command they just typed.
 4. **Mutate.** Run `devrites-engine resolve` with the same
    arguments. The script:
    - flips the qid's `status` to `answered` / `dropped` and stamps `answered_at` + `answer`;

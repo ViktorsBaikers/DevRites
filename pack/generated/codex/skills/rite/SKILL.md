@@ -1,6 +1,6 @@
 ---
 name: rite
-description: User-invoked DevRites menu and router; no args renders the menu, a verb dispatches to the matching `rite-<verb>` skill.
+description: User-invoked DevRites menu and router; no args renders the menu, a verb invokes the matching `rite-<verb>` skill.
 argument-hint: "[verb [args...]]"
 user-invocable: true
 disable-model-invocation: true
@@ -12,9 +12,13 @@ This is the Codex mirror of a DevRites skill. In Codex:
 
 - Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
 - Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
+- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
+- For every DevRites specialist or writer dispatch, first call `spawn_agent` with the named `devrites-<role>` custom role. The matching project contract is `.codex/agents/devrites-<role>.toml`.
+- If `spawn_agent` is callable but a named read-only role is unavailable, use generic `explorer` only when the host proves that run has a runtime-enforced read-only sandbox. Tell it to read `.codex/agents/devrites-<role>.toml`, follow its `developer_instructions`, and execute the unchanged packet. A missing read-only custom role is not evidence that spawning is unavailable.
+- Never dispatch generic `worker` for `devrites-slice-wright` unless the host proves that worker run carries exact DevRites identity and the same `.wright-allowlist` enforcement as the named role. Codex reports a generic run as `agent_type=worker`, so the generated global hooks cannot prove that binding. Reject that unsafe rung and use the documented labelled inline wright path with `.reconcile-inline` plus the full reconcile gate.
+- If the host cannot prove the generic explorer is runtime read-only, reject that rung too. Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn may the root run the documented discipline inline. Label it `independence: fallback`, never call it independent, and apply every fallback risk gate. An unbound generic wright or unconfined generic explorer is such a safety rejection, not evidence that no agents exist.
+- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
+- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
 - When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
 
 
@@ -23,7 +27,7 @@ This is the Codex mirror of a DevRites skill. In Codex:
 You are the DevRites entry point. Two modes:
 
 - **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a phase or read `state.md`: status is `$rite-status`.
-- **Verb arg** → pass-through dispatch to the matching `rite-<verb>` skill (`$rite spec foo` ≡ `$rite-spec foo`); the called skill owns the output.
+- **Verb arg** → pass-through invocation of the matching `rite-<verb>` skill (`$rite spec foo` ≡ `$rite-spec foo`); the called skill owns the output.
 
 When the user asks which rite fits, load [`devrites-lib/reference/intent-map.md`](../devrites-lib/reference/intent-map.md).
 When they ask how phases connect, load [`reference/menu.md`](reference/menu.md).
@@ -39,12 +43,13 @@ F=.agents/skills/rite-$V/SKILL.md
 # Then Read "$F" and follow its workflow with $ARGS as that skill's $ARGUMENTS.
 ```
 
-What each verb does lives once, in the Menu below; this table is the dispatch map only.
+What each verb does lives once, in the Menu below; this table is the invocation map only.
 
 | Verb | Skill |
 |---|---|
 | `spec [feature]` | `$rite-spec` |
 | `adopt [area]` | `$rite-adopt` |
+| `clarify [feature]` | `$rite-clarify` |
 | `temper [--mode]` | `$rite-temper` |
 | `define` | `$rite-define` |
 | `vet [--cross-model]` | `$rite-vet` |
@@ -75,17 +80,17 @@ What each verb does lives once, in the Menu below; this table is the dispatch ma
 | `quick [change]` | `$rite-quick` |
 | `frame [task]` | `$rite-frame` |
 
-Both forms hit the same skill: the menu form for discovery, the `/rite-<verb>` shortcut for muscle memory.
+Both forms call the same skill. The menu supports discovery; `/rite-<verb>` is the direct form.
 
 `use <slug>` is handled **inline**. There is no `rite-use` skill. Confirm
 `.devrites/work/<slug>/` exists, then re-point `.devrites/ACTIVE` to `<slug>` and report
 the now-active feature. It is cheap context-switching only: no re-spec, no phase run. If
 the workspace is missing, list the slugs under `.devrites/work/` and stop.
 
-`guide` is an inline first-feature walkthrough. Agree on one **real, genuinely small**
-change, then run spec → temper → define → vet → build → prove → polish → review → seal →
+`guide` is an inline walkthrough for the first feature. Agree on one **real, small**
+change, then run spec → clarify → temper → define → vet → build → prove → polish → review → seal →
 ship. Before each phase, say what it decides; after, name what it wrote and why. Pause at
-every boundary. Teach without lecturing.
+every boundary and explain only what the user needs for the next decision.
 
 Specialist triggers (model-invoked inside the above):
 `devrites-frontend-craft` (UI) · `devrites-browser-proof` (UI verify) ·
@@ -101,7 +106,7 @@ Reply-contract exception: `$rite` is the menu/router, not a workspace completion
 Called phase skills own the shared completion reply contract
 ([`reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 
-1. **Verb in `$ARGUMENTS`** → dispatch per the table above.
+1. **Verb in `$ARGUMENTS`** → invoke the matching skill per the table above.
 2. **No args** → menu mode, as above.
 3. **Unrecognized first token** → tell the user the known verbs and stop. Don't guess.
 4. **No active feature** and the user asked "where am I" or named no verb → point at `$rite spec <feature>` (or `$rite-spec`). Don't summarize state yourself: `$rite status` (or `$rite-status`) owns that.
@@ -114,6 +119,7 @@ Recommended start: <greenfield: $rite spec <feature> | brownfield-unadopted: $ri
                               menu form           direct shortcut
 SPEC          $rite spec               ≡    $rite-spec        investigate deeply → write spec.md
 ADOPT         $rite adopt              ≡    $rite-adopt       onboard existing code → reverse-derive spec.md + seed conventions
+CLARIFY       $rite clarify            ≡    $rite-clarify     close the complete decision surface before planning
 TEMPER        $rite temper             ≡    $rite-temper      optional — strategic review: scope mode + pre-mortem, harden the spec
 PLAN          $rite define             ≡    $rite-define      turn the spec into plan + task slices + state
 VET           $rite vet                ≡    $rite-vet         mandatory every plan — light/full engineering review by stakes
@@ -143,8 +149,8 @@ UTILITY       $rite frame | prototype | handoff | zoom-out | pressure-test  (or 
 
 > **Small one-off change?** A typo, copy tweak, config bump, or one-function fix → **`$rite-quick`**
 > (express lane: one contract → build → prove → ship, no full workspace). It escalates to
-> `$rite-spec` the instant the change grows past small / reversible / unambiguous. The full
-> lifecycle above is for real features: don't pay its ceremony for a one-off.
+> `$rite-spec` when the change is no longer small, reversible, and unambiguous. Use the
+> full lifecycle above for features.
 
 ## Core operating rules (every DevRites skill enforces)
 

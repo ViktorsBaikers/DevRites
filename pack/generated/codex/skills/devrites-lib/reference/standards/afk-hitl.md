@@ -1,10 +1,10 @@
 # AFK & HITL: the pause/resume contract
 
-The rule layer for DevRites's two run modes. Every `rite-*` and `devrites-*` skill that
+This file defines DevRites's two run modes. Every `rite-*` and `devrites-*` skill that
 might pause for a human reads from this contract; `$rite-build`, `$rite-status`,
 `$rite-resolve`, and `devrites-doubt` are the primary callers.
 
-The contract is intentionally small: one sentinel, one queue, one verb.
+The contract uses one sentinel, one queue, and one resume verb.
 
 ## Run modes
 
@@ -14,9 +14,9 @@ The contract is intentionally small: one sentinel, one queue, one verb.
   human picks; the skill records the pick to `questions.md` (`answered`) + `decisions.md` and
   **continues in place: no `$rite-resolve` round-trip**. `$rite-resolve` is only for answering
   **async** (a pause that already stopped the session) or in **batch**.
-  **No interactive question tool in the current surface?** (Codex outside Plan mode:
+  **If the current surface has no interactive question tool** (Codex outside Plan mode:
   `request_user_input` is Plan-mode-only.) Render the same option set as a plain numbered
-  list in chat and **end the turn**; the human's reply is the pick. Auto-picking an option
+  list in chat and **end the turn**. The human's reply is the selection. Auto-picking an option
   is **AFK's contract, gated by the `.devrites/AFK` sentinel**: a missing tool never
   converts a HITL gap into a self-answered one.
 - **AFK:** `.devrites/AFK` is present. For any gate AFK may auto-handle (severity in
@@ -67,8 +67,7 @@ for the full taxonomy. Summary:
 | blocking | high | sync | 15m | **no** (always pauses) |
 | escalating | novel pattern | sync to specialist | 24h | **no** (always pauses) |
 
-`blocking` and `escalating` always pause regardless of `allow_gates`. They are the
-"AFK never silently accepts" guarantees in protocol form.
+`blocking` and `escalating` always pause regardless of `allow_gates`.
 
 An open `gate: validating` entry is **merge-blocking by definition**: at `$rite-seal` any
 `questions.md` entry with `gate: validating` and `status: open` is a NO-GO, regardless of
@@ -77,14 +76,14 @@ validating gate resolves.
 
 ## Option set: how every gap is presented
 
-Wherever a gap, checkpoint, or non-trivial decision surfaces (`$rite-spec`, `$rite-define`,
+Wherever a gap, checkpoint, or non-trivial decision surfaces (`$rite-spec`, `$rite-clarify`, `$rite-define`,
 `$rite-build`, `$rite-temper`, `$rite-vet`, `devrites-doubt`, `devrites-interview`), present a
 **ranked option set**, never a single bare guess:
 
 - **2-4 concrete options**, the **recommended one first**, labelled `(Recommended)`.
 - Each option carries a **one-line rationale tagged by the dimensions that matter**:
   `logic · infra · business · architecture` (add `security` / `UX` / `risk` when in scope).
-  Name the trade-off, not just the choice.
+  Name the trade-off as well as the choice.
 - Always include an escape hatch (`Something else — I'll describe it`).
 - The recommendation reflects what's best for *this* project (its conventions, stack, scale,
   domain), not a generic default.
@@ -92,8 +91,21 @@ Wherever a gap, checkpoint, or non-trivial decision surfaces (`$rite-spec`, `$ri
 **HITL** renders the set via `AskUserQuestion` (recommended option first; rationale in each
 option's description); the human's pick resolves the gate **in place**. **AFK** auto-picks
 option 1 (the recommendation) for gates it may auto-handle. Either way the chosen option is
-recorded verbatim and the **rejected options stay in `questions.md`** as the considered-alternatives
-trail: the audit shows what was weighed, not just what was decided.
+recorded verbatim. Keep the **rejected options in `questions.md`** so the record includes
+the alternatives considered.
+
+## Decision ownership: search before asking
+
+A gate is human only when its remaining choice is human-owned. First search live code,
+project/decision docs, and authoritative dependency sources; make and record reversible
+implementation/test choices. Ask only about product, scope, acceptance, architecture policy,
+irreversible risk, or human-only access/action.
+
+Objective test/build/tool failure runs bounded `devrites-debug-recovery`; fix it or record a
+technical blocker. Never ask permission for another attempt, test, parser repair, or probe.
+Close decisions at the earliest informed phase: product in spec, coverage in clarify,
+scope/risk in temper, architecture/dependencies in define, and proof/toolchain in vet. Build
+keeps only unavailable-pre-code or mandatory action-time checkpoints.
 
 ## Irreversible-risk list (always pause)
 
@@ -105,15 +117,17 @@ The following always invoke the checkpoint protocol, regardless of `Mode`, `Gate
 - Public API break (response shape, removed endpoint, changed status code semantics).
 - External-service contract change.
 - Filesystem destruction outside the workspace.
-- Red tests / types / lint on slice completion (fail-on-red).
 
 When a pause clears and you proceed with a destructive migration, a removal, or a
 public-API break, take the **safe path** the gate stopped you for: expand→contract,
 prove the old path unused before removing it, and a rollback for every destructive step
-([`deprecation.md`](deprecation.md)). The gate exists to make you do it right, not to
-abandon the work.
+([`deprecation.md`](deprecation.md)). The gate requires the safe path; it does not
+cancel the work.
 
 By default, AFK widens what's *automatic*; it never widens what's *irreversible*.
+
+Red checks remain hard non-advance build gates, but are not inherently irreversible or
+human-owned; bounded recovery owns them.
 
 ## `questions.md` schema
 
@@ -141,6 +155,15 @@ Rules:
   are terminal.
 - The file is the audit trail. Don't edit answered/dropped entries: open a new qid that
   references the old one (`supersedes: q-...-OLD`) and resolve it.
+
+Destructive Git uses a narrower engine-owned question:
+`schema: devrites-git-authority/v1`, `kind: destructive-git-once`, the exact
+operation digest, sorted classifier reason IDs, `requested_at`, `expires_at`, and
+`answer_contract: Authorize once`. Run `$rite-resolve <qid> "Authorize once"`;
+then retry within 15 minutes. `git-guard` consumes the grant before the tool runs,
+so a failed tool call still spends it. Never hand-edit, broaden, reuse, or copy
+this authority record. Ambiguous shell forms cannot use it: rewrite them as a
+direct literal Git command.
 
 ## `state.md` `Awaiting human` block
 
@@ -177,8 +200,8 @@ walked away from), plus `--batch`. In an **interactive HITL** session the skill 
 `AskUserQuestion` pick **in place** (the same `questions.md` `answered` write + `state.md`
 clear), so you don't type `$rite-resolve` for gaps you answer live. Both paths flip
 `status: open → answered` and clear `Awaiting human` through the **same `devrites-engine resolve` writer**:
-one source of truth, two entry points (live pick vs typed verb). Manual edits work but the
-script is the contract: use it.
+one source of truth, two entry points (live pick vs typed verb). Use the writer;
+manual edits are never destructive-operation authority.
 
 When `$rite-resolve` does resume a stopped session, the skill does **not** auto-run the next
 `$rite-build`. The user types the next command explicitly so:
@@ -198,24 +221,27 @@ When `$rite-resolve` does resume a stopped session, the skill does **not** auto-
   log to `questions.md` as `gate: blocking`, set `state.md` `Status: awaiting_human`,
   fire `notify:`, STOP.
 
-The loop limits of the calling skill still apply: after the limit, the unresolved
-doubt becomes a blocking question regardless of AFK config.
+The loop limits of the calling skill still apply. At the limit, classify the unresolved
+finding by the decision-ownership rule above: human-owned uncertainty becomes a blocking
+question; an objective technical finding becomes a recorded blocker with its required
+changes, not a request for permission to retry.
 
 ## Retry cap, stuck loops, and self-resolve
 
-- **Cap retries.** At most **3 attempts** on the same failing check (test, lint, type, build).
-  On the third failure, stop guessing and convert it to a `gate: blocking` question: a fourth
-  identical attempt is thrash, not progress.
-- **Stuck loops pause even in AFK.** A detected loop (the same action repeating, or an
-  action↔error ping-pong) pauses regardless of `allow_gates` (`devrites-engine stuck`), the same standing as
-  the irreversible-risk list. AFK widens what's automatic, never what's looping.
-- **Bias to self-resolve.** Before raising a question, try to answer it from the code, the docs,
+- **Cap retries:** three total attempts per root cause across wright and recovery, carrying the
+  failure and dead ends; never rerun an unchanged check.
+- **Classify exhaustion:** human-owned contract/risk/access gaps open their gate. Otherwise
+  preserve reproduction/dead ends, set `Status: blocked` and `Next step: $rite-plan unblock`,
+  with no question or `$rite-resolve`.
+- **Stop loops even in AFK:** `devrites-engine stuck` ends the build and applies that same
+  classification regardless of `allow_gates`.
+- **Resolve agent-owned questions first.** Before raising a question, try to answer it from the code, the docs,
   or `decisions.md`. Communicate only for a blocked environment, a deliverable to hand over,
   critical info you genuinely can't access, or a credential / permission you lack. This narrows
   needless pauses and never weakens the blocking / escalating / irreversible gates.
-- **Human time is for human-only work.** A `human_intervention` pause is for what the agent
+- **Use human intervention only for human-owned work.** A `human_intervention` pause is for what the agent
   literally cannot do (create a cloud account, click a console button): never for writing code,
-  writing tests, or reviewing. Punting the agent's own job to the human is not a valid gate.
+  writing tests, or reviewing. The agent's own work is not a valid human gate.
 
 ## What the rule does NOT cover
 
@@ -228,7 +254,7 @@ This contract is about **human pauses**. It does not weaken or replace:
   are unproven at `$rite-prove`.
 - `/clear` / `/compact` advice: context-hygiene rules are unchanged.
 
-AFK shifts the boundary between automatic and "ask"; nothing else.
+AFK changes which decisions are automatic. It changes nothing else.
 
 ## Cross-reference
 

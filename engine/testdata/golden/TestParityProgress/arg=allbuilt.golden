@@ -1,4 +1,4 @@
 exit 0
 ── rite-build ─────────
 Slices 2/2  ██████████  ✅ ALL BUILT
-Flow   spec ✓ define ✓ plan ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○
+Flow   spec ✓ clarify ✓ define ✓ plan ✓ build ◉ prove ○ polish ○ review ○ seal ○ ship ○

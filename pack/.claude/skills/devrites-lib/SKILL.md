@@ -7,13 +7,13 @@ disable-model-invocation: true
 
 # devrites-lib: internal shared helpers (not a command)
 
-This is **not** a skill you run. It is DevRites' manifest for shared references
-and control-plane operations. Skills call `devrites-engine <command>` from any
-workspace; no pack script path is required.
+Do **not** run this skill directly. It lists shared references and control-plane
+operations. Skills call `devrites-engine <command>` from any workspace without a pack
+script path.
 
 ## Operations
 
-These are selected `devrites-engine` contracts; `devrites-engine help` is exhaustive.
+These are selected `devrites-engine` contracts. Run `devrites-engine help` for the full list.
 
 **Read-only: orient / gate (never mutate the workspace):**
 
@@ -22,13 +22,13 @@ These are selected `devrites-engine` contracts; `devrites-engine help` is exhaus
   open-question tally by gate. Run first (step 0) by every workspace-operating
   `rite-*` skill so the model orients deterministically instead of re-deriving
   state from raw Markdown.
-- `devrites-engine progress`: progress footer; the mirror of `devrites-engine preamble` (which runs
-  first). Run **last** (output step) by every lifecycle `rite-*` skill to render (from
+- `devrites-engine progress`: progress footer and counterpart to the initial
+  `devrites-engine preamble`. Run it **last** in every lifecycle `rite-*` skill to render from
   `state.md`, with zero model drift) the `── rite-<phase> ──` header rule, the **slice
   meter** (`Slice 3/5  ██████░░░░  <last-built> ✓`, or `Slices 5/5  ██████████  ✅ ALL
   BUILT` at completion), and the **flow ribbon** (`spec ✓ define ✓ build ◉ … ship ○`).
   The meter answers "how many slices left"; the `✅ ALL BUILT` marker answers "is the
-  build done". The skill prints its own what-was-done / next-step / hygiene lines beneath
+  build done". The skill prints its own result, next step, and hygiene lines beneath
   it. Read-only; silent (exit 0) when there is no active workspace. Not for the workspace-less
   utilities (`/rite-prototype`, `/rite-zoom-out`, `/rite-pressure-test`, `/rite-handoff`,
   the `/rite` menu). They have no phase/slice state to render.
@@ -43,7 +43,9 @@ These are selected `devrites-engine` contracts; `devrites-engine help` is exhaus
 - `devrites-engine build-readiness`: build-readiness gate. Exits non-zero on `/rite-build`'s
   step-0 stop conditions so they hold by exit code, not by prose the model must
   remember: `2` no `Plan approved` (→ `/rite-define`), `3` `awaiting_human`
-  (→ `/rite-resolve`), `4` `blocked` (→ `/rite-plan`), `5` no workspace, `0` ready.
+  (→ `/rite-resolve`), `4` `blocked` (→ `/rite-plan`), `5` no workspace
+  (→ `/rite-spec`), `6` decision coverage missing/not CLEAR (→ `/rite-clarify`),
+  `7` implementation readiness missing/not READY (→ `/rite-vet`), `0` ready.
 - `devrites-engine evidence-fresh`: evidence-freshness gate for `/rite-seal`. Exits `3`
   when any file in `touched-files.md` is newer than `evidence.md` /
   `browser-evidence.md` (stale proof = NO-GO until re-proven), `0` when fresh.
@@ -64,7 +66,7 @@ These are selected `devrites-engine` contracts; `devrites-engine help` is exhaus
 - `devrites-engine resolve`: backs the `/rite-resolve` contract (answer / drop / batch).
 - `devrites-engine close-out`: archive the workspace + clear `ACTIVE` on `/rite-ship`.
 
-### Canonical footer snippet
+### Canonical footer
 
 Every lifecycle `rite-*` skill prints this as the **first lines of its output**, then its
 own compact fact lines below per [`reply-contract.md`](reference/reply-contract.md):

@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""Scan GitHub Actions workflows for supply-chain + permission risks.
+"""Scan GitHub Actions workflows for supply-chain and permission risks.
 
-DevRites' publish (release.yml) and auto-merge paths are high-value targets, so this
-gate fails CI when a workflow:
+Release and auto-merge workflows are especially sensitive, but these rules
+apply to every workflow. The check rejects workflows that:
 
-  - uses any non-local action not pinned to a full 40-char commit SHA: a moving
-    tag like `@v2` lets a compromised upstream inject code into the pipeline;
-  - declares no `permissions:` scope anywhere: the default token is broad;
-  - uses `permissions: write-all` (over-broad);
-  - uses `pull_request_target`, except for a Dependabot-only workflow that never
-    checks out PR code.
-  - leaves an internal `: ` unquoted in a workflow or step name, which makes the
-    workflow invalid YAML and prevents every job from starting.
+  - use a non-local action without a full 40-character commit SHA, because a
+    moving tag can change upstream code;
+  - omit an explicit `permissions:` scope or use `permissions: write-all`;
+  - use `pull_request_target` outside a Dependabot-only workflow that does not
+    check out pull-request code;
+  - interpolate workflow_dispatch inputs directly into a shell `run:` block;
+  - leave `: ` unquoted inside a workflow or step name, producing invalid YAML.
 
 Usage: validate-workflow-security.py [DIR]   (default: .github/workflows)
 Exit: 0 clean; 1 on any finding.
@@ -29,6 +28,8 @@ DEPENDABOT_ONLY_RE = re.compile(
     re.MULTILINE,
 )
 UNQUOTED_NAME_COLON_RE = re.compile(r"^\s*(?:-\s*)?name:\s+[^'\"].*:\s+\S")
+RUN_RE = re.compile(r"^(\s*)(?:-\s*)?run:\s*(.*)$")
+DISPATCH_EXPRESSION_RE = re.compile(r"\$\{\{[^}]*\binputs\b", re.IGNORECASE)
 
 
 def safe_dependabot_target(text):
@@ -46,18 +47,18 @@ def scan_text(path, text):
     lines = text.splitlines()
     dependabot_target_is_safe = safe_dependabot_target(text)
     if not re.search(r"^\s*permissions:", text, re.MULTILINE):
-        findings.append("%s: no permissions: scope: the default GITHUB_TOKEN is broad; "
-                        "add an explicit least-privilege permissions block" % path)
+        findings.append("%s: no permissions block. The default GITHUB_TOKEN is broad; "
+                        "add an explicit least-privilege block" % path)
     for i, line in enumerate(lines, 1):
         if UNQUOTED_NAME_COLON_RE.match(line):
-            findings.append("%s:%d: name contains an unquoted colon: quote the complete "
+            findings.append("%s:%d: name has an unquoted colon. Quote the complete "
                             "name so GitHub can parse the workflow" % (path, i))
         if "write-all" in line:
-            findings.append("%s:%d: permissions: write-all is over-broad: scope to the "
-                            "minimum needed" % (path, i))
+            findings.append("%s:%d: permissions: write-all grants too much access. "
+                            "Limit it to the permissions this workflow needs" % (path, i))
         if "pull_request_target" in line and not dependabot_target_is_safe:
-            findings.append("%s:%d: pull_request_target runs with secrets on untrusted PR "
-                            "code: only a Dependabot-only workflow without checkout is allowed"
+            findings.append("%s:%d: pull_request_target exposes secrets to untrusted PR "
+                            "code. Only a Dependabot-only workflow without checkout is allowed"
                             % (path, i))
         m = USES_RE.match(line)
         if not m:
@@ -68,9 +69,27 @@ def scan_text(path, text):
         at = ref.rsplit("@", 1)
         pin = at[1] if len(at) == 2 else ""
         if not SHA_RE.match(pin):
-            findings.append("%s:%d: action '%s' not pinned to a full commit "
-                            "SHA: pin it (a moving tag is a supply-chain risk)"
+            findings.append("%s:%d: action '%s' is not pinned to a full commit "
+                            "SHA. Pin it because a moving tag is a supply-chain risk"
                             % (path, i, ref))
+    for i, line in enumerate(lines):
+        match = RUN_RE.match(line)
+        if not match:
+            continue
+        run_indent = len(match.group(1))
+        run_lines = [(i + 1, match.group(2))]
+        for j in range(i + 1, len(lines)):
+            candidate = lines[j]
+            if candidate.strip() and len(candidate) - len(candidate.lstrip()) <= run_indent:
+                break
+            run_lines.append((j + 1, candidate))
+        for line_number, command in run_lines:
+            if DISPATCH_EXPRESSION_RE.search(command):
+                findings.append(
+                    "%s:%d: workflow_dispatch input appears directly in run. "
+                    "Pass it through env and quote the shell variable"
+                    % (path, line_number)
+                )
     return findings
 
 

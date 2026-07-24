@@ -1,10 +1,12 @@
-# `.devrites/` state schema (v1)
+# `.devrites/` state schema (v2)
 
-The `devrites-engine` binary reads a project's workflow state from plain files under
-`.devrites/`. Those files are the source of truth and are hand-editable. A
-human edit always wins.
+The `devrites-engine` binary reads a project's workflow state from plain files
+under `.devrites/`. Those hand-editable files are the source of truth, and the
+engine reads human edits directly.
 
-`schemaVersion: 1`.
+<!-- authority:schema-version:start -->
+`schemaVersion: 2`.
+<!-- authority:schema-version:end -->
 
 For the layered load-order diagram, budget table, manifest/alias model, and
 phase-required section matrix, see [`workspace-schema.md`](workspace-schema.md).
@@ -25,6 +27,9 @@ phase-required section matrix, see [`workspace-schema.md`](workspace-schema.md).
       decisions.md    DEC-### decision log
       assumptions.md  assumption register
       questions.md    Q-### question register
+      decision-coverage.md  digest-bound clarification verdict
+      eng-review.md   digest-bound implementation-readiness verdict
+      test-plan.md    build-entry and acceptance-to-test plan
       state.md        compact cursor
       evidence.md     EVID-### command/action proof
       touched-files.md implementation file map
@@ -45,9 +50,9 @@ code. A feature's spec groups deltas under `ADDED`, `MODIFIED`, or `REMOVED`
 Requirements headings tagged with `capability: <c>`. On ship,
 `devrites-engine ledger sync` folds them in: ADDED appends, MODIFIED replaces by
 header identity, and REMOVED deletes. Because it lives outside `work/`, the
-ledger survives close-out archival. Unlike the rest of
-`.devrites/`, it is **git-tracked** (`.devrites/*` + `!.devrites/specs/`), so the
-proven contract is shared, not per-clone. Grammar and delta rules:
+ledger survives close-out archival. Unlike the rest of `.devrites/`, it is
+**git-tracked** (`.devrites/*` + `!.devrites/specs/`). Git therefore shares the
+proven contract across clones. Grammar and delta rules:
 [`spec-grammar.md`](../../pack/.claude/skills/devrites-lib/reference/standards/spec-grammar.md).
 
 Backward compatibility: `.devrites/features/<slug>/` remains readable as a legacy
@@ -94,18 +99,42 @@ requires only the sections needed to leave it, and the set grows additively down
 the arc. A section that is not yet required (e.g. `proof` during the `spec`
 phase) never blocks.
 
-| phase | required sections |
-| --- | --- |
-| `frame` | *(none)* |
-| `spec`, `temper` | `spec` |
-| `define`, `plan` | `spec`, `plan` |
-| `vet`, `build`, `converge` | `spec`, `plan`, `decisions`, `tasks` |
-| `prove`, `polish`, `review` | `spec`, `plan`, `decisions`, `tasks`, `proof` |
-| `seal`, `ship`, `done` | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` |
+<!-- authority:phase-contract:start -->
+| phase | normal resume | required sections | transition right |
+| --- | --- | --- | --- |
+| `frame` | `/rite-frame` | *(none)* | Frame an unstructured request before lifecycle work. |
+| `spec` | `/rite-spec` | `spec` | Author the product specification. |
+| `clarify` | `/rite-clarify` | `spec` | Close decision coverage in the written specification. |
+| `temper` | `/rite-temper` | `spec` | Optionally challenge the clarified specification strategy. |
+| `define` | `/rite-define` | `spec`, `plan` | Author and approve the initial implementation plan. |
+| `plan` | `/rite-vet` | `spec`, `plan` | Hold the approved or repaired plan checkpoint for engineering review. |
+| `vet` | `/rite-vet` | `spec`, `plan`, `decisions`, `tasks` | Review implementation readiness before build. |
+| `build` | `/rite-build` | `spec`, `plan`, `decisions`, `tasks` | Implement the next approved vertical slice. |
+| `converge` | `/rite-converge` | `spec`, `plan`, `decisions`, `tasks` | Recover unmet clarified intent into new slices. |
+| `prove` | `/rite-prove` | `spec`, `plan`, `decisions`, `tasks`, `proof` | Produce acceptance evidence for the implementation. |
+| `polish` | `/rite-polish` | `spec`, `plan`, `decisions`, `tasks`, `proof` | Apply the bounded quality pass. |
+| `review` | `/rite-review` | `spec`, `plan`, `decisions`, `tasks`, `proof` | Review the proven implementation. |
+| `seal` | `/rite-seal` | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` | Decide the final GO or NO-GO. |
+| `ship` | `/rite-ship` | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` | Perform authorized release and close-out mutations. |
+| `done` | *(terminal)* | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` | Represent archived completion with no resume command. |
+<!-- authority:phase-contract:end -->
 
 The authoritative typed definitions live in `engine/internal/state/schema.go`.
 `workflow_manifest.json` is a generated derivative for non-Go release tools;
 run `go generate ./internal/state` after editing the registry.
+
+### Clarify-return field policy
+
+<!-- authority:clarify-return-fields:start -->
+| field | policy |
+| --- | --- |
+| `phase` | derived |
+| `status` | derived |
+| `next_action` | derived |
+| `return_phase` | derived |
+| `return_next_action` | curated when present; otherwise derived |
+| `all other state.md content` | curated and preserved byte-for-byte |
+<!-- authority:clarify-return-fields:end -->
 
 ## `devrites-engine status <slug>`
 
@@ -130,13 +159,13 @@ result: incomplete (missing: tasks)
 - Unknown or missing slug → non-zero exit with a clear message on stderr.
 
 `status` makes no model or network calls; it is a pure read of the files under
-`DEVRITES_ROOT` (or the nearest `.devrites/` above the working directory). A
-hand edit wins immediately because there is no status cache. Other workspace
-control-plane commands share that deterministic boundary; explicit
+`DEVRITES_ROOT` (or the nearest `.devrites/` above the working directory).
+There is no status cache, so the next read reflects a hand edit immediately.
+Other workspace control-plane commands share that deterministic boundary;
+explicit
 install/update/source-cache I/O is isolated under `engine/internal/iohooks` as
 defined by ADR-0008.
 
-`.devrites/` is ignored **except** the capability ledger at `specs/`, which is
-committed shared truth. The recommended pattern is `.devrites/*` +
-`!.devrites/specs/` (so `work/`, `archive/`, and `ACTIVE` stay per-clone runtime
-state while `specs/` is tracked).
+<!-- authority:state-tracking:start -->
+Git-tracked shared state: `.devrites/specs/`. Per-clone runtime state: `.devrites/work/`, `.devrites/archive/`, `.devrites/ACTIVE`.
+<!-- authority:state-tracking:end -->

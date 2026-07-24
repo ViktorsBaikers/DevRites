@@ -19,9 +19,12 @@ Load that schema before creating or updating workspace artifacts.
       decisions.md
       assumptions.md
       questions.md
+      decision-coverage.md       # from /rite-clarify
       plan.md                    # from /rite-define
       tasks.md                   # from /rite-define
       traceability.md            # from /rite-define
+      eng-review.md              # from /rite-vet
+      test-plan.md               # from /rite-vet
       state.md
       evidence.md                # from /rite-build or /rite-prove (proof.md alias supported)
       browser-evidence.md        # UI only
@@ -46,8 +49,10 @@ canonical files and preserves aliases rather than deleting old ones.
 - `/rite-spec` creates the workspace map, `brief.md`, `spec.md`, `decisions.md`,
   `assumptions.md`, `questions.md`, `state.md`, optional `references.md` /
   `references/`, and optional `design-brief.md` for UI.
+- `/rite-clarify` adds `decision-coverage.md`.
 - `/rite-define` adds `architecture.md`, `plan.md`, `tasks.md`, and
   `traceability.md`.
+- `/rite-vet` adds `eng-review.md` and `test-plan.md`.
 - Later phases add only the artifact they own. Do not create optional files as
   empty placeholders; absence means the phase has not produced that artifact.
 - Each artifact starts with a summary and links to deeper source files instead of
@@ -61,7 +66,7 @@ canonical files and preserves aliases rather than deleting old ones.
 # <Feature> Workspace
 phase: spec
 status: running
-next_action: /rite-define after spec readiness passes
+next_action: /rite-clarify after spec readiness passes
 last_updated: <date>
 
 ## Artifact map
@@ -69,6 +74,7 @@ last_updated: <date>
 | --- | --- |
 | brief.md | Objective and bounds |
 | spec.md | Product contract |
+| decision-coverage.md | Clarification verdict; absent until /rite-clarify |
 | architecture.md | Technical map; absent until /rite-define |
 | plan.md | Technical approach; absent until /rite-define |
 | tasks.md | Vertical slices; absent until /rite-define |
@@ -79,7 +85,8 @@ last_updated: <date>
 | Phase / role | Read |
 | --- | --- |
 | Spec | brief.md, spec.md, questions.md |
-| Build | state.md, tasks.md, plan.md |
+| Clarify | spec.md, decisions.md, assumptions.md, questions.md |
+| Build | state.md, decision-coverage.md, eng-review.md, test-plan.md, tasks.md, plan.md |
 | Review | traceability.md, evidence.md, decisions.md |
 
 ## Blocking gates
@@ -100,6 +107,8 @@ None.
 | slice_mode | none |
 | risk | none |
 | next_action | <single command + reason> |
+| return_phase | <later phase; retrofit clarification only> |
+| return_next_action | <saved command; retrofit clarification only> |
 
 ## Awaiting human
 Only present when status is awaiting_human.
@@ -112,7 +121,8 @@ Only present when status is awaiting_human.
 
 `state.md` is a compact cursor, not a history file. Put proof in `evidence.md`,
 decisions in `decisions.md`, assumptions in `assumptions.md`, and drift in
-`drift.md`.
+`drift.md`. Omit both `return_*` rows outside a later-phase `/rite-clarify`
+retrofit; `devrites-engine clarify-return` owns their atomic lifecycle.
 
 ## questions.md entry format
 

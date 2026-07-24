@@ -14,7 +14,11 @@ continues.
 
 The core path is:
 
-`SPEC -> DEFINE -> VET -> BUILD -> PROVE -> POLISH -> REVIEW -> SEAL -> SHIP`
+`SPEC -> CLARIFY -> [TEMPER] -> DEFINE -> VET -> BUILD -> PROVE -> POLISH -> REVIEW -> SEAL -> SHIP`
+
+Clarify is mandatory but adaptive, so it asks no questions when the contract
+is complete. Temper adds an optional strategic review. Vet is the only final
+readiness phase before Build.
 
 Seal decides whether the feature is ready without changing git. Ship owns the
 final commit, push, and tag, and it requires a typed `GO` confirmation.
@@ -67,27 +71,25 @@ Claude Code supports both `/rite <verb>` and `/rite-<verb>`. Codex uses the same
 forms with `$`: `$rite <verb>` and `$rite-<verb>`. The menu and direct forms run
 the same skill.
 
-| Stage | Direct command | What happens |
-|---|---|---|
-| Spec | [`/rite-spec <feature>`](pack/.claude/skills/rite-spec/SKILL.md) | Investigates the request and codebase, closes product gaps, and writes `spec.md`. |
-| Define | [`/rite-define`](pack/.claude/skills/rite-define/SKILL.md) | Turns the spec into architecture, a plan, traceability, and vertical task slices. |
-| Vet | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | Reviews every plan before implementation. The depth scales with the risk. |
-| Build | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | Implements and verifies exactly one slice, then stops. Repeat for each slice. |
-| Prove | [`/rite-prove`](pack/.claude/skills/rite-prove/SKILL.md) | Runs the completed feature's tests, build, runtime checks, and browser proof when UI is involved. |
-| Polish | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | Cleans up the touched code and normalizes the UI when needed. |
-| Review | [`/rite-review`](pack/.claude/skills/rite-review/SKILL.md) | Runs feature-scoped review across the relevant engineering axes. |
-| Seal | [`/rite-seal`](pack/.claude/skills/rite-seal/SKILL.md) | Produces a final `GO` or `NO-GO` decision without changing git. |
-| Ship | [`/rite-ship`](pack/.claude/skills/rite-ship/SKILL.md) | On `GO`, asks for typed confirmation, performs the approved git actions, and archives the workspace. |
+| # | Stage | Direct command | What happens |
+|---:|---|---|---|
+| 1 | Spec | [`/rite-spec <feature>`](pack/.claude/skills/rite-spec/SKILL.md) | Inspects the request and codebase, asks about product gaps, and writes `spec.md`. |
+| 2 | Clarify | [`/rite-clarify`](pack/.claude/skills/rite-clarify/SKILL.md) | Checks the whole feature for missing decisions before planning. It asks no questions when everything is clear. |
+| 3 | Temper | [`/rite-temper`](pack/.claude/skills/rite-temper/SKILL.md) | Challenges scope and failure modes before Define. It is optional for small work and always runs in `/rite-autocomplete`. |
+| 4 | Define | [`/rite-define`](pack/.claude/skills/rite-define/SKILL.md) | Turns the approved spec into architecture, a plan, traceability, and vertical task slices. |
+| 5 | Vet | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | Reviews every plan before implementation. The review depth scales with the risk. |
+| 6 | Build | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | Implements and verifies one slice, then stops. Run it again for each remaining slice. |
+| 7 | Converge | [`/rite-converge`](pack/.claude/skills/rite-converge/SKILL.md) | Runs only when recovery is needed. It compares the code with the recorded intent, adds missing slices, and sends the changed plan back to Vet. |
+| 8 | Prove | [`/rite-prove`](pack/.claude/skills/rite-prove/SKILL.md) | Runs the completed feature's tests, build, runtime checks, and browser proof when the feature has a UI. |
+| 9 | Polish | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | Cleans up the touched code and normalizes the UI when needed. |
+| 10 | Review | [`/rite-review`](pack/.claude/skills/rite-review/SKILL.md) | Reviews the completed feature against its spec and engineering standards. |
+| 11 | Seal | [`/rite-seal`](pack/.claude/skills/rite-seal/SKILL.md) | Writes the final `GO` or `NO-GO` decision without changing git. |
+| 12 | Ship | [`/rite-ship`](pack/.claude/skills/rite-ship/SKILL.md) | On `GO`, asks for typed confirmation, performs the approved git actions, and archives the workspace. |
 
 Some work needs a different route:
 
 - [`/rite-quick`](pack/.claude/skills/rite-quick/SKILL.md) handles a small,
   reversible change without creating a full feature workspace.
-- [`/rite-temper`](pack/.claude/skills/rite-temper/SKILL.md) challenges the
-  scope and failure modes of a larger spec before Define.
-- [`/rite-converge`](pack/.claude/skills/rite-converge/SKILL.md) compares a
-  resumed, adopted, or stalled feature with the live code and adds the missing
-  work as new slices.
 - [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md) runs
   the lifecycle unattended. With `--ship`, it auto-confirms the final typed
   `GO`; without that flag, it stops and waits for you.
@@ -113,9 +115,12 @@ the original decisions and proof.
   work/<slug>/
     brief.md
     spec.md
+    decision-coverage.md
     architecture.md
     plan.md
     tasks.md
+    eng-review.md
+    test-plan.md
     state.md
     decisions.md
     questions.md
@@ -127,17 +132,20 @@ the original decisions and proof.
   archive/<slug>/
 ```
 
-Some phases add focused artifacts such as `strategy.md`, `test-plan.md`,
-`design-brief.md`, `browser-evidence.md`, `polish-report.md`, `drift.md`, or
-`handoff.md`. See the [workspace contract](docs/orchestration.md) for the full
-state model.
+Some phases add focused artifacts such as `strategy.md`, `design-brief.md`,
+`browser-evidence.md`, `polish-report.md`, `drift.md`, or `handoff.md`. See the
+[workspace contract](docs/engine/workspace-schema.md) for the full state model.
 
 ## Safety rules
 
-- **Plan before code.** Spec, Define, and Vet settle the intended behavior and
-  implementation path before Build starts.
+- **Settle before code.** Spec and Clarify settle the behavior contract. Define
+  and Vet settle the implementation path before Build starts. The engine checks
+  the meaning and input digests of fresh `CLEAR` and `READY` artifacts; marker
+  text alone does not pass.
 - **Build one slice.** `/rite-build` implements one vertical slice and records
-  its proof before returning control.
+  its proof before returning control. Before dispatching the sole writer, the
+  root writes an exact `.wright-allowlist`. Reconciliation and integrity gates
+  use the same pre-slice baseline.
 - **Stop on drift.** If implementation no longer matches the plan, the Spec
   Drift Guard records the mismatch in `drift.md` and routes through
   [`/rite-plan repair`](pack/.claude/skills/rite-plan/SKILL.md).
@@ -178,10 +186,11 @@ The workflow treats this file as configuration and never rewrites it.
 engine decrements that state after each built slice. Delete `.devrites/AFK` to
 return to HITL.
 
-AFK still pauses for blocking or escalating gates, destructive migrations,
-auth or authorization changes, public API breaks, external service contract
-changes, filesystem destruction outside the workspace, and red tests, types,
-or lint. The full pause and gate contract is in
+AFK still pauses for product, scope, or policy choices, irreversible risk,
+and access or actions available only to a human. Agents use bounded recovery
+for red tests, type or lint errors, runtime failures, and missing technical
+coverage. If that recovery budget runs out, they record a technical blocker
+instead of asking a question. The full pause and gate contract is in
 [`afk-hitl.md`](pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md).
 
 ## Install, update, and remove
@@ -207,7 +216,7 @@ Useful install flags:
 |---|---|
 | `--target DIR` | Use another project directory. |
 | `--dry-run` | Show planned file operations without changing anything. |
-| `--force` | Replace conflicting files that DevRites does not own. |
+| `--force` | Replace or remove foreign or customized managed files. The installer still rejects symlinks and path escapes. |
 | `--no-codex` | Skip `.agents`, `.codex`, and `AGENTS.md` integration. |
 | `--no-agents` | Skip the review agents. |
 | `--no-skills` | Skip skills and their bundled standards. |
@@ -232,11 +241,22 @@ curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/instal
 curl -fsSL https://raw.githubusercontent.com/ViktorsBaikers/DevRites/main/install.sh | bash -s -- --dry-run
 ```
 
-The installer records every managed project file in
-`.claude/devrites.manifest`. Update and uninstall use that manifest, preserve
-`.devrites/`, and avoid removing files they do not own. The optional shared
-`devrites-engine` binary is the only artifact that may be installed outside the
-project.
+The installer records every managed project file and its SHA-256 in
+`.claude/devrites.manifest`. Before an update or uninstall changes anything, it
+checks every managed path. It preserves customized files and tells the user to
+retry with `--force` before making any changes; legacy manifests without hashes
+also require `--force`.
+`--force --dry-run` lists the exact destructive actions. Marker-merged files
+keep user content outside the DevRites block, and `.devrites/` runtime state
+remains in place. The installer refuses symlinks, junctions, and paths that
+escape the target.
+
+The optional shared `devrites-engine` binary is the only artifact installed
+outside the project. Before replacement, the release binary at its staged path
+must report the requested version. After installation, the binary at its final
+path must report that version in a new process. The installer keeps a backup in
+the same directory until the second check passes. On failure, it restores the
+previous binary or removes a bad first install.
 
 ## Claude Code and Codex integration
 
@@ -255,14 +275,14 @@ through Claude Code or Codex plugin stores.
 
 ## Skills and agents
 
-The pack ships 42 skills: 30 public and 12 internal. The public surface contains
-the `rite` menu and 29 `rite-*` workflows and utilities. Eleven `devrites-*`
+The pack ships 43 skills: 31 public and 12 internal. The public surface contains
+the `rite` menu and 30 `rite-*` workflows and utilities. Eleven `devrites-*`
 specialists load when a matching task needs them; `devrites-lib` carries the
 shared contracts and engineering standards.
 
-Fourteen agents ship with the pack. Thirteen are read-only reviewers or
-analysts, including `devrites-retrospector`, which reads the shipped archive.
-`devrites-slice-wright` is the only agent allowed to edit a feature slice.
+Seventeen fresh-context agents ship with the pack. Sixteen are read-only,
+including the evidence scout, plan drafter, proof runner, reviewers, judges,
+and retrospector. `devrites-slice-wright` is the only source/test writer.
 
 The authoritative [skills catalogue](docs/skills.md) lists every skill and
 agent. The [flow diagrams](docs/flow.md) show routing, reviewer fan-out, and
@@ -293,13 +313,13 @@ traces. DevRites detects these tools but does not install them.
 ## Security model
 
 Installed host artifacts stay in the project. The npm shim prefers an explicitly
-configured engine or a local `engine/devrites-engine`, can download a
-checksummed release binary, can build a temporary engine from the local Go
-source, and finally falls back to an existing `devrites-engine` on `PATH`. Use `--no-binary` or
-`DEVRITES_NO_BINARY=1` if you do not want the installer to keep the shared
-binary outside the project. `devrites-engine update` also prefers the
-checksummed platform release binary and only builds from source as a fallback,
-without reading Git metadata from the target project.
+configured engine or a local `engine/devrites-engine`. If neither is available,
+it can download a checksummed release binary or build a temporary engine from
+the local Go source before falling back to `devrites-engine` on `PATH`. Use
+`--no-binary` or `DEVRITES_NO_BINARY=1` to avoid keeping a shared binary outside
+the project. `devrites-engine update` also prefers the checksummed platform
+release and builds from source only as a fallback. It does not read Git metadata
+from the target project.
 
 Workflow state is read through the engine rather than shell injection. The
 installer never writes `defaultMode: bypassPermissions`. Skills use networked

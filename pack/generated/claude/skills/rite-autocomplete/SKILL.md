@@ -7,33 +7,36 @@ user-invocable: true
 
 # /rite-autocomplete: full lifecycle, unattended
 
-Drives every DevRites phase in order without stopping for discretionary input. The
-prompt may be vague: autocomplete asks its clarifying questions **up front**, then
-runs to completion. It does **not** disable the safety gates: hard irreversible-risk,<!-- pack-scan-ignore: negated statement: gates are NOT disabled -->
+Runs every DevRites phase in order without pausing for discretionary input. It asks
+clarifying questions **before** unattended work begins. Safety gates remain active:
+hard irreversible-risk,<!-- pack-scan-ignore: negated statement: gates are NOT disabled -->
 blocking / escalating gates, and any NO-GO still pause.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 **Step 0:** Read `.claude/skills/devrites-lib/reference/standards/core.md` and `.claude/skills/devrites-lib/reference/standards/afk-hitl.md` first.
 
 ## Operating rules
-- **One human window.** Clarifying questions are batched up front via
-  `devrites-interview`. After that, discretionary decisions are made automatically and
-  recorded in `decisions.md`, not asked. See [reference/decision-policy.md](reference/decision-policy.md).
+- **Use one initial human window.** Run spec and topology-first clarify; arm AFK only after
+  `Decision coverage: CLEAR`. Later discretionary calls are recorded, not asked
+  ([decision policy](reference/decision-policy.md)).
 - **Safety gates are not bypassable.** AFK never auto-passes destructive migration /
-  auth-authz change / public-API break / external-contract change / red tests; blocking
+  auth-authz change / public-API break / external-contract change; blocking
   and escalating gates and any open `gate: validating` always pause. `--ship` auto-confirms
   the **final** type-GO only: nothing else. A change that violates a declared project
   principle (`.devrites/principles.md`) with no recorded exception pauses too: autocomplete
   never grants a principle exception on its own (`principles.md`: that's a human decision).
-- **Loop budget = the plan's own slice count, not a fixed number.** After `/rite-vet`
+  Red checks never advance the loop: autocomplete runs the shared bounded debug recovery, then
+  stops as `blocked` if the objective failure remains; it asks only if recovery exposes a
+  human-owned decision.
+- **Set the loop budget from the plan's slice count.** After `/rite-vet`
   (not `/rite-define`: vet may split or add slices, so the count isn't final until then),
   set the AFK budget to however many slices the plan has, so the loop builds exactly the
-  task's slices and stops when they're done. `--max-slices N` is an OPTIONAL *lower* safety
-  cap (partial / babysat run); omit it to run the whole plan. The budget is finite
-  (= planned slices), so a runaway is still bounded.
-- **Best option, recorded.** For each discretionary choice, pick the option the relevant
-  specialist / reviewer favours and record the rationale. Never silently coin-flip.
-- **Strategic review runs, but never auto-grows scope.** After `/rite-spec`, run `/rite-temper`
+  planned slices and stops when they are done. `--max-slices N` is an optional lower
+  safety cap for a partial run; omit it to run the whole plan. The planned slice count
+  keeps the default run finite.
+- **Record each discretionary choice.** Pick the option recommended by the relevant
+  specialist or reviewer and record the rationale. Do not choose arbitrarily.
+- **Strategic review runs, but never auto-grows scope.** After `/rite-clarify`, run `/rite-temper`
   (significance-gated; it skips low-stakes specs in one line). Unattended it auto-applies only
   `hold-rigor` + `reduce-to-MVP` (these never grow acceptance); **any `expand` is a blocking
   pause**, and irreversible-risk findings always pause. Autocomplete hardens and may *prune* the
@@ -49,19 +52,22 @@ blocking / escalating gates, and any NO-GO still pause.
 ## Workflow
 1. **Orient + parse args.** Run `devrites-engine preamble` for deterministic workspace orientation.
    The idea + flags: `--ship` / `--yolo` (auto-confirm the final
-   type-GO), `--max-slices N` (OPTIONAL *lower* safety cap for a partial run; default =
+   type-GO), `--max-slices N` (optional lower safety cap for a partial run; default =
    the plan's slice count, i.e. run all planned slices).
-2. **Clarify up front.** If the idea is underspecified, run `devrites-interview` to
-   ~95% confidence: the only interactive window. If already clear, skip.
-3. **Arm AFK.** Write `.devrites/AFK` with `allow_gates: [advisory]`; set the slice budget
+2. **Specify and clarify up front.** Use `devrites-interview`, `/rite-spec`, and
+   `/rite-clarify` as one interactive window. Clear specs ask zero questions; Partial/Missing
+   coverage never arms AFK. **Completion:** `decision-coverage.md` records `CLEAR`.
+3. **Arm AFK after clarity.** Require `Decision coverage: CLEAR`, then write `.devrites/AFK`
+   with `allow_gates: [advisory]`; set the slice budget
    from the plan's count after `/rite-vet` (the slice count is only final post-vet), or from
    an explicit `--max-slices` ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
-   irreversible-risk still pause. Also `touch .devrites/CHECKPOINT`: an unattended run is the
-   case checkpoint mode earns its keep, so each proven slice is committed local-only as
-   crash-survivable `WIP` ([rite-build/reference/checkpoint.md](../rite-build/reference/checkpoint.md));
+   irreversible-risk still pause. Also `touch .devrites/CHECKPOINT`: unattended runs use
+   checkpoint mode so each proven slice is committed locally as a crash-survivable `WIP`
+   ([rite-build/reference/checkpoint.md](../rite-build/reference/checkpoint.md));
    `/rite-ship` collapses them into the one feature commit.
-4. **Drive the phases** ([reference/loop.md](reference/loop.md)): `/rite-spec` →
-   **`/rite-temper`** → `/rite-define` → **`/rite-vet`** → `/rite-build` (loop until all slices
+4. **Drive the phases** ([reference/loop.md](reference/loop.md)). The canonical arc is
+   `/rite-spec` → **`/rite-clarify`** → **`/rite-temper`** → `/rite-define` →
+   **`/rite-vet`** → `/rite-build` (repeat until all slices
    built; `devrites-engine tick-afk` each) → `/rite-prove` → `/rite-polish` → `/rite-review` → `/rite-seal`.
    Run each by Reading its `SKILL.md` and executing its workflow; state is carried by the
    workspace files, not chat.
@@ -71,12 +77,11 @@ blocking / escalating gates, and any NO-GO still pause.
 6. **Seal GO → ship.** With `--ship`, proceed to `/rite-ship` and auto-confirm the
    type-GO. Without it, render the type-GO prompt and stop for the human.
 
-> **Mid-flight discipline.** When tempted to auto-pass a blocking gate "to keep moving",
-> answer a material question yourself instead of pausing, or run past red tests: stop.
-> Autonomy is for the routine path; the gates exist for everything else.
+> **Mid-flight discipline.** Stop rather than auto-passing a blocking gate, answering a
+> human-owned material question, or continuing past red tests.
 
 ## Output
-A compact phase-by-phase log, then the final status. **Progress first for the final
+A compact phase log followed by the final status. **Progress first for the final
 status**: run `devrites-engine progress`, then use the shared typed states from
 [`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md):
 `Shipped`, `Stopped`, `Awaiting human`, `NO-GO`, or `GO`.
@@ -84,7 +89,7 @@ status**: run `devrites-engine progress`, then use the shared typed states from
 Keep the log terse:
 ```
 Autocomplete: <slug>
-spec <done|stopped> · temper <done|skipped|stopped> · define <done|stopped> · vet <done|stopped> · build <n/N|stopped> · prove <done|stopped> · polish <done|stopped> · review <done|stopped> · seal <GO|NO-GO|stopped>
+spec <done|stopped> · clarify <clear|stopped> · temper <done|skipped|stopped> · define <done|stopped> · vet <ready|stopped> · build <n/N|stopped> · prove <done|stopped> · polish <done|stopped> · review <done|stopped> · seal <GO|NO-GO|stopped>
 ```
 
 Final state examples: `Shipped: <feature>`, `Stopped: <reason>`, `Awaiting human:

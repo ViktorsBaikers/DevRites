@@ -15,8 +15,8 @@ import (
 )
 
 // Resolve answers or drops an open question and keeps questions.md and state.md
-// consistent: it rewrites the question's block and, when state.md is awaiting that
-// question, clears the "Awaiting human" block and flips Status back to running.
+// consistent by updating the question block. When state.md is waiting for that
+// question, it clears the "Awaiting human" block and restores the running status.
 // The workspace is <root>/features/<slug>.
 //
 //	0  resolved         2  no active workspace      3  qid not found
@@ -67,6 +67,17 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
+	code := 0
+	if err := state.WithFeatureLock(root, slug, func() error {
+		code = resolveMutation(mode, qid, payload, qfile, sfile, stdout, stderr)
+		return nil
+	}); err != nil {
+		return fail(stderr, err.Error(), 1)
+	}
+	return code
+}
+
+func resolveMutation(mode, qid, payload, qfile, sfile string, stdout, stderr io.Writer) int {
 	switch mode {
 	case "answer":
 		if code := resolveQuestion(qfile, qid, "answered", payload, stderr); code != 0 {
@@ -148,12 +159,9 @@ func splitColon(s string) (before, after string) {
 	return before, after
 }
 
-// clockNow is the single wall-clock read for the resolve command. When
-// DEVRITES_NOW is set to an RFC-3339 timestamp or a bare YYYY-MM-DD date it pins
-// the clock, so date-derived output (the next question id) is deterministic
-// under test and stable across the day boundaries that otherwise rot golden
-// snapshots. One overridable seam instead of scattered time.Now() reads. See
-// ADR-0006.
+// clockNow is the resolve command's single wall-clock read. DEVRITES_NOW accepts
+// an RFC-3339 timestamp or YYYY-MM-DD date so tests can keep date-derived
+// question IDs stable. See ADR-0006.
 func clockNow() time.Time {
 	if s := os.Getenv("DEVRITES_NOW"); s != "" {
 		for _, layout := range []string{time.RFC3339, "2006-01-02"} {
@@ -174,21 +182,13 @@ func resolveNextQID(qpath string, stdout, stderr io.Writer) int {
 	if qpath == "" {
 		return fail(stderr, "Usage: devrites-engine resolve next-qid <questions.md path>", 5)
 	}
-	today := clockNow().Format("2006-01-02")
-	used := 0
 	var content []byte
 	if isFile(qpath) {
 		content, _ = os.ReadFile(qpath)
-		countRe := regexp.MustCompile(`(?m)^## q-` + regexp.QuoteMeta(today) + `-`)
-		used = len(countRe.FindAllIndex(content, -1))
 	}
-	next := used + 1
-	qid := fmt.Sprintf("q-%s-%03d", today, next)
-	if content != nil {
-		collideRe := regexp.MustCompile(`(?m)^## ` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)
-		if collideRe.Match(content) {
-			return fail(stderr, "qid already present: "+qid+" (questions.md edited out of sequence)", 6)
-		}
+	qid, err := nextQuestionID(content, clockNow())
+	if err != nil {
+		return fail(stderr, "qid already present: "+qid+" (questions.md edited out of sequence)", 6)
 	}
 	fmt.Fprintln(stdout, qid)
 	return 0
@@ -201,6 +201,10 @@ func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
 	data, err := os.ReadFile(qfile)
 	if err != nil {
 		return fail(stderr, "questions.md missing at "+qfile, 2)
+	}
+	answer, err = normalizeGitAuthorityResolution(data, qid, status, answer)
+	if err != nil {
+		return fail(stderr, err.Error(), 5)
 	}
 	ts := nowUTC()
 	target := regexp.MustCompile(`^## ` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)

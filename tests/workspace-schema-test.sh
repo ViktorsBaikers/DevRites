@@ -15,7 +15,34 @@ cp -R "$FIXTURES" "$CANONICAL_WORKSPACE/fixtures"
   awk '/<!-- canonical-slice:start -->/{on=1; next} /<!-- canonical-slice:end -->/{on=0} on' "$CANONICAL_SCHEMA" \
     | sed '/^```/d'
 } > "$CANONICAL_WORKSPACE/fixtures/.devrites/work/backend-api/tasks.md"
+perl -0pi -e 's/^Forge:.*$/Forge: no/m; s/^Forge strategies:.*$/Forge strategies: none/m; s/^Forge scorecard:.*$/Forge scorecard: none/m' \
+  "$CANONICAL_WORKSPACE/fixtures/.devrites/work/backend-api/tasks.md"
+# Put the workspace in plan phase because this case checks slice grammar, not
+# the post-vet digest.
+perl -0pi -e 's/\| phase \| prove \|/| phase | plan |/' \
+  "$CANONICAL_WORKSPACE/fixtures/.devrites/work/backend-api/state.md"
+perl -0pi -e 's/^phase: prove$/phase: plan/m' \
+  "$CANONICAL_WORKSPACE/fixtures/.devrites/work/backend-api/README.md"
 python3 "$VALIDATOR" "$CANONICAL_WORKSPACE/fixtures" >/tmp/devrites-workspace-schema-canonical.txt
+
+VALID_FORGE="$(mktemp -d)"
+cp -R "$CANONICAL_WORKSPACE/fixtures" "$VALID_FORGE/fixtures"
+perl -0pi -e 's/^Forge: no$/Forge: yes — two costly architecture seams/m; s/^Forge strategies: none$/Forge strategies: A=extend the existing seam | B=replace the boundary adapter/m; s/^Forge scorecard: none$/Forge scorecard: acceptance=AC-001, AC-002; test-plan=test-plan.md acceptance map rows AC-001 and AC-002/m' \
+  "$VALID_FORGE/fixtures/.devrites/work/backend-api/tasks.md"
+python3 "$VALIDATOR" "$VALID_FORGE/fixtures" >/tmp/devrites-workspace-schema-valid-forge.txt
+
+BAD_FORGE="$(mktemp -d)"
+cp -R "$VALID_FORGE/fixtures" "$BAD_FORGE/fixtures"
+perl -0pi -e 's/^Forge strategies:.*$/Forge strategies: A=same approach | B=same approach/m; s/^Forge scorecard:.*$/Forge scorecard: acceptance=AC-001; test-plan=test-plan.md row AC-001/m' \
+  "$BAD_FORGE/fixtures/.devrites/work/backend-api/tasks.md"
+if python3 "$VALIDATOR" "$BAD_FORGE/fixtures" >/tmp/devrites-workspace-schema-bad-forge.txt 2>&1; then
+  echo "FAIL: malformed Forge slice passed schema validation"
+  exit 1
+fi
+grep -q 'Forge strategies must be 2-3 distinct contiguous A-C entries' \
+  /tmp/devrites-workspace-schema-bad-forge.txt
+grep -q 'Forge scorecard must bind every Satisfies AC ID and exact test-plan.md rows or commands' \
+  /tmp/devrites-workspace-schema-bad-forge.txt
 
 BAD="$(mktemp -d)"
 mkdir -p "$BAD/.devrites/work/broken"
@@ -226,6 +253,7 @@ if python3 "$VALIDATOR" "$MISSING_FIELD" >/tmp/devrites-workspace-schema-missing
   exit 1
 fi
 grep -q "SLICE-001 missing field 'Files likely touched:'" /tmp/devrites-workspace-schema-missing-field.txt
+grep -q "SLICE-001 missing field 'Forge:'" /tmp/devrites-workspace-schema-missing-field.txt
 
 STALE_EVIDENCE="$(mktemp -d)"
 cp -R "$FIXTURES" "$STALE_EVIDENCE/fixtures"
@@ -237,4 +265,52 @@ if python3 "$VALIDATOR" "$STALE_EVIDENCE/fixtures" >/tmp/devrites-workspace-sche
 fi
 grep -q 'evidence ID EVID-003' /tmp/devrites-workspace-schema-stale-evidence.txt
 
-echo "ok: workspace schema validator accepts the canonical slice grammar and rejects legacy, underspecified, and stale-evidence workspaces"
+UNCLEAR="$(mktemp -d)"
+cp -R "$FIXTURES" "$UNCLEAR/fixtures"
+perl -0pi -e 's/Decision coverage: CLEAR/Decision coverage: NEEDS CLARIFICATION/' \
+  "$UNCLEAR/fixtures/.devrites/work/backend-api/decision-coverage.md"
+if python3 "$VALIDATOR" "$UNCLEAR/fixtures" >/tmp/devrites-workspace-schema-unclear.txt 2>&1; then
+  echo "FAIL: post-plan workspace with incomplete decision coverage passed validation"
+  exit 1
+fi
+grep -q 'must contain exactly one Decision coverage: CLEAR' /tmp/devrites-workspace-schema-unclear.txt
+
+NOT_READY="$(mktemp -d)"
+cp -R "$FIXTURES" "$NOT_READY/fixtures"
+perl -0pi -e 's/Implementation readiness: READY/Implementation readiness: NEEDS REPLAN/' \
+  "$NOT_READY/fixtures/.devrites/work/backend-api/eng-review.md"
+if python3 "$VALIDATOR" "$NOT_READY/fixtures" >/tmp/devrites-workspace-schema-not-ready.txt 2>&1; then
+  echo "FAIL: build workspace without a READY vet verdict passed validation"
+  exit 1
+fi
+grep -q 'must contain exactly one Implementation readiness: READY' /tmp/devrites-workspace-schema-not-ready.txt
+
+MARKER_ONLY="$(mktemp -d)"
+cp -R "$FIXTURES" "$MARKER_ONLY/fixtures"
+printf 'Decision coverage: CLEAR\n' \
+  > "$MARKER_ONLY/fixtures/.devrites/work/backend-api/decision-coverage.md"
+if python3 "$VALIDATOR" "$MARKER_ONLY/fixtures" >/tmp/devrites-workspace-schema-marker-only.txt 2>&1; then
+  echo "FAIL: marker-only readiness artifact passed validation"
+  exit 1
+fi
+grep -q "missing heading 'Topology'" /tmp/devrites-workspace-schema-marker-only.txt
+
+STALE_READINESS="$(mktemp -d)"
+cp -R "$FIXTURES" "$STALE_READINESS/fixtures"
+printf '\nChanged after vet.\n' >> "$STALE_READINESS/fixtures/.devrites/work/backend-api/plan.md"
+if python3 "$VALIDATOR" "$STALE_READINESS/fixtures" >/tmp/devrites-workspace-schema-stale-readiness.txt 2>&1; then
+  echo "FAIL: stale engineering verdict passed validation"
+  exit 1
+fi
+grep -q 'input digest is stale' /tmp/devrites-workspace-schema-stale-readiness.txt
+
+EMPTY_TEST_PLAN="$(mktemp -d)"
+cp -R "$FIXTURES" "$EMPTY_TEST_PLAN/fixtures"
+: > "$EMPTY_TEST_PLAN/fixtures/.devrites/work/backend-api/test-plan.md"
+if python3 "$VALIDATOR" "$EMPTY_TEST_PLAN/fixtures" >/tmp/devrites-workspace-schema-empty-test-plan.txt 2>&1; then
+  echo "FAIL: empty test plan passed validation"
+  exit 1
+fi
+grep -q 'empty or contains an unresolved placeholder' /tmp/devrites-workspace-schema-empty-test-plan.txt
+
+echo "ok: workspace schema validator accepts typed Forge slices and rejects legacy, underspecified, stale, malformed-Forge, marker-only, unclear, and unvetted workspaces"

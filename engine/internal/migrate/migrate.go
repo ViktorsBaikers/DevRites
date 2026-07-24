@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -93,6 +94,9 @@ func needsNormalizeFeature(dir string) bool {
 	if !regularFileExists(filepath.Join(dir, state.WorkspaceMapFile)) {
 		return true
 	}
+	if version := declaredSchemaVersion(dir); version < state.SchemaVersion {
+		return true
+	}
 	return regularFileExists(filepath.Join(dir, "proof.md")) && !regularFileExists(filepath.Join(dir, state.EvidenceFile)) ||
 		regularFileExists(filepath.Join(dir, "status.md")) && !regularFileExists(filepath.Join(dir, state.LedgerFile))
 }
@@ -114,10 +118,86 @@ func normalizeFeatureDir(dir, slug string) error {
 			return fmt.Errorf("write workspace index: %w", err)
 		}
 	}
+	phase := derivePhase(filepath.Join(dir, state.LedgerFile))
+	if err := upgradeWorkspaceMapSchema(filepath.Join(dir, state.WorkspaceMapFile), slug, phase); err != nil {
+		return fmt.Errorf("upgrade workspace schema: %w", err)
+	}
 	if err := copyAliasFile(dir, "proof.md", state.EvidenceFile); err != nil {
 		return fmt.Errorf("copy proof.md to evidence.md: %w", err)
 	}
 	return copyAliasFile(dir, "status.md", state.LedgerFile)
+}
+
+func declaredSchemaVersion(dir string) int {
+	for _, name := range state.WorkspaceMapFiles() {
+		raw, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			continue
+		}
+		lines := strings.Split(string(raw), "\n")
+		if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+			return 0
+		}
+		for _, line := range lines[1:] {
+			if strings.TrimSpace(line) == "---" {
+				break
+			}
+			key, value, ok := strings.Cut(line, ":")
+			if ok && strings.TrimSpace(key) == "schemaVersion" {
+				version, _ := strconv.Atoi(strings.TrimSpace(value))
+				return version
+			}
+		}
+		return 0
+	}
+	return 0
+}
+
+// upgradeWorkspaceMapSchema advances only the compatibility declaration. It
+// never creates decision coverage, readiness, or proof artifacts: those must be
+// earned by their owning phases.
+func upgradeWorkspaceMapSchema(path, slug string, phase state.Phase) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	version := declaredSchemaVersion(filepath.Dir(path))
+	if version > state.SchemaVersion {
+		return fmt.Errorf("schemaVersion %d is newer than this engine supports (%d)", version, state.SchemaVersion)
+	}
+	if version == state.SchemaVersion {
+		return nil
+	}
+
+	text := string(raw)
+	if !strings.HasPrefix(text, "---\n") {
+		prefix := fmt.Sprintf("---\nslug: %s\nphase: %s\nschemaVersion: %d\n---\n\n", slug, phase, state.SchemaVersion)
+		return state.AtomicWrite(path, []byte(prefix+text), 0o644)
+	}
+
+	lines := strings.Split(text, "\n")
+	end := -1
+	schemaLine := -1
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "---" {
+			end = i
+			break
+		}
+		key, _, ok := strings.Cut(lines[i], ":")
+		if ok && strings.TrimSpace(key) == "schemaVersion" {
+			schemaLine = i
+		}
+	}
+	if end < 0 {
+		return fmt.Errorf("workspace map has an unclosed frontmatter block")
+	}
+	value := fmt.Sprintf("schemaVersion: %d", state.SchemaVersion)
+	if schemaLine >= 0 {
+		lines[schemaLine] = value
+	} else {
+		lines = append(lines[:end], append([]string{value}, lines[end:]...)...)
+	}
+	return state.AtomicWrite(path, []byte(strings.Join(lines, "\n")), 0o644)
 }
 
 func copyAliasFile(dir, alias, canonical string) error {
@@ -133,7 +213,7 @@ func copyAliasFile(dir, alias, canonical string) error {
 	return state.AtomicWrite(dst, data, 0o644)
 }
 
-// workspaceIndex renders the compact map added to a normalized workspace.
+// workspaceIndex renders the compact map used by a normalized workspace.
 func workspaceIndex(slug string, phase state.Phase) string {
 	return fmt.Sprintf(`---
 slug: %s

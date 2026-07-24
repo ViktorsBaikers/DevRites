@@ -1,12 +1,16 @@
 # DevRites quick reference
 
-DevRites installs via `npx devrites ...`; Claude Code and Codex support are generated project-local artifacts, not plugin-store installs.
+Install DevRites with `npx devrites ...`. The installer generates project-local
+Claude Code and Codex artifacts; plugin stores do not distribute them.
 
 ## Lifecycle
 
-`SPEC -> DEFINE -> VET -> BUILD -> PROVE -> POLISH -> REVIEW -> SEAL -> SHIP`
+<!-- authority:lifecycle:start -->
+`FRAME → SPEC → CLARIFY → TEMPER → DEFINE → PLAN → VET → BUILD → CONVERGE → PROVE → POLISH → REVIEW → SEAL → SHIP → DONE`
+<!-- authority:lifecycle:end -->
 
-Seal decides. Ship mutates git. Build one slice. Autocomplete is opt-in.
+Seal makes the release decision, Ship mutates git, Build handles one slice per
+run, and Autocomplete is opt-in.
 
 ## Standing checklists
 

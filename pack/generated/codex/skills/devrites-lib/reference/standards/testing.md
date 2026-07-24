@@ -50,11 +50,7 @@ implementation is theatre, and it's the shape AI reaches for by default. Reject 
   back tests the stub, not your code. Assert the real effect on real (or realistic) data.
 - **Cover the unhappy edges, not just the happy path.** AI is strong on "valid input → success"
   and weak on empty / boundary / invalid-state / long-or-weird input: write those explicitly.
-- **Prove it can fail (fault injection).** For a critical or regression path, after green,
-  **break the code on purpose** (flip a comparison, drop a guard, return a constant) and confirm
-  the test goes **red**. A test never seen failing against broken code is unproven. This is
-  "see it fail first" extended past the happy path. Use the project's **mutation-testing** runner
-  to automate it where one exists; otherwise spot-check the criticals by hand.
+- **Prove it can fail.** For a critical or regression path, break the code deliberately and confirm the test goes red; use the project's mutation runner when one exists.
 - **Don't mirror the implementation.** A test whose assertions restate the code under test
   (same constant, same formula, same branch) stays green even when the logic is wrong. Assert
   an **independently-derived** expected value: reasoned from the spec, not copied from the code.
@@ -98,17 +94,6 @@ standing as an untested element or an unproven acceptance criterion. `devrites-e
 emits an advisory when a diff changes source but touches no test file; that signal is a pointer to
 run this trace, never a verdict on its own.
 
-## Test behavior, not implementation
-- Assert on observable behavior and public interfaces, not private internals, so a
-  refactor that preserves behavior keeps tests green.
-- One behavior per test; name the test for the behavior. A failure should point straight
-  at what broke.
-- Cover the unhappy paths: empty, boundary, error, permission-denied, and concurrency
-  cases, not just the happy path.
-- **Test state, not interactions.** Assert the outcome (the value returned, the row written,
-  the event emitted), not the sequence of internal calls that produced it. A test that asserts
-  "method X was called then Y" locks in today's implementation and breaks on every refactor.
-
 ## DAMP over DRY in tests
 Test code optimizes for a different reader than production code: someone staring at a failure who
 needs the whole scenario in front of them. A test should read like a spec: arrange, act, assert,
@@ -129,17 +114,6 @@ breaks, because it tested the stubs, not the code (see "Don't assert the mock" a
 | The database, network, filesystem, clock, randomness | Pure functions and business logic |
 | A third-party API or paid/rate-limited service | Your own internal utilities and transforms |
 | Anything non-deterministic or slow | Validation and mapping under test |
-
-## The Beyoncé Rule: if you liked it, you should have put a test on it
-A refactor, a dependency bump, or CI is not responsible for catching your regressions: your tests
-are. If a behavior matters, it has an asserting test that goes red when the behavior breaks;
-otherwise the next person to touch the area is free to break it and every gate will stay green.
-"It worked when I ran it" is not the same as "a test holds it." This is the completeness bar above,
-stated as the rule you'll quote when a untested behavior regresses.
-
-## See it fail first
-For new behavior, watch the test fail for the *expected* reason before you make it pass.
-A green test you never saw red proves nothing.
 
 ## Determinism: no flaky tests
 - A flaky test is a broken test. Isolate and fix it immediately; don't paper over it with

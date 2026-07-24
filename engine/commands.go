@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,18 +12,161 @@ import (
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/doctor"
 	"github.com/devrites/devrites/internal/migrate"
+	"github.com/devrites/devrites/internal/rootfacts"
 	"github.com/devrites/devrites/internal/state"
 )
 
-// resolveRootLenient resolves the .devrites root for the workspace-orientation
-// commands (preamble / progress / stuck), which must degrade gracefully outside a
-// workspace rather than erroring like the gates do. When no .devrites is found it
-// returns a nonexistent <cwd>/.devrites so the command reads an empty workspace
-// and no-ops (preamble's "No active workspace", progress's silence).
+type rootMode uint8
+
+const (
+	rootUnused rootMode = iota
+	rootLenient
+	rootStrict
+)
+
+// rootModeFor is the single policy boundary between diagnostic/read-only
+// commands, which may degrade outside a workspace, and commands that can write
+// workspace or Git state, which must never fall back after an unsafe root
+// selection.
+func rootModeFor(command string, args []string) rootMode {
+	subcommand := firstRootOperand(args)
+	switch command {
+	case "first-task", "spec-dedupe", "evidence-fresh", "coverage",
+		"doubt-coverage", "budget", "preamble", "progress",
+		"build-readiness", "readiness-digest", "analyze", "mutation-gate",
+		"test-integrity", "review-integrity", "package-existence",
+		"archive-search", "config", "reviewers", "outside-voice", "docs-stale",
+		"secret-scan", "lanes", "overrides":
+		return rootLenient
+	case "clarify-return", "reconcile", "close-out", "forge":
+		return rootStrict
+	case "resolve":
+		if subcommand == "next-qid" {
+			return rootLenient
+		}
+		return rootStrict
+	case "footprint", "stuck":
+		if subcommand == "log" {
+			return rootStrict
+		}
+		return rootLenient
+	case "recovery":
+		if subcommand == "record" || subcommand == "clear" {
+			return rootStrict
+		}
+		return rootLenient
+	case "decisions":
+		if subcommand == "index" {
+			return rootStrict
+		}
+		return rootLenient
+	case "ledger":
+		if subcommand == "sync" {
+			return rootStrict
+		}
+		return rootLenient
+	case "learnings":
+		if subcommand == "add" {
+			return rootStrict
+		}
+		return rootLenient
+	case "timeline":
+		if subcommand == "log" || subcommand == "purge" {
+			return rootStrict
+		}
+		return rootLenient
+	case "health":
+		if subcommand == "" || subcommand == "run" || subcommand == "check" || subcommand == "record" {
+			return rootStrict
+		}
+		return rootLenient
+	case "review-fingerprints":
+		if hasRootFlag(args, "--write") {
+			return rootStrict
+		}
+		return rootLenient
+	case "reviewer-stats":
+		if subcommand == "record" {
+			return rootStrict
+		}
+		return rootLenient
+	case "extensions":
+		if subcommand == "sync" {
+			return rootStrict
+		}
+		return rootLenient
+	case "context":
+		if subcommand == "sync" {
+			return rootStrict
+		}
+		return rootLenient
+	case "runbook":
+		if subcommand == "run" || subcommand == "resume" {
+			return rootStrict
+		}
+		return rootLenient
+	default:
+		return rootUnused
+	}
+}
+
+func firstRootOperand(args []string) string {
+	for _, arg := range args {
+		if arg == "--json" {
+			continue
+		}
+		return strings.ToLower(strings.TrimSpace(arg))
+	}
+	return ""
+}
+
+func hasRootFlag(args []string, flag string) bool {
+	for _, arg := range args {
+		if arg == flag {
+			return true
+		}
+	}
+	return false
+}
+
+// resolveRootFor resolves exactly once per command invocation. Strict commands
+// retain root-safety refusals; lenient readers preserve their historical
+// diagnostic/no-workspace behavior.
+func resolveRootFor(command string, args []string) (string, int, error) {
+	switch rootModeFor(command, args) {
+	case rootUnused:
+		return "", exitOK, nil
+	case rootLenient:
+		return resolveRootLenient(), exitOK, nil
+	case rootStrict:
+		root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
+		if err == nil {
+			return root, exitOK, nil
+		}
+		if errors.Is(err, rootfacts.ErrUnsafeRoot) {
+			return "", exitBlocked, err
+		}
+		if errors.Is(err, rootfacts.ErrNoRoot) {
+			return fallbackRoot(), exitOK, nil
+		}
+		return "", exitUsage, err
+	default:
+		panic("unknown root resolution mode")
+	}
+}
+
+// resolveRootLenient resolves the .devrites root for read-only and diagnostic
+// commands that must degrade cleanly outside a workspace. When no root is found,
+// it returns a nonexistent <cwd>/.devrites so those commands see an empty
+// workspace and keep their established no-workspace behavior.
 func resolveRootLenient() string {
 	if root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT")); err == nil {
 		return root
 	}
+	return fallbackRoot()
+}
+
+func fallbackRoot() string {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return ".devrites"
@@ -54,8 +198,11 @@ func gitDir(projectDir string) string {
 	return path
 }
 
-func gitOperation(projectDir string) string {
-	dir := gitDir(projectDir)
+func gitOperation(projectDir, resolvedGitDir string) string {
+	dir := resolvedGitDir
+	if dir == "" {
+		dir = gitDir(projectDir)
+	}
 	if _, err := os.Stat(filepath.Join(dir, "MERGE_HEAD")); err == nil {
 		return "merge"
 	}
@@ -67,37 +214,37 @@ func gitOperation(projectDir string) string {
 	return ""
 }
 
-// cmdDoctor reports the binary / pack / state-schema version triangle and its
-// skew verdict. It exits non-zero only when the state schema is a newer major
-// than the binary can safely parse (a genuine refuse); a mere pack-vs-binary
-// skew is a warning that still exits 0.
+// cmdDoctor reports canonical root facts and the binary, pack, and state schema
+// versions. It exits nonzero for an unsafe root or newer state schema. Missing
+// optional data and warnings remain diagnostic.
 func cmdDoctor(args []string, stdout, stderr io.Writer) int {
 	if len(args) != 0 {
 		fmt.Fprintln(stderr, "usage: devrites-engine doctor")
 		return exitUsage
 	}
-	root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: %v\n", err)
+	facts, resolveErr := rootfacts.Resolve(os.Getenv("DEVRITES_ROOT"))
+	if resolveErr != nil && len(facts.Hazards) == 0 {
+		fmt.Fprintf(stderr, "devrites: %v\n", resolveErr)
 		return exitUsage
 	}
-	// The project directory is the parent of the .devrites root: that is where
-	// an installed pack's version marker (.claude/devrites.version, package.json)
-	// lives.
-	projectDir := filepath.Dir(root)
-	report, err := doctor.Diagnose(projectDir, root)
+	root := facts.PhysicalRoot
+	projectDir := facts.PhysicalProject
+	report, err := doctor.DiagnoseFacts(facts)
 	if err != nil {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
 	}
 	fmt.Fprint(stdout, report.Render())
-	if op := gitOperation(projectDir); op != "" {
+	if op := gitOperation(projectDir, facts.Git.Dir); op != "" {
 		fmt.Fprintf(stdout, "git-state: %s in progress: resolve with .claude/skills/devrites-lib/reference/standards/git-workflow.md#merge-conflict-recovery\n", op)
 	}
-	for _, warning := range extensionProvenanceWarnings(root) {
-		fmt.Fprintf(stdout, "warning: %s\n", warning)
+	if root != "" {
+		for _, warning := range extensionProvenanceWarnings(root) {
+			fmt.Fprintf(stdout, "warning: %s\n", warning)
+		}
 	}
-	if slug := strings.TrimSpace(readFile(filepath.Join(root, "ACTIVE"))); slug != "" {
+	if root != "" {
+		slug := strings.TrimSpace(readFile(filepath.Join(root, "ACTIVE")))
 		if snap, err := state.Snapshot(root, slug); err == nil {
 			fmt.Fprintln(stdout)
 			fmt.Fprintln(stdout, "readiness-dashboard:")

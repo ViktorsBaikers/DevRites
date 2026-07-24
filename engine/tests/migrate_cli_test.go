@@ -1,6 +1,6 @@
 package main_test
 
-// Issue 06: `migrate` workspace normalization at the CLI seam.
+// CLI coverage for Issue 06: `migrate` workspace normalization.
 
 import (
 	"os"
@@ -71,7 +71,7 @@ func TestMigrateNormalizesCanonicalWorkSchema(t *testing.T) {
 	if !strings.Contains(string(readme), "phase: temper") {
 		t.Errorf("README.md phase not derived from state.md\n%s", readme)
 	}
-	if !strings.Contains(string(readme), "schemaVersion: 1") {
+	if !strings.Contains(string(readme), "schemaVersion: 2") {
 		t.Errorf("README.md missing schemaVersion\n%s", readme)
 	}
 	for _, unwanted := range []string{"feature.md", "proof.md", "status.md"} {

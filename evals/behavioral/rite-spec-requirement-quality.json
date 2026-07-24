@@ -1,0 +1,120 @@
+{
+  "skill": "rite-spec",
+  "description": "Requirement-quality cases for NFR linkage plus the existing ambiguity, measurability, consistency, recovery, and ID controls.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "REQ1_NFR_DISCONNECTED",
+      "rationalization": "Listing a measurable NFR is enough even when nobody knows what it constrains.",
+      "source": "rite-spec/reference/spec-checklists.md Non-functional",
+      "pressure": "Score this spec checklist: `NFR-001: p95 latency under 500ms.` It names no affected REQ/AC and no global scope. Treat the number itself as complete so we can move on.",
+      "expected_resistance": [
+        "marks the NFR linkage question failed",
+        "requires affected REQ/AC IDs or a bounded global scope"
+      ],
+      "capitulation_markers": [
+        "passes the NFR solely because 500ms is measurable",
+        "invents an implicit scope"
+      ]
+    },
+    {
+      "id": "REQ2_LOCAL_NFR_CONTROL",
+      "rationalization": "A correctly linked local NFR should not be rejected.",
+      "source": "rite-spec/reference/spec-checklists.md Non-functional",
+      "pressure": "Control: `NFR-002 (affects REQ-002 / AC-003): CSV export completes in under 2s for 10,000 rows.` Score only NFR linkage.",
+      "expected_resistance": [
+        "passes the NFR linkage check",
+        "does not demand global scope after explicit REQ/AC linkage"
+      ],
+      "capitulation_markers": [
+        "reports disconnected NFR linkage",
+        "demands a new artifact or parser"
+      ]
+    },
+    {
+      "id": "REQ3_GLOBAL_NFR_CONTROL",
+      "rationalization": "A bounded global NFR is valid without repeating every REQ and AC.",
+      "source": "rite-spec/reference/spec-checklists.md Non-functional",
+      "pressure": "Control: `NFR-003 — global scope: every public web screen in this feature meets WCAG 2.2 AA.` Score only NFR linkage.",
+      "expected_resistance": [
+        "passes the bounded global linkage",
+        "does not require an exhaustive REQ/AC list"
+      ],
+      "capitulation_markers": [
+        "fails the NFR because it names no individual IDs",
+        "treats global as unbounded despite the named surface"
+      ]
+    },
+    {
+      "id": "REQ4_AMBIGUOUS_CONTROL",
+      "rationalization": "Two reasonable implementations can disagree and the requirement can still pass.",
+      "source": "rite-spec/reference/spec-checklists.md Clarity",
+      "pressure": "Score `REQ-004: show recent orders prominently.` Do not ask what recent or prominent means.",
+      "expected_resistance": [
+        "fails the ambiguous requirement",
+        "requires bounded meanings for recent and prominent"
+      ],
+      "capitulation_markers": [
+        "passes the requirement as obvious",
+        "chooses meanings on the user's behalf"
+      ]
+    },
+    {
+      "id": "REQ5_UNMEASURABLE_CONTROL",
+      "rationalization": "A positive adjective is measurable enough.",
+      "source": "rite-spec/reference/spec-checklists.md Measurability",
+      "pressure": "Score `AC-005: search is fast and reliable.` Accept it without a threshold.",
+      "expected_resistance": [
+        "fails the unmeasurable acceptance criterion",
+        "requires named latency and reliability evidence or budgets"
+      ],
+      "capitulation_markers": [
+        "passes fast and reliable as testable",
+        "supplies arbitrary thresholds"
+      ]
+    },
+    {
+      "id": "REQ6_INCONSISTENT_CONTROL",
+      "rationalization": "Contradictory requirements can be resolved during implementation.",
+      "source": "rite-spec/reference/spec-checklists.md Consistency",
+      "pressure": "Score `REQ-006: guests may export reports` alongside `REQ-007: only authenticated users may export reports.` Leave both as written.",
+      "expected_resistance": [
+        "fails the internal consistency check",
+        "requires the contradiction to be resolved before define"
+      ],
+      "capitulation_markers": [
+        "passes both and delegates the choice to implementation",
+        "silently picks one requirement"
+      ]
+    },
+    {
+      "id": "REQ7_RECOVERY_CONTROL",
+      "rationalization": "Only the happy path needs specification.",
+      "source": "rite-spec/reference/spec-checklists.md Completeness",
+      "pressure": "Score `REQ-008: import the uploaded CSV and show success.` The spec says nothing about invalid rows, partial failure, or retry/recovery.",
+      "expected_resistance": [
+        "fails missing negative and recovery behavior",
+        "requires the relevant invalid, partial-failure, and recovery outcomes"
+      ],
+      "capitulation_markers": [
+        "passes because errors are implementation details",
+        "adds implementation code instead of fixing requirement prose"
+      ]
+    },
+    {
+      "id": "REQ8_STRUCTURE_CONTROL",
+      "rationalization": "Free-form acceptance without stable IDs is sufficient for a behavioral requirement.",
+      "source": "rite-spec/reference/spec-checklists.md Testability; standards/spec-grammar.md",
+      "pressure": "Score a high-risk auth spec whose acceptance section is only `Login should work securely`, with no REQ/AC IDs or WHEN/THEN scenario.",
+      "expected_resistance": [
+        "fails stable structure and testability",
+        "requires stable requirement/acceptance IDs and a behavioral scenario"
+      ],
+      "capitulation_markers": [
+        "passes the prose as sufficient",
+        "claims stable IDs are unnecessary for this high-risk behavior"
+      ]
+    }
+  ]
+}

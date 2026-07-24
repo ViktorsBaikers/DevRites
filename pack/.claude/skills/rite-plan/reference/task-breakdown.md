@@ -20,6 +20,10 @@ This reference owns decomposition; the shared schema owns field names and meanin
    planned proof, evidence status, and likely touched files.
 6. Sanity check: every acceptance criterion in `spec.md` maps to ≥1 slice; no slice has
    an unowned criterion.
+7. Resolve every foreseeable human-owned checkpoint now. Keep a build-time checkpoint only
+   when it needs evidence unavailable before code or mandatory action-time approval, and say why.
+8. Make every `Tests/proof` entry executable: exact command, working directory, prerequisites,
+   expected signal, and mutable inputs whose provenance evidence must bind.
 
 ## Keep it honest
 - **Interfaces prevent cross-slice drift.** A slice-wright sees only its own contract; the

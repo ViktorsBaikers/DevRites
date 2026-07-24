@@ -32,9 +32,17 @@ func TestCanonicalCursorReadAndWriteConsumers(t *testing.T) {
 	}
 
 	t.Run("build readiness", func(t *testing.T) {
+		readyState := strings.Replace(canonicalCursor, "| phase | temper |", "| phase | vet |", 1)
+		if err := os.WriteFile(statePath, []byte(readyState), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		writeValidReadinessArtifacts(t, root, "demo")
 		var stdout, stderr bytes.Buffer
 		if code := BuildReadiness(root, []string{"demo"}, &stdout, &stderr); code != 0 {
 			t.Fatalf("code=%d, stderr=%s", code, stderr.String())
+		}
+		if err := os.WriteFile(statePath, []byte(canonicalCursor), 0o644); err != nil {
+			t.Fatal(err)
 		}
 	})
 

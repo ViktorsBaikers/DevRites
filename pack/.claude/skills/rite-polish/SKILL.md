@@ -7,19 +7,21 @@ user-invocable: true
 
 # /rite-polish: finish before review
 
-The "finish" phase. **Always** code-polishes; **and** runs UI normalize +
-design polish when the feature touches UI. Self-review the work to ship
-quality *before* handing it to `/rite-review`. The two-phase split (code,
-UI) lives in `reference/code.md` and `reference/ui.md`: read each on demand,
-don't load both up front.
+Polish code for every feature. When the feature touches UI, normalize and polish the
+UI as well. Complete this self-review before `/rite-review`. The code and UI phases
+live in `reference/code.md` and `reference/ui.md`; read only the phase in scope.
 
 ## Operating rules
 
 - **Functionality complete first.** Polish runs after `/rite-prove` (full
   feature proven).
 - Feature scope only.
-- For UI: **NEVER polish without normalizing first**: decoration on drift is
-  banned.
+- For UI, **normalize before polishing**. Do not add decoration on top of drift.
+- **Root selects; wright edits.** The controlling chat assesses and reconciles, but every
+  accepted source/test correction is dispatched to the sole writer,
+  `devrites-slice-wright`, through
+  [`agents.md`](../devrites-lib/reference/standards/agents.md). Never edit source inline or
+  run two correction writers concurrently.
 
 ## Orchestration
 
@@ -36,21 +38,25 @@ don't load both up front.
    `pages/`, `routes/`, `app/`, `views/`, `screens/`), Storybook stories,
    or design-token files. When in doubt, look for visual changes that need
    verification.
-3. **Always** read [`reference/code.md`](reference/code.md) and run **Phase 1
-   (code polish)**; if backend was touched, continue into **Phase 2 (backend
-   polish)** from the same file.
+3. **Always** read [`reference/code.md`](reference/code.md) and assess **Phase 1
+   (code polish)**; if backend was touched, assess **Phase 2 (backend polish)** from
+   the same file. Reconcile the findings, then send accepted corrections as one bounded
+   wright contract.
 4. **If UI scope detected** read [`reference/ui.md`](reference/ui.md), and read
-   `design-brief.md` if present (the UX/UI contract `devrites-ux-shape` shaped at spec and
-   `devrites-frontend-craft` refined while building) so the polish honors the agreed
-   direction + states. **Read the `## Visual Verdict` table in `browser-evidence.md` if present:
-   its `FAIL` and `PARTIAL` rows are the normalize/quality-bar worklist**: fix the root cause of
-   each (a missing state, an off-token CTA, an anti-slop hit), don't decorate around it. Then run
-   **Phase 3 (normalize)** → **Phase 4 (UI polish)**. Honor argument modes:
+   `design-brief.md` if present so the polish follows the direction and states established
+   by `devrites-ux-shape` and refined by `devrites-frontend-craft`. **Read the
+   `## Visual Verdict` table in `browser-evidence.md` if present:
+   its `FAIL` and `PARTIAL` rows are the normalize/quality-bar worklist**: identify the root
+   cause of each (a missing state, an off-token CTA, or an anti-slop hit) rather than
+   hiding it with decoration. Assess **Phase 3 (normalize)** → **Phase 4 (UI polish)**,
+   then send accepted UI
+   corrections to the wright (which invokes the relevant craft skill). Honor argument modes:
    - `bolder | quieter | distill | harden`: passed to Phase 4 as the
      emphasis dial.
-   - `normalize-only`: run Phase 3 and stop (no Phase 4).
-5. **Re-verify after any code edit:** polish edits code, so the proof from
-   `/rite-prove` no longer post-dates it. Run the relevant fast checks (the
+   - `normalize-only`: assess Phase 3 and stop (no Phase 4).
+5. **Re-verify after any code edit:** a wright correction invalidates prior proof, so
+   `/rite-prove` no longer post-dates it. Dispatch `devrites-proof-runner` for the affected
+   fast checks (the
    targeted tests for the touched files + typecheck/lint; browser re-check if UI
    changed) and record a **`Re-verification:`** line in `polish-report.md`. A
    polish that changed code without a green re-verification isn't finished.
@@ -58,10 +64,8 @@ don't load both up front.
 
 ## Refinement modes
 
-When the user (or your own assessment) names a direction the UI should move,
-pass it through to Phase 4. Modes don't bypass normalize + quality-bar work:
-they shape the polish *after* the system is aligned. See `reference/ui.md` for
-the mode table.
+Pass the requested UI direction to Phase 4. Modes do not bypass normalization or the
+quality bar; they apply after the system is aligned. See `reference/ui.md`.
 
 > **Mid-flight discipline.** When tempted to polish UI without normalize, cite
 > clean lint as proof of quality, skip Phase 2 on a backend diff, or delete a

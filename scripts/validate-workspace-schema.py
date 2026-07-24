@@ -1,18 +1,35 @@
 #!/usr/bin/env python3
-"""Validate generated DevRites workspace artifacts.
+"""Validate generated DevRites workspace artifacts against the Markdown contract.
 
-The validator is intentionally dependency-free: it checks the Markdown contract
-well enough to catch drift without introducing a runtime parser dependency.
+The validator uses only the standard library, so it does not add a runtime
+parser dependency.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import re
 import sys
 from pathlib import Path
 
 from workflow_schema import PHASES, cursor_field
+
+
+READINESS_CONTRACT_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "engine"
+    / "internal"
+    / "lib"
+    / "readiness_contract.json"
+)
+READINESS_CONTRACT = json.loads(READINESS_CONTRACT_PATH.read_text(encoding="utf-8"))
+READINESS_PLACEHOLDER_RE = re.compile(
+    r"<[^>\n]+>|\b(?:TODO|TBD|FIXME|UNKNOWN)\b", re.IGNORECASE
+)
+READINESS_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
+READINESS_AC_RE = re.compile(r"\bAC-?\d+\b", re.IGNORECASE)
 
 
 ID_PATTERNS = {
@@ -49,10 +66,13 @@ HIGH_TRAFFIC_BUDGETS = {
     "feature.md": 120,
     "brief.md": 80,
     "spec.md": 260,
+    "decision-coverage.md": 200,
     "ai-spec.md": 160,
     "plan.md": 220,
     "tasks.md": 280,
     "traceability.md": 220,
+    "eng-review.md": 240,
+    "test-plan.md": 260,
     "state.md": 120,
     "handoff.md": 120,
     "evidence.md": 280,
@@ -76,6 +96,13 @@ REQUIRED_HEADINGS = {
         "Edge cases",
         "Measurable success",
         "Scope boundaries",
+    ],
+    "decision-coverage.md": [
+        "Topology",
+        "Coverage matrix",
+        "Assumption audit",
+        "Residual uncertainty",
+        "Readiness verdict",
     ],
     "architecture.md": [
         "Owning module / layer",
@@ -106,6 +133,9 @@ WORKSPACE_MAP_FIELDS = ("phase", "status", "next_action", "last_updated")
 SLICE_REQUIRED_FIELDS = (
     "Goal",
     "Satisfies",
+    "Forge",
+    "Forge strategies",
+    "Forge scorecard",
     "Files likely touched",
     "Tests/proof",
     "Mode",
@@ -169,10 +199,9 @@ def existing_or_alias(workspace: Path, name: str) -> bool:
 
 
 def find_local_workspaces(root: Path) -> list[Path]:
-    # A devrites workspace is identified by its devrites-specific artifacts, NOT by
-    # README.md: every repo root has a README.md, and matching on it here both
-    # misclassifies the repo root as a workspace and short-circuits the .devrites/work
-    # scan below (return [root] before the loop ever runs).
+    # Detect workspaces by DevRites artifacts, not README.md. Most repository
+    # roots have a README, which would misclassify the root and stop the
+    # .devrites/work scan before it starts.
     if root.is_dir() and any((root / name).exists() for name in ("spec.md", "state.md", "feature.md")):
         return [root]
     out: list[Path] = []
@@ -257,6 +286,56 @@ def validate_tasks(path: Path, text: str, errors: list[str]) -> None:
             if not re.search(rf"(?im)^{re.escape(field)}\s*:\s*\S+", body):
                 errors.append(f"{path}: {slice_id} missing field '{field}:'")
 
+        def field(name: str) -> str:
+            match = re.search(rf"(?im)^{re.escape(name)}\s*:\s*(.+?)\s*$", body)
+            return match.group(1).strip() if match else ""
+
+        forge = field("Forge")
+        strategies = field("Forge strategies")
+        scorecard = field("Forge scorecard")
+        if not forge:
+            continue
+        if re.fullmatch(r"(?i)no", forge):
+            if strategies.lower() != "none" or scorecard.lower() != "none":
+                errors.append(
+                    f"{path}: {slice_id} Forge:no requires strategies and scorecard 'none'"
+                )
+            continue
+        if not re.fullmatch(r"(?i)yes\s+[—-]\s+\S.*", forge):
+            errors.append(f"{path}: {slice_id} Forge must be 'no' or 'yes — <reason>'")
+            continue
+
+        parsed: list[tuple[str, str]] = []
+        for part in strategies.split("|"):
+            match = re.fullmatch(r"\s*([ABC])\s*=\s*(\S.*?)\s*", part)
+            if not match:
+                parsed = []
+                break
+            parsed.append((match.group(1), " ".join(match.group(2).split())))
+        ids = [item[0] for item in parsed]
+        descriptions = [item[1].casefold() for item in parsed]
+        if ids not in (["A", "B"], ["A", "B", "C"]) or len(set(descriptions)) != len(
+            descriptions
+        ):
+            errors.append(
+                f"{path}: {slice_id} Forge strategies must be 2-3 distinct contiguous A-C entries"
+            )
+
+        acceptance = re.search(r"(?i)\bacceptance\s*=\s*[^;\n]*", scorecard)
+        satisfies_ids = set(ID_PATTERNS["AC"].findall(field("Satisfies")))
+        scorecard_ids = set(ID_PATTERNS["AC"].findall(acceptance.group(0))) if acceptance else set()
+        test_plan = re.search(
+            r"(?i)\btest-plan\s*=\s*(?=\S)(?!none\b).*test-plan\.md", scorecard
+        )
+        if (
+            not satisfies_ids
+            or not satisfies_ids.issubset(scorecard_ids)
+            or not test_plan
+        ):
+            errors.append(
+                f"{path}: {slice_id} Forge scorecard must bind every Satisfies AC ID and exact test-plan.md rows or commands"
+            )
+
 
 def validate_id_register(path: Path, text: str, kind: str, errors: list[str]) -> None:
     if text and not ID_PATTERNS[kind].search(text):
@@ -299,9 +378,273 @@ def blocking_questions(questions: str) -> list[str]:
         qid = (ID_PATTERNS["Q"].search(chunk) or re.search(r"\bq-\d{4}-\d{2}-\d{2}-\d{3}\b", chunk))
         status = re.search(r"(?im)^status:\s*(\w+)", chunk)
         gate = re.search(r"(?im)^gate:\s*(\w+)", chunk)
-        if status and status.group(1).lower() == "open" and gate and gate.group(1).lower() in {"blocking", "escalating"}:
+        if status and status.group(1).lower() == "open" and gate and gate.group(1).lower() in {"blocking", "validating", "escalating"}:
             out.append(qid.group(0) if qid else "<unknown>")
-    return out
+
+    status_index = gate_index = qid_index = -1
+    for raw in questions.splitlines():
+        line = raw.strip()
+        if not (line.startswith("|") and line.endswith("|")):
+            status_index = gate_index = qid_index = -1
+            continue
+        cells = [cell.strip() for cell in line[1:-1].split("|")]
+        lowered = [cell.lower() for cell in cells]
+        if status_index < 0:
+            status_index = lowered.index("status") if "status" in lowered else -1
+            gate_index = lowered.index("gate") if "gate" in lowered else -1
+            for label in ("question id", "question", "id"):
+                if label in lowered:
+                    qid_index = lowered.index(label)
+                    break
+            if status_index < 0 or gate_index < 0:
+                status_index = gate_index = qid_index = -1
+            continue
+        if status_index >= len(cells) or gate_index >= len(cells):
+            continue
+        if cells[status_index].lower() != "open" or cells[gate_index].lower() not in {
+            "blocking",
+            "validating",
+            "escalating",
+        }:
+            continue
+        qid = cells[qid_index] if 0 <= qid_index < len(cells) else "<unknown>"
+        out.append(qid or "<unknown>")
+    return list(dict.fromkeys(out))
+
+
+def readiness_digest(workspace: Path, names: list[str]) -> str:
+    digest = hashlib.sha256()
+    for name in names:
+        path = workspace / name
+        data = path.read_bytes()
+        if not data.strip():
+            raise ValueError(f"{name} is empty")
+        digest.update(name.encode())
+        digest.update(b"\0")
+        digest.update(str(len(data)).encode())
+        digest.update(b"\0")
+        digest.update(data)
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def cursor_values(text: str, key: str) -> list[str]:
+    want = key.strip().lower().replace("_", " ")
+    values: list[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("|") and line.endswith("|"):
+            cells = [cell.strip() for cell in line[1:-1].split("|")]
+            if len(cells) >= 2 and cells[0].lower().replace("_", " ") == want:
+                values.append(cells[1])
+            continue
+        line = line.lstrip("-*+ \t")
+        if ":" not in line:
+            continue
+        found, value = line.split(":", 1)
+        if found.strip().lower().replace("_", " ") == want:
+            values.append(value.strip())
+    return values
+
+
+def markdown_section(text: str, wanted: str) -> str | None:
+    lines = text.splitlines()
+    start = -1
+    level = 0
+    for index, line in enumerate(lines):
+        match = re.match(r"^(#{1,6})\s+(.+?)\s*#*\s*$", line.strip())
+        if not match:
+            continue
+        if start < 0:
+            if match.group(2).strip().lower() == wanted.lower():
+                start = index + 1
+                level = len(match.group(1))
+            continue
+        if len(match.group(1)) <= level:
+            return "\n".join(lines[start:index])
+    return "\n".join(lines[start:]) if start >= 0 else None
+
+
+def markdown_table(text: str, heading: str) -> list[list[str]]:
+    section = markdown_section(text, heading)
+    if section is None:
+        return []
+    rows: list[list[str]] = []
+    header_seen = False
+    for raw in section.splitlines():
+        line = raw.strip()
+        if not (line.startswith("|") and line.endswith("|")):
+            continue
+        cells = [cell.strip() for cell in line[1:-1].split("|")]
+        if all(not cell.strip(" :-") for cell in cells):
+            continue
+        if not header_seen:
+            header_seen = True
+            continue
+        rows.append(cells)
+    return rows
+
+
+def empty_or_na(value: str) -> bool:
+    return value.strip().lower() in {"", "-", "n/a", "none"}
+
+
+def substantive_cells(row: list[str], *indexes: int) -> bool:
+    return all(index < len(row) and not empty_or_na(row[index]) for index in indexes)
+
+
+def none_row(value: str) -> bool:
+    return value.strip().lower() in {
+        "none",
+        "no material assumptions",
+        "no residual uncertainty",
+    }
+
+
+def validate_readiness_base(
+    workspace: Path, contract: dict[str, object], errors: list[str]
+) -> str | None:
+    path = workspace / str(contract["artifact"])
+    if not path.exists():
+        errors.append(f"{path}: missing readiness artifact")
+        return None
+    text = read(path)
+    if not text.strip():
+        errors.append(f"{path}: empty readiness artifact")
+        return None
+    if READINESS_PLACEHOLDER_RE.search(text):
+        errors.append(f"{path}: contains an unresolved placeholder")
+    for heading in contract.get("requiredHeadings", []):
+        if markdown_section(text, str(heading)) is None:
+            errors.append(f"{path}: missing heading '{heading}'")
+    for heading in contract.get("requiredTables", []):
+        if not markdown_table(text, str(heading)):
+            errors.append(f"{path}: heading '{heading}' has no table data rows")
+
+    verdicts = cursor_values(text, str(contract["verdictField"]))
+    if len(verdicts) != 1 or verdicts[0].upper() != str(contract["readyValue"]).upper():
+        errors.append(
+            f"{path}: must contain exactly one "
+            f"{contract['verdictField']}: {contract['readyValue']}"
+        )
+    digests = cursor_values(text, str(contract["digestField"]))
+    if len(digests) != 1 or not READINESS_DIGEST_RE.fullmatch(digests[0].lower()):
+        errors.append(f"{path}: must contain exactly one valid {contract['digestField']}")
+    else:
+        try:
+            expected = readiness_digest(workspace, list(contract["inputs"]))
+        except (OSError, ValueError) as exc:
+            errors.append(f"{path}: cannot compute readiness digest: {exc}")
+        else:
+            if digests[0].lower() != expected:
+                errors.append(f"{path}: input digest is stale")
+    return text
+
+
+def validate_decision_coverage(workspace: Path, errors: list[str]) -> None:
+    contract = READINESS_CONTRACT["coverage"]
+    text = validate_readiness_base(workspace, contract, errors)
+    if text is None:
+        return
+    path = workspace / "decision-coverage.md"
+    for index, row in enumerate(markdown_table(text, "Topology"), 1):
+        if len(row) < 4 or not substantive_cells(row, 0, 1, 3):
+            errors.append(f"{path}: topology row {index} is not evidence-backed")
+    rows = markdown_table(text, "Coverage matrix")
+    allowed = {"closed", "agent-owned", "not-applicable", "deferred-nonblocking"}
+    for index, row in enumerate(rows, 1):
+        if len(row) < 6:
+            errors.append(f"{path}: coverage row {index} has fewer than 6 cells")
+            continue
+        status = row[2].strip().lower()
+        if not substantive_cells(row, 0, 1, 5):
+            errors.append(f"{path}: coverage row {index} is incomplete")
+        if status not in allowed:
+            errors.append(
+                f"{path}: coverage row {index} has unresolved status {row[2]!r}"
+            )
+        if status == "closed" and not substantive_cells(row, 3):
+            errors.append(f"{path}: coverage row {index} is closed without a canonical reference")
+        if status in {"agent-owned", "deferred-nonblocking"} and empty_or_na(row[4]):
+            errors.append(
+                f"{path}: coverage row {index} has no owner/validation gate"
+            )
+    for index, row in enumerate(markdown_table(text, "Assumption audit"), 1):
+        if len(row) < 6:
+            errors.append(f"{path}: assumption row {index} has fewer than 6 cells")
+        elif not none_row(row[0]) and not substantive_cells(row, 0, 1, 2, 3, 4, 5):
+            errors.append(f"{path}: assumption row {index} is unowned or unverifiable")
+    for index, row in enumerate(markdown_table(text, "Residual uncertainty"), 1):
+        if len(row) < 4:
+            errors.append(f"{path}: residual row {index} has fewer than 4 cells")
+        elif not none_row(row[0]) and not substantive_cells(row, 0, 1, 2, 3):
+            errors.append(f"{path}: residual row {index} is unowned or unverifiable")
+    questions_path = workspace / "questions.md"
+    if questions_path.exists():
+        open_gates = blocking_questions(read(questions_path))
+        if open_gates:
+            errors.append(
+                f"{questions_path}: open blocking/validating/escalating questions: "
+                + ", ".join(open_gates)
+            )
+
+
+def validate_engineering_readiness(workspace: Path, errors: list[str]) -> None:
+    contract = READINESS_CONTRACT["engineering"]
+    text = validate_readiness_base(workspace, contract, errors)
+    if text is None:
+        return
+    review_path = workspace / "eng-review.md"
+    for index, row in enumerate(markdown_table(text, "2a. Build-entry preflight"), 1):
+        if len(row) < 7:
+            errors.append(f"{review_path}: preflight row {index} has fewer than 7 cells")
+            continue
+        verdict = row[6].strip().lower()
+        if verdict not in {"pass", "n/a"}:
+            errors.append(f"{review_path}: preflight row {index} is not passing")
+        if not substantive_cells(row, 0) or (
+            verdict == "pass" and not substantive_cells(row, 1, 2, 4, 5)
+        ):
+            errors.append(f"{review_path}: preflight row {index} lacks executable provenance")
+    for index, row in enumerate(markdown_table(text, "2b. Implementation readiness"), 1):
+        if (
+            len(row) < 6
+            or row[5].strip().lower() != "ready"
+            or not substantive_cells(row, 0, 1, 2, 3, 4)
+        ):
+            errors.append(f"{review_path}: readiness row {index} is not ready")
+
+    test_contract = READINESS_CONTRACT["testPlan"]
+    test_path = workspace / str(test_contract["artifact"])
+    if not test_path.exists():
+        errors.append(f"{test_path}: missing test plan")
+        return
+    test_text = read(test_path)
+    if not test_text.strip() or READINESS_PLACEHOLDER_RE.search(test_text):
+        errors.append(f"{test_path}: empty or contains an unresolved placeholder")
+        return
+    for heading in test_contract.get("requiredHeadings", []):
+        if markdown_section(test_text, str(heading)) is None:
+            errors.append(f"{test_path}: missing heading '{heading}'")
+    for heading in test_contract.get("requiredTables", []):
+        rows = markdown_table(test_text, str(heading))
+        if not rows:
+            errors.append(f"{test_path}: heading '{heading}' has no table data rows")
+            continue
+        required_cells = (0, 1, 2, 3, 5)
+        if heading == "Per-gap test requirements":
+            required_cells = (0, 1, 2, 3, 4, 5, 6)
+        for index, row in enumerate(rows, 1):
+            if not substantive_cells(row, *required_cells):
+                errors.append(f"{test_path}: heading '{heading}' row {index} is incomplete")
+    mapping = markdown_section(test_text, "Acceptance → test map") or ""
+    if "→" not in mapping and "->" not in mapping:
+        errors.append(f"{test_path}: acceptance map has no mappings")
+    spec_path = workspace / "spec.md"
+    if spec_path.exists():
+        for acceptance_id in sorted(set(READINESS_AC_RE.findall(read(spec_path)))):
+            if acceptance_id.upper() not in mapping.upper():
+                errors.append(f"{test_path}: acceptance map does not map {acceptance_id}")
 
 
 def validate_workspace(workspace: Path) -> list[str]:
@@ -316,6 +659,10 @@ def validate_workspace(workspace: Path) -> list[str]:
     for name in required:
         if not existing_or_alias(workspace, name):
             errors.append(f"{workspace}: phase {phase} requires {name}")
+    if "decision-coverage.md" in required:
+        validate_decision_coverage(workspace, errors)
+    if "eng-review.md" in required:
+        validate_engineering_readiness(workspace, errors)
 
     for path in sorted(workspace.glob("*.md")):
         text = read(path)
@@ -419,7 +766,12 @@ def validate_workspace(workspace: Path) -> list[str]:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("paths", nargs="*", default=["."], help="workspace dirs or roots containing .devrites/work|features|archive")
+    parser.add_argument(
+        "paths",
+        nargs="*",
+        default=["."],
+        help="workspace directories or roots containing .devrites/work|features|archive",
+    )
     args = parser.parse_args(argv)
 
     workspaces: list[Path] = []

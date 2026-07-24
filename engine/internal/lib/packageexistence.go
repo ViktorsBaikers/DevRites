@@ -1,14 +1,12 @@
 package lib
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"go/parser"
 	"go/token"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -20,6 +18,8 @@ import (
 // the standard parser, and Python/Rust use their import declaration syntax.
 var (
 	quotedModule  = regexp.MustCompile(`\b(?:from|import|require)[[:space:]]*(?:\([[:space:]]*)?['"]([^'"]+)['"]`)
+	cssImport     = regexp.MustCompile(`(?i)@import[[:space:]]+(?:url\([[:space:]]*)?(?:['"]([^'"]+)['"]|([^[:space:]);]+))`)
+	remoteImport  = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9+.-]*:`)
 	pythonImport  = regexp.MustCompile(`^\+?[[:space:]]*import[[:space:]]+([A-Za-z0-9_./-]+)`)
 	pythonFrom    = regexp.MustCompile(`^\+?[[:space:]]*from[[:space:]]+([A-Za-z0-9_./-]+)[[:space:]]+import\b`)
 	rustUse       = regexp.MustCompile(`^[[:space:]]*(?:pub(?:\([^)]*\))?[[:space:]]+)?use[[:space:]]+(?:::)?(?:r#)?([A-Za-z_][A-Za-z0-9_]*)(?:::|[[:space:]]+as\b|[[:space:]]*;)`)
@@ -56,6 +56,7 @@ type packageResolver struct {
 
 var packageResolvers = []packageResolver{
 	{extensions: " .js .jsx .mjs .cjs .ts .tsx .mts .cts .svelte .vue ", extract: quotedModulesFromAddedLines, resolve: resolveJavaScriptImport},
+	{extensions: " .css ", extract: cssModulesFromAddedLines, resolve: resolveCSSImport},
 	{extensions: " .go ", extract: goModulesFromAddedLinesForSource, resolve: resolveGoImport},
 	{extensions: " .py .pyi ", extract: pythonModulesFromAddedLines, resolve: resolvePythonImport},
 	{extensions: " .rs ", extract: rustModulesFromAddedLines, resolve: resolveRustImport},
@@ -63,13 +64,12 @@ var packageResolvers = []packageResolver{
 
 var fallbackPackageResolver = packageResolver{extract: quotedModulesFromAddedLines, resolve: resolveGenericImport}
 
-// PackageExistence catches hallucinated or typo-squatted dependencies: every new
-// third-party import in the slice diff must be DECLARED in a project manifest, not
-// merely imported. It is deterministic and offline: it checks the manifest, not a
-// package registry. The workspace is <root>/features/<slug>.
+// PackageExistence checks that every new third-party import in the slice diff is
+// declared in a project manifest. It works offline and does not query a package
+// registry. The workspace is <root>/features/<slug>.
 //
 //	0  clean, nothing to check, or skipped (not a git repo / no manifest)
-//	2  no active workspace
+//	2  no active workspace or missing/corrupt baseline state
 //	3  an imported package is not declared in any manifest
 func PackageExistence(root string, args []string, stdout, stderr io.Writer) int {
 	slug := slugOrActive(root, args)
@@ -89,12 +89,12 @@ func PackageExistence(root string, args []string, stdout, stderr io.Writer) int 
 		fmt.Fprintln(stderr, "package-existence: not a git repo: skipped.")
 		return 0
 	}
-	ref := "HEAD"
-	if b, err := os.ReadFile(filepath.Join(d, ".reconcile-base")); err == nil {
-		if t := strings.TrimSpace(string(b)); t != "" {
-			ref = t
-		}
+	trees, err := captureSliceTreeRange(gitRoot, root, d)
+	if err != nil {
+		fmt.Fprintf(stderr, "package-existence: cannot capture slice range: %v\n", err)
+		return 2
 	}
+	defer trees.cleanup()
 
 	var rootManifests []string
 	for _, m := range manifestFiles {
@@ -104,7 +104,11 @@ func PackageExistence(root string, args []string, stdout, stderr io.Writer) int 
 		}
 	}
 
-	imports := extractImportedPackages(gitRoot, ref)
+	imports, err := extractImportedPackages(gitRoot, trees.base, trees.current, trees.env)
+	if err != nil {
+		fmt.Fprintf(stderr, "package-existence: cannot inspect slice imports: %v\n", err)
+		return 2
+	}
 	hasManifest := len(rootManifests) > 0
 	findings := map[string]struct{}{}
 	for _, imported := range imports {
@@ -136,7 +140,7 @@ func PackageExistence(root string, args []string, stdout, stderr io.Writer) int 
 		for _, pkg := range packages {
 			fmt.Fprintf(stderr, "  - %s: imported but not declared in any manifest\n", pkg)
 		}
-		fmt.Fprintln(stderr, "An undeclared import is how hallucinated/typo-squatted packages slip in. Confirm the name on the registry before trusting it.")
+		fmt.Fprintln(stderr, "Check each package name in its registry before trusting it. Undeclared imports may be misspelled, typo-squatted, or nonexistent.")
 		return 3
 	}
 	fmt.Fprintln(stdout, "package-existence: OK: every new third-party import is declared in a manifest.")
@@ -144,35 +148,54 @@ func PackageExistence(root string, args []string, stdout, stderr io.Writer) int 
 }
 
 // extractImportedPackages retains the source file and raw specifier for each
-// import added by the diff so workspace and alias resolution can use that
-// provenance before the specifier is reduced to a top-level package name.
-func extractImportedPackages(gitRoot, ref string) []importedModule {
-	out, err := exec.Command("git", "-C", gitRoot, "diff", "--name-only", "-z", ref, "--").Output()
+// import introduced between two immutable trees. CSS is parsed from complete
+// baseline/current files so block-comment state from unchanged lines is
+// preserved; other languages retain the established added-line extraction.
+func extractImportedPackages(gitRoot, baseTree, currentTree string, env []string) ([]importedModule, error) {
+	paths, err := changedTreePaths(gitRoot, env, baseTree, currentTree)
 	if err != nil {
-		return nil
+		return nil, err
 	}
+
 	var imports []importedModule
-	for rawPath := range bytes.SplitSeq(out, []byte{0}) {
-		if len(rawPath) == 0 {
-			continue
-		}
-		sourcePath := filepath.Clean(string(rawPath))
-		diff, err := exec.Command("git", "-C", gitRoot, "diff", "--unified=0", ref, "--", sourcePath).Output()
+	for _, sourcePath := range paths {
+		currentSource, currentExists, err := treeFileContent(gitRoot, env, currentTree, sourcePath)
 		if err != nil {
+			return nil, err
+		}
+		if !currentExists {
 			continue
 		}
-		var addedLines []string
-		for _, line := range splitLinesNoTrailing(diff) {
-			if !strings.HasPrefix(line, "+") || strings.HasPrefix(line, "+++") {
-				continue
+
+		var specifiers []string
+		if strings.EqualFold(filepath.Ext(sourcePath), ".css") {
+			baselineSource, _, err := treeFileContent(gitRoot, env, baseTree, sourcePath)
+			if err != nil {
+				return nil, err
 			}
-			addedLines = append(addedLines, strings.TrimPrefix(line, "+"))
+			specifiers = addedCSSModules(baselineSource, currentSource)
+		} else {
+			diff, err := reconcileGitOutput(
+				gitRoot,
+				env,
+				"diff", "--unified=0", "--no-renames", baseTree, currentTree, "--", sourcePath,
+			)
+			if err != nil {
+				return nil, err
+			}
+			var addedLines []string
+			for _, line := range splitLinesNoTrailing(diff) {
+				if strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++") {
+					addedLines = append(addedLines, strings.TrimPrefix(line, "+"))
+				}
+			}
+			specifiers = importedModulesFromAddedLines(gitRoot, sourcePath, addedLines)
 		}
-		for _, specifier := range importedModulesFromAddedLines(gitRoot, sourcePath, addedLines) {
+		for _, specifier := range specifiers {
 			imports = append(imports, importedModule{sourcePath: sourcePath, specifier: specifier})
 		}
 	}
-	return imports
+	return imports, nil
 }
 
 func importedModulesFromAddedLines(gitRoot, sourcePath string, lines []string) []string {
@@ -202,6 +225,17 @@ func resolveJavaScriptImport(gitRoot, sourcePath, specifier string) packageResol
 	}
 }
 
+func resolveCSSImport(gitRoot, sourcePath, specifier string) packageResolution {
+	specifier = strings.TrimSpace(specifier)
+	if remoteImport.MatchString(specifier) || strings.HasPrefix(specifier, "//") {
+		return packageResolution{ignored: true}
+	}
+	if cssSourceRelativePathExists(gitRoot, sourcePath, specifier) {
+		return packageResolution{resolved: true}
+	}
+	return resolveJavaScriptImport(gitRoot, sourcePath, specifier)
+}
+
 func resolveGoImport(gitRoot, sourcePath, specifier string) packageResolution {
 	if isGoStandardLibrary(specifier) {
 		return packageResolution{ignored: true}
@@ -228,9 +262,9 @@ func resolveRustImport(gitRoot, sourcePath, specifier string) packageResolution 
 	return packageResolution{name: crate, resolved: resolved, manifestFound: manifestFound}
 }
 
-// resolveGenericImport keeps quoted imports in unregistered source types in the
-// shared pipeline. It deliberately fails closed: without ecosystem semantics,
-// text in an unrelated manifest cannot safely prove that an import is declared.
+// resolveGenericImport sends quoted imports from unregistered source types
+// through the shared pipeline. Without ecosystem rules, a nearby manifest is
+// recorded but cannot prove that the import is declared.
 func resolveGenericImport(gitRoot, sourcePath, specifier string) packageResolution {
 	pkg := normalizeImportedPackage(specifier)
 	if pkg == "" {
@@ -248,6 +282,88 @@ func quotedModulesFromAddedLines(_, _ string, lines []string) []string {
 		modules = append(modules, importedModulesFromLine(line)...)
 	}
 	return modules
+}
+
+func cssModulesFromAddedLines(_, _ string, lines []string) []string {
+	return cssModulesFromSource([]byte(strings.Join(lines, "\n")))
+}
+
+func addedCSSModules(baseline, current []byte) []string {
+	baselineCounts := map[string]int{}
+	for _, module := range cssModulesFromSource(baseline) {
+		baselineCounts[module]++
+	}
+	var added []string
+	for _, module := range cssModulesFromSource(current) {
+		if baselineCounts[module] > 0 {
+			baselineCounts[module]--
+			continue
+		}
+		added = append(added, module)
+	}
+	return added
+}
+
+func cssModulesFromSource(source []byte) []string {
+	activeSource := stripCSSComments(string(source))
+	var modules []string
+	for _, match := range cssImport.FindAllStringSubmatch(activeSource, -1) {
+		if len(match) < 3 {
+			continue
+		}
+		module := match[1]
+		if module == "" {
+			module = match[2]
+		}
+		modules = append(modules, module)
+	}
+	return modules
+}
+
+func stripCSSComments(source string) string {
+	var active strings.Builder
+	active.Grow(len(source))
+	inComment := false
+	for i := 0; i < len(source); {
+		switch {
+		case !inComment && i+1 < len(source) && source[i] == '/' && source[i+1] == '*':
+			inComment = true
+			active.WriteString("  ")
+			i += 2
+		case inComment && i+1 < len(source) && source[i] == '*' && source[i+1] == '/':
+			inComment = false
+			active.WriteString("  ")
+			i += 2
+		case inComment:
+			if source[i] == '\n' {
+				active.WriteByte('\n')
+			} else {
+				active.WriteByte(' ')
+			}
+			i++
+		default:
+			active.WriteByte(source[i])
+			i++
+		}
+	}
+	return active.String()
+}
+
+func cssSourceRelativePathExists(gitRoot, sourcePath, specifier string) bool {
+	localSpecifier := specifier
+	if index := strings.IndexAny(localSpecifier, "?#"); index >= 0 {
+		localSpecifier = localSpecifier[:index]
+	}
+	if localSpecifier == "" {
+		return false
+	}
+	candidate := filepath.Join(
+		gitRoot,
+		filepath.Dir(filepath.FromSlash(sourcePath)),
+		filepath.FromSlash(localSpecifier),
+	)
+	info, err := os.Stat(candidate)
+	return err == nil && !info.IsDir()
 }
 
 func goModulesFromAddedLinesForSource(gitRoot, sourcePath string, lines []string) []string {

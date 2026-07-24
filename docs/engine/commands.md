@@ -15,19 +15,21 @@ exhaustive current command and hook inventory; see
 | code | meaning                                                       |
 | ---- | ------------------------------------------------------------- |
 | `0`  | ok / gate passed                                              |
+| `1`  | command ran but could not complete its requested operation    |
 | `2`  | usage error (bad args, unknown command, unknown `--harness`)  |
-| `3`  | blocked: a gate pause or a version-skew refuse (`doctor`)    |
+| `3`  | blocked: a gate pause or a safety refuse (`doctor`)           |
 
-Exit `3` is always a **pause, not a crash**: a structured, actionable message
-naming exactly what to resolve, then retry. This keeps enforcement safe under
-AFK. A run pauses rather than hard-failing. Both a completeness gate
-(`readiness`/`seal`) and a `doctor` refuse (state schema newer than the binary
-supports) use it.
+Exit `3` means the engine paused or refused an unsafe action; it does not mean
+the process crashed. It prints a structured message that names exactly what to
+resolve before retrying. Both a completeness gate (`readiness` or `seal`) and a
+`doctor` refusal for newer state or unsafe root selection use this code. AFK
+treats it as a pause.
 
 ## Gates: `readiness` / `seal`
 
-Deterministic completeness gates. Enforcement is **phase-relative** and
-**gate-scoped**: a gate checks only the sections it needs, only when run.
+These deterministic completeness gates are **phase-relative** and
+**gate-scoped**. Each command checks only the sections required for that gate
+when it runs.
 
 - `devrites-engine readiness <slug>` asks whether the sections required to **leave the
   feature's current phase** are complete. A section that is not yet required (e.g.
@@ -46,18 +48,29 @@ $ echo $?
 3
 ```
 
-## `doctor`: version triangle
+## `doctor`: root facts and version triangle
 
-`devrites-engine doctor` reports the three versions that can drift out of alignment and
-one legible verdict:
+`devrites-engine doctor` is read-only. It reports the canonical action root,
+why that root was selected, Git's physical topology, and the three versions that
+can drift:
 
 ```
+project: /work/example
+root: /work/example/.devrites
+root-selection: git-ancestor
+git: top=/work/example dir=/work/example/.git common=/work/example/.git linked-worktree=false submodule=false
 binary: X.Y.Z
 pack: X.Y.Z
-state-schema: v1 (binary supports v1)
+state-schema: v2 (binary supports v2)
 verdict: ok: binary, pack, and state schema are compatible
+hazards: ok
 ```
 
+- **Parent `.devrites` beyond the current Git root, a physical path escape, or
+  an external `DEVRITES_WORKSPACE`** → a named hazard and `REFUSE` (exit `3`).
+  The report includes one pasteable `fix:` command.
+- **Stale `ACTIVE` or canonical/generated residue** → a named warning (exit
+  `0`) with its repair command.
 - **Binary older than the pack** → a `WARN` (exit `0`): an older binary still
   runs; update it when convenient.
 - **State schema a newer major than the binary supports** → a `REFUSE` (exit
@@ -66,8 +79,23 @@ verdict: ok: binary, pack, and state schema are compatible
 
 The pack version is discovered from `.claude/devrites.version` or the project
 `package.json`; when neither exists the pack is reported `unknown` and no skew is
-asserted. Doctor also warns when project extensions have artifacts but no optional
-`provenance.json`.
+asserted. Doctor also reports linked-worktree/submodule identity, merge/rebase
+state, host-artifact drift, and project extensions that have artifacts but no
+optional `provenance.json`.
+
+### Root safety at command dispatch
+
+For commands on the shared workspace router, the engine resolves the action
+root once before the command body runs. Read-only and diagnostic forms can still
+degrade cleanly outside a workspace. A form that writes workspace or Git state
+preserves every unsafe-root refusal and exits `3` before its command body runs.
+
+Strict forms include `footprint log`, `stuck log`, `recovery record|clear`,
+`clarify-return`, `reconcile`, mutating `resolve` forms, `close-out`,
+`decisions index`, `ledger sync`, `learnings add`, `timeline log|purge`,
+`health run|check|record`, `review-fingerprints --write`,
+`reviewer-stats record`, every `forge` verb, `extensions sync`, `context sync`,
+and `runbook run|resume`. `resolve next-qid` stays read-only.
 
 ## `snapshot`: workspace status JSON
 
@@ -84,9 +112,9 @@ The cache lives under `/tmp/compound-engineering/devrites/repo-profile` by defau
 
 ## `migrate`: legacy aliases and old layouts
 
-`devrites-engine migrate` preserves old workspaces while the canonical live location is
-`.devrites/work/<slug>/`. Older `.devrites/features/<slug>/` workspaces remain
-readable, and the migration path is:
+`devrites-engine migrate` keeps older `.devrites/features/<slug>/` workspaces
+readable while using `.devrites/work/<slug>/` as the canonical live location.
+Migration is:
 
 - **idempotent**: a second run is a no-op (`already up to date`);
 - **backed up**: the pre-migration `work/` and `ACTIVE` are snapshotted to a
@@ -101,8 +129,8 @@ can't be read.
 
 ## Hooks: `hook <name> --harness=claude|codex`
 
-One binary serves both Claude Code and Codex through thin per-harness adapters.
-Every hook is **fail-open and read-only unless it explicitly gates**.
+One binary serves Claude Code and Codex through thin per-harness adapters.
+Hooks are **fail-open and read-only unless they explicitly gate**.
 
 - `devrites-engine hook orient --harness=H` emits the SessionStart orientation for the
   active feature (named by `.devrites/ACTIVE`) as the harness's
@@ -112,28 +140,40 @@ Every hook is **fail-open and read-only unless it explicitly gates**.
   brownfield → `/rite-adopt`, …); the `.devrites/.first-run-shown` marker keeps
   it from repeating. Silent (exit `0`, no output) outside a workspace or once
   the marker exists.
-- `devrites-engine hook auq` captures an `AskUserQuestion` exchange after tool use.
-  It appends each question + chosen answer to `.devrites/timeline.jsonl`
-  and the feature's `events.jsonl`, so HITL decisions are recorded at the
-  substrate instead of trusting the model's bookkeeping. It only captures data and never
-  tunes, blocks, or replies; silent outside an active workspace. Claude-only by
-  design. Codex has an equivalent tool (`request_user_input`) but emits no hook
-  event for it. Codex PostToolUse matches only Bash/`apply_patch`/MCP calls, and
-  the user-input-requested event was declined upstream (openai/codex#12524).
+- `devrites-engine hook auq` observes a completed `AskUserQuestion` call. It
+  appends one metadata-only `human-wait-resumed` v1 row per question to the root
+  and feature event logs. Canonical workflow answers stay in `questions.md`;
+  telemetry stores neither the prompt nor the answer. It never tunes, blocks,
+  or replies and stays silent outside an active workspace. This is Claude-only
+  because the Codex host exposes no equivalent post-user-input hook.
+- `devrites-engine hook git-guard --harness=H` silently passes ordinary Git,
+  denies ambiguous high-impact shell forms with a direct-literal remediation,
+  and gates an unambiguous destructive operation on one exact digest. With no
+  grant it opens one idempotent escalating question. The exact answer
+  `Authorize once` is valid for 15 minutes and is atomically consumed before
+  the tool runs, so a failed tool call still spends it. Questions, the private
+  consumption ledger, events, and diagnostics never retain the raw command,
+  normalized tokens, paths, or refs.
 - `devrites-engine hook stop-gate --harness=H` refuses to end a turn at a provably
   inconsistent **rest point**, such as a feature in phase `seal` or `ship` with
   empty `evidence.md` or `proof.md`. It does not check whole-feature completeness,
-  so normal in-progress work is never blocked. It observes by default: a would-be block is
-  appended to the feature's `.stop-gate.log` (mirroring `devrites-engine hook stop-gate`)
-rather than gating; set `DEVRITES_STOP_GATE=enforce` to block.
-  Loop-guarded by the harness's `stop_hook_active` so it can never wedge a
-  session.
+  so normal in-progress work is never blocked. By default, it records a
+  would-be block in the feature's `.stop-gate.log` (mirroring
+  `devrites-engine hook stop-gate`) and allows the stop. Set
+  `DEVRITES_STOP_GATE=enforce` to block. The harness's `stop_hook_active` loop
+  guard prevents the hook from wedging a session.
+
+When a guard makes a real decision, it appends a metadata-only
+`devrites-event/v1` row. The row says which stable rule fired, whether the guard
+was enforced, observed, unavailable, or bypassed, and which host delivered it.
+It never copies the command, tool payload, fetched content, denial prose, or an
+absolute path. Event-write failure stays fail-open and cannot change the hook's
+decision.
 
 ### Fail-open guard
 
-Hooks are wired behind an inline POSIX guard so a **missing binary is a no-op**
-that never wedges a session (a teammate without `devrites-engine` installed is never
-blocked):
+An inline POSIX guard makes a missing binary a no-op, so a teammate without
+`devrites-engine` installed is not blocked:
 
 ```sh
 command -v devrites-engine >/dev/null 2>&1 && devrites-engine hook orient --harness=claude || exit 0
@@ -160,9 +200,10 @@ Prohibitions tables as a blocking spec-gate check.
 
 ## `analyze`: cross-artifact coverage & consistency
 
-`devrites-engine analyze [slug]` cross-checks a feature's `spec.md` against its `tasks.md` before
-any code is written, so a coverage gap surfaces as a one-line plan edit instead of a reslice
-mid-build. It emits a markdown report with four passes:
+Before code is written, `devrites-engine analyze [slug]` compares a feature's
+`spec.md` with its `tasks.md`. This catches coverage gaps while they still need
+only a one-line plan edit instead of a mid-build reslice. The Markdown report
+has four passes:
 
 - **Coverage**: a spec `AC-###` that no slice `Satisfies:` (**CRITICAL**; legacy `[ACn]` remains supported).
 - **Consistency**: a slice that `Satisfies:` an AC the spec never defines (**CRITICAL**).
@@ -178,31 +219,77 @@ duplicated or conflicting requirements on top of this deterministic floor.
 
 ## `review-integrity`: the silent-reviewer gate
 
-`devrites-engine review-integrity [slug]` guards the failure opposite to noise: a reviewer that
-returns "looks good, nothing found". It parses `review.md`'s `## Spec` / `## Code review` axis
-sections and flags any that carry neither a bold-labeled finding nor a `No-findings:` justification.
-A zero-count summary line does **not** count as a finding. An all-zero tally is the rubber-stamp
-this catches. Exit `0` every axis accounted for (or no/freeform `review.md`) · `1` an axis is silent
-and unjustified. `/rite-review` runs it after writing `review.md`; `/rite-seal` treats `rc=1` as an
-Important on the review's completeness. The honesty contract mirrors `doubt-coverage` and the
-footprint roster: it checks the *account* is present, not its quality.
+`devrites-engine review-integrity [slug]` catches reviews that return only
+"looks good, nothing found." It parses the `## Spec` and `## Code review`
+sections of `review.md` and flags any section with neither a bold severity label
+nor a `No-findings:` justification. A zero-count summary does not count as a
+finding, and an all-zero tally is treated as a rubber stamp. Exit `0` means
+every axis is accounted for, or that `review.md` is absent or freeform. Exit
+`1` means an axis is silent and unjustified.
+`/rite-review` runs this check after writing `review.md`; `/rite-seal` treats
+`rc=1` as an Important finding about review completeness. Like
+`doubt-coverage` and the footprint roster, this command checks that the account
+exists, not whether its judgment is correct.
 
-## `timeline`: append-only session trace
+## `timeline`: local, privacy-bounded workflow trace
 
-`devrites-engine timeline log|list` records compact session events in `.devrites/timeline.jsonl`.
-It is for reconstructing what happened across long agent runs: which rite or skill acted, what
-feature it touched, what decision it made, and whether a state transition happened. It does not
-gate anything; it is durable context for audits, handoffs, and later learning.
+`timeline log` accepts only validated `devrites-event/v1` facts. Legacy
+free-text `--skill`, `--decision`, and `--note` writes are refused; `list`
+continues to print old rows unchanged for compatibility. Canonical traces use a
+stable `DEVRITES_RUN_ID` across related calls and the small event vocabulary
+`run-started`, phase/gate events, `run-interrupted`, `run-resumed`, and
+`run-finished`:
 
 ```bash
-devrites-engine timeline log completed --skill rite-review --slug auth-tokens --outcome ok --decision "ship"
-devrites-engine timeline log state-change --slug auth-tokens --from build --to review --note "tests green"
-devrites-engine timeline list --limit 20
+devrites-engine timeline log run-started \
+  --slug auth-tokens \
+  --execution-mode named \
+  --guard-strength n/a \
+  --reason-id DRV-ROOT-SELECTED \
+  --host codex
+
+devrites-engine timeline log run-finished \
+  --slug auth-tokens \
+  --outcome passed \
+  --execution-mode named \
+  --guard-strength n/a \
+  --reason-id DRV-GATE-SEAL-PASSED \
+  --host codex \
+  --evidence .devrites/work/auth-tokens/seal.md
 ```
 
-Records are JSONL, append-only, and safe for concurrent short-lived engine calls. Install and
-update DevRites through the npm flow (`npx devrites ...`); this command is part of the installed
-engine, not a Claude/Codex plugin distribution path.
+`--execution-mode`, `--guard-strength`, and `--reason-id` are required. Rows may
+also carry phase IDs, rule IDs, project-relative evidence paths, and a host ID.
+They never retain prompts, question/answer text, source or diff bodies, model
+prose, absolute paths, user/external identifiers, auth/config/secrets, or token
+estimates. The current v1 contract exposes host but not model, token, or cost
+fields, so the engine does not infer them.
+
+`timeline report [--run <opaque-id>] [--json]` reads at most the last 4 MiB and
+4,096 valid v1 rows. It reports observed run and phase duration, retry and
+human-wait counts, interruption/resume linkage, active execution/guard mode,
+the last failed gate reason, stale-evidence/degradation counts, and final
+outcome. Missing, corrupt, oversized, legacy, or truncated input degrades the
+report only. Legacy and corrupt rows are counted as ignored and never
+interpreted as v1. The statusline and `progress` reuse these display facts but
+never treat them as lifecycle authority.
+
+Each telemetry log stops accepting new rows at 16 MiB. Hitting that bound
+degrades telemetry only; it cannot weaken or strengthen a workflow decision.
+
+`timeline purge (--before <RFC3339> | --run <opaque-id>)...` removes only valid
+matching v1 rows from `.devrites/timeline.jsonl` and the live feature
+`events.jsonl` files. When both selectors are present they form an intersection.
+It never touches state, questions, decisions, evidence, recovery, capability,
+or allowlist files. Purge is bounded to 16 MiB per file and refuses symlinks,
+oversized rows, concurrent changes, and unsafe roots without mutation.
+
+Telemetry is local instrumentation only; DevRites sends no analytics or remote
+traces. Review the retention needs, then use exact purge selectors. Reports do
+not interpret legacy rows, so manually delete legacy log files if their old
+free-text content must be removed. Deleting only
+`.devrites/timeline.jsonl` and live feature `events.jsonl` files is safe for
+workflow correctness; the engine recreates them as needed.
 
 ## `health`: code-health dashboard and history
 
@@ -224,8 +311,9 @@ devrites-engine health record 8.5 "tests green; one follow-up" --note "review-fi
 devrites-engine health list --limit 10
 ```
 
-Scores must be `0..10`. The label should name the evidence, not a vibe. Skill health stays static
-until DevRites records per-skill run outcomes; use `scripts/skill-pruning-audit.mjs` for pruning
+Scores must be `0..10`. The label should name the evidence rather than give a
+subjective impression. Skill health stays static until DevRites records
+per-skill run outcomes; use `scripts/skill-pruning-audit.mjs` for pruning
 signals instead of inventing telemetry.
 
 ## `review-fingerprints`: stable IDs for findings
@@ -239,9 +327,10 @@ bold severity labels (`Critical`, `Important`, `Suggestion`, `Nit`, `FYI`) and e
 devrites-engine review-fingerprints --write auth-tokens
 ```
 
-The IDs make recurring findings, dismissals, and later learning easier to correlate without
-copying full review text into every downstream surface. `review-integrity` remains the gate; this
-command only records stable references.
+The IDs let callers correlate recurring findings, dismissals, and later
+learning without copying full review text into every downstream surface.
+`review-integrity` remains the gate; this command records only stable
+references.
 
 ## `reviewer-stats`: dispatch outcomes that gate the fan-out
 
@@ -263,8 +352,9 @@ devrites-engine reviewer-stats record devrites-performance-reviewer 0 auth-token
 devrites-engine reviewer-stats report
 ```
 
-Thresholds live in the engine, not the prompt: the caller reads the verdict, it never re-derives
-or overrides the streak math (a user-requested full panel dispatches everything regardless).
+Thresholds live in the engine. The caller reads the verdict without
+recalculating or overriding the streak. A user-requested full panel still
+dispatches every reviewer.
 
 ## `reviewers list`: bounded reviewer aliases
 
@@ -281,6 +371,84 @@ surface (`cli` must be `claude` or `codex`; `model` and `agent` are opaque strin
   }
 }
 ```
+
+## `forge`: isolated candidate worktrees
+
+Forge compares two or three implementation strategies without letting a worker
+choose its own worktree, branch, or merge target. The engine owns those paths in
+one `devrites-forge/v1` manifest:
+
+```bash
+devrites-engine forge plan SLICE-004 feature-slug \
+  --strategy A='small adapter' \
+  --strategy B='native integration' \
+  --acceptance-hash <full-sha256> \
+  --test-plan-hash <full-sha256> \
+  --worker-binding manifest-env-v1
+```
+
+`plan` requires a clean primary checkout, 2 or 3 contiguous candidates, and
+complete hashes for the acceptance and test-plan scorecards. It writes the
+manifest before the first Git side effect, then creates candidate worktrees
+under a sibling directory named `.<repo>.devrites-forge/<run-id>/`. The
+manifest stays under
+`.devrites/work/<slug>/.forge/<run-id>/manifest.json`.
+
+Parallel Forge needs an exact host binding. Omitting
+`--worker-binding manifest-env-v1` is a supported fallback, not a partial
+parallel run. The command exits `0` with:
+
+```json
+{"status":"degraded","mode":"serial","reason":"supported worker binding was not declared"}
+```
+
+It creates no manifest, branch, or worktree in that case. An unsafe repository
+topology, dirty primary checkout, in-progress Git operation, unavailable
+process-liveness proof, or path collision also returns a bounded serial
+degradation when it can do so safely. Invalid arguments or a broken manifest
+fail instead of silently choosing a target.
+
+Use `forge process-token <pid>` to obtain the process-start token for a real
+worker. A bound candidate wright receives all five variables below and runs
+from the candidate worktree:
+
+```text
+DEVRITES_FORGE_RUN_ID
+DEVRITES_FORGE_CANDIDATE
+DEVRITES_FORGE_WORKER_ID
+DEVRITES_FORGE_WORKER_PID
+DEVRITES_FORGE_PROCESS_START
+```
+
+The binding is all-or-none. `wright-scope` checks the manifest, physical
+working directory, repository common directory, candidate branch, worker ID,
+live PID/start token, and leaf-agent identity before it permits a write. A
+partial, stale, sibling, foreign, or tampered binding is denied.
+
+The remaining commands advance only manifest-owned state:
+
+```bash
+devrites-engine forge record <run-id> A running \
+  --worker-id <id> --pid <pid> --process-start <token>
+devrites-engine forge record <run-id> A finished --worker-id <id>
+devrites-engine forge extract <run-id> A
+devrites-engine forge record <run-id> winner A --worker-id <judge-id>
+devrites-engine forge merge <run-id> A
+devrites-engine forge record <run-id> verification verified \
+  --worker-id <verifier-id>
+devrites-engine forge cleanup <run-id>
+devrites-engine forge reap [feature-slug]
+```
+
+Extract every candidate before recording and merging the judge's winner.
+Extraction snapshots the full candidate tree, pins its commit, tree, and binary
+delta hash, and refuses unrepresentable or still-live state. Merge requires the
+recorded winner, a clean unchanged primary baseline, every candidate extracted,
+and an exact fast-forward result. Cleanup runs only after the winner landed and
+independent verification was recorded as `verified`. It preserves anything
+dirty, live, foreign, ambiguous, or otherwise unsafe. `reap` follows the same
+manifest-only rule for interrupted runs and never deletes a branch by name
+alone.
 
 ## `extensions` / `overrides`: project extensibility
 
@@ -301,10 +469,12 @@ full contract is in [extensions.md](../extensions.md).
 reads `.devrites/context.yaml` (`context_file:` or `context_files:`), then falls back to existing
 `AGENTS.md` / `CLAUDE.md`, then `AGENTS.md`. Paths must be project-relative.
 
-`devrites-engine context show [--json]` is read-only. It reports the project root, `.devrites` root,
-active workspace, the source of that selection (`ACTIVE`, `DEVRITES_WORKSPACE`, `DEVRITES_ROOT`, or
-`none`), and the Claude/Codex menu forms. `--json` emits one direct JSON document for wrappers that
-need to know where a command will act.
+`devrites-engine context show [--json]` is read-only. It uses the same physical
+root facts as `doctor`: canonical and lexical roots, selection reason, Git
+top-level/dir/common-dir/superproject facts, active workspace source, and stable
+hazards with pasteable remediations. `--json` emits one direct document for
+wrappers that need to know where a command will act. `context sync` refuses an
+unsafe root instead of writing through a fallback.
 
 ## `runbook`: tiny local automation
 
@@ -321,8 +491,8 @@ steps:
 
 `engine` runs a local `devrites-engine` subcommand, `rite` prints the Claude/Codex dispatch form,
 `shell` runs in the project root, and `gate` writes `.devrites/runs/<id>/state.json` then exits `3`.
-Resume with `devrites-engine runbook resume <id>`. This is for repeatable local runbooks, not a
-replacement lifecycle.
+Resume with `devrites-engine runbook resume <id>`. This command handles
+repeatable local runbooks; it does not replace the lifecycle.
 
 ## Concurrency
 

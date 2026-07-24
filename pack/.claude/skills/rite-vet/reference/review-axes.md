@@ -1,57 +1,53 @@
-# The vet review: scope challenge, four axes, required outputs
+# Vet review: scope, four axes, and outputs
 
-The body of `/rite-vet`. Run §0 first as a blocking gate, then the four axes one at a time,
-then the required outputs. Apply the senior-engineer lenses in [`eng-lenses.md`](eng-lenses.md)
-throughout. They're how you *see* the findings, not a separate checklist. Every finding is
-calibrated and gated (see "Confidence + verification gate" below) before it reaches the human.
+Run §0 first as a blocking gate, then review the four axes in order and produce the
+required outputs. Apply the engineering lenses in [`eng-lenses.md`](eng-lenses.md)
+throughout rather than as a separate checklist. Calibrate every finding through the
+confidence and verification gate before presenting it.
 
 ---
 
-## §0. Scope Challenge (blocking gate: runs before any axis)
+## §0. Scope challenge (blocking gate)
 
-Before reviewing *how* the plan builds, challenge *whether it should build this much*. This is
-implementation-scope discipline (the spec's ambition is settled, that was `/rite-temper`).
+Before reviewing implementation details, check whether the plan includes more work than
+the settled spec requires.
 
 1. **What already exists?** For each sub-problem in the plan, find the existing code/flow that
    already solves it (use a code-intelligence index if available: see `../../devrites-lib/reference/standards/tooling.md`).
    Can the plan **capture outputs from an existing
    flow** instead of building a parallel one? Reuse → extend → build new, in that order
    (`coding-style.md`). List every reuse opportunity the plan misses.
-2. **Minimum diff.** What's the smallest set of changes that meets the spec's *acceptance
-   criteria*? Flag any planned work that can be deferred without blocking acceptance. Be ruthless
-   about implementation scope creep, but never cut an acceptance criterion (that's a Drift Guard
-   matter, not a trim).
+2. **Minimum diff.** Find the smallest set of changes that meets the spec's acceptance
+   criteria. Flag work that can be deferred without blocking acceptance. Do not cut an
+   acceptance criterion; that requires the Drift Guard.
 3. **Complexity smell.** If `plan.md` touches **>8 files** or adds **>2 new services / modules /
    classes**, treat it as a smell. Check the plan's complexity gate justifies it. If it doesn't
-   → **STOP**: name what's overbuilt, propose a smaller version that meets acceptance, and ask
-   via `AskUserQuestion` whether to reduce or proceed. Do not start the axes until answered.
+   → harden to the smallest acceptance-preserving plan. Ask only if reduction changes
+   acceptance or explicit architecture policy; never start the axes unresolved.
 4. **Built-in check.** For each new pattern / infra component / concurrency approach the plan
    introduces, verify a framework/runtime built-in doesn't already do it, and that the choice is
    current best practice with no known footgun: dispatch `devrites-source-driven` to confirm at
    the source and record the citation. A custom roll where a built-in exists is a scope-reduction
    finding.
-5. **Completeness check.** Is the plan doing the complete version or a shortcut? With AI-assisted
-   coding the cost of completeness (full edge-case handling, complete error paths, real test
-   coverage) is a fraction of what it was: a shortcut that saves human-hours but only saves
-   minutes here is a false economy. Prefer the complete option; flag shortcuts that exist only to
-   save effort that AI has already made cheap.
+5. **Completeness check.** Identify shortcuts in edge-case handling, error paths, and
+   test coverage. Prefer the complete option when AI-assisted implementation makes the
+   additional work small. Flag shortcuts that save little time but leave known gaps.
 6. **Distribution check.** If the plan introduces a new artifact (CLI binary, package, container,
    deployable), does it include how it gets built / published / installed? If distribution is
    deferred, say so explicitly in "NOT in scope": don't let it silently drop.
 
-> **STOP discipline.** If the complexity smell trips, the `AskUserQuestion` is a tool call, not
-> prose. Naming the 80%-solution in chat and continuing is the failure this gate exists to prevent.
+> **STOP discipline.** Fold technical reduction into the plan; ask and stop only for a
+> human-owned choice.
 
 If the smell does not trip, present the §0 findings and proceed to Axis 1.
 
 ---
 
-## The four axes (one at a time, ≤8 findings each)
+## Four axes (one at a time, at most 8 findings each)
 
-For each axis: evaluate, then **walk each finding WITH the human** via `AskUserQuestion` (one
-issue per call: see "How to ask" below). HITL pauses on each material finding; AFK auto-applies
-within the gate ceiling (`depth.md`). If an axis genuinely has no issue, say "No issues,
-moving on" and continue: don't manufacture findings.
+For each axis, fold verified technical findings into the plan, then walk each human-owned
+decision via one coherent `AskUserQuestion` packet. Supporting findings may combine only
+with one owner/trade-off. HITL pauses there; AFK follows `depth.md`. Never invent findings.
 
 ### 1. Architecture
 - Component boundaries, coupling, data-flow patterns, single points of failure. Architecture records invariants, not scaffolding: each medium+ decision should state `Binds:` and `Prevents:` so the builder knows what divergence it prevents.
@@ -72,7 +68,7 @@ moving on" and continue: don't manufacture findings.
   change will make stale.
 
 ### 3. Test-coverage design
-The differentiator: design the tests *before* the code, so the build writes them alongside.
+Design tests before code so the build writes them alongside the implementation.
 - **Framework detection:** find the project's existing test runner + conventions; match them
   (never introduce a new runner to prove one change: `testing.md`).
 - **Map acceptance → tests.** Every spec acceptance criterion must map to ≥1 planned, surface-anchored test (the API response/UI state/CLI output the criterion names, not an internal proxy).
@@ -117,22 +113,21 @@ acceptance criteria covered ✓" and continue.
 
 ---
 
-## Confidence + verification gate (applies to every finding, all axes)
+## Confidence and verification gate
 Tag each finding `[severity] (confidence: N/10) <plan/task/spec ref> — finding`:
 - **9-10** verified against a quoted line · **7-8** strong pattern match → report normally.
 - **5-6** moderate → report with "verify this is real".
 - **≤4** speculative → **suppress from the walk-through**, appendix only.
 
-**The gate:** before raising a finding, quote the line(s) that motivate it. Can't quote it →
-force confidence ≤4 and suppress. This kills the "the plan doesn't handle X" finding when the
-plan *does* and you skimmed. Don't fabricate 7+ to dodge it. (Same discipline the reviewer agent
-runs: `devrites-plan-reviewer`.)
+Before raising a finding, quote the lines that support it. If no line supports it, set
+confidence to 4 or lower and suppress it. Do not inflate confidence to avoid suppression.
+`devrites-plan-reviewer` follows the same rule.
 
 ---
 
-## How to ask (the interactive walk)
+## Present human-owned decisions
 Use `AskUserQuestion` per the pack's standard. Plan-review specifics:
-- **One finding = one call.** Never batch findings into one question.
+- **One decision = one call.** Never ask about agent work or batch unrelated choices.
 - Concrete: name the plan/task section + the quoted line.
 - 2-3 options, including "do nothing / proceed as-is" where reasonable.
 - Per option, one line: **effort** (human ~X / with the build agent ~Y), **risk**, **maintenance**.
@@ -144,8 +139,10 @@ Use `AskUserQuestion` per the pack's standard. Plan-review specifics:
   happy-path), add `Completeness: N/10` per option. If they differ in *kind* (two different
   architectures), skip the score and note "options differ in kind, not coverage". Never fabricate
   a score on a kind question.
-- Every material finding ends as a **recorded decision**: a resolved `questions.md` qid for HITL
-  or a `decisions.md` ADR for AFK. The walk must leave an auditable trail, not just chat.
+- Every material call ends as a **recorded decision**: behavior-preserving technical hardening
+  goes to `decisions.md`; a human-owned HITL choice gets a resolved `questions.md` qid; AFK
+  records the allowed recommendation in `decisions.md`. The review must leave an auditable
+  trail without turning agent work into questions.
 
 ---
 
@@ -164,4 +161,9 @@ Use `AskUserQuestion` per the pack's standard. Plan-review specifics:
    parallel lanes (shared module → same lane/sequential; independent → separate lanes), execution
    order, and conflict flags where two lanes touch the same module dir. This feeds `/rite-build`'s
    isolation strategy and the autocomplete loop. (Shape in [`artifacts.md`](artifacts.md).)
-5. **Completion summary:** the one-glance recap (shape in [`artifacts.md`](artifacts.md)).
+5. **Build-entry preflight:** commands/cwds, tools, package state, parser/browser smoke,
+   prerequisites, and provenance ([`artifacts.md`](artifacts.md)).
+6. **Implementation readiness:** goal-backward coverage, wiring, dependency simulation,
+   alignment, operations, and rollback verdict.
+7. **Completion summary:** the compact recap defined in
+   [`artifacts.md`](artifacts.md).

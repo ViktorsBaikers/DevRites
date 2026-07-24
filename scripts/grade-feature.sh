@@ -1,27 +1,25 @@
 #!/usr/bin/env bash
-# Deterministic OUTCOME grader for a finished DevRites feature workspace.
+# Deterministic outcome grader for a completed DevRites feature workspace.
 #
-# The trigger evals (evals/*.json) test whether the right SKILL *fires*. This
-# grades whether a finished run reached a *shippable* state: the
-# product claim DevRites sells ("won't claim done without proof"). It reads only
-# committed Markdown artifacts (no API key, no Claude Code harness), so it runs
-# in CI against a golden fixture and is the kind of deterministic grader
-# Anthropic's eval guidance recommends for coding agents.
+# Trigger evals in evals/*.json check skill selection. This script checks
+# whether a completed run is shippable and has proof. It reads only committed
+# Markdown artifacts, so CI can grade a golden fixture without an API key or
+# model harness.
 #
-# Live evidence-freshness (mtime: does proof post-date code?) is NOT graded here
-#: git fixtures don't preserve mtimes; that gate is enforced on a live
-# workspace by the `devrites-engine evidence-fresh` engine gate.
+# Git fixtures do not preserve the mtimes needed to compare proof with code.
+# The `devrites-engine evidence-fresh` gate performs that check in a live
+# workspace.
 #
-# Usage: grade-feature.sh <workspace-dir>
+# Usage: grade-feature.sh [--json] <workspace-dir>
 #   e.g. evals/golden/shippable-feature | .devrites/work/<slug> | .devrites/archive/<slug>
 #
-# Invariants (from rite-seal/reference/{seal-template,go-no-go,final-evidence}.md):
+# Checks from rite-seal/reference/{seal-template,go-no-go,final-evidence}.md:
 #   1. seal.md present with "Verdict: GO" (not NO-GO)
 #   2. seal.md "## Acceptance Criteria" has no unchecked "- [ ]" item
 #   3. seal.md "## Blockers" is empty / "none"
 #   4. evidence.md present and non-empty
 #   5. review.md present
-#   6. questions.md has no entry with gate: validating + status: open (NO-GO by definition)
+#   6. questions.md has no open question (later lifecycle phases block them)
 #   7. state.md Phase in {seal, ship, done}; Status not awaiting_human / blocked
 #
 # Exit codes: 0 shippable; 1 one or more invariants failed; 2 bad usage.
@@ -29,24 +27,41 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+json=0
+if [ "${1:-}" = "--json" ]; then
+  json=1
+  shift
+fi
 ws="${1:-}"
-if [ -z "$ws" ] || [ ! -d "$ws" ]; then
-  printf 'usage: grade-feature.sh <workspace-dir>\n' >&2
+if [ "$#" -ne 1 ] || [ ! -d "$ws" ]; then
+  printf 'usage: grade-feature.sh [--json] <workspace-dir>\n' >&2
   exit 2
 fi
 
 seal="$ws/seal.md"; ev="$ws/evidence.md"; rev="$ws/review.md"
 q="$ws/questions.md"; st="$ws/state.md"
 problems=()
+rules=()
+unchecked=0
+acceptance_ready=0
 
-# 1 / 2 / 3: seal verdict, acceptance, blockers
+add_problem() {
+  rules+=("$1")
+  problems+=("$2")
+}
+
+# Checks 1 through 3: seal verdict, acceptance, and blockers.
 if [ ! -f "$seal" ]; then
-  problems+=("seal.md missing: feature never sealed")
+  add_problem "final.seal.missing" "seal.md missing: feature never sealed"
 else
   grep -qiE '^[[:space:]]*Verdict:[[:space:]]*GO[[:space:]]*$' "$seal" \
-    || problems+=("seal.md Verdict is not GO")
+    || add_problem "final.verdict.not-go" "seal.md Verdict is not GO"
   unchecked=$(awk '/^## /{insec=($0 ~ /^## Acceptance Criteria/)} insec && /^- \[ \]/{c++} END{print c+0}' "$seal")
-  [ "${unchecked:-0}" -gt 0 ] && problems+=("seal.md has ${unchecked} unchecked acceptance criterion(s)")
+  if [ "${unchecked:-0}" -gt 0 ]; then
+    add_problem "final.acceptance.unchecked" "seal.md has ${unchecked} unchecked acceptance criterion(s)"
+  else
+    acceptance_ready=1
+  fi
   if awk '
       /^## /{ insec=($0 ~ /^## Blockers/); next }
       insec { l=$0; gsub(/^[[:space:]]+|[[:space:]]+$/,"",l)
@@ -54,40 +69,75 @@ else
               ll=tolower(l); if (ll ~ /^-?[[:space:]]*(none|n\/a)$/) next
               nz=1 }
       END { exit(nz?0:1) }' "$seal"; then
-    problems+=("seal.md lists unresolved blockers")
+    add_problem "final.blockers.unresolved" "seal.md lists unresolved blockers"
   fi
 fi
 
-# 4: evidence
-{ [ -f "$ev" ] && [ -s "$ev" ]; } || problems+=("evidence.md missing or empty: acceptance unproven")
+# Check 4: evidence.
+{ [ -f "$ev" ] && [ -s "$ev" ]; } \
+  || add_problem "final.evidence.missing-or-empty" "evidence.md missing or empty: acceptance unproven"
 
-# 5: review
-[ -f "$rev" ] || problems+=("review.md missing: feature not reviewed")
+# Check 5: review.
+[ -f "$rev" ] || add_problem "final.review.missing" "review.md missing: feature not reviewed"
 
-# 6: open validating gate (merge-blocking by definition)
+# Check 6: open questions block sealing.
 if [ -f "$q" ]; then
-  if awk '
-      /^## q-/{ if(inq && s=="open" && g=="validating") bad=1; inq=1; s=""; g=""; next }
-      inq && /^status:/{ v=$0; sub(/^status:[[:space:]]*/,"",v); s=v }
-      inq && /^gate:/  { v=$0; sub(/^gate:[[:space:]]*/,"",v);   g=v }
-      END{ if(inq && s=="open" && g=="validating") bad=1; exit(bad?0:1) }' "$q"; then
-    problems+=("open 'gate: validating' question: merge-blocking by definition (NO-GO)")
+  if python3 - "$q" <<'PY'
+from pathlib import Path
+import sys
+
+lines = Path(sys.argv[1]).read_text().splitlines()
+in_question = False
+status = ""
+for line in lines:
+    stripped = line.strip()
+    if stripped.startswith("## "):
+        if in_question and status.lower() == "open":
+            raise SystemExit(0)
+        in_question = stripped[3:].lower().startswith("q-")
+        status = ""
+    elif in_question and stripped.lower().startswith("status:"):
+        status = stripped.split(":", 1)[1].strip()
+if in_question and status.lower() == "open":
+    raise SystemExit(0)
+
+status_index = None
+for line in lines:
+    stripped = line.strip()
+    if not (stripped.startswith("|") and stripped.endswith("|")):
+        status_index = None
+        continue
+    cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+    lowered = [cell.lower() for cell in cells]
+    if status_index is None:
+        status_index = lowered.index("status") if "status" in lowered else None
+        continue
+    if status_index < len(cells) and cells[status_index].lower() == "open":
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+  then
+    add_problem "final.questions.open" "questions.md contains an open question"
   fi
 fi
 
-# 7: state phase / status
+# Check 7: state phase and status.
 if [ -f "$st" ]; then
   ph="$(python3 "$ROOT/scripts/workflow_schema.py" field "$st" phase 2>/dev/null || true)"
   stt="$(python3 "$ROOT/scripts/workflow_schema.py" field "$st" status 2>/dev/null || true)"
-  if ! python3 "$ROOT/scripts/workflow_schema.py" phase-property "$ph" shippable; then
-    problems+=("state.md Phase='${ph}' (expected a shippable phase)")
+  if ! python3 "$ROOT/scripts/workflow_schema.py" phase-property "$ph" shippable >/dev/null; then
+    add_problem "final.state.phase" "state.md Phase='${ph}' (expected a shippable phase)"
   fi
-  case "$stt" in awaiting_human|blocked) problems+=("state.md Status='${stt}' (not shippable)") ;; esac
+  case "$stt" in
+    awaiting_human|blocked)
+      add_problem "final.state.status" "state.md Status='${stt}' (not shippable)"
+      ;;
+  esac
 else
-  problems+=("state.md missing")
+  add_problem "final.state.missing" "state.md missing"
 fi
 
-# 8: executable acceptance criteria: every spec [ACn] proven + checked in seal
+# Check 8: every spec [ACn] is proven and checked in the seal.
 run_acceptance_check() {
   if [ -n "${DEVRITES_CLI:-}" ]; then
     "$DEVRITES_CLI" check-acceptance "$ws"
@@ -109,13 +159,44 @@ run_acceptance_check() {
   return 127
 }
 
-if ! acout=$(run_acceptance_check 2>&1); then
-  problems+=("acceptance: $(printf '%s' "$acout" | tail -1 | sed 's/^check-acceptance: //')")
+if [ "$acceptance_ready" -eq 1 ] && ! acout=$(run_acceptance_check 2>&1); then
+  add_problem "final.acceptance.ids" \
+    "acceptance: $(printf '%s' "$acout" | tail -1 | sed 's/^check-acceptance: //')"
 fi
 
 slug="$(basename "$ws")"
+if [ "$json" -eq 1 ]; then
+  status="GO"
+  [ "${#problems[@]}" -gt 0 ] && status="NO-GO"
+  pairs=()
+  for ((i = 0; i < ${#problems[@]}; i++)); do
+    pairs+=("${rules[$i]}" "${problems[$i]}")
+  done
+  python3 - "$slug" "$status" "${pairs[@]}" <<'PY'
+import json
+import sys
+
+slug, status, *pairs = sys.argv[1:]
+items = [
+    {"rule_id": pairs[i], "message": pairs[i + 1]}
+    for i in range(0, len(pairs), 2)
+]
+print(json.dumps({
+    "schema": "devrites-outcome-grade/v1",
+    "workspace": slug,
+    "status": status,
+    "rule_ids": [item["rule_id"] for item in items],
+    "problems": items,
+}, separators=(",", ":")))
+PY
+  if [ "${#problems[@]}" -eq 0 ]; then
+    exit 0
+  fi
+  exit 1
+fi
+
 if [ "${#problems[@]}" -eq 0 ]; then
-  printf 'GO    %s: shippable: sealed GO, acceptance proven, no blockers, no open validating gate.\n' "$slug"
+  printf 'GO    %s: shippable: sealed GO, acceptance proven, no blockers, no open question.\n' "$slug"
   exit 0
 fi
 printf 'NO-GO %s: %d blocker(s):\n' "$slug" "${#problems[@]}"

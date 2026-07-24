@@ -1,0 +1,275 @@
+{
+  "schema": "devrites-agent-contract-matrix/v1",
+  "packet_schema": "agent-packet/v1",
+  "result_schema": "agent-result/v1",
+  "hosts": [
+    {
+      "id": "claude",
+      "launcher": "scripts/live-hosts/claude.sh",
+      "fake_version": "claude-contract-fake/1"
+    },
+    {
+      "id": "codex",
+      "launcher": "scripts/live-hosts/codex.sh",
+      "fake_version": "codex-contract-fake/1"
+    }
+  ],
+  "budget": {
+    "timeout_seconds": 300,
+    "estimated_max_cost_usd_per_cell": "0.50",
+    "max_files": 4,
+    "max_loaded_lines": 200,
+    "max_result_lines": 80
+  },
+  "scenarios": [
+    {
+      "id": "named-reviewer",
+      "role": "devrites-code-reviewer",
+      "role_class": "reviewer",
+      "simulate": "accepted",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-RESULT-ACCEPTED",
+        "status": "complete",
+        "outcome": "passed",
+        "terminal_sentinel": "complete",
+        "host_exit": 0,
+        "required_signals": []
+      }
+    },
+    {
+      "id": "named-wright",
+      "role": "devrites-slice-wright",
+      "role_class": "wright",
+      "simulate": "write-allowed",
+      "allowed_repo_writes": [
+        "src/allowed.txt"
+      ],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-RESULT-ACCEPTED",
+        "status": "complete",
+        "outcome": "passed",
+        "terminal_sentinel": "complete",
+        "host_exit": 0,
+        "required_signals": [
+          "declared_side_effects"
+        ]
+      }
+    },
+    {
+      "id": "generic-fallback",
+      "role": "devrites-unavailable-reviewer",
+      "role_class": "reviewer",
+      "simulate": "generic-fallback",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "generic",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-GENERIC-FALLBACK",
+        "result_reason_id": "DRV-AGENT-RESULT-ACCEPTED",
+        "status": "complete",
+        "outcome": "passed",
+        "terminal_sentinel": "complete",
+        "host_exit": 0,
+        "required_signals": [
+          "fresh_context"
+        ]
+      }
+    },
+    {
+      "id": "inline-fallback",
+      "role": "devrites-unavailable-reviewer",
+      "role_class": "reviewer",
+      "simulate": "inline-fallback",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "inline",
+        "guard_strength": "observed",
+        "independence": false,
+        "dispatch_reason_id": "DRV-AGENT-INLINE-FALLBACK",
+        "result_reason_id": "DRV-AGENT-RESULT-ACCEPTED",
+        "status": "complete",
+        "outcome": "passed",
+        "terminal_sentinel": "complete",
+        "host_exit": 0,
+        "required_signals": [
+          "inline_labelled"
+        ]
+      }
+    },
+    {
+      "id": "reviewer-mutation-denied",
+      "role": "devrites-code-reviewer",
+      "role_class": "reviewer",
+      "simulate": "reviewer-denied",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-RESULT-OUT-OF-SCOPE",
+        "status": "blocked",
+        "outcome": "denied",
+        "terminal_sentinel": "complete",
+        "host_exit": 0,
+        "required_signals": [
+          "mutation_denied"
+        ]
+      }
+    },
+    {
+      "id": "wright-out-of-scope-denied",
+      "role": "devrites-slice-wright",
+      "role_class": "wright",
+      "simulate": "wright-denied",
+      "allowed_repo_writes": [
+        "src/allowed.txt"
+      ],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-RESULT-OUT-OF-SCOPE",
+        "status": "blocked",
+        "outcome": "denied",
+        "terminal_sentinel": "complete",
+        "host_exit": 0,
+        "required_signals": [
+          "scope_denied"
+        ]
+      }
+    },
+    {
+      "id": "stale-result",
+      "role": "devrites-code-reviewer",
+      "role_class": "reviewer",
+      "simulate": "stale",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-RESULT-STALE",
+        "status": "failed",
+        "outcome": "unavailable",
+        "terminal_sentinel": "stale",
+        "host_exit": 0,
+        "required_signals": []
+      }
+    },
+    {
+      "id": "malformed-result",
+      "role": "devrites-code-reviewer",
+      "role_class": "reviewer",
+      "simulate": "malformed",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-RESULT-MALFORMED",
+        "status": "failed",
+        "outcome": "unavailable",
+        "terminal_sentinel": "malformed",
+        "host_exit": 0,
+        "required_signals": []
+      }
+    },
+    {
+      "id": "missing-result",
+      "role": "devrites-code-reviewer",
+      "role_class": "reviewer",
+      "simulate": "missing",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-UNAVAILABLE",
+        "status": "failed",
+        "outcome": "unavailable",
+        "terminal_sentinel": "missing",
+        "host_exit": 0,
+        "required_signals": []
+      }
+    },
+    {
+      "id": "session-start-orientation",
+      "role": "devrites-code-reviewer",
+      "role_class": "reviewer",
+      "simulate": "session-start",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-RESULT-ACCEPTED",
+        "status": "complete",
+        "outcome": "passed",
+        "terminal_sentinel": "complete",
+        "host_exit": 0,
+        "required_signals": [
+          "session_start_oriented"
+        ]
+      }
+    },
+    {
+      "id": "post-compaction-resume",
+      "role": "devrites-code-reviewer",
+      "role_class": "reviewer",
+      "simulate": "post-compaction",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-RESULT-ACCEPTED",
+        "status": "complete",
+        "outcome": "passed",
+        "terminal_sentinel": "complete",
+        "host_exit": 0,
+        "required_signals": [
+          "resume_cursor_reinjected"
+        ]
+      }
+    },
+    {
+      "id": "interrupted-run",
+      "role": "devrites-code-reviewer",
+      "role_class": "reviewer",
+      "simulate": "interrupted",
+      "allowed_repo_writes": [],
+      "expect": {
+        "execution_mode": "named",
+        "guard_strength": "enforced",
+        "independence": true,
+        "dispatch_reason_id": "DRV-AGENT-NAMED",
+        "result_reason_id": "DRV-AGENT-UNAVAILABLE",
+        "status": "partial",
+        "outcome": "unavailable",
+        "terminal_sentinel": "interrupted",
+        "host_exit": 130,
+        "required_signals": [
+          "progress_recorded",
+          "partial_metadata"
+        ]
+      }
+    }
+  ]
+}

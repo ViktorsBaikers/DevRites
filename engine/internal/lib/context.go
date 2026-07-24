@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devrites/devrites/internal/rootfacts"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -16,12 +17,17 @@ const (
 	contextEnd   = "<!-- DEVRITES END -->"
 )
 
-// Context owns only a small delimited block in project context files. It never
-// rewrites the surrounding AGENTS.md / CLAUDE.md content.
+// Context owns only a small delimited block in project context files. It leaves
+// the surrounding AGENTS.md or CLAUDE.md content unchanged.
 func Context(root string, args []string, stdout, stderr io.Writer) int {
 	switch argAt(args, 0) {
 	case "sync":
-		return contextSync(root, args[1:], stdout, stderr)
+		facts, err := rootfacts.Resolve(root)
+		if err != nil {
+			fmt.Fprintf(stderr, "context: unsafe root selection: %v\n", err)
+			return 3
+		}
+		return contextSync(facts.PhysicalRoot, args[1:], stdout, stderr)
 	case "show":
 		return contextShow(root, args[1:], stdout, stderr)
 	default:
@@ -50,12 +56,16 @@ func contextSync(root string, args []string, stdout, stderr io.Writer) int {
 }
 
 type contextShowDocument struct {
-	Root            string          `json:"root"`
-	Project         string          `json:"project"`
-	ActiveWorkspace string          `json:"activeWorkspace,omitempty"`
-	Source          string          `json:"source"`
-	HostCommands    contextCommands `json:"hostCommands"`
-	Status          []Diagnostic    `json:"status"`
+	Root            string             `json:"root"`
+	Project         string             `json:"project"`
+	LexicalRoot     string             `json:"lexicalRoot,omitempty"`
+	LexicalProject  string             `json:"lexicalProject,omitempty"`
+	RootSelection   string             `json:"rootSelection"`
+	Git             rootfacts.GitFacts `json:"git"`
+	ActiveWorkspace string             `json:"activeWorkspace,omitempty"`
+	Source          string             `json:"source"`
+	HostCommands    contextCommands    `json:"hostCommands"`
+	Status          []rootfacts.Hazard `json:"status"`
 }
 
 type contextCommands struct {
@@ -85,27 +95,52 @@ func contextShow(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintln(stdout, "DevRites context")
 	fmt.Fprintf(stdout, "Project: %s\n", doc.Project)
-	fmt.Fprintf(stdout, "Root: %s\n", doc.Root)
+	rootDisplay := doc.Root
+	if rootDisplay == "" {
+		rootDisplay = "none"
+	}
+	fmt.Fprintf(stdout, "Root: %s\n", rootDisplay)
+	fmt.Fprintf(stdout, "Root selection: %s\n", doc.RootSelection)
+	if doc.LexicalProject != "" && doc.LexicalProject != doc.Project {
+		fmt.Fprintf(stdout, "Project (lexical): %s\n", doc.LexicalProject)
+	}
+	if doc.LexicalRoot != "" && doc.LexicalRoot != doc.Root {
+		fmt.Fprintf(stdout, "Root (lexical): %s\n", doc.LexicalRoot)
+	}
+	if doc.Git.TopLevel != "" {
+		fmt.Fprintf(stdout, "Git: %s (dir: %s, common: %s, linked worktree: %t, submodule: %t)\n",
+			doc.Git.TopLevel, doc.Git.Dir, doc.Git.CommonDir, doc.Git.LinkedWorktree, doc.Git.Submodule)
+	}
 	if doc.ActiveWorkspace != "" {
 		fmt.Fprintf(stdout, "Active workspace: %s (source: %s)\n", doc.ActiveWorkspace, doc.Source)
 	} else {
 		fmt.Fprintf(stdout, "Active workspace: none (source: %s)\n", doc.Source)
 	}
 	fmt.Fprintf(stdout, "Commands: Claude %s · Codex %s\n", doc.HostCommands.Claude, doc.HostCommands.Codex)
+	for _, hazard := range doc.Status {
+		fmt.Fprintf(stdout, "Status [%s] %s: %s\n", hazard.ID, hazard.Severity, hazard.Message)
+		fmt.Fprintf(stdout, "Fix: %s\n", hazard.Remediation)
+	}
 	return 0
 }
 
 func contextDocument(root string) contextShowDocument {
-	project := filepath.Dir(root)
-	slug := activeSlug(root)
+	facts, err := rootfacts.Resolve(os.Getenv("DEVRITES_ROOT"))
+	if err != nil && len(facts.Hazards) == 0 && root != "" {
+		facts, _ = rootfacts.Resolve(root)
+	}
+	root = facts.PhysicalRoot
+	project := facts.PhysicalProject
+	slug := ""
+	if root != "" {
+		slug = activeSlug(root)
+	}
 	source := "none"
 	active := ""
 	if strings.TrimSpace(os.Getenv("DEVRITES_WORKSPACE")) != "" {
 		source = "DEVRITES_WORKSPACE"
 	} else if slug != "" {
 		source = "ACTIVE"
-	} else if strings.TrimSpace(os.Getenv("DEVRITES_ROOT")) != "" {
-		source = "DEVRITES_ROOT"
 	}
 	if slug != "" {
 		active = filepath.Join(".devrites", "work", slug)
@@ -116,10 +151,14 @@ func contextDocument(root string) contextShowDocument {
 	return contextShowDocument{
 		Root:            root,
 		Project:         project,
+		LexicalRoot:     facts.LexicalRoot,
+		LexicalProject:  facts.LexicalProject,
+		RootSelection:   facts.SelectionReason,
+		Git:             facts.Git,
 		ActiveWorkspace: active,
 		Source:          source,
 		HostCommands:    contextCommands{Claude: "/rite", Codex: "$rite"},
-		Status:          []Diagnostic{},
+		Status:          append([]rootfacts.Hazard{}, facts.Hazards...),
 	}
 }
 

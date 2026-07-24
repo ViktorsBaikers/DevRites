@@ -1,19 +1,18 @@
-# AFK discipline: running `$rite-build` unattended without burning the trunk
+# AFK discipline for unattended `$rite-build`
 
-AFK mode is `.devrites/AFK` present. It lets `$rite-build` chain slices without per-slice
-user input. The discipline below is what keeps an AFK loop from drifting into damage.
+AFK mode is active when `.devrites/AFK` exists. It lets `$rite-build` chain slices
+without per-slice user input. The rules below limit that unattended work.
 
-The core principles are borrowed from established autonomous-coding loops (Ralph Wiggum,
-Claude Code auto mode):
+These rules follow established autonomous-coding loops, including Ralph Wiggum and
+Claude Code auto mode:
 
-1. **Feedback loops are the trust substrate.** No green tests / types / lint → no
-   "built" status. The loop can't declare victory if the lights are red.
-2. **Always cap iterations.** Stochastic systems + infinite loops = unsafe. `max_slices`
-   is the hard counter.
-3. **Promote pre-action gates, demote post-action gates.** Code that lands without a
-   gate is a finding; gates after the fact are review queues.
-4. **AFK widens what's automatic, never what's irreversible.** Destructive work, auth
-   boundaries, public API breaks always pause regardless of the sentinel.
+1. **Require green feedback.** Tests, types, and lint must pass before a slice is
+   marked `built`.
+2. **Cap iterations.** `max_slices` is the hard limit.
+3. **Run gates before the action they control.** A post-action gate is only a review
+   queue.
+4. **Keep irreversible work manual.** Destructive work, auth boundaries, and public
+   API breaks always pause regardless of the sentinel.
 
 ## The sentinel file
 
@@ -35,8 +34,7 @@ Defaults when keys are omitted:
 - `notify`: none.
 - `allow_gates`: `[advisory]`.
 
-To disable AFK temporarily, delete the file. The next `$rite-build` boots straight back
-into HITL.
+To disable AFK, delete the file. The next `$rite-build` runs in HITL.
 
 ## Iteration cap
 
@@ -55,29 +53,31 @@ The cap is enforced by `devrites-engine tick-afk`, not by prose, when it exits 3
 Step 0 re-derives the remaining budget from `state.md` (seeding it from `.devrites/AFK`
 `max_slices` on the first AFK build); `max_slices` itself is read-only and never rewritten.
 
-The cap is intentional: a missing or large cap **must be a conscious choice**. Ralph's
-rule: 5-10 iterations for small tasks, 30-50 for larger ones. Don't ship "unlimited" as
-the default for a job you haven't observed running once HITL.
+Choose a missing or large cap deliberately. Ralph's rule is 5-10 iterations for small
+tasks and 30-50 for larger ones. Do not use `unlimited` for work that has not completed
+successfully in HITL.
 
 ## Fail-on-red
 
-The **fail-on-red step** (workflow step 5) refuses to mark a slice `built` if targeted tests /
-types / lint are red. The reasoning:
+The **fail-on-red step** (workflow step 5) refuses to mark a slice `built` if targeted
+tests, types, or lint are red:
 
-- A red signal means either the slice's contract is wrong or the failing code is. Neither
-  is something AFK can resolve.
-- Marking it `built` and letting the AFK loop chain to the next slice burns the trunk:
-  the next slice builds on broken state.
+- A red signal means either the slice's contract is wrong or the implementation/proof path is.
+  The slice cannot advance, but an objective root cause is agent-owned recovery work.
+- Marking it `built` would let the next slice build on broken state.
 
 The fail-on-red path:
 
-1. Append a question to `questions.md` with `gate: blocking`, the SLA of the slice, and a
-   crisp `question:` field naming what failed.
-2. Set `state.md` `Status: awaiting_human` and the `Awaiting human` block.
-3. Fire the `notify:` hook if defined.
-4. STOP.
+1. Continue the same wright under `devrites-debug-recovery`, carrying exact output and dead
+   ends; cap writer + recovery at three total attempts per root cause.
+2. Green → record the slice. Product-contract/irreversible ambiguity → write the genuine
+   human gate. Missing human-only credential/permission → write a human-intervention gate.
+3. Any other exhausted objective failure → set `Status: blocked`, preserve the reproduction,
+   set `Next step: $rite-plan unblock`, and STOP without a qid.
+4. Fire `notify:` only for an actual `awaiting_human` transition.
 
-The user resolves via `$rite-resolve` after diagnosing or re-planning.
+AFK never starts the next slice while checks are red and never asks the human to approve
+agent-owned diagnosis or parser/test repair.
 
 ## Irreversible-risk list (always pause)
 
@@ -92,8 +92,8 @@ any of:
   rewriting `.gitignore`-listed paths, deleting fixtures).
 - Anything the slice's `Gate: blocking` plus `tasks.md` `Why HITL:` flags as irreversible.
 
-The list is the same one Claude Code auto-mode's transcript classifier protects: adapted
-to DevRites's workspace shape.
+This is the Claude Code auto-mode transcript classifier list adapted to the DevRites
+workspace.
 
 ## The `notify:` hook contract
 
@@ -109,7 +109,7 @@ the hook receives:
 | `DEVRITES_QUESTION` | the checkpoint text |
 | `DEVRITES_PROPOSED` | the proposed answer |
 
-The hook is best-effort: non-zero exit does **not** roll back the pause. Failures are
+The hook is best effort: a non-zero exit does **not** roll back the pause. Failures are
 logged to `evidence.md` so the user sees them on return.
 
 Example targets:
@@ -117,20 +117,20 @@ Example targets:
 - `osascript -e "display notification \"$DEVRITES_QUESTION\" with title \"DevRites: $DEVRITES_GATE\""`
 - `pb push "$DEVRITES_SLUG: $DEVRITES_QUESTION"` (via pushbullet CLI)
 
-DevRites owns no notification logic: the hook is a seam, not a feature.
+DevRites does not implement notifications; the configured hook does.
 
 ## When to leave AFK
 
 Drop the sentinel before:
 
-- A novel feature where you have not yet seen `$rite-build` work on this codebase HITL:
-  Ralph's progression: HITL first → refine prompt → AFK once trusted.
+- A new feature when `$rite-build` has not yet completed successfully on this codebase
+  in HITL. Ralph's progression is HITL first → refine prompt → AFK after validation.
 - A risky slice you marked `Mode: HITL` and want to walk through interactively even if
   the gate is technically `validating`.
 - Any time you'd rather review per-slice than batch-resolve afterwards.
 
-AFK is a **bias toward continuing**, not a vow. Re-enter it whenever the next stretch of
-work is bulk + low-stakes.
+AFK allows routine work to continue automatically. Re-enable it for another batch of
+low-stakes work.
 
 ## What AFK does NOT do
 

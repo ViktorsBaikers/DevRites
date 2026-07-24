@@ -10,8 +10,10 @@ import (
 // required set and the missing sections.
 type Report struct {
 	*Feature
-	Required map[Section]bool
-	Missing  []Section // required-but-empty sections, in Sections order
+	Required      map[Section]bool
+	Missing       []Section // legacy required-but-empty sections, in Sections order
+	RequiredFiles map[string]bool
+	MissingFiles  []string // required-but-empty workspace files, in lifecycle order
 }
 
 // Status computes the status report for feature <slug> under root by reading
@@ -32,7 +34,21 @@ func NewReport(f *Feature) *Report {
 	for _, s := range RequiredSections(f.Phase) {
 		required[s] = true
 	}
-	return &Report{Feature: f, Required: required, Missing: MissingFor(f, f.Phase)}
+	requiredFiles := make(map[string]bool)
+	var missingFiles []string
+	if !f.LegacyLayout {
+		for _, name := range RequiredWorkspaceFiles(f.Phase) {
+			requiredFiles[name] = true
+		}
+		missingFiles = MissingWorkspaceFiles(f, f.Phase)
+	}
+	return &Report{
+		Feature:       f,
+		Required:      required,
+		Missing:       MissingFor(f, f.Phase),
+		RequiredFiles: requiredFiles,
+		MissingFiles:  missingFiles,
+	}
 }
 
 // MissingFor returns the sections required to complete phase p that the feature
@@ -54,9 +70,28 @@ func MissingFor(f *Feature, p Phase) []Section {
 	return missing
 }
 
-// Complete reports whether every section required by the current phase has
-// real content.
-func (r *Report) Complete() bool { return len(r.Missing) == 0 }
+// MissingWorkspaceFiles returns the concrete lifecycle artifacts required for
+// p that do not contain real content. It is the authoritative runtime
+// completeness view; Section completeness remains only a compact legacy view.
+func MissingWorkspaceFiles(f *Feature, p Phase) []string {
+	var missing []string
+	for _, name := range RequiredWorkspaceFiles(p) {
+		if !f.PresentFiles[name] {
+			missing = append(missing, name)
+		}
+	}
+	return missing
+}
+
+// Complete reports whether every concrete canonical-workspace file required by
+// the current phase has real content. Compatibility features/ workspaces keep
+// their legacy section-based contract until migration moves them to work/.
+func (r *Report) Complete() bool {
+	if r.LegacyLayout {
+		return len(r.Missing) == 0
+	}
+	return len(r.MissingFiles) == 0
+}
 
 // Render produces the deterministic, greppable status text, including a
 // trailing newline. Each section line reads "<name> <present|empty> [required]".
@@ -79,12 +114,14 @@ func (r *Report) Render() string {
 	}
 	if r.Complete() {
 		b.WriteString("result: complete\n")
-	} else {
-		names := make([]string, len(r.Missing))
-		for i, s := range r.Missing {
-			names[i] = string(s)
+	} else if r.LegacyLayout {
+		missing := make([]string, len(r.Missing))
+		for i, section := range r.Missing {
+			missing[i] = string(section)
 		}
-		fmt.Fprintf(&b, "result: incomplete (missing: %s)\n", strings.Join(names, ", "))
+		fmt.Fprintf(&b, "result: incomplete (missing: %s)\n", strings.Join(missing, ", "))
+	} else {
+		fmt.Fprintf(&b, "result: incomplete (missing files: %s)\n", strings.Join(r.MissingFiles, ", "))
 	}
 	return b.String()
 }

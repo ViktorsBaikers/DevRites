@@ -5,16 +5,15 @@
 
 ## Context
 
-Two gaps surfaced while studying a more mature peer system (GSD Core; see
-`docs/research/gsd-core-adoption.md`):
+Two gaps surfaced during a control-plane reliability audit:
 
 1. **Unwired static analysis.** `engine/Makefile` defined `staticcheck` and
    `govulncheck` targets, but CI ran only `gofmt` + `go vet`. No `-race`, no
    custom analysis on the trust-root binary.
 2. **A wall-clock leak.** `resolve next-qid` derived today's date from a raw
    `time.Now()` with no seam, so its golden snapshot was pinned to the date it
-   was recorded and failed **every other day** — a latent red the peer system's
-   clock-seam lint would have caught at author time.
+   was recorded and failed **every other day** — a clock-seam check would have
+   caught the latent failure at author time.
 
 ## Decision
 

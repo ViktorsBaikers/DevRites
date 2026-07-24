@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// skills-inventory.mjs: verify authored DevRites skill inventory and docs counts.
+// Verify the authored DevRites skill inventory and documentation counts.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 

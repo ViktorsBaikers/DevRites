@@ -1,8 +1,8 @@
 # The autocomplete loop: arm AFK, drive every phase
 
-Autocomplete is an orchestrator: it runs the existing `/rite-*` skills in order,
-exactly as a human would, but without stopping between them. It owns no workflow of
-its own: the phases do the work; autocomplete sequences them and enforces stops.
+Autocomplete runs the existing `/rite-*` skills in order without stopping between
+routine phases. Each phase keeps its own workflow; autocomplete only sequences phases
+and enforces stop conditions.
 
 ## Arm AFK
 
@@ -16,34 +16,34 @@ allow_gates: [advisory]        # only advisory auto-handles; validating+ pause
 # caps how many run unattended (default = all the plan's slices).
 ```
 
-The budget is the plan's own slice count, not a fixed number, so the loop builds exactly
-the task's slices and stops when they're done; `--max-slices N` only *lowers* it for a
+The budget is the plan's slice count, so the loop builds the planned slices and stops
+when they are done. `--max-slices N` only lowers that number for a
 partial run. Arm the gate policy at step 3; write `max_slices` / `AFK slices remaining`
 **after `/rite-vet`** (it runs before the build loop and may split or add a slice, so the
 count isn't final until then: vet runs on every plan here, so always set the budget after it).
 
-`allow_gates: [advisory]` is deliberate: an open `gate: validating` is merge-blocking
-at seal (`afk-hitl.md`), so autocomplete must *pause* on it rather than queue it and
-then hit NO-GO. Widen `allow_gates` only if the caller explicitly asked.
+`allow_gates: [advisory]` prevents an open `gate: validating` from being queued until
+seal, where it would force NO-GO under `afk-hitl.md`. Autocomplete pauses on it instead. Widen
+`allow_gates` only when the caller explicitly asks.
 
 ## Drive the phases
 
-Run each by Reading its `SKILL.md` and executing that workflow. State flows through the
-workspace files (`state.md`, `tasks.md`, `evidence.md`, …), so each phase picks up where
-the last left off. There is nothing to thread through chat.
+Read each phase's `SKILL.md` and execute that workflow. Workspace files such as
+`state.md`, `tasks.md`, and `evidence.md` carry state between phases; chat does not.
 
 | Step | Phase | Loop / gate |
 |---|---|---|
-| 1 | `/rite-spec` | feed the interview answers; write `spec.md` |
-| 2 | `/rite-temper` | significance-gated strategic review; harden spec + write `strategy.md`. Skip low-stakes specs in one line. AFK: `hold-rigor` / `reduce-to-MVP` auto-apply; **any `expand` pauses (blocking)**; irreversible-risk pauses |
-| 3 | `/rite-define` | reads `strategy.md`; `plan.md` + `tasks.md`; record `Plan approved` |
-| 4 | `/rite-vet` | engineering plan review on **every** plan (light pass on simple plans, full on big/risky; never skipped); harden `plan.md` / `tasks.md` + write `eng-review.md` + `test-plan.md`. AFK: hardening / coverage findings auto-apply; **any scope-growing / acceptance-changing finding pauses (blocking)**; irreversible-risk pauses. Set the slice budget after this (vet may split a slice) |
-| 5 | `/rite-build` ×N | **loop** while any slice is `pending`; build one (the slice-wright reads `test-plan.md` for coverage), then run `devrites-engine tick-afk state.md`: exit 3 (budget hit) ⇒ STOP |
-| 6 | `/rite-prove` | once all slices `built`; walks `test-plan.md`; on failure → `devrites-debug-recovery` within scope |
-| 7 | `/rite-polish` | re-verify after code edits (evidence must stay fresh) |
-| 8 | `/rite-review` | apply in-scope fixes; re-prove if code changed |
-| 9 | `/rite-seal` | GO/NO-GO decision (no git here) |
-| 10 | `/rite-ship` | only if seal GO; `--ship` auto-confirms type-GO, else stop for human |
+| 1 | `/rite-spec` | interactive window: investigate, feed intent answers, write `spec.md` |
+| 2 | `/rite-clarify` | same interactive window: topology-first scan; write `decision-coverage.md`; proceed only on `CLEAR`, then arm AFK |
+| 3 | `/rite-temper` | significance-gated strategic review; harden spec + write `strategy.md`. Skip low-stakes specs in one line. AFK: `hold-rigor` / `reduce-to-MVP` auto-apply; **any `expand` pauses (blocking)**; irreversible-risk pauses |
+| 4 | `/rite-define` | reads `decision-coverage.md` + `strategy.md`; writes `plan.md` + `tasks.md`; records `Plan approved` |
+| 5 | `/rite-vet` | engineering/readiness review on **every** plan (light pass on simple plans, full on big/risky; never skipped); harden `plan.md` / `tasks.md` + write `eng-review.md` (`Implementation readiness: READY`) + `test-plan.md`. AFK: hardening / coverage findings auto-apply; **any scope-growing / acceptance-changing finding pauses (blocking)**; irreversible-risk pauses. Set the slice budget after this (vet may split a slice) |
+| 6 | `/rite-build` ×N | **loop** while any slice is `pending`; build one (the slice-wright reads `test-plan.md` for coverage), then run `devrites-engine tick-afk state.md`: exit 3 (budget hit) ⇒ STOP |
+| 7 | `/rite-prove` | once all slices `built`; walks `test-plan.md`; on failure → `devrites-debug-recovery` within scope |
+| 8 | `/rite-polish` | re-verify after code edits (evidence must stay fresh) |
+| 9 | `/rite-review` | apply in-scope fixes; re-prove if code changed |
+| 10 | `/rite-seal` | GO/NO-GO decision (no git here) |
+| 11 | `/rite-ship` | only if seal GO; `--ship` auto-confirms type-GO, else stop for human |
 
 ## Between phases
 

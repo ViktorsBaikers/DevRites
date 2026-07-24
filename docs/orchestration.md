@@ -1,84 +1,112 @@
 # Orchestration patterns
 
-How DevRites coordinates multiple agents: the patterns it uses, the ones it deliberately avoids,
-and where Claude Code's Agent Teams and worktree isolation fit. The rule that governs this lives in
-[`pack/.claude/skills/devrites-lib/reference/standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md); this doc is the map.
+DevRites delegates bounded work to agents while keeping authority in the root
+orchestrator. The governing contract is
+[`standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md);
+this page summarizes that model.
 
-## The model
+## Authority and topology
 
-DevRites separates three roles and never blurs them:
+- The active public `rite-*` skill is the root. It alone owns human questions,
+  decisions, routing, gates, reconciliation, canonical `.devrites/**` writes,
+  phase changes, and irreversible or external actions.
+- Orchestration is flat depth one: only the root dispatches. Leaves never
+  dispatch leaves.
+- Normally at most three read-only leaves run concurrently against one frozen
+  candidate. The root awaits every required return before mutation.
+- There are **17 named roles**: 16 read-only leaves and one source/test writer,
+  `devrites-slice-wright`.
 
-- **Orchestrator**: the active `rite-*` skill (chiefly `/rite-build` and `/rite-seal`). It owns
-  the gates and the `.devrites/` workspace, dispatches the other agents, and is the *single
-  canonical writer* of workspace state.
-- **Reviewers**: fresh-context, **read-only** subagents under `.claude/agents/`. Each gets the
-  workspace path + the diff and returns labelled findings. The generated host hooks observe this
-  boundary by default; set the documented strict-enforcement environment switch when a blocking
-  tool-layer boundary is required. Without strict mode, the agent contract and reconciliation gate
-  remain part of the control, rather than a fail-closed sandbox guarantee.
-- **Executor**: `devrites-slice-wright`, the one **write-capable** agent. It implements a single
-  fully-specified slice in a fresh context and returns code + tests; it never writes the `.devrites/`
-  bookkeeping (the orchestrator does).
+| Group | Roles |
+|---|---|
+| Bounded work leaves | `devrites-evidence-scout`, `devrites-plan-drafter`, `devrites-proof-runner` |
+| Strategic/claim challenge | `devrites-strategy-reviewer`, `devrites-plan-reviewer`, `devrites-doubt-reviewer` |
+| Review/audit | `devrites-spec-reviewer`, `devrites-code-reviewer`, `devrites-test-analyst`, `devrites-frontend-reviewer`, `devrites-security-auditor`, `devrites-performance-reviewer`, `devrites-devex-reviewer`, `devrites-simplifier-reviewer` |
+| Comparison/history | `devrites-forge-judge`, `devrites-retrospector` |
+| Sole writer | `devrites-slice-wright` |
 
-Fresh, undirected context is the point: an agent gets the contract, not the author's reasoning, so
-its judgment is independent.
+Every dispatch uses file-backed `agent-packet/v1` and `agent-result/v1`
+envelopes. They record exact inputs, scope, budgets, immutable baseline
+identity, side effects, and terminal status. The root rejects malformed, stale,
+or out-of-scope returns before adding anything to canonical state.
 
-## Endorsed patterns
+## Dispatch and enforcement
 
-1. **Direct (no orchestration).** Most phases are one skill doing one job. Don't spawn an agent for
-   work the phase can do inline.
-2. **Parallel read-only fan-out.** At `/rite-seal` the relevant reviewers run *in parallel*, then
-   the orchestrator reconciles them by confidence band and reports genuine disagreement
-   rather than averaging it away.
-3. **Single writer.** Exactly one `devrites-slice-wright` works on each slice. DevRites never
-   fans out writers that share a tree because concurrent writers make conflicting implicit decisions
-   that corrupt a coherent design. The one sanctioned exception is a **forge** slice
-   (`Forge: yes`, flagged by `/rite-vet`). Two or three candidate wrights build it with distinct strategies
-   in **isolated** worktrees, `devrites-forge-judge` scores them, and exactly one winner's diff
-   lands. No tree ever has two authors, so the invariant holds
-   ([`rite-build/reference/forge.md`](../pack/.claude/skills/rite-build/reference/forge.md)).
-4. **Lifecycle as user-driven verbs.** Each verb performs one mutation and stops; chaining is
-   explicit (the user types the next command), so there are no hidden side effects between phases.
-   `/rite-autocomplete` is the one deliberate exception: an opt-in unattended driver.
-5. **Adversarial single-claim check.** `devrites-doubt` spawns a fresh reviewer to try to refute one
-   load-bearing decision, rather than asking the author to re-grade their own work.
+Use the first safe option available:
 
-## Anti-patterns DevRites avoids
+1. the named project role;
+2. a generic `explorer` or `worker` reading the same generated role contract
+   only when the host still enforces read-only or exact wright scope (or
+   isolated staging);
+3. inline execution, labelled `independence: fallback`, when neither safe
+   fresh-context option is callable.
 
-- **A persona that paraphrases another.** Passing one agent's summary to the next is lossy telephone;
-  reviewers read the raw diff and contract, not a digest of the author's reasoning.
-- **Parallel writers.** See single-writer above: two agents editing the same feature concurrently
-  is a merge of conflicting decisions, not a speed-up. (Forge is *not* this: its candidates write in
-  **isolated** worktrees and exactly one lands, so no tree is ever co-authored.)
-- **A router that does the work.** `/rite` is a thin dispatcher. It renders the menu, resolves a
-  verb to a skill, and gets out of the way. It holds no phase logic and produces no artifact itself.
-  (This is the distinction that makes a router fine: the anti-pattern is a "meta-orchestrator"
-  persona that paraphrases and re-decides on every call, not a dispatch table.)
-- **Deep persona trees.** Agents do not call agents that call more agents. The
-  orchestrator dispatches reviewers and the wright one level deep, then
-  reconciles the results itself.
+Inline self-review never silently satisfies an independence gate. Declared
+leaf identity is fail-closed: a missing or crashed `devrites-engine` guard
+blocks the tool call. Leaves never ask the human, write `.devrites/**`, change
+phase, commit, push, install, deploy, migrate live data, or perform irreversible
+actions.
 
-## Agent Teams and worktree isolation
+## Single-writer build lifecycle
 
-Two Claude Code capabilities sit adjacent to DevRites' model; the stance on each is deliberate.
+The root derives normalized project-relative source/test paths and writes them,
+one per line, to `.devrites/work/<slug>/.wright-allowlist`. It is an exact
+authorization manifest and permits no directories, globs, traversal,
+duplicates, or `.devrites/**`. The wright's returned file list records what
+changed but cannot grant access.
 
-- **Agent Teams.** DevRites does **not** use Agent Teams to run the lifecycle. The on-disk workspace
-  plus fresh-context read-only fan-out already give independent context per agent without the
-  coordination overhead, and the lifecycle is intentionally single-slice / single-writer. Reach for
-  Use Agent Teams outside that discipline for competing-hypothesis debugging or
-  several genuinely different approaches in parallel. Do not use it to parallelize a DevRites build. The one
-  in-lifecycle form of "compete several approaches" is **forge** (a `Forge: yes` slice), and it is
-  deliberately bounded: vet-gated, K≤3, isolated, winner-takes-all.
-- **Worktree isolation.** A single feature is single-writer on one branch by design, so DevRites
-  does not spawn worktrees for ordinary builds. You can still run DevRites inside a git worktree to
-  drive two features in parallel without them colliding (the `.devrites/ACTIVE` sentinel is
-  per-working-tree, so each carries its own active feature). The one place DevRites spawns worktrees
-  itself is a **forge** slice: each candidate build gets an ephemeral worktree, auto-removed after
-  the winner lands.
+Each dispatch follows the retained-baseline sequence:
+
+1. `reconcile snapshot` captures the original dirty-tree baseline, private Git
+   objects, exact allowlist, and canonical-state fingerprint.
+2. The sole wright returns code/tests; the root validates its typed identity and
+   exact changed-file set.
+3. `reconcile check` rejects anything outside the root allowlist.
+4. `test-integrity` and `package-existence` run against the same retained
+   baseline.
+5. After proof and decision checks pass, `reconcile close` retires the private
+   window; only then does the root write canonical records.
+
+On retry, the root may add only an accepted still-in-slice path, then runs
+`reconcile snapshot` again. This refreshes the dispatch boundary while
+preserving the original slice baseline. The same objective root cause has a
+durable three-failure budget in `recovery-attempts.jsonl`; exhaustion records a
+technical blocker with reproduction and dead ends, not a retry-approval
+question.
+
+Build asks the human only for product/scope/policy choices, irreversible risk,
+or human-only access/actions. Tests, types, lint, runtime/browser failures,
+missing coverage, and workflow-tool defects stay agent-owned.
+
+## Isolation
+
+Parallel shared-tree writers are forbidden. A vetted `Forge: yes` slice may
+compare two or three complete strategies only through
+`devrites-engine forge`:
+
+1. `plan` validates the scorecard, pins the physical repository/base, writes
+   the sole `devrites-forge/v1` ownership manifest, and creates derived
+   worktrees outside `.devrites` **before** reconciliation snapshots.
+2. A real host adapter declares `manifest-env-v1`. Each candidate is bound
+   all-or-none to the manifest run, candidate, worktree cwd, branch, live
+   worker ID, PID, and the engine's `forge process-token` value.
+3. `record` and `extract` make every terminal full-tree delta immutable; the
+   read-only judge records one winner; `merge` preflights and lands exactly it.
+4. Normal reconcile, integrity, doubt, and proof gates record verification
+   before `cleanup`. The human `forge-report.md` is written afterward and owns
+   nothing.
+
+An ineligible layout returns a typed serial degradation before side effects.
+After planning, errors preserve manifest-owned state for recovery. Cleanup and
+reap enumerate only manifests, preserve live, dirty, mismatched, or ambiguous
+state, and never delete candidate branches. Ordinary features may also run in
+separate user worktrees so their `ACTIVE` cursors and source trees do not
+collide.
 
 ## See also
 
-- [`pack/.claude/skills/devrites-lib/reference/standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md): the reviewer / executor roster
-  and the when-to-fan-out rules.
-- [`architecture.md`](architecture.md): the full layer model.
-- [`flow.md`](flow.md): phase-by-phase flow and the public/internal namespace.
+- [`architecture.md`](architecture.md): full layer model.
+- [`command-map.md`](command-map.md): every role and phase owner.
+- [`flow.md`](flow.md): lifecycle and state diagrams.
+- [`ADR-0010`](adr/0010-agent-first-fresh-context-orchestration.md): decision
+  record and rejected alternatives.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
@@ -11,6 +11,15 @@ let jobs = Math.max(1, Math.min(5, Math.floor(Number(process.env.DEVRITES_TEST_J
 let serial = false;
 let fast = false;
 const filters = [];
+
+function repositoryPackageVersion() {
+  const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+  const safeSemver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+  if (typeof version !== 'string' || version.length > 128 || !safeSemver.test(version)) {
+    throw new Error('package.json version must be a safe semantic version of at most 128 characters');
+  }
+  return version;
+}
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
@@ -35,6 +44,7 @@ const integrationTests = new Set([
   'cli-smoke.sh',
   'codex-agent-generation-test.sh',
   'codex-runtime-smoke.sh',
+  'claude-runtime-smoke.sh',
   'fixture-install.sh',
   'install-flag-parser-legacy-smoke.sh',
   'host-artifacts-test.sh',
@@ -65,8 +75,11 @@ const testWeights = new Map([
   ['validate-pack.sh', 25],
   ['install-flag-parser-invalid-smoke.sh', 20],
   ['codex-agent-generation-test.sh', 20],
+  ['agent-contract-evals-test.sh', 18],
+  ['claude-runtime-smoke.sh', 15],
   ['codex-runtime-smoke.sh', 15],
   ['hooks-parity-test.sh', 15],
+  ['outcome-evals-test.sh', 15],
   ['host-artifacts-test.sh', 10],
   ['install-pin-no-global-smoke.sh', 10],
 ]);
@@ -122,9 +135,24 @@ process.on('exit', () => {
 });
 
 if (!sharedEngine && existsSync(join(root, 'engine', 'go.mod'))) {
+  let engineVersion;
+  try {
+    engineVersion = `v${repositoryPackageVersion()}`;
+  } catch (error) {
+    console.error(`cannot build shared test engine: ${error.message}`);
+    process.exit(1);
+  }
   sharedEngineDir = mkdtempSync(join(tmpdir(), 'devrites-test-engine-'));
   sharedEngine = join(sharedEngineDir, 'devrites-engine');
-  const build = spawn('go', ['build', '-trimpath', '-o', sharedEngine, '.'], {
+  const build = spawn('go', [
+    'build',
+    '-trimpath',
+    '-ldflags',
+    `-s -w -X github.com/devrites/devrites/internal/version.Version=${engineVersion}`,
+    '-o',
+    sharedEngine,
+    '.',
+  ], {
     cwd: join(root, 'engine'),
     env: { ...process.env, CGO_ENABLED: '0' },
     stdio: ['ignore', 'ignore', 'pipe'],

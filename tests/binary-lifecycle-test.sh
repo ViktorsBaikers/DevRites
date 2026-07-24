@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# binary-lifecycle-test.sh: the global devrites-engine binary's install / update / downgrade
-# / uninstall lifecycle (issue 10), exercised hermetically. DEVRITES_BIN_DIR points
-# the installer at a throwaway bin dir (never the real /usr/local/bin or ~/.local/bin)
-# and DEVRITES_REF pins the stamped version; the release download 404s and falls back
-# to `go build` from engine/, so the version is deterministic and offline-safe.
-# Requires the Go toolchain + an engine/ checkout; self-skips otherwise.
+# Exercise the global devrites-engine lifecycle from issue 10 in a temporary
+# directory, including install, update, downgrade, and uninstall.
+# DEVRITES_BIN_DIR keeps the real system paths untouched, and DEVRITES_REF pins
+# the stamped version. A failed release download falls back to `go build` from
+# engine/, which keeps the test offline
+# and deterministic. The test skips itself without Go or an engine checkout.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
@@ -62,13 +62,46 @@ DEVRITES_REF="v9.9.9" bash "$ROOT/install.sh" --target "$TGT" --force >/dev/null
 bash "$ROOT/uninstall.sh" --target "$TGT" --keep-binary >/dev/null 2>&1
 [ -x "$BIN/devrites-engine" ] && ok "uninstall --keep-binary keeps it" || no "--keep-binary removed the binary"
 
-# 8) an unstamped source build (version "dev") must be UPGRADABLE to a release:
-#    the downgrade guard only compares real semver, so "dev" is never "newest".
+# 8) An unstamped source build ("dev") can be upgraded to a release. The
+#    downgrade guard compares only semantic versions, so "dev" is never newer.
 ( cd "$ROOT/engine" && GOCACHE="$BIN/go-cache-dev" CGO_ENABLED=0 go build -o "$BIN/devrites-engine" . ) >/dev/null 2>&1
 [ "$("$BIN/devrites-engine" version 2>/dev/null)" = "dev" ] && ok "planted a dev build" || no "could not plant a dev build"
 DEVRITES_REF="v9.9.9" bash "$ROOT/install.sh" --target "$TGT" --force >/dev/null 2>&1
 v="$("$BIN/devrites-engine" version 2>/dev/null || true)"
-[ "$v" = "v9.9.9" ] && ok "dev build upgraded to a release ($v)" || no "dev build NOT upgraded: '$v' (downgrade guard false-positive)"
+[ "$v" = "v9.9.9" ] && ok "dev build upgraded to a release ($v)" || no "dev build was not upgraded: '$v' (downgrade guard false positive)"
+
+# 9) a wrong staged version is rejected before replacement.
+STAGED_WRONG="$(mktemp)"
+cat > "$STAGED_WRONG" <<'EOF'
+#!/bin/sh
+[ "$1" = version ] && echo 1.0.0
+EOF
+chmod +x "$STAGED_WRONG"
+DEVRITES_ENGINE_CLI="$STAGED_WRONG" DEVRITES_REF="v9.9.11" "$BIN/devrites-engine" install \
+  --source-dir "$ROOT" --payload-dir "$DEVRITES_HOST_ARTIFACT_DIR" --target "$TGT" --force >/dev/null 2>&1 \
+  && no "wrong staged version was accepted" || ok "wrong staged version rejected before replacement"
+v="$("$BIN/devrites-engine" version 2>/dev/null || true)"
+[ "$v" = "v9.9.9" ] && ok "wrong staged version left old binary intact" || no "wrong staged version changed binary: '$v'"
+rm -f "$STAGED_WRONG"
+
+# 10) post-install verification failure restores the same-directory backup.
+STAGED_POST="$(mktemp)"
+cat > "$STAGED_POST" <<EOF
+#!/bin/sh
+if [ "\$1" = version ]; then
+  case "\$0" in
+    "$BIN/devrites-engine") echo 9.9.12 ;;
+    *) echo 9.9.11 ;;
+  esac
+fi
+EOF
+chmod +x "$STAGED_POST"
+DEVRITES_ENGINE_CLI="$STAGED_POST" DEVRITES_REF="v9.9.11" "$BIN/devrites-engine" install \
+  --source-dir "$ROOT" --payload-dir "$DEVRITES_HOST_ARTIFACT_DIR" --target "$TGT" --force >/dev/null 2>&1 \
+  && no "post-install wrong version was accepted" || ok "post-install wrong version rejected"
+v="$("$BIN/devrites-engine" version 2>/dev/null || true)"
+[ "$v" = "v9.9.9" ] && ok "post-install failure restored old binary" || no "rollback did not restore old binary: '$v'"
+rm -f "$STAGED_POST"
 
 [ "$fail" -eq 0 ] && echo "PASS: binary lifecycle" || echo "FAILED: binary lifecycle"
 exit "$fail"

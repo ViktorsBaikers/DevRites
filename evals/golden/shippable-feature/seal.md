@@ -3,9 +3,9 @@
 Verdict: GO
 
 ## Acceptance Criteria
-- [x] [AC1] `GET /transactions/export.csv` streams CSV — evidence: export.test.ts (pass)
-- [x] [AC2] Export scoped to the authenticated user (no IDOR) — evidence: cross-user 403 test (pass)
-- [x] [AC3] 100k-row export does not buffer the full set — evidence: memory-flat test (pass)
+- [x] AC-001: `GET /transactions/export.csv` streams CSV — EVID-001 (pass)
+- [x] AC-002: Export rejects cross-user access — EVID-002 (pass)
+- [x] AC-003: 100k-row export does not buffer the full set — EVID-003 (pass)
 
 ## Verification Evidence
 Tests 3/3 pass; build + typecheck + lint clean (evidence.md, captured 2026-06-11T16:40Z, post-dates code).

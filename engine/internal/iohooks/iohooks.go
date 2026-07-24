@@ -1,10 +1,7 @@
+// Package iohooks contains hooks that access the network or start processes. The
+// source cache revalidates citations with conditional HEAD requests, and the
+// index refresher starts background reindexing. Errors do not block the caller.
 package iohooks
-
-// IO hooks: the ported bash hooks that do network or process-orchestration IO:
-// the source-citation cache (a conditional-HEAD revalidation cache) and the
-// code-index refresher (a detached background reindex). Unlike the deterministic
-// control-plane hooks these reach the network / spawn processes; they are kept in
-// their own file to mark that boundary. Every one is fail-open and never blocks.
 
 import (
 	"context"
@@ -15,27 +12,69 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/devrites/devrites/internal/fsutil"
+	"github.com/devrites/devrites/internal/harness"
 )
 
-// exitOK is the fail-open success code these hooks return.
-const exitOK = 0
+const (
+	// Current release tarballs are under 2 MiB and host binaries are about 13 MiB.
+	// The 64 MiB cap allows growth while keeping temporary files bounded.
+	maxInstallDownloadBytes = int64(64) << 20
+	// Release JSON is metadata rather than an asset, so it gets a smaller cap.
+	maxInstallJSONBytes = int64(4) << 20
+	// WebFetch results are untrusted JSON. One MiB covers the current reading cache
+	// while bounding the optional warning scan.
+	maxSourcePostPayloadBytes = int64(1) << 20
+
+	// exitOK is the fail-open success code these hooks return.
+	exitOK = 0
+
+	ingestWarningMode = "warn"
+
+	ingestReasonHiddenControl       = "ingest_hidden_control"
+	ingestReasonInstructionRedirect = "ingest_instruction_redirect"
+	ingestReasonCredentialShape     = "ingest_credential_shape"
+)
 
 var (
-	installHTTPClient     = &http.Client{Timeout: 30 * time.Second}
+	installHTTPClient = &http.Client{
+		Timeout:       30 * time.Second,
+		CheckRedirect: checkInstallRedirect,
+	}
 	sourceCacheHTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	ingestInstructionPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:ignore|disregard|forget|override)\s+(?:all\s+)?(?:previous|prior|earlier|above)\s+(?:instructions?|directives?|rules?)\b`),
+		regexp.MustCompile(`(?i)\b(?:follow|obey|execute)\s+(?:only\s+)?(?:these|the following|my)\s+(?:instructions?|directives?|commands?)\s+(?:instead|now)\b`),
+	}
+	ingestCredentialPatterns = []struct {
+		re     *regexp.Regexp
+		accept func(string) bool
+	}{
+		{regexp.MustCompile(`AKIA[0-9A-Z]{16}`), func(s string) bool {
+			return !strings.HasSuffix(s, "EXAMPLE")
+		}},
+		{regexp.MustCompile(`gh[pousr]_[A-Za-z0-9]{36,255}`), variedCredential},
+		{regexp.MustCompile(`AIza[0-9A-Za-z_-]{35}`), variedCredential},
+		{regexp.MustCompile(`(?s)-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\r\n]+[A-Za-z0-9+/=\r\n]{64,}-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----`), func(string) bool {
+			return true
+		}},
+	}
 )
 
 // ---- source-citation cache -------------------------------------------------
 
-// sourceCacheEntry is the on-disk cache record: a page's post-processed reading
-// plus the origin validators that let a later 304 prove it is still fresh.
+// sourceCacheEntry stores a processed page and the validators needed to confirm
+// it with a later 304 response.
 type sourceCacheEntry struct {
 	URL          string `json:"url"`
 	Prompt       string `json:"prompt"`
@@ -47,9 +86,9 @@ type sourceCacheEntry struct {
 
 func sourceCacheOff() bool { return os.Getenv("DEVRITES_SOURCE_CACHE") == "off" }
 
-// ioProjectDir is the repo root the IO hooks key off: CLAUDE_PROJECT_DIR or CWD,
-// like the shell hooks. (The cache is project-global under .devrites/, not
-// feature-scoped, so it does not use the feature-dir resolver.)
+// ioProjectDir returns the repository root from CLAUDE_PROJECT_DIR or the current
+// directory, matching the shell hooks. The cache is project wide under
+// .devrites, so it does not use the feature directory resolver.
 func ioProjectDir() string {
 	if d := os.Getenv("CLAUDE_PROJECT_DIR"); d != "" {
 		return d
@@ -68,11 +107,10 @@ func sourceCachePath(url string) string {
 	return filepath.Join(ioProjectDir(), ".devrites", "source-cache", key+".json")
 }
 
-// hookSourceCachePre serves a cached page reading ONLY after revalidating it with a
-// conditional HEAD that returns 304: a fresh verification, not a memory read.
-// Ported from devrites-source-cache-pre.sh. Cache hit → the reading on stderr +
-// exit 2 (Claude hands that to the agent in place of the fetch); miss/uncertain →
-// exit 0 (the real WebFetch proceeds). Fail-open on every uncertainty.
+// hookSourceCachePre serves a cached page only after a conditional HEAD request
+// returns 304. A cache hit writes the reading to stderr and exits 2 so Claude
+// uses it instead of fetching. A miss or uncertain result exits 0 and lets
+// WebFetch continue. This matches devrites-source-cache-pre.sh.
 func SourceCachePre(stdin io.Reader, stdout, stderr io.Writer) int {
 	if sourceCacheOff() {
 		return exitOK
@@ -95,7 +133,7 @@ func SourceCachePre(stdin io.Reader, stdout, stderr io.Writer) int {
 	if json.Unmarshal(raw, &e) != nil {
 		return exitOK
 	}
-	// No validator on the stored entry → freshness is unprovable → never serve.
+	// An entry without a validator cannot be revalidated.
 	if e.ETag == "" && e.LastModified == "" {
 		return exitOK
 	}
@@ -112,11 +150,11 @@ func SourceCachePre(stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	resp, err := headURL(url, headers)
 	if err != nil {
-		return exitOK // slow/dead server must not stall the turn
+		return exitOK // A slow or unavailable server does not stall the turn.
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusNotModified || e.Content == "" {
-		return exitOK // changed / inconclusive → let WebFetch re-fetch
+		return exitOK // Let WebFetch handle changed or inconclusive results.
 	}
 
 	fetched := e.FetchedAt
@@ -131,19 +169,20 @@ func SourceCachePre(stdin io.Reader, stdout, stderr io.Writer) int {
 	fmt.Fprintln(stderr, "----- BEGIN CACHED CONTENT -----")
 	fmt.Fprintf(stderr, "%s\n", e.Content)
 	fmt.Fprintln(stderr, "----- END CACHED CONTENT -----")
-	return 2 // the cache-hit channel: stderr replaces the fetch
+	return 2 // Claude uses stderr as the fetch result on a cache hit.
 }
 
-// hookSourceCachePost stores a completed WebFetch keyed on sha256(url) together with
-// the origin's validator headers, but only when the origin supplies a validator
-// (else a later 304 could never prove freshness). Ported from
-// devrites-source-cache-post.sh. Always exit 0.
-func SourceCachePost(stdin io.Reader, stdout, stderr io.Writer) int {
-	if sourceCacheOff() {
+// SourceCachePost stores a completed WebFetch under sha256(url) after a bounded
+// read. For Claude, the optional warning scan runs before the cache write and
+// returns typed metadata. The hook always exits 0.
+func SourceCachePost(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) int {
+	warn := h == harness.Claude && os.Getenv("DEVRITES_INGEST_WARNING") == ingestWarningMode
+	cacheOff := sourceCacheOff()
+	if cacheOff && !warn {
 		return exitOK
 	}
-	data, err := io.ReadAll(stdin)
-	if err != nil {
+	data, err := io.ReadAll(io.LimitReader(stdin, maxSourcePostPayloadBytes+1))
+	if err != nil || int64(len(data)) > maxSourcePostPayloadBytes {
 		return exitOK
 	}
 	payload := parseWebFetchPayload(data)
@@ -155,11 +194,22 @@ func SourceCachePost(stdin io.Reader, stdout, stderr io.Writer) int {
 	if content == "" {
 		return exitOK
 	}
+	if warn {
+		findings := scanIngestContent(content, ingestOrigin(payload.ToolInput.URL))
+		if len(findings) > 0 {
+			_ = os.Remove(sourceCachePath(url))
+			writeIngestWarning(h, findings, stdout)
+			return exitOK
+		}
+	}
+	if cacheOff {
+		return exitOK
+	}
 	prompt := payload.ToolInput.Prompt
 
 	etag, lastMod := fetchValidators(url)
 	entryPath := sourceCachePath(url)
-	// No validator → we could never prove freshness later → don't cache; clear stale.
+	// Clear stale data when no validator can support later revalidation.
 	if etag == "" && lastMod == "" {
 		_ = os.Remove(entryPath)
 		return exitOK
@@ -180,8 +230,168 @@ func SourceCachePost(stdin io.Reader, stdout, stderr io.Writer) int {
 	return exitOK
 }
 
-// fetchValidators does a HEAD to the origin (following redirects) and returns the
-// FINAL response's ETag / Last-Modified, empty on any failure.
+type ingestFinding struct {
+	ReasonID     string `json:"reason_id"`
+	Class        string `json:"class"`
+	Severity     string `json:"severity"`
+	Offset       int    `json:"offset"`
+	Origin       string `json:"origin"`
+	CacheSkipped bool   `json:"cache_skipped"`
+}
+
+func scanIngestContent(content, origin string) []ingestFinding {
+	findings := make([]ingestFinding, 0, 3)
+	appendFinding := func(reasonID, class string, offset int) {
+		findings = append(findings, ingestFinding{
+			ReasonID:     reasonID,
+			Class:        class,
+			Severity:     "high",
+			Offset:       offset,
+			Origin:       origin,
+			CacheSkipped: true,
+		})
+	}
+	if offset, ok := hiddenControlOffset(content); ok {
+		appendFinding(ingestReasonHiddenControl, "hidden_control", offset)
+	}
+	if offset, ok := instructionRedirectOffset(content); ok {
+		appendFinding(ingestReasonInstructionRedirect, "instruction_redirect", offset)
+	}
+	if offset, ok := credentialOffset(content); ok {
+		appendFinding(ingestReasonCredentialShape, "credential_shape", offset)
+	}
+	return findings
+}
+
+func hiddenControlOffset(content string) (int, bool) {
+	for offset, r := range content {
+		switch {
+		case r >= '\u202a' && r <= '\u202e':
+			return offset, true
+		case r >= '\u2066' && r <= '\u2069':
+			return offset, true
+		case r == '\u200b' || r == '\u2060' || r == '\ufeff':
+			return offset, true
+		}
+	}
+	return 0, false
+}
+
+func instructionRedirectOffset(content string) (int, bool) {
+	best := -1
+	for _, pattern := range ingestInstructionPatterns {
+		for cursor := 0; cursor < len(content); {
+			loc := pattern.FindStringIndex(content[cursor:])
+			if loc == nil {
+				break
+			}
+			start, end := cursor+loc[0], cursor+loc[1]
+			if !instructionExample(content, start, end) && (best < 0 || start < best) {
+				best = start
+			}
+			cursor = end
+		}
+	}
+	return best, best >= 0
+}
+
+func instructionExample(content string, start, end int) bool {
+	lineStart := strings.LastIndexByte(content[:start], '\n') + 1
+	beforeStart := lineStart
+	if start-beforeStart > 160 {
+		beforeStart = start - 160
+	}
+	afterEnd := len(content)
+	if end+160 < afterEnd {
+		afterEnd = end + 160
+	}
+	if n := strings.IndexByte(content[end:afterEnd], '\n'); n >= 0 {
+		afterEnd = end + n
+	}
+	before, after := content[beforeStart:start], content[end:afterEnd]
+	for _, quote := range []byte{'`', '"', '\''} {
+		if strings.LastIndexByte(before, quote) >= 0 && strings.IndexByte(after, quote) >= 0 {
+			return true
+		}
+	}
+	lowerBefore := strings.ToLower(before)
+	trimmedBefore := strings.TrimSpace(lowerBefore)
+	if strings.HasPrefix(trimmedBefore, "//") || strings.HasPrefix(trimmedBefore, "# ") {
+		return true
+	}
+	for _, marker := range []string{
+		"do not ", "don't ", "never ", "example", "pattern", "detect",
+		"security guidance", "prompt injection",
+	} {
+		if strings.Contains(lowerBefore, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func credentialOffset(content string) (int, bool) {
+	best := -1
+	for _, pattern := range ingestCredentialPatterns {
+		for cursor := 0; cursor < len(content); {
+			loc := pattern.re.FindStringIndex(content[cursor:])
+			if loc == nil {
+				break
+			}
+			start, end := cursor+loc[0], cursor+loc[1]
+			if pattern.accept(content[start:end]) && (best < 0 || start < best) {
+				best = start
+				break
+			}
+			cursor = end
+		}
+	}
+	return best, best >= 0
+}
+
+func variedCredential(s string) bool {
+	var lower, upper, digit bool
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z':
+			lower = true
+		case r >= 'A' && r <= 'Z':
+			upper = true
+		case r >= '0' && r <= '9':
+			digit = true
+		}
+	}
+	return lower && upper && digit
+}
+
+func ingestOrigin(rawURL string) string {
+	origin := "claude/WebFetch/PostToolUse"
+	if u, err := url.Parse(rawURL); err == nil && u.Hostname() != "" {
+		host := strings.ToLower(u.Hostname())
+		if len(host) <= 253 && strings.IndexFunc(host, func(r rune) bool {
+			return !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '.' || r == '-' || r == ':')
+		}) < 0 {
+			origin += "@" + host
+		}
+	}
+	return origin
+}
+
+func writeIngestWarning(h harness.Harness, findings []ingestFinding, stdout io.Writer) {
+	metadata, err := json.Marshal(findings)
+	if err != nil {
+		return
+	}
+	context := "DevRites experimental ingestion warning: suspicious untrusted WebFetch content detected. Review this metadata before using the result: " + string(metadata)
+	envelope, err := h.PostToolContext(context)
+	if err == nil {
+		fmt.Fprintln(stdout, envelope)
+	}
+}
+
+// fetchValidators sends a HEAD request to the origin, follows redirects, and
+// returns the final response's ETag and Last-Modified values. Failures return
+// empty values.
 func fetchValidators(url string) (etag, lastMod string) {
 	resp, err := headURL(url, nil)
 	if err != nil {
@@ -205,25 +415,42 @@ func headURL(url string, headers http.Header) (*http.Response, error) {
 }
 
 func FetchJSON(url string, out any) error {
-	resp, err := installHTTPClient.Get(url)
+	resp, err := installGet(url)
 	if err != nil {
 		return fmt.Errorf("fetch JSON: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return fmt.Errorf("%s returned %s", url, resp.Status)
+		return fmt.Errorf("%s returned %s", resp.Request.URL.Redacted(), resp.Status)
 	}
-	return json.NewDecoder(resp.Body).Decode(out)
+	if resp.ContentLength > maxInstallJSONBytes {
+		return fmt.Errorf("JSON response exceeds %d bytes", maxInstallJSONBytes)
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxInstallJSONBytes+1))
+	if err != nil {
+		return fmt.Errorf("read JSON response: %w", err)
+	}
+	if int64(len(body)) > maxInstallJSONBytes {
+		return fmt.Errorf("JSON response exceeds %d bytes", maxInstallJSONBytes)
+	}
+	if err := json.Unmarshal(body, out); err != nil {
+		return fmt.Errorf("decode JSON response: %w", err)
+	}
+	return nil
 }
 
 func DownloadFile(url, path string) error {
-	resp, err := installHTTPClient.Get(url)
+	resp, err := installGet(url)
 	if err != nil {
 		return fmt.Errorf("download to %s: %w", path, err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		_ = resp.Body.Close()
-		return fmt.Errorf("%s returned %s", url, resp.Status)
+		return fmt.Errorf("%s returned %s", resp.Request.URL.Redacted(), resp.Status)
+	}
+	if resp.ContentLength > maxInstallDownloadBytes {
+		_ = resp.Body.Close()
+		return fmt.Errorf("download exceeds %d bytes", maxInstallDownloadBytes)
 	}
 	dir := filepath.Dir(path)
 	out, err := os.CreateTemp(dir, "."+filepath.Base(path)+".download-*")
@@ -239,12 +466,17 @@ func DownloadFile(url, path string) error {
 			_ = os.Remove(tmp)
 		}
 	}()
-	if _, err := io.Copy(out, resp.Body); err != nil {
+	written, err := io.Copy(out, io.LimitReader(resp.Body, maxInstallDownloadBytes+1))
+	if err != nil {
 		_ = resp.Body.Close()
 		return fmt.Errorf("write %s: %w", path, err)
 	}
+	if written > maxInstallDownloadBytes {
+		_ = resp.Body.Close()
+		return fmt.Errorf("download exceeds %d bytes", maxInstallDownloadBytes)
+	}
 	if err := resp.Body.Close(); err != nil {
-		return fmt.Errorf("close download %s: %w", url, err)
+		return fmt.Errorf("close download %s: %w", resp.Request.URL.Redacted(), err)
 	}
 	if err := out.Chmod(0o644); err != nil {
 		return fmt.Errorf("chmod %s: %w", path, err)
@@ -260,6 +492,66 @@ func DownloadFile(url, path string) error {
 	}
 	keep = true
 	return nil
+}
+
+func installGet(rawURL string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("build install request: %w", err)
+	}
+	if err := validateInstallURL(req.URL); err != nil {
+		return nil, err
+	}
+	return installHTTPClient.Do(req)
+}
+
+func validateInstallURL(u *url.URL) error {
+	if u == nil || u.Hostname() == "" {
+		return errors.New("install URL has no host")
+	}
+	switch strings.ToLower(u.Scheme) {
+	case "https":
+		return nil
+	case "http":
+		if ip, err := netip.ParseAddr(u.Hostname()); err == nil && ip.Unmap().IsLoopback() {
+			return nil
+		}
+	}
+	return fmt.Errorf("install URL must use HTTPS (HTTP is allowed only for literal loopback test addresses): %s", u.Redacted())
+}
+
+func checkInstallRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	if err := validateInstallURL(req.URL); err != nil {
+		return err
+	}
+	if len(via) == 0 {
+		return nil
+	}
+	if !isLoopbackURL(via[0].URL) && isLoopbackURL(req.URL) {
+		return fmt.Errorf("remote install URL cannot redirect to loopback: %s", req.URL.Redacted())
+	}
+	if !strings.EqualFold(via[len(via)-1].URL.Host, req.URL.Host) {
+		req.URL.User = nil
+		for _, name := range []string{"Authorization", "Proxy-Authorization", "Cookie"} {
+			req.Header.Del(name)
+		}
+	}
+	return nil
+}
+
+func isLoopbackURL(u *url.URL) bool {
+	if u == nil {
+		return false
+	}
+	host := strings.TrimSuffix(strings.ToLower(u.Hostname()), ".")
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return true
+	}
+	ip, err := netip.ParseAddr(host)
+	return err == nil && ip.Unmap().IsLoopback()
 }
 
 type webFetchPayload struct {
@@ -314,17 +606,16 @@ var refreshExcludedDirs = map[string]bool{
 	".research": true, ".cursor": true, "dist": true, "build": true,
 }
 
-// hookRefreshIndexes keeps the optional code-intelligence indexes fresh after code
-// changes. Ported from devrites-refresh-indexes.sh. Trigger mode (no args) guards on
-// availability + a change-stamp, then spawns a DETACHED worker so Stop returns at
-// once; `--worker ROOT` is that detached work; `--force [ROOT]` runs it
-// synchronously and prints a report. Silent when no index tracks the repo;
-// fail-open, never blocks.
+// hookRefreshIndexes refreshes optional code indexes after source changes. With
+// no arguments it checks availability and a change stamp, then starts a detached
+// worker so Stop can return. `--worker ROOT` runs that work, while
+// `--force [ROOT]` runs it synchronously and prints a report. This matches
+// devrites-refresh-indexes.sh and stays silent when no index tracks the repo.
 func RefreshIndexes(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if os.Getenv("DEVRITES_REFRESH_INDEXES") == "off" {
 		return exitOK
 	}
-	// Worker branch: do the work, release the lock, exit.
+	// Run the detached worker, then release its lock.
 	if len(args) >= 1 && args[0] == "--worker" {
 		root := argOrProject(args, 1)
 		st := computeRefreshState(root)
@@ -341,21 +632,21 @@ func RefreshIndexes(args []string, stdin io.Reader, stdout, stderr io.Writer) in
 	root := argOrProject(rest, 0)
 	st := computeRefreshState(root)
 
-	// Availability guard: nothing to do unless at least one index tracks this repo.
+	// Skip repositories that no configured index tracks.
 	if !dirExists(filepath.Join(root, ".codegraph")) &&
 		!dirExists(filepath.Join(root, "graphify-out")) &&
 		!cbmRegistered(root) {
 		return exitOK
 	}
-	// Change guard (trigger mode): skip if nothing changed since the last refresh.
+	// In trigger mode, skip unchanged repositories.
 	if !force && fileExists(st.stamp) && !repoChangedSince(root, st.stamp) {
 		return exitOK
 	}
-	// Lock: never run two refreshes at once; steal a lock older than 30 minutes.
+	// Allow one refresh at a time and replace locks older than 30 minutes.
 	if !acquireRefreshLock(st.lock) {
 		return exitOK
 	}
-	// Debounce: stamp now so a no-op turn doesn't re-trigger.
+	// Stamp the attempt so a no-op turn does not trigger it again.
 	_ = os.WriteFile(st.stamp, []byte(""), 0o644)
 
 	if force {
@@ -363,7 +654,7 @@ func RefreshIndexes(args []string, stdin io.Reader, stdout, stderr io.Writer) in
 		_ = os.RemoveAll(st.lock)
 		return exitOK
 	}
-	// Detached worker: Stop returns immediately.
+	// Start a detached worker so Stop can return immediately.
 	spawnRefreshWorker(root, st)
 	return exitOK
 }
@@ -449,8 +740,8 @@ func spawnRefreshWorker(root string, st refreshState) {
 	}
 }
 
-// refreshWorker runs the actual reindex for each optional tool that is installed
-// AND tracks this repo, each under a bounded timeout. Missing tool = no-op.
+// refreshWorker runs each installed indexer that tracks the repository, with a
+// timeout for each command.
 func refreshWorker(root string, st refreshState, out io.Writer) {
 	fmt.Fprintf(out, "[%s] refresh start: %s\n", nowStamp(), root)
 	if cbmRegistered(root) {
@@ -469,8 +760,8 @@ func refreshWorker(root string, st refreshState, out io.Writer) {
 	fmt.Fprintf(out, "[%s] refresh done\n", nowStamp())
 }
 
-// runIndexTool runs one external index command under a timeout, tee-ing its combined
-// output; a failure or timeout is reported, never fatal.
+// runIndexTool runs one index command with a timeout and copies its combined
+// output. Failures are reported but do not stop other indexers.
 func runIndexTool(out io.Writer, timeout time.Duration, name string, args ...string) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -505,8 +796,8 @@ func runIndexTool(out io.Writer, timeout time.Duration, name string, args ...str
 	}
 }
 
-// cbmRegistered reports whether codebase-memory-mcp is installed AND tracks root:
-// a cheap repo-local marker first, then the project registry.
+// cbmRegistered reports whether codebase-memory-mcp is installed and tracks
+// root. It checks a repository marker before consulting the project registry.
 func cbmRegistered(root string) bool {
 	if !hasTool("codebase-memory-mcp") {
 		return false

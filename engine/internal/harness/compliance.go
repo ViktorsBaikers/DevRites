@@ -5,31 +5,25 @@ import (
 	"strings"
 )
 
-// The harness adapter-compliance matrix.
-//
-// DevRites drives more than one agent runtime from one engine, but the runtimes
-// do not expose identical enforcement surfaces. Rather than pretend parity, this
-// frozen matrix states, per surface, whether each supported harness enforces it
-// natively, through an adapter, or only by instruction the model may ignore. It
-// is the single source of truth; `devrites-engine harness-matrix` renders it and
-// CI drift-checks the rendered copy in docs/, so the honest picture cannot rot.
+// The compliance matrix records how each harness supports every enforcement
+// surface. `devrites-engine harness-matrix` renders this data, and CI compares
+// the result with the copy in docs.
 
 // Tier is how strongly a harness backs a given surface, from strongest to
 // weakest.
 type Tier int
 
 const (
-	// Native — the harness exposes and delivers the surface directly. Whether a
-	// delivered policy blocks is stated separately in the surface note.
+	// Native means the harness exposes and delivers the surface directly. The
+	// surface note says whether its policy blocks.
 	Native Tier = iota
-	// Adapter — supported, but through a translation shim (a different verb,
-	// a mirrored file tree) rather than the harness's first-class path.
+	// Adapter means a translation layer, such as a different verb or mirrored
+	// file tree, provides the surface.
 	Adapter
-	// Instruction — no runtime enforcement surface; the behaviour rides on a
-	// directive the model is asked to follow and may under-fire.
+	// Instruction means the runtime has no enforcement surface and relies on a
+	// directive that the model may not follow consistently.
 	Instruction
-	// Conditional — natively supported, but gated on an operator precondition
-	// that silently disables it when unmet.
+	// Conditional means native support depends on an operator precondition.
 	Conditional
 )
 
@@ -60,13 +54,15 @@ type Surface struct {
 	Note        string
 }
 
-// complianceMatrix is grounded in the shipped wiring: pack/.claude/settings.json
-// for Claude, generated host artifacts + AGENTS.md merge for Codex.
-// Change a cell only when that wiring changes.
+// complianceMatrix reflects the shipped wiring in pack/.claude/settings.json
+// for Claude and the generated host artifacts plus AGENTS.md for Codex. Change
+// a cell only when that wiring changes.
 var complianceMatrix = []Surface{
 	{"SessionStart orientation", Native, Native, "all phases", "manual preamble/snapshot", "yes", "high", "Both wire the orient hook; identical additionalContext envelope."},
 	{"PreToolUse policy (allow, a1-guard, reviewer-readonly, wright-scope)", Conditional, Conditional, "build/review safety", "observe-only findings + human review", "yes", "high", "Both deliver the event, but these policies are non-blocking by default; DEVRITES_HOOK_PROFILE=strict enables every guard, or each guard can be enabled through its documented specific variable."},
+	{"Destructive Git authority", Conditional, Conditional, "all shell tool calls", "human permission review; no exact one-shot proof", "yes", "high", "Both wire git-guard at PreToolUse. Standard and strict profiles enforce exact 15-minute one-shot authority; minimal profile or the explicit kill list disables the hook."},
 	{"PostToolUse sentinel (redwatch)", Native, Native, "prove/build rest points", "manual red/green check", "yes", "high", "Fail-on-red sentinel wired on both."},
+	{"WebFetch ingestion warning trial", Conditional, Instruction, "external research", "inspect retrieved content as untrusted data", "no", "medium", "Claude WebFetch PostToolUse can emit an opt-in metadata-only warning with DEVRITES_INGEST_WARNING=warn; a flagged result remains in context and is omitted from the local source cache. Codex has no matching result event, so this trial is unavailable and silent."},
 	{"Stop gate", Conditional, Conditional, "all rest points", "observe-only finding + manual host-specific rite-status", "yes", "high", "Both deliver Stop; stop-gate blocks with DEVRITES_STOP_GATE=enforce or DEVRITES_HOOK_PROFILE=strict."},
 	{"SubagentStart discipline injection", Native, Native, "review/build fan-out", "agent file preamble", "yes", "high", "subagent-orient wired on both."},
 	{"Skill invocation", Native, Adapter, "all public rites", "explicit file read", "yes", "high", "Claude: native /rite. Codex: $rite over the mirrored .agents/skills tree."},
@@ -75,16 +71,14 @@ var complianceMatrix = []Surface{
 	{"Project activation", Native, Conditional, "Codex-only startup", "inspect hooks/config, decide trust, then rerun doctor", "yes", "medium", "Codex silently skips every .codex/ layer in an untrusted project; trust remains an operator decision after inspection."},
 }
 
-// Matrix markers delimit the generated block inside a docs file so drift-check
-// can extract and compare exactly the rendered region.
+// Matrix markers identify the generated block that the drift check compares.
 const (
 	MatrixBeginMarker = "<!-- BEGIN harness-matrix (generated by `devrites-engine harness-matrix`) -->"
 	MatrixEndMarker   = "<!-- END harness-matrix -->"
 )
 
-// RenderMatrix returns the marker-delimited Markdown block for the matrix. It is
-// deterministic — no timestamps — so a committed copy only changes when the
-// matrix data does.
+// RenderMatrix returns the marker-delimited Markdown block. It has no timestamps,
+// so its output changes only when the matrix data changes.
 func RenderMatrix() string {
 	var b strings.Builder
 	b.WriteString(MatrixBeginMarker)
