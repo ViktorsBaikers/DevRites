@@ -2,6 +2,14 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.3](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.2...v3.2.3) (2026-07-25)
+
+### Fixed
+
+* **agents:** enforce native specialist dispatch ([4ac3eb1](https://github.com/ViktorsBaikers/DevRites/commit/4ac3eb1a407ed8df4d3097984fbc0e369a5918b4))
+* **agents:** satisfy staticcheck error style ([cc21c46](https://github.com/ViktorsBaikers/DevRites/commit/cc21c4600171111dc30065327a9cd0ffff2420bc))
+* **skills:** avoid false invocation reference ([45f25bb](https://github.com/ViktorsBaikers/DevRites/commit/45f25bb70516460d753bccaa5ba78cce73e2a1d0))
+
 ## [3.2.2](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.1...v3.2.2) (2026-07-25)
 
 ### Fixed
