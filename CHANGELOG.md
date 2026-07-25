@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.4](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.3...v3.2.4) (2026-07-25)
+
+### Fixed
+
+* **agents:** handle hidden v2 agent_type schema ([31ece9a](https://github.com/ViktorsBaikers/DevRites/commit/31ece9aad686fa3a3fa0308d5a3ede11f5b58c07))
+
 ## [3.2.3](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.2...v3.2.3) (2026-07-25)
 
 ### Fixed
