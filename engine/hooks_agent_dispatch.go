@@ -575,7 +575,7 @@ func readCodexV2ParentRollout(
 		}
 		if record.Type == "session_meta" {
 			if record.Payload.ID != sessionID || !sameResolvedPath(record.Payload.CWD, projectRoot) {
-				return nil, nil, fmt.Errorf("Codex parent rollout does not match the current session root")
+				return nil, nil, fmt.Errorf("codex parent rollout does not match the current session root")
 			}
 			metaSeen = true
 			continue
@@ -600,7 +600,7 @@ func readCodexV2ParentRollout(
 			}
 			spawnedAt, err := time.Parse(time.RFC3339Nano, record.Timestamp)
 			if err != nil {
-				return nil, nil, fmt.Errorf("Codex spawn timestamp is invalid: %w", err)
+				return nil, nil, fmt.Errorf("codex spawn timestamp is invalid: %w", err)
 			}
 			spawns["/root/"+args.TaskName] = &codexV2Spawn{
 				Role:      args.AgentType,
@@ -624,7 +624,7 @@ func readCodexV2ParentRollout(
 		return nil, nil, fmt.Errorf("read Codex parent rollout: %w", err)
 	}
 	if !metaSeen {
-		return nil, nil, fmt.Errorf("Codex parent rollout is missing session metadata")
+		return nil, nil, fmt.Errorf("codex parent rollout is missing session metadata")
 	}
 	return spawns, waitLines, nil
 }
