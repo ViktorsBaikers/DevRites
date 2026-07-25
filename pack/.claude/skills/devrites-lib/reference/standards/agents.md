@@ -64,7 +64,7 @@ Use the first safe rung:
 Every canonical skill declares `required-agent-roles` in its frontmatter. Use `none`
 when no fresh agent is unconditionally required for that invocation. Codex reads this
 field from the installed skill at `UserPromptSubmit` and arms a fail-closed completion
-receipt for every listed role; the engine never carries a hardcoded rite-to-role map.
+receipt for every listed role; the engine derives roles from skill metadata.
 Conditional scouts and reviewers remain owned by their explicit phase triggers.
 
 Claude uses `Agent` (`Task` alias); Codex uses `spawn_agent`. V2 sends the exact named
