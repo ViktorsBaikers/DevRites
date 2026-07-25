@@ -22,10 +22,7 @@ const (
 	reconcileAllowlistName      = ".reconcile-allowlist"
 	reconcileCheckedName        = ".reconcile-checked"
 	reconcileDevritesName       = ".reconcile-devrites"
-	reconcileInlineName         = ".reconcile-inline"
 	reconcileObjectsName        = ".reconcile-objects"
-	reconcileObjectMarkerName   = ".devrites-baseline"
-	reconcileLegacyClaimedName  = ".reconcile-claimed"
 	defaultWrightAllowlistName  = ".wright-allowlist"
 	wrightAllowlistFileEnv      = "DEVRITES_WRIGHT_ALLOWLIST_FILE"
 	reconcileDevritesPathPrefix = ".devrites/"
@@ -63,14 +60,12 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	base := filepath.Join(d, reconcileBaseName)
 	capturedAllowlist := filepath.Join(d, reconcileAllowlistName)
 	devritesSnapshot := filepath.Join(d, reconcileDevritesName)
-	inline := filepath.Join(d, reconcileInlineName)
 	objects := filepath.Join(d, reconcileObjectsName)
-	legacyClaimed := filepath.Join(d, reconcileLegacyClaimedName)
 	checked := filepath.Join(d, reconcileCheckedName)
 
 	closeWindow := func() error {
 		var failures []string
-		for _, privateFile := range []string{base, capturedAllowlist, devritesSnapshot, inline, legacyClaimed, checked} {
+		for _, privateFile := range []string{base, capturedAllowlist, devritesSnapshot, checked} {
 			if err := os.Remove(privateFile); err != nil && !os.IsNotExist(err) {
 				failures = append(failures, fmt.Sprintf("%s: %v", filepath.Base(privateFile), err))
 			}
@@ -136,7 +131,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 				fmt.Fprintf(stderr, "reconcile: cannot refresh wright allowlist: %v\n", err)
 				return 6
 			}
-			state, err := captureReconcileDevritesState(root, devritesSnapshot, activeObjects, checked, inline)
+			state, err := captureReconcileDevritesState(root, devritesSnapshot, activeObjects, checked)
 			if err != nil {
 				fmt.Fprintf(stderr, "reconcile: cannot refresh .devrites snapshot: %v\n", err)
 				return 6
@@ -180,17 +175,12 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "reconcile: cannot write snapshot: %v\n", err)
 			return 6
 		}
-		if err := os.WriteFile(filepath.Join(objects, reconcileObjectMarkerName), []byte(tree+"\n"), 0o600); err != nil {
-			_ = closeWindow()
-			fmt.Fprintf(stderr, "reconcile: cannot seal snapshot object database: %v\n", err)
-			return 6
-		}
 		if err := os.WriteFile(capturedAllowlist, renderWrightAllowlist(allowed), 0o600); err != nil {
 			_ = closeWindow()
 			fmt.Fprintf(stderr, "reconcile: cannot capture wright allowlist: %v\n", err)
 			return 6
 		}
-		state, err := captureReconcileDevritesState(root, devritesSnapshot, objects, checked, inline)
+		state, err := captureReconcileDevritesState(root, devritesSnapshot, objects, checked)
 		if err != nil {
 			_ = closeWindow()
 			fmt.Fprintf(stderr, "reconcile: cannot snapshot .devrites: %v\n", err)
@@ -225,7 +215,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "reconcile: invalid .devrites snapshot: %v\n", err)
 			return 6
 		}
-		afterDevrites, err := captureReconcileDevritesState(root, devritesSnapshot, objects, checked, inline)
+		afterDevrites, err := captureReconcileDevritesState(root, devritesSnapshot, objects, checked)
 		if err != nil {
 			fmt.Fprintf(stderr, "reconcile: cannot compare .devrites: %v\n", err)
 			return 6
@@ -742,21 +732,6 @@ func loadReconcileBaseline(gitRoot, workspace string) (baseTree string, env []st
 	baseTree = strings.TrimSpace(string(data))
 	if baseTree == "" || strings.ContainsAny(baseTree, " \t\r\n") {
 		return "", nil, "", false, fmt.Errorf("%s does not contain one tree id", reconcileBaseName)
-	}
-	markerPath := filepath.Join(objectDir, reconcileObjectMarkerName)
-	markerInfo, err := os.Lstat(markerPath)
-	if err != nil {
-		return "", nil, "", false, fmt.Errorf("%s is not a sealed object database: %w", reconcileObjectsName, err)
-	}
-	if !markerInfo.Mode().IsRegular() {
-		return "", nil, "", false, fmt.Errorf("%s marker is not a regular file", reconcileObjectsName)
-	}
-	marker, err := os.ReadFile(markerPath)
-	if err != nil {
-		return "", nil, "", false, fmt.Errorf("read %s marker: %w", reconcileObjectsName, err)
-	}
-	if strings.TrimSpace(string(marker)) != baseTree {
-		return "", nil, "", false, fmt.Errorf("%s marker does not match %s", reconcileObjectsName, reconcileBaseName)
 	}
 	env, err = reconcileGitEnv(gitRoot, objectDir)
 	if err != nil {

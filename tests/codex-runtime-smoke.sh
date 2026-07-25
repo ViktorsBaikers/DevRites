@@ -5,7 +5,9 @@
 # DEVRITES_CODEX_MODEL_SMOKE=1 also runs a read-only `codex exec` session and
 # requires Codex authentication, network access, and a token budget.
 # DEVRITES_CODEX_SUBAGENT_SMOKE=1 checks a live fresh-agent role-contract spawn
-# in the Codex JSON event stream and uses more tokens.
+# and uses more tokens. It defaults to GPT-5.4's stable V1 surface;
+# DEVRITES_CODEX_SUBAGENT_MODEL and
+# DEVRITES_CODEX_SUBAGENT_SCHEMA select another authenticated model/schema pair.
 set -u
 export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -20,7 +22,19 @@ command -v python3 >/dev/null 2>&1 || { echo "codex-runtime-smoke: SKIP (python3
 
 T="$(mktemp -d)"
 GEN=""
-trap 'rm -rf "$T"; [ -n "$GEN" ] && rm -rf "$GEN"' EXIT
+RECEIPT_DIR=""
+trap 'rm -rf "$T"; [ -n "$GEN" ] && rm -rf "$GEN"; [ -n "$RECEIPT_DIR" ] && rm -rf "$RECEIPT_DIR"' EXIT
+live_engine_ready=1
+if [ "${DEVRITES_CODEX_SUBAGENT_SMOKE:-0}" = "1" ]; then
+  mkdir -p "$T/bin"
+  if (cd "$ROOT/engine" && go build -o "$T/bin/devrites-engine" .); then
+    export PATH="$T/bin:$PATH"
+    ok "built current devrites-engine for live hook verification"
+  else
+    no "could not build current devrites-engine for live hook verification"
+    live_engine_ready=0
+  fi
+fi
 if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
   GEN="$(mktemp -d)"
   DEVRITES_HOST_ARTIFACT_DIR="$GEN" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
@@ -30,10 +44,29 @@ fi
 # A unique basename prevents persistent-memory clients from reusing evidence
 # from an earlier temp fixture also named "project".
 PROJECT="$T/codex-runtime-smoke-$(basename "$T")"
-mkdir -p "$PROJECT" "$T/home" "$T/codex-home"
+mkdir -p "$PROJECT"
+PROJECT="$(cd "$PROJECT" && pwd -P)"
+RECEIPT_DIR="$(python3 - "$PROJECT/.devrites" <<'PY'
+import hashlib, os, pathlib, sys, tempfile
+root_hash = hashlib.sha256(os.path.normpath(sys.argv[1]).encode()).hexdigest()
+print(pathlib.Path(tempfile.gettempdir()) / "devrites-agent-dispatch-v1" / root_hash)
+PY
+)"
+mkdir -p "$T/home" "$T/codex-home"
+git -C "$PROJECT" init -q || no "could not initialize live Codex project"
 
 echo "== codex-runtime-smoke (target: $PROJECT) =="
 bash "$ROOT/install.sh" --target "$PROJECT" >/dev/null 2>&1 || no "install failed"
+mkdir -p "$PROJECT/.agents/skills/devrites-runtime-smoke"
+cat > "$PROJECT/.agents/skills/devrites-runtime-smoke/SKILL.md" <<'EOF'
+---
+name: devrites-runtime-smoke
+description: Authenticated fixture for proving mandatory Codex role dispatch.
+required-agent-roles: devrites-security-auditor
+---
+
+Spawn the required specialist and return its result.
+EOF
 
 (
   cd "$PROJECT" || exit 1
@@ -67,20 +100,41 @@ fi
 
 MODEL_HOME="${DEVRITES_CODEX_MODEL_HOME:-}"
 MODEL_CODEX_HOME="${DEVRITES_CODEX_MODEL_CODEX_HOME:-}"
+LIVE_CODEX_HOME="$T/model-codex-home"
 model_env_ready() {
   runtime_explicit_roots_ready "$MODEL_HOME" "$MODEL_CODEX_HOME"
+}
+
+prepare_live_codex_home() {
+  [ -f "$MODEL_CODEX_HOME/auth.json" ] || return 1
+  mkdir -p "$LIVE_CODEX_HOME" || return 1
+  cp "$MODEL_CODEX_HOME/auth.json" "$LIVE_CODEX_HOME/auth.json" || return 1
+  chmod 600 "$LIVE_CODEX_HOME/auth.json" || return 1
+  python3 - "$PROJECT" "$LIVE_CODEX_HOME/config.toml" <<'PY'
+import json, pathlib, sys
+project = str(pathlib.Path(sys.argv[1]).resolve())
+pathlib.Path(sys.argv[2]).write_text(
+    "[features]\nhooks = true\nmulti_agent = true\n\n"
+    "[agents]\nenabled = true\n\n"
+    f"[projects.{json.dumps(project)}]\n"
+    'trust_level = "trusted"\n'
+)
+PY
 }
 
 if [ "${DEVRITES_CODEX_MODEL_SMOKE:-0}" = "1" ]; then
   if ! model_env_ready; then
     no "model-backed codex exec requires real Codex auth/config (set DEVRITES_CODEX_MODEL_HOME and DEVRITES_CODEX_MODEL_CODEX_HOME if needed)"
+  elif ! prepare_live_codex_home; then
+    no "model-backed codex exec could not prepare isolated authenticated Codex home"
   else
   (
     cd "$PROJECT" || exit 1
-    HOME="$MODEL_HOME" CODEX_HOME="$MODEL_CODEX_HOME" codex exec \
+    HOME="$MODEL_HOME" CODEX_HOME="$LIVE_CODEX_HOME" codex exec \
       --ephemeral \
-      --skip-git-repo-check \
       --dangerously-bypass-hook-trust \
+      --enable hooks \
+      -c shell_environment_policy.inherit=all \
       -s read-only \
       'Read AGENTS.md only. Reply with exactly: DEVRITES-CODEX-OK'
   ) > "$T/exec.out" 2> "$T/exec.err"
@@ -97,18 +151,43 @@ else
   ok "model-backed codex exec skipped (set DEVRITES_CODEX_MODEL_SMOKE=1 to run)"
 fi
 
-SKILL_DISPATCH_PROMPT='Use $devrites-audit with the security axis to inspect README.md without modifying files. You must call spawn_agent with agent_type explorer and fork_turns none, tell it to read .codex/agents/devrites-security-auditor.toml, and wait for it. Then reply exactly DEVRITES-SKILL-DISPATCH-OK.'
+SUBAGENT_MODEL="${DEVRITES_CODEX_SUBAGENT_MODEL:-gpt-5.4}"
+SUBAGENT_SCHEMA="${DEVRITES_CODEX_SUBAGENT_SCHEMA:-v1}"
+SKILL_DISPATCH_TASK_NAME="$(python3 - "$PROJECT" <<'PY'
+import hashlib, sys
+print("devrites_security_auditor_" + hashlib.sha256(sys.argv[1].encode()).hexdigest()[:12])
+PY
+)"
 SKILL_DISPATCH_ROLE="devrites-security-auditor"
-SKILL_DISPATCH_AGENT_TYPE="explorer"
-if printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q 'spawn_agent.*agent_type explorer.*fork_turns none'; then
-  ok "skill dispatch smoke explicitly requests the generic compatibility path"
-else
-  no "skill dispatch smoke does not request the generic compatibility path"
-fi
+case "$SUBAGENT_SCHEMA" in
+  v1)
+    SKILL_DISPATCH_AGENT_TYPE="explorer"
+    SKILL_DISPATCH_PROMPT='$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not audit in the root. Call spawn_agent with agent_type explorer and fork_turns none, and send a message naming .codex/agents/devrites-security-auditor.toml that asks the child to inspect README.md without modifying files. Wait for the returned child and use its result. Then reply exactly DEVRITES-SKILL-DISPATCH-OK.'
+    printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q 'spawn_agent.*agent_type explorer.*fork_turns none' \
+      && ok "skill dispatch smoke explicitly requests the MultiAgent V1 compatibility path" \
+      || no "skill dispatch smoke does not request the MultiAgent V1 compatibility path"
+    ;;
+  v2)
+    SKILL_DISPATCH_AGENT_TYPE="$SKILL_DISPATCH_ROLE"
+    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not audit in the root. This smoke targets Codex MultiAgent V2: call spawn_agent with agent_type $SKILL_DISPATCH_ROLE, task_name $SKILL_DISPATCH_TASK_NAME, and fork_turns none. Send the exact named child a README-only read-only audit message, wait for it, and use its non-empty result. Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
+    printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "spawn_agent.*agent_type $SKILL_DISPATCH_ROLE.*task_name $SKILL_DISPATCH_TASK_NAME.*fork_turns none" \
+      && ok "skill dispatch smoke explicitly requests the MultiAgent V2 named-role path" \
+      || no "skill dispatch smoke does not request the MultiAgent V2 named-role path"
+    ;;
+  *)
+    no "unknown DEVRITES_CODEX_SUBAGENT_SCHEMA=$SUBAGENT_SCHEMA (expected v1 or v2)"
+    SKILL_DISPATCH_AGENT_TYPE=""
+    SKILL_DISPATCH_PROMPT=""
+    ;;
+esac
 
 if [ "${DEVRITES_CODEX_SUBAGENT_SMOKE:-0}" = "1" ]; then
-  if ! model_env_ready; then
+  if [ "$live_engine_ready" -ne 1 ]; then
+    :
+  elif ! model_env_ready; then
     no "subagent smoke requires real Codex auth/config (set DEVRITES_CODEX_MODEL_HOME and DEVRITES_CODEX_MODEL_CODEX_HOME if needed)"
+  elif ! prepare_live_codex_home; then
+    no "subagent smoke could not prepare isolated authenticated Codex home"
   else
     mkdir -p "$PROJECT/.devrites/work/codex-skill-smoke"
     printf '%s\n' '# Codex skill dispatch smoke' > "$PROJECT/README.md"
@@ -121,25 +200,149 @@ EOF
     printf '%s\n' 'README.md' > "$PROJECT/.devrites/work/codex-skill-smoke/touched-files.md"
     (
       cd "$PROJECT" || exit 1
-      HOME="$MODEL_HOME" CODEX_HOME="$MODEL_CODEX_HOME" codex exec \
+      ephemeral_args=(--ephemeral)
+      [ "$SUBAGENT_SCHEMA" = "v2" ] && ephemeral_args=()
+      HOME="$MODEL_HOME" CODEX_HOME="$LIVE_CODEX_HOME" codex exec \
         --json \
-        --ephemeral \
-        --skip-git-repo-check \
+        "${ephemeral_args[@]}" \
+        -m "$SUBAGENT_MODEL" \
         --dangerously-bypass-hook-trust \
+        --enable hooks \
+        -c shell_environment_policy.inherit=all \
         -s read-only \
         "$SKILL_DISPATCH_PROMPT"
     ) > "$T/subagent.jsonl" 2> "$T/subagent.err"
     rc=$?
+    python3 - "$RECEIPT_DIR" "$SKILL_DISPATCH_ROLE" <<'PY'
+import json, pathlib, sys
+
+state_dir, role = map(str, sys.argv[1:])
+events = []
+for path in pathlib.Path(state_dir).glob("*.jsonl"):
+    events.extend(json.loads(line) for line in path.read_text().splitlines() if line.strip())
+assert any(
+    event.get("event") == "armed" and event.get("role") == role
+    for event in events
+), "missing required-agent-roles armed receipt"
+PY
+    armed_rc=$?
+    receipt_rc=1
+    if [ "$SUBAGENT_SCHEMA" = "v1" ]; then
+      python3 - "$PROJECT/.devrites" "$SKILL_DISPATCH_ROLE" "$SKILL_DISPATCH_AGENT_TYPE" <<'PY'
+import hashlib, json, os, pathlib, sys, tempfile
+
+root, role, agent_type = map(str, sys.argv[1:])
+root_hash = hashlib.sha256(os.path.normpath(root).encode()).hexdigest()
+state_dir = pathlib.Path(tempfile.gettempdir()) / "devrites-agent-dispatch-v1" / root_hash
+events = []
+for path in state_dir.glob("*.jsonl"):
+    events.extend(json.loads(line) for line in path.read_text().splitlines() if line.strip())
+
+pending = [e for e in events if e.get("event") == "pending" and e.get("role") == role and e.get("agent_type") == agent_type]
+assert pending, "missing pending spawn receipt"
+tool_ids = {e["tool_use_id"] for e in pending}
+started = [e for e in events if e.get("event") == "started" and e.get("tool_use_id") in tool_ids and e.get("agent_id")]
+assert started, "missing SubagentStart receipt"
+agent_ids = {e["agent_id"] for e in started}
+assert any(e.get("event") == "stopped" and e.get("agent_id") in agent_ids and e.get("result_sha256") for e in events), "missing non-empty result receipt"
+PY
+    else
+      python3 - "$LIVE_CODEX_HOME" "$T/subagent.jsonl" "$PROJECT" "$SKILL_DISPATCH_ROLE" "$SKILL_DISPATCH_TASK_NAME" <<'PY'
+import json, pathlib, sys
+
+code_home, event_path, project, role, task_name = map(str, sys.argv[1:])
+events = [json.loads(line) for line in pathlib.Path(event_path).read_text().splitlines() if line.strip()]
+thread_ids = [event.get("thread_id") for event in events if event.get("type") == "thread.started"]
+assert thread_ids and thread_ids[-1], "missing parent thread id"
+parent_id = thread_ids[-1]
+rollouts = list((pathlib.Path(code_home) / "sessions").rglob("*.jsonl"))
+parent_paths = [path for path in rollouts if path.name.endswith(f"-{parent_id}.jsonl")]
+assert len(parent_paths) == 1, f"expected one parent rollout, got {len(parent_paths)}"
+parent = [json.loads(line) for line in parent_paths[0].read_text().splitlines() if line.strip()]
+meta = parent[0]
+assert meta.get("type") == "session_meta"
+assert pathlib.Path(meta["payload"]["cwd"]).resolve() == pathlib.Path(project).resolve()
+
+spawns = []
+wait_indices = []
+delivered_indices = []
+for index, record in enumerate(parent):
+    payload = record.get("payload", {})
+    if payload.get("type") == "function_call" and payload.get("name") == "spawn_agent":
+        args = json.loads(payload.get("arguments", "{}"))
+        if args.get("task_name") == task_name:
+            spawns.append((index, args))
+    if payload.get("type") == "function_call" and payload.get("name") == "wait_agent":
+        wait_indices.append(index)
+    if payload.get("type") == "agent_message" and payload.get("author") == f"/root/{task_name}" and payload.get("recipient") == "/root":
+        text = "\n".join(
+            item.get("text", "")
+            for item in payload.get("content", [])
+            if item.get("type") == "input_text"
+        ).strip()
+        if text:
+            delivered_indices.append(index)
+
+assert len(spawns) == 1, f"expected one named spawn, got {len(spawns)}"
+spawn_index, spawn_args = spawns[0]
+assert spawn_args.get("agent_type") == role, spawn_args
+assert spawn_args.get("fork_turns") == "none", spawn_args
+assert delivered_indices, "missing non-empty child-to-root result"
+assert any(spawn_index < wait < delivered_indices[0] for wait in wait_indices), "missing wait between spawn and delivered result"
+
+children = []
+for path in rollouts:
+    if path == parent_paths[0]:
+        continue
+    records = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    if not records or records[0].get("type") != "session_meta":
+        continue
+    child_meta = records[0].get("payload", {})
+    if (
+        child_meta.get("parent_thread_id") == parent_id
+        and child_meta.get("agent_path") == f"/root/{task_name}"
+    ):
+        children.append(records)
+assert len(children) == 1, f"expected one child rollout, got {len(children)}"
+child = children[0]
+child_meta = child[0]["payload"]
+assert child_meta.get("agent_role") == role, child_meta
+developer_text = "\n".join(
+    item.get("text", "")
+    for record in child
+    for item in record.get("payload", {}).get("content", [])
+    if record.get("payload", {}).get("type") == "message"
+    and record.get("payload", {}).get("role") == "developer"
+    and item.get("type") == "input_text"
+)
+assert f"Codex custom-agent version of DevRites `{role}`" in developer_text, "named role instructions were not loaded"
+assert any(
+    record.get("payload", {}).get("type") == "task_complete"
+    and record.get("payload", {}).get("last_agent_message", "").strip()
+    for record in child
+), "missing non-empty child completion"
+PY
+    fi
+    receipt_rc=$?
+    stream_rc=0
+    if [ "$SUBAGENT_SCHEMA" = "v1" ]; then
+      grep -q '"tool":"spawn_agent"' "$T/subagent.jsonl" \
+        && grep -q '"tool":"wait"' "$T/subagent.jsonl" \
+        && grep -q "$SKILL_DISPATCH_AGENT_TYPE" "$T/subagent.jsonl" \
+        && grep -q "$SKILL_DISPATCH_ROLE" "$T/subagent.jsonl" \
+        || stream_rc=1
+    fi
     if [ "$rc" -eq 0 ] \
-      && grep -q '"tool":"spawn_agent"' "$T/subagent.jsonl" \
-      && grep -q '"tool":"wait"' "$T/subagent.jsonl" \
-      && grep -q "$SKILL_DISPATCH_AGENT_TYPE" "$T/subagent.jsonl" \
-      && grep -q "$SKILL_DISPATCH_ROLE" "$T/subagent.jsonl" \
+      && [ "$armed_rc" -eq 0 ] \
+      && [ "$receipt_rc" -eq 0 ] \
+      && [ "$stream_rc" -eq 0 ] \
       && ! grep -q 'unknown agent_type' "$T/subagent.err" "$T/subagent.jsonl" \
       && grep -q 'DEVRITES-SKILL-DISPATCH-OK' "$T/subagent.jsonl"; then
-      ok "codex skill-triggered generic role-contract dispatch smoke passed"
+      ok "codex skill-triggered $SUBAGENT_SCHEMA role-contract dispatch smoke passed"
     else
-      no "codex skill-triggered generic role-contract dispatch smoke failed"
+      no "codex skill-triggered $SUBAGENT_SCHEMA role-contract dispatch smoke failed"
+      [ "$armed_rc" -eq 0 ] || printf '%s\n' "  required-agent-roles arming verification failed"
+      [ "$receipt_rc" -eq 0 ] || printf '%s\n' "  receipt verification failed"
       sed -n '1,80p' "$T/subagent.err"
       sed -n '1,120p' "$T/subagent.jsonl"
     fi

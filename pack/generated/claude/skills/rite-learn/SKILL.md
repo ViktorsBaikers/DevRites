@@ -4,6 +4,7 @@ description: User-invoked review of the learning ledger; promotes recurring less
 argument-hint: "[--mine | \"<lesson to record>\"]"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # /rite-learn: the cross-feature learning loop

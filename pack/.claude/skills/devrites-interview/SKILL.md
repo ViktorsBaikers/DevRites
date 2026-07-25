@@ -2,6 +2,7 @@
 name: devrites-interview
 description: Interview the user one question at a time to extract intent. Use when the user says "interview me", "I am not sure what I want", or the ask is underspecified. Not for casual clarification.
 user-invocable: false
+required-agent-roles: none
 ---
 
 # devrites-interview: extract intent

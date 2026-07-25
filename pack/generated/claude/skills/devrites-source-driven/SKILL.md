@@ -2,6 +2,7 @@
 name: devrites-source-driven
 description: Verify uncertain framework/library behavior against official docs or installed source before relying on it. Use when the user says "check the docs", "verify this assumption", or hits an unfamiliar API. Not for internal code.
 user-invocable: false
+required-agent-roles: devrites-evidence-scout
 ---
 
 # devrites-source-driven: verify, don't guess

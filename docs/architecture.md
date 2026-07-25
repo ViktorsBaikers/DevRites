@@ -318,7 +318,8 @@ contract.
 - **Drift**: an explicit **Spec Drift Guard** in build/prove/polish/review/seal.
 - **Design**: `devrites-frontend-craft` + a four-phase `/rite-polish` orchestrator (code + backend always; UI normalize + polish when UI is in scope).
 - **Agents**: 18 fresh-context roles at flat depth one: 17 read-only leaves and
-  one wright. Fallback order is named, generic, then labelled inline.
+  one wright. Dispatch order is named, then guarded generic; if neither can
+  spawn, the workflow stops for HITL.
 - **Review**: **feature-scoped** multi-axis review with severity labels and
   fresh-context agents at the seal.
 - **Scope**: clarify → seal (decide) → ship (commit → push → tag or PR,
@@ -332,7 +333,10 @@ contract.
 1. **Invocation semantics are explicit in frontmatter.** `user-invocable`
    controls whether a skill is a public command; `disable-model-invocation`
    independently marks explicit-only public utilities and the internal
-   `devrites-lib` library. Model-invocable phases can still hand off and route;
+   `devrites-lib` library. `required-agent-roles` is the canonical list of
+   unconditional fresh-agent roles for one invocation (`none` is explicit);
+   Codex derives its fail-closed dispatch receipt from the installed mirror.
+   Model-invocable phases can still hand off and route;
    per-phase side-effect discipline (for example, "stop after one slice") is
    enforced in the skill **body**, because invocation flags cannot express it.
 2. **`context: fork` used selectively.** Verified it is a real field (isolated

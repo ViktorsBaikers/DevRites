@@ -25,18 +25,16 @@ For each risky step, state how to back it out:
 - A new external dependency with no failure handling is at least **Important**.
 - Record the chosen rollback path in `seal.md` → "Rollback / Recovery".
 
-## Fresh-context fallback weighting
+## Fresh-context availability
 
-An inline final-rung review is useful signal but **not independent evidence**:
+A required review must run in a fresh spawned agent:
 
-- Record `independence: fallback` and a roster skip reason; never log it as a dispatched
-  reviewer or a clean fresh-context pass.
-- Preserve its findings at their normal severity. A clean inline result still leaves an
-  **Important assurance gap** and cannot silently satisfy a required axis.
-- Seal remains NO-GO until that axis runs through a fresh-context spawn, or the human
-  explicitly accepts the reduced assurance in `seal.md`. AFK never auto-accepts it.
-- Security or irreversible-risk scope has no reduced-assurance override: unavailable
-  independent review remains NO-GO.
+- If neither a named role nor a guarded generic agent is available, record the roster
+  skip reason and keep seal **NO-GO**.
+- Never run the reviewer in the root context or log root work as a dispatched review.
+- AFK never auto-accepts a missing reviewer.
+- Security or irreversible-risk scope remains NO-GO while independent review is
+  unavailable.
 
 ## Destructive operations
 Confirm any destructive step with the user before shipping. Verify backups exist where

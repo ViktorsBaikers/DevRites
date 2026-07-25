@@ -3,6 +3,7 @@ name: rite-temper
 description: Temper a readied spec before planning. Use when the user says "temper this", "strategy review", "pre-mortem the spec", or asks if we are over/under-building. Not for code review or final seal.
 argument-hint: "[feature-slug] [--mode expand|selective|hold|reduce]"
 user-invocable: true
+required-agent-roles: devrites-strategy-reviewer
 ---
 
 # /rite-temper: review scope and risk before planning
@@ -112,8 +113,8 @@ that needs more than the default pre-mortem) selected by the section's risk).
    dimension still below bar after 3 is classified by decision ownership: a product/scope/risk
    choice becomes a blocking question; an objective spec defect stays blocked with the exact
    required edit and routes to `/rite-spec`, not `/rite-resolve`. Irreversible-risk findings
-   always pause. Use the shared capability ladder; an inline final-rung pass is labeled
-   `independence: fallback`, never an independent review. After an accepted edit to a
+   always pause. Use the shared capability ladder; if no fresh-agent rung is available,
+   stop for HITL. After an accepted edit to a
    coverage-bound input, repeat step 6's revalidation and digest refresh before handoff.
 8. **STOP.** Report the mode, the scope deltas, and the floor verdict; recommend `/rite-define`.
 

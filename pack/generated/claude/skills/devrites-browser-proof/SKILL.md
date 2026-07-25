@@ -2,6 +2,7 @@
 name: devrites-browser-proof
 description: Observe and prove working UI behavior in a real browser with screenshots, interactions, network evidence, and Core Web Vitals. Use for browser proof or performance after the page works.
 user-invocable: false
+required-agent-roles: none
 ---
 
 # devrites-browser-proof: runtime evidence for UI

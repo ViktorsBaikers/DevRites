@@ -3,6 +3,7 @@ name: rite-seal
 description: Decide GO / NO-GO readiness on the active feature. Use when the user asks "seal this", "GO / NO-GO", "decide if we can ship", "can we ship", or "safe to merge". Not for commit/push/tag/close; use /rite-ship.
 argument-hint: "[feature-slug] [--full]"
 user-invocable: true
+required-agent-roles: devrites-test-analyst
 ---
 
 # /rite-seal: GO / NO-GO

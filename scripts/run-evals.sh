@@ -1,32 +1,21 @@
 #!/usr/bin/env bash
 # scripts/run-evals.sh: validate the structure of DevRites trigger evals.
 #
-# Schema check + summary. Does NOT invoke a model unless --live is passed.
-# Live execution requires CLAUDE_API_KEY and is manual-only, never CI default.
-# CI runs this script to enforce the shape and
+# Schema check + summary. CI runs this script to enforce the shape and
 # catch broken JSON, missing skills, and empty/one-sided corpora. Invocation-policy
 # shape is enforced by run-routing-evals.py in scripts/validate.sh.
 #
 # Usage:
 #   scripts/run-evals.sh                         # validate every evals/*.json
 #   scripts/run-evals.sh evals/rite-spec.json    # validate one file
-#   scripts/run-evals.sh --live evals/*.json     # execute live model evals too
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EVALS_DIR="$ROOT/evals"
-LIVE=0
-ARGS=()
-for arg in "$@"; do
-  case "$arg" in
-    --live) LIVE=1 ;;
-    *) ARGS+=("$arg") ;;
-  esac
-done
 
-if [[ ${#ARGS[@]} -gt 0 ]]; then
-  FILES=("${ARGS[@]}")
+if [[ $# -gt 0 ]]; then
+  FILES=("$@")
 else
   if [[ ! -d "$EVALS_DIR" ]]; then
     echo "No evals/ directory at $EVALS_DIR" >&2
@@ -141,23 +130,3 @@ printf 'Validated %d eval files; %d failed.\n' "$TOTAL" "$FAILED"
 if [[ $FAILED -gt 0 ]]; then
   exit 1
 fi
-
-if [[ "$LIVE" -ne 1 ]]; then
-  echo
-  echo "Live model evals disabled by default. To run them manually:"
-  echo "  CLAUDE_API_KEY=sk-... scripts/run-evals.sh --live evals/*.json"
-  exit 0
-fi
-
-if [[ -z "${CLAUDE_API_KEY:-}" ]]; then
-  echo "error: --live requires CLAUDE_API_KEY." >&2
-  exit 2
-fi
-if ! command -v python3 >/dev/null 2>&1; then
-  echo "error: --live requires python3." >&2
-  exit 2
-fi
-
-echo
-echo "Executing live trigger evals via scripts/eval-runner.py …"
-exec python3 "$ROOT/scripts/eval-runner.py" "${FILES[@]}"

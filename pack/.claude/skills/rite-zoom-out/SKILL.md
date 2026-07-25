@@ -4,6 +4,7 @@ description: User-invoked read-only structural map of unfamiliar code: modules, 
 argument-hint: "[symbol | file | area to map]"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # /rite-zoom-out: step up one abstraction layer

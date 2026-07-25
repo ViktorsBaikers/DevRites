@@ -273,8 +273,8 @@ def validate_matrix(data: Any) -> dict[str, Any]:
             raise ContractError("scenario.role_class is unsupported")
         if scenario["simulate"] not in {
             "accepted",
+            "dispatch-unavailable",
             "generic-fallback",
-            "inline-fallback",
             "interrupted",
             "malformed",
             "missing",
@@ -313,7 +313,7 @@ def validate_matrix(data: Any) -> dict[str, Any]:
             },
             "scenario.expect",
         )
-        if expect["execution_mode"] not in {"named", "generic", "inline"}:
+        if expect["execution_mode"] not in {"named", "generic", "none"}:
             raise ContractError("execution mode is unsupported")
         if expect["guard_strength"] not in {
             "enforced",
@@ -778,7 +778,7 @@ def validate_result(
     exact_keys(
         execution, {"mode", "guard_strength", "independence"}, "result execution"
     )
-    if execution["mode"] not in {"named", "generic", "inline"}:
+    if execution["mode"] not in {"named", "generic", "none"}:
         raise ContractError("result execution mode is unsupported")
     if execution["guard_strength"] not in {
         "enforced",

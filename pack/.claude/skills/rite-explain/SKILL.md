@@ -4,6 +4,7 @@ description: User-invoked explainer that teaches one concept, diff, idea, or rec
 argument-hint: "[a concept | a diff ref | an idea | \"what did I do this week?\"], or bare to be asked"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # /rite-explain: the human half of the learning loop
@@ -42,8 +43,9 @@ Dispatch by task shape, per [`devrites-lib/reference/model-tiers.md`](../devrite
   orchestrator's own model; nothing is dispatched down. Teaching quality is the whole product: do
   not cheapen it.
 
-The degradation rule in that file applies: no per-agent model control → run the scout inline under
-the same budget.
+No per-agent model control means dispatch the scout as a same-model fresh agent under the
+same budget. If no fresh-agent rung is available, stop with the missing capability; never run
+the scout in the root context.
 
 ## Workflow
 

@@ -88,10 +88,44 @@ cat > "$TMP/ok.md" <<'EOF'
 name: ok-skill
 description: A canonical skill with only name and description.
 user-invocable: true
+required-agent-roles: none
 ---
 body
 EOF
 assert_ok "canonical-skill" "$TMP/ok.md"
+
+# 6) malformed required agent role should be rejected
+cat > "$TMP/invalid-agent-role.md" <<'EOF'
+---
+name: invalid-agent-role
+description: A skill with malformed mandatory agent metadata.
+required-agent-roles: root-inline-reviewer
+---
+body
+EOF
+assert_fail "invalid-agent-role" "$TMP/invalid-agent-role.md"
+
+# 7) every skill must make the agent requirement explicit
+cat > "$TMP/missing-agent-requirement.md" <<'EOF'
+---
+name: missing-agent-requirement
+description: A skill that omitted mandatory agent metadata.
+---
+body
+EOF
+assert_fail "missing-agent-requirement" "$TMP/missing-agent-requirement.md"
+
+# 8) canonical role references must resolve to an agent source file
+mkdir -p "$TMP/pack/.claude/skills/missing-agent" "$TMP/pack/.claude/agents"
+cat > "$TMP/pack/.claude/skills/missing-agent/SKILL.md" <<'EOF'
+---
+name: missing-agent
+description: A skill that references an absent agent contract.
+required-agent-roles: devrites-missing-agent
+---
+body
+EOF
+assert_fail "missing-agent-contract" "$TMP/pack/.claude/skills/missing-agent/SKILL.md"
 
 rm -rf "$TMP"
 

@@ -2,6 +2,7 @@
 name: devrites-doubt
 description: Stress-test one non-trivial decision with an adversarial independent take. Use when the user says "are we sure", "double-check", "what could go wrong", or before boundary/data/auth/API/migration choices. Not for trivial choices.
 user-invocable: false
+required-agent-roles: devrites-doubt-reviewer
 ---
 
 # devrites-doubt: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP
@@ -22,7 +23,7 @@ code · claiming "this is safe", "this scales", or "this matches the spec".
   `agent-packet/v1` and the adversarial objective *"find what's wrong; do not
   validate."* Follow
   [`agents.md`](../devrites-lib/reference/standards/agents.md). Inline does not satisfy
-  independence; it is a labeled fallback only at the final capability-ladder rung.
+  independence; if no fresh-agent rung is available, stop for HITL.
 - [ ] **4. RECONCILE**: classify EVERY finding: contract misread | valid & actionable |
   valid trade-off | noise. **Doubt-theater check:** if two or more cycles find substantive
   issues but classify **zero** as actionable, the review is too agreeable. Sharpen the

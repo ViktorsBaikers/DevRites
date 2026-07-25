@@ -653,8 +653,8 @@ func TestCoverageGolden(t *testing.T) {
 // ---- doubt-coverage -------------------------------------------------------
 //
 // Golden: the decisions.md `doubt: MISSING` short-circuit (checked first), the
-// inline-build branch, the no-log pass, the wright/doubt count line, and the
-// 0/1/2/3 exit taxonomy are checked against golden snapshots.
+// no-log pass, the wright/doubt count line, and the 0/1/2/3 exit taxonomy are
+// checked against golden snapshots.
 
 func TestParityDoubtCoverage(t *testing.T) {
 	work := t.TempDir()
@@ -664,15 +664,7 @@ func TestParityDoubtCoverage(t *testing.T) {
 		"## Decisions stood\n- use flock — doubt: MISSING\n")
 	writeFeatureFile(t, work, "missing", "footprint.log", "1000 wright 01\n")
 
-	// MISSING is checked BEFORE the inline marker → still exit 3.
-	writeFeatureFile(t, work, "missing-inline", "decisions.md", "- x — doubt: MISSING\n")
-	writeFeatureFile(t, work, "missing-inline", ".reconcile-inline", "")
-
-	// inline build, no MISSING → exit 0.
-	writeFeatureFile(t, work, "inline", ".reconcile-inline", "")
-	writeFeatureFile(t, work, "inline", "decisions.md", "## Decisions stood\n- x — doubt: yes\n")
-
-	// dir exists, no log / dec / marker → "no footprint log" pass.
+	// dir exists, no log / decisions → "no footprint log" pass.
 	makeFeatureDir(t, work, "nolog")
 
 	// wright dispatch(es), zero doubt → exit 1.
@@ -687,7 +679,7 @@ func TestParityDoubtCoverage(t *testing.T) {
 		"1000 reviewer code-reviewer\n1000 doubt d1\n")
 
 	for _, arg := range []string{
-		"missing", "missing-inline", "inline", "nolog",
+		"missing", "nolog",
 		"nodoubt", "doubted", "nowright",
 		"ghost", // no workspace at all → "no footprint log" pass
 	} {
@@ -708,13 +700,12 @@ func TestParityDoubtCoverage(t *testing.T) {
 }
 
 // TestDoubtCoverageGolden asserts each verdict's exact stdout inline: the
-// SKIPPED / inline / no-log messages and the "no doubt ran" prompt.
+// SKIPPED / no-log messages and the "no doubt ran" prompt.
 func TestDoubtCoverageGolden(t *testing.T) {
 	work := t.TempDir()
 	const base = ".devrites/features/"
 
 	writeFile(t, work, base+"miss/decisions.md", "- x — doubt: MISSING\n")
-	writeFile(t, work, base+"in/.reconcile-inline", "")
 	mkdirAllT(t, work, base+"empty")
 	writeFile(t, work, base+"nd/footprint.log", "1000 wright 01\n1000 wright 02\n")
 	writeFile(t, work, base+"ok/footprint.log", "1000 wright 01\n1000 doubt d1\n")
@@ -723,9 +714,6 @@ func TestDoubtCoverageGolden(t *testing.T) {
 		{"skipped", []string{"doubt-coverage", "miss"},
 			"doubt-coverage: SKIPPED: a '## Decisions stood' entry in decisions.md has doubt: MISSING.\n" +
 				"A decision was stood and recorded but never doubted. Re-dispatch doubt or escalate.\n", 3},
-		{"inline", []string{"doubt-coverage", "in"},
-			"doubt-coverage: inline build (.reconcile-inline): footprint heuristic n/a; no MISSING\n" +
-				"verdict recorded. Verify by hand that each stood decision carries a devrites-doubt verdict.\n", 0},
 		{"no-log", []string{"doubt-coverage", "empty"},
 			"doubt-coverage: no footprint log: nothing to assess (pass)\n", 0},
 		{"no-doubt-ran", []string{"doubt-coverage", "nd"},

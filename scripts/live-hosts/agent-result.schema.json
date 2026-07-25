@@ -143,7 +143,8 @@
           "enum": [
             "named",
             "generic",
-            "inline"
+            "inline",
+            "none"
           ]
         },
         "guard_strength": {

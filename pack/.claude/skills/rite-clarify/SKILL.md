@@ -3,6 +3,7 @@ name: rite-clarify
 description: Run the topology-first decision-coverage scan after rite-spec and before strategy or architecture. Audit actors, journeys, states, data, integrations, operations, proof, assumptions, and must-NOT boundaries; close Partial/Missing rows and emit decision-coverage.md CLEAR. Use for missing/stale coverage or a missed pre-build product decision.
 argument-hint: "[feature-slug]"
 user-invocable: true
+required-agent-roles: none
 ---
 
 # /rite-clarify: resolve product decisions

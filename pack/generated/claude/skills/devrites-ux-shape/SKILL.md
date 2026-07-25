@@ -2,6 +2,7 @@
 name: devrites-ux-shape
 description: Plan UX/UI before code: design direction, design brief, visual direction, key states, interaction model for screens/forms/dashboards/settings pages. Use when shaping UI. Not for building/polish.
 user-invocable: false
+required-agent-roles: none
 ---
 
 # devrites-ux-shape: plan the UX/UI before code

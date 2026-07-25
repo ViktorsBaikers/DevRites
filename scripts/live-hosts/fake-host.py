@@ -132,11 +132,6 @@ def mode_and_reasons(simulate: str) -> tuple[str, str, bool, str, str, str]:
     if simulate == "generic-fallback":
         mode = "generic"
         dispatch = "DRV-AGENT-GENERIC-FALLBACK"
-    elif simulate == "inline-fallback":
-        mode = "inline"
-        guard = "observed"
-        independence = False
-        dispatch = "DRV-AGENT-INLINE-FALLBACK"
     elif simulate in {"reviewer-denied", "wright-denied"}:
         result = "DRV-AGENT-RESULT-OUT-OF-SCOPE"
         outcome = "denied"
@@ -152,7 +147,7 @@ def run() -> int:
     packet = json.loads(packet_path.read_text(encoding="utf-8"))
     simulate = packet["simulate"]
     fault = os.environ.get("DEVRITES_CONTRACT_FAKE_FAULT", "")
-    if simulate == "missing":
+    if simulate in {"dispatch-unavailable", "missing"}:
         return 0
     if simulate == "malformed":
         result_path.write_text("not-json-compatible-yaml\n", encoding="utf-8")
@@ -170,8 +165,6 @@ def run() -> int:
         signals.add("declared_side_effects")
     elif simulate == "generic-fallback":
         signals.add("fresh_context")
-    elif simulate == "inline-fallback":
-        signals.add("inline_labelled")
     elif simulate == "reviewer-denied":
         signals.add("mutation_denied")
     elif simulate == "wright-denied":

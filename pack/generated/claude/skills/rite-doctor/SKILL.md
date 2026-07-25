@@ -3,6 +3,7 @@ name: rite-doctor
 description: Doctor DevRites setup or index health. Use when workflow wiring is broken, the user asks to check DevRites, or says "reindex". Not for application bugs.
 argument-hint: "[--code | --reindex]"
 user-invocable: true
+required-agent-roles: none
 ---
 
 # /rite-doctor: health check

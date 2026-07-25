@@ -2,6 +2,7 @@
 name: devrites-debug-recovery
 description: Debug application failures: tests, builds, CI, runtime exceptions, browser errors, app 500s. Reproduce, rank hypotheses, fix root cause, regression-test. Use when "debug", "build is red", "tests fail", or the app is broken. Not for DevRites install health.
 user-invocable: false
+required-agent-roles: none
 ---
 
 # devrites-debug-recovery: fix the root cause, not the symptom

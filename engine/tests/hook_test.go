@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // writeActive points the workspace's ACTIVE pointer at slug.
@@ -475,7 +476,7 @@ func TestHookWrightScopeBindsCodexWorkerDuringReconcileWindow(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(workspace, ".reconcile-base"), []byte("snapshot\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	env := []string{"DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1"}
+	env := []string{"DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1", "DEVRITES_HOOK_PROFILE=strict"}
 
 	for _, test := range []struct {
 		name  string
@@ -509,6 +510,137 @@ func TestHookWrightScopeBindsCodexWorkerDuringReconcileWindow(t *testing.T) {
 		env, "hook", "wright-scope", "--harness=codex")
 	if code != 0 || strings.TrimSpace(out) != "" {
 		t.Fatalf("generic worker outside a reconcile window was shadowed: exit=%d out=%q", code, out)
+	}
+}
+
+func TestHookWrightScopeAcceptsCodexV2NamedRole(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	if err := os.WriteFile(filepath.Join(workspace, ".wright-allowlist"), []byte("src/app.go\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{".reconcile-base", ".reconcile-allowlist", ".reconcile-devrites"} {
+		if err := os.WriteFile(filepath.Join(workspace, name), []byte(name+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	env := []string{"DEVRITES_HOOK_PROFILE=strict"}
+	for _, test := range []struct {
+		path string
+		deny bool
+	}{
+		{"src/app.go", false},
+		{"src/other.go", true},
+	} {
+		payload := hookPayload(t, map[string]any{
+			"hook_event_name": "PreToolUse",
+			"agent_type":      "devrites-slice-wright",
+			"tool_name":       "Edit",
+			"tool_input":      map[string]any{"file_path": test.path},
+		})
+		out, stderr, code := runDevritesIO(t, root, payload, env,
+			"hook", "wright-scope", "--harness=codex")
+		if code != 0 {
+			t.Fatalf("%s exit=%d stderr=%s", test.path, code, stderr)
+		}
+		if test.deny {
+			if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+				t.Fatalf("%s should be denied: %s", test.path, out)
+			}
+		} else if strings.TrimSpace(out) != "" {
+			t.Fatalf("%s should be allowed: %s", test.path, out)
+		}
+	}
+}
+
+func TestHookWrightScopeRequiresSpawnedCodexWorkerForSourceWrites(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	if err := os.WriteFile(filepath.Join(workspace, ".reconcile-base"), []byte("snapshot\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := []string{"DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1"}
+
+	runGuard := func(input string, deny bool) {
+		t.Helper()
+		out, errOut, code := runDevritesIO(t, root, input, env,
+			"hook", "wright-scope", "--harness=codex")
+		if code != 0 {
+			t.Fatalf("exit=%d out=%q stderr=%q", code, out, errOut)
+		}
+		if deny {
+			if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+				t.Fatalf("expected deny, got %q", out)
+			}
+		} else if strings.TrimSpace(out) != "" {
+			t.Fatalf("expected allow, got %q", out)
+		}
+	}
+
+	runGuard(`{"tool_name":"spawn_agent","tool_input":{"agent_type":"worker"}}`, false)
+	runGuard(`{"tool_name":"spawn_agent","tool_input":{"agent_type":"explorer"}}`, false)
+	runGuard(`{"tool_name":"Write","tool_input":{"file_path":".devrites/features/auth-tokens/state.md"}}`, false)
+	runGuard(`{"tool_name":"Write","tool_input":{"file_path":"src/app.go"}}`, true)
+	runGuard(`{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`, true)
+	runGuard(`{"tool_name":"js","tool_input":{"code":"writeFile()"}}`, true)
+	out, errOut, code := runDevritesIO(t, root,
+		`{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`,
+		nil, "hook", "wright-scope", "--harness=claude")
+	if code != 0 {
+		t.Fatalf("Claude root guard: exit=%d stderr=%q", code, errOut)
+	}
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Fatalf("Claude root source write was not denied: %q", out)
+	}
+
+	// A legacy marker is inert: it cannot authorize root source writes.
+	if err := os.WriteFile(filepath.Join(workspace, ".reconcile-inline"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	runGuard(`{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`, true)
+	runGuard(`{"tool_name":"js","tool_input":{"code":"writeFile()"}}`, true)
+
+	projectDir := filepath.Dir(root)
+	if err := os.MkdirAll(filepath.Join(projectDir, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	source := filepath.Join(projectDir, "src", "app.go")
+	if err := os.WriteFile(source, []byte("package src\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(workspace, "source-alias")
+	if err := os.Symlink(source, alias); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	runGuard(`{"tool_name":"Write","tool_input":{"file_path":".devrites/features/auth-tokens/source-alias"}}`, true)
+}
+
+func TestHookA1GuardIgnoresLegacyInlineMarker(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	for _, name := range []string{".reconcile-base", ".reconcile-inline"} {
+		if err := os.WriteFile(filepath.Join(workspace, name), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	input := `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"}}`
+	env := []string{"DEVRITES_A1_HOOK=enforce"}
+
+	for _, host := range []string{"codex", "claude"} {
+		t.Run(host, func(t *testing.T) {
+			out, errOut, code := runDevritesIO(t, root, input, env,
+				"hook", "a1-guard", "--harness="+host)
+			if code != 0 {
+				t.Fatalf("exit=%d stderr=%q", code, errOut)
+			}
+			if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+				t.Fatalf("legacy inline marker authorized root source write: %q", out)
+			}
+		})
 	}
 }
 
@@ -731,5 +863,746 @@ func TestHookSubagentOrientSilentForNonDevritesAgent(t *testing.T) {
 		if code != 0 || strings.TrimSpace(out) != "" {
 			t.Errorf("want silent exit 0 for payload %q; got exit=%d out=%q", in, code, out)
 		}
+	}
+}
+
+func hookPayload(t *testing.T, value map[string]any) string {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw)
+}
+
+func writeCodexAgentContract(t *testing.T, root, role string) {
+	t.Helper()
+	dir := filepath.Join(filepath.Dir(root), ".codex", "agents")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	contract := "name = \"" + role + "\"\ndeveloper_instructions = '''\nROLE-CONTRACT:" + role + "\n'''\n"
+	if err := os.WriteFile(filepath.Join(dir, role+".toml"), []byte(contract), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeCodexSkillContract(t *testing.T, root, skill, roles string) {
+	t.Helper()
+	dir := filepath.Join(filepath.Dir(root), ".agents", "skills", skill)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	contract := "---\nname: " + skill + "\ndescription: Test skill.\nrequired-agent-roles: " + roles + "\n---\n"
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte(contract), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeCodexV2Rollouts(
+	t *testing.T,
+	codeHome, projectRoot, sessionID, turnID, role, taskName string,
+	includeWait, includeInstructions, includeResult bool,
+) {
+	t.Helper()
+	dir := filepath.Join(codeHome, "sessions", "2026", "07", "25")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	at := time.Now().UTC()
+	parent := []map[string]any{
+		{
+			"timestamp": at.Format(time.RFC3339Nano),
+			"type":      "session_meta",
+			"payload": map[string]any{
+				"session_id": sessionID,
+				"id":         sessionID,
+				"cwd":        projectRoot,
+			},
+		},
+		{
+			"timestamp": at.Add(time.Millisecond).Format(time.RFC3339Nano),
+			"type":      "response_item",
+			"payload": map[string]any{
+				"type":      "function_call",
+				"name":      "spawn_agent",
+				"arguments": `{"agent_type":"` + role + `","task_name":"` + taskName + `","fork_turns":"none","message":"encrypted"}`,
+				"internal_chat_message_metadata_passthrough": map[string]any{
+					"turn_id": turnID,
+				},
+			},
+		},
+	}
+	if includeWait {
+		parent = append(parent, map[string]any{
+			"timestamp": at.Add(2 * time.Millisecond).Format(time.RFC3339Nano),
+			"type":      "response_item",
+			"payload": map[string]any{
+				"type":      "function_call",
+				"name":      "wait_agent",
+				"arguments": `{"timeout_ms":3600000}`,
+				"internal_chat_message_metadata_passthrough": map[string]any{
+					"turn_id": turnID,
+				},
+			},
+		})
+	}
+	if includeResult {
+		parent = append(parent, map[string]any{
+			"timestamp": at.Add(3 * time.Millisecond).Format(time.RFC3339Nano),
+			"type":      "response_item",
+			"payload": map[string]any{
+				"type":      "agent_message",
+				"author":    "/root/" + taskName,
+				"recipient": "/root",
+				"content": []map[string]any{{
+					"type": "input_text",
+					"text": "Message Type: FINAL_ANSWER\nPayload:\nagent-result/v1 complete",
+				}},
+				"internal_chat_message_metadata_passthrough": map[string]any{
+					"turn_id": turnID,
+				},
+			},
+		})
+	}
+	writeJSONLines(t, filepath.Join(dir, "rollout-parent-"+sessionID+".jsonl"), parent)
+
+	child := []map[string]any{
+		{
+			"timestamp": at.Add(time.Millisecond).Format(time.RFC3339Nano),
+			"type":      "session_meta",
+			"payload": map[string]any{
+				"session_id":       sessionID,
+				"id":               "child-" + taskName,
+				"parent_thread_id": sessionID,
+				"cwd":              projectRoot,
+				"agent_path":       "/root/" + taskName,
+				"agent_role":       role,
+			},
+		},
+	}
+	if includeInstructions {
+		child = append(child, map[string]any{
+			"timestamp": at.Add(2 * time.Millisecond).Format(time.RFC3339Nano),
+			"type":      "response_item",
+			"payload": map[string]any{
+				"type": "message",
+				"role": "developer",
+				"content": []map[string]any{{
+					"type": "input_text",
+					"text": "ROLE-CONTRACT:" + role,
+				}},
+			},
+		})
+	}
+	if includeResult {
+		child = append(child, map[string]any{
+			"timestamp": at.Add(3 * time.Millisecond).Format(time.RFC3339Nano),
+			"type":      "event_msg",
+			"payload": map[string]any{
+				"type":               "task_complete",
+				"last_agent_message": "agent-result/v1 complete",
+			},
+		})
+	}
+	writeJSONLines(t, filepath.Join(dir, "rollout-child-"+taskName+".jsonl"), child)
+}
+
+func writeJSONLines(t *testing.T, path string, records []map[string]any) {
+	t.Helper()
+	var lines []string
+	for _, record := range records {
+		raw, err := json.Marshal(record)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines = append(lines, string(raw))
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCodexAgentDispatchArmsInstalledSkillRequirements(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		invocation string
+		roles      string
+		wantRoles  []string
+	}{
+		{
+			name:       "single-role-dollar-invocation",
+			invocation: "$rite-vet",
+			roles:      "devrites-plan-reviewer",
+			wantRoles:  []string{"devrites-plan-reviewer"},
+		},
+		{
+			name:       "multi-role-slash-invocation",
+			invocation: "/rite-review",
+			roles:      "devrites-spec-reviewer, devrites-code-reviewer",
+			wantRoles:  []string{"devrites-code-reviewer", "devrites-spec-reviewer"},
+		},
+		{
+			name:       "declared-no-agent",
+			invocation: "$rite-status",
+			roles:      "none",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := newWorkspace(t)
+			skill := strings.TrimLeft(tc.invocation, "$/")
+			writeCodexSkillContract(t, root, skill, tc.roles)
+			for _, role := range tc.wantRoles {
+				writeCodexAgentContract(t, root, role)
+			}
+			sessionID, turnID := "session-"+tc.name, "turn-"+tc.name
+			out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+				"hook_event_name": "UserPromptSubmit",
+				"session_id":      sessionID,
+				"turn_id":         turnID,
+				"prompt":          tc.invocation,
+			}), nil, "hook", "agent-dispatch", "--harness=codex")
+			if code != 0 {
+				t.Fatalf("arm exit=%d stderr=%s", code, stderr)
+			}
+			for _, role := range tc.wantRoles {
+				if !strings.Contains(out, role) {
+					t.Fatalf("arm output omitted %s: %s", role, out)
+				}
+			}
+
+			stopOut, stopErr, stopCode := runDevritesIO(t, root, hookPayload(t, map[string]any{
+				"hook_event_name":  "Stop",
+				"session_id":       sessionID,
+				"turn_id":          turnID,
+				"stop_hook_active": false,
+			}), nil, "hook", "agent-dispatch", "--harness=codex")
+			if stopCode != 0 {
+				t.Fatalf("stop exit=%d stderr=%s", stopCode, stopErr)
+			}
+			if len(tc.wantRoles) == 0 {
+				if strings.TrimSpace(stopOut) != "" {
+					t.Fatalf("no-agent skill was blocked: %s", stopOut)
+				}
+				return
+			}
+			for _, role := range tc.wantRoles {
+				if strings.Contains(stopOut, role) {
+					return
+				}
+			}
+			t.Fatalf("required skill roles did not block Stop: %s", stopOut)
+		})
+	}
+}
+
+func TestCodexAgentDispatchRejectsInvalidInstalledSkillRequirements(t *testing.T) {
+	root := newWorkspace(t)
+	writeCodexSkillContract(t, root, "rite-vet", "root-inline-reviewer")
+	out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      "session-invalid-skill",
+		"turn_id":         "turn-invalid-skill",
+		"prompt":          "$rite-vet",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("invalid metadata exit=%d stderr=%s", code, stderr)
+	}
+	var decision struct {
+		Decision string `json:"decision"`
+		Reason   string `json:"reason"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &decision); err != nil {
+		t.Fatalf("invalid metadata response: %v\n%s", err, out)
+	}
+	if decision.Decision != "block" || !strings.Contains(decision.Reason, "invalid required agent role") {
+		t.Fatalf("invalid skill metadata did not fail closed: %#v", decision)
+	}
+	stopOut, stopErr, stopCode := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "Stop",
+		"session_id":      "session-invalid-skill",
+		"turn_id":         "turn-invalid-skill",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if stopCode != 0 || !strings.Contains(stopOut, "required-agent-roles contract is invalid") {
+		t.Fatalf("invalid skill metadata did not remain fail closed at Stop: exit=%d out=%s stderr=%s", stopCode, stopOut, stopErr)
+	}
+}
+
+func TestCodexAgentDispatchDoesNotArmSkillNamesInsideURLs(t *testing.T) {
+	root := newWorkspace(t)
+	writeCodexSkillContract(t, root, "rite-vet", "devrites-plan-reviewer")
+	sessionID, turnID := "session-skill-url", "turn-skill-url"
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "Read https://example.test/rite-vet before answering.",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "Stop",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("URL path armed a skill: exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
+func TestCodexAgentDispatchDoesNotArmBareAgentContractReference(t *testing.T) {
+	root := newWorkspace(t)
+	writeCodexAgentContract(t, root, "devrites-security-auditor")
+	sessionID, turnID := "session-agent-reference", "turn-agent-reference"
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "Explain .codex/agents/devrites-security-auditor.toml without running it.",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "Stop",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("bare agent reference armed dispatch: exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
+func TestCodexAgentDispatchBlocksFalseWaitAndStop(t *testing.T) {
+	root := newWorkspace(t)
+	writeCodexSkillContract(t, root, "devrites-audit", "devrites-security-auditor")
+	sessionID, turnID := "session-false-wait", "turn-false-wait"
+	prompt := hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$devrites-audit Call spawn_agent and tell it to read .codex/agents/devrites-security-auditor.toml.",
+	})
+	if _, stderr, code := runDevritesIO(t, root, prompt, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 {
+		t.Fatalf("arm exit=%d stderr=%s", code, stderr)
+	}
+
+	wait := hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "wait",
+		"tool_input":      map[string]any{"receiver_thread_ids": []string{}},
+	})
+	out, stderr, code := runDevritesIO(t, root, wait, nil,
+		"hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("wait exit=%d stderr=%s", code, stderr)
+	}
+	if decision, reason := parsePermissionDecision(t, out); decision != "deny" ||
+		!strings.Contains(reason, "spawn_agent") {
+		t.Fatalf("false wait not denied: decision=%q reason=%q out=%s", decision, reason, out)
+	}
+
+	stop := hookPayload(t, map[string]any{
+		"hook_event_name":  "Stop",
+		"session_id":       sessionID,
+		"turn_id":          turnID,
+		"stop_hook_active": false,
+	})
+	out, stderr, code = runDevritesIO(t, root, stop, nil,
+		"hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("stop exit=%d stderr=%s", code, stderr)
+	}
+	var stopDecision struct {
+		Decision string `json:"decision"`
+		Reason   string `json:"reason"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &stopDecision); err != nil {
+		t.Fatalf("invalid Stop response: %v\n%s", err, out)
+	}
+	if stopDecision.Decision != "block" || !strings.Contains(stopDecision.Reason, "spawn_agent") {
+		t.Fatalf("false completion not blocked: %#v", stopDecision)
+	}
+
+	stop = hookPayload(t, map[string]any{
+		"hook_event_name":  "Stop",
+		"session_id":       sessionID,
+		"turn_id":          turnID,
+		"stop_hook_active": true,
+	})
+	out, stderr, code = runDevritesIO(t, root, stop, nil,
+		"hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("second stop exit=%d stderr=%s", code, stderr)
+	}
+	var terminal struct {
+		Continue   bool   `json:"continue"`
+		StopReason string `json:"stopReason"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &terminal); err != nil {
+		t.Fatalf("invalid terminal Stop response: %v\n%s", err, out)
+	}
+	if terminal.Continue || !strings.Contains(terminal.StopReason, "spawn_agent") {
+		t.Fatalf("second false completion was not stopped: %#v", terminal)
+	}
+}
+
+func TestCodexAgentDispatchConfirmsGenericRoleAndResult(t *testing.T) {
+	root := newWorkspace(t)
+	sessionID, turnID := "session-complete", "turn-complete"
+	role := "devrites-security-auditor"
+	writeCodexAgentContract(t, root, role)
+	writeCodexSkillContract(t, root, "devrites-audit", role)
+
+	prompt := hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$devrites-audit Call spawn_agent and tell it to read .codex/agents/" + role + ".toml.",
+	})
+	runDevritesIO(t, root, prompt, nil, "hook", "agent-dispatch", "--harness=codex")
+
+	spawn := hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "spawn_agent",
+		"tool_use_id":     "spawn-1",
+		"tool_input": map[string]any{
+			"agent_type": "explorer",
+			"fork_turns": "none",
+			"message":    "Read .codex/agents/" + role + ".toml and return the requested report.",
+		},
+	})
+	out, stderr, code := runDevritesIO(t, root, spawn, nil,
+		"hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("spawn exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+	var rewrite struct {
+		HookSpecificOutput struct {
+			PermissionDecision string `json:"permissionDecision"`
+			UpdatedInput       struct {
+				Message string `json:"message"`
+			} `json:"updatedInput"`
+		} `json:"hookSpecificOutput"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &rewrite); err != nil {
+		t.Fatalf("invalid spawn rewrite: %v\n%s", err, out)
+	}
+	if rewrite.HookSpecificOutput.PermissionDecision != "allow" ||
+		!strings.Contains(rewrite.HookSpecificOutput.UpdatedInput.Message, "ROLE-CONTRACT:"+role) ||
+		!strings.Contains(rewrite.HookSpecificOutput.UpdatedInput.Message, "return the requested report") {
+		t.Fatalf("generic spawn did not receive developer_instructions: %#v", rewrite)
+	}
+
+	start := hookPayload(t, map[string]any{
+		"hook_event_name": "SubagentStart",
+		"session_id":      sessionID,
+		"turn_id":         "child-turn",
+		"agent_id":        "agent-1",
+		"agent_type":      "explorer",
+	})
+	out, stderr, code = runDevritesIO(t, root, start, nil,
+		"hook", "subagent-orient", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("start exit=%d stderr=%s", code, stderr)
+	}
+	var startEnvelope struct {
+		HookSpecificOutput struct {
+			AdditionalContext string `json:"additionalContext"`
+		} `json:"hookSpecificOutput"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &startEnvelope); err != nil {
+		t.Fatalf("invalid start response: %v\n%s", err, out)
+	}
+	if !strings.Contains(startEnvelope.HookSpecificOutput.AdditionalContext,
+		".codex/agents/"+role+".toml") {
+		t.Fatalf("generic child did not receive role contract: %s", out)
+	}
+
+	stopAgent := hookPayload(t, map[string]any{
+		"hook_event_name":        "SubagentStop",
+		"session_id":             sessionID,
+		"turn_id":                "child-turn",
+		"agent_id":               "agent-1",
+		"agent_type":             "explorer",
+		"last_assistant_message": "agent-result/v1 complete",
+	})
+	if out, stderr, code := runDevritesIO(t, root, stopAgent, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("subagent stop exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+
+	stop := hookPayload(t, map[string]any{
+		"hook_event_name":  "Stop",
+		"session_id":       sessionID,
+		"turn_id":          turnID,
+		"stop_hook_active": false,
+	})
+	if out, stderr, code := runDevritesIO(t, root, stop, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("resolved stop exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
+func TestCodexAgentDispatchConfirmsDurableV2NamedRole(t *testing.T) {
+	root := newWorkspace(t)
+	codeHome := t.TempDir()
+	sessionID, turnID := "session-v2-named", "turn-v2-named"
+	role := "devrites-security-auditor"
+	writeCodexAgentContract(t, root, role)
+	writeCodexSkillContract(t, root, "devrites-audit", role)
+
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$devrites-audit Call spawn_agent and tell it to read .codex/agents/" + role + ".toml.",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+
+	writeCodexV2Rollouts(
+		t, codeHome, filepath.Dir(root), sessionID, turnID, role,
+		"devrites_security_auditor_named", true, true, true,
+	)
+	stop := hookPayload(t, map[string]any{
+		"hook_event_name":  "Stop",
+		"session_id":       sessionID,
+		"turn_id":          turnID,
+		"stop_hook_active": false,
+	})
+	if out, stderr, code := runDevritesIO(t, root, stop,
+		[]string{"CODEX_HOME=" + codeHome},
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("durable v2 stop exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
+func TestCodexAgentDispatchRejectsIncompleteDurableV2(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		role          string
+		includeWait   bool
+		includeRules  bool
+		includeResult bool
+	}{
+		{name: "generic-role", role: "explorer", includeWait: true, includeRules: true, includeResult: true},
+		{name: "missing-wait", role: "devrites-security-auditor", includeRules: true, includeResult: true},
+		{name: "missing-rules", role: "devrites-security-auditor", includeWait: true, includeResult: true},
+		{name: "missing-result", role: "devrites-security-auditor", includeWait: true, includeRules: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := newWorkspace(t)
+			codeHome := t.TempDir()
+			sessionID, turnID := "session-"+tc.name, "turn-"+tc.name
+			role := "devrites-security-auditor"
+			writeCodexAgentContract(t, root, role)
+			writeCodexSkillContract(t, root, "devrites-audit", role)
+			runDevritesIO(t, root, hookPayload(t, map[string]any{
+				"hook_event_name": "UserPromptSubmit",
+				"session_id":      sessionID,
+				"turn_id":         turnID,
+				"prompt":          "$devrites-audit Read .codex/agents/" + role + ".toml.",
+			}), nil, "hook", "agent-dispatch", "--harness=codex")
+			writeCodexV2Rollouts(
+				t, codeHome, filepath.Dir(root), sessionID, turnID, tc.role,
+				"devrites_security_auditor_named", tc.includeWait, tc.includeRules, tc.includeResult,
+			)
+			stop := hookPayload(t, map[string]any{
+				"hook_event_name": "Stop",
+				"session_id":      sessionID,
+				"turn_id":         turnID,
+			})
+			out, stderr, code := runDevritesIO(t, root, stop,
+				[]string{"CODEX_HOME=" + codeHome},
+				"hook", "agent-dispatch", "--harness=codex")
+			if code != 0 {
+				t.Fatalf("stop exit=%d stderr=%s", code, stderr)
+			}
+			var decision struct {
+				Decision string `json:"decision"`
+			}
+			if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &decision); err != nil {
+				t.Fatalf("invalid Stop response: %v\n%s", err, out)
+			}
+			if decision.Decision != "block" {
+				t.Fatalf("incomplete durable V2 dispatch passed: %s", out)
+			}
+		})
+	}
+}
+
+func TestCodexAgentDispatchGatesReconcileOnBoundWrightResult(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	for _, name := range []string{".reconcile-base", ".reconcile-allowlist", ".reconcile-devrites"} {
+		if err := os.WriteFile(filepath.Join(workspace, name), []byte(name+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	sessionID, turnID := "session-wright", "turn-wright"
+	writeCodexAgentContract(t, root, "devrites-slice-wright")
+	writeCodexSkillContract(t, root, "rite-build", "devrites-slice-wright")
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$rite-build",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+
+	reconcile := hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "Bash",
+		"tool_input":      map[string]any{"command": "rtk devrites-engine reconcile close"},
+	})
+	out, _, _ := runDevritesIO(t, root, reconcile, nil,
+		"hook", "agent-dispatch", "--harness=codex")
+	if decision, reason := parsePermissionDecision(t, out); decision != "deny" ||
+		!strings.Contains(reason, "confirmed") {
+		t.Fatalf("premature reconcile not denied: decision=%q reason=%q", decision, reason)
+	}
+
+	for _, payload := range []map[string]any{
+		{
+			"hook_event_name": "PreToolUse",
+			"session_id":      sessionID,
+			"turn_id":         turnID,
+			"tool_name":       "spawn_agent",
+			"tool_use_id":     "spawn-wright",
+			"tool_input": map[string]any{
+				"agent_type": "worker",
+				"fork_turns": "none",
+				"message":    "Read .codex/agents/devrites-slice-wright.toml.",
+			},
+		},
+		{
+			"hook_event_name": "SubagentStart",
+			"session_id":      sessionID,
+			"turn_id":         "child-wright",
+			"agent_id":        "agent-wright",
+			"agent_type":      "worker",
+		},
+		{
+			"hook_event_name":        "SubagentStop",
+			"session_id":             sessionID,
+			"turn_id":                "child-wright",
+			"agent_id":               "agent-wright",
+			"agent_type":             "worker",
+			"last_assistant_message": "agent-result/v1 complete",
+		},
+		{
+			"hook_event_name": "PreToolUse",
+			"session_id":      sessionID,
+			"turn_id":         turnID,
+			"tool_name":       "wait",
+			"tool_input":      map[string]any{"ids": []string{"agent-wright"}},
+		},
+	} {
+		hook := "agent-dispatch"
+		if payload["hook_event_name"] == "SubagentStart" {
+			hook = "subagent-orient"
+		}
+		if _, stderr, code := runDevritesIO(t, root, hookPayload(t, payload), nil,
+			"hook", hook, "--harness=codex"); code != 0 {
+			t.Fatalf("%s exit=%d stderr=%s", hook, code, stderr)
+		}
+	}
+
+	if out, stderr, code := runDevritesIO(t, root, reconcile, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("completed wright reconcile exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
+func TestCodexAgentDispatchBindsDurableV2WrightToReconcileWindow(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		changeWindow  bool
+		wantPermitted bool
+	}{
+		{name: "same-window", wantPermitted: true},
+		{name: "changed-window", changeWindow: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := newWorkspace(t)
+			codeHome := t.TempDir()
+			writeActive(t, root, "auth-tokens")
+			workspace := filepath.Join(root, "features", "auth-tokens")
+			for _, name := range []string{".reconcile-base", ".reconcile-allowlist", ".reconcile-devrites"} {
+				if err := os.WriteFile(filepath.Join(workspace, name), []byte(name+"\n"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			sessionID, turnID := "session-v2-wright-"+tc.name, "turn-v2-wright-"+tc.name
+			role := "devrites-slice-wright"
+			writeCodexAgentContract(t, root, role)
+			writeCodexSkillContract(t, root, "rite-build", role)
+			runDevritesIO(t, root, hookPayload(t, map[string]any{
+				"hook_event_name": "UserPromptSubmit",
+				"session_id":      sessionID,
+				"turn_id":         turnID,
+				"prompt":          "$rite-build",
+			}), nil, "hook", "agent-dispatch", "--harness=codex")
+			writeCodexV2Rollouts(
+				t, codeHome, filepath.Dir(root), sessionID, turnID, role,
+				"devrites_slice_wright_named", true, true, true,
+			)
+			if tc.changeWindow {
+				future := time.Now().Add(time.Minute)
+				if err := os.Chtimes(
+					filepath.Join(workspace, ".reconcile-devrites"), future, future,
+				); err != nil {
+					t.Fatal(err)
+				}
+			}
+			reconcile := hookPayload(t, map[string]any{
+				"hook_event_name": "PreToolUse",
+				"session_id":      sessionID,
+				"turn_id":         turnID,
+				"tool_name":       "Bash",
+				"tool_input":      map[string]any{"command": "rtk devrites-engine reconcile close"},
+			})
+			out, stderr, code := runDevritesIO(t, root, reconcile,
+				[]string{"CODEX_HOME=" + codeHome},
+				"hook", "agent-dispatch", "--harness=codex")
+			if code != 0 {
+				t.Fatalf("reconcile exit=%d stderr=%s", code, stderr)
+			}
+			if tc.wantPermitted && strings.TrimSpace(out) != "" {
+				t.Fatalf("same-window V2 wright was rejected: %s", out)
+			}
+			if !tc.wantPermitted {
+				if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+					t.Fatalf("changed-window V2 wright was accepted: %s", out)
+				}
+			}
+		})
+	}
+}
+
+func TestCodexAgentDispatchRejectsWrongGenericRole(t *testing.T) {
+	root := newWorkspace(t)
+	writeCodexAgentContract(t, root, "devrites-security-auditor")
+	spawn := hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      "session-role",
+		"turn_id":         "turn-role",
+		"tool_name":       "spawn_agent",
+		"tool_use_id":     "spawn-role",
+		"tool_input": map[string]any{
+			"agent_type": "worker",
+			"fork_turns": "none",
+			"message":    "Read .codex/agents/devrites-security-auditor.toml.",
+		},
+	})
+	out, stderr, code := runDevritesIO(t, root, spawn, nil,
+		"hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("exit=%d stderr=%s", code, stderr)
+	}
+	if decision, reason := parsePermissionDecision(t, out); decision != "deny" ||
+		!strings.Contains(reason, "devrites-slice-wright") {
+		t.Fatalf("worker role mismatch not denied: decision=%q reason=%q", decision, reason)
 	}
 }

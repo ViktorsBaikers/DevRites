@@ -3,6 +3,7 @@ name: rite-converge
 description: Converge intent and live code. Use when resuming a half-built feature, after `/rite-adopt` drift, or the user asks "what's left to build". Not for initial planning.
 argument-hint: "[feature-slug]"
 user-invocable: true
+required-agent-roles: devrites-evidence-scout
 ---
 
 # /rite-converge: compare live code with intent

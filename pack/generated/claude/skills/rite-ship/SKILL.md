@@ -3,6 +3,7 @@ name: rite-ship
 description: Ship the sealed feature: commit, push, tag, archive, close. Use when the user says "ship it", "push the branch", "tag the release", or "close the task" after /rite-seal GO. Not for GO/NO-GO readiness.
 argument-hint: "[feature-slug]"
 user-invocable: true
+required-agent-roles: none
 ---
 
 # /rite-ship: ship + close the task

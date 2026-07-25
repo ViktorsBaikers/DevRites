@@ -3,6 +3,7 @@ name: rite-adopt
 description: Adopt an existing or legacy codebase into DevRites by reverse-engineering current behavior, seeding conventions, and establishing the workflow. Use for inherited or live applications.
 argument-hint: "[path or area to adopt] [+ what you want to build next]"
 user-invocable: true
+required-agent-roles: none
 ---
 
 # /rite-adopt: onboard existing code

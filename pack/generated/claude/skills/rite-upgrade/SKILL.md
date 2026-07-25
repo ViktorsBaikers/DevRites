@@ -4,6 +4,7 @@ description: User-invoked semantic upgrade for an active legacy DevRites workspa
 argument-hint: "[feature-slug]"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: devrites-upgrade-planner
 ---
 
 # /rite-upgrade: bring an active workspace onto the current contract
@@ -58,7 +59,8 @@ Plan, Vet, Converge, and Build phase contracts needed by the assessment.
    devrites-engine snapshot [feature-slug]
    ```
    If every semantic artifact names the current contract and `build-readiness` passes,
-   report a no-op.
+   mark the candidate as a likely no-op; the fresh upgrade assessment in step 2 must
+   confirm that before reporting it.
 1. **Freeze the preservation baseline.** Create the standard orchestrator-controlled
    `agent-packet/v1` baseline. Include exact paths for current phase/artifact contracts,
    `state.md`, `spec.md`, `decision-coverage.md`, `architecture.md`, `plan.md`, `tasks.md`,

@@ -121,15 +121,14 @@ Only then persist `state.md`, `evidence.md`, `touched-files.md`, decision/doubt 
 and browser evidence. Keep the retained window across a genuine human wait that will
 resume the same slice. Close it before abandoning the slice for a scope/plan transition.
 
-## Host fallback
+## Host dispatch
 
-Use named wright → safely enforced generic fresh worker → labelled inline fallback from
-`standards/agents.md`. A generic worker is eligible only when the host preserves
-recognized wright identity plus exact allowlist enforcement, or contains it in an
-isolated/staged checkout. Post-hoc reconciliation alone cannot authorize an
-instruction-only shared-tree writer.
-
-When no safe fresh-context writer rung is callable, the root may execute the same bounded
-wright discipline inline. Write `.reconcile-inline` after the initial snapshot so the legacy
-A1 pre-hook recognizes the authorized fallback; reconciliation does **not** skip. The
-same allowlist, baseline, integrity gates, and close command remain mandatory.
+Use named wright → enforced V1 generic worker from `standards/agents.md`. On Codex
+MultiAgent V2, dispatch the exact named `devrites-slice-wright` with a unique
+`task_name` and `fork_turns="none"`; its durable child rollout must prove the native
+wright role, wait, completion, and non-empty result from the current reconcile window.
+Any generic worker still needs the exact allowlist or an isolated checkout;
+reconciliation alone is insufficient. If no safe fresh-agent rung is available, stop
+for HITL. On Codex, `reconcile check` and `reconcile close` require the completed
+wright receipt bound to the current reconcile snapshot.
+The root never performs wright work.

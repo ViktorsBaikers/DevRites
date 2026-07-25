@@ -3,6 +3,7 @@ name: rite-prove
 description: Prove a completed feature with tests and the full test suite, build/typecheck/lint, end-to-end/browser evidence, screenshots, commands, and outputs for seal. Not for single-slice proof.
 argument-hint: "[feature-slug]"
 user-invocable: true
+required-agent-roles: devrites-proof-runner
 ---
 
 # /rite-prove: prove the completed feature

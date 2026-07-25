@@ -27,6 +27,10 @@ actual_version="$(env -i "PATH=$PATH" "LANG=C" "LC_ALL=C" codex --version 2>/dev
 [ "$actual_version" = "$DEVRITES_CONTRACT_HOST_VERSION_PIN" ] \
   || contract_die "Codex version pin changed"
 
+simulate="$(python3 "$CONTRACT_HELPER" field simulate)"
+if [ "$simulate" = "dispatch-unavailable" ]; then
+  exit 0
+fi
 role_class="$(python3 "$CONTRACT_HELPER" field role_class)"
 sandbox="read-only"
 if [ "$role_class" = "wright" ]; then

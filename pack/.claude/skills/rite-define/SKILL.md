@@ -3,6 +3,7 @@ name: rite-define
 description: Define the first build plan from an approved spec: architecture, task slices, traceability, and state. Use when turning approved intent into its initial plan.
 argument-hint: "[feature-slug]"
 user-invocable: true
+required-agent-roles: devrites-plan-drafter
 ---
 
 # /rite-define: plan from the spec

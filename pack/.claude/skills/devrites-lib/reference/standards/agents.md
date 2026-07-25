@@ -50,7 +50,7 @@ review fan-out. Phase skills own their phase-locked role choice.
 
 ## Fresh-context dispatch ladder
 
-Use the first available rung; capability failure never changes the contract:
+Use the first safe rung:
 
 1. Dispatch the named custom role with the host's spawn primitive.
 2. If spawning works but that role is unavailable, use a generic fresh agent only when
@@ -59,13 +59,19 @@ Use the first available rung; capability failure never changes the contract:
    allowlist (or an isolated/staged checkout) for a `worker`. Tell it to read the
    generated role contract, then give it the same packet. An instruction-only shared-tree
    writer is not an available rung.
-3. When no safe fresh-context rung exists or policy rejects spawning, run the discipline
-   inline under the same budgets and label it `independence: fallback`. It is not an
-   independent review; seal applies
-   [`risk-and-rollback.md`](../../../rite-seal/reference/risk-and-rollback.md).
+3. Otherwise stop for HITL; specialist work never runs in the root context.
 
-Host mapping: Claude Code uses `Agent` (`Task` is its legacy alias); Codex uses
-`spawn_agent`. Use the host-neutral term **fresh-context dispatch** in shared guidance.
+Every canonical skill declares `required-agent-roles` in its frontmatter. Use `none`
+when no fresh agent is unconditionally required for that invocation. Codex reads this
+field from the installed skill at `UserPromptSubmit` and arms a fail-closed completion
+receipt for every listed role; the engine never carries a hardcoded rite-to-role map.
+Conditional scouts and reviewers remain owned by their explicit phase triggers.
+
+Claude uses `Agent` (`Task` alias); Codex uses `spawn_agent`. V2 sends the exact named
+role, a unique `task_name`, and `fork_turns="none"`; Codex loads its TOML natively.
+Because V2 lifecycle calls bypass hooks, Stop/reconcile verify the durable rollout's
+role, instructions, wait, completion, and delivered result. V1 uses guarded
+`explorer`/`worker` with injected rules and a lifecycle receipt. Prose isn't evidence.
 
 ## File-backed dispatch contract
 
