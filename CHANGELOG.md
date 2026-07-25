@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.5](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.4...v3.2.5) (2026-07-25)
+
+### Fixed
+
+* **agents:** retain v2 wright dispatch receipt ([84f0c05](https://github.com/ViktorsBaikers/DevRites/commit/84f0c05c9d91d85194dfd4c97593ca1c07183282))
+
 ## [3.2.4](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.3...v3.2.4) (2026-07-25)
 
 ### Fixed
