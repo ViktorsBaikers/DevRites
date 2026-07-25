@@ -1341,6 +1341,33 @@ func TestCodexAgentDispatchConfirmsGenericRoleAndResult(t *testing.T) {
 		"turn_id":          turnID,
 		"stop_hook_active": false,
 	})
+	out, stderr, code = runDevritesIO(t, root, stop, nil,
+		"hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("unawaited stop exit=%d stderr=%s", code, stderr)
+	}
+	var blocked struct {
+		Decision string `json:"decision"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &blocked); err != nil {
+		t.Fatalf("invalid unawaited Stop response: %v\n%s", err, out)
+	}
+	if blocked.Decision != "block" {
+		t.Fatalf("unawaited child result passed Stop: %s", out)
+	}
+
+	wait := hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "wait",
+		"tool_input":      map[string]any{"ids": []string{"agent-1"}},
+	})
+	if out, stderr, code := runDevritesIO(t, root, wait, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("wait exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+
 	if out, stderr, code := runDevritesIO(t, root, stop, nil,
 		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
 		t.Fatalf("resolved stop exit=%d out=%s stderr=%s", code, out, stderr)
@@ -1579,6 +1606,21 @@ func TestCodexAgentDispatchBindsDurableV2WrightToReconcileWindow(t *testing.T) {
 				if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
 					t.Fatalf("changed-window V2 wright was accepted: %s", out)
 				}
+				return
+			}
+			for _, name := range []string{".reconcile-base", ".reconcile-allowlist", ".reconcile-devrites"} {
+				if err := os.Remove(filepath.Join(workspace, name)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			stop := hookPayload(t, map[string]any{
+				"hook_event_name": "Stop",
+				"session_id":      sessionID,
+				"turn_id":         turnID,
+			})
+			if out, stderr, code := runDevritesIO(t, root, stop, nil,
+				"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+				t.Fatalf("persisted V2 wright receipt was lost after close: exit=%d out=%s stderr=%s", code, out, stderr)
 			}
 		})
 	}
