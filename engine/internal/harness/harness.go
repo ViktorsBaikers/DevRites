@@ -199,6 +199,7 @@ type GuardInput struct {
 	ToolName     string
 	Command      string
 	FilePath     string
+	SessionID    string
 	AgentType    string
 	AgentID      string
 	ToolResponse string
@@ -209,6 +210,7 @@ type GuardInput struct {
 // way the shell hooks' `JSON.stringify` node parse does.
 func (h Harness) ParseGuardInput(r io.Reader) GuardInput {
 	var raw struct {
+		SessionID string `json:"session_id"`
 		ToolName  string `json:"tool_name"`
 		ToolInput struct {
 			Command  string `json:"command"`
@@ -237,6 +239,7 @@ func (h Harness) ParseGuardInput(r io.Reader) GuardInput {
 		ToolName:     raw.ToolName,
 		Command:      raw.ToolInput.Command,
 		FilePath:     firstNonEmpty(raw.ToolInput.FilePath, raw.ToolInput.Path),
+		SessionID:    raw.SessionID,
 		AgentType:    raw.AgentType,
 		AgentID:      raw.AgentID,
 		ToolResponse: resp,

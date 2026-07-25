@@ -2,6 +2,7 @@
 name: devrites-prose-craft
 description: Humanize prose without losing technical content. Use when asked to remove AI-writing tells, match a writing sample or project voice, edit artifacts/replies/commit or PR prose, or run `/rite-polish`'s prose pass. Not for code comments or UI craft.
 user-invocable: false
+required-agent-roles: none
 ---
 
 # devrites-prose-craft: prose that reads human

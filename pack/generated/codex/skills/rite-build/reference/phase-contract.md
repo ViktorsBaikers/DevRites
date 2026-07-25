@@ -55,9 +55,8 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    **Default serial branch.** Follow
    [`wright-dispatch.md`](wright-dispatch.md) end to end; it owns snapshot timing, stuck
    logging, the exact packet, conditional skill loading, and return checks. Dispatch through
-   named wright → safely enforced generic fresh worker → labelled inline fallback. Inline is
-   allowed only when no fresh worker preserves recognized wright identity plus exact allowlist
-   enforcement or isolated staging; it never skips reconciliation. Before any canonical
+   named wright → safely enforced generic fresh worker. If neither is available, stop for
+   HITL; the root never performs wright work. Before any canonical
    `.devrites/` mutation, validate the typed result and require a clean immediate
    `devrites-engine reconcile check`; exit `5` rejects the writer result.
 4. **Doubt every stood decision before accepting the slice.** The writer never grades its
@@ -176,4 +175,4 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    just built. **When every slice is built** (`✅ ALL BUILT`) say so explicitly (the build
    phase is complete, the next phase is `$rite-prove`) don't leave completion implicit.
 
-> **Mid-flight discipline.** The wright (or you, in the inline fallback) must resist doing two slices, skipping TDD, adding a defensive check, or wandering outside `touched-files.md`; you must resist skipping the post-return `devrites-doubt` because the wright "seems confident": see [`anti-patterns.md`](anti-patterns.md). Load it the moment you reach for the excuse.
+> **Mid-flight discipline.** The wright must resist doing two slices, skipping TDD, adding a defensive check, or wandering outside `touched-files.md`; you must resist skipping the post-return `devrites-doubt` because the wright "seems confident": see [`anti-patterns.md`](anti-patterns.md). Load it the moment you reach for the excuse.

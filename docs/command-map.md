@@ -144,9 +144,9 @@ the shared reference library.
 Only the root dispatches; leaves never dispatch other leaves. The first
 fallback is a generic `explorer` or `worker` that reads the same role contract,
 but only when the host preserves the required read-only or exact-write
-boundary. If no safe fresh-context option is available, the root runs the work
-inline and labels the result `independence: fallback`. Declared leaf identity
-and scope guards fail closed. A missing or crashed engine blocks the tool call
+boundary. If no safe fresh-context option is available, the workflow stops for
+HITL. The root never executes a specialist role. Declared leaf identity and
+scope guards fail closed. A missing or crashed engine blocks the tool call
 instead of granting permission to continue.
 
 ## Engineering rules (`pack/.claude/skills/devrites-lib/reference/standards/`)

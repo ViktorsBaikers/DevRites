@@ -4,6 +4,7 @@ description: Explicit utility for resolving GitHub PR review feedback.
 argument-hint: "[PR number|thread URL|blank for current branch]"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # /rite-pr-feedback: resolve PR review threads

@@ -3,6 +3,7 @@ name: devrites-lib
 description: Internal shared DevRites helper library. Documents cross-cutting engine commands and references; not a user workflow. Do not invoke directly.
 user-invocable: false
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # devrites-lib: internal shared helpers (not a command)

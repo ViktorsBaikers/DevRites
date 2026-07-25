@@ -68,7 +68,7 @@ func TestParityReconcile(t *testing.T) {
 		assertGolden(t, out, code)
 	})
 
-	t.Run("inline-fallback", func(t *testing.T) {
+	t.Run("close-window", func(t *testing.T) {
 		work := newRepo(t)
 		snapshot(t, work)
 		out, code := runArgv(t, work, libRootEnv(work), "", binPath, "reconcile", "close", "feat")

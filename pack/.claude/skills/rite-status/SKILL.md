@@ -4,6 +4,7 @@ description: User-invoked read-only active-feature report: phase, active slice, 
 argument-hint: "[feature-slug]"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # /rite-status: active feature status

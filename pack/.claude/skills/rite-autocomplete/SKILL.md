@@ -3,6 +3,7 @@ name: rite-autocomplete
 description: Run the DevRites lifecycle end-to-end unattended; --ship confirms the final gate. Use when the user says "autocomplete", "one-shot this feature", or "ship it autonomously". Not for a single phase.
 argument-hint: "[idea] [--ship|--yolo] [--max-slices N]"
 user-invocable: true
+required-agent-roles: none
 ---
 
 # /rite-autocomplete: full lifecycle, unattended

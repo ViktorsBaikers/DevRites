@@ -3,6 +3,7 @@ name: rite-spec
 description: Spec new or high-risk behavior before code and write its `.devrites/work/<slug>/` workspace. Use for a feature/app, vague product idea, auth or migration work, or a public-API change. Not for approved-spec planning.
 argument-hint: "<feature or idea>"
 user-invocable: true
+required-agent-roles: none
 ---
 
 # /rite-spec: investigate and write the spec

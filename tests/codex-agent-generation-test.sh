@@ -174,6 +174,27 @@ skill_files = sorted(skills_dir.rglob("*.md"))
 report(bool(skill_files), f"installed Codex skill mirror is present ({len(skill_files)} markdown files)")
 skill_text = "\n".join(path.read_text() for path in skill_files)
 
+for forbidden in (
+    ".reconcile-inline",
+    "labeled fallback only at the final capability-ladder rung",
+    "run the scout work **inline**",
+    "no per-agent model control → run the scout inline",
+    "MUST call that worker",
+):
+    report(forbidden not in skill_text, f"Codex skills exclude obsolete fallback {forbidden!r}")
+
+for skill in sorted(skills_dir.glob("*/SKILL.md")):
+    frontmatter = skill.read_text().split("\n---\n", 1)[0]
+    match = re.search(r"(?m)^required-agent-roles:\s*(.+)$", frontmatter)
+    report(bool(match), f"{skill.parent.name}: required-agent-roles declared")
+    if not match or match.group(1).strip() == "none":
+        continue
+    roles = [role.strip() for role in match.group(1).split(",")]
+    report(
+        all(role in dst_names for role in roles),
+        f"{skill.parent.name}: required agent roles resolve ({sorted(set(roles) - dst_names)})",
+    )
+
 task_wording = re.findall(r"\bTask\b", skill_text)
 report(not task_wording, "Codex skills contain no legacy Task orchestration wording")
 
@@ -216,16 +237,19 @@ report(
 
 for required in (
     "invoke means run a skill in this context",
-    "named role is not exposed, use generic `explorer`",
+    "On MultiAgent V1, when the named role is not exposed, use generic `explorer`",
     'fork_turns="none"',
-    "Trusted `.codex/hooks.json` binds `agent_type=explorer`",
-    "A missing custom role is not evidence that spawning is unavailable",
-    "trusted `.codex/hooks.json` binds generic `worker`",
-    "`agent_type=worker`",
+    "injects that contract's exact `developer_instructions`",
+    "On MultiAgent V1, `devrites-slice-wright` uses generic `worker`",
     "`.wright-allowlist`",
-    "`.reconcile-inline`",
-    "Only when the project hooks are unavailable or untrusted, no spawn primitive exists",
-    "`independence: fallback`",
+    "On MultiAgent V2",
+    "`agent_type=devrites-<role>`",
+    "a unique `task_name`",
+    "durable parent/child rollout",
+    "Codex loads that role TOML's `developer_instructions` natively",
+    "`required-agent-roles` frontmatter arms the fail-closed Stop receipt",
+    "If any required named or generic agent dispatch is unavailable or rejected, stop for HITL",
+    "Never execute a DevRites specialist role in the root context",
 ):
     report(required in skill_text, f"Codex dispatch ladder includes {required!r}")
 

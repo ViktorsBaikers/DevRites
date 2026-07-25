@@ -4,6 +4,7 @@ description: User-invoked throwaway prototype for one logic or UI design questio
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[the question the prototype is answering]"
+required-agent-roles: none
 ---
 
 # /rite-prototype: answer one question with throwaway code

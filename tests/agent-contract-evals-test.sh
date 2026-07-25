@@ -37,21 +37,21 @@ assert summary["cells_passed"] == 24
 assert summary["cells_failed"] == 0
 assert summary["cost_usd"] == "0"
 assert summary["reason_counts"] == {
-    "DRV-AGENT-RESULT-ACCEPTED": 12,
+    "DRV-AGENT-RESULT-ACCEPTED": 10,
     "DRV-AGENT-RESULT-MALFORMED": 2,
     "DRV-AGENT-RESULT-OUT-OF-SCOPE": 4,
     "DRV-AGENT-RESULT-STALE": 2,
-    "DRV-AGENT-UNAVAILABLE": 4,
+    "DRV-AGENT-UNAVAILABLE": 6,
 }
 rows = summary["results"]
 assert Counter(row["host"] for row in rows) == {"claude": 12, "codex": 12}
-assert Counter(row["execution_mode"] for row in rows) == {"named": 20, "generic": 2, "inline": 2}
-assert Counter(row["guard_strength"] for row in rows) == {"enforced": 22, "observed": 2}
+assert Counter(row["execution_mode"] for row in rows) == {"named": 20, "generic": 2, "none": 2}
+assert Counter(row["guard_strength"] for row in rows) == {"enforced": 24}
 assert Counter(row["terminal_sentinel"] for row in rows) == {
-    "complete": 16,
+    "complete": 14,
     "stale": 2,
     "malformed": 2,
-    "missing": 2,
+    "missing": 4,
     "interrupted": 2,
 }
 assert sum(not row["independence"] for row in rows) == 2

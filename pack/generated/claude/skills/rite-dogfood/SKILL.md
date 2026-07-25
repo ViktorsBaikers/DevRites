@@ -4,6 +4,7 @@ description: Explicit browser dogfood QA for the active feature or branch.
 argument-hint: "[feature-slug|branch] [--port N]"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # /rite-dogfood: diff-scoped browser QA

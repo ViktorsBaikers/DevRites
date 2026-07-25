@@ -40,7 +40,7 @@ the table and the code can never silently drift apart.
 | Stop gate | Conditional | Conditional | all rest points | observe-only finding + manual host-specific rite-status | yes | high | Both deliver Stop; stop-gate blocks with DEVRITES_STOP_GATE=enforce or DEVRITES_HOOK_PROFILE=strict. |
 | SubagentStart discipline injection | Native | Native | review/build fan-out | agent file preamble | yes | high | subagent-orient wired on both. |
 | Skill invocation | Native | Adapter-backed | all public rites | explicit file read | yes | high | Claude: native /rite. Codex: $rite over the mirrored .agents/skills tree. |
-| Reviewer subagent dispatch | Native | Instruction-backed | review/seal confidence | labelled inline pass | partial | medium | Codex under-fires embedded spawns (openai/codex#23496); falls back to .codex/agents + a labelled inline pass. |
+| Reviewer subagent dispatch | Native | Adapter-backed | review/seal confidence | HITL stop; no root inline review | yes | high | Codex V2 requires the exact named role and verifies its durable parent/child rollout because V2 collaboration lifecycle calls bypass hooks; V1 keeps the guarded explorer fallback. |
 | Standards step-0 load | Native | Instruction-backed | all phases | explicit standards read | partial | medium | Claude: skill Reads core.md. Codex: an AGENTS.md directive to read it. |
 | Project activation | Native | Conditional | Codex-only startup | inspect hooks/config, decide trust, then rerun doctor | yes | medium | Codex silently skips every .codex/ layer in an untrusted project; trust remains an operator decision after inspection. |
 
@@ -52,7 +52,7 @@ Tiers: **Native** (the harness exposes and delivers the surface directly; policy
 
 The matrix above records what each host can support. The agent-contract eval
 checks whether the complete dispatch path behaves as claimed. Its 12 scenarios
-cover named reviewer and wright runs, generic and inline fallbacks, denial
+cover named reviewer and wright runs, generic fallback and dispatch unavailability, denial
 paths, stale or malformed results, session orientation, interruption, and
 post-compaction recovery. Every scenario runs once on Claude and once on
 Codex, for 24 isolated cells.

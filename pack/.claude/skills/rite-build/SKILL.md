@@ -3,6 +3,7 @@ name: rite-build
 description: Build one approved vertical slice, then stop with evidence. Use when the next planned slice should be implemented. Not for multiple slices.
 argument-hint: "[slice number or name]"
 user-invocable: true
+required-agent-roles: devrites-slice-wright
 ---
 
 # /rite-build: one verified slice
@@ -19,7 +20,7 @@ doubt, fail-on-red, recording, and stop checks. See
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 Read `.claude/skills/devrites-lib/reference/standards/core.md` first (workflow step 0). The
 following load on demand: **the wright reads them** (they are named in its contract) while it
-writes; read them yourself for the doubt/record gates or in the inline fallback:
+writes; read them yourself for the doubt/record gates:
 - `coding-style.md`: naming, function shape, guard clauses, comments, reuse-first.
 - `error-handling.md`: fail fast, no silent catches, fail closed.
 - `testing.md`: pyramid, behaviour over implementation, see-it-fail-first.

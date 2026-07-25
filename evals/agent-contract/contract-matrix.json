@@ -86,24 +86,22 @@
       }
     },
     {
-      "id": "inline-fallback",
+      "id": "dispatch-unavailable",
       "role": "devrites-unavailable-reviewer",
       "role_class": "reviewer",
-      "simulate": "inline-fallback",
+      "simulate": "dispatch-unavailable",
       "allowed_repo_writes": [],
       "expect": {
-        "execution_mode": "inline",
-        "guard_strength": "observed",
+        "execution_mode": "none",
+        "guard_strength": "enforced",
         "independence": false,
-        "dispatch_reason_id": "DRV-AGENT-INLINE-FALLBACK",
-        "result_reason_id": "DRV-AGENT-RESULT-ACCEPTED",
-        "status": "complete",
-        "outcome": "passed",
-        "terminal_sentinel": "complete",
+        "dispatch_reason_id": "DRV-AGENT-UNAVAILABLE",
+        "result_reason_id": "DRV-AGENT-UNAVAILABLE",
+        "status": "failed",
+        "outcome": "unavailable",
+        "terminal_sentinel": "missing",
         "host_exit": 0,
-        "required_signals": [
-          "inline_labelled"
-        ]
+        "required_signals": []
       }
     },
     {

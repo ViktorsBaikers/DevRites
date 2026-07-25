@@ -467,7 +467,7 @@ func hookReviewerReadonly(h harness.Harness, stdin io.Reader, stdout, stderr io.
 		return exitOK
 	}
 	in := h.ParseGuardInput(bytes.NewReader(data))
-	kind := devritesAgent(in.AgentType)
+	kind := devritesAgentForGuard(h, in)
 	if kind == devritesAgentNone &&
 		os.Getenv("DEVRITES_CODEX_GENERIC_AGENT_COMPAT") == "1" &&
 		in.AgentType == "" {
@@ -540,11 +540,46 @@ var subagentOrientContext string
 // Spawned agents have fresh context and do not load the rite-* framework the
 // same way as the main thread. The output matches devrites-subagent-orient.sh.
 func hookSubagentOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) int {
-	agentType := h.SubagentAgentType(stdin)
-	if !strings.HasPrefix(agentType, "devrites-") {
+	data, err := io.ReadAll(stdin)
+	if err != nil {
+		return exitOK
+	}
+	agentType := h.SubagentAgentType(bytes.NewReader(data))
+	context := strings.ReplaceAll(subagentOrientContext, "\r\n", "\n")
+	if h == harness.Codex {
+		in, parseErr := parseAgentDispatchHookInput(bytes.NewReader(data))
+		root, ok := agentDispatchRoot()
+		if parseErr != nil || !ok || in.SessionID == "" || in.TurnID == "" || in.AgentID == "" {
+			if !strings.HasPrefix(agentType, "devrites-") {
+				return exitOK
+			}
+			context += "\n\n- **Dispatch binding unavailable.** Return blocked without doing specialist work; the parent must retry a confirmed spawn."
+		} else {
+			role, bound, bindErr := bindAgentDispatchStart(root, in)
+			if bindErr != nil {
+				context += "\n\n- **Dispatch binding failed.** Return blocked without doing specialist work; the parent must repair the agent-start receipt."
+			} else if bound {
+				if in.AgentType == role {
+					context += fmt.Sprintf(
+						"\n\n- **Confirmed role.** Your named Codex profile is `%s`; follow its loaded `developer_instructions` and execute only the unchanged packet from the parent.",
+						role,
+					)
+				} else {
+					context += fmt.Sprintf(
+						"\n\n- **Confirmed role.** Your generic `%s` identity is bound to `%s`; the spawn hook injected `.codex/agents/%s.toml` `developer_instructions` into your message. Follow them and execute only the unchanged packet from the parent.",
+						in.AgentType, role, role,
+					)
+				}
+			} else if !strings.HasPrefix(agentType, "devrites-") {
+				return exitOK
+			} else {
+				context += "\n\n- **Unbound named start.** Return blocked without doing specialist work; no matching root spawn receipt exists."
+			}
+		}
+	} else if !strings.HasPrefix(agentType, "devrites-") {
 		return exitOK // Stay silent without a DevRites agent identity.
 	}
-	out, err := h.SubagentStartContext(strings.ReplaceAll(subagentOrientContext, "\r\n", "\n"))
+	out, err := h.SubagentStartContext(context)
 	if err != nil {
 		debugf(stderr, "subagent-orient: %v", err)
 		return exitOK

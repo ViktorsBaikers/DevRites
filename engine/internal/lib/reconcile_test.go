@@ -207,9 +207,8 @@ func TestReconcileCheckFlagsUnauthorizedChange(t *testing.T) {
 	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
 		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
 	}
-	// A writer cannot self-authorize a path by reporting it after dispatch.
+	// A writer cannot change a path that was not authorized at dispatch.
 	writeFile(t, filepath.Join(gitRoot, "rogue.go"), "package main\n")
-	writeFile(t, filepath.Join(root, "work", "feat", reconcileLegacyClaimedName), "rogue.go\n")
 
 	code, out := runReconcile(t, root, "check", "feat")
 	if code != 5 {
@@ -383,14 +382,20 @@ func TestReconcileCheckFailsClosedWhenObjectDatabaseIsMissing(t *testing.T) {
 }
 
 func TestReconcileCheckFailsClosedWhenObjectDatabaseIsCorrupt(t *testing.T) {
-	newGitRepo(t)
+	gitRoot := newGitRepo(t)
 	root := workspace(t, "feat")
 	writeWrightAllowlist(t, root, "feat", "seed.go")
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), "package seed\n")
 	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
 		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
 	}
-	marker := filepath.Join(featureDir(root, "feat"), reconcileObjectsName, reconcileObjectMarkerName)
-	if err := os.Remove(marker); err != nil {
+	baseData, err := os.ReadFile(filepath.Join(featureDir(root, "feat"), reconcileBaseName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	baseTree := strings.TrimSpace(string(baseData))
+	treeObject := filepath.Join(featureDir(root, "feat"), reconcileObjectsName, baseTree[:2], baseTree[2:])
+	if err := os.Remove(treeObject); err != nil {
 		t.Fatal(err)
 	}
 
@@ -398,7 +403,7 @@ func TestReconcileCheckFailsClosedWhenObjectDatabaseIsCorrupt(t *testing.T) {
 	if code != 6 {
 		t.Fatalf("check = %d, want 6\n%s", code, out)
 	}
-	if !strings.Contains(out, "not a sealed object database") {
+	if !strings.Contains(out, "tree is unavailable") {
 		t.Fatalf("missing corrupt-object diagnostic:\n%s", out)
 	}
 }
@@ -502,23 +507,22 @@ func TestReconcileRefreshRequiresPriorCleanCheck(t *testing.T) {
 	}
 }
 
-func TestReconcileCloseSupportsInlineFallback(t *testing.T) {
+func TestReconcileCloseClearsPrivateWindowState(t *testing.T) {
 	newGitRepo(t)
 	root := workspace(t, "feat")
 	writeFile(t, filepath.Join(root, "work", "feat", reconcileBaseName), "stale\n")
-	writeFile(t, filepath.Join(root, "work", "feat", reconcileInlineName), "")
 	if err := os.MkdirAll(filepath.Join(root, "work", "feat", reconcileObjectsName), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	code, out := runReconcile(t, root, "close", "feat")
 	if code != 0 {
-		t.Fatalf("inline fallback close = %d, want 0\n%s", code, out)
+		t.Fatalf("close = %d, want 0\n%s", code, out)
 	}
 	if !strings.Contains(out, "closed slice window") {
 		t.Errorf("expected close message:\n%s", out)
 	}
 	if isFile(filepath.Join(featureDir(root, "feat"), reconcileBaseName)) || isDir(filepath.Join(featureDir(root, "feat"), reconcileObjectsName)) {
-		t.Fatal("inline fallback close retained private baseline state")
+		t.Fatal("close retained private baseline state")
 	}
 }

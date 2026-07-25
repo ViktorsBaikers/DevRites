@@ -3,6 +3,7 @@ name: rite-review
 description: Review polished feature diff for correctness, readability, architecture, security, tests proving acceptance, Critical/Important findings, and quality dimensions before seal.
 argument-hint: "[scope: slice N | feature] [--full]"
 user-invocable: true
+required-agent-roles: devrites-spec-reviewer, devrites-code-reviewer
 ---
 
 # /rite-review: feature-scoped review

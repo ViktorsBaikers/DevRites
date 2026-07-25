@@ -18,6 +18,11 @@ only when needed; small utilities keep their narrower contract local. The npm
 `devrites` shim bootstraps or proxies the engine directly (see
 [`cli.md`](cli.md)).
 
+Every canonical skill declares `required-agent-roles`. A comma-separated list
+means those fresh agents are mandatory for a Codex invocation; `none` means no
+agent is unconditionally required. Host generation preserves the field and
+validation rejects missing or unresolved role contracts.
+
 ## Naming convention
 
 `rite-*` is the namespace for lifecycle and utility commands. Its utilities are
@@ -248,8 +253,8 @@ context with only the slice contract; all other agents are read-only.
 | [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) | Turn ONE exact allowlisted slice into the smallest complete, idiomatic, proven implementation. Writes code + tests only; returns a typed artifact for the root to reconcile, gate, and record. Writes no `.devrites/` bookkeeping; single-threaded per tree. |
 
 Dispatch contract + return shape + fallback: [`rite-build/reference/wright-dispatch.md`](../pack/.claude/skills/rite-build/reference/wright-dispatch.md).
-The shared topology, named → generic → labelled-inline fallback, and fail-closed
-identity rules live in [`standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md).
+The shared topology, named → guarded generic → HITL stop, and fail-closed identity
+rules live in [`standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md).
 
 ---
 

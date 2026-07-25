@@ -3,6 +3,7 @@ name: rite-frame
 description: Frame an ad-hoc ask before coding, then audit the diff. Use for underspecified imperative asks, raw-diff self-audits, or `/rite-quick` setup. Not a lifecycle gate.
 argument-hint: "[task to frame | diff to audit]"
 user-invocable: true
+required-agent-roles: none
 ---
 
 # /rite-frame: frame the goal, audit the diff

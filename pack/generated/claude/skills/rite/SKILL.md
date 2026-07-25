@@ -4,6 +4,7 @@ description: User-invoked DevRites menu and router; no args renders the menu, a 
 argument-hint: "[verb [args...]]"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # /rite: DevRites menu + router

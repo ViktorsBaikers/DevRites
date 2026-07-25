@@ -3,6 +3,7 @@ name: rite-vet
 description: Vet a defined plan before code with senior-engineer engineering review. Use when the user says "vet the plan", "engineering review", "lock in the plan", or before building. Not for code review or final seal.
 argument-hint: "[slug] [--cross-model] [--full]"
 user-invocable: true
+required-agent-roles: devrites-plan-reviewer
 ---
 
 # /rite-vet: review the plan before build

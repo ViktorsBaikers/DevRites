@@ -132,7 +132,8 @@ timeline rows remain readable beside v1 rows.
 
 The v1 validator accepts only:
 
-- `execution_mode`: `named` · `generic` · `inline` · `none`;
+- `execution_mode`: `named` · `generic` · `inline` · `none` (`inline` remains
+  readable for historical telemetry; current specialist dispatch never emits it);
 - `guard_strength`: `enforced` · `observed` · `unavailable` · `bypassed` · `n/a`;
 - `host`: `engine` · `claude` · `codex`;
 - registered `DRV-*` reason and rule IDs;
@@ -166,6 +167,6 @@ reasons are:
 | `DRV-GIT-AMBIGUOUS-*` / `DRV-GIT-INPUT-TOO-LARGE` | direct-literal Git parser boundary |
 | `DRV-GIT-DESTRUCTIVE-*` | destructive-operation classifier |
 | `DRV-GIT-AUTHORITY-*` / `DRV-GIT-WORKSPACE-UNAVAILABLE` | exact one-shot authority and replay gate |
-| `DRV-AGENT-*` | named/generic/inline execution and result reconciliation |
+| `DRV-AGENT-*` | named/generic execution, historical inline telemetry, and result reconciliation |
 
 Add a reason to that registry before an emitting rule or eval depends on it.

@@ -45,8 +45,7 @@
      against the ledger: an every-slice-trivial feature (`- none`) is a valid pass; a stood triggering
      decision (boundary / data-model / auth / public-API / migration / branching) with no verdict is
      the finding, same severity as rc=3.
-   - **rc=0:** covered, or not assessable (an inline build logs no dispatch: verify the ledger's
-     verdicts by hand).
+   - **rc=0:** covered, or not assessable because no wright was logged.
    Either way, walk the `## Decisions stood` ledger yourself: severity rides the unverified
    **decision**, never the exit code alone.
 5. Check **security, data, migration, rollback**, strategy scope, principles,
@@ -61,7 +60,7 @@
    [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md). Await
    fresh-context batches of at most three and give reviewers only the workspace path plus
    immutable diff, without author reasoning. Use named role → safely enforced generic fresh
-   agent → labelled inline; inline output is never independent. Carry Spec/Code verdicts only
+   agent; if neither is available, seal remains NO-GO. Carry Spec/Code verdicts only
    for an unchanged post-review diff; rerun the other applicable axes.
    **Footprint: account for the whole roster.** For each reviewer you dispatch, append
    `devrites-engine footprint log <slug> reviewer devrites-<x>-reviewer` (the reviewer's **exact agent name**:

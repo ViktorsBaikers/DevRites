@@ -269,15 +269,12 @@ func TestParityRedwatch(t *testing.T) {
 
 // TestParityA1Guard checks `hook a1-guard` against golden snapshots for each
 // payload. It blocks a main-thread source edit only when the build window is open
-// and enforce is on, and allows subagent edits, .devrites bookkeeping edits, an
-// inline-fallback window, and a closed window.
+// and enforce is on, and allows subagent edits, .devrites bookkeeping edits, and
+// a closed window.
 func TestParityA1Guard(t *testing.T) {
 	work := t.TempDir()
 	makeFeatureDir(t, work, "win")
 	writeFeatureFile(t, work, "win", ".reconcile-base", "snapshot\n")
-	makeFeatureDir(t, work, "inline")
-	writeFeatureFile(t, work, "inline", ".reconcile-base", "snapshot\n")
-	writeFeatureFile(t, work, "inline", ".reconcile-inline", "")
 	makeFeatureDir(t, work, "nowin") // no .reconcile-base → window closed
 
 	enforce := []string{"DEVRITES_A1_HOOK=enforce"}
@@ -291,7 +288,6 @@ func TestParityA1Guard(t *testing.T) {
 		{"devrites-edit-allowed", "win", enforce, `{"tool_name":"Edit","tool_input":{"file_path":".devrites/features/win/state.md"}}`},
 		{"non-edit-tool", "win", enforce, `{"tool_name":"Bash","tool_input":{"command":"ls"}}`},
 		{"observe-mode-silent", "win", nil, `{"tool_name":"Edit","tool_input":{"file_path":"src/app.js"}}`},
-		{"inline-fallback-silent", "inline", enforce, `{"tool_name":"Edit","tool_input":{"file_path":"src/app.js"}}`},
 		{"no-window-silent", "nowin", enforce, `{"tool_name":"Edit","tool_input":{"file_path":"src/app.js"}}`},
 	} {
 		tc := tc

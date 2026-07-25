@@ -3,6 +3,7 @@ name: devrites-audit
 description: Read-only feature audit on security/perf/simplify: auth trust boundary, injection, secrets, hot-path, payload-size, perf budget, Chesterton delete/cleanup. Use when auditing one axis. Not for writes.
 argument-hint: "<security | perf | simplify>"
 user-invocable: false
+required-agent-roles: none
 ---
 
 # devrites-audit: read-only audit dispatch
@@ -39,14 +40,12 @@ no cross-pollination and the shared maximum of three concurrent read-only roles.
 
 ## Fallback and scope
 
-Use the capability ladder; inline is allowed only when no safe fresh-context rung
-preserves the role's read-only boundary or policy rejects it, and must say
-`independence: fallback`. Use these role contracts:
+Use the capability ladder. If no safe fresh-context rung preserves the role's
+read-only boundary, stop for HITL. Use these role contracts:
 
 - `.claude/agents/devrites-security-auditor.md`
 - `.claude/agents/devrites-performance-reviewer.md`
 - `.claude/agents/devrites-simplifier-reviewer.md`
 
-Seal weights that fallback under
-[`risk-and-rollback.md`](../rite-seal/reference/risk-and-rollback.md). Stay inside the
-active feature. Critical findings block seal; simplification never changes behavior.
+Stay inside the active feature. Critical findings block seal; simplification never
+changes behavior.

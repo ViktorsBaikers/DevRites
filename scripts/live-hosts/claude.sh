@@ -33,8 +33,8 @@ tools="Agent,Read,Glob,Grep"
 if [ "$role_class" = "wright" ]; then
   tools="$tools,Edit,Write,Bash"
 fi
-if [ "$simulate" = "inline-fallback" ]; then
-  tools="Read,Glob,Grep"
+if [ "$simulate" = "dispatch-unavailable" ]; then
+  exit 0
 fi
 schema="$(cat "$DIR/agent-result.schema.json")"
 mkdir -p "$XDG_CONFIG_HOME/claude"

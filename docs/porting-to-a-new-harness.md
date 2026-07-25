@@ -21,7 +21,8 @@ The harness must invoke DevRites and route to `/rite-spec` (or the host's explic
 - Skill discovery path is project-local and installed by `npx devrites`.
 - Session/project orientation runs automatically at startup/compact/resume, or the missing surface is recorded in `docs/harness-compliance.md`.
 - `devrites-engine` hooks/gates are wired, or each degraded gate has an honest fallback and confidence label.
-- Subagent support is mapped; if unavailable, reviewers/wrights use the documented inline fallback and label it.
+- Subagent support is mapped; if unavailable, required reviewer/wright work
+  stops for HITL rather than running in the root context.
 - Skills, agents, standards, hooks, and harness guidance stay project-local;
   the optional shared `devrites-engine` executable is the sole sanctioned
   global artifact and must remain skippable with `--no-binary`.

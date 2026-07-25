@@ -4,6 +4,7 @@ description: User-invoked handoff writer: sync chat-only context into `.devrites
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[what the next session will focus on]"
+required-agent-roles: none
 ---
 
 # /rite-handoff: chat-only context, into a fresh-agent doc

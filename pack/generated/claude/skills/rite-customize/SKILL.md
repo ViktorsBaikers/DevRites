@@ -4,6 +4,7 @@ description: User-invoked helper for authoring DevRites overrides or extensions.
 argument-hint: "[override <agent> | extension <name>]"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # /rite-customize: guided project customization

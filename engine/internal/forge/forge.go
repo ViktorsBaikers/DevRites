@@ -256,8 +256,6 @@ type strategyFlags struct {
 	values map[CandidateID]string
 }
 
-func (s *strategyFlags) String() string { return "" }
-
 func (s *strategyFlags) Set(value string) error {
 	idText, text, ok := strings.Cut(value, "=")
 	id := CandidateID(idText)

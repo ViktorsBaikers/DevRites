@@ -207,7 +207,6 @@ def interrupted() -> int:
     dispatch = {
         "named": "DRV-AGENT-NAMED",
         "generic": "DRV-AGENT-GENERIC-FALLBACK",
-        "inline": "DRV-AGENT-INLINE-FALLBACK",
     }[mode]
     result = {
         "result_version": value["result_schema"],
@@ -233,7 +232,7 @@ def interrupted() -> int:
         "execution": {
             "mode": mode,
             "guard_strength": value["expected_guard"],
-            "independence": mode != "inline",
+            "independence": True,
         },
         "signals": sorted(
             MANDATORY_SIGNALS | {"progress_recorded", "partial_metadata"}

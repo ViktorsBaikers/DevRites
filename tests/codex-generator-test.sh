@@ -48,6 +48,7 @@ cat > "$skill_dir/SKILL.md" <<'EOF'
 name: devrites-sample
 description: Expensive internal description that should be stubbed.
 user-invocable: false
+required-agent-roles: devrites-code-reviewer
 ---
 
 Read .claude/skills/devrites-lib/reference/standards/core.md and ask /rite-review.
@@ -64,41 +65,50 @@ grep -q '.codex/agents/devrites-code-reviewer.toml' "$skill_out" && ok "skill bo
 grep -q '\$rite-review' "$skill_out" && ok "skill body rewrites slash invocation" || no "skill body did not rewrite slash invocation"
 grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$skill_out" && no "generated skill kept Claude runtime paths" || ok "generated skill has no Claude runtime paths"
 grep -q 'invoke means run a skill in this context' "$skill_out" && ok "skill distinguishes invocation from dispatch" || no "skill does not distinguish invocation from dispatch"
-if grep -q 'named role is not exposed.*use generic `explorer`' "$skill_out" \
+grep -q '^required-agent-roles: devrites-code-reviewer$' "$skill_out" \
+  && ok "skill preserves required agent metadata" \
+  || no "skill dropped required agent metadata"
+if grep -q 'On MultiAgent V1.*use generic `explorer`' "$skill_out" \
   && grep -q 'fork_turns="none"' "$skill_out" \
-  && grep -q 'read `.codex/agents/devrites-<role>.toml`' "$skill_out"; then
+  && grep -q 'name exactly one `.codex/agents/devrites-<role>.toml`' "$skill_out"; then
   ok "skill maps unavailable read-only roles to a fresh generic explorer"
 else
   no "skill permits an unconfined generic explorer"
 fi
-if grep -q 'trusted `.codex/hooks.json` binds generic `worker`' "$skill_out" \
-  && grep -q 'agent_type=worker' "$skill_out" \
+if grep -q 'On MultiAgent V1.*`devrites-slice-wright` uses generic `worker`' "$skill_out" \
   && grep -q '\.wright-allowlist' "$skill_out" \
-  && grep -q '\.reconcile-inline' "$skill_out"; then
-  ok "skill maps the wright to a hook-bound generic worker"
+  && grep -q 'do not substitute `worker` for an exposed V2 named role' "$skill_out"; then
+  ok "skill confines the generic worker to the V1 compatibility path"
 else
-  no "skill does not expose the safe generic-wright rung"
+  no "skill permits prose-only generic-worker fallback"
 fi
-grep -q 'A missing custom role is not evidence that spawning is unavailable' "$skill_out" \
-  && ok "read-only custom-role absence does not permit inline fallback" \
-  || no "read-only custom-role absence can still permit inline fallback"
-grep -q 'Only when the project hooks are unavailable or untrusted, no spawn primitive exists' "$skill_out" \
-  && grep -q 'independence: fallback' "$skill_out" \
-  && ok "inline fallback is labelled and capability-gated" \
-  || no "inline fallback is not capability-gated"
+grep -q 'On MultiAgent V2' "$skill_out" \
+  && grep -q 'agent_type=devrites-<role>' "$skill_out" \
+  && grep -q 'unique `task_name`' "$skill_out" \
+  && grep -q 'durable parent/child rollout' "$skill_out" \
+  && ok "skill binds MultiAgent V2 named children to exact role contracts" \
+  || no "skill omits the MultiAgent V2 named-role path"
+grep -q 'Codex loads that role TOML.*developer_instructions.*natively' "$skill_out" \
+  && grep -q 'required-agent-roles.*arms the fail-closed Stop receipt' "$skill_out" \
+  && grep -q 'If any required named or generic agent dispatch is unavailable or rejected, stop for HITL' "$skill_out" \
+  && grep -q 'Never execute a DevRites specialist role in the root context' "$skill_out" \
+  && ! grep -q '\.reconcile-inline\\|\.reconcile-codex-worker-attempt\\|independence: fallback' "$skill_out" \
+  && ok "specialist dispatch is agent-only and preserves role instructions" \
+  || no "specialist dispatch still permits root inline fallback"
 
 bridge="$TMP_GEN_DIR/AGENTS.md"
 gen_codex_agents_bridge "$bridge"
 grep -q 'invoke.*run a skill inline.*dispatch.*fresh agent' "$bridge" \
   && ok "AGENTS bridge defines invoke and dispatch" \
   || no "AGENTS bridge does not define invoke and dispatch"
-if grep -q 'named role is not exposed.*use generic `explorer`' "$bridge" \
-  && grep -q 'trusted `.codex/hooks.json` binds generic `worker`' "$bridge" \
+if grep -q 'V2 uses the named `devrites-<role>`; V1 alone may use the guarded generic compatibility path' "$bridge" \
   && grep -q 'fork_turns="none"' "$bridge" \
-  && grep -q 'labelled inline `.reconcile-inline` path' "$bridge"; then
-  ok "AGENTS bridge preserves the safe spawn capability ladder"
+  && grep -q 'required-agent-roles.*arms a fail-closed receipt' "$bridge" \
+  && grep -q 'never execute a DevRites specialist role in the root context' "$bridge" \
+  && ! grep -q '\.reconcile-inline\\|\.reconcile-codex-worker-attempt\\|independence: fallback' "$bridge"; then
+  ok "AGENTS bridge requires agent-only specialist dispatch"
 else
-  no "AGENTS bridge promises an unenforceable generic-wright boundary"
+  no "AGENTS bridge permits prose-only wright fallback"
 fi
 
 agent="$TMP_GEN_DIR/devrites-sample-reviewer.md"
@@ -215,6 +225,33 @@ else
 fi
 grep -q 'devrites-engine hook stop-gate --harness=codex' "$hooks" && ok "hooks call engine hook subcommands" || no "hooks do not call engine hook subcommands"
 grep -q 'pack/\.claude/hooks\|\.sh' "$hooks" && no "hooks reference shell hook scripts" || ok "hooks do not reference shell hook scripts"
+if python3 - "$hooks" <<'PY'
+import json, pathlib, sys
+
+hooks = json.loads(pathlib.Path(sys.argv[1]).read_text())["hooks"]
+for event in ("PreToolUse", "UserPromptSubmit", "SubagentStop", "Stop"):
+    commands = [
+        hook["command"]
+        for group in hooks[event]
+        for hook in group["hooks"]
+    ]
+    assert any("hook agent-dispatch --harness=codex" in command for command in commands), event
+
+pre_matchers = [group.get("matcher", "") for group in hooks["PreToolUse"]]
+assert any({"Bash", "spawn_agent", "wait", "wait_agent"} <= set(m.split("|")) for m in pre_matchers)
+start_matchers = [group.get("matcher", "") for group in hooks["SubagentStart"]]
+assert "devrites-.*|explorer|worker" in start_matchers
+stop_matchers = [group.get("matcher", "") for group in hooks["SubagentStop"]]
+assert "devrites-.*|explorer|worker" in stop_matchers
+PY
+then
+  ok "Codex hooks bind spawn, start, result, and stop receipts and request targeted waits"
+else
+  no "Codex hooks do not enforce the available agent receipt lifecycle"
+fi
+grep -q 'DEVRITES_A1_HOOK=enforce devrites-engine hook a1-guard --harness=codex' "$hooks" \
+  && ok "Codex A1 source boundary is enforced" \
+  || no "Codex A1 source boundary remains observe-only"
 if grep -q 'DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1 devrites-engine hook reviewer-readonly --harness=codex' "$hooks" \
   && grep -q 'DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1 devrites-engine hook wright-scope --harness=codex' "$hooks" \
   && grep -q 'devrites-codex-generic-guard' "$hooks"; then

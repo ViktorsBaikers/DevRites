@@ -2,6 +2,7 @@
 name: devrites-api-interface
 description: Design stable API/interface contracts before implementation: REST/GraphQL endpoints, module boundaries, type contracts, FE/BE splits. Use when the user says "design the API" or a slice crosses a boundary. Not for helpers.
 user-invocable: false
+required-agent-roles: none
 ---
 
 # devrites-api-interface: contract before implementation

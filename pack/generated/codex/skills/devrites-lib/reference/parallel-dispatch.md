@@ -91,9 +91,8 @@ devrites-engine footprint roster <slug>
 ```
 
 `roster` rc=3 means an unaccounted reviewer: dispatch or record why it does not apply.
-rc=1 means an always-on skip; this is valid only for an unchanged-candidate carry-forward
-or the explicit independence fallback in
-[`../../rite-seal/reference/risk-and-rollback.md`](../../rite-seal/reference/risk-and-rollback.md).
+rc=1 means an always-on skip; this is valid only for an unchanged-candidate
+carry-forward. A required reviewer that cannot be dispatched blocks the phase.
 
 ## Reconciliation
 
@@ -106,5 +105,5 @@ or the explicit independence fallback in
 6. Apply the caller's gate; do not invent a composite score.
 
 Every panel reviewer runs at the ceiling or inherited tier. If the named role is
-unavailable, use the universal ladder. Record an inline fallback as non-independent
-under the seal risk rule, never as a fresh-context pass.
+unavailable, use the universal ladder. If no fresh-agent rung is available, stop for
+HITL; never execute the reviewer in the root context.

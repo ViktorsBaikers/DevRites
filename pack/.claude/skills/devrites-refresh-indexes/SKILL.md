@@ -2,6 +2,7 @@
 name: devrites-refresh-indexes
 description: Refresh stale optional indexes. Use when structural lookup disagrees with live code or rite-doctor requests a synchronous reindex.
 user-invocable: false
+required-agent-roles: none
 ---
 
 # devrites-refresh-indexes: keep the code-intelligence indexes fresh

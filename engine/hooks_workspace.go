@@ -465,12 +465,8 @@ func hookA1Guard(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) i
 	if !ok {
 		return exitOK
 	}
-	// The guard is active between a reconcile snapshot and its check. Inline
-	// fallback makes the orchestrator the expected writer.
+	// The guard is active between a reconcile snapshot and its check.
 	if !wsIsFile(filepath.Join(dir, ".reconcile-base")) {
-		return exitOK
-	}
-	if wsIsFile(filepath.Join(dir, ".reconcile-inline")) {
 		return exitOK
 	}
 
@@ -562,9 +558,15 @@ func hookWrightScope(h harness.Harness, stdin io.Reader, stdout, stderr io.Write
 		return exitOK
 	}
 	in := h.ParseGuardInput(bytes.NewReader(data))
-	kind := devritesAgent(in.AgentType)
+	kind := devritesAgentForGuard(h, in)
+	genericCompat := os.Getenv("DEVRITES_CODEX_GENERIC_AGENT_COMPAT") == "1"
+	if in.AgentType == "" && in.AgentID == "" {
+		if code, handled := guardRootBuildWindow(h, data, in, stdout, stderr); handled {
+			return code
+		}
+	}
 	if kind == devritesAgentNone &&
-		os.Getenv("DEVRITES_CODEX_GENERIC_AGENT_COMPAT") == "1" &&
+		genericCompat &&
 		in.AgentType == "" {
 		return exitOK
 	}
@@ -616,9 +618,6 @@ func hookWrightScope(h harness.Harness, stdin io.Reader, stdout, stderr io.Write
 	if genericWright && !forgeDeclared {
 		if !wsIsFile(filepath.Join(dir, ".reconcile-base")) {
 			return exitOK
-		}
-		if wsIsFile(filepath.Join(dir, ".reconcile-inline")) {
-			return denyWright(h, stdout, stderr, wrightForbiddenReason, drvreason.HookWrightForbiddenDenied)
 		}
 		active = true
 	}
@@ -1007,6 +1006,75 @@ func denyOrObserveWright(h harness.Harness, stdout, stderr io.Writer, dir string
 	_ = state.AppendLog(filepath.Join(dir, ".wright-scope.log"), "WOULD-BLOCK\t"+strings.Join(bad, ", "))
 	recordHookGuard(h, "wright-scope", drvreason.HookWrightScopeObserved, lib.GuardObserved, lib.OutcomeObserved)
 	return exitOK
+}
+
+func guardRootBuildWindow(h harness.Harness, data []byte, in harness.GuardInput, stdout, stderr io.Writer) (int, bool) {
+	root, _, dir, ok := resolveWorkspace()
+	if !ok || !wsIsFile(filepath.Join(dir, ".reconcile-base")) {
+		return exitOK, false
+	}
+
+	if isAgentDispatchTool(in.ToolName) {
+		return exitOK, true
+	}
+
+	projectDir := filepath.Dir(root)
+	if isOpaqueExecutionTool(in.ToolName) {
+		return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
+	}
+	targets, suspicious := rootMutationTargets(data, in)
+	for _, target := range targets {
+		abs := target
+		if !filepath.IsAbs(abs) {
+			abs = filepath.Join(projectDir, abs)
+		}
+		abs = filepath.Clean(abs)
+		resolved, err := resolveRootMutationTarget(abs)
+		if err != nil {
+			return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
+		}
+		if !underDevrites(resolved, root) {
+			return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
+		}
+	}
+	if suspicious {
+		return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
+	}
+	if len(targets) > 0 {
+		return exitOK, true
+	}
+	return exitOK, false
+}
+
+func resolveRootMutationTarget(filename string) (string, error) {
+	info, err := os.Lstat(filename)
+	if err == nil && info.Mode()&os.ModeSymlink != 0 {
+		target, err := os.Readlink(filename)
+		if err != nil {
+			return "", err
+		}
+		if !filepath.IsAbs(target) {
+			target = filepath.Join(filepath.Dir(filename), target)
+		}
+		return safepath.ResolveExisting(target)
+	}
+	return safepath.ResolveExisting(filename)
+}
+
+func rootMutationTargets(data []byte, in harness.GuardInput) ([]string, bool) {
+	switch {
+	case isEditTool(in.ToolName):
+		targets := mutationToolPaths(data, in)
+		return targets, len(targets) == 0
+	case isShellTool(in.ToolName):
+		targets, opaque := wrightShellWritePaths(in.Command)
+		if len(targets) > 0 {
+			return targets, false
+		}
+		return nil, opaque && (reviewerMutateRe.MatchString(in.Command) || opaqueInterpreterRe.MatchString(in.Command))
+	default:
+		return nil, false
+	}
 }
 
 func denyWright(h harness.Harness, stdout, stderr io.Writer, message string, reasonID drvreason.ID) int {

@@ -3,6 +3,7 @@ name: rite-pov
 description: Project-grounded verdict for adopting, switching, rejecting, or revisiting a named external technology, library, platform, CVE, or pattern. Use when deciding whether this project should commit to an outside option.
 argument-hint: "[candidate/link/question]"
 user-invocable: true
+required-agent-roles: none
 ---
 
 # /rite-pov: project-grounded external verdict

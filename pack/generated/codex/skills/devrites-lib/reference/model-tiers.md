@@ -21,13 +21,14 @@ one to a reviewer to save cost. The tier a scout runs on is where savings are sa
 ## The degradation rule
 
 Tiers are an optimization, never a correctness dependency. A skill written against tiers must run
-correctly on a harness that cannot select models per agent, or has no subagent primitive at all:
+correctly on a harness that cannot select models per agent:
 
 1. **Per-agent model override unavailable** → dispatch the scout on the **inherited** model and
    keep its **read budget and output cap**. The cost control falls back to structure, not model
    choice. This is why every scout dispatch also carries an explicit read budget.
-2. **No subagent primitive at all** → run the scout work **inline** in the orchestrator, with the
-   same budgets. The tier still tells you how much to spend, even with nothing to dispatch to.
+2. **No safe fresh-agent rung** → stop for HITL when the scout is required, or record the
+   explicitly optional scout as skipped. Never relabel root-context work as independent
+   specialist dispatch.
 
 A skill that only works when it can pick a cheap model is broken. The tier names the *intent*; the
 budget enforces it regardless of what the harness can do.

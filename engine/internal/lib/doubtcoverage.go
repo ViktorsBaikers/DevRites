@@ -22,7 +22,7 @@ import (
 //
 // base is the project directory that contains the .devrites tree.
 //
-//	0  doubt covered, or not assessable (no log / no wright / inline build) → pass
+//	0  doubt covered, or not assessable (no log / no wright) → pass
 //	1  wright dispatch(es) but ZERO doubt → verify against decisions.md
 //	2  usage (no slug)
 //	3  decisions.md records a stood decision with `doubt: MISSING`
@@ -39,21 +39,11 @@ func DoubtCoverage(root string, args []string, stdout, stderr io.Writer) int {
 	dir := featureDir(root, slug)
 
 	// A recorded stood decision that was never doubted is the unambiguous
-	// failure: checked first, and on every path (it survives the inline-build
-	// case below, where the footprint heuristic cannot apply).
+	// failure: checked first, and on every path.
 	if dec, ok := readFileOK(filepath.Join(dir, "decisions.md")); ok && strings.Contains(dec, "doubt: MISSING") {
 		fmt.Fprintln(stdout, "doubt-coverage: SKIPPED: a '## Decisions stood' entry in decisions.md has doubt: MISSING.")
 		fmt.Fprintln(stdout, "A decision was stood and recorded but never doubted. Re-dispatch doubt or escalate.")
 		return 3
-	}
-
-	// Inline build (Task tool unavailable): the wright + doubt ran in-context,
-	// dispatching nothing, so the footprint heuristic does not apply: the
-	// decisions.md check above is the assessment.
-	if isFile(filepath.Join(dir, ".reconcile-inline")) {
-		fmt.Fprintln(stdout, "doubt-coverage: inline build (.reconcile-inline): footprint heuristic n/a; no MISSING")
-		fmt.Fprintln(stdout, "verdict recorded. Verify by hand that each stood decision carries a devrites-doubt verdict.")
-		return 0
 	}
 
 	f, err := os.Open(filepath.Join(dir, "footprint.log"))

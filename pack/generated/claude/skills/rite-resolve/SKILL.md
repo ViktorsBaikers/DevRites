@@ -4,6 +4,7 @@ description: User-invoked resume verb for answering, dropping, or batch-resolvin
 argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <path-to-yaml>"
 user-invocable: true
 disable-model-invocation: true
+required-agent-roles: none
 ---
 
 # /rite-resolve: answer the human gate

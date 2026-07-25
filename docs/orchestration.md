@@ -34,18 +34,21 @@ or out-of-scope returns before adding anything to canonical state.
 
 Use the first safe option available:
 
-1. the named project role;
-2. a generic `explorer` or `worker` reading the same generated role contract
-   only when the host still enforces read-only or exact wright scope (or
-   isolated staging);
-3. inline execution, labelled `independence: fallback`, when neither safe
-   fresh-context option is callable.
+1. the named project role; Codex V2 uses its exact `agent_type`, a unique
+   `task_name`, and a durable rollout proving native rules, wait, and result;
+2. a generic V1 `explorer`/`worker` only when the host still enforces read-only
+   or exact wright scope (or isolated staging);
+3. a HITL stop when neither safe fresh-context option is callable.
 
-Inline self-review never silently satisfies an independence gate. Declared
-leaf identity is fail-closed: a missing or crashed `devrites-engine` guard
-blocks the tool call. Leaves never ask the human, write `.devrites/**`, change
-phase, commit, push, install, deploy, migrate live data, or perform irreversible
-actions.
+Specialist work never runs in the root context. Declared leaf identity is
+fail-closed: a missing or crashed `devrites-engine` guard blocks the tool call.
+Every installed skill also carries `required-agent-roles` frontmatter. Codex
+arms those unconditional roles when the user invokes the skill and blocks Stop
+until each role has a confirmed start, wait, and non-empty result. `none`
+explicitly declares that the skill has no unconditional fresh-agent requirement;
+conditional fan-out still follows the phase's documented triggers.
+Leaves never ask the human, write `.devrites/**`, change phase, commit, push,
+install, deploy, migrate live data, or perform irreversible actions.
 
 ## Single-writer build lifecycle
 

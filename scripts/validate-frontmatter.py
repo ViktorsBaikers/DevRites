@@ -6,10 +6,12 @@ Exits non-zero if any file fails. Uses PyYAML if present, else a minimal parser
 (frontmatter here is simple key: value, no nested structures needed).
 """
 import sys
+import re
+from pathlib import Path
 
 KNOWN_SKILL_FIELDS = {
     "name", "description", "argument-hint", "user-invocable",
-    "disable-model-invocation",
+    "disable-model-invocation", "required-agent-roles",
 }
 KNOWN_AGENT_FIELDS = {
     "name", "description", "tools", "disallowedTools", "model", "permissionMode",
@@ -22,6 +24,7 @@ DESCRIPTION_WORD_LIMITS = {
     "library": 60,
     "explicit": 30,
 }
+AGENT_ROLE_RE = re.compile(r"^devrites-[a-z0-9-]+$")
 
 
 def extract_frontmatter(text):
@@ -88,6 +91,26 @@ def is_agent(path):
     return "/agents/" in path.replace("\\", "/")
 
 
+def required_agent_roles(path, value):
+    raw = str(value).strip()
+    if raw == "none":
+        return [], None
+    if not raw:
+        return [], "required-agent-roles must be 'none' or a comma-separated role list"
+    roles = [role.strip() for role in raw.split(",")]
+    if any(not AGENT_ROLE_RE.fullmatch(role) for role in roles):
+        return [], "required-agent-roles contains an invalid role"
+    if len(set(roles)) != len(roles):
+        return [], "required-agent-roles contains a duplicate role"
+    skill_path = Path(path).resolve()
+    agents_dir = skill_path.parent.parent.parent / "agents"
+    if agents_dir.is_dir():
+        missing = [role for role in roles if not (agents_dir / (role + ".md")).is_file()]
+        if missing:
+            return [], "required-agent-roles references missing agent(s): " + ", ".join(missing)
+    return roles, None
+
+
 def main(argv):
     files = argv[1:]
     if not files:
@@ -123,6 +146,16 @@ def main(argv):
                   % (path, ", ".join(unknown)))
             errors += 1
             continue
+        if not is_agent(path):
+            if "required-agent-roles" not in data:
+                print("ERROR %s: missing 'required-agent-roles' (use 'none' when no fresh agent is mandatory)" % path)
+                errors += 1
+                continue
+            _, role_err = required_agent_roles(path, data.get("required-agent-roles"))
+            if role_err:
+                print("ERROR %s: %s" % (path, role_err))
+                errors += 1
+                continue
         # description length cap is 1024 chars per Anthropic SKILL.md spec
         warn = ""
         desc = str(data.get("description", ""))

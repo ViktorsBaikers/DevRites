@@ -93,7 +93,8 @@ Hooks:
   hook orient             Emit SessionStart orientation for the active feature
   hook stop-gate          Refuse to end a turn at a provably inconsistent rest point
   hook reviewer-readonly  Deny every mutation/dispatch surface for read-only DevRites agents
-  hook subagent-orient    Inject the DevRites discipline into a spawned devrites-* subagent
+  hook agent-dispatch     Bind Codex spawn, start, wait, result, and reconcile receipts
+  hook subagent-orient    Inject DevRites discipline and bind a spawned specialist role
   hook cursor             Re-inject the active feature's cursor (UserPromptSubmit)
   hook statusline         One-line workspace HUD (settings.json statusLine)
   hook redwatch           Fail-on-red sentinel: set/clear .red after a test/build command
@@ -510,6 +511,8 @@ func cmdHook(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return hookStopGate(h, stdin, stdout, stderr)
 	case "reviewer-readonly":
 		return hookReviewerReadonly(h, stdin, stdout, stderr)
+	case "agent-dispatch":
+		return hookAgentDispatch(h, stdin, stdout, stderr)
 	case "subagent-orient":
 		return hookSubagentOrient(h, stdin, stdout, stderr)
 	case "cursor":

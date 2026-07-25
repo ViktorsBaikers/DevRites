@@ -60,10 +60,11 @@ gen_codex_skill_file() {
       print "- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them."
       print "- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation."
       print "- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch."
-      print "- Inspect the current `spawn_agent` role list. When the named `devrites-<role>` is exposed, dispatch it with `fork_turns=\"none\"`; full-history forks inherit the parent type. The matching project contract is `.codex/agents/devrites-<role>.toml`."
-      print "- If a named role is not exposed, use generic `explorer` for every read-only role with `fork_turns=\"none\"`. Tell it to read `.codex/agents/devrites-<role>.toml`, follow its `developer_instructions`, and execute the unchanged packet. Trusted `.codex/hooks.json` binds `agent_type=explorer` to the fail-closed reviewer read-only guard."
-      print "- For `devrites-slice-wright`, trusted `.codex/hooks.json` binds generic `worker` (`agent_type=worker`) to the active reconcile window and exact `.wright-allowlist`. Dispatch that worker with `fork_turns=\"none\"`, tell it to read `.codex/agents/devrites-slice-wright.toml`, and execute the unchanged packet. Never create `.reconcile-inline` when this safe rung is available."
-      print "- A missing custom role is not evidence that spawning is unavailable. Only when the project hooks are unavailable or untrusted, no spawn primitive exists, or higher-priority policy rejects a safe spawn may the root run the documented discipline inline. Label it `independence: fallback`, never call it independent, create `.reconcile-inline` only for that path, and apply every fallback risk gate."
+      print "- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns=\"none\"`. Codex loads that role TOML'\''s `developer_instructions` natively. Because V2 collaboration lifecycle calls bypass hooks, DevRites verifies the current durable parent/child rollout for the exact role, wait, completion, and non-empty delivered result."
+      print "- On MultiAgent V1, when the named role is not exposed, use generic `explorer` for a read-only role with `fork_turns=\"none\"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract'\''s exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard."
+      print "- On MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns=\"none\"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`; do not substitute `worker` for an exposed V2 named role."
+      print "- The invoked skill'\''s `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn."
+      print "- If any required named or generic agent dispatch is unavailable or rejected, stop for HITL. Never execute a DevRites specialist role in the root context."
       print "- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete."
       print "- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement."
       print "- When this skill asks a HITL question via `AskUserQuestion`: Codex'\''s equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK'\''s contract, gated by the `.devrites/AFK` sentinel."
@@ -78,7 +79,7 @@ gen_codex_skill_file() {
         print ""
         print "## Codex compatibility"
         print ""
-        print "Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Invocation runs a skill inline; dispatch starts a fresh agent with `spawn_agent` and must be awaited. Use an exposed named `devrites-<role>` with `fork_turns=\"none\"`; otherwise use generic `explorer` for read-only roles or generic `worker` for `devrites-slice-wright`, also with `fork_turns=\"none\"`, after telling it to read the exact `.codex/agents/devrites-<role>.toml`. Trusted `.codex/hooks.json` binds `agent_type=explorer` to read-only policy and `agent_type=worker` to the active reconcile window plus `.wright-allowlist`. Inline `.reconcile-inline` fallback is allowed only when those hooks are unavailable or untrusted, spawning is unavailable, or higher-priority policy rejects the safe rung."
+        print "Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Invocation runs a skill inline; dispatch starts a fresh agent with `spawn_agent` and must be awaited. On V2 use the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns=\"none\"`; on V1 use guarded `explorer`/`worker` with the unchanged packet and exact role TOML. If any required dispatch is unavailable or rejected, stop for HITL; never execute the specialist role in the root context."
       }
     }
   ' "$_src" > "$_tmp"
@@ -170,10 +171,8 @@ This project has DevRites installed for both Claude Code and Codex.
 - Before using any DevRites workflow skill, read `.agents/skills/devrites-lib/reference/standards/core.md`. Load other `.agents/skills/devrites-lib/reference/standards/*.md` files when the skill or rule index asks for them. These are DevRites engineering standards, not Codex exec-policy `.rules` files.
 - Custom Codex subagents generated from the DevRites review agents live in `.codex/agents`.
 - In DevRites guidance, **invoke** means run a skill inline in the current context; **dispatch** means start a fresh agent with `spawn_agent`, wait for it, and reconcile its result.
-- Inspect the current `spawn_agent` role list. Use an exposed named `devrites-<role>` with `fork_turns="none"`; full-history forks inherit the parent type.
-- If a named role is not exposed, use generic `explorer` for read-only work with `fork_turns="none"` and tell it to read `.codex/agents/devrites-<role>.toml`. Trusted `.codex/hooks.json` binds `agent_type=explorer` to the fail-closed reviewer guard.
-- For `devrites-slice-wright`, trusted `.codex/hooks.json` binds generic `worker` (`agent_type=worker`) to the active reconcile window and exact `.wright-allowlist`. Dispatch it with `fork_turns="none"`, the unchanged packet, and `.codex/agents/devrites-slice-wright.toml`.
-- A missing custom role is not evidence that spawning is unavailable. Use the labelled inline `.reconcile-inline` path only when project hooks are unavailable or untrusted, spawning is unavailable, or higher-priority policy rejects the safe rung.
+- Follow the invoked skill's generated **Codex compatibility** section for exact dispatch mechanics: V2 uses the named `devrites-<role>`; V1 alone may use the guarded generic compatibility path. Both use `fork_turns="none"`.
+- The invoked skill's `required-agent-roles` frontmatter arms a fail-closed receipt. If a required dispatch is unavailable or rejected, stop for HITL; never execute a DevRites specialist role in the root context.
 - Claude Code agent hook metadata is not active in Codex. The generated Codex agents preserve read-only intent with Codex sandbox settings where possible; still follow DevRites' scope and no-mutation rules explicitly.
 
 ## Workflow contract
@@ -211,14 +210,19 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
-            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook a1-guard --harness=codex",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec env DEVRITES_A1_HOOK=enforce devrites-engine hook a1-guard --harness=codex",
             "statusMessage": "DevRites: checking build write boundary"
           }
         ]
       },
       {
-        "matcher": "Bash|Shell|sh|exec_command|run_command|Edit|Write|MultiEdit|NotebookEdit|apply_patch|exec|js|python|computer|computer_use|write_stdin|run_code|Agent|Task|spawn_agent|delegate|dispatch_agent|create_agent",
+        "matcher": "Bash|Shell|sh|exec_command|run_command|Edit|Write|MultiEdit|NotebookEdit|apply_patch|exec|js|python|computer|computer_use|write_stdin|run_code|Agent|Task|spawn_agent|delegate|dispatch_agent|create_agent|wait|wait_agent",
         "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook agent-dispatch --harness=codex",
+            "statusMessage": "DevRites: verifying agent dispatch receipt"
+          },
           {
             "type": "command",
             "command": "payload=\"$(cat)\"; if ! command -v devrites-engine >/dev/null 2>&1; then if printf '%s' \"$payload\" | grep -Eq '\"agent_type\"[[:space:]]*:[[:space:]]*\"(explorer|worker)\"'; then printf '%s\\n' 'DevRites: generic Codex leaf guard unavailable; install or repair devrites-engine. (devrites-codex-generic-guard)' >&2; exit 2; fi; exit 0; fi; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || { printf '%s\\n' 'DevRites: cannot resolve the project root for a generic Codex leaf. (devrites-codex-generic-guard)' >&2; exit 2; }; printf '%s' \"$payload\" | DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1 devrites-engine hook reviewer-readonly --harness=codex; rc=$?; case \"$rc\" in 0) exit 0 ;; 2) exit 2 ;; *) printf '%s\\n' 'DevRites: generic Codex reviewer guard unavailable or crashed; install or repair devrites-engine. (devrites-codex-generic-guard)' >&2; exit 2 ;; esac",
@@ -260,6 +264,15 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook agent-dispatch --harness=codex",
+            "statusMessage": "DevRites: checking agent completion receipt"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook stop-gate --harness=codex",
             "statusMessage": "DevRites: checking workspace stop gate"
           }
@@ -280,6 +293,10 @@ gen_codex_hooks_json() {
         "hooks": [
           {
             "type": "command",
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook agent-dispatch --harness=codex"
+          },
+          {
+            "type": "command",
             "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook cursor --harness=codex"
           }
         ]
@@ -287,7 +304,7 @@ gen_codex_hooks_json() {
     ],
     "SubagentStart": [
       {
-        "matcher": "devrites-.*",
+        "matcher": "devrites-.*|explorer|worker",
         "hooks": [
           {
             "type": "command",
@@ -317,11 +334,12 @@ gen_codex_hooks_json() {
     ],
     "SubagentStop": [
       {
-        "matcher": "devrites-slice-wright|devrites-.*reviewer|devrites-retrospector|devrites-forge-judge",
+        "matcher": "devrites-.*|explorer|worker",
         "hooks": [
           {
             "type": "command",
-            "command": "printf '%s\\n' 'DevRites: reconcile this subagent result against the active DevRites skill contract before claiming completion.'"
+            "command": "command -v devrites-engine >/dev/null 2>&1 || exit 0; cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" 2>/dev/null || exit 0; exec devrites-engine hook agent-dispatch --harness=codex",
+            "statusMessage": "DevRites: recording subagent result"
           },
           {
             "type": "command",
@@ -345,8 +363,4 @@ gen_codex_hooks_json() {
   }
 }
 EOF
-# Codex has no SessionEnd hook event. Its lifecycle events are
-# SessionStart/SubagentStart/PreToolUse/PermissionRequest/PostToolUse/PreCompact/
-# PostCompact/UserPromptSubmit/SubagentStop/Stop. The `hook event session-end`
-# trace remains Claude-only until Codex adds that event.
 }
