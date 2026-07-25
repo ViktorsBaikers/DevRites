@@ -56,7 +56,6 @@ Usage:
   devrites-engine mutation-gate [slug]     Advisory: detect the mutation runner and scope it
   devrites-engine test-integrity [slug]    Gate: no test deleted, skipped, or de-asserted
   devrites-engine review-integrity [slug]  Gate: no adversarial review axis is silent (zero findings, no justification)
-  devrites-engine package-existence [slug] Gate: every new import is declared in a manifest
   devrites-engine reconcile <sub> [slug]   A1 gate: snapshot|check|close the wright's source writes
   devrites-engine resolve <qid> "<ans>"    Resolve an open question; keep state.md consistent
   devrites-engine close-out <slug>         Archive a shipped feature and clear ACTIVE
@@ -239,8 +238,6 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.TestIntegrity(root, args[1:], stdout, stderr)
 	case "review-integrity":
 		return lib.ReviewIntegrity(root, args[1:], stdout, stderr)
-	case "package-existence":
-		return lib.PackageExistence(root, args[1:], stdout, stderr)
 	case "reconcile":
 		return lib.Reconcile(root, args[1:], stdout, stderr)
 	case "resolve":

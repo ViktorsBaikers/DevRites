@@ -21,7 +21,6 @@ mutation tool when present. Run:
 ```bash
 devrites-engine test-integrity
 devrites-engine mutation-gate
-devrites-engine package-existence
 ```
 
 A test that stays green on broken code is unproven. Pure transforms also get a

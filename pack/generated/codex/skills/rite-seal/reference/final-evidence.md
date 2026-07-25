@@ -53,7 +53,6 @@ gates:
 ```bash
 devrites-engine test-integrity; echo "test-integrity rc=$?"   # exit 3 = a test deleted/skipped/loosened → Critical NO-GO
 devrites-engine mutation-gate   # changed-files mutation score — band the verdict; survivors are unproven behaviours
-devrites-engine package-existence; echo "package-existence rc=$?"   # exit 3 = a new import isn't declared in any manifest (hallucinated/typo-squatted dep) → Critical NO-GO
 ```
 A test weakened since the slice base is a **Critical NO-GO**: the suite went green by lowering the
 bar, not by the code being right. Record the mutation score in `seal.md`; under

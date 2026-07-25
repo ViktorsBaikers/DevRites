@@ -59,6 +59,7 @@ for item in "${PAYLOAD[@]}"; do
   if [[ -e "$item" ]]; then
     if [[ "$item" == "engine" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       while IFS= read -r -d '' path; do
+        [[ -e "$path" ]] || continue
         if [[ "$path" == engine/testdata/golden/* ]]; then
           continue
         fi

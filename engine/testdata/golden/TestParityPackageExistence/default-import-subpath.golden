@@ -1,2 +1,0 @@
-exit 0
-package-existence: OK: every new third-party import is declared in a manifest.

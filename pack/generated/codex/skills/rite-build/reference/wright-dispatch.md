@@ -66,15 +66,12 @@ and exact changed-file set. Before the root writes any canonical record, run:
 ```bash
 devrites-engine reconcile check; echo "reconcile rc=$?"
 devrites-engine test-integrity; echo "test-integrity rc=$?"
-devrites-engine package-existence; echo "package-existence rc=$?"
 ```
 
 - Reconcile `5`: reject the result. Preserve pre-snapshot user work; restore only the
   unauthorized slice delta; never widen scope from the writer's self-report.
 - Test integrity `3`: a test was deleted, muted, focused, or de-asserted. Treat it as a
   Critical protocol failure and correct it through the wright.
-- Package existence `3`: verify the exact package/version and fix the bounded workflow
-  or dependency defect through recovery. It is not a reason to ask for retry approval.
 - A setup/corrupt-baseline error blocks acceptance; never fall back silently to `HEAD`.
 
 The clean reconcile check records that source has not changed since inspection. The
@@ -105,13 +102,13 @@ Before every retry:
 
 That refresh requires the prior clean check, re-fingerprints root-owned state, and keeps
 the original source baseline. Re-dispatch with the exact output, attempt count, and dead
-ends. Then repeat reconcile and both integrity gates from zero. Clear recovery only after
+ends. Then repeat reconcile and `test-integrity` from zero. Clear recovery only after
 green with `recovery clear --class <class> "<root cause>" <slug>`. An exhausted objective
 failure becomes a technical blocker with its reproduction, not a `rite-resolve` question.
 
 ## Close and record
 
-When reconciliation, integrity, package, proof, and doubt gates all pass:
+When reconciliation, integrity, proof, and doubt gates all pass:
 
 ```bash
 devrites-engine reconcile close

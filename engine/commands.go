@@ -34,7 +34,7 @@ func rootModeFor(command string, args []string) rootMode {
 	case "first-task", "spec-dedupe", "evidence-fresh", "coverage",
 		"doubt-coverage", "budget", "preamble", "progress",
 		"build-readiness", "readiness-digest", "analyze", "mutation-gate",
-		"test-integrity", "review-integrity", "package-existence",
+		"test-integrity", "review-integrity",
 		"archive-search", "config", "reviewers", "outside-voice", "docs-stale",
 		"secret-scan", "lanes", "overrides":
 		return rootLenient
