@@ -457,6 +457,17 @@ func dispatchTurnState(events []agentDispatchEvent, turnID string) (map[string]s
 				attempt.Stopped = true
 				attempt.ResultSHA256 = event.ResultSHA256
 			}
+		case "verified":
+			attempts = append(attempts, &agentDispatchAttempt{
+				Role:         event.Role,
+				AgentType:    event.AgentType,
+				AgentID:      event.AgentID,
+				WindowID:     event.WindowID,
+				Started:      true,
+				Stopped:      true,
+				Waited:       true,
+				ResultSHA256: event.ResultSHA256,
+			})
 		}
 	}
 	return armed, attempts
@@ -771,7 +782,7 @@ func reconcileWindowPredates(at time.Time) bool {
 }
 
 func dispatchAttemptComplete(attempt *agentDispatchAttempt) bool {
-	return attempt.Started && attempt.Stopped && attempt.ResultSHA256 != ""
+	return attempt.Started && attempt.Stopped && attempt.Waited && attempt.ResultSHA256 != ""
 }
 
 func roleSatisfied(role, windowID string, attempts []*agentDispatchAttempt) bool {
@@ -1092,15 +1103,34 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 		if windowID == "" {
 			return exitOK
 		}
-		durable, durableErr := durableCodexV2DispatchAttempts(
-			root, in.SessionID, in.TurnID, armed,
-		)
-		if durableErr != nil {
-			return preToolDeny(h, "DevRites could not verify the Codex V2 wright result: "+durableErr.Error(), stdout, stderr)
-		}
-		attempts = append(attempts, durable...)
 		if !roleSatisfied("devrites-slice-wright", windowID, attempts) {
-			return preToolDeny(h, "DevRites reconcile check/close requires a confirmed, awaited devrites-slice-wright result bound to the active reconcile snapshot.", stdout, stderr)
+			durable, durableErr := durableCodexV2DispatchAttempts(
+				root, in.SessionID, in.TurnID, armed,
+			)
+			if durableErr != nil {
+				return preToolDeny(h, "DevRites could not verify the Codex V2 wright result: "+durableErr.Error(), stdout, stderr)
+			}
+			attempts = append(attempts, durable...)
+			if !roleSatisfied("devrites-slice-wright", windowID, attempts) {
+				return preToolDeny(h, "DevRites reconcile check/close requires a confirmed, awaited devrites-slice-wright result bound to the active reconcile snapshot.", stdout, stderr)
+			}
+			for _, attempt := range durable {
+				if attempt.Role != "devrites-slice-wright" || attempt.WindowID != windowID ||
+					!dispatchAttemptComplete(attempt) {
+					continue
+				}
+				if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
+					Event:        "verified",
+					TurnID:       in.TurnID,
+					AgentID:      attempt.AgentID,
+					AgentType:    attempt.AgentType,
+					Role:         attempt.Role,
+					WindowID:     attempt.WindowID,
+					ResultSHA256: attempt.ResultSHA256,
+				}); err != nil {
+					return preToolDeny(h, "DevRites could not persist the verified Codex V2 wright result: "+err.Error(), stdout, stderr)
+				}
+			}
 		}
 	}
 	return exitOK

@@ -8,6 +8,8 @@
 # and uses more tokens. It defaults to GPT-5.4's stable V1 surface;
 # DEVRITES_CODEX_SUBAGENT_MODEL and
 # DEVRITES_CODEX_SUBAGENT_SCHEMA select another authenticated model/schema pair.
+# DEVRITES_CODEX_SUBAGENT_ROLE=devrites-slice-wright additionally proves the
+# write-capable V2 receipt survives reconcile close.
 set -u
 export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -55,14 +57,20 @@ PY
 mkdir -p "$T/home" "$T/codex-home"
 git -C "$PROJECT" init -q || no "could not initialize live Codex project"
 
+SUBAGENT_ROLE="${DEVRITES_CODEX_SUBAGENT_ROLE:-devrites-security-auditor}"
+case "$SUBAGENT_ROLE" in
+  devrites-security-auditor|devrites-slice-wright) ;;
+  *) no "unknown DEVRITES_CODEX_SUBAGENT_ROLE=$SUBAGENT_ROLE" ;;
+esac
+
 echo "== codex-runtime-smoke (target: $PROJECT) =="
 bash "$ROOT/install.sh" --target "$PROJECT" >/dev/null 2>&1 || no "install failed"
 mkdir -p "$PROJECT/.agents/skills/devrites-runtime-smoke"
-cat > "$PROJECT/.agents/skills/devrites-runtime-smoke/SKILL.md" <<'EOF'
+cat > "$PROJECT/.agents/skills/devrites-runtime-smoke/SKILL.md" <<EOF
 ---
 name: devrites-runtime-smoke
 description: Authenticated fixture for proving mandatory Codex role dispatch.
-required-agent-roles: devrites-security-auditor
+required-agent-roles: $SUBAGENT_ROLE
 ---
 
 Spawn the required specialist and return its result.
@@ -153,23 +161,32 @@ fi
 
 SUBAGENT_MODEL="${DEVRITES_CODEX_SUBAGENT_MODEL:-gpt-5.4}"
 SUBAGENT_SCHEMA="${DEVRITES_CODEX_SUBAGENT_SCHEMA:-v1}"
-SKILL_DISPATCH_TASK_NAME="$(python3 - "$PROJECT" <<'PY'
+SKILL_DISPATCH_TASK_NAME="$(python3 - "$PROJECT" "$SUBAGENT_ROLE" <<'PY'
 import hashlib, sys
-print("devrites_security_auditor_" + hashlib.sha256(sys.argv[1].encode()).hexdigest()[:12])
+print(sys.argv[2].replace("-", "_") + "_" + hashlib.sha256(sys.argv[1].encode()).hexdigest()[:12])
 PY
 )"
-SKILL_DISPATCH_ROLE="devrites-security-auditor"
+SKILL_DISPATCH_ROLE="$SUBAGENT_ROLE"
+SKILL_DISPATCH_AGENT_TYPE="explorer"
+SKILL_DISPATCH_CHILD_REQUEST="inspect README.md without modifying files"
+SKILL_DISPATCH_AFTER_WAIT=""
+SUBAGENT_SANDBOX="read-only"
+if [ "$SKILL_DISPATCH_ROLE" = "devrites-slice-wright" ]; then
+  SKILL_DISPATCH_AGENT_TYPE="worker"
+  SKILL_DISPATCH_CHILD_REQUEST="append exactly DEVRITES-WRIGHT-CHILD-OK to README.md"
+  SKILL_DISPATCH_AFTER_WAIT=' Then run rtk devrites-engine reconcile check && rtk devrites-engine reconcile close.'
+  SUBAGENT_SANDBOX="workspace-write"
+fi
 case "$SUBAGENT_SCHEMA" in
   v1)
-    SKILL_DISPATCH_AGENT_TYPE="explorer"
-    SKILL_DISPATCH_PROMPT='$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not audit in the root. Call spawn_agent with agent_type explorer and fork_turns none, and send a message naming .codex/agents/devrites-security-auditor.toml that asks the child to inspect README.md without modifying files. Wait for the returned child and use its result. Then reply exactly DEVRITES-SKILL-DISPATCH-OK.'
-    printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q 'spawn_agent.*agent_type explorer.*fork_turns none' \
+    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not work in the root. Call spawn_agent with agent_type $SKILL_DISPATCH_AGENT_TYPE and fork_turns none, and send a message naming .codex/agents/$SKILL_DISPATCH_ROLE.toml that asks the child to $SKILL_DISPATCH_CHILD_REQUEST. Wait for the returned child and use its result.$SKILL_DISPATCH_AFTER_WAIT Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
+    printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "spawn_agent.*agent_type $SKILL_DISPATCH_AGENT_TYPE.*fork_turns none" \
       && ok "skill dispatch smoke explicitly requests the MultiAgent V1 compatibility path" \
       || no "skill dispatch smoke does not request the MultiAgent V1 compatibility path"
     ;;
   v2)
     SKILL_DISPATCH_AGENT_TYPE="$SKILL_DISPATCH_ROLE"
-    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not audit in the root. This smoke targets Codex MultiAgent V2. The visible V2 schema may omit agent_type even though the runtime accepts it: call spawn_agent with agent_type $SKILL_DISPATCH_ROLE, task_name $SKILL_DISPATCH_TASK_NAME, and fork_turns none anyway. Send the exact named child a README-only read-only audit message, wait for it, and use its non-empty result. Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
+    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not work in the root. This smoke targets Codex MultiAgent V2. The visible V2 schema may omit agent_type even though the runtime accepts it: call spawn_agent with agent_type $SKILL_DISPATCH_ROLE, task_name $SKILL_DISPATCH_TASK_NAME, and fork_turns none anyway. Send the exact named child a message to $SKILL_DISPATCH_CHILD_REQUEST, wait for it, and use its non-empty result.$SKILL_DISPATCH_AFTER_WAIT Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
     printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "spawn_agent.*agent_type $SKILL_DISPATCH_ROLE.*task_name $SKILL_DISPATCH_TASK_NAME.*fork_turns none" \
       && ok "skill dispatch smoke explicitly requests the MultiAgent V2 named-role path" \
       || no "skill dispatch smoke does not request the MultiAgent V2 named-role path"
@@ -198,6 +215,18 @@ if [ "${DEVRITES_CODEX_SUBAGENT_SMOKE:-0}" = "1" ]; then
 Review the installed smoke README without modifying the project.
 EOF
     printf '%s\n' 'README.md' > "$PROJECT/.devrites/work/codex-skill-smoke/touched-files.md"
+    if [ "$SKILL_DISPATCH_ROLE" = "devrites-slice-wright" ]; then
+      printf '%s\n' 'README.md' > "$PROJECT/.devrites/work/codex-skill-smoke/.wright-allowlist"
+      cat > "$PROJECT/.devrites/work/codex-skill-smoke/spec.md" <<'EOF'
+# Spec
+
+Append exactly one line containing DEVRITES-WRIGHT-CHILD-OK to README.md.
+EOF
+      git -C "$PROJECT" add . >/dev/null 2>&1
+      git -C "$PROJECT" -c user.name=DevRites -c user.email=devrites@example.invalid commit -qm 'fixture baseline'
+      (cd "$PROJECT" && devrites-engine reconcile snapshot codex-skill-smoke) \
+        || no "wright smoke could not create reconcile window"
+    fi
     (
       cd "$PROJECT" || exit 1
       ephemeral_args=(--ephemeral)
@@ -209,10 +238,16 @@ EOF
         --dangerously-bypass-hook-trust \
         --enable hooks \
         -c shell_environment_policy.inherit=all \
-        -s read-only \
+        -s "$SUBAGENT_SANDBOX" \
         "$SKILL_DISPATCH_PROMPT"
     ) > "$T/subagent.jsonl" 2> "$T/subagent.err"
     rc=$?
+    if [ "$SKILL_DISPATCH_ROLE" = "devrites-slice-wright" ]; then
+      [ ! -e "$PROJECT/.devrites/work/codex-skill-smoke/.reconcile-base" ] \
+        || no "wright smoke did not close reconcile window"
+      grep -q "DEVRITES-WRIGHT-CHILD-OK" "$PROJECT/README.md" \
+        || no "wright smoke child did not write the allowed file"
+    fi
     python3 - "$RECEIPT_DIR" "$SKILL_DISPATCH_ROLE" <<'PY'
 import json, pathlib, sys
 
