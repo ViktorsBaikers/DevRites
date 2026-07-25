@@ -3,8 +3,8 @@
 #
 # Both hosts call `devrites-engine hook <name> --harness=<h>`, so the test
 # compares hook names rather than script filenames. Root hooks live in host
-# settings. Project agent profiles carry the leaf guards so leaf work fails
-# closed without hiding root work.
+# settings. Codex also routes built-in explorer/worker identities through the
+# leaf guards; the engine keeps root work out of those policies.
 #
 # Codex provides the same core enforcement except for these Claude-only hooks:
 #   - source-cache-pre/-post: Claude fires these for WebFetch. Codex uses
@@ -136,8 +136,21 @@ for f in glob.glob(f"{target}/.codex/agents/*.toml"):
     body = open(f).read()
     codex_agents |= set(re.findall(RE, body))
     codex_commands += re.findall(r"(?s)command\s*=\s*'''(.*?)'''", body)
-if {"reviewer-readonly", "wright-scope"} & codex_global:
-    fail.append("Codex root hooks must not shadow main/generic work with leaf policy")
+for leaf in ("reviewer-readonly", "wright-scope"):
+    locations = hook_locations(f"{target}/.codex/hooks.json", leaf)
+    if len(locations) != 1 or locations[0][0] != "PreToolUse":
+        fail.append(f"Codex {leaf} generic guard must appear exactly once at PreToolUse: {locations}")
+        continue
+    matcher = set(locations[0][1].split("|"))
+    missing_matchers = {"Bash", "Edit", "apply_patch", "exec", "spawn_agent"} - matcher
+    command = locations[0][2]
+    if missing_matchers:
+        fail.append(f"Codex {leaf} generic guard matcher missing {sorted(missing_matchers)}")
+    if (
+        "DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1" not in command
+        or "devrites-codex-generic-guard" not in command
+    ):
+        fail.append(f"Codex {leaf} is not scoped to the fail-closed generic compatibility path")
 codex = codex_global | codex_agents
 missing = shared - codex
 if missing:

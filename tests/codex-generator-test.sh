@@ -64,25 +64,25 @@ grep -q '.codex/agents/devrites-code-reviewer.toml' "$skill_out" && ok "skill bo
 grep -q '\$rite-review' "$skill_out" && ok "skill body rewrites slash invocation" || no "skill body did not rewrite slash invocation"
 grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$skill_out" && no "generated skill kept Claude runtime paths" || ok "generated skill has no Claude runtime paths"
 grep -q 'invoke means run a skill in this context' "$skill_out" && ok "skill distinguishes invocation from dispatch" || no "skill does not distinguish invocation from dispatch"
-if grep -q 'named read-only role is unavailable, use generic `explorer` only when the host proves' "$skill_out" \
-  && grep -q 'runtime-enforced read-only sandbox' "$skill_out" \
+if grep -q 'named role is not exposed.*use generic `explorer`' "$skill_out" \
+  && grep -q 'fork_turns="none"' "$skill_out" \
   && grep -q 'read `.codex/agents/devrites-<role>.toml`' "$skill_out"; then
-  ok "skill gates generic explorer on runtime-enforced read-only"
+  ok "skill maps unavailable read-only roles to a fresh generic explorer"
 else
   no "skill permits an unconfined generic explorer"
 fi
-if grep -q 'Never dispatch generic `worker` for `devrites-slice-wright` unless' "$skill_out" \
+if grep -q 'trusted `.codex/hooks.json` binds generic `worker`' "$skill_out" \
   && grep -q 'agent_type=worker' "$skill_out" \
   && grep -q '\.wright-allowlist' "$skill_out" \
   && grep -q '\.reconcile-inline' "$skill_out"; then
-  ok "skill rejects an unbound generic wright and names the safe fallback"
+  ok "skill maps the wright to a hook-bound generic worker"
 else
-  no "skill promises wright enforcement for an unbound generic worker"
+  no "skill does not expose the safe generic-wright rung"
 fi
-grep -q 'A missing read-only custom role is not evidence that spawning is unavailable' "$skill_out" \
+grep -q 'A missing custom role is not evidence that spawning is unavailable' "$skill_out" \
   && ok "read-only custom-role absence does not permit inline fallback" \
   || no "read-only custom-role absence can still permit inline fallback"
-grep -q 'Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn' "$skill_out" \
+grep -q 'Only when the project hooks are unavailable or untrusted, no spawn primitive exists' "$skill_out" \
   && grep -q 'independence: fallback' "$skill_out" \
   && ok "inline fallback is labelled and capability-gated" \
   || no "inline fallback is not capability-gated"
@@ -92,8 +92,9 @@ gen_codex_agents_bridge "$bridge"
 grep -q 'invoke.*run a skill inline.*dispatch.*fresh agent' "$bridge" \
   && ok "AGENTS bridge defines invoke and dispatch" \
   || no "AGENTS bridge does not define invoke and dispatch"
-if grep -q 'read-only role is unavailable but `spawn_agent` still works, use generic `explorer` only when the host proves runtime-enforced read-only' "$bridge" \
-  && grep -q 'agent_type=worker.*generated leaf hooks intentionally do not treat as a declared DevRites run' "$bridge" \
+if grep -q 'named role is not exposed.*use generic `explorer`' "$bridge" \
+  && grep -q 'trusted `.codex/hooks.json` binds generic `worker`' "$bridge" \
+  && grep -q 'fork_turns="none"' "$bridge" \
   && grep -q 'labelled inline `.reconcile-inline` path' "$bridge"; then
   ok "AGENTS bridge preserves the safe spawn capability ladder"
 else
@@ -214,10 +215,56 @@ else
 fi
 grep -q 'devrites-engine hook stop-gate --harness=codex' "$hooks" && ok "hooks call engine hook subcommands" || no "hooks do not call engine hook subcommands"
 grep -q 'pack/\.claude/hooks\|\.sh' "$hooks" && no "hooks reference shell hook scripts" || ok "hooks do not reference shell hook scripts"
-if grep -q 'hook reviewer-readonly\|hook wright-scope' "$hooks"; then
-  no "global hooks can shadow root or generic agents with leaf policy"
+if grep -q 'DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1 devrites-engine hook reviewer-readonly --harness=codex' "$hooks" \
+  && grep -q 'DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1 devrites-engine hook wright-scope --harness=codex' "$hooks" \
+  && grep -q 'devrites-codex-generic-guard' "$hooks"; then
+  ok "global hooks fail closed around generic explorer/worker boundaries"
 else
-  ok "declared leaf guards are scoped to agent profiles, not root hooks"
+  no "global hooks do not bind generic explorer/worker identities"
+fi
+
+generic_reviewer_command="$TMP_GEN_DIR/generic-reviewer-command"
+generic_wright_command="$TMP_GEN_DIR/generic-wright-command"
+if command -v python3 >/dev/null 2>&1; then
+  python3 - "$hooks" "$generic_reviewer_command" "$generic_wright_command" <<'PY'
+import json, pathlib, sys
+
+data = json.loads(pathlib.Path(sys.argv[1]).read_text())
+commands = [
+    hook["command"]
+    for group in data["hooks"]["PreToolUse"]
+    for hook in group["hooks"]
+    if "DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1" in hook["command"]
+]
+assert len(commands) == 2
+pathlib.Path(sys.argv[2]).write_text(commands[0])
+pathlib.Path(sys.argv[3]).write_text(commands[1])
+PY
+  if [ "$?" -eq 0 ]; then
+    root_payload='{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"}}'
+    explorer_payload='{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"},"agent_type":"explorer"}'
+    worker_payload='{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"},"agent_type":"worker"}'
+    for command_file in "$generic_reviewer_command" "$generic_wright_command"; do
+      command="$(cat "$command_file")"
+      printf '%s\n' "$root_payload" | PATH="/usr/bin:/bin" /bin/sh -c "$command" >/dev/null 2>/dev/null
+      [ "$?" -eq 0 ] || no "generic compatibility hook blocks root when engine is absent"
+    done
+    printf '%s\n' "$explorer_payload" | PATH="/usr/bin:/bin" /bin/sh -c "$(cat "$generic_reviewer_command")" >/dev/null 2>"$TMP_GEN_DIR/generic-reviewer.err"
+    generic_reviewer_rc="$?"
+    printf '%s\n' "$worker_payload" | PATH="/usr/bin:/bin" /bin/sh -c "$(cat "$generic_wright_command")" >/dev/null 2>"$TMP_GEN_DIR/generic-wright.err"
+    generic_wright_rc="$?"
+    if [ "$generic_reviewer_rc" -eq 2 ] && [ "$generic_wright_rc" -eq 2 ] \
+      && grep -q 'devrites-codex-generic-guard' "$TMP_GEN_DIR/generic-reviewer.err" \
+      && grep -q 'devrites-codex-generic-guard' "$TMP_GEN_DIR/generic-wright.err"; then
+      ok "generic compatibility hooks fail closed only for generic leaves when engine is absent"
+    else
+      no "generic compatibility hooks fail open when engine is absent"
+    fi
+  else
+    no "generic compatibility hook commands could not be extracted"
+  fi
+else
+  ok "generic compatibility hook behavior skipped (python3 not found)"
 fi
 
 if [ -n "$reviewer_command" ] && [ -n "$wright_command" ]; then

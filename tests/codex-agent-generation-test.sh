@@ -216,15 +216,15 @@ report(
 
 for required in (
     "invoke means run a skill in this context",
-    "named read-only role is unavailable, use generic `explorer` only when the host proves",
-    "runtime-enforced read-only sandbox",
-    "A missing read-only custom role is not evidence that spawning is unavailable",
-    "Never dispatch generic `worker` for `devrites-slice-wright` unless",
+    "named role is not exposed, use generic `explorer`",
+    'fork_turns="none"',
+    "Trusted `.codex/hooks.json` binds `agent_type=explorer`",
+    "A missing custom role is not evidence that spawning is unavailable",
+    "trusted `.codex/hooks.json` binds generic `worker`",
     "`agent_type=worker`",
     "`.wright-allowlist`",
     "`.reconcile-inline`",
-    "unconfined generic explorer",
-    "Only when no spawn primitive exists or a higher-priority policy rejects a safe spawn",
+    "Only when the project hooks are unavailable or untrusted, no spawn primitive exists",
     "`independence: fallback`",
 ):
     report(required in skill_text, f"Codex dispatch ladder includes {required!r}")

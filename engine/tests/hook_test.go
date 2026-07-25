@@ -347,6 +347,36 @@ func TestHookReviewerReadonlyAgentRequiredSkipsNonDevrites(t *testing.T) {
 	}
 }
 
+func TestHookReviewerReadonlyBindsCodexExplorerCompatibility(t *testing.T) {
+	root := newWorkspace(t)
+	in := `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"},"agent_type":"explorer"}`
+	out, errOut, code := runDevritesIO(t, root, in,
+		[]string{"DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1"},
+		"hook", "reviewer-readonly", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("exit=%d stderr=%q", code, errOut)
+	}
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Fatalf("generic explorer mutation was not denied: %q", out)
+	}
+}
+
+func TestCodexGenericCompatibilityDoesNotShadowRoot(t *testing.T) {
+	root := newWorkspace(t)
+	in := `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"}}`
+	env := []string{
+		"DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1",
+		"DEVRITES_HOOK_PROFILE=strict",
+	}
+	for _, guard := range []string{"reviewer-readonly", "wright-scope"} {
+		out, errOut, code := runDevritesIO(t, root, in, env,
+			"hook", guard, "--harness=codex")
+		if code != 0 || strings.TrimSpace(out) != "" {
+			t.Fatalf("%s shadowed root: exit=%d out=%q stderr=%q", guard, code, out, errOut)
+		}
+	}
+}
+
 func TestHookReviewerReadonlyActiveLeafDeniesEveryMutationSurface(t *testing.T) {
 	root := newWorkspace(t)
 	env := []string{
@@ -432,6 +462,53 @@ func TestHookWrightScopeUsesExactOrchestratorAllowlist(t *testing.T) {
 				t.Fatalf("expected allow, got %q", out)
 			}
 		})
+	}
+}
+
+func TestHookWrightScopeBindsCodexWorkerDuringReconcileWindow(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	if err := os.WriteFile(filepath.Join(workspace, ".wright-allowlist"), []byte("src/app.go\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workspace, ".reconcile-base"), []byte("snapshot\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := []string{"DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1"}
+
+	for _, test := range []struct {
+		name  string
+		input string
+		deny  bool
+	}{
+		{"listed edit", `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"},"agent_type":"worker"}`, false},
+		{"unlisted edit", `{"tool_name":"Edit","tool_input":{"file_path":"src/other.go"},"agent_type":"worker"}`, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			out, errOut, code := runDevritesIO(t, root, test.input, env,
+				"hook", "wright-scope", "--harness=codex")
+			if code != 0 {
+				t.Fatalf("exit=%d stderr=%q", code, errOut)
+			}
+			if test.deny {
+				if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+					t.Fatalf("expected deny, got %q", out)
+				}
+			} else if strings.TrimSpace(out) != "" {
+				t.Fatalf("expected allow, got %q", out)
+			}
+		})
+	}
+
+	if err := os.Remove(filepath.Join(workspace, ".reconcile-base")); err != nil {
+		t.Fatal(err)
+	}
+	out, _, code := runDevritesIO(t, root,
+		`{"tool_name":"Edit","tool_input":{"file_path":"src/other.go"},"agent_type":"worker"}`,
+		env, "hook", "wright-scope", "--harness=codex")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("generic worker outside a reconcile window was shadowed: exit=%d out=%q", code, out)
 	}
 }
 
@@ -522,6 +599,22 @@ func TestHookWrightScopeBindsForgeCandidateManifestIdentity(t *testing.T) {
 		"hook", "wright-scope", "--harness=codex")
 	if code != 0 || strings.TrimSpace(out) != "" {
 		t.Fatalf("valid Forge candidate was denied: exit=%d stdout=%s stderr=%s", code, out, stderr)
+	}
+	genericEnv := append([]string{"DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1"}, baseEnv[2:]...)
+	genericInput := `{"tool_name":"Edit","agent_id":"worker-a","agent_type":"worker","tool_input":{"file_path":"tracked.txt"}}`
+	out, stderr, code = runDevritesAt(t, repo, candidate.Worktree, genericInput, genericEnv,
+		"hook", "wright-scope", "--harness=codex")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("valid generic Forge worker was denied: exit=%d stdout=%s stderr=%s", code, out, stderr)
+	}
+	out, _, code = runDevritesAt(t, repo, candidate.Worktree,
+		`{"tool_name":"Edit","agent_id":"worker-a","agent_type":"worker","tool_input":{"file_path":"outside.txt"}}`,
+		genericEnv, "hook", "wright-scope", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("generic Forge worker hook exit=%d", code)
+	}
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Fatalf("generic Forge worker escaped its allowlist: %s", out)
 	}
 
 	replaceEnv := func(name, value string) []string {
