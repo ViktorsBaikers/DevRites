@@ -65,8 +65,7 @@ Each dispatch follows the retained-baseline sequence:
 2. The sole wright returns code/tests; the root validates its typed identity and
    exact changed-file set.
 3. `reconcile check` rejects anything outside the root allowlist.
-4. `test-integrity` and `package-existence` run against the same retained
-   baseline.
+4. `test-integrity` runs against the retained baseline.
 5. After proof and decision checks pass, `reconcile close` retires the private
    window; only then does the root write canonical records.
 

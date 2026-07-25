@@ -41,7 +41,7 @@ these lanes so its owner is clear:
 
 | Lane | Commands | Owner |
 |---|---|---|
-| Workflow gates | `preamble`, `build-readiness`, `readiness-digest`, `spec-skeleton`, `spec-validate`, `check-acceptance`, `evidence-fresh`, `coverage`, `doubt-coverage`, `budget`, `test-integrity`, `mutation-gate`, `package-existence`, `review-integrity`, `footprint`, `reconcile`, `conventions`, `learnings`, `review-fingerprints`, `timeline`, `health`, `progress` | Called by the relevant `rite-*` workflow or shared reply contract. |
+| Workflow gates | `preamble`, `build-readiness`, `readiness-digest`, `spec-skeleton`, `spec-validate`, `check-acceptance`, `evidence-fresh`, `coverage`, `doubt-coverage`, `budget`, `test-integrity`, `mutation-gate`, `review-integrity`, `footprint`, `reconcile`, `conventions`, `learnings`, `review-fingerprints`, `timeline`, `health`, `progress` | Called by the relevant `rite-*` workflow or shared reply contract. |
 | Workspace utilities | `status`, `snapshot`, `analyze`, `archive-search`, `clarify-return`, `recovery`, `resolve`, `close-out`, `stuck`, `tick-afk`, `ledger`, `profile` | Called by a specific utility/phase when its condition is met. |
 | Low-level completeness API | `readiness`, `seal` | Available for scripts/CI and documented engine use. Feature rites use stricter phase-specific gates (`build-readiness`, `/rite-seal` phase contract) instead of auto-running these weaker aggregate checks. |
 | Install / operator / CI | `install`, `update`, `uninstall`, `doctor`, `migrate`, `validate-pack`, `harness-matrix`, `extensions`, `overrides`, `reviewers`, `hook`, `version` | Called by `npx devrites ...`, `/rite-doctor`, hooks, CI, or a human operator; do not auto-run during feature work just because the command exists. |

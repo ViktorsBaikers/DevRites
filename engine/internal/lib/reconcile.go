@@ -34,7 +34,7 @@ const (
 // clean check, another snapshot re-arms only the dispatch state for a retry while
 // retaining the original source baseline.
 // `check` compares the captured state with the current state and retains the
-// immutable baseline for the later test-integrity and package-existence gates.
+// immutable baseline for the later test-integrity gate.
 // `close` explicitly ends the window and removes its private artifacts.
 //
 //	0  clean check, snapshot/close completed, or skipped (not a git repo)

@@ -7,8 +7,8 @@ import (
 )
 
 // gitToplevel returns the absolute path of the git working tree containing dir,
-// or "" when dir is not inside a repository. The git-backed gates (test-integrity,
-// package-existence, reconcile) skip rather than block when it is empty.
+// or "" when dir is not inside a repository. The git-backed gates
+// (test-integrity and reconcile) skip rather than block when it is empty.
 func gitToplevel(dir string) string {
 	out, err := exec.Command("git", "-C", dir, "rev-parse", "--show-toplevel").Output()
 	if err != nil {

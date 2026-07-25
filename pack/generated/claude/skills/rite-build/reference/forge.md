@@ -166,8 +166,8 @@ decision.
 
 Hand the winner's structured artifact to the normal cycle. Run immediate
 reconciliation, doubt every stood decision, and complete test-integrity,
-package-existence, targeted, browser, and other slice proof. Only after every
-required gate is green:
+targeted, browser, and other slice proof. Only after every required gate is
+green:
 
 ```bash
 devrites-engine forge record "$RUN_ID" verification verified \

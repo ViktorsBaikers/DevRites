@@ -408,15 +408,13 @@ func TestReconcileCheckFailsClosedWhenObjectDatabaseIsCorrupt(t *testing.T) {
 	}
 }
 
-func TestPostSliceGatesShareBaselineUntilClose(t *testing.T) {
+func TestPostSliceTestIntegrityUsesBaselineUntilClose(t *testing.T) {
 	gitRoot := newGitRepo(t)
 	root := workspace(t, "feat")
-	writeFile(t, filepath.Join(gitRoot, "package.json"), "{}\n")
-	commitAll(t, gitRoot, "manifest")
+	writeFile(t, filepath.Join(gitRoot, "README.md"), "fixture\n")
+	commitAll(t, gitRoot, "baseline")
 
-	// These user deltas predate the slice. In particular, the undeclared import
-	// must not be blamed on the wright by package-existence.
-	writeFile(t, filepath.Join(gitRoot, "src/user-delta.ts"), `import ghost from "preexisting-user-package";`+"\n")
+	// This user delta predates the slice and must not be blamed on the wright.
 	writeFile(t, filepath.Join(gitRoot, "tests/user_delta_test.go"), "package tests\n\nfunc TestUserDelta(t *testing.T) { t.Fatal(\"baseline\") }\n")
 	writeWrightAllowlist(t, root, "feat", "seed.go")
 
@@ -432,12 +430,6 @@ func TestPostSliceGatesShareBaselineUntilClose(t *testing.T) {
 	if code := TestIntegrity(root, []string{"feat"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("test-integrity = %d, want 0\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
 	}
-	stdout.Reset()
-	stderr.Reset()
-	if code := PackageExistence(root, []string{"feat"}, &stdout, &stderr); code != 0 {
-		t.Fatalf("package-existence = %d, want 0\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
-	}
-
 	if code, out := runReconcile(t, root, "close", "feat"); code != 0 {
 		t.Fatalf("close = %d, want 0\n%s", code, out)
 	}

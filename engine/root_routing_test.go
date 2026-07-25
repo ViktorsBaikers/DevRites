@@ -45,7 +45,6 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "mutation gate", command: "mutation-gate", want: rootLenient},
 		{name: "test integrity", command: "test-integrity", want: rootLenient},
 		{name: "review integrity", command: "review-integrity", want: rootLenient},
-		{name: "package existence", command: "package-existence", want: rootLenient},
 		{name: "reconcile snapshot", command: "reconcile", args: []string{"snapshot"}, want: rootStrict},
 		{name: "reconcile check", command: "reconcile", args: []string{"check"}, want: rootStrict},
 		{name: "reconcile close", command: "reconcile", args: []string{"close"}, want: rootStrict},

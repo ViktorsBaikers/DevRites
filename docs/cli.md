@@ -21,7 +21,6 @@ devrites-engine recovery route <class>             # typed owner/action; JSON re
 devrites-engine recovery check|record|clear ...    # durable three-failure budget; record/clear accept --class
 devrites-engine reconcile snapshot|check|close [slug] # retained writer baseline
 devrites-engine test-integrity [slug]    # reject weakened tests against that baseline
-devrites-engine package-existence [slug] # verify new imports are declared
 devrites-engine evidence-fresh [slug]    # proof freshness gate      (exit 0 fresh · 3 stale)
 devrites-engine check-acceptance <dir>   # acceptance gate           (exit 0 proven · 1 gap)
 devrites-engine ledger sync <dir>        # fold a feature's spec deltas into the living capability ledger

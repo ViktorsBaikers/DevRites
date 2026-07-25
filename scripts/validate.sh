@@ -302,7 +302,6 @@ DELETED_HELPER_HITS="$(grep -rnI \
   -e 'footprint\.sh' \
   -e 'learnings\.sh' \
   -e 'mutation-gate\.sh' \
-  -e 'package-existence\.sh' \
   -e 'progress\.sh' \
   -e 'reconcile\.sh' \
   -e 'tick-afk\.sh' \

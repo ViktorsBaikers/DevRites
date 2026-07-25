@@ -73,14 +73,13 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    (reported in its `Principles` field, or that you detect against `.devrites/principles.md`) is
    handled here like an irreversible-risk item: block, route to a human-approved scoped
    exception in the register or stop; never doubt-and-accept a principle violation into the slice.
-5. **Run retained-baseline integrity gates, then recover any objective red.**
+5. **Run the retained-baseline integrity gate, then recover any objective red.**
    ```bash
    devrites-engine test-integrity; echo "test-integrity rc=$?"
-   devrites-engine package-existence; echo "package-existence rc=$?"
    ```
-   If the wright's `Gates` were red (targeted tests / types / lint), either integrity gate
-   failed, or it
-   couldn't verify: do **not** mark the slice `built`, and **do not fix the code yourself**.
+   If the wright's `Gates` were red (targeted tests / types / lint), `test-integrity`
+   failed, or proof could not be verified: do **not** mark the slice `built`, and **do not
+   fix the code yourself**.
    Classify each causal fingerprint through
    [`cleanup-and-classify.md`](../../devrites-debug-recovery/reference/cleanup-and-classify.md),
    run `devrites-engine recovery route <class>`, and follow the `recovery-route/v1`
@@ -95,9 +94,9 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    `recovery clear --class <class> "<root cause>" <slug>` only after green. Before every
    re-dispatch, update the root-owned allowlist only for an accepted in-slice path and run
    `reconcile snapshot`: after a clean check this refreshes canonical-state scope while
-   retaining the original source baseline. Repeat reconcile and both integrity gates on every
-   return. This owns red
-   gates, missing coverage, browser/runtime failures, and workflow-tool defects.
+   retaining the original source baseline. Repeat reconcile and the integrity gate on every
+   return. This owns red gates, missing coverage, browser/runtime failures, and
+   workflow-tool defects.
    After recovery:
    - green → continue to record;
    - product-contract/acceptance ambiguity or irreversible risk → open the genuine human gate
@@ -106,22 +105,14 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    - exhausted objective failure → preserve reproduction/dead ends, set `Status: blocked` and
      `Next step: /rite-plan unblock`, then STOP without a question or `/rite-resolve`.
 6. **Close the retained baseline, then record. You are the canonical writer.**
-   Reconciliation ran immediately on return and the two integrity gates ran in step 5.
+   Reconciliation ran immediately on return and `test-integrity` ran in step 5.
    **Exit 3 → hard STOP:** a test was deleted, skipped, or de-asserted since the slice base: the
    slice went green by weakening its tests, a Critical protocol violation. Revert the weakening and
    re-dispatch the wright; do **not** mark the slice `built`.
 
-   The package-existence gate (anti-hallucination) requires every new third-party import
-   to appear in a project manifest:
-   **Exit 3 → STOP:** an imported package is not declared in any manifest (`package.json`, `go.mod`,
-   `requirements.txt`, `pyproject.toml`, `Pipfile`, `Cargo.toml`): the classic shape of a
-   hallucinated or typo-squatted dependency. Confirm the name on the registry and declare it via the
-   package manager, or remove the import; do **not** mark the slice `built`. The gate is deterministic
-   and fail-open (not a git repo / no manifest / stdlib-only import → rc 0). If the nearest
-   manifest declares the package, treat the mismatch as a workflow-tool defect under bounded
-   recovery, not a plan repair or retry-authorization question. Once every gate and doubt
-   verdict is accepted, a forged slice records successful verification and runs
-   manifest-only cleanup per [`forge.md`](forge.md). Then close the private window:
+   Once every gate and doubt verdict is accepted, a forged slice records successful
+   verification and runs manifest-only cleanup per [`forge.md`](forge.md). Then close the
+   private window:
    ```bash
    devrites-engine reconcile close
    ```
