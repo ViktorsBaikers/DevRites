@@ -169,7 +169,7 @@ case "$SUBAGENT_SCHEMA" in
     ;;
   v2)
     SKILL_DISPATCH_AGENT_TYPE="$SKILL_DISPATCH_ROLE"
-    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not audit in the root. This smoke targets Codex MultiAgent V2: call spawn_agent with agent_type $SKILL_DISPATCH_ROLE, task_name $SKILL_DISPATCH_TASK_NAME, and fork_turns none. Send the exact named child a README-only read-only audit message, wait for it, and use its non-empty result. Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
+    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not audit in the root. This smoke targets Codex MultiAgent V2. The visible V2 schema may omit agent_type even though the runtime accepts it: call spawn_agent with agent_type $SKILL_DISPATCH_ROLE, task_name $SKILL_DISPATCH_TASK_NAME, and fork_turns none anyway. Send the exact named child a README-only read-only audit message, wait for it, and use its non-empty result. Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
     printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "spawn_agent.*agent_type $SKILL_DISPATCH_ROLE.*task_name $SKILL_DISPATCH_TASK_NAME.*fork_turns none" \
       && ok "skill dispatch smoke explicitly requests the MultiAgent V2 named-role path" \
       || no "skill dispatch smoke does not request the MultiAgent V2 named-role path"
