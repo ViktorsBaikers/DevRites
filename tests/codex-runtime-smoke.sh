@@ -4,8 +4,8 @@
 # Default mode uses `codex debug prompt-input`, which does not call the model.
 # DEVRITES_CODEX_MODEL_SMOKE=1 also runs a read-only `codex exec` session and
 # requires Codex authentication, network access, and a token budget.
-# DEVRITES_CODEX_SUBAGENT_SMOKE=1 checks a live custom-agent spawn in the Codex
-# JSON event stream and uses more tokens.
+# DEVRITES_CODEX_SUBAGENT_SMOKE=1 checks a live fresh-agent role-contract spawn
+# in the Codex JSON event stream and uses more tokens.
 set -u
 export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -27,7 +27,9 @@ if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
     || { echo "  FAIL: could not build host artifacts"; exit 1; }
   export DEVRITES_HOST_ARTIFACT_DIR="$GEN"
 fi
-PROJECT="$T/project"
+# A unique basename prevents persistent-memory clients from reusing evidence
+# from an earlier temp fixture also named "project".
+PROJECT="$T/codex-runtime-smoke-$(basename "$T")"
 mkdir -p "$PROJECT" "$T/home" "$T/codex-home"
 
 echo "== codex-runtime-smoke (target: $PROJECT) =="
@@ -95,12 +97,13 @@ else
   ok "model-backed codex exec skipped (set DEVRITES_CODEX_MODEL_SMOKE=1 to run)"
 fi
 
-SKILL_DISPATCH_PROMPT='Use $devrites-audit with the security axis to inspect README.md without modifying files. Follow the selected skill completely and wait for all required work to finish. Then reply exactly DEVRITES-SKILL-DISPATCH-OK.'
+SKILL_DISPATCH_PROMPT='Use $devrites-audit with the security axis to inspect README.md without modifying files. You must call spawn_agent with agent_type explorer and fork_turns none, tell it to read .codex/agents/devrites-security-auditor.toml, and wait for it. Then reply exactly DEVRITES-SKILL-DISPATCH-OK.'
 SKILL_DISPATCH_ROLE="devrites-security-auditor"
-if printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -Eiq '(^|[^[:alpha:]])(sub)?agents?([^[:alpha:]]|$)'; then
-  no "skill dispatch smoke prompt must not name agents or subagents"
+SKILL_DISPATCH_AGENT_TYPE="explorer"
+if printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q 'spawn_agent.*agent_type explorer.*fork_turns none'; then
+  ok "skill dispatch smoke explicitly requests the generic compatibility path"
 else
-  ok "skill dispatch smoke activation prompt is skill-only"
+  no "skill dispatch smoke does not request the generic compatibility path"
 fi
 
 if [ "${DEVRITES_CODEX_SUBAGENT_SMOKE:-0}" = "1" ]; then
@@ -130,17 +133,19 @@ EOF
     if [ "$rc" -eq 0 ] \
       && grep -q '"tool":"spawn_agent"' "$T/subagent.jsonl" \
       && grep -q '"tool":"wait"' "$T/subagent.jsonl" \
+      && grep -q "$SKILL_DISPATCH_AGENT_TYPE" "$T/subagent.jsonl" \
       && grep -q "$SKILL_DISPATCH_ROLE" "$T/subagent.jsonl" \
+      && ! grep -q 'unknown agent_type' "$T/subagent.err" "$T/subagent.jsonl" \
       && grep -q 'DEVRITES-SKILL-DISPATCH-OK' "$T/subagent.jsonl"; then
-      ok "codex skill-triggered custom-role dispatch smoke passed"
+      ok "codex skill-triggered generic role-contract dispatch smoke passed"
     else
-      no "codex skill-triggered custom-role dispatch smoke failed"
+      no "codex skill-triggered generic role-contract dispatch smoke failed"
       sed -n '1,80p' "$T/subagent.err"
       sed -n '1,120p' "$T/subagent.jsonl"
     fi
   fi
 else
-  ok "custom-subagent codex exec skipped (set DEVRITES_CODEX_SUBAGENT_SMOKE=1 to run)"
+  ok "fresh-agent codex exec skipped (set DEVRITES_CODEX_SUBAGENT_SMOKE=1 to run)"
 fi
 
 echo ""

@@ -101,7 +101,13 @@ grep -q '^\.codex/hooks/devrites-.*\.sh$' "$T/.claude/devrites.manifest" && no "
 grep -q '^\.codex/mcp/' "$T/.claude/devrites.manifest" && no "manifest tracks Codex MCP files" || ok "manifest does not track Codex MCP files"
 grep -q 'install-smoke-generated-sentinel' "$T/.agents/skills/rite/SKILL.md" && ok "installer consumes generated Codex skill payload" || no "installer did not use generated Codex skill payload"
 grep -q '## Codex compatibility' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror has compatibility block" || no "Codex skill mirror missing compatibility block"
-grep -q 'first call `spawn_agent` with the named `devrites-<role>`' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror maps fresh-context dispatch" || no "Codex skill mirror missing fresh-context mapping"
+if grep -q 'When the named `devrites-<role>` is exposed, dispatch it with `fork_turns="none"`' "$T/.agents/skills/rite-build/SKILL.md" \
+  && grep -q 'use generic `explorer` for every read-only role' "$T/.agents/skills/rite-build/SKILL.md" \
+  && grep -q 'binds generic `worker`' "$T/.agents/skills/rite-build/SKILL.md"; then
+  ok "Codex skill mirror maps named and generic fresh-context dispatch"
+else
+  no "Codex skill mirror missing fresh-context mapping"
+fi
 grep -q 'Read `.agents/skills/devrites-lib/reference/standards/core.md`' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror loads DevRites rules mirror" || no "Codex skill mirror missing rules instruction"
 grep -q '\.claude/agents' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/agents" || ok "Codex skill mirror does not point at .claude/agents"
 grep -q '\.claude/skills/devrites-lib/reference/standards' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/skills/devrites-lib/reference/standards" || ok "Codex skill mirror does not point at .claude/skills/devrites-lib/reference/standards"

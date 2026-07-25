@@ -563,9 +563,15 @@ func hookWrightScope(h harness.Harness, stdin io.Reader, stdout, stderr io.Write
 	}
 	in := h.ParseGuardInput(bytes.NewReader(data))
 	kind := devritesAgent(in.AgentType)
+	if kind == devritesAgentNone &&
+		os.Getenv("DEVRITES_CODEX_GENERIC_AGENT_COMPAT") == "1" &&
+		in.AgentType == "" {
+		return exitOK
+	}
 	forgeDeclared := forgeWrightDeclared()
-	active := kind != devritesAgentNone
-	if forgeDeclared && kind != devritesAgentWright {
+	genericWright := kind == devritesAgentGenericWright
+	active := kind != devritesAgentNone && (!genericWright || forgeDeclared)
+	if forgeDeclared && kind != devritesAgentWright && !genericWright {
 		return denyWright(h, stdout, stderr, forgeWrightDenyReason, drvreason.HookForgeBindingDenied)
 	}
 	if kind == devritesAgentNone && (in.AgentType != "" || os.Getenv("DEVRITES_WRIGHT_AGENT_REQUIRED") == "1") {
@@ -607,6 +613,15 @@ func hookWrightScope(h harness.Harness, stdin io.Reader, stdout, stderr io.Write
 		}
 		return exitOK
 	}
+	if genericWright && !forgeDeclared {
+		if !wsIsFile(filepath.Join(dir, ".reconcile-base")) {
+			return exitOK
+		}
+		if wsIsFile(filepath.Join(dir, ".reconcile-inline")) {
+			return denyWright(h, stdout, stderr, wrightForbiddenReason, drvreason.HookWrightForbiddenDenied)
+		}
+		active = true
+	}
 
 	if wrightForbiddenShellRe.MatchString(in.Command) ||
 		(opaqueInterpreterRe.MatchString(in.Command) && !safeReadonlyShellCommand(in.Command)) {
@@ -617,7 +632,7 @@ func hookWrightScope(h harness.Harness, stdin io.Reader, stdout, stderr io.Write
 	}
 
 	projectDir := filepath.Dir(root)
-	if !forgeDeclared && kind == devritesAgentWright && insideForgeStaging(projectDir) {
+	if !forgeDeclared && (kind == devritesAgentWright || genericWright) && insideForgeStaging(projectDir) {
 		return denyOrObserveWright(h, stdout, stderr, dir, true, forgeWrightDenyReason, drvreason.HookForgeBindingDenied, []string{"missing Forge binding"})
 	}
 	if forgeDeclared {

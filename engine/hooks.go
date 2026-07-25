@@ -246,16 +246,21 @@ const (
 	devritesAgentNone devritesAgentKind = iota
 	devritesAgentReadonly
 	devritesAgentWright
+	devritesAgentGenericWright
 	devritesAgentInvalid
 )
 
 // devritesAgent identifies the one write-capable leaf without copying the agent
 // roster. DEVRITES_AGENT_RUN supplies identity when a hook payload cannot carry
-// agent_type.
+// agent_type; the generated Codex project hook explicitly opts built-in
+// explorer/worker identities into the same policies.
 func devritesAgent(payloadAgent string) devritesAgentKind {
 	payloadAgent = strings.TrimSpace(payloadAgent)
 	envAgent := strings.TrimSpace(os.Getenv("DEVRITES_ACTIVE_AGENT"))
-	declared := os.Getenv("DEVRITES_AGENT_RUN") == "1" || strings.HasPrefix(payloadAgent, "devrites-")
+	genericCompat := os.Getenv("DEVRITES_CODEX_GENERIC_AGENT_COMPAT") == "1"
+	declared := os.Getenv("DEVRITES_AGENT_RUN") == "1" ||
+		strings.HasPrefix(payloadAgent, "devrites-") ||
+		(genericCompat && (payloadAgent == "explorer" || payloadAgent == "worker"))
 	if !declared {
 		return devritesAgentNone
 	}
@@ -269,6 +274,10 @@ func devritesAgent(payloadAgent string) devritesAgentKind {
 	switch {
 	case agent == "devrites-slice-wright":
 		return devritesAgentWright
+	case genericCompat && agent == "worker":
+		return devritesAgentGenericWright
+	case genericCompat && agent == "explorer":
+		return devritesAgentReadonly
 	case strings.HasPrefix(agent, "devrites-") && len(agent) > len("devrites-"):
 		return devritesAgentReadonly
 	default:
@@ -459,13 +468,18 @@ func hookReviewerReadonly(h harness.Harness, stdin io.Reader, stdout, stderr io.
 	}
 	in := h.ParseGuardInput(bytes.NewReader(data))
 	kind := devritesAgent(in.AgentType)
+	if kind == devritesAgentNone &&
+		os.Getenv("DEVRITES_CODEX_GENERIC_AGENT_COMPAT") == "1" &&
+		in.AgentType == "" {
+		return exitOK
+	}
 
 	// Do not let a global hook interfere with the main thread or another
 	// product's agent when no DevRites run is declared.
 	if kind == devritesAgentNone && (in.AgentType != "" || os.Getenv("DEVRITES_REVIEWER_AGENT_REQUIRED") == "1") {
 		return exitOK
 	}
-	if kind == devritesAgentWright {
+	if kind == devritesAgentWright || kind == devritesAgentGenericWright {
 		if !isAgentDispatchTool(in.ToolName) {
 			return exitOK
 		}
