@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.2](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.1...v3.2.2) (2026-07-25)
+
+### Fixed
+
+* **agents:** restore guarded codex dispatch ([2d05e20](https://github.com/ViktorsBaikers/DevRites/commit/2d05e20f6196774827d1496275f4c3cb5c5e22e2))
+* **ci:** govern bundled brace expansion advisory ([d1d0786](https://github.com/ViktorsBaikers/DevRites/commit/d1d078667fa42b61d8bec823136c628ca53fc6d8))
+
 ## [3.2.1](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.0...v3.2.1) (2026-07-24)
 
 ### Fixed
