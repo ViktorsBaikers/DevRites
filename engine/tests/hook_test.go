@@ -1218,7 +1218,10 @@ func TestCodexAgentDispatchBlocksFalseWaitAndStop(t *testing.T) {
 	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &stopDecision); err != nil {
 		t.Fatalf("invalid Stop response: %v\n%s", err, out)
 	}
-	if stopDecision.Decision != "block" || !strings.Contains(stopDecision.Reason, "spawn_agent") {
+	if stopDecision.Decision != "block" ||
+		!strings.Contains(stopDecision.Reason, "spawn_agent") ||
+		!strings.Contains(stopDecision.Reason, "visible tool schema") ||
+		!strings.Contains(stopDecision.Reason, "send agent_type anyway") {
 		t.Fatalf("false completion not blocked: %#v", stopDecision)
 	}
 

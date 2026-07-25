@@ -67,11 +67,12 @@ field from the installed skill at `UserPromptSubmit` and arms a fail-closed comp
 receipt for every listed role; the engine derives roles from skill metadata.
 Conditional scouts and reviewers remain owned by their explicit phase triggers.
 
-Claude uses `Agent` (`Task` alias); Codex uses `spawn_agent`. V2 sends the exact named
-role, a unique `task_name`, and `fork_turns="none"`; Codex loads its TOML natively.
-Because V2 lifecycle calls bypass hooks, Stop/reconcile verify the durable rollout's
-role, instructions, wait, completion, and delivered result. V1 uses guarded
-`explorer`/`worker` with injected rules and a lifecycle receipt. Prose isn't evidence.
+Claude: `Agent`; Codex: `spawn_agent`. V2 calls the named `agent_type` with
+unique `task_name` and `fork_turns="none"`. GPT-5.6 may hide `agent_type` from the
+schema, but runtime accepts it and loads the TOML; never use `default`. V2 bypasses
+hooks, so Stop/reconcile verify role, native instructions, wait, completion, and result.
+V1 uses guarded `explorer`/`worker` with injected rules and receipt. Prose
+isn't evidence.
 
 ## File-backed dispatch contract
 

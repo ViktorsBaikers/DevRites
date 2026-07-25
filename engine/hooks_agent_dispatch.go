@@ -802,7 +802,7 @@ func incompleteDispatchReason(armed map[string]struct{}, attempts []*agentDispat
 		return "DevRites could not determine this skill's required agents because its installed required-agent-roles contract is invalid. Reinstall or repair the DevRites skill pack before continuing."
 	}
 	return fmt.Sprintf(
-		"DevRites dispatch for %s is not complete. On MultiAgent V2 call spawn_agent with agent_type=%s, a unique task_name, and fork_turns=\"none\" so Codex loads .codex/agents/%s.toml natively. On V1 use agent_type=%s with fork_turns=\"none\" and name that role TOML in the message. Wait for the returned child and use its non-empty result. Do not call wait before spawn_agent and do not synthesize the agent result.",
+		"DevRites dispatch for %s is not complete. On MultiAgent V2 call spawn_agent with agent_type=%s, a unique task_name, and fork_turns=\"none\" so Codex loads .codex/agents/%s.toml natively. GPT-5.6 V2 may omit agent_type from the visible tool schema even though the runtime accepts it; send agent_type anyway rather than using a default child. On V1 use agent_type=%s with fork_turns=\"none\" and name that role TOML in the message. Wait for the returned child and use its non-empty result. Do not call wait before spawn_agent and do not synthesize the agent result.",
 		role, role, role, expectedAgentType(role),
 	)
 }
