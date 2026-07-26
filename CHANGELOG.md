@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.13](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.12...v3.2.13) (2026-07-26)
+
+### Fixed
+
+* **agents:** retain canonical boundary before spawn ([b290aa9](https://github.com/ViktorsBaikers/DevRites/commit/b290aa97851915afcddd85ff43855fc8e07b6860))
+
 ## [3.2.12](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.11...v3.2.12) (2026-07-26)
 
 ### Fixed
