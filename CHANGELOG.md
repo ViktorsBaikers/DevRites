@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.14](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.13...v3.2.14) (2026-07-26)
+
+### Fixed
+
+* **agents:** track unarmed retained retries ([44cf3cd](https://github.com/ViktorsBaikers/DevRites/commit/44cf3cd2d111060c76c53095ae76615ddba29c53))
+
 ## [3.2.13](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.12...v3.2.13) (2026-07-26)
 
 ### Fixed
