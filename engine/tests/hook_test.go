@@ -1900,6 +1900,76 @@ func TestCodexAgentDispatchGatesReconcileCloseOnBoundWrightResult(t *testing.T) 
 	}
 }
 
+func TestCodexAgentDispatchCapturesWrightBoundaryBeforeSpawn(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	for name, body := range map[string]string{
+		".reconcile-base":      ".reconcile-base\n",
+		".reconcile-allowlist": ".reconcile-allowlist\n",
+		".reconcile-devrites":  "[]\n",
+		"action.log":           "Prior root action\n",
+		"browser-evidence.md":  "Prior root evidence\n",
+		"decisions.md":         "Prior root decision\n",
+		"evidence.md":          "Prior root evidence\n",
+		"footprint.log":        "Prior root footprint\n",
+		"state.md":             "Phase: build\n",
+		"touched-files.md":     "Prior root manifest\n",
+	} {
+		if err := os.WriteFile(filepath.Join(workspace, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(filepath.Join(workspace, ".reconcile-objects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	sessionID, turnID := "session-wright-spawn", "turn-wright-spawn"
+	writeCodexAgentContract(t, root, "devrites-slice-wright")
+	writeCodexSkillContract(t, root, "rite-build", "devrites-slice-wright")
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$rite-build",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+
+	spawn := hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "spawn_agent",
+		"tool_use_id":     "spawn-wright",
+		"tool_input": map[string]any{
+			"agent_type": "devrites-slice-wright",
+			"fork_turns": "none",
+			"message":    "Read .codex/agents/devrites-slice-wright.toml.",
+		},
+	})
+	if out, stderr, code := runDevritesIO(t, root, spawn, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("spawn exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+
+	raw, err := os.ReadFile(filepath.Join(workspace, ".reconcile-wright-devrites"))
+	if err != nil {
+		t.Fatalf("read wright boundary: %v", err)
+	}
+	for _, path := range []string{
+		"features/auth-tokens/action.log",
+		"features/auth-tokens/browser-evidence.md",
+		"features/auth-tokens/decisions.md",
+		"features/auth-tokens/evidence.md",
+		"features/auth-tokens/footprint.log",
+		"features/auth-tokens/state.md",
+		"features/auth-tokens/touched-files.md",
+	} {
+		if !strings.Contains(string(raw), path) {
+			t.Errorf("wright boundary omitted %s: %s", path, raw)
+		}
+	}
+}
+
 func TestCodexAgentDispatchBindsDurableV2WrightToReconcileWindow(t *testing.T) {
 	for _, tc := range []struct {
 		name          string

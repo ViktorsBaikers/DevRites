@@ -244,6 +244,10 @@ EOF
       git -C "$PROJECT" -c user.name=DevRites -c user.email=devrites@example.invalid commit -qm 'fixture baseline'
       (cd "$PROJECT" && devrites-engine reconcile snapshot codex-skill-smoke) \
         || no "wright smoke could not create reconcile window"
+      for name in action.log browser-evidence.md decisions.md evidence.md footprint.log state.md touched-files.md; do
+        printf '%s\n' 'Prior root-owned retained-window record' \
+          > "$PROJECT/.devrites/work/codex-skill-smoke/$name"
+      done
     fi
     (
       cd "$PROJECT" || exit 1
