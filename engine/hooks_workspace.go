@@ -325,6 +325,8 @@ func redwatchSafe(cmd string) string {
 // node regex the shell guards use.
 var patchPathRe = regexp.MustCompile(`(?m)^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+)$`)
 
+var shellHeredocStartRe = regexp.MustCompile(`<<(-?)[ \t]*(?:'([A-Za-z_][A-Za-z0-9_]*)'|"([A-Za-z_][A-Za-z0-9_]*)"|([A-Za-z_][A-Za-z0-9_]*))`)
+
 // isEditTool reports whether a tool can write source. toolBaseName also handles
 // host-qualified names such as functions.apply_patch and MCP symbol editors.
 func isEditTool(tool string) bool {
@@ -344,6 +346,39 @@ func patchPaths(command string) []string {
 		paths = append(paths, strings.TrimSpace(m[1]))
 	}
 	return paths
+}
+
+func stripShellHeredocBodies(command string) (string, bool) {
+	lines := strings.Split(strings.ReplaceAll(command, "\r\n", "\n"), "\n")
+	out := make([]string, 0, len(lines))
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		out = append(out, line)
+		for _, match := range shellHeredocStartRe.FindAllStringSubmatch(line, -1) {
+			delimiter := match[2]
+			if delimiter == "" {
+				delimiter = match[3]
+			}
+			if delimiter == "" {
+				return "", false
+			}
+			found := false
+			for i++; i < len(lines); i++ {
+				candidate := lines[i]
+				if match[1] == "-" {
+					candidate = strings.TrimLeft(candidate, "\t")
+				}
+				if candidate == delimiter {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return "", false
+			}
+		}
+	}
+	return strings.Join(out, "\n"), true
 }
 
 // shellOutputRedirections removes harmless fd redirects and returns every file
@@ -471,44 +506,13 @@ func hookA1Guard(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) i
 	}
 
 	in := h.ParseGuardInput(bytes.NewReader(data))
-	if !isEditTool(in.ToolName) {
-		return exitOK
-	}
 	// The wright may edit. Claude sends agent_id; Codex sends agent_type.
 	if in.AgentID != "" || in.AgentType != "" {
 		return exitOK
 	}
-
-	projectDir := filepath.Dir(root)
-	target := ""
-	if in.ToolName == "apply_patch" {
-		sourcePatch := false
-		for _, p := range patchPaths(in.Command) {
-			abs := p
-			if !filepath.IsAbs(abs) {
-				abs = filepath.Join(projectDir, abs)
-			}
-			if !underDevrites(abs, root) {
-				sourcePatch = true
-				break
-			}
-		}
-		if !sourcePatch {
-			return exitOK
-		}
-		target = "apply_patch"
-	} else {
-		if in.FilePath == "" {
-			return exitOK
-		}
-		abs := in.FilePath
-		if !filepath.IsAbs(abs) {
-			abs = filepath.Join(projectDir, abs)
-		}
-		if underDevrites(abs, root) {
-			return exitOK // orchestrator editing its own .devrites bookkeeping
-		}
-		target = abs
+	handled, violation, target := classifyRootBuildWindowOperation(root, data, in)
+	if !handled || !violation {
+		return exitOK
 	}
 
 	mode := os.Getenv("DEVRITES_A1_HOOK")
@@ -842,7 +846,11 @@ func uniqueStrings(values []string) []string {
 }
 
 func wrightShellWritePaths(command string) ([]string, bool) {
-	if strings.TrimSpace(command) == "" || wrightForbiddenShellRe.MatchString(command) {
+	patches := patchPaths(command)
+	var ok bool
+	command, ok = stripShellHeredocBodies(command)
+	if !ok || strings.TrimSpace(command) == "" || strings.Contains(command, "$(") ||
+		strings.ContainsRune(command, '`') || wrightForbiddenShellRe.MatchString(command) {
 		return nil, true
 	}
 	sanitized, paths, opaque := shellOutputRedirections(command)
@@ -850,7 +858,6 @@ func wrightShellWritePaths(command string) ([]string, bool) {
 		return nil, true
 	}
 
-	patches := patchPaths(command)
 	if strings.Contains(command, "apply_patch") {
 		if len(patches) == 0 {
 			return nil, true
@@ -896,6 +903,15 @@ func wrightShellWritePaths(command string) ([]string, bool) {
 			found = nonFlagArgs(args)
 		case "rm", "unlink", "touch", "mkdir", "rmdir", "truncate":
 			found = nonFlagArgs(args)
+		case "cp":
+			if hasAnyArg(args, "-t", "--target-directory") || hasArgPrefix(args, "--target-directory=") {
+				return nil, true
+			}
+			operands := nonFlagArgs(args)
+			if len(operands) < 2 {
+				return nil, true
+			}
+			found = operands[len(operands)-1:]
 		default:
 			return nil, true
 		}
@@ -1014,14 +1030,22 @@ func guardRootBuildWindow(h harness.Harness, data []byte, in harness.GuardInput,
 		return exitOK, false
 	}
 
+	handled, violation, _ := classifyRootBuildWindowOperation(root, data, in)
+	if violation {
+		return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
+	}
+	return exitOK, handled
+}
+
+func classifyRootBuildWindowOperation(root string, data []byte, in harness.GuardInput) (handled, violation bool, target string) {
 	if isAgentDispatchTool(in.ToolName) {
-		return exitOK, true
+		return true, false, ""
+	}
+	if isOpaqueExecutionTool(in.ToolName) {
+		return true, true, in.ToolName
 	}
 
 	projectDir := filepath.Dir(root)
-	if isOpaqueExecutionTool(in.ToolName) {
-		return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
-	}
 	targets, suspicious := rootMutationTargets(data, in)
 	for _, target := range targets {
 		absoluteTarget := filepath.IsAbs(target)
@@ -1032,21 +1056,24 @@ func guardRootBuildWindow(h harness.Harness, data []byte, in harness.GuardInput,
 		abs = filepath.Clean(abs)
 		resolved, err := resolveRootMutationTarget(abs)
 		if err != nil {
-			return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
+			return true, true, target
 		}
 		insideProject := pathWithin(resolved, projectDir)
 		if (insideProject && !underDevrites(resolved, root)) ||
 			(!insideProject && !absoluteTarget) {
-			return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
+			return true, true, target
 		}
 	}
 	if suspicious {
-		return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
+		return true, true, in.ToolName
 	}
 	if len(targets) > 0 {
-		return exitOK, true
+		return true, false, strings.Join(targets, ",")
 	}
-	return exitOK, false
+	if isShellTool(in.ToolName) && safeReadonlyShellCommand(in.Command) {
+		return true, false, ""
+	}
+	return false, false, ""
 }
 
 func resolveRootMutationTarget(filename string) (string, error) {
@@ -1074,7 +1101,8 @@ func rootMutationTargets(data []byte, in harness.GuardInput) ([]string, bool) {
 		if len(targets) > 0 {
 			return targets, false
 		}
-		return nil, opaque && (reviewerMutateRe.MatchString(in.Command) || opaqueInterpreterRe.MatchString(in.Command))
+		_, completeHeredoc := stripShellHeredocBodies(in.Command)
+		return nil, opaque && (!completeHeredoc || reviewerMutateRe.MatchString(in.Command) || opaqueInterpreterRe.MatchString(in.Command))
 	default:
 		return nil, false
 	}

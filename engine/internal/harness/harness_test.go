@@ -113,6 +113,10 @@ func TestHarnessParsersFailOpenAndFallbacks(t *testing.T) {
 	if guard.ToolName != "Edit" || guard.FilePath != "src/app.go" || guard.AgentID != "a1" || guard.ToolResponse != `{"ok":true}` {
 		t.Fatalf("ParseGuardInput = %#v", guard)
 	}
+	guard = Codex.ParseGuardInput(strings.NewReader(`{"tool_name":"functions.exec_command","tool_input":{"cmd":"sha256sum /tmp/agent-packet.yaml"}}`))
+	if guard.ToolName != "functions.exec_command" || guard.Command != "sha256sum /tmp/agent-packet.yaml" {
+		t.Fatalf("ParseGuardInput Codex cmd = %#v", guard)
+	}
 
 	if got := Codex.SubagentAgentType(strings.NewReader(`{"agentType":"executor"}`)); got != "executor" {
 		t.Fatalf("SubagentAgentType fallback = %q, want executor", got)

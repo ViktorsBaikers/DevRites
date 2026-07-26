@@ -214,6 +214,7 @@ func (h Harness) ParseGuardInput(r io.Reader) GuardInput {
 		ToolName  string `json:"tool_name"`
 		ToolInput struct {
 			Command  string `json:"command"`
+			Cmd      string `json:"cmd"`
 			FilePath string `json:"file_path"`
 			Path     string `json:"path"`
 		} `json:"tool_input"`
@@ -237,7 +238,7 @@ func (h Harness) ParseGuardInput(r io.Reader) GuardInput {
 	}
 	return GuardInput{
 		ToolName:     raw.ToolName,
-		Command:      raw.ToolInput.Command,
+		Command:      firstNonEmpty(raw.ToolInput.Command, raw.ToolInput.Cmd),
 		FilePath:     firstNonEmpty(raw.ToolInput.FilePath, raw.ToolInput.Path),
 		SessionID:    raw.SessionID,
 		AgentType:    raw.AgentType,
