@@ -26,8 +26,8 @@ only the source-write lifecycle.
 4. Immediately before a serial dispatch:
 
    ```bash
-   devrites-engine reconcile snapshot
    devrites-engine stuck log "$(cat .devrites/ACTIVE 2>/dev/null)" dispatch "<slice id>"
+   devrites-engine reconcile snapshot
    ```
 
    A Forge slice runs `forge plan` first, then takes this same snapshot; see
