@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/devrites/devrites/internal/harness"
+	"github.com/devrites/devrites/internal/lib"
 	"github.com/devrites/devrites/internal/orient"
 	"github.com/devrites/devrites/internal/safepath"
 )
@@ -400,8 +401,9 @@ func currentReconcileWindowID() string {
 	if !ok {
 		return ""
 	}
-	// The wright-start canonical fingerprint is captured after the pending
-	// receipt. It narrows the delta but does not change source authorization.
+	// The wright-start canonical fingerprint is captured by the spawn hook
+	// before the child starts. It narrows the delta but does not change source
+	// authorization.
 	names := []string{".reconcile-base", ".reconcile-allowlist", ".reconcile-devrites"}
 	h := sha256.New()
 	for _, name := range names {
@@ -1087,6 +1089,15 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 		windowID := currentReconcileWindowID()
 		if role == "devrites-slice-wright" && windowID == "" {
 			return preToolDeny(h, "devrites-slice-wright requires an active reconcile snapshot before spawn_agent.", stdout, stderr)
+		}
+		if role == "devrites-slice-wright" {
+			workspaceRoot, slug, _, ok := resolveWorkspace()
+			if !ok || !sameResolvedPath(workspaceRoot, root) {
+				return preToolDeny(h, "DevRites could not resolve the active wright reconcile window before spawn_agent.", stdout, stderr)
+			}
+			if err := lib.CaptureReconcileWrightBoundary(root, slug); err != nil {
+				return preToolDeny(h, "DevRites could not capture the wright canonical boundary before spawn_agent: "+err.Error(), stdout, stderr)
+			}
 		}
 		if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
 			Event:     "pending",
