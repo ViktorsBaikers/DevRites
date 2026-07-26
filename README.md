@@ -25,7 +25,7 @@ final commit, push, and tag, and it requires a typed `GO` confirmation.
 Unattended runs may create local WIP checkpoint commits along the way, but only
 Ship collapses and pushes them.
 
-**Status:** [`v3.2.8`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v3.2.8): see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+**Status:** [`v3.2.9`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v3.2.9): see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
 ## Quick start
 
