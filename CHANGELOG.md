@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.9](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.8...v3.2.9) (2026-07-26)
+
+### Fixed
+
+* **devrites:** unblock retained reconcile checks ([c1093b0](https://github.com/ViktorsBaikers/DevRites/commit/c1093b00c3e32ba3cc22e0b9a2da548618ead621))
+
 ## [3.2.8](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.7...v3.2.8) (2026-07-26)
 
 ### Fixed
