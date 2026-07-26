@@ -583,6 +583,11 @@ func TestHookWrightScopeRequiresSpawnedCodexWorkerForSourceWrites(t *testing.T) 
 	runGuard(`{"tool_name":"spawn_agent","tool_input":{"agent_type":"worker"}}`, false)
 	runGuard(`{"tool_name":"spawn_agent","tool_input":{"agent_type":"explorer"}}`, false)
 	runGuard(`{"tool_name":"Write","tool_input":{"file_path":".devrites/features/auth-tokens/state.md"}}`, false)
+	runGuard(hookPayload(t, map[string]any{
+		"tool_name":  "Write",
+		"tool_input": map[string]any{"file_path": filepath.Join(t.TempDir(), "agent-packet.yaml")},
+	}), false)
+	runGuard(`{"tool_name":"Write","tool_input":{"file_path":"../outside.txt"}}`, true)
 	runGuard(`{"tool_name":"Write","tool_input":{"file_path":"src/app.go"}}`, true)
 	runGuard(`{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`, true)
 	runGuard(`{"tool_name":"js","tool_input":{"code":"writeFile()"}}`, true)
@@ -1695,7 +1700,7 @@ func TestCodexAgentDispatchRejectsIncompleteDurableV2(t *testing.T) {
 	}
 }
 
-func TestCodexAgentDispatchGatesReconcileOnBoundWrightResult(t *testing.T) {
+func TestCodexAgentDispatchGatesReconcileCloseOnBoundWrightResult(t *testing.T) {
 	root := newWorkspace(t)
 	writeActive(t, root, "auth-tokens")
 	workspace := filepath.Join(root, "features", "auth-tokens")
@@ -1714,14 +1719,26 @@ func TestCodexAgentDispatchGatesReconcileOnBoundWrightResult(t *testing.T) {
 		"prompt":          "$rite-build",
 	}), nil, "hook", "agent-dispatch", "--harness=codex")
 
-	reconcile := hookPayload(t, map[string]any{
+	check := hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "Bash",
+		"tool_input":      map[string]any{"command": "rtk devrites-engine reconcile check"},
+	})
+	if out, stderr, code := runDevritesIO(t, root, check, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("ordinary reconcile check exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+
+	closeWindow := hookPayload(t, map[string]any{
 		"hook_event_name": "PreToolUse",
 		"session_id":      sessionID,
 		"turn_id":         turnID,
 		"tool_name":       "Bash",
 		"tool_input":      map[string]any{"command": "rtk devrites-engine reconcile close"},
 	})
-	out, _, _ := runDevritesIO(t, root, reconcile, nil,
+	out, _, _ := runDevritesIO(t, root, closeWindow, nil,
 		"hook", "agent-dispatch", "--harness=codex")
 	if decision, reason := parsePermissionDecision(t, out); decision != "deny" ||
 		!strings.Contains(reason, "confirmed") {
@@ -1774,7 +1791,7 @@ func TestCodexAgentDispatchGatesReconcileOnBoundWrightResult(t *testing.T) {
 		}
 	}
 
-	if out, stderr, code := runDevritesIO(t, root, reconcile, nil,
+	if out, stderr, code := runDevritesIO(t, root, closeWindow, nil,
 		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
 		t.Fatalf("completed wright reconcile exit=%d out=%s stderr=%s", code, out, stderr)
 	}

@@ -33,7 +33,7 @@ var (
 	devritesAgentPathRe = regexp.MustCompile(`\.codex/agents/(devrites-[a-z0-9-]+)\.toml`)
 	devritesAgentNameRe = regexp.MustCompile(`^devrites-[a-z0-9-]+$`)
 	skillInvocationRe   = regexp.MustCompile(`(?i)(?:^|[^a-z0-9_./-])(?:\$|/)([a-z][a-z0-9-]*)\b`)
-	reconcileTerminalRe = regexp.MustCompile(`(?m)(?:^|[;&|]\s*)(?:rtk\s+)?(?:[A-Za-z0-9_./-]+/)?devrites-engine\s+reconcile\s+(?:check|close)\b`)
+	reconcileCloseRe    = regexp.MustCompile(`(?m)(?:^|[;&|]\s*)(?:rtk\s+)?(?:[A-Za-z0-9_./-]+/)?devrites-engine\s+reconcile\s+close\b`)
 )
 
 type agentDispatchHookInput struct {
@@ -1163,7 +1163,7 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 		return exitOK
 	}
 
-	if isShellTool(in.ToolName) && reconcileTerminalRe.MatchString(in.ToolInput.Command) {
+	if isShellTool(in.ToolName) && reconcileCloseRe.MatchString(in.ToolInput.Command) {
 		windowID := currentReconcileWindowID()
 		if windowID == "" {
 			return exitOK
@@ -1177,7 +1177,7 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 			}
 			attempts = append(attempts, durable...)
 			if !roleSatisfied("devrites-slice-wright", windowID, attempts) {
-				return preToolDeny(h, "DevRites reconcile check/close requires a confirmed, awaited devrites-slice-wright result bound to the active reconcile snapshot.", stdout, stderr)
+				return preToolDeny(h, "DevRites reconcile close requires a confirmed, awaited devrites-slice-wright result bound to the active reconcile snapshot.", stdout, stderr)
 			}
 			for _, attempt := range durable {
 				if attempt.Role != "devrites-slice-wright" || attempt.WindowID != windowID ||

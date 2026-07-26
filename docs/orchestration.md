@@ -69,6 +69,14 @@ Each dispatch follows the retained-baseline sequence:
 5. After proof and decision checks pass, `reconcile close` retires the private
    window; only then does the root write canonical records.
 
+An ordinary `reconcile check` may revalidate an existing retained window
+without a fresh current-turn wright receipt; it does not retire or widen that
+window. `reconcile close` still requires the confirmed, awaited wright result
+bound to the active snapshot. While the window is armed, the root guard permits
+inspectable writes only under `.devrites` or at an absolute scratch path outside
+the project; source-tree writes, relative escapes, and opaque execution remain
+blocked.
+
 The canonical-state fingerprint excludes root-owned operational records:
 `timeline.jsonl`, feature `events.jsonl`, a valid `recovery-attempts.jsonl`,
 the redwatch sentinel, automatic handoff snapshots, and hidden hook observation

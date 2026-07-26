@@ -1024,8 +1024,9 @@ func guardRootBuildWindow(h harness.Harness, data []byte, in harness.GuardInput,
 	}
 	targets, suspicious := rootMutationTargets(data, in)
 	for _, target := range targets {
+		absoluteTarget := filepath.IsAbs(target)
 		abs := target
-		if !filepath.IsAbs(abs) {
+		if !absoluteTarget {
 			abs = filepath.Join(projectDir, abs)
 		}
 		abs = filepath.Clean(abs)
@@ -1033,7 +1034,9 @@ func guardRootBuildWindow(h harness.Harness, data []byte, in harness.GuardInput,
 		if err != nil {
 			return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
 		}
-		if !underDevrites(resolved, root) {
+		insideProject := pathWithin(resolved, projectDir)
+		if (insideProject && !underDevrites(resolved, root)) ||
+			(!insideProject && !absoluteTarget) {
 			return denyWright(h, stdout, stderr, a1DenyReason, drvreason.HookA1Denied), true
 		}
 	}
