@@ -906,17 +906,17 @@ func refreshPendingWrightBoundary(
 	if in.AgentID != "" || in.AgentType != "" || currentReconcileWindowID() == "" {
 		return nil
 	}
-	_, wrightRequired := armed["devrites-slice-wright"]
-	_, conditional := armed[agentDispatchSkillGuard]
-	if !wrightRequired && !conditional {
-		return nil
-	}
 	for _, attempt := range attempts {
 		if attempt.Role == "devrites-slice-wright" {
 			return nil
 		}
 	}
-	durable, err := durableCodexV2DispatchAttempts(root, in.SessionID, in.TurnID, armed)
+	boundaryArmed := make(map[string]struct{}, len(armed)+1)
+	for role := range armed {
+		boundaryArmed[role] = struct{}{}
+	}
+	boundaryArmed["devrites-slice-wright"] = struct{}{}
+	durable, err := durableCodexV2DispatchAttempts(root, in.SessionID, in.TurnID, boundaryArmed)
 	if err != nil {
 		return err
 	}

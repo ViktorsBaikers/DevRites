@@ -1971,7 +1971,7 @@ func TestCodexAgentDispatchCapturesWrightBoundaryBeforeSpawn(t *testing.T) {
 	}
 }
 
-func TestCodexAgentDispatchRefreshesWrightBoundaryUntilDurableSpawn(t *testing.T) {
+func TestCodexAgentDispatchRefreshesUnarmedWrightBoundaryUntilDurableSpawn(t *testing.T) {
 	root := newWorkspace(t)
 	codeHome := t.TempDir()
 	writeActive(t, root, "auth-tokens")
@@ -1999,13 +1999,12 @@ func TestCodexAgentDispatchRefreshesWrightBoundaryUntilDurableSpawn(t *testing.T
 	sessionID, turnID := "session-wright-durable", "turn-wright-durable"
 	role := "devrites-slice-wright"
 	writeCodexAgentContract(t, root, role)
-	writeCodexSkillContract(t, root, "rite-build", role)
 	env := []string{"CODEX_HOME=" + codeHome}
 	runDevritesIO(t, root, hookPayload(t, map[string]any{
 		"hook_event_name": "UserPromptSubmit",
 		"session_id":      sessionID,
 		"turn_id":         turnID,
-		"prompt":          "$rite-build",
+		"prompt":          "Retry the retained reconciliation check.",
 	}), env, "hook", "agent-dispatch", "--harness=codex")
 
 	wrightState := filepath.Join(workspace, ".reconcile-wright-devrites")
