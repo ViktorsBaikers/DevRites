@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.8](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.7...v3.2.8) (2026-07-26)
+
+### Fixed
+
+* **devrites:** prevent reconcile self-invalidation ([161ed18](https://github.com/ViktorsBaikers/DevRites/commit/161ed187e600dfc92623b22db5cd7f0824408d1a))
+
 ## [3.2.7](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.6...v3.2.7) (2026-07-26)
 
 ### Fixed
