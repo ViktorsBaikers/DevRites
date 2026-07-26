@@ -897,6 +897,41 @@ func stopDispatchFailure(reason string, stdout, stderr io.Writer) int {
 	return exitOK
 }
 
+func refreshPendingWrightBoundary(
+	root string,
+	in agentDispatchHookInput,
+	armed map[string]struct{},
+	attempts []*agentDispatchAttempt,
+) error {
+	if in.AgentID != "" || in.AgentType != "" || currentReconcileWindowID() == "" {
+		return nil
+	}
+	_, wrightRequired := armed["devrites-slice-wright"]
+	_, conditional := armed[agentDispatchSkillGuard]
+	if !wrightRequired && !conditional {
+		return nil
+	}
+	for _, attempt := range attempts {
+		if attempt.Role == "devrites-slice-wright" {
+			return nil
+		}
+	}
+	durable, err := durableCodexV2DispatchAttempts(root, in.SessionID, in.TurnID, armed)
+	if err != nil {
+		return err
+	}
+	for _, attempt := range durable {
+		if attempt.Role == "devrites-slice-wright" {
+			return nil
+		}
+	}
+	workspaceRoot, slug, _, ok := resolveWorkspace()
+	if !ok || !sameResolvedPath(workspaceRoot, root) {
+		return fmt.Errorf("active reconcile window is unavailable")
+	}
+	return lib.CaptureReconcileWrightBoundary(root, slug)
+}
+
 func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) int {
 	if h != harness.Codex {
 		_, _ = io.Copy(io.Discard, stdin)
@@ -942,6 +977,13 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 				return stopDispatchBlock(h, "DevRites could not arm the required agent dispatch: "+err.Error(), stdout, stderr)
 			}
 		}
+		events, stateErr := readAgentDispatchEvents(root, in.SessionID)
+		if stateErr == nil {
+			armed, attempts := dispatchTurnState(events, in.TurnID)
+			if err := refreshPendingWrightBoundary(root, in, armed, attempts); err != nil {
+				debugf(stderr, "agent-dispatch pending wright boundary: %v", err)
+			}
+		}
 		if len(roles) > 0 {
 			instructions := make([]string, 0, len(roles))
 			for _, role := range roles {
@@ -963,6 +1005,18 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 
 	case "PreToolUse":
 		return hookAgentDispatchPreTool(h, root, in, stdout, stderr)
+
+	case "PostToolUse":
+		events, err := readAgentDispatchEvents(root, in.SessionID)
+		if err != nil {
+			debugf(stderr, "agent-dispatch post-tool state: %v", err)
+			return exitOK
+		}
+		armed, attempts := dispatchTurnState(events, in.TurnID)
+		if err := refreshPendingWrightBoundary(root, in, armed, attempts); err != nil {
+			debugf(stderr, "agent-dispatch post-tool wright boundary: %v", err)
+		}
+		return exitOK
 
 	case "SubagentStop":
 		if in.AgentID == "" {
