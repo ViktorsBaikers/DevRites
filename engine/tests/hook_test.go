@@ -899,6 +899,18 @@ func writeCodexSkillContract(t *testing.T, root, skill, roles string) {
 	}
 }
 
+func writeCodexConditionalSkillContract(t *testing.T, root, skill, role string) {
+	t.Helper()
+	dir := filepath.Join(filepath.Dir(root), ".agents", "skills", skill)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	contract := "---\nname: " + skill + "\ndescription: Test skill.\nrequired-agent-roles: none\n---\n\nConditionally dispatch `" + role + "` when needed.\n"
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte(contract), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func writeCodexV2Rollouts(
 	t *testing.T,
 	codeHome, projectRoot, sessionID, turnID, role, taskName string,
@@ -1093,6 +1105,156 @@ func TestCodexAgentDispatchArmsInstalledSkillRequirements(t *testing.T) {
 			}
 			t.Fatalf("required skill roles did not block Stop: %s", stopOut)
 		})
+	}
+}
+
+func TestCodexAgentDispatchPromptGivesExactNamedCallBeforeCompletion(t *testing.T) {
+	root := newWorkspace(t)
+	role := "devrites-plan-drafter"
+	writeCodexAgentContract(t, root, role)
+	writeCodexSkillContract(t, root, "rite-plan", role)
+
+	out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      "session-plan-drafter-guidance",
+		"turn_id":         "turn-plan-drafter-guidance",
+		"prompt":          "$rite-plan repair",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("arm exit=%d stderr=%s", code, stderr)
+	}
+	for _, want := range []string{
+		"MANDATORY DISPATCH THIS TURN",
+		"spawn_agent",
+		"agent_type=" + role,
+		"unique task_name",
+		`fork_turns="none"`,
+		".codex/agents/" + role + ".toml",
+		"send agent_type anyway",
+		"Wait for the returned child",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("initial dispatch guidance omitted %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestCodexConditionalAgentDispatchRejectsDefaultAndArmsNamedRole(t *testing.T) {
+	root := newWorkspace(t)
+	role := "devrites-proof-runner"
+	writeCodexAgentContract(t, root, role)
+	writeCodexConditionalSkillContract(t, root, "rite-polish", role)
+	sessionID, turnID := "session-conditional-role", "turn-conditional-role"
+
+	out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$rite-polish",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("arm exit=%d stderr=%s", code, stderr)
+	}
+	for _, want := range []string{
+		"CONDITIONAL DISPATCH RULE",
+		"exact named agent_type=devrites-<role>",
+		`fork_turns="none"`,
+		"send agent_type anyway",
+		"never use a default child",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("conditional dispatch guidance omitted %q:\n%s", want, out)
+		}
+	}
+
+	for _, agentType := range []string{"", "default"} {
+		out, stderr, code = runDevritesIO(t, root, hookPayload(t, map[string]any{
+			"hook_event_name": "PreToolUse",
+			"session_id":      sessionID,
+			"turn_id":         turnID,
+			"tool_name":       "spawn_agent",
+			"tool_use_id":     "default-" + agentType,
+			"tool_input": map[string]any{
+				"agent_type": agentType,
+				"task_name":  "conditional_default",
+				"fork_turns": "none",
+				"message":    "Run the conditional DevRites check.",
+			},
+		}), nil, "hook", "agent-dispatch", "--harness=codex")
+		if code != 0 {
+			t.Fatalf("default spawn exit=%d stderr=%s", code, stderr)
+		}
+		if decision, reason := parsePermissionDecision(t, out); decision != "deny" ||
+			!strings.Contains(reason, "exact named agent_type=devrites-<role>") {
+			t.Fatalf("conditional default child not denied: decision=%q reason=%q out=%s", decision, reason, out)
+		}
+	}
+
+	out, stderr, code = runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "spawn_agent",
+		"tool_use_id":     "missing-named-type",
+		"tool_input": map[string]any{
+			"task_name":  "conditional_missing_type",
+			"fork_turns": "none",
+			"message":    "Read .codex/agents/" + role + ".toml and run the check.",
+		},
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("missing type spawn exit=%d stderr=%s", code, stderr)
+	}
+	if decision, reason := parsePermissionDecision(t, out); decision != "deny" ||
+		!strings.Contains(reason, "agent_type="+role) ||
+		!strings.Contains(reason, "send agent_type anyway") {
+		t.Fatalf("missing named type did not get exact retry: decision=%q reason=%q out=%s", decision, reason, out)
+	}
+
+	out, stderr, code = runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "spawn_agent",
+		"tool_use_id":     "named-conditional",
+		"tool_input": map[string]any{
+			"agent_type": role,
+			"task_name":  "conditional_proof",
+			"fork_turns": "none",
+			"message":    "Run the conditional DevRites check.",
+		},
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("named conditional spawn rejected: exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+
+	out, stderr, code = runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "Stop",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if code != 0 || !strings.Contains(out, "DevRites dispatch for "+role+" is not complete") {
+		t.Fatalf("named conditional spawn was not armed: exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
+func TestCodexAgentDispatchAllowsDefaultChildOutsideSkillTurn(t *testing.T) {
+	root := newWorkspace(t)
+	out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      "session-unrelated-default",
+		"turn_id":         "turn-unrelated-default",
+		"tool_name":       "spawn_agent",
+		"tool_use_id":     "unrelated-default",
+		"tool_input": map[string]any{
+			"agent_type": "default",
+			"task_name":  "unrelated",
+			"fork_turns": "all",
+			"message":    "Handle an unrelated bounded task.",
+		},
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("unrelated default child was rejected: exit=%d out=%s stderr=%s", code, out, stderr)
 	}
 }
 
@@ -1403,6 +1565,79 @@ func TestCodexAgentDispatchConfirmsDurableV2NamedRole(t *testing.T) {
 		[]string{"CODEX_HOME=" + codeHome},
 		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
 		t.Fatalf("durable v2 stop exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
+func TestCodexAgentDispatchConfirmsConditionalDurableV2NamedRole(t *testing.T) {
+	root := newWorkspace(t)
+	codeHome := t.TempDir()
+	sessionID, turnID := "session-v2-conditional", "turn-v2-conditional"
+	role := "devrites-security-auditor"
+	writeCodexAgentContract(t, root, role)
+	writeCodexConditionalSkillContract(t, root, "devrites-audit", role)
+
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$devrites-audit security",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+
+	writeCodexV2Rollouts(
+		t, codeHome, filepath.Dir(root), sessionID, turnID, role,
+		"devrites_security_auditor_conditional", true, true, true,
+	)
+	stop := hookPayload(t, map[string]any{
+		"hook_event_name": "Stop",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+	})
+	if out, stderr, code := runDevritesIO(t, root, stop,
+		[]string{"CODEX_HOME=" + codeHome},
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("conditional durable v2 stop exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
+func TestCodexAgentDispatchRejectsConditionalDurableV2DefaultChild(t *testing.T) {
+	root := newWorkspace(t)
+	codeHome := t.TempDir()
+	sessionID, turnID := "session-v2-default", "turn-v2-default"
+	writeCodexConditionalSkillContract(t, root, "devrites-audit", "devrites-security-auditor")
+
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$devrites-audit security",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+
+	writeCodexV2Rollouts(
+		t, codeHome, filepath.Dir(root), sessionID, turnID, "default",
+		"default_conditional_child", true, true, true,
+	)
+	stop := hookPayload(t, map[string]any{
+		"hook_event_name": "Stop",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+	})
+	out, stderr, code := runDevritesIO(t, root, stop,
+		[]string{"CODEX_HOME=" + codeHome},
+		"hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("conditional default stop exit=%d stderr=%s", code, stderr)
+	}
+	var decision struct {
+		Decision string `json:"decision"`
+		Reason   string `json:"reason"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &decision); err != nil {
+		t.Fatalf("invalid conditional default response: %v\n%s", err, out)
+	}
+	if decision.Decision != "block" ||
+		!strings.Contains(decision.Reason, "default or non-DevRites child") ||
+		!strings.Contains(decision.Reason, "never use a default child") {
+		t.Fatalf("conditional V2 default child passed: %#v", decision)
 	}
 }
 
