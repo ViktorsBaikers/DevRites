@@ -493,7 +493,7 @@ func durableCodexV2DispatchAttempts(
 	for _, spawn := range spawns {
 		if !devritesAgentNameRe.MatchString(spawn.Role) || spawn.Role == agentDispatchSkillGuard {
 			if strings.TrimSpace(spawn.Result) != "" {
-				return nil, fmt.Errorf("Codex V2 completed a default or non-DevRites child during a DevRites skill turn; %s", conditionalDispatchInstruction())
+				return nil, fmt.Errorf("codex V2 completed a default or non-DevRites child during a DevRites skill turn; %s", conditionalDispatchInstruction())
 			}
 			continue
 		}
