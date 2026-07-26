@@ -400,6 +400,8 @@ func currentReconcileWindowID() string {
 	if !ok {
 		return ""
 	}
+	// The wright-start canonical fingerprint is captured after the pending
+	// receipt. It narrows the delta but does not change source authorization.
 	names := []string{".reconcile-base", ".reconcile-allowlist", ".reconcile-devrites"}
 	h := sha256.New()
 	for _, name := range names {

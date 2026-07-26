@@ -62,11 +62,16 @@ Each dispatch follows the retained-baseline sequence:
 
 1. `reconcile snapshot` captures the original dirty-tree baseline, private Git
    objects, exact allowlist, and canonical-state fingerprint.
-2. The sole wright returns code/tests; the root validates its typed identity and
+2. The confirmed wright start captures a second canonical-state fingerprint.
+   This preserves the original source baseline while separating root-owned
+   recovery records that predate the writer from canonical mutations made while
+   the writer is active.
+3. The sole wright returns code/tests; the root validates its typed identity and
    exact changed-file set.
-3. `reconcile check` rejects anything outside the root allowlist.
-4. `test-integrity` runs against the retained baseline.
-5. After proof and decision checks pass, `reconcile close` retires the private
+4. `reconcile check` rejects anything outside the root allowlist and any
+   canonical-state change after the wright start.
+5. `test-integrity` runs against the retained baseline.
+6. After proof and decision checks pass, `reconcile close` retires the private
    window; only then does the root write canonical records.
 
 An ordinary `reconcile check` may revalidate an existing retained window

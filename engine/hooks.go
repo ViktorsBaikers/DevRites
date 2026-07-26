@@ -546,6 +546,7 @@ func hookSubagentOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Wr
 	}
 	agentType := h.SubagentAgentType(bytes.NewReader(data))
 	context := strings.ReplaceAll(subagentOrientContext, "\r\n", "\n")
+	confirmedRole := ""
 	if h == harness.Codex {
 		in, parseErr := parseAgentDispatchHookInput(bytes.NewReader(data))
 		root, ok := agentDispatchRoot()
@@ -559,6 +560,7 @@ func hookSubagentOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Wr
 			if bindErr != nil {
 				context += "\n\n- **Dispatch binding failed.** Return blocked without doing specialist work; the parent must repair the agent-start receipt."
 			} else if bound {
+				confirmedRole = role
 				if in.AgentType == role {
 					context += fmt.Sprintf(
 						"\n\n- **Confirmed role.** Your named Codex profile is `%s`; follow its loaded `developer_instructions` and execute only the unchanged packet from the parent.",
@@ -578,6 +580,17 @@ func hookSubagentOrient(h harness.Harness, stdin io.Reader, stdout, stderr io.Wr
 		}
 	} else if !strings.HasPrefix(agentType, "devrites-") {
 		return exitOK // Stay silent without a DevRites agent identity.
+	} else {
+		confirmedRole = agentType
+	}
+	if confirmedRole == "devrites-slice-wright" {
+		root, slug, _, ok := resolveWorkspace()
+		if !ok {
+			context += "\n\n- **Wright boundary unavailable.** Return blocked without writing; the parent must restore the active reconcile window."
+		} else if err := lib.CaptureReconcileWrightBoundary(root, slug); err != nil {
+			debugf(stderr, "subagent-orient wright boundary: %v", err)
+			context += "\n\n- **Wright boundary unavailable.** Return blocked without writing; the parent must repair the retained reconcile window."
+		}
 	}
 	out, err := h.SubagentStartContext(context)
 	if err != nil {

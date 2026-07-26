@@ -926,6 +926,44 @@ func TestHookSubagentOrientSilentForNonDevritesAgent(t *testing.T) {
 	}
 }
 
+func TestHookSubagentOrientCapturesWrightCanonicalBoundary(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	if err := os.MkdirAll(filepath.Join(workspace, ".reconcile-objects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range map[string]string{
+		".reconcile-base":      "base\n",
+		".reconcile-allowlist": "",
+		".reconcile-devrites":  "[]\n",
+		"state.md":             "Phase: build\n",
+		"browser-evidence.md":  "Prior root evidence\n",
+	} {
+		if err := os.WriteFile(filepath.Join(workspace, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	in := `{"agent_type":"devrites-slice-wright"}`
+	out, errOut, code := runDevritesIO(t, root, in, nil, "hook", "subagent-orient", "--harness=claude")
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0 (stderr: %s)", code, errOut)
+	}
+	if strings.Contains(out, "Wright boundary unavailable") {
+		t.Fatalf("wright start was blocked: %s", out)
+	}
+	raw, err := os.ReadFile(filepath.Join(workspace, ".reconcile-wright-devrites"))
+	if err != nil {
+		t.Fatalf("read wright boundary: %v", err)
+	}
+	for _, path := range []string{"features/auth-tokens/state.md", "features/auth-tokens/browser-evidence.md"} {
+		if !strings.Contains(string(raw), path) {
+			t.Errorf("wright boundary omitted %s: %s", path, raw)
+		}
+	}
+}
+
 func hookPayload(t *testing.T, value map[string]any) string {
 	t.Helper()
 	raw, err := json.Marshal(value)
@@ -1759,10 +1797,17 @@ func TestCodexAgentDispatchGatesReconcileCloseOnBoundWrightResult(t *testing.T) 
 	root := newWorkspace(t)
 	writeActive(t, root, "auth-tokens")
 	workspace := filepath.Join(root, "features", "auth-tokens")
-	for _, name := range []string{".reconcile-base", ".reconcile-allowlist", ".reconcile-devrites"} {
-		if err := os.WriteFile(filepath.Join(workspace, name), []byte(name+"\n"), 0o600); err != nil {
+	for name, body := range map[string]string{
+		".reconcile-base":      ".reconcile-base\n",
+		".reconcile-allowlist": ".reconcile-allowlist\n",
+		".reconcile-devrites":  "[]\n",
+	} {
+		if err := os.WriteFile(filepath.Join(workspace, name), []byte(body), 0o600); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if err := os.MkdirAll(filepath.Join(workspace, ".reconcile-objects"), 0o700); err != nil {
+		t.Fatal(err)
 	}
 	sessionID, turnID := "session-wright", "turn-wright"
 	writeCodexAgentContract(t, root, "devrites-slice-wright")
@@ -1808,7 +1853,7 @@ func TestCodexAgentDispatchGatesReconcileCloseOnBoundWrightResult(t *testing.T) 
 			"tool_name":       "spawn_agent",
 			"tool_use_id":     "spawn-wright",
 			"tool_input": map[string]any{
-				"agent_type": "worker",
+				"agent_type": "devrites-slice-wright",
 				"fork_turns": "none",
 				"message":    "Read .codex/agents/devrites-slice-wright.toml.",
 			},
@@ -1818,14 +1863,14 @@ func TestCodexAgentDispatchGatesReconcileCloseOnBoundWrightResult(t *testing.T) 
 			"session_id":      sessionID,
 			"turn_id":         "child-wright",
 			"agent_id":        "agent-wright",
-			"agent_type":      "worker",
+			"agent_type":      "devrites-slice-wright",
 		},
 		{
 			"hook_event_name":        "SubagentStop",
 			"session_id":             sessionID,
 			"turn_id":                "child-wright",
 			"agent_id":               "agent-wright",
-			"agent_type":             "worker",
+			"agent_type":             "devrites-slice-wright",
 			"last_assistant_message": "agent-result/v1 complete",
 		},
 		{
@@ -1844,6 +1889,9 @@ func TestCodexAgentDispatchGatesReconcileCloseOnBoundWrightResult(t *testing.T) 
 			"hook", hook, "--harness=codex"); code != 0 {
 			t.Fatalf("%s exit=%d stderr=%s", hook, code, stderr)
 		}
+	}
+	if _, err := os.Stat(filepath.Join(workspace, ".reconcile-wright-devrites")); err != nil {
+		t.Fatalf("wright start did not capture canonical boundary: %v", err)
 	}
 
 	if out, stderr, code := runDevritesIO(t, root, closeWindow, nil,

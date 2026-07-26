@@ -23,6 +23,7 @@ const (
 	reconcileCheckedName        = ".reconcile-checked"
 	reconcileDevritesName       = ".reconcile-devrites"
 	reconcileObjectsName        = ".reconcile-objects"
+	reconcileWrightStateName    = ".reconcile-wright-devrites"
 	defaultWrightAllowlistName  = ".wright-allowlist"
 	wrightAllowlistFileEnv      = "DEVRITES_WRIGHT_ALLOWLIST_FILE"
 	reconcileDevritesPathPrefix = ".devrites/"
@@ -30,9 +31,11 @@ const (
 
 // Reconcile enforces the source-write boundary around one dispatched
 // slice-wright. The first `snapshot` captures the dirty worktree, private object
-// database, exact orchestrator-authored allowlist, and .devrites state. After a
-// clean check, another snapshot re-arms only the dispatch state for a retry while
-// retaining the original source baseline.
+// database, exact orchestrator-authored allowlist, and .devrites state. A
+// confirmed wright start captures the current canonical state separately, so
+// retained-window recovery records are not attributed to the writer. After a
+// clean check, another snapshot re-arms only the dispatch state for a retry
+// while retaining the original source baseline.
 // `check` compares the captured state with the current state and retains the
 // immutable baseline for the later test-integrity gate.
 // `close` explicitly ends the window and removes its private artifacts.
@@ -62,10 +65,11 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	devritesSnapshot := filepath.Join(d, reconcileDevritesName)
 	objects := filepath.Join(d, reconcileObjectsName)
 	checked := filepath.Join(d, reconcileCheckedName)
+	wrightState := filepath.Join(d, reconcileWrightStateName)
 
 	closeWindow := func() error {
 		var failures []string
-		for _, privateFile := range []string{base, capturedAllowlist, devritesSnapshot, checked} {
+		for _, privateFile := range []string{base, capturedAllowlist, devritesSnapshot, checked, wrightState} {
 			if err := os.Remove(privateFile); err != nil && !os.IsNotExist(err) {
 				failures = append(failures, fmt.Sprintf("%s: %v", filepath.Base(privateFile), err))
 			}
@@ -131,7 +135,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 				fmt.Fprintf(stderr, "reconcile: cannot refresh wright allowlist: %v\n", err)
 				return 6
 			}
-			state, err := captureReconcileDevritesState(root, devritesSnapshot, activeObjects, checked)
+			state, err := captureReconcileDevritesState(root, devritesSnapshot, activeObjects, checked, wrightState)
 			if err != nil {
 				fmt.Fprintf(stderr, "reconcile: cannot refresh .devrites snapshot: %v\n", err)
 				return 6
@@ -140,9 +144,11 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 				fmt.Fprintf(stderr, "reconcile: cannot write refreshed .devrites snapshot: %v\n", err)
 				return 6
 			}
-			if err := os.Remove(checked); err != nil {
-				fmt.Fprintf(stderr, "reconcile: cannot arm refreshed slice window: %v\n", err)
-				return 6
+			for _, privateFile := range []string{checked, wrightState} {
+				if err := os.Remove(privateFile); err != nil && !os.IsNotExist(err) {
+					fmt.Fprintf(stderr, "reconcile: cannot arm refreshed slice window: %v\n", err)
+					return 6
+				}
 			}
 			fmt.Fprintf(stdout, "reconcile: dispatch snapshot refreshed for %s; original slice baseline retained.\n", slug)
 			return 0
@@ -180,7 +186,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "reconcile: cannot capture wright allowlist: %v\n", err)
 			return 6
 		}
-		state, err := captureReconcileDevritesState(root, devritesSnapshot, objects, checked)
+		state, err := captureReconcileDevritesState(root, devritesSnapshot, objects, checked, wrightState)
 		if err != nil {
 			_ = closeWindow()
 			fmt.Fprintf(stderr, "reconcile: cannot snapshot .devrites: %v\n", err)
@@ -210,13 +216,20 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "reconcile: invalid captured allowlist: %v\n", err)
 			return 6
 		}
-		beforeDevrites, err := readDevritesState(devritesSnapshot)
+		beforeDevritesPath := devritesSnapshot
+		if _, err := os.Lstat(wrightState); err == nil {
+			beforeDevritesPath = wrightState
+		} else if !os.IsNotExist(err) {
+			fmt.Fprintf(stderr, "reconcile: invalid wright-start .devrites snapshot: %v\n", err)
+			return 6
+		}
+		beforeDevrites, err := readDevritesState(beforeDevritesPath)
 		if err != nil {
 			fmt.Fprintf(stderr, "reconcile: invalid .devrites snapshot: %v\n", err)
 			return 6
 		}
 		beforeDevrites = withoutRootOwnedOperationalState(beforeDevrites)
-		afterDevrites, err := captureReconcileDevritesState(root, devritesSnapshot, objects, checked)
+		afterDevrites, err := captureReconcileDevritesState(root, devritesSnapshot, objects, checked, wrightState)
 		if err != nil {
 			fmt.Fprintf(stderr, "reconcile: cannot compare .devrites: %v\n", err)
 			return 6
@@ -272,6 +285,50 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "reconcile: usage: devrites-engine reconcile <snapshot|check|close> [slug]")
 		return 6
 	}
+}
+
+// CaptureReconcileWrightBoundary records canonical state at the confirmed
+// wright start. The original source baseline remains untouched; reconciliation
+// can therefore distinguish root recovery records that predate the writer from
+// canonical mutations made while the writer is active.
+func CaptureReconcileWrightBoundary(root, slug string) error {
+	d := featureDir(root, slug)
+	if slug == "" || !isDir(d) {
+		return fmt.Errorf("no active workspace")
+	}
+	base := filepath.Join(d, reconcileBaseName)
+	capturedAllowlist := filepath.Join(d, reconcileAllowlistName)
+	devritesSnapshot := filepath.Join(d, reconcileDevritesName)
+	objects := filepath.Join(d, reconcileObjectsName)
+	checked := filepath.Join(d, reconcileCheckedName)
+	wrightState := filepath.Join(d, reconcileWrightStateName)
+
+	for _, filename := range []string{base, capturedAllowlist} {
+		info, err := os.Lstat(filename)
+		if err != nil || !info.Mode().IsRegular() {
+			if err == nil {
+				err = fmt.Errorf("not a regular file")
+			}
+			return fmt.Errorf("invalid reconcile window %s: %w", filepath.Base(filename), err)
+		}
+	}
+	if !isDir(objects) {
+		return fmt.Errorf("invalid reconcile window %s: not a directory", filepath.Base(objects))
+	}
+	if _, err := readDevritesState(devritesSnapshot); err != nil {
+		return fmt.Errorf("invalid reconcile window %s: %w", filepath.Base(devritesSnapshot), err)
+	}
+	state, err := captureReconcileDevritesState(
+		root,
+		devritesSnapshot,
+		objects,
+		checked,
+		wrightState,
+	)
+	if err != nil {
+		return err
+	}
+	return writeDevritesState(wrightState, state)
 }
 
 func wrightAllowlistPath(gitRoot, workspace string) (string, error) {
