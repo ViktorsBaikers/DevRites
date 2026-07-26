@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.12](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.11...v3.2.12) (2026-07-26)
+
+### Fixed
+
+* **agents:** capture wright boundary before spawn ([4eb95f3](https://github.com/ViktorsBaikers/DevRites/commit/4eb95f3f75c150b9c535972db6d84fadf97f1a87))
+
 ## [3.2.11](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.10...v3.2.11) (2026-07-26)
 
 ### Fixed
