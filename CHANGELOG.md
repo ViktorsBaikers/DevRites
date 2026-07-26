@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.7](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.6...v3.2.7) (2026-07-26)
+
+### Fixed
+
+* **agents:** enforce conditional v2 dispatch ([f4169d4](https://github.com/ViktorsBaikers/DevRites/commit/f4169d41c456f352172be8d96afdcdc69800d849))
+* **ci:** satisfy staticcheck error style ([0023265](https://github.com/ViktorsBaikers/DevRites/commit/00232656283647db8d94b2ed61dccb1629091b25))
+
 ## [3.2.6](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.5...v3.2.6) (2026-07-25)
 
 ### Changed
