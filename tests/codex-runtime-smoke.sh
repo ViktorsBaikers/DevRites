@@ -8,6 +8,7 @@
 # and uses more tokens. It defaults to GPT-5.4's stable V1 surface;
 # DEVRITES_CODEX_SUBAGENT_MODEL and
 # DEVRITES_CODEX_SUBAGENT_SCHEMA select another authenticated model/schema pair.
+# DEVRITES_CODEX_SUBAGENT_CONDITIONAL=1 proves a role selected after skill start.
 # DEVRITES_CODEX_SUBAGENT_ROLE=devrites-slice-wright additionally proves the
 # write-capable V2 receipt survives reconcile close.
 set -u
@@ -59,9 +60,23 @@ git -C "$PROJECT" init -q || no "could not initialize live Codex project"
 
 SUBAGENT_ROLE="${DEVRITES_CODEX_SUBAGENT_ROLE:-devrites-security-auditor}"
 case "$SUBAGENT_ROLE" in
-  devrites-security-auditor|devrites-slice-wright) ;;
+  devrites-slice-wright) ;;
+  devrites-*)
+    [ -f "$ROOT/pack/generated/codex/agents/$SUBAGENT_ROLE.toml" ] \
+      || no "unknown DEVRITES_CODEX_SUBAGENT_ROLE=$SUBAGENT_ROLE"
+    ;;
   *) no "unknown DEVRITES_CODEX_SUBAGENT_ROLE=$SUBAGENT_ROLE" ;;
 esac
+SKILL_REQUIRED_ROLES="$SUBAGENT_ROLE"
+SKILL_DISPATCH_ARMED_ROLE="$SUBAGENT_ROLE"
+SKILL_DISPATCH_CHILD_LABEL="required"
+SKILL_DISPATCH_BODY="Spawn the required specialist and return its result."
+if [ "${DEVRITES_CODEX_SUBAGENT_CONDITIONAL:-0}" = "1" ]; then
+  SKILL_REQUIRED_ROLES="none"
+  SKILL_DISPATCH_ARMED_ROLE="devrites-skill-dispatch-guard"
+  SKILL_DISPATCH_CHILD_LABEL="conditional"
+  SKILL_DISPATCH_BODY="When asked to run the check, conditionally spawn $SUBAGENT_ROLE and return its result."
+fi
 
 echo "== codex-runtime-smoke (target: $PROJECT) =="
 bash "$ROOT/install.sh" --target "$PROJECT" >/dev/null 2>&1 || no "install failed"
@@ -70,10 +85,10 @@ cat > "$PROJECT/.agents/skills/devrites-runtime-smoke/SKILL.md" <<EOF
 ---
 name: devrites-runtime-smoke
 description: Authenticated fixture for proving mandatory Codex role dispatch.
-required-agent-roles: $SUBAGENT_ROLE
+required-agent-roles: $SKILL_REQUIRED_ROLES
 ---
 
-Spawn the required specialist and return its result.
+$SKILL_DISPATCH_BODY
 EOF
 
 (
@@ -186,10 +201,13 @@ case "$SUBAGENT_SCHEMA" in
     ;;
   v2)
     SKILL_DISPATCH_AGENT_TYPE="$SKILL_DISPATCH_ROLE"
-    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not work in the root. This smoke targets Codex MultiAgent V2. The visible V2 schema may omit agent_type even though the runtime accepts it: call spawn_agent with agent_type $SKILL_DISPATCH_ROLE, task_name $SKILL_DISPATCH_TASK_NAME, and fork_turns none anyway. Send the exact named child a message to $SKILL_DISPATCH_CHILD_REQUEST, wait for it, and use its non-empty result.$SKILL_DISPATCH_AFTER_WAIT Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
-    printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "spawn_agent.*agent_type $SKILL_DISPATCH_ROLE.*task_name $SKILL_DISPATCH_TASK_NAME.*fork_turns none" \
-      && ok "skill dispatch smoke explicitly requests the MultiAgent V2 named-role path" \
-      || no "skill dispatch smoke does not request the MultiAgent V2 named-role path"
+    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not work in the root. Follow the installed skill and hook-injected dispatch instructions, ask the $SKILL_DISPATCH_CHILD_LABEL child to $SKILL_DISPATCH_CHILD_REQUEST, wait for it, and use its non-empty result.$SKILL_DISPATCH_AFTER_WAIT Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
+    if printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "hook-injected dispatch instructions" \
+      && ! printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "spawn_agent"; then
+      ok "skill dispatch smoke relies on the MultiAgent V2 hook contract"
+    else
+      no "skill dispatch smoke bypasses the MultiAgent V2 hook contract"
+    fi
     ;;
   *)
     no "unknown DEVRITES_CODEX_SUBAGENT_SCHEMA=$SUBAGENT_SCHEMA (expected v1 or v2)"
@@ -248,7 +266,7 @@ EOF
       grep -q "DEVRITES-WRIGHT-CHILD-OK" "$PROJECT/README.md" \
         || no "wright smoke child did not write the allowed file"
     fi
-    python3 - "$RECEIPT_DIR" "$SKILL_DISPATCH_ROLE" <<'PY'
+    python3 - "$RECEIPT_DIR" "$SKILL_DISPATCH_ARMED_ROLE" <<'PY'
 import json, pathlib, sys
 
 state_dir, role = map(str, sys.argv[1:])
@@ -258,7 +276,7 @@ for path in pathlib.Path(state_dir).glob("*.jsonl"):
 assert any(
     event.get("event") == "armed" and event.get("role") == role
     for event in events
-), "missing required-agent-roles armed receipt"
+), "missing skill dispatch armed receipt"
 PY
     armed_rc=$?
     receipt_rc=1
@@ -282,10 +300,10 @@ agent_ids = {e["agent_id"] for e in started}
 assert any(e.get("event") == "stopped" and e.get("agent_id") in agent_ids and e.get("result_sha256") for e in events), "missing non-empty result receipt"
 PY
     else
-      python3 - "$LIVE_CODEX_HOME" "$T/subagent.jsonl" "$PROJECT" "$SKILL_DISPATCH_ROLE" "$SKILL_DISPATCH_TASK_NAME" <<'PY'
+      python3 - "$LIVE_CODEX_HOME" "$T/subagent.jsonl" "$PROJECT" "$SKILL_DISPATCH_ROLE" <<'PY'
 import json, pathlib, sys
 
-code_home, event_path, project, role, task_name = map(str, sys.argv[1:])
+code_home, event_path, project, role = map(str, sys.argv[1:])
 events = [json.loads(line) for line in pathlib.Path(event_path).read_text().splitlines() if line.strip()]
 thread_ids = [event.get("thread_id") for event in events if event.get("type") == "thread.started"]
 assert thread_ids and thread_ids[-1], "missing parent thread id"
@@ -300,28 +318,31 @@ assert pathlib.Path(meta["payload"]["cwd"]).resolve() == pathlib.Path(project).r
 
 spawns = []
 wait_indices = []
-delivered_indices = []
+deliveries = []
 for index, record in enumerate(parent):
     payload = record.get("payload", {})
     if payload.get("type") == "function_call" and payload.get("name") == "spawn_agent":
         args = json.loads(payload.get("arguments", "{}"))
-        if args.get("task_name") == task_name:
+        if args.get("agent_type") == role:
             spawns.append((index, args))
     if payload.get("type") == "function_call" and payload.get("name") == "wait_agent":
         wait_indices.append(index)
-    if payload.get("type") == "agent_message" and payload.get("author") == f"/root/{task_name}" and payload.get("recipient") == "/root":
+    if payload.get("type") == "agent_message" and payload.get("recipient") == "/root":
         text = "\n".join(
             item.get("text", "")
             for item in payload.get("content", [])
             if item.get("type") == "input_text"
         ).strip()
         if text:
-            delivered_indices.append(index)
+            deliveries.append((payload.get("author"), index))
 
 assert len(spawns) == 1, f"expected one named spawn, got {len(spawns)}"
 spawn_index, spawn_args = spawns[0]
 assert spawn_args.get("agent_type") == role, spawn_args
 assert spawn_args.get("fork_turns") == "none", spawn_args
+task_name = spawn_args.get("task_name", "")
+assert task_name and "/" not in task_name, spawn_args
+delivered_indices = [index for author, index in deliveries if author == f"/root/{task_name}"]
 assert delivered_indices, "missing non-empty child-to-root result"
 assert any(spawn_index < wait < delivered_indices[0] for wait in wait_indices), "missing wait between spawn and delivered result"
 

@@ -25,6 +25,7 @@ const (
 	agentDispatchStateVersion = "devrites-agent-dispatch/v1"
 	agentDispatchStateDir     = "devrites-agent-dispatch-v1"
 	agentDispatchMetadataRole = "devrites-skill-contract-error"
+	agentDispatchSkillGuard   = "devrites-skill-dispatch-guard"
 	maxCodexRolloutLine       = 8 << 20
 )
 
@@ -309,22 +310,24 @@ func requiredAgentRolesFromSkill(path string) ([]string, error) {
 	return roles, nil
 }
 
-func requiredRolesInPrompt(root, text string) ([]string, error) {
+func requiredRolesInPrompt(root, text string) ([]string, bool, error) {
 	seen := map[string]struct{}{}
+	skillInvoked := false
 	skillsDir := filepath.Join(filepath.Dir(root), ".agents", "skills")
 	for _, match := range skillInvocationRe.FindAllStringSubmatch(text, -1) {
 		skill := strings.ToLower(match[1])
 		path := filepath.Join(skillsDir, skill, "SKILL.md")
 		if !safepath.WithinResolved(path, skillsDir) {
-			return nil, fmt.Errorf("unsafe skill path for %s", skill)
+			return nil, false, fmt.Errorf("unsafe skill path for %s", skill)
 		}
 		roles, err := requiredAgentRolesFromSkill(path)
 		if os.IsNotExist(err) {
 			continue
 		}
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", skill, err)
+			return nil, false, fmt.Errorf("%s: %w", skill, err)
 		}
+		skillInvoked = true
 		for _, role := range roles {
 			seen[role] = struct{}{}
 		}
@@ -334,7 +337,7 @@ func requiredRolesInPrompt(root, text string) ([]string, error) {
 		roles = append(roles, role)
 	}
 	sort.Strings(roles)
-	return roles, nil
+	return roles, skillInvoked, nil
 }
 
 func expectedAgentType(role string) string {
@@ -488,6 +491,19 @@ func durableCodexV2DispatchAttempts(
 	}
 	var attempts []*agentDispatchAttempt
 	for _, spawn := range spawns {
+		if !devritesAgentNameRe.MatchString(spawn.Role) || spawn.Role == agentDispatchSkillGuard {
+			if strings.TrimSpace(spawn.Result) != "" {
+				return nil, fmt.Errorf("Codex V2 completed a default or non-DevRites child during a DevRites skill turn; %s", conditionalDispatchInstruction())
+			}
+			continue
+		}
+		armed[spawn.Role] = struct{}{}
+		attempt := &agentDispatchAttempt{
+			Role:      spawn.Role,
+			AgentType: spawn.Role,
+			Started:   true,
+		}
+		attempts = append(attempts, attempt)
 		if strings.TrimSpace(spawn.Result) == "" || !lineBetween(waitLines, spawn.SpawnLine, spawn.ResultLine) {
 			continue
 		}
@@ -504,24 +520,17 @@ func durableCodexV2DispatchAttempts(
 		if childID == "" || strings.TrimSpace(childResult) == "" {
 			continue
 		}
-		windowID := ""
+		attempt.AgentID = childID
+		attempt.Stopped = true
+		attempt.Waited = true
 		if spawn.Role == "devrites-slice-wright" {
-			windowID = currentReconcileWindowID()
-			if windowID == "" || !reconcileWindowPredates(spawn.SpawnedAt) {
+			attempt.WindowID = currentReconcileWindowID()
+			if attempt.WindowID == "" || !reconcileWindowPredates(spawn.SpawnedAt) {
 				continue
 			}
 		}
 		sum := sha256.Sum256([]byte(childResult))
-		attempts = append(attempts, &agentDispatchAttempt{
-			Role:         spawn.Role,
-			AgentType:    spawn.Role,
-			AgentID:      childID,
-			WindowID:     windowID,
-			Started:      true,
-			Stopped:      true,
-			Waited:       true,
-			ResultSHA256: hex.EncodeToString(sum[:]),
-		})
+		attempt.ResultSHA256 = hex.EncodeToString(sum[:])
 	}
 	return attempts, nil
 }
@@ -570,6 +579,7 @@ func readCodexV2ParentRollout(
 	spawns := map[string]*codexV2Spawn{}
 	var waitLines []int
 	metaSeen := false
+	_, guarded := armed[agentDispatchSkillGuard]
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 64<<10), maxCodexRolloutLine)
 	for lineNumber := 1; scanner.Scan(); lineNumber++ {
@@ -604,9 +614,9 @@ func readCodexV2ParentRollout(
 			if json.Unmarshal([]byte(record.Payload.Arguments), &args) != nil {
 				continue
 			}
-			if _, required := armed[args.AgentType]; !required ||
-				args.TaskName == "" || strings.Contains(args.TaskName, "/") ||
-				args.ForkTurns != "none" {
+			_, required := armed[args.AgentType]
+			if (!required && !guarded) || args.TaskName == "" ||
+				strings.Contains(args.TaskName, "/") || args.ForkTurns != "none" {
 				continue
 			}
 			spawnedAt, err := time.Parse(time.RFC3339Nano, record.Timestamp)
@@ -797,9 +807,23 @@ func roleSatisfied(role, windowID string, attempts []*agentDispatchAttempt) bool
 	return false
 }
 
+func dispatchInstruction(role string) string {
+	return fmt.Sprintf(
+		"On MultiAgent V2 call spawn_agent with agent_type=%s, a unique task_name, and fork_turns=\"none\" so Codex loads .codex/agents/%s.toml natively. GPT-5.6 V2 may omit agent_type from the visible tool schema even though the runtime accepts it; send agent_type anyway rather than using a default child. On V1 use agent_type=%s with fork_turns=\"none\" and name that role TOML in the message. Wait for the returned child and use its non-empty result. Do not call wait before spawn_agent and do not synthesize the agent result.",
+		role, role, expectedAgentType(role),
+	)
+}
+
+func conditionalDispatchInstruction() string {
+	return "CONDITIONAL DISPATCH RULE — If this skill reaches a child-agent step, call spawn_agent with the exact named agent_type=devrites-<role> specified by the skill, a unique task_name, and fork_turns=\"none\". GPT-5.6 V2 may omit agent_type from the visible tool schema; send agent_type anyway and never use a default child. Wait for the returned child and use its non-empty result."
+}
+
 func incompleteDispatchReason(armed map[string]struct{}, attempts []*agentDispatchAttempt) string {
 	roles := make([]string, 0, len(armed))
 	for role := range armed {
+		if role == agentDispatchSkillGuard {
+			continue
+		}
 		if !roleSatisfied(role, "", attempts) {
 			roles = append(roles, role)
 		}
@@ -812,10 +836,7 @@ func incompleteDispatchReason(armed map[string]struct{}, attempts []*agentDispat
 	if role == agentDispatchMetadataRole {
 		return "DevRites could not determine this skill's required agents because its installed required-agent-roles contract is invalid. Reinstall or repair the DevRites skill pack before continuing."
 	}
-	return fmt.Sprintf(
-		"DevRites dispatch for %s is not complete. On MultiAgent V2 call spawn_agent with agent_type=%s, a unique task_name, and fork_turns=\"none\" so Codex loads .codex/agents/%s.toml natively. GPT-5.6 V2 may omit agent_type from the visible tool schema even though the runtime accepts it; send agent_type anyway rather than using a default child. On V1 use agent_type=%s with fork_turns=\"none\" and name that role TOML in the message. Wait for the returned child and use its non-empty result. Do not call wait before spawn_agent and do not synthesize the agent result.",
-		role, role, role, expectedAgentType(role),
-	)
+	return fmt.Sprintf("DevRites dispatch for %s is not complete. %s", role, dispatchInstruction(role))
 }
 
 func preToolDeny(h harness.Harness, reason string, stdout, stderr io.Writer) int {
@@ -888,7 +909,7 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 
 	switch in.HookEventName {
 	case "UserPromptSubmit":
-		roles, rolesErr := requiredRolesInPrompt(root, in.Prompt)
+		roles, skillInvoked, rolesErr := requiredRolesInPrompt(root, in.Prompt)
 		if rolesErr != nil {
 			if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
 				Event:  "armed",
@@ -898,6 +919,15 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 				return stopDispatchBlock(h, "DevRites could not record the invalid agent-role contract: "+err.Error(), stdout, stderr)
 			}
 			return stopDispatchBlock(h, "DevRites could not read the required agent roles: "+rolesErr.Error(), stdout, stderr)
+		}
+		if skillInvoked {
+			if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
+				Event:  "armed",
+				TurnID: in.TurnID,
+				Role:   agentDispatchSkillGuard,
+			}); err != nil {
+				return stopDispatchBlock(h, "DevRites could not arm the skill dispatch guard: "+err.Error(), stdout, stderr)
+			}
 		}
 		for _, role := range roles {
 			if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
@@ -909,7 +939,21 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 			}
 		}
 		if len(roles) > 0 {
-			fmt.Fprintf(stdout, "DevRites: this turn requires a confirmed %s subagent start, wait, and non-empty result; a success phrase is not evidence.", strings.Join(roles, ", "))
+			instructions := make([]string, 0, len(roles))
+			for _, role := range roles {
+				instructions = append(instructions, dispatchInstruction(role))
+			}
+			fmt.Fprintf(
+				stdout,
+				"MANDATORY DISPATCH THIS TURN — At the skill's dispatch step, execute every required child before finishing or claiming completion; a success phrase is not evidence.\n%s",
+				strings.Join(instructions, "\n"),
+			)
+		}
+		if skillInvoked {
+			if len(roles) > 0 {
+				fmt.Fprintln(stdout)
+			}
+			fmt.Fprint(stdout, conditionalDispatchInstruction())
 		}
 		return exitOK
 
@@ -949,7 +993,8 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 			return stopDispatchBlock(h, "DevRites could not verify the required agent dispatch: "+err.Error(), stdout, stderr)
 		}
 		armed, attempts := dispatchTurnState(events, in.TurnID)
-		if reason := incompleteDispatchReason(armed, attempts); reason != "" {
+		_, guarded := armed[agentDispatchSkillGuard]
+		if reason := incompleteDispatchReason(armed, attempts); reason != "" || guarded && len(attempts) == 0 {
 			durable, durableErr := durableCodexV2DispatchAttempts(
 				root, in.SessionID, in.TurnID, armed,
 			)
@@ -979,10 +1024,17 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 	if isAgentDispatchTool(in.ToolName) {
 		agentType := in.ToolInput.AgentType
 		if agentType == "" {
-			if len(armed) == 0 {
-				return exitOK
+			roles := explicitRolesInText(in.ToolInput.Message + "\n" + in.ToolInput.TaskName)
+			if len(roles) == 1 {
+				return preToolDeny(h, "DevRites conditional dispatch requires the exact named specialist. "+dispatchInstruction(roles[0]), stdout, stderr)
 			}
-			return preToolDeny(h, "DevRites MultiAgent V2 dispatch requires the exact named agent_type=devrites-<role>; omitting agent_type does not load the specialist role contract.", stdout, stderr)
+			if reason := incompleteDispatchReason(armed, attempts); reason != "" {
+				return preToolDeny(h, reason, stdout, stderr)
+			}
+			if _, guarded := armed[agentDispatchSkillGuard]; guarded {
+				return preToolDeny(h, conditionalDispatchInstruction(), stdout, stderr)
+			}
+			return exitOK
 		}
 		role := ""
 		if strings.HasPrefix(agentType, "devrites-") {
@@ -995,10 +1047,19 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 		}
 		if role == "" {
 			if agentType == "explorer" || agentType == "worker" {
-				if len(armed) == 0 {
+				if reason := incompleteDispatchReason(armed, attempts); reason != "" {
+					return preToolDeny(h, reason, stdout, stderr)
+				}
+				if _, guarded := armed[agentDispatchSkillGuard]; !guarded {
 					return exitOK // Unrelated generic subagent in a DevRites repository.
 				}
 				return preToolDeny(h, "DevRites generic dispatch must name exactly one .codex/agents/devrites-<role>.toml contract.", stdout, stderr)
+			}
+			if reason := incompleteDispatchReason(armed, attempts); reason != "" {
+				return preToolDeny(h, reason, stdout, stderr)
+			}
+			if _, guarded := armed[agentDispatchSkillGuard]; guarded {
+				return preToolDeny(h, conditionalDispatchInstruction(), stdout, stderr)
 			}
 			return exitOK
 		}
@@ -1016,7 +1077,7 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 			return preToolDeny(h, "devrites-slice-wright requires the generic worker identity and exact wright allowlist.", stdout, stderr)
 		}
 		if agentType != "" && agentType != role && agentType != expectedAgentType(role) {
-			return preToolDeny(h, fmt.Sprintf("DevRites role %s requires agent_type=%s or its exposed named role.", role, expectedAgentType(role)), stdout, stderr)
+			return preToolDeny(h, fmt.Sprintf("DevRites role %s requires agent_type=%s or its exposed named role. %s", role, expectedAgentType(role), dispatchInstruction(role)), stdout, stderr)
 		}
 		if in.ToolUseID == "" {
 			return preToolDeny(h, "DevRites cannot bind a spawn without tool_use_id.", stdout, stderr)
@@ -1057,7 +1118,11 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 			}
 		}
 		if len(started) == 0 {
-			return preToolDeny(h, incompleteDispatchReason(armed, attempts), stdout, stderr)
+			reason := incompleteDispatchReason(armed, attempts)
+			if reason == "" {
+				reason = conditionalDispatchInstruction()
+			}
+			return preToolDeny(h, reason, stdout, stderr)
 		}
 		targets := in.ToolInput.ReceiverThreadIDs
 		if len(targets) == 0 {
