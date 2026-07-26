@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.6](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.5...v3.2.6) (2026-07-25)
+
+### Changed
+
+* **devrites:** remove package-existence gate ([4cbcbe9](https://github.com/ViktorsBaikers/DevRites/commit/4cbcbe9002eaf97f8f921e13e97b4dcfc6b61b34))
+
 ## [3.2.5](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.4...v3.2.5) (2026-07-25)
 
 ### Fixed
