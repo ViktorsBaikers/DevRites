@@ -10,6 +10,7 @@ VET_ARTIFACTS="$ROOT/pack/.claude/skills/rite-vet/reference/artifacts.md"
 PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
 CONVERGE="$ROOT/pack/.claude/skills/rite-converge/SKILL.md"
 BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
+WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
 DRIFT="$ROOT/pack/.claude/skills/rite-build/reference/spec-drift-guard.md"
 DOCTOR="$ROOT/pack/.claude/skills/rite-doctor/SKILL.md"
 UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
@@ -142,6 +143,16 @@ if grep -q 'devrites-debug-recovery' "$BUILD" \
   ok "rite-build routes objective failures through bounded debug recovery"
 else
   no "rite-build still converts the first retry failure directly into a human gate"
+fi
+
+stuck_line="$(grep -n 'devrites-engine stuck log' "$WRIGHT_DISPATCH" | head -1 | cut -d: -f1)"
+snapshot_line="$(grep -n 'devrites-engine reconcile snapshot' "$WRIGHT_DISPATCH" | head -1 | cut -d: -f1)"
+if [ -n "$stuck_line" ] \
+   && [ -n "$snapshot_line" ] \
+   && [ "$stuck_line" -lt "$snapshot_line" ]; then
+  ok "rite-build records stuck telemetry before arming reconciliation"
+else
+  no "rite-build mutates action.log after the reconcile snapshot"
 fi
 
 if grep -q 'explicit consent' "$RESOLVE" && ! grep -q 'confirm? (y/N)' "$RESOLVE"; then

@@ -215,6 +215,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "reconcile: invalid .devrites snapshot: %v\n", err)
 			return 6
 		}
+		beforeDevrites = withoutRootOwnedOperationalState(beforeDevrites)
 		afterDevrites, err := captureReconcileDevritesState(root, devritesSnapshot, objects, checked)
 		if err != nil {
 			fmt.Fprintf(stderr, "reconcile: cannot compare .devrites: %v\n", err)
@@ -465,6 +466,13 @@ func captureDevritesState(root string, ignoredPaths ...string) ([]devritesStateE
 			}
 			return nil
 		}
+		operational, err := reconcileRootOwnedOperationalFile(filename, rel, entry)
+		if err != nil {
+			return err
+		}
+		if operational {
+			return nil
+		}
 
 		fingerprint, err := devritesFingerprint(filename, entry)
 		if err != nil {
@@ -481,6 +489,61 @@ func captureDevritesState(root string, ignoredPaths ...string) ([]devritesStateE
 	}
 	sort.Slice(state, func(i, j int) bool { return state[i].Path < state[j].Path })
 	return state, nil
+}
+
+// reconcileRootOwnedOperationalFile excludes engine/root-owned operational
+// records from the writer delta. Their owning hooks/gates validate them where
+// needed; root activity must not be attributed to the slice writer.
+func reconcileRootOwnedOperationalFile(filename, rel string, entry os.DirEntry) (bool, error) {
+	if !entry.Type().IsRegular() || !reconcileRootOwnedOperationalPath(rel) {
+		return false, nil
+	}
+	rel = filepath.ToSlash(filepath.Clean(rel))
+	parts := strings.Split(rel, "/")
+	if len(parts) == 3 && parts[2] == recoveryAttemptsFile {
+		if _, err := readRecoveryAttempts(filename); err != nil {
+			return false, fmt.Errorf("validate root-owned recovery ledger %s: %w", rel, err)
+		}
+	}
+	return true, nil
+}
+
+func reconcileRootOwnedOperationalPath(rel string) bool {
+	rel = filepath.ToSlash(filepath.Clean(rel))
+	if rel == "timeline.jsonl" {
+		return true
+	}
+	parts := strings.Split(rel, "/")
+	if len(parts) != 3 ||
+		(parts[0] != "work" && parts[0] != "features") ||
+		!slugToken.MatchString(parts[1]) {
+		return false
+	}
+	switch parts[2] {
+	case "events.jsonl",
+		recoveryAttemptsFile,
+		".red",
+		"handoff.md",
+		".a1-guard.log",
+		".reviewer-ro.log",
+		".stop-gate.log",
+		".wright-scope.log":
+		return true
+	default:
+		return false
+	}
+}
+
+func withoutRootOwnedOperationalState(state []devritesStateEntry) []devritesStateEntry {
+	filtered := state[:0]
+	for _, item := range state {
+		if strings.HasPrefix(item.Fingerprint, "file:") &&
+			reconcileRootOwnedOperationalPath(item.Path) {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return filtered
 }
 
 func devritesFingerprint(filename string, entry os.DirEntry) (string, error) {

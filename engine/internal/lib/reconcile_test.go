@@ -361,6 +361,158 @@ func TestReconcileRejectsDevritesMutation(t *testing.T) {
 	}
 }
 
+func TestReconcileAllowsRootOwnedOperationalFiles(t *testing.T) {
+	newGitRepo(t)
+	root := workspace(t, "feat")
+	dir := featureDir(root, "feat")
+	writeWrightAllowlist(t, root, "feat", "seed.go")
+	if code := Stuck(root, []string{"log", "feat", "dispatch", "SLICE-010"}, &bytes.Buffer{}, &bytes.Buffer{}); code != 0 {
+		t.Fatalf("stuck log = %d, want 0", code)
+	}
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+
+	writeFile(t, filepath.Join(root, "timeline.jsonl"), "telemetry\n")
+	writeFile(t, filepath.Join(dir, "events.jsonl"), "telemetry\n")
+	writeFile(t, filepath.Join(dir, ".a1-guard.log"), "WOULD-BLOCK\n")
+	writeFile(t, filepath.Join(dir, ".reviewer-ro.log"), "WOULD-BLOCK\n")
+	writeFile(t, filepath.Join(dir, ".stop-gate.log"), "WOULD-BLOCK\n")
+	writeFile(t, filepath.Join(dir, ".wright-scope.log"), "WOULD-BLOCK\n")
+	writeFile(t, filepath.Join(dir, ".red"), "npm test\n")
+	writeFile(t, filepath.Join(dir, "handoff.md"), "## Handoff snapshot\n")
+	if code := RecoveryAttempts(
+		root,
+		[]string{"record", "--class", "proof_tool_defect", "reconcile telemetry", "changed logs", "feat"},
+		&bytes.Buffer{},
+		&bytes.Buffer{},
+	); code != 0 {
+		t.Fatalf("recovery record = %d, want 0", code)
+	}
+
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("check = %d, want 0\n%s", code, out)
+	}
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("refresh = %d, want 0\n%s", code, out)
+	}
+
+	writeFile(t, filepath.Join(dir, ".unknown.log"), "not engine-owned\n")
+	code, out := runReconcile(t, root, "check", "feat")
+	if code != 5 {
+		t.Fatalf("check after canonical mutation = %d, want 5\n%s", code, out)
+	}
+	if !strings.Contains(out, ".devrites/work/feat/.unknown.log") {
+		t.Fatalf("canonical mutation missing from output:\n%s", out)
+	}
+}
+
+func TestReconcileAcceptsLegacyOperationalFingerprints(t *testing.T) {
+	newGitRepo(t)
+	root := workspace(t, "feat")
+	dir := featureDir(root, "feat")
+	writeWrightAllowlist(t, root, "feat", "seed.go")
+	writeFile(t, filepath.Join(root, "timeline.jsonl"), "before\n")
+	writeFile(t, filepath.Join(dir, "events.jsonl"), "before\n")
+	writeFile(t, filepath.Join(dir, ".a1-guard.log"), "before\n")
+	writeFile(t, filepath.Join(dir, ".red"), "before\n")
+	writeFile(t, filepath.Join(dir, "handoff.md"), "before\n")
+	if code := RecoveryAttempts(
+		root,
+		[]string{"record", "--class", "proof_tool_defect", "reconcile telemetry", "first failure", "feat"},
+		&bytes.Buffer{},
+		&bytes.Buffer{},
+	); code != 0 {
+		t.Fatalf("initial recovery record = %d, want 0", code)
+	}
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+
+	snapshotPath := filepath.Join(dir, reconcileDevritesName)
+	state, err := readDevritesState(snapshotPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	have := make(map[string]bool, len(state))
+	for _, item := range state {
+		have[item.Path] = true
+	}
+	for _, path := range []string{
+		"timeline.jsonl",
+		"work/feat/events.jsonl",
+		"work/feat/.a1-guard.log",
+		"work/feat/.red",
+		"work/feat/handoff.md",
+		"work/feat/recovery-attempts.jsonl",
+	} {
+		if !have[path] {
+			state = append(state, devritesStateEntry{Path: path, Fingerprint: "file:0600:legacy"})
+		}
+	}
+	if err := writeDevritesState(snapshotPath, state); err != nil {
+		t.Fatal(err)
+	}
+
+	writeFile(t, filepath.Join(root, "timeline.jsonl"), "after\n")
+	writeFile(t, filepath.Join(dir, "events.jsonl"), "after\n")
+	writeFile(t, filepath.Join(dir, ".a1-guard.log"), "after\n")
+	writeFile(t, filepath.Join(dir, ".red"), "after\n")
+	writeFile(t, filepath.Join(dir, "handoff.md"), "after\n")
+	if code := RecoveryAttempts(
+		root,
+		[]string{"record", "--class", "proof_tool_defect", "reconcile telemetry", "second failure", "feat"},
+		&bytes.Buffer{},
+		&bytes.Buffer{},
+	); code != 0 {
+		t.Fatalf("second recovery record = %d, want 0", code)
+	}
+
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("check = %d, want 0\n%s", code, out)
+	}
+}
+
+func TestReconcileRejectsCorruptRootOwnedRecoveryLedger(t *testing.T) {
+	newGitRepo(t)
+	root := workspace(t, "feat")
+	writeWrightAllowlist(t, root, "feat", "seed.go")
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(featureDir(root, "feat"), recoveryAttemptsFile), "{not-json}\n")
+
+	code, out := runReconcile(t, root, "check", "feat")
+	if code != 6 {
+		t.Fatalf("check = %d, want 6\n%s", code, out)
+	}
+	if !strings.Contains(out, "validate root-owned recovery ledger") {
+		t.Fatalf("corrupt recovery ledger missing from output:\n%s", out)
+	}
+}
+
+func TestReconcileRootOwnedOperationalPathsAreExact(t *testing.T) {
+	for _, path := range []string{
+		"timeline.jsonl",
+		"work/feat/.red",
+		"features/feat/events.jsonl",
+	} {
+		if !reconcileRootOwnedOperationalPath(path) {
+			t.Errorf("%q should be root-owned operational state", path)
+		}
+	}
+	for _, path := range []string{
+		"work/feat/.unknown.log",
+		"work/feat/action.log",
+		"work/feat/footprint.log",
+		"work/feat/state.md",
+	} {
+		if reconcileRootOwnedOperationalPath(path) {
+			t.Errorf("%q must remain fingerprinted", path)
+		}
+	}
+}
+
 func TestReconcileCheckFailsClosedWhenObjectDatabaseIsMissing(t *testing.T) {
 	newGitRepo(t)
 	root := workspace(t, "feat")

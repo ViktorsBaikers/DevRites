@@ -69,6 +69,16 @@ Each dispatch follows the retained-baseline sequence:
 5. After proof and decision checks pass, `reconcile close` retires the private
    window; only then does the root write canonical records.
 
+The canonical-state fingerprint excludes root-owned operational records:
+`timeline.jsonl`, feature `events.jsonl`, a valid `recovery-attempts.jsonl`,
+the redwatch sentinel, automatic handoff snapshots, and hidden hook observation
+logs. Those records cannot grant source authority or invalidate a writer result
+merely because the engine or a hook wrote them. Unknown or canonical
+`.devrites` paths remain fail-closed, and recovery ledgers must still parse
+before reconciliation can pass. Gate-authoritative operational state such as
+recovery attempts and `.red` remains enforced by its owning gate. Checks also
+normalize these paths out of retained snapshots created by older engines.
+
 On retry, the root may add only an accepted still-in-slice path, then runs
 `reconcile snapshot` again. This refreshes the dispatch boundary while
 preserving the original slice baseline. The same objective root cause has a
