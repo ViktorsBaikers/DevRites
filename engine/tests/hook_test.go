@@ -5,6 +5,7 @@ package main_test
 // check stdout and exit status. parity_test.go owns the parity oracle.
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -1967,6 +1968,104 @@ func TestCodexAgentDispatchCapturesWrightBoundaryBeforeSpawn(t *testing.T) {
 		if !strings.Contains(string(raw), path) {
 			t.Errorf("wright boundary omitted %s: %s", path, raw)
 		}
+	}
+}
+
+func TestCodexAgentDispatchRefreshesWrightBoundaryUntilDurableSpawn(t *testing.T) {
+	root := newWorkspace(t)
+	codeHome := t.TempDir()
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	for name, body := range map[string]string{
+		".reconcile-base":      ".reconcile-base\n",
+		".reconcile-allowlist": ".reconcile-allowlist\n",
+		".reconcile-devrites":  "[]\n",
+		"action.log":           "Prior root action\n",
+		"browser-evidence.md":  "Prior root evidence\n",
+		"decisions.md":         "Prior root decision\n",
+		"evidence.md":          "Prior root evidence\n",
+		"footprint.log":        "Prior root footprint\n",
+		"state.md":             "Phase: ready\n",
+		"touched-files.md":     "Prior root manifest\n",
+	} {
+		if err := os.WriteFile(filepath.Join(workspace, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(filepath.Join(workspace, ".reconcile-objects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	sessionID, turnID := "session-wright-durable", "turn-wright-durable"
+	role := "devrites-slice-wright"
+	writeCodexAgentContract(t, root, role)
+	writeCodexSkillContract(t, root, "rite-build", role)
+	env := []string{"CODEX_HOME=" + codeHome}
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$rite-build",
+	}), env, "hook", "agent-dispatch", "--harness=codex")
+
+	wrightState := filepath.Join(workspace, ".reconcile-wright-devrites")
+	initial, err := os.ReadFile(wrightState)
+	if err != nil {
+		t.Fatalf("read initial wright boundary: %v", err)
+	}
+	for _, path := range []string{
+		"features/auth-tokens/action.log",
+		"features/auth-tokens/browser-evidence.md",
+		"features/auth-tokens/decisions.md",
+		"features/auth-tokens/evidence.md",
+		"features/auth-tokens/footprint.log",
+		"features/auth-tokens/state.md",
+		"features/auth-tokens/touched-files.md",
+	} {
+		if !strings.Contains(string(initial), path) {
+			t.Errorf("pending wright boundary omitted %s: %s", path, initial)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("Phase: build\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	postTool := hookPayload(t, map[string]any{
+		"hook_event_name": "PostToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "apply_patch",
+		"tool_use_id":     "root-state-edit",
+		"tool_input":      map[string]any{"file_path": "state.md"},
+	})
+	if out, stderr, code := runDevritesIO(t, root, postTool, env,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("root post-tool refresh exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+	beforeSpawn, err := os.ReadFile(wrightState)
+	if err != nil {
+		t.Fatalf("read refreshed wright boundary: %v", err)
+	}
+	if bytes.Equal(initial, beforeSpawn) {
+		t.Fatal("root PostToolUse did not refresh the pending wright boundary")
+	}
+
+	writeCodexV2Rollouts(
+		t, codeHome, filepath.Dir(root), sessionID, turnID, role,
+		"devrites_slice_wright_unhooked", true, true, true,
+	)
+	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("Writer mutation\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if out, stderr, code := runDevritesIO(t, root, postTool, env,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("post-spawn PostToolUse exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+	afterSpawn, err := os.ReadFile(wrightState)
+	if err != nil {
+		t.Fatalf("read frozen wright boundary: %v", err)
+	}
+	if !bytes.Equal(beforeSpawn, afterSpawn) {
+		t.Fatal("durable V2 spawn did not freeze the pre-writer canonical boundary")
 	}
 }
 

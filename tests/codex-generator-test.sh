@@ -229,7 +229,7 @@ if python3 - "$hooks" <<'PY'
 import json, pathlib, sys
 
 hooks = json.loads(pathlib.Path(sys.argv[1]).read_text())["hooks"]
-for event in ("PreToolUse", "UserPromptSubmit", "SubagentStop", "Stop"):
+for event in ("PreToolUse", "PostToolUse", "UserPromptSubmit", "SubagentStop", "Stop"):
     commands = [
         hook["command"]
         for group in hooks[event]
