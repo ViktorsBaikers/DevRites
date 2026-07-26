@@ -361,6 +361,49 @@ func TestReconcileRejectsDevritesMutation(t *testing.T) {
 	}
 }
 
+func TestReconcileUsesWrightStartAsCanonicalStateBoundary(t *testing.T) {
+	gitRoot := newGitRepo(t)
+	root := workspace(t, "feat")
+	dir := featureDir(root, "feat")
+	writeWrightAllowlist(t, root, "feat", "seed.go")
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+
+	// Root-owned canonical records may legitimately change while a retained
+	// source baseline survives technical recovery. The next wright start is the
+	// boundary that separates those changes from the writer's delta.
+	for _, name := range []string{
+		"action.log",
+		"browser-evidence.md",
+		"decisions.md",
+		"evidence.md",
+		"footprint.log",
+		"state.md",
+		"touched-files.md",
+	} {
+		writeFile(t, filepath.Join(dir, name), "Root-owned recovery record\n")
+	}
+	if err := CaptureReconcileWrightBoundary(root, "feat"); err != nil {
+		t.Fatalf("capture wright boundary: %v", err)
+	}
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), "package main\n\nfunc repaired() {}\n")
+
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("check = %d, want 0\n%s", code, out)
+	}
+
+	// A canonical mutation after the wright starts is still a violation.
+	writeFile(t, filepath.Join(dir, "state.md"), "Phase: prove\n")
+	code, out := runReconcile(t, root, "check", "feat")
+	if code != 5 {
+		t.Fatalf("check after writer-time canonical mutation = %d, want 5\n%s", code, out)
+	}
+	if !strings.Contains(out, ".devrites/work/feat/state.md") {
+		t.Fatalf("writer-time canonical mutation missing from output:\n%s", out)
+	}
+}
+
 func TestReconcileAllowsRootOwnedOperationalFiles(t *testing.T) {
 	newGitRepo(t)
 	root := workspace(t, "feat")
@@ -613,6 +656,7 @@ func TestReconcileRefreshPreservesOriginalBaselineAcrossRetry(t *testing.T) {
 	// between attempts. Refresh must re-arm those boundaries without replacing
 	// the original pre-slice source baseline.
 	writeFile(t, filepath.Join(featureDir(root, "feat"), "recovery-attempts.json"), "{}\n")
+	writeFile(t, filepath.Join(featureDir(root, "feat"), reconcileWrightStateName), "stale\n")
 	writeWrightAllowlist(t, root, "feat", "seed.go", "retry.go")
 	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
 		t.Fatalf("refresh snapshot = %d, want 0\n%s", code, out)
@@ -625,6 +669,9 @@ func TestReconcileRefreshPreservesOriginalBaselineAcrossRetry(t *testing.T) {
 	}
 	if !bytes.Equal(originalBase, refreshedBase) {
 		t.Fatalf("refresh replaced original baseline: before=%q after=%q", originalBase, refreshedBase)
+	}
+	if isFile(filepath.Join(featureDir(root, "feat"), reconcileWrightStateName)) {
+		t.Fatal("refresh retained the prior wright-start boundary")
 	}
 
 	writeFile(t, filepath.Join(gitRoot, "retry.go"), "package main\n")
@@ -655,6 +702,7 @@ func TestReconcileCloseClearsPrivateWindowState(t *testing.T) {
 	newGitRepo(t)
 	root := workspace(t, "feat")
 	writeFile(t, filepath.Join(root, "work", "feat", reconcileBaseName), "stale\n")
+	writeFile(t, filepath.Join(root, "work", "feat", reconcileWrightStateName), "stale\n")
 	if err := os.MkdirAll(filepath.Join(root, "work", "feat", reconcileObjectsName), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -666,7 +714,9 @@ func TestReconcileCloseClearsPrivateWindowState(t *testing.T) {
 	if !strings.Contains(out, "closed slice window") {
 		t.Errorf("expected close message:\n%s", out)
 	}
-	if isFile(filepath.Join(featureDir(root, "feat"), reconcileBaseName)) || isDir(filepath.Join(featureDir(root, "feat"), reconcileObjectsName)) {
+	if isFile(filepath.Join(featureDir(root, "feat"), reconcileBaseName)) ||
+		isFile(filepath.Join(featureDir(root, "feat"), reconcileWrightStateName)) ||
+		isDir(filepath.Join(featureDir(root, "feat"), reconcileObjectsName)) {
 		t.Fatal("close retained private baseline state")
 	}
 }

@@ -120,10 +120,12 @@ resume the same slice. Close it before abandoning the slice for a scope/plan tra
 
 ## Host dispatch
 
-Use named wright → enforced V1 generic worker from `standards/agents.md`. On Codex
-MultiAgent V2, dispatch the exact named `devrites-slice-wright` with a unique
-`task_name` and `fork_turns="none"`; its durable child rollout must prove the native
-wright role, wait, completion, and non-empty result from the current reconcile window.
+Use named wright → enforced V1 generic worker from `standards/agents.md`. Codex V2
+dispatches the exact named `devrites-slice-wright` with a unique `task_name` and
+`fork_turns="none"`; its durable rollout proves the native role, wait, and non-empty
+result in the current window. The confirmed start fingerprints canonical state apart
+from the retained source baseline: pre-start root recovery records are excluded, while
+post-start canonical changes fail.
 Any generic worker still needs the exact allowlist or an isolated checkout;
 reconciliation alone is insufficient. If no safe fresh-agent rung is available, stop
 for HITL. On Codex, `reconcile check` and `reconcile close` require the completed
