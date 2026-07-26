@@ -583,9 +583,11 @@ func TestHookWrightScopeRequiresSpawnedCodexWorkerForSourceWrites(t *testing.T) 
 	runGuard(`{"tool_name":"spawn_agent","tool_input":{"agent_type":"worker"}}`, false)
 	runGuard(`{"tool_name":"spawn_agent","tool_input":{"agent_type":"explorer"}}`, false)
 	runGuard(`{"tool_name":"Write","tool_input":{"file_path":".devrites/features/auth-tokens/state.md"}}`, false)
+	scratch := t.TempDir()
+	packet := filepath.Join(scratch, "agent-packet.yaml")
 	runGuard(hookPayload(t, map[string]any{
 		"tool_name":  "Write",
-		"tool_input": map[string]any{"file_path": filepath.Join(t.TempDir(), "agent-packet.yaml")},
+		"tool_input": map[string]any{"file_path": packet},
 	}), false)
 	runGuard(`{"tool_name":"Write","tool_input":{"file_path":"../outside.txt"}}`, true)
 	runGuard(`{"tool_name":"Write","tool_input":{"file_path":"src/app.go"}}`, true)
@@ -647,6 +649,59 @@ func TestHookA1GuardIgnoresLegacyInlineMarker(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHookA1GuardAllowsExternalDispatchScratchOnly(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	if err := os.WriteFile(filepath.Join(workspace, ".reconcile-base"), []byte("snapshot\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	scratch := t.TempDir()
+	packet := filepath.Join(scratch, "agent-packet.yaml")
+	env := []string{"DEVRITES_A1_HOOK=enforce"}
+	patch := func(tool, path string, freeform bool) string {
+		body := "*** Begin Patch\n*** Add File: " + path + "\n+x\n*** End Patch\n"
+		if freeform {
+			return hookPayload(t, map[string]any{"tool_name": tool, "tool_input": body})
+		}
+		return hookPayload(t, map[string]any{"tool_name": tool, "tool_input": map[string]any{"patch": body}})
+	}
+	shell := func(command string) string {
+		return hookPayload(t, map[string]any{
+			"tool_name":  "functions.exec_command",
+			"tool_input": map[string]any{"cmd": command},
+		})
+	}
+
+	runGuard := func(input string, deny bool) {
+		t.Helper()
+		out, errOut, code := runDevritesIO(t, root, input, env,
+			"hook", "a1-guard", "--harness=codex")
+		if code != 0 {
+			t.Fatalf("exit=%d out=%q stderr=%q", code, out, errOut)
+		}
+		if deny {
+			if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+				t.Fatalf("expected deny, got %q", out)
+			}
+		} else if strings.TrimSpace(out) != "" {
+			t.Fatalf("expected allow, got %q", out)
+		}
+	}
+
+	runGuard(patch("apply_patch", packet, false), false)
+	runGuard(patch("functions.apply_patch", packet, true), false)
+	runGuard(shell("cat <<'EOF' > "+packet+"\npacket_version: agent-packet/v1\nEOF"), false)
+	runGuard(shell("sha256sum "+packet), false)
+	runGuard(shell("cp "+packet+" "+filepath.Join(scratch, "agent-packet.copy.yaml")), false)
+	runGuard(patch("apply_patch", "src/app.go", false), true)
+	runGuard(patch("functions.apply_patch", "src/app.go", true), true)
+	runGuard(shell("cat <<'EOF' > src/app.go\npackage src\nEOF"), true)
+	runGuard(shell("cat <<'EOF' > "+packet+"\nunterminated"), true)
+	runGuard(shell("cat <<EOF > "+packet+"\n$(cp "+packet+" src/app.go)\nEOF"), true)
+	runGuard(shell("cp "+packet+" src/app.go"), true)
 }
 
 func TestHookWrightScopeFailsClosedWhenWorkspaceResolutionFails(t *testing.T) {

@@ -75,7 +75,9 @@ window. `reconcile close` still requires the confirmed, awaited wright result
 bound to the active snapshot. While the window is armed, the root guard permits
 inspectable writes only under `.devrites` or at an absolute scratch path outside
 the project; source-tree writes, relative escapes, and opaque execution remain
-blocked.
+blocked. The standalone A1 hook and wright-scope hook share this classification;
+Codex `cmd` and Claude `command` payloads may create a literal external packet
+with a patch, heredoc, or copy and may hash it without gaining source authority.
 
 The canonical-state fingerprint excludes root-owned operational records:
 `timeline.jsonl`, feature `events.jsonl`, a valid `recovery-attempts.jsonl`,

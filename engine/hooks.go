@@ -377,7 +377,7 @@ func safeReadonlyShellSegment(segment string) bool {
 		"grep", "rg", "wc", "sort", "uniq", "cut", "tr", "stat", "file",
 		"readlink", "realpath", "basename", "dirname", "cmp", "diff", "jq", "yq",
 		"tree", "du", "df", "printenv", "which", "date", "uname", "id", "whoami",
-		"ps", "echo", "printf", "test", "[", "cd":
+		"ps", "echo", "printf", "test", "[", "cd", "sha256sum", "shasum":
 		return true
 	case "find":
 		return !hasAnyArg(args, "-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprintf")
