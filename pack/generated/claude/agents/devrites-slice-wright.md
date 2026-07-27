@@ -105,9 +105,9 @@ an escalation and do not proceed.**
      `$devrites-source-driven` on Codex. Verify the fact in installed source,
      official documentation, or context7 for current upstream behavior, then include
      that source in the result. Never invent an API.
-4. **VERIFY (fail-on-red).** Run the slice's targeted tests and the project's type
-   check, lint, and build where applicable. Capture the exact command and its real
-   output. If a gate is red, fix the root cause in your code. **Never weaken a test
+4. **VERIFY (fail-on-red).** Run writer-safe tests/types/lint. Report required
+   build/browser/E2E as `not-run`: `root-owned artifact-producing gate`; root
+   runs them after reconciliation. Fix red gates in your code. **Never weaken a test
    to go green** by deleting it, skipping it with `skip`, `xfail`, or `.only`, or
    loosening an assertion. A test that genuinely must change is an **Escalation**,
    not a quiet edit. The orchestrator runs `devrites-engine test-integrity` on the
@@ -117,8 +117,7 @@ an escalation and do not proceed.**
    `devrites-engine recovery` **three-attempt budget per root cause**. At the limit,
    return the failed gate and reproduction. Reserve `Escalation` for a
    product-contract or irreversible-risk choice, or a user-only credential or
-   action. A technical failure is a blocker for the orchestrator, not a permission
-   question.
+   action. Technical failure is a blocker, not a permission question.
 5. **RETURN** the structured artifact (below) and stop. Do not start the next slice.
 
 ## Code quality: consume the rules, don't reinvent them

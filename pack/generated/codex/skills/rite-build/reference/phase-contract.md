@@ -73,13 +73,22 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    (reported in its `Principles` field, or that you detect against `.devrites/principles.md`) is
    handled here like an irreversible-risk item: block, route to a human-approved scoped
    exception in the register or stop; never doubt-and-accept a principle violation into the slice.
-5. **Run the retained-baseline integrity gate, then recover any objective red.**
+5. **Run retained-baseline integrity and every root-owned proof gate, then recover
+   any objective red.**
    ```bash
    devrites-engine test-integrity; echo "test-integrity rc=$?"
    ```
+   Run every exact command reported as `not-run`: `root-owned artifact-producing gate`
+   in the wright result. These are root proof commands, not source-edit authority.
+   Do not omit, rewrite, or substitute them; a missing command is unverifiable proof.
+   After they pass, run `devrites-engine reconcile check` again after the root-owned gates
+   and before close, proving their child processes did not change tracked source:
+   ```bash
+   devrites-engine reconcile check; echo "reconcile rc=$?"
+   ```
    If the wright's `Gates` were red (targeted tests / types / lint), `test-integrity`
-   failed, or proof could not be verified: do **not** mark the slice `built`, and **do not
-   fix the code yourself**.
+   failed, a root-owned gate failed, the final reconcile failed, or proof could not be
+   verified: do **not** mark the slice `built`, and **do not fix the code yourself**.
    Classify each causal fingerprint through
    [`cleanup-and-classify.md`](../../devrites-debug-recovery/reference/cleanup-and-classify.md),
    run `devrites-engine recovery route <class>`, and follow the `recovery-route/v1`
@@ -105,7 +114,8 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    - exhausted objective failure → preserve reproduction/dead ends, set `Status: blocked` and
      `Next step: $rite-plan unblock`, then STOP without a question or `$rite-resolve`.
 6. **Close the retained baseline, then record. You are the canonical writer.**
-   Reconciliation ran immediately on return and `test-integrity` ran in step 5.
+   Reconciliation ran immediately on return; step 5 ran integrity, root-owned proof,
+   and a final clean reconciliation.
    **Exit 3 → hard STOP:** a test was deleted, skipped, or de-asserted since the slice base: the
    slice went green by weakening its tests, a Critical protocol violation. Revert the weakening and
    re-dispatch the wright; do **not** mark the slice `built`.

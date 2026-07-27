@@ -15,9 +15,9 @@ DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). 
    ORIENT    → load only the files this slice touches; learn the project's idiom; reuse-first
    (RED)     → if behavior change: write the failing test first
    IMPLEMENT → smallest complete version; match conventions; devrites-frontend-craft for UI
-   VERIFY    → targeted tests (+ types/lint/build); fail-on-red; return artifact — code + tests only
+   VERIFY    → writer-safe tests/types/lint; return code + tests
 (DOUBT)   → orchestrator, on return: devrites-doubt each non-trivial decision the wright stood up
-PROVE     → orchestrator: fail-on-red check on the wright's gates; browser proof for UI
+PROVE     → root: exact required production build/browser/E2E, then final reconcile; fail-on-red
 RECORD    → orchestrator: after green verification, Forge cleanup/report if used; then
             state.md, evidence.md, touched-files.md (the canonical writer)
 (CHECKPOINT) → orchestrator: if .devrites/CHECKPOINT is set, commit the proven slice
