@@ -7,6 +7,7 @@ package main_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -376,6 +377,40 @@ func TestCodexGenericCompatibilityDoesNotShadowRoot(t *testing.T) {
 		if code != 0 || strings.TrimSpace(out) != "" {
 			t.Fatalf("%s shadowed root: exit=%d out=%q stderr=%q", guard, code, out, errOut)
 		}
+	}
+}
+
+func TestCodexRootRunsArtifactGatesInsideActiveWindow(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	if err := os.WriteFile(filepath.Join(workspace, ".reconcile-base"), []byte("snapshot\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := []string{
+		"DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1",
+		"DEVRITES_HOOK_PROFILE=strict",
+	}
+	for _, command := range []string{
+		"npm run build",
+		"npm run test:e2e -- tests/admin-locations.e2e.spec.ts",
+	} {
+		in := fmt.Sprintf(`{"tool_name":"Bash","tool_input":{"command":%q}}`, command)
+		out, errOut, code := runDevritesIO(t, root, in, env,
+			"hook", "wright-scope", "--harness=codex")
+		if code != 0 || strings.TrimSpace(out) != "" {
+			t.Fatalf("%q should be root-owned: exit=%d out=%q stderr=%q", command, code, out, errOut)
+		}
+	}
+
+	in := `{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`
+	out, errOut, code := runDevritesIO(t, root, in, env,
+		"hook", "wright-scope", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("source write guard exit=%d stderr=%q", code, errOut)
+	}
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Fatalf("root source mutation was not denied: %q", out)
 	}
 }
 

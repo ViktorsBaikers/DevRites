@@ -1,9 +1,9 @@
 # Slice-wright dispatch
 
-`/rite-build` delegates one settled slice or correction set to
-`devrites-slice-wright`. The root orchestrator owns scope, human questions,
-`.devrites/**`, gates, reconciliation, and routing. The wright is the only source/test
-writer and never invokes another agent.
+`/rite-build` delegates one slice or correction to `devrites-slice-wright`.
+The root owns scope, questions, `.devrites/**`, reconciliation, and routing.
+Production builds and browser/E2E runs are root-owned gates.
+The wright only writes source/tests, runs writer-safe proof, and never invokes agents.
 
 The universal packet, result, budget, await, retry, and host fallback contract is
 [`standards/agents.md`](../../devrites-lib/reference/standards/agents.md). This file adds
@@ -108,7 +108,7 @@ failure becomes a technical blocker with its reproduction, not a `rite-resolve` 
 
 ## Close and record
 
-When reconciliation, integrity, proof, and doubt gates all pass:
+Run the root gates and final reconciliation from `phase-contract.md` step 5. Then:
 
 ```bash
 devrites-engine reconcile close

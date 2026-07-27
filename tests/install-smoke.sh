@@ -130,6 +130,12 @@ grep -q '\.wright-allowlist' "$T/.agents/skills/rite-build/reference/wright-disp
 grep -q '\.claude/skills/devrites-lib/reference/standards' "$T/.codex/agents/devrites-code-reviewer.toml" && no "Codex agent still points at .claude/skills/devrites-lib/reference/standards" || ok "Codex agent uses mirrored rules paths"
 grep -q '\$rite-build' "$T/.agents/skills/rite-define/reference/gates.md" && ok "Codex skill mirror rewrites slash rite invocations" || no "Codex skill mirror missing dollar rite invocation rewrite"
 grep -q '\$rite-build' "$T/.codex/agents/devrites-slice-wright.toml" && ok "Codex agent descriptions rewrite slash rite invocations" || no "Codex agent descriptions missing dollar rite invocation rewrite"
+grep -q 'root-owned artifact-producing gate' "$T/.codex/agents/devrites-slice-wright.toml" \
+  && grep -q 'Production builds and browser/E2E runs are root-owned gates' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" \
+  && grep -q 'Run every exact command reported as.*root-owned artifact-producing gate' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
+  && grep -q 'reconcile check.*after the root-owned gates' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
+  && ok "Codex build contract keeps opaque artifact gates with root" \
+  || no "Codex build contract assigns opaque artifact gates inconsistently"
 if grep -R -nE '(^|[^A-Za-z0-9_./-])/rite(-[a-z0-9-]+)?([^A-Za-z0-9_-]|$)' "$T/.agents/skills" "$T/.codex/agents" >/tmp/dr_codex_slash_rite 2>/dev/null; then
   no "Codex mirrors still contain slash rite invocations"
   sed -n '1,20p' /tmp/dr_codex_slash_rite
