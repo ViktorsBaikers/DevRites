@@ -2,6 +2,14 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.17](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.16...v3.2.17) (2026-07-27)
+
+### Fixed
+
+* **devrites:** harden agent orchestration and proof gates ([0602313](https://github.com/ViktorsBaikers/DevRites/commit/06023130b918117ae00ab0dadcfab6c000443981))
+* **devrites:** normalize restore prefix on Windows ([27c5646](https://github.com/ViktorsBaikers/DevRites/commit/27c5646a1ed344e38a488dd6fc6584b67f1de09e))
+* **devrites:** preserve restore bytes on Windows ([e6c3233](https://github.com/ViktorsBaikers/DevRites/commit/e6c32332e6ea9137644a8a6f42b542240b44c7e1))
+
 ## [3.2.16](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.15...v3.2.16) (2026-07-27)
 
 ### Fixed
