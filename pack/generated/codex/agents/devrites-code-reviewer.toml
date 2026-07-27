@@ -94,6 +94,9 @@ not as a blocker on this diff.
 - If you can't verify something, say so explicitly rather than assuming it's fine.
 
 ## Output
+
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
 ```
 Code review (<slug>) — independent
 [Critical] file:line — problem. fix.

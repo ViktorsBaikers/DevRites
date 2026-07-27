@@ -2,7 +2,7 @@
 name: devrites-source-driven
 description: Internal DevRites skill; DevRites agents invoke it explicitly, not by prompt match.
 user-invocable: false
-required-agent-roles: devrites-evidence-scout
+required-agent-roles: none
 ---
 
 ## Codex compatibility

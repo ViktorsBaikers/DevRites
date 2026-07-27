@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -32,8 +33,11 @@ func MutationGate(root string, args []string, stdout, stderr io.Writer) int {
 	// Config files are looked up relative to the repo root, falling back to the
 	// working directory when this is not a git repo.
 	cwd, _ := os.Getwd()
-	base := gitToplevel(cwd)
-	if base == "" {
+	base, err := gitToplevel(cwd)
+	if errors.Is(err, errNotGitRepository) {
+		base = "."
+	} else if err != nil {
+		fmt.Fprintf(stderr, "mutation-gate: cannot resolve git worktree; using current directory: %v\n", err)
 		base = "."
 	}
 

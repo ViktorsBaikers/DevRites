@@ -414,7 +414,12 @@ func SecretScan(root string, args []string, stdout, stderr io.Writer) int {
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--staged":
-			paths = append(paths, gitStagedNames(project)...)
+			staged, err := gitStagedNames(project)
+			if err != nil {
+				fmt.Fprintf(stderr, "secret-scan: cannot inspect staged paths: %v\n", err)
+				return 2
+			}
+			paths = append(paths, staged...)
 		case "--text":
 			i++
 			if i < len(args) {
@@ -433,7 +438,12 @@ func SecretScan(root string, args []string, stdout, stderr io.Writer) int {
 		paths = append(paths, touchedFiles(root, slug)...)
 	}
 	if len(paths) == 0 {
-		paths = append(paths, gitDiffNames(project)...)
+		changed, err := gitDiffNames(project)
+		if err != nil {
+			fmt.Fprintf(stderr, "secret-scan: cannot inspect changed paths: %v\n", err)
+			return 2
+		}
+		paths = append(paths, changed...)
 	}
 	findings := []secretFinding{}
 	seen := map[string]bool{}
@@ -484,12 +494,12 @@ func scanSecrets(path, text string) []secretFinding {
 	return out
 }
 
-func gitStagedNames(project string) []string {
-	out, err := boundedCommandOutput(15*time.Second, "", "git", "-C", project, "diff", "--cached", "--name-only")
+func gitStagedNames(project string) ([]string, error) {
+	out, err := runGitCommand(project, nil, "diff", "--cached", "--name-only")
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return splitLinesNoTrailing(out)
+	return splitLinesNoTrailing(out), nil
 }
 
 func touchedFiles(root, slug string) []string {
@@ -515,7 +525,12 @@ func DocsStale(root string, args []string, stdout, stderr io.Writer) int {
 	slug := slugOrActive(root, args)
 	changed := touchedFiles(root, slug)
 	if len(changed) == 0 {
-		changed = gitDiffNames(project)
+		var err error
+		changed, err = gitDiffNames(project)
+		if err != nil {
+			fmt.Fprintf(stderr, "docs-stale: cannot inspect changed paths: %v\n", err)
+			return 2
+		}
 	}
 	docsTouched, surfaceTouched := false, []string{}
 	for _, p := range changed {

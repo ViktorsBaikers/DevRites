@@ -72,6 +72,9 @@ reaches the trusted tier without crossing the required boundary.
   exploitable, say so and explain the conditions.
 
 ## Output
+
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
 ```
 Security audit (<slug>) — independent
 [Critical] file:line — issue. impact. fix.

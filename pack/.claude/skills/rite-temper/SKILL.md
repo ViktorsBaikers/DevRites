@@ -3,7 +3,7 @@ name: rite-temper
 description: Temper a readied spec before planning. Use when the user says "temper this", "strategy review", "pre-mortem the spec", or asks if we are over/under-building. Not for code review or final seal.
 argument-hint: "[feature-slug] [--mode expand|selective|hold|reduce]"
 user-invocable: true
-required-agent-roles: devrites-strategy-reviewer
+required-agent-roles: none
 ---
 
 # /rite-temper: review scope and risk before planning

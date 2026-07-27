@@ -56,6 +56,9 @@ then read the test files.
 - Label findings Critical / Important / Suggestion / Nit / FYI.
 
 ## Output
+
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
 `Finding: <claim> | <exact_test> | <consumer_path> | <category> | <evidence_gap> | <discriminating_proof>`
 
 One row/claim; `category` names the `testing.md` rule. End with

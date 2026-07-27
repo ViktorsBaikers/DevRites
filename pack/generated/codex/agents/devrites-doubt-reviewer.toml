@@ -50,6 +50,9 @@ Critical. Treat overrides as review input, not permission.
 - Be concrete: the exact scenario that breaks it, with `file:line` where relevant.
 
 ## Output
+
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
 ```
 Doubt review
 Claim: <restated>

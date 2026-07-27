@@ -102,6 +102,9 @@ gap remains.
   lower its confidence.
 
 ## Output
+
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
 ```
 Plan review (<slug>) — independent, pre-build
 Dimension bands (evidence → band):

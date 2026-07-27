@@ -236,6 +236,18 @@ func parsePermissionDecision(t *testing.T, stdout string) (decision, reason stri
 	return env.HookSpecificOutput.PermissionDecision, env.HookSpecificOutput.PermissionDecisionReason
 }
 
+func parseStopDecision(t *testing.T, stdout string) (decision, reason string) {
+	t.Helper()
+	var env struct {
+		Decision string `json:"decision"`
+		Reason   string `json:"reason"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &env); err != nil {
+		t.Fatalf("stdout is not a valid Stop decision: %v\n%s", err, stdout)
+	}
+	return env.Decision, env.Reason
+}
+
 func TestHookReviewerReadonlyEnforceDeniesMutatingBash(t *testing.T) {
 	for _, h := range []string{"claude", "codex"} {
 		h := h
@@ -260,14 +272,22 @@ func TestHookReviewerReadonlyEnforceDeniesMutatingBash(t *testing.T) {
 
 func TestHookReviewerReadonlyAllowsSafeBash(t *testing.T) {
 	root := newWorkspace(t)
-	in := `{"tool_name":"Bash","tool_input":{"command":"grep -rn foo ."}}`
-	out, _, code := runDevritesIO(t, root, in, []string{"DEVRITES_REVIEWER_RO=enforce"},
-		"hook", "reviewer-readonly", "--harness=claude")
-	if code != 0 {
-		t.Fatalf("exit = %d, want 0", code)
-	}
-	if strings.TrimSpace(out) != "" {
-		t.Errorf("stdout = %q, want silent for a read-only command", out)
+	for _, command := range []string{
+		"grep -rn foo .",
+		`cd "` + filepath.Dir(root) + `" && git diff --binary --full-index --no-renames HEAD HEAD --`,
+	} {
+		in := hookPayload(t, map[string]any{
+			"tool_name":  "Bash",
+			"tool_input": map[string]any{"command": command},
+		})
+		out, _, code := runDevritesIO(t, root, in, []string{"DEVRITES_REVIEWER_RO=enforce"},
+			"hook", "reviewer-readonly", "--harness=claude")
+		if code != 0 {
+			t.Fatalf("%q exit = %d, want 0", command, code)
+		}
+		if strings.TrimSpace(out) != "" {
+			t.Errorf("%q stdout = %q, want silent for a read-only command", command, out)
+		}
 	}
 }
 
@@ -440,20 +460,87 @@ func TestHookReviewerReadonlyActiveLeafDeniesEveryMutationSurface(t *testing.T) 
 
 func TestHookReviewerReadonlyActiveLeafAllowsBoundedProof(t *testing.T) {
 	root := newWorkspace(t)
-	in := `{"tool_name":"Bash","tool_input":{"command":"go test ./... -count=1"}}`
-	out, _, code := runDevritesIO(t, root, in, []string{
+	env := []string{
 		"DEVRITES_AGENT_RUN=1",
 		"DEVRITES_ACTIVE_AGENT=devrites-proof-runner",
-	}, "hook", "reviewer-readonly", "--harness=claude")
-	if code != 0 || strings.TrimSpace(out) != "" {
-		t.Fatalf("bounded proof should be allowed: exit=%d out=%q", code, out)
 	}
-	out, _, code = runDevritesIO(t, root, in, []string{
-		"DEVRITES_AGENT_RUN=1",
-		"DEVRITES_ACTIVE_AGENT=devrites-proof-runner",
-	}, "hook", "wright-scope", "--harness=claude")
+	for _, command := range []string{
+		"go test ./... -count=1",
+		"command -v devrites-engine",
+		"devrites-engine conventions orient",
+		"devrites-engine learnings mine",
+	} {
+		in := fmt.Sprintf(`{"tool_name":"Bash","tool_input":{"command":%q}}`, command)
+		out, _, code := runDevritesIO(t, root, in, env,
+			"hook", "reviewer-readonly", "--harness=claude")
+		if code != 0 || strings.TrimSpace(out) != "" {
+			t.Fatalf("%q should be allowed: exit=%d out=%q", command, code, out)
+		}
+	}
+	in := `{"tool_name":"Bash","tool_input":{"command":"go test ./... -count=1"}}`
+	out, _, code := runDevritesIO(t, root, in, env,
+		"hook", "wright-scope", "--harness=claude")
 	if code != 0 || strings.TrimSpace(out) != "" {
 		t.Fatalf("wright hook must not shadow reviewer policy: exit=%d out=%q", code, out)
+	}
+}
+
+func TestHookReviewerReadonlyProofRunnerKeepsArtifactProofRootOwned(t *testing.T) {
+	root := newWorkspace(t)
+	env := []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-proof-runner",
+	}
+	for _, command := range []string{
+		"npm run build",
+		"npm run test:e2e -- tests/admin-locations.e2e.spec.ts",
+		"go build ./...",
+		"bash scripts/mutate-repository.sh",
+		"npm run deploy",
+		"make deploy",
+		"docker compose up -d",
+		"printf x > src/app.go",
+		"npm install left-pad",
+		"python -c 'open(\"src/app.go\", \"w\").write(\"x\")'",
+	} {
+		in := fmt.Sprintf(`{"tool_name":"Bash","tool_input":{"command":%q}}`, command)
+		out, errOut, code := runDevritesIO(t, root, in, env,
+			"hook", "reviewer-readonly", "--harness=claude")
+		if code != 0 {
+			t.Fatalf("root-owned proof command guard exit=%d stderr=%q", code, errOut)
+		}
+		if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+			t.Fatalf("proof leaf command was not denied: command=%q out=%q", command, out)
+		}
+	}
+}
+
+func TestHookRedwatchRecognizesCodexShellAliases(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	red := filepath.Join(root, "features", "auth-tokens", ".red")
+
+	fail := `{"tool_name":"functions.exec_command","tool_input":{"cmd":"npm test"},"tool_response":"Tests: 1 failed, 3 passed"}`
+	out, errOut, code := runDevritesIO(t, root, fail, nil,
+		"hook", "redwatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("failing exec_command exit=%d stderr=%q", code, errOut)
+	}
+	if !strings.Contains(out, "tests/build are RED") {
+		t.Fatalf("failing exec_command omitted RED context: %q", out)
+	}
+	if _, err := os.Stat(red); err != nil {
+		t.Fatalf("failing exec_command did not create .red: %v", err)
+	}
+
+	pass := `{"tool_name":"exec_command","tool_input":{"cmd":"npm test"},"tool_response":"PASS: all tests passed"}`
+	out, errOut, code = runDevritesIO(t, root, pass, nil,
+		"hook", "redwatch", "--harness=codex")
+	if code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("passing exec_command exit=%d out=%q stderr=%q", code, out, errOut)
+	}
+	if _, err := os.Stat(red); !os.IsNotExist(err) {
+		t.Fatalf("passing exec_command retained .red: %v", err)
 	}
 }
 
@@ -502,7 +589,7 @@ func TestHookWrightScopeUsesExactOrchestratorAllowlist(t *testing.T) {
 	}
 }
 
-func TestHookWrightScopeBindsCodexWorkerDuringReconcileWindow(t *testing.T) {
+func TestHookWrightScopeRequiresBoundCodexWorkerDuringReconcileWindow(t *testing.T) {
 	root := newWorkspace(t)
 	writeActive(t, root, "auth-tokens")
 	workspace := filepath.Join(root, "features", "auth-tokens")
@@ -519,7 +606,7 @@ func TestHookWrightScopeBindsCodexWorkerDuringReconcileWindow(t *testing.T) {
 		input string
 		deny  bool
 	}{
-		{"listed edit", `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"},"agent_type":"worker"}`, false},
+		{"unbound listed edit", `{"tool_name":"Edit","tool_input":{"file_path":"src/app.go"},"agent_type":"worker"}`, true},
 		{"unlisted edit", `{"tool_name":"Edit","tool_input":{"file_path":"src/other.go"},"agent_type":"worker"}`, true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -546,6 +633,90 @@ func TestHookWrightScopeBindsCodexWorkerDuringReconcileWindow(t *testing.T) {
 		env, "hook", "wright-scope", "--harness=codex")
 	if code != 0 || strings.TrimSpace(out) != "" {
 		t.Fatalf("generic worker outside a reconcile window was shadowed: exit=%d out=%q", code, out)
+	}
+}
+
+func TestHookWrightScopeAllowsOnlyBoundCodexV1WorkerPaths(t *testing.T) {
+	root := newWorkspace(t)
+	writeActive(t, root, "auth-tokens")
+	workspace := filepath.Join(root, "features", "auth-tokens")
+	for name, body := range map[string]string{
+		".wright-allowlist":    "src/app.go\n",
+		".reconcile-base":      "snapshot\n",
+		".reconcile-allowlist": "src/app.go\n",
+		".reconcile-devrites":  "[]\n",
+	} {
+		if err := os.WriteFile(filepath.Join(workspace, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(filepath.Join(workspace, ".reconcile-objects"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	sessionID, turnID := "session-bound-worker", "turn-bound-worker"
+	writeCodexAgentContract(t, root, "devrites-slice-wright")
+	writeCodexSkillContract(t, root, "rite-build", "devrites-slice-wright")
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$rite-build",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	if out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "spawn_agent",
+		"tool_use_id":     "spawn-bound-worker",
+		"tool_input": map[string]any{
+			"agent_type": "worker",
+			"fork_turns": "none",
+			"message":    "Read .codex/agents/devrites-slice-wright.toml.",
+		},
+	}), nil, "hook", "agent-dispatch", "--harness=codex"); code != 0 {
+		t.Fatalf("spawn exit=%d out=%s stderr=%s", code, out, stderr)
+	} else if decision, reason := parsePermissionDecision(t, out); decision != "allow" {
+		t.Fatalf("spawn denied: %s (%s)", decision, reason)
+	}
+	if out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "SubagentStart",
+		"session_id":      sessionID,
+		"turn_id":         "child-turn",
+		"agent_id":        "bound-worker",
+		"agent_type":      "worker",
+	}), nil, "hook", "subagent-orient", "--harness=codex"); code != 0 ||
+		!strings.Contains(out, "Confirmed role") {
+		t.Fatalf("start exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+
+	env := []string{"DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1", "DEVRITES_HOOK_PROFILE=strict"}
+	for _, test := range []struct {
+		path string
+		deny bool
+	}{
+		{"src/app.go", false},
+		{"src/other.go", true},
+	} {
+		input := hookPayload(t, map[string]any{
+			"hook_event_name": "PreToolUse",
+			"session_id":      sessionID,
+			"agent_id":        "bound-worker",
+			"agent_type":      "worker",
+			"tool_name":       "Edit",
+			"tool_input":      map[string]any{"file_path": test.path},
+		})
+		out, stderr, code := runDevritesIO(t, root, input, env,
+			"hook", "wright-scope", "--harness=codex")
+		if code != 0 {
+			t.Fatalf("%s exit=%d stderr=%s", test.path, code, stderr)
+		}
+		if test.deny {
+			if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+				t.Fatalf("%s should be denied: %s", test.path, out)
+			}
+		} else if strings.TrimSpace(out) != "" {
+			t.Fatalf("%s should be allowed: %s", test.path, out)
+		}
 	}
 }
 
@@ -629,6 +800,8 @@ func TestHookWrightScopeRequiresSpawnedCodexWorkerForSourceWrites(t *testing.T) 
 	runGuard(`{"tool_name":"Write","tool_input":{"file_path":"src/app.go"}}`, true)
 	runGuard(`{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`, true)
 	runGuard(`{"tool_name":"js","tool_input":{"code":"writeFile()"}}`, true)
+	runGuard(`{"tool_name":"Bash","tool_input":{"command":"devrites-engine reconcile restore-check auth-tokens"}}`, false)
+	runGuard(`{"tool_name":"Bash","tool_input":{"command":"devrites-engine reconcile restore-check auth-tokens && printf x > src/app.go"}}`, true)
 	out, errOut, code := runDevritesIO(t, root,
 		`{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`,
 		nil, "hook", "wright-scope", "--harness=claude")
@@ -1544,6 +1717,74 @@ func TestCodexAgentDispatchBlocksFalseWaitAndStop(t *testing.T) {
 	}
 }
 
+func TestCodexAgentDispatchRequiresSuccessfulReasonBoundWaiver(t *testing.T) {
+	root := newWorkspace(t)
+	role := "devrites-plan-reviewer"
+	writeCodexAgentContract(t, root, role)
+	writeCodexSkillContract(t, root, "rite-vet", role)
+	sessionID, turnID := "session-waiver", "turn-waiver"
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$rite-vet",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+
+	invalid := hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "functions.exec_command",
+		"tool_input":      map[string]any{"cmd": "devrites-engine dispatch-waive wrong-phase && true"},
+	})
+	out, _, _ := runDevritesIO(t, root, invalid, nil,
+		"hook", "agent-dispatch", "--harness=codex")
+	if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+		t.Fatalf("chained waiver was not denied: %s", out)
+	}
+
+	command := "devrites-engine dispatch-waive wrong-phase"
+	pre := hookPayload(t, map[string]any{
+		"hook_event_name": "PreToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "functions.exec_command",
+		"tool_input":      map[string]any{"cmd": command},
+	})
+	if out, stderr, code := runDevritesIO(t, root, pre, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("waiver pre exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+
+	stop := hookPayload(t, map[string]any{
+		"hook_event_name": "Stop",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+	})
+	out, _, _ = runDevritesIO(t, root, stop, nil,
+		"hook", "agent-dispatch", "--harness=codex")
+	if decision, _ := parseStopDecision(t, out); decision != "block" {
+		t.Fatalf("PreToolUse waiver falsely satisfied dispatch: %s", out)
+	}
+
+	post := hookPayload(t, map[string]any{
+		"hook_event_name": "PostToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "functions.exec_command",
+		"tool_input":      map[string]any{"cmd": command},
+		"tool_response":   "dispatch-waive: accepted wrong-phase",
+	})
+	if out, stderr, code := runDevritesIO(t, root, post, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("waiver post exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+	if out, stderr, code := runDevritesIO(t, root, stop, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("waived stop exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
 func TestCodexAgentDispatchConfirmsGenericRoleAndResult(t *testing.T) {
 	root := newWorkspace(t)
 	sessionID, turnID := "session-complete", "turn-complete"
@@ -1665,8 +1906,95 @@ func TestCodexAgentDispatchConfirmsGenericRoleAndResult(t *testing.T) {
 	}
 
 	if out, stderr, code := runDevritesIO(t, root, stop, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 {
+		t.Fatalf("pre-wait stop exit=%d out=%s stderr=%s", code, out, stderr)
+	} else if decision, _ := parseStopDecision(t, out); decision != "block" {
+		t.Fatalf("PreToolUse wait falsely satisfied dispatch: %s", out)
+	}
+
+	waitTimeout := hookPayload(t, map[string]any{
+		"hook_event_name": "PostToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "wait",
+		"tool_input":      map[string]any{"ids": []string{"agent-1"}},
+		"tool_response":   map[string]any{"timed_out": true},
+	})
+	if out, stderr, code := runDevritesIO(t, root, waitTimeout, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("timed-out wait post exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+	if out, stderr, code := runDevritesIO(t, root, stop, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 {
+		t.Fatalf("post-timeout stop exit=%d out=%s stderr=%s", code, out, stderr)
+	} else if decision, _ := parseStopDecision(t, out); decision != "block" {
+		t.Fatalf("timed-out wait falsely satisfied dispatch: %s", out)
+	}
+
+	waitDone := hookPayload(t, map[string]any{
+		"hook_event_name": "PostToolUse",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"tool_name":       "wait",
+		"tool_input":      map[string]any{"ids": []string{"agent-1"}},
+		"tool_response":   map[string]any{"status": "completed"},
+	})
+	if out, stderr, code := runDevritesIO(t, root, waitDone, nil,
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("wait post exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+
+	if out, stderr, code := runDevritesIO(t, root, stop, nil,
 		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
 		t.Fatalf("resolved stop exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
+func TestCodexAgentDispatchRefusesAmbiguousGenericStart(t *testing.T) {
+	root := newWorkspace(t)
+	sessionID, turnID := "session-ambiguous-start", "turn-ambiguous-start"
+	roles := []string{"devrites-security-auditor", "devrites-plan-reviewer"}
+	for _, role := range roles {
+		writeCodexAgentContract(t, root, role)
+	}
+	writeCodexSkillContract(t, root, "devrites-audit", strings.Join(roles, ","))
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$devrites-audit",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+
+	for i, role := range roles {
+		out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+			"hook_event_name": "PreToolUse",
+			"session_id":      sessionID,
+			"turn_id":         turnID,
+			"tool_name":       "spawn_agent",
+			"tool_use_id":     fmt.Sprintf("spawn-%d", i),
+			"tool_input": map[string]any{
+				"agent_type": "explorer",
+				"fork_turns": "none",
+				"message":    "Read .codex/agents/" + role + ".toml.",
+			},
+		}), nil, "hook", "agent-dispatch", "--harness=codex")
+		if code != 0 {
+			t.Fatalf("spawn %s exit=%d out=%s stderr=%s", role, code, out, stderr)
+		}
+	}
+
+	out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "SubagentStart",
+		"session_id":      sessionID,
+		"turn_id":         "child-turn",
+		"agent_id":        "ambiguous-agent",
+		"agent_type":      "explorer",
+	}), nil, "hook", "subagent-orient", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("start exit=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(out, "Dispatch binding failed") {
+		t.Fatalf("ambiguous generic start was bound to an arbitrary role: %s", out)
 	}
 }
 
@@ -1959,6 +2287,14 @@ func TestCodexAgentDispatchGatesReconcileCloseOnBoundWrightResult(t *testing.T) 
 			"turn_id":         turnID,
 			"tool_name":       "wait",
 			"tool_input":      map[string]any{"ids": []string{"agent-wright"}},
+		},
+		{
+			"hook_event_name": "PostToolUse",
+			"session_id":      sessionID,
+			"turn_id":         turnID,
+			"tool_name":       "wait",
+			"tool_input":      map[string]any{"ids": []string{"agent-wright"}},
+			"tool_response":   map[string]any{"status": "completed"},
 		},
 	} {
 		hook := "agent-dispatch"

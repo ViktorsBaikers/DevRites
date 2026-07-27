@@ -68,6 +68,9 @@ files.
 
 ## Output
 
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
+
 ```
 Simplification review (<slug>) — independent
 [Suggestion] file:line — <technique> ; why behavior preserved: <...>

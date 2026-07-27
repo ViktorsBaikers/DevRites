@@ -103,6 +103,7 @@ for src in src_agents:
     report(bool(data.get("description")), f"{name}: description present")
     instructions = data.get("developer_instructions", "")
     report("You are the Codex custom-agent version" in instructions, f"{name}: Codex wrapper present")
+    report("agent-result/v1" in instructions, f"{name}: returns the universal typed result envelope")
     report(".claude/agents" not in instructions, f"{name}: no .claude/agents runtime path")
     report(".claude/skills/devrites-lib/reference/standards" not in instructions, f"{name}: no .claude/skills/devrites-lib/reference/standards runtime path")
     report(".agents/skills/devrites-lib/reference/standards/" in instructions or name == "devrites-slice-wright", f"{name}: uses mirrored rules path when rules are referenced")
@@ -111,6 +112,18 @@ for src in src_agents:
         report(data.get("sandbox_mode") != "read-only", f"{name}: write-capable")
     else:
         report(data.get("sandbox_mode") == "read-only", f"{name}: read-only sandbox")
+    if name == "devrites-proof-runner":
+        report(
+            "Do not execute shell, browser, build, test" in instructions
+            and "Run only packet-approved" not in instructions,
+            f"{name}: validates immutable root-owned proof instead of executing gates",
+        )
+    if name == "devrites-forge-judge":
+        report(
+            'cd "<validated manifest primary_root>" && git diff' in instructions
+            and "git -C" not in instructions,
+            f"{name}: immutable diff command matches the read-only parser",
+        )
 
     expected_subcommand = "wright-scope" if name == "devrites-slice-wright" else "reviewer-readonly"
     expected_required = (
@@ -193,6 +206,13 @@ for skill in sorted(skills_dir.glob("*/SKILL.md")):
     report(
         all(role in dst_names for role in roles),
         f"{skill.parent.name}: required agent roles resolve ({sorted(set(roles) - dst_names)})",
+    )
+
+for conditional_skill in ("devrites-source-driven", "rite-temper", "rite-upgrade"):
+    frontmatter = (skills_dir / conditional_skill / "SKILL.md").read_text().split("\n---\n", 1)[0]
+    report(
+        re.search(r"(?m)^required-agent-roles:\s*none$", frontmatter) is not None,
+        f"{conditional_skill}: conditional dispatch does not arm an unconditional receipt",
     )
 
 task_wording = re.findall(r"\bTask\b", skill_text)

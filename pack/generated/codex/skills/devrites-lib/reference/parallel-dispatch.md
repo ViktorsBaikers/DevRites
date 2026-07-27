@@ -73,6 +73,14 @@ review-findings`, one finding per line, labeled Critical / Important / Suggestio
 Nit / FYI and anchored to `file:line` plus the spec criterion or observed command.
 The exact result `CANNOT-VERIFY: <requirement> — <why>` is never a pass.
 
+Before dispatching `devrites-devex-reviewer` in measured mode, the root runs the
+documented quickstart in an isolated clean checkout and adds immutable commands,
+timings, output, candidate identity, and log hashes to the packet. Before
+dispatching `devrites-performance-reviewer`, the root supplies the immutable diff
+and any already-authorized measurement artifacts. Reviewers validate these inputs;
+their read-only identity never executes quickstarts, builds, browser runs, or
+assignment-only shell setup.
+
 Dispatch rules:
 
 - Fresh-context dispatch through the capability ladder; one packet per reviewer.

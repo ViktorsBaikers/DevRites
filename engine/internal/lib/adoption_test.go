@@ -53,6 +53,36 @@ func TestSecretScanBlocksHighSeverityTouchedFile(t *testing.T) {
 	}
 }
 
+func TestSecretScanFailsClosedWhenGitIsUnavailable(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	t.Chdir(project)
+	t.Setenv("PATH", t.TempDir())
+
+	var out, err bytes.Buffer
+	if code := SecretScan(root, nil, &out, &err); code != 2 {
+		t.Fatalf("want rc=2 got %d stdout=%s stderr=%s", code, out.String(), err.String())
+	}
+	if !strings.Contains(err.String(), "cannot inspect changed paths") {
+		t.Fatalf("missing fail-closed diagnostic: %s", err.String())
+	}
+}
+
+func TestDocsStaleFailsClosedWhenGitIsUnavailable(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	t.Chdir(project)
+	t.Setenv("PATH", t.TempDir())
+
+	var out, err bytes.Buffer
+	if code := DocsStale(root, nil, &out, &err); code != 2 {
+		t.Fatalf("want rc=2 got %d stdout=%s stderr=%s", code, out.String(), err.String())
+	}
+	if !strings.Contains(err.String(), "cannot inspect changed paths") {
+		t.Fatalf("missing fail-closed diagnostic: %s", err.String())
+	}
+}
+
 func TestSpecDedupeSearchesScratchPRDs(t *testing.T) {
 	project := t.TempDir()
 	root := filepath.Join(project, ".devrites")

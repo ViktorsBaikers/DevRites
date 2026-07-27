@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,6 +36,7 @@ var (
 	devritesAgentNameRe = regexp.MustCompile(`^devrites-[a-z0-9-]+$`)
 	skillInvocationRe   = regexp.MustCompile(`(?i)(?:^|[^a-z0-9_./-])(?:\$|/)([a-z][a-z0-9-]*)\b`)
 	reconcileCloseRe    = regexp.MustCompile(`(?m)(?:^|[;&|]\s*)(?:rtk\s+)?(?:[A-Za-z0-9_./-]+/)?devrites-engine\s+reconcile\s+close\b`)
+	dispatchWaiveRe     = regexp.MustCompile(`^\s*(?:rtk\s+)?(?:[A-Za-z0-9_./-]+/)?devrites-engine\s+dispatch-waive\s+([a-z-]+)\s*$`)
 )
 
 type agentDispatchHookInput struct {
@@ -48,9 +50,11 @@ type agentDispatchHookInput struct {
 	Prompt               string          `json:"prompt"`
 	StopHookActive       bool            `json:"stop_hook_active"`
 	LastAssistantMessage string          `json:"last_assistant_message"`
+	ToolResponse         string          `json:"-"`
 	ToolInputRaw         json.RawMessage `json:"-"`
 	ToolInput            struct {
 		Command           string   `json:"command"`
+		Cmd               string   `json:"cmd"`
 		AgentType         string   `json:"agent_type"`
 		ForkTurns         string   `json:"fork_turns"`
 		Message           string   `json:"message"`
@@ -59,6 +63,7 @@ type agentDispatchHookInput struct {
 		IDs               []string `json:"ids"`
 		AgentIDs          []string `json:"agent_ids"`
 		Target            string   `json:"target"`
+		TimeoutMS         int      `json:"timeout_ms"`
 	} `json:"tool_input"`
 }
 
@@ -72,6 +77,7 @@ type agentDispatchEvent struct {
 	Role         string `json:"role,omitempty"`
 	WindowID     string `json:"window_id,omitempty"`
 	ResultSHA256 string `json:"result_sha256,omitempty"`
+	Reason       string `json:"reason,omitempty"`
 	AtUnixNano   int64  `json:"at_unix_nano"`
 }
 
@@ -133,12 +139,20 @@ func parseAgentDispatchHookInput(r io.Reader) (agentDispatchHookInput, error) {
 		return in, err
 	}
 	var raw struct {
-		ToolInput json.RawMessage `json:"tool_input"`
+		ToolInput    json.RawMessage `json:"tool_input"`
+		ToolResponse json.RawMessage `json:"tool_response"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return in, err
 	}
 	in.ToolInputRaw = raw.ToolInput
+	if len(raw.ToolResponse) > 0 {
+		if raw.ToolResponse[0] == '"' {
+			_ = json.Unmarshal(raw.ToolResponse, &in.ToolResponse)
+		} else {
+			in.ToolResponse = string(raw.ToolResponse)
+		}
+	}
 	in.HookEventName = strings.TrimSpace(in.HookEventName)
 	in.SessionID = strings.TrimSpace(in.SessionID)
 	in.TurnID = strings.TrimSpace(in.TurnID)
@@ -431,6 +445,8 @@ func dispatchTurnState(events []agentDispatchEvent, turnID string) (map[string]s
 		switch event.Event {
 		case "armed":
 			armed[event.Role] = struct{}{}
+		case "waived":
+			delete(armed, event.Role)
 		case "pending":
 			armed[event.Role] = struct{}{}
 			attempt := &agentDispatchAttempt{
@@ -1028,6 +1044,21 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 			return exitOK
 		}
 		armed, attempts := dispatchTurnState(events, in.TurnID)
+		if reason, ok := dispatchWaiverReason(agentDispatchCommand(in)); ok &&
+			strings.Contains(in.ToolResponse, "dispatch-waive: accepted "+reason) {
+			if err := recordDispatchWaiver(root, in, reason, armed, attempts); err != nil {
+				debugf(stderr, "agent-dispatch post-tool waiver: %v", err)
+			}
+		}
+		if isWaitTool(in.ToolName) {
+			if waitToolSucceeded(in.ToolResponse) {
+				if err := recordCompletedWaits(root, in, attempts); err != nil {
+					debugf(stderr, "agent-dispatch post-tool wait: %v", err)
+				}
+			} else if err := recordCancelledWaits(root, in, attempts); err != nil {
+				debugf(stderr, "agent-dispatch post-tool wait cancellation: %v", err)
+			}
+		}
 		if err := refreshPendingWrightBoundary(root, in, armed, attempts); err != nil {
 			debugf(stderr, "agent-dispatch post-tool wright boundary: %v", err)
 		}
@@ -1057,6 +1088,17 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 			ResultSHA256: resultSum,
 		}); err != nil {
 			return stopDispatchBlock(h, "DevRites could not record the subagent result: "+err.Error(), stdout, stderr)
+		}
+		if active, activeErr := activeWaitIntent(root, in.SessionID, attempt.TurnID, in.AgentID, time.Now()); activeErr != nil {
+			return stopDispatchBlock(h, "DevRites could not verify the awaited subagent result: "+activeErr.Error(), stdout, stderr)
+		} else if active {
+			if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
+				Event:   "waited",
+				TurnID:  attempt.TurnID,
+				AgentID: in.AgentID,
+			}); err != nil {
+				return stopDispatchBlock(h, "DevRites could not record the awaited subagent result: "+err.Error(), stdout, stderr)
+			}
 		}
 		return exitOK
 
@@ -1093,6 +1135,27 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 		return preToolDeny(h, "DevRites could not verify agent dispatch state: "+err.Error(), stdout, stderr)
 	}
 	armed, attempts := dispatchTurnState(events, in.TurnID)
+
+	command := agentDispatchCommand(in)
+	if isShellTool(in.ToolName) && strings.Contains(command, "dispatch-waive") {
+		reason, ok := dispatchWaiverReason(command)
+		if !ok || !lib.ValidDispatchWaiver(reason) {
+			return preToolDeny(h, "DevRites dispatch waiver must be one exact standalone engine command with an approved reason.", stdout, stderr)
+		}
+		if len(attempts) != 0 {
+			return preToolDeny(h, "DevRites dispatch waiver is only valid before any specialist spawn attempt.", stdout, stderr)
+		}
+		required := 0
+		for role := range armed {
+			if strings.HasPrefix(role, "devrites-") && role != agentDispatchSkillGuard && role != agentDispatchMetadataRole {
+				required++
+			}
+		}
+		if required == 0 {
+			return preToolDeny(h, "DevRites dispatch waiver requires an armed mandatory role in this turn.", stdout, stderr)
+		}
+		return exitOK
+	}
 
 	if isAgentDispatchTool(in.ToolName) {
 		agentType := in.ToolInput.AgentType
@@ -1206,46 +1269,25 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 			}
 			return preToolDeny(h, reason, stdout, stderr)
 		}
-		targets := in.ToolInput.ReceiverThreadIDs
-		if len(targets) == 0 {
-			targets = in.ToolInput.IDs
-		}
-		if len(targets) == 0 {
-			targets = in.ToolInput.AgentIDs
-		}
+		targets := waitTargets(in)
 		if len(targets) > 0 {
 			known := map[string]*agentDispatchAttempt{}
 			for _, attempt := range started {
 				known[attempt.AgentID] = attempt
 			}
 			for _, agentID := range targets {
-				attempt := known[agentID]
-				if attempt == nil {
+				if known[agentID] == nil {
 					return preToolDeny(h, "DevRites wait target is not a confirmed child from this turn.", stdout, stderr)
 				}
-				if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
-					Event:   "waited",
-					TurnID:  in.TurnID,
-					AgentID: agentID,
-				}); err != nil {
-					return preToolDeny(h, "DevRites could not record the child wait: "+err.Error(), stdout, stderr)
-				}
 			}
-			return exitOK
 		}
-		for _, attempt := range started {
-			if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
-				Event:   "waited",
-				TurnID:  in.TurnID,
-				AgentID: attempt.AgentID,
-			}); err != nil {
-				return preToolDeny(h, "DevRites could not record the child wait: "+err.Error(), stdout, stderr)
-			}
+		if err := recordWaitIntents(root, in, started); err != nil {
+			return preToolDeny(h, "DevRites could not record the wait intent: "+err.Error(), stdout, stderr)
 		}
 		return exitOK
 	}
 
-	if isShellTool(in.ToolName) && reconcileCloseRe.MatchString(in.ToolInput.Command) {
+	if isShellTool(in.ToolName) && reconcileCloseRe.MatchString(command) {
 		windowID := currentReconcileWindowID()
 		if windowID == "" {
 			return exitOK
@@ -1283,6 +1325,195 @@ func hookAgentDispatchPreTool(h harness.Harness, root string, in agentDispatchHo
 	return exitOK
 }
 
+func isWaitTool(toolName string) bool {
+	switch toolBaseName(toolName) {
+	case "wait", "wait_agent":
+		return true
+	default:
+		return false
+	}
+}
+
+func agentDispatchCommand(in agentDispatchHookInput) string {
+	if in.ToolInput.Command != "" {
+		return in.ToolInput.Command
+	}
+	return in.ToolInput.Cmd
+}
+
+func dispatchWaiverReason(command string) (string, bool) {
+	match := dispatchWaiveRe.FindStringSubmatch(command)
+	if len(match) != 2 {
+		return "", false
+	}
+	return match[1], true
+}
+
+func recordDispatchWaiver(
+	root string,
+	in agentDispatchHookInput,
+	reason string,
+	armed map[string]struct{},
+	attempts []*agentDispatchAttempt,
+) error {
+	if len(attempts) != 0 || !lib.ValidDispatchWaiver(reason) {
+		return fmt.Errorf("waiver is not valid after a spawn attempt")
+	}
+	recorded := 0
+	for role := range armed {
+		if !strings.HasPrefix(role, "devrites-") || role == agentDispatchSkillGuard || role == agentDispatchMetadataRole {
+			continue
+		}
+		if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
+			Event:  "waived",
+			TurnID: in.TurnID,
+			Role:   role,
+			Reason: reason,
+		}); err != nil {
+			return err
+		}
+		recorded++
+	}
+	if recorded == 0 {
+		return fmt.Errorf("no armed mandatory role to waive")
+	}
+	return nil
+}
+
+func waitTargets(in agentDispatchHookInput) []string {
+	if len(in.ToolInput.ReceiverThreadIDs) > 0 {
+		return in.ToolInput.ReceiverThreadIDs
+	}
+	if len(in.ToolInput.IDs) > 0 {
+		return in.ToolInput.IDs
+	}
+	return in.ToolInput.AgentIDs
+}
+
+func waitToolSucceeded(response string) bool {
+	response = strings.ToLower(strings.TrimSpace(response))
+	if response == "" {
+		return false
+	}
+	for _, failure := range []string{
+		`"timed_out":true`,
+		`"timed_out": true`,
+		"timed out",
+		"timeout summary",
+		"no activity",
+	} {
+		if strings.Contains(response, failure) {
+			return false
+		}
+	}
+	return true
+}
+
+func waitTargetIDs(in agentDispatchHookInput, attempts []*agentDispatchAttempt) []string {
+	targets := waitTargets(in)
+	if len(targets) > 0 {
+		return targets
+	}
+	targets = make([]string, 0, len(attempts))
+	for _, attempt := range attempts {
+		if attempt.Started && attempt.AgentID != "" {
+			targets = append(targets, attempt.AgentID)
+		}
+	}
+	return targets
+}
+
+func agentWaitTimeout(in agentDispatchHookInput) time.Duration {
+	const defaultTimeout = 30 * time.Second
+	const maxTimeout = time.Hour
+	if in.ToolInput.TimeoutMS <= 0 {
+		return defaultTimeout
+	}
+	timeout := time.Duration(in.ToolInput.TimeoutMS) * time.Millisecond
+	if timeout > maxTimeout {
+		return maxTimeout
+	}
+	return timeout
+}
+
+func recordWaitIntents(root string, in agentDispatchHookInput, attempts []*agentDispatchAttempt) error {
+	timeoutMS := strconv.FormatInt(agentWaitTimeout(in).Milliseconds(), 10)
+	for _, agentID := range waitTargetIDs(in, attempts) {
+		if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
+			Event:   "waiting",
+			TurnID:  in.TurnID,
+			AgentID: agentID,
+			Reason:  timeoutMS,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func recordCancelledWaits(root string, in agentDispatchHookInput, attempts []*agentDispatchAttempt) error {
+	for _, agentID := range waitTargetIDs(in, attempts) {
+		if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
+			Event:   "wait-cancelled",
+			TurnID:  in.TurnID,
+			AgentID: agentID,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func activeWaitIntent(root, sessionID, turnID, agentID string, now time.Time) (bool, error) {
+	events, err := readAgentDispatchEvents(root, sessionID)
+	if err != nil {
+		return false, err
+	}
+	for i := len(events) - 1; i >= 0; i-- {
+		event := events[i]
+		if event.TurnID != turnID || event.AgentID != agentID {
+			continue
+		}
+		switch event.Event {
+		case "waited", "wait-cancelled":
+			return false, nil
+		case "waiting":
+			timeoutMS, err := strconv.ParseInt(event.Reason, 10, 64)
+			if err != nil || timeoutMS <= 0 {
+				return false, nil
+			}
+			deadline := time.Unix(0, event.AtUnixNano).Add(time.Duration(timeoutMS) * time.Millisecond)
+			return !now.After(deadline), nil
+		}
+	}
+	return false, nil
+}
+
+func recordCompletedWaits(root string, in agentDispatchHookInput, attempts []*agentDispatchAttempt) error {
+	targetSet := map[string]struct{}{}
+	for _, agentID := range waitTargets(in) {
+		targetSet[agentID] = struct{}{}
+	}
+	for _, attempt := range attempts {
+		if !attempt.Started || attempt.Waited {
+			continue
+		}
+		if len(targetSet) > 0 {
+			if _, ok := targetSet[attempt.AgentID]; !ok {
+				continue
+			}
+		}
+		if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
+			Event:   "waited",
+			TurnID:  in.TurnID,
+			AgentID: attempt.AgentID,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func bindAgentDispatchStart(root string, in agentDispatchHookInput) (string, bool, error) {
 	events, err := readAgentDispatchEvents(root, in.SessionID)
 	if err != nil {
@@ -1294,6 +1525,7 @@ func bindAgentDispatchStart(root string, in agentDispatchHookInput) (string, boo
 			started[event.ToolUseID] = struct{}{}
 		}
 	}
+	var candidates []agentDispatchEvent
 	for i := len(events) - 1; i >= 0; i-- {
 		event := events[i]
 		if event.Event != "pending" || event.AgentType != in.AgentType {
@@ -1302,20 +1534,30 @@ func bindAgentDispatchStart(root string, in agentDispatchHookInput) (string, boo
 		if _, ok := started[event.ToolUseID]; ok {
 			continue
 		}
-		if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
-			Event:     "started",
-			TurnID:    event.TurnID,
-			ToolUseID: event.ToolUseID,
-			AgentID:   in.AgentID,
-			AgentType: in.AgentType,
-			Role:      event.Role,
-			WindowID:  event.WindowID,
-		}); err != nil {
-			return "", false, err
+		if strings.HasPrefix(in.AgentType, "devrites-") && event.Role != in.AgentType {
+			continue
 		}
-		return event.Role, true, nil
+		candidates = append(candidates, event)
 	}
-	return "", false, nil
+	if len(candidates) == 0 {
+		return "", false, nil
+	}
+	if len(candidates) != 1 {
+		return "", false, fmt.Errorf("ambiguous subagent start: %d pending %s dispatches lack a parent tool-use binding", len(candidates), in.AgentType)
+	}
+	event := candidates[0]
+	if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
+		Event:     "started",
+		TurnID:    event.TurnID,
+		ToolUseID: event.ToolUseID,
+		AgentID:   in.AgentID,
+		AgentType: in.AgentType,
+		Role:      event.Role,
+		WindowID:  event.WindowID,
+	}); err != nil {
+		return "", false, err
+	}
+	return event.Role, true, nil
 }
 
 type boundAgentDispatchAttempt struct {
@@ -1342,29 +1584,36 @@ func boundDispatchAttempt(root, sessionID, agentID string) (boundAgentDispatchAt
 	return boundAgentDispatchAttempt{}, false, nil
 }
 
-func devritesAgentForGuard(h harness.Harness, in harness.GuardInput) devritesAgentKind {
+type devritesAgentGuardBinding struct {
+	Kind devritesAgentKind
+	Role string
+}
+
+func devritesAgentBindingForGuard(h harness.Harness, in harness.GuardInput) devritesAgentGuardBinding {
 	kind := devritesAgent(in.AgentType)
-	if h != harness.Codex || kind != devritesAgentNone ||
+	binding := devritesAgentGuardBinding{Kind: kind, Role: declaredDevritesRole(in.AgentType)}
+	generic := in.AgentType == "" || in.AgentType == "explorer" || in.AgentType == "worker"
+	if h != harness.Codex || !generic ||
 		os.Getenv("DEVRITES_CODEX_GENERIC_AGENT_COMPAT") != "1" ||
 		in.SessionID == "" || in.AgentID == "" {
-		return kind
+		return binding
 	}
 	root, ok := agentDispatchRoot()
 	if !ok {
-		return devritesAgentInvalid
+		return devritesAgentGuardBinding{Kind: devritesAgentInvalid}
 	}
 	attempt, found, err := boundDispatchAttempt(root, in.SessionID, in.AgentID)
 	if err != nil {
-		return devritesAgentInvalid
+		return devritesAgentGuardBinding{Kind: devritesAgentInvalid}
 	}
 	if !found {
-		return devritesAgentNone
+		return binding
 	}
 	if attempt.Role == "devrites-slice-wright" {
-		return devritesAgentGenericWright
+		return devritesAgentGuardBinding{Kind: devritesAgentGenericWright, Role: attempt.Role}
 	}
 	if strings.HasPrefix(attempt.Role, "devrites-") {
-		return devritesAgentReadonly
+		return devritesAgentGuardBinding{Kind: devritesAgentReadonly, Role: attempt.Role}
 	}
-	return devritesAgentInvalid
+	return devritesAgentGuardBinding{Kind: devritesAgentInvalid}
 }

@@ -77,6 +77,21 @@ func TestIsSourceFileRecognisesCode(t *testing.T) {
 	}
 }
 
+func TestIntegrityFailsClosedWhenGitIsUnavailable(t *testing.T) {
+	newGitRepo(t)
+	root := workspace(t, "feat")
+	t.Setenv("PATH", t.TempDir())
+
+	var stdout, stderr bytes.Buffer
+	code := TestIntegrity(root, []string{"feat"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("test-integrity = %d, want 2\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "cannot resolve git worktree") {
+		t.Fatalf("missing fail-closed diagnostic: %s", stderr.String())
+	}
+}
+
 func TestIntegrityDetectsDeletionFromDirtySliceBaseline(t *testing.T) {
 	gitRoot := newGitRepo(t)
 	root := workspace(t, "feat")

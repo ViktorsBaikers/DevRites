@@ -93,6 +93,86 @@ func FeatureDir(root, slug string) string {
 	return work
 }
 
+// ExistingFeatureDirChecked resolves an existing canonical feature workspace
+// without following a work/<slug> or features/<slug> symlink. Mutating
+// control-plane commands use this instead of FeatureDir so an attacker cannot
+// redirect archive/removal operations outside the selected DevRites root.
+func ExistingFeatureDirChecked(root, slug string) (string, error) {
+	if !validSlug(slug) {
+		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: %q is not a feature slug", slug)
+	}
+	if ws, err := WorkspaceOverrideChecked(root, slug); err != nil {
+		return "", err
+	} else if ws != "" {
+		return ws, nil
+	}
+	for _, parent := range []string{"work", "features"} {
+		candidate := filepath.Join(root, parent, slug)
+		resolved, err := checkedCanonicalDir(root, candidate, parent, slug)
+		if err == nil {
+			return resolved, nil
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+	}
+	return "", os.ErrNotExist
+}
+
+// ArchiveDirChecked resolves (or safely prepares) the canonical archive
+// directory. Existing symlinked archive components are rejected before a
+// close-out can move a workspace through them.
+func ArchiveDirChecked(root string) (string, error) {
+	return checkedCanonicalDir(root, filepath.Join(root, "archive"), "archive", "")
+}
+
+func checkedCanonicalDir(root, candidate, parent, slug string) (string, error) {
+	resolvedRoot, err := safepath.ResolveExisting(root)
+	if err != nil {
+		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: resolve DevRites root %q: %w", root, err)
+	}
+	info, err := os.Lstat(candidate)
+	if err != nil {
+		if !os.IsNotExist(err) || parent != "archive" {
+			return "", err
+		}
+		resolved, resolveErr := safepath.ResolveExisting(candidate)
+		if resolveErr != nil {
+			return "", fmt.Errorf("DRV-ARCHIVE-INVALID: resolve archive %q: %w", candidate, resolveErr)
+		}
+		if !safepath.WithinResolved(resolved, resolvedRoot) {
+			return "", fmt.Errorf("DRV-ARCHIVE-OUTSIDE-ROOT: archive %q escapes %q", candidate, root)
+		}
+		rel, relErr := filepath.Rel(resolvedRoot, resolved)
+		if relErr != nil || filepath.Clean(rel) != "archive" {
+			return "", fmt.Errorf("DRV-ARCHIVE-INVALID: archive %q is not the canonical archive directory", candidate)
+		}
+		return filepath.Clean(candidate), nil
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return "", fmt.Errorf("DRV-WORKSPACE-SYMLINK: canonical directory %q must not be a symlink", candidate)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: canonical directory %q is not a directory", candidate)
+	}
+	resolved, err := safepath.ResolveExisting(candidate)
+	if err != nil {
+		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: resolve canonical directory %q: %w", candidate, err)
+	}
+	if !safepath.WithinResolved(resolved, resolvedRoot) {
+		return "", fmt.Errorf("DRV-WORKSPACE-OUTSIDE-ROOT: canonical directory %q escapes %q", candidate, root)
+	}
+	want := parent
+	if slug != "" {
+		want = filepath.Join(parent, slug)
+	}
+	rel, err := filepath.Rel(resolvedRoot, resolved)
+	if err != nil || filepath.Clean(rel) != filepath.Clean(want) {
+		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: canonical directory %q resolves to unexpected path %q", candidate, resolved)
+	}
+	return filepath.Clean(candidate), nil
+}
+
 // ActiveSlug reads and trims the active-feature pointer. A missing pointer file
 // is not an error; it yields the empty slug.
 func ActiveSlug(root string) (string, error) {

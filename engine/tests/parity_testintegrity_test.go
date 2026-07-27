@@ -58,7 +58,7 @@ func TestParityTestIntegrity(t *testing.T) {
 		runCase(t, newRepo(t), "ghost")
 	})
 	t.Run("not-git", func(t *testing.T) {
-		work := t.TempDir() // no initGitRepo -> gate skipped
+		work := t.TempDir() // no initGitRepo -> gate fails closed
 		makeFeatureDir(t, work, "feat")
 		runCase(t, work, "feat")
 	})

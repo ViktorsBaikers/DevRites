@@ -302,6 +302,7 @@ started = [e for e in events if e.get("event") == "started" and e.get("tool_use_
 assert started, "missing SubagentStart receipt"
 agent_ids = {e["agent_id"] for e in started}
 assert any(e.get("event") == "stopped" and e.get("agent_id") in agent_ids and e.get("result_sha256") for e in events), "missing non-empty result receipt"
+assert any(e.get("event") == "waited" and e.get("agent_id") in agent_ids for e in events), "missing successful wait receipt"
 PY
     else
       python3 - "$LIVE_CODEX_HOME" "$T/subagent.jsonl" "$PROJECT" "$SKILL_DISPATCH_ROLE" <<'PY'

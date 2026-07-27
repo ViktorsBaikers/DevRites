@@ -1,42 +1,147 @@
 package lib
 
 import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-// gitToplevel returns the absolute path of the git working tree containing dir,
-// or "" when dir is not inside a repository. The git-backed gates
-// (test-integrity and reconcile) skip rather than block when it is empty.
-func gitToplevel(dir string) string {
-	out, err := exec.Command("git", "-C", dir, "rev-parse", "--show-toplevel").Output()
-	if err != nil {
-		return ""
+var errNotGitRepository = errors.New("not a git repository")
+
+const (
+	gitCommandTimeout = 30 * time.Second
+	gitOutputLimit    = 16 << 20
+)
+
+type cappedGitOutput struct {
+	bytes.Buffer
+	truncated bool
+}
+
+func (w *cappedGitOutput) Write(p []byte) (int, error) {
+	remaining := gitOutputLimit - w.Len()
+	if remaining > 0 {
+		if len(p) > remaining {
+			_, _ = w.Buffer.Write(p[:remaining])
+			w.truncated = true
+		} else {
+			_, _ = w.Buffer.Write(p)
+		}
+	} else {
+		w.truncated = true
 	}
-	return filepath.Clean(strings.TrimSpace(string(out)))
+	return len(p), nil
+}
+
+type gitCommandError struct {
+	args     []string
+	output   string
+	exitCode int
+	err      error
+}
+
+func (e *gitCommandError) Error() string {
+	detail := strings.TrimSpace(e.output)
+	if detail == "" {
+		return fmt.Sprintf("git %s: %v", strings.Join(e.args, " "), e.err)
+	}
+	return fmt.Sprintf("git %s: %v: %s", strings.Join(e.args, " "), e.err, detail)
+}
+
+func (e *gitCommandError) Unwrap() error { return e.err }
+
+func runGitCommand(dir string, env []string, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), gitCommandTimeout)
+	defer cancel()
+	commandArgs := append([]string{"-C", dir}, args...)
+	cmd := exec.CommandContext(ctx, "git", commandArgs...)
+	cmd.WaitDelay = 2 * time.Second
+	if env == nil {
+		env = os.Environ()
+	} else {
+		env = append([]string{}, env...)
+	}
+	cmd.Env = append(
+		env,
+		"GIT_TERMINAL_PROMPT=0",
+		"GCM_INTERACTIVE=never",
+		"GIT_PAGER=cat",
+		"PAGER=cat",
+		"LC_ALL=C",
+	)
+	var output cappedGitOutput
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	err := cmd.Run()
+	if err == nil {
+		return output.Bytes(), nil
+	}
+	code := -1
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		code = exitErr.ExitCode()
+	}
+	if ctx.Err() != nil {
+		err = ctx.Err()
+	}
+	detail := output.String()
+	if output.truncated {
+		detail += "\n[git output truncated]"
+	}
+	return nil, &gitCommandError{
+		args:     args,
+		output:   detail,
+		exitCode: code,
+		err:      err,
+	}
+}
+
+func gitErrorExitCode(err error) (int, bool) {
+	var commandErr *gitCommandError
+	if !errors.As(err, &commandErr) {
+		return 0, false
+	}
+	return commandErr.exitCode, commandErr.exitCode >= 0
+}
+
+// gitToplevel returns the absolute path of the Git working tree containing dir.
+// Repository absence is distinct from Git execution failure so integrity gates
+// can fail closed on a missing binary, corrupt repository, or poisoned runtime.
+func gitToplevel(dir string) (string, error) {
+	out, err := runGitCommand(dir, nil, "rev-parse", "--show-toplevel")
+	if err != nil {
+		var commandErr *gitCommandError
+		if errors.As(err, &commandErr) {
+			detail := strings.ToLower(commandErr.output)
+			if strings.Contains(detail, "not a git repository") ||
+				strings.Contains(detail, "not a git work tree") {
+				return "", errNotGitRepository
+			}
+		}
+		return "", err
+	}
+	root := strings.TrimSpace(string(out))
+	if root == "" {
+		return "", fmt.Errorf("git rev-parse returned an empty top-level path")
+	}
+	return filepath.Clean(root), nil
 }
 
 // gitDiffNames lists the paths that differ, relative to gitRoot. With one ref it
 // diffs the working tree against that ref; with two it diffs the two tree objects.
-func gitDiffNames(gitRoot string, refs ...string) []string {
-	args := append([]string{"-C", gitRoot, "diff", "--name-only"}, refs...)
-	out, err := exec.Command("git", args...).Output()
+func gitDiffNames(gitRoot string, refs ...string) ([]string, error) {
+	args := append([]string{"diff", "--name-only"}, refs...)
+	out, err := runGitCommand(gitRoot, nil, args...)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return splitLinesNoTrailing(out)
-}
-
-// stripASCIISpace removes every whitespace character from s (used to normalise an
-// ACTIVE pointer before comparing it to a slug).
-func stripASCIISpace(s string) string {
-	return strings.Map(func(r rune) rune {
-		if strings.ContainsRune(spaceChars, r) {
-			return -1
-		}
-		return r
-	}, s)
+	return splitLinesNoTrailing(out), nil
 }
 
 // isAllDigits reports whether s is a non-empty run of ASCII digits.

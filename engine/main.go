@@ -56,7 +56,8 @@ Usage:
   devrites-engine mutation-gate [slug]     Advisory: detect the mutation runner and scope it
   devrites-engine test-integrity [slug]    Gate: no test deleted, skipped, or de-asserted
   devrites-engine review-integrity [slug]  Gate: no adversarial review axis is silent (zero findings, no justification)
-  devrites-engine reconcile <sub> [slug]   A1 gate: snapshot|check|close the wright's source writes
+  devrites-engine dispatch-waive <reason>  Record a deterministic pre-dispatch STOP reason
+  devrites-engine reconcile <sub> [slug]   A1 gate: snapshot|check|restore-check|close the wright's source writes
   devrites-engine resolve <qid> "<ans>"    Resolve an open question; keep state.md consistent
   devrites-engine close-out <slug>         Archive a shipped feature and clear ACTIVE
   devrites-engine archive-search "<nouns>" Find prior shipped specs that overlap the query
@@ -238,6 +239,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.TestIntegrity(root, args[1:], stdout, stderr)
 	case "review-integrity":
 		return lib.ReviewIntegrity(root, args[1:], stdout, stderr)
+	case "dispatch-waive":
+		return lib.DispatchWaive(args[1:], stdout, stderr)
 	case "reconcile":
 		return lib.Reconcile(root, args[1:], stdout, stderr)
 	case "resolve":

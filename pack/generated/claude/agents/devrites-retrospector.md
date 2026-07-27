@@ -78,6 +78,9 @@ writer for these destinations:
   and dated, not inferred from a trend. Recommend it and let the user ratify it.
 
 ## Output
+
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
 ```
 Retro (<n> features since last review) — independent, advisory
 Recurring patterns (>=2 features):

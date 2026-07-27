@@ -49,7 +49,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|Shell|sh|exec_command|run_command",
         "hooks": [
           {
             "type": "command",

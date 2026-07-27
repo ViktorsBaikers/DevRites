@@ -238,7 +238,7 @@ gen_codex_hooks_json() {
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|Shell|sh|exec_command|run_command",
         "hooks": [
           {
             "type": "command",

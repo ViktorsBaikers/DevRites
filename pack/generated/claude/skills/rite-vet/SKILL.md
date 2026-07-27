@@ -127,29 +127,32 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
    `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`, re-scan the
    affected coverage rows, assumption audit, residual uncertainty, and closed gates.
    Partial/Missing, an unowned material assumption, or an open blocking/escalating question is
-   `NEEDS CLARIFICATION` → `/rite-clarify`/HITL; never refresh past it. Only after the matrix is
-   re-closed, run `devrites-engine readiness-digest coverage <slug>` and replace the complete
-   `Coverage inputs SHA-256` line in `decision-coverage.md`. This coverage refresh must precede
-   `devrites-engine readiness-digest engineering <slug>`.
+   `NEEDS CLARIFICATION` → `/rite-clarify`/HITL; never refresh past it.
    Re-run the gate after every fold-back so a task edit cannot invalidate the earlier pass:
    ```bash
    devrites-engine analyze; echo "final analyze rc=$?"
    ```
-   Any non-zero result blocks the handoff. Then update `state.md`:
-   write exactly one `DevRites contract: devrites.readiness-artifacts.v2` field to both
-   `test-plan.md` and `eng-review.md`, plus one typed field to `eng-review.md`:
-   `Implementation readiness: READY`,
-   `NEEDS CLARIFICATION`, or `NEEDS REPLAN`. Only READY sets `Phase: vet` and
-   `Next step: /rite-build`, after a final sweep leaves no foreseeable human choice except a
-   justified action-time checkpoint. Technical failure records its reproduction and
-   `/rite-plan repair` without a qid; a human-owned contract gap routes `/rite-clarify` and
-   uses the normal awaiting-human block.
+   Any non-zero result blocks the handoff. Keep `state.md` non-READY and do not
+   generate the engineering digest yet; this is the frozen candidate for step 6,
+   not the final handoff.
 6. **One narrow recheck after accepted edits.** If steps 2 through 5 changed the frozen candidate,
    dispatch `devrites-plan-reviewer` once more with only the accepted initial findings,
    changed planning paths, affected criteria, and the new immutable identity. Do not repeat
    the full review or start a third loop. If nothing changed, the initial report is final.
-   If the recheck causes an accepted edit, repeat step 5, including coverage refresh and analyze,
-   before generating the engineering digest.
+   If the recheck causes an accepted edit, repeat step 5. After the recheck is
+   complete and all accepted edits are folded back, re-close the matrix, rerun
+   `analyze`, run `devrites-engine readiness-digest coverage <slug>`, replace the
+   complete `Coverage inputs SHA-256` line, and only then run
+   `devrites-engine readiness-digest engineering <slug>`.
+
+   Now write exactly one `DevRites contract: devrites.readiness-artifacts.v2`
+   field to both `test-plan.md` and `eng-review.md`, plus one typed field to
+   `eng-review.md`: `Implementation readiness: READY`, `NEEDS CLARIFICATION`, or
+   `NEEDS REPLAN`. Only READY sets `Phase: vet` and `Next step: /rite-build`,
+   after a final sweep leaves no foreseeable human choice except a justified
+   action-time checkpoint. Technical failure records its reproduction and
+   `/rite-plan repair` without a qid; a human-owned contract gap routes
+   `/rite-clarify` and uses the normal awaiting-human block.
    [`reference/cross-model.md`](reference/cross-model.md) owns the optional outside voice.
    Completion: the final axis floor clears, an objective technical blocker is recorded, or a
    genuine human-owned gate is recorded.
