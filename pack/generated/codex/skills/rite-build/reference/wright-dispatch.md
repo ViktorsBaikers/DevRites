@@ -2,7 +2,9 @@
 
 `$rite-build` delegates one slice or correction to `devrites-slice-wright`.
 The root owns scope, questions, `.devrites/**`, reconciliation, and routing.
-Production builds and browser/E2E runs are root-owned gates.
+Production builds and browser/E2E runs are root-owned gates only when their exact
+command, cwd, prerequisites, and artifact boundary are already frozen in
+`test-plan.md` and the unchanged packet.
 The wright only writes source/tests, runs writer-safe proof, and never invokes agents.
 
 The universal packet, result, budget, await, retry, and host fallback contract is

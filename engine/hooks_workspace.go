@@ -262,14 +262,15 @@ func hookStatusline(stdin io.Reader, stdout, stderr io.Writer) int {
 // insensitive, and FAIL/PASS scans are line oriented.
 // pack-scan-ignore: these are the hook's own red/green heuristics, not a payload.
 var (
-	redTestCmdRe = regexp.MustCompile(`(?i)(npm|pnpm|yarn|bun)([[:space:]]+run)?[[:space:]]+(test|build|lint|typecheck|check)|jest|vitest|pytest|go[[:space:]]+test|cargo[[:space:]]+(test|build|clippy)|\bmvn\b|gradle|eslint|ruff|mypy|\btsc\b|\bmake[[:space:]]+(test|build|check)`)
-	redFailRe    = regexp.MustCompile(`(?im)(^|[^A-Za-z])FAIL([^A-Za-z]|$)|[1-9][0-9]*[[:space:]]+(failed|failing|failures?|errors?)|not ok|panic:|error TS[0-9]|Traceback|AssertionError|✗|✘|BUILD FAILED|exit code [1-9]`)
-	redPassRe    = regexp.MustCompile(`(?im)PASS(ED)?|0[[:space:]]+(failed|failing|errors?)|all tests passed|BUILD SUCC(ESS|EEDED)|succeeded|no (errors|problems|issues)|(^|[^a-z])ok([^a-z]|$)|✓`)
+	redTestCmdRe            = regexp.MustCompile(`(?i)(npm|pnpm|yarn|bun)([[:space:]]+run)?[[:space:]]+(test|build|lint|typecheck|check)|jest|vitest|pytest|go[[:space:]]+test|cargo[[:space:]]+(test|build|clippy)|\bmvn\b|gradle|eslint|ruff|mypy|\btsc\b|\bmake[[:space:]]+(test|build|check)`)
+	redFailRe               = regexp.MustCompile(`(?im)(^|[^A-Za-z])FAIL([^A-Za-z]|$)|[1-9][0-9]*[[:space:]]+(failed|failing|failures?|errors?)|not ok|panic:|error TS[0-9]|Traceback|AssertionError|✗|✘|BUILD FAILED|exit code [1-9]`)
+	redPassRe               = regexp.MustCompile(`(?im)PASS(ED)?|0[[:space:]]+(failed|failing|errors?)|all tests passed|BUILD SUCC(ESS|EEDED)|succeeded|no (errors|problems|issues)|(^|[^a-z])ok([^a-z]|$)|✓`)
+	reconcileRestoreCheckRe = regexp.MustCompile(`^\s*(?:rtk\s+)?(?:[A-Za-z0-9_./-]+/)?devrites-engine\s+reconcile\s+restore-check(?:\s+[A-Za-z0-9._-]+)?\s*$`)
 )
 
 const redReasonFmt = "DevRites: tests/build are RED (%s). Fix to green or record the failure + next step in state.md before stopping: the Stop gate blocks an end-of-turn while .red is set."
 
-// hookRedwatch handles PostToolUse Bash events for test, build, lint, and type
+// hookRedwatch handles PostToolUse shell events for test, build, lint, and type
 // checking commands. It sets or clears <featureDir>/.red so the Stop gate can
 // catch a known failing suite. Its command and output checks match
 // devrites-redwatch.sh, and uncertain input leaves state unchanged.
@@ -286,7 +287,7 @@ func hookRedwatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Writer) 
 		return exitOK
 	}
 	in := h.ParseGuardInput(bytes.NewReader(data))
-	if in.ToolName != "Bash" {
+	if !isShellTool(in.ToolName) {
 		return exitOK
 	}
 	// Ignore commands unrelated to tests, builds, linting, or type checking.
@@ -562,7 +563,8 @@ func hookWrightScope(h harness.Harness, stdin io.Reader, stdout, stderr io.Write
 		return exitOK
 	}
 	in := h.ParseGuardInput(bytes.NewReader(data))
-	kind := devritesAgentForGuard(h, in)
+	binding := devritesAgentBindingForGuard(h, in)
+	kind := binding.Kind
 	genericCompat := os.Getenv("DEVRITES_CODEX_GENERIC_AGENT_COMPAT") == "1"
 	if in.AgentType == "" && in.AgentID == "" {
 		if code, handled := guardRootBuildWindow(h, data, in, stdout, stderr); handled {
@@ -620,6 +622,21 @@ func hookWrightScope(h harness.Harness, stdin io.Reader, stdout, stderr io.Write
 		return exitOK
 	}
 	if genericWright && !forgeDeclared {
+		if binding.Role != "devrites-slice-wright" {
+			if wsIsFile(filepath.Join(dir, ".reconcile-base")) {
+				return denyOrObserveWright(
+					h,
+					stdout,
+					stderr,
+					dir,
+					true,
+					wrightForbiddenReason,
+					drvreason.HookWrightForbiddenDenied,
+					[]string{"unbound generic worker"},
+				)
+			}
+			return exitOK
+		}
 		if !wsIsFile(filepath.Join(dir, ".reconcile-base")) {
 			return exitOK
 		}
@@ -1043,6 +1060,9 @@ func classifyRootBuildWindowOperation(root string, data []byte, in harness.Guard
 	}
 	if isOpaqueExecutionTool(in.ToolName) {
 		return true, true, in.ToolName
+	}
+	if isShellTool(in.ToolName) && strings.Contains(in.Command, "reconcile restore-check") {
+		return true, !reconcileRestoreCheckRe.MatchString(in.Command), in.Command
 	}
 
 	projectDir := filepath.Dir(root)

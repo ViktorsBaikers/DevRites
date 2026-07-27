@@ -4,7 +4,7 @@ description: User-invoked semantic upgrade for an active legacy DevRites workspa
 argument-hint: "[feature-slug]"
 user-invocable: true
 disable-model-invocation: true
-required-agent-roles: devrites-upgrade-planner
+required-agent-roles: none
 ---
 
 # /rite-upgrade: bring an active workspace onto the current contract

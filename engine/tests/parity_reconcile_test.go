@@ -71,6 +71,9 @@ func TestParityReconcile(t *testing.T) {
 	t.Run("close-window", func(t *testing.T) {
 		work := newRepo(t)
 		snapshot(t, work)
+		if out, code := runArgv(t, work, libRootEnv(work), "", binPath, "reconcile", "check", "feat"); code != 0 {
+			t.Fatalf("pre-close reconcile check = %d, want 0\n%s", code, out)
+		}
 		out, code := runArgv(t, work, libRootEnv(work), "", binPath, "reconcile", "close", "feat")
 		assertGolden(t, out, code)
 	})
@@ -78,7 +81,7 @@ func TestParityReconcile(t *testing.T) {
 	t.Run("not-git", func(t *testing.T) {
 		work := t.TempDir()
 		makeFeatureDir(t, work, "feat")
-		check(t, work) // exit 0
+		check(t, work) // fail closed outside Git
 	})
 
 	t.Run("bad-mode", func(t *testing.T) {

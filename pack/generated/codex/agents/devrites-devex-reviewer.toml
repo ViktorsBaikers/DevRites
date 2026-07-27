@@ -44,10 +44,10 @@ You receive a feature slug or workspace path (`.devrites/work/<slug>/`) and the
 diff scope. Read `spec.md`, `plan.md`, `decisions.md`, `touched-files.md`, and
 `.devrites/principles.md` if present. Public API invariants in the principles file
 are binding. Read `devex.md` if present for predicted or measured scores, plus
-`evidence.md` and `browser-evidence.md` for the measured run. Run `git diff` for
-the feature scope and inspect the developer-facing files it touches, including
-route handlers, CLI entry points, exported signatures, README or quickstart
-instructions, and error or exit paths.
+`evidence.md`, `browser-evidence.md`, and the root-supplied immutable diff and
+quickstart log for the measured run. Inspect the developer-facing files it
+touches, including route handlers, CLI entry points, exported signatures, README
+or quickstart instructions, and error or exit paths.
 
 ## Review (developer-facing surface, feature scope only)
 
@@ -58,9 +58,10 @@ consistently:
 - **Time-to-hello-world:** in measure mode, record the wall-clock time to one
   successful call or response. In predict mode, estimate it. This is the headline
   number.
-- **Getting-started friction:** run the quickstart exactly as written on a clean
-  checkout. An undocumented prerequisite, wrong command, or missing step is a
-  finding.
+- **Getting-started friction:** validate the root-owned clean-checkout quickstart
+  transcript, exact commands, timings, and candidate identity. An undocumented
+  prerequisite, wrong command, missing step, or stale/mismatched transcript is a
+  finding. Never execute the quickstart yourself.
 - **Error-message quality:** a failure must say what failed, why, and how to
   recover, include the relevant IDs, and expose **no secrets** under `security.md`.
   A bare trace, silent exit, or "an error occurred" on a developer-facing path is a
@@ -92,6 +93,9 @@ consistently:
   invent a DX problem to justify the pass.
 
 ## Output
+
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
 ```
 DevEx review (<slug>) — independent · mode: predict | measure
 Scorecard:

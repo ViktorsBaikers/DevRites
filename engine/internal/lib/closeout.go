@@ -5,6 +5,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/state"
 )
 
 // CloseOut retires a shipped feature: it moves the feature directory into the
@@ -30,13 +33,27 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 		return 4
 	}
 
-	work := featureDir(dv, slug)
-	arch := filepath.Join(dv, "archive", slug)
+	work, err := devritespaths.ExistingFeatureDirChecked(dv, slug)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintf(stderr, "close-out: no workspace for %s\n", slug)
+			return 4
+		}
+		fmt.Fprintf(stderr, "close-out: invalid workspace for %s: %v\n", slug, err)
+		return 1
+	}
+	archiveDir, err := devritespaths.ArchiveDirChecked(dv)
+	if err != nil {
+		fmt.Fprintf(stderr, "close-out: invalid archive directory: %v\n", err)
+		return 1
+	}
+	arch := filepath.Join(archiveDir, slug)
 	active := filepath.Join(dv, "ACTIVE")
 
-	if !isDir(work) {
-		fmt.Fprintf(stderr, "close-out: no workspace at %s\n", work)
-		return 4
+	activeSlug, err := devritespaths.ActiveSlug(dv)
+	if err != nil {
+		fmt.Fprintf(stderr, "close-out: invalid ACTIVE cursor: %v\n", err)
+		return 1
 	}
 	// A broken symlink at the destination still counts as "already there", so use
 	// Lstat rather than Stat to avoid silently overwriting it.
@@ -47,7 +64,7 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 
 	// Fail closed: if the move does not happen, leave the cursor alone and do not
 	// claim success: a lost audit trail must never look like a clean close-out.
-	if err := os.MkdirAll(filepath.Join(dv, "archive"), 0o755); err != nil {
+	if err := os.MkdirAll(archiveDir, 0o755); err != nil {
 		fmt.Fprintf(stderr, "close-out: cannot create archive dir: %v\n", err)
 		return 1
 	}
@@ -57,12 +74,18 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	// Clear ACTIVE only if it still points at the slug we just archived.
-	if isFile(active) {
-		if b, err := os.ReadFile(active); err == nil && stripASCIISpace(string(b)) == slug {
-			_ = os.WriteFile(active, nil, 0o644)
-			fmt.Fprintf(stdout, "close-out: archived %s -> %s and cleared ACTIVE\n", slug, filepath.ToSlash(arch))
-			return 0
+	if activeSlug == slug {
+		if err := state.AtomicWrite(active, nil, 0o644); err != nil {
+			rollbackErr := os.Rename(arch, work)
+			if rollbackErr != nil {
+				fmt.Fprintf(stderr, "close-out: cannot clear ACTIVE after archiving: %v; rollback %s -> %s also failed: %v\n", err, arch, work, rollbackErr)
+			} else {
+				fmt.Fprintf(stderr, "close-out: cannot clear ACTIVE; archive move rolled back: %v\n", err)
+			}
+			return 1
 		}
+		fmt.Fprintf(stdout, "close-out: archived %s -> %s and cleared ACTIVE\n", slug, filepath.ToSlash(arch))
+		return 0
 	}
 	fmt.Fprintf(stdout, "close-out: archived %s -> %s (ACTIVE pointed elsewhere: left as-is)\n", slug, filepath.ToSlash(arch))
 	return 0

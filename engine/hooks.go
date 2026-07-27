@@ -122,7 +122,9 @@ var allowReadonlyCommands = map[string]bool{
 }
 
 var allowReadonlySubcommands = map[string]map[string]bool{
+	"conventions":    {"orient": true},
 	"footprint":      {"render": true, "roster": true},
+	"learnings":      {"mine": true},
 	"ledger":         {"diff": true, "validate": true, "list": true, "show": true},
 	"reviewer-stats": {"report": true},
 }
@@ -285,6 +287,21 @@ func devritesAgent(payloadAgent string) devritesAgentKind {
 	}
 }
 
+func declaredDevritesRole(payloadAgent string) string {
+	payloadAgent = strings.TrimSpace(payloadAgent)
+	envAgent := strings.TrimSpace(os.Getenv("DEVRITES_ACTIVE_AGENT"))
+	if payloadAgent != "" && envAgent != "" && payloadAgent != envAgent {
+		return ""
+	}
+	if payloadAgent == "" {
+		payloadAgent = envAgent
+	}
+	if strings.HasPrefix(payloadAgent, "devrites-") && len(payloadAgent) > len("devrites-") {
+		return payloadAgent
+	}
+	return ""
+}
+
 func toolBaseName(tool string) string {
 	tool = strings.ToLower(strings.TrimSpace(tool))
 	for _, sep := range []string{"::", "__", "/", "."} {
@@ -352,11 +369,10 @@ func safeReadonlyShellSegment(segment string) bool {
 			fields = fields[1:]
 			continue
 		case "command":
-			if len(fields) == 2 && fields[1] == "-v" {
+			if len(fields) == 3 && fields[1] == "-v" {
 				return true
 			}
-			fields = fields[1:]
-			continue
+			return false
 		case "env":
 			fields = fields[1:]
 			for len(fields) > 0 && (strings.HasPrefix(fields[0], "-") || strings.Contains(fields[0], "=")) {
@@ -467,7 +483,7 @@ func hookReviewerReadonly(h harness.Harness, stdin io.Reader, stdout, stderr io.
 		return exitOK
 	}
 	in := h.ParseGuardInput(bytes.NewReader(data))
-	kind := devritesAgentForGuard(h, in)
+	kind := devritesAgentBindingForGuard(h, in).Kind
 	if kind == devritesAgentNone &&
 		os.Getenv("DEVRITES_CODEX_GENERIC_AGENT_COMPAT") == "1" &&
 		in.AgentType == "" {

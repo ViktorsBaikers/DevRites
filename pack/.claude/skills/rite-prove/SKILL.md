@@ -53,10 +53,13 @@ Pull these via `Read` when relevant:
   blocker; don't refactor unrelated code.
 - Spec Drift Guard applies: if tests/evidence reveal the spec is wrong, stop and handle
   drift (`rite-build/reference/spec-drift-guard.md`).
-- **Runner observes; root records; wright fixes.** Use the file-backed fresh-context
-  contract in [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns
-  the evidence verdict and canonical writes. Every accepted source/test correction is one
-  bounded `devrites-slice-wright` packet, never an inline edit.
+- **Root executes; runner validates; root records; wright fixes.** Use the file-backed
+  fresh-context contract in
+  [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns exact
+  vetted gate execution, browser capability, the evidence verdict, and canonical
+  writes. The proof runner is read-only and validates immutable logs/artifacts.
+  Every accepted source/test correction is one bounded `devrites-slice-wright`
+  packet, never an inline edit.
 
 ## Workflow
 0. Read `.claude/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
@@ -69,28 +72,36 @@ Pull these via `Read` when relevant:
    [test-command-discovery](reference/test-command-discovery.md): README, package
    scripts, Makefile, CI configs, Gemfile/Rakefile, pyproject, go.mod, Cargo.toml.
    **Completion:** exact runnable test/build/typecheck/lint commands are recorded or explicitly unavailable.
-3. **Run proof in fresh context.** Freeze the candidate and dispatch
-   `devrites-proof-runner` with the exact commands, cwd, prerequisites, acceptance map,
-   and scratch boundary. Await and validate its observed full relevant test suite plus
-   **build / typecheck / lint** report. The runner writes no canonical evidence.
-4. **UI feature?** Include `design-brief.md`, `references.md`, routes, browser harness, and
-   allowed scratch path in the proof packet, then have the runner apply the browser proof ladder:
+3. **Execute proof against a frozen candidate.** Freeze and hash the candidate.
+   The root runs only commands authorized byte-for-byte by `test-plan.md` and the
+   immutable proof packet, with exact cwd and prerequisites, capturing exit code,
+   decisive output, artifact hashes, and before/after candidate identity in secure
+   external scratch. Run the full relevant test suite plus **build / typecheck /
+   lint**. Reject synthesized or substituted commands and any source drift.
+4. **UI feature?** The root applies the browser proof ladder with
+   `design-brief.md`, `references.md`, packet-listed routes, browser harness, and
+   allowed scratch path:
    [proof-ladder](reference/proof-ladder.md) + [browser-proof](reference/browser-proof.md)
    (`devrites-browser-proof`): routes, viewports, screenshots (opened + described),
    console, network, interaction paths, and the brief's proof targets. Compare screenshots
    with target references and record deltas. An unresolved material mismatch is a failed
-   result; the root handles any accepted correction at step 6 before re-rendering.
-5. **Map proof completely.** Follow
+   result; the root handles any accepted correction at step 7 before re-rendering.
+5. **Validate proof in fresh context.** Dispatch `devrites-proof-runner` with the
+   frozen candidate identity, exact approved command list, immutable root-produced
+   logs/screenshots/traces, acceptance map, and hashes. Await its non-empty
+   `agent-result/v1`; reject mismatched, missing, stale, or self-attested evidence.
+   The runner executes no command and writes no canonical evidence.
+6. **Map proof completely.** Follow
    [`reference/acceptance-proof.md`](reference/acceptance-proof.md) for acceptance/scenario
    coverage and the conditional critical-path, observability, developer-surface, and wiring
    branches. Completion: every criterion, planned interaction, and declared key link has a
    proof class plus passing evidence, or is recorded as a blocker.
-6. **On failure** → [failure-triage](reference/failure-triage.md) +
+7. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. The root reconciles the reproduction. Send an accepted,
    in-scope correction to the sole writer, `devrites-slice-wright`; then freeze the new
    candidate and dispatch a fresh proof runner for affected checks. If a fix would exceed
    scope, record a blocker.
-7. The root updates `evidence.md`, `browser-evidence.md` (if UI), `traceability.md`, and
+8. The root updates `evidence.md`, `browser-evidence.md` (if UI), `traceability.md`, and
    `state.md`. New proof goes to `evidence.md` (`proof.md` is a read-only alias:
    see `devrites-lib/reference/workspace-artifact-schema.md`).
 

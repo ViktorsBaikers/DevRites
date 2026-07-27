@@ -72,6 +72,9 @@ project's tokens, shared components, and neighboring screens.
   with `file:line` and a concrete fix. Feature scope only.
 
 ## Output
+
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
 ```
 Frontend review (<slug>) — independent
 System alignment: <drift by root cause>

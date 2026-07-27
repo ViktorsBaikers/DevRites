@@ -93,6 +93,20 @@ func TestWorktreeTreeErrorsOutsideGitRepo(t *testing.T) {
 	}
 }
 
+func TestReconcileFailsClosedWhenGitIsUnavailable(t *testing.T) {
+	newGitRepo(t)
+	root := workspace(t, "slice")
+	t.Setenv("PATH", t.TempDir())
+
+	code, output := runReconcile(t, root, "snapshot", "slice")
+	if code != 6 {
+		t.Fatalf("reconcile snapshot code=%d, want 6 when git is unavailable\n%s", code, output)
+	}
+	if !strings.Contains(output, "cannot resolve git worktree") {
+		t.Fatalf("missing fail-closed diagnostic:\n%s", output)
+	}
+}
+
 func TestWorktreeTreeCapturesUntrackedFiles(t *testing.T) {
 	dir := newGitRepo(t)
 	objects := t.TempDir()
@@ -196,6 +210,83 @@ func TestReconcileSnapshotThenCleanCheck(t *testing.T) {
 	}
 	if isFile(filepath.Join(featureDir(root, "feat"), reconcileBaseName)) || isDir(filepath.Join(featureDir(root, "feat"), reconcileObjectsName)) {
 		t.Fatal("close retained private baseline state")
+	}
+}
+
+func TestReconcileRepeatedCheckRejectsAllowlistedSourceDrift(t *testing.T) {
+	gitRoot := newGitRepo(t)
+	root := workspace(t, "feat")
+	writeWrightAllowlist(t, root, "feat", "seed.go")
+
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), "package main\n\nfunc builtByWright() {}\n")
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("first check = %d, want 0\n%s", code, out)
+	}
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("unchanged repeated check = %d, want 0\n%s", code, out)
+	}
+
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), "package main\n\nfunc changedByArtifactGate() {}\n")
+	code, out := runReconcile(t, root, "check", "feat")
+	if code != 5 {
+		t.Fatalf("post-gate drift check = %d, want 5\n%s", code, out)
+	}
+	if !strings.Contains(out, "source changed after the last clean check") ||
+		!strings.Contains(out, "seed.go") {
+		t.Fatalf("post-gate drift diagnostic missing reason/path:\n%s", out)
+	}
+}
+
+func TestReconcileRestoreCheckRollsBackOnlyPostCheckDelta(t *testing.T) {
+	gitRoot := newGitRepo(t)
+	root := workspace(t, "feat")
+	writeWrightAllowlist(t, root, "feat", "seed.go", "kept.go")
+	writeFile(t, filepath.Join(gitRoot, "kept.go"), "package main\n\nfunc beforeWright() {}\n")
+
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+	wrightSeed := "package main\n\nfunc builtByWright() {}\n"
+	wrightKept := "package main\n\nfunc keptByWright() {}\n"
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), wrightSeed)
+	writeFile(t, filepath.Join(gitRoot, "kept.go"), wrightKept)
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("check = %d, want 0\n%s", code, out)
+	}
+
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), "package main\n\nfunc corruptedByGate() {}\n")
+	if err := os.Remove(filepath.Join(gitRoot, "kept.go")); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(gitRoot, "gate-added.go"), "package main\n")
+
+	code, out := runReconcile(t, root, "restore-check", "feat")
+	if code != 0 {
+		t.Fatalf("restore-check = %d, want 0\n%s", code, out)
+	}
+	for _, changedPath := range []string{"gate-added.go", "kept.go", "seed.go"} {
+		if !strings.Contains(out, changedPath) {
+			t.Errorf("restore output omitted %s:\n%s", changedPath, out)
+		}
+	}
+	if data, err := os.ReadFile(filepath.Join(gitRoot, "seed.go")); err != nil {
+		t.Fatal(err)
+	} else if string(data) != wrightSeed {
+		t.Fatalf("seed.go = %q, want retained wright content %q", data, wrightSeed)
+	}
+	if data, err := os.ReadFile(filepath.Join(gitRoot, "kept.go")); err != nil {
+		t.Fatal(err)
+	} else if string(data) != wrightKept {
+		t.Fatalf("kept.go = %q, want retained wright content %q", data, wrightKept)
+	}
+	if _, err := os.Stat(filepath.Join(gitRoot, "gate-added.go")); !os.IsNotExist(err) {
+		t.Fatalf("post-check added source remains: %v", err)
+	}
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("post-restore check = %d, want 0\n%s", code, out)
 	}
 }
 
@@ -698,25 +789,78 @@ func TestReconcileRefreshRequiresPriorCleanCheck(t *testing.T) {
 	}
 }
 
-func TestReconcileCloseClearsPrivateWindowState(t *testing.T) {
+func TestReconcileCloseRequiresCleanCheck(t *testing.T) {
 	newGitRepo(t)
 	root := workspace(t, "feat")
-	writeFile(t, filepath.Join(root, "work", "feat", reconcileBaseName), "stale\n")
-	writeFile(t, filepath.Join(root, "work", "feat", reconcileWrightStateName), "stale\n")
-	if err := os.MkdirAll(filepath.Join(root, "work", "feat", reconcileObjectsName), 0o755); err != nil {
+	writeWrightAllowlist(t, root, "feat", "seed.go")
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+
+	code, out := runReconcile(t, root, "close", "feat")
+	if code != 6 {
+		t.Fatalf("unchecked close = %d, want 6\n%s", code, out)
+	}
+	if !strings.Contains(out, "no clean check marker") {
+		t.Fatalf("missing clean-check diagnostic:\n%s", out)
+	}
+	if !isFile(filepath.Join(featureDir(root, "feat"), reconcileBaseName)) ||
+		!isDir(filepath.Join(featureDir(root, "feat"), reconcileObjectsName)) {
+		t.Fatal("unchecked close destroyed the retained baseline")
+	}
+}
+
+func TestReconcileCloseRejectsPostCheckSourceDrift(t *testing.T) {
+	gitRoot := newGitRepo(t)
+	root := workspace(t, "feat")
+	writeWrightAllowlist(t, root, "feat", "seed.go")
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), "package main\n\nfunc builtByWright() {}\n")
+	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
+		t.Fatalf("check = %d, want 0\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), "package main\n\nfunc changedAfterCheck() {}\n")
+
+	code, out := runReconcile(t, root, "close", "feat")
+	if code != 5 {
+		t.Fatalf("drifted close = %d, want 5\n%s", code, out)
+	}
+	if !strings.Contains(out, "source changed after the last clean check") ||
+		!strings.Contains(out, "seed.go") {
+		t.Fatalf("missing post-check drift diagnostic:\n%s", out)
+	}
+	if !isFile(filepath.Join(featureDir(root, "feat"), reconcileBaseName)) ||
+		!isDir(filepath.Join(featureDir(root, "feat"), reconcileObjectsName)) {
+		t.Fatal("drifted close destroyed the retained baseline")
+	}
+}
+
+func TestReconcileCloseRejectsWorkspaceSymlinkEscape(t *testing.T) {
+	newGitRepo(t)
+	root := t.TempDir()
+	outside := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "work"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "work", "feat")); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	writeFile(t, filepath.Join(outside, reconcileBaseName), "outside\n")
+	if err := os.MkdirAll(filepath.Join(outside, reconcileObjectsName), 0o700); err != nil {
 		t.Fatal(err)
 	}
 
 	code, out := runReconcile(t, root, "close", "feat")
-	if code != 0 {
-		t.Fatalf("close = %d, want 0\n%s", code, out)
+	if code != 6 {
+		t.Fatalf("symlinked close = %d, want 6\n%s", code, out)
 	}
-	if !strings.Contains(out, "closed slice window") {
-		t.Errorf("expected close message:\n%s", out)
+	if !strings.Contains(out, "workspace") {
+		t.Fatalf("missing workspace-path diagnostic:\n%s", out)
 	}
-	if isFile(filepath.Join(featureDir(root, "feat"), reconcileBaseName)) ||
-		isFile(filepath.Join(featureDir(root, "feat"), reconcileWrightStateName)) ||
-		isDir(filepath.Join(featureDir(root, "feat"), reconcileObjectsName)) {
-		t.Fatal("close retained private baseline state")
+	if !isFile(filepath.Join(outside, reconcileBaseName)) ||
+		!isDir(filepath.Join(outside, reconcileObjectsName)) {
+		t.Fatal("symlinked close deleted state outside the DevRites root")
 	}
 }

@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/forge"
 	"github.com/devrites/devrites/internal/safepath"
 )
@@ -38,7 +38,8 @@ const (
 // while retaining the original source baseline.
 // `check` compares the captured state with the current state and retains the
 // immutable baseline for the later test-integrity gate.
-// `close` explicitly ends the window and removes its private artifacts.
+// `restore-check` rolls back only source drift introduced after the last clean
+// check. `close` revalidates and then removes the private window artifacts.
 //
 //	0  clean check, snapshot/close completed, or skipped (not a git repo)
 //	5  VIOLATION: a path changed outside the orchestrator allowlist
@@ -50,13 +51,21 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		slug = activeSlug(root)
 	}
 
-	d := featureDir(root, slug)
-	if slug == "" || !isDir(d) {
+	if slug == "" {
 		s := slug
 		if s == "" {
 			s = "<unset>"
 		}
 		fmt.Fprintf(stderr, "reconcile: no active workspace (slug=%s): nothing to reconcile.\n", s)
+		return 6
+	}
+	d, err := devritespaths.ExistingFeatureDirChecked(root, slug)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintf(stderr, "reconcile: no active workspace (slug=%s): nothing to reconcile.\n", slug)
+		} else {
+			fmt.Fprintf(stderr, "reconcile: invalid workspace for %s: %v\n", slug, err)
+		}
 		return 6
 	}
 
@@ -84,6 +93,17 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	if mode == "close" {
+		info, err := os.Lstat(checked)
+		if err != nil || !info.Mode().IsRegular() {
+			fmt.Fprintln(stderr, `reconcile: active slice window has no clean check marker; run "reconcile check" before closing it.`)
+			return 6
+		}
+		// Defense in depth: a prior marker proves the explicit check occurred;
+		// rerunning it here binds close to the current source and canonical
+		// workspace state rather than trusting a stale marker.
+		if code := Reconcile(root, []string{"check", slug}, stdout, stderr); code != 0 {
+			return code
+		}
 		if err := closeWindow(); err != nil {
 			fmt.Fprintf(stderr, "reconcile: cannot close slice window: %v\n", err)
 			return 6
@@ -93,10 +113,10 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	cwd, _ := os.Getwd()
-	gitRoot := gitToplevel(cwd)
-	if gitRoot == "" {
-		fmt.Fprintln(stderr, "reconcile: not a git repo: gate skipped, verify the diff by hand.")
-		return 0
+	gitRoot, err := gitToplevel(cwd)
+	if err != nil {
+		fmt.Fprintf(stderr, "reconcile: cannot resolve git worktree: %v\n", err)
+		return 6
 	}
 
 	switch mode {
@@ -200,6 +220,55 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "reconcile: snapshot captured for %s.\n", slug)
 		return 0
 
+	case "restore-check":
+		_, env, activeObjects, active, err := loadReconcileBaseline(gitRoot, d)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: invalid snapshot: %v\n", err)
+			return 6
+		}
+		if !active {
+			fmt.Fprintln(stderr, `reconcile: no snapshot (.reconcile-base/.reconcile-objects): nothing can be restored.`)
+			return 6
+		}
+		checkedData, err := os.ReadFile(checked)
+		if err != nil {
+			fmt.Fprintln(stderr, `reconcile: active slice window has no clean check marker; nothing can be restored.`)
+			return 6
+		}
+		checkedTree := strings.TrimSpace(string(checkedData))
+		if checkedTree == "" || strings.ContainsAny(checkedTree, " \t\r\n") {
+			fmt.Fprintf(stderr, "reconcile: invalid %s: expected one tree id\n", reconcileCheckedName)
+			return 6
+		}
+		nowTree, err := worktreeTree(gitRoot, activeObjects, root)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot capture worktree for restore: %v\n", err)
+			return 6
+		}
+		changed, err := restoreTreeDelta(gitRoot, env, checkedTree, nowTree)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot restore post-check source drift: %v\n", err)
+			return 6
+		}
+		restoredTree, err := worktreeTree(gitRoot, activeObjects, root)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot verify restored worktree: %v\n", err)
+			return 6
+		}
+		if restoredTree != checkedTree {
+			fmt.Fprintln(stderr, "reconcile: restored worktree does not match the last clean check; retained window left open.")
+			return 6
+		}
+		if len(changed) == 0 {
+			fmt.Fprintln(stdout, "reconcile: no post-check source drift to restore.")
+			return 0
+		}
+		fmt.Fprintln(stdout, "reconcile: restored only the post-check source delta:")
+		for _, changedPath := range changed {
+			fmt.Fprintf(stdout, "  - %s\n", changedPath)
+		}
+		return 0
+
 	case "check":
 		baseTree, env, _, active, err := loadReconcileBaseline(gitRoot, d)
 		if err != nil {
@@ -238,6 +307,29 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		nowTree, err := worktreeTree(gitRoot, objects, root)
 		if err != nil {
 			fmt.Fprintf(stderr, "reconcile: cannot capture worktree: %v\n", err)
+			return 6
+		}
+		if checkedData, checkedErr := os.ReadFile(checked); checkedErr == nil {
+			checkedTree := strings.TrimSpace(string(checkedData))
+			if checkedTree == "" || strings.ContainsAny(checkedTree, " \t\r\n") {
+				fmt.Fprintf(stderr, "reconcile: invalid %s: expected one tree id\n", reconcileCheckedName)
+				return 6
+			}
+			if checkedTree != nowTree {
+				changedAfterCheck, err := changedTreePaths(gitRoot, env, checkedTree, nowTree)
+				if err != nil {
+					fmt.Fprintf(stderr, "reconcile: cannot compare with the last clean check: %v\n", err)
+					return 6
+				}
+				sort.Strings(changedAfterCheck)
+				fmt.Fprintln(stderr, "reconcile: STOP: source changed after the last clean check; root-owned artifact gates must not edit source:")
+				for _, changedPath := range changedAfterCheck {
+					fmt.Fprintf(stderr, "  - %s\n", changedPath)
+				}
+				return 5
+			}
+		} else if !os.IsNotExist(checkedErr) {
+			fmt.Fprintf(stderr, "reconcile: cannot read %s: %v\n", reconcileCheckedName, checkedErr)
 			return 6
 		}
 		changed, err := changedTreePaths(gitRoot, env, baseTree, nowTree)
@@ -282,7 +374,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		return 0
 
 	default:
-		fmt.Fprintln(stderr, "reconcile: usage: devrites-engine reconcile <snapshot|check|close> [slug]")
+		fmt.Fprintln(stderr, "reconcile: usage: devrites-engine reconcile <snapshot|check|restore-check|close> [slug]")
 		return 6
 	}
 }
@@ -692,6 +784,83 @@ func changedDevritesPaths(before, after []devritesStateEntry) []string {
 	return paths
 }
 
+// restoreTreeDelta materializes the last clean tree in a private directory and
+// copies back only paths that changed afterward. It never touches the real Git
+// index and rejects parent symlink escapes before deleting or writing.
+func restoreTreeDelta(gitRoot string, env []string, checkedTree, currentTree string) ([]string, error) {
+	changed, err := changedTreePaths(gitRoot, env, checkedTree, currentTree)
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(changed)
+	if len(changed) == 0 {
+		return nil, nil
+	}
+
+	materialized, err := os.MkdirTemp("", "devrites-reconcile-restore-*")
+	if err != nil {
+		return nil, fmt.Errorf("create restore directory: %w", err)
+	}
+	defer func() { _ = os.RemoveAll(materialized) }()
+	index := filepath.Join(materialized, "index")
+	restoreEnv := append(append([]string{}, env...), "GIT_INDEX_FILE="+index)
+	if _, err := reconcileGitOutput(gitRoot, restoreEnv, "read-tree", checkedTree); err != nil {
+		return nil, err
+	}
+	prefix := filepath.Join(materialized, "tree") + string(filepath.Separator)
+	if _, err := reconcileGitOutput(gitRoot, restoreEnv, "checkout-index", "--all", "--force", "--prefix="+prefix); err != nil {
+		return nil, err
+	}
+
+	for _, changedPath := range changed {
+		if changedPath == "." || changedPath == ".devrites" ||
+			strings.HasPrefix(changedPath, reconcileDevritesPathPrefix) ||
+			path.Clean(changedPath) != changedPath {
+			return nil, fmt.Errorf("unsafe restore path %q", changedPath)
+		}
+		target := filepath.Join(gitRoot, filepath.FromSlash(changedPath))
+		targetParent := filepath.Dir(target)
+		if !safepath.WithinResolved(targetParent, gitRoot) {
+			return nil, fmt.Errorf("restore parent escapes repository through a symlink: %s", changedPath)
+		}
+		source := filepath.Join(prefix, filepath.FromSlash(changedPath))
+		sourceInfo, sourceErr := os.Lstat(source)
+		if sourceErr != nil && !os.IsNotExist(sourceErr) {
+			return nil, fmt.Errorf("inspect clean source %s: %w", changedPath, sourceErr)
+		}
+		if err := os.RemoveAll(target); err != nil {
+			return nil, fmt.Errorf("remove post-check path %s: %w", changedPath, err)
+		}
+		if os.IsNotExist(sourceErr) {
+			continue
+		}
+		if err := os.MkdirAll(targetParent, 0o755); err != nil {
+			return nil, fmt.Errorf("create restore parent for %s: %w", changedPath, err)
+		}
+		switch {
+		case sourceInfo.Mode()&os.ModeSymlink != 0:
+			link, err := os.Readlink(source)
+			if err != nil {
+				return nil, fmt.Errorf("read clean symlink %s: %w", changedPath, err)
+			}
+			if err := os.Symlink(link, target); err != nil {
+				return nil, fmt.Errorf("restore symlink %s: %w", changedPath, err)
+			}
+		case sourceInfo.Mode().IsRegular():
+			data, err := os.ReadFile(source)
+			if err != nil {
+				return nil, fmt.Errorf("read clean file %s: %w", changedPath, err)
+			}
+			if err := os.WriteFile(target, data, sourceInfo.Mode().Perm()); err != nil {
+				return nil, fmt.Errorf("restore file %s: %w", changedPath, err)
+			}
+		default:
+			return nil, fmt.Errorf("unsupported clean tree entry for %s: %s", changedPath, sourceInfo.Mode())
+		}
+	}
+	return changed, nil
+}
+
 // worktreeTree captures the working tree (tracked + untracked, .gitignore
 // honored) as a git tree object via a throwaway index, excluding separately
 // fingerprinted DevRites roots. Seeding from HEAD keeps committed paths tracked
@@ -715,49 +884,29 @@ func worktreeTree(gitRoot, objectDir string, excludedRoots ...string) (string, e
 	}
 	env = append(env, "GIT_INDEX_FILE="+idx)
 
-	read := exec.Command("git", "-C", gitRoot, "read-tree", "HEAD")
-	read.Env = env
-	readOut, readErr := read.CombinedOutput()
+	_, readErr := runGitCommand(gitRoot, env, "read-tree", "HEAD")
 	if readErr != nil {
 		readFailure := fmt.Errorf("git read-tree HEAD: %w", readErr)
-		if detail := strings.TrimSpace(string(readOut)); detail != "" {
-			readFailure = fmt.Errorf("git read-tree HEAD: %w: %s", readErr, detail)
-		}
 		// An unborn branch is the one valid reason HEAD cannot seed the index.
 		// Distinguish it from a corrupt or unreadable existing ref so the gate
 		// still fails closed on real repository errors.
-		symbolic := exec.Command("git", "-C", gitRoot, "symbolic-ref", "--quiet", "HEAD")
-		symbolic.Env = env
-		refOut, symbolicErr := symbolic.CombinedOutput()
+		refOut, symbolicErr := runGitCommand(gitRoot, env, "symbolic-ref", "--quiet", "HEAD")
 		if symbolicErr != nil {
 			return "", readFailure
 		}
 		ref := strings.TrimSpace(string(refOut))
-		exists := exec.Command("git", "-C", gitRoot, "show-ref", "--verify", "--quiet", ref)
-		exists.Env = env
-		if err := exists.Run(); err == nil {
+		if _, err := runGitCommand(gitRoot, env, "show-ref", "--verify", "--quiet", ref); err == nil {
 			return "", readFailure
-		} else if exitErr, ok := err.(*exec.ExitError); !ok || exitErr.ExitCode() != 1 {
+		} else if code, ok := gitErrorExitCode(err); !ok || code != 1 {
 			return "", fmt.Errorf("inspect HEAD ref %s: %w", ref, err)
 		}
 
-		empty := exec.Command("git", "-C", gitRoot, "read-tree", "--empty")
-		empty.Env = env
-		if out, err := empty.CombinedOutput(); err != nil {
-			if detail := strings.TrimSpace(string(out)); detail != "" {
-				return "", fmt.Errorf("git read-tree --empty: %w: %s", err, detail)
-			}
+		if _, err := runGitCommand(gitRoot, env, "read-tree", "--empty"); err != nil {
 			return "", fmt.Errorf("git read-tree --empty: %w", err)
 		}
 	}
 
-	add := exec.Command("git", "-C", gitRoot, "add", "-A")
-	add.Env = env
-	addOut, err := add.CombinedOutput()
-	if err != nil {
-		if detail := strings.TrimSpace(string(addOut)); detail != "" {
-			return "", fmt.Errorf("git add -A: %w: %s", err, detail)
-		}
+	if _, err := runGitCommand(gitRoot, env, "add", "-A"); err != nil {
 		return "", fmt.Errorf("git add -A: %w", err)
 	}
 	for _, excludedRoot := range excludedRoots {
@@ -765,23 +914,16 @@ func worktreeTree(gitRoot, objectDir string, excludedRoots ...string) (string, e
 		if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			continue
 		}
-		rm := exec.Command(
-			"git", "-C", gitRoot, "rm", "-r", "--cached", "--ignore-unmatch", "--",
+		if _, err := runGitCommand(
+			gitRoot, env, "rm", "-r", "--cached", "--ignore-unmatch", "--",
 			":(top,literal)"+filepath.ToSlash(rel),
-		)
-		rm.Env = env
-		if out, err := rm.CombinedOutput(); err != nil {
-			return "", fmt.Errorf("exclude %s from worktree snapshot: %w: %s", rel, err, strings.TrimSpace(string(out)))
+		); err != nil {
+			return "", fmt.Errorf("exclude %s from worktree snapshot: %w", rel, err)
 		}
 	}
 
-	write := exec.Command("git", "-C", gitRoot, "write-tree")
-	write.Env = env
-	out, err := write.CombinedOutput()
+	out, err := runGitCommand(gitRoot, env, "write-tree")
 	if err != nil {
-		if detail := strings.TrimSpace(string(out)); detail != "" {
-			return "", fmt.Errorf("git write-tree: %w: %s", err, detail)
-		}
 		return "", fmt.Errorf("git write-tree: %w", err)
 	}
 	tree := strings.TrimSpace(string(out))
@@ -792,10 +934,9 @@ func worktreeTree(gitRoot, objectDir string, excludedRoots ...string) (string, e
 }
 
 func reconcileGitEnv(gitRoot, objectDir string) ([]string, error) {
-	common := exec.Command("git", "-C", gitRoot, "rev-parse", "--git-common-dir")
-	out, err := common.CombinedOutput()
+	out, err := runGitCommand(gitRoot, nil, "rev-parse", "--git-common-dir")
 	if err != nil {
-		return nil, fmt.Errorf("git rev-parse --git-common-dir: %w: %s", err, strings.TrimSpace(string(out)))
+		return nil, fmt.Errorf("git rev-parse --git-common-dir: %w", err)
 	}
 	commonDir := strings.TrimSpace(string(out))
 	if !filepath.IsAbs(commonDir) {
@@ -935,18 +1076,5 @@ func treeFileContent(gitRoot string, env []string, tree, filename string) ([]byt
 }
 
 func reconcileGitOutput(gitRoot string, env []string, args ...string) ([]byte, error) {
-	commandArgs := append([]string{"-C", gitRoot}, args...)
-	cmd := exec.Command("git", commandArgs...)
-	if env != nil {
-		cmd.Env = env
-	}
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		detail := strings.TrimSpace(string(out))
-		if detail != "" {
-			return nil, fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, detail)
-		}
-		return nil, fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
-	}
-	return out, nil
+	return runGitCommand(gitRoot, env, args...)
 }

@@ -132,10 +132,21 @@ grep -q '\$rite-build' "$T/.agents/skills/rite-define/reference/gates.md" && ok 
 grep -q '\$rite-build' "$T/.codex/agents/devrites-slice-wright.toml" && ok "Codex agent descriptions rewrite slash rite invocations" || no "Codex agent descriptions missing dollar rite invocation rewrite"
 grep -q 'root-owned artifact-producing gate' "$T/.codex/agents/devrites-slice-wright.toml" \
   && grep -q 'Production builds and browser/E2E runs are root-owned gates' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" \
-  && grep -q 'Run every exact command reported as.*root-owned artifact-producing gate' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
+  && grep -q 'authorized byte-for-byte by the vetted' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
+  && grep -q 'cannot invent, rewrite, widen' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
+  && grep -q 'reconcile restore-check' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
   && grep -q 'reconcile check.*after the root-owned gates' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
   && ok "Codex build contract keeps opaque artifact gates with root" \
   || no "Codex build contract assigns opaque artifact gates inconsistently"
+if grep -q '^tools = .*Bash' "$T/.codex/agents/devrites-proof-runner.toml" \
+   || grep -q 'Run only packet-approved' "$T/.codex/agents/devrites-proof-runner.toml"; then
+  no "Codex proof runner still executes root-owned proof commands"
+elif grep -q 'root-produced test, build, lint, typecheck, and browser evidence' "$T/.codex/agents/devrites-proof-runner.toml" \
+   && grep -q 'The root runs only commands authorized byte-for-byte' "$T/.agents/skills/rite-prove/SKILL.md"; then
+  ok "Codex proof runner validates immutable root-owned proof"
+else
+  no "Codex proof ownership contract is incomplete"
+fi
 if grep -R -nE '(^|[^A-Za-z0-9_./-])/rite(-[a-z0-9-]+)?([^A-Za-z0-9_-]|$)' "$T/.agents/skills" "$T/.codex/agents" >/tmp/dr_codex_slash_rite 2>/dev/null; then
   no "Codex mirrors still contain slash rite invocations"
   sed -n '1,20p' /tmp/dr_codex_slash_rite

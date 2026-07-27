@@ -32,7 +32,7 @@ Read the review bar once: `spec.md` and the slice acceptance criteria;
 For each candidate, read only the immutable extracted delta:
 
 ```bash
-git -C "<manifest primary_root>" diff --binary --full-index --no-renames \
+cd "<validated manifest primary_root>" && git diff --binary --full-index --no-renames \
   "<candidate initial_base>" "<candidate commit>" --
 ```
 
@@ -90,6 +90,9 @@ Cite the diff line before the mark, and never rank candidates by general impress
 - The strategy a candidate was assigned is context, not credit: score the code it produced.
 
 ## Output
+
+Wrap the report in the standards `agent-result/v1` envelope with
+`payload.type: review-findings`; never return raw prose.
 ```
 Forge verdict (<slug> / <slice id>) — independent, comparative
 Candidates scored (each, evidence → mark):

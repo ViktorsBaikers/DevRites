@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/devrites/devrites/internal/harness"
 	"github.com/devrites/devrites/internal/lib"
@@ -78,6 +79,45 @@ func TestStopGateRecordsTypedDecisionForBothHosts(t *testing.T) {
 				t.Fatalf("evidence=%v", got.EvidencePaths)
 			}
 		})
+	}
+}
+
+func TestWaitIntentCoversSubagentStopBeforePostToolUse(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	in := agentDispatchHookInput{SessionID: "session", TurnID: "turn"}
+	in.ToolInput.IDs = []string{"agent-1"}
+	in.ToolInput.TimeoutMS = 1_000
+	attempts := []*agentDispatchAttempt{{
+		AgentID: "agent-1",
+		Started: true,
+	}}
+
+	if err := recordWaitIntents(root, in, attempts); err != nil {
+		t.Fatal(err)
+	}
+	active, err := activeWaitIntent(root, in.SessionID, in.TurnID, "agent-1", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !active {
+		t.Fatal("fresh wait intent is inactive")
+	}
+	active, err = activeWaitIntent(root, in.SessionID, in.TurnID, "agent-1", time.Now().Add(2*time.Second))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if active {
+		t.Fatal("expired wait intent remained active")
+	}
+	if err := recordCancelledWaits(root, in, attempts); err != nil {
+		t.Fatal(err)
+	}
+	active, err = activeWaitIntent(root, in.SessionID, in.TurnID, "agent-1", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if active {
+		t.Fatal("cancelled wait intent remained active")
 	}
 }
 

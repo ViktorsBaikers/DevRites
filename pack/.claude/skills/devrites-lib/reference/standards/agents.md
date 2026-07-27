@@ -67,6 +67,16 @@ field from the installed skill at `UserPromptSubmit` and arms a fail-closed comp
 receipt for every listed role; the engine derives roles from skill metadata.
 Conditional scouts and reviewers remain owned by their explicit phase triggers.
 
+If a skill with an unconditional role must STOP before its dispatch step because a
+deterministic prerequisite failed, record that branch with exactly one successful
+standalone command before the completion reply:
+`devrites-engine dispatch-waive <reason>`, where `<reason>` is one of
+`no-active-workspace`, `wrong-phase`, `readiness-failed`, `no-eligible-work`, or
+`human-gate-before-dispatch`. Use it only before any spawn attempt and only for the
+literal predicate observed. PreToolUse alone is not a receipt: the hook accepts the
+waiver only after the engine command succeeds. Never use a waiver for failed,
+unavailable, skipped, empty, or inconvenient specialist work.
+
 Claude: `Agent`; Codex: `spawn_agent`. V2 calls the named `agent_type` with
 unique `task_name` and `fork_turns="none"`. GPT-5.6 may hide `agent_type` from the
 schema, but runtime accepts it and loads the TOML; never use `default`. V2 bypasses

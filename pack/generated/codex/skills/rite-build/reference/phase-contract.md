@@ -78,14 +78,28 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    ```bash
    devrites-engine test-integrity; echo "test-integrity rc=$?"
    ```
-   Run every exact command reported as `not-run`: `root-owned artifact-producing gate`
-   in the wright result. These are root proof commands, not source-edit authority.
-   Do not omit, rewrite, or substitute them; a missing command is unverifiable proof.
+   Run only root-owned gates already authorized byte-for-byte by the vetted
+   `test-plan.md` and unchanged `agent-packet/v1`, including exact command, cwd,
+   prerequisites, and expected artifact boundary. A wright result may report one
+   of those commands as `not-run`; it cannot invent, rewrite, widen, or authorize a
+   command. Reject any reported command that does not exactly match the frozen
+   plan/packet. Opaque wrapper, build, Playwright, and browser commands are root-owned
+   only when pre-authorized there; this transfers no source/test write authority.
+   A missing approved command is unverifiable proof.
    After they pass, run `devrites-engine reconcile check` again after the root-owned gates
    and before close, proving their child processes did not change tracked source:
    ```bash
    devrites-engine reconcile check; echo "reconcile rc=$?"
    ```
+   If a root-owned gate changes source after the clean pre-gate check, run the exact
+   engine-owned rollback and verify the retained tree before recovery:
+   ```bash
+   devrites-engine reconcile restore-check
+   devrites-engine reconcile check; echo "reconcile rc=$?"
+   ```
+   Never manually restore, truncate, resnapshot, or widen an allowlist to hide
+   post-check drift.
+
    If the wright's `Gates` were red (targeted tests / types / lint), `test-integrity`
    failed, a root-owned gate failed, the final reconcile failed, or proof could not be
    verified: do **not** mark the slice `built`, and **do not fix the code yourself**.

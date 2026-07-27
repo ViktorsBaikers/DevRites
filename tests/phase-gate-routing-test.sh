@@ -81,6 +81,20 @@ else
   no "rite-vet lacks a typed final implementation-readiness verdict"
 fi
 
+vet_recheck_line="$(grep -n '^6\. \*\*One narrow recheck' "$VET" | cut -d: -f1)"
+vet_engineering_digest_line="$(grep -n 'devrites-engine readiness-digest engineering <slug>' "$VET" | tail -1 | cut -d: -f1)"
+vet_ready_line="$(grep -n 'Only READY sets `Phase: vet`' "$VET" | tail -1 | cut -d: -f1)"
+if [ -n "$vet_recheck_line" ] \
+   && [ -n "$vet_engineering_digest_line" ] \
+   && [ -n "$vet_ready_line" ] \
+   && [ "$vet_engineering_digest_line" -gt "$vet_recheck_line" ] \
+   && [ "$vet_ready_line" -gt "$vet_recheck_line" ] \
+   && grep -q 'Keep `state.md` non-READY' "$VET"; then
+  ok "rite-vet finalizes digest and READY only after the mandatory narrow recheck"
+else
+  no "rite-vet can expose READY before its final reviewer recheck"
+fi
+
 if grep -q '`6` → `/rite-clarify`' "$BUILD" \
    && grep -q '`7` → `/rite-vet`' "$BUILD" \
    && grep -q '`8` → `/rite-upgrade`' "$BUILD"; then

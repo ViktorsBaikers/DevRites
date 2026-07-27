@@ -52,10 +52,10 @@ func TestIntegrity(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	cwd, _ := os.Getwd()
-	gitRoot := gitToplevel(cwd)
-	if gitRoot == "" {
-		fmt.Fprintln(stderr, "test-integrity: not a git repo: gate skipped; inspect the test diff manually.")
-		return 0
+	gitRoot, err := gitToplevel(cwd)
+	if err != nil {
+		fmt.Fprintf(stderr, "test-integrity: cannot resolve git worktree: %v\n", err)
+		return 2
 	}
 
 	trees, err := captureSliceTreeRange(gitRoot, root, d)

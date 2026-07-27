@@ -101,8 +101,10 @@ an escalation and do not proceed.**
      official documentation, or context7 for current upstream behavior, then include
      that source in the result. Never invent an API.
 4. **VERIFY (fail-on-red).** Run writer-safe tests/types/lint. Report required
-   build/browser/E2E as `not-run`: `root-owned artifact-producing gate`; root
-   runs them after reconciliation. Fix red gates in your code. **Never weaken a test
+   build/browser/E2E as `not-run`: `root-owned artifact-producing gate` only when
+   the exact command, cwd, and prerequisites already appear in the unchanged packet
+   and vetted `test-plan.md`; never synthesize or rewrite a root command. Root runs
+   those approved gates after reconciliation. Fix red gates in your code. **Never weaken a test
    to go green** by deleting it, skipping it with `skip`, `xfail`, or `.only`, or
    loosening an assertion. A test that genuinely must change is an **Escalation**,
    not a quiet edit. The orchestrator runs `devrites-engine test-integrity` on the
