@@ -495,39 +495,54 @@ func durableCodexV2DispatchAttempts(
 	}
 	var attempts []*agentDispatchAttempt
 	for _, spawn := range spawns {
-		if !devritesAgentNameRe.MatchString(spawn.Role) || spawn.Role == agentDispatchSkillGuard {
+		role := spawn.Role
+		var childPath string
+		var childMeta codexRolloutRecord
+		if strings.TrimSpace(spawn.Result) != "" {
+			childPath, childMeta, err = findCodexV2ChildRollout(
+				sessionsDir, parentPath, projectRoot, sessionID, spawn.AgentPath,
+			)
+			if err != nil {
+				return nil, err
+			}
+			if childPath != "" {
+				role = childMeta.Payload.AgentRole
+			}
+		}
+		if !devritesAgentNameRe.MatchString(role) || role == agentDispatchSkillGuard {
 			if strings.TrimSpace(spawn.Result) != "" {
 				return nil, fmt.Errorf("codex V2 completed a default or non-DevRites child during a DevRites skill turn; %s", conditionalDispatchInstruction())
 			}
 			continue
 		}
-		armed[spawn.Role] = struct{}{}
+		armed[role] = struct{}{}
 		attempt := &agentDispatchAttempt{
-			Role:      spawn.Role,
-			AgentType: spawn.Role,
+			Role:      role,
+			AgentType: role,
 			Started:   true,
 		}
 		attempts = append(attempts, attempt)
 		if strings.TrimSpace(spawn.Result) == "" || !lineBetween(waitLines, spawn.SpawnLine, spawn.ResultLine) {
 			continue
 		}
-		instructions, err := agentRoleDeveloperInstructions(root, spawn.Role)
-		if err != nil {
-			return nil, fmt.Errorf("named role %s is not loadable: %w", spawn.Role, err)
+		if childPath == "" || childMeta.Payload.AgentRole != role {
+			continue
 		}
-		childID, childResult, err := findCodexV2ChildResult(
-			sessionsDir, parentPath, projectRoot, sessionID, spawn.AgentPath, spawn.Role, instructions,
-		)
+		instructions, err := agentRoleDeveloperInstructions(root, role)
+		if err != nil {
+			return nil, fmt.Errorf("named role %s is not loadable: %w", role, err)
+		}
+		childResult, err := codexChildResult(childPath, instructions)
 		if err != nil {
 			return nil, err
 		}
-		if childID == "" || strings.TrimSpace(childResult) == "" {
+		if childMeta.Payload.ID == "" || strings.TrimSpace(childResult) == "" {
 			continue
 		}
-		attempt.AgentID = childID
+		attempt.AgentID = childMeta.Payload.ID
 		attempt.Stopped = true
 		attempt.Waited = true
-		if spawn.Role == "devrites-slice-wright" {
+		if role == "devrites-slice-wright" {
 			attempt.WindowID = currentReconcileWindowID()
 			if attempt.WindowID == "" || !reconcileWindowPredates(spawn.SpawnedAt) {
 				continue
@@ -654,10 +669,11 @@ func readCodexV2ParentRollout(
 	return spawns, waitLines, nil
 }
 
-func findCodexV2ChildResult(
-	sessionsDir, parentPath, projectRoot, sessionID, agentPath, role, instructions string,
-) (string, string, error) {
-	var childID, result string
+func findCodexV2ChildRollout(
+	sessionsDir, parentPath, projectRoot, sessionID, agentPath string,
+) (string, codexRolloutRecord, error) {
+	var childPath string
+	var childMeta codexRolloutRecord
 	err := filepath.WalkDir(sessionsDir, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			if os.IsNotExist(walkErr) {
@@ -675,18 +691,17 @@ func findCodexV2ChildResult(
 		if record.Type != "session_meta" ||
 			record.Payload.ParentThreadID != sessionID ||
 			record.Payload.AgentPath != agentPath ||
-			record.Payload.AgentRole != role ||
 			!sameResolvedPath(record.Payload.CWD, projectRoot) {
 			return nil
 		}
-		if childID != "" {
+		if childPath != "" {
 			return fmt.Errorf("multiple Codex child rollouts match %s", agentPath)
 		}
-		childID = record.Payload.ID
-		result, err = codexChildResult(path, instructions)
-		return err
+		childPath = path
+		childMeta = record
+		return nil
 	})
-	return childID, result, err
+	return childPath, childMeta, err
 }
 
 func firstCodexRolloutRecord(path string) (codexRolloutRecord, bool, error) {
