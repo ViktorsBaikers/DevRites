@@ -807,8 +807,12 @@ func restoreTreeDelta(gitRoot string, env []string, checkedTree, currentTree str
 	if _, err := reconcileGitOutput(gitRoot, restoreEnv, "read-tree", checkedTree); err != nil {
 		return nil, err
 	}
-	prefix := filepath.Join(materialized, "tree") + string(filepath.Separator)
-	if _, err := reconcileGitOutput(gitRoot, restoreEnv, "checkout-index", "--all", "--force", "--prefix="+prefix); err != nil {
+	materializedTree := filepath.Join(materialized, "tree")
+	if err := os.MkdirAll(materializedTree, 0o700); err != nil {
+		return nil, fmt.Errorf("create restore tree: %w", err)
+	}
+	gitPrefix := filepath.ToSlash(materializedTree) + "/"
+	if _, err := reconcileGitOutput(gitRoot, restoreEnv, "checkout-index", "--all", "--force", "--prefix="+gitPrefix); err != nil {
 		return nil, err
 	}
 
@@ -823,7 +827,7 @@ func restoreTreeDelta(gitRoot string, env []string, checkedTree, currentTree str
 		if !safepath.WithinResolved(targetParent, gitRoot) {
 			return nil, fmt.Errorf("restore parent escapes repository through a symlink: %s", changedPath)
 		}
-		source := filepath.Join(prefix, filepath.FromSlash(changedPath))
+		source := filepath.Join(materializedTree, filepath.FromSlash(changedPath))
 		sourceInfo, sourceErr := os.Lstat(source)
 		if sourceErr != nil && !os.IsNotExist(sourceErr) {
 			return nil, fmt.Errorf("inspect clean source %s: %w", changedPath, sourceErr)
