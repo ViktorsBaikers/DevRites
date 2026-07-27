@@ -242,6 +242,9 @@ func TestReconcileRepeatedCheckRejectsAllowlistedSourceDrift(t *testing.T) {
 
 func TestReconcileRestoreCheckRollsBackOnlyPostCheckDelta(t *testing.T) {
 	gitRoot := newGitRepo(t)
+	if _, err := runGitCommand(gitRoot, nil, "config", "core.autocrlf", "true"); err != nil {
+		t.Fatal(err)
+	}
 	root := workspace(t, "feat")
 	writeWrightAllowlist(t, root, "feat", "seed.go", "kept.go")
 	writeFile(t, filepath.Join(gitRoot, "kept.go"), "package main\n\nfunc beforeWright() {}\n")

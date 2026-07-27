@@ -812,7 +812,12 @@ func restoreTreeDelta(gitRoot string, env []string, checkedTree, currentTree str
 		return nil, fmt.Errorf("create restore tree: %w", err)
 	}
 	gitPrefix := filepath.ToSlash(materializedTree) + "/"
-	if _, err := reconcileGitOutput(gitRoot, restoreEnv, "checkout-index", "--all", "--force", "--prefix="+gitPrefix); err != nil {
+	if _, err := reconcileGitOutput(
+		gitRoot,
+		restoreEnv,
+		"-c", "core.autocrlf=false",
+		"checkout-index", "--all", "--force", "--prefix="+gitPrefix,
+	); err != nil {
 		return nil, err
 	}
 
