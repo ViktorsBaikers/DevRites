@@ -1667,6 +1667,50 @@ func TestCodexAgentDispatchConfirmsDurableV2NamedRole(t *testing.T) {
 	}
 }
 
+func TestCodexAgentDispatchConfirmsDurableV2ChildRoleWhenParentOmitsAgentType(t *testing.T) {
+	root := newWorkspace(t)
+	codeHome := t.TempDir()
+	sessionID, turnID := "session-v2-hidden-role", "turn-v2-hidden-role"
+	role := "devrites-plan-drafter"
+	writeCodexAgentContract(t, root, role)
+	writeCodexSkillContract(t, root, "rite-plan", role)
+
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$rite-plan unblock",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+
+	taskName := "devrites_plan_drafter_hidden_role"
+	writeCodexV2Rollouts(
+		t, codeHome, filepath.Dir(root), sessionID, turnID, role,
+		taskName, true, true, true,
+	)
+	parentPath := filepath.Join(codeHome, "sessions", "2026", "07", "25", "rollout-parent-"+sessionID+".jsonl")
+	parent, err := os.ReadFile(parentPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hiddenParentRole := bytes.ReplaceAll(parent, []byte(`\"agent_type\":\"`+role+`\"`), []byte(`\"agent_type\":\"\"`))
+	if bytes.Equal(parent, hiddenParentRole) {
+		t.Fatal("fixture did not hide the parent agent_type")
+	}
+	if err := os.WriteFile(parentPath, hiddenParentRole, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	stop := hookPayload(t, map[string]any{
+		"hook_event_name": "Stop",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+	})
+	if out, stderr, code := runDevritesIO(t, root, stop,
+		[]string{"CODEX_HOME=" + codeHome},
+		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
+		t.Fatalf("hidden parent role stop exit=%d out=%s stderr=%s", code, out, stderr)
+	}
+}
+
 func TestCodexAgentDispatchConfirmsConditionalDurableV2NamedRole(t *testing.T) {
 	root := newWorkspace(t)
 	codeHome := t.TempDir()
