@@ -327,12 +327,12 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		if pendingReceipt != "" {
 			defer func() { _ = os.Remove(pendingReceipt) }()
 		}
-		if err := closeWindow(); err != nil {
-			fmt.Fprintf(stderr, "reconcile: source baseline restored, but cannot close rejected slice window: %v\n", err)
+		if err := commitContentAddressedReceipt(receiptPath, pendingReceipt, receiptData); err != nil {
+			fmt.Fprintf(stderr, "reconcile: source baseline restored, but cannot persist abort receipt; retained window left open: %v\n", err)
 			return 6
 		}
-		if err := commitContentAddressedReceipt(receiptPath, pendingReceipt, receiptData); err != nil {
-			fmt.Fprintf(stderr, "reconcile: source baseline restored and window closed, but cannot persist abort receipt: %v\n", err)
+		if err := closeWindow(); err != nil {
+			fmt.Fprintf(stderr, "reconcile: source baseline restored and receipt persisted, but cannot close rejected slice window: %v\n", err)
 			return 6
 		}
 		fmt.Fprintf(stdout, "reconcile: aborted rejected slice window for %s; restored %d source path(s); receipt %s.\n", slug, len(changed), receiptName)
@@ -962,25 +962,17 @@ func restoreTreePaths(gitRoot string, env []string, targetTree string, changed [
 		return fmt.Errorf("create restore directory: %w", err)
 	}
 	defer func() { _ = os.RemoveAll(materialized) }()
-	index := filepath.Join(materialized, "index")
-	restoreEnv := append(append([]string{}, env...), "GIT_INDEX_FILE="+index)
-	if _, err := reconcileGitOutput(gitRoot, restoreEnv, "read-tree", targetTree); err != nil {
-		return err
-	}
 	materializedTree := filepath.Join(materialized, "tree")
 	if err := os.MkdirAll(materializedTree, 0o700); err != nil {
 		return fmt.Errorf("create restore tree: %w", err)
 	}
-	gitPrefix := filepath.ToSlash(materializedTree) + "/"
-	if _, err := reconcileGitOutput(
-		gitRoot,
-		restoreEnv,
-		"-c", "core.autocrlf=false",
-		"checkout-index", "--all", "--force", "--prefix="+gitPrefix,
-	); err != nil {
-		return err
-	}
 
+	type restoreEntry struct {
+		path, target, parent, source string
+		mode                         os.FileMode
+		symlink, exists              bool
+	}
+	entries := make([]restoreEntry, 0, len(changed))
 	for _, changedPath := range changed {
 		if changedPath == "." || changedPath == ".devrites" ||
 			strings.HasPrefix(changedPath, reconcileDevritesPathPrefix) ||
@@ -992,39 +984,111 @@ func restoreTreePaths(gitRoot string, env []string, targetTree string, changed [
 		if !safepath.WithinResolved(targetParent, gitRoot) {
 			return fmt.Errorf("restore parent escapes repository through a symlink: %s", changedPath)
 		}
-		source := filepath.Join(materializedTree, filepath.FromSlash(changedPath))
-		sourceInfo, sourceErr := os.Lstat(source)
-		if sourceErr != nil && !os.IsNotExist(sourceErr) {
-			return fmt.Errorf("inspect clean source %s: %w", changedPath, sourceErr)
+		if targetInfo, targetErr := os.Lstat(target); targetErr == nil {
+			if targetInfo.IsDir() {
+				return fmt.Errorf("refusing to remove live directory at restore path %s", changedPath)
+			}
+		} else if !os.IsNotExist(targetErr) {
+			return fmt.Errorf("inspect restore target %s: %w", changedPath, targetErr)
 		}
-		if err := os.RemoveAll(target); err != nil {
-			return fmt.Errorf("remove source path %s: %w", changedPath, err)
+
+		treeEntry, err := reconcileGitOutput(
+			gitRoot, env, "ls-tree", "-z", targetTree, "--", ":(top,literal)"+changedPath,
+		)
+		if err != nil {
+			return err
 		}
-		if os.IsNotExist(sourceErr) {
+		if len(treeEntry) == 0 {
+			entries = append(entries, restoreEntry{path: changedPath, target: target, parent: targetParent})
 			continue
 		}
-		if err := os.MkdirAll(targetParent, 0o755); err != nil {
-			return fmt.Errorf("create restore parent for %s: %w", changedPath, err)
+		record := strings.TrimSuffix(string(treeEntry), "\x00")
+		if strings.Contains(record, "\x00") {
+			return fmt.Errorf("ambiguous tree entry for %s", changedPath)
 		}
-		switch {
-		case sourceInfo.Mode()&os.ModeSymlink != 0:
-			link, err := os.Readlink(source)
-			if err != nil {
-				return fmt.Errorf("read clean symlink %s: %w", changedPath, err)
-			}
-			if err := os.Symlink(link, target); err != nil {
-				return fmt.Errorf("restore symlink %s: %w", changedPath, err)
-			}
-		case sourceInfo.Mode().IsRegular():
-			data, err := os.ReadFile(source)
-			if err != nil {
-				return fmt.Errorf("read clean file %s: %w", changedPath, err)
-			}
-			if err := os.WriteFile(target, data, sourceInfo.Mode().Perm()); err != nil {
-				return fmt.Errorf("restore file %s: %w", changedPath, err)
-			}
+		header, entryPath, ok := strings.Cut(record, "\t")
+		fields := strings.Fields(header)
+		if !ok || len(fields) != 3 || entryPath != changedPath {
+			return fmt.Errorf("invalid tree entry for %s", changedPath)
+		}
+		if fields[0] == "160000" || fields[1] == "commit" {
+			return fmt.Errorf("cannot safely restore changed submodule worktree %s", changedPath)
+		}
+		entry := restoreEntry{
+			path:    changedPath,
+			target:  target,
+			parent:  targetParent,
+			source:  filepath.Join(materializedTree, filepath.FromSlash(changedPath)),
+			exists:  true,
+			symlink: fields[0] == "120000",
+		}
+		switch fields[0] {
+		case "100644":
+			entry.mode = 0o644
+		case "100755":
+			entry.mode = 0o755
+		case "120000":
 		default:
-			return fmt.Errorf("unsupported clean tree entry for %s: %s", changedPath, sourceInfo.Mode())
+			return fmt.Errorf("unsupported tree mode %s for %s", fields[0], changedPath)
+		}
+		if err := os.MkdirAll(filepath.Dir(entry.source), 0o700); err != nil {
+			return fmt.Errorf("create materialized parent for %s: %w", changedPath, err)
+		}
+		source, err := os.OpenFile(entry.source, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if err != nil {
+			return fmt.Errorf("create materialized source %s: %w", changedPath, err)
+		}
+		writeErr := runGitCommandToWriter(gitRoot, env, source, "cat-file", "blob", fields[2])
+		closeErr := source.Close()
+		if writeErr != nil {
+			return fmt.Errorf("materialize source %s: %w", changedPath, writeErr)
+		}
+		if closeErr != nil {
+			return fmt.Errorf("close materialized source %s: %w", changedPath, closeErr)
+		}
+		entries = append(entries, entry)
+	}
+
+	for _, entry := range entries {
+		if err := os.RemoveAll(entry.target); err != nil {
+			return fmt.Errorf("remove source path %s: %w", entry.path, err)
+		}
+		if !entry.exists {
+			continue
+		}
+		if err := os.MkdirAll(entry.parent, 0o755); err != nil {
+			return fmt.Errorf("create restore parent for %s: %w", entry.path, err)
+		}
+		if entry.symlink {
+			link, err := os.ReadFile(entry.source)
+			if err != nil {
+				return fmt.Errorf("read clean symlink %s: %w", entry.path, err)
+			}
+			if err := os.Symlink(string(link), entry.target); err != nil {
+				return fmt.Errorf("restore symlink %s: %w", entry.path, err)
+			}
+			continue
+		}
+		source, err := os.Open(entry.source)
+		if err != nil {
+			return fmt.Errorf("open clean file %s: %w", entry.path, err)
+		}
+		target, err := os.OpenFile(entry.target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, entry.mode)
+		if err != nil {
+			_ = source.Close()
+			return fmt.Errorf("create restored file %s: %w", entry.path, err)
+		}
+		_, copyErr := io.Copy(target, source)
+		sourceCloseErr := source.Close()
+		targetCloseErr := target.Close()
+		if copyErr != nil {
+			return fmt.Errorf("restore file %s: %w", entry.path, copyErr)
+		}
+		if sourceCloseErr != nil {
+			return fmt.Errorf("close clean file %s: %w", entry.path, sourceCloseErr)
+		}
+		if targetCloseErr != nil {
+			return fmt.Errorf("close restored file %s: %w", entry.path, targetCloseErr)
 		}
 	}
 	return nil
@@ -1193,6 +1257,9 @@ func worktreeTree(gitRoot, objectDir string, excludedRoots ...string) (string, e
 			return "", fmt.Errorf("exclude %s from worktree snapshot: %w", rel, err)
 		}
 	}
+	if err := rewriteIndexWithRawWorktreeBytes(gitRoot, env); err != nil {
+		return "", err
+	}
 
 	out, err := runGitCommand(gitRoot, env, "write-tree")
 	if err != nil {
@@ -1203,6 +1270,83 @@ func worktreeTree(gitRoot, objectDir string, excludedRoots ...string) (string, e
 		return "", fmt.Errorf("git write-tree: empty tree sha")
 	}
 	return tree, nil
+}
+
+func rewriteIndexWithRawWorktreeBytes(gitRoot string, env []string) error {
+	out, err := runGitCommand(gitRoot, env, "ls-files", "--stage", "-z")
+	if err != nil {
+		return fmt.Errorf("list worktree snapshot entries: %w", err)
+	}
+	type rawEntry struct {
+		mode, path string
+	}
+	var batch, individual []rawEntry
+	for _, record := range strings.Split(string(out), "\x00") {
+		if record == "" {
+			continue
+		}
+		header, filename, ok := strings.Cut(record, "\t")
+		fields := strings.Fields(header)
+		if !ok || len(fields) != 3 || fields[2] != "0" {
+			return fmt.Errorf("invalid worktree snapshot index entry")
+		}
+		if fields[0] != "100644" && fields[0] != "100755" {
+			continue
+		}
+		entry := rawEntry{mode: fields[0], path: filename}
+		if strings.ContainsRune(filename, '\n') {
+			individual = append(individual, entry)
+		} else {
+			batch = append(batch, entry)
+		}
+	}
+
+	var indexInfo strings.Builder
+	if len(batch) > 0 {
+		var paths strings.Builder
+		for _, entry := range batch {
+			paths.WriteString(entry.path)
+			paths.WriteByte('\n')
+		}
+		hashes, err := runGitCommandInput(
+			gitRoot, env, []byte(paths.String()),
+			"hash-object", "-w", "--no-filters", "--stdin-paths",
+		)
+		if err != nil {
+			return fmt.Errorf("hash raw worktree files: %w", err)
+		}
+		objectIDs := strings.Fields(string(hashes))
+		if len(objectIDs) != len(batch) {
+			return fmt.Errorf("hash raw worktree files: got %d object ids for %d paths", len(objectIDs), len(batch))
+		}
+		for i, entry := range batch {
+			if !reconcileObjectID.MatchString(objectIDs[i]) {
+				return fmt.Errorf("hash raw worktree file %s: invalid object id", entry.path)
+			}
+			fmt.Fprintf(&indexInfo, "%s %s\t%s\x00", entry.mode, objectIDs[i], entry.path)
+		}
+	}
+	for _, entry := range individual {
+		hash, err := runGitCommand(gitRoot, env, "hash-object", "-w", "--no-filters", "--", entry.path)
+		if err != nil {
+			return fmt.Errorf("hash raw worktree file %s: %w", entry.path, err)
+		}
+		objectID := strings.TrimSpace(string(hash))
+		if !reconcileObjectID.MatchString(objectID) {
+			return fmt.Errorf("hash raw worktree file %s: invalid object id", entry.path)
+		}
+		fmt.Fprintf(&indexInfo, "%s %s\t%s\x00", entry.mode, objectID, entry.path)
+	}
+	if indexInfo.Len() == 0 {
+		return nil
+	}
+	if _, err := runGitCommandInput(
+		gitRoot, env, []byte(indexInfo.String()),
+		"update-index", "-z", "--index-info",
+	); err != nil {
+		return fmt.Errorf("record raw worktree files: %w", err)
+	}
+	return nil
 }
 
 func reconcileGitEnv(gitRoot, objectDir string) ([]string, error) {
