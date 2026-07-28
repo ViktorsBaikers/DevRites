@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.21](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.20...v3.2.21) (2026-07-28)
+
+### Fixed
+
+* **devrites:** bound Codex dispatch stop retries ([4ef9d5b](https://github.com/ViktorsBaikers/DevRites/commit/4ef9d5baf3ca74b1d494f535e8820447e9c37129))
+
 ## [3.2.20](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.19...v3.2.20) (2026-07-28)
 
 ### Fixed
