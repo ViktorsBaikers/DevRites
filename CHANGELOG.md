@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.22](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.21...v3.2.22) (2026-07-28)
+
+### Fixed
+
+* **devrites:** prevent receipt-only agent spawns ([4cf4c19](https://github.com/ViktorsBaikers/DevRites/commit/4cf4c19cf8671b8fdd497b8875c50bd50faf85d9))
+
 ## [3.2.21](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.20...v3.2.21) (2026-07-28)
 
 ### Fixed
