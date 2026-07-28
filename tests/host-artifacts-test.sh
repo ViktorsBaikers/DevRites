@@ -47,6 +47,9 @@ grep -q 'repository-aware file tool refuses an ignored path.*native filesystem c
 grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$OUT/codex/agents/devrites-code-reviewer.toml" \
   && ok "Codex agent artifact recovers from ignored mirror refusals" \
   || no "Codex agent artifact can return an ignored mirror refusal"
+grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' "$OUT/codex/agents/devrites-code-reviewer.toml" \
+  && ok "Codex agent artifact preserves exact Engram identifiers" \
+  || no "Codex agent artifact can invent Engram identifiers"
 grep -q '.codex/agents/devrites-slice-wright.toml' "$OUT/codex/skills/rite-build/SKILL.md" \
   && ok "Codex skill artifact references Codex agent TOML" \
   || no "Codex skill artifact missing Codex agent TOML"
