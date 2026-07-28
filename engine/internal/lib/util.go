@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -57,11 +58,27 @@ func (e *gitCommandError) Error() string {
 func (e *gitCommandError) Unwrap() error { return e.err }
 
 func runGitCommand(dir string, env []string, args ...string) ([]byte, error) {
+	return runGitCommandIO(dir, env, nil, nil, args...)
+}
+
+func runGitCommandInput(dir string, env []string, input []byte, args ...string) ([]byte, error) {
+	return runGitCommandIO(dir, env, input, nil, args...)
+}
+
+func runGitCommandToWriter(dir string, env []string, stdout io.Writer, args ...string) error {
+	_, err := runGitCommandIO(dir, env, nil, stdout, args...)
+	return err
+}
+
+func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitCommandTimeout)
 	defer cancel()
 	commandArgs := append([]string{"-C", dir}, args...)
 	cmd := exec.CommandContext(ctx, "git", commandArgs...)
 	cmd.WaitDelay = 2 * time.Second
+	if input != nil {
+		cmd.Stdin = bytes.NewReader(input)
+	}
 	if env == nil {
 		env = os.Environ()
 	} else {
@@ -76,7 +93,11 @@ func runGitCommand(dir string, env []string, args ...string) ([]byte, error) {
 		"LC_ALL=C",
 	)
 	var output cappedGitOutput
-	cmd.Stdout = &output
+	if stdout == nil {
+		cmd.Stdout = &output
+	} else {
+		cmd.Stdout = stdout
+	}
 	cmd.Stderr = &output
 	err := cmd.Run()
 	if err == nil {

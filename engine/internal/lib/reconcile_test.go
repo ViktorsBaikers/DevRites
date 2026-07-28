@@ -392,6 +392,80 @@ func TestReconcileAbortRestoresOriginalSourceAndClosesWindow(t *testing.T) {
 	}
 }
 
+func TestReconcileAbortRestoresOriginalCRLFBytes(t *testing.T) {
+	gitRoot := newGitRepo(t)
+	root := workspace(t, "feat")
+	writeWrightAllowlist(t, root, "feat", "seed.go")
+	if out, err := exec.Command("git", "-C", gitRoot, "config", "core.autocrlf", "true").CombinedOutput(); err != nil {
+		t.Fatalf("configure core.autocrlf: %v\n%s", err, out)
+	}
+	baseline := []byte("package main\r\n\r\nfunc userWork() {}\r\n")
+	if err := os.WriteFile(filepath.Join(gitRoot, "seed.go"), baseline, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), "package main\n\nfunc rejectedWriterChange() {}\n")
+
+	if code, out := runReconcile(t, root, "abort", "feat"); code != 0 {
+		t.Fatalf("abort = %d, want 0\n%s", code, out)
+	}
+	restored, err := os.ReadFile(filepath.Join(gitRoot, "seed.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(restored, baseline) {
+		t.Fatalf("restored bytes = %q, want original bytes %q", restored, baseline)
+	}
+}
+
+func TestReconcileAbortPreservesChangedSubmoduleWorktree(t *testing.T) {
+	submoduleOrigin := newGitRepo(t)
+	gitRoot := newGitRepo(t)
+	git := func(dir string, args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	git(gitRoot, "-c", "protocol.file.allow=always", "submodule", "add", "-q", submoduleOrigin, "sub")
+	commitAll(t, gitRoot, "add submodule")
+
+	root := workspace(t, "feat")
+	writeWrightAllowlist(t, root, "feat")
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+
+	writeFile(t, filepath.Join(submoduleOrigin, "seed.go"), "package changed\n")
+	commitAll(t, submoduleOrigin, "advance submodule")
+	advanced := git(submoduleOrigin, "rev-parse", "HEAD")
+	git(filepath.Join(gitRoot, "sub"), "-c", "protocol.file.allow=always", "fetch", "-q", "origin")
+	git(filepath.Join(gitRoot, "sub"), "checkout", "-q", advanced)
+	local := []byte("uncommitted submodule work\n")
+	if err := os.WriteFile(filepath.Join(gitRoot, "sub", "local.txt"), local, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	code, out := runReconcile(t, root, "abort", "feat")
+	if code != 6 {
+		t.Fatalf("abort = %d, want fail-closed 6 for a changed submodule\n%s", code, out)
+	}
+	if restored, err := os.ReadFile(filepath.Join(gitRoot, "sub", "local.txt")); err != nil {
+		t.Fatalf("abort removed the live submodule worktree: %v\n%s", err, out)
+	} else if !bytes.Equal(restored, local) {
+		t.Fatalf("abort changed uncommitted submodule bytes: %q", restored)
+	}
+	if !isFile(filepath.Join(featureDir(root, "feat"), reconcileBaseName)) {
+		t.Fatal("failed abort removed its retained baseline marker")
+	}
+}
+
 func TestReconcileAbortFailsClosedWhenObjectDatabaseIsMissing(t *testing.T) {
 	gitRoot := newGitRepo(t)
 	root := workspace(t, "feat")

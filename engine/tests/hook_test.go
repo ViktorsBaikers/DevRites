@@ -293,6 +293,33 @@ func TestHookReviewerReadonlyAllowsSafeBash(t *testing.T) {
 	}
 }
 
+func TestHookReviewerReadonlyRejectsWriteCapableInspectionFlags(t *testing.T) {
+	root := newWorkspace(t)
+	env := []string{
+		"DEVRITES_AGENT_RUN=1",
+		"DEVRITES_ACTIVE_AGENT=devrites-code-reviewer",
+	}
+	for _, command := range []string{
+		"sed --in-place=.bak s/a/b/ src/app.go",
+		"sort -o src/app.go input.txt",
+		"find . -fls src/index.txt",
+		"git diff --output=src/diff.txt",
+	} {
+		in := hookPayload(t, map[string]any{
+			"tool_name":  "Bash",
+			"tool_input": map[string]any{"command": command},
+		})
+		out, errOut, code := runDevritesIO(t, root, in, env,
+			"hook", "reviewer-readonly", "--harness=codex")
+		if code != 0 {
+			t.Fatalf("%q exit=%d stderr=%q", command, code, errOut)
+		}
+		if decision, _ := parsePermissionDecision(t, out); decision != "deny" {
+			t.Errorf("write-capable inspection command was not denied: %q", command)
+		}
+	}
+}
+
 func TestHookReviewerReadonlyNonBashIsSilent(t *testing.T) {
 	root := newWorkspace(t)
 	in := `{"tool_name":"Read","tool_input":{"file_path":"secret.txt"}}`

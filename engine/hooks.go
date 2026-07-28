@@ -389,18 +389,37 @@ func safeReadonlyShellSegment(segment string) bool {
 	base := strings.ToLower(filepath.Base(strings.Trim(fields[0], `"'`)))
 	args := fields[1:]
 	switch base {
-	case "true", "false", "pwd", "ls", "cat", "head", "tail", "less", "more",
-		"grep", "rg", "wc", "sort", "uniq", "cut", "tr", "stat", "file",
-		"readlink", "realpath", "basename", "dirname", "cmp", "diff", "jq", "yq",
-		"tree", "du", "df", "printenv", "which", "date", "uname", "id", "whoami",
+	case "true", "false", "pwd", "ls", "cat", "head", "tail", "more",
+		"grep", "wc", "uniq", "cut", "tr", "stat", "file",
+		"readlink", "realpath", "basename", "dirname", "cmp", "jq",
+		"du", "df", "printenv", "which", "date", "uname", "id", "whoami",
 		"ps", "echo", "printf", "test", "[", "cd", "sha256sum", "shasum":
 		return true
+	case "less":
+		return !hasShellOption(args, "oO", "--log-file")
+	case "rg":
+		return !hasShellOption(args, "", "--pre", "--hostname-bin")
+	case "sort":
+		return !hasShellOption(args, "o", "--output", "--compress-program")
+	case "diff":
+		return !hasShellOption(args, "", "--output")
+	case "yq":
+		return !hasShellOption(args, "i", "--inplace", "--in-place")
+	case "tree":
+		return !hasShellOption(args, "o", "--output")
 	case "find":
-		return !hasAnyArg(args, "-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprintf")
+		return !hasArgPrefix(args, "-delete") &&
+			!hasArgPrefix(args, "-exec") &&
+			!hasArgPrefix(args, "-ok") &&
+			!hasArgPrefix(args, "-fprint") &&
+			!hasArgPrefix(args, "-fprintf") &&
+			!hasArgPrefix(args, "-fls")
 	case "sed":
-		return !hasArgPrefix(args, "-i")
+		return !hasShellOption(args, "i", "--in-place", "--inplace")
 	case "git":
-		return len(args) > 0 && hasAnyArg(args[:1], "diff", "status", "show", "log", "rev-parse", "ls-files", "grep", "blame")
+		return len(args) > 0 &&
+			hasAnyArg(args[:1], "diff", "status", "show", "log", "rev-parse", "ls-files", "grep", "blame") &&
+			!hasShellOption(args[1:], "", "--output", "--ext-diff", "--textconv", "--open-files-in-pager")
 	case "go":
 		if len(args) == 0 || !hasAnyArg(args[:1], "test", "vet", "list", "version", "env") {
 			return false
@@ -453,6 +472,7 @@ func safePackageProof(args []string) bool {
 
 func hasAnyArg(args []string, wants ...string) bool {
 	for _, arg := range args {
+		arg = strings.Trim(arg, `"'`)
 		for _, want := range wants {
 			if arg == want {
 				return true
@@ -464,7 +484,29 @@ func hasAnyArg(args []string, wants ...string) bool {
 
 func hasArgPrefix(args []string, prefix string) bool {
 	for _, arg := range args {
+		arg = strings.Trim(arg, `"'`)
 		if strings.HasPrefix(arg, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasShellOption(args []string, shortOptions string, longOptions ...string) bool {
+	for _, arg := range args {
+		arg = strings.Trim(arg, `"'`)
+		if arg == "--" {
+			return false
+		}
+		if strings.HasPrefix(arg, "--") {
+			for _, option := range longOptions {
+				if arg == option || strings.HasPrefix(arg, option+"=") {
+					return true
+				}
+			}
+			continue
+		}
+		if strings.HasPrefix(arg, "-") && strings.ContainsAny(strings.TrimPrefix(arg, "-"), shortOptions) {
 			return true
 		}
 	}
