@@ -14,6 +14,8 @@
 #     PostToolUse covers only Bash, apply_patch, and MCP calls. The proposed
 #     user-input-requested event was closed as not planned (openai/codex#12524).
 #     Revisit this exception if Codex adds that event.
+# `agent-dispatch` is Codex-only because Claude natively enforces declared agent
+# types and lifecycle hooks from canonical skill/agent frontmatter.
 # `subagent-orient` is shared. Claude agent frontmatter and generated Codex TOML
 # files both carry `reviewer-readonly` and `wright-scope`.
 set -u
@@ -108,6 +110,7 @@ for path in agent_files:
 # Codex must carry every shared hook: all Claude settings and scoped agent hooks
 # except the documented Claude-only set.
 CLAUDE_ONLY = {"source-cache-pre", "source-cache-post", "statusline", "auq"}
+CODEX_ONLY = {"agent-dispatch"}
 claude_all = names(f"{root}/pack/.claude/settings.json")
 claude_commands = json_commands(f"{root}/pack/.claude/settings.json")
 for f in glob.glob(f"{root}/pack/.claude/agents/*.md"):
@@ -162,11 +165,11 @@ if leaked:
 # Both hosts must wire every production blocker. Hook commands inherit the
 # operator's profile and kill-list environment, so generated commands may not
 # clear or replace those control-plane variables before invoking the engine.
-for host, wired, commands in (
-    ("Claude", claude_all, claude_commands),
-    ("Codex", codex, codex_commands),
+for host, wired, commands, host_only in (
+    ("Claude", claude_all, claude_commands, CODEX_ONLY),
+    ("Codex", codex, codex_commands, set()),
 ):
-    missing_blockers = BLOCKERS - wired
+    missing_blockers = BLOCKERS - host_only - wired
     if missing_blockers:
         fail.append(f"{host} missing production blockers: {sorted(missing_blockers)}")
     for blocker in BLOCKERS:

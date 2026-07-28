@@ -6,6 +6,8 @@ package main_test
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -2142,8 +2144,97 @@ func TestCodexAgentDispatchRejectsConditionalDurableV2DefaultChild(t *testing.T)
 	}
 	if decision.Decision != "block" ||
 		!strings.Contains(decision.Reason, "default or non-DevRites child") ||
+		!strings.Contains(decision.Reason, "cannot be repaired by another dispatch") ||
+		!strings.Contains(decision.Reason, "retry the skill in a fresh turn") ||
 		!strings.Contains(decision.Reason, "never use a default child") {
 		t.Fatalf("conditional V2 default child passed: %#v", decision)
+	}
+
+	stop = hookPayload(t, map[string]any{
+		"hook_event_name":  "Stop",
+		"session_id":       sessionID,
+		"turn_id":          turnID,
+		"stop_hook_active": true,
+	})
+	out, stderr, code = runDevritesIO(t, root, stop,
+		[]string{"CODEX_HOME=" + codeHome},
+		"hook", "agent-dispatch", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("conditional default reentry exit=%d stderr=%s", code, stderr)
+	}
+	var terminal struct {
+		Continue   bool   `json:"continue"`
+		StopReason string `json:"stopReason"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &terminal); err != nil {
+		t.Fatalf("invalid conditional default reentry response: %v\n%s", err, out)
+	}
+	if terminal.Continue ||
+		!strings.Contains(terminal.StopReason, "default or non-DevRites child") ||
+		!strings.Contains(terminal.StopReason, "retry the skill in a fresh turn") {
+		t.Fatalf("conditional V2 default child reentry did not stop: %#v", terminal)
+	}
+}
+
+func TestCodexAgentDispatchTerminatesCorruptStateReentry(t *testing.T) {
+	root := newWorkspace(t)
+	sessionID, turnID := "session-corrupt-state", "turn-corrupt-state"
+
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$rite-status",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootSum := sha256.Sum256([]byte(filepath.Clean(resolvedRoot)))
+	sessionSum := sha256.Sum256([]byte(sessionID))
+	statePath := filepath.Join(
+		os.TempDir(),
+		"devrites-agent-dispatch-v1",
+		hex.EncodeToString(rootSum[:]),
+		hex.EncodeToString(sessionSum[:])+".jsonl",
+	)
+	if err := os.MkdirAll(filepath.Dir(statePath), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(statePath, []byte("not-json\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	stop := func(active bool) string {
+		out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+			"hook_event_name":  "Stop",
+			"session_id":       sessionID,
+			"turn_id":          turnID,
+			"stop_hook_active": active,
+		}), nil, "hook", "agent-dispatch", "--harness=codex")
+		if code != 0 {
+			t.Fatalf("corrupt state stop active=%t exit=%d stderr=%s", active, code, stderr)
+		}
+		return out
+	}
+
+	var blocked struct {
+		Decision string `json:"decision"`
+	}
+	if out := stop(false); json.Unmarshal([]byte(strings.TrimSpace(out)), &blocked) != nil ||
+		blocked.Decision != "block" {
+		t.Fatalf("corrupt state first Stop did not block: %s", out)
+	}
+
+	var terminal struct {
+		Continue   bool   `json:"continue"`
+		StopReason string `json:"stopReason"`
+	}
+	if out := stop(true); json.Unmarshal([]byte(strings.TrimSpace(out)), &terminal) != nil ||
+		terminal.Continue ||
+		!strings.Contains(terminal.StopReason, "invalid agent dispatch state") {
+		t.Fatalf("corrupt state reentry did not stop: %s", out)
 	}
 }
 
