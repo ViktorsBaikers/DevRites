@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.19](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.18...v3.2.19) (2026-07-28)
+
+### Fixed
+
+* **devrites:** recover ignored Codex reads ([9b0db60](https://github.com/ViktorsBaikers/DevRites/commit/9b0db603b298a8c8d7e36aafa61b909d11c00361))
+
 ## [3.2.18](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.17...v3.2.18) (2026-07-28)
 
 ### Fixed
