@@ -67,7 +67,7 @@ run_fail_contains "npm audit rejects an unexcepted advisory" "not excepted" node
 # The advertised local quality gate must be self-contained and pin the same
 # three external analyzers used by CI.
 make -C "$ROOT/engine" -n quality > "$T/make-quality" 2>&1 || true
-for needle in 'staticcheck@2025.1.1' 'govulncheck@v1.5.0' 'gosec@v2.27.1'; do
+for needle in 'staticcheck@2026.1' 'govulncheck@v1.6.0' 'gosec@v2.28.0'; do
   if grep -q "$needle" "$T/make-quality"; then ok "quality pins $needle"; else no "quality does not pin $needle"; fi
 done
 
