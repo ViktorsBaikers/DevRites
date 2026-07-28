@@ -111,6 +111,8 @@ else
   no "Codex skill mirror missing fresh-context mapping"
 fi
 grep -q 'Read `.agents/skills/devrites-lib/reference/standards/core.md`' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror loads DevRites rules mirror" || no "Codex skill mirror missing rules instruction"
+grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$T/AGENTS.md" && ok "installed AGENTS bridge recovers from ignored mirror refusals" || no "installed AGENTS bridge can return an ignored mirror refusal"
+grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$T/.codex/agents/devrites-code-reviewer.toml" && ok "installed Codex agent recovers from ignored mirror refusals" || no "installed Codex agent can return an ignored mirror refusal"
 grep -q '\.claude/agents' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/agents" || ok "Codex skill mirror does not point at .claude/agents"
 grep -q '\.claude/skills/devrites-lib/reference/standards' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/skills/devrites-lib/reference/standards" || ok "Codex skill mirror does not point at .claude/skills/devrites-lib/reference/standards"
 grep -q '\.claude/skills' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/skills" || ok "Codex skill mirror does not point at .claude/skills"
