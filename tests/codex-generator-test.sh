@@ -64,6 +64,9 @@ grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$skill_out" &
 grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$skill_out" \
   && ok "skill recovers when ignored runtime mirrors are refused" \
   || no "skill can return an ignored-path tool refusal"
+grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' "$skill_out" \
+  && ok "skill preserves exact Engram identifiers" \
+  || no "skill can invent Engram identifiers"
 grep -q '.codex/agents/devrites-code-reviewer.toml' "$skill_out" && ok "skill body rewrites agent reference" || no "skill body did not rewrite agent reference"
 grep -q '\$rite-review' "$skill_out" && ok "skill body rewrites slash invocation" || no "skill body did not rewrite slash invocation"
 grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$skill_out" && no "generated skill kept Claude runtime paths" || ok "generated skill has no Claude runtime paths"
@@ -107,6 +110,9 @@ grep -q 'invoke.*run a skill inline.*dispatch.*fresh agent' "$bridge" \
 grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$bridge" \
   && ok "AGENTS bridge recovers when ignored runtime mirrors are refused" \
   || no "AGENTS bridge can return an ignored-path tool refusal"
+grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' "$bridge" \
+  && ok "AGENTS bridge preserves exact Engram identifiers" \
+  || no "AGENTS bridge can invent Engram identifiers"
 if grep -q 'V2 uses the named `devrites-<role>`; V1 alone may use the guarded generic compatibility path' "$bridge" \
   && grep -q 'fork_turns="none"' "$bridge" \
   && grep -q 'required-agent-roles.*arms a fail-closed receipt' "$bridge" \
@@ -135,6 +141,7 @@ grep -q 'name = "devrites-sample-reviewer"' "$agent_out" && ok "agent name prese
 grep -q 'sandbox_mode = "read-only"' "$agent_out" && ok "read-only agent sandbox emitted" || no "read-only agent sandbox missing"
 grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$agent_out" && ok "agent paths rewritten" || no "agent paths not rewritten"
 grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$agent_out" && ok "agent recovers when ignored runtime mirrors are refused" || no "agent can return an ignored-path tool refusal"
+grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' "$agent_out" && ok "agent preserves exact Engram identifiers" || no "agent can invent Engram identifiers"
 grep -q '\$rite-seal' "$agent_out" && grep -q '\$rite-build' "$agent_out" && ok "agent invocations rewritten" || no "agent invocations not rewritten"
 grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$agent_out" && no "generated agent kept Claude runtime paths" || ok "generated agent has no Claude runtime paths"
 
