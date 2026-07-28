@@ -68,7 +68,11 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, path)
 		return 0
 	case "refresh":
-		p := derive(root, rootSHA, headSHA)
+		p, err := derive(root, rootSHA, headSHA)
+		if err != nil {
+			fmt.Fprintf(stderr, "devrites: profile cache refresh failed: %v\n", err)
+			return 1
+		}
 		if err := writeCache(path, p); err != nil {
 			fmt.Fprintf(stderr, "devrites: profile cache write failed: %v\n", err)
 			return 1
@@ -151,9 +155,12 @@ func writeCache(path string, p Profile) error {
 	return os.Rename(name, path)
 }
 
-func derive(root, rootSHA, headSHA string) Profile {
+func derive(root, rootSHA, headSHA string) (Profile, error) {
 	p := Profile{ProfileSchemaVersion: schemaVersion, RootSHA: rootSHA, HeadSHA: headSHA, Inputs: map[string]FileInfo{}}
-	entries, _ := os.ReadDir(root)
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return Profile{}, fmt.Errorf("read repository root: %w", err)
+	}
 	for _, e := range entries {
 		name := e.Name()
 		if strings.HasPrefix(name, ".git") || name == "node_modules" {
@@ -165,12 +172,15 @@ func derive(root, rootSHA, headSHA string) Profile {
 		p.TopLevel = append(p.TopLevel, name)
 	}
 	sort.Strings(p.TopLevel)
-	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	if err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 		rel, err := filepath.Rel(root, path)
-		if err != nil || rel == "." {
+		if err != nil {
+			return err
+		}
+		if rel == "." {
 			return nil
 		}
 		rel = filepath.ToSlash(rel)
@@ -185,23 +195,27 @@ func derive(root, rootSHA, headSHA string) Profile {
 			p.Manifests = append(p.Manifests, rel)
 		}
 		if isProfileInput(rel) {
-			if info, ok := fileInfo(path); ok {
-				p.Inputs[rel] = info
+			info, err := fileInfo(path)
+			if err != nil {
+				return err
 			}
+			p.Inputs[rel] = info
 		}
 		return nil
-	})
+	}); err != nil {
+		return Profile{}, fmt.Errorf("walk repository: %w", err)
+	}
 	sort.Strings(p.Manifests)
-	return p
+	return p, nil
 }
 
-func fileInfo(path string) (FileInfo, bool) {
+func fileInfo(path string) (FileInfo, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return FileInfo{}, false
+		return FileInfo{}, fmt.Errorf("read profile input %s: %w", path, err)
 	}
 	sum := sha256.Sum256(raw)
-	return FileInfo{SHA256: hex.EncodeToString(sum[:]), Bytes: len(raw)}, true
+	return FileInfo{SHA256: hex.EncodeToString(sum[:]), Bytes: len(raw)}, nil
 }
 
 func cleanProfileInputs(root string) bool {

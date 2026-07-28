@@ -584,8 +584,11 @@ func SpecDedupe(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	var hits []hit
 	for _, base := range targets {
-		_ = filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
-			if err != nil || d.IsDir() || !strings.HasSuffix(strings.ToLower(p), ".md") {
+		err := filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() || !strings.HasSuffix(strings.ToLower(p), ".md") {
 				return nil
 			}
 			lowName := strings.ToLower(filepath.Base(p))
@@ -594,7 +597,7 @@ func SpecDedupe(root string, args []string, stdout, stderr io.Writer) int {
 			}
 			b, err := os.ReadFile(p) // #nosec G122 -- scoring walk over the project's own .scratch tree; a symlink race requires an attacker already writing to the checkout
 			if err != nil {
-				return nil
+				return err
 			}
 			text := strings.ToLower(string(b))
 			score := 0
@@ -604,11 +607,18 @@ func SpecDedupe(root string, args []string, stdout, stderr io.Writer) int {
 				}
 			}
 			if score >= 2 || score == len(terms) {
-				rel, _ := filepath.Rel(project, p)
+				rel, err := filepath.Rel(project, p)
+				if err != nil {
+					return err
+				}
 				hits = append(hits, hit{score: score, path: filepath.ToSlash(rel), line: firstLine(string(b))})
 			}
 			return nil
 		})
+		if err != nil && !os.IsNotExist(err) {
+			fmt.Fprintf(stderr, "spec-dedupe: search %s: %v\n", base, err)
+			return 1
+		}
 	}
 	sort.Slice(hits, func(i, j int) bool {
 		if hits[i].score == hits[j].score {

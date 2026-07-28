@@ -151,7 +151,10 @@ func executeRunbook(root, path string, start int, runID string, dry bool, stdout
 			return 3
 		}
 	}
-	_ = writeRunbookState(root, runbookState{RunID: runID, Source: path, Next: len(steps), Status: "completed"})
+	if err := writeRunbookState(root, runbookState{RunID: runID, Source: path, Next: len(steps), Status: "completed"}); err != nil {
+		fmt.Fprintf(stderr, "runbook: %v\n", err)
+		return 1
+	}
 	fmt.Fprintf(stdout, "runbook: completed %s\n", runID)
 	return 0
 }

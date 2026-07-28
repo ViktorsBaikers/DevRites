@@ -92,7 +92,11 @@ func planFold(root, workspaceDir string, stderr io.Writer) ([]capabilityFold, in
 
 	var folds []capabilityFold
 	for _, capability := range order {
-		fold := foldCapability(root, capability, byCap[capability])
+		fold, err := foldCapability(root, capability, byCap[capability])
+		if err != nil {
+			fmt.Fprintf(stderr, "ledger: %v\n", err)
+			return nil, 2
+		}
 		folds = append(folds, fold)
 	}
 	return folds, 0
@@ -102,8 +106,17 @@ func planFold(root, workspaceDir string, stderr io.Writer) ([]capabilityFold, in
 // A requirement with no delta kind (a flat feature spec) folds as ADDED. ADDED and
 // MODIFIED are both an upsert (replace in place if the header exists, else append);
 // REMOVED deletes. Ordering: existing blocks keep their position, new blocks append.
-func foldCapability(root, capability string, deltas []Requirement) capabilityFold {
-	existing, _ := ParseSpec(ledgerCapabilityPath(root, capability))
+func foldCapability(root, capability string, deltas []Requirement) (capabilityFold, error) {
+	path := ledgerCapabilityPath(root, capability)
+	var existing *SpecDoc
+	if _, err := os.Stat(path); err == nil {
+		existing, err = ParseSpec(path)
+		if err != nil {
+			return capabilityFold{}, fmt.Errorf("read capability %s: %w", capability, err)
+		}
+	} else if !os.IsNotExist(err) {
+		return capabilityFold{}, fmt.Errorf("inspect capability %s: %w", capability, err)
+	}
 	var blocks []Requirement
 	idx := map[string]int{}
 	if existing != nil {
@@ -140,7 +153,7 @@ func foldCapability(root, capability string, deltas []Requirement) capabilityFol
 		}
 	}
 	fold.blocks = blocks
-	return fold
+	return fold, nil
 }
 
 // renderLedgerSpec assembles a capability's ledger spec.md from its resolved blocks.

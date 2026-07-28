@@ -32,7 +32,11 @@ func BuildReadiness(root string, args []string, stdout, stderr io.Writer) int {
 		return readinessCode("workspace-missing")
 	}
 
-	data, _ := os.ReadFile(s)
+	data, err := os.ReadFile(s)
+	if err != nil {
+		fmt.Fprintf(stderr, "readiness: cannot read state.md: %v\n", err)
+		return readinessCode("workspace-missing")
+	}
 	lines := splitLinesNoTrailing(data)
 
 	status := readinessField(lines, "Status")

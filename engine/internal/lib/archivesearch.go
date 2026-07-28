@@ -1,8 +1,10 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,11 +13,11 @@ import (
 
 // ArchiveSearch surfaces shipped features whose spec.md overlaps a query, so
 // /rite-spec can spot prior art before writing a new spec: an extension, a
-// conflict, or a re-spec of solved work. It is advisory, not a gate: it always
-// exits 0 when it runs (empty output means no overlap), and reserves exit 2 for
-// a missing query. The query is the feature's key nouns, one or many args; a
-// quoted phrase is split on whitespace. Ranking is by the count of distinct query
-// terms a spec contains, highest first, ties broken by slug.
+// conflict, or a re-spec of solved work. It is advisory, not a gate: empty
+// output means no overlap. Exit 2 means a missing query; exit 3 means the
+// archive could not be read. The query is the feature's key nouns, one or many
+// args; a quoted phrase is split on whitespace. Ranking is by the count of
+// distinct query terms a spec contains, highest first, ties broken by slug.
 //
 // args is `<term>...`. Terms shorter than three characters are dropped as noise.
 func ArchiveSearch(root string, args []string, stdout, stderr io.Writer) int {
@@ -36,8 +38,12 @@ func ArchiveSearch(root string, args []string, stdout, stderr io.Writer) int {
 
 	entries, err := os.ReadDir(filepath.Join(root, "archive"))
 	if err != nil {
-		// No archive yet: no prior art to surface. Silent, successful no-op.
-		return 0
+		if errors.Is(err, fs.ErrNotExist) {
+			// No archive yet: no prior art to surface. Silent, successful no-op.
+			return 0
+		}
+		fmt.Fprintf(stderr, "archive-search: read archive: %v\n", err)
+		return 3
 	}
 
 	type hit struct {
@@ -53,7 +59,11 @@ func ArchiveSearch(root string, args []string, stdout, stderr io.Writer) int {
 		spec := filepath.Join(root, "archive", e.Name(), "spec.md")
 		b, err := os.ReadFile(spec)
 		if err != nil {
-			continue
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			fmt.Fprintf(stderr, "archive-search: read %s: %v\n", spec, err)
+			return 3
 		}
 		body := strings.ToLower(string(b))
 		n := 0

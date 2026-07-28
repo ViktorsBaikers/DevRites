@@ -60,6 +60,28 @@ func TestContextSyncRejectsUnsafePath(t *testing.T) {
 	}
 }
 
+func TestContextSyncDoesNotOverwriteUnreadableTarget(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(project, "AGENTS.md")
+	if err := os.Mkdir(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stderr := &bytes.Buffer{}
+	if code := Context(root, []string{"sync", "AGENTS.md"}, &bytes.Buffer{}, stderr); code != 1 {
+		t.Fatalf("unreadable target code = %d, want 1; stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "read existing context file") {
+		t.Fatalf("stderr=%q, want target read error", stderr.String())
+	}
+	if info, err := os.Stat(target); err != nil || !info.IsDir() {
+		t.Fatalf("target was replaced: info=%v err=%v", info, err)
+	}
+}
+
 func TestContextSyncRefusesExternalWorkspaceOverride(t *testing.T) {
 	project := t.TempDir()
 	root := filepath.Join(project, ".devrites")
@@ -135,5 +157,26 @@ func TestRunbookDryRunDoesNotExecuteShell(t *testing.T) {
 	}
 	if _, err := os.Stat(marker); err == nil {
 		t.Fatal("dry run executed shell step")
+	}
+}
+
+func TestRunbookReportsCompletionStateWriteFailure(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "demo.yaml")
+	if err := os.WriteFile(path, []byte("steps:\n  - rite: build\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "runs"), []byte("blocks state directory"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := executeRunbook(root, path, 0, "test-run", false, stdout, stderr); code != 1 {
+		t.Fatalf("executeRunbook code = %d, want 1; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if strings.Contains(stdout.String(), "completed") || !strings.Contains(stderr.String(), "runbook:") {
+		t.Fatalf("completion write failure was misreported; stdout=%q stderr=%q", stdout.String(), stderr.String())
 	}
 }

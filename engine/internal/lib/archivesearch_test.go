@@ -98,6 +98,34 @@ func TestArchiveSearchNoArchive(t *testing.T) {
 	}
 }
 
+func TestArchiveSearchReportsUnreadableArchive(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "archive"), []byte("not a directory"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := ArchiveSearch(root, []string{"anything"}, stdout, stderr); code != 3 {
+		t.Fatalf("code=%d, want 3; stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "read archive") {
+		t.Fatalf("stderr=%q, want archive read error", stderr.String())
+	}
+}
+
+func TestArchiveSearchReportsUnreadableSpec(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "archive", "broken", "spec.md"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := ArchiveSearch(root, []string{"anything"}, stdout, stderr); code != 3 {
+		t.Fatalf("code=%d, want 3; stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "archive-search: read") {
+		t.Fatalf("stderr=%q, want spec read error", stderr.String())
+	}
+}
+
 func writeArchiveSpec(t *testing.T, root, slug, content string) {
 	t.Helper()
 	dir := filepath.Join(root, "archive", slug)

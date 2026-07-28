@@ -1,8 +1,10 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -182,9 +184,12 @@ func resolveNextQID(qpath string, stdout, stderr io.Writer) int {
 	if qpath == "" {
 		return fail(stderr, "Usage: devrites-engine resolve next-qid <questions.md path>", 5)
 	}
-	var content []byte
-	if isFile(qpath) {
-		content, _ = os.ReadFile(qpath)
+	content, err := os.ReadFile(qpath)
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return fail(stderr, "read questions.md: "+err.Error(), 5)
+		}
+		content = nil
 	}
 	qid, err := nextQuestionID(content, clockNow())
 	if err != nil {

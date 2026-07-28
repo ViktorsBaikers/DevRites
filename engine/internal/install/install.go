@@ -280,14 +280,20 @@ func newRunner(opts Options) (*runner, error) {
 		source = inferSourceDir()
 	}
 	if source != "" {
-		source, _ = filepath.Abs(source)
+		source, err = filepath.Abs(source)
+		if err != nil {
+			return nil, fmt.Errorf("resolve source %s: %w", opts.SourceDir, err)
+		}
 	}
 	payload := opts.PayloadDir
 	if payload == "" {
 		payload = inferPayloadDir(source)
 	}
 	if payload != "" {
-		payload, _ = filepath.Abs(payload)
+		payload, err = filepath.Abs(payload)
+		if err != nil {
+			return nil, fmt.Errorf("resolve payload %s: %w", opts.PayloadDir, err)
+		}
 	}
 	r := &runner{
 		opts:      opts,
@@ -304,7 +310,10 @@ func newRunner(opts Options) (*runner, error) {
 			return nil, fmt.Errorf("validate payload: %w", err)
 		}
 	}
-	r.prev = readManifest(filepath.Join(target, ManifestName))
+	r.prev, err = readManifest(filepath.Join(target, ManifestName))
+	if err != nil {
+		return nil, err
+	}
 	return r, nil
 }
 
@@ -737,13 +746,15 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
 	if r.opts.DryRun {
 		verb := "create DevRites block"
-		if exists(dest) {
-			current, _ := os.ReadFile(dest)
+		current, readErr := os.ReadFile(dest)
+		if readErr == nil {
 			if bytes.Contains(current, []byte(merge.Begin)) {
 				verb = "refresh DevRites block"
 			} else {
 				verb = "append DevRites block"
 			}
+		} else if !errors.Is(readErr, fs.ErrNotExist) {
+			return fmt.Errorf("cannot read %s: %w", merge.TargetRel, readErr)
 		}
 		fmt.Fprintf(r.opts.Stdout, "  [merge] %s (%s)\n", merge.TargetRel, verb)
 	} else {
@@ -751,8 +762,11 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 			return err
 		}
 		next := block
-		if current, err := os.ReadFile(dest); err == nil {
+		current, readErr := os.ReadFile(dest)
+		if readErr == nil {
 			next = hostpack.MergeMarkerBlock(current, block, merge.Begin, merge.End)
+		} else if !errors.Is(readErr, fs.ErrNotExist) {
+			return fmt.Errorf("cannot read %s: %w", merge.TargetRel, readErr)
 		}
 		if err := fsutil.WriteFileAtomic(dest, next, 0o644); err != nil {
 			return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
@@ -974,7 +988,10 @@ func (r *runner) flagsString() string {
 
 func (r *runner) uninstall() error {
 	mf := filepath.Join(r.target, ManifestName)
-	entries := readManifestList(mf)
+	entries, err := readManifestList(mf)
+	if err != nil {
+		return err
+	}
 	if len(entries) == 0 {
 		return fmt.Errorf("no DevRites manifest at %s - nothing to uninstall", mf)
 	}
@@ -1922,20 +1939,23 @@ func readEngineVersion(path string, timeout time.Duration) (string, error) {
 	return line, nil
 }
 
-func readManifest(path string) map[string]managedRecord {
-	records, _ := parseManifest(path)
-	return records
+func readManifest(path string) (map[string]managedRecord, error) {
+	records, _, err := parseManifest(path)
+	return records, err
 }
 
-func readManifestList(path string) []string {
-	_, entries := parseManifest(path)
-	return entries
+func readManifestList(path string) ([]string, error) {
+	_, entries, err := parseManifest(path)
+	return entries, err
 }
 
-func parseManifest(path string) (map[string]managedRecord, []string) {
+func parseManifest(path string) (map[string]managedRecord, []string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return map[string]managedRecord{}, nil
+		if errors.Is(err, fs.ErrNotExist) {
+			return map[string]managedRecord{}, nil, nil
+		}
+		return nil, nil, fmt.Errorf("read manifest %s: %w", path, err)
 	}
 	hashes := map[string]string{}
 	var out []string
@@ -1967,7 +1987,7 @@ func parseManifest(path string) (map[string]managedRecord, []string) {
 	for _, rel := range out {
 		records[rel] = managedRecord{Hash: hashes[rel]}
 	}
-	return records, out
+	return records, out, nil
 }
 
 func validManagedHash(hash string) bool {
