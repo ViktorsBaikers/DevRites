@@ -1441,6 +1441,12 @@ func TestCodexAgentDispatchPromptGivesExactNamedCallBeforeCompletion(t *testing.
 		".codex/agents/" + role + ".toml",
 		"send agent_type anyway",
 		"Wait for the returned child",
+		"PRE-DISPATCH STOP RULE",
+		"do not spawn only to satisfy this receipt",
+		"devrites-engine dispatch-waive <reason>",
+		"readiness-failed",
+		"human-gate-before-dispatch",
+		"never waive after a spawn attempt",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("initial dispatch guidance omitted %q:\n%s", want, out)
@@ -1692,7 +1698,9 @@ func TestCodexAgentDispatchBlocksFalseWaitAndStop(t *testing.T) {
 	if stopDecision.Decision != "block" ||
 		!strings.Contains(stopDecision.Reason, "spawn_agent") ||
 		!strings.Contains(stopDecision.Reason, "visible tool schema") ||
-		!strings.Contains(stopDecision.Reason, "send agent_type anyway") {
+		!strings.Contains(stopDecision.Reason, "send agent_type anyway") ||
+		!strings.Contains(stopDecision.Reason, "do not spawn only to satisfy this receipt") ||
+		!strings.Contains(stopDecision.Reason, "dispatch-waive <reason>") {
 		t.Fatalf("false completion not blocked: %#v", stopDecision)
 	}
 
@@ -1745,7 +1753,7 @@ func TestCodexAgentDispatchRequiresSuccessfulReasonBoundWaiver(t *testing.T) {
 		t.Fatalf("chained waiver was not denied: %s", out)
 	}
 
-	command := "devrites-engine dispatch-waive wrong-phase"
+	command := "devrites-engine dispatch-waive readiness-failed"
 	pre := hookPayload(t, map[string]any{
 		"hook_event_name": "PreToolUse",
 		"session_id":      sessionID,
@@ -1775,7 +1783,7 @@ func TestCodexAgentDispatchRequiresSuccessfulReasonBoundWaiver(t *testing.T) {
 		"turn_id":         turnID,
 		"tool_name":       "functions.exec_command",
 		"tool_input":      map[string]any{"cmd": command},
-		"tool_response":   "dispatch-waive: accepted wrong-phase",
+		"tool_response":   "dispatch-waive: accepted readiness-failed",
 	})
 	if out, stderr, code := runDevritesIO(t, root, post, nil,
 		"hook", "agent-dispatch", "--harness=codex"); code != 0 || strings.TrimSpace(out) != "" {
@@ -1887,12 +1895,16 @@ func TestCodexAgentDispatchConfirmsGenericRoleAndResult(t *testing.T) {
 	}
 	var blocked struct {
 		Decision string `json:"decision"`
+		Reason   string `json:"reason"`
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &blocked); err != nil {
 		t.Fatalf("invalid unawaited Stop response: %v\n%s", err, out)
 	}
 	if blocked.Decision != "block" {
 		t.Fatalf("unawaited child result passed Stop: %s", out)
+	}
+	if strings.Contains(blocked.Reason, "dispatch-waive") {
+		t.Fatalf("unavailable post-spawn waiver was suggested: %s", out)
 	}
 
 	wait := hookPayload(t, map[string]any{

@@ -853,6 +853,10 @@ func conditionalDispatchInstruction() string {
 	return "CONDITIONAL DISPATCH RULE — If this skill reaches a child-agent step, call spawn_agent with the exact named agent_type=devrites-<role> specified by the skill, a unique task_name, and fork_turns=\"none\". GPT-5.6 V2 may omit agent_type from the visible tool schema; send agent_type anyway and never use a default child. Wait for the returned child and use its non-empty result."
 }
 
+func preDispatchStopInstruction() string {
+	return "PRE-DISPATCH STOP RULE — If a deterministic prerequisite forces STOP before any spawn attempt, do not spawn only to satisfy this receipt. Run exactly one successful standalone devrites-engine dispatch-waive <reason> before replying. Use only the matching observed predicate: no-active-workspace, wrong-phase, readiness-failed, no-eligible-work, or human-gate-before-dispatch. The successful PostToolUse receipt is required; never waive after a spawn attempt."
+}
+
 func incompleteDispatchReason(armed map[string]struct{}, attempts []*agentDispatchAttempt) string {
 	roles := make([]string, 0, len(armed))
 	for role := range armed {
@@ -871,7 +875,11 @@ func incompleteDispatchReason(armed map[string]struct{}, attempts []*agentDispat
 	if role == agentDispatchMetadataRole {
 		return "DevRites could not determine this skill's required agents because its installed required-agent-roles contract is invalid. Reinstall or repair the DevRites skill pack before continuing."
 	}
-	return fmt.Sprintf("DevRites dispatch for %s is not complete. %s", role, dispatchInstruction(role))
+	reason := fmt.Sprintf("DevRites dispatch for %s is not complete. %s", role, dispatchInstruction(role))
+	if len(attempts) == 0 {
+		reason += " " + preDispatchStopInstruction()
+	}
+	return reason
 }
 
 func preToolDeny(h harness.Harness, reason string, stdout, stderr io.Writer) int {
@@ -1022,8 +1030,9 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 			}
 			fmt.Fprintf(
 				stdout,
-				"MANDATORY DISPATCH THIS TURN — At the skill's dispatch step, execute every required child before finishing or claiming completion; a success phrase is not evidence.\n%s",
+				"MANDATORY DISPATCH THIS TURN — At the skill's dispatch step, execute every required child before finishing or claiming completion; a success phrase is not evidence.\n%s\n%s",
 				strings.Join(instructions, "\n"),
+				preDispatchStopInstruction(),
 			)
 		}
 		if skillInvoked {
