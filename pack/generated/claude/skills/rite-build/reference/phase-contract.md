@@ -56,9 +56,9 @@ See also [`one-slice-cycle.md`](one-slice-cycle.md).
    [`wright-dispatch.md`](wright-dispatch.md) end to end; it owns snapshot timing, stuck
    logging, the exact packet, conditional skill loading, and return checks. Dispatch through
    named wright → safely enforced generic fresh worker. If neither is available, stop for
-   HITL; the root never performs wright work. Before any canonical
-   `.devrites/` mutation, validate the typed result and require a clean immediate
-   `devrites-engine reconcile check`; exit `5` rejects the writer result.
+   HITL; root never writes source. Validate the result before `.devrites`
+   writes; run `reconcile check`. Exit `5` rejects: run standalone
+   `devrites-engine reconcile abort`, then verify its receipt and frozen hashes.
 4. **Doubt every stood decision before accepting the slice.** The writer never grades its
    own decisions: invoke `devrites-doubt` and its fresh reviewer for each entry. Do not enter
    step 5 until every entry has a recorded `accept` or resolved `reject` verdict. Log each dispatch:

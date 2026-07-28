@@ -74,6 +74,16 @@ Each dispatch follows the retained-baseline sequence:
 6. After proof and decision checks pass, `reconcile close` retires the private
    window; only then does the root write canonical records.
 
+If the writer result is rejected before a clean check, the root runs the exact
+standalone `reconcile abort` operation. It restores source to the original
+pre-dispatch baseline while preserving pre-snapshot user work and canonical
+`.devrites` evidence, verifies a source-manifest digest, closes the retained
+window, and records a content-addressed `.reconcile-abort-<sha256>.json`
+receipt. The receipt binds the original tree, captured allowlist digest,
+restored path set, and closed-window result. Project-specific frozen hashes are
+verified separately against the restored worktree. `restore-check` remains the
+narrow rollback for source drift introduced after a clean check.
+
 An ordinary `reconcile check` may revalidate an existing retained window
 without a fresh current-turn wright receipt; it does not retire or widen that
 window. `reconcile close` still requires the confirmed, awaited wright result

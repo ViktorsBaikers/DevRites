@@ -804,6 +804,9 @@ func TestHookWrightScopeRequiresSpawnedCodexWorkerForSourceWrites(t *testing.T) 
 	runGuard(`{"tool_name":"js","tool_input":{"code":"writeFile()"}}`, true)
 	runGuard(`{"tool_name":"Bash","tool_input":{"command":"devrites-engine reconcile restore-check auth-tokens"}}`, false)
 	runGuard(`{"tool_name":"Bash","tool_input":{"command":"devrites-engine reconcile restore-check auth-tokens && printf x > src/app.go"}}`, true)
+	runGuard(`{"tool_name":"Bash","tool_input":{"command":"rtk devrites-engine reconcile abort auth-tokens"}}`, false)
+	runGuard(`{"tool_name":"Bash","tool_input":{"command":"devrites-engine reconcile   abort auth-tokens"}}`, false)
+	runGuard(`{"tool_name":"Bash","tool_input":{"command":"devrites-engine reconcile abort auth-tokens && printf x > src/app.go"}}`, true)
 	out, errOut, code := runDevritesIO(t, root,
 		`{"tool_name":"Bash","tool_input":{"command":"printf x > src/app.go"}}`,
 		nil, "hook", "wright-scope", "--harness=claude")

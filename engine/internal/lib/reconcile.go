@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -27,7 +28,25 @@ const (
 	defaultWrightAllowlistName  = ".wright-allowlist"
 	wrightAllowlistFileEnv      = "DEVRITES_WRIGHT_ALLOWLIST_FILE"
 	reconcileDevritesPathPrefix = ".devrites/"
+	reconcileAbortSchema        = "devrites.reconcile-abort-receipt.v1"
 )
+
+var (
+	reconcileAbortReceiptName = regexp.MustCompile(`^\.reconcile-abort-([0-9a-f]{64})\.json$`)
+	reconcileObjectID         = regexp.MustCompile(`^(?:[0-9a-f]{40}|[0-9a-f]{64})$`)
+	reconcileSHA256           = regexp.MustCompile(`^[0-9a-f]{64}$`)
+)
+
+type reconcileAbortReceipt struct {
+	SchemaVersion           string   `json:"schemaVersion"`
+	Slug                    string   `json:"slug"`
+	BaselineTree            string   `json:"baselineTree"`
+	SourceManifestSHA256    string   `json:"sourceManifestSHA256"`
+	SourceEntryCount        int      `json:"sourceEntryCount"`
+	CapturedAllowlistSHA256 string   `json:"capturedAllowlistSHA256"`
+	RestoredPaths           []string `json:"restoredPaths"`
+	WindowClosed            bool     `json:"windowClosed"`
+}
 
 // Reconcile enforces the source-write boundary around one dispatched
 // slice-wright. The first `snapshot` captures the dirty worktree, private object
@@ -39,7 +58,9 @@ const (
 // `check` compares the captured state with the current state and retains the
 // immutable baseline for the later test-integrity gate.
 // `restore-check` rolls back only source drift introduced after the last clean
-// check. `close` revalidates and then removes the private window artifacts.
+// check. `abort` restores the original source baseline, records a
+// content-addressed receipt, and closes a rejected writer window. `close`
+// revalidates and then removes the private window artifacts.
 //
 //	0  clean check, snapshot/close completed, or skipped (not a git repo)
 //	5  VIOLATION: a path changed outside the orchestrator allowlist
@@ -220,6 +241,103 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "reconcile: snapshot captured for %s.\n", slug)
 		return 0
 
+	case "abort":
+		baseTree, env, activeObjects, active, err := loadReconcileBaseline(gitRoot, d)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: invalid snapshot: %v\n", err)
+			return 6
+		}
+		if !active {
+			fmt.Fprintln(stderr, `reconcile: no active snapshot to abort.`)
+			return 6
+		}
+		allowed, err := readWrightAllowlist(gitRoot, capturedAllowlist)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: invalid captured allowlist: %v\n", err)
+			return 6
+		}
+		allowlistBytes := renderWrightAllowlist(allowed)
+		allowlistDigest := sha256.Sum256(allowlistBytes)
+
+		nowTree, err := worktreeTree(gitRoot, activeObjects, root)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot capture worktree for abort: %v\n", err)
+			return 6
+		}
+		changed, err := changedTreePaths(gitRoot, env, baseTree, nowTree)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot compare abort baseline: %v\n", err)
+			return 6
+		}
+		changed = sourceTreePaths(changed)
+		if err := restoreTreePaths(gitRoot, env, baseTree, changed); err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot restore rejected writer source delta: %v\n", err)
+			return 6
+		}
+
+		restoredTree, err := worktreeTree(gitRoot, activeObjects, root)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot verify aborted worktree: %v\n", err)
+			return 6
+		}
+		remaining, err := changedTreePaths(gitRoot, env, baseTree, restoredTree)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot verify abort baseline: %v\n", err)
+			return 6
+		}
+		if remaining = sourceTreePaths(remaining); len(remaining) != 0 {
+			fmt.Fprintln(stderr, "reconcile: rejected writer source delta was not fully restored; retained window left open.")
+			return 6
+		}
+		manifestDigest, entryCount, err := sourceTreeManifest(gitRoot, env, baseTree)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot fingerprint restored source baseline: %v\n", err)
+			return 6
+		}
+		restoredDigest, restoredEntryCount, err := sourceTreeManifest(gitRoot, env, restoredTree)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot fingerprint restored worktree: %v\n", err)
+			return 6
+		}
+		if restoredDigest != manifestDigest || restoredEntryCount != entryCount {
+			fmt.Fprintln(stderr, "reconcile: restored source manifest does not match the original baseline; retained window left open.")
+			return 6
+		}
+		receipt := reconcileAbortReceipt{
+			SchemaVersion:           reconcileAbortSchema,
+			Slug:                    slug,
+			BaselineTree:            baseTree,
+			SourceManifestSHA256:    manifestDigest,
+			SourceEntryCount:        entryCount,
+			CapturedAllowlistSHA256: hex.EncodeToString(allowlistDigest[:]),
+			RestoredPaths:           changed,
+			WindowClosed:            true,
+		}
+		receiptData, receiptName, err := renderReconcileAbortReceipt(receipt)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot render abort receipt: %v\n", err)
+			return 6
+		}
+		receiptPath := filepath.Join(d, receiptName)
+		pendingReceipt, err := stageContentAddressedReceipt(receiptPath, receiptData)
+		if err != nil {
+			fmt.Fprintf(stderr, "reconcile: cannot stage abort receipt: %v\n", err)
+			return 6
+		}
+		if pendingReceipt != "" {
+			defer func() { _ = os.Remove(pendingReceipt) }()
+		}
+		if err := closeWindow(); err != nil {
+			fmt.Fprintf(stderr, "reconcile: source baseline restored, but cannot close rejected slice window: %v\n", err)
+			return 6
+		}
+		if err := commitContentAddressedReceipt(receiptPath, pendingReceipt, receiptData); err != nil {
+			fmt.Fprintf(stderr, "reconcile: source baseline restored and window closed, but cannot persist abort receipt: %v\n", err)
+			return 6
+		}
+		fmt.Fprintf(stdout, "reconcile: aborted rejected slice window for %s; restored %d source path(s); receipt %s.\n", slug, len(changed), receiptName)
+		return 0
+
 	case "restore-check":
 		_, env, activeObjects, active, err := loadReconcileBaseline(gitRoot, d)
 		if err != nil {
@@ -374,7 +492,7 @@ func Reconcile(root string, args []string, stdout, stderr io.Writer) int {
 		return 0
 
 	default:
-		fmt.Fprintln(stderr, "reconcile: usage: devrites-engine reconcile <snapshot|check|restore-check|close> [slug]")
+		fmt.Fprintln(stderr, "reconcile: usage: devrites-engine reconcile <snapshot|check|restore-check|abort|close> [slug]")
 		return 6
 	}
 }
@@ -654,7 +772,43 @@ func reconcileRootOwnedOperationalFile(filename, rel string, entry os.DirEntry) 
 			return false, fmt.Errorf("validate root-owned recovery ledger %s: %w", rel, err)
 		}
 	}
+	if len(parts) == 3 && reconcileAbortReceiptName.MatchString(parts[2]) {
+		data, err := os.ReadFile(filename)
+		if err != nil {
+			return false, fmt.Errorf("read reconcile abort receipt %s: %w", rel, err)
+		}
+		match := reconcileAbortReceiptName.FindStringSubmatch(parts[2])
+		digest := sha256.Sum256(data)
+		if hex.EncodeToString(digest[:]) != match[1] {
+			return false, fmt.Errorf("validate reconcile abort receipt %s: content digest does not match filename", rel)
+		}
+		var receipt reconcileAbortReceipt
+		if err := json.Unmarshal(data, &receipt); err != nil {
+			return false, fmt.Errorf("validate reconcile abort receipt %s: %w", rel, err)
+		}
+		if receipt.SchemaVersion != reconcileAbortSchema || !receipt.WindowClosed ||
+			receipt.Slug != parts[1] || !reconcileObjectID.MatchString(receipt.BaselineTree) ||
+			!reconcileSHA256.MatchString(receipt.SourceManifestSHA256) ||
+			!reconcileSHA256.MatchString(receipt.CapturedAllowlistSHA256) ||
+			receipt.SourceEntryCount < 0 || !validReceiptPaths(receipt.RestoredPaths) {
+			return false, fmt.Errorf("validate reconcile abort receipt %s: invalid receipt fields", rel)
+		}
+	}
 	return true, nil
+}
+
+func validReceiptPaths(paths []string) bool {
+	previous := ""
+	for _, receiptPath := range paths {
+		if receiptPath == "" || receiptPath == "." || receiptPath == ".devrites" ||
+			strings.HasPrefix(receiptPath, reconcileDevritesPathPrefix) ||
+			path.Clean(receiptPath) != receiptPath ||
+			(previous != "" && receiptPath <= previous) {
+			return false
+		}
+		previous = receiptPath
+	}
+	return true
 }
 
 func reconcileRootOwnedOperationalPath(rel string) bool {
@@ -679,7 +833,7 @@ func reconcileRootOwnedOperationalPath(rel string) bool {
 		".wright-scope.log":
 		return true
 	default:
-		return false
+		return reconcileAbortReceiptName.MatchString(parts[2])
 	}
 }
 
@@ -796,20 +950,26 @@ func restoreTreeDelta(gitRoot string, env []string, checkedTree, currentTree str
 	if len(changed) == 0 {
 		return nil, nil
 	}
+	if err := restoreTreePaths(gitRoot, env, checkedTree, changed); err != nil {
+		return nil, err
+	}
+	return changed, nil
+}
 
+func restoreTreePaths(gitRoot string, env []string, targetTree string, changed []string) error {
 	materialized, err := os.MkdirTemp("", "devrites-reconcile-restore-*")
 	if err != nil {
-		return nil, fmt.Errorf("create restore directory: %w", err)
+		return fmt.Errorf("create restore directory: %w", err)
 	}
 	defer func() { _ = os.RemoveAll(materialized) }()
 	index := filepath.Join(materialized, "index")
 	restoreEnv := append(append([]string{}, env...), "GIT_INDEX_FILE="+index)
-	if _, err := reconcileGitOutput(gitRoot, restoreEnv, "read-tree", checkedTree); err != nil {
-		return nil, err
+	if _, err := reconcileGitOutput(gitRoot, restoreEnv, "read-tree", targetTree); err != nil {
+		return err
 	}
 	materializedTree := filepath.Join(materialized, "tree")
 	if err := os.MkdirAll(materializedTree, 0o700); err != nil {
-		return nil, fmt.Errorf("create restore tree: %w", err)
+		return fmt.Errorf("create restore tree: %w", err)
 	}
 	gitPrefix := filepath.ToSlash(materializedTree) + "/"
 	if _, err := reconcileGitOutput(
@@ -818,56 +978,159 @@ func restoreTreeDelta(gitRoot string, env []string, checkedTree, currentTree str
 		"-c", "core.autocrlf=false",
 		"checkout-index", "--all", "--force", "--prefix="+gitPrefix,
 	); err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, changedPath := range changed {
 		if changedPath == "." || changedPath == ".devrites" ||
 			strings.HasPrefix(changedPath, reconcileDevritesPathPrefix) ||
 			path.Clean(changedPath) != changedPath {
-			return nil, fmt.Errorf("unsafe restore path %q", changedPath)
+			return fmt.Errorf("unsafe restore path %q", changedPath)
 		}
 		target := filepath.Join(gitRoot, filepath.FromSlash(changedPath))
 		targetParent := filepath.Dir(target)
 		if !safepath.WithinResolved(targetParent, gitRoot) {
-			return nil, fmt.Errorf("restore parent escapes repository through a symlink: %s", changedPath)
+			return fmt.Errorf("restore parent escapes repository through a symlink: %s", changedPath)
 		}
 		source := filepath.Join(materializedTree, filepath.FromSlash(changedPath))
 		sourceInfo, sourceErr := os.Lstat(source)
 		if sourceErr != nil && !os.IsNotExist(sourceErr) {
-			return nil, fmt.Errorf("inspect clean source %s: %w", changedPath, sourceErr)
+			return fmt.Errorf("inspect clean source %s: %w", changedPath, sourceErr)
 		}
 		if err := os.RemoveAll(target); err != nil {
-			return nil, fmt.Errorf("remove post-check path %s: %w", changedPath, err)
+			return fmt.Errorf("remove source path %s: %w", changedPath, err)
 		}
 		if os.IsNotExist(sourceErr) {
 			continue
 		}
 		if err := os.MkdirAll(targetParent, 0o755); err != nil {
-			return nil, fmt.Errorf("create restore parent for %s: %w", changedPath, err)
+			return fmt.Errorf("create restore parent for %s: %w", changedPath, err)
 		}
 		switch {
 		case sourceInfo.Mode()&os.ModeSymlink != 0:
 			link, err := os.Readlink(source)
 			if err != nil {
-				return nil, fmt.Errorf("read clean symlink %s: %w", changedPath, err)
+				return fmt.Errorf("read clean symlink %s: %w", changedPath, err)
 			}
 			if err := os.Symlink(link, target); err != nil {
-				return nil, fmt.Errorf("restore symlink %s: %w", changedPath, err)
+				return fmt.Errorf("restore symlink %s: %w", changedPath, err)
 			}
 		case sourceInfo.Mode().IsRegular():
 			data, err := os.ReadFile(source)
 			if err != nil {
-				return nil, fmt.Errorf("read clean file %s: %w", changedPath, err)
+				return fmt.Errorf("read clean file %s: %w", changedPath, err)
 			}
 			if err := os.WriteFile(target, data, sourceInfo.Mode().Perm()); err != nil {
-				return nil, fmt.Errorf("restore file %s: %w", changedPath, err)
+				return fmt.Errorf("restore file %s: %w", changedPath, err)
 			}
 		default:
-			return nil, fmt.Errorf("unsupported clean tree entry for %s: %s", changedPath, sourceInfo.Mode())
+			return fmt.Errorf("unsupported clean tree entry for %s: %s", changedPath, sourceInfo.Mode())
 		}
 	}
-	return changed, nil
+	return nil
+}
+
+func sourceTreePaths(paths []string) []string {
+	source := make([]string, 0, len(paths))
+	for _, changedPath := range paths {
+		if changedPath == ".devrites" || strings.HasPrefix(changedPath, reconcileDevritesPathPrefix) {
+			continue
+		}
+		source = append(source, changedPath)
+	}
+	sort.Strings(source)
+	return source
+}
+
+func sourceTreeManifest(gitRoot string, env []string, tree string) (string, int, error) {
+	out, err := reconcileGitOutput(gitRoot, env, "ls-tree", "-r", "-z", "--full-tree", tree)
+	if err != nil {
+		return "", 0, err
+	}
+	hash := sha256.New()
+	count := 0
+	for _, entry := range strings.Split(string(out), "\x00") {
+		if entry == "" {
+			continue
+		}
+		tab := strings.IndexByte(entry, '\t')
+		if tab < 0 {
+			return "", 0, fmt.Errorf("invalid ls-tree entry")
+		}
+		entryPath := entry[tab+1:]
+		if entryPath == ".devrites" || strings.HasPrefix(entryPath, reconcileDevritesPathPrefix) {
+			continue
+		}
+		_, _ = hash.Write([]byte(entry))
+		_, _ = hash.Write([]byte{0})
+		count++
+	}
+	return hex.EncodeToString(hash.Sum(nil)), count, nil
+}
+
+func renderReconcileAbortReceipt(receipt reconcileAbortReceipt) ([]byte, string, error) {
+	data, err := json.MarshalIndent(receipt, "", "  ")
+	if err != nil {
+		return nil, "", err
+	}
+	data = append(data, '\n')
+	digest := sha256.Sum256(data)
+	name := fmt.Sprintf(".reconcile-abort-%x.json", digest)
+	return data, name, nil
+}
+
+func stageContentAddressedReceipt(filename string, data []byte) (string, error) {
+	existing, readErr := os.ReadFile(filename)
+	if readErr == nil {
+		if string(existing) != string(data) {
+			return "", fmt.Errorf("existing content-addressed receipt does not match %s", filepath.Base(filename))
+		}
+		return "", nil
+	}
+	if !os.IsNotExist(readErr) {
+		return "", readErr
+	}
+	pending := strings.TrimSuffix(filename, ".json") + ".pending"
+	file, err := os.OpenFile(pending, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return "", err
+	}
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		_ = os.Remove(pending)
+		return "", err
+	}
+	if err := file.Sync(); err != nil {
+		_ = file.Close()
+		_ = os.Remove(pending)
+		return "", err
+	}
+	if err := file.Close(); err != nil {
+		_ = os.Remove(pending)
+		return "", err
+	}
+	if err := os.Chmod(pending, 0o444); err != nil {
+		_ = os.Remove(pending)
+		return "", err
+	}
+	return pending, nil
+}
+
+func commitContentAddressedReceipt(filename, pending string, data []byte) error {
+	if pending == "" {
+		return nil
+	}
+	if err := os.Rename(pending, filename); err != nil {
+		return err
+	}
+	persisted, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	if string(persisted) != string(data) {
+		return fmt.Errorf("persisted abort receipt does not match staged content")
+	}
+	return nil
 }
 
 // worktreeTree captures the working tree (tracked + untracked, .gitignore
