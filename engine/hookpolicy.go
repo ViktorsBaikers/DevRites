@@ -49,6 +49,7 @@ var hookRegistry = map[string]hookDefinition{
 
 	// Standard hooks add the default gates, guards, sentinels, and caches.
 	"a1-guard":          {tier: tierStandard, canBlock: true},
+	"agent-dispatch":    {tier: tierStandard, canBlock: true},
 	"git-guard":         {tier: tierStandard, canBlock: true},
 	"stop-gate":         {tier: tierStandard, canBlock: true},
 	"reviewer-readonly": {tier: tierStandard, canBlock: true},

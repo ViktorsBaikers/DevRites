@@ -527,7 +527,7 @@ func durableCodexV2DispatchAttempts(
 		}
 		if !devritesAgentNameRe.MatchString(role) || role == agentDispatchSkillGuard {
 			if strings.TrimSpace(spawn.Result) != "" {
-				return nil, fmt.Errorf("codex V2 completed a default or non-DevRites child during a DevRites skill turn; %s", conditionalDispatchInstruction())
+				return nil, fmt.Errorf("codex V2 completed a default or non-DevRites child during a DevRites skill turn; this turn is tainted and cannot be repaired by another dispatch. Do not use the child result or advance workflow state. End this turn, then retry the skill in a fresh turn; %s", conditionalDispatchInstruction())
 			}
 			continue
 		}
@@ -1105,7 +1105,11 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 	case "Stop":
 		events, err := readAgentDispatchEvents(root, in.SessionID)
 		if err != nil {
-			return stopDispatchBlock(h, "DevRites could not verify the required agent dispatch: "+err.Error(), stdout, stderr)
+			reason := "DevRites could not verify the required agent dispatch: " + err.Error()
+			if in.StopHookActive {
+				return stopDispatchFailure(reason, stdout, stderr)
+			}
+			return stopDispatchBlock(h, reason, stdout, stderr)
 		}
 		armed, attempts := dispatchTurnState(events, in.TurnID)
 		_, guarded := armed[agentDispatchSkillGuard]
@@ -1114,7 +1118,11 @@ func hookAgentDispatch(h harness.Harness, stdin io.Reader, stdout, stderr io.Wri
 				root, in.SessionID, in.TurnID, armed,
 			)
 			if durableErr != nil {
-				return stopDispatchBlock(h, "DevRites could not verify the Codex V2 agent dispatch: "+durableErr.Error(), stdout, stderr)
+				reason := "DevRites could not verify the Codex V2 agent dispatch: " + durableErr.Error()
+				if in.StopHookActive {
+					return stopDispatchFailure(reason, stdout, stderr)
+				}
+				return stopDispatchBlock(h, reason, stdout, stderr)
 			}
 			attempts = append(attempts, durable...)
 		}

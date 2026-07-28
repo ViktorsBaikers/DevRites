@@ -81,6 +81,12 @@ func TestBlockingHookExitAudit(t *testing.T) {
 			bound:     "one block before the host re-enters with stop_hook_active=true",
 			killPath:  "DEVRITES_DISABLED_HOOKS=stop-gate or DEVRITES_HOOK_PROFILE=minimal",
 		},
+		"agent-dispatch": {
+			reentry:   "explicit stop_hook_active=true terminates the re-entered Stop with the same failure",
+			malformed: "missing or malformed event, session, or turn identity fails open",
+			bound:     "one block before the host re-enters with stop_hook_active=true",
+			killPath:  "DEVRITES_DISABLED_HOOKS=agent-dispatch or DEVRITES_HOOK_PROFILE=minimal",
+		},
 		"reviewer-readonly": {
 			reentry:   "not applicable: each PreToolUse decision applies to one tool request",
 			malformed: "missing or malformed tool identity fails open",
