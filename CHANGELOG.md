@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.24](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.23...v3.2.24) (2026-07-28)
+
+### Fixed
+
+* **devrites:** close review safety gaps ([33e736a](https://github.com/ViktorsBaikers/DevRites/commit/33e736a3d9d69fd166827235ed1ce2310aeca75a))
+
 ## [3.2.23](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.22...v3.2.23) (2026-07-28)
 
 ### Fixed
