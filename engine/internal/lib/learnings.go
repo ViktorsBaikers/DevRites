@@ -367,8 +367,11 @@ func countSubdirs(arch string) int {
 // anyFileNewerThan reports whether any regular file under arch was modified after t.
 func anyFileNewerThan(arch string, t time.Time) bool {
 	newer := false
-	_ = filepath.WalkDir(arch, func(_ string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
+	err := filepath.WalkDir(arch, func(_ string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
 			return nil
 		}
 		if info, err := d.Info(); err == nil && info.Mode().IsRegular() && info.ModTime().After(t) {
@@ -377,6 +380,9 @@ func anyFileNewerThan(arch string, t time.Time) bool {
 		}
 		return nil
 	})
+	if err != nil && !os.IsNotExist(err) {
+		return true
+	}
 	return newer
 }
 

@@ -2,8 +2,10 @@ package lib
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -258,7 +260,10 @@ func upsertContextBlock(path, block string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create context dir: %w", err)
 	}
-	existingBytes, _ := os.ReadFile(path)
+	existingBytes, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("read existing context file: %w", err)
+	}
 	existing := string(existingBytes)
 	var next string
 	start := strings.Index(existing, contextStart)

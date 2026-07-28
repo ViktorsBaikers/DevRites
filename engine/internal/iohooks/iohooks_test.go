@@ -548,3 +548,14 @@ func TestRefreshStateAndChangeScan(t *testing.T) {
 		t.Fatalf("repoChangedSince=false after tracked file write, want true")
 	}
 }
+
+func TestRepoChangedSinceTreatsScanFailureAsChanged(t *testing.T) {
+	base := t.TempDir()
+	stamp := filepath.Join(base, "stamp")
+	if err := os.WriteFile(stamp, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if !repoChangedSince(filepath.Join(base, "missing"), stamp) {
+		t.Fatal("repoChangedSince=false after repository scan failure, want conservative refresh")
+	}
+}

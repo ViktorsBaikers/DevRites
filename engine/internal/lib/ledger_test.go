@@ -160,3 +160,27 @@ The system SHALL group appearance controls together.
 		}
 	}
 }
+
+func TestLedgerSyncDoesNotOverwriteUnreadableCapability(t *testing.T) {
+	root := t.TempDir()
+	capability := ledgerCapabilityPath(root, "billing")
+	if err := os.MkdirAll(capability, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	wsParent := t.TempDir()
+	writeSpec(t, wsParent, "feat", `## ADDED Requirements — capability: billing
+### Requirement: Invoice export
+The system SHALL export invoices.
+`)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	code := Ledger(root, []string{"sync", filepath.Join(wsParent, "feat")}, stdout, stderr)
+	if code != 2 {
+		t.Fatalf("sync code=%d, want 2; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "read capability billing") {
+		t.Fatalf("stderr=%q, want capability read error", stderr.String())
+	}
+	if info, err := os.Stat(capability); err != nil || !info.IsDir() {
+		t.Fatalf("capability was overwritten: info=%v err=%v", info, err)
+	}
+}

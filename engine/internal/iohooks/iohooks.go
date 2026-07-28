@@ -690,9 +690,9 @@ func repoChangedSince(root, stamp string) bool {
 	}
 	stampTime := info.ModTime()
 	changed := false
-	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	if err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 		if d.IsDir() {
 			if path != root && refreshExcludedDirs[d.Name()] {
@@ -705,7 +705,9 @@ func repoChangedSince(root, stamp string) bool {
 			return filepath.SkipAll
 		}
 		return nil
-	})
+	}); err != nil {
+		return true
+	}
 	return changed
 }
 

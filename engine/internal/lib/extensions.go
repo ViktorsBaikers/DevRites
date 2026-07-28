@@ -481,7 +481,11 @@ func extensionsSync(extDir, projectDir string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "extensions: not syncing: validation failed (run `devrites-engine extensions validate`)")
 		return code
 	}
-	exts, _ := discoverExtensions(extDir)
+	exts, err := discoverExtensions(extDir)
+	if err != nil {
+		fmt.Fprintf(stderr, "extensions: discovery failed: %v\n", err)
+		return 1
+	}
 	if len(exts) == 0 {
 		fmt.Fprintln(stdout, "extensions: nothing to sync")
 		return 0

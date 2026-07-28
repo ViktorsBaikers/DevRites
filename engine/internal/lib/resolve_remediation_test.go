@@ -48,6 +48,20 @@ func TestResolveAcceptsCanonicalUppercaseQuestionID(t *testing.T) {
 	}
 }
 
+func TestResolveNextQIDReportsUnreadableQuestions(t *testing.T) {
+	qpath := filepath.Join(t.TempDir(), "questions.md")
+	if err := os.Mkdir(qpath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := resolveNextQID(qpath, &stdout, &stderr); code != 5 {
+		t.Fatalf("code = %d, want 5; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "read questions.md") {
+		t.Fatalf("stderr = %q, want read error", stderr.String())
+	}
+}
+
 func resolveWorkspace(t *testing.T, questions string) string {
 	t.Helper()
 	root := t.TempDir()

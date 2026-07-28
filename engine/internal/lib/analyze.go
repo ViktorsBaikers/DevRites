@@ -53,8 +53,16 @@ func Analyze(root string, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	specData, _ := os.ReadFile(spec)
-	tasksData, _ := os.ReadFile(tasks)
+	specData, err := os.ReadFile(spec)
+	if err != nil {
+		fmt.Fprintf(stderr, "analyze: read spec.md: %v\n", err)
+		return 2
+	}
+	tasksData, err := os.ReadFile(tasks)
+	if err != nil {
+		fmt.Fprintf(stderr, "analyze: read tasks.md: %v\n", err)
+		return 2
+	}
 
 	specACs := sortedACIDs(acIDRe, specData, true) // legacy brackets stripped: "[AC1]" -> "AC1"
 	taskACs := sortedACIDs(taskACRe, tasksData, false)

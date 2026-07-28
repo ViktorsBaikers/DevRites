@@ -23,7 +23,7 @@ import (
 //	5  the file is missing, or the field holds a non-numeric value
 func TickAfk(args []string, stdout, stderr io.Writer) int {
 	path := argAt(args, 0)
-	if path == "" || !isFile(path) {
+	if path == "" {
 		where := path
 		if where == "" {
 			where = "<unset>"
@@ -32,7 +32,11 @@ func TickAfk(args []string, stdout, stderr io.Writer) int {
 		return 5
 	}
 
-	data, _ := os.ReadFile(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Fprintf(stderr, "tick-afk: read state.md at %s: %v\n", path, err)
+		return 5
+	}
 	lines := splitLinesNoTrailing(data)
 
 	remaining, found := readBudget(lines)

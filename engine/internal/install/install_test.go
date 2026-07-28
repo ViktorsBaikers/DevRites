@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/devrites/devrites/internal/hostpack"
 	"github.com/devrites/devrites/internal/testutil"
 )
 
@@ -188,6 +189,50 @@ func TestMarkerMergeAndUninstallPreserveUserContent(t *testing.T) {
 	}
 }
 
+func TestMarkerMergeDryRunReportsUnreadableTarget(t *testing.T) {
+	payload := t.TempDir()
+	if err := os.WriteFile(filepath.Join(payload, "block.md"), []byte("DevRites\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	target := t.TempDir()
+	if err := os.Mkdir(filepath.Join(target, "AGENTS.md"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	r := runner{
+		opts:      Options{DryRun: true, Stdout: &bytes.Buffer{}},
+		target:    target,
+		payloadFS: os.DirFS(payload),
+	}
+	err := r.mergeMarkerFile(hostpack.MarkerMerge{
+		TargetRel:  "AGENTS.md",
+		PayloadRel: "block.md",
+		Begin:      "<!-- BEGIN -->",
+		End:        "<!-- END -->",
+	})
+	if err == nil || !strings.Contains(err.Error(), "cannot read AGENTS.md") {
+		t.Fatalf("mergeMarkerFile error = %v, want target read error", err)
+	}
+}
+
+func TestUninstallReportsUnreadableManifest(t *testing.T) {
+	target := t.TempDir()
+	if err := os.Mkdir(filepath.Dir(filepath.Join(target, ManifestName)), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(target, ManifestName), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	opts := DefaultOptions(ModeUninstall)
+	opts.Target = target
+	err := Apply(opts)
+	if err == nil || !strings.Contains(err.Error(), "read manifest") {
+		t.Fatalf("Apply error = %v, want manifest read error", err)
+	}
+	if info, statErr := os.Stat(filepath.Join(target, ManifestName)); statErr != nil || !info.IsDir() {
+		t.Fatalf("manifest was replaced: info=%v err=%v", info, statErr)
+	}
+}
+
 func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	payload := testPayload(t)
@@ -259,7 +304,11 @@ func TestInstallKeepsClaudeMergeOwnershipAcrossReinstall(t *testing.T) {
 	if !exists(filepath.Join(target, filepath.FromSlash(markerRel))) {
 		t.Fatal("first install did not create the Claude hook merge marker")
 	}
-	if _, ok := readManifest(filepath.Join(target, ManifestName))[markerRel]; !ok {
+	manifestRecords, err := readManifest(filepath.Join(target, ManifestName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := manifestRecords[markerRel]; !ok {
 		t.Fatalf("first install did not record the Claude hook merge marker:\n%s", testutil.ReadFile(t, filepath.Join(target, ManifestName)))
 	}
 	runInstall(t, target, payload, func(o *Options) {})
