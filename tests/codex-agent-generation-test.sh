@@ -58,7 +58,8 @@ def parse_generated_toml(text):
 
     data = {}
     m = re.search(
-        r"^developer_instructions = '''\n(.*?)\n'''(?=\n(?:\[\[hooks\.|\Z))",
+        r"^developer_instructions = '''\n(.*?)\n'''"
+        r"(?=\Z|\n(?:[ \t]*\n)*(?:\[\[hooks\.|\Z))",
         text,
         re.M | re.S,
     )

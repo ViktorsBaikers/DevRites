@@ -32,6 +32,38 @@ bash "$ROOT/scripts/pin.sh" --target "$T" remove b >/dev/null 2>&1 || no "pin re
 [ -e "$T/.claude/skills/b/SKILL.md" ] && no "pin remove left Claude alias" || ok "pin removes Claude alias"
 [ -e "$T/.agents/skills/b/SKILL.md" ] && no "pin remove left Codex alias" || ok "pin removes Codex alias"
 
+printf 'user-owned skill path\n' > "$T/.claude/skills/foreign"
+cp "$T/.claude/devrites.manifest" "$T/manifest-before-failed-add"
+if bash "$ROOT/scripts/pin.sh" --target "$T" add foreign rite-build >/dev/null 2>&1; then
+  no "pin add reported success for a foreign regular-file destination"
+else
+  ok "pin add rejects a foreign regular-file destination"
+fi
+grep -qx 'user-owned skill path' "$T/.claude/skills/foreign" \
+  && ok "failed pin add preserves the foreign file" \
+  || no "failed pin add changed the foreign file"
+cmp -s "$T/manifest-before-failed-add" "$T/.claude/devrites.manifest" \
+  && ok "failed pin add leaves the manifest unchanged" \
+  || no "failed pin add corrupted the manifest"
+
+bash "$ROOT/scripts/pin.sh" --target "$T" add keep rite-build >/dev/null 2>&1 || no "setup pin for remove safety failed"
+printf 'user-owned Codex content\n' > "$T/.agents/skills/keep/SKILL.md"
+cp "$T/.claude/devrites.manifest" "$T/manifest-before-failed-remove"
+if bash "$ROOT/scripts/pin.sh" --target "$T" remove keep >/dev/null 2>&1; then
+  no "pin remove accepted a foreign Codex alias"
+else
+  ok "pin remove rejects a foreign Codex alias"
+fi
+[ -f "$T/.claude/skills/keep/SKILL.md" ] \
+  && ok "failed pin remove preserves the Claude alias" \
+  || no "failed pin remove deleted the Claude alias"
+grep -qx 'user-owned Codex content' "$T/.agents/skills/keep/SKILL.md" \
+  && ok "failed pin remove preserves foreign Codex content" \
+  || no "failed pin remove changed foreign Codex content"
+cmp -s "$T/manifest-before-failed-remove" "$T/.claude/devrites.manifest" \
+  && ok "failed pin remove leaves the manifest unchanged" \
+  || no "failed pin remove corrupted the manifest"
+
 bash "$ROOT/scripts/check-no-global-writes.sh" >/dev/null 2>&1 && ok "check-no-global-writes passed" || no "check-no-global-writes failed"
 
 echo ""

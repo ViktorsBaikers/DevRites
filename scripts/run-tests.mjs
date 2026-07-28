@@ -3,8 +3,9 @@ import { spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const root = fileURLToPath(new URL('..', import.meta.url));
 const testsDir = join(root, 'tests');
 const args = process.argv.slice(2);
 let jobs = Math.max(1, Math.min(5, Math.floor(Number(process.env.DEVRITES_TEST_JOBS || 4)) || 4));

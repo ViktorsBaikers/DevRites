@@ -4,7 +4,7 @@
 #
 # Default output is pack/generated/ so npm pack can ship prebuilt surfaces.
 # Tests may set DEVRITES_HOST_ARTIFACT_DIR to a temporary directory.
-set -u
+set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 PACK_SRC="$ROOT/pack/.claude"
@@ -13,7 +13,7 @@ OUT_ROOT="${DEVRITES_HOST_ARTIFACT_DIR:-$ROOT/pack/generated}"
 [ -d "$PACK_SRC/skills" ] || { echo "build-host-artifacts: missing $PACK_SRC/skills" >&2; exit 1; }
 [ -d "$PACK_SRC/agents" ] || { echo "build-host-artifacts: missing $PACK_SRC/agents" >&2; exit 1; }
 
-TMP_GEN_DIR="$(mktemp -d 2>/dev/null || echo "${TMPDIR:-/tmp}/devrites-host-artifacts.$$")"
+TMP_GEN_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$TMP_GEN_DIR"; }
 trap cleanup EXIT
 

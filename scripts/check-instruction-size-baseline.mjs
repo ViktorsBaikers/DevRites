@@ -2,8 +2,9 @@
 // Track canonical instruction files individually and skills as a group.
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const defaultRoot = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const defaultRoot = fileURLToPath(new URL('..', import.meta.url));
 const argv = process.argv.slice(2);
 function option(name, fallback) {
   const i = argv.indexOf(name);

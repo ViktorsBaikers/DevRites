@@ -2,8 +2,9 @@
 // Advisory pruning audit plus blocking ordered-step completion contracts.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const root = fileURLToPath(new URL('..', import.meta.url));
 const skillsArg = process.argv.indexOf('--skills-dir');
 const skillsDir = skillsArg >= 0 ? process.argv[skillsArg + 1] : join(root, 'pack', '.claude', 'skills');
 const quiet = process.argv.includes('--quiet');

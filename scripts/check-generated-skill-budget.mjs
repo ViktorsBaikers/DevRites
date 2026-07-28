@@ -2,8 +2,9 @@
 // Guard generated host skill payloads against accidental context bloat.
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const root = fileURLToPath(new URL('..', import.meta.url));
 const base = process.argv[2] || join(root, 'pack', '.claude', 'skills');
 const totalLimit = Number(process.env.DEVRITES_SKILL_TOTAL_BUDGET || 900_000);
 const fileLimit = Number(process.env.DEVRITES_SKILL_FILE_BUDGET || 64_000);

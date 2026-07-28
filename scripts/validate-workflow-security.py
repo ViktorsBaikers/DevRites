@@ -20,25 +20,82 @@ import re
 import sys
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-USES_RE = re.compile(r"^\s*-?\s*uses:\s*([^\s#]+)")
+USES_RE = re.compile(r"^\s*-?\s*uses\s*:\s*([^\s#]+)")
 DEPENDABOT_ONLY_RE = re.compile(
-    r"^\s*if:\s*(?:\$\{\{\s*)?"
+    r"^\s*if\s*:\s*(?:\$\{\{\s*)?"
     r"(?:github\.actor|github\.event\.pull_request\.user\.login)\s*==\s*"
     r"['\"]dependabot\[bot\]['\"]",
     re.MULTILINE,
 )
 UNQUOTED_NAME_COLON_RE = re.compile(r"^\s*(?:-\s*)?name:\s+[^'\"].*:\s+\S")
-RUN_RE = re.compile(r"^(\s*)(?:-\s*)?run:\s*(.*)$")
+RUN_RE = re.compile(r"^(\s*)(?:-\s*)?run\s*:\s*(.*)$")
 DISPATCH_EXPRESSION_RE = re.compile(r"\$\{\{[^}]*\binputs\b", re.IGNORECASE)
+KEY_RE = re.compile(r"^(\s*)([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*(.*)$")
+
+
+def jobs_without_permissions(lines):
+    """Return job IDs missing direct permissions, or None with a global scope."""
+    for line in lines:
+        match = KEY_RE.match(line)
+        if match and not match.group(1) and match.group(2) == "permissions":
+            return None
+
+    jobs_line = None
+    for i, line in enumerate(lines):
+        match = KEY_RE.match(line)
+        if match and not match.group(1) and match.group(2) == "jobs":
+            jobs_line = i
+            break
+    if jobs_line is None:
+        return ["<workflow>"]
+
+    job_indent = None
+    job_starts = []
+    for i in range(jobs_line + 1, len(lines)):
+        line = lines[i]
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        match = KEY_RE.match(line)
+        if not match:
+            continue
+        indent = len(match.group(1))
+        if indent == 0:
+            break
+        if job_indent is None:
+            job_indent = indent
+        if indent == job_indent:
+            job_starts.append((i, match.group(2)))
+    if not job_starts:
+        return ["<workflow>"]
+
+    missing = []
+    for position, (start, job_id) in enumerate(job_starts):
+        end = job_starts[position + 1][0] if position + 1 < len(job_starts) else len(lines)
+        property_indents = []
+        properties = []
+        for line in lines[start + 1:end]:
+            match = KEY_RE.match(line)
+            if not match:
+                continue
+            indent = len(match.group(1))
+            if indent > job_indent:
+                property_indents.append(indent)
+                properties.append((indent, match.group(2)))
+        direct_indent = min(property_indents) if property_indents else None
+        if direct_indent is None or not any(
+                indent == direct_indent and key == "permissions"
+                for indent, key in properties):
+            missing.append(job_id)
+    return missing
 
 
 def safe_dependabot_target(text):
-    if re.search(r"^\s*-?\s*uses:\s*actions/checkout@", text, re.MULTILINE):
+    if re.search(r"^\s*-?\s*uses\s*:\s*actions/checkout@", text, re.MULTILINE):
         return False
-    jobs = text.split("\njobs:", 1)
+    jobs = re.split(r"(?m)^jobs\s*:\s*(?:#.*)?$", text, maxsplit=1)
     if len(jobs) != 2:
         return False
-    blocks = re.split(r"(?m)^  [A-Za-z0-9_-]+:\s*(?:#.*)?$", jobs[1])[1:]
+    blocks = re.split(r"(?m)^  [A-Za-z0-9_-]+\s*:\s*(?:#.*)?$", jobs[1])[1:]
     return bool(blocks) and all(DEPENDABOT_ONLY_RE.search(block) for block in blocks)
 
 
@@ -46,9 +103,11 @@ def scan_text(path, text):
     findings = []
     lines = text.splitlines()
     dependabot_target_is_safe = safe_dependabot_target(text)
-    if not re.search(r"^\s*permissions:", text, re.MULTILINE):
-        findings.append("%s: no permissions block. The default GITHUB_TOKEN is broad; "
-                        "add an explicit least-privilege block" % path)
+    unscoped_jobs = jobs_without_permissions(lines)
+    if unscoped_jobs:
+        findings.append("%s: jobs without explicit permissions: %s. Add a global "
+                        "least-privilege block or scope every job"
+                        % (path, ", ".join(unscoped_jobs)))
     for i, line in enumerate(lines, 1):
         if UNQUOTED_NAME_COLON_RE.match(line):
             findings.append("%s:%d: name has an unquoted colon. Quote the complete "

@@ -10,10 +10,10 @@
 # package.json "files", an over-broad .npmignore, a broken prepack, or a bad
 # bin/shebang: each of which silently breaks real `npx devrites`.
 #
-# Packs a throwaway tree, so prepack's `rm -rf` runs there and never mutates your
-# working copy. By default it copies the current tracked working tree so local
-# tracked and untracked changes are tested before commit; set DEVRITES_NPX_PACK_FROM_HEAD=1 for a
-# deterministic committed-HEAD release check. Fully offline (no runtime deps).
+# Packs a throwaway tree so lifecycle hooks never mutate your working copy. By
+# default it copies the current tracked working tree so local tracked and
+# untracked changes are tested before commit; set DEVRITES_NPX_PACK_FROM_HEAD=1
+# for a deterministic committed-HEAD release check. Fully offline (no runtime deps).
 set -u
 export DEVRITES_NO_BINARY=1   # pack smoke: the engine binary has its own lifecycle test (binary-lifecycle-test.sh)
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -46,8 +46,13 @@ else
   cp -R "$ROOT"/. "$WORK"/ 2>/dev/null && ok "no git HEAD: copied working tree"
 fi
 
+mkdir -p "$WORK/docs/internal"
+printf 'private work must survive npm pack\n' > "$WORK/docs/internal/private-work.txt"
 ( cd "$WORK" && env -u DEVRITES_HOST_ARTIFACT_DIR npm pack --pack-destination "$PACKDIR" ) >/dev/null 2>&1 \
   || { no "npm pack failed"; echo "npx-pack-smoke: FAIL"; exit 1; }
+[ -f "$WORK/docs/internal/private-work.txt" ] \
+  && ok "npm pack preserves ignored developer files" \
+  || no "npm pack deleted docs/internal developer data"
 TGZ="$(ls "$PACKDIR"/devrites-*.tgz 2>/dev/null | head -1)"
 { [ -n "$TGZ" ] && [ -f "$TGZ" ]; } && ok "packed $(basename "$TGZ")" \
   || { no "no tarball produced"; echo "npx-pack-smoke: FAIL"; exit 1; }
@@ -69,8 +74,10 @@ for need in \
   package/pack/.claude/ ; do
   echo "$contents" | grep -q "^$need" && ok "tarball ships $need" || no "tarball MISSING $need (files allowlist?)"
 done
-echo "$contents" | grep -q '__pycache__' && no "tarball ships __pycache__ (prepack didn't clean)" \
+echo "$contents" | grep -q '__pycache__' && no "tarball ships __pycache__ (package exclusions failed)" \
   || ok "no __pycache__ in tarball"
+echo "$contents" | grep -q 'docs/internal' && no "tarball ships docs/internal (package exclusions failed)" \
+  || ok "no docs/internal in tarball"
 
 # 3) Install the tarball into an isolated global prefix: offline, real ~/.npm global untouched.
 npm install -g --prefix "$PREFIX" --no-audit --no-fund "$TGZ" >/dev/null 2>&1 \

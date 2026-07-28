@@ -40,6 +40,18 @@ printf 'unreviewed growth that must trip the ratchet\n' >> "$T/size/pack/.claude
 run_fail_contains "instruction baseline catches reference growth" "reference/details.md grew" node "$ROOT/scripts/check-instruction-size-baseline.mjs" --root "$T/size" --baseline "$T/size/tests/baseline.json"
 run_fail_contains "reference file budget is blocking" "reference/details.md" env DEVRITES_REFERENCE_FILE_BUDGET=20 node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/size/pack/.claude/skills"
 
+# Module URLs must be decoded before they are used as filesystem paths.
+SPACE_ROOT="$T/repository with spaces"
+mkdir -p "$SPACE_ROOT/scripts" "$SPACE_ROOT/tests" "$SPACE_ROOT/pack/.claude/skills/demo" "$T/shared-artifacts"
+cp "$ROOT/scripts/run-tests.mjs" "$ROOT/scripts/check-generated-skill-budget.mjs" "$SPACE_ROOT/scripts/"
+cat > "$SPACE_ROOT/tests/path-smoke.sh" <<'SH'
+#!/usr/bin/env bash
+exit 0
+SH
+printf '# demo\npayload\n' > "$SPACE_ROOT/pack/.claude/skills/demo/SKILL.md"
+run_ok "test runner decodes module URL paths" env DEVRITES_HOST_ARTIFACT_DIR="$T/shared-artifacts" node "$SPACE_ROOT/scripts/run-tests.mjs" --serial path-smoke
+run_fail_contains "default skill path survives spaces" "SKILL.md" env DEVRITES_SKILL_FILE_BUDGET=1 node "$SPACE_ROOT/scripts/check-generated-skill-budget.mjs"
+
 # Reachability is blocking unless an orphan has an owned, expiring exception.
 mkdir -p "$T/refs/demo/reference"
 printf '# demo\n' > "$T/refs/demo/SKILL.md"

@@ -61,12 +61,50 @@ jobs:
       - uses: actions/checkout@v7
 EOF
 
+cat > "$TMP/unpinned-key-spacing.yml" <<'EOF'
+name: bad-key-spacing
+permissions:
+  contents: read
+jobs:
+  a:
+    steps:
+      - uses : actions/checkout@main
+EOF
+
 cat > "$TMP/noperm.yml" <<'EOF'
 name: noperm
 jobs:
   a:
     steps:
       - uses: actions/checkout@v7
+EOF
+
+cat > "$TMP/partially-scoped-jobs.yml" <<EOF
+name: partially-scoped
+jobs:
+  scoped:
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@$SHA
+  inherited:
+    steps:
+      - uses: actions/checkout@$SHA
+EOF
+
+cat > "$TMP/all-jobs-scoped.yml" <<EOF
+name: all-jobs-scoped
+jobs:
+  first:
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@$SHA
+  second:
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@$SHA
 EOF
 
 cat > "$TMP/writeall.yml" <<'EOF'
@@ -168,17 +206,36 @@ jobs:
         run: python3 runner.py --model "$MODEL"
 EOF
 
+cat > "$TMP/dispatch-key-spacing.yml" <<'EOF'
+name: unsafe-dispatch-key-spacing
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        default: ''
+permissions:
+  contents: read
+jobs:
+  live:
+    steps:
+      - run : python3 runner.py --model "${{ inputs.model }}"
+EOF
+
 clean "SHA-pinned + scoped"        "$TMP/clean.yml"
 finds "unpinned third-party"       "$TMP/unpinned.yml"
 finds "unquoted name colon"        "$TMP/unquoted-name-colon.yml"
 finds "unpinned first-party"       "$TMP/unpinned-first-party.yml"
+finds "unpinned action with spaced YAML key" "$TMP/unpinned-key-spacing.yml"
 finds "no permissions block"       "$TMP/noperm.yml"
+finds "one of two jobs inherits permissions" "$TMP/partially-scoped-jobs.yml"
+clean "every job explicitly scopes permissions" "$TMP/all-jobs-scoped.yml"
 finds "write-all over-broad"       "$TMP/writeall.yml"
 finds "pull_request_target"        "$TMP/prtarget.yml"
 clean "Dependabot-only target without checkout" "$TMP/dependabot-target.yml"
 finds "Dependabot target with checkout" "$TMP/dependabot-target-checkout.yml"
 finds "Dependabot target with unguarded job" "$TMP/dependabot-target-unguarded-job.yml"
 finds "dispatch shell substitution in run" "$TMP/dispatch-shell-substitution.yml"
+finds "dispatch input with spaced run key" "$TMP/dispatch-key-spacing.yml"
 clean "dispatch input transported through env" "$TMP/dispatch-input-via-env.yml"
 
 # The repository's workflows must pass too.
