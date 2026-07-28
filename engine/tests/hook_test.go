@@ -1116,7 +1116,7 @@ func TestHookSubagentOrientInjectsDisciplineForDevritesAgent(t *testing.T) {
 			if env.HookSpecificOutput.HookEventName != "SubagentStart" {
 				t.Errorf("hookEventName = %q, want SubagentStart", env.HookSpecificOutput.HookEventName)
 			}
-			for _, want := range []string{"DevRites subagent", "Operating rules", "orchestration depth"} {
+			for _, want := range []string{"DevRites subagent", "Operating rules", "ignored path", "native filesystem", "orchestration depth"} {
 				if !strings.Contains(env.HookSpecificOutput.AdditionalContext, want) {
 					t.Errorf("additionalContext missing %q", want)
 				}

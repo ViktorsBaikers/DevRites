@@ -61,6 +61,9 @@ gen_codex_skill_file "$skill_dir/SKILL.md" "$skill_out" 1
 grep -q 'description: Internal DevRites skill; DevRites agents invoke it explicitly' "$skill_out" && ok "internal skill description stubbed" || no "internal skill description not stubbed"
 grep -q '## Codex compatibility' "$skill_out" && ok "skill compatibility block injected" || no "skill compatibility block missing"
 grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$skill_out" && ok "skill body uses mirrored rules path" || no "skill body did not use mirrored rules path"
+grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$skill_out" \
+  && ok "skill recovers when ignored runtime mirrors are refused" \
+  || no "skill can return an ignored-path tool refusal"
 grep -q '.codex/agents/devrites-code-reviewer.toml' "$skill_out" && ok "skill body rewrites agent reference" || no "skill body did not rewrite agent reference"
 grep -q '\$rite-review' "$skill_out" && ok "skill body rewrites slash invocation" || no "skill body did not rewrite slash invocation"
 grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$skill_out" && no "generated skill kept Claude runtime paths" || ok "generated skill has no Claude runtime paths"
@@ -101,6 +104,9 @@ gen_codex_agents_bridge "$bridge"
 grep -q 'invoke.*run a skill inline.*dispatch.*fresh agent' "$bridge" \
   && ok "AGENTS bridge defines invoke and dispatch" \
   || no "AGENTS bridge does not define invoke and dispatch"
+grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$bridge" \
+  && ok "AGENTS bridge recovers when ignored runtime mirrors are refused" \
+  || no "AGENTS bridge can return an ignored-path tool refusal"
 if grep -q 'V2 uses the named `devrites-<role>`; V1 alone may use the guarded generic compatibility path' "$bridge" \
   && grep -q 'fork_turns="none"' "$bridge" \
   && grep -q 'required-agent-roles.*arms a fail-closed receipt' "$bridge" \
@@ -128,6 +134,7 @@ gen_codex_agent "$agent" "$agent_out"
 grep -q 'name = "devrites-sample-reviewer"' "$agent_out" && ok "agent name preserved" || no "agent name missing"
 grep -q 'sandbox_mode = "read-only"' "$agent_out" && ok "read-only agent sandbox emitted" || no "read-only agent sandbox missing"
 grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$agent_out" && ok "agent paths rewritten" || no "agent paths not rewritten"
+grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$agent_out" && ok "agent recovers when ignored runtime mirrors are refused" || no "agent can return an ignored-path tool refusal"
 grep -q '\$rite-seal' "$agent_out" && grep -q '\$rite-build' "$agent_out" && ok "agent invocations rewritten" || no "agent invocations not rewritten"
 grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$agent_out" && no "generated agent kept Claude runtime paths" || ok "generated agent has no Claude runtime paths"
 
