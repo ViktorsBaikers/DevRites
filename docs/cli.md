@@ -19,7 +19,7 @@ devrites-engine readiness-digest coverage|engineering [slug] # canonical input d
 devrites-engine clarify-return enter|restore [slug] # durable later-phase clarify cursor
 devrites-engine recovery route <class>             # typed owner/action; JSON recovery-route/v1
 devrites-engine recovery check|record|clear ...    # durable three-failure budget; record/clear accept --class
-devrites-engine reconcile snapshot|check|close [slug] # retained writer baseline
+devrites-engine reconcile snapshot|check|restore-check|abort|close [slug] # retained writer baseline and rejected-window recovery
 devrites-engine test-integrity [slug]    # reject weakened tests against that baseline
 devrites-engine evidence-fresh [slug]    # proof freshness gate      (exit 0 fresh · 3 stale)
 devrites-engine check-acceptance <dir>   # acceptance gate           (exit 0 proven · 1 gap)

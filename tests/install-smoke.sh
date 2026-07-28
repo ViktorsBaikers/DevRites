@@ -138,6 +138,7 @@ grep -q 'root-owned artifact-producing gate' "$T/.codex/agents/devrites-slice-wr
   && grep -q 'authorized byte-for-byte by the vetted' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
   && grep -q 'cannot invent, rewrite, widen' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
   && grep -q 'reconcile restore-check' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
+  && grep -q 'reconcile abort' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
   && grep -q 'reconcile check.*after the root-owned gates' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
   && ok "Codex build contract keeps opaque artifact gates with root" \
   || no "Codex build contract assigns opaque artifact gates inconsistently"

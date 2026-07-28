@@ -70,8 +70,8 @@ devrites-engine reconcile check; echo "reconcile rc=$?"
 devrites-engine test-integrity; echo "test-integrity rc=$?"
 ```
 
-- Reconcile `5`: reject the result. Preserve pre-snapshot user work; restore only the
-  unauthorized slice delta; never widen scope from the writer's self-report.
+- Reconcile `5`: reject; run standalone `devrites-engine reconcile abort` to restore
+  pre-snapshot source/user work and close with a receipt. Never widen scope.
 - Test integrity `3`: a test was deleted, muted, focused, or de-asserted. Treat it as a
   Critical protocol failure and correct it through the wright.
 - A setup/corrupt-baseline error blocks acceptance; never fall back silently to `HEAD`.

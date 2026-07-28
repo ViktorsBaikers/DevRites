@@ -262,10 +262,11 @@ func hookStatusline(stdin io.Reader, stdout, stderr io.Writer) int {
 // insensitive, and FAIL/PASS scans are line oriented.
 // pack-scan-ignore: these are the hook's own red/green heuristics, not a payload.
 var (
-	redTestCmdRe            = regexp.MustCompile(`(?i)(npm|pnpm|yarn|bun)([[:space:]]+run)?[[:space:]]+(test|build|lint|typecheck|check)|jest|vitest|pytest|go[[:space:]]+test|cargo[[:space:]]+(test|build|clippy)|\bmvn\b|gradle|eslint|ruff|mypy|\btsc\b|\bmake[[:space:]]+(test|build|check)`)
-	redFailRe               = regexp.MustCompile(`(?im)(^|[^A-Za-z])FAIL([^A-Za-z]|$)|[1-9][0-9]*[[:space:]]+(failed|failing|failures?|errors?)|not ok|panic:|error TS[0-9]|Traceback|AssertionError|✗|✘|BUILD FAILED|exit code [1-9]`)
-	redPassRe               = regexp.MustCompile(`(?im)PASS(ED)?|0[[:space:]]+(failed|failing|errors?)|all tests passed|BUILD SUCC(ESS|EEDED)|succeeded|no (errors|problems|issues)|(^|[^a-z])ok([^a-z]|$)|✓`)
-	reconcileRestoreCheckRe = regexp.MustCompile(`^\s*(?:rtk\s+)?(?:[A-Za-z0-9_./-]+/)?devrites-engine\s+reconcile\s+restore-check(?:\s+[A-Za-z0-9._-]+)?\s*$`)
+	redTestCmdRe                   = regexp.MustCompile(`(?i)(npm|pnpm|yarn|bun)([[:space:]]+run)?[[:space:]]+(test|build|lint|typecheck|check)|jest|vitest|pytest|go[[:space:]]+test|cargo[[:space:]]+(test|build|clippy)|\bmvn\b|gradle|eslint|ruff|mypy|\btsc\b|\bmake[[:space:]]+(test|build|check)`)
+	redFailRe                      = regexp.MustCompile(`(?im)(^|[^A-Za-z])FAIL([^A-Za-z]|$)|[1-9][0-9]*[[:space:]]+(failed|failing|failures?|errors?)|not ok|panic:|error TS[0-9]|Traceback|AssertionError|✗|✘|BUILD FAILED|exit code [1-9]`)
+	redPassRe                      = regexp.MustCompile(`(?im)PASS(ED)?|0[[:space:]]+(failed|failing|errors?)|all tests passed|BUILD SUCC(ESS|EEDED)|succeeded|no (errors|problems|issues)|(^|[^a-z])ok([^a-z]|$)|✓`)
+	reconcileRootRecoveryRe        = regexp.MustCompile(`^\s*(?:rtk\s+)?(?:[A-Za-z0-9_./-]+/)?devrites-engine\s+reconcile\s+(?:restore-check|abort)(?:\s+[A-Za-z0-9._-]+)?\s*$`)
+	reconcileRootRecoveryMentionRe = regexp.MustCompile(`\breconcile\s+(?:restore-check|abort)\b`)
 )
 
 const redReasonFmt = "DevRites: tests/build are RED (%s). Fix to green or record the failure + next step in state.md before stopping: the Stop gate blocks an end-of-turn while .red is set."
@@ -1061,8 +1062,8 @@ func classifyRootBuildWindowOperation(root string, data []byte, in harness.Guard
 	if isOpaqueExecutionTool(in.ToolName) {
 		return true, true, in.ToolName
 	}
-	if isShellTool(in.ToolName) && strings.Contains(in.Command, "reconcile restore-check") {
-		return true, !reconcileRestoreCheckRe.MatchString(in.Command), in.Command
+	if isShellTool(in.ToolName) && reconcileRootRecoveryMentionRe.MatchString(in.Command) {
+		return true, !reconcileRootRecoveryRe.MatchString(in.Command), in.Command
 	}
 
 	projectDir := filepath.Dir(root)

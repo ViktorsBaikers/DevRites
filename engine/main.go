@@ -57,7 +57,7 @@ Usage:
   devrites-engine test-integrity [slug]    Gate: no test deleted, skipped, or de-asserted
   devrites-engine review-integrity [slug]  Gate: no adversarial review axis is silent (zero findings, no justification)
   devrites-engine dispatch-waive <reason>  Record a deterministic pre-dispatch STOP reason
-  devrites-engine reconcile <sub> [slug]   A1 gate: snapshot|check|restore-check|close the wright's source writes
+  devrites-engine reconcile <sub> [slug]   A1 gate: snapshot|check|restore-check|abort|close the wright's source writes
   devrites-engine resolve <qid> "<ans>"    Resolve an open question; keep state.md consistent
   devrites-engine close-out <slug>         Archive a shipped feature and clear ACTIVE
   devrites-engine archive-search "<nouns>" Find prior shipped specs that overlap the query

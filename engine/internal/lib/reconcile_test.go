@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -290,6 +291,132 @@ func TestReconcileRestoreCheckRollsBackOnlyPostCheckDelta(t *testing.T) {
 	}
 	if code, out := runReconcile(t, root, "check", "feat"); code != 0 {
 		t.Fatalf("post-restore check = %d, want 0\n%s", code, out)
+	}
+}
+
+func TestReconcileAbortRestoresOriginalSourceAndClosesWindow(t *testing.T) {
+	gitRoot := newGitRepo(t)
+	root := filepath.Join(gitRoot, ".devrites")
+	if err := os.MkdirAll(filepath.Join(root, "work", "feat"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeWrightAllowlist(t, root, "feat", "seed.go", "user-dirty.go")
+	userDirty := "package main\n\nfunc userWorkBeforeDispatch() {}\n"
+	writeFile(t, filepath.Join(gitRoot, "user-dirty.go"), userDirty)
+
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), "package main\n\nfunc rejectedWriterChange() {}\n")
+	if err := os.Remove(filepath.Join(gitRoot, "user-dirty.go")); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(gitRoot, "writer-added.go"), "package main\n")
+	evidence := filepath.Join(featureDir(root, "feat"), "evidence.md")
+	writeFile(t, evidence, "rejection evidence stays\n")
+
+	code, out := runReconcile(t, root, "abort", "feat")
+	if code != 0 {
+		t.Fatalf("abort = %d, want 0\n%s", code, out)
+	}
+	if !strings.Contains(out, "restored 3 source path(s)") {
+		t.Errorf("abort output omitted restored scope:\n%s", out)
+	}
+	if data, err := os.ReadFile(filepath.Join(gitRoot, "seed.go")); err != nil {
+		t.Fatal(err)
+	} else if string(data) != "package main\n" {
+		t.Fatalf("seed.go = %q, want original source", data)
+	}
+	if data, err := os.ReadFile(filepath.Join(gitRoot, "user-dirty.go")); err != nil {
+		t.Fatal(err)
+	} else if string(data) != userDirty {
+		t.Fatalf("pre-snapshot user work = %q, want %q", data, userDirty)
+	}
+	if _, err := os.Stat(filepath.Join(gitRoot, "writer-added.go")); !os.IsNotExist(err) {
+		t.Fatalf("writer-added source remains after abort: %v", err)
+	}
+	if data, err := os.ReadFile(evidence); err != nil {
+		t.Fatal(err)
+	} else if string(data) != "rejection evidence stays\n" {
+		t.Fatalf("abort changed canonical evidence: %q", data)
+	}
+	feature := featureDir(root, "feat")
+	if isFile(filepath.Join(feature, reconcileBaseName)) || isDir(filepath.Join(feature, reconcileObjectsName)) {
+		t.Fatal("abort retained the private reconciliation window")
+	}
+	receipts, err := filepath.Glob(filepath.Join(feature, ".reconcile-abort-*.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(receipts) != 1 {
+		t.Fatalf("abort receipts = %v, want exactly one", receipts)
+	}
+	data, err := os.ReadFile(receipts[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var receipt reconcileAbortReceipt
+	if err := json.Unmarshal(data, &receipt); err != nil {
+		t.Fatal(err)
+	}
+	if receipt.SchemaVersion != reconcileAbortSchema || receipt.Slug != "feat" ||
+		!receipt.WindowClosed || receipt.SourceEntryCount != 2 ||
+		len(receipt.RestoredPaths) != 3 {
+		t.Fatalf("unexpected abort receipt: %+v", receipt)
+	}
+	entries, err := os.ReadDir(feature)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var receiptEntry os.DirEntry
+	for _, entry := range entries {
+		if entry.Name() == filepath.Base(receipts[0]) {
+			receiptEntry = entry
+			break
+		}
+	}
+	if receiptEntry == nil {
+		t.Fatal("abort receipt directory entry not found")
+	}
+	if ok, err := reconcileRootOwnedOperationalFile(receipts[0], "work/feat/"+filepath.Base(receipts[0]), receiptEntry); err != nil || !ok {
+		t.Fatalf("valid abort receipt operational=%v err=%v", ok, err)
+	}
+	if err := os.Chmod(receipts[0], 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(receipts[0], append(data, 'x'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reconcileRootOwnedOperationalFile(receipts[0], "work/feat/"+filepath.Base(receipts[0]), receiptEntry); err == nil {
+		t.Fatal("tampered content-addressed abort receipt was accepted")
+	}
+}
+
+func TestReconcileAbortFailsClosedWhenObjectDatabaseIsMissing(t *testing.T) {
+	gitRoot := newGitRepo(t)
+	root := workspace(t, "feat")
+	writeWrightAllowlist(t, root, "feat", "seed.go")
+	if code, out := runReconcile(t, root, "snapshot", "feat"); code != 0 {
+		t.Fatalf("snapshot = %d, want 0\n%s", code, out)
+	}
+	rejected := "package main\n\nfunc rejectedWriterChange() {}\n"
+	writeFile(t, filepath.Join(gitRoot, "seed.go"), rejected)
+	feature := featureDir(root, "feat")
+	if err := os.RemoveAll(filepath.Join(feature, reconcileObjectsName)); err != nil {
+		t.Fatal(err)
+	}
+
+	code, out := runReconcile(t, root, "abort", "feat")
+	if code != 6 {
+		t.Fatalf("abort = %d, want 6\n%s", code, out)
+	}
+	if data, err := os.ReadFile(filepath.Join(gitRoot, "seed.go")); err != nil {
+		t.Fatal(err)
+	} else if string(data) != rejected {
+		t.Fatalf("failed abort mutated source: %q", data)
+	}
+	if !isFile(filepath.Join(feature, reconcileBaseName)) {
+		t.Fatal("failed abort removed its retained baseline marker")
 	}
 }
 
@@ -633,6 +760,7 @@ func TestReconcileRootOwnedOperationalPathsAreExact(t *testing.T) {
 		"timeline.jsonl",
 		"work/feat/.red",
 		"features/feat/events.jsonl",
+		"work/feat/.reconcile-abort-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.json",
 	} {
 		if !reconcileRootOwnedOperationalPath(path) {
 			t.Errorf("%q should be root-owned operational state", path)
