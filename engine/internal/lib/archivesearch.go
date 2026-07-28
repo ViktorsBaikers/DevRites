@@ -36,12 +36,22 @@ func ArchiveSearch(root string, args []string, stdout, stderr io.Writer) int {
 		return 2 // usage
 	}
 
-	entries, err := os.ReadDir(filepath.Join(root, "archive"))
+	archive := filepath.Join(root, "archive")
+	info, err := os.Stat(archive)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			// No archive yet: no prior art to surface. Silent, successful no-op.
 			return 0
 		}
+		fmt.Fprintf(stderr, "archive-search: read archive: %v\n", err)
+		return 3
+	}
+	if !info.IsDir() {
+		fmt.Fprintf(stderr, "archive-search: read archive: %s is not a directory\n", archive)
+		return 3
+	}
+	entries, err := os.ReadDir(archive)
+	if err != nil {
 		fmt.Fprintf(stderr, "archive-search: read archive: %v\n", err)
 		return 3
 	}
@@ -57,6 +67,18 @@ func ArchiveSearch(root string, args []string, stdout, stderr io.Writer) int {
 			continue
 		}
 		spec := filepath.Join(root, "archive", e.Name(), "spec.md")
+		info, err := os.Stat(spec)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			fmt.Fprintf(stderr, "archive-search: read %s: %v\n", spec, err)
+			return 3
+		}
+		if !info.Mode().IsRegular() {
+			fmt.Fprintf(stderr, "archive-search: read %s: not a regular file\n", spec)
+			return 3
+		}
 		b, err := os.ReadFile(spec)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
