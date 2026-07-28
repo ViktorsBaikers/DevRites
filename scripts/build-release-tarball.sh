@@ -57,14 +57,14 @@ PAYLOAD=(
 
 for item in "${PAYLOAD[@]}"; do
   if [[ -e "$item" ]]; then
-    if [[ "$item" == "engine" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       while IFS= read -r -d '' path; do
-        [[ -e "$path" ]] || continue
+        [[ -e "$path" || -L "$path" ]] || continue
         if [[ "$path" == engine/testdata/golden/* ]]; then
           continue
         fi
         mkdir -p "$STAGE/$(dirname "$path")"
-        cp "$path" "$STAGE/$path"
+        cp -P "$path" "$STAGE/$path"
       done < <(git ls-files -z -- "$item")
     else
       cp -R "$item" "$STAGE/"
@@ -73,7 +73,7 @@ for item in "${PAYLOAD[@]}"; do
 done
 
 # Include the same prebuilt host artifacts as the npm package.
-DEVRITES_HOST_ARTIFACT_DIR="$STAGE/pack/generated" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null
+DEVRITES_HOST_ARTIFACT_DIR="$STAGE/pack/generated" bash "$STAGE/scripts/build-host-artifacts.sh" >/dev/null
 
 # Remove development files copied with the payload.
 rm -rf "$STAGE/docs/internal" "$STAGE/scripts/.cache" 2>/dev/null || true

@@ -15,9 +15,11 @@ good() { printf 'ok: %s\n' "$*"; }
 
 # ---- 1. bash -n on every shell script ------------------------------------
 section "bash syntax (bash -n)"
-SH_LIST="$ROOT/install.sh $ROOT/uninstall.sh $ROOT/update.sh"
-for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/hooks/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do [ -f "$f" ] && SH_LIST="$SH_LIST $f"; done
-for f in $SH_LIST; do
+SH_LIST=("$ROOT/install.sh" "$ROOT/uninstall.sh" "$ROOT/update.sh")
+for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/hooks/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do
+  [ -f "$f" ] && SH_LIST+=("$f")
+done
+for f in "${SH_LIST[@]}"; do
   if bash -n "$f" 2>/tmp/dr_synerr; then good "syntax ${f#$ROOT/}"; else bad "syntax ${f#$ROOT/}: $(cat /tmp/dr_synerr)"; fi
 done
 
@@ -67,10 +69,10 @@ done
 # ---- 5. frontmatter validation ------------------------------------------
 section "frontmatter"
 if command -v python3 >/dev/null 2>&1; then
-  FM_FILES=""
-  for d in "$SKILLS"/*/; do FM_FILES="$FM_FILES ${d}SKILL.md"; done
-  for a in "$AGENTS"/*.md; do FM_FILES="$FM_FILES $a"; done
-  if python3 "$ROOT/scripts/validate-frontmatter.py" $FM_FILES; then good "frontmatter parses"; else bad "frontmatter validation failed"; fi
+  FM_FILES=()
+  for d in "$SKILLS"/*/; do [ -f "${d}SKILL.md" ] && FM_FILES+=("${d}SKILL.md"); done
+  for a in "$AGENTS"/*.md; do [ -f "$a" ] && FM_FILES+=("$a"); done
+  if python3 "$ROOT/scripts/validate-frontmatter.py" "${FM_FILES[@]}"; then good "frontmatter parses"; else bad "frontmatter validation failed"; fi
 else
   echo "skip: python3 not found"
 fi
@@ -335,11 +337,11 @@ fi
 # Local validation skips this gate only when shellcheck is not installed.
 section "shellcheck (-S error blocking · -S warning advisory)"
 if command -v shellcheck >/dev/null 2>&1; then
-  for f in $SH_LIST; do
+  for f in "${SH_LIST[@]}"; do
     if shellcheck -S error "$f"; then good "shellcheck ${f#"$ROOT"/}"; else bad "shellcheck (error) ${f#"$ROOT"/}"; fi
   done
   # Warnings are advisory. Print them per file without failing the build.
-  for f in $SH_LIST; do
+  for f in "${SH_LIST[@]}"; do
     shellcheck -S warning "$f" >/dev/null 2>&1 || echo "  advisory (warning-level): ${f#"$ROOT"/}"
   done
 else

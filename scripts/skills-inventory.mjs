@@ -2,8 +2,9 @@
 // Verify the authored DevRites skill inventory and documentation counts.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const root = fileURLToPath(new URL('..', import.meta.url));
 const skillsDir = join(root, 'pack', '.claude', 'skills');
 const docsSkills = join(root, 'docs', 'skills.md');
 const docsCommandMap = join(root, 'docs', 'command-map.md');

@@ -16,6 +16,14 @@ DEVRITES_HOST_ARTIFACT_DIR="$OUT" bash "$ROOT/scripts/build-host-artifacts.sh" >
   && ok "build-host-artifacts completed" \
   || no "build-host-artifacts failed"
 
+touch "$T/not-a-directory"
+if DEVRITES_HOST_ARTIFACT_DIR="$T/not-a-directory/generated" \
+  bash "$ROOT/scripts/build-host-artifacts.sh" >"$T/failed-build.log" 2>&1; then
+  no "build-host-artifacts reported success after an output failure"
+else
+  ok "build-host-artifacts propagates output failures"
+fi
+
 for f in \
   "claude/skills/rite-build/SKILL.md" \
   "claude/agents/devrites-code-reviewer.md" \

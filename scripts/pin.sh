@@ -29,7 +29,7 @@
 #   - Manifest-managed: pinned wrappers are recorded in .claude/devrites.manifest
 #     so the standard uninstall.sh cleans them up automatically.
 
-set -u
+set -euo pipefail
 
 # ---- locate install-lib + load helpers ----------------------------------
 SELF_DIR="$( cd "$(dirname "$0")" && pwd -P )"
@@ -77,6 +77,16 @@ MF="$TARGET/$DR_MANIFEST_NAME"
 [ -f "$MF" ]         || dr_die "no manifest at $MF: run install.sh first?"
 
 # ---- helpers -------------------------------------------------------------
+PIN_TMP=""
+cleanup_pin_tmp() {
+  [ -z "$PIN_TMP" ] || rm -rf "$PIN_TMP"
+}
+trap cleanup_pin_tmp EXIT
+
+path_exists() {
+  [ -e "$1" ] || [ -L "$1" ]
+}
+
 valid_alias_name() {
   # lowercase ASCII, digits, hyphens. No /, ., spaces. Not "rite" or "rite-*".
   case "$1" in
@@ -105,6 +115,20 @@ is_pinned_alias_file() {
   grep -q 'description: Alias of DevRites /' "$1"
 }
 
+preflight_alias_destination() {
+  _dir="$1"
+  _file="$2"
+  if [ -L "$_dir" ] || { path_exists "$_dir" && [ ! -d "$_dir" ]; }; then
+    dr_die "$_dir exists and is not a managed alias directory: refusing to overwrite"
+  fi
+  if path_exists "$_file"; then
+    [ ! -L "$_file" ] && is_pinned_alias_file "$_file" \
+      || dr_die "$_file exists and is NOT a pinned alias: refusing to overwrite"
+  elif [ -d "$_dir" ]; then
+    dr_die "$_dir exists without a pinned alias: refusing to overwrite"
+  fi
+}
+
 # ---- subcommands ---------------------------------------------------------
 do_add() {
   valid_alias_name "$ALIAS"    || dr_die "invalid alias name '$ALIAS' (lowercase / digits / hyphens; not 'rite' or 'rite-*')"
@@ -118,34 +142,47 @@ do_add() {
   CODEX_ALIAS_FILE="$CODEX_ALIAS_DIR/SKILL.md"
   CODEX_ALIAS_REL=".agents/skills/$ALIAS/SKILL.md"
 
-  if [ -e "$ALIAS_FILE" ]; then
-    if is_pinned_alias "$ALIAS"; then
-      dr_warn "already pinned: /$ALIAS: overwriting"
-    else
-      dr_die "$ALIAS_FILE exists and is NOT a pinned alias: refusing to overwrite"
+  preflight_alias_destination "$ALIAS_DIR" "$ALIAS_FILE"
+  if path_exists "$ALIAS_FILE"; then
+    dr_warn "already pinned: /$ALIAS: overwriting"
+  fi
+  if [ -d "$CODEX_SKILLS_DIR" ]; then
+    preflight_alias_destination "$CODEX_ALIAS_DIR" "$CODEX_ALIAS_FILE"
+    if path_exists "$CODEX_ALIAS_FILE"; then
+      dr_warn "already pinned for Codex: /$ALIAS: overwriting"
     fi
   fi
-  if [ -d "$CODEX_SKILLS_DIR" ] && [ -e "$CODEX_ALIAS_FILE" ]; then
-    if is_pinned_alias_file "$CODEX_ALIAS_FILE"; then
-      dr_warn "already pinned for Codex: /$ALIAS: overwriting"
-    else
-      dr_die "$CODEX_ALIAS_FILE exists and is NOT a pinned alias: refusing to overwrite"
-    fi
+
+  PIN_TMP="$(mktemp -d "$SKILLS_DIR/.devrites-pin.XXXXXX")"
+  dr_gen_alias_wrapper "$ALIAS" "$DEST" "$PIN_TMP/claude"
+  if [ -d "$CODEX_SKILLS_DIR" ]; then
+    dr_gen_alias_wrapper "$ALIAS" "$DEST" "$PIN_TMP/codex"
+  fi
+  cp -p "$MF" "$PIN_TMP/manifest"
+  if ! dr_manifest_contains "$PIN_TMP/manifest" "$ALIAS_REL"; then
+    printf '%s\n' "$ALIAS_REL" >> "$PIN_TMP/manifest"
+  fi
+  if [ -d "$CODEX_SKILLS_DIR" ] && ! dr_manifest_contains "$PIN_TMP/manifest" "$CODEX_ALIAS_REL"; then
+    printf '%s\n' "$CODEX_ALIAS_REL" >> "$PIN_TMP/manifest"
   fi
 
   mkdir -p "$ALIAS_DIR"
-  dr_gen_alias_wrapper "$ALIAS" "$DEST" "$ALIAS_FILE"
   if [ -d "$CODEX_SKILLS_DIR" ]; then
     mkdir -p "$CODEX_ALIAS_DIR"
-    dr_gen_alias_wrapper "$ALIAS" "$DEST" "$CODEX_ALIAS_FILE"
+  fi
+  [ -w "$ALIAS_DIR" ] || dr_die "$ALIAS_DIR is not writable"
+  [ -w "$(dirname "$MF")" ] || dr_die "$(dirname "$MF") is not writable"
+  if [ -d "$CODEX_SKILLS_DIR" ]; then
+    [ -w "$CODEX_ALIAS_DIR" ] || dr_die "$CODEX_ALIAS_DIR is not writable"
   fi
 
-  if ! dr_manifest_contains "$MF" "$ALIAS_REL"; then
-    printf '%s\n' "$ALIAS_REL" >> "$MF"
+  mv "$PIN_TMP/claude" "$ALIAS_FILE"
+  if [ -d "$CODEX_SKILLS_DIR" ]; then
+    mv "$PIN_TMP/codex" "$CODEX_ALIAS_FILE"
   fi
-  if [ -d "$CODEX_SKILLS_DIR" ] && ! dr_manifest_contains "$MF" "$CODEX_ALIAS_REL"; then
-    printf '%s\n' "$CODEX_ALIAS_REL" >> "$MF"
-  fi
+  mv "$PIN_TMP/manifest" "$MF"
+  rm -rf "$PIN_TMP"
+  PIN_TMP=""
 
   if [ -d "$CODEX_SKILLS_DIR" ]; then
     dr_ok "pinned: /$ALIAS → /$DEST   ($ALIAS_FILE, $CODEX_ALIAS_FILE)"
@@ -166,17 +203,24 @@ do_remove() {
   [ -f "$ALIAS_FILE" ]      || dr_die "no pinned alias at $ALIAS_FILE"
   is_pinned_alias "$ALIAS"  || dr_die "$ALIAS_FILE exists but is not a pinned alias: refusing to remove"
 
+  if path_exists "$CODEX_ALIAS_FILE"; then
+    is_pinned_alias_file "$CODEX_ALIAS_FILE" || dr_die "$CODEX_ALIAS_FILE exists but is not a pinned alias: refusing to remove"
+  fi
+
+  PIN_TMP="$(mktemp -d "$SKILLS_DIR/.devrites-pin.XXXXXX")"
+  awk -v claude="$ALIAS_REL" -v codex="$CODEX_ALIAS_REL" \
+    '$0 != claude && $0 != codex' "$MF" > "$PIN_TMP/manifest"
+
   rm -f "$ALIAS_FILE"
   rmdir "$ALIAS_DIR" 2>/dev/null || true
-  if [ -f "$CODEX_ALIAS_FILE" ]; then
-    is_pinned_alias_file "$CODEX_ALIAS_FILE" || dr_die "$CODEX_ALIAS_FILE exists but is not a pinned alias: refusing to remove"
+  if path_exists "$CODEX_ALIAS_FILE"; then
     rm -f "$CODEX_ALIAS_FILE"
     rmdir "$CODEX_ALIAS_DIR" 2>/dev/null || true
   fi
 
-  # Drop the alias line from the manifest (preserve header + the rest)
-  TMP="$(mktemp)"
-  grep -Fvx "$ALIAS_REL" "$MF" | grep -Fvx "$CODEX_ALIAS_REL" > "$TMP" && mv "$TMP" "$MF"
+  mv "$PIN_TMP/manifest" "$MF"
+  rm -rf "$PIN_TMP"
+  PIN_TMP=""
 
   dr_ok "unpinned: /$ALIAS"
 }
@@ -192,7 +236,9 @@ do_list() {
       found=1
     fi
   done
-  [ "$found" -eq 0 ] && dr_say "(no pinned aliases at $TARGET)"
+  if [ "$found" -eq 0 ]; then
+    dr_say "(no pinned aliases at $TARGET)"
+  fi
 }
 
 case "$SUBCMD" in

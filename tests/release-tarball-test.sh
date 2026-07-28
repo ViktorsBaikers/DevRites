@@ -15,12 +15,16 @@ copy_release_source() {
   (
     cd "$destination"
     git init -q
-    git add -f engine
+    git add -f .
   )
   mkdir -p "$destination/scripts/.cache" "$destination/docs/internal" "$destination/dist"
   printf 'prior output\n' >"$destination/scripts/.cache/prior.tar.gz"
   printf 'internal only\n' >"$destination/docs/internal/private.md"
   printf 'prior output\n' >"$destination/dist/devrites-vprior.tar.gz"
+  printf 'private\n' >"$destination/scripts/UNTRACKED_SECRET.txt"
+  printf 'private\n' >"$destination/pack/UNTRACKED_SECRET.txt"
+  printf 'private generated instruction\n' >"$destination/pack/.claude/agents/UNTRACKED_SECRET.md"
+  printf 'private\n' >"$destination/docs/UNTRACKED_SECRET.txt"
 }
 
 set_tree_mtime() {
@@ -103,6 +107,10 @@ if grep -Eq '/(docs/internal|scripts/\.cache|dist)(/|$)|/engine/testdata/golden/
   echo "release archive contains excluded development or prior output" >&2
   exit 1
 fi
+if grep -q 'UNTRACKED_SECRET' "$TMP/members"; then
+  echo "release archive contains an untracked working-tree file" >&2
+  exit 1
+fi
 
 mkdir "$TMP/extracted"
 tar -C "$TMP/extracted" -xzf "$ARCHIVE_A"
@@ -119,6 +127,7 @@ fi
 grep -q 'output directory overlaps the release payload' "$TMP/overlap.log"
 
 ln -s "$TMP/outside" "$SOURCE_A/pack/unsafe-link"
+git -C "$SOURCE_A" add -f pack/unsafe-link
 if TZ=UTC SOURCE_DATE_EPOCH=1700000000 DEVRITES_RELEASE_DIST_DIR="$TMP/unsafe-dist" \
   bash "$SOURCE_A/scripts/build-release-tarball.sh" 0.0.0-unsafe >"$TMP/unsafe.log" 2>&1; then
   echo "release build accepted a symlink payload" >&2

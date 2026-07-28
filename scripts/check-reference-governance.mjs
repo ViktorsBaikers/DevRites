@@ -2,8 +2,9 @@
 // Ensure supporting skill references are reachable or explicitly time-bounded.
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, dirname, join, normalize, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const defaultRoot = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const defaultRoot = fileURLToPath(new URL('..', import.meta.url));
 const argv = process.argv.slice(2);
 function option(name, fallback) {
   const i = argv.indexOf(name);

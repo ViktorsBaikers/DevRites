@@ -58,7 +58,7 @@ jobs:
         run: python3 scripts/check-invocation-integrity.py
 
       - name: "Pack security scan (injection + hidden unicode: BLOCKING)"
-        run: python3 scripts/scan-pack-security.py pack/.claude
+        run: python3 scripts/scan-pack-security.py pack/.claude pack/generated
 
       - name: "Workflow security (SHA-pinned actions + scoped permissions: BLOCKING)"
         run: python3 scripts/validate-workflow-security.py
