@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.23](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.22...v3.2.23) (2026-07-28)
+
+### Fixed
+
+* **devrites:** add retained-window abort recovery ([e47957c](https://github.com/ViktorsBaikers/DevRites/commit/e47957cd759f83e0166985b4b691d84068cc1d93))
+
 ## [3.2.22](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.21...v3.2.22) (2026-07-28)
 
 ### Fixed
