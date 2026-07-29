@@ -517,7 +517,7 @@ func durableCodexV2DispatchAttempts(
 		var childMeta codexRolloutRecord
 		if strings.TrimSpace(spawn.Result) != "" {
 			childPath, childMeta, err = findCodexV2ChildRollout(
-				sessionsDir, parentPath, projectRoot, sessionID, spawn.AgentPath,
+				sessionsDir, parentPath, projectRoot, sessionID, spawn.AgentPath, "",
 			)
 			if err != nil {
 				return nil, err
@@ -687,10 +687,14 @@ func readCodexV2ParentRollout(
 }
 
 func findCodexV2ChildRollout(
-	sessionsDir, parentPath, projectRoot, sessionID, agentPath string,
+	sessionsDir, parentPath, projectRoot, sessionID, agentPath, agentID string,
 ) (string, codexRolloutRecord, error) {
 	var childPath string
 	var childMeta codexRolloutRecord
+	selector := agentPath
+	if selector == "" {
+		selector = agentID
+	}
 	err := filepath.WalkDir(sessionsDir, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			if os.IsNotExist(walkErr) {
@@ -707,12 +711,13 @@ func findCodexV2ChildRollout(
 		}
 		if record.Type != "session_meta" ||
 			record.Payload.ParentThreadID != sessionID ||
-			record.Payload.AgentPath != agentPath ||
+			(agentPath != "" && record.Payload.AgentPath != agentPath) ||
+			(agentID != "" && record.Payload.ID != agentID) ||
 			!sameResolvedPath(record.Payload.CWD, projectRoot) {
 			return nil
 		}
 		if childPath != "" {
-			return fmt.Errorf("multiple Codex child rollouts match %s", agentPath)
+			return fmt.Errorf("multiple Codex child rollouts match %s", selector)
 		}
 		childPath = path
 		childMeta = record
@@ -1540,6 +1545,12 @@ func bindAgentDispatchStart(root string, in agentDispatchHookInput) (string, boo
 	started := map[string]struct{}{}
 	for _, event := range events {
 		if event.Event == "started" {
+			if event.AgentID == in.AgentID {
+				if event.AgentType != in.AgentType || event.Role == "" {
+					return "", false, fmt.Errorf("subagent %s is already bound to a different dispatch", in.AgentID)
+				}
+				return event.Role, true, nil
+			}
 			started[event.ToolUseID] = struct{}{}
 		}
 	}
@@ -1558,7 +1569,7 @@ func bindAgentDispatchStart(root string, in agentDispatchHookInput) (string, boo
 		candidates = append(candidates, event)
 	}
 	if len(candidates) == 0 {
-		return "", false, nil
+		return bindDurableCodexV2Start(root, in, events)
 	}
 	if len(candidates) != 1 {
 		return "", false, fmt.Errorf("ambiguous subagent start: %d pending %s dispatches lack a parent tool-use binding", len(candidates), in.AgentType)
@@ -1576,6 +1587,84 @@ func bindAgentDispatchStart(root string, in agentDispatchHookInput) (string, boo
 		return "", false, err
 	}
 	return event.Role, true, nil
+}
+
+func bindDurableCodexV2Start(
+	root string, in agentDispatchHookInput, events []agentDispatchEvent,
+) (string, bool, error) {
+	if !devritesAgentNameRe.MatchString(in.AgentType) || in.AgentType == agentDispatchSkillGuard {
+		return "", false, nil
+	}
+	parentPath, sessionsDir, err := findCodexParentRollout(in.SessionID)
+	if err != nil || parentPath == "" {
+		return "", false, err
+	}
+	projectRoot := filepath.Dir(root)
+	childPath, childMeta, err := findCodexV2ChildRollout(
+		sessionsDir, parentPath, projectRoot, in.SessionID, "", in.AgentID,
+	)
+	if err != nil || childPath == "" || childMeta.Payload.AgentRole != in.AgentType {
+		return "", false, err
+	}
+
+	turns := map[string]struct{}{}
+	for _, event := range events {
+		if event.TurnID != "" {
+			turns[event.TurnID] = struct{}{}
+		}
+	}
+	type binding struct {
+		turnID, windowID string
+	}
+	var matches []binding
+	for turnID := range turns {
+		armed, _ := dispatchTurnState(events, turnID)
+		_, required := armed[in.AgentType]
+		_, guarded := armed[agentDispatchSkillGuard]
+		if !required && !guarded {
+			continue
+		}
+		spawns, _, err := readCodexV2ParentRollout(
+			parentPath, projectRoot, in.SessionID, turnID, armed,
+		)
+		if err != nil {
+			return "", false, err
+		}
+		spawn := spawns[childMeta.Payload.AgentPath]
+		if spawn == nil || spawn.Role != in.AgentType {
+			continue
+		}
+		windowID := ""
+		if in.AgentType == "devrites-slice-wright" {
+			windowID = currentReconcileWindowID()
+			if windowID == "" || !reconcileWindowPredates(spawn.SpawnedAt) {
+				continue
+			}
+		}
+		matches = append(matches, binding{turnID: turnID, windowID: windowID})
+	}
+	if len(matches) == 0 {
+		return "", false, nil
+	}
+	if len(matches) != 1 {
+		return "", false, fmt.Errorf(
+			"ambiguous durable subagent start: %d parent spawns match %s",
+			len(matches), in.AgentID,
+		)
+	}
+	match := matches[0]
+	if err := appendAgentDispatchEvent(root, in.SessionID, agentDispatchEvent{
+		Event:     "started",
+		TurnID:    match.turnID,
+		ToolUseID: "codex-v2:" + in.AgentID,
+		AgentID:   in.AgentID,
+		AgentType: in.AgentType,
+		Role:      in.AgentType,
+		WindowID:  match.windowID,
+	}); err != nil {
+		return "", false, err
+	}
+	return in.AgentType, true, nil
 }
 
 type boundAgentDispatchAttempt struct {
