@@ -258,18 +258,21 @@ report(
 
 for required in (
     "invoke means run a skill in this context",
-    "On MultiAgent V1, when the named role is not exposed, use generic `explorer`",
+    "Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer`",
     'fork_turns="none"',
     "injects that contract's exact `developer_instructions`",
-    "On MultiAgent V1, `devrites-slice-wright` uses generic `worker`",
+    "On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker`",
     "`.wright-allowlist`",
     "On MultiAgent V2",
     "`agent_type=devrites-<role>`",
     "a unique `task_name`",
-    "durable parent/child rollout",
-    "Codex loads that role TOML's `developer_instructions` natively",
+    "missing visible `agent_type` field is still V2",
+    "stop before any generic/default spawn",
+    "durable rollout",
+    "Codex loads the role TOML's `developer_instructions` natively",
     "`required-agent-roles` frontmatter arms the fail-closed Stop receipt",
-    "If any required named or generic agent dispatch is unavailable or rejected, stop for HITL",
+    "If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL",
+    "Never switch runtime lanes",
     "Never execute a DevRites specialist role in the root context",
 ):
     report(required in skill_text, f"Codex dispatch ladder includes {required!r}")

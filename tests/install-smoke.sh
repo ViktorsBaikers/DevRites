@@ -102,8 +102,10 @@ grep -q '^\.codex/mcp/' "$T/.claude/devrites.manifest" && no "manifest tracks Co
 grep -q 'install-smoke-generated-sentinel' "$T/.agents/skills/rite/SKILL.md" && ok "installer consumes generated Codex skill payload" || no "installer did not use generated Codex skill payload"
 grep -q '## Codex compatibility' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror has compatibility block" || no "Codex skill mirror missing compatibility block"
 if grep -q 'On MultiAgent V2.*exact named `agent_type=devrites-<role>`' "$T/.agents/skills/rite-build/SKILL.md" \
-  && grep -q 'On MultiAgent V1.*use generic `explorer`' "$T/.agents/skills/rite-build/SKILL.md" \
-  && grep -q 'On MultiAgent V1.*uses generic `worker`' "$T/.agents/skills/rite-build/SKILL.md" \
+  && grep -q 'missing visible `agent_type` field is still V2.*not capability loss, V1, or HITL' "$T/.agents/skills/rite-build/SKILL.md" \
+  && grep -q 'stop before any generic/default spawn' "$T/.agents/skills/rite-build/SKILL.md" \
+  && grep -q 'Only after the runtime explicitly identifies MultiAgent V1.*use generic `explorer`' "$T/.agents/skills/rite-build/SKILL.md" \
+  && grep -q 'On explicitly identified MultiAgent V1.*uses generic `worker`' "$T/.agents/skills/rite-build/SKILL.md" \
   && grep -q '^required-agent-roles: devrites-slice-wright$' "$T/.agents/skills/rite-build/SKILL.md" \
   && grep -q 'Never execute a DevRites specialist role in the root context' "$T/.agents/skills/rite-build/SKILL.md"; then
   ok "Codex skill mirror maps named and generic fresh-context dispatch"
@@ -124,8 +126,10 @@ grep -R -q '\.\./.*agents/devrites-.*\.md' "$T/.agents/skills" && no "Codex skil
 grep -q '\.codex/agents/devrites-slice-wright.toml' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill root points at Codex agent TOML" || no "Codex skill root missing Codex agent TOML path"
 grep -q '\.claude/agents' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" && no "Codex reference still points at .claude/agents" || ok "Codex reference rewrites .claude/agents"
 grep -q '\.claude/skills/devrites-lib/reference/standards' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" && no "Codex reference still points at .claude/skills/devrites-lib/reference/standards" || ok "Codex reference rewrites .claude/skills/devrites-lib/reference/standards"
-grep -q 'exact named `devrites-slice-wright`' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" \
+grep -q 'agent_type=devrites-slice-wright' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" \
   && grep -q 'generic worker' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" \
+  && grep -q 'Hidden V2 `agent_type` is not V1/unavailable' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" \
+  && grep -q 'stop before.*generic/default' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" \
   && grep -q 'The root never performs wright work' "$T/.agents/skills/rite-build/reference/wright-dispatch.md" \
   && ok "Codex reference preserves the safe writer fallback" \
   || no "Codex reference missing safe writer fallback"

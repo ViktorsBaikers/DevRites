@@ -1470,6 +1470,9 @@ func TestCodexAgentDispatchPromptGivesExactNamedCallBeforeCompletion(t *testing.
 		`fork_turns="none"`,
 		".codex/agents/" + role + ".toml",
 		"send agent_type anyway",
+		"Schema omission alone is not capability loss",
+		"only after the runtime explicitly identifies MultiAgent V1",
+		"stop before any generic/default spawn",
 		"Wait for the returned child",
 		"PRE-DISPATCH STOP RULE",
 		"do not spawn only to satisfy this receipt",
@@ -1505,6 +1508,9 @@ func TestCodexConditionalAgentDispatchRejectsDefaultAndArmsNamedRole(t *testing.
 		"exact named agent_type=devrites-<role>",
 		`fork_turns="none"`,
 		"send agent_type anyway",
+		"Schema omission alone is not capability loss",
+		"only after the runtime explicitly identifies MultiAgent V1",
+		"stop before any generic/default spawn",
 		"never use a default child",
 	} {
 		if !strings.Contains(out, want) {
@@ -1729,6 +1735,8 @@ func TestCodexAgentDispatchBlocksFalseWaitAndStop(t *testing.T) {
 		!strings.Contains(stopDecision.Reason, "spawn_agent") ||
 		!strings.Contains(stopDecision.Reason, "visible tool schema") ||
 		!strings.Contains(stopDecision.Reason, "send agent_type anyway") ||
+		!strings.Contains(stopDecision.Reason, "Schema omission alone is not capability loss") ||
+		!strings.Contains(stopDecision.Reason, "stop before any generic/default spawn") ||
 		!strings.Contains(stopDecision.Reason, "do not spawn only to satisfy this receipt") ||
 		!strings.Contains(stopDecision.Reason, "dispatch-waive <reason>") {
 		t.Fatalf("false completion not blocked: %#v", stopDecision)

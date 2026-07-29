@@ -201,12 +201,13 @@ case "$SUBAGENT_SCHEMA" in
     ;;
   v2)
     SKILL_DISPATCH_AGENT_TYPE="$SKILL_DISPATCH_ROLE"
-    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not work in the root. Follow the installed skill and hook-injected dispatch instructions, ask the $SKILL_DISPATCH_CHILD_LABEL child to $SKILL_DISPATCH_CHILD_REQUEST, wait for it, and use its non-empty result.$SKILL_DISPATCH_AFTER_WAIT Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
-    if printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "hook-injected dispatch instructions" \
+    SKILL_DISPATCH_PROMPT="\$devrites-runtime-smoke Authenticated DevRites dispatch smoke: do not work in the root. Follow the installed skill and hook-injected dispatch instructions. Even if the visible schema omits agent_type, send the exact named V2 field anyway; do not use a generic/default child or stop merely for schema omission. Ask the $SKILL_DISPATCH_CHILD_LABEL child to $SKILL_DISPATCH_CHILD_REQUEST, wait for it, and use its non-empty result.$SKILL_DISPATCH_AFTER_WAIT Then reply exactly DEVRITES-SKILL-DISPATCH-OK."
+    if printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "visible schema omits agent_type.*send the exact named V2 field anyway.*do not use a generic/default child" \
+      && printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "hook-injected dispatch instructions" \
       && ! printf '%s\n' "$SKILL_DISPATCH_PROMPT" | grep -q "spawn_agent"; then
-      ok "skill dispatch smoke relies on the MultiAgent V2 hook contract"
+      ok "skill dispatch smoke keeps hidden agent_type on the MultiAgent V2 named-role path"
     else
-      no "skill dispatch smoke bypasses the MultiAgent V2 hook contract"
+      no "skill dispatch smoke can misclassify hidden agent_type as V1 or unavailable"
     fi
     ;;
   *)

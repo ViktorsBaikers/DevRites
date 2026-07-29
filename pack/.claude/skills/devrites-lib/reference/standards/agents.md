@@ -77,12 +77,11 @@ literal predicate observed. PreToolUse alone is not a receipt: the hook accepts 
 waiver only after the engine command succeeds. Never use a waiver for failed,
 unavailable, skipped, empty, or inconvenient specialist work.
 
-Claude: `Agent`; Codex: `spawn_agent`. V2 calls the named `agent_type` with
-unique `task_name` and `fork_turns="none"`. GPT-5.6 may hide `agent_type` from the
-schema, but runtime accepts it and loads the TOML; never use `default`. V2 bypasses
-hooks, so Stop/reconcile verify role, native instructions, wait, completion, and result.
-V1 uses guarded `explorer`/`worker` with injected rules and receipt. Prose
-isn't evidence.
+Claude: `Agent`; Codex: `spawn_agent`. V2 sends named `agent_type` with unique
+`task_name` and `fork_turns="none"`. Hidden `agent_type` is still V2—not loss, V1,
+or HITL—so send it. Use guarded `explorer`/`worker` only after explicit V1; if V2
+rejects the call, stop before generic/default. V2 Stop/reconcile verifies role,
+wait, completion, and result. Prose isn't evidence.
 
 ## File-backed dispatch contract
 
