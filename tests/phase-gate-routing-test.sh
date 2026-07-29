@@ -8,9 +8,11 @@ DEFINE="$ROOT/pack/.claude/skills/rite-define/SKILL.md"
 VET="$ROOT/pack/.claude/skills/rite-vet/SKILL.md"
 VET_ARTIFACTS="$ROOT/pack/.claude/skills/rite-vet/reference/artifacts.md"
 PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
+PLAN_MODES="$ROOT/pack/.claude/skills/rite-plan/reference/replan-and-repair.md"
 CONVERGE="$ROOT/pack/.claude/skills/rite-converge/SKILL.md"
 BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
 WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
+CLEANUP="$ROOT/pack/.claude/skills/devrites-debug-recovery/reference/cleanup-and-classify.md"
 DRIFT="$ROOT/pack/.claude/skills/rite-build/reference/spec-drift-guard.md"
 DOCTOR="$ROOT/pack/.claude/skills/rite-doctor/SKILL.md"
 UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
@@ -157,6 +159,26 @@ if grep -q 'devrites-debug-recovery' "$BUILD" \
   ok "rite-build routes objective failures through bounded debug recovery"
 else
   no "rite-build still converts the first retry failure directly into a human gate"
+fi
+
+if grep -q 'Fingerprint the causal diagnosis, never the failing test or symptom' "$CLEANUP" \
+   && grep -q 'discriminating fix proves the cause absent' "$CLEANUP" \
+   && grep -q 'symptom remains' "$CLEANUP" \
+   && grep -q 'Failure alone' "$CLEANUP" \
+   && grep -q 'never resets a budget' "$CLEANUP" \
+   && grep -q 'cleanup-and-classify.md' "$BUILD"; then
+  ok "rite-build separates a falsified diagnosis from a repeated symptom"
+else
+  no "rite-build can exhaust a new diagnosis under an old symptom fingerprint"
+fi
+
+if grep -q 'exhausted fingerprint blocks diagnosis, not symptom' "$PLAN_MODES" \
+   && grep -q 'proof removed that cause but symptom remains' "$PLAN_MODES" \
+   && grep -q 'new diagnosis/proof fingerprint' "$PLAN_MODES" \
+   && grep -q 'Never clear/reuse old one' "$PLAN_MODES"; then
+  ok "rite-plan unblock reroutes a falsified diagnosis without resetting its budget"
+else
+  no "rite-plan unblock can reuse or clear an exhausted diagnosis"
 fi
 
 stuck_line="$(grep -n 'devrites-engine stuck log' "$WRIGHT_DISPATCH" | head -1 | cut -d: -f1)"
