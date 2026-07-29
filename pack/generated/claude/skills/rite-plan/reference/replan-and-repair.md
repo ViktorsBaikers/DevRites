@@ -33,9 +33,9 @@ errors: `devrites-api-interface`), then split into a backend slice (can land wit
 stub consumer) and a frontend slice (can land against a mock/real contract).
 
 ## unblock
-A `/rite-prove` failure can't be fixed inside the current slice. Capture the blocker in
-`state.md`, decide: route around it (reorder), shrink the slice (reslice), or escalate
-to the user (if it changes scope). Don't loop on the same failing approach.
+An exhausted fingerprint blocks diagnosis, not symptom. Route around/reslice; escalate
+only for scope change. If proof removed that cause but symptom remains, keep the dead
+end and plan a new diagnosis/proof fingerprint. Never clear/reuse old one.
 
 ## Always
 Update `state.md` (phase, next step) and append a dated line to `decisions.md`

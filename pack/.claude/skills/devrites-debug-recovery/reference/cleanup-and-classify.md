@@ -2,8 +2,10 @@
 
 ## Classify one causal fingerprint
 
-Use one class per normalized root cause. A class changes only when new evidence changes
-the diagnosis:
+Fingerprint the causal diagnosis, never the failing test or symptom. Reuse it while
+plausible. If a discriminating fix proves the cause absent but the symptom remains,
+preserve that diagnosis as a dead end and classify a new fingerprint. Failure alone
+never resets a budget.
 
 - `intent_gap`: desired behavior, scope, policy, or risk choice is unsettled.
 - `spec_gap`: an acceptance outcome or product decision is missing.
@@ -20,11 +22,9 @@ Ask the engine for the canonical owner and action:
 devrites-engine recovery route <class>
 ```
 
-Follow the `recovery-route/v1` result. `humanPause: true` routes an unresolved intent or
-spec choice through Clarify. Technical routes stay agent-owned: repair the implementation
-or proof tool, normalize the environment, or repair the plan without asking permission to
-retry. A credential, external quota, irreversible action, or user-owned process that only
-the human can handle gets an exact human-intervention gate; it is not retry authorization.
+Follow `recovery-route/v1`. `humanPause: true` routes unresolved intent/spec through
+Clarify. Technical routes stay agent-owned. Gate only an exact human credential, quota,
+irreversible action, or user-owned process—never retry authorization.
 
 Record the class with every new failed attempt and green clear:
 
