@@ -2082,6 +2082,52 @@ func TestCodexAgentDispatchConfirmsDurableV2NamedRole(t *testing.T) {
 	}
 }
 
+func TestCodexAgentDispatchBindsDurableV2NamedStartWithoutPreToolReceipt(t *testing.T) {
+	root := newWorkspace(t)
+	codeHome := t.TempDir()
+	sessionID, turnID := "session-v2-start", "turn-v2-start"
+	role := "devrites-plan-reviewer"
+	taskName := "devrites_plan_reviewer_named"
+	writeCodexAgentContract(t, root, role)
+	writeCodexSkillContract(t, root, "rite-vet", role)
+
+	runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "UserPromptSubmit",
+		"session_id":      sessionID,
+		"turn_id":         turnID,
+		"prompt":          "$rite-vet",
+	}), nil, "hook", "agent-dispatch", "--harness=codex")
+	writeCodexV2Rollouts(
+		t, codeHome, filepath.Dir(root), sessionID, turnID, role,
+		taskName, false, false, false,
+	)
+
+	mismatched, _, _ := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "SubagentStart",
+		"session_id":      sessionID,
+		"turn_id":         "child-turn",
+		"agent_id":        "child-" + taskName,
+		"agent_type":      "devrites-plan-drafter",
+	}), []string{"CODEX_HOME=" + codeHome}, "hook", "subagent-orient", "--harness=codex")
+	if !strings.Contains(mismatched, "Unbound named start") {
+		t.Fatalf("mismatched named role was bound: %s", mismatched)
+	}
+
+	out, stderr, code := runDevritesIO(t, root, hookPayload(t, map[string]any{
+		"hook_event_name": "SubagentStart",
+		"session_id":      sessionID,
+		"turn_id":         "child-turn",
+		"agent_id":        "child-" + taskName,
+		"agent_type":      role,
+	}), []string{"CODEX_HOME=" + codeHome}, "hook", "subagent-orient", "--harness=codex")
+	if code != 0 {
+		t.Fatalf("start exit=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(out, "Confirmed role") || strings.Contains(out, "Unbound named start") {
+		t.Fatalf("durable named start was not bound: %s", out)
+	}
+}
+
 func TestCodexAgentDispatchConfirmsDurableV2ChildRoleWhenParentOmitsAgentType(t *testing.T) {
 	root := newWorkspace(t)
 	codeHome := t.TempDir()
