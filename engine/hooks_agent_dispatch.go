@@ -29,6 +29,7 @@ const (
 	agentDispatchMetadataRole = "devrites-skill-contract-error"
 	agentDispatchSkillGuard   = "devrites-skill-dispatch-guard"
 	maxCodexRolloutLine       = 8 << 20
+	v2HiddenAgentTypeRule     = "GPT-5.6 V2 may omit agent_type from the visible tool schema while the runtime accepts it. Schema omission alone is not capability loss, V1 detection, or HITL: send agent_type anyway. Use a generic child only after the runtime explicitly identifies MultiAgent V1. If the named V2 call rejects agent_type, stop before any generic/default spawn; never use a default child."
 )
 
 var (
@@ -844,13 +845,13 @@ func roleSatisfied(role, windowID string, attempts []*agentDispatchAttempt) bool
 
 func dispatchInstruction(role string) string {
 	return fmt.Sprintf(
-		"On MultiAgent V2 call spawn_agent with agent_type=%s, a unique task_name, and fork_turns=\"none\" so Codex loads .codex/agents/%s.toml natively. GPT-5.6 V2 may omit agent_type from the visible tool schema even though the runtime accepts it; send agent_type anyway rather than using a default child. On V1 use agent_type=%s with fork_turns=\"none\" and name that role TOML in the message. Wait for the returned child and use its non-empty result. Do not call wait before spawn_agent and do not synthesize the agent result.",
-		role, role, expectedAgentType(role),
+		"On MultiAgent V2 call spawn_agent with agent_type=%s, a unique task_name, and fork_turns=\"none\" so Codex loads .codex/agents/%s.toml natively. %s On V1 use agent_type=%s with fork_turns=\"none\" and name that role TOML in the message. Wait for the returned child and use its non-empty result. Do not call wait before spawn_agent and do not synthesize the agent result.",
+		role, role, v2HiddenAgentTypeRule, expectedAgentType(role),
 	)
 }
 
 func conditionalDispatchInstruction() string {
-	return "CONDITIONAL DISPATCH RULE — If this skill reaches a child-agent step, call spawn_agent with the exact named agent_type=devrites-<role> specified by the skill, a unique task_name, and fork_turns=\"none\". GPT-5.6 V2 may omit agent_type from the visible tool schema; send agent_type anyway and never use a default child. Wait for the returned child and use its non-empty result."
+	return "CONDITIONAL DISPATCH RULE — If this skill reaches a child-agent step, call spawn_agent with the exact named agent_type=devrites-<role> specified by the skill, a unique task_name, and fork_turns=\"none\". " + v2HiddenAgentTypeRule + " Wait for the returned child and use its non-empty result."
 }
 
 func preDispatchStopInstruction() string {

@@ -74,16 +74,17 @@ grep -q 'invoke means run a skill in this context' "$skill_out" && ok "skill dis
 grep -q '^required-agent-roles: devrites-code-reviewer$' "$skill_out" \
   && ok "skill preserves required agent metadata" \
   || no "skill dropped required agent metadata"
-if grep -q 'On MultiAgent V1.*use generic `explorer`' "$skill_out" \
+if grep -q 'Only after the runtime explicitly identifies MultiAgent V1.*use generic `explorer`' "$skill_out" \
   && grep -q 'fork_turns="none"' "$skill_out" \
   && grep -q 'name exactly one `.codex/agents/devrites-<role>.toml`' "$skill_out"; then
   ok "skill maps unavailable read-only roles to a fresh generic explorer"
 else
   no "skill permits an unconfined generic explorer"
 fi
-if grep -q 'On MultiAgent V1.*`devrites-slice-wright` uses generic `worker`' "$skill_out" \
+if grep -q 'On explicitly identified MultiAgent V1.*`devrites-slice-wright` uses generic `worker`' "$skill_out" \
   && grep -q '\.wright-allowlist' "$skill_out" \
-  && grep -q 'do not substitute `worker` for an exposed V2 named role' "$skill_out"; then
+  && grep -q 'missing visible `agent_type` field is still V2.*not capability loss, V1, or HITL' "$skill_out" \
+  && grep -q 'stop before any generic/default spawn' "$skill_out"; then
   ok "skill confines the generic worker to the V1 compatibility path"
 else
   no "skill permits prose-only generic-worker fallback"
@@ -91,12 +92,13 @@ fi
 grep -q 'On MultiAgent V2' "$skill_out" \
   && grep -q 'agent_type=devrites-<role>' "$skill_out" \
   && grep -q 'unique `task_name`' "$skill_out" \
-  && grep -q 'durable parent/child rollout' "$skill_out" \
+  && grep -q 'durable rollout' "$skill_out" \
   && ok "skill binds MultiAgent V2 named children to exact role contracts" \
   || no "skill omits the MultiAgent V2 named-role path"
-grep -q 'Codex loads that role TOML.*developer_instructions.*natively' "$skill_out" \
+grep -q 'Codex loads the role TOML.*developer_instructions.*natively' "$skill_out" \
   && grep -q 'required-agent-roles.*arms the fail-closed Stop receipt' "$skill_out" \
-  && grep -q 'If any required named or generic agent dispatch is unavailable or rejected, stop for HITL' "$skill_out" \
+  && grep -q 'required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL' "$skill_out" \
+  && grep -q 'Never switch runtime lanes' "$skill_out" \
   && grep -q 'Never execute a DevRites specialist role in the root context' "$skill_out" \
   && ! grep -q '\.reconcile-inline\\|\.reconcile-codex-worker-attempt\\|independence: fallback' "$skill_out" \
   && ok "specialist dispatch is agent-only and preserves role instructions" \
@@ -113,7 +115,9 @@ grep -q 'repository-aware file tool refuses an ignored path.*native filesystem c
 grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' "$bridge" \
   && ok "AGENTS bridge preserves exact Engram identifiers" \
   || no "AGENTS bridge can invent Engram identifiers"
-if grep -q 'V2 uses the named `devrites-<role>`; V1 alone may use the guarded generic compatibility path' "$bridge" \
+if grep -q 'V2 uses the named `devrites-<role>` even when `agent_type` is hidden from the visible schema' "$bridge" \
+  && grep -q 'omission is not V1 or HITL' "$bridge" \
+  && grep -q 'Only explicit V1 may use guarded generic compatibility' "$bridge" \
   && grep -q 'fork_turns="none"' "$bridge" \
   && grep -q 'required-agent-roles.*arms a fail-closed receipt' "$bridge" \
   && grep -q 'never execute a DevRites specialist role in the root context' "$bridge" \

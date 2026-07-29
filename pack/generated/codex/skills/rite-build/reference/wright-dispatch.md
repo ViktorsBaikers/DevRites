@@ -122,11 +122,10 @@ resume the same slice. Close it before abandoning the slice for a scope/plan tra
 
 ## Host dispatch
 
-Use named wright → enforced V1 generic worker from `standards/agents.md`. Codex V2
-dispatches the exact named `devrites-slice-wright` with a unique `task_name` and
-`fork_turns="none"`; its durable rollout proves the native role, wait, and non-empty
-result in the current window. Root lifecycle hooks keep the pending canonical
-boundary current until the accepted or durable spawn, then freeze it apart from the
+Use the named wright. Hidden V2 `agent_type` is not V1/unavailable: send
+`agent_type=devrites-slice-wright` anyway. Use guarded generic only after explicit
+V1; if V2 rejects the call, stop before generic/default. The rollout proves role,
+wait, and result. Root hooks keep the pending canonical boundary current until spawn, then freeze it apart from the
 retained source baseline: pre-start root recovery records are excluded, while
 post-start canonical changes fail.
 Any generic worker still needs the exact allowlist or an isolated checkout;
