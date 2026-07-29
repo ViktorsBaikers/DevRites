@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [3.2.27](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.26...v3.2.27) (2026-07-29)
+
+### Fixed
+
+* **rite:** separate recovery causes from symptoms ([c01f516](https://github.com/ViktorsBaikers/DevRites/commit/c01f5164ce349e5caad6ce450cfa6d76c7ce522b))
+
 ## [3.2.26](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.25...v3.2.26) (2026-07-29)
 
 ### Fixed
