@@ -22,8 +22,8 @@ dr_abspath_dir() {
 }
 
 # ---- engine bootstrap ----------------------------------------------------
-# These helpers are deliberately limited to release/binary acquisition for the
-# shell shims. Install/update/uninstall policy lives in devrites-engine.
+# Shell shims own source and binary acquisition. The engine receives only local
+# source, payload, and a version-compatible binary handoff.
 dr_pkg_version() {
   _dr_source_dir="$1"
   sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$_dr_source_dir/package.json" 2>/dev/null | head -n1
@@ -31,45 +31,100 @@ dr_pkg_version() {
 
 dr_release_tag() {
   _dr_source_dir="$1"
-  if [ -n "${DEVRITES_REF:-}" ]; then
-    printf '%s\n' "$DEVRITES_REF"
-    return 0
+  if [ -n "${DEVRITES_REF:-}" ]; then _dr_version="${DEVRITES_REF#v}"; else _dr_version="$(dr_pkg_version "$_dr_source_dir")"; fi
+  printf '%s\n' "$_dr_version" | LC_ALL=C grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$' || return 1
+  _dr_pre="${_dr_version%%+*}"
+  case "$_dr_pre" in *-*) _dr_pre="${_dr_pre#*-}" ;; *) _dr_pre="" ;; esac
+  if [ -n "$_dr_pre" ]; then
+    printf '%s\n' "$_dr_pre" | awk -F. '{ for (i=1;i<=NF;i++) if ($i ~ /^[0-9]+$/ && length($i)>1 && substr($i,1,1)=="0") exit 1 }' || return 1
   fi
-  _dr_version="$(dr_pkg_version "$_dr_source_dir")"
-  [ -n "$_dr_version" ] && printf 'v%s\n' "${_dr_version#v}"
+  printf 'v%s\n' "$_dr_version"
+}
+
+dr_valid_repo() {
+  printf '%s\n' "$1" | LC_ALL=C grep -Eq '^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$'
+}
+
+dr_bounded_download() {
+  _dr_url="$1"; _dr_out="$2"; _dr_limit="$3"
+  DR_DOWNLOAD_FAILURE=""
+  rm -f "$_dr_out" "$_dr_out.part"
+  curl -fL --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 10 --max-time 120 \
+    "$_dr_url" 2>/dev/null | head -c "$((_dr_limit + 1))" > "$_dr_out.part"
+  _dr_pipeline_status=("${PIPESTATUS[@]}")
+  _dr_curl_status="${_dr_pipeline_status[0]}"
+  _dr_head_status="${_dr_pipeline_status[1]}"
+  _dr_bytes="$(wc -c < "$_dr_out.part" 2>/dev/null)" || {
+    DR_DOWNLOAD_FAILURE="local write"
+    rm -f "$_dr_out.part"
+    return 1
+  }
+  if [ "$_dr_bytes" -gt "$_dr_limit" ]; then
+    DR_DOWNLOAD_FAILURE="size limit"
+    rm -f "$_dr_out.part"
+    return 1
+  fi
+  if [ "$_dr_head_status" -ne 0 ]; then
+    DR_DOWNLOAD_FAILURE="local write"
+    rm -f "$_dr_out.part"
+    return 1
+  fi
+  if [ "$_dr_curl_status" -ne 0 ]; then
+    case "$_dr_curl_status" in
+      22) DR_DOWNLOAD_FAILURE="HTTP status" ;;
+      28) DR_DOWNLOAD_FAILURE="timeout" ;;
+      47) DR_DOWNLOAD_FAILURE="redirect" ;;
+      *) DR_DOWNLOAD_FAILURE="download" ;;
+    esac
+    rm -f "$_dr_out.part"
+    return 1
+  fi
+  mv "$_dr_out.part" "$_dr_out" || { DR_DOWNLOAD_FAILURE="local write"; rm -f "$_dr_out.part"; return 1; }
+}
+
+dr_verify_checksum() {
+  _dr_file="$1"; _dr_sidecar="$2"; _dr_asset="$3"
+  _dr_want="$(awk -v asset="$_dr_asset" '
+    NF == 0 { next }
+    { records++ }
+    NF == 2 && length($1) == 64 && $1 ~ /^[0-9A-Fa-f]+$/ && $2 == asset { valid++; hash=tolower($1) }
+    END { if (records == 1 && valid == 1) print hash; else exit 1 }
+  ' "$_dr_sidecar" 2>/dev/null)" || return 1
+  if command -v shasum >/dev/null 2>&1; then
+    _dr_got="$(shasum -a 256 "$_dr_file" | awk '{print $1}')"
+  elif command -v sha256sum >/dev/null 2>&1; then
+    _dr_got="$(sha256sum "$_dr_file" | awk '{print $1}')"
+  else
+    return 1
+  fi
+  [ "$_dr_got" = "$_dr_want" ]
 }
 
 dr_download_engine() {
   _dr_source_dir="$1"
   _dr_repo="$2"
   _dr_out="$3"
+  dr_valid_repo "$_dr_repo" || { DR_ACQUIRE_FAILURE="repository name validation failed"; rm -f "$_dr_out" "$_dr_out.sha256"; return 1; }
   _dr_tag="$(dr_release_tag "$_dr_source_dir")"
-  [ -n "$_dr_tag" ] || return 1
+  [ -n "$_dr_tag" ] || { DR_ACQUIRE_FAILURE="release tag validation failed"; rm -f "$_dr_out" "$_dr_out.sha256"; return 1; }
   _dr_os="$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')"
   _dr_arch="$(uname -m 2>/dev/null)"
   case "$_dr_arch" in
     x86_64|amd64) _dr_arch=amd64 ;;
     arm64|aarch64) _dr_arch=arm64 ;;
-    *) return 1 ;;
+    *) DR_ACQUIRE_FAILURE="release $_dr_tag has no asset for architecture $_dr_arch"; return 1 ;;
   esac
   case "$_dr_os" in
     linux|darwin) : ;;
-    *) return 1 ;;
+    *) DR_ACQUIRE_FAILURE="release $_dr_tag has no asset for operating system $_dr_os"; return 1 ;;
   esac
 
-  _dr_url="https://github.com/$_dr_repo/releases/download/$_dr_tag/devrites-$_dr_os-$_dr_arch"
-  curl -fsSL -o "$_dr_out" "$_dr_url" 2>/dev/null || return 1
-  curl -fsSL -o "$_dr_out.sha256" "$_dr_url.sha256" 2>/dev/null || return 1
-  _dr_want="$(awk '{print $1; exit}' "$_dr_out.sha256" 2>/dev/null)"
-  if command -v shasum >/dev/null 2>&1; then
-    _dr_got="$(shasum -a 256 "$_dr_out" | awk '{print $1}')"
-  elif command -v sha256sum >/dev/null 2>&1; then
-    _dr_got="$(sha256sum "$_dr_out" | awk '{print $1}')"
-  else
-    _dr_got=""
-  fi
-  [ -n "$_dr_got" ] && [ "$_dr_got" = "$_dr_want" ] || return 1
-  chmod +x "$_dr_out" 2>/dev/null || true
+  _dr_asset="devrites-$_dr_os-$_dr_arch"
+  _dr_url="https://github.com/$_dr_repo/releases/download/$_dr_tag/$_dr_asset"
+  dr_bounded_download "$_dr_url" "$_dr_out" 67108864 || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: ${DR_DOWNLOAD_FAILURE:-download} failed"; return 1; }
+  dr_bounded_download "$_dr_url.sha256" "$_dr_out.sha256" 4096 || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset.sha256: ${DR_DOWNLOAD_FAILURE:-download} failed"; rm -f "$_dr_out"; return 1; }
+  dr_verify_checksum "$_dr_out" "$_dr_out.sha256" "$_dr_asset" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: checksum failed"; rm -f "$_dr_out" "$_dr_out.sha256"; return 1; }
+  chmod +x "$_dr_out" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: executable preparation failed"; rm -f "$_dr_out" "$_dr_out.sha256"; return 1; }
 }
 
 dr_build_engine() {
@@ -89,13 +144,32 @@ dr_engine_supports() {
   "$_dr_engine" "$_dr_subcommand" --help >/dev/null 2>&1
 }
 
+dr_engine_compatible() {
+  _dr_engine="$1"
+  _dr_source_dir="$2"
+  _dr_subcommand="$3"
+  dr_engine_supports "$_dr_engine" "$_dr_subcommand" || return 1
+  case "$_dr_subcommand" in
+    install|update)
+      _dr_want="$(dr_release_tag "$_dr_source_dir")"
+      [ -n "$_dr_want" ] || return 1
+      _dr_got="$("$_dr_engine" version 2>/dev/null)"
+      [ "${_dr_got#v}" = "${_dr_want#v}" ] || return 1
+      ;;
+  esac
+  return 0
+}
+
 dr_acquire_engine() {
   _dr_source_dir="$1"
   _dr_subcommand="$2"
   _dr_repo="$3"
 
+  DR_ENGINE_PATH=""
+  DR_ENGINE_TMP=""
+  DR_ACQUIRE_FAILURE=""
   if [ -n "${DEVRITES_ENGINE_CLI:-}" ] && [ -x "$DEVRITES_ENGINE_CLI" ]; then
-    dr_engine_supports "$DEVRITES_ENGINE_CLI" "$_dr_subcommand" && { printf '%s\n' "$DEVRITES_ENGINE_CLI"; return 0; }
+    dr_engine_compatible "$DEVRITES_ENGINE_CLI" "$_dr_source_dir" "$_dr_subcommand" && { DR_ENGINE_PATH="$DEVRITES_ENGINE_CLI"; return 0; }
   fi
 
   case "$_dr_subcommand" in
@@ -105,27 +179,40 @@ dr_acquire_engine() {
 
   if [ "$_dr_prefer_fresh" -eq 0 ] && command -v devrites-engine >/dev/null 2>&1; then
     _dr_path="$(command -v devrites-engine)"
-    dr_engine_supports "$_dr_path" "$_dr_subcommand" && { printf '%s\n' "$_dr_path"; return 0; }
+    dr_engine_compatible "$_dr_path" "$_dr_source_dir" "$_dr_subcommand" && { DR_ENGINE_PATH="$_dr_path"; return 0; }
   fi
 
-  _dr_tmp="${TMPDIR:-/tmp}/devrites-engine-bootstrap.$$"
-  mkdir -p "$_dr_tmp"
-  if dr_build_engine "$_dr_source_dir" "$_dr_tmp/devrites-engine"; then
-    dr_engine_supports "$_dr_tmp/devrites-engine" "$_dr_subcommand" && { printf '%s\n' "$_dr_tmp/devrites-engine"; return 0; }
-  fi
-
+  _dr_old_umask="$(umask)"
+  umask 077
+  DR_ENGINE_TMP="$(mktemp -d "${TMPDIR:-/tmp}/devrites-engine-bootstrap.XXXXXX" 2>/dev/null)" || {
+    umask "$_dr_old_umask"
+    DR_ENGINE_TMP=""
+    return 1
+  }
+  umask "$_dr_old_umask"
   if command -v curl >/dev/null 2>&1; then
-    if dr_download_engine "$_dr_source_dir" "$_dr_repo" "$_dr_tmp/devrites-engine"; then
-      dr_engine_supports "$_dr_tmp/devrites-engine" "$_dr_subcommand" && { printf '%s\n' "$_dr_tmp/devrites-engine"; return 0; }
+    if dr_download_engine "$_dr_source_dir" "$_dr_repo" "$DR_ENGINE_TMP/devrites-engine"; then
+      dr_engine_compatible "$DR_ENGINE_TMP/devrites-engine" "$_dr_source_dir" "$_dr_subcommand" && { DR_ENGINE_PATH="$DR_ENGINE_TMP/devrites-engine"; return 0; }
     fi
+  fi
+
+  if dr_build_engine "$_dr_source_dir" "$DR_ENGINE_TMP/devrites-engine"; then
+    dr_engine_compatible "$DR_ENGINE_TMP/devrites-engine" "$_dr_source_dir" "$_dr_subcommand" && { DR_ENGINE_PATH="$DR_ENGINE_TMP/devrites-engine"; return 0; }
   fi
 
   if [ "$_dr_prefer_fresh" -eq 1 ] && command -v devrites-engine >/dev/null 2>&1; then
     _dr_path="$(command -v devrites-engine)"
-    dr_engine_supports "$_dr_path" "$_dr_subcommand" && { printf '%s\n' "$_dr_path"; return 0; }
+    dr_engine_compatible "$_dr_path" "$_dr_source_dir" "$_dr_subcommand" && { rm -rf "$DR_ENGINE_TMP"; DR_ENGINE_TMP=""; DR_ENGINE_PATH="$_dr_path"; return 0; }
   fi
 
+  rm -rf "$DR_ENGINE_TMP"
+  DR_ENGINE_TMP=""
   return 1
+}
+
+dr_cleanup_engine() {
+  [ -z "${DR_ENGINE_TMP:-}" ] || rm -rf "$DR_ENGINE_TMP"
+  DR_ENGINE_TMP=""
 }
 # ---- manifest ------------------------------------------------------------
 # Manifest = newline list of target-relative paths. Pin aliases append to the

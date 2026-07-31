@@ -46,8 +46,8 @@ done
 [ -f "$EMPTY/.agents/skills/devrites-lib/reference/standards/security.md" ] && ok "Codex rules mirror installed" || no "Codex rules mirror missing"
 [ -d "$EMPTY/.claude/agents" ] && ok "agents installed" || no "agents missing"
 [ -d "$EMPTY/.codex/agents" ] && ok "Codex agents installed" || no "Codex agents missing"
-[ -f "$EMPTY/.codex/hooks.json" ] && ok "Codex hooks installed" || no "Codex hooks missing"
-[ -e "$EMPTY/.codex/config.toml" ] && no "DevRites Codex config installed" || ok "DevRites Codex config not installed"
+[ -e "$EMPTY/.codex/hooks.json" ] && no "Codex root hooks installed" || ok "Codex root hooks not installed"
+[ -f "$EMPTY/.codex/config.toml" ] && ok "Codex permission config installed" || no "Codex permission config missing"
 [ -e "$EMPTY/.codex/mcp" ] && no "DevRites MCP directory installed" || ok "DevRites MCP directory not installed"
 [ -f "$EMPTY/AGENTS.md" ] && ok "Codex AGENTS bridge installed" || no "Codex AGENTS bridge missing"
 

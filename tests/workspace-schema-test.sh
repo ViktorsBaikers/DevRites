@@ -8,6 +8,18 @@ CANONICAL_SCHEMA="$ROOT/pack/.claude/skills/devrites-lib/reference/workspace-art
 
 python3 "$VALIDATOR" "$FIXTURES" >/tmp/devrites-workspace-schema-ok.txt
 
+PENDING_SLICE="$(mktemp -d)"
+cp -R "$FIXTURES" "$PENDING_SLICE/fixtures"
+perl -0pi -e 's/(\| SLICE-002 \| Pagination metadata \| AC-002 \| AFK \| advisory \| )built( \|)/${1}pending${2}/' \
+  "$PENDING_SLICE/fixtures/.devrites/work/backend-api/tasks.md"
+perl -0pi -e 's/(## SLICE-002 Pagination metadata.*?^Status: )built$/${1}pending/ms' \
+  "$PENDING_SLICE/fixtures/.devrites/work/backend-api/tasks.md"
+if python3 "$VALIDATOR" "$PENDING_SLICE/fixtures" >/tmp/devrites-workspace-schema-pending-slice.txt 2>&1; then
+  echo "FAIL: proof-required workspace with a pending slice passed schema validation"
+  exit 1
+fi
+grep -q 'SLICE-002' /tmp/devrites-workspace-schema-pending-slice.txt
+
 CANONICAL_WORKSPACE="$(mktemp -d)"
 cp -R "$FIXTURES" "$CANONICAL_WORKSPACE/fixtures"
 {
@@ -15,34 +27,13 @@ cp -R "$FIXTURES" "$CANONICAL_WORKSPACE/fixtures"
   awk '/<!-- canonical-slice:start -->/{on=1; next} /<!-- canonical-slice:end -->/{on=0} on' "$CANONICAL_SCHEMA" \
     | sed '/^```/d'
 } > "$CANONICAL_WORKSPACE/fixtures/.devrites/work/backend-api/tasks.md"
-perl -0pi -e 's/^Forge:.*$/Forge: no/m; s/^Forge strategies:.*$/Forge strategies: none/m; s/^Forge scorecard:.*$/Forge scorecard: none/m' \
-  "$CANONICAL_WORKSPACE/fixtures/.devrites/work/backend-api/tasks.md"
 # Put the workspace in plan phase because this case checks slice grammar, not
-# the post-vet digest.
+# later-phase proof artifacts.
 perl -0pi -e 's/\| phase \| prove \|/| phase | plan |/' \
   "$CANONICAL_WORKSPACE/fixtures/.devrites/work/backend-api/state.md"
 perl -0pi -e 's/^phase: prove$/phase: plan/m' \
   "$CANONICAL_WORKSPACE/fixtures/.devrites/work/backend-api/README.md"
 python3 "$VALIDATOR" "$CANONICAL_WORKSPACE/fixtures" >/tmp/devrites-workspace-schema-canonical.txt
-
-VALID_FORGE="$(mktemp -d)"
-cp -R "$CANONICAL_WORKSPACE/fixtures" "$VALID_FORGE/fixtures"
-perl -0pi -e 's/^Forge: no$/Forge: yes — two costly architecture seams/m; s/^Forge strategies: none$/Forge strategies: A=extend the existing seam | B=replace the boundary adapter/m; s/^Forge scorecard: none$/Forge scorecard: acceptance=AC-001, AC-002; test-plan=test-plan.md acceptance map rows AC-001 and AC-002/m' \
-  "$VALID_FORGE/fixtures/.devrites/work/backend-api/tasks.md"
-python3 "$VALIDATOR" "$VALID_FORGE/fixtures" >/tmp/devrites-workspace-schema-valid-forge.txt
-
-BAD_FORGE="$(mktemp -d)"
-cp -R "$VALID_FORGE/fixtures" "$BAD_FORGE/fixtures"
-perl -0pi -e 's/^Forge strategies:.*$/Forge strategies: A=same approach | B=same approach/m; s/^Forge scorecard:.*$/Forge scorecard: acceptance=AC-001; test-plan=test-plan.md row AC-001/m' \
-  "$BAD_FORGE/fixtures/.devrites/work/backend-api/tasks.md"
-if python3 "$VALIDATOR" "$BAD_FORGE/fixtures" >/tmp/devrites-workspace-schema-bad-forge.txt 2>&1; then
-  echo "FAIL: malformed Forge slice passed schema validation"
-  exit 1
-fi
-grep -q 'Forge strategies must be 2-3 distinct contiguous A-C entries' \
-  /tmp/devrites-workspace-schema-bad-forge.txt
-grep -q 'Forge scorecard must bind every Satisfies AC ID and exact test-plan.md rows or commands' \
-  /tmp/devrites-workspace-schema-bad-forge.txt
 
 BAD="$(mktemp -d)"
 mkdir -p "$BAD/.devrites/work/broken"
@@ -69,6 +60,57 @@ fi
 
 grep -q 'legacy acceptance id AC1' /tmp/devrites-workspace-schema-bad.txt
 
+DATED_QUESTIONS="$(mktemp -d)"
+cp -R "$FIXTURES" "$DATED_QUESTIONS/fixtures"
+cat > "$DATED_QUESTIONS/fixtures/.devrites/work/ui-settings-toggle/questions.md" <<'MD'
+# Questions
+
+## Question register
+
+## q-2026-08-01-001
+status: answered
+slice: spec
+gate: validating
+question: Should copy say digest or summary?
+answer: digest
+impact: AC-001
+MD
+python3 "$VALIDATOR" "$DATED_QUESTIONS/fixtures" \
+  >/tmp/devrites-workspace-schema-dated-questions.txt
+
+DUPLICATE_IDS="$(mktemp -d)"
+cp -R "$FIXTURES" "$DUPLICATE_IDS/fixtures"
+cat >> "$DUPLICATE_IDS/fixtures/.devrites/work/ui-settings-toggle/spec.md" <<'MD'
+
+- REQ-001: A second definition must fail.
+MD
+cat >> "$DUPLICATE_IDS/fixtures/.devrites/work/ui-settings-toggle/browser-evidence.md" <<'MD'
+| EVID-001 | /settings | 375 | duplicate evidence identity | AC-001, SLICE-001 |
+MD
+cat >> "$DUPLICATE_IDS/fixtures/.devrites/work/ui-settings-toggle/tasks.md" <<'MD'
+
+## SLICE-001 Duplicate slice identity
+MD
+cat >> "$DUPLICATE_IDS/fixtures/.devrites/work/ui-settings-toggle/questions.md" <<'MD'
+
+## q-2026-08-01-001
+status: answered
+gate: advisory
+
+## q-2026-08-01-001
+status: answered
+gate: advisory
+MD
+if python3 "$VALIDATOR" "$DUPLICATE_IDS/fixtures" \
+  >/tmp/devrites-workspace-schema-duplicate-ids.txt 2>&1; then
+  echo "FAIL: duplicate canonical IDs passed schema validation"
+  exit 1
+fi
+grep -q 'duplicate REQ-001 definition' /tmp/devrites-workspace-schema-duplicate-ids.txt
+grep -q 'duplicate SLICE-001 definition' /tmp/devrites-workspace-schema-duplicate-ids.txt
+grep -q 'duplicate EVID-001 definition' /tmp/devrites-workspace-schema-duplicate-ids.txt
+grep -q 'duplicate q-2026-08-01-001 definition' /tmp/devrites-workspace-schema-duplicate-ids.txt
+
 CANONICAL_PHASE="$(mktemp -d)"
 mkdir -p "$CANONICAL_PHASE/.devrites/work/converging"
 cat > "$CANONICAL_PHASE/.devrites/work/converging/state.md" <<'MD'
@@ -85,6 +127,27 @@ if python3 "$VALIDATOR" "$CANONICAL_PHASE" >/tmp/devrites-workspace-schema-canon
   exit 1
 fi
 grep -q 'phase converge requires architecture.md' /tmp/devrites-workspace-schema-canonical-phase.txt
+
+README_PHASE_ONLY="$(mktemp -d)"
+mkdir -p "$README_PHASE_ONLY/.devrites/work/readme-phase-only"
+cat > "$README_PHASE_ONLY/.devrites/work/readme-phase-only/README.md" <<'MD'
+# README Phase Only
+phase: plan
+MD
+cat > "$README_PHASE_ONLY/.devrites/work/readme-phase-only/state.md" <<'MD'
+# State
+
+## Cursor
+| Key | Value |
+| --- | --- |
+| status | running |
+MD
+if python3 "$VALIDATOR" "$README_PHASE_ONLY" \
+  >/tmp/devrites-workspace-schema-readme-phase-only.txt 2>&1; then
+  echo "FAIL: README phase replaced missing state.md authority"
+  exit 1
+fi
+grep -q 'no phase in state.md' /tmp/devrites-workspace-schema-readme-phase-only.txt
 
 MISSING_FIELD="$(mktemp -d)"
 mkdir -p "$MISSING_FIELD/.devrites/work/missing-slice-field"
@@ -253,7 +316,6 @@ if python3 "$VALIDATOR" "$MISSING_FIELD" >/tmp/devrites-workspace-schema-missing
   exit 1
 fi
 grep -q "SLICE-001 missing field 'Files likely touched:'" /tmp/devrites-workspace-schema-missing-field.txt
-grep -q "SLICE-001 missing field 'Forge:'" /tmp/devrites-workspace-schema-missing-field.txt
 
 STALE_EVIDENCE="$(mktemp -d)"
 cp -R "$FIXTURES" "$STALE_EVIDENCE/fixtures"
@@ -265,25 +327,26 @@ if python3 "$VALIDATOR" "$STALE_EVIDENCE/fixtures" >/tmp/devrites-workspace-sche
 fi
 grep -q 'evidence ID EVID-003' /tmp/devrites-workspace-schema-stale-evidence.txt
 
-UNCLEAR="$(mktemp -d)"
-cp -R "$FIXTURES" "$UNCLEAR/fixtures"
+ALTERNATE_VERDICTS="$(mktemp -d)"
+cp -R "$FIXTURES" "$ALTERNATE_VERDICTS/fixtures"
 perl -0pi -e 's/Decision coverage: CLEAR/Decision coverage: NEEDS CLARIFICATION/' \
-  "$UNCLEAR/fixtures/.devrites/work/backend-api/decision-coverage.md"
-if python3 "$VALIDATOR" "$UNCLEAR/fixtures" >/tmp/devrites-workspace-schema-unclear.txt 2>&1; then
-  echo "FAIL: post-plan workspace with incomplete decision coverage passed validation"
-  exit 1
-fi
-grep -q 'must contain exactly one Decision coverage: CLEAR' /tmp/devrites-workspace-schema-unclear.txt
-
-NOT_READY="$(mktemp -d)"
-cp -R "$FIXTURES" "$NOT_READY/fixtures"
+  "$ALTERNATE_VERDICTS/fixtures/.devrites/work/backend-api/decision-coverage.md"
 perl -0pi -e 's/Implementation readiness: READY/Implementation readiness: NEEDS REPLAN/' \
-  "$NOT_READY/fixtures/.devrites/work/backend-api/eng-review.md"
-if python3 "$VALIDATOR" "$NOT_READY/fixtures" >/tmp/devrites-workspace-schema-not-ready.txt 2>&1; then
-  echo "FAIL: build workspace without a READY vet verdict passed validation"
+  "$ALTERNATE_VERDICTS/fixtures/.devrites/work/backend-api/eng-review.md"
+python3 "$VALIDATOR" "$ALTERNATE_VERDICTS/fixtures" \
+  >/tmp/devrites-workspace-schema-alternate-verdicts.txt
+
+EMPTY_VERDICT="$(mktemp -d)"
+cp -R "$FIXTURES" "$EMPTY_VERDICT/fixtures"
+perl -0pi -e 's/Decision coverage: CLEAR/Decision coverage:/' \
+  "$EMPTY_VERDICT/fixtures/.devrites/work/backend-api/decision-coverage.md"
+if python3 "$VALIDATOR" "$EMPTY_VERDICT/fixtures" \
+  >/tmp/devrites-workspace-schema-empty-verdict.txt 2>&1; then
+  echo "FAIL: empty decision-coverage verdict passed validation"
   exit 1
 fi
-grep -q 'must contain exactly one Implementation readiness: READY' /tmp/devrites-workspace-schema-not-ready.txt
+grep -q 'must contain exactly one nonempty Decision coverage verdict' \
+  /tmp/devrites-workspace-schema-empty-verdict.txt
 
 MARKER_ONLY="$(mktemp -d)"
 cp -R "$FIXTURES" "$MARKER_ONLY/fixtures"
@@ -295,15 +358,6 @@ if python3 "$VALIDATOR" "$MARKER_ONLY/fixtures" >/tmp/devrites-workspace-schema-
 fi
 grep -q "missing heading 'Topology'" /tmp/devrites-workspace-schema-marker-only.txt
 
-STALE_READINESS="$(mktemp -d)"
-cp -R "$FIXTURES" "$STALE_READINESS/fixtures"
-printf '\nChanged after vet.\n' >> "$STALE_READINESS/fixtures/.devrites/work/backend-api/plan.md"
-if python3 "$VALIDATOR" "$STALE_READINESS/fixtures" >/tmp/devrites-workspace-schema-stale-readiness.txt 2>&1; then
-  echo "FAIL: stale engineering verdict passed validation"
-  exit 1
-fi
-grep -q 'input digest is stale' /tmp/devrites-workspace-schema-stale-readiness.txt
-
 EMPTY_TEST_PLAN="$(mktemp -d)"
 cp -R "$FIXTURES" "$EMPTY_TEST_PLAN/fixtures"
 : > "$EMPTY_TEST_PLAN/fixtures/.devrites/work/backend-api/test-plan.md"
@@ -311,6 +365,184 @@ if python3 "$VALIDATOR" "$EMPTY_TEST_PLAN/fixtures" >/tmp/devrites-workspace-sch
   echo "FAIL: empty test plan passed validation"
   exit 1
 fi
-grep -q 'empty or contains an unresolved placeholder' /tmp/devrites-workspace-schema-empty-test-plan.txt
+grep -q 'empty artifact' /tmp/devrites-workspace-schema-empty-test-plan.txt
 
-echo "ok: workspace schema validator accepts typed Forge slices and rejects legacy, underspecified, stale, malformed-Forge, marker-only, unclear, and unvetted workspaces"
+PYTHONPATH="$ROOT/scripts" python3 - "$ROOT/engine/internal/markdowntext/testdata/structural.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+from workflow_schema import cursor_field_text, decode_markdown, structural_markdown
+
+cases = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert cases
+for case in cases:
+    view = structural_markdown(case["input"])
+    assert view == case["output"], case["name"]
+    assert len(view.encode()) == len(case["input"].encode()), case["name"]
+assert cursor_field_text("~~~md\nphase: hidden\n~~~\nphase: build\n", "phase") == "build"
+for data, expected in ((b"bad\x00", "NUL"), (b"bad\xff", "UTF-8")):
+    try:
+        decode_markdown(data, "test.md")
+    except ValueError as exc:
+        assert expected in str(exc)
+    else:
+        raise AssertionError(f"{expected} input was accepted")
+PY
+
+CURSOR_FILE="$(mktemp)"
+cat > "$CURSOR_FILE" <<'MD'
+~~~md
+| phase | hidden |
+~~~
+| phase | build |
+MD
+test "$(python3 "$ROOT/scripts/workflow_schema.py" field "$CURSOR_FILE" phase)" = "build"
+printf '\0' >> "$CURSOR_FILE"
+if python3 "$ROOT/scripts/workflow_schema.py" field "$CURSOR_FILE" phase \
+  >/tmp/devrites-workflow-schema-corrupt.txt 2>&1; then
+  echo "FAIL: corrupt cursor Markdown was accepted"
+  exit 1
+fi
+grep -q 'NUL' /tmp/devrites-workflow-schema-corrupt.txt
+if grep -q 'Traceback' /tmp/devrites-workflow-schema-corrupt.txt; then
+  echo "FAIL: corrupt cursor error included a traceback"
+  exit 1
+fi
+
+FENCED="$(mktemp -d)"
+cp -R "$FIXTURES" "$FENCED/fixtures"
+python3 - "$VALIDATOR" "$FENCED/fixtures/.devrites/work/backend-api" <<'PY'
+import runpy
+import sys
+from pathlib import Path
+
+validator = Path(sys.argv[1])
+workspace = Path(sys.argv[2])
+sys.path.insert(0, str(validator.parent))
+schema = runpy.run_path(str(validator))
+
+def prepend(name: str, body: str) -> None:
+    path = workspace / name
+    path.write_text(body + path.read_text(encoding="utf-8"), encoding="utf-8")
+
+prepend("questions.md", "```md\n## Q-999\nstatus: open\ngate: blocking\n```\n")
+prepend("spec.md", "```md\n## Acceptance criteria\n- AC-999 example\nTODO\n[stale](missing.md)\n```\n")
+prepend("tasks.md", "```md\n## SLICE-999 Example\nGoal: fake\nSlice 99\n```\n")
+prepend(
+    "decision-coverage.md",
+    "```md\nDecision coverage: BLOCKED\nTODO\n## Topology\nnot a table\n```\n",
+)
+prepend(
+    "test-plan.md",
+    "```md\nTODO\n## Build-entry preflight\nnot a table\n"
+    "## Acceptance → test map\n- AC-999 -> fake\n```\n",
+)
+prepend(
+    "eng-review.md",
+    "```md\nImplementation readiness: BLOCKED\nTODO\n"
+    "## 2a. Build-entry preflight\nnot a table\n```\n",
+)
+PY
+python3 "$VALIDATOR" "$FENCED/fixtures" >/tmp/devrites-workspace-schema-fenced.txt
+
+for kind in nul utf8; do
+  CORRUPT="$(mktemp -d)"
+  cp -R "$FIXTURES" "$CORRUPT/fixtures"
+  if [ "$kind" = nul ]; then
+    printf '\0' >> "$CORRUPT/fixtures/.devrites/work/backend-api/spec.md"
+    expected='NUL'
+  else
+    printf '\377' >> "$CORRUPT/fixtures/.devrites/work/backend-api/spec.md"
+    expected='UTF-8'
+  fi
+  if python3 "$VALIDATOR" "$CORRUPT/fixtures" \
+    >"/tmp/devrites-workspace-schema-corrupt-$kind.txt" 2>&1; then
+    echo "FAIL: corrupt $kind Markdown passed workspace validation"
+    exit 1
+  fi
+  grep -q "$expected" "/tmp/devrites-workspace-schema-corrupt-$kind.txt"
+  if grep -q 'Traceback' "/tmp/devrites-workspace-schema-corrupt-$kind.txt"; then
+    echo "FAIL: corrupt $kind validator error included a traceback"
+    exit 1
+  fi
+done
+
+FENCED_BUDGET="$(mktemp -d)"
+cp -R "$FIXTURES" "$FENCED_BUDGET/fixtures"
+{
+  printf '\n```md\nBudget override: fake\n```\n'
+  for _ in $(seq 1 300); do
+    echo
+  done
+} >> "$FENCED_BUDGET/fixtures/.devrites/work/backend-api/spec.md"
+if python3 "$VALIDATOR" "$FENCED_BUDGET/fixtures" \
+  >/tmp/devrites-workspace-schema-fenced-budget.txt 2>&1; then
+  echo "FAIL: fenced budget override bypassed the raw line-count budget"
+  exit 1
+fi
+grep -q 'lines exceeds budget' /tmp/devrites-workspace-schema-fenced-budget.txt
+
+BAD_MERMAID="$(mktemp -d)"
+cp -R "$FIXTURES" "$BAD_MERMAID/fixtures"
+perl -0pi -e 's/^sequenceDiagram$/unsupportedDiagram/m' \
+  "$BAD_MERMAID/fixtures/.devrites/work/backend-api/architecture.md"
+if python3 "$VALIDATOR" "$BAD_MERMAID/fixtures" \
+  >/tmp/devrites-workspace-schema-bad-mermaid.txt 2>&1; then
+  echo "FAIL: invalid raw Mermaid input passed validation"
+  exit 1
+fi
+grep -q 'starts with unsupported syntax' /tmp/devrites-workspace-schema-bad-mermaid.txt
+
+LEDGER_ONLY="$(mktemp -d)"
+mkdir -p "$LEDGER_ONLY/.devrites/work/ledger-only"
+cat > "$LEDGER_ONLY/.devrites/work/ledger-only/state.md" <<'MD'
+# State
+
+## Cursor
+| Key | Value |
+| --- | --- |
+| phase | frame |
+MD
+python3 "$VALIDATOR" "$LEDGER_ONLY" >/tmp/devrites-workspace-schema-ledger-only.txt
+
+UNKNOWN_PHASE="$(mktemp -d)"
+mkdir -p "$UNKNOWN_PHASE/.devrites/work/unknown"
+cat > "$UNKNOWN_PHASE/.devrites/work/unknown/state.md" <<'MD'
+# State
+
+## Cursor
+| Key | Value |
+| --- | --- |
+| phase | invented |
+MD
+if python3 "$VALIDATOR" "$UNKNOWN_PHASE" >/tmp/devrites-workspace-schema-unknown.txt 2>&1; then
+  echo "FAIL: unknown phase passed workspace validation"
+  exit 1
+fi
+grep -q "unknown phase 'invented'" /tmp/devrites-workspace-schema-unknown.txt
+
+REMNANTS="$(mktemp -d)"
+for name in "native-engine-cleanup" "native-engine-cleanup-s1" "native-engine-cleanup-s10" "native-engine-cleanup-s11" "native-engine-cleanup-s12" "native-engine-cleanup-s13" "native-engine-cleanup-s14" "native-engine-cleanup-s15" "native-engine-cleanup-s16" "native-engine-cleanup-s16b" "native-engine-cleanup-s17" "native-engine-cleanup-s18" "native-engine-cleanup-s19" "native-engine-cleanup-s2" "native-engine-cleanup-s20" "native-engine-cleanup-s21" "native-engine-cleanup-s22" "native-engine-cleanup-s23" "native-engine-cleanup-s24" "native-engine-cleanup-s3" "native-engine-cleanup-s3b" "native-engine-cleanup-s4" "native-engine-cleanup-s5a" "native-engine-cleanup-s5b" "native-engine-cleanup-s6a" "native-engine-cleanup-s6b" "native-engine-cleanup-s7" "native-engine-cleanup-s8" "native-engine-cleanup-s9"; do
+  mkdir -p "$REMNANTS/.devrites/work/$name"
+done
+printf 'bounded paths\n' > "$REMNANTS/.devrites/work/native-engine-cleanup/.wright-allowlist"
+printf '{}\n' > "$REMNANTS/.devrites/work/native-engine-cleanup-s20/recovery-attempts.jsonl"
+if python3 "$VALIDATOR" "$REMNANTS" >/tmp/devrites-workspace-schema-remnants.txt 2>&1; then
+  echo "FAIL: operational remnants were treated as workspaces"
+  exit 1
+fi
+grep -q "workspace-schema: no workspaces found" /tmp/devrites-workspace-schema-remnants.txt
+
+SYMLINKS="$(mktemp -d)"
+mkdir -p "$SYMLINKS/.devrites/work/file-link" "$SYMLINKS/target"
+printf '| phase | invented |\n' > "$SYMLINKS/target/state.md"
+ln -s "$SYMLINKS/target" "$SYMLINKS/.devrites/work/directory-link"
+ln -s "$SYMLINKS/target/state.md" "$SYMLINKS/.devrites/work/file-link/state.md"
+if python3 "$VALIDATOR" "$SYMLINKS" >/tmp/devrites-workspace-schema-symlinks.txt 2>&1; then
+  echo "FAIL: symlinked workspace authority passed validation"
+  exit 1
+fi
+grep -q "workspace-schema: no workspaces found" /tmp/devrites-workspace-schema-symlinks.txt
+
+echo "ok: workspace schema validator enforces structural Markdown trust boundaries, canonical layouts, complete mappings and verdict shapes without semantic verdict policing"

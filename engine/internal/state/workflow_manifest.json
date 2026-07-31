@@ -25,10 +25,6 @@
       "id": "spec",
       "resumeVerb": "spec",
       "transitionRight": "Author the product specification.",
-      "aliases": [
-        "specced",
-        "specifying"
-      ],
       "requiredSections": [
         "spec"
       ],
@@ -45,10 +41,6 @@
       "id": "clarify",
       "resumeVerb": "clarify",
       "transitionRight": "Close decision coverage in the written specification.",
-      "aliases": [
-        "clarified",
-        "clarifying"
-      ],
       "requiredSections": [
         "spec"
       ],
@@ -67,10 +59,6 @@
       "id": "temper",
       "resumeVerb": "temper",
       "transitionRight": "Optionally challenge the clarified specification strategy.",
-      "aliases": [
-        "tempered",
-        "tempering"
-      ],
       "requiredSections": [
         "spec"
       ],
@@ -89,10 +77,6 @@
       "id": "define",
       "resumeVerb": "define",
       "transitionRight": "Author and approve the initial implementation plan.",
-      "aliases": [
-        "defined",
-        "defining"
-      ],
       "requiredSections": [
         "spec",
         "plan"
@@ -116,10 +100,6 @@
       "id": "plan",
       "resumeVerb": "vet",
       "transitionRight": "Hold the approved or repaired plan checkpoint for engineering review.",
-      "aliases": [
-        "planned",
-        "planning"
-      ],
       "requiredSections": [
         "spec",
         "plan"
@@ -143,10 +123,6 @@
       "id": "vet",
       "resumeVerb": "vet",
       "transitionRight": "Review implementation readiness before build.",
-      "aliases": [
-        "vetted",
-        "vetting"
-      ],
       "requiredSections": [
         "spec",
         "plan",
@@ -174,12 +150,6 @@
       "id": "build",
       "resumeVerb": "build",
       "transitionRight": "Implement the next approved vertical slice.",
-      "aliases": [
-        "building",
-        "wip",
-        "in",
-        "in-progress"
-      ],
       "requiredSections": [
         "spec",
         "plan",
@@ -207,10 +177,6 @@
       "id": "converge",
       "resumeVerb": "converge",
       "transitionRight": "Recover unmet clarified intent into new slices.",
-      "aliases": [
-        "converged",
-        "converging"
-      ],
       "requiredSections": [
         "spec",
         "plan",
@@ -238,11 +204,6 @@
       "id": "prove",
       "resumeVerb": "prove",
       "transitionRight": "Produce acceptance evidence for the implementation.",
-      "aliases": [
-        "proving",
-        "proven",
-        "testing"
-      ],
       "requiredSections": [
         "spec",
         "plan",
@@ -274,10 +235,6 @@
       "id": "polish",
       "resumeVerb": "polish",
       "transitionRight": "Apply the bounded quality pass.",
-      "aliases": [
-        "polished",
-        "polishing"
-      ],
       "requiredSections": [
         "spec",
         "plan",
@@ -309,10 +266,6 @@
       "id": "review",
       "resumeVerb": "review",
       "transitionRight": "Review the proven implementation.",
-      "aliases": [
-        "reviewed",
-        "reviewing"
-      ],
       "requiredSections": [
         "spec",
         "plan",
@@ -344,10 +297,6 @@
       "id": "seal",
       "resumeVerb": "seal",
       "transitionRight": "Decide the final GO or NO-GO.",
-      "aliases": [
-        "sealed",
-        "sealing"
-      ],
       "requiredSections": [
         "spec",
         "plan",
@@ -371,7 +320,9 @@
         "eng-review.md",
         "test-plan.md",
         "evidence.md",
-        "touched-files.md"
+        "touched-files.md",
+        "review.md",
+        "seal.md"
       ],
       "proofRequired": true,
       "blocksOpenQuestions": true,
@@ -381,10 +332,6 @@
       "id": "ship",
       "resumeVerb": "ship",
       "transitionRight": "Perform authorized release and close-out mutations.",
-      "aliases": [
-        "shipped",
-        "shipping"
-      ],
       "requiredSections": [
         "spec",
         "plan",
@@ -408,7 +355,9 @@
         "eng-review.md",
         "test-plan.md",
         "evidence.md",
-        "touched-files.md"
+        "touched-files.md",
+        "review.md",
+        "seal.md"
       ],
       "proofRequired": true,
       "blocksOpenQuestions": true,
@@ -417,11 +366,6 @@
     {
       "id": "done",
       "transitionRight": "Represent archived completion with no resume command.",
-      "aliases": [
-        "closed",
-        "complete",
-        "completed"
-      ],
       "requiredSections": [
         "spec",
         "plan",
@@ -445,37 +389,13 @@
         "eng-review.md",
         "test-plan.md",
         "evidence.md",
-        "touched-files.md"
+        "touched-files.md",
+        "review.md",
+        "seal.md"
       ],
       "proofRequired": true,
       "blocksOpenQuestions": true,
       "shippable": true
-    }
-  ],
-  "clarifyReturnFields": [
-    {
-      "field": "phase",
-      "policy": "derived"
-    },
-    {
-      "field": "status",
-      "policy": "derived"
-    },
-    {
-      "field": "next_action",
-      "policy": "derived"
-    },
-    {
-      "field": "return_phase",
-      "policy": "derived"
-    },
-    {
-      "field": "return_next_action",
-      "policy": "curated when present; otherwise derived"
-    },
-    {
-      "field": "all other state.md content",
-      "policy": "curated and preserved byte-for-byte"
     }
   ],
   "cursorKeyAliases": [

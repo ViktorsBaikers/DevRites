@@ -1,8 +1,7 @@
 ---
 name: devrites-frontend-craft
-description: Implement frontend at senior designer-engineer quality: every state covered, anti-AI-slop, WCAG 2.2 AA. Use when the user says "build the UI", "design system", "a11y", or `/rite-build` detects UI. Not for polishing a built feature or design exploration.
+description: Build accessible production UI and all states during /rite-build. Use for frontend or design-system implementation; not for polish or design exploration.
 user-invocable: false
-required-agent-roles: none
 ---
 
 # devrites-frontend-craft: UI like a senior designer-engineer

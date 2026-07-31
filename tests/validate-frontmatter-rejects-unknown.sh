@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # validate-frontmatter-rejects-unknown.sh: assert validate-frontmatter.py
-# fails (non-zero) on any non-canonical SKILL.md field, on a description > 1024
-# chars, and on a multi-line description.
+# fails (non-zero) on duplicate or non-canonical fields, on an agent description
+# over 45 words, on a description > 1024 chars, and on a multi-line description.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 PY="$ROOT/scripts/validate-frontmatter.py"
@@ -82,50 +82,39 @@ body
 EOF
 assert_fail "multiline-description" "$TMP/multiline.md"
 
-# 5) a canonical skill should pass
+# 5) agent descriptions over 45 words should be rejected
+mkdir -p "$TMP/agents"
+AGENT_WORDS="$(python3 -c 'print("word " * 46)')"
+cat > "$TMP/agents/too-many-words.md" <<EOF
+---
+name: overlong-agent
+description: $AGENT_WORDS
+---
+body
+EOF
+assert_fail "agent-description-word-budget" "$TMP/agents/too-many-words.md"
+
+# 6) duplicate fields must fail instead of silently taking the last value
+cat > "$TMP/duplicate-field.md" <<'EOF'
+---
+name: duplicate-field
+description: First description.
+description: Second description.
+---
+body
+EOF
+assert_fail "duplicate-field" "$TMP/duplicate-field.md"
+
+# 7) a canonical skill should pass
 cat > "$TMP/ok.md" <<'EOF'
 ---
 name: ok-skill
 description: A canonical skill with only name and description.
 user-invocable: true
-required-agent-roles: none
 ---
 body
 EOF
 assert_ok "canonical-skill" "$TMP/ok.md"
-
-# 6) malformed required agent role should be rejected
-cat > "$TMP/invalid-agent-role.md" <<'EOF'
----
-name: invalid-agent-role
-description: A skill with malformed mandatory agent metadata.
-required-agent-roles: root-inline-reviewer
----
-body
-EOF
-assert_fail "invalid-agent-role" "$TMP/invalid-agent-role.md"
-
-# 7) every skill must make the agent requirement explicit
-cat > "$TMP/missing-agent-requirement.md" <<'EOF'
----
-name: missing-agent-requirement
-description: A skill that omitted mandatory agent metadata.
----
-body
-EOF
-assert_fail "missing-agent-requirement" "$TMP/missing-agent-requirement.md"
-
-# 8) canonical role references must resolve to an agent source file
-mkdir -p "$TMP/pack/.claude/skills/missing-agent" "$TMP/pack/.claude/agents"
-cat > "$TMP/pack/.claude/skills/missing-agent/SKILL.md" <<'EOF'
----
-name: missing-agent
-description: A skill that references an absent agent contract.
-required-agent-roles: devrites-missing-agent
----
-body
-EOF
-assert_fail "missing-agent-contract" "$TMP/pack/.claude/skills/missing-agent/SKILL.md"
 
 rm -rf "$TMP"
 

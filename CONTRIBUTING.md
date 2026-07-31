@@ -53,9 +53,10 @@ the terms above.
 |---|---|---|
 | Bug report | GitHub Issues | Include version (`.claude/devrites.manifest`), repro, expected vs actual. |
 | Feature request | GitHub Issues / Discussions | Explain the problem first; suggest a shape, not a finished design. |
-| New / improved skill | `pack/.claude/skills/<skill>/SKILL.md` | Must have frontmatter, body discipline, and ≥1 eval file. |
-| Review agent | `pack/.claude/agents/<agent>.md` | Read-only, fresh-context, severity-labeled output. |
-| Engineering rule | `pack/.claude/skills/devrites-lib/reference/standards/<rule>.md` | Stack-agnostic. Project conventions always win. |
+| New / improved skill | `pack/.claude/skills/<skill>/SKILL.md` | Must satisfy the [instruction authoring contract](docs/skills.md#instruction-authoring-contract), frontmatter validation, and applicable routing/behavior evals. |
+| Review agent | `pack/.claude/agents/<agent>.md` | Read-only and fresh-context, with exact scope, severity-labeled evidence, failure behavior, and completion criteria. |
+| Writer agent | `pack/.claude/agents/devrites-slice-wright.md` | Sole source/test writer; one exact path-bounded task, proof-bearing result, and no `.devrites/` bookkeeping. |
+| Engineering rule | `pack/.claude/skills/devrites-lib/reference/standards/<rule>.md` | Stack-agnostic. Follow the core authority/evidence/method ladder; repository conventions choose technical form but cannot waive gates. |
 | Docs | `docs/` or `README.md` | Keep cross-links current. |
 | Eval query | `evals/<skill>.json` | Trigger phrasing that covers the skill's positive, negative, and boundary routing branches; corpus size follows the branch shape rather than a fixed quota. |
 | Behavioral eval | `evals/behavioral/<skill>.json` | Pressure scenario that tests whether a gating skill resists a documented rationalization. Opt-in; sourced from `anti-patterns.md`. |
@@ -64,21 +65,33 @@ the terms above.
 If you're not sure where a change belongs, open a discussion or draft issue
 first.
 
+GitHub Issues and Discussions are human community intake. Automated DevRites
+work uses local `.scratch/<slug>/` records and must not create or update an
+external tracker unless the controlling user explicitly authorizes that write.
+
 ## Before you open a PR
 
 - [ ] Issue exists (or the change is small enough to skip one).
 - [ ] You've read the relevant section of [`docs/architecture.md`](docs/architecture.md).
 - [ ] Commit messages follow the **strict** Conventional Commits policy below.
+- [ ] `git diff --check` passes and the final changed-file list matches the
+  intended scope.
 - [ ] `npm run validate` passes.
-- [ ] `npm run audit` reports no unexcepted moderate-or-higher dependency advisories.
+- [ ] `npm run audit` reports no unexcepted moderate-or-higher dependency advisories; every allowed advisory has an exact, current, unexpired exception.
 - [ ] `npm test` passes (install/uninstall smoke + pack validation).
 - [ ] If you touched a skill, you ran the matching eval (`scripts/run-evals.sh`).
 - [ ] If you touched a **gating** skill's discipline (or its `anti-patterns.md`), you ran / updated its behavioral eval (`scripts/run-behavioral-evals.sh`).
 - [ ] No skill, agent, or hook artifacts are written to `~/.claude` or
   `~/.codex`; any global write is limited to the shared engine-binary lifecycle.
-- [ ] No new network calls exist outside the sanctioned bootstrap, update, and
-  source-cache boundary in `engine/internal/iohooks`; skill research uses explicit host tools.
-- [ ] You've updated docs and cross-links touched by the change.
+- [ ] No network calls exist in the Go engine; release/source/binary acquisition
+  is confined to shell/npm bootstrap entrypoints; skill research uses explicit host tools.
+- [ ] Canonical pack edits were regenerated with
+  `bash scripts/build-host-artifacts.sh`; generated files were reviewed rather
+  than hand-edited.
+- [ ] Changed Markdown links, repository paths, command names, and examples were
+  checked against their live owners.
+- [ ] The PR lists exact commands and observed results, plus every skipped or
+  not-applicable gate and its reason.
 
 ## Local development setup
 
@@ -110,7 +123,7 @@ To try your changes inside a real project:
 
 ## Project layout (what lives where)
 
-This is the short map. The [README layout section](README.md#layout) has the
+This is the short map. The [README layout section](README.md#repository-layout) has the
 full version.
 
 - `pack/.claude/skills/`: canonical public rites, internal specialists, and the `devrites-lib` reference library.
@@ -158,7 +171,12 @@ Run `python3 scripts/validate-frontmatter.py <files>` (or `npm run validate`) an
 ### Engineering rules (`pack/.claude/skills/devrites-lib/reference/standards/<rule>.md`)
 
 - Stack-agnostic. No language-specific assumptions.
-- "Project conventions always win": these are defaults, not laws.
+- Follow [`core.md` § Precedence](pack/.claude/skills/devrites-lib/reference/standards/core.md#precedence):
+  repository conventions choose technical form where authority is silent; they
+  do not authorize scope, side effects, or weaker safety/evidence gates.
+- Before promoting, moving, consolidating, or substantially rewriting active
+  guidance, apply the placement and non-regression gate in
+  [`skill-authoring.md`](pack/.claude/skills/devrites-lib/reference/standards/skill-authoring.md#body-and-placement).
 - Add to `pack/.claude/skills/devrites-lib/reference/standards/README.md` index when you add a file.
 
 ## Commit message format (strict)

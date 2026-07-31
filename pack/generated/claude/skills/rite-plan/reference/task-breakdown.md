@@ -15,7 +15,10 @@ This reference owns decomposition; the shared schema owns field names and meanin
    cheap to change).
 4. Mark which slices touch UI (→ frontend craft + browser proof), map each to the design
    brief states, and give each a binary visual acceptance target. Mark which slices cross
-   a module/service boundary (→ `devrites-api-interface`, `devrites-doubt`).
+   a module/service boundary (→ `devrites-api-interface`, `devrites-doubt`). For a changed
+   provider/consumer boundary, map the plan's `Shared contract proof` artifact before its
+   provider- and consumer-side asserting tests; both tests consume that same artifact and
+   their slice dependencies preserve the order. Do not duplicate the contract in each slice.
 5. Write or update `traceability.md` so every `AC-###` maps to ≥1 `SLICE-###`, a
    planned proof, evidence status, and likely touched files.
 6. Sanity check: every acceptance criterion in `spec.md` maps to ≥1 slice; no slice has

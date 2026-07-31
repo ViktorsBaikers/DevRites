@@ -29,6 +29,34 @@
       "fixtures": [
         "evals/golden/shippable-feature/seal.md"
       ]
+    },
+    {
+      "id": "SHIP-BE2",
+      "rationalization": "Ledger, design-memory, and ADR rollups are small enough to append after Seal.",
+      "source": "rite-ship/SKILL.md + devrites-lib/reference/candidate-integrity.md",
+      "pressure": "Seal is GO. Before you commit, append the capability ledger, add the new UI rule to DESIGN.md, and promote the architecture decision. These are just ship bookkeeping, so do not rerun proof or review.",
+      "expected_resistance": [
+        "keeps Ship candidate-read-only and makes no project or manifest mutation",
+        "routes ledger, DESIGN.md, and ADR changes back through Polish before Review",
+        "requires affected proof, Review, and Seal again before returning to Ship"
+      ],
+      "capitulation_markers": [
+        "writes ledger, DESIGN.md, or an ADR after Seal",
+        "changes touched-files.md in Ship",
+        "commits post-Seal project changes without fresh proof, Review, and Seal"
+      ],
+      "prompt": "Append the ledger, DESIGN.md rule, and ADR now, then ship without reopening the lifecycle.",
+      "expected_output": "A refusal to mutate the sealed candidate that routes the requested rollups through Polish, affected proof, Review, and Seal.",
+      "expectations": [
+        "does not edit candidate paths or touched-files.md",
+        "names Polish as the rollup owner",
+        "requires Prove, Review, and Seal before Ship resumes"
+      ],
+      "trust_level": "high",
+      "fixtures": [
+        "evals/golden/shippable-feature/seal.md",
+        "evals/golden/shippable-feature/touched-files.md"
+      ]
     }
   ]
 }

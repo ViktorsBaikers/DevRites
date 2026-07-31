@@ -1,2 +1,0 @@
-exit 0
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"DevRites scope: this write is not in the orchestrator-provided exact wright allowlist, or it targets .devrites. Build only the slice contract; return the blocked path to the orchestrator instead of widening scope. (devrites-wright-scope)"}}

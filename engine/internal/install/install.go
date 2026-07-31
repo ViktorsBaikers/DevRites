@@ -1,9 +1,7 @@
 package install
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -16,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"slices"
 	"sort"
@@ -26,14 +23,11 @@ import (
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/hostpack"
-	"github.com/devrites/devrites/internal/iohooks"
 	"github.com/devrites/devrites/internal/safepath"
 	"github.com/devrites/devrites/internal/version"
 )
 
 const ManifestName = devritespaths.ManifestName
-const defaultRepo = "ViktorsBaikers/DevRites"
-const githubBaseURL = "https://github.com"
 
 type Mode string
 
@@ -57,8 +51,6 @@ type Options struct {
 	KeepBinary  bool
 	AliasMode   string
 	UpdateCheck bool
-	UpdateTo    string
-	AllowPre    bool
 	Stdout      io.Writer
 	Stderr      io.Writer
 }
@@ -73,18 +65,18 @@ type stats struct {
 }
 
 type runner struct {
-	opts             Options
-	target           string
-	payload          string
-	payloadFS        fs.FS
-	source           string
-	manifest         []string
-	records          map[string]string
-	prev             map[string]managedRecord
-	preflight        map[string]pathSnapshot
-	stats            stats
-	releaseBinaryTag string
-	preparedBinary   string
+	opts              Options
+	target            string
+	payload           string
+	payloadFS         fs.FS
+	source            string
+	manifest          []string
+	records           map[string]string
+	prev              map[string]managedRecord
+	preflight         map[string]pathSnapshot
+	stats             stats
+	requiredBinaryTag string
+	preparedBinary    string
 }
 
 type managedRecord struct {
@@ -162,8 +154,6 @@ func parseArgs(args []string, opts *Options) error {
 	noShortAliases := flags.Bool("no-short-aliases", false, "")
 	shortAliases := flags.String("short-aliases", opts.AliasMode, "")
 	updateCheck := flags.Bool("check", opts.UpdateCheck, "")
-	allowPre := flags.Bool("pre", opts.AllowPre, "")
-	updateTo := flags.String("to", opts.UpdateTo, "")
 
 	if err := flags.Parse(normalized); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -186,8 +176,6 @@ func parseArgs(args []string, opts *Options) error {
 	opts.WithBinary = !*noBinary
 	opts.KeepBinary = *keepBinary
 	opts.UpdateCheck = *updateCheck
-	opts.AllowPre = *allowPre
-	opts.UpdateTo = *updateTo
 	for _, dep := range []struct {
 		set  bool
 		name string
@@ -227,7 +215,7 @@ func usage(mode Mode) string {
 	case ModeUninstall:
 		return "usage: devrites-engine uninstall [--target DIR] [--dry-run] [--force] [--keep-binary]\n"
 	case ModeUpdate:
-		return "usage: devrites-engine update [--target DIR] [--dry-run] [--force] [--check] [--to TAG] [install flags]\n"
+		return "usage: devrites-engine update [--target DIR] [--source-dir DIR] [--payload-dir DIR] [--dry-run] [--force] [--check] [install flags]\n"
 	default:
 		return "usage: devrites-engine install [--target DIR] [--dry-run] [--force] [--no-codex] [--no-agents] [--no-skills] [--no-binary] [--short-aliases=all]\n"
 	}
@@ -404,8 +392,8 @@ func (r *runner) install() error {
 		if err := r.mergeMarkerFile(hostpack.CodexAgentsMerge); err != nil {
 			return fmt.Errorf("merge %s: %w", hostpack.CodexAgentsMerge.TargetRel, err)
 		}
-		if err := r.mergeJSONHooks(hostpack.CodexHooksMerge); err != nil {
-			return fmt.Errorf("merge %s: %w", hostpack.CodexHooksMerge.TargetRel, err)
+		if err := r.mergeCodexConfig(); err != nil {
+			return fmt.Errorf("merge %s: %w", hostpack.CodexConfigMerge.TargetRel, err)
 		}
 	}
 	if r.opts.WithSkills {
@@ -435,6 +423,13 @@ func (r *runner) install() error {
 		fmt.Fprintln(r.opts.Stdout, "DevRites installed")
 	}
 	fmt.Fprintf(r.opts.Stdout, "  installed: %d   overwritten: %d   skipped(conflict): %d   pruned: %d\n", r.stats.installed, r.stats.overwrote, r.stats.skipped, r.stats.pruned)
+	if !r.opts.DryRun && r.opts.WithSkills {
+		if r.opts.WithCodex {
+			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite (Claude) or $rite (Codex).")
+		} else {
+			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite.")
+		}
+	}
 	return nil
 }
 
@@ -568,7 +563,7 @@ func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	}
 	if r.opts.WithSkills && r.opts.WithCodex {
 		out[hostpack.CodexAgentsMerge.MarkerRel] = true
-		out[hostpack.CodexHooksMerge.MarkerRel] = true
+		out[hostpack.CodexConfigMerge.MarkerRel] = true
 	}
 	if r.opts.WithSkills {
 		out[hostpack.ClaudeSettingsMerge.MarkerRel] = true
@@ -581,7 +576,7 @@ func (r *runner) installMergeTargets() []string {
 	if r.opts.WithSkills {
 		out = append(out, hostpack.ClaudeSettingsMerge.TargetRel)
 		if r.opts.WithCodex {
-			out = append(out, hostpack.CodexAgentsMerge.TargetRel, hostpack.CodexHooksMerge.TargetRel)
+			out = append(out, hostpack.CodexAgentsMerge.TargetRel, hostpack.CodexConfigMerge.TargetRel)
 		}
 	}
 	return out
@@ -738,6 +733,20 @@ func (r *runner) installMarker(rel, text string) error {
 	return r.installData([]byte(text+"\n"), rel)
 }
 
+func (r *runner) installClaudeSettingsMarker(ownsDefaultMode bool) error {
+	ownership := "preexisting"
+	if ownsDefaultMode {
+		ownership = "added"
+	}
+	text := hostpack.ClaudeSettingsMerge.MarkerText + "\ndefault-mode=" + ownership
+	return r.installMarker(hostpack.ClaudeSettingsMerge.MarkerRel, text)
+}
+
+func (r *runner) claudeDefaultModeOwned() bool {
+	data, err := os.ReadFile(filepath.Join(r.target, filepath.FromSlash(hostpack.ClaudeSettingsMerge.MarkerRel)))
+	return err == nil && strings.Contains(string(data), "\ndefault-mode=added\n")
+}
+
 func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 	block, err := fs.ReadFile(r.payloadFS, merge.PayloadRel)
 	if err != nil {
@@ -775,87 +784,81 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 	return r.installMarker(merge.MarkerRel, merge.MarkerText)
 }
 
-func (r *runner) mergeJSONHooks(merge hostpack.JSONMerge) error {
-	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
-	devrites, err := readJSONFS(r.payloadFS, merge.PayloadRel)
+func (r *runner) mergeCodexConfig() error {
+	merge := hostpack.CodexConfigMerge
+	block, err := fs.ReadFile(r.payloadFS, merge.PayloadRel)
 	if err != nil {
-		return fmt.Errorf("load hooks payload: %w", err)
+		return fmt.Errorf("read payload %s: %w", merge.PayloadRel, err)
 	}
+	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
 	if r.opts.DryRun {
-		fmt.Fprintf(r.opts.Stdout, "  [merge] %s\n", merge.DryRunText)
+		fmt.Fprintf(r.opts.Stdout, "  [merge] %s (prepend DevRites permission block)\n", merge.TargetRel)
 		return r.installMarker(merge.MarkerRel, merge.MarkerText)
 	}
 	if err := r.recheckPath(merge.TargetRel); err != nil {
 		return err
 	}
-	next := devrites
-	if current, err := readJSON(dest); err == nil {
-		if currentStatus, exists := current["statusLine"]; exists && !isDevritesHookCommand(currentStatus) {
-			if _, wanted := devrites["statusLine"]; wanted {
-				fmt.Fprintln(r.opts.Stderr, "warning: preserved existing Claude statusLine; DevRites statusline was not installed.")
-			}
+	var current []byte
+	if data, readErr := os.ReadFile(dest); readErr == nil {
+		current = stripMarkerBlock(data, merge.Begin, merge.End)
+		current = stripMarkerBlock(current, "# BEGIN DEVRITES CODEX MCP", "# END DEVRITES CODEX MCP")
+		current = stripMarkerBlock(current, "### BEGIN DEVRITES CODEX MCP", "### END DEVRITES CODEX MCP")
+		if hasTopLevelTOMLKey(current, "default_permissions") {
+			return fmt.Errorf("%s already sets top-level default_permissions; remove that project override before installing the DevRites read-only-root profile", merge.TargetRel)
 		}
-		next = mergeHooks(stripDevritesHooks(current), devrites)
+	} else if !errors.Is(readErr, fs.ErrNotExist) {
+		return fmt.Errorf("cannot read %s: %w", merge.TargetRel, readErr)
 	}
-	data, err := json.MarshalIndent(next, "", "  ")
-	if err != nil {
-		return fmt.Errorf("encode merged hooks: %w", err)
+	next := append([]byte(nil), block...)
+	if len(next) == 0 || next[len(next)-1] != '\n' {
+		next = append(next, '\n')
 	}
-	data = append(data, '\n')
-	if err := fsutil.WriteFileAtomic(dest, data, 0o644); err != nil {
+	if len(bytes.TrimSpace(current)) > 0 {
+		next = append(next, '\n')
+		next = append(next, current...)
+	}
+	if err := fsutil.WriteFileAtomic(dest, next, 0o644); err != nil {
 		return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 	}
 	return r.installMarker(merge.MarkerRel, merge.MarkerText)
 }
 
-func (r *runner) seedClaudeSettings() error {
-	merge := hostpack.ClaudeSettingsMerge
-	rel := merge.TargetRel
-	dest := filepath.Join(r.target, rel)
-	if exists(dest) {
-		current, err := readJSON(dest)
-		if err != nil {
-			return fmt.Errorf("load existing Claude settings: %w", err)
-		}
-		devrites, err := readJSONFS(r.payloadFS, merge.PayloadRel)
-		if err != nil {
-			return fmt.Errorf("load Claude settings payload: %w", err)
-		}
-		_, managed := r.prev[merge.MarkerRel]
-		if reflect.DeepEqual(current, devrites) {
-			if managed {
-				return r.installMarker(merge.MarkerRel, merge.MarkerText)
-			}
-			return nil
-		}
-		if containsDevritesHook(current) && len(stripDevritesHooks(current)) == 0 && !managed {
-			if r.opts.DryRun {
-				fmt.Fprintln(r.opts.Stdout, "  [seed] .claude/settings.json (refresh DevRites hooks)")
-				return nil
-			}
-			data, err := fs.ReadFile(r.payloadFS, merge.PayloadRel)
-			if err != nil {
-				return fmt.Errorf("read payload claude/settings.json: %w", err)
-			}
-			if err := r.recheckPath(rel); err != nil {
-				return err
-			}
-			return fsutil.WriteFileAtomic(dest, data, 0o644)
-		}
-		return r.mergeJSONHooks(merge)
-	}
-	if r.opts.DryRun {
-		fmt.Fprintln(r.opts.Stdout, "  [seed] .claude/settings.json (DevRites hooks - preserved on uninstall/update)")
-		return nil
-	}
-	data, err := fs.ReadFile(r.payloadFS, merge.PayloadRel)
+func (r *runner) mergeClaudeSettings(merge hostpack.JSONMerge) error {
+	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
+	devrites, err := readJSONFS(r.payloadFS, merge.PayloadRel)
 	if err != nil {
-		return fmt.Errorf("read payload claude/settings.json: %w", err)
+		return fmt.Errorf("load Claude settings payload: %w", err)
 	}
-	if err := r.recheckPath(rel); err != nil {
+	current := map[string]any{}
+	if data, readErr := readJSON(dest); readErr == nil {
+		current = data
+	} else if !errors.Is(readErr, fs.ErrNotExist) {
+		return fmt.Errorf("load existing Claude settings: %w", readErr)
+	}
+	next, ownsDefaultMode, err := mergeClaudeSettingsConfig(current, devrites, r.claudeDefaultModeOwned())
+	if err != nil {
 		return err
 	}
-	return fsutil.WriteFileAtomic(dest, data, 0o644)
+	if r.opts.DryRun {
+		fmt.Fprintf(r.opts.Stdout, "  [merge] %s\n", merge.DryRunText)
+		return r.installClaudeSettingsMarker(ownsDefaultMode)
+	}
+	if err := r.recheckPath(merge.TargetRel); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(next, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode merged Claude settings: %w", err)
+	}
+	data = append(data, '\n')
+	if err := fsutil.WriteFileAtomic(dest, data, 0o644); err != nil {
+		return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
+	}
+	return r.installClaudeSettingsMarker(ownsDefaultMode)
+}
+
+func (r *runner) seedClaudeSettings() error {
+	return r.mergeClaudeSettings(hostpack.ClaudeSettingsMerge)
 }
 
 func (r *runner) seedDevrites() error {
@@ -922,9 +925,8 @@ func (r *runner) pruneDropped() error {
 				if err := r.recheckPath(merge.TargetRel); err != nil {
 					return err
 				}
-				if merge.TargetRel == hostpack.CodexHooksMerge.TargetRel || merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
-					preserveEmpty := merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel
-					_ = r.stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), preserveEmpty)
+				if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
+					_ = r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), true)
 				} else {
 					_ = stripMarkerPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End)
 				}
@@ -1021,10 +1023,9 @@ func (r *runner) uninstall() error {
 		if err := r.recheckPath(merge.TargetRel); err != nil {
 			return err
 		}
-		if merge.TargetRel == hostpack.CodexHooksMerge.TargetRel || merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
-			preserveEmpty := merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel
-			if err := r.stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), preserveEmpty); err != nil {
-				return fmt.Errorf("strip hooks from %s: %w", merge.TargetRel, err)
+		if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
+			if err := r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), true); err != nil {
+				return fmt.Errorf("strip DevRites settings from %s: %w", merge.TargetRel, err)
 			}
 			continue
 		}
@@ -1091,21 +1092,21 @@ func (r *runner) uninstall() error {
 	return nil
 }
 
-func (r *runner) stripHooksPath(path string, preserveEmpty bool) error {
+func (r *runner) stripClaudeSettings(path string, preserveEmpty bool) error {
 	current, err := readJSON(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
-		return fmt.Errorf("load hooks config: %w", err)
+		return fmt.Errorf("load Claude settings: %w", err)
 	}
-	next := stripDevritesHooks(current)
+	next := stripDevritesSettings(current, r.claudeDefaultModeOwned())
 	if len(next) == 0 && !preserveEmpty {
 		return os.Remove(path)
 	}
 	data, err := json.MarshalIndent(next, "", "  ")
 	if err != nil {
-		return fmt.Errorf("encode hooks config: %w", err)
+		return fmt.Errorf("encode Claude settings: %w", err)
 	}
 	data = append(data, '\n')
 	return fsutil.WriteFileAtomic(path, data, 0o644)
@@ -1124,36 +1125,42 @@ func runUpdate(opts Options) error {
 	if installed == "" {
 		installed = "unknown"
 	}
-	latestTag, err := resolveUpdateTag(opts)
-	if err != nil {
-		return fmt.Errorf("resolve update tag: %w", err)
+	if opts.SourceDir == "" {
+		return fmt.Errorf("update requires --source-dir with the locally acquired source")
 	}
-	latest := strings.TrimPrefix(latestTag, "v")
+	source, err := filepath.Abs(opts.SourceDir)
+	if err != nil {
+		return fmt.Errorf("resolve source %s: %w", opts.SourceDir, err)
+	}
+	candidate := installedVersion(source)
+	if candidate == "" || candidate == "unknown" {
+		return fmt.Errorf("derive update version from local source %s: package.json has no version", source)
+	}
+	candidate = strings.TrimPrefix(candidate, "v")
 	fmt.Fprintln(opts.Stdout, "DevRites update")
 	fmt.Fprintf(opts.Stdout, "  project:   %s\n", target)
 	fmt.Fprintf(opts.Stdout, "  installed: %s\n", installed)
-	fmt.Fprintf(opts.Stdout, "  latest:    %s\n", latest)
+	fmt.Fprintf(opts.Stdout, "  candidate: %s\n", candidate)
 	if opts.UpdateCheck {
-		if installed == latest || strings.TrimPrefix(installed, "v") == latest {
+		if installed == candidate || strings.TrimPrefix(installed, "v") == candidate {
 			fmt.Fprintln(opts.Stdout, "up to date.")
 			return nil
 		}
-		return fmt.Errorf("update available: %s -> %s", installed, latest)
+		return fmt.Errorf("update available: %s -> %s", installed, candidate)
 	}
-	if !opts.Force && (installed == latest || strings.TrimPrefix(installed, "v") == latest) {
+	if !opts.Force && (installed == candidate || strings.TrimPrefix(installed, "v") == candidate) {
 		fmt.Fprintln(opts.Stdout, "already up to date (use --force to reinstall).")
 		return nil
 	}
-	source, cleanup, err := acquireUpdateBundle(latestTag, opts.Stdout)
-	if err != nil {
-		return fmt.Errorf("acquire update %s: %w", latestTag, err)
+	if opts.PayloadDir == "" {
+		return fmt.Errorf("update requires --payload-dir with the locally prepared host payload")
 	}
-	defer cleanup()
-	payload := filepath.Join(source, "pack", "generated")
-	if hostpack.ValidatePayload(os.DirFS(payload), true) != nil {
-		if err := buildHostArtifacts(source, payload); err != nil {
-			return fmt.Errorf("prepare update payload: %w", err)
-		}
+	payload, err := filepath.Abs(opts.PayloadDir)
+	if err != nil {
+		return fmt.Errorf("resolve payload %s: %w", opts.PayloadDir, err)
+	}
+	if err := hostpack.ValidatePayload(os.DirFS(payload), true); err != nil {
+		return fmt.Errorf("local update payload under %s is invalid: %w", payload, err)
 	}
 	installFlags := manifestHeader(mf, "devrites-flags")
 	next := DefaultOptions(ModeInstall)
@@ -1175,9 +1182,9 @@ func runUpdate(opts Options) error {
 	if err != nil {
 		return fmt.Errorf("prepare installer: %w", err)
 	}
-	r.releaseBinaryTag = latestTag
+	r.requiredBinaryTag = "v" + candidate
 	if next.WithBinary && os.Getenv("DEVRITES_NO_BINARY") != "1" && !next.DryRun {
-		staged, cleanup, err := r.acquireBinary(latestTag, githubBaseURL)
+		staged, cleanup, err := r.acquireBinary(r.requiredBinaryTag)
 		if err != nil {
 			return fmt.Errorf("prepare engine binary: %w", err)
 		}
@@ -1185,249 +1192,6 @@ func runUpdate(opts Options) error {
 		r.preparedBinary = staged
 	}
 	return r.install()
-}
-
-func resolveUpdateTag(opts Options) (string, error) {
-	if opts.UpdateTo != "" {
-		return normalizeTag(opts.UpdateTo), nil
-	}
-	if os.Getenv("DEVRITES_UPDATE_BUNDLE") != "" && opts.SourceDir != "" {
-		if v := installedVersion(opts.SourceDir); v != "" && v != "unknown" {
-			return normalizeTag(v), nil
-		}
-	}
-	repo := os.Getenv("DEVRITES_REPO")
-	if repo == "" {
-		repo = defaultRepo
-	}
-	endpoint := "latest"
-	if opts.AllowPre {
-		endpoint = ""
-	}
-	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/%s", repo, endpoint)
-	if opts.AllowPre {
-		var releases []struct {
-			TagName string `json:"tag_name"`
-		}
-		if err := iohooks.FetchJSON(url, &releases); err != nil {
-			return "", fmt.Errorf("resolve latest release: %w", err)
-		}
-		for _, rel := range releases {
-			if rel.TagName != "" {
-				return normalizeTag(rel.TagName), nil
-			}
-		}
-		return "", fmt.Errorf("resolve latest release: no releases found")
-	}
-	var release struct {
-		TagName string `json:"tag_name"`
-	}
-	if err := iohooks.FetchJSON(url, &release); err != nil {
-		return "", fmt.Errorf("resolve latest release: %w", err)
-	}
-	if release.TagName == "" {
-		return "", fmt.Errorf("resolve latest release: empty tag")
-	}
-	return normalizeTag(release.TagName), nil
-}
-
-func acquireUpdateBundle(tag string, stdout io.Writer) (string, func(), error) {
-	tmp, err := os.MkdirTemp("", "devrites-update-*")
-	if err != nil {
-		return "", func() {}, fmt.Errorf("create temp dir: %w", err)
-	}
-	cleanup := func() { _ = os.RemoveAll(tmp) }
-	artifact := fmt.Sprintf("devrites-%s.tar.gz", tag)
-	tarball := filepath.Join(tmp, artifact)
-	if bundle := os.Getenv("DEVRITES_UPDATE_BUNDLE"); bundle != "" {
-		if !exists(bundle) {
-			cleanup()
-			return "", func() {}, fmt.Errorf("DEVRITES_UPDATE_BUNDLE not readable: %s", bundle)
-		}
-		fmt.Fprintf(stdout, "  bundle:   %s\n", bundle)
-		return extractUpdateBundle(bundle, tmp, cleanup)
-	}
-
-	repo := os.Getenv("DEVRITES_REPO")
-	if repo == "" {
-		repo = defaultRepo
-	}
-	releaseURL := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", repo, tag, artifact)
-	if err := iohooks.DownloadFile(releaseURL, tarball); err == nil {
-		sumPath := tarball + ".sha256"
-		if err := iohooks.DownloadFile(releaseURL+".sha256", sumPath); err != nil {
-			cleanup()
-			return "", func() {}, fmt.Errorf("could not verify release artifact %s: missing checksum: %w", artifact, err)
-		}
-		if err := verifySHA256(tarball, sumPath); err != nil {
-			cleanup()
-			return "", func() {}, fmt.Errorf("could not verify release artifact %s: %w", artifact, err)
-		}
-		fmt.Fprintf(stdout, "  bundle:   %s\n", releaseURL)
-		return extractUpdateBundle(tarball, tmp, cleanup)
-	}
-
-	sourceURL := fmt.Sprintf("https://github.com/%s/archive/refs/tags/%s.tar.gz", repo, tag)
-	sourceTarball := filepath.Join(tmp, "src-"+tag+".tar.gz")
-	if err := iohooks.DownloadFile(sourceURL, sourceTarball); err != nil {
-		cleanup()
-		return "", func() {}, fmt.Errorf("download update bundle: %w", err)
-	}
-	fmt.Fprintf(stdout, "  bundle:   %s\n", sourceURL)
-	return extractUpdateBundle(sourceTarball, tmp, cleanup)
-}
-
-func verifySHA256(path, sumPath string) error {
-	data, err := os.ReadFile(sumPath)
-	if err != nil {
-		return fmt.Errorf("read checksum %s: %w", sumPath, err)
-	}
-	want := strings.Fields(string(data))
-	if len(want) == 0 {
-		return fmt.Errorf("empty checksum file")
-	}
-	body, err := os.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("read artifact %s: %w", path, err)
-	}
-	got := fmt.Sprintf("%x", sha256.Sum256(body))
-	if got != want[0] {
-		return fmt.Errorf("checksum mismatch: got %s want %s", got, want[0])
-	}
-	return nil
-}
-
-func extractUpdateBundle(tarball, tmp string, cleanup func()) (string, func(), error) {
-	if err := extractTarGz(tarball, tmp); err != nil {
-		cleanup()
-		return "", func() {}, fmt.Errorf("extract update bundle: %w", err)
-	}
-	entries, err := os.ReadDir(tmp)
-	if err != nil {
-		cleanup()
-		return "", func() {}, fmt.Errorf("list extracted bundle: %w", err)
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		dir := filepath.Join(tmp, entry.Name())
-		if exists(filepath.Join(dir, "install.sh")) {
-			return dir, cleanup, nil
-		}
-	}
-	cleanup()
-	return "", func() {}, fmt.Errorf("extracted update bundle has no install.sh")
-}
-
-const (
-	maxUpdateEntries    = 4096
-	maxUpdateEntryBytes = int64(1) << 30
-	maxUpdateTotalBytes = int64(2) << 30
-)
-
-func extractTarGz(tarball, dest string) error {
-	f, err := os.Open(tarball)
-	if err != nil {
-		return fmt.Errorf("open update bundle: %w", err)
-	}
-	defer f.Close()
-	gz, err := gzip.NewReader(f)
-	if err != nil {
-		return fmt.Errorf("decompress %s: %w", tarball, err)
-	}
-	defer gz.Close()
-	tr := tar.NewReader(gz)
-	root, err := filepath.Abs(dest)
-	if err != nil {
-		return fmt.Errorf("resolve %s: %w", dest, err)
-	}
-	entryCount := 0
-	var totalBytes int64
-	for {
-		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			return nil
-		}
-		if err != nil {
-			return fmt.Errorf("read tar entry: %w", err)
-		}
-		entryCount++
-		if entryCount > maxUpdateEntries {
-			return fmt.Errorf("update bundle has too many entries (maximum %d)", maxUpdateEntries)
-		}
-		if hdr.Size < 0 {
-			return fmt.Errorf("entry %s in update bundle has a negative size", hdr.Name)
-		}
-		if hdr.Size > maxUpdateEntryBytes {
-			return fmt.Errorf("entry %s in update bundle exceeds %d bytes", hdr.Name, maxUpdateEntryBytes)
-		}
-		if hdr.Size > maxUpdateTotalBytes-totalBytes {
-			return fmt.Errorf("update bundle exceeds %d total bytes", maxUpdateTotalBytes)
-		}
-		totalBytes += hdr.Size
-		name := filepath.Clean(hdr.Name)
-		if name == "." || filepath.IsAbs(name) || strings.HasPrefix(name, ".."+string(os.PathSeparator)) || name == ".." {
-			return fmt.Errorf("unsafe path in update bundle: %s", hdr.Name)
-		}
-		target := filepath.Join(root, name)
-		if !strings.HasPrefix(target, root+string(os.PathSeparator)) && target != root {
-			return fmt.Errorf("unsafe path in update bundle: %s", hdr.Name)
-		}
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, fs.FileMode(hdr.Mode&0o777)); err != nil {
-				return fmt.Errorf("create dir %s: %w", name, err)
-			}
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-				return fmt.Errorf("create dir for %s: %w", name, err)
-			}
-			out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fs.FileMode(hdr.Mode&0o777))
-			if err != nil {
-				return fmt.Errorf("create %s: %w", name, err)
-			}
-			// Keep the streaming cap even after validating the header so malformed
-			// archives cannot make the extractor trust inconsistent metadata.
-			written, copyErr := io.Copy(out, io.LimitReader(tr, maxUpdateEntryBytes+1))
-			closeErr := out.Close()
-			if copyErr != nil {
-				return fmt.Errorf("extract %s: %w", name, copyErr)
-			}
-			if written > maxUpdateEntryBytes {
-				return fmt.Errorf("entry %s in update bundle exceeds %d bytes", hdr.Name, maxUpdateEntryBytes)
-			}
-			if closeErr != nil {
-				return fmt.Errorf("close %s: %w", name, closeErr)
-			}
-		default:
-			continue
-		}
-	}
-}
-
-func buildHostArtifacts(source, payload string) error {
-	script := filepath.Join(source, "scripts", "build-host-artifacts.sh")
-	if !exists(script) {
-		return fmt.Errorf("generated install payload missing at %s and no builder found at %s", payload, script)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "bash", script)
-	cmd.Dir = source
-	cmd.Env = append(os.Environ(), "DEVRITES_HOST_ARTIFACT_DIR="+payload)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("build generated install payload: %w: %s", err, strings.TrimSpace(string(out)))
-	}
-	return nil
-}
-
-func normalizeTag(tag string) string {
-	tag = strings.TrimSpace(tag)
-	if tag == "" || strings.HasPrefix(tag, "v") {
-		return tag
-	}
-	return "v" + tag
 }
 
 func stripMarkerPath(path, begin, end string) error {
@@ -1438,6 +1202,14 @@ func stripMarkerPath(path, begin, end string) error {
 		}
 		return fmt.Errorf("read %s: %w", path, err)
 	}
+	next := stripMarkerBlock(data, begin, end)
+	if strings.TrimSpace(string(next)) == "" {
+		return os.Remove(path)
+	}
+	return fsutil.WriteFileAtomic(path, next, 0o644)
+}
+
+func stripMarkerBlock(data []byte, begin, end string) []byte {
 	var out strings.Builder
 	inBlock := false
 	for _, line := range strings.SplitAfter(string(data), "\n") {
@@ -1455,10 +1227,24 @@ func stripMarkerPath(path, begin, end string) error {
 			out.WriteString(line)
 		}
 	}
-	if strings.TrimSpace(out.String()) == "" {
-		return os.Remove(path)
+	return []byte(out.String())
+}
+
+func hasTopLevelTOMLKey(data []byte, key string) bool {
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.HasPrefix(line, "[") {
+			return false
+		}
+		name, _, ok := strings.Cut(line, "=")
+		if ok && strings.TrimSpace(name) == key {
+			return true
+		}
 	}
-	return fsutil.WriteFileAtomic(path, []byte(out.String()), 0o644)
+	return false
 }
 
 func readJSON(path string) (map[string]any, error) {
@@ -1497,27 +1283,6 @@ func isDevritesHookCommand(v any) bool {
 		(strings.Contains(command, "printf ") && strings.Contains(command, "DevRites:"))
 }
 
-func containsDevritesHook(v any) bool {
-	switch value := v.(type) {
-	case map[string]any:
-		if isDevritesHookCommand(value) {
-			return true
-		}
-		for _, child := range value {
-			if containsDevritesHook(child) {
-				return true
-			}
-		}
-	case []any:
-		for _, child := range value {
-			if containsDevritesHook(child) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func isDevritesHooksComment(comment string) bool {
 	return comment == "DevRites hooks" ||
 		strings.HasPrefix(comment, "DevRites hooks: every event invokes the global `devrites-engine` engine binary") ||
@@ -1525,6 +1290,11 @@ func isDevritesHooksComment(comment string) bool {
 		strings.HasPrefix(comment, "DevRites hooks — every event invokes the global `devrites-engine` engine binary") ||
 		strings.HasPrefix(comment, "DevRites hooks — auto-approve the read-only orientation/gate scripts") ||
 		strings.HasPrefix(comment, "DevRites hooks for Codex. Project hooks load only after")
+}
+
+func isDevritesSettingsComment(comment string) bool {
+	return isDevritesHooksComment(comment) ||
+		strings.HasPrefix(comment, "DevRites keeps the root orchestration context source-read-only.")
 }
 
 func stripDevritesHooks(config map[string]any) map[string]any {
@@ -1591,29 +1361,124 @@ func stripDevritesHooks(config map[string]any) map[string]any {
 	return next
 }
 
-func mergeHooks(existing, devrites map[string]any) map[string]any {
-	hooks, _ := existing["hooks"].(map[string]any)
-	if hooks == nil {
-		hooks = map[string]any{}
+func stripDevritesSettings(config map[string]any, removeOwnedDefaultMode bool) map[string]any {
+	next := stripDevritesHooks(config)
+	if comment, ok := next["$comment"].(string); ok && isDevritesSettingsComment(comment) {
+		delete(next, "$comment")
 	}
-	devHooks, _ := devrites["hooks"].(map[string]any)
-	for event, entries := range devHooks {
-		arr, _ := hooks[event].([]any)
-		devArr, _ := entries.([]any)
-		hooks[event] = append(arr, devArr...)
+
+	rawPermissions, exists := next["permissions"]
+	if !exists {
+		return next
 	}
-	existing["hooks"] = hooks
-	if statusLine, ok := devrites["statusLine"]; ok {
-		if current, exists := existing["statusLine"]; !exists || isDevritesHookCommand(current) {
-			existing["statusLine"] = statusLine
+	permissions, ok := rawPermissions.(map[string]any)
+	if !ok {
+		return next
+	}
+	clean := make(map[string]any, len(permissions))
+	for key, value := range permissions {
+		switch key {
+		case "allow":
+			rules, ok := value.([]any)
+			if !ok {
+				clean[key] = value
+				continue
+			}
+			kept := make([]any, 0, len(rules))
+			for _, rule := range rules {
+				if !isDevritesPermissionRule(rule) {
+					kept = append(kept, rule)
+				}
+			}
+			if len(kept) > 0 {
+				clean[key] = kept
+			}
+		case "defaultMode":
+			if removeOwnedDefaultMode && value == "plan" {
+				continue
+			}
+			clean[key] = value
+		default:
+			clean[key] = value
 		}
 	}
-	return existing
+	if len(clean) == 0 {
+		delete(next, "permissions")
+	} else {
+		next["permissions"] = clean
+	}
+	return next
+}
+
+func mergeClaudeSettingsConfig(current, desired map[string]any, defaultModeOwned bool) (map[string]any, bool, error) {
+	next := stripDevritesSettings(current, false)
+	permissions := map[string]any{}
+	if raw, exists := next["permissions"]; exists {
+		var ok bool
+		permissions, ok = raw.(map[string]any)
+		if !ok {
+			return nil, false, fmt.Errorf("existing Claude permissions must be a JSON object")
+		}
+	}
+
+	switch mode, exists := permissions["defaultMode"]; {
+	case !exists:
+		defaultModeOwned = true
+	case mode == "plan":
+	case mode != "plan":
+		return nil, false, fmt.Errorf("existing Claude permissions.defaultMode is %q; DevRites requires plan mode for the read-only root orchestrator", mode)
+	}
+	permissions["defaultMode"] = "plan"
+
+	desiredPermissions, ok := desired["permissions"].(map[string]any)
+	if !ok || desiredPermissions["defaultMode"] != "plan" {
+		return nil, false, fmt.Errorf("DevRites Claude settings payload must declare permissions.defaultMode=plan")
+	}
+	desiredAllow, ok := desiredPermissions["allow"].([]any)
+	if !ok {
+		return nil, false, fmt.Errorf("DevRites Claude settings payload permissions.allow must be an array")
+	}
+	var allow []any
+	if existingAllow, exists := permissions["allow"]; exists {
+		allow, ok = existingAllow.([]any)
+		if !ok {
+			return nil, false, fmt.Errorf("existing Claude permissions.allow must be an array")
+		}
+	}
+	seen := map[string]bool{}
+	for _, rule := range allow {
+		if value, ok := rule.(string); ok {
+			seen[value] = true
+		}
+	}
+	for _, rule := range desiredAllow {
+		value, ok := rule.(string)
+		if !ok {
+			return nil, false, fmt.Errorf("DevRites Claude permission rules must be strings")
+		}
+		if !seen[value] {
+			allow = append(allow, value)
+			seen[value] = true
+		}
+	}
+	permissions["allow"] = allow
+	next["permissions"] = permissions
+	if _, exists := next["$comment"]; !exists {
+		if comment, ok := desired["$comment"].(string); ok {
+			next["$comment"] = comment
+		}
+	}
+	return next, defaultModeOwned, nil
+}
+
+func isDevritesPermissionRule(value any) bool {
+	rule, ok := value.(string)
+	return ok && strings.HasPrefix(strings.TrimSpace(rule), "Bash(devrites-engine ")
 }
 
 func (r *runner) installBinary() error {
 	if !r.opts.WithBinary || os.Getenv("DEVRITES_NO_BINARY") == "1" {
-		fmt.Fprintln(r.opts.Stdout, "  engine binary: skipped (--no-binary); hooks fail open.")
+		fmt.Fprintln(r.opts.Stdout, "  engine binary: skipped (--no-binary).")
 		return nil
 	}
 	if r.opts.DryRun {
@@ -1632,7 +1497,7 @@ func (r *runner) installBinary() error {
 	staged, cleanup := r.preparedBinary, func() {}
 	if staged == "" {
 		var err error
-		staged, cleanup, err = r.acquireBinary(tag, githubBaseURL)
+		staged, cleanup, err = r.acquireBinary(tag)
 		if err != nil {
 			return r.binaryInstallFailure(err)
 		}
@@ -1672,17 +1537,14 @@ func (r *runner) installBinary() error {
 		return fmt.Errorf("verify installed engine binary: %w (bad binary removed)", err)
 	}
 	fmt.Fprintf(r.opts.Stdout, "  engine binary: installed %s\n", dest)
-	if !binaryReachableFromPATH(dest) {
-		fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %s is not on PATH; installed hooks will fail open until devrites-engine is reachable.\n", dest)
-	}
 	return nil
 }
 
 func (r *runner) binaryTag() string {
-	if r.releaseBinaryTag != "" {
-		return r.releaseBinaryTag
+	if r.requiredBinaryTag != "" {
+		return r.requiredBinaryTag
 	}
-	if tag := os.Getenv("DEVRITES_REF"); tag != "" {
+	if tag := os.Getenv("DEVRITES_REF"); semverLike(tag) {
 		return tag
 	}
 	return "v" + strings.TrimPrefix(installedVersion(r.source), "v")
@@ -1737,81 +1599,25 @@ func (r *runner) binaryInstallFailure(err error) error {
 	if r.preparedBinary != "" {
 		return err
 	}
-	fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %v - hooks fail open until you install it.\n", err)
+	if os.Getenv("DEVRITES_ENGINE_CLI") != "" {
+		return err
+	}
+	fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %v; continuing without it.\n", err)
 	return nil
 }
 
-func (r *runner) acquireBinary(tag, baseURL string) (string, func(), error) {
-	if v := os.Getenv("DEVRITES_ENGINE_CLI"); v != "" {
-		if exists(v) {
-			if r.releaseBinaryTag == "" || strings.TrimPrefix(engineVersion(v), "v") == strings.TrimPrefix(r.releaseBinaryTag, "v") {
-				return v, func() {}, nil
-			}
-		} else {
-			return "", func() {}, fmt.Errorf("DEVRITES_ENGINE_CLI points to a missing binary: %s", v)
-		}
+func (r *runner) acquireBinary(tag string) (string, func(), error) {
+	path := os.Getenv("DEVRITES_ENGINE_CLI")
+	if path == "" {
+		return "", func() {}, fmt.Errorf("no DEVRITES_ENGINE_CLI handoff")
 	}
-	tmp, err := os.MkdirTemp("", "devrites-engine-*")
-	if err != nil {
-		return "", func() {}, fmt.Errorf("create temp dir: %w", err)
+	if !exists(path) {
+		return "", func() {}, fmt.Errorf("DEVRITES_ENGINE_CLI points to a missing binary: %s", path)
 	}
-	cleanup := func() { _ = os.RemoveAll(tmp) }
-	staged := filepath.Join(tmp, engineBinaryName())
-	var releaseErr error
-	if r.releaseBinaryTag != "" && os.Getenv("DEVRITES_UPDATE_BUNDLE") == "" {
-		repo := os.Getenv("DEVRITES_REPO")
-		if repo == "" {
-			repo = defaultRepo
-		}
-		downloaded, err := downloadReleaseBinary(baseURL, repo, r.releaseBinaryTag, staged)
-		if err == nil {
-			return staged, cleanup, nil
-		}
-		if downloaded {
-			return "", cleanup, err
-		}
-		releaseErr = err
+	if _, err := verifyEngineBinary(path, tag, 30*time.Second); err != nil {
+		return "", func() {}, fmt.Errorf("DEVRITES_ENGINE_CLI is incompatible: %w", err)
 	}
-	if r.source != "" && exists(filepath.Join(r.source, "engine", "go.mod")) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		defer cancel()
-		cmd := exec.CommandContext(ctx, "go", "build", "-buildvcs=false", "-trimpath", "-ldflags", "-s -w -X github.com/devrites/devrites/internal/version.Version="+tag, "-o", staged, ".")
-		cmd.Dir = filepath.Join(r.source, "engine")
-		if out, err := cmd.CombinedOutput(); err != nil {
-			if releaseErr != nil {
-				return "", cleanup, fmt.Errorf("could not download release binary: %v; source fallback failed: %w: %s", releaseErr, err, strings.TrimSpace(string(out)))
-			}
-			return "", cleanup, fmt.Errorf("could not build from source: %w: %s", err, strings.TrimSpace(string(out)))
-		}
-		return staged, cleanup, nil
-	}
-	if releaseErr != nil {
-		return "", cleanup, fmt.Errorf("could not obtain a binary: %v; no Go source fallback", releaseErr)
-	}
-	return "", cleanup, fmt.Errorf("could not obtain a binary (no DEVRITES_ENGINE_CLI handoff, no Go source)")
-}
-
-func downloadReleaseBinary(baseURL, repo, tag, dest string) (bool, error) {
-	asset := fmt.Sprintf("devrites-%s-%s", runtime.GOOS, runtime.GOARCH)
-	if runtime.GOOS == "windows" {
-		asset += ".exe"
-	}
-	url := fmt.Sprintf("%s/%s/releases/download/%s/%s", strings.TrimRight(baseURL, "/"), repo, tag, asset)
-	if err := iohooks.DownloadFile(url, dest); err != nil {
-		return false, fmt.Errorf("download %s: %w", asset, err)
-	}
-	sumPath := dest + ".sha256"
-	defer os.Remove(sumPath)
-	if err := iohooks.DownloadFile(url+".sha256", sumPath); err != nil {
-		return true, fmt.Errorf("could not verify release binary %s: missing checksum: %w", asset, err)
-	}
-	if err := verifySHA256(dest, sumPath); err != nil {
-		return true, fmt.Errorf("could not verify release binary %s: %w", asset, err)
-	}
-	if err := os.Chmod(dest, 0o755); err != nil && runtime.GOOS != "windows" {
-		return true, fmt.Errorf("make release binary executable: %w", err)
-	}
-	return true, nil
+	return path, func() {}, nil
 }
 
 func (r *runner) removeBinary() error {
@@ -1862,36 +1668,6 @@ func binaryCandidates() []string {
 		candidates = append(candidates, filepath.Join(home, ".local", "bin", engineBinaryName()))
 	}
 	return append(candidates, filepath.Join("/usr/local/bin", engineBinaryName()))
-}
-
-func binaryReachableFromPATH(dest string) bool {
-	if _, err := exec.LookPath("devrites-engine"); err == nil {
-		return true
-	}
-	return pathContainsDir(filepath.Dir(dest))
-}
-
-func pathContainsDir(dir string) bool {
-	if dir == "" {
-		return false
-	}
-	want, err := filepath.Abs(dir)
-	if err != nil {
-		want = filepath.Clean(dir)
-	}
-	for _, entry := range filepath.SplitList(os.Getenv("PATH")) {
-		if entry == "" {
-			continue
-		}
-		got, err := filepath.Abs(entry)
-		if err != nil {
-			got = filepath.Clean(entry)
-		}
-		if got == want {
-			return true
-		}
-	}
-	return false
 }
 
 func engineVersion(path string) string {
@@ -2016,14 +1792,16 @@ func manifestHeader(path, key string) string {
 func installedVersion(source string) string {
 	if source != "" {
 		data, err := os.ReadFile(filepath.Join(source, "package.json"))
-		if err == nil {
-			var pkg struct {
-				Version string `json:"version"`
-			}
-			if json.Unmarshal(data, &pkg) == nil && pkg.Version != "" {
-				return pkg.Version
-			}
+		if err != nil {
+			return "unknown"
 		}
+		var pkg struct {
+			Version string `json:"version"`
+		}
+		if json.Unmarshal(data, &pkg) != nil || pkg.Version == "" {
+			return "unknown"
+		}
+		return pkg.Version
 	}
 	if version.Version != "" && version.Version != "dev" {
 		return strings.TrimPrefix(version.Version, "v")

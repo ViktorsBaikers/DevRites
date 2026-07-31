@@ -121,12 +121,6 @@ printf '%s' '{
 }' | mkfile badtrials.json
 rc "$T/badtrials.json" && no "bad trials accepted (should be exit 1)" || { [ "$?" -eq 1 ] && printf '%s' "$OUT" | grep -q 'trials' && ok "bad trials → exit 1" || no "wrong failure for bad trials (rc=$?)"; }
 
-if PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT/tests/live-behavioral-runner-test.py"; then
-  ok "controlled 20-session runner passes fake, failure, budget, privacy, and interruption fixtures"
-else
-  no "controlled behavioral runner regression"
-fi
-
 echo ""
 [ "$fail" -eq 0 ] && echo "behavioral-evals-test: PASS" || echo "behavioral-evals-test: FAIL"
 exit "$fail"

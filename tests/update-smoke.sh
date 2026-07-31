@@ -3,7 +3,6 @@
 #   - default installs survive an update --force,
 #   - .devrites/ feature state is preserved across the upgrade,
 #   - the retired --rules-only install shape still updates cleanly.
-# DEVRITES_UPDATE_BUNDLE supplies a locally built release archive.
 set -u
 export DEVRITES_NO_BINARY=1   # pack smoke: the engine binary has its own lifecycle test (binary-lifecycle-test.sh)
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -13,8 +12,7 @@ no() { printf '  FAIL: %s\n' "$*"; fail=1; }
 
 T="$(mktemp -d)"
 GEN=""
-DIST="$(mktemp -d)"
-cleanup() { rm -rf "$T"; [ -n "$GEN" ] && rm -rf "$GEN"; [ -n "$DIST" ] && rm -rf "$DIST"; }
+cleanup() { rm -rf "$T"; [ -n "$GEN" ] && rm -rf "$GEN"; }
 trap cleanup EXIT
 if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
   GEN="$(mktemp -d)"
@@ -25,17 +23,9 @@ fi
 
 echo "== update-smoke =="
 
-VERSION="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$ROOT/package.json" | head -n1)"
-[ -n "$VERSION" ] && ok "package.json version: $VERSION" || no "could not read package.json version"
-TAG="v$VERSION"
-
-DEVRITES_RELEASE_DIST_DIR="$DIST" bash "$ROOT/scripts/build-release-tarball.sh" "$VERSION" >/dev/null 2>&1 || no "build-release-tarball failed"
-BUNDLE="$DIST/devrites-${TAG}.tar.gz"
-[ -f "$BUNDLE" ] && ok "built local bundle: ${BUNDLE#$ROOT/}" || no "no local bundle at $BUNDLE"
-
 run_update() {
   local target="$1"
-  env -u DEVRITES_HOST_ARTIFACT_DIR DEVRITES_UPDATE_BUNDLE="$BUNDLE" bash "$ROOT/update.sh" --target "$target" --to "$TAG" --force >/dev/null 2>&1
+  bash "$ROOT/update.sh" --target "$target" --force >/dev/null 2>&1
 }
 
 case_default() {
@@ -50,8 +40,8 @@ case_default() {
   [ -f "$d/.agents/skills/devrites-lib/reference/standards/security.md" ] && ok "default: Codex rules mirror survives update" || no "default: Codex rules mirror missing after update"
   [ -d "$d/.claude/agents" ] && ok "default: agents survive update" || no "default: agents missing after update"
   [ -d "$d/.codex/agents" ] && ok "default: Codex agents survive update" || no "default: Codex agents missing after update"
-  [ -f "$d/.codex/hooks.json" ] && ok "default: Codex hooks survive update" || no "default: Codex hooks missing after update"
-  [ -e "$d/.codex/config.toml" ] && no "default: DevRites Codex config present after update" || ok "default: DevRites Codex config absent after update"
+  [ -e "$d/.codex/hooks.json" ] && no "default: Codex root hooks present after update" || ok "default: Codex root hooks absent after update"
+  [ -f "$d/.codex/config.toml" ] && ok "default: Codex permission config survives update" || no "default: Codex permission config missing after update"
   [ -e "$d/.codex/mcp" ] && no "default: DevRites MCP directory present after update" || ok "default: DevRites MCP directory absent after update"
   [ -f "$d/AGENTS.md" ] && ok "default: AGENTS bridge survives update" || no "default: AGENTS bridge missing after update"
   [ -f "$d/.devrites/work/demo/state.md" ] && ok "default: feature state preserved" || no "default: feature state lost"
@@ -87,7 +77,7 @@ case_customized() {
   sed 's/^# devrites-version:.*/# devrites-version: 0.0.0/' "$manifest" > "$tmp" && mv "$tmp" "$manifest"
   managed="$d/.claude/skills/rite/SKILL.md"
   printf 'local customization\n' > "$managed"
-  out="$(env -u DEVRITES_HOST_ARTIFACT_DIR DEVRITES_UPDATE_BUNDLE="$BUNDLE" bash "$ROOT/update.sh" --target "$d" --to "$TAG" 2>&1)" \
+  out="$(bash "$ROOT/update.sh" --target "$d" 2>&1)" \
     && no "customized: default update silently succeeded" \
     || ok "customized: default update aborts"
   [ "$(cat "$managed")" = "local customization" ] && ok "customized: default update preserved file" || no "customized: default update changed file"

@@ -1,127 +1,112 @@
 ---
 name: rite-upgrade
-description: User-invoked semantic upgrade for an active legacy DevRites workspace. Reconciles unfinished planning with the installed workflow contract while preserving completed work and history.
+description: Audit and reconcile an older released DevRites workspace. Proves a current-contract defect, then routes its phase owner while preserving completed work and history.
 argument-hint: "[feature-slug]"
 user-invocable: true
 disable-model-invocation: true
-required-agent-roles: none
 ---
 
-# /rite-upgrade: bring an active workspace onto the current contract
+# /rite-upgrade: reconcile a released workspace safely
 
-Use this when a workspace created under older DevRites rules cannot safely continue with
-the installed pack. It reconciles the workspace to the current desired state; it does not
-replay a chain of release-specific scripts. Structural `devrites-engine migrate` remains a
-separate first step.
-
-Current semantic contract: `devrites.readiness-artifacts.v2`.
+Use when an unfinished workspace from an older release cannot resume. This is a
+audit/orchestrator—not a pack update, cursor conversion, release replay,
+structural migration, or generic cleanup.
 
 ## Rules consulted
 
-Read `devrites-lib/reference/standards/core.md`,
-`devrites-lib/reference/standards/agents.md`,
-`devrites-lib/reference/workspace-artifact-schema.md`, and the current Clarify, Define,
-Plan, Vet, Converge, and Build phase contracts needed by the assessment.
+Read `devrites-lib/reference/standards/core.md`, its agent and workspace-schema
+references, and only current phase contracts needed for the observed gap.
 
 ## Invariants
 
-- Never edit application source, tests, dependencies, Git state, or historical evidence.
-- Preserve completed-slice identity, status, acceptance, dependencies, historical proof,
-  answered questions, and `touched-files.md`.
-- Reassess only unfinished planning. Archived or `done` workspaces are a no-op.
-- Never downgrade a workspace that names a future semantic contract.
-- This is a recovery command, not a lifecycle phase; never write `Phase: upgrade`.
-- Durable plans contain portable repository commands, not RTK/local aliases, user-specific
-  absolute paths, or temporary proof trees. Runtime packets may name an execution adapter;
-  evidence may record both logical and executed forms.
-- Ask at most one coherent question, and only for product, policy, irreversible risk, or
-  human-only access/action. Retry and repair authorization is agent-owned.
-- The explicit `/rite-upgrade` invocation authorizes the bounded workspace reconciliation.
-  The root remains the only canonical writer.
+- Upgrade writes no workspace artifact and never edits source, tests, dependencies,
+  or Git. It observes, admits, invokes current owners, and re-audits only.
+- Recognize only released workspace forms: `.devrites/work/<slug>/state.md` with v1/v2
+  bullet fields (`- Phase:`, `- Next step:`, optional `- qid:`) or the v3 cursor table.
+  Preserve its encoding; only its owning rite may change fields. Never create aliases,
+  journals, telemetry, version markers, or an engine migrator.
+- Older provenance, cursor form, or pack version alone is never a defect. A repair requires
+  a current rule, exact workspace evidence, affected gate, owning rite, exact paths, and
+  the smallest behavior-neutral delta.
+- Existing rites own semantic changes. Upgrade may sequence `/rite-clarify`,
+  `/rite-plan repair`, `/rite-converge`, `/rite-vet`, `/rite-prove`, `/rite-polish`,
+  `/rite-review`, and `/rite-seal`; it never reimplements them or starts Build or Ship.
+  `/rite-doctor` owns install/config diagnosis.
+- An admitted candidate route may name only the exact current gate artifacts its owner
+  must refresh: `touched-files.md`, `evidence.md`, optional `browser-evidence.md`,
+  `polish-report.md`, `review.md`, `seal.md`, and the owner's `state.md` fields as
+  applicable. Source, completed-slice identities, answers, decisions, and unrelated
+  history remain protected. Each owner preserves unrelated content and normal gates.
+- Archived/`done` workspaces are no-ops. Unknown or unverifiable inputs stop without
+  writes. There is no legacy fallback: never synthesize or guess scope, bytes, proof,
+  freshness, or a historical pass.
+- The explicit invocation authorizes only admitted, behavior-neutral workspace repairs.
+  Product/policy choices, acceptance changes, irreversible risk, and human-only actions
+  remain HITL.
 
 ## Workflow
 
-0. **Orient and normalize structure.** Read the active slug or `$ARGUMENTS`. Run:
+0. **Orient read-only.** Apply `/rite-doctor`. Resolve the explicit or active slug.
+   Archive-only is `current`; otherwise require contained regular `state.md` and read its
+   cursor. A damaged/mismatched install stops at Doctor; missing live work routes
+   `/rite-spec`; `done` is `current`. An unknown cursor is `unsupported`.
+1. **Freeze preservation evidence.** Record `git status --short`, cursor form/fields, and
+   hashes of completed-slice fields, candidate gate artifacts, existing answers/decisions,
+   and protected history. Inventory every path that could change; absence is evidence,
+   never permission to synthesize history. For a post-Build workspace, also retain the
+   exact result of `devrites-engine check candidate <slug>`; at or after Seal retain the
+   exact result of `devrites-engine check seal <slug>`.
+2. **Assess from fresh context.** Dispatch exact `devrites-upgrade-planner` with the named
+   installed contracts, workspace paths, cursor form, current phase, and frozen baseline.
+   Require one read-only typed assessment. It writes and asks nothing.
+3. **Admit the assessment fail closed.** Accept `current` only when every applicable axis has
+   cited evidence and no finding. Accept `repairable` only when every finding names the
+   current rule, exact workspace evidence, affected gate, owning rite, exact writable paths,
+   minimal delta, and protected invariants. Missing fields become `gap`.
+   Unsupported shapes remain untouched. Reject version-only, speculative, alias-creating,
+   source-changing, history-changing, or acceptance-changing advice.
+4. **Route; do not duplicate.** For `repairable`, invoke only the admitted current owners,
+   one at a time:
+   - decision coverage or a material assumption → `/rite-clarify`;
+   - stale/inconsistent planning or traceability with settled intent → `/rite-plan repair`;
+   - live code and recorded intent disagreement → `/rite-converge`;
+   - any changed planning input or readiness defect → `/rite-vet`;
+   - a missing/malformed strict manifest, missing/malformed/mismatched evidence binding,
+     a browser-binding defect when that file exists, or current candidate-check failure
+     → `/rite-prove`;
+   - candidate-affecting capability-ledger, `DESIGN.md`, or ADR rollups still deferred by
+     an old Ship-era workspace → `/rite-polish`;
+   - a missing, stale, or mismatched review binding → `/rite-review`;
+   - a missing, stale, or mismatched seal binding or failed Seal gate → `/rite-seal`.
+
+   Sequence only applicable owners; candidate owners stay in the Prove → Polish → Review
+   → Seal order above. Each owner keeps normal gates/write limits. Stop on HITL/blocked.
+   Never infer `/rite-customize --import-legacy`; that mode requires the exact token in the
+   user's current invocation.
+5. **Re-audit and prove preservation.** Re-dispatch the planner once against the changed
+   candidate. `gap`, `unsupported`, or a remaining finding stops. Compare the frozen hashes
+   and Git status; only admitted paths may differ. Cursor changes must match the owning
+   rite while preserving form. Any unadmitted, protected, or source change is a gap and
+   stops; Upgrade never restores it itself.
+   For a post-Build workspace, run `devrites-engine check candidate <slug>` and require
+   the assessed bindings to match it. At or after Seal, also run
+   `devrites-engine check seal <slug>`. Run readiness where applicable:
    ```bash
-   devrites-engine doctor; echo "doctor rc=$?"
+   devrites-engine check readiness <slug>; echo "readiness rc=$?"
    ```
-   A binary/pack integrity mismatch stops at `/rite-doctor`; do not run migration or
-   mutate semantic artifacts. Once healthy, orient without writing:
-   ```bash
-   devrites-engine preamble [feature-slug]
-   devrites-engine snapshot [feature-slug]
-   ```
-   A missing workspace stops at `/rite-spec`; an archived or `Status: done` workspace is
-   a no-op. For an active healthy workspace, run:
-   ```bash
-   devrites-engine migrate
-   devrites-engine preamble [feature-slug]
-   devrites-engine snapshot [feature-slug]
-   ```
-   If every semantic artifact names the current contract and `build-readiness` passes,
-   mark the candidate as a likely no-op; the fresh upgrade assessment in step 2 must
-   confirm that before reporting it.
-1. **Freeze the preservation baseline.** Create the standard orchestrator-controlled
-   `agent-packet/v1` baseline. Include exact paths for current phase/artifact contracts,
-   `state.md`, `spec.md`, `decision-coverage.md`, `architecture.md`, `plan.md`, `tasks.md`,
-   `traceability.md`, `test-plan.md`, `eng-review.md`, `questions.md`, `decisions.md`,
-   `assumptions.md`, `drift.md`, `evidence.md`, and `touched-files.md` when present. Record
-   the source diff identity plus the protected identity/status/acceptance/dependency
-   fields for every completed slice and each preserved artifact identity. Freeze the
-   workspace while it is assessed.
-2. **Classify from fresh context.** Dispatch `devrites-upgrade-planner` with objective
-   `reconcile this workspace with devrites.readiness-artifacts.v2`, the exact baseline,
-   and budgets `25 files / 2,000 loaded lines / 180 result lines`. Require one validated
-   `upgrade-assessment`. The agent writes nothing and asks nothing.
-3. **Reconcile ownership.** Reject stale, malformed, or preservation-breaking advice.
-   Dispatch `devrites-evidence-scout` only for a bounded missing fact. Drop an open
-   retry/tool-repair question with `devrites-engine resolve --drop <qid>
-   "superseded by explicit semantic upgrade; agent-owned recovery"` and continue. Keep a
-   genuine existing human gate intact; if a newly discovered human-owned choice is
-   unavoidable, persist one option packet and stop.
-4. **Apply current desired state in the root.**
-   - Remove obsolete old-engine reconstruction, old workflow hashes, temporary proof
-     recipes, and host-local wrappers from active `plan.md`, `tasks.md`, and
-     `test-plan.md`. Keep historical evidence unchanged.
-   - Re-run Clarify against unfinished intent until `Decision coverage: CLEAR`; it writes
-     exactly one `DevRites contract: devrites.readiness-artifacts.v2` field. Do not stamp a
-     marker over stale content.
-   - Re-run Temper only where unfinished scope still needs strategic review.
-   - For unstarted planning, use the current Define contract. When active planning needs
-     normalization, dispatch `devrites-plan-drafter` in repair mode and reconcile only
-     pending slices. Preserve all completed slices without changing their protected fields.
-     For all-built active work, normalize only gate-required planning fields. Use Converge
-     only when live code and recorded intent genuinely differ.
-   - Invalidate stale engineering readiness after any planning edit. Run the full current
-     Vet contract, including its fresh plan reviewer, portable proof commands, preflight,
-     and digest refresh. Vet writes exactly one current contract field to `test-plan.md`
-     and `eng-review.md`.
-5. **Verify preservation and readiness.** Recompute the frozen source diff, every protected
-   completed-slice field, `evidence.md`, answered-question records, and `touched-files.md`;
-   any mismatch is a hard stop and must be restored before proceeding. Then run:
-   ```bash
-   devrites-engine build-readiness [feature-slug]; echo "readiness rc=$?"
-   ```
-   Follow the gate's current route for `2` through `7`; `8` means the semantic
-   reconciliation is still incomplete. Finish only at `0`. Preserve the original active
-   build cursor when it still names the next pending slice; otherwise use the current
-   deterministic next action.
-6. **STOP.** Do not start Build. A second `/rite-upgrade` must take the current-contract
-   no-op path.
+   Any nonzero result or mismatch remains a `gap` and stops.
+6. **STOP.** Do not advance to Build or Ship. A repeated `/rite-upgrade` is a no-op only
+   when the fresh assessment independently returns `current`; no marker may manufacture
+   that result.
 
 ## Output
 
-Run `devrites-engine progress`, then use the shared completion reply contract in
-`devrites-lib/reference/reply-contract.md`:
-
 ```text
-Done: workspace <slug> upgraded to devrites.readiness-artifacts.v2.
-Changed: <active planning artifacts only | none; already current>
-Evidence: build-readiness rc=0; source/completed slices/history preserved
-Open: <none | one genuine human gate>
-Next: <snapshot next command>
+Done: workspace <slug> compatibility <current | reconciled>.
+Changed: <admitted active-workspace paths | none>
+Evidence: assessment=current; candidate rc=<n|n/a>; seal rc=<n|n/a>; readiness rc=<n|n/a>; protected history/source unchanged
+Open: <none | exact unsupported shape, evidence gap, or human gate>
+Next: <state.md next action | one owning rite>
 Record: .devrites/work/<slug>/state.md
 ↻ Hygiene: /clear before the next lifecycle step
 ```
-
-On a no-op, say so and keep the snapshot's current next command.

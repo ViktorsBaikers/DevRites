@@ -2,6 +2,8 @@
 
 Scope: the export feature diff (3 files).
 
+Candidate SHA-256: __CANDIDATE_SHA256__
+
 ## Findings (Critical / Important / Suggestion / Nit / FYI)
 - Critical: 0
 - Important: 0

@@ -1,64 +1,102 @@
 # The irreversible ship: type-GO + git ladder
 
-`$rite-ship` is the only DevRites phase that runs actions that cannot be undone
-silently. The seal verdict authorizes the *decision*; this prompt authorizes the
-*action*.
+`$rite-ship` alone runs irreversible actions. A seal GO is never authorization for Git.
+Require fresh approval for one disclosed attempt plus native permission.
 
 ## The type-GO prompt (render verbatim, wait)
 
 ```
-About to: <git commit + git push [+ git tag vX.Y.Z | open PR]>
 Feature:  <slug>
 Verdict:  GO  (seal.md)
 Acceptance criteria proven: <n / total>
 Branch:   <target branch>
+Candidate paths: <exact project-relative paths>
+Checkpoint collapse: <exact `git reset --soft '<merge-base>'` command | skip>
+Stage plan: <exact argv-safe `git add -- '<path>'` command for every manifest row>
+Commit:   <exact git commit command>
+Push:     <exact git push command | skip>
+Tag:      <exact git tag command | skip>
+PR:       <exact PR command, target, title, and body source | skip>
 
-Type "GO" exactly to proceed. Anything else cancels.
+Type "GO" exactly to approve this attempt once. Anything else cancels.
 ```
 
-Rules for the prompt:
-- Render it **every time**, even with auto-trigger enabled. This is the last net.
-- Only the literal string `GO` (no quotes) proceeds. `y`, `yes`, `go` (lowercase),
-  `ok`, `sure`, `do it`, or anything else → cancel, record the cancel in `ship.md`
-  as "user declined irreversible step at <ts>", and stop.
-- `$rite-autocomplete --ship` (or `--yolo`) is the *only* caller permitted to satisfy
-  this prompt automatically. Every other path requires the human's literal `GO`.
+Rules:
+- Render every attempt; autocomplete flags only reach this boundary.
+- Only literal `GO` proceeds. Anything else cancels, records
+  `user declined irreversible step at <ts>` in `ship.md`, and stops.
+- `GO` is one-use for the shown scope/commands; changed/retried plans re-prompt.
+- Prior answers, AFK, seal GO, and native approval do not replace type-GO;
+  type-GO never replaces/bypasses native permission or sandbox approval.
 
-## The git ladder
+## The candidate-safe Git ladder
 
-Follow `.agents/skills/devrites-lib/reference/standards/git-workflow.md` and the project's own convention. Do not invent
-a release flow the project doesn't use.
+Follow `standards/git-workflow.md` and project convention; invent no release flow.
+Candidate identity always comes from `devrites-engine check candidate`; do not
+implement a Git-side hash.
 
-0. **Collapse checkpoints** (only if checkpoint mode ran: see
-   [rite-build/reference/checkpoint.md](../../rite-build/reference/checkpoint.md)). Local
-   `WIP(<slug>)` commits are scratch; fold them into the working tree so the ship is one
-   atomic feature commit. `reset --soft` moves only the branch pointer: index and worktree
-   are untouched, so no change is ever lost:
-   ```bash
-   base=$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null) || base=main
-   mb=$(git merge-base HEAD "$base" 2>/dev/null)
-   if [ -n "$mb" ] && git log --format='%s' "$mb..HEAD" | grep -q '^WIP('; then
-     git log --format='%s' "$mb..HEAD" | grep -qv '^WIP(' \
-       && echo "history since $base mixes WIP + real commits — surface and confirm before collapsing" \
-       || git reset --soft "$mb"   # fold every WIP commit since the branch point → staged
-   fi
-   ```
-   No WIP commits (checkpoint mode was off) → this is a silent no-op.
-1. **Stage** only the files in `touched-files.md`. Never `git add -A`; never stage
-   secrets, `.env`, or out-of-scope files (see the never-commit list in `git-workflow.md`).
-2. **Commit** with a Conventional Commit message derived from the feature (`feat(scope):
-   …` / `fix(scope): …`). Atomic: one logical change. Put the *why* in the body.
-   For non-trivial features, append trailers from the workspace record:
-   `Constraint:` from binding principles/irreversible risks, `Rejected:` from material alternatives,
-   `Confidence:` from `seal.md`, `Scope-risk:` from the blast-radius scan, and `Not-tested:` for
-   known proof gaps. Skip trailers for typos and pure formatting.
-3. **Push** to the target branch (the feature branch, or per the project's trunk
-   convention).
-4. **Tag / PR** only if the project does it: cut a tag when the project tags releases,
-   or open a PR when the project reviews via PRs. Otherwise skip: pushing the branch
-   is the ship.
+### Before type-GO
 
-Capture the resulting commit SHA(s), branch, and tag/PR URL for `ship.md`.
+Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
+
+0. **Protect existing index work.** Read the NUL-delimited staged state/path set.
+   Refuse a pre-existing staged path outside the manifest; never unstage, stage,
+   reset, or discard user work.
+1. **Analyze checkpoint history without mutating it.** Read the upstream, merge
+   base, commit OIDs, and full subjects. If no checkpoint commit exists, disclose
+   `skip`. A collapse is eligible only when every commit in its range has the exact
+   `WIP(<active-slug>):` prefix for the validated active slug. A different slug,
+   missing colon, broad `WIP(` match, ordinary commit, or mixed history blocks;
+   never reinterpret the range.
+2. **Verify the candidate.** Rerun `devrites-engine check candidate <slug>` and
+   `devrites-engine check seal <slug>`, compare every binding, require the
+   candidate worktree paths to be unchanged, and inspect the existing staged
+   scope. These checks do not prepare the index.
+3. **Prepare the disclosure.** Build argv-safe commands from literal validated
+   paths, without `eval` or command-string interpolation. Run only read-only
+   secret scans of the existing staged state and proposed PR body. Render the
+   literal prompt with the exact optional collapse command or `skip`, exact stage
+   plan, commit, push, tag, and PR commands; then wait.
+
+### After type-GO
+
+1. **Optional checkpoint collapse.** If and only if the prompt disclosed it,
+   recheck that `HEAD`, merge base, and every subject are unchanged and that each
+   subject starts exactly `WIP(<slug>):` for the active slug, then run the exact
+   disclosed `git reset --soft "$mb"`. Otherwise skip. Any different or mixed
+   subject blocks without mutation.
+2. **Exact staging.** Run `git add -- "$path"` once for each disclosed manifest
+   row, passing each validated project-relative path as its own quoted argv
+   element. Use no glob, directory, `-A`, `.env`, secret, out-of-scope path,
+   `eval`, or interpolated command string.
+3. **Compare staged scope.** Compare the NUL-delimited output of
+   `git diff --cached --name-status --no-renames -z` to the manifest's exact
+   state/path set. `present` maps only to `A` or `M`; `deleted` maps only to `D`.
+   Reject missing, extra, renamed, duplicated, or differently classified paths.
+4. **Compare staged bytes.** Require no index-to-worktree difference for any
+   manifest path. A dirty manifest path stops; never stage or reinterpret it
+   after this comparison.
+5. **Revalidate immediately before commit.** With no intervening mutation,
+   rerun `devrites-engine check candidate <slug>` and
+   `devrites-engine check seal <slug>`, require the exact candidate digest and
+   every evidence/browser/review/Seal binding, then run the staged secret scan.
+   Any scope, byte, identity, binding, scan, history, or command drift invalidates
+   the one-use approval. Stop and render a fresh type-GO prompt; do not repair the
+   drift under the old approval.
+6. **Commit** one logical change using Conventional Commit and a why-body.
+   Non-trivial work adds applicable `Constraint:`, `Rejected:`, `Confidence:`,
+   `Scope-risk:`, and `Not-tested:` workspace trailers; trivial edits omit them.
+7. **Verify the commit.** Immediately after the authorized commit and before any
+   push or tag, compare
+   `git diff-tree --root --no-commit-id --name-status --no-renames -r -z HEAD`
+   to the manifest using the same exact state/path mapping. Require candidate
+   paths still match `HEAD`, then rerun `devrites-engine check candidate <slug>`
+   and `devrites-engine check seal <slug>` and compare the exact digest again.
+   Any mismatch stops; do not reinterpret it.
+8. **Push** to the project-conventional target branch.
+9. **Tag / PR** only when project convention requires it; otherwise skip.
+
+Record SHA(s), branch, and tag/PR URL in `ship.md`.
 
 ## Pull request body
 

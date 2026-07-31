@@ -37,7 +37,7 @@
       "changelogTitle": "# Changelog\n\nAll notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`."
     }],
     ["@semantic-release/exec", {
-      "prepareCmd": "bash scripts/sync-version.sh ${nextRelease.version} && bash scripts/build-release-tarball.sh ${nextRelease.version} && bash scripts/build-binaries.sh ${nextRelease.version}"
+      "prepareCmd": "bash scripts/sync-version.sh ${nextRelease.version} && git add -- CHANGELOG.md README.md package.json && bash scripts/build-release-tarball.sh ${nextRelease.version} && bash scripts/build-binaries.sh ${nextRelease.version}"
     }],
     ["@semantic-release/npm", {
       "npmPublish": true
@@ -55,6 +55,8 @@
       "assets": [
         { "path": "dist/devrites-v*.tar.gz", "label": "devrites-v${nextRelease.version}.tar.gz (pack tarball)" },
         { "path": "dist/devrites-v*.tar.gz.sha256", "label": "devrites-v${nextRelease.version}.tar.gz.sha256 (checksum)" },
+        { "path": "dist/install.sh", "label": "install.sh (verified release installer)" },
+        { "path": "dist/install.sh.sha256", "label": "install.sh.sha256 (checksum)" },
         { "path": "dist/bin/devrites-*-*" }
       ],
       "successComment": false,

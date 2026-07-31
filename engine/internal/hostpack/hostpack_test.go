@@ -16,15 +16,15 @@ func TestValidatePayloadRequiresClaudeAndCodexFiles(t *testing.T) {
 		"codex/skills/rite/SKILL.md":               {},
 		"codex/agents/devrites-code-reviewer.toml": {},
 		"codex/AGENTS.md":                          {},
-		"codex/hooks.json":                         {},
+		"codex/config.toml":                        {},
 	}
 	if err := ValidatePayload(payload, true); err != nil {
 		t.Fatal(err)
 	}
-	delete(payload, "codex/hooks.json")
+	delete(payload, "codex/config.toml")
 	err := ValidatePayload(payload, true)
-	if err == nil || !strings.Contains(err.Error(), "missing codex/hooks.json") {
-		t.Fatalf("ValidatePayload error = %v, want missing codex/hooks.json", err)
+	if err == nil || !strings.Contains(err.Error(), "missing codex/config.toml") {
+		t.Fatalf("ValidatePayload error = %v, want missing codex/config.toml", err)
 	}
 	if err := ValidatePayload(payload, false); err != nil {
 		t.Fatalf("claude-only payload should not require codex files: %v", err)
@@ -79,8 +79,8 @@ func TestMergeMarkerBlockIsIdempotent(t *testing.T) {
 }
 
 func TestUninstallAndPruneClassification(t *testing.T) {
-	entries := []string{".claude/devrites.agents-merge", ".claude/devrites.codex-hooks-merge"}
-	for _, rel := range []string{"AGENTS.md", ".codex/hooks.json"} {
+	entries := []string{CodexAgentsMerge.MarkerRel, CodexConfigMerge.MarkerRel}
+	for _, rel := range []string{CodexAgentsMerge.TargetRel, CodexConfigMerge.TargetRel} {
 		if ShouldRemoveOnUninstall(rel, entries) {
 			t.Fatalf("%s should be preserved because its merge marker is manifest-managed", rel)
 		}

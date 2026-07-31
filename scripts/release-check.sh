@@ -16,12 +16,6 @@ need python3
 bash scripts/validate.sh >/tmp/devrites-release-validate.log
 ok "scripts/validate.sh"
 
-bash scripts/build-host-artifacts.sh >/tmp/devrites-release-hostpack.log
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  git diff --quiet -- pack/generated || { echo "pack/generated drifted; rerun scripts/build-host-artifacts.sh and commit the result if this is intentional" >&2; exit 1; }
-fi
-ok "pack/generated fresh"
-
 bash tests/npx-pack-smoke.sh >/tmp/devrites-release-npx-pack-smoke.log
 ok "npx-pack-smoke"
 
@@ -29,9 +23,6 @@ bash tests/install-smoke.sh >/tmp/devrites-release-install.log
 bash tests/update-smoke.sh >/tmp/devrites-release-update.log
 bash tests/uninstall-smoke.sh >/tmp/devrites-release-uninstall.log
 ok "install/update/uninstall smoke"
-
-bash tests/validate-pack.sh >/tmp/devrites-release-validate-pack.log
-ok "validate-pack"
 
 bash scripts/run-behavioral-evals.sh >/tmp/devrites-release-behavioral.log
 ok "behavioral eval schema"
@@ -62,7 +53,8 @@ for root in [Path('README.md'), Path('install.sh'), Path('update.sh'), Path('bin
             if any(neg in l for neg in [' not ', ' no ', 'not through', 'not shipped', 'not distributed', 'no claude/codex']):
                 continue
             bad.append(f'{p}:{i}:{line}')
-print('\n'.join(bad))
+if bad:
+    print('\n'.join(bad))
 raise SystemExit(1 if bad else 0)
 PY
 if [[ -s /tmp/devrites-release-plugin-refs.log ]]; then

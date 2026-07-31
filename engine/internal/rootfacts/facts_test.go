@@ -101,6 +101,26 @@ func TestResolveKeepsRepositoryBoundaryWhenGitProbeIsUnavailable(t *testing.T) {
 	}
 }
 
+func TestGitPathIgnoresInheritedRepositoryTargets(t *testing.T) {
+	target := initRepository(t, filepath.Join(t.TempDir(), "target repo"))
+	poison := initRepository(t, filepath.Join(t.TempDir(), "poison repo"))
+	t.Setenv("GIT_DIR", filepath.Join(poison, ".git"))
+	t.Setenv("GIT_WORK_TREE", poison)
+	t.Setenv("GIT_CONFIG_COUNT", "1")
+	t.Setenv("GIT_CONFIG_KEY_0", "core.worktree")
+	t.Setenv("GIT_CONFIG_VALUE_0", poison)
+	t.Setenv("GIT_AUTHOR_NAME", "Retained Author")
+	want, err := physical(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, ok := gitPath(target, "--show-toplevel")
+	if !ok || got != want {
+		t.Fatalf("gitPath() = %q, %v, want %q, true", got, ok, want)
+	}
+}
+
 func TestResolveLinkedWorktreeUsesPerWorktreeRootAndCommonDir(t *testing.T) {
 	base := t.TempDir()
 	main := initRepository(t, filepath.Join(base, "main"))

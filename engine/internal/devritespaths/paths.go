@@ -66,7 +66,7 @@ func WorkspaceOverrideChecked(root, slug string) (string, error) {
 		return r == '/' || r == '\\'
 	})
 	canonicalWorkspace := relErr == nil && len(parts) == 2 &&
-		(parts[0] == "work" || parts[0] == "features")
+		parts[0] == "work"
 	if sameRoot || !canonicalWorkspace || !validSlug(filepath.Base(path)) {
 		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: DEVRITES_WORKSPACE %q is not a feature workspace; run `unset DEVRITES_WORKSPACE`", raw)
 	}
@@ -76,25 +76,16 @@ func WorkspaceOverrideChecked(root, slug string) (string, error) {
 	return path, nil
 }
 
-// FeatureDir is the per-feature workspace directory under root. work/ is
-// canonical; features/ remains readable as a compatibility alias.
+// FeatureDir is the canonical per-feature workspace directory under root.
 func FeatureDir(root, slug string) string {
 	if ws := WorkspaceOverride(root, slug); ws != "" {
 		return ws
 	}
-	work := filepath.Join(root, "work", slug)
-	if isDir(work) {
-		return work
-	}
-	features := filepath.Join(root, "features", slug)
-	if isDir(features) {
-		return features
-	}
-	return work
+	return filepath.Join(root, "work", slug)
 }
 
 // ExistingFeatureDirChecked resolves an existing canonical feature workspace
-// without following a work/<slug> or features/<slug> symlink. Mutating
+// without following a work/<slug> symlink. Mutating
 // control-plane commands use this instead of FeatureDir so an attacker cannot
 // redirect archive/removal operations outside the selected DevRites root.
 func ExistingFeatureDirChecked(root, slug string) (string, error) {
@@ -106,17 +97,15 @@ func ExistingFeatureDirChecked(root, slug string) (string, error) {
 	} else if ws != "" {
 		return ws, nil
 	}
-	for _, parent := range []string{"work", "features"} {
-		candidate := filepath.Join(root, parent, slug)
-		resolved, err := checkedCanonicalDir(root, candidate, parent, slug)
-		if err == nil {
-			return resolved, nil
-		}
-		if !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
+	candidate := filepath.Join(root, "work", slug)
+	resolved, err := checkedCanonicalDir(root, candidate, "work", slug)
+	if err == nil {
+		return resolved, nil
 	}
-	return "", os.ErrNotExist
+	if errors.Is(err, os.ErrNotExist) {
+		return "", os.ErrNotExist
+	}
+	return "", err
 }
 
 // ArchiveDirChecked resolves (or safely prepares) the canonical archive
@@ -197,11 +186,6 @@ func ActiveSlug(root string) (string, error) {
 		return "", fmt.Errorf("DRV-ACTIVE-INVALID: ACTIVE value %q is not a feature slug; run `rm -f %q`", slug, activePath)
 	}
 	return slug, nil
-}
-
-func isDir(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
 }
 
 func validSlug(slug string) bool {

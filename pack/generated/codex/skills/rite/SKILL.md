@@ -4,33 +4,14 @@ description: User-invoked DevRites menu and router; no args renders the menu, a 
 argument-hint: "[verb [args...]]"
 user-invocable: true
 disable-model-invocation: true
-required-agent-roles: none
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Installed `.agents/` mirrors may be Git-ignored. If a repository-aware file tool refuses an ignored path, read it with a native filesystem command instead; a tool refusal is not a completed task.
-- For automatic Engram calls, omit optional `project` and `session_id` unless an exact value came from Engram or repository configuration. Never derive either from `task_name`, a run ID, directory name, or normalized slug. Call `mem_session_summary` without them by default; on `unknown_session` or `unknown_project`, retry once with both optional fields omitted. If auto-detection is ambiguous, ask the user instead of guessing.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
-- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns="none"`. A missing visible `agent_type` field is still V2—not capability loss, V1, or HITL—so send it anyway. If the named call rejects it, stop before any generic/default spawn. Codex loads the role TOML's `developer_instructions` natively; DevRites verifies the durable rollout, wait, completion, and delivered result.
-- Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer` for a read-only role with `fork_turns="none"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract's exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard.
-- On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns="none"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`.
-- The invoked skill's `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn.
-- If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL. Never switch runtime lanes. Never execute a DevRites specialist role in the root context.
-- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
-- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
 
 # $rite: DevRites menu + router
 
 You are the DevRites entry point. Two modes:
 
-- **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a phase or read `state.md`: status is `$rite-status`.
+- **No args** → render the menu and stop. Do not execute a phase or infer
+  workspace status; `$rite-status` owns that.
 - **Verb arg** → pass-through invocation of the matching `rite-<verb>` skill (`$rite spec foo` ≡ `$rite-spec foo`); the called skill owns the output.
 
 When the user asks which rite fits, load [`devrites-lib/reference/intent-map.md`](../devrites-lib/reference/intent-map.md).
@@ -66,14 +47,14 @@ What each verb does lives once, in the Menu below; this table is the invocation 
 | `seal` | `$rite-seal` |
 | `ship` | `$rite-ship` |
 | `status [slug]` | `$rite-status` |
-| `doctor [--code | --reindex]` | `$rite-doctor` |
+| `doctor` | `$rite-doctor` |
 | `upgrade [slug]` | `$rite-upgrade` |
-| `learn [--mine \| "<lesson>"]` | `$rite-learn` |
+| `learn ["<lesson>"]` | `$rite-learn` |
 | `explain [concept \| diff \| idea \| recap]` | `$rite-explain` |
 | `pov [candidate]` | `$rite-pov` |
 | `dogfood [--port N]` | `$rite-dogfood` |
 | `pr-feedback [PR\|thread]` | `$rite-pr-feedback` |
-| `customize [override <agent> \| extension <name>]` | `$rite-customize` |
+| `customize [instruction \| skill \| agent \| plugin]` | `$rite-customize` |
 | `use <slug>` | (inline) |
 | `guide` | (inline) |
 | `resolve <qid> "<answer>"` | `$rite-resolve` |
@@ -120,16 +101,15 @@ Called phase skills own the shared completion reply contract
 
 ```
 DevRites — disciplined senior-engineer workflow
-Recommended start: <greenfield: $rite spec <feature> | brownfield-unadopted: $rite adopt | active-feature: $rite status | dirty-worktree: $rite frame or $rite quick | branch-ahead: $rite ship/status | clean-default: $rite spec <feature>>
                               menu form           direct shortcut
 SPEC          $rite spec               ≡    $rite-spec        investigate deeply → write spec.md
-ADOPT         $rite adopt              ≡    $rite-adopt       onboard existing code → reverse-derive spec.md + seed conventions
+ADOPT         $rite adopt              ≡    $rite-adopt       onboard existing code → reverse-derive spec.md
 CLARIFY       $rite clarify            ≡    $rite-clarify     close the complete decision surface before planning
 TEMPER        $rite temper             ≡    $rite-temper      optional — strategic review: scope mode + pre-mortem, harden the spec
 PLAN          $rite define             ≡    $rite-define      turn the spec into plan + task slices + state
 VET           $rite vet                ≡    $rite-vet         mandatory every plan — light/full engineering review by stakes
 REPLAN        $rite plan               ≡    $rite-plan        decompose / reslice / repair an active plan
-BUILD         $rite build              ≡    $rite-build       implement exactly one verified vertical slice, then stop
+BUILD         $rite build              ≡    $rite-build       one slice/wright; HITL stops, `.devrites/AFK` may chain
 CONVERGE      $rite converge           ≡    $rite-converge    recovery — append work needed to meet intent
 PROVE         $rite prove              ≡    $rite-prove       tests + build + runtime + browser evidence
 POLISH        $rite polish             ≡    $rite-polish      code polish always; UI normalize + polish if UI
@@ -137,8 +117,8 @@ REVIEW        $rite review             ≡    $rite-review      feature-scoped m
 SEAL          $rite seal               ≡    $rite-seal        final GO / NO-GO decision (no git)
 SHIP          $rite ship               ≡    $rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
 STATUS        $rite status             ≡    $rite-status      active feature, next action, evidence, risks
-DOCTOR        $rite doctor ...         ≡    $rite-doctor      health check; --reindex refreshes structural indexes
-UPGRADE       $rite upgrade ...        ≡    $rite-upgrade     reconcile an active legacy workspace with current contracts
+DOCTOR        $rite doctor             ≡    $rite-doctor      installation and native host diagnostics
+UPGRADE       $rite upgrade ...        ≡    $rite-upgrade     audit an older workspace; route only proven gaps
 LEARN         $rite learn ...          ≡    $rite-learn       review captured lessons → promote to project rules / principles
 EXPLAIN       $rite explain ...        ≡    $rite-explain     grounded concept/diff/idea/recap explainer
 POV           $rite pov ...            ≡    $rite-pov         decide adopt / trial / hold / reject for an external option

@@ -8,25 +8,35 @@ points every agent here.
 
 DevRites is a spec-driven development system for AI coding agents. It gives the
 model an ordered lifecycle called the rites, so feature work follows a process
-that another session can inspect and resume. A Go engine owns deterministic
-bookkeeping, while the model handles judgment. See
-[ADR-0001](docs/adr/0001-go-engine-as-control-plane.md).
+that another session can inspect and resume. A Go engine owns the retained
+deterministic safety/atomic primitives, while native skills and exact agents
+handle workflow policy and judgment. See
+[ADR-0001](docs/adr/0001-go-engine-as-control-plane.md) and
+[ADR-0022](docs/adr/0022-native-orchestration-thin-engine.md), as narrowed by
+[ADR-0024](docs/adr/0024-native-policy-offline-installer-boundary.md).
 
 ## The two planes
 
 - **Control plane: the engine** (`engine/`): a single stdlib-only Go binary
-  (`CGO_ENABLED=0`, no model calls). It owns every deterministic operation over
-  the workspace: state transitions, gates, hooks, derivations, migration. Those
-  operations are network-free; explicit update/source-cache I/O is isolated in
-  `internal/iohooks` (ADR-0008). The command inventory is defined by the
-  hand-rolled dispatcher in `engine/main.go`; `devrites-engine help` is the
-  exhaustive user-facing list.
+  (`CGO_ENABLED=0`, no model or network calls). It owns local managed
+  install/update/uninstall against caller-supplied candidates, structural
+  and content-bound Build readiness, final structural plus identity and
+  evidence-freshness checks, atomic
+  answer/drop/batch resolve and transactional close, secret scanning, and
+  version reporting. `devrites-engine help` is exhaustive.
+- **Semantic plane: native hosts, skills, and agents**: Claude Code and Codex
+  own agent discovery, dispatch, waiting, and result delivery. Installed skills
+  and exact custom roles own semantic readiness, traceability,
+  acceptance/evidence quality, doubt, reviewer reconciliation, test-quality
+  assessment, capability interpretation, upgrade,
+  recovery routing, normative spec grammar re-read, qid allocation, Clarify
+  cursor edits, AFK/recovery accounting, and read-only diagnostics. Shell/npm
+  entrypoints own release bundle/source/binary acquisition.
 - **Data plane: the workspace** (`.devrites/`): git-diffable Markdown. Feature
-  completeness uses six single-concern **sections** (`spec`, `plan`,
-  `decisions`, `tasks`, `proof`, `status`); the canonical live map/cursor/proof
-  files are `README.md`, `state.md`, and `evidence.md` (ADR-0007). Workspace
-  schema v2 adds phase-owned clarification and vet artifacts. The engine can
-  still read v1 layouts and aliases.
+  completeness uses six logical **sections** (`spec`, `plan`, `decisions`,
+  `tasks`, `proof`, `status`); the canonical live map/cursor/proof files are
+  `README.md`, `state.md`, and `evidence.md` (ADR-0007). The current state schema
+  is v2; the runtime also directly reads official v1/v2 bullet cursors.
 
 ## The lifecycle (rites → phases)
 
@@ -42,21 +52,17 @@ optional. Vet is the only final readiness phase; there is no separate `ready`
 rite.
 
 Completeness is **phase-relative**. The typed `phaseDefinitions` registry in
-`engine/internal/state/schema.go` lists the sections and workspace artifacts
-that must contain real content in each phase. Later phases require more. A
-**gate** checks those requirements at a phase boundary. A blocker that only a
-human can resolve becomes a **human-in-the-loop pause** and uses reserved
-**exit code 3**. Missing artifacts and technical readiness failures instead
-return the work to the phase that owns the fix. For example, build-readiness
-`6` routes to `/rite-clarify`, `7` routes to `/rite-vet`, and `8` routes
-semantically stale workspaces to `/rite-upgrade`. The build gate validates the
-content, current `devrites.readiness-artifacts.v2` contract, and input digests
-of `Decision coverage: CLEAR` and `Implementation readiness: READY`; marker
-strings alone do not pass. See
-[ADR-0003](docs/adr/0003-gate-model-hitl-pause.md)
-and [ADR-0009](docs/adr/0009-prebuild-decision-coverage-and-readiness.md).
-Structural workspace migration remains separate from semantic upgrade; see
-[ADR-0012](docs/adr/0012-semantic-workspace-upgrades.md).
+`engine/internal/state/schema.go` lists the structural sections and workspace
+artifacts required at each phase. `devrites-engine check readiness <slug>`
+checks that structure and, after Vet, the stable planning-input identity;
+`check seal <slug>` repeats that identity check and adds deterministic evidence
+freshness. A blocker that only a human can resolve uses reserved **exit code 3**.
+The active skill and exact reviewers—not Go heuristics—judge whether the spec,
+plan, traceability, tests, and evidence mean what they claim. Semantic upgrade
+is a native, preservation-first workflow edit. See
+[ADR-0003](docs/adr/0003-gate-model-hitl-pause.md) and
+[ADR-0022](docs/adr/0022-native-orchestration-thin-engine.md), as narrowed by
+[ADR-0027](docs/adr/0027-content-bound-build-readiness.md).
 
 ## Key concepts
 
@@ -65,18 +71,17 @@ Structural workspace migration remains separate from semantic upgrade; see
 | **Rite** | A lifecycle step, surfaced as a `rite-*` skill in the pack. |
 | **Section** | One single-concern completeness file in a feature dir. |
 | **Phase** | Workflow state; gates are phase-relative. |
-| **Gate** | Deterministic boundary check; objective failures route to their owner, while only a genuine human wait uses exit 3. |
-| **Hook** | An engine subcommand (`hook <id>`) wired through Claude `settings.json` or generated Codex `hooks.json`; profiles select which fire. See [ADR-0005](docs/adr/0005-hooks-as-engine-subcommands.md). |
+| **Gate** | Deterministic structural boundary check; semantic findings route through the native workflow, while exit 3 represents a lifecycle or safety block. |
 | **Harness** | Per-host edge adapter. Two hosts: Claude + Codex. See [ADR-0002](docs/adr/0002-dual-host-harness.md). |
-| **Pack** | The installed bundle under `pack/.claude/`: reviewer and judge agents, `rite-*` skills, and `settings.json` hook wiring. |
+| **Pack** | The installed bundle under `pack/.claude/`: reviewer/writer agents, `rite-*` skills, and native host configuration. |
 
 ## Repository map
 
 | Path | What |
 |------|------|
-| `engine/` | The Go control plane. `internal/` owns state, gates, harness adapters, install/update semantics, explicit I/O hooks, and shared command logic. |
+| `engine/` | The thin offline Go control plane: local managed install, structural checks, retained atomic state, secret scan, and version. |
 | `engine/tests/` | Parity/golden + unit tests, incl. `adr_NNNN_*` guard tests. |
-| `pack/.claude/` | Canonical pack: 44 shipped skills and 18 agents (17 read-only leaves, one source/test wright), plus Claude hook wiring. |
+| `pack/.claude/` | Canonical skills, agents, standards, and Claude configuration; Codex artifacts are generated from it. |
 | `install.sh` / `bin/` | Installer + npx entry; version is single-sourced from `package.json`. |
 | `evals/` | Trigger / outcome / behavioral eval tiers with golden fixtures. |
 | `docs/adr/` | Architecture decisions (start here for "why"). |
@@ -84,16 +89,26 @@ Structural workspace migration remains separate from semantic upgrade; see
 
 ## Invariants worth knowing
 
-- Workspace control-plane operations make **no** network or model calls;
-  explicit network I/O is confined to `internal/iohooks` (ADR-0008).
+- The engine makes **no** network or model calls. Explicit install/update
+  acquisition belongs to shell/npm entrypoints before they invoke the local
+  engine operation (ADR-0024).
 - Public rites are the authoritative orchestrators. Fresh-context leaves run
-  at depth one. They fail closed if an identity guard is missing or crashes,
-  and they never own human questions, phase changes, or canonical `.devrites/`
-  writes
-  ([ADR-0010](docs/adr/0010-agent-first-fresh-context-orchestration.md)).
-- `/rite-build` derives the exact `.wright-allowlist`; the writer's report cannot
-  expand it. The snapshot, reconciliation check, test/package integrity, and
-  close steps all use the original slice baseline, even after a retry refresh.
+  at depth one through exact named profiles; there is no generic-agent
+  fallback. Reviewer leaves are natively read-only. Claude keeps the root in
+  plan mode; Codex uses a workspace-capable root because a child cannot elevate
+  above its parent, so the root's source/test non-writing boundary is
+  instruction-enforced there. Both hosts make only the exact slice-wright
+  writable among specialists; the task states its exact paths and the root
+  rejects an out-of-scope diff. Leaves never own human questions, phase
+  changes, or canonical
+  `.devrites/` writes
+  ([ADR-0010](docs/adr/0010-agent-first-fresh-context-orchestration.md),
+  [ADR-0015](docs/adr/0015-read-only-root-native-orchestration.md),
+  [ADR-0018](docs/adr/0018-native-sandbox-instruction-writer-boundary.md)).
+- `/rite-build` states the exact project-relative paths in the writer task; the
+  writer may not expand them. The root compares the returned file list and `git
+  diff --name-only` with that contract, reviews test integrity, and runs
+  repository proof.
 - Version is **single-sourced** from `package.json`; the engine binary is stamped
   via `-ldflags` at build; install.sh + `bin/devrites.mjs` read it at runtime.
   There are no hand-maintained embedded version literals to drift.

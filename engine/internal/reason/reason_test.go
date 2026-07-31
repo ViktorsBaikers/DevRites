@@ -24,8 +24,10 @@ func TestCatalogIsKnownUniqueAndStableShaped(t *testing.T) {
 }
 
 func TestParseRejectsUnregisteredAndFreeText(t *testing.T) {
-	if got, err := Parse(string(GateSealMissing)); err != nil || got != GateSealMissing {
-		t.Fatalf("Parse registered = %q, %v", got, err)
+	for _, want := range []ID{GateReadinessStale, GateSealMissing} {
+		if got, err := Parse(string(want)); err != nil || got != want {
+			t.Fatalf("Parse registered = %q, %v", got, err)
+		}
 	}
 	for _, raw := range []string{"", "DRV-UNKNOWN", "/absolute/repo", "operator-private-value"} {
 		if _, err := Parse(raw); err == nil {

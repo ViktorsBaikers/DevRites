@@ -1,12 +1,12 @@
-# Spec grammar: testable requirements, parseable by tooling
+# Spec grammar: testable requirements, checked by native re-read
 
 Acceptance criteria are the contract the seal checks ([`testing.md`](testing.md),
 [`code-review.md`](code-review.md)). Prose criteria work, but a requirement written as free
 text is graded by a human reading carefully, and an ambiguous one ("handle errors
 gracefully") slips past every gate because nothing can falsify it. This rule adds an
 **optional, recommended structure** that makes a behavioral requirement testable by
-construction and parseable by a deterministic linter, so the spec phase catches a malformed
-requirement before `$rite-define` plans against it.
+construction. The root checks it by re-reading the written spec before
+`$rite-define` plans against a malformed requirement.
 
 It is the grammar counterpart to [`testing.md`](testing.md): testing says *prove every
 behavior*; this says *write each behavior so it can be proven*.
@@ -29,7 +29,7 @@ Match the rigor to the stakes; don't pay grammar ceremony for a one-liner.
 
 A spec mixes both: most criteria stay flat bullets; the two or three that carry real risk get
 the structured treatment. **Absence of structured requirements is never a failure**: the
-validator no-ops on a flat-bullet spec, the same discipline as the principles gate
+native checklist has nothing structured to inspect on a flat-bullet spec, the same discipline as the principles gate
 ([`principles.md`](principles.md)).
 
 ## The structured form
@@ -47,7 +47,7 @@ The system SHALL reject any session token older than 15 minutes of inactivity.
             **THEN** the request is served and the last-use timestamp advances
 ```
 
-The rules the validator enforces (`devrites-engine spec-validate`):
+The normative rules the root checks:
 
 - **`### Requirement: <name>`:** a level-3 heading. Its block MUST carry a **SHALL** or
   **MUST** statement (in the header or the body) describing the core behavior. Keep the name
@@ -78,14 +78,14 @@ support proof, but they are not the criterion unless the spec's surface is expli
 
 ## How it composes (no new gate, no duplication)
 
-- **`AC-###` ids nest inside scenarios.** Tag each scenario's checkable line with an `AC-###` id
-  exactly as the flat form does. The same `devrites-engine check-acceptance` grades it against `seal.md` at
-  the end of the lifecycle. This grammar checks the requirement's **shape**, that script
-  checks its **proof**. The two compose; neither replaces the other.
+- **`AC-###` ids nest inside scenarios.** Tag each scenario's checkable line with an `AC-###`
+  id exactly as the flat form does. At the end of the lifecycle, the exact proof runner maps
+  immutable observed evidence and the exact spec reviewer checks implementation against the
+  criterion's meaning. The native grammar re-read checks shape only; reviewers judge proof.
 - **`$rite-prove` and `$rite-review` get concrete hooks.** Each scenario is one behavior to
   prove and the test analyst's unit of "is this covered": the WHEN/THEN maps
   straight to an arrange/assert ([`testing.md`](testing.md)).
-- **The spec-quality checklists still apply.** The grammar makes a requirement *parseable*; the
+- **The spec-quality checklists still apply.** The grammar makes a requirement *structured*; the
   `checklists/<domain>.md` "unit tests for English" still score whether it's *complete and
   measurable* ("is 'prominent' quantified?"). Structure doesn't excuse vagueness inside a THEN.
 
@@ -108,34 +108,61 @@ a separate **`## Success metrics`** heading:
 - Support tickets about export drop by half within a quarter
 ```
 
-Why the split earns its place: an outcome metric tagged `AC-###` poisons the coverage gate in
-both directions. `devrites-engine analyze` flags it CRITICAL forever: no slice can `Satisfies:` a KPI:
-so a genuinely complete plan reads as uncovered. And `devrites-engine check-acceptance` can never mark it
-proven at `$rite-seal`, because no end-to-end test run inside the feature observes a quarter of
-production traffic. The metric still matters (it's *why* the feature exists) but it belongs to
-intent (`brief.md` / `spec.md` overview), not to the criteria the lifecycle mechanically proves.
-The load-bearing test: **can one slice make this true and one test show it?** If no, it's a
-success metric, not an acceptance criterion. (`analyze` scopes its coverage count to `AC-###`
-ids, so an untagged `## Success metrics` line is correctly ignored by the gate.)
+Why the split earns its place: an outcome metric tagged `AC-###` poisons traceability in
+both directions. No slice can honestly `Satisfies:` a quarterly KPI, and no feature test can
+observe a quarter of production traffic. The metric still matters (it is *why* the feature
+exists) but belongs to intent (`brief.md` / `spec.md` overview), not criteria the lifecycle
+proves. The load-bearing test: **can one slice make this true and one test show it?** If no,
+it is a success metric, not an acceptance criterion. Native traceability reviews map only
+buildable `AC-###` IDs and meanings.
 
-## The validator: `devrites-engine spec-validate`
+## Capability-impact declaration
 
-Deterministic, zero-token. Run it on the workspace (or a spec path) at the spec readiness gate:
+Every new or materially revised feature spec contains exactly one concise standalone statement:
 
-```bash
-devrites-engine spec-validate .devrites/work/<slug>
+```text
+Capability impact: <affected capability or capabilities and the observable change>
 ```
 
-Exit codes: `0` valid (or no structured requirements: nothing to lint), `1` grammar
-violation(s) with `file:line` locations, `2` usage, `5` missing `spec.md`. A non-zero exit is a
-blocking spec-readiness failure: fix the requirement, never soften the check. It runs as part
-of `$rite-spec`'s readiness gate and is safe to re-run any time the spec changes.
+When no capability contract changes, use:
+
+```text
+Capability impact: none — <specific justification>
+```
+
+The statement scopes ledger inspection; it does not replace the capability suffix on a
+delta heading. A vague list or an unjustified `none` blocks spec readiness.
+
+## Native grammar re-read checklist
+
+At the spec readiness gate, the controlling root re-opens `spec.md` and checks
+each item against the file's exact headings and text. **No parser or replacement script** is introduced.
+
+- [ ] `## Acceptance criteria` exists and every buildable criterion has one
+  unique `AC-###` ID; success metrics have none.
+- [ ] Every `### Requirement:` header is non-empty and unique.
+- [ ] Every structured requirement contains a normative `SHALL` or `MUST`
+  statement and at least one `#### Scenario:`.
+- [ ] Every scenario has an observable uppercase `WHEN` and `THEN`, plus an
+  `AC-###` criterion; it describes behavior rather than implementation.
+- [ ] Delta headings use only ADDED, MODIFIED, or REMOVED. Each named capability
+  is contained under `.devrites/specs/`, and MODIFIED/REMOVED headers match the
+  current ledger exactly.
+- [ ] Exactly one capability-impact declaration exists and agrees with the ledger
+  deltas, or gives a specific `none` justification.
+- [ ] Re-read the entire requirements and acceptance sections once more after
+  corrections so duplicates and partial edits cannot hide between blocks.
+
+Any miss blocks spec readiness. Correct the spec; never soften or skip the
+checklist. A flat-only spec still checks the acceptance section and has no
+Requirement/Scenario rows to inspect.
 
 ## Delta form: when the capability ledger already holds this behavior
 
 The Requirement / Scenario block is the unit the **capability ledger** stores: the living
-`.devrites/specs/<capability>/spec.md` record of *what the system does now*, folded in on ship
-([ledger reference](../../../rite-ship/reference/ledger.md)). When a feature changes behavior a
+`.devrites/specs/<capability>/spec.md` record of *what the system does now*, folded during
+Polish before Review
+([ledger reference](../../../rite-polish/reference/ledger.md)). When a feature changes behavior a
 ledger already describes, write its spec as **deltas against the ledger** instead of a flat
 snapshot, so the change (not merely the end state) is explicit and the fold is unambiguous.
 
@@ -158,28 +185,27 @@ The system SHALL default to the OS colour-scheme on first load.
 Removed — superseded by system-preference detection.
 ```
 
-Fold semantics on `devrites-engine ledger sync`. **ADDED** appends, **MODIFIED** replaces the
-same-named requirement, **REMOVED** deletes it. Matching is by **header identity** (the rule
+The native capability-ledger workflow previews and writes the fold through the host
+filesystem. **ADDED** appends, **MODIFIED** replaces the same-named requirement, and
+**REMOVED** deletes it. Matching is by **header identity** (the rule
 above: names are unique and a rename is a remove + add), so the section MUST use the exact ledger
 header text for MODIFIED / REMOVED.
+
+For **MODIFIED**, compare the complete current requirement block with the proposed full
+replacement under the lossless rule in `rite-polish/reference/ledger.md`. An unexplained
+omission blocks readiness; it is not cleanup.
 
 - **The `— capability: <name>` suffix is the fold target.** Omit it and the fold defaults to the
   feature slug: correct for a single-capability feature; name it explicitly when a feature spans
   more than one, or when the capability differs from the slug.
-- **Pick the kind against the current ledger, not from memory.** `devrites-engine ledger show
-  <capability>` prints what it holds. A real change marked ADDED yields two competing
-  requirements; new behavior marked MODIFIED has nothing to replace.
+- **Pick the kind against the current ledger, not from memory.** Read the affected
+  `.devrites/specs/<capability>/spec.md` directly. A real change marked ADDED yields two
+  competing requirements; new behavior marked MODIFIED has nothing to replace.
 - **Greenfield stays flat.** A capability with no ledger entry is all-new: write plain
-  `### Requirement:` blocks with no delta H2; the first `ledger sync` seeds the capability as if
+  `### Requirement:` blocks with no delta H2; the first confirmed native ledger update seeds the capability as if
   every block were ADDED. Never pay delta ceremony for behavior that has no prior record.
 
-Validate the classification deterministically at the spec gate: `--against` points the linter at
-the ledger root so it flags an ADDED that already exists or a MODIFIED/REMOVED that doesn't:
-
-```bash
-devrites-engine spec-validate .devrites/work/<slug> --against .devrites/specs
-```
-
-Exit `1` on a mismatch (a blocking spec-readiness failure); `0` when the deltas reconcile. The
-plain-grammar checks (SHALL, WHEN/THEN, unique headers) run in the same pass: delta H2 headers
-are transparent to them, so a flat spec and a delta spec lint identically.
+At the spec gate, apply the native grammar re-read checklist above to the
+feature spec, then compare current ledger blocks using the
+ADDED/MODIFIED/REMOVED rules above. Any grammar or delta mismatch blocks
+readiness.

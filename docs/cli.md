@@ -1,94 +1,127 @@
-# Tool-agnostic state core: the `devrites-engine` CLI
+# `devrites-engine`: deterministic workspace core
 
-DevRites stores its workflow in `.devrites/` Markdown files and the
-`devrites-engine` binary rather than tying it to one chat harness. Claude Code,
-Codex, Cursor, Gemini CLI, CI, and human operators can all run the same
-deterministic gates from the project root.
+DevRites keeps durable workflow truth in `.devrites/` Markdown. Claude Code and
+Codex interpret the workflow, run exact custom agents, reconcile their results,
+and make semantic judgments. The Go engine exposes only deterministic,
+cross-host primitives; it never dispatches an agent or grades reviewer prose.
 
-## The `devrites-engine` CLI
+## Command surface
 
-Install DevRites normally, then run the engine from the project root. These
-examples cover the common commands; `devrites-engine help` lists every current
-command and hook.
+`devrites-engine help` is exhaustive:
 
-```bash
-devrites-engine preamble                 # workspace digest for the active feature
-devrites-engine snapshot [slug]          # machine-readable workspace/status snapshot
-devrites-engine build-readiness [slug]   # semantic clarify + vet gate (exit 0 ready)
-devrites-engine readiness-digest coverage|engineering [slug] # canonical input digest
-devrites-engine clarify-return enter|restore [slug] # durable later-phase clarify cursor
-devrites-engine recovery route <class>             # typed owner/action; JSON recovery-route/v1
-devrites-engine recovery check|record|clear ...    # durable three-failure budget; record/clear accept --class
-devrites-engine reconcile snapshot|check|restore-check|abort|close [slug] # retained writer baseline and rejected-window recovery
-devrites-engine test-integrity [slug]    # reject weakened tests against that baseline
-devrites-engine evidence-fresh [slug]    # proof freshness gate      (exit 0 fresh · 3 stale)
-devrites-engine check-acceptance <dir>   # acceptance gate           (exit 0 proven · 1 gap)
-devrites-engine ledger sync <dir>        # fold a feature's spec deltas into the living capability ledger
-devrites-engine ledger list|show <cap>   # read the ledger: what the system already does
-devrites-engine context show --json      # report root, active workspace, and host command forms
-devrites-engine timeline log|list|report|purge # local typed trace, bounded report, exact retention
-devrites-engine health run               # run known project checks + record a code-health dashboard
-devrites-engine health record|list       # append/list manual or dashboard health history
-devrites-engine review-fingerprints [slug] # stable IDs for review findings; --write saves JSONL
-devrites-engine reviewer-stats report --json # direct structured reviewer-dispatch verdicts
-devrites-engine progress [slug]          # compact phase/slice footer
-devrites-engine resolve <qid> "<answer>" # answer a HITL gate
-devrites-engine close-out <slug>         # archive a shipped feature and clear ACTIVE
-devrites-engine help
+```text
+devrites-engine install [flags]
+devrites-engine update [flags]
+devrites-engine uninstall [flags]
+
+devrites-engine check candidate <slug>
+devrites-engine check readiness <slug>
+devrites-engine check readiness --emit-binding <slug>
+devrites-engine check seal <slug>
+
+devrites-engine state resolve <qid> "<answer>"
+devrites-engine state close <slug>
+
+devrites-engine secret-scan [--staged] [--stdin] [slug]
+devrites-engine version
 ```
 
-The AFK-parsed read commands (`status`, `readiness`, `seal`, `spec-validate`,
-`evidence-fresh`, `preamble`, `coverage`, `analyze`, `doctor`, `ledger`) accept
-`--json`, which wraps the result in a stable envelope: see
-[`engine/agent-contract.md`](engine/agent-contract.md). `snapshot` is already a
-structured JSON contract and emits `schemaVersion: devrites.workspace.v1`
-directly rather than wrapping human text. Snapshot consumers should read
-`nextCommands.claude` or `nextCommands.codex` for the current host instead of
-hardcoding a `/rite-*` or `$rite-*` command form. `context show --json` and
-`reviewer-stats report --json` are also direct structured reports rather than
-envelopes. The snapshot wire identifier is separate from the workspace-map
-frontmatter `schemaVersion: 2`: schema v2 is additive, reads legacy layouts and
-aliases, and rejects only declarations newer than the engine supports.
+Commands outside this list are unsupported. There are no legacy aliases,
+tombstones, agent-protocol versions, semantic-readiness digests, compatibility
+telemetry, or workspace migration command.
+`check candidate` is additive; no existing engine command or public `/rite-*`
+workflow was removed or renamed.
 
-The npm `devrites` shim remains the installer/updater/uninstaller entry point and
-proxies these engine subcommands when `devrites-engine` is installed. Install and
-update DevRites through `npx devrites ...`; DevRites is not distributed through
-Claude or Codex plugin stores.
+## Checks
 
-Callers use the exit code as the gate result. `build-readiness` routes
-objective gaps to their owner:
+- `check candidate <slug>` validates the strict `touched-files.md` manifest and
+  hashes its exact path/state/type/mode/content identity. A pass prints:
+  ```text
+  candidate-sha256: <64 lowercase hex>
+  candidate-files: <manifest row count>
+  ```
+- `check readiness <slug>` verifies the files required to leave the workspace's
+  current phase and, once `eng-review.md` is required, its exact stable
+  Build-input binding.
+- `check readiness --emit-binding <slug>` renders the exact stable Build-input
+  binding for Vet to record after semantic review.
+- `check seal <slug>` checks final required files and open human gates. Once
+  those files are complete, it verifies the stable readiness binding; only
+  after that aggregate check passes does it verify that `evidence.md`,
+  `review.md`, `seal.md`, and optional `browser-evidence.md` contain exactly one
+  binding to the current candidate digest.
 
-<!-- authority:readiness-reasons:start -->
-| exit | reason | condition | remediation |
-| --- | --- | --- | --- |
-| `0` | `ready` | Ready to build | *(none)* |
-| `2` | `plan-unapproved` | Plan is not approved | `/rite-define` |
-| `3` | `awaiting-human` | A human-owned question is open | `/rite-resolve` |
-| `4` | `plan-blocked` | Plan is blocked and needs repair | `/rite-plan` |
-| `5` | `workspace-missing` | Workspace or state.md is missing | `/rite-spec` |
-| `6` | `coverage-not-clear` | Decision coverage is not CLEAR and fresh | `/rite-clarify` |
-| `7` | `engineering-not-ready` | Plan is not vetted or implementation readiness is not READY | `/rite-vet` |
-| `8` | `upgrade-required` | Planning artifacts use an older or unknown DevRites contract | `/rite-upgrade` |
-<!-- authority:readiness-reasons:end -->
+Semantic readiness, traceability, acceptance interpretation, evidence quality,
+doubt, test quality, reviewer reconciliation, and capability interpretation
+belong to the active skill and exact native agents. Normative spec grammar is
+checked by the root's explicit native re-read checklist. Repository build,
+test, lint, typecheck, schema, and release commands belong to that repository
+or CI.
 
-A non-zero `build-readiness`,
-`evidence-fresh`, or `check-acceptance` result is a hard stop that can be used
-in an agent loop, a local script, or pre-merge CI.
+## Atomic state operations
 
-`build-readiness` does not trust `CLEAR` or `READY` text alone. It validates the
-required sections, tables, ownership and test mappings, requires the current
-`devrites.readiness-artifacts.v2` declaration, and compares each artifact's
-SHA-256 field with the digest of its canonical inputs.
+`state resolve` also supports `--drop <qid> ["<reason>"]` and `--batch <file>`.
+`state close` transactionally archives a shipped workspace and clears matching
+`ACTIVE`.
 
-`devrites-engine update` refreshes the installed binary and pack.
-`devrites-engine migrate` may upgrade a workspace declaration to structural
-schema v2, but it never creates or blesses clarification, vet, or proof
-evidence. `/rite-upgrade [slug]` is the separate semantic reconciliation route
-for an active unfinished workspace.
+The mutating forms share the engine's root-safety, locking, and atomic-write
+boundary.
 
-## Why this exists
+The root scans and rechecks `questions.md` to allocate the next unused qid,
+manages Clarify return fields without rewriting unrelated Markdown, charges an
+AFK budget once per green built slice, and counts no more than three recovery
+failures per causal fingerprint from context plus Dead ends/evidence. `/rite-doctor`
+is a read-only native inspection. None has an engine command or replacement
+script.
 
-The CLI exposes DevRites workspace data and standards to agent loops, local
-scripts, CI, and human operators without requiring each caller to reimplement
-the workflow. CLI and `rite-*` verdicts match because both use the same engine
-gates.
+## Secret scanning
+
+Use `secret-scan --staged` for exact Git index blobs and `secret-scan --stdin`
+for review text supplied through a non-logging process-stdin channel. The flags
+may be combined. The scanner does not follow worktree symlinks or print matched
+secret bytes. It accepts at most 4,096 entries, 64 MiB total captured input, and
+4,096 findings; input, limit, and output failures close the scan.
+
+Findings include only severity, a redacted or escaped source label, category,
+and zero-based byte offset. HIGH findings exit `3`.
+
+## Output and exits
+
+Lifecycle checks print stable line-oriented fields. `reason: DRV-...` identifies
+the deterministic gate outcome without an agent protocol or versioned wrapper.
+Skills read workspace Markdown directly.
+
+`check candidate` uses the two exact fields shown above. Invalid usage or root
+selection exits `2`; a malformed/unsafe manifest or candidate mismatch prints
+`candidate: BLOCKED: <reason>` to stderr and exits `3`.
+
+- `0`: passed or completed.
+- `2`: common invalid request or unreadable-state result.
+- `3`: common deterministic lifecycle or safety block.
+- Atomic state operations retain their documented operation-specific nonzero
+  results.
+
+## Root safety
+
+`DEVRITES_ROOT` selects a project root or `.devrites/` directory.
+`DEVRITES_WORKSPACE` may select one explicit contained workspace. Mutating
+commands refuse ambiguous, escaped, symlinked, or otherwise unsafe roots.
+
+Install, update, and uninstall remain manifest-owned operations and perform no
+network acquisition. Shell and npm entrypoints acquire the local candidate
+bundle and optional checksummed binary before invoking them. Remote acquisition
+uses exact SemVer, HTTPS-only redirect hops, mandatory exact-filename SHA-256
+sidecars, private temporary directories, and byte/archive bounds; it has no
+unchecked raw/source/default-branch fallback. Update
+accepts `--check` to compare the installed manifest version with that local
+candidate; remote-selector flags such as `--to` and `--pre` are unsupported.
+`/rite-upgrade` is a native compatibility audit, not an engine migration. Its
+read-only planner must cite a current rule and exact workspace defect; admitted
+repairs run through the current Clarify, Plan, Converge, Vet, Prove, Polish,
+Review, or Seal owner. Candidate repairs rerun current proof and never infer a
+historical pass.
+
+Production Go and shell Git sites remove repository/config/object/ref/pathspec
+retargeting `GIT_*` variables before execution while preserving unrelated Git
+environment. This targeting isolation is a caller boundary, not another engine
+command.

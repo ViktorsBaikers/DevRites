@@ -3,27 +3,7 @@ name: rite-temper
 description: Temper a readied spec before planning. Use when the user says "temper this", "strategy review", "pre-mortem the spec", or asks if we are over/under-building. Not for code review or final seal.
 argument-hint: "[feature-slug] [--mode expand|selective|hold|reduce]"
 user-invocable: true
-required-agent-roles: none
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Installed `.agents/` mirrors may be Git-ignored. If a repository-aware file tool refuses an ignored path, read it with a native filesystem command instead; a tool refusal is not a completed task.
-- For automatic Engram calls, omit optional `project` and `session_id` unless an exact value came from Engram or repository configuration. Never derive either from `task_name`, a run ID, directory name, or normalized slug. Call `mem_session_summary` without them by default; on `unknown_session` or `unknown_project`, retry once with both optional fields omitted. If auto-detection is ambiguous, ask the user instead of guessing.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
-- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns="none"`. A missing visible `agent_type` field is still V2—not capability loss, V1, or HITL—so send it anyway. If the named call rejects it, stop before any generic/default spawn. Codex loads the role TOML's `developer_instructions` natively; DevRites verifies the durable rollout, wait, completion, and delivered result.
-- Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer` for a read-only role with `fork_turns="none"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract's exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard.
-- On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns="none"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`.
-- The invoked skill's `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn.
-- If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL. Never switch runtime lanes. Never execute a DevRites specialist role in the root context.
-- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
-- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
 
 # $rite-temper: review scope and risk before planning
 
@@ -31,7 +11,9 @@ Review a readied spec for outcome ambition, scope, pre-mortem risks, and unneces
 solution surface. Fold accepted decisions into the canonical contract before
 `$rite-define`. This step is optional for small work and skips low-stakes specs, but
 `$rite-autocomplete` always invokes it. **Read the active workspace first**; if there
-is no readied `spec.md`, tell the user to run `$rite-spec`.
+is no readied `spec.md`, tell the user to run `$rite-spec`. Review depth follows
+[`devrites-lib/reference/orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md);
+the required exact strategy reviewer never changes with profile.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
 Pull on demand: `patterns.md` +
@@ -60,8 +42,8 @@ that needs more than the default pre-mortem) selected by the section's risk).
   failure that reopens the readiness gate.
 
 ## Workflow
-0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`**, then run
-   `devrites-engine preamble` for deterministic workspace orientation.
+0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`**, then
+   resolve the active slug, require its `state.md`, and read the cursor directly.
    Then read the workspace: `spec.md`, `decision-coverage.md` (+ `decisions.md`,
    `assumptions.md`, `design-brief.md` if UI), `state.md`. Require `Spec gate: passed`: else
    STOP → `$rite-spec`. Require `Decision coverage: CLEAR`: else STOP →
@@ -118,44 +100,24 @@ that needs more than the default pre-mortem) selected by the section's risk).
    After any edit to `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or
    `questions.md`, re-scan the affected coverage rows, assumption audit, residual uncertainty,
    and closed gates. Partial/Missing, an unowned material assumption, or an open
-   blocking/escalating question routes `$rite-clarify`/HITL; never refresh past it. Only after the
-   matrix is re-closed, run `devrites-engine readiness-digest coverage <slug>` and replace the
-   complete `Coverage inputs SHA-256` line in `decision-coverage.md`.
+   blocking/escalating question routes `$rite-clarify`/HITL. Only after the
+   matrix is re-closed may the phase advance.
    Update `state.md`: `Phase: temper`,
    `Next step: $rite-define`; on a blocking pause (expand / irreversible / a dimension still below
    bar) write the `Awaiting human` block + `Status: awaiting_human` before stopping.
-7. **Adversarial verification loop:** dispatch [`devrites-strategy-reviewer`](.codex/agents/devrites-strategy-reviewer.toml)
-   through the file-backed fresh-context contract in
+7. **Adversarial verification loop:** ask the exact
+   [`devrites-strategy-reviewer`](.codex/agents/devrites-strategy-reviewer.toml)
+   through the native fresh-context contract in
    [`agents.md`](../devrites-lib/reference/standards/agents.md), with **only** the hardened
    spec + rubric: no authoring reasoning. Resolve
    actionable findings by editing `spec.md`/`strategy.md`, re-dispatch; **cap ≤3 iterations**. A
    dimension still below bar after 3 is classified by decision ownership: a product/scope/risk
    choice becomes a blocking question; an objective spec defect stays blocked with the exact
    required edit and routes to `$rite-spec`, not `$rite-resolve`. Irreversible-risk findings
-   always pause. Use the shared capability ladder; if no fresh-agent rung is available,
-   stop for HITL. After an accepted edit to a
-   coverage-bound input, repeat step 6's revalidation and digest refresh before handoff.
+   always pause. If the named agent is unavailable, stop for HITL. After an accepted edit to a
+   coverage-bound input, repeat step 6's native coverage revalidation before handoff.
 8. **STOP.** Report the mode, the scope deltas, and the floor verdict; recommend `$rite-define`.
 
 > **Mid-flight discipline.** Do not replace the interactive review with `strategy.md`,
 > expand implementation surface without need, grow scope outside the Drift Guard, or score
 > before citing evidence. See [`reference/anti-patterns.md`](reference/anti-patterns.md).
-
-## Output
-
-**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: spec tempered for <slug>; mode <expand|selective|hold-rigor|reduce-to-MVP|skipped-low-stakes>.
-Changed: strategy.md, spec.md, decisions.md, assumptions.md
-Evidence: dimension floor <band>; reviewer loop <n>; spec readiness + decision coverage re-checked pass
-Open: <none | n deferred non-goals>
-Next: $rite-define
-Record: .devrites/work/<slug>/strategy.md
-↻ Hygiene: /clear before $rite-define
-```
-If readiness is blocked, use the shared `Stopped / blocked` form and route `Fix:`
-to `$rite-clarify` for an uncovered decision surface or `$rite-spec` for an objective
-spec defect; do not recommend `$rite-define`.
-**DO NOT plan, slice, or write code here**. That's `$rite-define` and `$rite-build`.

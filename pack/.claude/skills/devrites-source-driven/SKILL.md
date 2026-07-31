@@ -1,8 +1,7 @@
 ---
 name: devrites-source-driven
-description: Verify uncertain framework/library behavior against official docs or installed source before relying on it. Use when the user says "check the docs", "verify this assumption", or hits an unfamiliar API. Not for internal code.
+description: Verify uncertain framework or library behavior in installed source or official docs. Use for unfamiliar APIs; not internal code.
 user-invocable: false
-required-agent-roles: none
 ---
 
 # devrites-source-driven: verify, don't guess
@@ -31,8 +30,8 @@ authoritative documentation before relying on it.
 ## Delegate broad research
 When the question is an *area* (a library surface, unfamiliar subsystem, or migration
 guide), the **root orchestrator** uses the fresh-context dispatch contract in
-[`agents.md`](../devrites-lib/reference/standards/agents.md) to send one bounded
-`agent-packet/v1` to `devrites-evidence-scout`. Await and validate its cited
+[`agents.md`](../devrites-lib/reference/standards/agents.md) to give one bounded
+question to `devrites-evidence-scout`. Wait for and validate its cited
 `evidence-dossier`; the orchestrator, not the scout, persists accepted facts under
 `references/` and links them from `references.md`.
 

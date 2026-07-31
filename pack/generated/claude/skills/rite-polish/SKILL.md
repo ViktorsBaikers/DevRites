@@ -1,9 +1,8 @@
 ---
 name: rite-polish
-description: Polish the active feature before review: code always, UI when touched. Use when the user says "polish this", "finish before review", "normalize the UI", or "make it bolder/quieter". Not for repo-wide refactors.
+description: Polish the active feature's code and any touched UI before review. Use for finish or normalization requests; not for repository-wide refactors.
 argument-hint: "[target | bolder | quieter | distill | harden | normalize-only]"
 user-invocable: true
-required-agent-roles: none
 ---
 
 # /rite-polish: finish before review
@@ -16,6 +15,9 @@ live in `reference/code.md` and `reference/ui.md`; read only the phase in scope.
 
 - **Functionality complete first.** Polish runs after `/rite-prove` (full
   feature proven).
+- Follow the shared
+  [`candidate-integrity.md`](../devrites-lib/reference/candidate-integrity.md).
+  Polish owns every candidate-affecting correction and durable rollup before Review.
 - Feature scope only.
 - For UI, **normalize before polishing**. Do not add decoration on top of drift.
 - **Root selects; wright edits.** The controlling chat assesses and reconciles, but every
@@ -30,9 +32,9 @@ live in `reference/code.md` and `reference/ui.md`; read only the phase in scope.
    per-phase rule files (`coding-style.md`, `error-handling.md`, …) load on demand
    from `reference/code.md` / `reference/ui.md` when their phase runs; for UI scope also read
    `.claude/skills/devrites-lib/reference/standards/browser-proof-checklist.md`.
-   Then run `devrites-engine preamble` for deterministic workspace orientation.
-1. **Read** `state.md`, `touched-files.md`, and the `git diff` for the active
-   workspace (or `$ARGUMENTS` if a target was given).
+   Then read the explicit or active workspace's `state.md` directly.
+1. **Read** `state.md`, `touched-files.md`, the current candidate digest, and the
+   `git diff` for the active workspace (or `$ARGUMENTS` if a target was given).
 2. **Detect UI scope:** UI is touched if the diff or `touched-files.md`
    contains any of: `.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, `.css`,
    `.scss`, `.sass`, `.less`, `.styl`, component dirs (`components/`,
@@ -55,13 +57,18 @@ live in `reference/code.md` and `reference/ui.md`; read only the phase in scope.
    - `bolder | quieter | distill | harden`: passed to Phase 4 as the
      emphasis dial.
    - `normalize-only`: assess Phase 3 and stop (no Phase 4).
-5. **Re-verify after any code edit:** a wright correction invalidates prior proof, so
-   `/rite-prove` no longer post-dates it. Dispatch `devrites-proof-runner` for the affected
-   fast checks (the
-   targeted tests for the touched files + typecheck/lint; browser re-check if UI
-   changed) and record a **`Re-verification:`** line in `polish-report.md`. A
-   polish that changed code without a green re-verification isn't finished.
-6. **Aggregate output:** both phases append to the single `polish-report.md`.
+5. **Finish durable rollups before Review.** Apply the capability
+   [`ledger`](reference/ledger.md) when requirements changed, the optional UI
+   [`design memory`](reference/design-memory.md), and durable
+   [`ADR promotion`](reference/adr-promotion.md). Add every changed project path
+   to the candidate manifest; none of these writes waits for Ship.
+6. **Re-prove and close.** After all accepted code/UI corrections and rollups,
+   run `devrites-engine check candidate <slug>`. Any digest change requires
+   affected real re-proof using the approved commands, fresh proof-runner
+   validation, refreshed evidence/browser bindings, and an updated candidate
+   manifest. Record a **`Re-verification:`** line in `polish-report.md`. Close
+   the candidate for Review only after these checks are green.
+7. **Aggregate output:** both phases append to the single `polish-report.md`.
 
 ## Refinement modes
 
@@ -74,19 +81,4 @@ quality bar; they apply after the system is aligned. See `reference/ui.md`.
 
 ## Output → `polish-report.md`
 
-Write the detailed report to `polish-report.md`. In chat, run `devrites-engine progress` first,
-then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: polished <slug | target>; code/backend/UI phases <ran|n/a>.
-Changed: polish-report.md, <files touched | workspace only>, browser-evidence.md <updated|n/a>
-Evidence: re-verification <cmd -> pass | n/a>; browser <summary | n/a>
-Open: <none | non-blocking design follow-ups>
-Next: /rite-review
-Record: .devrites/work/<slug>/polish-report.md
-↻ Hygiene: /clear before /rite-review
-```
-If a design decision remains unresolved or polish invalidated proof, use `Awaiting human`
-or `Stopped / blocked` and route to the decision or `/rite-prove`; do not recommend
-`/rite-review`.
+Write the detailed report to `polish-report.md`.

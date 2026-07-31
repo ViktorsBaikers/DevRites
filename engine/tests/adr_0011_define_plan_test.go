@@ -13,8 +13,8 @@ func TestADR0011DefineAndPlanHaveDistinctTransitionRights(t *testing.T) {
 	if got := state.ResumeVerb(state.PhasePlan); got != "vet" {
 		t.Fatalf("plan resumes %q, want vet", got)
 	}
-	if got, ok := state.PhaseForName("planning"); !ok || got != state.PhasePlan {
-		t.Fatalf("planning alias=(%q,%v), want plan compatibility", got, ok)
+	if got, ok := state.PhaseForName("planning"); ok || got != "" {
+		t.Fatalf("planning alias=(%q,%v), want speculative alias rejected", got, ok)
 	}
 
 	rights := map[string]state.Phase{}

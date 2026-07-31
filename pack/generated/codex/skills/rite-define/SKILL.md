@@ -3,27 +3,7 @@ name: rite-define
 description: Define the first build plan from an approved spec: architecture, task slices, traceability, and state. Use when turning approved intent into its initial plan.
 argument-hint: "[feature-slug]"
 user-invocable: true
-required-agent-roles: devrites-plan-drafter
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Installed `.agents/` mirrors may be Git-ignored. If a repository-aware file tool refuses an ignored path, read it with a native filesystem command instead; a tool refusal is not a completed task.
-- For automatic Engram calls, omit optional `project` and `session_id` unless an exact value came from Engram or repository configuration. Never derive either from `task_name`, a run ID, directory name, or normalized slug. Call `mem_session_summary` without them by default; on `unknown_session` or `unknown_project`, retry once with both optional fields omitted. If auto-detection is ambiguous, ask the user instead of guessing.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
-- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns="none"`. A missing visible `agent_type` field is still V2—not capability loss, V1, or HITL—so send it anyway. If the named call rejects it, stop before any generic/default spawn. Codex loads the role TOML's `developer_instructions` natively; DevRites verifies the durable rollout, wait, completion, and delivered result.
-- Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer` for a read-only role with `fork_turns="none"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract's exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard.
-- On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns="none"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`.
-- The invoked skill's `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn.
-- If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL. Never switch runtime lanes. Never execute a DevRites specialist role in the root context.
-- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
-- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
 
 # $rite-define: plan from the spec
 
@@ -58,25 +38,23 @@ Pull these via `Read` when shaping the plan:
   criterion mapped to ≥1 slice. A user-named count is a hint at most: slice logically and,
   if your honest count differs, present it and why. Never pad or compress to hit a figure.
   (`.devrites/AFK` `max_slices` is a separate AFK iteration budget, not the decomposition.)
+- **Complexity does not shrink accepted scope.** Split/reorder for context, size,
+  or dependencies; MUST NOT drop/defer approved REQ/AC. Reduction requires Spec
+  Drift Guard + recorded human decision; hard/large is a decomposition signal.
 - **Wide mechanical refactors slice expand → migrate → contract.** If one repeated change
   crosses many files, don't fake vertical slices. Add a compatibility/adapter slice, migrate
   small green batches, then remove the old path. If a batch cannot stay green, use an
   integration branch plus a final verify slice.
-- **Root writes; drafter proposes.** Use the file-backed fresh-context contract in
+- **Root writes; drafter proposes.** Use the native bounded fresh-context contract in
   [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns architecture
   decisions, human questions, approval, and every canonical artifact write.
 
 ## Workflow
 0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`:** the always-on operating rules and anti-rationalizations.
-   Then **run the shared orientation preamble**. It confirms the active feature and which
-   artifacts exist (it prints `state.md`, the artifacts present, the run mode, and the
-   open-question tally):
-   ```bash
-   devrites-engine preamble
-   devrites-engine snapshot
-   devrites-engine spec-skeleton ".devrites/work/$(cat .devrites/ACTIVE 2>/dev/null)"
-   ```
-   If there is no active workspace, no `spec.md`, `spec-skeleton` blocks, or its readiness gate hasn't passed →
+   Resolve the active slug from `.devrites/ACTIVE`, require its `state.md`, and
+   re-open `spec.md` and apply `spec-grammar.md`'s Native grammar re-read
+   checklist. If there is no active workspace, no `spec.md`, the checklist
+   fails, or its readiness gate hasn't passed →
    **STOP** and tell the user to run `$rite-spec <feature>` first.
    If `decision-coverage.md` is absent or does not say `Decision coverage: CLEAR`,
    **STOP** → `$rite-clarify`.
@@ -91,7 +69,7 @@ Pull these via `Read` when shaping the plan:
 1a. **Draft from fresh context.** Freeze the planning inputs and dispatch
    `devrites-plan-drafter` in `define` mode for one atomic candidate bundle:
    `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md`, including proof mapping.
-   Await and validate `agent-result/v1`. The drafter does not write or ask; any human-owned
+   Wait for and validate its bounded result. The drafter does not write or ask; any human-owned
    choice returns to this root context.
 2. **Reconcile and decide the architecture + approach** (the HOW the spec deliberately
    omitted). Validate the candidate against live seams and the following rules; the root writes
@@ -106,6 +84,10 @@ Pull these via `Read` when shaping the plan:
    models, public contracts, or dependencies, compare ≥2 viable approaches by drivers,
    trade-offs, and consequences. Specify cross-boundary interfaces for independent work:
    invariants, I/O, ordering/idempotency, errors, versioning, config, and relevant budgets.
+   For any changed provider/consumer boundary, complete `plan.md`'s canonical
+   `Shared contract proof` table with one reused contract artifact and provider- and
+   consumer-side asserting tests that both consume it. Otherwise record the exact justified
+   no-impact statement. Missing, one-sided, duplicated-contract, vague, or non-consuming proof blocks.
    **Deep-module check:** while sketching the major modules, look for opportunities
    to extract a **deep module**: a small, stable interface that hides a meaningful chunk
    of behavior and is independently testable. A *shallow* module whose interface is
@@ -117,13 +99,11 @@ Pull these via `Read` when shaping the plan:
    calls. New product/acceptance/policy/irreversible-risk gaps return to `$rite-clarify`; a build
    checkpoint survives only for unavailable pre-code evidence or mandatory action-time approval.
    **Completion:** no known implementation choice is postponed for build to ask later.
-3. **Create vertical tasks:** each delivers one observable capability end to end and
-   is verifiable on its own; the **count emerges from the work, not a target number**;
-   first slice = thinnest useful end-to-end path; order by dependency (risk-first within a
-   tier). For a broad mechanical refactor, use expand → migrate batches → contract instead
-   of pretending each touched file is a product slice; every migrate batch must stay green,
-   or route through an integration branch + final verify slice. Use `rite-plan/reference/slicing.md` and
-   `rite-plan/reference/task-breakdown.md`. Mark per slice: **Frontend craft required**
+3. **Create vertical tasks:** each delivers one independently verifiable, observable
+   capability end to end; first is the thinnest useful path, ordered by dependency then
+   risk. Apply the slice-count and broad-refactor rules above plus
+   `rite-plan/reference/slicing.md` and `rite-plan/reference/task-breakdown.md`.
+   Mark per slice: **Frontend craft required**
    and **Browser proof required** (UI), and whether it's **fullstack** (FE+BE → contract
    first, see `devrites-frontend-craft/reference/fullstack.md`). **For UI slices, name which
    of `design-brief.md`'s key states + interaction the slice delivers, and give it a binary
@@ -131,28 +111,21 @@ Pull these via `Read` when shaping the plan:
    the design contract maps to slices as well as acceptance criteria.
    `Tests/proof` names exact command, cwd, expected signal, prerequisites, and mutable
    provenance inputs; `$rite-vet` preflights them. Write the portable repository command,
-   never RTK/local wrappers, user-specific absolute paths, or temporary proof trees.
+   never RTK/local wrappers, user-specific absolute paths, or temporary proof trees. When a
+   shared contract changes, order its canonical artifact before both asserting tests and make
+   the provider/consumer slice dependencies explicit.
 4. **Map coverage and wiring:** every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
    criterion. Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`
    rows into `traceability.md` and `test-plan.md`; unresolved rows get a gate/owner. Each
    cross-slice boundary names producer, consumer, invariant, integration step, and proof.
-4a. **Parallel-lane sanity check**: after drafting `tasks.md` but before asking for plan
-   approval, run the advisory lane planner:
-   ```bash
-   devrites-engine lanes plan "$(cat .devrites/ACTIVE 2>/dev/null)"
-   ```
-   Use it to spot independent read-only/review lanes and dependency mistakes, but do not
-   weaken DevRites' default of one production-write slice at a time.
-4b. **Persist the traceability matrix**: write `traceability.md` (`AC/REQ ID → slice(s) →
-   test/proof → evidence ID → touched files → status`), the living map `$rite-prove` and
-   `$rite-seal` walk. Generate it with `devrites-engine coverage` when available, then save/rename
-   the output as `traceability.md`, or write the table by hand from the same inputs if the
-   script is absent:
-   ```bash
-   S="$(cat .devrites/ACTIVE 2>/dev/null)"
-   devrites-engine coverage "$S" > ".devrites/work/$S/traceability.md"
-   ```
+4a. **Persist traceability natively.** The drafter proposes and root writes
+   `traceability.md` (`AC/REQ ID → slice → proof → evidence ID → files → status`).
+   Re-read spec, tasks, and proof fields: every ID must exist and every mapping
+   preserve meaning, not just labels. Reject orphans, inventions, and false mappings;
+   `$rite-prove` and `$rite-seal` read this file directly. Reference the plan's
+   `Shared contract proof` rows from existing slice/proof mappings; do not create a second
+   traceability system.
 5. **Complexity and deviations gate:** justify anything outside DevRites defaults (new dep,
    extra abstraction, second design system) in the plan; if you can't justify it, simplify.
    **Principles conformance:** read `.devrites/principles.md` (if present) and confirm the
@@ -163,14 +136,13 @@ Pull these via `Read` when shaping the plan:
    as a blocking gate at `$rite-vet`; no file → none declared → nothing to check.)
 6. **Write** `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md`; update
    `state.md` (phase: plan → next `$rite-vet`).
-6a. **Cross-artifact gate: now that `tasks.md` exists.** Run the deterministic
-   spec↔tasks coverage/consistency check; any non-zero result blocks plan readiness:
-   ```bash
-   S="$(cat .devrites/ACTIVE 2>/dev/null)"
-   devrites-engine analyze "$S"
-   ```
+6a. **Cross-artifact gate.** Read spec, tasks, and traceability together: every
+   buildable AC/REQ maps to an existing slice/proof, every slice maps to real
+   acceptance, and names/prose agree. Missing, duplicate, contradictory, or
+   meaning-changing mappings block.
 7. **Readiness gate** (plan-template): require CLEAR coverage, complete acceptance and
-   cross-slice wiring/proof, risk-first acyclic order, justified deviations, rollback, and a
+   cross-slice wiring/proof, complete `Shared contract proof`, risk-first acyclic order,
+   justified deviations, rollback, and a
    closed decision sweep. **Stop and confirm** before code. Render the review-before-code
    digest first: `Intent` (one sentence from the spec), `Done means` (acceptance coverage x/y),
    `Plan sanity` (slice count + riskiest boundary/gate), `Expected build interruptions`
@@ -188,18 +160,3 @@ Every slice must satisfy that complete field set; phase-specific gate details li
 
 > **Mid-flight discipline.** Do not skip vertical slicing, coverage mapping, or
 > dependency ordering. See [`anti-patterns`](reference/anti-patterns.md).
-
-## Output
-
-**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: plan written for <slug>; <n> vertical slices defined.
-Changed: architecture.md, plan.md, tasks.md, traceability.md, decisions.md, state.md
-Evidence: not applicable; acceptance coverage <x/y> mapped in traceability.md
-Open: <none | plan questions | Alternative: $rite-plan revise to reshape artifacts>; review digest: intent + coverage + plan sanity rendered
-Next: $rite-vet
-Record: .devrites/work/<slug>/plan.md
-↻ Hygiene: /clear after user confirms the plan
-```

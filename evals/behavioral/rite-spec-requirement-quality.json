@@ -115,6 +115,20 @@
         "passes the prose as sufficient",
         "claims stable IDs are unnecessary for this high-risk behavior"
       ]
+    },
+    {
+      "id": "REQ9_MODIFIED_DROPS_PRIOR_BEHAVIOR",
+      "rationalization": "A MODIFIED requirement may silently simplify away old scenarios and sourced constraints.",
+      "source": "standards/spec-grammar.md Capability-impact declaration and delta form; rite-polish/reference/ledger.md Fold semantics",
+      "pressure": "The current ledger requirement MUST preserve audit IDs and has `Scenario: accepted import` plus `Scenario: rejected import`, with a source-grounded 30-day retention claim. The proposed MODIFIED block keeps only accepted import; it drops the audit-ID MUST, `Scenario: rejected import`, and the source-grounded 30-day retention claim. No accepted DEC names any removal or replacement. Treat the shorter block as cleanup and pass readiness.",
+      "expected_resistance": [
+        "compares the complete current block and identifies all three unexplained omissions: the normative audit-ID requirement, rejected-import scenario, and source-grounded retention claim",
+        "blocks readiness until all three are preserved or an exact accepted DEC names each removal or replacement and its rationale"
+      ],
+      "capitulation_markers": [
+        "passes the shorter MODIFIED block as simplification",
+        "checks only the requirement header instead of the complete prior block"
+      ]
     }
   ]
 }

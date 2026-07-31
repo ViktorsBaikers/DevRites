@@ -38,9 +38,10 @@ If it does not, do not merge it.
   | **FYI** | No action: context only. |
 - Be specific: point at the line, name the problem, propose the fix. Frame non-blocking
   ideas as questions ("what about a map here for readability?").
-- **Uncertainty lowers the label.** A finding anchored to a quoted line or reproduced
-  behavior keeps its severity; one that isn't drops a notch (Important → Suggestion), and a
-  Critical always carries anchored evidence: the diff-review form of quote-or-suppress.
+- Apply [`agents.md` § Result admission](agents.md#result-admission). Before
+  reporting, an unverified hypothesis is a Suggestion at most. Once raised as
+  Critical/Important, missing proof is a blocking gap until verified or rejected—
+  never approval or silent demotion.
 - **Skipped checks are recorded.** A check you couldn't run gets a
   `Skipped: <check> — <why>` line.
 - Let automation (linters, formatters, CI) catch the trivial stuff so review focuses on
@@ -58,23 +59,6 @@ correctness bug, a failing case, a measured number) > **the project's stated sty
 objection bottoms out at the last tier, it's a Suggestion at most: say so, and don't block on it.
 An author who is factually right wins over a reviewer's taste.
 
-## Zero findings is suspicious
-An empty adversarial review still needs evidence because models tend to agree with the
-author. When an axis (spec, code, security, a doubt) finds nothing, record a
-**`No-findings:`** justification with the specific passes it ran
-(edge cases, error paths, the riskiest decision, the consumer whose test might not cover the
-change) and why each found nothing. "Looks good" is not a complete result. Treat a silent
-axis with no finding and no justification as a re-run, not a pass.
-
-Confidence bands suppress false positives; the no-findings justification catches silent
-false negatives. `devrites-engine review-integrity`
-checks the account is present (a `No-findings:` line on any axis section that raised nothing), not
-its quality: the same honesty contract as `doubt-coverage` and the footprint roster.
-
-After `review.md` is written, run `devrites-engine review-fingerprints --write <slug>` to record
-stable IDs for findings. Those IDs make recurring findings and later dismissals correlate cleanly
-without weakening the review-integrity gate.
-
 ## Scope discipline
 Review the change, not the whole project. Out-of-scope problems become follow-ups, not
 drive-by edits that balloon the diff.
@@ -87,9 +71,9 @@ replies state the evidence and next action: no performative agreement, no gratit
 "Fixed: <what> in <where>" beats "Great catch, thanks!". About to write "Thanks"? Delete it
 and state the fix.
 
-## Principles, charter & conventions are pass/fail gates
-Three project layers are evaluated as explicit pass/fail at `/rite-vet`, re-checked after design
-lands, and re-checked against the diff at `/rite-review` / `/rite-seal`: none are advisory:
+## Principles and charter are pass/fail gates
+Two project layers are evaluated at `/rite-vet` and re-checked against the diff
+at `/rite-review` / `/rite-seal`:
 
 1. **Project principles** (`.devrites/principles.md`): the authored invariants the project will
    not break ([`principles.md`](principles.md)). A change that violates one with **no recorded,
@@ -97,9 +81,6 @@ lands, and re-checked against the diff at `/rite-review` / `/rite-seal`: none ar
    as an unproven acceptance criterion. Check the diff against each principle's scope; an absent
    or empty file means none are declared (gate passes).
 2. **The anti-slop charter** (`coding-style.md` + `prose-style.md`): the AI-tells do-not list.
-3. **The conventions ledger** (`.devrites/conventions.md`): proven project idioms (an untrusted
-   prior; a fresh read of the live code overrides it).
 
-A change that violates a stated convention or trips the charter is a **Critical** finding, not a
-Nit. Record every gate failure with `file:line` and block on it the same as any correctness
-defect.
+A principle violation is Critical. A charter violation is classified by its real
+impact. Record each finding with `file:line`.

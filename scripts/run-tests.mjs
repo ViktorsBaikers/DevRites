@@ -76,7 +76,6 @@ const testWeights = new Map([
   ['validate-pack.sh', 25],
   ['install-flag-parser-invalid-smoke.sh', 20],
   ['codex-agent-generation-test.sh', 20],
-  ['agent-contract-evals-test.sh', 18],
   ['claude-runtime-smoke.sh', 15],
   ['codex-runtime-smoke.sh', 15],
   ['hooks-parity-test.sh', 15],
@@ -87,7 +86,6 @@ const testWeights = new Map([
 
 const engineIsolatedTests = new Set([
   'binary-lifecycle-test.sh',
-  'npx-pack-smoke.sh',
 ]);
 
 tests.sort((a, b) => {

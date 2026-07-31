@@ -1,7 +1,7 @@
 # Close-out: archive the workspace, free the active slot
 
 Closing a feature means it stops being the *active* work, not that its record is
-deleted. DevRites keeps the full audit trail; it just moves out of the live path.
+deleted. DevRites keeps the audit trail; it just moves out of the live path.
 
 ## What close-out does
 
@@ -9,7 +9,7 @@ deleted. DevRites keeps the full audit trail; it just moves out of the live path
    of `/rite-spec <next feature>`.
 2. **Archive.** Run the deterministic script:
    ```bash
-   devrites-engine close-out <slug>
+   devrites-engine state close <slug>
    ```
    It moves `.devrites/work/<slug>/` → `.devrites/archive/<slug>/` (every `.md`
    intact) and clears `.devrites/ACTIVE` **only if** ACTIVE still points at `<slug>`.
@@ -30,13 +30,5 @@ To resume archived work, move it back:
 `mv .devrites/archive/<slug> .devrites/work/<slug>` and write `<slug>` into
 `.devrites/ACTIVE`. Nothing is lost: close-out is reversible by design.
 
-## Cross-feature retro
-
-After archive, run `devrites-engine learnings nudge`. It stays silent until a
-finding/drift class recurs across at least two shipped features with new signal.
-
-When it emits, dispatch the read-only `devrites-retrospector` over
-`.devrites/archive/`, append its dated digest to `.devrites/retro.md`, and surface
-graduation candidates to `/rite-learn`. The retro proposes; only `/rite-learn` may
-promote a rule, principle, or convention. Mark `.devrites/.learnings-reviewed` only
-after the human acts there.
+Cross-feature review is user-invoked through `/rite-learn`; close-out does not
+mine, score, nudge, or write a retrospective ledger.

@@ -33,3 +33,5 @@ Return one consolidated report containing:
 4. Final disposition: accept, accept after listed corrections, or reject.
 
 Do not edit the candidate and do not report style preferences as blocking.
+If the bounded review finds no defect, say so and name the inspected evidence;
+never invent a finding to satisfy a quota.

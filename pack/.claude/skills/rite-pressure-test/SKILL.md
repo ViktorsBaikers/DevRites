@@ -3,7 +3,6 @@ name: rite-pressure-test
 description: Pressure-test a rough/vague idea: ideate, explore 3-5 approaches, radically different shapes, diverge then converge on direction before spec. Not for writing spec.
 argument-hint: "[rough idea or plan to stress-test]"
 user-invocable: true
-required-agent-roles: none
 ---
 
 # /rite-pressure-test: diverge then converge
@@ -18,9 +17,9 @@ Read `.claude/skills/devrites-lib/reference/standards/core.md` first: its operat
 existing conventions) shape the divergence. The other rule files load on demand.
 
 ## Diverge (widen)
-- Load the `rejected-direction` entries from `.devrites/learnings.md` first. A recorded
-  rejection re-enters the option set only with new evidence against its recorded *why*:
-  name that evidence when you bring one back.
+- Search the current `decisions.md`, accepted ADRs, and directly relevant archived
+  Markdown for prior rejected directions. Reconsider one only when new evidence answers
+  its recorded reason; cite both the rejection and the new evidence.
 - Generate 3-5 genuinely different approaches to the underlying goal, not variations of
   one. Cover at least: the obvious approach, a simpler/smaller approach, and a
   different-shape approach (different data model, flow, or boundary).
@@ -54,15 +53,9 @@ existing conventions) shape the divergence. The other rule files load on demand.
   frontier question per session.
 - Ask the user to pick when two options are close and the choice changes the product.
 - Name a **"Not doing" list**: the good options you deliberately cut. It's the highest-value
-  output of convergence: it hands `/rite-spec` its scope boundary and stops the rejected ideas
-  from creeping back in later. When a cut is durable (rejected for a reason that outlives this
-  feature) offer to record it: `devrites-engine learnings add <slug> "<direction>: <why>"
-  rejected-direction`.
-
-## Output
-Reply-contract exception: pre-workspace ideation utility. It skips `devrites-engine progress`,
-but follows the compact labels and single-next-action rule from
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
+  output of convergence: it hands `/rite-spec` its scope boundary. When a cut is
+  durable, offer to record the reason in the active feature's `decisions.md` or
+  a durable ADR rather than a parallel rejection index.
 
 ```
 Done: pressure test complete for <goal>.

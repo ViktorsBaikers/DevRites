@@ -4,7 +4,6 @@ description: User-invoked read-only structural map of unfamiliar code: modules, 
 argument-hint: "[symbol | file | area to map]"
 user-invocable: true
 disable-model-invocation: true
-required-agent-roles: none
 ---
 
 # /rite-zoom-out: step up one abstraction layer
@@ -57,11 +56,6 @@ end; don't try to fix it here.
   `/rite-define` (plan an approved spec).
 - You want a project-wide architecture audit: use the project's normal architecture
   review process; this skill is a read-only feature-area map.
-
-## Output shape
-Reply-contract exception: read-only mapping utility. It skips `devrites-engine progress` when
-there is no active workspace, but follows
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
 
 ```
 Done: mapped <area> in the project's vocabulary.

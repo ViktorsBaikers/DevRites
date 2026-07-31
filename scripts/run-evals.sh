@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # scripts/run-evals.sh: validate the structure of DevRites trigger evals.
 #
-# Schema check + summary. CI runs this script to enforce the shape and
-# catch broken JSON, missing skills, and empty/one-sided corpora. Invocation-policy
-# shape is enforced by run-routing-evals.py in scripts/validate.sh.
+# Schema check + summary. CI runs this script to catch broken JSON, missing
+# skills, and empty/one-sided corpora. Native hosts own actual skill routing.
 #
 # Usage:
 #   scripts/run-evals.sh                         # validate every evals/*.json
@@ -23,7 +22,6 @@ else
   fi
   FILES=()
   while IFS= read -r f; do
-    [[ "$f" == */routing-baseline.json ]] && continue
     FILES+=("$f")
   done < <(find "$EVALS_DIR" -maxdepth 1 -type f -name '*.json' | sort)
 fi
@@ -48,7 +46,6 @@ FAILED=0
 TOTAL=0
 
 for file in "${FILES[@]}"; do
-  [[ "$file" == */routing-baseline.json ]] && continue
   TOTAL=$((TOTAL + 1))
   printf '== %s ==\n' "$file"
 

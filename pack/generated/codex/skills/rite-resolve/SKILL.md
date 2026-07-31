@@ -4,27 +4,7 @@ description: User-invoked resume verb for answering, dropping, or batch-resolvin
 argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <path-to-yaml>"
 user-invocable: true
 disable-model-invocation: true
-required-agent-roles: none
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Installed `.agents/` mirrors may be Git-ignored. If a repository-aware file tool refuses an ignored path, read it with a native filesystem command instead; a tool refusal is not a completed task.
-- For automatic Engram calls, omit optional `project` and `session_id` unless an exact value came from Engram or repository configuration. Never derive either from `task_name`, a run ID, directory name, or normalized slug. Call `mem_session_summary` without them by default; on `unknown_session` or `unknown_project`, retry once with both optional fields omitted. If auto-detection is ambiguous, ask the user instead of guessing.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
-- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns="none"`. A missing visible `agent_type` field is still V2—not capability loss, V1, or HITL—so send it anyway. If the named call rejects it, stop before any generic/default spawn. Codex loads the role TOML's `developer_instructions` natively; DevRites verifies the durable rollout, wait, completion, and delivered result.
-- Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer` for a read-only role with `fork_turns="none"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract's exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard.
-- On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns="none"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`.
-- The invoked skill's `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn.
-- If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL. Never switch runtime lanes. Never execute a DevRites specialist role in the root context.
-- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
-- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
 
 # $rite-resolve: answer the human gate
 
@@ -32,7 +12,7 @@ This is the Codex mirror of a DevRites skill. In Codex:
 **stopped the session** (an AFK blocking/escalating/irreversible queue, or a HITL pause
 left unanswered), plus `--batch`. When `$rite-build` asks a question **inline**
 via `AskUserQuestion` and the human is present, that pick resolves the gate **in place** through
-the same `devrites-engine resolve` writer. You don't type `$rite-resolve` for it. For the async case this
+the `devrites-engine state resolve` writer. You don't type `$rite-resolve` for it. For the async case this
 skill takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
 `state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next command.
 
@@ -60,7 +40,7 @@ Pull these via `Read` when shaping the resolve:
   through the Spec Drift Guard (`$rite-plan repair`) **after** writing the answer: do
   not modify `spec.md` / `plan.md` inside this skill.
 - **The script is the source of truth.** Always invoke
-  `devrites-engine resolve`. It keeps `questions.md` + `state.md` consistent and emits the
+  `devrites-engine state resolve`. It keeps `questions.md` + `state.md` consistent and emits the
   next-action recommendation. The one `state.md` field this skill may write by hand is the
   unblocked slice's `Slice mode` (step 4, the named exception); everything else goes through
   the script, never by hand.
@@ -75,7 +55,7 @@ Pull these via `Read` when shaping the resolve:
 
 0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`** (operating rules + persistence discipline) before
    touching the workspace.
-   Then run `devrites-engine preamble` for deterministic workspace orientation.
+   Then read the explicit or active workspace's `state.md` directly.
 1. **Parse arguments.** `$ARGUMENTS` is one of:
    - `<qid> "<answer>"`: answer the single open question.
    - `--drop <qid>` (optional `"<reason>"`): mark the question `dropped`; record
@@ -91,8 +71,7 @@ Pull these via `Read` when shaping the resolve:
    user's explicit consent for this local workspace mutation. Echo the qid, answer/drop,
    and slice being unblocked, then continue immediately; do not ask the user to confirm the
    command they just typed.
-4. **Mutate.** Run `devrites-engine resolve` with the same
-   arguments. The script:
+4. **Mutate.** Run `devrites-engine state resolve` with those arguments. It:
    - flips the qid's `status` to `answered` / `dropped` and stamps `answered_at` + `answer`;
    - if the qid is in `state.md`'s `Awaiting human` block (single-question pause), clears
      that block and sets `Status: running`;
@@ -113,18 +92,3 @@ Pull these via `Read` when shaping the resolve:
 > answer. That's `$rite-plan repair`. Don't silently retry a build after the answer
 > lands: the user types the next command. Don't merge two open questions into one
 > answered entry: each question is independently auditable.
-
-## Output
-
-**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: resolved <qid> for <gate> at <slice/phase>.
-Changed: questions.md, state.md, decisions.md <updated|n/a>
-Evidence: not applicable; answer persisted before resume
-Open: <none | remaining questions | plan repair needed>
-Next: <single recommended command>
-Record: .devrites/work/<slug>/questions.md
-↻ Hygiene: no /clear needed; the answer is persisted
-```

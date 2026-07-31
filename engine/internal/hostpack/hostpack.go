@@ -80,16 +80,17 @@ var ClaudeSettingsMerge = JSONMerge{
 	PayloadRel: "claude/settings.json",
 	TargetRel:  ".claude/settings.json",
 	MarkerRel:  ".claude/devrites.claude-hooks-merge",
-	MarkerText: ".claude/settings.json contains DevRites managed hook entries.",
-	DryRunText: ".claude/settings.json (DevRites hooks)",
+	MarkerText: ".claude/settings.json contains DevRites managed permissions.",
+	DryRunText: ".claude/settings.json (DevRites permissions)",
 }
 
-var CodexHooksMerge = JSONMerge{
-	PayloadRel: "codex/hooks.json",
-	TargetRel:  ".codex/hooks.json",
-	MarkerRel:  ".claude/devrites.codex-hooks-merge",
-	MarkerText: ".codex/hooks.json contains DevRites managed hook entries.",
-	DryRunText: ".codex/hooks.json (DevRites hooks)",
+var CodexConfigMerge = MarkerMerge{
+	TargetRel:  ".codex/config.toml",
+	PayloadRel: "codex/config.toml",
+	Begin:      "# BEGIN DEVRITES CODEX PERMISSIONS",
+	End:        "# END DEVRITES CODEX PERMISSIONS",
+	MarkerRel:  ".claude/devrites.codex-config-merge",
+	MarkerText: ".codex/config.toml contains the DevRites read-only-root permission profile.",
 }
 
 var managedMerges = []ManagedMerge{
@@ -101,21 +102,16 @@ var managedMerges = []ManagedMerge{
 		DryRun:    "AGENTS.md DevRites block",
 	},
 	{
-		MarkerRel: ".claude/devrites.codex-config-merge",
-		TargetRel: ".codex/config.toml",
-		Begin:     "# BEGIN DEVRITES CODEX MCP",
-		End:       "# END DEVRITES CODEX MCP",
-		DryRun:    ".codex/config.toml DevRites MCP block",
+		MarkerRel: CodexConfigMerge.MarkerRel,
+		TargetRel: CodexConfigMerge.TargetRel,
+		Begin:     CodexConfigMerge.Begin,
+		End:       CodexConfigMerge.End,
+		DryRun:    ".codex/config.toml DevRites permission block",
 	},
 	{
 		MarkerRel: ClaudeSettingsMerge.MarkerRel,
 		TargetRel: ClaudeSettingsMerge.TargetRel,
-		DryRun:    ".claude/settings.json DevRites hooks",
-	},
-	{
-		MarkerRel: CodexHooksMerge.MarkerRel,
-		TargetRel: CodexHooksMerge.TargetRel,
-		DryRun:    ".codex/hooks.json DevRites hooks",
+		DryRun:    ".claude/settings.json DevRites permissions",
 	},
 }
 
@@ -130,7 +126,7 @@ func RequiredPayload(withCodex bool) []string {
 			"codex/skills",
 			"codex/agents",
 			"codex/AGENTS.md",
-			"codex/hooks.json",
+			"codex/config.toml",
 		)
 	}
 	return required

@@ -35,13 +35,10 @@ func NewReport(f *Feature) *Report {
 		required[s] = true
 	}
 	requiredFiles := make(map[string]bool)
-	var missingFiles []string
-	if !f.LegacyLayout {
-		for _, name := range RequiredWorkspaceFiles(f.Phase) {
-			requiredFiles[name] = true
-		}
-		missingFiles = MissingWorkspaceFiles(f, f.Phase)
+	for _, name := range RequiredWorkspaceFiles(f.Phase) {
+		requiredFiles[name] = true
 	}
+	missingFiles := MissingWorkspaceFiles(f, f.Phase)
 	return &Report{
 		Feature:       f,
 		Required:      required,
@@ -84,12 +81,8 @@ func MissingWorkspaceFiles(f *Feature, p Phase) []string {
 }
 
 // Complete reports whether every concrete canonical-workspace file required by
-// the current phase has real content. Compatibility features/ workspaces keep
-// their legacy section-based contract until migration moves them to work/.
+// the current phase has real content.
 func (r *Report) Complete() bool {
-	if r.LegacyLayout {
-		return len(r.Missing) == 0
-	}
 	return len(r.MissingFiles) == 0
 }
 
@@ -114,12 +107,6 @@ func (r *Report) Render() string {
 	}
 	if r.Complete() {
 		b.WriteString("result: complete\n")
-	} else if r.LegacyLayout {
-		missing := make([]string, len(r.Missing))
-		for i, section := range r.Missing {
-			missing[i] = string(section)
-		}
-		fmt.Fprintf(&b, "result: incomplete (missing: %s)\n", strings.Join(missing, ", "))
 	} else {
 		fmt.Fprintf(&b, "result: incomplete (missing files: %s)\n", strings.Join(r.MissingFiles, ", "))
 	}

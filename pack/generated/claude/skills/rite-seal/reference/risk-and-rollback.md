@@ -29,8 +29,8 @@ For each risky step, state how to back it out:
 
 A required review must run in a fresh spawned agent:
 
-- If neither a named role nor a guarded generic agent is available, record the roster
-  skip reason and keep seal **NO-GO**.
+- If the named role is unavailable, record the roster skip reason and keep seal
+  **NO-GO**.
 - Never run the reviewer in the root context or log root work as a dispatched review.
 - AFK never auto-accepts a missing reviewer.
 - Security or irreversible-risk scope remains NO-GO while independent review is

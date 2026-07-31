@@ -1,2 +1,0 @@
-exit 0
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"DevRites: tests/build are RED (npm test). Fix to green or record the failure + next step in state.md before stopping: the Stop gate blocks an end-of-turn while .red is set."}}

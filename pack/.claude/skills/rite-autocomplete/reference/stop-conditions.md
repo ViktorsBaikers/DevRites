@@ -1,8 +1,8 @@
 # Stop conditions: when autocomplete must pause for a human
 
-In the cases below, autocomplete writes `state.md` (`Status: awaiting_human` or
-`blocked`), reports the reason and one resume command, fires `notify` if set, and
-**stops**. `--ship` cannot bypass them.
+On these conditions, write `state.md` (`awaiting_human` or `blocked`), report
+the reason and one resume command, notify if configured, and stop. `--ship`
+cannot bypass them.
 
 ## Always stop (irreversible-risk list: from `afk-hitl.md`)
 
@@ -13,9 +13,8 @@ Regardless of `allow_gates` or `--ship`:
 - External-service contract change.
 - Filesystem destruction outside the workspace.
 
-Red tests/types/lint/build/browser proof are hard non-advance gates, not automatically human
-gates. Run bounded `devrites-debug-recovery`; if it exhausts, stop as a technical blocker unless
-the remaining issue is human-owned.
+Red checks are hard non-advance gates. Run bounded `devrites-debug-recovery`;
+on exhaustion, stop as a technical blocker unless human-owned.
 
 ## Stop on gate severity
 
@@ -26,11 +25,9 @@ the remaining issue is human-owned.
 
 ## Stop on strategic-review scope expansion (`/rite-temper`)
 
-- `/rite-temper` choosing scope mode `expand`, or otherwise **adding** any acceptance
-  criterion to `spec.md`: → synchronous pause, regardless of `allow_gates` / `--ship`.
-  Autocomplete may auto-apply only `hold-rigor` and `reduce-to-MVP` (they harden / prune and
-  never grow the build's scope); **growing scope unattended is never automatic**. A low-stakes
-  spec that temper skips, or a `hold-rigor` / `reduce-to-MVP` run, does **not** pause.
+- Any `expand` or added acceptance criterion pauses regardless of
+  `allow_gates`/`--ship`. Only `hold-rigor` and `reduce-to-MVP` auto-apply;
+  skipped low-stakes specs and those two modes do not pause.
 
 ## Stop on incomplete decision coverage (`/rite-clarify`)
 
@@ -44,21 +41,21 @@ the remaining issue is human-owned.
   direction. Do not round NO-GO up to GO.
 - **Spec Drift Guard fires** (`/rite-build` finds the plan is wrong and the change
   alters product behaviour) → stop; route through `/rite-plan repair`.
-- **Budget exhausted with slices still pending:** `devrites-engine tick-afk` exit 3 while `tasks.md`
-  still has unbuilt slices (only when an explicit `--max-slices` capped the run below the
-  plan's count) → stop; report slices remaining. Exhausting the default budget = all
-  planned slices built = normal completion → continue to `/rite-prove` without pausing.
+- **Budget exhausted with slices still pending:** any validated root-owned remaining
+  value of zero stops before the next dispatch. Report which bound won (pre-existing
+  remaining value, explicit flag, sentinel cap, or post-vet pending count) and the
+  unbuilt slices. A malformed value also fails closed. Zero with no pending slices is
+  normal completion → continue to `/rite-prove` without pausing.
 - **Still low-confidence after the interview:** the idea can't be pinned to testable
   acceptance criteria → stop and ask, rather than guessing the product.
-- **Repeated failure:** a phase fails, `devrites-debug-recovery` can't fix it within
-  scope after a bounded number of attempts → stop with the reproduction.
+- **Repeated failure:** bounded recovery exhausts → stop with reproduction.
 
 ## The final type-GO
 
-- Default: render the type-GO prompt at `/rite-ship` and **stop** for the human's
-  literal `GO`.
-- With `--ship` / `--yolo`: auto-confirm the type-GO (the *only* thing the flag changes).
-  Everything above still pauses.
+- `--ship` / `--yolo` never authorizes Git. Continue through ship preflight,
+  disclose the exact plan, then stop for literal `GO` and native approval.
+- Without either flag, stop at seal GO with `/rite-ship` as the resume command.
+  Seal GO, AFK, prior approval, and flags never satisfy ship approval.
 
 ## How to stop well
 

@@ -4,7 +4,6 @@ description: User-invoked explainer that teaches one concept, diff, idea, or rec
 argument-hint: "[a concept | a diff ref | an idea | \"what did I do this week?\"], or bare to be asked"
 user-invocable: true
 disable-model-invocation: true
-required-agent-roles: none
 ---
 
 # /rite-explain: the human half of the learning loop
@@ -32,20 +31,6 @@ beginners" softening, no executive summary. It is a display artifact: no embedde
 widgets: the check-in (below) happens live in the session, where an answer can be
 graded. If the user asked for prep for a meeting or a teammate, it preps **them** to explain the
 thing; it does not produce the deck.
-
-## Model tiers
-
-Dispatch by task shape, per [`devrites-lib/reference/model-tiers.md`](../devrites-lib/reference/model-tiers.md):
-
-- **extraction tier:** the work-recap scout and any repo-profiling: search-and-quote, run under a
-  read budget, write findings to the run's scratch dossier, return only a gist.
-- **ceiling tier:** the explainer composition and the check-in reasoning. These run inline in the
-  orchestrator's own model; nothing is dispatched down. Teaching quality is the whole product: do
-  not cheapen it.
-
-No per-agent model control means dispatch the scout as a same-model fresh agent under the
-same budget. If no fresh-agent rung is available, stop with the missing capability; never run
-the scout in the root context.
 
 ## Workflow
 
@@ -77,7 +62,7 @@ free: prefer it over re-deriving:
 - An **idea** or a concept with no repo footprint → the user's framing plus, only if it sharpens
   the teaching, current external sources (weight by date; the year is 2026).
 
-Create the run directory before composing so scout dossiers have a home:
+Create the run directory before composing so the durable artifact has a home:
 
 ```bash
 RUN_DIR=".devrites/explainers/$(date +%Y%m%d)-<slug>"; mkdir -p "$RUN_DIR"
@@ -134,10 +119,6 @@ not force it; offer once.
   `principles.md`, or any rule file. Teaching the human is not promoting a repo rule.
 
 ## Output
-
-Reply-contract exception: cross-feature learning utility; may run with no active feature, so it
-skips `devrites-engine progress` when no workspace exists. Otherwise follows
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
 
 ```
 Done: explained <the one thing> as a <concept|diff|idea|recap> explainer OR walked through <change> for human review.

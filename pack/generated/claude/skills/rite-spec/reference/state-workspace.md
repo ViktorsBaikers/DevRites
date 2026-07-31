@@ -11,7 +11,7 @@ Load that schema before creating or updating workspace artifacts.
   ACTIVE
   work/
     <feature-slug>/
-      README.md                  # compact workspace map (feature.md/index.md aliases supported)
+      README.md                  # compact workspace map
       brief.md
       spec.md
       architecture.md            # from /rite-define
@@ -26,7 +26,7 @@ Load that schema before creating or updating workspace artifacts.
       eng-review.md              # from /rite-vet
       test-plan.md               # from /rite-vet
       state.md
-      evidence.md                # from /rite-build or /rite-prove (proof.md alias supported)
+      evidence.md                # from /rite-build or /rite-prove
       browser-evidence.md        # UI only
       drift.md                   # drift only
       touched-files.md           # from /rite-build
@@ -38,14 +38,11 @@ Load that schema before creating or updating workspace artifacts.
     <feature-slug>/
 ```
 
-Backward compatibility: if an installed project already uses
-`.devrites/features/<slug>/`, keep reading and updating that workspace. New
-writer instructions should prefer `.devrites/work/<slug>/`; migration adds
-canonical files and preserves aliases rather than deleting old ones.
-
 ## Creation rules
 
-- Slug is kebab-case and comes from the objective.
+- Create or reuse the slug exactly under the canonical schema's
+  [Slug identity](../../devrites-lib/reference/workspace-artifact-schema.md#slug-identity)
+  contract.
 - `/rite-spec` creates the workspace map, `brief.md`, `spec.md`, `decisions.md`,
   `assumptions.md`, `questions.md`, `state.md`, optional `references.md` /
   `references/`, and optional `design-brief.md` for UI.
@@ -57,8 +54,9 @@ canonical files and preserves aliases rather than deleting old ones.
   empty placeholders; absence means the phase has not produced that artifact.
 - Each artifact starts with a summary and links to deeper source files instead of
   copying their content.
-- Use stable IDs: `REQ-001`, `AC-001`, `SLICE-001`, `DEC-001`, `Q-001`,
-  `DRIFT-001`, `EVID-001`.
+- Use stable IDs: `REQ-001`, `AC-001`, `EDGE-001`, `PROH-001`, `SLICE-001`,
+  `DEC-001`, `ASM-001`, `DRIFT-001`, `EVID-001`; apply the canonical schema's
+  append-only ID contract. Queued questions use `q-YYYY-MM-DD-NNN` below.
 
 ## README.md template
 
@@ -114,7 +112,7 @@ None.
 Only present when status is awaiting_human.
 | Key | Value |
 | --- | --- |
-| question_id | Q-001 |
+| question_id | q-YYYY-MM-DD-NNN |
 | gate | blocking |
 | blocking_slices | SLICE-001 |
 ```
@@ -122,12 +120,23 @@ Only present when status is awaiting_human.
 `state.md` is a compact cursor, not a history file. Put proof in `evidence.md`,
 decisions in `decisions.md`, assumptions in `assumptions.md`, and drift in
 `drift.md`. Omit both `return_*` rows outside a later-phase `/rite-clarify`
-retrofit; `devrites-engine clarify-return` owns their atomic lifecycle.
+retrofit. The controlling root follows `/rite-clarify`'s native cursor protocol:
+save both fields before later-phase entry, restore and remove both only after a
+contract-neutral CLEAR verdict, and preserve every unrelated Markdown byte.
+
+`afk_slices_remaining` is mutable runtime state, not `.devrites/AFK`
+configuration. Only the controlling root writes it under the shared
+[`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#the-sentinel-devritesafk)
+contract and Build's
+[`afk-discipline.md`](../../rite-build/reference/afk-discipline.md#iteration-cap).
+Ordinary workspace creation preserves the field without initializing,
+increasing, renaming, or deleting it. Released bullet workspaces spell it `AFK
+slices remaining`; preserve that presentation rather than migrating it.
 
 ## questions.md entry format
 
 ```markdown
-## Q-001
+## q-YYYY-MM-DD-NNN
 status: open | answered | dropped
 slice: spec | plan | SLICE-001
 gate: advisory | validating | blocking | escalating
@@ -143,6 +152,12 @@ impact: <affected AC/REQ/slice IDs>
 ```
 
 No open blocking/escalating question may remain before define/build/prove gates.
+For a new entry, scan every `## q-YYYY-MM-DD-NNN` header for the current date,
+choose one above the highest suffix (or `001` when none exist), advancing until
+it is unused, then re-read
+`questions.md` immediately before the append and recompute. If the candidate is
+no longer unused, retry the scan; never reserve or derive it with an engine
+command.
 
 ## brief.md template
 

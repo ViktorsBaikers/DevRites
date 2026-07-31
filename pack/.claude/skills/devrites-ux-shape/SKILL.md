@@ -1,8 +1,7 @@
 ---
 name: devrites-ux-shape
-description: Plan UX/UI before code: design direction, design brief, visual direction, key states, interaction model for screens/forms/dashboards/settings pages. Use when shaping UI. Not for building/polish.
+description: Shape UX/UI direction, states, and interactions before code. Use for screens, forms, dashboards, or settings; not for implementation or polish.
 user-invocable: false
-required-agent-roles: none
 ---
 
 # devrites-ux-shape: plan the UX/UI before code
@@ -29,7 +28,8 @@ gathered:
   → `../devrites-frontend-craft/reference/design-references.md`.
 - `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` if present: anchors that reduce questions.
   `DESIGN.md` is the project's **rolled-up design memory** (tokens, calibration baseline,
-  proven component behaviors) earlier features sealed via `../rite-ship/reference/design-memory.md`;
+  proven component behaviors) earlier features closed during Polish via
+  `../rite-polish/reference/design-memory.md`;
   treat it as the inherited system: read it before re-discovering, depart only on signal.
 - `references.md` + `references/`: the screenshots / Figma / video / links the human
   supplied. Honor each recorded role: **target** = fidelity contract, **constraint** =

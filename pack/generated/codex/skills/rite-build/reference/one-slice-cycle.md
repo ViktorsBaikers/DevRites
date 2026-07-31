@@ -1,35 +1,32 @@
 # One-slice cycle
 
-The discipline that makes large features manageable: build one thin slice, leave it
-working and proven, stop. Never implement the whole feature in one pass.
+One wright dispatch builds one thin, proven slice. HITL stops; only explicit
+`.devrites/AFK` lets the controlling root chain another pending slice under the
+green-proof, cap, and pause rules. Each wright returns after exactly one slice.
 
 ## The cycle
 The orchestrator (`$rite-build`) gates and records; the **wright** writes. See
 [`wright-dispatch.md`](wright-dispatch.md).
 ```
 SELECT    → orchestrator: restate slice goal + acceptance + scope boundary; HITL gate (pause pre-code)
-(SHAPE)   → orchestrator: if UI and no design-brief.md, shape it (devrites-ux-shape) before dispatch
-(FORGE)   → orchestrator: if slice is Forge: yes, engine plan → snapshot → bound isolated
-            candidates → extract → judge → record + merge one winner, then continue at DOUBT (forge.md)
+(SHAPE)   → orchestrator: missing UI design-brief.md → shape it, then $rite-vet before dispatch
 DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). Inside the wright:
    ORIENT    → load only the files this slice touches; learn the project's idiom; reuse-first
    (RED)     → if behavior change: write the failing test first
    IMPLEMENT → smallest complete version; match conventions; devrites-frontend-craft for UI
    VERIFY    → writer-safe tests/types/lint; return code + tests
 (DOUBT)   → orchestrator, on return: devrites-doubt each non-trivial decision the wright stood up
-PROVE     → root: exact required production build/browser/E2E, then final reconcile; fail-on-red
-RECORD    → orchestrator: after green verification, Forge cleanup/report if used; then
-            state.md, evidence.md, touched-files.md (the canonical writer)
+PROVE     → root: required build/browser/E2E, then returned-diff/path review; fail-on-red
+RECORD    → orchestrator: after green verification, update state.md/evidence.md and
+            upsert the authoritative candidate manifest from the actual scoped diff
 (CHECKPOINT) → orchestrator: if .devrites/CHECKPOINT is set, commit the proven slice
             local-only as WIP(<slug>) with a [devrites-context] body → survives a crash (checkpoint.md)
-STOP      → report + recommend next; do not start slice N+1
+NEXT      → HITL root reports and stops; AFK root may repeat only under afk-discipline.md
 ```
 
-## Why stop after one slice
-- Keeps the diff reviewable (~one capability, roughly ≤100 lines of meaningful change).
-- Surfaces integration/drift problems while they're cheap.
-- Gives the user a decision point. They may reprioritize, reslice, or polish now.
-- Prevents the "90% done" pile-up where nothing is proven.
+## Why the boundary matters
+- Keeps diffs reviewable and reveals integration or drift early.
+- Preserves a HITL decision point and prevents unproven pile-ups.
 
 ## Restate the scope boundary
 Before coding, write what this slice will and will **not** touch. This is the contract

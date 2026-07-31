@@ -1,26 +1,26 @@
 ---
 name: rite-build
-description: Build one approved vertical slice, then stop with evidence. Use when the next planned slice should be implemented. Not for multiple slices.
+description: Build the next approved vertical slice with evidence. HITL stops after one; explicit AFK may chain bounded green slices.
 argument-hint: "[slice number or name]"
 user-invocable: true
-required-agent-roles: devrites-slice-wright
 ---
 
 # /rite-build: one verified slice
 
-Build and prove one slice, then **stop**. **Read the active workspace first**; if none,
-tell the user to run `/rite-spec <feature>`.
+Build and prove one slice. HITL stops; a later user invocation starts the next.
+Explicit `.devrites/AFK` alone lets the controlling root chain pending slices,
+only under existing green-proof, cap, and pause rules. **Read the active workspace
+first**; if none, tell the user to run `/rite-spec <feature>`.
 
-This skill owns the gates and workspace. A fresh-context
-[`devrites-slice-wright`](../../agents/devrites-slice-wright.md) writes source and tests.
-Run the readiness, slice-selection, and HITL checks; dispatch the wright; then run the
-doubt, fail-on-red, recording, and stop checks. See
+The root owns gates/workspace; a
+fresh-context [`devrites-slice-wright`](../../agents/devrites-slice-wright.md)
+writes source and tests. Apply the readiness, selection, host, HITL/AFK,
+dispatch, doubt, fail-on-red, record, and stop checks. See
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-Read `.claude/skills/devrites-lib/reference/standards/core.md` first (workflow step 0). The
-following load on demand: **the wright reads them** (they are named in its contract) while it
-writes; read them yourself for the doubt/record gates:
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first. The wright
+reads named on-demand rules while writing; root reads them for doubt/record gates:
 - `coding-style.md`: naming, function shape, guard clauses, comments, reuse-first.
 - `error-handling.md`: fail fast, no silent catches, fail closed.
 - `testing.md`: pyramid, behaviour over implementation, see-it-fail-first.
@@ -33,13 +33,14 @@ writes; read them yourself for the doubt/record gates:
 
 
 ## Operating rules
-- **One slice at a time. DO NOT** start the next slice without the user asking.
+- **One slice per wright dispatch.** Every wright returns after it. The controlling
+  root applies the mode rule above before another dispatch.
 - Evidence over confidence. Prefer existing conventions. Feature scope only: no
   drive-by refactors.
-- **Record adjacent issues; do not edit them.** An issue outside the captured
-  `.wright-allowlist` becomes an FYI follow-up in `decisions.md`. The slice summary states
+- **Record adjacent issues; do not edit them.** An issue outside the exact paths
+  stated in the dispatch task becomes an FYI follow-up in `decisions.md`. The slice summary states
   what it deliberately left alone ([`git-workflow.md`](../devrites-lib/reference/standards/git-workflow.md)
-  "Things I didn't touch"). The `devrites-engine reconcile` gate enforces this boundary.
+  "Things I didn't touch"). The root rejects a returned diff outside this boundary.
 - **Don't re-run an unchanged check.** The same build or test on unchanged code provides
   no new evidence. Re-verify after an edit.
 - Surface material assumptions. Do not introduce an unplanned dependency or second design
@@ -60,31 +61,24 @@ writes; read them yourself for the doubt/record gates:
   principle was broken**; a fresh violation is handled like any irreversible-risk item: a
   human-approved, scoped exception in the register or a stop, never folded into the slice. No
   `.devrites/principles.md` → none declared → nothing to honor.
-- **You never edit source: the wright is the only writer of code + tests.** You write only
-  `.devrites/` bookkeeping. On any red gate, doubt finding, or coverage gap your only remedies
-  are to continue the same wright under bounded `devrites-debug-recovery` (three total attempts
-  per root cause) or stop with the correctly classified blocker: never patch the code yourself
-  and never ask the human to authorize agent-owned repair work. The `devrites-engine reconcile`
-  gate enforces this against the root-owned pre-dispatch allowlist: any source file changed
-  outside that exact set is a hard STOP.
-- **Forge is manifest-owned, winner-takes-all.** For a fully typed `Forge: yes`
-  slice, follow [`reference/forge.md`](reference/forge.md): `forge plan` precedes
-  reconciliation; every candidate is bound to its isolated worktree and live worker;
-  the judge records one winner; normal reconciliation and proof pass before manifest-only
-  cleanup and the human report. Any stale/ineligible flag uses one serial wright before
-  Forge creates state.
+- **You never edit source.** You write only `.devrites/` bookkeeping. Follow the
+  host gate in `wright-dispatch.md` before every build or recovery dispatch. On a
+  supported host, the wright is the only writer of code and tests. Codex gives
+  the root workspace permission only so that native writer dispatch can execute;
+  never patch code from the root. Put the exact project-relative source/test path
+  list directly in the task, dispatch the exact `devrites-slice-wright`, then
+  compare `git diff --name-only` with those task paths. Any extra source file is
+  a hard STOP.
 
 ## Workflow
 
 Run the full execution contract in
 [`reference/phase-contract.md`](reference/phase-contract.md). It is not optional:
 it contains the gated one-slice workflow, including readiness, HITL/AFK handling,
-wright dispatch, forge, doubt, fail-on-red, record gates, and stop behavior.
+wright dispatch, doubt, fail-on-red, record gates, and stop behavior.
 
 ## Output
 
-Use the full output contract in [`reference/output.md`](reference/output.md).
-It preserves the progress-footer-first response shape, uses the shared completion
-reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)),
-and keeps the explicit stop after one slice.
+Use [`reference/output.md`](reference/output.md) and the shared
+[`reply contract`](../devrites-lib/reference/reply-contract.md). They keep the
+HITL stop, bounded AFK chaining, and no-automatic-`/rite-prove` boundary explicit.

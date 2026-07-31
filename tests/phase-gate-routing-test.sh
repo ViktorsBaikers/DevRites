@@ -1,201 +1,155 @@
 #!/usr/bin/env bash
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-SPEC="$ROOT/pack/.claude/skills/rite-spec/SKILL.md"
-CLARIFY="$ROOT/pack/.claude/skills/rite-clarify/SKILL.md"
-TEMPER="$ROOT/pack/.claude/skills/rite-temper/SKILL.md"
-DEFINE="$ROOT/pack/.claude/skills/rite-define/SKILL.md"
-VET="$ROOT/pack/.claude/skills/rite-vet/SKILL.md"
-VET_ARTIFACTS="$ROOT/pack/.claude/skills/rite-vet/reference/artifacts.md"
-PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
-PLAN_MODES="$ROOT/pack/.claude/skills/rite-plan/reference/replan-and-repair.md"
-CONVERGE="$ROOT/pack/.claude/skills/rite-converge/SKILL.md"
-BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
-WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
-CLEANUP="$ROOT/pack/.claude/skills/devrites-debug-recovery/reference/cleanup-and-classify.md"
-DRIFT="$ROOT/pack/.claude/skills/rite-build/reference/spec-drift-guard.md"
-DOCTOR="$ROOT/pack/.claude/skills/rite-doctor/SKILL.md"
-UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
-UPGRADE_PLANNER="$ROOT/pack/.claude/agents/devrites-upgrade-planner.md"
-RESOLVE="$ROOT/pack/.claude/skills/rite-resolve/SKILL.md"
-AUTOCOMPLETE="$ROOT/pack/.claude/skills/rite-autocomplete/SKILL.md"
 fail=0
 
 ok() { printf '  ok: %s\n' "$*"; }
 no() { printf '  FAIL: %s\n' "$*"; fail=1; }
+require() {
+  if grep -Fq -- "$2" "$1"; then ok "$3"; else no "$3"; fi
+}
+forbid() {
+  if grep -Fq -- "$2" "$1"; then no "$3"; else ok "$3"; fi
+}
+require_order() {
+  local file="$1" label="$2" previous=0 line token
+  shift 2
+  for token in "$@"; do
+    line="$(grep -nF -- "$token" "$file" | head -1 | cut -d: -f1)"
+    if [ -z "$line" ] || [ "$line" -le "$previous" ]; then
+      no "$label"
+      return
+    fi
+    previous="$line"
+  done
+  ok "$label"
+}
 
 echo "== phase-gate-routing-test =="
 
-if grep -q 'Do not run `devrites-engine analyze`' "$SPEC"; then
-  ok "rite-spec defers analyze until tasks exist"
-else
-  no "rite-spec does not explicitly defer analyze"
-fi
+SPEC="$ROOT/pack/.claude/skills/rite-spec/SKILL.md"
+CLARIFY="$ROOT/pack/.claude/skills/rite-clarify/SKILL.md"
+DEFINE="$ROOT/pack/.claude/skills/rite-define/SKILL.md"
+BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
+WRIGHT="$ROOT/pack/.claude/agents/devrites-slice-wright.md"
+WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
+CORE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/core.md"
+REPLY="$ROOT/pack/.claude/skills/devrites-lib/reference/reply-contract.md"
+PROVE="$ROOT/pack/.claude/skills/rite-prove/SKILL.md"
+CANDIDATE_INTEGRITY="$ROOT/pack/.claude/skills/devrites-lib/reference/candidate-integrity.md"
+PROOF_RUNNER="$ROOT/pack/.claude/agents/devrites-proof-runner.md"
+DISCOVERY="$ROOT/pack/.claude/skills/rite-prove/reference/test-command-discovery.md"
+CUSTOMIZE="$ROOT/pack/.claude/skills/rite-customize/SKILL.md"
+UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
+UPGRADE_PLANNER="$ROOT/pack/.claude/agents/devrites-upgrade-planner.md"
+RESOLVE="$ROOT/pack/.claude/skills/rite-resolve/SKILL.md"
+SEAL="$ROOT/pack/.claude/skills/rite-seal/SKILL.md"
+SEAL_CONTRACT="$ROOT/pack/.claude/skills/rite-seal/reference/phase-contract.md"
 
-write_line="$(grep -n '^6\. \*\*Write\*\*' "$DEFINE" | cut -d: -f1)"
-analyze_line="$(grep -n '^[[:space:]]*devrites-engine analyze' "$DEFINE" | head -1 | cut -d: -f1)"
-readiness_line="$(grep -n '^7\. \*\*Readiness gate\*\*' "$DEFINE" | cut -d: -f1)"
-if [ -n "$write_line" ] && [ -n "$analyze_line" ] && [ -n "$readiness_line" ] \
-   && [ "$analyze_line" -gt "$write_line" ] && [ "$analyze_line" -lt "$readiness_line" ]; then
-  ok "rite-define runs analyze after writing tasks and before readiness"
-else
-  no "rite-define does not run analyze after tasks are written"
-fi
+require "$CORE" 'Immediately before its final response' 'core loads the shared reply contract at the response boundary'
+require "$CORE" 'reply-contract.md' 'core names the universal reply contract'
+require "$CORE" 'devrites-engine check readiness <slug>' 'core preserves the structural lifecycle rest point'
+require "$CORE" 'devrites-engine check seal <slug>' 'core preserves the structural seal rest point'
+require "$REPLY" 'Use exactly one recommended next action' 'reply contract keeps one next action'
 
-vet_analyze_count="$(grep -c '^[[:space:]]*devrites-engine analyze' "$VET" || true)"
-if [ "$vet_analyze_count" -ge 2 ]; then
-  ok "rite-vet re-runs analyze after plan hardening"
-else
-  no "rite-vet can mutate tasks after its only analyze pass"
-fi
+require "$SPEC" '/rite-clarify' 'spec routes topology coverage to clarify'
+require "$SPEC" 'update the existing workspace rather than overwrite it' 'spec updates an existing workspace safely'
+require "$SPEC" 'Acceptance delta' 'spec shows acceptance changes'
+require "$SPEC" 'Open-question delta' 'spec shows question changes'
+require "$SPEC" 'same intent, >50% scope' 'spec preserves the ACTIVE overlap route'
+require "$SPEC" 'Native grammar re-read checklist' 'spec checks normative grammar without an engine parser'
+forbid "$SPEC" 'devrites-engine check spec' 'spec has no removed grammar command'
+require "$CLARIFY" 'devrites-interview' 'clarify owns the coverage scan'
+require "$CLARIFY" 'Decision coverage: CLEAR' 'clarify emits the readiness verdict'
+require "$CLARIFY" 'Next step: /rite-temper' 'clarify names the next phase'
+require "$CLARIFY" 'return_phase' 'clarify preserves the later-phase return cursor natively'
+require "$CLARIFY" 'preserve unrelated Markdown' 'clarify edits only its cursor fields'
+forbid "$CLARIFY" 'devrites-engine state clarify' 'clarify has no removed state helper'
+require "$DEFINE" 'Decision coverage: CLEAR' 'define requires clarified intent'
+require "$DEFINE" '/rite-clarify' 'define returns missing coverage to clarify'
 
-if grep -q 'Build-interruption forecast' "$SPEC" \
-   && grep -q 'Interruption pre-mortem' "$TEMPER" \
-   && grep -q 'Foreseeable-decision sweep' "$DEFINE" \
-   && grep -q 'Build-entry preflight' "$VET"; then
-  ok "pre-build phases explicitly close foreseeable build interruptions"
-else
-  no "one or more pre-build phases lack their interruption-closure gate"
-fi
+require "$BUILD" 'devrites-engine check readiness <slug>' 'build uses the structural readiness gate'
+require "$BUILD" 'dispatch the exact `devrites-slice-wright`' 'build does not bypass the writer agent'
+require "$BUILD" 'exact project-relative source/test path list directly in the task' 'build states exact writer paths inline'
+require "$BUILD" 'git diff --name-only' 'build inspects the returned source delta'
+require "$BUILD" 'test hunks for deletion, skipping/focus, tautology, or weaker expectations' 'build reviews test integrity without snapshot machinery'
+require "$BUILD" 'devrites-test-analyst' 'build delegates semantic test analysis natively'
+forbid "$BUILD" 'devrites-engine test-integrity' 'build has no heuristic engine test parser'
+forbid "$BUILD" 'devrites-engine build-readiness' 'build has no semantic engine readiness parser'
+forbid "$BUILD" 'devrites-engine reconcile' 'build has no engine source-window gate'
+require "$BUILD" 'devrites-debug-recovery' 'build routes technical failures to bounded recovery'
+require "$BUILD" 'exactly once after each green built slice' 'build accounts for AFK slices natively'
+forbid "$BUILD" 'devrites-engine state tick-afk' 'build has no removed AFK counter command'
+forbid "$BUILD" 'devrites-engine preamble' 'build has no orientation renderer'
+forbid "$BUILD" 'devrites-engine progress' 'build has no decorative progress renderer'
+forbid "$BUILD" 'devrites-engine footprint' 'build has no dispatch telemetry'
 
-if [ -f "$CLARIFY" ] \
-   && grep -q 'devrites-interview' "$CLARIFY" \
-   && grep -q 'decision-coverage.md' "$CLARIFY" \
-   && grep -q 'Next: /rite-clarify' "$SPEC" \
-   && grep -q 'decision-coverage.md' "$DEFINE"; then
-  ok "rite-clarify reuses the interview engine and leaves auditable decision coverage"
-else
-  no "clarification is not an enforced, auditable pre-plan phase"
-fi
-
-autocomplete_arc="$(tr '\n' ' ' < "$AUTOCOMPLETE" | sed -E 's/[[:space:]]+/ /g')"
-if [[ "$autocomplete_arc" == *'/rite-spec` → **`/rite-clarify`** → **`/rite-temper`** → `/rite-define`'* ]]; then
-  ok "rite-autocomplete runs clarify before temper and define"
-else
-  no "rite-autocomplete does not enforce clarify before technical planning"
-fi
-
-if grep -q 'Implementation readiness: READY' "$VET" \
-   && grep -q 'NEEDS CLARIFICATION' "$VET" \
-   && grep -q 'NEEDS REPLAN' "$VET"; then
-  ok "rite-vet records a typed implementation-readiness verdict"
-else
-  no "rite-vet lacks a typed final implementation-readiness verdict"
-fi
-
-vet_recheck_line="$(grep -n '^6\. \*\*One narrow recheck' "$VET" | cut -d: -f1)"
-vet_engineering_digest_line="$(grep -n 'devrites-engine readiness-digest engineering <slug>' "$VET" | tail -1 | cut -d: -f1)"
-vet_ready_line="$(grep -n 'Only READY sets `Phase: vet`' "$VET" | tail -1 | cut -d: -f1)"
-if [ -n "$vet_recheck_line" ] \
-   && [ -n "$vet_engineering_digest_line" ] \
-   && [ -n "$vet_ready_line" ] \
-   && [ "$vet_engineering_digest_line" -gt "$vet_recheck_line" ] \
-   && [ "$vet_ready_line" -gt "$vet_recheck_line" ] \
-   && grep -q 'Keep `state.md` non-READY' "$VET"; then
-  ok "rite-vet finalizes digest and READY only after the mandatory narrow recheck"
-else
-  no "rite-vet can expose READY before its final reviewer recheck"
-fi
-
-if grep -q '`6` → `/rite-clarify`' "$BUILD" \
-   && grep -q '`7` → `/rite-vet`' "$BUILD" \
-   && grep -q '`8` → `/rite-upgrade`' "$BUILD"; then
-  ok "rite-build routes missing upstream evidence to its owning phase"
-else
-  no "rite-build does not route clarification/vet readiness gaps upstream"
-fi
-
-if grep -q 'devrites.readiness-artifacts.v2' "$CLARIFY" \
-   && grep -q 'devrites.readiness-artifacts.v2' "$VET" \
-   && grep -q 'devrites-engine migrate' "$UPGRADE" \
-   && grep -q 'devrites-upgrade-planner' "$UPGRADE" \
-   && grep -q 'devrites-engine build-readiness' "$UPGRADE" \
-   && grep -q 'second `/rite-upgrade`' "$UPGRADE" \
-   && grep -q 'no-op path' "$UPGRADE" \
-   && grep -q 'Read-only' "$UPGRADE_PLANNER"; then
-  ok "rite-upgrade reconciles legacy workspaces to the stamped current contract"
-else
-  no "rite-upgrade lacks a current-contract, fresh-agent, idempotent readiness path"
-fi
-
-if grep -q 'devrites-engine doctor; echo' "$DOCTOR" \
-   && grep -q 'devrites-engine doctor; echo' "$UPGRADE" \
-   && ! grep -q 'doctor --verbose' "$DOCTOR" "$UPGRADE"; then
-  ok "doctor and upgrade use the engine's stable doctor contract"
-else
-  no "doctor or upgrade depends on an unsupported doctor flag"
-fi
-
-if grep -q 'Implementation readiness: NEEDS REPLAN' "$PLAN" \
-   && grep -q 'Next step: /rite-vet' "$PLAN" \
-   && grep -q 'Implementation readiness: NEEDS REPLAN' "$CONVERGE" \
-   && grep -q 'Next step: /rite-vet' "$CONVERGE"; then
-  ok "planning mutations invalidate stale vet readiness"
-else
-  no "a replan or convergence append can retain a stale READY verdict"
-fi
-
-coverage_refresh_ok=1
-for owner in "$TEMPER" "$PLAN" "$VET"; do
-  grep -q 'Partial/Missing' "$owner" || coverage_refresh_ok=0
-  grep -q 'devrites-engine readiness-digest coverage <slug>' "$owner" || coverage_refresh_ok=0
+for key in reuse conventions principles sources assumptions follow_ups; do
+  require "$WRIGHT" "$key: []" "wright result requires $key bookkeeping"
 done
-coverage_digest_line="$(grep -n 'devrites-engine readiness-digest coverage <slug>' "$VET_ARTIFACTS" | tail -1 | cut -d: -f1)"
-engineering_digest_line="$(grep -n 'devrites-engine readiness-digest engineering <slug>' "$VET_ARTIFACTS" | tail -1 | cut -d: -f1)"
-if [ "$coverage_refresh_ok" -eq 1 ] \
-   && [ -n "$coverage_digest_line" ] \
-   && [ -n "$engineering_digest_line" ] \
-   && [ "$coverage_digest_line" -lt "$engineering_digest_line" ]; then
-  ok "coverage-bound mutation owners revalidate and refresh before engineering digest"
-else
-  no "a downstream ledger mutation can stale decision coverage before build readiness"
-fi
+require "$WRIGHT_DISPATCH" 'Reject a result that omits any required key' 'root rejects incomplete wright results'
+require "$WRIGHT_DISPATCH" 'Persist the' 'root persists returned wright facts'
+require "$WRIGHT" 'three total failed attempts' 'wright shares the caller recovery budget'
+forbid "$WRIGHT" 'devrites-engine state recovery' 'wright has no removed recovery counter command'
 
-if grep -q 'devrites-debug-recovery' "$BUILD" \
-   && grep -q 'three total attempts' "$BUILD" \
-   && ! grep -q 'Still red after the one retry' "$BUILD" \
-   && grep -q 'Do not ask for retry authorization' "$DRIFT" \
-   && grep -q 'Re-plan only when the durable plan changed' "$DRIFT"; then
-  ok "rite-build routes objective failures through bounded debug recovery"
-else
-  no "rite-build still converts the first retry failure directly into a human gate"
-fi
+require "$PROVE" 'sole approved runtime' 'prove treats test-plan as sole command authority'
+require "$PROVE" 'return to the current Vet contract' 'prove routes newly discovered commands through Vet'
+require "$DISCOVERY" 'discovery evidence, not authorization' 'command discovery cannot authorize execution'
+require "$PROOF_RUNNER" 'reject missing, synthesized, or unapproved commands' 'proof runner rejects commands outside the approved plan'
+require "$SEAL_CONTRACT" 'devrites-proof-runner' 'seal delegates acceptance proof judgment natively'
+require "$SEAL_CONTRACT" 'devrites-spec-reviewer' 'seal delegates spec coverage judgment natively'
+require "$SEAL" 'devrites-engine check seal' 'seal retains only deterministic structure and freshness'
 
-if grep -q 'Fingerprint the causal diagnosis, never the failing test or symptom' "$CLEANUP" \
-   && grep -q 'discriminating fix proves the cause absent' "$CLEANUP" \
-   && grep -q 'symptom remains' "$CLEANUP" \
-   && grep -q 'Failure alone' "$CLEANUP" \
-   && grep -q 'never resets a budget' "$CLEANUP" \
-   && grep -q 'cleanup-and-classify.md' "$BUILD"; then
-  ok "rite-build separates a falsified diagnosis from a repeated symptom"
-else
-  no "rite-build can exhaust a new diagnosis under an old symptom fingerprint"
-fi
+require "$CUSTOMIZE" '--import-legacy' 'customize exposes legacy import mode'
+require "$CUSTOMIZE" '.devrites/extensions/' 'legacy import inventories extensions'
+require "$CUSTOMIZE" '.devrites/overrides/' 'legacy import inventories overrides'
+require "$CUSTOMIZE" '.devrites/runbooks/' 'legacy import inventories runbooks'
+require "$CUSTOMIZE" 'native skill with explicit gate,' 'runbooks map to native skills with control semantics'
+require "$CUSTOMIZE" 'Leave the legacy files intact until native' 'legacy data remains until native validation passes'
 
-if grep -q 'exhausted fingerprint blocks diagnosis, not symptom' "$PLAN_MODES" \
-   && grep -q 'proof removed that cause but symptom remains' "$PLAN_MODES" \
-   && grep -q 'new diagnosis/proof fingerprint' "$PLAN_MODES" \
-   && grep -q 'Never clear/reuse old one' "$PLAN_MODES"; then
-  ok "rite-plan unblock reroutes a falsified diagnosis without resetting its budget"
-else
-  no "rite-plan unblock can reuse or clear an exhausted diagnosis"
-fi
-
-stuck_line="$(grep -n 'devrites-engine stuck log' "$WRIGHT_DISPATCH" | head -1 | cut -d: -f1)"
-snapshot_line="$(grep -n 'devrites-engine reconcile snapshot' "$WRIGHT_DISPATCH" | head -1 | cut -d: -f1)"
-if [ -n "$stuck_line" ] \
-   && [ -n "$snapshot_line" ] \
-   && [ "$stuck_line" -lt "$snapshot_line" ]; then
-  ok "rite-build records stuck telemetry before arming reconciliation"
-else
-  no "rite-build mutates action.log after the reconcile snapshot"
-fi
-
-if grep -q 'explicit consent' "$RESOLVE" && ! grep -q 'confirm? (y/N)' "$RESOLVE"; then
-  ok "rite-resolve does not ask for redundant confirmation"
-else
-  no "rite-resolve still double-confirms an explicit answer"
-fi
+require "$UPGRADE" '/rite-doctor' 'upgrade routes installed-contract diagnosis to the native doctor'
+require "$UPGRADE" 'Recognize only released workspace forms' 'upgrade limits compatibility to released cursors'
+require "$UPGRADE" 'Older provenance, cursor form, or pack version alone is never a defect' 'upgrade requires an observed current-contract failure'
+require "$UPGRADE" 'current rule, exact workspace evidence, affected gate, owning rite' 'upgrade admits only evidence-backed repair deltas'
+require "$UPGRADE" 'devrites-upgrade-planner' 'upgrade uses the native read-only planner'
+require "$UPGRADE" '/rite-clarify' 'upgrade delegates decision repair to clarify'
+require "$UPGRADE" '/rite-plan repair' 'upgrade delegates planning repair to plan'
+require "$UPGRADE" '/rite-converge' 'upgrade delegates code-intent repair to converge'
+require "$UPGRADE" '/rite-vet' 'upgrade delegates readiness to vet'
+require_order "$UPGRADE" 'upgrade sequences candidate repair owners in lifecycle order' \
+  '→ `/rite-prove`' '→ `/rite-polish`' '→ `/rite-review`' '→ `/rite-seal`'
+require "$UPGRADE" 'Upgrade writes no workspace artifact' 'upgrade remains a read-only assessor and orchestrator'
+require "$UPGRADE" 'Upgrade never restores it itself' 'upgrade does not mutate files during preservation failure'
+require "$UPGRADE" 'never synthesize or guess' 'upgrade never invents candidate scope or historical proof'
+require "$UPGRADE" 'v1/v2' 'upgrade preserves released v1 and v2 cursor support'
+require "$UPGRADE" 'v3' 'upgrade preserves released v3 cursor support'
+require "$UPGRADE" 'devrites-engine check candidate <slug>' 'upgrade rechecks a post-build candidate'
+require "$UPGRADE" 'devrites-engine check seal <slug>' 'upgrade rechecks a sealed candidate'
+require "$UPGRADE" 'devrites-engine check readiness <slug>' 'upgrade proves structural readiness'
+forbid "$UPGRADE" 'devrites-engine migrate' 'upgrade has no engine migrator'
+forbid "$UPGRADE" 'devrites-engine build-readiness' 'upgrade has no semantic engine readiness parser'
+forbid "$UPGRADE" 'doctor --verbose' 'upgrade uses no unsupported doctor flag'
+forbid "$UPGRADE" 'devrites-engine doctor' 'upgrade has no removed engine doctor command'
+require "$UPGRADE" 'Resolve the explicit or active slug' 'upgrade reads native workspace orientation directly'
+require "$UPGRADE" 'state.md' 'upgrade requires the authoritative workspace ledger'
+require "$UPGRADE_PLANNER" 'Outcome: <current | repairable | unsupported | gap>' 'upgrade planner returns a fail-closed typed outcome'
+require "$UPGRADE_PLANNER" 'current_rule:' 'upgrade planner cites the current contract'
+require "$UPGRADE_PLANNER" 'workspace_evidence:' 'upgrade planner cites the observed workspace defect'
+require "$UPGRADE_PLANNER" 'Older provenance is not evidence' 'upgrade planner cannot infer staleness from age'
+require "$UPGRADE_PLANNER" 'Missing input or unverifiable current rules produce `gap`' 'upgrade planner fails closed on incomplete evidence'
+require "$UPGRADE_PLANNER" 'candidate integrity' 'upgrade planner assesses the current candidate-integrity axis'
+require "$UPGRADE_PLANNER" 'Prove, Polish, Review, or Seal' 'upgrade planner may route candidate defects only to current owners'
+require "$UPGRADE_PLANNER" 'ambiguous candidate scope produces' 'upgrade planner fails closed before candidate reconstruction'
+require "$UPGRADE_PLANNER" '`unsupported`/`gap` return empty findings/route and no writable path or delta' 'unsupported and gap assessments remain pathless'
+require "$PROVE" 'admitted `/rite-upgrade` assessment' 'prove limits legacy refresh to an admitted upgrade assessment'
+require "$PROVE" 'legacy touched-file scope, live diff, tasks, and traceability agree unambiguously' 'prove refuses ambiguous legacy candidate scope'
+require "$PROVE" 'all current approved real proof from scratch' 'prove never reuses a legacy pass'
+require "$PROVE" 'pre-proof and post-proof engine digest' 'prove establishes both candidate digest observations'
+require "$PROVE" 'fresh exact binding' 'prove writes fresh exact candidate bindings after legacy proof'
+require "$CANDIDATE_INTEGRITY" 'Upgrade routes a released-workspace candidate defect to Prove' 'candidate integrity names the fail-closed legacy owner'
+require "$RESOLVE" 'explicit consent' 'resolve consumes the explicit answer'
+require "$RESOLVE" 'devrites-engine state resolve' 'resolve uses the nested state writer'
+forbid "$RESOLVE" 'confirm? (y/N)' 'resolve does not ask twice'
 
 echo ""
 [ "$fail" -eq 0 ] && echo "phase-gate-routing-test: PASS" || echo "phase-gate-routing-test: FAIL"

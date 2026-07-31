@@ -1,103 +1,94 @@
 # `.devrites/` state schema (v2)
 
-The `devrites-engine` binary reads a project's workflow state from plain files
-under `.devrites/`. Those hand-editable files are the source of truth, and the
-engine reads human edits directly.
+The engine reads workflow state from plain files under `.devrites/`. Those
+human-editable files remain authoritative; the engine has no database or
+semantic cache.
 
 <!-- authority:schema-version:start -->
 `schemaVersion: 2`.
 <!-- authority:schema-version:end -->
 
-For the layered load-order diagram, budget table, manifest/alias model, and
-phase-required section matrix, see [`workspace-schema.md`](workspace-schema.md).
+For root selection, supported legacy cursors, and the full artifact layout, see
+[`workspace-schema.md`](workspace-schema.md).
 
 ## Layout
 
-```
+```text
 .devrites/
+  ACTIVE
+  AFK
+  specs/
+    <capability>/spec.md
   work/
     <slug>/
-      README.md       workspace map: phase, status, next action, read-next
-      brief.md        objective, non-goals, success definition
-      spec.md         product WHAT/WHY, requirements, acceptance, boundaries
-      architecture.md feature technical map
-      plan.md         approach and slice strategy
-      tasks.md        SLICE-### vertical slices
-      traceability.md AC/REQ -> slices -> tests/evidence/files
-      decisions.md    DEC-### decision log
-      assumptions.md  assumption register
-      questions.md    Q-### question register
-      decision-coverage.md  digest-bound clarification verdict
-      eng-review.md   digest-bound implementation-readiness verdict
-      test-plan.md    build-entry and acceptance-to-test plan
-      state.md        compact cursor
-      evidence.md     EVID-### command/action proof
-      touched-files.md implementation file map
-  specs/              capability ledger: the living "what the system does now"
-    <capability>/
-      spec.md         proven Requirement blocks for this capability
+      README.md
+      brief.md
+      spec.md
+      architecture.md
+      plan.md
+      tasks.md
+      traceability.md
+      decisions.md
+      assumptions.md
+      questions.md
+      decision-coverage.md
+      eng-review.md
+      test-plan.md
+      state.md
+      evidence.md
+      touched-files.md
+  archive/<slug>/
 ```
 
-Each feature is a directory of small files with one concern apiece. This keeps
-the context for each file small and makes missing content easy to spot.
+Each feature uses small files with one concern. The mutable `state.md` cursor is
+the phase authority. `README.md` is the canonical map and `evidence.md` is the
+canonical proof record.
 
-### Capability ledger: `specs/`
+### Capability specifications
 
-`work/<slug>/` is **ephemeral** (archived on ship); `specs/` is **durable**. It is
-the cumulative record of proven behavior, one `spec.md` per capability, so a new
-feature starts from the system's current contract instead of re-deriving it from
-code. A feature's spec groups deltas under `ADDED`, `MODIFIED`, or `REMOVED`
-Requirements headings tagged with `capability: <c>`. On ship,
-`devrites-engine ledger sync` folds them in: ADDED appends, MODIFIED replaces by
-header identity, and REMOVED deletes. Because it lives outside `work/`, the
-ledger survives close-out archival. Unlike the rest of `.devrites/`, it is
-**git-tracked** (`.devrites/*` + `!.devrites/specs/`). Git therefore shares the
-proven contract across clones. Grammar and delta rules:
+`.devrites/specs/<capability>/spec.md` is the durable, Git-tracked record of
+proven behavior. The active skill interprets accepted `ADDED`, `MODIFIED`, and
+`REMOVED` deltas, edits the capability Markdown through the normal reviewed
+workflow, and applies the normative native grammar re-read checklist. The Go
+engine does not parse grammar, fold, or interpret capability deltas.
+
+Grammar rules live in
 [`spec-grammar.md`](../../pack/.claude/skills/devrites-lib/reference/standards/spec-grammar.md).
 
-Backward compatibility: `.devrites/features/<slug>/` remains readable as a legacy
-workspace location. `feature.md` / `index.md` may stand in for `README.md`, and
-`status.md` may stand in for `state.md`, while `proof.md` may stand in for
-`evidence.md`.
+### Supported cursor readers
 
-### Workspace maps
+Official released cursors use one of two encodings in
+`.devrites/work/<slug>/state.md`:
 
-The canonical per-feature index is `README.md`; `feature.md` and `index.md` are
-readable aliases. A map may carry YAML frontmatter with:
+- v1.0.0–v2.6.1 bullet fields: `Phase`, `Next step`, and `qid`;
+- v3 table fields: `phase`, `next_action`, and `question_id`.
 
-| field           | meaning                                        |
-| --------------- | ---------------------------------------------- |
-| `slug`          | feature identifier (matches the directory)     |
-| `title`         | human-readable title                           |
-| `phase`         | current workflow phase (see below)             |
-| `schemaVersion` | schema version the file was written against    |
+Both readers are direct and non-mutating. `state.md` is required; other
+pre-release encodings are not state authorities. The current writer emits the
+canonical v3 table form.
 
-A feature exists when it has either a live `state.md` ledger or a workspace map.
-The mutable `state.md` cursor is authoritative when both declare a phase; an
-unknown declared phase is an error.
+## Logical completeness sections
 
-## Sections
+The engine's logical sections, in canonical order, are:
 
-The legacy engine completeness sections, in canonical order:
+| Section | Canonical file |
+|---|---|
+| `spec` | `spec.md` |
+| `plan` | `plan.md` |
+| `decisions` | `decisions.md` |
+| `tasks` | `tasks.md` |
+| `proof` | `evidence.md` |
+| `status` | `state.md` |
 
-`spec` · `plan` · `decisions` · `tasks` · `proof` · `status`
-
-A section is **present** (has real content) when its `<section>.md` file exists
-and, after removing any leading YAML frontmatter, ATX (`#`) headings, and
-whitespace, some content remains. A stub that is only a heading counts as
-**empty**. Scaffolding a file never fakes completeness.
-
-The 2026 Markdown workspace schema is stricter and lives in
-[`workspace-schema.md`](workspace-schema.md). It validates required phase-owned
-artifacts, stable IDs (`AC-###`, `SLICE-###`, `EVID-###`), traceability, evidence,
-compactness budgets, Mermaid fences, and stale local links.
+A required file is present only when content remains after leading YAML
+frontmatter, ATX headings, and whitespace are removed. A heading-only stub does
+not satisfy a structural gate. Semantic quality is assessed separately by the
+active skill and exact native agents.
 
 ## Phases and required sections
 
-Phases follow the rite-\* arc. Completeness is **phase-relative**: each phase
-requires only the sections needed to leave it, and the set grows additively down
-the arc. A section that is not yet required (e.g. `proof` during the `spec`
-phase) never blocks.
+Completeness is phase-relative: a phase requires only the sections needed to
+leave it, and the set grows through the lifecycle.
 
 <!-- authority:phase-contract:start -->
 | phase | normal resume | required sections | transition right |
@@ -119,52 +110,42 @@ phase) never blocks.
 | `done` | *(terminal)* | `spec`, `plan`, `decisions`, `tasks`, `proof`, `status` | Represent archived completion with no resume command. |
 <!-- authority:phase-contract:end -->
 
-The authoritative typed definitions live in `engine/internal/state/schema.go`.
+The typed definitions live in `engine/internal/state/schema.go`.
 `workflow_manifest.json` is a generated derivative for non-Go release tools;
-run `go generate ./internal/state` after editing the registry.
+run `go generate ./internal/state` after changing the registry.
 
-### Clarify-return field policy
+### Native clarification-return field policy
 
-<!-- authority:clarify-return-fields:start -->
+The controlling root owns these cursor edits and preserves the existing
+table/bullet representation plus all unrelated Markdown.
+
 | field | policy |
 | --- | --- |
-| `phase` | derived |
-| `status` | derived |
-| `next_action` | derived |
-| `return_phase` | derived |
-| `return_next_action` | curated when present; otherwise derived |
-| `all other state.md content` | curated and preserved byte-for-byte |
-<!-- authority:clarify-return-fields:end -->
+| `phase` | set to `clarify` on entry; restored from a validated later `return_phase` only after contract-neutral CLEAR |
+| `status` | `running` on entry and restore |
+| `next_action` | Clarify on entry; restored from validated `return_next_action` |
+| `return_phase` | copied from the current recognized later phase; removed on restore |
+| `return_next_action` | copied from the current non-empty action; removed on restore |
+| `all other state.md content` | preserved |
 
-## `devrites-engine status <slug>`
+Entry while already in Clarify is a no-op. A changed behavior or acceptance
+contract routes through `/rite-plan repair` instead of restoring the saved
+cursor.
 
-Prints the feature's phase and, for each section, its present/empty state and
-whether the current phase requires it, then a completeness verdict computed over
-the required sections only. Output is deterministic and greppable:
+### Native AFK and recovery accounting
 
-```
-feature: auth-tokens
-phase: build
-  spec       present  required
-  plan       present  required
-  decisions  present  required
-  tasks      empty    required
-  proof      empty
-  status     present
-result: incomplete (missing: tasks)
-```
+For a configured or orchestrator-derived AFK cap, `afk_slices_remaining` is an
+optional nonnegative cursor field. An orchestrator may pre-seed it from a validated
+post-plan budget but never increase or reinitialize an existing value. The root then
+charges it exactly once with each green pending → built
+transition and stops before another dispatch at zero; malformed values fail
+closed and values never go below zero. Released bullet state spells the same
+field `AFK slices remaining`; native edits recognize it and preserve the
+existing presentation.
 
-- Found feature → exit `0`, whether complete or incomplete (`status` reports, it
-  does not gate; gating is issue 04).
-- Unknown or missing slug → non-zero exit with a clear message on stderr.
-
-`status` makes no model or network calls; it is a pure read of the files under
-`DEVRITES_ROOT` (or the nearest `.devrites/` above the working directory).
-There is no status cache, so the next read reflects a hand edit immediately.
-Other workspace control-plane commands share that deterministic boundary;
-explicit
-install/update/source-cache I/O is isolated under `engine/internal/iohooks` as
-defined by ADR-0008.
+There is no recovery-counter artifact. The caller and recovery loop count at
+most three failed attempts per causal fingerprint from current context and the
+recorded `## Dead ends` / `evidence.md`, then stop before a fourth.
 
 <!-- authority:state-tracking:start -->
 Git-tracked shared state: `.devrites/specs/`. Per-clone runtime state: `.devrites/work/`, `.devrites/archive/`, `.devrites/ACTIVE`.

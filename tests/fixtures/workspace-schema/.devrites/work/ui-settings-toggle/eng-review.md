@@ -1,7 +1,6 @@
 # Engineering review
 
 Implementation readiness: READY
-Readiness inputs SHA-256: 4debc5a54eddecf0dca5738aa6e0071db72a2ed1bd29a38900f8aee709ae4caa
 
 ## 2a. Build-entry preflight
 | Gate | Command + cwd | Tool/version | Prerequisite owner | Full provenance inputs | Fixture/smoke | Verdict |

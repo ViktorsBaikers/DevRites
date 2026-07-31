@@ -18,19 +18,17 @@ func main() {
 	flag.Parse()
 
 	document := struct {
-		GeneratedBy         string                     `json:"generatedBy"`
-		SchemaVersion       int                        `json:"schemaVersion"`
-		AuthorityPolicy     state.AuthorityPolicy      `json:"authorityPolicy"`
-		Phases              []state.WorkflowPhase      `json:"phases"`
-		ClarifyReturnFields []state.ClarifyFieldPolicy `json:"clarifyReturnFields"`
-		CursorKeyAliases    []state.CursorKeyAlias     `json:"cursorKeyAliases"`
+		GeneratedBy      string                 `json:"generatedBy"`
+		SchemaVersion    int                    `json:"schemaVersion"`
+		AuthorityPolicy  state.AuthorityPolicy  `json:"authorityPolicy"`
+		Phases           []state.WorkflowPhase  `json:"phases"`
+		CursorKeyAliases []state.CursorKeyAlias `json:"cursorKeyAliases"`
 	}{
-		GeneratedBy:         "go generate ./internal/state; DO NOT EDIT",
-		SchemaVersion:       state.SchemaVersion,
-		AuthorityPolicy:     state.WorkflowAuthorityPolicy(),
-		Phases:              state.WorkflowPhases(),
-		ClarifyReturnFields: state.ClarifyFieldPolicies(),
-		CursorKeyAliases:    state.CursorKeyAliases(),
+		GeneratedBy:      "go generate ./internal/state; DO NOT EDIT",
+		SchemaVersion:    state.SchemaVersion,
+		AuthorityPolicy:  state.WorkflowAuthorityPolicy(),
+		Phases:           state.WorkflowPhases(),
+		CursorKeyAliases: state.CursorKeyAliases(),
 	}
 	data, err := json.MarshalIndent(document, "", "  ")
 	if err != nil {

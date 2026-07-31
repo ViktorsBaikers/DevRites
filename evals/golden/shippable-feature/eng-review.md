@@ -1,7 +1,8 @@
 # Engineering review: add CSV export
 
 Implementation readiness: READY
-Readiness inputs SHA-256: aebbee2d1bca970eb86ddcace5044ee6489266d0a077926725fbfdc6b43b58d1
+
+Readiness inputs SHA-256: __READINESS_SHA256__
 
 ## 2a. Build-entry preflight
 | Gate | Command + cwd | Tool/version | Prerequisite owner | Full provenance inputs | Fixture/smoke | Verdict |

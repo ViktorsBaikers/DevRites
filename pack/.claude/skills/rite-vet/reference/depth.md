@@ -23,7 +23,7 @@ recorded engineering verdict and a coverage plan.
 - **The user asked**, or `--full`.
 
 Full pass = §0 scope challenge + all four axes (each walked finding-by-finding) + the failure-mode
-table + parallelization + the reviewer loop. See [`review-axes.md`](review-axes.md).
+table + dependency-safety review + the reviewer loop. See [`review-axes.md`](review-axes.md).
 
 ## Light pass otherwise (the default for simple plans: still never a skip)
 When none of the full-pass triggers fire, run the **light pass**: a fast but real engineering
@@ -44,7 +44,7 @@ with the human, confidence-banded). Light means *less ceremony*, never *less hon
 Autocomplete runs `/rite-vet` after `/rite-define` on **every** feature: light or full per the
 triggers above, **never skipped**. Under the AFK gate ceiling:
 - **Auto-apply (no pause):** hardening findings: added test requirements, error-handling /
-  failure-mode coverage, tightened scope, reuse-over-rebuild, dependency-order / parallel-lane fixes
+  failure-mode coverage, tightened scope, reuse-over-rebuild, dependency-order fixes
   (these never grow acceptance). Record the rationale in `decisions.md`.
 - **Blocking pause:** any finding that **grows scope, adds a slice, changes an acceptance
   criterion, or alters product behavior**.

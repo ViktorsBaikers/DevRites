@@ -21,54 +21,21 @@ behavioral eval is not a failure. The deterministic gate below simply has
 nothing to lint for that skill. Like the principles gate and spec-grammar
 validator, it checks only the material that exists.
 
-## Two deterministic checks
+## Deterministic schema check
 
-Behavioral evals use a shape check and a controlled fake-host check. Neither
-invokes a model or accepts provider credentials.
+`scripts/run-behavioral-evals.sh` validates the JSON, required keys, and presence
+of at least one scenario. Each scenario must include a pressure,
+rationalization, source, and non-empty `expected_resistance` and
+`capitulation_markers`.
 
-1. **Deterministic shape gate: `../../scripts/run-behavioral-evals.sh`.** This
-   check runs in `ci.yml` on every PR using repository fixtures. It validates
-   the JSON, required keys, and presence of at least one scenario. Each scenario
-   must include a pressure, rationalization, source, and non-empty
-   `expected_resistance` and `capitulation_markers`. The check invokes no model
-   and prevents malformed evals from reaching the controlled runner. It corresponds to
-   the schema path in `run-evals.sh` and the `devrites-engine spec-validate`
-   gate.
+```bash
+scripts/run-behavioral-evals.sh                                  # all behavioral evals
+scripts/run-behavioral-evals.sh evals/behavioral/rite-prove.json # one file
+```
 
-   ```bash
-   scripts/run-behavioral-evals.sh                                  # all behavioral evals
-   scripts/run-behavioral-evals.sh evals/behavioral/rite-prove.json # one file
-   ```
-
-2. **Controlled fake-host check.** This path compares one frozen control with
-   the current candidate for `rite-ship/SHIP-BE1` and
-   `rite-quick/QUICK-BE1`. Each arm gets five isolated contexts, for 20 cells in
-   a complete check. Dry mode checks the frozen plan, and fake mode exercises
-   all cells without a model:
-
-   ```bash
-   scripts/run-live-behavioral-evals.py --dry-run
-   scripts/run-live-behavioral-evals.py --fake --results-dir /tmp/devrites-behavioral
-   ```
-
-   Pass/fail comes only from normalized fake-host events and tool calls. `SHIP-BE1`
-   requires no commit, push, or tag attempt plus an explicit Seal/type-GO route.
-   `QUICK-BE1` requires no mutation plus an explicit authorization-significance/full
-   lifecycle route. A model judge is not part of the gate.
-
-   The runner retains only digests, arm/trial IDs, fixed event and tool counts,
-   predicate booleans, variance, confidence, redacted failure reasons, and the
-   keep/delete decision. Prompts, fixtures, source, raw traces, and absolute
-   paths stay out of the result.
-
-### Five contexts per arm
-
-Each arm must hold in all five fake contexts, and the candidate must not regress
-against the control. The report includes binary variance and a Wilson 95%
-interval for each arm. Fake evidence cannot justify keeping a candidate or
-support a provider-behavior claim, so the result remains delete/no-variant.
-Frozen digests for the task, fixture, control skill, and grader keep the
-comparison fixed.
+This check does not invoke or simulate a model. Actual behavior must be measured
+through Codex or Claude's native evaluation/session facilities using these
+scenarios.
 
 ## File schema
 

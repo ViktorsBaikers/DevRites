@@ -3,6 +3,8 @@
 # Codex runtime paths.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+# Binary installation has its own lifecycle test; keep this pack smoke isolated.
+export DEVRITES_NO_BINARY=1
 fail=0
 ok() { printf '  ok: %s\n' "$*"; }
 no() { printf '  FAIL: %s\n' "$*"; fail=1; }
@@ -103,90 +105,46 @@ for src in src_agents:
     report(data.get("name") == name, f"{name}: name preserved")
     report(bool(data.get("description")), f"{name}: description present")
     instructions = data.get("developer_instructions", "")
-    report("You are the Codex custom-agent version" in instructions, f"{name}: Codex wrapper present")
-    report("agent-result/v1" in instructions, f"{name}: returns the universal typed result envelope")
+    report("You are the Codex custom-agent version" not in instructions, f"{name}: no duplicate Codex wrapper")
+    report("agent-result/v1" not in instructions, f"{name}: uses native result delivery")
     report(".claude/agents" not in instructions, f"{name}: no .claude/agents runtime path")
     report(".claude/skills/devrites-lib/reference/standards" not in instructions, f"{name}: no .claude/skills/devrites-lib/reference/standards runtime path")
-    report(".agents/skills/devrites-lib/reference/standards/" in instructions or name == "devrites-slice-wright", f"{name}: uses mirrored rules path when rules are referenced")
+    source_text = src.read_text()
+    if ".claude/skills/devrites-lib/reference/standards/" in source_text:
+        report(
+            ".agents/skills/devrites-lib/reference/standards/" in instructions,
+            f"{name}: uses mirrored rules path when rules are referenced",
+        )
 
-    if name == "devrites-slice-wright":
-        report(data.get("sandbox_mode") != "read-only", f"{name}: write-capable")
-    else:
-        report(data.get("sandbox_mode") == "read-only", f"{name}: read-only sandbox")
+    expected_permissions = ":workspace" if name == "devrites-slice-wright" else ":read-only"
+    report(
+        data.get("default_permissions") == expected_permissions,
+        f"{name}: uses exact {expected_permissions} permission profile",
+    )
+    report("sandbox_mode" not in data, f"{name}: omits legacy sandbox_mode")
+    report(
+        "hooks" not in data and "[[hooks." not in text,
+        f"{name}: native permission profile needs no engine hook",
+    )
     if name == "devrites-proof-runner":
         report(
-            "Do not execute shell, browser, build, test" in instructions
+            "Execute no command or external write." in instructions
             and "Run only packet-approved" not in instructions,
             f"{name}: validates immutable root-owned proof instead of executing gates",
         )
-    if name == "devrites-forge-judge":
-        report(
-            'cd "<validated manifest primary_root>" && git diff' in instructions
-            and "git -C" not in instructions,
-            f"{name}: immutable diff command matches the read-only parser",
-        )
-
-    expected_subcommand = "wright-scope" if name == "devrites-slice-wright" else "reviewer-readonly"
-    expected_required = (
-        "DEVRITES_WRIGHT_AGENT_REQUIRED=1"
-        if name == "devrites-slice-wright"
-        else "DEVRITES_REVIEWER_AGENT_REQUIRED=1"
-    )
-    if tomllib is not None:
-        groups = data.get("hooks", {}).get("PreToolUse", [])
-        matcher = groups[0].get("matcher", "") if len(groups) == 1 else ""
-        handlers = groups[0].get("hooks", []) if len(groups) == 1 else []
-        command = handlers[0].get("command", "") if len(handlers) == 1 else ""
-    else:
-        matcher_match = re.search(
-            r'^\[\[hooks\.PreToolUse\]\]\nmatcher = "([^"]+)"',
-            text,
-            re.M,
-        )
-        command_match = re.search(r"^command = '''(.*)'''$", text, re.M)
-        matcher = matcher_match.group(1) if matcher_match else ""
-        command = command_match.group(1) if command_match else ""
-        groups = [True] if matcher_match else []
-        handlers = [True] if command_match else []
-
-    required_surfaces = {
-        "Bash",
-        "Edit",
-        "Write",
-        "apply_patch",
-        "exec",
-        "Task",
-        "spawn_agent",
-        "delegate",
-        "dispatch_agent",
-        "create_agent",
-    }
-    report(len(groups) == 1 and len(handlers) == 1, f"{name}: one agent-scoped leaf hook")
-    report(
-        required_surfaces <= set(matcher.split("|")),
-        f"{name}: leaf hook covers mutation and nested dispatch",
-    )
-    report(
-        f"{expected_required} devrites-engine hook {expected_subcommand} --harness=codex"
-        in command,
-        f"{name}: leaf hook routes to the exact engine guard",
-    )
-    report(
-        "DEVRITES_AGENT_RUN=1" in command
-        and f"DEVRITES_ACTIVE_AGENT={name}" in command,
-        f"{name}: leaf hook declares its exact scoped identity",
-    )
-    report(
-        "command -v devrites-engine" not in command
-        and "node " not in command
-        and 'case "$rc" in' in command
-        and "exit 2" in command,
-        f"{name}: leaf hook has no optional runtime and normalizes failures to deny",
-    )
 
 skill_files = sorted(skills_dir.rglob("*.md"))
 report(bool(skill_files), f"installed Codex skill mirror is present ({len(skill_files)} markdown files)")
 skill_text = "\n".join(path.read_text() for path in skill_files)
+execution_text = "\n".join(
+    path.read_text()
+    for path in skill_files
+    if not path.as_posix().endswith("devrites-lib/reference/standards/agents.md")
+)
+report(
+    all(name in execution_text for name in src_names),
+    "every generated agent is named outside the catalog by executable workflow guidance",
+)
 
 for forbidden in (
     ".reconcile-inline",
@@ -194,27 +152,12 @@ for forbidden in (
     "run the scout work **inline**",
     "no per-agent model control → run the scout inline",
     "MUST call that worker",
+    "MultiAgent V1",
+    "MultiAgent V2",
+    "required-agent-roles",
+    "agent-dispatch",
 ):
     report(forbidden not in skill_text, f"Codex skills exclude obsolete fallback {forbidden!r}")
-
-for skill in sorted(skills_dir.glob("*/SKILL.md")):
-    frontmatter = skill.read_text().split("\n---\n", 1)[0]
-    match = re.search(r"(?m)^required-agent-roles:\s*(.+)$", frontmatter)
-    report(bool(match), f"{skill.parent.name}: required-agent-roles declared")
-    if not match or match.group(1).strip() == "none":
-        continue
-    roles = [role.strip() for role in match.group(1).split(",")]
-    report(
-        all(role in dst_names for role in roles),
-        f"{skill.parent.name}: required agent roles resolve ({sorted(set(roles) - dst_names)})",
-    )
-
-for conditional_skill in ("devrites-source-driven", "rite-temper", "rite-upgrade"):
-    frontmatter = (skills_dir / conditional_skill / "SKILL.md").read_text().split("\n---\n", 1)[0]
-    report(
-        re.search(r"(?m)^required-agent-roles:\s*none$", frontmatter) is not None,
-        f"{conditional_skill}: conditional dispatch does not arm an unconditional receipt",
-    )
 
 task_wording = re.findall(r"\bTask\b", skill_text)
 report(not task_wording, "Codex skills contain no legacy Task orchestration wording")
@@ -256,26 +199,36 @@ report(
     f"invoke references resolve only to skills ({sorted(invoke_refs - skill_names)})",
 )
 
-for required in (
-    "invoke means run a skill in this context",
-    "Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer`",
-    'fork_turns="none"',
-    "injects that contract's exact `developer_instructions`",
-    "On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker`",
-    "`.wright-allowlist`",
-    "On MultiAgent V2",
-    "`agent_type=devrites-<role>`",
-    "a unique `task_name`",
-    "missing visible `agent_type` field is still V2",
-    "stop before any generic/default spawn",
-    "durable rollout",
-    "Codex loads the role TOML's `developer_instructions` natively",
-    "`required-agent-roles` frontmatter arms the fail-closed Stop receipt",
-    "If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL",
-    "Never switch runtime lanes",
-    "Never execute a DevRites specialist role in the root context",
-):
-    report(required in skill_text, f"Codex dispatch ladder includes {required!r}")
+bridge_text = (target / "AGENTS.md").read_text()
+report(
+    bool(re.search(r"Dispatch every exact named `devrites-<role>`.*fresh subagent thread.*wait", bridge_text, re.S)),
+    "AGENTS bridge owns native exact-role fresh-context orchestration",
+)
+report("generic/default child" in bridge_text, "AGENTS bridge forbids generic role substitution")
+report("spawn_agent" in bridge_text, "AGENTS bridge uses Codex native subagent lifecycle")
+report(
+    "Dispatch every exact named `devrites-<role>`" in bridge_text
+    and "never skip it" in bridge_text,
+    "AGENTS bridge requires every workflow agent to execute",
+)
+report(
+    'devrites-slice-wright` alone uses `default_permissions = ":workspace"' in bridge_text
+    and 'every other specialist uses `default_permissions = ":read-only"' in bridge_text
+    and "root must never edit source or tests itself" in bridge_text,
+    "AGENTS bridge keeps source writing in the exact native wright",
+)
+report(
+    "`git diff --name-only`" in bridge_text
+    and "reject any extra path" in bridge_text
+    and "Never bypass the wright" in bridge_text
+    and "never recreate an engine dispatch bridge" in bridge_text,
+    "AGENTS bridge requires instruction-backed exact-path review",
+)
+for removed_syntax in ("agent_type=devrites-", 'fork_turns="none"', "a unique `task_name`"):
+    report(
+        removed_syntax not in bridge_text + skill_text,
+        f"Codex guidance omits host-internal syntax {removed_syntax!r}",
+    )
 
 if failed:
     sys.exit(1)

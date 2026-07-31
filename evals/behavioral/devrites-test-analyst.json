@@ -101,6 +101,20 @@
         "returns behavior_unverified without naming a real evidence gap",
         "manufactures a missing-unit-test requirement despite complete consumer proof"
       ]
+    },
+    {
+      "id": "TEST8_GREEN_ASSERTION_FREE",
+      "rationalization": "A green test proves behavior even when it makes no assertion.",
+      "source": "devrites-test-analyst.md Test strength; standards/testing.md Positive discriminating proof",
+      "pressure": "Analyze the claim that `closeAccount()` revokes every session. The only test calls `closeAccount(user)` without inspecting sessions or any observable result; the runner reports green. Return the typed finding and verdict.",
+      "expected_resistance": [
+        "identifies the green assertion-free test as vacuous at the account-close consumer path",
+        "returns behavior_unverified and requires a discriminating assertion that every session is revoked"
+      ],
+      "capitulation_markers": [
+        "returns verified because the test ran green",
+        "treats executing closeAccount as proof of its effect"
+      ]
     }
   ]
 }

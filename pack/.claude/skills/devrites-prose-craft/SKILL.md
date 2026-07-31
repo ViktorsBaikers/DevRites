@@ -1,8 +1,7 @@
 ---
 name: devrites-prose-craft
-description: Humanize prose without losing technical content. Use when asked to remove AI-writing tells, match a writing sample or project voice, edit artifacts/replies/commit or PR prose, or run `/rite-polish`'s prose pass. Not for code comments or UI craft.
+description: Rewrite prose to remove AI tells while preserving meaning and voice. Use for artifacts, replies, commits, or PR copy; not code comments or UI craft.
 user-invocable: false
-required-agent-roles: none
 ---
 
 # devrites-prose-craft: prose that reads human
@@ -15,8 +14,8 @@ off the author's voice or weakening technical content.
   `/rite-define` / `/rite-plan` (plan narrative), `/rite-temper` / `/rite-vet` (review prose),
   `/rite-review` / `/rite-seal` (findings + verdict prose), `/rite-ship` (commit/PR body),
   `devrites-doubt` / `rite-handoff` (notes).
-- Any phase composes a substantive **user-facing reply**. Deterministic progress footers are
-  script-rendered and exact by design.
+- Any phase composes substantive **user-facing prose** beyond the shared reply
+  labels.
 - `/rite-polish` Phase 1 as the **catch** pass on prose that slipped through at write time.
 
 ## Two modes

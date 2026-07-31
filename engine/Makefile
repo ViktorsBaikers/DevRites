@@ -22,8 +22,7 @@ fmt-check:
 test:
 	go test ./...
 
-# Race-enabled run. The engine has concurrent index/source-cache paths; the
-# detector is free signal on every test that touches them.
+# Race-enabled run for concurrent state paths and mutable test clients.
 test-race:
 	go test -race -count=1 ./...
 

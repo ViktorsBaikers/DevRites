@@ -3,27 +3,7 @@ name: rite-quick
 description: Express lane for a small reversible change: typo/copy/config, rate-limit constant, error message, local variable rename, feature flag, README link, one-file/function fix.
 argument-hint: "<what to change>"
 user-invocable: true
-required-agent-roles: none
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Installed `.agents/` mirrors may be Git-ignored. If a repository-aware file tool refuses an ignored path, read it with a native filesystem command instead; a tool refusal is not a completed task.
-- For automatic Engram calls, omit optional `project` and `session_id` unless an exact value came from Engram or repository configuration. Never derive either from `task_name`, a run ID, directory name, or normalized slug. Call `mem_session_summary` without them by default; on `unknown_session` or `unknown_project`, retry once with both optional fields omitted. If auto-detection is ambiguous, ask the user instead of guessing.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
-- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns="none"`. A missing visible `agent_type` field is still V2—not capability loss, V1, or HITL—so send it anyway. If the named call rejects it, stop before any generic/default spawn. Codex loads the role TOML's `developer_instructions` natively; DevRites verifies the durable rollout, wait, completion, and delivered result.
-- Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer` for a read-only role with `fork_turns="none"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract's exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard.
-- On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns="none"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`.
-- The invoked skill's `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn.
-- If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL. Never switch runtime lanes. Never execute a DevRites specialist role in the root context.
-- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
-- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
 
 # $rite-quick: express lane for small changes
 
@@ -31,7 +11,8 @@ The full DevRites lifecycle is right for real features; it is **ceremony** for a
 copy tweak, a one-function fix, or a small config change. `$rite-quick` keeps the
 discipline that matters (idiom, TDD, evidence, escape-to-full-lifecycle) and drops the
 artifacts that don't, in a **single pass**. Senior-engineer "right step, right time" made
-executable, not advisory.
+executable, not advisory. This lane uses the **Quick** depth profile from
+[`devrites-lib/reference/orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md).
 
 ## The significance gate (the whole safety story)
 
@@ -62,8 +43,9 @@ Load this lane's conditional standards when needed:
 
 
 ## Workflow
-0. **Orient.** Read `core.md`. If a `.devrites/` workspace is active, run the preamble to
-   see it; `$rite-quick` does **not** require one and does **not** create the full tree.
+0. **Orient.** Read `core.md`. If a `.devrites/` workspace is active, read its
+   `state.md` directly; `$rite-quick` does **not** require
+   a workspace and does **not** create the full tree.
 1. **Significance gate** (above). Fail → STOP, tell the user to run `$rite-spec <feature>`.
 2. **One-line contract.** Restate in 1-3 lines: the change, its **acceptance** (how you'll
    know it works), and the **scope boundary** (what you will NOT touch). This is the entire
@@ -90,21 +72,6 @@ If the "small" change turns out to be not small: a second slice appears, a real 
 decision surfaces, scope grows past the boundary, or you hit an irreversible-risk item:
 **STOP, say so, and route to `$rite-spec` / `$rite-define`**. Don't quietly grow a quick
 fix into an unreviewed feature; that's the exact drift the lifecycle guards against.
-
-## Output
-Run `devrites-engine progress` when a workspace is active; otherwise skip it. Then use the
-shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: quick change complete — <one line>.
-Changed: <files touched>
-Evidence: tests <cmd -> pass>; assertion check <real asserts saw red | n/a>; boundary held yes
-Open: <none | non-blocking follow-up | tracked workspace needs ship>
-Next: <single recommended command>
-Record: <commit/PR path | .devrites/work/<slug>/evidence.md | not applicable>
-↻ Hygiene: /clear after commit
-```
 
 If the quick boundary does not hold or an escalation remains, use `Stopped / blocked`
 and route to the full lifecycle; do not render `Done`.

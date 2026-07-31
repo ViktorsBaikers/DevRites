@@ -3,124 +3,129 @@ name: rite-prove
 description: Prove a completed feature with tests and the full test suite, build/typecheck/lint, end-to-end/browser evidence, screenshots, commands, and outputs for seal. Not for single-slice proof.
 argument-hint: "[feature-slug]"
 user-invocable: true
-required-agent-roles: devrites-proof-runner
 ---
 
 # /rite-prove: prove the completed feature
 
-Record evidence for the **whole feature**. Read the active workspace first; if none,
-run `/rite-spec <feature>`.
+Prove the **whole feature**. Read the active workspace; if absent, run
+`/rite-spec <feature>`.
 
-> **Scope:** built-in `/verify` proves one change and `/run` launches the app.
-> `/rite-prove` covers a feature. It walks `spec.md` acceptance
-> criteria one-by-one, runs the full relevant test suite + build/typecheck/lint,
-> ascends the browser-proof ladder (step 4),
-> and writes `evidence.md` + `browser-evidence.md` keyed to the active
-> `.devrites/work/<slug>/`. No DevRites workspace → use `/verify` or `/run` alone.
+> **Scope:** `/verify` proves one change; `/run` launches the app. `/rite-prove`
+> walks feature acceptance, relevant suite/build/typecheck/lint, and browser
+> proof, writing evidence under the active workspace. Without one, use
+> `/verify` or `/run`.
 
 ## Gate: all slices must be built first
-Read `tasks.md` + `state.md`. **If ANY slice is still pending/unbuilt, STOP** and tell the
-user to finish it with `/rite-build`: `/rite-prove` runs once, when the full task is
-complete, not after each slice. (Each slice already got its own targeted tests during
-`/rite-build`; this phase proves the assembled feature as a whole.)
+Read `tasks.md` + `state.md`. If any slice is pending, stop for `/rite-build`.
+This phase proves the assembled feature once, after per-slice tests.
 
 **Never report an unobserved pass.** If a command could not run, report that and give
 exact manual steps.
 
-**Scoped reruns are allowed.** `/rite-prove` runs once when the full feature is assembled.
-After `/rite-polish` or `/rite-review` edits code,
-the existing `evidence.md` no longer post-dates the change, so re-run `/rite-prove` over
-the affected criteria/routes to refresh proof before `/rite-seal`.
+After polish/review edits, rerun affected criteria/routes so evidence binds the
+changed candidate digest before Seal.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 Pull these via `Read` when relevant:
 - `testing.md`: pyramid, determinism, no-flake discipline.
 - `test-proof-checklist.md`: compact proof-quality gate for tests and recorded evidence.
-- `browser-proof-checklist.md`: for UI scope, the required browser states and Visual Verdict evidence.
+- `browser-proof-checklist.md`: required UI states and Visual Verdict evidence.
 - `spec-grammar.md`: when the spec uses structured `### Requirement:` / `#### Scenario:`
   blocks, each scenario (WHEN/THEN) is one observable behavior to walk and prove.
 - `performance.md`: measure first when perf is in scope.
-- `observability.md`: when the change has a runtime surface (endpoint, job, integration,
-  user flow): telemetry must be present **and observed to emit**, not assumed.
+- `observability.md`: runtime telemetry must be observed to emit.
 - `developer-experience.md`: when the change ships a developer-facing surface (API / CLI / SDK /
   webhook / config / error messages / getting-started): **measure** the DX scorecard (run the flow,
   measure time-to-hello-world, and capture verbatim error text), rather than asserting it.
-- `definition-of-done.md`: standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+- `definition-of-done.md`: acceptance, proof, gates, scope, rollback/docs.
 
 
 ## Operating rules
 - Evidence over confidence. Feature scope only: fix within the feature or record a
   blocker; don't refactor unrelated code.
+- Apply `testing.md`'s positive, discriminating proof rule to every behavioral claim.
+  A green command without an executing assertion and decisive observed signal is unproven.
+- Follow the shared
+  [`candidate-integrity.md`](../devrites-lib/reference/candidate-integrity.md).
+  Prove owns proof binding, not manifest grammar or candidate hashing.
 - Spec Drift Guard applies: if tests/evidence reveal the spec is wrong, stop and handle
   drift (`rite-build/reference/spec-drift-guard.md`).
-- **Root executes; runner validates; root records; wright fixes.** Use the file-backed
+- **Root executes; runner validates; root records; wright fixes.** Use the native
   fresh-context contract in
   [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns exact
   vetted gate execution, browser capability, the evidence verdict, and canonical
   writes. The proof runner is read-only and validates immutable logs/artifacts.
-  Every accepted source/test correction is one bounded `devrites-slice-wright`
-  packet, never an inline edit.
+  Every accepted source/test correction is one bounded
+  `devrites-slice-wright` task, never an inline edit.
+
+## Released-workspace refresh entry
+
+Only an admitted `/rite-upgrade` assessment that proves a released-format candidate
+defect may enter this branch. Normal Prove never reconstructs candidate scope.
+
+Before proof, require that the legacy touched-file scope, live diff, tasks, and traceability agree unambiguously on every candidate path and state. Missing, unknown, or
+ambiguous scope is a recorded gap and HITL stop; never guess from Git alone. When they
+agree, preserve unrelated `touched-files.md` content and refresh only its strict manifest
+from the currently observed project bytes under the workspace schema.
+
+Discard every old pass as proof. Run all current approved real proof from scratch under
+the positive, discriminating rules below, and establish the pre-proof and post-proof engine digest
+with `devrites-engine check candidate <slug>`. Require an identical digest,
+then write one fresh exact binding in `evidence.md` and in `browser-evidence.md` when it
+exists. Historical evidence cannot substitute for any current gate. A current proof
+failure is a blocker; this Upgrade admission never authorizes source or test changes.
 
 ## Workflow
-0. Read `.claude/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
-   on-demand rules above when relevant.
-   Then run `devrites-engine preamble` for deterministic workspace orientation.
-1. **Confirm the gate** (all slices built). Read `spec.md` (acceptance criteria +
-   "Commands discovered"), `tasks.md`, `state.md`, `test-plan.md` if present (the vetted
-   coverage target from `/rite-vet`), and the full `git diff`.
+0. Read core, load relevant rules above, then resolve the active slug,
+   require its `state.md`, and read the cursor directly.
+1. **Confirm all slices built.** Read `spec.md`, `tasks.md`, `state.md`,
+   `test-plan.md`, and the full diff.
+   A missing `test-plan.md` returns to Vet; it never authorizes ad hoc proof.
 2. **Discover commands** if not recorded:
    [test-command-discovery](reference/test-command-discovery.md): README, package
    scripts, Makefile, CI configs, Gemfile/Rakefile, pyproject, go.mod, Cargo.toml.
-   **Completion:** exact runnable test/build/typecheck/lint commands are recorded or explicitly unavailable.
-3. **Execute proof against a frozen candidate.** Freeze and hash the candidate.
-   The root runs only commands authorized byte-for-byte by `test-plan.md` and the
-   immutable proof packet, with exact cwd and prerequisites, capturing exit code,
-   decisive output, artifact hashes, and before/after candidate identity in secure
-   external scratch. Run the full relevant test suite plus **build / typecheck /
-   lint**. Reject synthesized or substituted commands and any source drift.
+   Discovery only supplies evidence. `test-plan.md` is the sole approved runtime
+   command list. If a discovered command is absent from it, do not run or
+   silently approve the command: return to the current Vet contract to add and
+   vet it, refresh readiness, then return to Prove.
+   **Completion:** exact commands are approved in `test-plan.md` or unavailable.
+3. **Execute proof against a frozen candidate.** Run
+   `devrites-engine check candidate <slug>` before any approved proof and retain
+   its exact digest. The root runs only commands declared by `test-plan.md`,
+   byte-for-byte, with exact cwd and prerequisites, capturing exit code and
+   decisive output in secure external scratch. Run the full relevant test suite
+   plus **build / typecheck / lint**. Then rerun the candidate check: require the
+   identical digest and no candidate-source mutation. Reject synthesized or
+   substituted commands, malformed manifests, zero-test/skipped/filtered results used as
+   behavioral proof, success inferred only from exit status, and any source drift. Static
+   gates prove only their named static criterion.
 4. **UI feature?** The root applies the browser proof ladder with
-   `design-brief.md`, `references.md`, packet-listed routes, browser harness, and
+   `design-brief.md`, `references.md`, the requested routes, browser harness, and
    allowed scratch path:
    [proof-ladder](reference/proof-ladder.md) + [browser-proof](reference/browser-proof.md)
    (`devrites-browser-proof`): routes, viewports, screenshots (opened + described),
    console, network, interaction paths, and the brief's proof targets. Compare screenshots
    with target references and record deltas. An unresolved material mismatch is a failed
    result; the root handles any accepted correction at step 7 before re-rendering.
-5. **Validate proof in fresh context.** Dispatch `devrites-proof-runner` with the
-   frozen candidate identity, exact approved command list, immutable root-produced
-   logs/screenshots/traces, acceptance map, and hashes. Await its non-empty
-   `agent-result/v1`; reject mismatched, missing, stale, or self-attested evidence.
-   The runner executes no command and writes no canonical evidence.
-6. **Map proof completely.** Follow
+5. **Validate proof in fresh context.** In parallel, dispatch the exact read-only
+   `devrites-proof-runner` on candidate identity, approved commands, immutable
+   root evidence, and acceptance map, and `devrites-spec-reviewer` on the same
+   candidate. Wait for both; reject missing/stale, invented-ID, label-only, or
+   self-attested evidence. Neither executes commands.
+6. **Map proof completely.** Reconcile both exact verdicts, then follow
    [`reference/acceptance-proof.md`](reference/acceptance-proof.md) for acceptance/scenario
    coverage and the conditional critical-path, observability, developer-surface, and wiring
    branches. Completion: every criterion, planned interaction, and declared key link has a
-   proof class plus passing evidence, or is recorded as a blocker.
+   proof class plus positive, discriminating passing evidence, or is recorded as a blocker.
 7. **On failure** → [failure-triage](reference/failure-triage.md) +
    `devrites-debug-recovery`. The root reconciles the reproduction. Send an accepted,
-   in-scope correction to the sole writer, `devrites-slice-wright`; then freeze the new
-   candidate and dispatch a fresh proof runner for affected checks. If a fix would exceed
+   in-scope correction to the sole writer, `devrites-slice-wright`; update the
+   manifest from its actual scoped diff, rerun affected real proof and both
+   candidate checks, then dispatch a fresh proof runner. If a fix would exceed
    scope, record a blocker.
-8. The root updates `evidence.md`, `browser-evidence.md` (if UI), `traceability.md`, and
-   `state.md`. New proof goes to `evidence.md` (`proof.md` is a read-only alias:
-   see `devrites-lib/reference/workspace-artifact-schema.md`).
+8. The root updates `evidence.md`, `browser-evidence.md` (when present),
+   `traceability.md`, and `state.md`. Record exactly one binding for the observed
+   digest in evidence and browser evidence. New proof goes to canonical
+   `evidence.md`.
 
 > **Mid-flight discipline.** When tempted to claim an un-observed pass, skip a rung of the browser-proof ladder, or proceed with slices pending: see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
-
-## Output
-
-**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: feature proof complete for <slug>.
-Changed: evidence.md, browser-evidence.md <updated|n/a>, devex.md <updated|n/a>, state.md
-Evidence: acceptance <total>/<total> (judgment-only <n>); scenarios <total>/<total|n/a>; key links <n>/<n|none>; tests/build/lint/browser <pass summary>
-Open: none
-Next: /rite-polish
-Record: .devrites/work/<slug>/evidence.md
-↻ Hygiene: /clear before /rite-polish
-```
-If any check fails, a blocker remains, or a criterion is unproven, use the shared
-`Stopped / blocked` form and route `Fix:` to the failing check or `/rite-build`; do
-not recommend `/rite-polish`.

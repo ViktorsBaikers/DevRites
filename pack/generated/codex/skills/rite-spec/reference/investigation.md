@@ -16,10 +16,7 @@ presented to the human.
 Before external research, check whether the project already shipped related work. Search
 the archive for the feature's key nouns. A hit may indicate an extension, conflict, or
 replacement and provides prior decisions:
-```bash
-devrites-engine archive-search "<key nouns>" 2>/dev/null \
-  || grep -rliE '<noun1>|<noun2>' .devrites/archive/*/spec.md 2>/dev/null
-```
+Use native file search over `.devrites/archive/*/{spec,decisions}.md`.
 - **Overlap found** → read the overlapping `spec.md` + its `decisions.md`, then put it to
   the human as a ranked option (*extend the shipped feature* · *this supersedes it* ·
   *genuinely distinct*) same option-set contract as a gap.

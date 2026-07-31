@@ -28,7 +28,7 @@ other phases reference it here.
        re-vet, then resume.
      NO, product/policy/irreversible-risk decision → ask the user (format below).
 5. Never continue on a known-wrong durable plan. A repaired active-slice implementation
-   may continue only after the normal recovery, reconciliation, and integrity gates pass.
+   may continue only after bounded recovery, returned-diff review, and proof gates pass.
 ```
 
 ## User question format

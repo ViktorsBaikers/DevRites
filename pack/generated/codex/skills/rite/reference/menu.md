@@ -8,7 +8,7 @@ what each command does or how phases connect.
 | Phase | Command | Use when |
 |---|---|---|
 | Spec | `$rite-spec <feature>` | **New feature.** Investigate → write spec.md. Asks with options; gathers attached design references (optional). |
-| Adopt | `$rite-adopt` | Onboard an existing codebase instead of starting fresh: reverse-derive spec.md + seed the conventions ledger. |
+| Adopt | `$rite-adopt` | Onboard an existing codebase instead of starting fresh: reverse-derive spec.md and propose project guidance. |
 | Clarify | `$rite-clarify` | _Required after spec._ Topology-first decision-coverage scan; zero-question fast path when already clear. |
 | Temper | `$rite-temper` | _Optional, before define._ Strategic review of the spec: scope mode (expand/selective/hold-rigor/reduce) + pre-mortem; hardens the spec. Best on big/risky features; mandatory in `$rite-autocomplete`. |
 | Plan | `$rite-define` | Turn the approved spec into plan + vertical task slices + state. |
@@ -22,9 +22,9 @@ what each command does or how phases connect.
 | Seal | `$rite-seal` | Final GO / NO-GO decision (no git). |
 | Ship | `$rite-ship` | Type-GO → commit/push/tag, then archive the task + clear ACTIVE. |
 | Status | `$rite-status` | See where the active feature stands. |
-| Doctor | `$rite-doctor` | Health check: install integrity, stale ACTIVE, orphaned gates, hook wiring, merge/rebase state. |
-| Upgrade | `$rite-upgrade` | _Explicit recovery._ Reconcile an active legacy workspace with the installed semantic workflow contract; preserve completed work and history. |
-| Learn | `$rite-learn` | Review the captured learning ledger → promote recurring lessons to project rules / principles. |
+| Doctor | `$rite-doctor` | Diagnose install integrity and native host configuration. |
+| Upgrade | `$rite-upgrade` | _Explicit compatibility._ Audit an older released workspace; route cited defects through Clarify/Plan repair/Converge/Vet or current Prove/Polish/Review/Seal, preserve history, and never synthesize old proof. |
+| Learn | `$rite-learn` | Review native memory and archived evidence → propose durable project guidance. |
 
 ## Typical orderings
 
@@ -36,13 +36,14 @@ what each command does or how phases connect.
 - **Existing codebase**: `$rite-adopt` → `$rite-clarify` → `$rite-define` → `$rite-vet` → build.
 - **Drift mid-build**: classify → bounded recovery for objective defects, `$rite-plan`
   repair for a wrong durable plan, or one user decision for real product/risk drift.
-- **Workspace from older DevRites rules**: `$rite-upgrade` → current Clarify/Plan/Vet
-  gates → resume the snapshot's next command. Structural migration alone is not enough.
+- **Older workspace cannot resume**: `$rite-upgrade` audits first → only proven gaps use
+  Clarify/Plan repair/Converge/Vet or Prove/Polish/Review/Seal → resume. It never
+  migrates cursor format or invents a prior pass.
 - **Resumed / adopted / stalled**: `$rite-converge` (assess live code vs intent → append the
   remaining slices) → `$rite-vet` → `$rite-build` ×N → continue at `$rite-prove`.
 
 ## Rules this menu obeys
 
 - `$rite` never edits code or runs a phase workflow.
-- Menu mode runs `devrites-engine first-task`; `$rite-status` owns workspace status.
+- Menu mode is static; `$rite-status` owns workspace status.
 - It suggests; the user (or Claude, when appropriate) invokes the real skill.

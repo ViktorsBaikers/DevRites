@@ -1,111 +1,72 @@
 ---
 name: rite-spec
-description: Spec new or high-risk behavior before code and write its `.devrites/work/<slug>/` workspace. Use for a feature/app, vague product idea, auth or migration work, or a public-API change. Not for approved-spec planning.
+description: Specify new, vague, or high-risk behavior before code. Use for features, auth, migrations, or public API changes; not for planning an approved spec.
 argument-hint: "<feature or idea>"
 user-invocable: true
-required-agent-roles: none
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Installed `.agents/` mirrors may be Git-ignored. If a repository-aware file tool refuses an ignored path, read it with a native filesystem command instead; a tool refusal is not a completed task.
-- For automatic Engram calls, omit optional `project` and `session_id` unless an exact value came from Engram or repository configuration. Never derive either from `task_name`, a run ID, directory name, or normalized slug. Call `mem_session_summary` without them by default; on `unknown_session` or `unknown_project`, retry once with both optional fields omitted. If auto-detection is ambiguous, ask the user instead of guessing.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
-- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns="none"`. A missing visible `agent_type` field is still V2—not capability loss, V1, or HITL—so send it anyway. If the named call rejects it, stop before any generic/default spawn. Codex loads the role TOML's `developer_instructions` natively; DevRites verifies the durable rollout, wait, completion, and delivered result.
-- Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer` for a read-only role with `fork_turns="none"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract's exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard.
-- On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns="none"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`.
-- The invoked skill's `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn.
-- If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL. Never switch runtime lanes. Never execute a DevRites specialist role in the root context.
-- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
-- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
 
 # $rite-spec: investigate and write the spec
 
-Turn a request into a **fully covered, correctly placed `spec.md`** by investigating
-the existing system and resolving every material gap found during authoring.
-`$rite-clarify` audits the full topology before `$rite-define` plans it. **Do not write
-a plan, tasks, or code here.** Those belong to `$rite-define` and `$rite-build`.
+Investigate and resolve material gaps into a placed, covered `spec.md`.
+`$rite-clarify` audits topology next. Write no plan, task, or code here.
 
-> **Use `$rite-quick` for a small change.** A typo, copy edit, config bump, or
-> one-function fix does not need a full workspace and lifecycle. Run
-> `$rite-quick <change>`. It returns here if the work touches auth, data, a migration, a
-> public API, or more than one slice.
+> Use `$rite-quick` for a typo, copy/config edit, or one-function fix. It returns
+> here for auth, data, migration, public API, or multi-slice work.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-Pull `documentation.md` via `Read`
-when capturing significant spec decisions (why-not-what, ADR-style notes in `decisions.md`);
-pull `principles.md` when the project has declared invariants (`.devrites/principles.md`): a
-new spec must respect them, and a requirement that can only be met by breaking one is a blocking gap.
-Pull `spec-grammar.md` and `devrites-lib/reference/workspace-artifact-schema.md` when writing
-acceptance for a behavioral / high-risk requirement (auth,
-data model, state machine, public API, money, migration): the structured `### Requirement:` /
-`#### Scenario:` (SHALL · WHEN/THEN) form, lint-checked by `devrites-engine spec-validate`. Simple criteria
-stay flat `AC-###` bullets; the grammar is opt-in by rigor, never forced. Use
-[`reference/acceptance-criteria.md`](reference/acceptance-criteria.md) to keep each
-criterion independently observable and binary.
+Pull `documentation.md` for significant decisions and `principles.md` for
+declared invariants; an unavoidable principle violation is blocking.
+For behavioral/high-risk acceptance, use `spec-grammar.md` plus workspace schema;
+simple criteria stay flat `AC-###`. Apply
+[`acceptance-criteria.md`](reference/acceptance-criteria.md) so each is binary and observable.
 
 ## Operating rules (DevRites core)
-- No silent assumptions · no guessing through confusion · prefer existing conventions ·
-  ask the human when an answer changes scope, placement, data model, UX, security,
-  migration risk, or acceptance.
-- **Root authority:** the controlling chat asks every human question, makes decisions, and
-  writes the workspace. Read-only evidence work follows the fresh-context contract in
-  [`agents.md`](../devrites-lib/reference/standards/agents.md).
-- **Author one section at a time.** Draft problem → goal → requirements → acceptance →
-  edge cases, pausing after each section. If a section contains a contested requirement,
-  boundary, or unstated assumption, apply a relevant technique from
+- No silent assumptions or guessing; prefer conventions; ask on scope,
+  placement, data, UX, security, migration, or acceptance changes.
+- **Root authority:** controlling chat asks humans, decides, and writes workspace;
+  evidence work follows [`agents.md`](../devrites-lib/reference/standards/agents.md).
+- **Author one section at a time:** problem → goal → requirements → acceptance →
+  edges. For contested requirements/boundaries/assumptions, apply
   [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) before continuing.
 
 ## Workflow
-0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`:** the always-on operating rules and anti-rationalizations.
-   Then run `devrites-engine preamble` for deterministic workspace orientation.
-0a. **Check whether existing code needs adoption.** If this is an
-   **existing codebase** that has **never been adopted** (no
-   `.devrites/conventions.md`, no prior `.devrites/work`, `.devrites/features`, or `.devrites/archive`) the build has no
-   conventions ledger, route through `$rite-adopt` **first** and pass `$ARGUMENTS` as its
-   next objective. Adopt derives the baseline `spec.md`, seeds conventions, and proposes
-   principles; `$rite-spec` only detects and routes. In **HITL**, present a ranked option:
-   recommend adoption first and include a spec-only escape hatch. In **AFK**, when adoption
-   is allowed, run `$rite-adopt` automatically. **Skip this check silently for greenfield or
-   already-onboarded projects.** Never block a spec only because adoption is absent. Probe:
+0. Read core; if `.devrites/ACTIVE` exists, require its `state.md`.
+0a. **Adoption check.** For a never-adopted existing codebase, route first to
+   `$rite-adopt` with `$ARGUMENTS`; it derives baseline spec/principles. HITL
+   offers ranked adopt-first and spec-only choices; permitted AFK adopts.
+   Silently skip greenfield/onboarded projects, and never block solely on absence:
    ```bash
-   if [ ! -f .devrites/conventions.md ] && [ ! -d .devrites/archive ] \
-      && [ -z "$(ls .devrites/work .devrites/features 2>/dev/null)" ] \
+   if [ ! -d .devrites/archive ] \
+      && [ -z "$(ls .devrites/work 2>/dev/null)" ] \
       && [ -n "$(git ls-files 2>/dev/null | grep -vE '^\.(devrites|claude)/' | head -1)" ]; then
      echo "brownfield, not yet adopted → recommend $rite-adopt first (carry this idea as its next objective)"
    else echo "greenfield or already onboarded → continue spec"; fi
    ```
-1. **Understand the request** (`$ARGUMENTS`). State the requested outcome and the
-   underlying problem in one or two sentences.
-   **Completion:** one sentence includes both.
-1a. **Local dedupe.** Search local issues/PRDs and archived specs before creating a new workspace:
-   ```bash
-   devrites-engine spec-dedupe "$ARGUMENTS"
-   ```
-   If it finds a close match, ask the user: extend existing / adopt / new spec. Record the choice in
-   `decisions.md` once the workspace exists. No match → continue silently.
+1. **Understand the request** (`$ARGUMENTS`). State outcome and underlying
+   problem in one sentence. **Completion:** it includes both.
+1a. **Dedupe.** Search local issues/PRDs, work, and archive. On a close match ask
+   extend/adopt/new, then record the choice; otherwise continue silently.
 2. **Investigate:** follow [investigation](reference/investigation.md) through its
-   complete findings and done-when gate. Also discover the project's **test /
+   complete findings and done-when gate. Discover the project's **test /
    build/typecheck/lint** commands, frontend/backend systems, and declared project guidance
    (`PRODUCT.md`, `DESIGN.md`, `CLAUDE.md`, `AGENTS.md`, and `.devrites/principles.md` when
    present).
    **Consult the capability ledger**, which records current system behavior
-   ([`ledger.md`](../rite-ship/reference/ledger.md)): `devrites-engine ledger list` for the
-   capabilities on record, then `devrites-engine ledger show <capability>` for any this feature
-   touches. Also search prior decisions with `devrites-engine decisions search "<2-4 feature nouns>"`
-   before asking the human to revisit a settled architecture, API, or auth choice. The
-   ledger shows whether each requirement is new or changes existing behavior, which
-   determines the delta kind in step 5.
+   ([`ledger.md`](../rite-polish/reference/ledger.md)); Polish folds accepted deltas
+   before Review. List `.devrites/specs/*/spec.md` with the
+   host filesystem and read only capabilities this feature touches. Search accepted ADRs and
+   relevant `.devrites/**/decisions.md` files directly before asking the human to revisit a
+   settled architecture, API, or auth choice. Compare exact requirement headers and meanings
+   with the current ledger to choose ADDED/MODIFIED/REMOVED; never classify from memory. Use
+   `spec-grammar.md`'s singular `Capability impact:` declaration to name the affected
+   capabilities and change, or give its specific `none` justification.
+   Inventory affected observable behavior from current test/contract/runtime/source
+   evidence; map each outcome to preserving REQ/AC. Greenfield `none` needs the
+   template's specific justification.
    Identify proof constraints now: human-only credentials, unavailable environments, approval
    windows, or acceptance not observable through existing test/runtime/browser surfaces.
    Split independent placement, blast-radius, and external-fact questions into at most three
-   bounded `devrites-evidence-scout` packets on one frozen baseline. Await and reconcile every
+   bounded `devrites-evidence-scout` tasks on one frozen candidate. Wait for and reconcile every
    cited dossier before step 4. The scout supplies facts only; it never asks the human or writes
    the spec.
 3. **Gather design references when provided:** [references-intake](reference/references-intake.md).
@@ -135,28 +96,33 @@ criterion independently observable and binary.
    product/acceptance ambiguity, irreversible/external approval, or human-only access. Record
    owned prerequisites. Keep a build checkpoint only for unavailable pre-code evidence or a
    mandatory action-time approval. **Completion:** no foreseeable human choice is deferred.
-5. **Create the workspace** + set `.devrites/ACTIVE` from
-   [state-workspace](reference/state-workspace.md). Write every required artifact and
-   conditional annex exactly from [spec-template](reference/spec-template.md), including its
-   grammar/delta, coverage-seed, edge/prohibition, UI, and AI rules. Then refresh any managed
-   project context block so `AGENTS.md` / `CLAUDE.md` point at the new active workspace:
-   ```bash
-   devrites-engine context sync || true
-   ```
+5. **Create or update the workspace** + set `.devrites/ACTIVE` from
+   [state-workspace](reference/state-workspace.md). If the slug already exists,
+   update the existing workspace rather than overwrite it; preserve history and
+   unrelated settled content. Write every required artifact and conditional
+   annex exactly from [spec-template](reference/spec-template.md), including its
+   capability impact, existing-behavior preservation, grammar/delta,
+   coverage-seed, qualified backstops, edge/prohibition, UI, and AI rules. Native
+   hierarchical instructions remain stable; do not rewrite `AGENTS.md` or
+   `CLAUDE.md` for the active workspace.
 5a. **Check the spec prose** with [spec-checklists](reference/spec-checklists.md).
    Emit every applicable domain checklist and fix each CRITICAL by correcting the spec,
    never by softening the question.
 6. **Run the complete readiness gate** at the bottom of
-   [spec-template](reference/spec-template.md), then validate structure and ledger deltas:
-   ```bash
-   devrites-engine spec-skeleton ".devrites/work/<slug>"
-   devrites-engine spec-validate ".devrites/work/<slug>" --against .devrites/specs
-   ```
-   **Do not run `devrites-engine analyze` in this phase:** `tasks.md` deliberately does not
-   exist yet. `$rite-define` owns the first analyze pass after it writes the slices.
-   Any failure blocks. The interruption forecast must be resolved, owned, or a justified
+   [spec-template](reference/spec-template.md), then apply the
+   **Native grammar re-read checklist** in `spec-grammar.md` to the complete
+   saved `spec.md`. Re-open the file after corrections and verify every
+   applicable item; there is no parser or replacement script. Natively compare
+   deltas with the current ledger using exact header semantics and the ledger's
+   complete-block preservation rule.
+   `tasks.md` deliberately does not exist yet; cross-artifact traceability starts in
+   `$rite-define`. Any grammar or delta failure blocks. The interruption forecast must be resolved, owned, or a justified
    action-time gate. Then write `Spec gate: passed <iso>`.
-6a. **Review-before-code digest.** Before planning, render the compact human review:
+6a. **Existing-spec delta.** For a pre-existing slug/workspace, compare old/new
+   spec and questions, then show `Acceptance delta` (added/removed/reworded IDs)
+   and `Open-question delta` (opened/resolved/reworded IDs), using `none` for
+   empty categories. Show before proceeding; new workspaces skip.
+6b. **Review-before-code digest.** Before planning, render the compact human review:
    `Intent` (one sentence), `Done means` (top acceptance/scenario IDs), `Scope/risk` (what is in/out
    plus the hard gates), and `Build exactly this?` (yes → next phase; no → revise now). The digest
    is a view over `spec.md`, not a new artifact. **Stop** after the digest.
@@ -165,24 +131,6 @@ criterion independently observable and binary.
 > decisions. See [`anti-patterns`](reference/anti-patterns.md).
 
 ## Output
-
-**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: spec ready for <slug>; placement decided and gaps closed.
-Changed: spec.md, decisions.md, assumptions.md, questions.md, references/ <updated|n/a>
-Evidence: checklists passed; grammar <valid | n/a flat acceptance>; design brief <path | n/a>
-Open: <none | n non-blocking questions | Alternative: $rite-quick if express-lane eligible>; review digest: intent + done-means + scope/risk rendered
-Next: $rite-clarify
-Record: .devrites/work/<slug>/spec.md
-↻ Hygiene: /clear before $rite-clarify; $rite-handoff if away > a few hours
-```
-If a workspace with the slug already exists, update its spec rather than overwriting it,
-and **show the human a short diff of what changed** in `spec.md` (acceptance criteria added /
-removed / reworded) before proceeding. A spec edit reviewed as a diff catches silent scope
-drift that a full re-read buries; this is the spec-review view (`$rite-spec --review` renders
-just the diff + the open-question delta, no re-investigation).
 
 When the ask overlaps the ACTIVE feature (same intent, >50% scope), route to
 `$rite-plan revise` (its gate decides) rather than minting a parallel workspace.

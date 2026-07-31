@@ -26,9 +26,7 @@ environment, credentials/approvals, and evidence limits.
 ```markdown
 # Decision coverage
 
-DevRites contract: devrites.readiness-artifacts.v2
 Decision coverage: <CLEAR | NEEDS CLARIFICATION>
-Coverage inputs SHA-256: <exact value from `devrites-engine readiness-digest coverage <slug>`>
 
 ## Topology
 | Surface | Kind | Related IDs | Evidence |
@@ -51,11 +49,7 @@ No Partial, Missing, unowned material assumption, or unresolved blocking/escalat
 question remains.
 ```
 
-Combine rows only when one decision and owner genuinely close them.
-
-Run the digest command only after `brief.md`, `spec.md`, `decisions.md`,
-`assumptions.md`, and `questions.md` are final for this clarification pass, then
-write the current contract field exactly once and copy the digest's complete field line
-verbatim. The build gate recomputes the digest and
-rejects stale coverage. Any open blocking, validating, or escalating question
-also prevents `CLEAR`.
+Combine rows only when one decision and owner genuinely close them. Re-read the current
+`brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, and `questions.md` before writing
+`CLEAR`; the matrix itself is the freshness check. Any open blocking, validating, or
+escalating question prevents `CLEAR`.

@@ -1,17 +1,11 @@
 # `spec.md` template
 
-Write the product contract: WHAT users get, WHY it matters, how success is
-measured, and what is out of scope. Keep HOW in `plan.md`; put technical topology and
-diagrams in `architecture.md` / `flows.md`; put coverage in `traceability.md`.
+Contract WHAT users get, WHY, success, and scope. HOW belongs in `plan.md`,
+topology in `architecture.md`/`flows.md`, coverage in `traceability.md`.
 
-Rules:
-
-1. Mark unknowns with `[NEEDS CLARIFICATION: <question>]`; blocking unknowns
-   stop `$rite-clarify`.
-2. Use stable IDs: `REQ-001` for requirements and `AC-001` for acceptance.
-3. Link to source artifacts instead of duplicating them.
-4. Keep the file compact. If it exceeds the schema budget, add
-   `Budget override: <reason>`.
+Use `[NEEDS CLARIFICATION: <question>]` (blocking stops `$rite-clarify`) and
+stable `REQ-001`/`AC-001` IDs. Link, never duplicate, source artifacts. Over
+schema budget requires `Budget override: <reason>`.
 
 ```markdown
 # Spec: <Feature>
@@ -20,13 +14,24 @@ Status: Draft | Ready
 Created: <date>
 
 ## Problem
-What is broken, missing, or costly today.
+<What is broken, missing, or costly.>
 
 ## Goal
-One paragraph describing the user-visible outcome and why it matters.
+<User-visible outcome and why it matters.>
+
+Capability impact: <affected capability/ies and change | none — specific justification>
 
 ## Non-goals
 - <Explicitly out of scope.>
+
+## Existing behavior to preserve
+List affected observable public/security/data/operational outcomes that MUST
+survive; map preserving REQ/AC plus current test/runtime/contract/source evidence.
+No implementation detail. True greenfield: `none — no existing behavior in the affected scope`.
+
+| Existing outcome | Preserved by | Current evidence |
+| --- | --- | --- |
+| <outcome that must not regress> | REQ-001 / AC-001 | <current evidence> |
 
 ## Users / actors
 | Actor | Need |
@@ -38,14 +43,12 @@ One paragraph describing the user-visible outcome and why it matters.
 - REQ-002: The system MUST NOT <prohibited behavior>.
 
 ## Acceptance criteria
-Each criterion is binary and evidence-backed; every item maps to at least one
-requirement and later to at least one slice in `traceability.md`.
+Binary/evidence-backed; each maps to a requirement and later a traceability slice.
 
-- [ ] AC-001: Given <state>, when <action>, then <observable outcome>. (REQ-001)
-- [ ] AC-002: Given <state>, when <action>, then <observable outcome>. (REQ-002)
+- [ ] AC-001: Given <state>, when <action>, then <outcome>. (REQ-001)
+- [ ] AC-002: Given <state>, when <action>, then <outcome>. (REQ-002)
 
-For behavioral or high-risk requirements, use the structured form below. Keep the
-`AC-###` ID inside the scenario so traceability remains machine-checkable.
+Behavioral/high-risk work uses this grammar, with the AC ID inside the scenario:
 
 ### Requirement: <name>
 The system SHALL <core observable behavior>.
@@ -54,49 +57,47 @@ The system SHALL <core observable behavior>.
 - [ ] AC-003: **WHEN** <trigger> **THEN** <observable outcome>. (REQ-001)
 
 ## Edge Coverage
-Deterministic boundary checklist for the requirements. Use `covered`, `backstop`,
-`dismissed`, or `unresolved`; every row targets an existing REQ/AC unless dismissed.
+Use `covered | backstop | dismissed | unresolved`; target an existing REQ/AC
+unless dismissed. `backstop` requires a named independent held-out,
+property/metamorphic, or direct behavioral check plus the wrong behavior it
+discriminates. If unavailable, use `unresolved`; presence/prose/self-judgment cannot pass.
 
 | Edge ID | Requirement/AC | Class | Status | Reason/backstop |
 | --- | --- | --- | --- | --- |
-| EDGE-001 | AC-001 | empty/error/permission/race/migration | covered | <test/evidence or rationale> |
+| EDGE-001 | AC-001 | empty/error/permission/race/migration | covered | <evidence/rationale> |
 
 ## Prohibitions (must-NOT)
-Only bespoke constraints; generic security/privacy canon stays in project standards.
-Use `resolved/test`, `resolved/judgment`, `dismissed`, or `unresolved`.
+Bespoke only; generic security/privacy stays in standards. Status:
+`resolved/test | resolved/judgment | dismissed | unresolved`.
 
 | Prohibition ID | Requirement/AC | Status | Test/evidence |
 | --- | --- | --- | --- |
 | PROH-001 | REQ-002 | resolved/test | <test/evidence link> |
 
 ## Edge cases
-- <Narrative notes for boundary cases not captured in the table.>
+- <Boundary note not captured above.>
 
 ## AI-SPEC annex
-- Required when the feature touches model calls, RAG, agents, evals, or LLM output: `ai-spec.md` from `ai-spec-template.md`.
+- Model/RAG/agent/eval/LLM-output scope: `ai-spec.md` from `ai-spec-template.md`.
 - Otherwise: not applicable.
 
 ## Measurable success
-- <Metric or observable proof that the feature worked.>
+- <Metric or observable proof.>
 
 ## Scope boundaries
-- Owns: <product surface or behavior>.
+- Owns: <surface/behavior>.
 - Does not own: <adjacent area>.
-- Placement summary: <one-line module/layer summary>; full technical map lives in `architecture.md`.
+- Placement summary: <module/layer>; full map in `architecture.md`.
 
 ## Coverage seed
-- Actors/journeys/components: <material surfaces discovered while authoring>.
-- States/data/contracts/integrations: <material boundaries discovered>.
-- Operations/proof surfaces: <configuration, observability, rollout/rollback, evidence constraints>.
+- Actors/journeys/components: <material surfaces>.
+- States/data/contracts/integrations: <material boundaries>.
+- Operations/proof: <config, observability, rollout/rollback, evidence constraints>.
 
 ## References
-- `brief.md` - request, objective, non-goals, success definition.
-- `architecture.md` - technical placement and integration points.
-- `flows.md` - diagrams when useful.
-- `decisions.md` - ADR-style product/technical decisions.
-- `decision-coverage.md` - topology scan and clarity verdict once `$rite-clarify` runs.
-- `traceability.md` - AC/REQ coverage once `$rite-define` runs.
-- `design-brief.md` - UI direction when UI is in scope.
+- `brief.md`: request/outcome/scope; `architecture.md`: placement/integration;
+  `flows.md`: diagrams; `decisions.md`: decisions; `decision-coverage.md`: Clarify
+  topology/verdict; `traceability.md`: Define coverage; `design-brief.md`: UI direction.
 
 ## Open questions
 | Question ID | Gate | Question | Impact |
@@ -104,14 +105,11 @@ Use `resolved/test`, `resolved/judgment`, `dismissed`, or `unresolved`.
 | Q-001 | blocking | [NEEDS CLARIFICATION: <question>] | AC-001 |
 
 ## Readiness gate
-- [ ] No blocking `[NEEDS CLARIFICATION]` markers remain.
-- [ ] Requirements use `REQ-###` IDs.
-- [ ] Acceptance criteria use `AC-###` IDs and are independently provable.
-- [ ] Edge Coverage rows target existing REQ/AC IDs or carry a dismissal reason.
-- [ ] Prohibitions have resolved/dismissed status; `resolved/test` rows link test/evidence.
-- [ ] AI features have `ai-spec.md`; non-AI work states the annex is not applicable.
-- [ ] Non-goals and scope boundaries are explicit.
-- [ ] Architecture/flows/decisions are linked out instead of duplicated here.
-- [ ] UI work has `design-brief.md`; non-UI work states UI is out of scope.
-- [ ] Coverage seed names the material surfaces `$rite-clarify` must scan.
+- [ ] No blocking clarification; REQ/AC IDs are valid and ACs independently provable.
+- [ ] Existing affected behavior maps to preserving REQ/AC + current evidence, or uses the exact justified greenfield `none`.
+- [ ] Edge rows target REQ/AC or justify dismissal; every backstop names independent discriminating evidence, else `unresolved`.
+- [ ] Prohibitions resolve/dismiss; `resolved/test` links evidence.
+- [ ] AI has `ai-spec.md` and UI has `design-brief.md`; out-of-scope work states not applicable.
+- [ ] Non-goals/scope are explicit; capability impact is singular/specific and matches ledger deltas.
+- [ ] Architecture/flows/decisions are linked, not duplicated; Coverage seed names Clarify surfaces.
 ```

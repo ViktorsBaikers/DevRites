@@ -2,7 +2,7 @@
 
 `/rite-resolve` is the single canonical writer for `questions.md` `status` flips and
 `state.md` `Awaiting human` clearance. This file is the reference for the three input
-shapes, the batch file format, and the rules the underlying `devrites-engine resolve` obeys.
+shapes, the batch file format, and the `devrites-engine state resolve` rules.
 
 ## Three input shapes
 
@@ -30,7 +30,7 @@ skill applies it once after validation and reports the result instead of asking 
   by a re-plan.
 - The reason is an optional single trailing string, **strongly recommended** for the
   audit trail. "obsolete" / "duplicate" / "absorbed by Slice N" are sufficient; if omitted,
-  `devrites-engine resolve` records the reason as `dropped`.
+  `devrites-engine state resolve` records it as `dropped`.
 
 ### 3. Batch
 

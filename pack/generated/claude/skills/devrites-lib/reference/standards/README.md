@@ -1,10 +1,13 @@
 # DevRites rules
 
-These stack-agnostic rules ship under `.claude/skills/devrites-lib/reference/standards/`. Project-specific conventions win where they exist.
+Stack-agnostic rules: `.claude/skills/devrites-lib/reference/standards/`.
+[`core.md` § Precedence](core.md#precedence) governs: repository conventions
+select technical form only inside its safety, source-writing, and evidence gates.
 
 ## Loading model
 
-Every workspace-operating `rite-*` skill reads [`core.md`](core.md) first. Load the smallest topic file needed for the current step; each file owns its full rule.
+Each workspace rite reads [`core.md`](core.md); then load only the current
+topic's owner.
 
 | Rule | Load when |
 |---|---|
@@ -41,4 +44,4 @@ Every workspace-operating `rite-*` skill reads [`core.md`](core.md) first. Load 
 | `browser-proof-checklist.md` | UI behavior needs browser proof. |
 | `security-checklist.md` | Auth, input, data, or integration work needs a compact security sweep. |
 
-These files guide judgment. Workflow skills and engine gates own enforcement.
+These guide judgment; workflows and engine gates enforce.

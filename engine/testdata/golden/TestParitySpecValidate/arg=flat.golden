@@ -1,2 +1,0 @@
-exit 0
-spec-validate: flat/spec.md uses the simple acceptance form (no "### Requirement:" blocks): nothing to lint

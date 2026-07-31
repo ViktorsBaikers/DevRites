@@ -14,8 +14,10 @@ no() { printf '  FAIL: %s\n' "$*"; fail=1; }
 command -v go >/dev/null 2>&1 || { echo "  SKIP: go toolchain not available"; exit 0; }
 [ -d "$ROOT/engine" ] || { echo "  SKIP: no engine/ (tarball install)"; exit 0; }
 
-BIN="$(mktemp -d)"; TGT="$(mktemp -d)"; GEN=""
-trap 'rm -rf "$BIN" "$TGT"; [ -n "$GEN" ] && rm -rf "$GEN"' EXIT
+BIN="$(mktemp -d)"; TGT="$(mktemp -d)"; ENGINE_TMP_ROOT="$(mktemp -d)"; NETBIN="$(mktemp -d)"; GEN=""
+trap 'rm -rf "$BIN" "$TGT" "$ENGINE_TMP_ROOT" "$NETBIN"; [ -n "$GEN" ] && rm -rf "$GEN"' EXIT
+printf '#!/bin/sh\nexit 22\n' > "$NETBIN/curl"
+chmod +x "$NETBIN/curl"
 if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
   GEN="$(mktemp -d)"
   DEVRITES_HOST_ARTIFACT_DIR="$GEN" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
@@ -23,7 +25,7 @@ if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
   export DEVRITES_HOST_ARTIFACT_DIR="$GEN"
 fi
 export DEVRITES_BIN_DIR="$BIN"
-export PATH="$BIN:$PATH"   # so the downgrade guard's `command -v devrites-engine` resolves it
+export PATH="$NETBIN:$BIN:$PATH"   # keep acquisition offline and let the downgrade guard resolve the staged engine
 
 echo "== binary-lifecycle (bin: $BIN) =="
 
@@ -102,6 +104,19 @@ DEVRITES_ENGINE_CLI="$STAGED_POST" DEVRITES_REF="v9.9.11" "$BIN/devrites-engine"
 v="$("$BIN/devrites-engine" version 2>/dev/null || true)"
 [ "$v" = "v9.9.9" ] && ok "post-install failure restored old binary" || no "rollback did not restore old binary: '$v'"
 rm -f "$STAGED_POST"
+
+# 11) The shim owns and removes a source-built engine directory after exit.
+TMPDIR="$ENGINE_TMP_ROOT" DEVRITES_REF="v9.9.13" bash "$ROOT/install.sh" --target "$TGT" --dry-run >/dev/null 2>&1
+if find "$ENGINE_TMP_ROOT" -mindepth 1 -print -quit | grep -q .; then
+  no "shell shim leaked its temporary engine directory"
+else
+  ok "shell shim removes its temporary engine directory"
+fi
+
+# 12) Non-exact versions fail closed before a build or download can be selected.
+TMPDIR="$ENGINE_TMP_ROOT" DEVRITES_REF="main" bash "$ROOT/install.sh" --target "$TGT" --dry-run >/dev/null 2>&1 \
+  && no "non-semver engine reference was accepted" \
+  || ok "non-semver engine reference rejected"
 
 [ "$fail" -eq 0 ] && echo "PASS: binary lifecycle" || echo "FAILED: binary lifecycle"
 exit "$fail"

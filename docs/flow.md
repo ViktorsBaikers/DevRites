@@ -9,10 +9,11 @@ For the full per-skill table, see [`command-map.md`](command-map.md). For the
 ## 1. Feature lifecycle
 
 This diagram shows the normal path. Each arrow assumes that the previous
-phase's readiness gate passed. Failures route through `/rite-clarify`,
+phase's deterministic engine check and native semantic review passed. Findings
+route through `/rite-clarify`,
 `/rite-plan repair`, `/rite-upgrade`, or `devrites-debug-recovery`.
-`/rite-upgrade` is conditional maintenance rather than a lifecycle phase: build
-readiness uses it only when existing semantic artifacts are stale.
+`/rite-upgrade` is an explicit compatibility audit, not a lifecycle phase; it
+routes only cited current-contract defects through existing phase owners.
 `/rite-clarify` always runs but may ask zero questions; `/rite-temper` is the
 optional strategic branch; `/rite-vet` runs on every defined plan, with depth
 scaled to risk. Build asks the human only for genuine
@@ -25,27 +26,35 @@ flowchart LR
     Spec -.->|UI detected| Shape[devrites-ux-shape<br/>plan UX/UI → design-brief.md]
     Shape -.->|brief confirmed| Spec
     Spec -->|spec.md ready| Clarify[/rite-clarify/]
-    Clarify -->|fresh digest-bound CLEAR<br/>big / risky| Temper[/rite-temper/] -.->|strategy.md| Define
-    Clarify -->|fresh digest-bound CLEAR<br/>low stakes| Define[/rite-define/]
+    Clarify -->|native semantic CLEAR<br/>big / risky| Temper[/rite-temper/] -.->|strategy.md| Define
+    Clarify -->|native semantic CLEAR<br/>low stakes| Define[/rite-define/]
     Define -->|plan.md + tasks.md<br/>approved| Plan[(plan checkpoint)]
     Plan -->|normal resume| Vet[/rite-vet/]
-    Vet -->|fresh digest-bound READY<br/>+ test-plan.md| Build[/rite-build/]
-    Build -.->|build-readiness code 8<br/>stale semantic contract| Upgrade[/rite-upgrade/]
-    Upgrade -.->|contract v2<br/>current gates pass| Build
-    Build -.->|exact .wright-allowlist<br/>retained baseline| Wright[devrites-slice-wright]
+    Vet -->|native-reviewed READY<br/>+ current input binding| Build[/rite-build/]
+    Build -.->|older workspace<br/>cannot resume| Upgrade[/rite-upgrade audit/]
+    Upgrade -.->|current: resume cursor| Build
+    Upgrade -.->|decision gap| Clarify
+    Upgrade -.->|plan gap| Repair[/rite-plan repair/]
+    Upgrade -.->|code / intent gap| Converge
+    Upgrade -.->|readiness gap| Vet
+    Upgrade -.->|manifest / evidence binding gap| Prove
+    Upgrade -.->|deferred candidate rollup| Polish
+    Upgrade -.->|review binding gap| Review
+    Upgrade -.->|seal binding / gate gap| Seal
+    Repair -.->|changed plan| Vet
+    Build -.->|Claude / Codex<br/>exact paths in task| Wright[devrites-slice-wright]
     Wright -.->|typed result| Build
-    Build -->|one slice done<br/>+ evidence| Build
-    Build -.->|"Forge: yes slice"| Forge[forge: K candidates<br/>→ devrites-forge-judge → 1 winner]
-    Forge -.->|winner lands<br/>forge-report.md| Build
+    Build -->|new explicit /rite-build,<br/>bounded AFK chain,<br/>or autocomplete loop| Build
     Build -->|product / risk / access gate| Await{{Awaiting human<br/>state.md + questions.md}}
-    Await -->|"/rite-resolve &lt;qid&gt; &lt;answer&gt;"| Build
-    Build -->|all slices built| Prove[/rite-prove/]
+    Await -->|answer| Resolve[/rite-resolve<br/>record + STOP/]
+    Resolve -.->|new explicit /rite-build| Build
+    Build -->|all slices built<br/>manifest maintained| Prove[/rite-prove/]
     Build -.->|resumed / adopted / stalled<br/>code vs intent| Converge[/rite-converge/]
     Converge -.->|appends remaining slices<br/>invalidates old READY| Vet
     Converge -.->|already converged| Prove
-    Prove -->|evidence captured| Polish[/rite-polish/]
-    Polish -->|polish-report.md| Review[/rite-review/]
-    Review -->|review.md<br/>Critical == 0| Seal[/rite-seal/]
+    Prove -->|evidence bound to candidate| Polish[/rite-polish/]
+    Polish -->|rollups complete<br/>candidate closed + re-proved| Review[/rite-review/]
+    Review -->|review bound to candidate<br/>Critical == 0| Seal[/rite-seal/]
     Seal -->|GO| Ship2[/rite-ship/]
     Ship2 -->|type-GO| Shipped([commit · push · tag · archive])
     Seal -->|NO-GO| Repair[/rite-plan repair/]
@@ -61,12 +70,25 @@ flowchart LR
     classDef repair fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef gate fill:#4c1d95,stroke:#a78bfa,color:#f5f3ff
     classDef internal fill:#0f172a,stroke:#9ca3af,color:#f9fafb
-    class Spec,Clarify,Temper,Define,Plan,Vet,Build,Prove,Polish,Review,Seal,Ship2 phase
+    class Spec,Clarify,Temper,Define,Plan,Vet,Build,Resolve,Prove,Polish,Review,Seal,Ship2 phase
     class Shipped done
     class Repair,Upgrade repair
     class Await gate
-    class Shape,Forge,Wright internal
+    class Shape,Wright internal
 ```
+
+Build is the manifest writer; Prove checks the candidate before and after real
+commands; Polish performs capability-ledger, design-memory, and ADR rollups and
+refreshes affected proof; Review and Seal bind to the closed digest. Ship is
+candidate-read-only and verifies the exact staged and committed state/path set.
+See [candidate integrity](candidate-integrity.md).
+
+The same lifecycle carries semantic contracts without a new phase or registry:
+Spec declares capability impact and preserves MODIFIED behavior unless an
+accepted decision replaces it; Define/Vet require one shared contract artifact
+and consuming tests on both sides when a provider/consumer boundary changes;
+Prove accepts only positive, discriminating behavioral evidence. Static gates
+prove only their named static criterion.
 
 ## 2. `/rite-polish` orchestrator
 
@@ -95,6 +117,10 @@ Mode tokens passed to `/rite-polish` (`bolder`, `quieter`, `distill`,
 `harden`, `normalize-only`) flow through to Phase 4 (`reference/ui.md`) as
 emphasis dials. `normalize-only` stops after Phase 3.
 
+After code/UI polish, the phase also folds applicable capability deltas,
+updates durable design memory, promotes durable ADRs, updates the manifest, and
+reruns affected proof before handing one closed candidate to Review.
+
 ## 3. `/rite-review` parallel axes
 
 Review assigns Spec coverage and Standards compliance to separate
@@ -107,8 +133,8 @@ flowchart LR
     R -->|fresh-context dispatch<br/>in parallel| C[devrites-code-reviewer<br/>**Standards axis**]
     S -->|missing / partial / wrong /<br/>scope-creep findings| Combine
     C -->|standards violations<br/>cite rule + file| Combine
-    R --> Sec[devrites-audit security]
-    R --> Perf[devrites-audit perf]
+    R -.->|input/auth/data/etc.| Sec[devrites-audit security]
+    R -.->|perf relevant| Perf[devrites-audit perf]
     Sec -->|labelled findings| Combine
     Perf -->|labelled findings| Combine
     Combine([review.md<br/>Critical / Important / Suggestion / Nit / FYI])
@@ -123,29 +149,39 @@ flowchart LR
 
 ## 4. `/rite-seal` fan-out
 
-The seal runs all relevant reviewers in parallel, reconciles their findings,
-decides GO or NO-GO, and stops without running git. On GO, `/rite-ship` renders
-the type-GO prompt and runs the irreversible commit · push · tag · archive
-sequence. The gate uses severity, acceptance, and drift rather than an advisory
-score.
+Seal re-runs repository proof on the frozen digest, then requires
+`devrites-proof-runner` to validate that immutable root-produced evidence; the
+agent executes no commands. Each stood decision also requires a
+`devrites-doubt-reviewer` verdict. Separately, the seven-account review roster
+runs all applicable reviewers, reconciles their findings, and binds its verdict
+to the same candidate. Seal decides GO or NO-GO and stops without running git.
+On GO, `/rite-ship` renders the type-GO prompt and runs the irreversible commit
+· push · tag · archive sequence. The gate uses severity, acceptance, and drift
+rather than an advisory score.
 
 ```mermaid
 flowchart TB
-    Seal[/rite-seal/] -->|read all artifacts| Walk[walk acceptance<br/>criteria one by one]
+    Seal[/rite-seal/] -->|read all artifacts| Walk[run frozen proof + walk<br/>acceptance criteria one by one]
+    Walk -->|immutable root-produced evidence| Proof[devrites-proof-runner<br/>validates; runs no commands]
+    Walk -.->|each stood decision| Doubt[devrites-doubt-reviewer]
     Walk -->|spawn in parallel| SpecRev[devrites-spec-reviewer]
     Walk -->|spawn in parallel| CodeRev[devrites-code-reviewer]
     Walk -->|spawn in parallel| TestRev[devrites-test-analyst]
     Walk -.->|UI only| FERev[devrites-frontend-reviewer]
     Walk -.->|input/auth/data| SecRev[devrites-security-auditor]
     Walk -.->|perf relevant| PerfRev[devrites-performance-reviewer]
+    Walk -.->|developer-facing surface| DXRev[devrites-devex-reviewer]
     VV[/browser-evidence.md<br/>Visual Verdict/] -.->|UI + design-brief.md| FERev
     VV -.->|acceptance-mapped FAIL = NO-GO| Gate
+    Proof --> Gate
+    Doubt --> Gate
     SpecRev --> Gate
     CodeRev --> Gate
     TestRev --> Gate
     FERev --> Gate
     SecRev --> Gate
     PerfRev --> Gate
+    DXRev --> Gate
     Gate{Critical == 0?<br/>Acceptance proven?<br/>Drift resolved?}
     Gate -->|yes + Important == 0| Go
     Gate -->|yes + Important > 0| YN[render interactive<br/>y/N prompt]
@@ -160,7 +196,7 @@ flowchart TB
     classDef ship fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef stop fill:#7f1d1d,stroke:#f87171,color:#fee2e2
     class Seal,Walk phase
-    class SpecRev,CodeRev,TestRev,FERev,SecRev,PerfRev agent
+    class Proof,Doubt,SpecRev,CodeRev,TestRev,FERev,SecRev,PerfRev,DXRev agent
     class Gate,YN gate
     class Go,Ship ship
     class NoGo stop
@@ -170,31 +206,34 @@ flowchart TB
 
 ## 5. `devrites-debug-recovery` seven-step loop
 
-Failure recovery starts by routing the faulty layer. `recovery route <class>`
-returns its owner, action, and whether a human decision is actually needed.
-The root-cause fingerprint and three-failure budget persist across agents and
-sessions in `recovery-attempts.jsonl`; typed entries keep independent defects
-on independent budgets.
+Failure recovery starts by classifying the root cause. The debug-recovery
+guidance sends unsettled intent or specification gaps to Clarify, plan gaps to
+plan repair, and settled technical defects through the recovery loop. The
+caller and recovery loop share at most three failed attempts per causal
+fingerprint. The root counts current-context failures plus matching `## Dead
+ends` / `evidence.md` records; there is no counter artifact or command.
+Different causes have independent budgets.
 
 ```mermaid
 flowchart LR
-    F([failing test /<br/>build / runtime]) --> Route{Route faulty layer}
-    Route -->|technical class<br/>humanPause: false| L1[Step 1<br/>Build the loop]
-    Route -->|intent / missing decision| Clarify([Clarify with the human])
+    F([failing test /<br/>build / runtime]) --> Classify{Classify root cause}
+    Classify -->|intent / spec gap| Clarify([Clarify with the human])
+    Classify -->|plan gap| Plan([Repair the plan])
+    Classify -->|settled technical defect| L1[Step 1<br/>Build the loop]
     L1 -->|fast deterministic signal| R[Step 2<br/>Reproduce]
     R -->|exact error text| H[Step 3<br/>Ranked hypotheses 3-5]
     H --> T[Step 4<br/>Trace when ambiguous]
     T -->|discriminating probe| I[Step 5<br/>Instrument]
     I -->|change one variable| Fix[Step 6<br/>Fix + regression test]
     Fix --> C[Step 7<br/>Cleanup + classify]
-    C -->|green: recovery clear --class| Done([verified])
-    C -->|same root cause red:<br/>recovery record --class| Budget{3 failures<br/>used?}
-    Budget -->|no: recovery check<br/>+ exact failure| L1
+    C -->|green: record proof| Done([verified])
+    C -->|same root cause red:<br/>record Dead end/evidence| Budget{3 failures<br/>used?}
+    Budget -->|no: next discriminating attempt| L1
     Budget -->|yes| Block([technical blocker<br/>reproduction + dead ends])
 
     classDef phase fill:#1f2937,stroke:#60a5fa,color:#f9fafb
     classDef stop fill:#7f1d1d,stroke:#f87171,color:#fee2e2
-    class L1,R,H,T,I,Fix,C phase
+    class L1,R,H,T,I,Fix,C,Plan phase
     class Block,Clarify stop
 ```
 
@@ -265,11 +304,11 @@ erDiagram
     WORKSPACE ||--|| state : has
     WORKSPACE ||--|| brief : has
     WORKSPACE ||--|| spec : has
-    WORKSPACE ||--o| decision-coverage : "has (semantic + digest-bound CLEAR before planning)"
+    WORKSPACE ||--o| decision-coverage : "has (native semantic CLEAR before planning)"
     WORKSPACE ||--o| strategy : "has (optional: from /rite-temper)"
     WORKSPACE ||--|| plan : "has (from /rite-define)"
     WORKSPACE ||--|| tasks : "has: slices tagged Mode + Gate"
-    WORKSPACE ||--o| eng-review : "has (semantic + digest-bound READY from /rite-vet)"
+    WORKSPACE ||--o| eng-review : "has (native-reviewed READY from /rite-vet)"
     WORKSPACE ||--o| test-plan : "has (from /rite-vet; build + prove read it)"
     WORKSPACE ||--o{ references : "has (design refs)"
     WORKSPACE ||--o| design-brief : "has (UI features: from /rite-spec via devrites-ux-shape; the build target)"
@@ -284,15 +323,12 @@ erDiagram
     WORKSPACE ||--o| review : "has (from /rite-review)"
     WORKSPACE ||--o| seal : "has (from /rite-seal)"
     WORKSPACE ||--o| ship : "has (from /rite-ship; archived on close)"
-    WORKSPACE ||--o| recovery_attempts : "durable three-failure budget per root cause"
-    WORKSPACE ||--o| wright_allowlist : "root-owned exact source/test paths"
-
     ACTIVE {
         string slug "names the current workspace"
     }
     AFK_SENTINEL {
         bool present "presence = AFK active"
-        int max_slices "read-only initial budget: copied to state.md once"
+        int max_slices "read-only initial budget: charged on green built transitions"
         string notify "optional shell command on pause"
         list allow_gates "gate severities AFK may auto-handle"
     }
@@ -304,7 +340,7 @@ erDiagram
         string phase "frame | spec | clarify | temper | define | plan | vet | build | converge | prove | polish | review | seal | ship | done"
         string status "running | awaiting_human | blocked | done"
         string active_slice "N: name"
-        int afk_slices_remaining "from .devrites/AFK max_slices on first AFK build"
+        int afk_slices_remaining "root-owned; never negative; one charge per green built slice"
         string return_phase "durable later-phase clarify return"
         string return_next_action "restored only after fresh CLEAR"
         block awaiting_human "qid, gate, question, proposed, raised_at (only when paused)"
@@ -353,7 +389,7 @@ flowchart TB
         RA[/rite-adopt/]
         RL[/rite-learn/]
         RD[/rite-doctor/]
-        RU[/rite-upgrade/]
+        RU[/rite-upgrade<br/>compatibility audit/]
         RE[/rite-explain/]
         RCU[/rite-customize/]
         RDO[/rite-dogfood/]
@@ -364,7 +400,7 @@ flowchart TB
         D2[/rite-prototype/]
         D3[/rite-handoff/]
     end
-    subgraph Internal["Internal (user-invocable: false): 12 skills (11 specialists + devrites-lib library)"]
+    subgraph Internal["Internal (user-invocable: false): 11 skills (10 specialists + devrites-lib library)"]
         direction TB
         I1[devrites-api-interface]
         I2[devrites-audit<br/>security · perf · simplify]
@@ -376,14 +412,13 @@ flowchart TB
         I8[devrites-source-driven]
         I9[devrites-ux-shape]
         I10[devrites-prose-craft]
-        I11[devrites-refresh-indexes]
-        I12[devrites-lib<br/>library scripts]
+        I11[devrites-lib<br/>library scripts]
     end
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
     class R1,R2,RCL,RT,R3,RV,R4,R5,RC,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,RU,RE,RCU,RDO,RPOV,RPF,IPT,D1,D2,D3 pub
-    class I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11,I12 int
+    class I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11 int
 ```
 
 ## 9. AFK & HITL state machine
@@ -397,7 +432,7 @@ stateDiagram-v2
     [*] --> running: /rite-build starts
     running --> running: AFK slice + advisory finding<br/>(log to questions.md, proceed)
     running --> recovery: objective red<br/>(tests · types · lint · runtime · coverage)
-    recovery --> running: green<br/>recovery clear --class
+    recovery --> running: green<br/>recovery clear
     recovery --> blocked: 3 failed attempts<br/>reproduction + dead ends; no question
     running --> awaiting_human: product / scope / policy choice
     running --> awaiting_human: irreversible risk or<br/>human-only access / action
