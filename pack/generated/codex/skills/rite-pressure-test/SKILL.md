@@ -3,27 +3,7 @@ name: rite-pressure-test
 description: Pressure-test a rough/vague idea: ideate, explore 3-5 approaches, radically different shapes, diverge then converge on direction before spec. Not for writing spec.
 argument-hint: "[rough idea or plan to stress-test]"
 user-invocable: true
-required-agent-roles: none
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Installed `.agents/` mirrors may be Git-ignored. If a repository-aware file tool refuses an ignored path, read it with a native filesystem command instead; a tool refusal is not a completed task.
-- For automatic Engram calls, omit optional `project` and `session_id` unless an exact value came from Engram or repository configuration. Never derive either from `task_name`, a run ID, directory name, or normalized slug. Call `mem_session_summary` without them by default; on `unknown_session` or `unknown_project`, retry once with both optional fields omitted. If auto-detection is ambiguous, ask the user instead of guessing.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
-- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns="none"`. A missing visible `agent_type` field is still V2—not capability loss, V1, or HITL—so send it anyway. If the named call rejects it, stop before any generic/default spawn. Codex loads the role TOML's `developer_instructions` natively; DevRites verifies the durable rollout, wait, completion, and delivered result.
-- Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer` for a read-only role with `fork_turns="none"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract's exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard.
-- On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns="none"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`.
-- The invoked skill's `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn.
-- If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL. Never switch runtime lanes. Never execute a DevRites specialist role in the root context.
-- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
-- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
 
 # $rite-pressure-test: diverge then converge
 
@@ -37,9 +17,9 @@ Read `.agents/skills/devrites-lib/reference/standards/core.md` first: its operat
 existing conventions) shape the divergence. The other rule files load on demand.
 
 ## Diverge (widen)
-- Load the `rejected-direction` entries from `.devrites/learnings.md` first. A recorded
-  rejection re-enters the option set only with new evidence against its recorded *why*:
-  name that evidence when you bring one back.
+- Search the current `decisions.md`, accepted ADRs, and directly relevant archived
+  Markdown for prior rejected directions. Reconsider one only when new evidence answers
+  its recorded reason; cite both the rejection and the new evidence.
 - Generate 3-5 genuinely different approaches to the underlying goal, not variations of
   one. Cover at least: the obvious approach, a simpler/smaller approach, and a
   different-shape approach (different data model, flow, or boundary).
@@ -73,15 +53,9 @@ existing conventions) shape the divergence. The other rule files load on demand.
   frontier question per session.
 - Ask the user to pick when two options are close and the choice changes the product.
 - Name a **"Not doing" list**: the good options you deliberately cut. It's the highest-value
-  output of convergence: it hands `$rite-spec` its scope boundary and stops the rejected ideas
-  from creeping back in later. When a cut is durable (rejected for a reason that outlives this
-  feature) offer to record it: `devrites-engine learnings add <slug> "<direction>: <why>"
-  rejected-direction`.
-
-## Output
-Reply-contract exception: pre-workspace ideation utility. It skips `devrites-engine progress`,
-but follows the compact labels and single-next-action rule from
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
+  output of convergence: it hands `$rite-spec` its scope boundary. When a cut is
+  durable, offer to record the reason in the active feature's `decisions.md` or
+  a durable ADR rather than a parallel rejection index.
 
 ```
 Done: pressure test complete for <goal>.

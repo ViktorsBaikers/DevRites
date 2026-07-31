@@ -44,7 +44,8 @@ and the resume line is `$rite-resolve <qid> "<answer>"` (or `--drop <qid> "<reas
 
 ### Workspace mutations
 
-In one atomic write (one `state.md` rewrite + one `questions.md` append):
+In one bounded root-owned update (one `questions.md` append and one `state.md`
+rewrite; do not claim cross-file atomicity):
 
 1. **`questions.md` append:**
 
@@ -99,11 +100,12 @@ In one atomic write (one `state.md` rewrite + one `questions.md` append):
 ## qid generation
 
 Format: `q-YYYY-MM-DD-NNN`, where `NNN` is the next sequential integer for that date in
-`questions.md`. For the write side, call
-`devrites-engine resolve next-qid <questions.md path>`. It
-counts existing `## q-YYYY-MM-DD-` headers for today, prints the next zero-padded id, and
-refuses to print an id whose header already exists. Use that id verbatim so each qid is
-unique within the date.
+`questions.md`. The controlling root must scan every question header matching
+today's prefix, collect its numeric suffixes, and select one above the highest
+observed suffix (or `001` when none exist), advancing until it is unused. Then
+re-read `questions.md` immediately before the append and repeat the scan. Append only if
+the same candidate is still the next unused id; otherwise recompute. There is no
+reservation or engine command for qids.
 
 ## When AFK is active
 
@@ -123,9 +125,8 @@ If `.devrites/AFK` exists and the slice's `Gate` is in `allow_gates`, `$rite-bui
 For gates in `allow_gates`, AFK **auto-picks the recommended option** (option 1 of the set)
 instead of pausing, recording it as above. For `blocking` and `escalating` (and every
 irreversible-risk item), AFK **always** invokes the checkpoint protocol: the sentinel does
-not unlock these gates: **unless `allow_irreversible: true`** is set, which makes AFK
-auto-pick the recommendation on *every* gate, irreversible included (maximal autonomy, opt-in;
-see `afk-hitl.md`). See `afk-discipline.md` for the irreversible-risk list.
+not unlock these gates and no AFK key can override them. See `afk-discipline.md`
+for the irreversible-risk list.
 
 ## Multi-question pauses
 

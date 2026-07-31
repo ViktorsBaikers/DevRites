@@ -9,12 +9,22 @@ Claude Code and Codex artifacts; plugin stores do not distribute them.
 `FRAME → SPEC → CLARIFY → TEMPER → DEFINE → PLAN → VET → BUILD → CONVERGE → PROVE → POLISH → REVIEW → SEAL → SHIP → DONE`
 <!-- authority:lifecycle:end -->
 
-Seal makes the release decision, Ship mutates git, Build handles one slice per
-run, and Autocomplete is opt-in.
+Frame is the optional non-gating preflight lens represented in the machine state
+vocabulary; Spec begins the required feature-definition path. Seal makes the
+release decision and Ship mutates git. A direct Build handles one slice per run
+in HITL; an explicit `.devrites/AFK` sentinel may chain bounded low-risk slices,
+while Autocomplete owns full-lifecycle repetition. Build maintains the strict
+candidate manifest. Prove, Review, and Seal bind to its content digest; Polish
+completes durable rollups before Review; Ship is candidate-read-only.
 
-Conditional maintenance: `/rite-upgrade [slug]` reconciles an active unfinished
-workspace with the current semantic planning contract when build readiness
-returns code `8`. It is not a lifecycle phase.
+Conditional compatibility: `/rite-upgrade [slug]` audits an older active
+workspace against current contracts. It repairs only a cited defect through
+Clarify, Plan repair, Converge, Vet, Prove, Polish, Review, or Seal; it is not a
+phase or migration and never synthesizes old proof.
+
+Candidate check: `devrites-engine check candidate <slug>` prints
+`candidate-sha256: <64 lowercase hex>` and `candidate-files: <row count>` on a
+pass. See [`candidate-integrity.md`](candidate-integrity.md).
 
 ## Standing checklists
 

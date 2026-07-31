@@ -1,10 +1,8 @@
 package lib
 
 import (
-	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,16 +17,11 @@ import (
 // Resolve answers or drops an open question and keeps questions.md and state.md
 // consistent by updating the question block. When state.md is waiting for that
 // question, it clears the "Awaiting human" block and restores the running status.
-// The workspace is <root>/features/<slug>.
+// The workspace is <root>/work/<slug>.
 //
 //	0  resolved         2  no active workspace      3  qid not found
-//	4  qid not open      5  bad arguments            6  qid collision (next-qid)
+//	4  qid not open      5  bad arguments
 func Resolve(root string, args []string, stdout, stderr io.Writer) int {
-	// next-qid works on an explicit questions.md path, without an active workspace.
-	if argAt(args, 0) == "next-qid" {
-		return resolveNextQID(argAt(args, 1), stdout, stderr)
-	}
-
 	slug := activeSlug(root)
 	if slug == "" {
 		return fail(stderr, "No active workspace. Run "+workflow.ForVerb("spec").Both()+" <feature> first.", 2)
@@ -59,7 +52,7 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 			return fail(stderr, "Batch file not found: "+payload, 5)
 		}
 	case "":
-		return fail(stderr, `Usage: devrites-engine resolve <qid> "<answer>"  |  --drop <qid> ["<reason>"]  |  --batch <file>`, 5)
+		return fail(stderr, `Usage: devrites-engine state resolve <qid> "<answer>"  |  state resolve --drop <qid> ["<reason>"]  |  state resolve --batch <file>`, 5)
 	default:
 		mode = "answer"
 		qid = first
@@ -143,6 +136,16 @@ func fail(stderr io.Writer, msg string, code int) int {
 	return code
 }
 
+func isDir(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
+func isFile(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
 // batchLines returns the newline-terminated lines of a batch file. An unterminated
 // final line is dropped, matching a shell `read` loop, so a partial trailing line
 // is never applied as an entry.
@@ -178,27 +181,6 @@ func clockNow() time.Time {
 // nowUTC returns the current time as an ISO-8601 UTC timestamp.
 func nowUTC() string { return clockNow().UTC().Format("2006-01-02T15:04:05Z") }
 
-// resolveNextQID prints the next sequential question id for today, refusing (exit
-// 6) an id that already has a header: a sign questions.md was hand-edited.
-func resolveNextQID(qpath string, stdout, stderr io.Writer) int {
-	if qpath == "" {
-		return fail(stderr, "Usage: devrites-engine resolve next-qid <questions.md path>", 5)
-	}
-	content, err := os.ReadFile(qpath)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return fail(stderr, "read questions.md: "+err.Error(), 5)
-		}
-		content = nil
-	}
-	qid, err := nextQuestionID(content, clockNow())
-	if err != nil {
-		return fail(stderr, "qid already present: "+qid+" (questions.md edited out of sequence)", 6)
-	}
-	fmt.Fprintln(stdout, qid)
-	return 0
-}
-
 // resolveQuestion rewrites the <qid> block in questions.md so it records the new
 // status, answer, and answered-at time in one pass. Returns 0, or 3 (qid
 // not found) / 4 (qid not open), writing the message on failure.
@@ -206,10 +188,6 @@ func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
 	data, err := os.ReadFile(qfile)
 	if err != nil {
 		return fail(stderr, "questions.md missing at "+qfile, 2)
-	}
-	answer, err = normalizeGitAuthorityResolution(data, qid, status, answer)
-	if err != nil {
-		return fail(stderr, err.Error(), 5)
 	}
 	ts := nowUTC()
 	target := regexp.MustCompile(`^## ` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)

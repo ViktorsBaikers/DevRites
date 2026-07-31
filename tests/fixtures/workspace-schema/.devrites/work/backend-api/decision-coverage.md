@@ -1,7 +1,6 @@
 # Decision coverage
 
 Decision coverage: CLEAR
-Coverage inputs SHA-256: 17cc9333cf43d2bf96f60e9c8d4f31ddb8933006463e9ee56e79fd6b384b43d7
 
 ## Topology
 | Surface | Kind | Related IDs | Evidence |

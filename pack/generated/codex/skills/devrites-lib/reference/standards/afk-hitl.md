@@ -1,8 +1,8 @@
 # AFK & HITL: the pause/resume contract
 
-This file defines DevRites's two run modes. Every `rite-*` and `devrites-*` skill that
-might pause for a human reads from this contract; `$rite-build`, `$rite-status`,
-`$rite-resolve`, and `devrites-doubt` are the primary callers.
+Defines two modes for `rite-*`/`devrites-*` skills that may pause; main
+callers are `$rite-build`, `$rite-status`, `$rite-resolve`, and
+`devrites-doubt`.
 
 The contract uses one sentinel, one queue, and one resume verb.
 
@@ -10,7 +10,7 @@ The contract uses one sentinel, one queue, and one resume verb.
 
 - **HITL (default):** human is present. At a gap/checkpoint the skill **asks inline** via
   the harness `AskUserQuestion` tool: a ranked **option set** (recommended first, each with
-  dimension-tagged rationale; see [Option set](#option-set--how-every-gap-is-presented)). The
+  dimension-tagged rationale; see [Option set](#option-set-how-every-gap-is-presented)). The
   human picks; the skill records the pick to `questions.md` (`answered`) + `decisions.md` and
   **continues in place: no `$rite-resolve` round-trip**. `$rite-resolve` is only for answering
   **async** (a pause that already stopped the session) or in **batch**.
@@ -25,9 +25,8 @@ The contract uses one sentinel, one queue, and one resume verb.
   ceiling (and every irreversible-risk item) pause and queue a `questions.md` entry for
   `$rite-resolve`.
 
-`.devrites/AFK` presence is authoritative for run mode; gate-deciding skills re-read the
-sentinel at decision time (the shared preamble derives the mode from it). There is no
-`state.md` run-mode field to drift out of sync.
+`.devrites/AFK` presence is authoritative for run mode; gate-deciding skills re-read
+it at decision time. There is no `state.md` run-mode field to drift out of sync.
 
 ## The sentinel: `.devrites/AFK`
 
@@ -40,9 +39,22 @@ allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-pi
 ```
 
 The file is **read-only config**: never rewritten in place. `max_slices` is the initial
-budget; the mutable remaining count lives in `state.md` as `AFK slices remaining: <n>`,
-seeded from `max_slices` on the first AFK build and decremented by `devrites-engine tick-afk` (which
-exits non-zero at 0, forcing a HITL stop). The cap is enforced by the script, not prose.
+budget; the mutable remaining count is the `state.md` cursor
+`afk_slices_remaining` (`AFK slices remaining: <n>` in the released bullet
+form), owned by the controlling root. Recognize either spelling and preserve
+the existing table or bullet presentation. Before dispatch, a configured
+`max_slices` and any existing remaining value must be decimal nonnegative
+integers; malformed or negative values fail closed. The pending → built state transition spends
+exactly one slice: on the first green slice write `max_slices - 1`, otherwise
+write `remaining - 1`, never below zero. Re-reading an already built slice does
+not spend again. At zero, stop before the next dispatch.
+
+An orchestrator that can derive a stricter budget only after planning may pre-seed
+`afk_slices_remaining` in `state.md` before the first dispatch instead of rewriting the
+sentinel. It uses the minimum of pending work and every configured/explicit cap. An
+existing counter may be lowered but never increased or reinitialized. Once present, that state
+counter is the effective remaining budget even when the read-only sentinel omits
+`max_slices`.
 
 Missing keys fall back to defaults:
 
@@ -81,18 +93,17 @@ Wherever a gap, checkpoint, or non-trivial decision surfaces (`$rite-spec`, `$ri
 **ranked option set**, never a single bare guess:
 
 - **2-4 concrete options**, the **recommended one first**, labelled `(Recommended)`.
-- Each option carries a **one-line rationale tagged by the dimensions that matter**:
-  `logic · infra · business · architecture` (add `security` / `UX` / `risk` when in scope).
-  Name the trade-off as well as the choice.
+- Each option has a **one-line, dimension-tagged rationale**: `logic · infra · business ·
+  architecture` (add `security` / `UX` / `risk` in scope) and trade-off.
 - Always include an escape hatch (`Something else — I'll describe it`).
-- The recommendation reflects what's best for *this* project (its conventions, stack, scale,
-  domain), not a generic default.
+- With more than four materially distinct choices, first ask a discriminating question or use
+  sequential packets, then obtain final confirmation. Materially distinct options MUST NOT
+  be silently dropped, merged, or preselected to fit the UI.
+- Recommend for project conventions, stack, scale, and domain, not a generic default.
 
-**HITL** renders the set via `AskUserQuestion` (recommended option first; rationale in each
-option's description); the human's pick resolves the gate **in place**. **AFK** auto-picks
-option 1 (the recommendation) for gates it may auto-handle. Either way the chosen option is
-recorded verbatim. Keep the **rejected options in `questions.md`** so the record includes
-the alternatives considered.
+**HITL** renders the set via `AskUserQuestion`; the human's pick resolves the gate **in place**.
+**AFK** auto-picks option 1 for gates it may auto-handle. Record the chosen option verbatim and
+keep the **rejected options in `questions.md`**.
 
 ## Decision ownership: search before asking
 
@@ -156,14 +167,8 @@ Rules:
 - The file is the audit trail. Don't edit answered/dropped entries: open a new qid that
   references the old one (`supersedes: q-...-OLD`) and resolve it.
 
-Destructive Git uses a narrower engine-owned question:
-`schema: devrites-git-authority/v1`, `kind: destructive-git-once`, the exact
-operation digest, sorted classifier reason IDs, `requested_at`, `expires_at`, and
-`answer_contract: Authorize once`. Run `$rite-resolve <qid> "Authorize once"`;
-then retry within 15 minutes. `git-guard` consumes the grant before the tool runs,
-so a failed tool call still spends it. Never hand-edit, broaden, reuse, or copy
-this authority record. Ambiguous shell forms cannot use it: rewrite them as a
-direct literal Git command.
+AFK never authorizes destructive Git. The native host permission/sandbox
+boundary owns any such request and requires explicit user approval.
 
 ## `state.md` `Awaiting human` block
 
@@ -199,7 +204,7 @@ stopped the session (an AFK blocking/escalating/irreversible queue, or a HITL pa
 walked away from), plus `--batch`. In an **interactive HITL** session the skill resolves the
 `AskUserQuestion` pick **in place** (the same `questions.md` `answered` write + `state.md`
 clear), so you don't type `$rite-resolve` for gaps you answer live. Both paths flip
-`status: open → answered` and clear `Awaiting human` through the **same `devrites-engine resolve` writer**:
+`status: open → answered` and clear `Awaiting human` through the **same `devrites-engine state resolve` writer**:
 one source of truth, two entry points (live pick vs typed verb). Use the writer;
 manual edits are never destructive-operation authority.
 
@@ -226,15 +231,19 @@ finding by the decision-ownership rule above: human-owned uncertainty becomes a 
 question; an objective technical finding becomes a recorded blocker with its required
 changes, not a request for permission to retry.
 
-## Retry cap, stuck loops, and self-resolve
+## Retry cap, no-progress loops, and self-resolve
 
-- **Cap retries:** three total attempts per root cause across wright and recovery, carrying the
-  failure and dead ends; never rerun an unchanged check.
+- **Cap retries:** three total attempts per root cause across wright and recovery is a hard
+  cap. The caller and recovery loop count every failed attempt with the same
+  causal fingerprint from the current context and recorded `## Dead ends` /
+  `evidence.md`. Persist the exact failure and attempted idea after each; never
+  make a fourth unchanged or related attempt for the same root cause. There is
+  no recovery counter file or command.
 - **Classify exhaustion:** human-owned contract/risk/access gaps open their gate. Otherwise
   preserve reproduction/dead ends, set `Status: blocked` and `Next step: $rite-plan unblock`,
   with no question or `$rite-resolve`.
-- **Stop loops even in AFK:** `devrites-engine stuck` ends the build and applies that same
-  classification regardless of `allow_gates`.
+- **Reassess no-progress loops:** After repeated attempts without progress, stop and
+  reassess the failure and approach rather than continuing blindly.
 - **Resolve agent-owned questions first.** Before raising a question, try to answer it from the code, the docs,
   or `decisions.md`. Communicate only for a blocked environment, a deliverable to hand over,
   critical info you genuinely can't access, or a credential / permission you lack. This narrows

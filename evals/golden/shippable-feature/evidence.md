@@ -2,6 +2,8 @@
 
 Captured: 2026-06-11T16:40:00Z (post-dates the last code edit)
 
+Candidate SHA-256: __CANDIDATE_SHA256__
+
 ## Evidence log
 | Evidence ID | Command / action | Result | Related IDs | Limitation |
 | --- | --- | --- | --- | --- |

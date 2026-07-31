@@ -17,17 +17,17 @@ PACK = os.path.join(REPO, "pack/.claude")
 
 # devrites-* tokens that are scripts/hooks/mcp, not skills: legitimate non-skill references.
 NONSKILL = {
-    "devrites-mcp", "devrites-lib", "devrites-reviewer-readonly", "devrites-wright-scope",
-    "devrites-a1-guard", "devrites-allow", "devrites-redwatch", "devrites-orient",
-    "devrites-statusline", "devrites-stop-gate", "devrites-cursor", "devrites-refresh-indexes",
-    "devrites-source-cache", "devrites-source-cache-pre", "devrites-source-cache-post",
-    "devrites-subagent-orient", "devrites-detect", "devrites-prose-craft-report",
-    # the control-plane binary, invoked by name in skill/agent prose ("devrites-engine seal")
+    "devrites-mcp", "devrites-lib",
+    "devrites-detect", "devrites-prose-craft-report",
+    # the control-plane binary, invoked by name in skill/agent prose
+    # (for example, "devrites-engine check seal")
     "devrites-engine",
     # a git commit-trailer marker ("[devrites-context]" body in a WIP checkpoint), not a skill
     "devrites-context",
     # typed contract schemas and a generated-hook diagnostic marker, not skills
-    "devrites-forge", "devrites-git-authority", "devrites-codex-leaf-guard",
+    "devrites-codex-wright-guard",
+    # Codex permission profile used by rite-doctor, not a skill or agent invocation
+    "devrites-orchestrator",
 }
 # names a skill deliberately mentions as NON-existent (self-documenting prose).
 DOCUMENTED_NONEXISTENT = {"rite-use"}

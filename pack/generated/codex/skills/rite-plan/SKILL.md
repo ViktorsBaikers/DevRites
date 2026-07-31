@@ -3,27 +3,7 @@ name: rite-plan
 description: Re-plan existing work when reality invalidates the plan: reslice a slice that is too big, repair drift, reorder dependencies, split boundaries, or unblock work. Not first-pass decomposition.
 argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct|revise]"
 user-invocable: true
-required-agent-roles: devrites-plan-drafter
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Installed `.agents/` mirrors may be Git-ignored. If a repository-aware file tool refuses an ignored path, read it with a native filesystem command instead; a tool refusal is not a completed task.
-- For automatic Engram calls, omit optional `project` and `session_id` unless an exact value came from Engram or repository configuration. Never derive either from `task_name`, a run ID, directory name, or normalized slug. Call `mem_session_summary` without them by default; on `unknown_session` or `unknown_project`, retry once with both optional fields omitted. If auto-detection is ambiguous, ask the user instead of guessing.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
-- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns="none"`. A missing visible `agent_type` field is still V2—not capability loss, V1, or HITL—so send it anyway. If the named call rejects it, stop before any generic/default spawn. Codex loads the role TOML's `developer_instructions` natively; DevRites verifies the durable rollout, wait, completion, and delivered result.
-- Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer` for a read-only role with `fork_turns="none"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract's exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard.
-- On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns="none"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`.
-- The invoked skill's `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn.
-- If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL. Never switch runtime lanes. Never execute a DevRites specialist role in the root context.
-- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
-- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
 
 # $rite-plan: (re)plan an active feature
 
@@ -58,7 +38,8 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
 
 ## Workflow
 0. Read `.agents/skills/devrites-lib/reference/standards/core.md` (operating rules) before reshaping anything.
-   Then run `devrites-engine preamble` for deterministic workspace orientation.
+   Then resolve the explicit or active slug, require its `state.md`, and read
+   the cursor directly.
 1. Read `spec.md`, `decision-coverage.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`,
    `eng-review.md`, and the current `git diff` (if a repo). Read `decisions.md` and
    `assumptions.md`. Require `Decision coverage: CLEAR`; otherwise STOP → `$rite-clarify`.
@@ -84,10 +65,10 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
      scope, not a new negotiation.
    - **revise:** apply a requested planning-artifact revision and reconcile existing artifacts in
      any direction; propose the file edit set first, confirm each file before writing, and **never
-     edit source code**. The one confirmation exception is an explicit `$rite-upgrade`: its
-     validated `upgrade-assessment` authorizes one atomic, behavior-neutral normalization of
-     active planning artifacts, provided source, completed slices, answered questions, and
-     historical evidence remain unchanged. **Gate first: revise or new?** Same intent? More than 50% of existing scope
+     edit source code**. The sole confirmation exception is explicit `$rite-upgrade` with an
+     admitted `repairable` assessment naming current rule, evidence, gate, exact paths, and
+     delta; it authorizes only that neutral workspace edit, never source or history.
+     **Gate first: revise or new?** Same intent? More than 50% of existing scope
      survives? original *not* completable without this? Two "no"s → new work: recommend
      sealing/shipping the current workspace (MVP cut if named) then `$rite-spec` for the new
      intent, and stop. Revise preserves context; a new workspace separates the work.
@@ -97,6 +78,10 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
    paths, settled contract, and observed failure/drift. Await one atomic `plan-candidate`;
    the drafter writes nothing and returns human-owned choices separately.
 3. Reason about dependencies: [dependency-graph](reference/dependency-graph.md).
+   Reconcile `plan.md`'s canonical `Shared contract proof`: changed provider/consumer
+   boundaries keep one reused contract artifact ahead of both asserting tests, and unaffected
+   plans retain the specific no-impact statement. Missing, one-sided, duplicated-contract, vague, or
+   non-consuming proof routes to `$rite-vet` only after repair.
    **Completion:** the slice graph is cycle-free and every dependency names an existing slice.
 4. Re-slice using vertical-slice rules: [slicing](reference/slicing.md) and
    [task-breakdown](reference/task-breakdown.md). Prefer thin, shippable, verifiable.
@@ -114,33 +99,17 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
    `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`, including a
    behavior-neutral technical rationale appended to `decisions.md`, re-scan the affected coverage
    rows, assumption audit, residual uncertainty, and closed gates. Partial/Missing, an unowned
-   material assumption, or an open blocking/escalating question routes `$rite-clarify`/HITL;
-   never refresh past it. Only after the matrix is re-closed, run
-   `devrites-engine readiness-digest coverage <slug>` and replace the complete
-   `Coverage inputs SHA-256` line in `decision-coverage.md`.
+   material assumption, or an open blocking/escalating question routes `$rite-clarify`/HITL.
+   Re-read every affected row and require current evidence before restoring `CLEAR`.
    **Completion:** the change is classified, and every behavior/acceptance change has explicit
    confirmation recorded before the artifacts are updated.
 7. **Done when:** every slice is sized (builds + proves in one cycle; no slice scoring >3
    left unjustified), the dependency order is acyclic, every `drift.md` entry you stopped for
    is marked resolved, revised artifacts agree with each other, no source files changed in
    `revise` mode, behavior-change-vs-not is confirmed (`no`, or clarified), and every changed
-   plan ends at `$rite-vet` rather than returning directly to build.
+   plan ends at `$rite-vet` rather than returning directly to build. The `Shared contract proof`
+   table or justified no-impact statement must still match the revised boundary set.
    If any check fails, loop back: don't hand off a half-reshaped plan.
 
 > **Mid-flight discipline.** Do not change product behavior without confirmation or
 > absorb drift silently. See [`anti-patterns`](reference/anti-patterns.md).
-
-## Output
-
-**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: plan repaired for <slug> in <mode> mode.
-Changed: plan.md, tasks.md, traceability.md, decisions.md, state.md, eng-review.md <invalidated|n/a>
-Evidence: not applicable; slice map now <n> slices and next slice is <name>
-Open: <none | behavior question answered | Alternative: $rite-prove if all built slices need re-verification>
-Next: $rite-vet
-Record: .devrites/work/<slug>/plan.md
-↻ Hygiene: /clear if the repair was large; keep session for small reorder-only repairs
-```

@@ -9,7 +9,6 @@ package main_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -72,9 +71,14 @@ func newWorkspace(t *testing.T) string {
 // runDevrites runs the built binary against the given .devrites root and returns
 // stdout, stderr, and the exit code.
 func runDevrites(t *testing.T, root string, args ...string) (stdout, stderr string, code int) {
+	return runDevritesIO(t, root, "", nil, args...)
+}
+
+func runDevritesIO(t *testing.T, root, stdin string, extraEnv []string, args ...string) (stdout, stderr string, code int) {
 	t.Helper()
 	cmd := exec.Command(binPath, args...)
-	cmd.Env = append(os.Environ(), "DEVRITES_ROOT="+root)
+	cmd.Env = append(append(os.Environ(), "DEVRITES_ROOT="+root), extraEnv...)
+	cmd.Stdin = strings.NewReader(stdin)
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
@@ -90,95 +94,6 @@ func runDevrites(t *testing.T, root string, args ...string) (stdout, stderr stri
 	return outBuf.String(), errBuf.String(), code
 }
 
-func goldenStatus(t *testing.T, slug string) string {
-	t.Helper()
-	b, err := os.ReadFile(filepath.Join(engineRoot, "testdata", "golden", "status", slug+".txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return strings.ReplaceAll(string(b), "\r\n", "\n")
-}
-
-func TestStatusMatchesGolden(t *testing.T) {
-	for _, slug := range []string{"auth-tokens", "search-ranking"} {
-		slug := slug
-		t.Run(slug, func(t *testing.T) {
-			root := newWorkspace(t)
-			out, errOut, code := runDevrites(t, root, "status", slug)
-			if code != 0 {
-				t.Fatalf("exit = %d, want 0 (stderr: %s)", code, errOut)
-			}
-			if want := goldenStatus(t, slug); out != want {
-				t.Errorf("stdout mismatch\n--- got ---\n%s--- want ---\n%s", out, want)
-			}
-		})
-	}
-}
-
-func TestSnapshotEmitsDevRitesWorkspaceJSON(t *testing.T) {
-	root := newWorkspace(t)
-	out, errOut, code := runDevrites(t, root, "snapshot", "auth-tokens")
-	if code != 0 {
-		t.Fatalf("snapshot exit = %d, want 0 (stderr: %s)", code, errOut)
-	}
-	var got struct {
-		SchemaVersion   string   `json:"schemaVersion"`
-		Slug            string   `json:"slug"`
-		Phase           string   `json:"phase"`
-		RunMode         string   `json:"runMode"`
-		Complete        bool     `json:"complete"`
-		MissingSections []string `json:"missingSections"`
-		NextCommand     string   `json:"nextCommand"`
-		NextCommands    struct {
-			Verb   string `json:"verb"`
-			Claude string `json:"claude"`
-			Codex  string `json:"codex"`
-		} `json:"nextCommands"`
-	}
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatalf("snapshot output is not JSON: %v\n%s", err, out)
-	}
-	if got.SchemaVersion != "devrites.workspace.v1" {
-		t.Fatalf("schemaVersion = %q, want devrites.workspace.v1", got.SchemaVersion)
-	}
-	if got.Slug != "auth-tokens" || got.Phase != "build" || got.RunMode != "HITL" {
-		t.Fatalf("unexpected identity fields: %+v", got)
-	}
-	if got.Complete {
-		t.Fatalf("auth-tokens fixture should be incomplete before tasks are filled")
-	}
-	if len(got.MissingSections) != 1 || got.MissingSections[0] != "tasks" {
-		t.Fatalf("missingSections = %#v, want [tasks]", got.MissingSections)
-	}
-	if got.NextCommand != "/rite-build" {
-		t.Fatalf("nextCommand = %q, want /rite-build", got.NextCommand)
-	}
-	if got.NextCommands.Verb != "build" || got.NextCommands.Claude != "/rite-build" || got.NextCommands.Codex != "$rite-build" {
-		t.Fatalf("nextCommands = %+v, want build with Claude/Codex forms", got.NextCommands)
-	}
-}
-
-func TestStatusUnknownSlugExitsNonZero(t *testing.T) {
-	root := newWorkspace(t)
-	out, errOut, code := runDevrites(t, root, "status", "does-not-exist")
-	if code == 0 {
-		t.Fatalf("exit = 0, want non-zero for unknown slug")
-	}
-	if out != "" {
-		t.Errorf("stdout = %q, want empty on error", out)
-	}
-	if !bytes.Contains([]byte(errOut), []byte("not found")) {
-		t.Errorf("stderr = %q, want it to mention 'not found'", errOut)
-	}
-}
-
-func TestStatusMissingSlugArgExitsNonZero(t *testing.T) {
-	root := newWorkspace(t)
-	if _, _, code := runDevrites(t, root, "status"); code == 0 {
-		t.Fatalf("exit = 0, want non-zero when slug arg is missing")
-	}
-}
-
 func TestUnknownCommandExitsNonZero(t *testing.T) {
 	root := newWorkspace(t)
 	if _, _, code := runDevrites(t, root, "frobnicate"); code == 0 {
@@ -186,24 +101,26 @@ func TestUnknownCommandExitsNonZero(t *testing.T) {
 	}
 }
 
-func TestStatusReflectsHandEdit(t *testing.T) {
-	root := newWorkspace(t)
-	// Before: tasks is a heading-only stub → incomplete.
-	if out, _, _ := runDevrites(t, root, "status", "auth-tokens"); !bytes.Contains([]byte(out), []byte("result: incomplete")) {
-		t.Fatalf("precondition failed, expected incomplete, got:\n%s", out)
-	}
-	// Hand-edit the file to add real content; status reads files directly.
-	tasks := filepath.Join(root, "features", "auth-tokens", "tasks.md")
-	testutil.AppendFile(t, tasks, "\n- [x] mint\n- [x] verify\n")
+func TestCheckCandidateOutputAndMalformedFailure(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	workspace := filepath.Join(root, "work", "feature")
+	testutil.WriteFile(t, filepath.Join(project, "source.go"), "package source\n")
+	manifest := "# Touched files\n\n## Touched files\nCandidate paths are declared below.\n\n## Candidate manifest\n| State | File | Slice | Reason |\n| --- | --- | --- | --- |\n| present | `source.go` | S-1 | Implementation. |\n"
+	testutil.WriteFile(t, filepath.Join(workspace, "touched-files.md"), manifest)
 
-	out, _, code := runDevrites(t, root, "status", "auth-tokens")
-	if code != 0 {
-		t.Fatalf("status exit = %d, want 0", code)
+	out, errOut, code := runDevrites(t, root, "check", "candidate", "feature")
+	if code != 0 || errOut != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q", code, out, errOut)
 	}
-	if !bytes.Contains([]byte(out), []byte("  tasks      present")) {
-		t.Errorf("tasks still not present after edit\n%s", out)
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) != 2 || !strings.HasPrefix(lines[0], "candidate-sha256: ") || lines[1] != "candidate-files: 1" {
+		t.Fatalf("stdout=%q", out)
 	}
-	if !bytes.Contains([]byte(out), []byte("result: complete")) {
-		t.Errorf("expected complete after edit\n%s", out)
+
+	testutil.WriteFile(t, filepath.Join(workspace, "touched-files.md"), "# Touched files\n\n## Touched files\n- `source.go`\n")
+	out, errOut, code = runDevrites(t, root, "check", "candidate", "feature")
+	if code != 3 || out != "" || !strings.Contains(errOut, "candidate manifest") {
+		t.Fatalf("malformed: code=%d stdout=%q stderr=%q", code, out, errOut)
 	}
 }

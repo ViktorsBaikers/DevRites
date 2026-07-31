@@ -6,9 +6,8 @@
 # Markdown artifacts, so CI can grade a golden fixture without an API key or
 # model harness.
 #
-# Git fixtures do not preserve the mtimes needed to compare proof with code.
-# The `devrites-engine evidence-fresh` gate performs that check in a live
-# workspace.
+# Git fixtures do not preserve proof mtimes. Live freshness belongs to
+# `devrites-engine check seal`; this grader checks committed artifact content.
 #
 # Usage: grade-feature.sh [--json] <workspace-dir>
 #   e.g. evals/golden/shippable-feature | .devrites/work/<slug> | .devrites/archive/<slug>
@@ -21,6 +20,7 @@
 #   5. review.md present
 #   6. questions.md has no open question (later lifecycle phases block them)
 #   7. state.md Phase in {seal, ship, done}; Status not awaiting_human / blocked
+#   8. spec.md and seal.md contain the same nonempty, unique canonical AC-### IDs
 #
 # Exit codes: 0 shippable; 1 one or more invariants failed; 2 bad usage.
 
@@ -137,31 +137,66 @@ else
   add_problem "final.state.missing" "state.md missing"
 fi
 
-# Check 8: every spec [ACn] is proven and checked in the seal.
+# Check 8: canonical acceptance IDs are nonempty, unique, and exactly equal in
+# spec.md and seal.md. The unchecked rule above separately proves every seal row
+# is checked.
 run_acceptance_check() {
-  if [ -n "${DEVRITES_CLI:-}" ]; then
-    "$DEVRITES_CLI" check-acceptance "$ws"
-    return $?
-  fi
-  if command -v devrites-engine >/dev/null 2>&1; then
-    devrites-engine check-acceptance "$ws"
-    return $?
-  fi
-  if [ -x "$ROOT/engine/devrites" ]; then
-    "$ROOT/engine/devrites" check-acceptance "$ws"
-    return $?
-  fi
-  if [ -d "$ROOT/engine" ] && command -v go >/dev/null 2>&1; then
-    ( cd "$ROOT/engine" && go run . check-acceptance "$ws" )
-    return $?
-  fi
-  printf 'check-acceptance: devrites-engine unavailable (install devrites or run from a checkout with Go)\n' >&2
-  return 127
+  PYTHONPATH="$ROOT/scripts${PYTHONPATH:+:$PYTHONPATH}" python3 - "$ws/spec.md" "$seal" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+from workflow_schema import structural_markdown
+
+canonical = re.compile(r"\bAC-\d{3}\b")
+any_ac = re.compile(r"\bAC(?:-\d+|\d+)\b", re.IGNORECASE)
+heading = re.compile(r"^##\s+Acceptance criteria\s*#*\s*$", re.IGNORECASE)
+h2 = re.compile(r"^##\s+")
+
+
+def acceptance(path: Path) -> str:
+    if not path.is_file():
+        raise ValueError(f"{path.name} missing")
+    text = structural_markdown(path.read_text(encoding="utf-8"), path)
+    lines = text.splitlines()
+    start = next((i + 1 for i, line in enumerate(lines) if heading.match(line.strip())), None)
+    if start is None:
+        raise ValueError(f'{path.name} has no "## Acceptance criteria" section')
+    end = next((i for i in range(start, len(lines)) if h2.match(lines[i].strip())), len(lines))
+    return "\n".join(lines[start:end])
+
+
+try:
+    spec = acceptance(Path(sys.argv[1]))
+    sealed = acceptance(Path(sys.argv[2]))
+except (OSError, UnicodeError, ValueError) as exc:
+    raise SystemExit(str(exc))
+
+spec_ids = canonical.findall(spec)
+seal_ids = canonical.findall(sealed)
+for name, body, ids in (("spec.md", spec, spec_ids), ("seal.md", sealed, seal_ids)):
+    invalid = sorted({token for token in any_ac.findall(body) if not canonical.fullmatch(token)})
+    if invalid:
+        raise SystemExit(f"{name} has noncanonical acceptance IDs: {' '.join(invalid)}")
+    if not ids:
+        raise SystemExit(f"{name} acceptance IDs are empty")
+    duplicates = sorted({item for item in ids if ids.count(item) > 1})
+    if duplicates:
+        raise SystemExit(f"{name} has duplicate acceptance IDs: {' '.join(duplicates)}")
+
+missing = sorted(set(spec_ids) - set(seal_ids))
+extra = sorted(set(seal_ids) - set(spec_ids))
+if missing or extra:
+    raise SystemExit(
+        "acceptance ID mismatch: missing={} extra={}".format(
+            " ".join(missing) or "none", " ".join(extra) or "none"
+        )
+    )
+PY
 }
 
 if [ "$acceptance_ready" -eq 1 ] && ! acout=$(run_acceptance_check 2>&1); then
-  add_problem "final.acceptance.ids" \
-    "acceptance: $(printf '%s' "$acout" | tail -1 | sed 's/^check-acceptance: //')"
+  add_problem "final.acceptance.ids" "acceptance: $(printf '%s' "$acout" | tail -1)"
 fi
 
 slug="$(basename "$ws")"
@@ -172,7 +207,7 @@ if [ "$json" -eq 1 ]; then
   for ((i = 0; i < ${#problems[@]}; i++)); do
     pairs+=("${rules[$i]}" "${problems[$i]}")
   done
-  python3 - "$slug" "$status" "${pairs[@]}" <<'PY'
+  python3 - "$slug" "$status" ${pairs[@]+"${pairs[@]}"} <<'PY'
 import json
 import sys
 

@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
-	"github.com/devrites/devrites/internal/orient"
 	"github.com/devrites/devrites/internal/reason"
 	"github.com/devrites/devrites/internal/state"
 )
@@ -31,15 +30,15 @@ const (
 // Result is a gate outcome. Blocked is true iff a required section is missing;
 // Missing lists them in canonical order for an actionable message.
 type Result struct {
-	Kind         Kind
-	Slug         string
-	Phase        state.Phase
-	Target       state.Phase     // the phase whose requirements were checked
-	Missing      []state.Section // compact legacy view
-	MissingFiles []string        // authoritative per-file view
-	LegacyLayout bool
-	Blocked      bool
-	ReasonID     reason.ID
+	Kind          Kind
+	Slug          string
+	Phase         state.Phase
+	Target        state.Phase     // the phase whose requirements were checked
+	Missing       []state.Section // compact legacy view
+	MissingFiles  []string        // authoritative per-file view
+	StateProblems []string        // deterministic cross-file invariant failures
+	Blocked       bool
+	ReasonID      reason.ID
 }
 
 // Check runs a gate against feature <slug> under root. It reads workspace files
@@ -55,23 +54,44 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 		target = state.PhaseSeal
 	}
 	missing := state.MissingFor(f, target)
-	var missingFiles []string
-	blocked := len(missing) > 0
-	if !f.LegacyLayout {
-		missingFiles = state.MissingWorkspaceFiles(f, target)
-		blocked = len(missingFiles) > 0
+	missingFiles := state.MissingWorkspaceFiles(f, target)
+	blocked := len(missingFiles) > 0
+	readinessStale := false
+	var stateProblems []string
+	if gates, awaitingHuman := openHumanGates(devritespaths.FeatureDir(root, slug)); len(gates) > 0 {
+		problem := fmt.Sprintf("open %s human question(s) remain in questions.md", strings.Join(gates, "/"))
+		if !awaitingHuman {
+			problem += " but state.md is not awaiting_human"
+		}
+		stateProblems = append(stateProblems, problem)
+		blocked = true
+	}
+	if len(missingFiles) == 0 && phaseRequiresReadinessBinding(target) {
+		expected, bindingErr := verifyReadinessBinding(root, slug)
+		if bindingErr != nil {
+			readinessStale = true
+			blocked = true
+			if expected == "" {
+				stateProblems = append(stateProblems, bindingErr.Error()+"; repair the input and rerun /rite-vet")
+			} else {
+				stateProblems = append(stateProblems, "readiness inputs are stale or the binding is invalid; rerun /rite-vet and record exactly one standalone line: "+expected)
+			}
+		}
 	}
 	result := &Result{
-		Kind:         kind,
-		Slug:         slug,
-		Phase:        f.Phase,
-		Target:       target,
-		Missing:      missing,
-		MissingFiles: missingFiles,
-		LegacyLayout: f.LegacyLayout,
-		Blocked:      blocked,
+		Kind:          kind,
+		Slug:          slug,
+		Phase:         f.Phase,
+		Target:        target,
+		Missing:       missing,
+		MissingFiles:  missingFiles,
+		StateProblems: stateProblems,
+		Blocked:       blocked,
 	}
 	result.ReasonID = ResultReasonID(kind, blocked)
+	if readinessStale {
+		result.ReasonID = reason.GateReadinessStale
+	}
 	return result, nil
 }
 
@@ -102,82 +122,32 @@ func (r *Result) Render() string {
 	fmt.Fprintf(&b, "phase: %s\n", r.Phase)
 	if !r.Blocked {
 		b.WriteString("result: pass\n")
+		fmt.Fprintf(&b, "reason: %s\n", r.ReasonID)
 		return b.String()
 	}
 	missing := r.MissingFiles
-	if r.LegacyLayout {
-		missing = make([]string, len(r.Missing))
-		for i, section := range r.Missing {
-			missing[i] = string(section)
-		}
-	}
-	if r.Kind == Seal {
+	switch {
+	case len(missing) == 0:
+		b.WriteString("result: blocked (state invariant)\n")
+	case r.Kind == Seal:
 		fmt.Fprintf(&b, "result: blocked (missing to seal: %s)\n", strings.Join(missing, ", "))
-	} else {
+	default:
 		fmt.Fprintf(&b, "result: blocked (missing to leave %q: %s)\n", r.Phase, strings.Join(missing, ", "))
 	}
-	fmt.Fprintf(&b, "next: add real content to %s, then re-run: devrites-engine %s %s\n",
-		strings.Join(missing, ", "), r.Kind, r.Slug)
+	fmt.Fprintf(&b, "reason: %s\n", r.ReasonID)
+	if len(missing) > 0 {
+		fmt.Fprintf(&b, "next: add real content to %s\n", strings.Join(missing, ", "))
+	}
+	for _, problem := range r.StateProblems {
+		fmt.Fprintf(&b, "invariant: %s\n", problem)
+	}
+	fmt.Fprintf(&b, "retry: devrites-engine check %s %s\n", r.Kind, r.Slug)
 	return b.String()
-}
-
-// StopGate checks whether the active feature can end a turn in its current state.
-// A feature in seal, ship, or done must have proof. Normal incompleteness during
-// earlier phases does not block.
-//
-// Missing or unreadable workspace state returns an unblocked zero result.
-func StopGate(root string) (StopResult, error) {
-	slug, err := orient.ActiveSlug(root)
-	if err != nil || slug == "" {
-		return StopResult{}, nil
-	}
-	f, err := state.LoadFeature(root, slug)
-	if err != nil {
-		return StopResult{}, nil // Unreadable state does not block Stop.
-	}
-	// redwatch writes .red for a known failing suite. Stop blocks while that file
-	// exists, independently of whole-feature completeness.
-	featureDir := devritespaths.FeatureDir(root, slug)
-	if _, statErr := os.Stat(filepath.Join(featureDir, ".red")); statErr == nil {
-		return StopResult{
-			Slug:          slug,
-			Blocked:       true,
-			ReasonID:      reason.HookStopRed,
-			EvidenceFiles: []string{".red"},
-			Reason: fmt.Sprintf(
-				"feature %q has tests/build RED (.red is set): fix to green, or record the failure and next step, before stopping",
-				slug),
-		}, nil
-	}
-	if gates, blocked := unsurfacedHumanGates(featureDir); blocked {
-		return StopResult{
-			Slug:          slug,
-			Blocked:       true,
-			ReasonID:      reason.HookStopUnsurfacedHumanGate,
-			EvidenceFiles: []string{"questions.md", "state.md"},
-			Reason: fmt.Sprintf(
-				"feature %q has open %s human question(s) in questions.md but state.md is not awaiting_human: surface the gate before stopping",
-				slug, strings.Join(gates, "/")),
-		}, nil
-	}
-	claimsDone := state.ShippablePhase(f.Phase)
-	if claimsDone && !f.Present[state.SectionProof] {
-		return StopResult{
-			Slug:          slug,
-			Blocked:       true,
-			ReasonID:      reason.HookStopMissingProof,
-			EvidenceFiles: []string{"evidence.md", "proof.md", "state.md"},
-			Reason: fmt.Sprintf(
-				"feature %q is at phase %q but proof.md is empty: record acceptance evidence, or move the phase back, before stopping",
-				slug, f.Phase),
-		}, nil
-	}
-	return StopResult{Slug: slug, ReasonID: reason.HookStopClear}, nil
 }
 
 const gateSpaceChars = " \t\n\v\f\r"
 
-func unsurfacedHumanGates(featureDir string) ([]string, bool) {
+func openHumanGates(featureDir string) ([]string, bool) {
 	qdata, err := os.ReadFile(filepath.Join(featureDir, "questions.md"))
 	if err != nil {
 		return nil, false
@@ -187,10 +157,7 @@ func unsurfacedHumanGates(featureDir string) ([]string, bool) {
 		return nil, false
 	}
 	sdata, err := os.ReadFile(filepath.Join(featureDir, "state.md"))
-	if err == nil && stateAwaitingHuman(sdata) {
-		return nil, false
-	}
-	return gates, true
+	return gates, err == nil && stateAwaitingHuman(sdata)
 }
 
 func openBlockingQuestionGates(data []byte) []string {
@@ -199,13 +166,35 @@ func openBlockingQuestionGates(data []byte) []string {
 	var gates []string
 	inQ := false
 	status, gate := "", ""
+	tableOpen := false
+	statusColumn, gateColumn := -1, -1
+	add := func(questionStatus, questionGate string) {
+		questionStatus = strings.ToLower(strings.TrimSpace(questionStatus))
+		questionGate = strings.ToLower(strings.TrimSpace(questionGate))
+		if questionStatus == "open" && (questionGate == "blocking" || questionGate == "validating" || questionGate == "escalating") && !seen[questionGate] {
+			seen[questionGate] = true
+			gates = append(gates, questionGate)
+		}
+	}
 	finalize := func() {
-		if inQ && status == "open" && (gate == "blocking" || gate == "validating" || gate == "escalating") && !seen[gate] {
-			seen[gate] = true
-			gates = append(gates, gate)
+		if inQ {
+			add(status, gate)
 		}
 	}
 	for _, line := range lines {
+		if cells, ok := questionTableCells(line); ok {
+			if !tableOpen {
+				tableOpen = true
+				statusColumn = tableColumn(cells, "status")
+				gateColumn = tableColumn(cells, "gate")
+			}
+			if statusColumn >= 0 && statusColumn < len(cells) && gateColumn >= 0 && gateColumn < len(cells) {
+				add(cells[statusColumn], cells[gateColumn])
+			}
+		} else {
+			tableOpen = false
+			statusColumn, gateColumn = -1, -1
+		}
 		switch {
 		case strings.HasPrefix(strings.ToLower(line), "## q-"):
 			finalize()
@@ -221,6 +210,27 @@ func openBlockingQuestionGates(data []byte) []string {
 	}
 	finalize()
 	return gates
+}
+
+func questionTableCells(line string) ([]string, bool) {
+	line = strings.TrimSpace(line)
+	if !strings.HasPrefix(line, "|") || !strings.HasSuffix(line, "|") {
+		return nil, false
+	}
+	parts := strings.Split(strings.Trim(line, "|"), "|")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+	return parts, true
+}
+
+func tableColumn(cells []string, name string) int {
+	for i, cell := range cells {
+		if strings.EqualFold(cell, name) {
+			return i
+		}
+	}
+	return -1
 }
 
 func stateAwaitingHuman(data []byte) bool {
@@ -243,15 +253,4 @@ func splitLinesNoTrailing(data []byte) []string {
 		return nil
 	}
 	return strings.Split(s, "\n")
-}
-
-// StopResult is a stop-gate evaluation. Slug names the active feature (empty when
-// none); Blocked is true iff the rest-point invariant is violated; Reason is the
-// actionable explanation when Blocked.
-type StopResult struct {
-	Slug          string
-	Reason        string
-	ReasonID      reason.ID
-	EvidenceFiles []string
-	Blocked       bool
 }

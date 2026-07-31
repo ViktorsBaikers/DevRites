@@ -3,7 +3,6 @@ name: rite-frame
 description: Frame an ad-hoc ask before coding, then audit the diff. Use for underspecified imperative asks, raw-diff self-audits, or `/rite-quick` setup. Not a lifecycle gate.
 argument-hint: "[task to frame | diff to audit]"
 user-invocable: true
-required-agent-roles: none
 ---
 
 # /rite-frame: frame the goal, audit the diff
@@ -11,7 +10,7 @@ required-agent-roles: none
 LLMs reliably get four things wrong: they **assume** silently, **overcomplicate**, edit
 **out of scope**, and run on an **unverifiable** "make it work". The full DevRites
 lifecycle catches all four at its gates (spec readiness, the Spec Drift Guard,
-`touched-files.md` + `devrites-engine reconcile`, `/rite-seal`). But the express lane and plain
+`touched-files.md` + diff review, `/rite-seal`). But the express lane and plain
 "just do X" requests **skip those gates**, and a raw diff has no gate at all.
 
 `rite-frame` is the gate's reflex made portable. Two moves, no workspace required:
@@ -102,11 +101,6 @@ ask into unreviewed work.
   mode 4 has nothing to check against.
 - A criterion that can't be false isn't a criterion. It's a wish. Rewrite it or ask.
 - Feature/ask scope only. Out-of-scope findings become FYI follow-ups, never silent fixes.
-
-## Output
-Reply-contract exception: ad-hoc utility. It may run outside a DevRites workspace, so
-it skips `devrites-engine progress`, but it follows the compact reply principles in
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
 
 ```
 Done: frame complete for <task>; criterion and boundary are explicit.

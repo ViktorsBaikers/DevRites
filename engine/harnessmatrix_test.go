@@ -2,58 +2,45 @@ package main
 
 import (
 	"bytes"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/devrites/devrites/internal/harness"
 )
 
-func TestHarnessMatrixRender(t *testing.T) {
-	var out, errb bytes.Buffer
-	if code := cmdHarnessMatrix(nil, &out, &errb); code != exitOK {
-		t.Fatalf("render exit %d", code)
+func TestHarnessMatrixCommandIsRemoved(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"harness-matrix"}, strings.NewReader(""), &stdout, &stderr); code != exitUsage {
+		t.Fatalf("run(harness-matrix) = %d, want %d", code, exitUsage)
 	}
-	if !strings.Contains(out.String(), harness.MatrixBeginMarker) {
-		t.Error("rendered block missing begin marker")
+	if stdout.Len() != 0 {
+		t.Fatalf("stdout = %q, want no success output", stdout.String())
 	}
-}
-
-func TestHarnessMatrixCheckInSync(t *testing.T) {
-	dir := t.TempDir()
-	doc := filepath.Join(dir, "m.md")
-	body := "# heading\n\n" + harness.RenderMatrix() + "\n\ntrailing prose\n"
-	if err := os.WriteFile(doc, []byte(body), 0o644); err != nil {
-		t.Fatal(err)
+	if !strings.Contains(stderr.String(), `unknown command "harness-matrix"`) {
+		t.Fatalf("stderr = %q, want unknown-command diagnostic", stderr.String())
 	}
-	var out, errb bytes.Buffer
-	if code := cmdHarnessMatrix([]string{"--check", doc}, &out, &errb); code != exitOK {
-		t.Fatalf("in-sync doc should pass, got %d: %s", code, errb.String())
+	if !strings.Contains(stderr.String(), "Usage:") {
+		t.Fatalf("stderr = %q, want help after unknown-command diagnostic", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "\n  devrites-engine harness-matrix ") {
+		t.Fatalf("usage still advertises harness-matrix:\n%s", stderr.String())
 	}
 }
 
-func TestHarnessMatrixCheckDrift(t *testing.T) {
-	dir := t.TempDir()
-	doc := filepath.Join(dir, "m.md")
-	drifted := strings.Replace(harness.RenderMatrix(), "Native", "MADE-UP", 1)
-	if err := os.WriteFile(doc, []byte(drifted), 0o644); err != nil {
-		t.Fatal(err)
+func TestHarnessMatrixCheckCommandIsRemoved(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	args := []string{"harness-matrix", "--check", "docs/harness-compliance.md"}
+	if code := run(args, strings.NewReader(""), &stdout, &stderr); code != exitUsage {
+		t.Fatalf("run(%q) = %d, want %d", args, code, exitUsage)
 	}
-	var out, errb bytes.Buffer
-	if code := cmdHarnessMatrix([]string{"--check", doc}, &out, &errb); code != exitBlocked {
-		t.Fatalf("drifted doc should block (exit 3), got %d", code)
+	if stdout.Len() != 0 {
+		t.Fatalf("stdout = %q, want no success output", stdout.String())
 	}
-}
-
-func TestHarnessMatrixCheckMissingMarkers(t *testing.T) {
-	dir := t.TempDir()
-	doc := filepath.Join(dir, "m.md")
-	if err := os.WriteFile(doc, []byte("no markers here"), 0o644); err != nil {
-		t.Fatal(err)
+	if !strings.Contains(stderr.String(), `unknown command "harness-matrix"`) {
+		t.Fatalf("stderr = %q, want unknown-command diagnostic", stderr.String())
 	}
-	var out, errb bytes.Buffer
-	if code := cmdHarnessMatrix([]string{"--check", doc}, &out, &errb); code != exitBlocked {
-		t.Fatalf("missing markers should block, got %d", code)
+	if !strings.Contains(stderr.String(), "Usage:") {
+		t.Fatalf("stderr = %q, want help after unknown-command diagnostic", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "\n  devrites-engine harness-matrix ") {
+		t.Fatalf("usage still advertises harness-matrix:\n%s", stderr.String())
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"math"
 	"os"
 	"path"
@@ -76,7 +77,13 @@ func writeArchive(root, output, prefix string, epoch time.Time) error {
 		return errors.New("output must be outside the staged release tree")
 	}
 
-	entries, err := collectEntries(canonicalRoot, prefix)
+	sourceRoot, err := os.OpenRoot(canonicalRoot)
+	if err != nil {
+		return fmt.Errorf("open staged release tree: %w", err)
+	}
+	defer sourceRoot.Close()
+
+	entries, err := collectEntries(sourceRoot, prefix)
 	if err != nil {
 		return err
 	}
@@ -102,7 +109,7 @@ func writeArchive(root, output, prefix string, epoch time.Time) error {
 	gz.Header.OS = 255
 	tw := tar.NewWriter(gz)
 
-	writeErr := writeEntries(tw, entries, epoch)
+	writeErr := writeEntries(sourceRoot, tw, entries, epoch)
 	if err := tw.Close(); writeErr == nil {
 		writeErr = err
 	}
@@ -136,31 +143,30 @@ func within(root, candidate string) bool {
 	return err == nil && (rel == "." || filepath.IsLocal(rel))
 }
 
-func collectEntries(root, prefix string) ([]archiveEntry, error) {
+func collectEntries(root *os.Root, prefix string) ([]archiveEntry, error) {
 	var entries []archiveEntry
-	err := filepath.Walk(root, func(sourcePath string, info os.FileInfo, walkErr error) error {
+	err := fs.WalkDir(root.FS(), ".", func(sourcePath string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if sourcePath == root {
-			entries = append(entries, archiveEntry{archiveName: prefix + "/", sourcePath: root, info: info})
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if sourcePath == "." {
+			entries = append(entries, archiveEntry{archiveName: prefix + "/", sourcePath: sourcePath, info: info})
 			return nil
 		}
-		rel, err := filepath.Rel(root, sourcePath)
-		if err != nil || !filepath.IsLocal(rel) {
-			return fmt.Errorf("path escapes staged release tree: %q", sourcePath)
-		}
 		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("symlink is not allowed in release payload: %s", filepath.ToSlash(rel))
+			return fmt.Errorf("symlink is not allowed in release payload: %s", sourcePath)
 		}
 		if !info.Mode().IsRegular() && !info.IsDir() {
-			return fmt.Errorf("unsupported release payload entry: %s (%s)", filepath.ToSlash(rel), info.Mode())
+			return fmt.Errorf("unsupported release payload entry: %s (%s)", sourcePath, info.Mode())
 		}
-		archiveRel := filepath.ToSlash(rel)
-		if strings.Contains(archiveRel, `\`) {
-			return fmt.Errorf("non-portable release payload path: %s", archiveRel)
+		if strings.Contains(sourcePath, `\`) {
+			return fmt.Errorf("non-portable release payload path: %s", sourcePath)
 		}
-		name := path.Join(prefix, archiveRel)
+		name := path.Join(prefix, sourcePath)
 		if info.IsDir() {
 			name += "/"
 		}
@@ -176,14 +182,29 @@ func collectEntries(root, prefix string) ([]archiveEntry, error) {
 	return entries, nil
 }
 
-func writeEntries(tw *tar.Writer, entries []archiveEntry, epoch time.Time) error {
+func writeEntries(root *os.Root, tw *tar.Writer, entries []archiveEntry, epoch time.Time) error {
 	for _, entry := range entries {
+		file, err := root.Open(entry.sourcePath)
+		if err != nil {
+			return fmt.Errorf("open %s: %w", entry.archiveName, err)
+		}
+		currentInfo, err := file.Stat()
+		if err != nil {
+			return errors.Join(fmt.Errorf("stat %s: %w", entry.archiveName, err), file.Close())
+		}
+		if !os.SameFile(entry.info, currentInfo) {
+			return errors.Join(fmt.Errorf("release payload changed after collection: %s", entry.archiveName), file.Close())
+		}
+		if !currentInfo.Mode().IsRegular() && !currentInfo.IsDir() {
+			return errors.Join(fmt.Errorf("unsupported release payload entry: %s (%s)", entry.archiveName, currentInfo.Mode()), file.Close())
+		}
+
 		mode := int64(0o644)
 		typeflag := byte(tar.TypeReg)
-		size := entry.info.Size()
-		if entry.info.IsDir() {
+		size := currentInfo.Size()
+		if currentInfo.IsDir() {
 			mode, typeflag, size = 0o755, tar.TypeDir, 0
-		} else if entry.info.Mode().Perm()&0o111 != 0 || path.Ext(entry.archiveName) == ".sh" {
+		} else if currentInfo.Mode().Perm()&0o111 != 0 || path.Ext(entry.archiveName) == ".sh" {
 			mode = 0o755
 		}
 		header := &tar.Header{
@@ -197,14 +218,13 @@ func writeEntries(tw *tar.Writer, entries []archiveEntry, epoch time.Time) error
 			Format:     tar.FormatPAX,
 		}
 		if err := tw.WriteHeader(header); err != nil {
-			return err
+			return errors.Join(err, file.Close())
 		}
 		if typeflag != tar.TypeReg {
+			if err := file.Close(); err != nil {
+				return err
+			}
 			continue
-		}
-		file, err := os.Open(entry.sourcePath)
-		if err != nil {
-			return err
 		}
 		_, copyErr := io.Copy(tw, file)
 		closeErr := file.Close()

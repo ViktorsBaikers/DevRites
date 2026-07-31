@@ -4,7 +4,6 @@ description: User-invoked handoff writer: sync chat-only context into `.devrites
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[what the next session will focus on]"
-required-agent-roles: none
 ---
 
 # /rite-handoff: chat-only context, into a fresh-agent doc
@@ -17,7 +16,7 @@ the same user after `/clear`) can pick the work up without re-reading the transc
 Read `.claude/skills/devrites-lib/reference/standards/core.md` first: its "Persistence before stopping" discipline is
 exactly what this skill executes. The other rule files load on demand.
 
-Then run `devrites-engine preamble` for deterministic workspace orientation.
+Then read the explicit or active workspace's `state.md` directly.
 
 ## Where to write
 

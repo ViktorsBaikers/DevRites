@@ -3,7 +3,6 @@ name: rite-converge
 description: Converge intent and live code. Use when resuming a half-built feature, after `/rite-adopt` drift, or the user asks "what's left to build". Not for initial planning.
 argument-hint: "[feature-slug]"
 user-invocable: true
-required-agent-roles: devrites-evidence-scout
 ---
 
 # /rite-converge: compare live code with intent
@@ -58,7 +57,8 @@ Pull on demand:
 
 ## Workflow
 0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`** first (the always-on
-   operating rules), then run `devrites-engine preamble` for deterministic workspace orientation.
+   operating rules), then resolve the active slug, require its `state.md`, and
+   read the cursor directly.
 1. **Confirm the gate.** Require `spec.md` + `plan.md` + `tasks.md` in the active workspace. If
    any is missing, **STOP** and name the prerequisite (`/rite-spec` for a missing spec,
    `/rite-define` for a missing plan/tasks, `/rite-adopt` to onboard existing code). Do not
@@ -71,15 +71,11 @@ Pull on demand:
    get built); from `tasks.md`: existing slices + their `Satisfies:`; from
    `.devrites/principles.md`: the invariants.
    **Completion:** every buildable criterion, touch-point, slice output, and principle is in the assessment inventory.
-3. **Run the mechanical checks**, then read the code. `devrites-engine analyze` gives coverage
-   and consistency; `devrites-engine coverage` gives the AC→slice→proven matrix. They catch *unmapped*
-   criteria; they do **not** see whether mapped code is built and correct, for that,
-   read the live code (code-intelligence index per `tooling.md`).
-   ```bash
-   S="$(cat .devrites/ACTIVE 2>/dev/null)"
-   devrites-engine analyze "$S"; echo "analyze rc=$?"
-   devrites-engine coverage "$S" > /dev/null; echo "coverage rc=$?"
-   ```
+3. **Reconcile the map, then read the code.** Compare `spec.md`, `tasks.md`, and
+   `traceability.md` directly: every buildable AC/REQ maps to an existing slice, every slice maps
+   back to real acceptance, and the mapped prose preserves the requirement's meaning. Record
+   orphaned, invented, duplicate, or contradictory mappings as gaps. Then read the live code
+   (code-intelligence index per `tooling.md`); artifact mappings never prove implementation.
 4. **Assess each unit as built / partial / absent** against the live code (the rubric is in
    [`reference/convergence-assessment.md`](reference/convergence-assessment.md)): every
    acceptance criterion / scenario, every plan touch-point, and every existing slice's stated
@@ -94,8 +90,8 @@ Pull on demand:
    principle-remediation slice sorts first. **If every unit is built → append nothing.**
    **Completion:** every partial/absent unit has one traceable appended slice, or the file is byte-for-byte unchanged.
 6. **Write append-only + bookkeeping.** Append the slice batch to `tasks.md` (nothing else in
-   that file changes); refresh `traceability.md` (`devrites-engine coverage` → new rows for the
-   appended slices). Appending a slice changes the plan input, so invalidate the prior vet:
+   that file changes); update `traceability.md` directly with rows for only the appended slices,
+   preserving every existing row. Appending a slice changes the plan input, so invalidate the prior vet:
    update `state.md` to `Phase: plan`, `Next step: /rite-vet`, and set an existing
    `eng-review.md` field to `Implementation readiness: NEEDS REPLAN`. When nothing was unmet,
    leave the plan/vet verdict untouched and set `Next step: /rite-prove`. Append
@@ -120,23 +116,3 @@ Convergence: 2026-07-07      # marks this as a convergence-appended slice, not a
 > **Mid-flight discipline.** Do not rewrite an existing slice, edit source, mark a
 > happy-path-only implementation as built, or add work for a spec you suspect is wrong.
 > See [`reference/anti-patterns.md`](reference/anti-patterns.md).
-
-## Output
-
-**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: convergence assessed for <slug>; <n> slices appended.
-Changed: tasks.md <appended|unchanged>, traceability.md, state.md, eng-review.md <invalidated|unchanged>
-Evidence: units <built>/<total> built · <partial> partial · <absent> absent · principle violations 0
-Open: none
-Next: /rite-vet
-Record: .devrites/work/<slug>/tasks.md
-↻ Hygiene: /clear before /rite-vet
-```
-When nothing was unmet, render the same green form with `Next: /rite-prove`.
-If spec drift or another blocker remains, use the shared `Stopped / blocked` form
-and route `Fix:` to `/rite-plan`; do not recommend `/rite-build`.
-**DO NOT write application code, rewrite existing slices, or edit spec.md/plan.md here.**
-This phase assesses and enqueues; `/rite-build` implements.

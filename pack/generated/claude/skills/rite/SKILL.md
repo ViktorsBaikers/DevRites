@@ -4,14 +4,14 @@ description: User-invoked DevRites menu and router; no args renders the menu, a 
 argument-hint: "[verb [args...]]"
 user-invocable: true
 disable-model-invocation: true
-required-agent-roles: none
 ---
 
 # /rite: DevRites menu + router
 
 You are the DevRites entry point. Two modes:
 
-- **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a phase or read `state.md`: status is `/rite-status`.
+- **No args** → render the menu and stop. Do not execute a phase or infer
+  workspace status; `/rite-status` owns that.
 - **Verb arg** → pass-through dispatch to the matching `rite-<verb>` skill (`/rite spec foo` ≡ `/rite-spec foo`); the called skill owns the output.
 
 When the user asks which rite fits, load [`devrites-lib/reference/intent-map.md`](../devrites-lib/reference/intent-map.md).
@@ -47,14 +47,14 @@ What each verb does lives once, in the Menu below; this table is the dispatch ma
 | `seal` | `/rite-seal` |
 | `ship` | `/rite-ship` |
 | `status [slug]` | `/rite-status` |
-| `doctor [--code | --reindex]` | `/rite-doctor` |
+| `doctor` | `/rite-doctor` |
 | `upgrade [slug]` | `/rite-upgrade` |
-| `learn [--mine \| "<lesson>"]` | `/rite-learn` |
+| `learn ["<lesson>"]` | `/rite-learn` |
 | `explain [concept \| diff \| idea \| recap]` | `/rite-explain` |
 | `pov [candidate]` | `/rite-pov` |
 | `dogfood [--port N]` | `/rite-dogfood` |
 | `pr-feedback [PR\|thread]` | `/rite-pr-feedback` |
-| `customize [override <agent> \| extension <name>]` | `/rite-customize` |
+| `customize [instruction \| skill \| agent \| plugin]` | `/rite-customize` |
 | `use <slug>` | (inline) |
 | `guide` | (inline) |
 | `resolve <qid> "<answer>"` | `/rite-resolve` |
@@ -101,16 +101,15 @@ Called phase skills own the shared completion reply contract
 
 ```
 DevRites — disciplined senior-engineer workflow
-Recommended start: <greenfield: /rite spec <feature> | brownfield-unadopted: /rite adopt | active-feature: /rite status | dirty-worktree: /rite frame or /rite quick | branch-ahead: /rite ship/status | clean-default: /rite spec <feature>>
                               menu form           direct shortcut
 SPEC          /rite spec               ≡    /rite-spec        investigate deeply → write spec.md
-ADOPT         /rite adopt              ≡    /rite-adopt       onboard existing code → reverse-derive spec.md + seed conventions
+ADOPT         /rite adopt              ≡    /rite-adopt       onboard existing code → reverse-derive spec.md
 CLARIFY       /rite clarify            ≡    /rite-clarify     close the complete decision surface before planning
 TEMPER        /rite temper             ≡    /rite-temper      optional — strategic review: scope mode + pre-mortem, harden the spec
 PLAN          /rite define             ≡    /rite-define      turn the spec into plan + task slices + state
 VET           /rite vet                ≡    /rite-vet         mandatory every plan — light/full engineering review by stakes
 REPLAN        /rite plan               ≡    /rite-plan        decompose / reslice / repair an active plan
-BUILD         /rite build              ≡    /rite-build       implement exactly one verified vertical slice, then stop
+BUILD         /rite build              ≡    /rite-build       one slice/wright; HITL stops, `.devrites/AFK` may chain
 CONVERGE      /rite converge           ≡    /rite-converge    recovery — append work needed to meet intent
 PROVE         /rite prove              ≡    /rite-prove       tests + build + runtime + browser evidence
 POLISH        /rite polish             ≡    /rite-polish      code polish always; UI normalize + polish if UI
@@ -118,8 +117,8 @@ REVIEW        /rite review             ≡    /rite-review      feature-scoped m
 SEAL          /rite seal               ≡    /rite-seal        final GO / NO-GO decision (no git)
 SHIP          /rite ship               ≡    /rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
 STATUS        /rite status             ≡    /rite-status      active feature, next action, evidence, risks
-DOCTOR        /rite doctor ...         ≡    /rite-doctor      health check; --reindex refreshes structural indexes
-UPGRADE       /rite upgrade ...        ≡    /rite-upgrade     reconcile an active legacy workspace with current contracts
+DOCTOR        /rite doctor             ≡    /rite-doctor      installation and native host diagnostics
+UPGRADE       /rite upgrade ...        ≡    /rite-upgrade     audit an older workspace; route only proven gaps
 LEARN         /rite learn ...          ≡    /rite-learn       review captured lessons → promote to project rules / principles
 EXPLAIN       /rite explain ...        ≡    /rite-explain     grounded concept/diff/idea/recap explainer
 POV           /rite pov ...            ≡    /rite-pov         decide adopt / trial / hold / reject for an external option

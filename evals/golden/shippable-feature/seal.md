@@ -2,6 +2,8 @@
 
 Verdict: GO
 
+Candidate SHA-256: __CANDIDATE_SHA256__
+
 ## Acceptance Criteria
 - [x] AC-001: `GET /transactions/export.csv` streams CSV — EVID-001 (pass)
 - [x] AC-002: Export rejects cross-user access — EVID-002 (pass)

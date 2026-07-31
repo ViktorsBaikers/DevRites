@@ -13,14 +13,10 @@ trap 'rm -rf "$tmp"' EXIT
 
 output="$(bash "$ROOT/scripts/run-outcome-evals.sh")"
 printf '%s\n' "$output"
-grep -Fq "canonical parity + 15 isolated negative rows" <<<"$output"
-grep -Fq "reason=DRV-GATE-SEAL-MISSING" <<<"$output"
-grep -Fq "readiness=coverage-not-clear(code=6)" <<<"$output"
-grep -Fq "readiness=engineering-not-ready(code=7)" <<<"$output"
-if grep -Fq "stale PATH shim executed" <<<"$output"; then
-  echo "outcome runner used a PATH engine instead of its exact build" >&2
-  exit 1
-fi
+grep -Fq "Outcome evals passed: native boundary + 15 isolated final-outcome negatives + candidate/readiness content binding + removed-command rejections." <<<"$output"
+grep -Fq "PASS content_identity     unchanged-touch=pass restored-mtime-byte-change=blocked" <<<"$output"
+grep -Fq "all 20 retired top-level commands are unknown (no aliases)" <<<"$output"
+grep -Fq "wrong_ac_id" <<<"$output"
 
 mkdir -p "$tmp/host-artifacts"
 discovery="$(

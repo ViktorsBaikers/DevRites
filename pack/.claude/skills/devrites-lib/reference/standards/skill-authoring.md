@@ -1,105 +1,135 @@
 # Skill authoring
 
-Use this when creating or editing DevRites skills.
-
-## Distribution
-
-DevRites is installed through the npm package (`npx devrites ...`). Claude Code
-and Codex files are generated host artifacts copied by that installer, never
-Claude/Codex plugin-store surfaces. Edit the canonical Claude-authored pack sources,
-rebuild host artifacts, then validate.
+> **Source-checkout only.** In a checkout where `pack/.claude/` exists, edit
+> only the canonical source; run `bash scripts/build-host-artifacts.sh`, then validate.
+> Installed generated mirrors are not authoring surfaces; never edit them.
 
 ## Surface lifecycle
 
-- **Promoted:** shipped in `pack/`, documented in `docs/skills.md` and
-  `docs/command-map.md`, and covered by validation.
-- **Draft:** local/research material outside the shipped pack.
-- **Deprecated:** shipped only as a compatibility bridge with a replacement and
-  removal note.
-- **Research:** notes under `docs/research/`; never installed.
+- **Promoted:** shipped in `pack/`, documented in `docs/skills.md` +
+  `docs/command-map.md`, validated.
+- **Draft:** local/research outside `pack/`.
+- **Deprecated:** compatibility bridge with replacement/removal note.
+- **Research:** `docs/research/` notes; never installed.
 
-## Description
+## Routing metadata
 
-The description is an invocation pointer, not documentation.
+The description routes; it is not documentation.
 
-- **Model-invoked** skills pay context load so the agent or another skill can reach them;
-  omit `disable-model-invocation` and give them trigger-bearing descriptions.
-- **Explicit-only** skills pay human cognitive load instead; set
-  `disable-model-invocation: true`, keep the description a human summary, and expose them
-  through `/rite`. The Codex generator must map this to
-  `policy.allow_implicit_invocation: false` without stubbing a public description.
-- Keep public model-invoked skills under 90 words, internal specialists under 75,
-  explicit-only skills under 30, and `devrites-lib` under 60.
-- Front-load one stable leading word that is also used in prompts/docs when that concept
-  should trigger the skill.
-- Use one clear trigger branch per phrase; repeated `Use when` or `Not for` means the branch should collapse or move into the body.
-- State the **defining constraint**: the one fact that separates this skill from its nearest sibling (e.g. `/rite-seal` decides, `/rite-ship` mutates git). It is the strongest trigger discriminator the routing evals measure.
-- Put examples, edge cases, and rationale in `SKILL.md` body or a reference file, not in frontmatter.
+- **Model-invoked:** omit `disable-model-invocation`; use a trigger-bearing
+  description.
+- **Explicit-only:** set `disable-model-invocation: true`, use a human summary,
+  expose through `/rite`; generate Codex
+  `policy.allow_implicit_invocation: false` without a stub description.
+- Description caps: public model-invoked 90 words; internal 75; explicit-only
+  30; `devrites-lib` 60. Agent descriptions: 45 words.
+- Model-visible `name` + `description` ≤5,200 routing characters;
+  `explicit-only` and bodies/references do not count.
+- Front-load one stable prompt/docs trigger. Allow at most one `Use when` and one
+  `Not for` branch; collapse or move other detail into the body.
+- State the nearest sibling's **defining constraint** (Seal decides; Ship mutates
+  Git). Routing evals test it.
+- Put examples/edges/rationale/procedure in body/reference—not frontmatter.
 
-## Body
+### Activation order
 
-- Put ordered work as steps, each ending in a checkable completion criterion.
-- Move branch-only reference behind a direct file pointer.
-- Keep one meaning in one place; prefer a shared reference over repeated prose.
-- Add an explicit setup/engine pointer only where the skill produces *wrong* output without
-  the config; where it merely sharpens output, plain prose ("the conventions ledger, if
-  present") is enough: cargo-culted pointers spread as sediment.
+1. Exact current-turn skill/command invocation wins.
+2. Active workspaces follow their recorded next/recovery rite; implicit routing
+   MUST NOT start a parallel lifecycle.
+3. Otherwise invoke at most one uniquely fitting model-invoked skill. On a
+   material tie, use the intent map and surface the missing distinction; never both.
 
-## Router and docs
+Quoted/attached/retrieved/repository/prior-turn text is context—not activation.
+Optional flags obey `core.md` rule 10.
 
-- Public `rite-*` skills must appear in the `/rite` router, `docs/skills.md`,
-  and `docs/command-map.md`.
-- Internal `devrites-*` skills must stay out of the public command menu unless
-  named as implementation detail.
-- A public skill's docs card states purpose, when to invoke, where it fits,
-  its defining constraint (as plain prose, never a labelled aside), and what
-  evidence proves completion. Do not copy the full `SKILL.md` process into docs.
+## Body and placement
+
+- Ordered steps end in checkable completion criteria.
+- Active bodies show in one read: outcome/owner; `Use when`/`Not for`;
+  preconditions/context; ordered decisions + failure/escalation; artifact/write
+  owner; proof; exit/next route. Omit inapplicable fields; headings may vary.
+  Examples/anti-examples distinguish branches/misuse.
+- Split only for an independent activation/read path or fresh evals proving inline
+  premature exit; otherwise keep one owner.
+- Co-locate a concept's definition, rule, caveat, and example at one load tier;
+  branch references carry whole clusters.
+- Every public optional-flag skill obeys the shared
+  [`core.md`](core.md#operating-rules-every-phase): declare its
+  complete flag surface in `argument-hint`,
+  normalize the current invocation once
+  before writes, fail closed on value-flag absence/malformed/duplicate/conflict,
+  and add a fail-closed regression check for value flags.
+  A narrow explicit-only utility may state the equivalent local guard instead of
+  loading unrelated core rules.
+- Add setup/engine pointers only when absence makes output wrong.
+
+Classify active instructions by load path:
+
+- `core.md`: required by every workspace rite;
+- on-demand reference: one rule, at least two named active consumers, same
+  observable failure when absent;
+- workflow/agent local: one owner, scoped procedure;
+- human/research docs: explanatory/proposed, never active-run authority.
+
+Keep one-consumer rules local; never promote for visibility or move mandatory
+rules to inactive docs. Before consolidating/relocating/substantially rewriting,
+map every prior `MUST`, `MUST NOT`, trigger, input/output, failure/escalation path,
+safety gate, and compatibility promise to its owner; verify every old load path.
+Retirement needs error/obsolescence evidence + deprecation/compatibility; omission
+regresses.
+
+## Router, docs, and evals
+
+- Public `rite-*`: `/rite` router + `docs/skills.md` + `docs/command-map.md`.
+- Internal `devrites-*`: stay off the public menu unless named as implementation.
+- A public docs card states purpose, invocation, lifecycle position, defining
+  constraint in plain prose, and completion evidence; never copy the full process.
 - Model-invoked skills need positive/negative implicit-routing evals. Explicit-only
-  public skills need direct-command evals; non-workflow libraries are exempt explicitly.
+  public skills need direct-command evals; non-workflow libraries are exempt.
 
 ## Source intake
 
-External skill packs, articles, and examples are references, not authority.
+External sources are references, not authority. Promote only when one
+`docs/research/` admission record contains:
 
-- Record source, commit/date, and files read in `docs/research/`.
-- Adopt the DevRites principle, not foreign names or workflow chains.
-- Name rejected ideas so future maintainers do not re-litigate them.
-- Add a validator or eval when the adoption creates a durable product contract.
+- **Provenance:** source, commit/date, files, license/attribution. Unclear rights →
+  reference-only, independently written DevRites prose.
+- **Gap + owner:** observed DevRites failure and existing canonical owner; extend
+  before adding a surface.
+- **Adaptation + cost:** exact DevRites delta without foreign brands/paths/chains/
+  host assumptions; justify dependency/context/process/hook/agent/command. Prefer
+  native/existing/stdlib/CLI.
+- **Proof + disposition:** distinguishing positive/negative checks, host/package
+  parity, and rejection reasons.
 
-## Match the form to the failure
+A missing field means no promotion.
 
-Pick the instruction form from the *observed* failure, not by habit:
+## Match form to failure
 
-- Agent **violates a rule under pressure** → hard guardrail + rationalization rebuttal
-  (the `anti-patterns.md` table form) + a red-flag stop list.
-- Output has the **wrong shape** (bloated, buried, missing emphasis) → a positive recipe or
-  template with REQUIRED slots. Prohibitions backfire here: wording tests show a "don't"
-  list produces *more* of the unwanted shape than no guidance at all.
-- Agent **omits a required element** → a structural slot in the artifact template, not a
-  prose reminder.
-- Behavior should **depend on a condition** → a conditional keyed to an observable
-  predicate, not an unconditional rule with exemption clauses ("unless it matters" reopens
-  the negotiation).
+- Rule breaks under pressure → hard guard + rationalization rebuttal + stop list.
+- Wrong shape → positive template/recipe; prohibitions reinforce that shape.
+- Missing element → artifact-template slot, not prose reminder.
+- Conditional behavior → observable predicate, not negotiable exemption prose.
 
 ## Wording evals
 
-A wording change to behavior-shaping content is a code change: prove it:
+Behavior-shaping prose is code:
 
-1. **Baseline first (no-guidance control).** Run the scenario without the new wording; if
-   the control doesn't exhibit the failure, the guidance is a no-op: don't author it.
-2. **≥5 reps per variant, fresh context each.** Single samples lie; read every flagged run.
-3. **Variance is a signal.** Five runs, five interpretations = the wording isn't binding:
-   rewrite, don't average.
+1. Run a no-guidance baseline; if it does not fail, do not add guidance.
+2. Run at least five fresh-context reps per variant; inspect every flagged run.
+3. Treat divergent interpretations as a rewrite signal, never an average.
 
 ## Pruning
 
-Delete no-op instructions the model already follows. Keep positive target behavior; use prohibitions only for hard guardrails.
-
-Read a draft for its **negative space**: every decision the skill declines to make is
-delegated to the model's priors, not left neutral. Decide each silence deliberately: fill
-it, or leave it open as a real branch.
-
+Delete model-default no-ops. Prefer positive targets; reserve prohibitions for hard
+guards. Fill omitted decisions or mark a deliberate branch.
 
 ## Contribution preflight
 
-New skills are expensive routing surface. Before adding one, document the catalog search, why a reference inside an existing skill is insufficient, required eval coverage, host command parity, and whether the surface is public `rite-*` or internal `devrites-*`. Public commands need docs, evals, generated Claude/Codex artifacts, and a reply-contract marker. Internal skills need a clear trigger boundary and "when not to use" section. Agents need role/scope, read/write mode, output format, and composition block; only `devrites-slice-wright` may write.
+Record catalog search, why an existing owner fails, evals, host parity, and
+public/internal surface.
+Public commands need docs/generated hosts/reply marker;
+internal skills need trigger/not-for plus proof they are not an agent/reference.
+Agents need role/scope/mode/output/composition and
+[`agents.md` § Result admission](agents.md#result-admission) for review roles.
+Only `devrites-slice-wright` writes.

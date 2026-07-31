@@ -2,6 +2,65 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## Unreleased
+
+### Added
+
+- Added one strict `touched-files.md` candidate manifest, a content-bound
+  `devrites-engine check candidate <slug>` identity, and exact candidate bindings
+  across Prove, Review, Seal, and optional browser evidence.
+- Added capability-impact declarations, lossless MODIFIED capability folding,
+  conditional shared-contract provider/consumer proof, and positive,
+  discriminating behavioral-evidence rules inside the existing lifecycle.
+- Added the exact nine-source research inventory and adoption matrix plus
+  ADR-0026 and a public candidate-integrity guide.
+- Added a fresh Markdown-instruction benchmark with exact upstream revisions,
+  per-repository adoption/rejection traceability, and deferred runtime ideas.
+- Added first-class existing-behavior preservation and qualified backstop
+  contracts to Spec and Prove without changing artifact names or runtime schemas.
+
+### Changed
+
+- Moved capability-ledger, design-memory, and durable ADR rollups into Polish so
+  Review and Seal inspect the final candidate; Ship is candidate-read-only and
+  verifies exact staged and committed state before push or tag.
+- Extended preservation-first `/rite-upgrade` assessment for released unfinished
+  workspaces to route candidate defects through current Prove, Polish, Review,
+  and Seal owners without rewriting cursor formats or synthesizing old proof.
+- Hardened release acquisition with exact SemVer, HTTPS-only redirects,
+  mandatory exact-filename SHA-256 sidecars, secure temporary directories,
+  in-stream bounded downloads, and streaming archive preflight. The release now
+  publishes a verified `install.sh` plus sidecar, and payload bytes come from one
+  Git index. No dependency was added.
+- Clarified authority, evidence, method, and advice precedence; made implicit
+  routing single-owner; replaced lookup-count orientation with an evidence gate;
+  and made parallel review aware of shared and scarce host resources.
+- Consolidated the 15 changed active instructions from 75,102 to 74,234 bytes;
+  no changed instruction file grew.
+
+### Fixed
+
+- Isolated production Git subprocesses from repository/config/object/ref/pathspec
+  retargeting environment regardless of variable-name case while retaining
+  unrelated Git variables.
+- Rejected unsorted or case-colliding candidate rows, non-portable Windows path
+  components, and every undeclared `.devrites` sibling; documented the fixed
+  candidate limits and non-atomic worktree-digest boundary.
+- Moved Ship staging and checkpoint collapse after the one-use type-`GO`
+  approval, with immediate staged scope, byte, binding, and secret revalidation
+  before commit.
+- Repaired the exact `devrites-orchestrator` invocation-integrity classification
+  and refreshed the owner-bound, expiring live-audited brace-expansion exception;
+  the upstream advisory remains open in the bundled dependency chain.
+
+### Tests and documentation
+
+- Added malformed-input, path-containment, content-drift, Git-environment,
+  acquisition, lifecycle-routing, semantic-contract, and compatibility coverage.
+- Synchronized architecture, workflow, CLI, workspace, security, release,
+  extension, and harness documentation without removing or renaming a public
+  command.
+
 ## [3.2.28](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.27...v3.2.28) (2026-07-29)
 
 ### Fixed

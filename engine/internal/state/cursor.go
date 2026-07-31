@@ -4,6 +4,8 @@ import (
 	"sort"
 	"strings"
 	"unicode"
+
+	"github.com/devrites/devrites/internal/markdowntext"
 )
 
 // Canonical cursor keys. Callers use these constants so schema spelling changes
@@ -56,8 +58,12 @@ const (
 // CursorField reads a state.md field from either the canonical | key | value |
 // cursor table or the legacy "- Key: value" form.
 func CursorField(lines []string, key string) (string, bool) {
+	structural, ok := structuralCursorLines(lines)
+	if !ok {
+		return "", false
+	}
 	want := normalizeCursorKey(key)
-	for _, line := range lines {
+	for _, line := range structural {
 		gotKey, value, _, ok := parseCursorLine(line)
 		if ok && normalizeCursorKey(gotKey) == want {
 			return value, true
@@ -69,20 +75,29 @@ func CursorField(lines []string, key string) (string, bool) {
 // SetCursorField replaces an existing state.md field without changing whether
 // the file uses the canonical table or legacy bullet form.
 func SetCursorField(lines []string, key, value string) ([]string, bool) {
+	structural, ok := structuralCursorLines(lines)
+	if !ok {
+		return append([]string(nil), lines...), false
+	}
+	return setCursorField(lines, structural, key, value)
+}
+
+func setCursorField(lines, structural []string, key, value string) ([]string, bool) {
 	want := normalizeCursorKey(key)
 	out := append([]string(nil), lines...)
-	for i, line := range out {
+	for i, line := range structural {
 		gotKey, _, kind, ok := parseCursorLine(line)
 		if !ok || normalizeCursorKey(gotKey) != want {
 			continue
 		}
+		original := out[i]
 		switch kind {
 		case cursorLineTable:
-			indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+			indent := original[:len(original)-len(strings.TrimLeft(original, " \t"))]
 			out[i] = indent + "| " + strings.TrimSpace(gotKey) + " | " + value + " |"
 		case cursorLineLegacy:
-			colon := strings.IndexByte(line, ':')
-			out[i] = line[:colon+1] + " " + value
+			colon := strings.IndexByte(original, ':')
+			out[i] = original[:colon+1] + " " + value
 		}
 		return out, true
 	}
@@ -92,13 +107,17 @@ func SetCursorField(lines []string, key, value string) ([]string, bool) {
 // UpsertCursorField replaces key when present or inserts it into the canonical
 // cursor table (falling back to a legacy bullet when no table exists).
 func UpsertCursorField(lines []string, key, value string) []string {
-	if out, ok := SetCursorField(lines, key, value); ok {
+	structural, ok := structuralCursorLines(lines)
+	if !ok {
+		return append([]string(nil), lines...)
+	}
+	if out, ok := setCursorField(lines, structural, key, value); ok {
 		return out
 	}
 	out := append([]string(nil), lines...)
 	lastTable := -1
 	inCursor := false
-	for i, line := range out {
+	for i, line := range structural {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "## ") {
 			if inCursor {
@@ -133,16 +152,32 @@ func UpsertCursorField(lines []string, key, value string) []string {
 // DeleteCursorField removes every presentation of key from canonical or legacy
 // state without disturbing unrelated prose.
 func DeleteCursorField(lines []string, key string) []string {
+	structural, ok := structuralCursorLines(lines)
+	if !ok {
+		return append([]string(nil), lines...)
+	}
 	want := normalizeCursorKey(key)
 	out := make([]string, 0, len(lines))
-	for _, line := range lines {
+	for i, line := range structural {
 		gotKey, _, _, ok := parseCursorLine(line)
 		if ok && normalizeCursorKey(gotKey) == want {
 			continue
 		}
-		out = append(out, line)
+		out = append(out, lines[i])
 	}
 	return out
+}
+
+func structuralCursorLines(lines []string) ([]string, bool) {
+	if len(lines) == 0 {
+		return nil, true
+	}
+	structural, err := markdowntext.Structural([]byte(strings.Join(lines, "\n")))
+	if err != nil {
+		return nil, false
+	}
+	masked := strings.Split(string(structural), "\n")
+	return masked, len(masked) == len(lines)
 }
 
 func parseCursorLine(line string) (key, value string, kind cursorLineKind, ok bool) {
@@ -163,15 +198,19 @@ func parseCursorLine(line string) (key, value string, kind cursorLineKind, ok bo
 }
 
 func normalizeCursorKey(key string) string {
+	normalized := rawCursorKey(key)
+	if canonical, ok := cursorKeyAliases[normalized]; ok {
+		return normalizeCursorKey(canonical)
+	}
+	return normalized
+}
+
+func rawCursorKey(key string) string {
 	var b strings.Builder
 	for _, r := range strings.ToLower(key) {
 		if unicode.IsLetter(r) || unicode.IsDigit(r) {
 			b.WriteRune(r)
 		}
 	}
-	normalized := b.String()
-	if canonical, ok := cursorKeyAliases[normalized]; ok {
-		return normalizeCursorKey(canonical)
-	}
-	return normalized
+	return b.String()
 }

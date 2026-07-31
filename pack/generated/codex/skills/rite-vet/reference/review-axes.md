@@ -155,12 +155,9 @@ Use `AskUserQuestion` per the pack's standard. Plan-review specifics:
    covers it, (b) error handling exists, (c) the user sees a clear error or a silent failure. A
    failure with **no test AND no handling AND silent** is a **Critical gap**. (Shape in
    [`artifacts.md`](artifacts.md).)
-4. **Worktree parallelization strategy:** analyze the slices for parallel execution. **Skip** if
-   all slices touch the same module or there are <2 independent workstreams ("Sequential, no
-   parallelization opportunity"). Otherwise: a dependency table (module-level, not file-level),
-   parallel lanes (shared module → same lane/sequential; independent → separate lanes), execution
-   order, and conflict flags where two lanes touch the same module dir. This feeds `$rite-build`'s
-   isolation strategy and the autocomplete loop. (Shape in [`artifacts.md`](artifacts.md).)
+4. **Dependency safety:** verify the declared dependency graph, required execution order,
+   and conflicts where slices touch the same module. Correct unsafe or missing ordering in the
+   plan; do not create a lane/scheduler artifact—the native host schedules eligible work.
 5. **Build-entry preflight:** commands/cwds, tools, package state, parser/browser smoke,
    prerequisites, and provenance ([`artifacts.md`](artifacts.md)).
 6. **Implementation readiness:** goal-backward coverage, wiring, dependency simulation,

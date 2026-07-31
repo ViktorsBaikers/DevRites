@@ -27,8 +27,8 @@ slice.
 
 Read the code to decide: do not infer from the plan. Use the code-intelligence index
 (codebase-memory-mcp → codegraph → graphify, else LSP / grep) so the verdict reflects live
-code, not the artifacts' claims. `devrites-engine analyze` / `devrites-engine coverage` tell you what's
-*mapped*; only reading the code tells you what's *built*.
+code, not the artifacts' claims. Read `traceability.md` to see what is mapped; only reading the
+code and tests tells you what is built.
 
 ## Principle violations
 

@@ -31,6 +31,26 @@ run_ok "cross refs accept repo docs and runtime artifacts" python3 "$ROOT/script
 printf 'Read `definitely-dead.md`.\n' >> "$T/cross/pack/.claude/skills/demo/SKILL.md"
 run_fail_contains "cross refs still reject unknown documents" "definitely-dead.md" python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/cross"
 
+# Permission profile names are not skill invocations; undeclared devrites-* names remain errors.
+printf 'Use the devrites-orchestrator permission profile.\n' > "$T/non-skill-profile.md"
+printf 'Invoke devrites-definitely-missing.\n' > "$T/missing-invocation.md"
+run_ok "invocation scanner distinguishes a permission profile from a missing name" python3 - "$ROOT/scripts/check-invocation-integrity.py" "$T/non-skill-profile.md" "$T/missing-invocation.md" <<'PY'
+import importlib.util
+import sys
+
+spec = importlib.util.spec_from_file_location("invocation_integrity", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+problems = []
+module.scan(sys.argv[2], set(), set(), problems)
+assert problems == [], problems
+
+module.scan(sys.argv[3], set(), set(), problems)
+assert len(problems) == 1, problems
+assert "unresolved skill/agent name 'devrites-definitely-missing'" in problems[0], problems
+PY
+
 # Every supporting reference is size-ratcheted, not only SKILL.md.
 mkdir -p "$T/size/pack/.claude/skills/demo/reference" "$T/size/tests"
 printf '# demo\n[details](reference/details.md)\n' > "$T/size/pack/.claude/skills/demo/SKILL.md"
@@ -39,6 +59,17 @@ run_ok "instruction baseline writes references" node "$ROOT/scripts/check-instru
 printf 'unreviewed growth that must trip the ratchet\n' >> "$T/size/pack/.claude/skills/demo/reference/details.md"
 run_fail_contains "instruction baseline catches reference growth" "reference/details.md grew" node "$ROOT/scripts/check-instruction-size-baseline.mjs" --root "$T/size" --baseline "$T/size/tests/baseline.json"
 run_fail_contains "reference file budget is blocking" "reference/details.md" env DEVRITES_REFERENCE_FILE_BUDGET=20 node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/size/pack/.claude/skills"
+
+# Model-visible routing metadata has its own aggregate budget.
+mkdir -p "$T/routing/demo"
+cat > "$T/routing/demo/SKILL.md" <<'MD'
+---
+name: demo
+description: Route this model-visible demo skill.
+---
+# Demo
+MD
+run_fail_contains "model-visible routing budget is blocking" "shorten name/description frontmatter" env DEVRITES_SKILL_ROUTING_BUDGET=1 node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/routing"
 
 # Module URLs must be decoded before they are used as filesystem paths.
 SPACE_ROOT="$T/repository with spaces"

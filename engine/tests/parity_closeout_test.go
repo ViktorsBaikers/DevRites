@@ -2,7 +2,7 @@ package main_test
 
 // Golden snapshot for the ported close-out command (lib.CloseOut).
 //
-// close-out MUTATES the tree: it moves .devrites/features/<slug> to
+// close-out MUTATES the tree: it moves .devrites/work/<slug> to
 // .devrites/archive/<slug> and, when it is the active slug, clears
 // .devrites/ACTIVE. Each case snapshots the command's stdout + exit code (stderr
 // is diagnostic, not contract) and then asserts the post-move filesystem shape
@@ -28,23 +28,23 @@ func TestParityCloseOut(t *testing.T) {
 	// current subtest's golden.
 	run := func(t *testing.T, gw string, args ...string) {
 		t.Helper()
-		out, code := runArgv(t, gw, libEnv, "", binPath, append([]string{"close-out"}, args...)...)
+		out, code := runArgv(t, gw, libEnv, "", binPath, append([]string{"state", "close"}, args...)...)
 		assertGolden(t, out, code)
 	}
 
 	t.Run("active_slug_cleared", func(t *testing.T) {
 		slug := "feat-x"
 		gw := t.TempDir()
-		writeFile(t, gw, filepath.Join(".devrites/features", slug, "spec.md"), "# spec\n")
+		writeFile(t, gw, filepath.Join(".devrites/work", slug, "spec.md"), "# spec\n")
 		writeFile(t, gw, ".devrites/ACTIVE", slug+"\n")
 
-		run(t, gw, slug, ".devrites")
+		run(t, gw, slug)
 
-		// archive created, features/ source gone, ACTIVE truncated.
+		// archive created, work/ source gone, ACTIVE truncated.
 		if !dirExists(filepath.Join(gw, ".devrites/archive", slug)) {
 			t.Error("archive dir not created")
 		}
-		if !gone(filepath.Join(gw, ".devrites/features", slug)) {
+		if !gone(filepath.Join(gw, ".devrites/work", slug)) {
 			t.Error("source workspace not moved")
 		}
 		if b, err := os.ReadFile(filepath.Join(gw, ".devrites/ACTIVE")); err != nil {
@@ -58,10 +58,10 @@ func TestParityCloseOut(t *testing.T) {
 		slug := "feat-y"
 		other := "someone-else\n"
 		gw := t.TempDir()
-		writeFile(t, gw, filepath.Join(".devrites/features", slug, "spec.md"), "# spec\n")
+		writeFile(t, gw, filepath.Join(".devrites/work", slug, "spec.md"), "# spec\n")
 		writeFile(t, gw, ".devrites/ACTIVE", other)
 
-		run(t, gw, slug, ".devrites")
+		run(t, gw, slug)
 
 		// The archive moved, but ACTIVE (pointed elsewhere) is left untouched.
 		if !dirExists(filepath.Join(gw, ".devrites/archive", slug)) {
@@ -77,19 +77,19 @@ func TestParityCloseOut(t *testing.T) {
 	t.Run("missing_workspace", func(t *testing.T) {
 		// No workspace seeded -> non-zero exit, empty stdout.
 		gw := t.TempDir()
-		run(t, gw, "ghost", ".devrites")
+		run(t, gw, "ghost")
 	})
 
 	t.Run("archive_clobber", func(t *testing.T) {
 		slug := "feat-z"
 		gw := t.TempDir()
-		writeFile(t, gw, filepath.Join(".devrites/features", slug, "spec.md"), "# spec\n")
+		writeFile(t, gw, filepath.Join(".devrites/work", slug, "spec.md"), "# spec\n")
 		writeFile(t, gw, filepath.Join(".devrites/archive", slug, "old.md"), "old\n")
 
-		run(t, gw, slug, ".devrites")
+		run(t, gw, slug)
 
 		// Refused: source stays in place, the pre-existing archive is not clobbered.
-		if !dirExists(filepath.Join(gw, ".devrites/features", slug)) {
+		if !dirExists(filepath.Join(gw, ".devrites/work", slug)) {
 			t.Error("source workspace was moved despite clobber refusal")
 		}
 	})

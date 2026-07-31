@@ -31,7 +31,8 @@ What to read in the project before designing, and how register changes the rules
 Match what exists. A new token, font, or component library is a decision the user makes,
 not a default you reach for. When the system is ambiguous, ask: don't invent the
 project's intent. When a project `DESIGN.md` is present it is the **rolled-up design
-memory** earlier features sealed (`../../rite-ship/reference/design-memory.md`): the
+memory** earlier features proved and closed during Polish
+(`../../rite-polish/reference/design-memory.md`): the
 inherited system to build *to*, ahead of re-deriving direction from scratch.
 
 ## Scene-sentence: commit before choosing theme / direction

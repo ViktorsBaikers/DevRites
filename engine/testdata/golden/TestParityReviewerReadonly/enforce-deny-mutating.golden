@@ -1,2 +1,0 @@
-exit 0
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"DevRites: reviewers are read-only. This Bash command can mutate or exfiltrate; inspect with Read/Grep/Glob and return findings: do not modify the tree or reach the network. (devrites-reviewer-readonly)"}}

@@ -3,7 +3,6 @@ name: rite-temper
 description: Temper a readied spec before planning. Use when the user says "temper this", "strategy review", "pre-mortem the spec", or asks if we are over/under-building. Not for code review or final seal.
 argument-hint: "[feature-slug] [--mode expand|selective|hold|reduce]"
 user-invocable: true
-required-agent-roles: none
 ---
 
 # /rite-temper: review scope and risk before planning
@@ -12,7 +11,9 @@ Review a readied spec for outcome ambition, scope, pre-mortem risks, and unneces
 solution surface. Fold accepted decisions into the canonical contract before
 `/rite-define`. This step is optional for small work and skips low-stakes specs, but
 `/rite-autocomplete` always invokes it. **Read the active workspace first**; if there
-is no readied `spec.md`, tell the user to run `/rite-spec`.
+is no readied `spec.md`, tell the user to run `/rite-spec`. Review depth follows
+[`devrites-lib/reference/orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md);
+the required exact strategy reviewer never changes with profile.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 Pull on demand: `patterns.md` +
@@ -41,8 +42,8 @@ that needs more than the default pre-mortem) selected by the section's risk).
   failure that reopens the readiness gate.
 
 ## Workflow
-0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`**, then run
-   `devrites-engine preamble` for deterministic workspace orientation.
+0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`**, then
+   resolve the active slug, require its `state.md`, and read the cursor directly.
    Then read the workspace: `spec.md`, `decision-coverage.md` (+ `decisions.md`,
    `assumptions.md`, `design-brief.md` if UI), `state.md`. Require `Spec gate: passed`: else
    STOP → `/rite-spec`. Require `Decision coverage: CLEAR`: else STOP →
@@ -99,44 +100,24 @@ that needs more than the default pre-mortem) selected by the section's risk).
    After any edit to `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or
    `questions.md`, re-scan the affected coverage rows, assumption audit, residual uncertainty,
    and closed gates. Partial/Missing, an unowned material assumption, or an open
-   blocking/escalating question routes `/rite-clarify`/HITL; never refresh past it. Only after the
-   matrix is re-closed, run `devrites-engine readiness-digest coverage <slug>` and replace the
-   complete `Coverage inputs SHA-256` line in `decision-coverage.md`.
+   blocking/escalating question routes `/rite-clarify`/HITL. Only after the
+   matrix is re-closed may the phase advance.
    Update `state.md`: `Phase: temper`,
    `Next step: /rite-define`; on a blocking pause (expand / irreversible / a dimension still below
    bar) write the `Awaiting human` block + `Status: awaiting_human` before stopping.
-7. **Adversarial verification loop:** dispatch [`devrites-strategy-reviewer`](../../agents/devrites-strategy-reviewer.md)
-   through the file-backed fresh-context contract in
+7. **Adversarial verification loop:** ask the exact
+   [`devrites-strategy-reviewer`](../../agents/devrites-strategy-reviewer.md)
+   through the native fresh-context contract in
    [`agents.md`](../devrites-lib/reference/standards/agents.md), with **only** the hardened
    spec + rubric: no authoring reasoning. Resolve
    actionable findings by editing `spec.md`/`strategy.md`, re-dispatch; **cap ≤3 iterations**. A
    dimension still below bar after 3 is classified by decision ownership: a product/scope/risk
    choice becomes a blocking question; an objective spec defect stays blocked with the exact
    required edit and routes to `/rite-spec`, not `/rite-resolve`. Irreversible-risk findings
-   always pause. Use the shared capability ladder; if no fresh-agent rung is available,
-   stop for HITL. After an accepted edit to a
-   coverage-bound input, repeat step 6's revalidation and digest refresh before handoff.
+   always pause. If the named agent is unavailable, stop for HITL. After an accepted edit to a
+   coverage-bound input, repeat step 6's native coverage revalidation before handoff.
 8. **STOP.** Report the mode, the scope deltas, and the floor verdict; recommend `/rite-define`.
 
 > **Mid-flight discipline.** Do not replace the interactive review with `strategy.md`,
 > expand implementation surface without need, grow scope outside the Drift Guard, or score
 > before citing evidence. See [`reference/anti-patterns.md`](reference/anti-patterns.md).
-
-## Output
-
-**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: spec tempered for <slug>; mode <expand|selective|hold-rigor|reduce-to-MVP|skipped-low-stakes>.
-Changed: strategy.md, spec.md, decisions.md, assumptions.md
-Evidence: dimension floor <band>; reviewer loop <n>; spec readiness + decision coverage re-checked pass
-Open: <none | n deferred non-goals>
-Next: /rite-define
-Record: .devrites/work/<slug>/strategy.md
-↻ Hygiene: /clear before /rite-define
-```
-If readiness is blocked, use the shared `Stopped / blocked` form and route `Fix:`
-to `/rite-clarify` for an uncovered decision surface or `/rite-spec` for an objective
-spec defect; do not recommend `/rite-define`.
-**DO NOT plan, slice, or write code here**. That's `/rite-define` and `/rite-build`.

@@ -92,6 +92,75 @@ func TestWriteArchiveRejectsUnsafePaths(t *testing.T) {
 	}
 }
 
+func TestWriteEntriesRejectsChangedSource(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	source := filepath.Join(root, "payload.txt")
+	if err := os.WriteFile(source, []byte("first\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sourceRoot, err := os.OpenRoot(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sourceRoot.Close()
+	entries, err := collectEntries(sourceRoot, "devrites-v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	replacement := filepath.Join(root, "replacement")
+	if err := os.WriteFile(replacement, []byte("other\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(source); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(replacement, source); err != nil {
+		t.Fatal(err)
+	}
+
+	var archive bytes.Buffer
+	tw := tar.NewWriter(&archive)
+	err = writeEntries(sourceRoot, tw, entries, time.Unix(0, 0))
+	if err == nil || !strings.Contains(err.Error(), "changed after collection") {
+		t.Fatalf("changed source error = %v", err)
+	}
+}
+
+func TestWriteEntriesRejectsEscapingSymlinkSwap(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	source := filepath.Join(root, "payload.txt")
+	if err := os.WriteFile(source, []byte("first\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sourceRoot, err := os.OpenRoot(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sourceRoot.Close()
+	entries, err := collectEntries(sourceRoot, "devrites-v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(t.TempDir(), "outside.txt")
+	if err := os.WriteFile(outside, []byte("other\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(source); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, source); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+
+	var archive bytes.Buffer
+	tw := tar.NewWriter(&archive)
+	if err := writeEntries(sourceRoot, tw, entries, time.Unix(0, 0)); err == nil {
+		t.Fatal("escaping symlink swap was accepted")
+	}
+}
+
 func makeTree(t *testing.T, mtime time.Time) string {
 	t.Helper()
 	root := t.TempDir()

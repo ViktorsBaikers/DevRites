@@ -4,7 +4,6 @@ description: User-invoked resume verb for answering, dropping, or batch-resolvin
 argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <path-to-yaml>"
 user-invocable: true
 disable-model-invocation: true
-required-agent-roles: none
 ---
 
 # /rite-resolve: answer the human gate
@@ -13,7 +12,7 @@ required-agent-roles: none
 **stopped the session** (an AFK blocking/escalating/irreversible queue, or a HITL pause
 left unanswered), plus `--batch`. When `/rite-build` asks a question **inline**
 via `AskUserQuestion` and the human is present, that pick resolves the gate **in place** through
-the same `devrites-engine resolve` writer. You don't type `/rite-resolve` for it. For the async case this
+the `devrites-engine state resolve` writer. You don't type `/rite-resolve` for it. For the async case this
 skill takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
 `state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next command.
 
@@ -41,7 +40,7 @@ Pull these via `Read` when shaping the resolve:
   through the Spec Drift Guard (`/rite-plan repair`) **after** writing the answer: do
   not modify `spec.md` / `plan.md` inside this skill.
 - **The script is the source of truth.** Always invoke
-  `devrites-engine resolve`. It keeps `questions.md` + `state.md` consistent and emits the
+  `devrites-engine state resolve`. It keeps `questions.md` + `state.md` consistent and emits the
   next-action recommendation. The one `state.md` field this skill may write by hand is the
   unblocked slice's `Slice mode` (step 4, the named exception); everything else goes through
   the script, never by hand.
@@ -56,7 +55,7 @@ Pull these via `Read` when shaping the resolve:
 
 0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`** (operating rules + persistence discipline) before
    touching the workspace.
-   Then run `devrites-engine preamble` for deterministic workspace orientation.
+   Then read the explicit or active workspace's `state.md` directly.
 1. **Parse arguments.** `$ARGUMENTS` is one of:
    - `<qid> "<answer>"`: answer the single open question.
    - `--drop <qid>` (optional `"<reason>"`): mark the question `dropped`; record
@@ -72,8 +71,7 @@ Pull these via `Read` when shaping the resolve:
    user's explicit consent for this local workspace mutation. Echo the qid, answer/drop,
    and slice being unblocked, then continue immediately; do not ask the user to confirm the
    command they just typed.
-4. **Mutate.** Run `devrites-engine resolve` with the same
-   arguments. The script:
+4. **Mutate.** Run `devrites-engine state resolve` with those arguments. It:
    - flips the qid's `status` to `answered` / `dropped` and stamps `answered_at` + `answer`;
    - if the qid is in `state.md`'s `Awaiting human` block (single-question pause), clears
      that block and sets `Status: running`;
@@ -94,18 +92,3 @@ Pull these via `Read` when shaping the resolve:
 > answer. That's `/rite-plan repair`. Don't silently retry a build after the answer
 > lands: the user types the next command. Don't merge two open questions into one
 > answered entry: each question is independently auditable.
-
-## Output
-
-**Progress first**: run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: resolved <qid> for <gate> at <slice/phase>.
-Changed: questions.md, state.md, decisions.md <updated|n/a>
-Evidence: not applicable; answer persisted before resume
-Open: <none | remaining questions | plan repair needed>
-Next: <single recommended command>
-Record: .devrites/work/<slug>/questions.md
-↻ Hygiene: no /clear needed; the answer is persisted
-```

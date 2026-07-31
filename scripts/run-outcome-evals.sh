@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Run the deterministic final-outcome matrix. The canonical fixture passes the
-# shell grader and Go seal gate. Each failing case changes one input.
+# Exercise the deterministic artifact boundary with one freshly built engine.
+# Native agents own semantic readiness/review; the engine owns structure,
+# freshness, and state mechanics.
 
 set -euo pipefail
 
@@ -8,24 +9,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GRADER="$ROOT/scripts/grade-feature.sh"
 GOOD="$ROOT/evals/golden/shippable-feature"
 MANIFEST="$ROOT/engine/internal/state/workflow_manifest.json"
-READINESS="$ROOT/engine/internal/lib/readiness_contract.json"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
 ENGINE="$tmp/devrites-engine"
-(cd "$ROOT/engine" && CGO_ENABLED=0 go build -trimpath -o "$ENGINE" .)
-export DEVRITES_CLI="$ENGINE"
-
-# A fake PATH binary exposes accidental fallback. The grader must use the exact
-# binary built above through DEVRITES_CLI.
-mkdir -p "$tmp/stale-path"
-cat >"$tmp/stale-path/devrites-engine" <<'SH'
-#!/usr/bin/env sh
-echo "stale PATH shim executed" >&2
-exit 99
-SH
-chmod +x "$tmp/stale-path/devrites-engine"
-export PATH="$tmp/stale-path:$PATH"
+(cd "$ROOT/engine" && GOCACHE="$tmp/go-cache" CGO_ENABLED=0 go build -trimpath -o "$ENGINE" .)
 
 CAPTURED=""
 CAPTURE_CODE=0
@@ -60,92 +48,51 @@ if got_rules != want_rules:
 ' "$want_status" "$want_rules"
 }
 
-assert_seal() {
+assert_check_seal() {
   local want_reason="$1"
-  printf '%s' "$CAPTURED" | python3 -c '
-import json
-import sys
-
-data = json.load(sys.stdin)
-want = sys.argv[1]
-if data["schema"] != "devrites-command/v1" or data["command"] != "seal":
-    raise SystemExit(f"unexpected seal envelope: {data!r}")
-if data.get("reason_id") != want:
-    raise SystemExit("seal reason={!r}, want {!r}".format(data.get("reason_id"), want))
-' "$want_reason"
+  printf '%s\n' "$CAPTURED" | grep -Fxq "reason: $want_reason" \
+    || fail "check-seal reason missing: want $want_reason; $CAPTURED"
 }
 
 stage_workspace() {
   local project="$1"
   local slug="$2"
-  local mode="$3"
   local ws="$project/.devrites/work/$slug"
   mkdir -p "$ws"
   cp -R "$GOOD/." "$ws/"
-  if [ "$mode" = "readiness" ]; then
-    python3 - "$ws" "$READINESS" <<'PY'
-from pathlib import Path
-import json
-import sys
-
-workspace, contract_path = map(Path, sys.argv[1:])
-path = workspace / "state.md"
-text = path.read_text()
-for old, new in (
-    ("| phase | done |", "| phase | build |"),
-    ("| status | done |", "| status | running |"),
-):
-    if text.count(old) != 1:
-        raise SystemExit(f"{path}: expected exactly one {old!r}")
-    text = text.replace(old, new)
-path.write_text(text)
-
-contract = json.loads(contract_path.read_text())
-field = contract["contractField"]
-declaration = f"{field}: {contract['schema']}"
-for name in ("decision-coverage.md", "test-plan.md", "eng-review.md"):
-    artifact = workspace / name
-    lines = [
-        line for line in artifact.read_text().splitlines()
-        if not line.startswith(f"{field}:")
-    ]
-    lines[1:1] = ["", declaration]
-    artifact.write_text("\n".join(lines) + "\n")
-PY
-    local engineering_digest
-    engineering_digest="$(
-      env DEVRITES_ROOT="$project" "$ENGINE" readiness-digest engineering "$slug"
-    )"
-    python3 - "$ws/eng-review.md" "$engineering_digest" <<'PY'
-from pathlib import Path
-import sys
-
-path = Path(sys.argv[1])
-field = sys.argv[2]
-lines = path.read_text().splitlines()
-matches = [i for i, line in enumerate(lines) if line.startswith("Readiness inputs SHA-256:")]
-if len(matches) != 1:
-    raise SystemExit(f"{path}: expected exactly one engineering digest")
-lines[matches[0]] = field
-path.write_text("\n".join(lines) + "\n")
-PY
-  fi
 
   python3 - "$project" "$ws" <<'PY'
 from pathlib import Path
-import os
 import re
 import sys
 
 project, workspace = map(Path, sys.argv[1:])
-paths = re.findall(r"`([^`]+)`", (workspace / "touched-files.md").read_text())
+paths = []
+for line in (workspace / "touched-files.md").read_text().splitlines():
+    match = re.fullmatch(r"\| present \| `([^`]+)` \| [^|]+ \| [^|]+ \|", line)
+    if match:
+        paths.append(match.group(1))
 for relative in paths:
     path = project / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("synthetic outcome-eval source\n")
-    os.utime(path, (1_700_000_000, 1_700_000_000))
-os.utime(workspace / "evidence.md", (1_700_000_100, 1_700_000_100))
 PY
+
+  run_capture env DEVRITES_ROOT="$project" "$ENGINE" check readiness --emit-binding "$slug"
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "stage readiness binding failed: $CAPTURED"
+  local readiness_digest
+  readiness_digest="$(printf '%s\n' "$CAPTURED" | sed -n 's/^Readiness inputs SHA-256: \([0-9a-f]\{64\}\)$/\1/p')"
+  [ "${#readiness_digest}" -eq 64 ] || fail "stage readiness binding malformed: $CAPTURED"
+  replace_once "$ws/eng-review.md" "__READINESS_SHA256__" "$readiness_digest"
+
+  run_capture env DEVRITES_ROOT="$project" "$ENGINE" check candidate "$slug"
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "stage candidate failed: $CAPTURED"
+  local digest
+  digest="$(printf '%s\n' "$CAPTURED" | sed -n 's/^candidate-sha256: \([0-9a-f]\{64\}\)$/\1/p')"
+  [ "${#digest}" -eq 64 ] || fail "stage candidate digest malformed: $CAPTURED"
+  for artifact in evidence.md review.md seal.md; do
+    replace_once "$ws/$artifact" "__CANDIDATE_SHA256__" "$digest"
+  done
 }
 
 snapshot_tree() {
@@ -180,17 +127,15 @@ import sys
 
 before_path, after_path = map(Path, sys.argv[1:3])
 want = sys.argv[3]
+
+
 def load(path):
-    rows = {}
-    for line in path.read_text().splitlines():
-        key = line.split("|", 1)[0]
-        rows[key] = line
-    return rows
+    return {line.split("|", 1)[0]: line for line in path.read_text().splitlines()}
+
 
 before, after = load(before_path), load(after_path)
 changed = sorted(
-    key for key in before.keys() | after.keys()
-    if before.get(key) != after.get(key)
+    key for key in before.keys() | after.keys() if before.get(key) != after.get(key)
 )
 if changed != [want]:
     raise SystemExit(f"causal paths={changed!r}, want {[want]!r}")
@@ -211,6 +156,22 @@ text = path.read_text()
 if text.count(old) != 1:
     raise SystemExit(f"{path}: expected exactly one {old!r}, found {text.count(old)}")
 path.write_text(text.replace(old, new))
+PY
+}
+
+remove_acceptance_ids() {
+  python3 - "$1" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+match = re.search(r"(?ms)(^## Acceptance criteria\s*$\n)(.*?)(?=^##\s)", text)
+if not match:
+    raise SystemExit(f"{path}: acceptance section missing")
+body = match.group(2).replace("AC-", "XX-")
+path.write_text(text[:match.start(2)] + body + text[match.end(2):])
 PY
 }
 
@@ -236,12 +197,11 @@ mutate_final() {
       replace_once "$ws/state.md" "| status | done |" "| status | awaiting_human |"
       ;;
     blocked_status) replace_once "$ws/state.md" "| status | done |" "| status | blocked |" ;;
-    unchecked_ac)
-      replace_once "$ws/seal.md" "- [x] AC-001:" "- [ ] AC-001:"
-      ;;
-    wrong_ac_id)
-      replace_once "$ws/seal.md" "AC-003:" "AC-999:"
-      ;;
+    unchecked_ac) replace_once "$ws/seal.md" "- [x] AC-001:" "- [ ] AC-001:" ;;
+    wrong_ac_id) replace_once "$ws/seal.md" "AC-003:" "AC-999:" ;;
+    noncanonical_ac) replace_once "$ws/seal.md" "AC-001:" "AC1:" ;;
+    duplicate_ac) replace_once "$ws/seal.md" "- [x] AC-001:" "- [x] AC-001: AC-001" ;;
+    empty_ac) remove_acceptance_ids "$ws/spec.md" ;;
     *) fail "unknown final mutation $id" ;;
   esac
 }
@@ -252,9 +212,10 @@ mutation_path() {
   case "$id" in
     missing_review) printf '.devrites/work/%s/review.md\n' "$slug" ;;
     missing_evidence|empty_evidence) printf '.devrites/work/%s/evidence.md\n' "$slug" ;;
-    missing_seal|non_go|unresolved_blocker|unchecked_ac|wrong_ac_id)
+    missing_seal|non_go|unresolved_blocker|unchecked_ac|wrong_ac_id|noncanonical_ac|duplicate_ac)
       printf '.devrites/work/%s/seal.md\n' "$slug"
       ;;
+    empty_ac) printf '.devrites/work/%s/spec.md\n' "$slug" ;;
     open_question) printf '.devrites/work/%s/questions.md\n' "$slug" ;;
     wrong_phase|awaiting_human|blocked_status)
       printf '.devrites/work/%s/state.md\n' "$slug"
@@ -274,7 +235,7 @@ run_final_case() {
   local after="$tmp/$id.after"
   local ws="$project/.devrites/work/$slug"
 
-  stage_workspace "$project" "$slug" final
+  stage_workspace "$project" "$slug"
   snapshot_tree "$project" "$before"
   mutate_final "$id" "$project" "$slug"
   snapshot_tree "$project" "$after"
@@ -283,102 +244,81 @@ run_final_case() {
   run_capture bash "$GRADER" --json "$ws"
   [ "$CAPTURE_CODE" -eq 1 ] || fail "$id grader exit=$CAPTURE_CODE; $CAPTURED"
   assert_grade "NO-GO" "$want_rule"
+  case "$id" in
+    wrong_ac_id) printf '%s' "$CAPTURED" | grep -Fq 'acceptance ID mismatch' || fail "$id did not prove exact ID equality" ;;
+    noncanonical_ac) printf '%s' "$CAPTURED" | grep -Fq 'noncanonical acceptance IDs' || fail "$id did not prove canonical IDs" ;;
+    duplicate_ac) printf '%s' "$CAPTURED" | grep -Fq 'duplicate acceptance IDs' || fail "$id did not prove ID uniqueness" ;;
+    empty_ac) printf '%s' "$CAPTURED" | grep -Fq 'acceptance IDs are empty' || fail "$id did not prove nonempty IDs" ;;
+  esac
 
-  run_capture env DEVRITES_ROOT="$project" "$ENGINE" seal --json "$slug"
+  run_capture env DEVRITES_ROOT="$project" "$ENGINE" check seal "$slug"
   [ "$CAPTURE_CODE" -eq "$want_seal_code" ] \
-    || fail "$id seal exit=$CAPTURE_CODE, want $want_seal_code; $CAPTURED"
-  assert_seal "$want_reason"
-  printf '  PASS %-20s rule=%s reason=%s\n' "$id" "$want_rule" "$want_reason"
+    || fail "$id check seal exit=$CAPTURE_CODE, want $want_seal_code; $CAPTURED"
+  assert_check_seal "$want_reason"
+  printf '  PASS %-20s rule=%s structural=%s\n' "$id" "$want_rule" "$want_reason"
 }
 
-readiness_code() {
-  local id="$1"
-  python3 - "$READINESS" "$id" <<'PY'
-import json
-import sys
-
-contract = json.load(open(sys.argv[1]))
-want = sys.argv[2]
-matches = [row for row in contract["reasons"] if row["id"] == want]
-if len(matches) != 1:
-    raise SystemExit(f"readiness reason {want!r} is not unique")
-print(matches[0]["code"])
-PY
-}
-
-run_readiness_case() {
-  local id="$1"
-  local file="$2"
-  local readiness_id="$3"
-  local project="$tmp/readiness-$id"
-  local slug="case-$id"
-  local ws="$project/.devrites/work/$slug"
-  local before="$tmp/$id.before"
-  local after="$tmp/$id.after"
-  local want_code
-  want_code="$(readiness_code "$readiness_id")"
-
-  stage_workspace "$project" "$slug" readiness
-  run_capture env DEVRITES_ROOT="$project" "$ENGINE" build-readiness "$slug"
-  [ "$CAPTURE_CODE" -eq 0 ] || fail "$id readiness baseline failed: $CAPTURED"
-
-  snapshot_tree "$project" "$before"
-  printf '\nOutcome-eval drift.\n' >>"$ws/$file"
-  snapshot_tree "$project" "$after"
-  assert_one_mutation "$before" "$after" ".devrites/work/$slug/$file"
-
-  run_capture env DEVRITES_ROOT="$project" "$ENGINE" build-readiness "$slug"
-  [ "$CAPTURE_CODE" -eq "$want_code" ] \
-    || fail "$id readiness exit=$CAPTURE_CODE, want $want_code; $CAPTURED"
-
-  run_capture env DEVRITES_ROOT="$project" "$ENGINE" seal --json "$slug"
-  [ "$CAPTURE_CODE" -eq 0 ] || fail "$id structural seal failed: $CAPTURED"
-  assert_seal "DRV-GATE-SEAL-PASSED"
-  printf '  PASS %-20s readiness=%s(code=%s) reason=DRV-GATE-SEAL-PASSED\n' \
-    "$id" "$readiness_id" "$want_code"
-}
-
-run_stale_case() {
-  local id="stale_proof"
+run_content_identity_case() {
+  local id="content_identity"
   local project="$tmp/$id"
   local slug="case-$id"
   local ws="$project/.devrites/work/$slug"
   local source="src/routes/transactions/export.ts"
   local before="$tmp/$id.before"
   local after="$tmp/$id.after"
+  local before_content="$tmp/$id.before-content"
+  local after_content="$tmp/$id.after-content"
 
-  stage_workspace "$project" "$slug" final
+  stage_workspace "$project" "$slug"
   snapshot_tree "$project" "$before"
   python3 - "$project/$source" <<'PY'
 import os
 import sys
+
 os.utime(sys.argv[1], (1_700_000_200, 1_700_000_200))
 PY
   snapshot_tree "$project" "$after"
   assert_one_mutation "$before" "$after" "$source"
 
   run_capture bash "$GRADER" --json "$ws"
-  [ "$CAPTURE_CODE" -eq 0 ] || fail "$id final-only grader failed: $CAPTURED"
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "$id content grader failed: $CAPTURED"
   assert_grade "GO" ""
 
-  run_capture env DEVRITES_ROOT="$project" "$ENGINE" evidence-fresh "$slug"
-  [ "$CAPTURE_CODE" -eq 3 ] || fail "$id evidence exit=$CAPTURE_CODE, want 3; $CAPTURED"
+  run_capture env DEVRITES_ROOT="$project" "$ENGINE" check seal "$slug"
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "$id unchanged touch check seal exit=$CAPTURE_CODE, want 0: $CAPTURED"
+  assert_check_seal "DRV-GATE-SEAL-PASSED"
 
-  run_capture env DEVRITES_ROOT="$project" "$ENGINE" seal --json "$slug"
-  [ "$CAPTURE_CODE" -eq 0 ] || fail "$id structural seal failed: $CAPTURED"
-  assert_seal "DRV-GATE-SEAL-PASSED"
-  printf '  PASS %-20s evidence=stale(code=3) reason=DRV-GATE-SEAL-PASSED\n' "$id"
+  snapshot_tree "$project" "$before_content"
+  python3 - "$project/$source" <<'PY'
+import os
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+stat = path.stat()
+path.write_text("synthetic outcome-eval source changed\n")
+os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+PY
+  snapshot_tree "$project" "$after_content"
+  assert_one_mutation "$before_content" "$after_content" "$source"
+
+  run_capture bash "$GRADER" --json "$ws"
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "$id changed-content grader failed: $CAPTURED"
+  assert_grade "GO" ""
+  run_capture env DEVRITES_ROOT="$project" "$ENGINE" check seal "$slug"
+  [ "$CAPTURE_CODE" -eq 3 ] || fail "$id changed-content check seal exit=$CAPTURE_CODE, want 3: $CAPTURED"
+  assert_check_seal "DRV-GATE-SEAL-MISSING"
+  printf '  PASS %-20s unchanged-touch=pass restored-mtime-byte-change=blocked\n' "$id"
 }
 
-printf '== canonical owner inventory ==\n'
-python3 - "$MANIFEST" "$READINESS" "$GOOD" <<'PY'
+printf '== canonical structural owner ==\n'
+python3 - "$MANIFEST" "$GOOD" <<'PY'
 from pathlib import Path
 import json
 import sys
 
 manifest = json.load(open(sys.argv[1]))
-readiness = json.load(open(sys.argv[2]))
-workspace = Path(sys.argv[3])
+workspace = Path(sys.argv[2])
 seal = [phase for phase in manifest["phases"] if phase["id"] == "seal"]
 if len(seal) != 1 or not seal[0].get("shippable"):
     raise SystemExit("workflow manifest must own one shippable seal phase")
@@ -389,66 +329,83 @@ missing = [
 ]
 if missing:
     raise SystemExit(f"canonical fixture missing seal artifacts: {missing}")
-contract_artifacts = [
-    readiness["coverage"]["artifact"],
-    readiness["engineering"]["artifact"],
-    readiness["testPlan"]["artifact"],
-]
-missing_contract = [name for name in contract_artifacts if not (workspace / name).is_file()]
-if missing_contract:
-    raise SystemExit(f"canonical fixture missing readiness artifacts: {missing_contract}")
 for name in ("seal.md", "review.md"):
     if not (workspace / name).is_file():
         raise SystemExit(f"canonical fixture missing final-only artifact: {name}")
-print(f"  PASS: {len(required)} seal artifacts + {len(contract_artifacts)} readiness bindings + final-only files")
+print(f"  PASS: {len(required)} seal artifacts + final-only files")
 PY
 run_capture python3 "$ROOT/scripts/validate-workspace-schema.py" "$GOOD"
 [ "$CAPTURE_CODE" -eq 0 ] || fail "canonical workspace schema failed: $CAPTURED"
-printf '  PASS: workspace schema validator\n'
+printf '  PASS: workspace schema\n'
 
-printf '\n== canonical base: shell grader + exact Go gates ==\n'
+printf '\n== canonical content grader + structural gates ==\n'
 run_capture bash "$GRADER" --json "$GOOD"
 [ "$CAPTURE_CODE" -eq 0 ] || fail "canonical grader failed: $CAPTURED"
 assert_grade "GO" ""
 
 base_project="$tmp/canonical-base"
 base_slug="shippable-feature"
-stage_workspace "$base_project" "$base_slug" final
-run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" evidence-fresh "$base_slug"
-[ "$CAPTURE_CODE" -eq 0 ] || fail "canonical evidence freshness failed: $CAPTURED"
-run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" seal --json "$base_slug"
-[ "$CAPTURE_CODE" -eq 0 ] || fail "canonical seal failed: $CAPTURED"
-assert_seal "DRV-GATE-SEAL-PASSED"
-
-readiness_project="$tmp/canonical-readiness"
-readiness_slug="readiness-feature"
-stage_workspace "$readiness_project" "$readiness_slug" readiness
-run_capture env DEVRITES_ROOT="$readiness_project" "$ENGINE" build-readiness "$readiness_slug"
-[ "$CAPTURE_CODE" -eq 0 ] || fail "canonical readiness projection failed: $CAPTURED"
-printf '  PASS: grader GO, seal DRV-GATE-SEAL-PASSED, evidence fresh, readiness ready\n'
+stage_workspace "$base_project" "$base_slug"
+run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" check readiness "$base_slug"
+[ "$CAPTURE_CODE" -eq 0 ] || fail "canonical check readiness failed: $CAPTURED"
+run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" check seal "$base_slug"
+[ "$CAPTURE_CODE" -eq 0 ] || fail "canonical check seal failed: $CAPTURED"
+assert_check_seal "DRV-GATE-SEAL-PASSED"
+printf '  PASS: grader GO + structural readiness + fresh seal\n'
 
 printf '\n== one-delta final-outcome matrix ==\n'
-run_final_case missing_review final.review.missing 0 DRV-GATE-SEAL-PASSED
+run_final_case missing_review final.review.missing 3 DRV-GATE-SEAL-MISSING
 run_final_case missing_evidence final.evidence.missing-or-empty 3 DRV-GATE-SEAL-MISSING
 run_final_case empty_evidence final.evidence.missing-or-empty 3 DRV-GATE-SEAL-MISSING
-run_final_case missing_seal final.seal.missing 0 DRV-GATE-SEAL-PASSED
+run_final_case missing_seal final.seal.missing 3 DRV-GATE-SEAL-MISSING
 run_final_case non_go final.verdict.not-go 0 DRV-GATE-SEAL-PASSED
 run_final_case unresolved_blocker final.blockers.unresolved 0 DRV-GATE-SEAL-PASSED
-run_final_case open_question final.questions.open 0 DRV-GATE-SEAL-PASSED
+run_final_case open_question final.questions.open 3 DRV-GATE-SEAL-MISSING
 run_final_case wrong_phase final.state.phase 0 DRV-GATE-SEAL-PASSED
 run_final_case awaiting_human final.state.status 0 DRV-GATE-SEAL-PASSED
 run_final_case blocked_status final.state.status 0 DRV-GATE-SEAL-PASSED
 run_final_case unchecked_ac final.acceptance.unchecked 0 DRV-GATE-SEAL-PASSED
 run_final_case wrong_ac_id final.acceptance.ids 0 DRV-GATE-SEAL-PASSED
-run_stale_case
-run_readiness_case coverage_digest_drift brief.md coverage-not-clear
-run_readiness_case engineering_digest_drift architecture.md engineering-not-ready
+run_final_case noncanonical_ac final.acceptance.ids 0 DRV-GATE-SEAL-PASSED
+run_final_case duplicate_ac final.acceptance.ids 0 DRV-GATE-SEAL-PASSED
+run_final_case empty_ac final.acceptance.ids 3 DRV-GATE-READINESS-STALE
+run_content_identity_case
 
-printf '\n== legacy compatibility fixtures (not matrix proof) ==\n'
+printf '\n== removed top-level commands ==\n'
+removed=(
+  readiness seal spec-validate check-acceptance evidence-fresh coverage
+  doubt-coverage test-integrity review-integrity build-readiness
+  readiness-digest analyze ledger resolve clarify-return tick-afk recovery
+  close-out migrate doctor
+)
+[ "${#removed[@]}" -eq 20 ] || fail "removed command inventory is not 20"
+for command in "${removed[@]}"; do
+  run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" "$command"
+  [ "$CAPTURE_CODE" -eq 2 ] || fail "$command exit=$CAPTURE_CODE, want 2; $CAPTURED"
+  printf '%s' "$CAPTURED" | grep -Fq "unknown command \"$command\"" \
+    || fail "$command did not use unknown-command path: $CAPTURED"
+done
+printf '  PASS: all 20 retired top-level commands are unknown (no aliases)\n'
+
+printf '\n== removed nested policy commands ==\n'
+assert_removed_nested() {
+  run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" "$@"
+  [ "$CAPTURE_CODE" -ne 0 ] || fail "$* unexpectedly succeeded: $CAPTURED"
+}
+assert_removed_nested check spec "$GOOD"
+assert_removed_nested state clarify enter "$base_slug"
+assert_removed_nested state tick-afk "$base_project/.devrites/work/$base_slug/state.md"
+assert_removed_nested state recovery check synthetic-cause "$base_slug"
+printf '%s\n' "$base_slug" >"$base_project/.devrites/ACTIVE"
+run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" state resolve next-qid "$GOOD/questions.md"
+[ "$CAPTURE_CODE" -ne 0 ] || fail "state resolve next-qid unexpectedly generated an id: $CAPTURED"
+printf '  PASS: removed nested policy forms cannot execute\n'
+
+printf '\n== compatibility examples ==\n'
 for legacy in blocked-feature near-miss-unproven-ac; do
   run_capture bash "$GRADER" --json "$ROOT/evals/golden/$legacy"
   [ "$CAPTURE_CODE" -eq 1 ] || fail "$legacy should remain NO-GO"
   printf '  PASS: %s remains NO-GO\n' "$legacy"
 done
 
-printf '\nOutcome evals passed: canonical parity + 15 isolated negative rows.\n'
+printf '\nOutcome evals passed: native boundary + 15 isolated final-outcome negatives + candidate/readiness content binding + removed-command rejections.\n'

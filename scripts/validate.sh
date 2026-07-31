@@ -4,6 +4,7 @@
 
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+. "$ROOT/scripts/git-env.sh"
 PACK="$ROOT/pack/.claude"
 SKILLS="$PACK/skills"
 AGENTS="$PACK/agents"
@@ -34,6 +35,48 @@ if command -v python3 >/dev/null 2>&1; then
 else
   echo "skip: python3 not found"
 fi
+
+
+section "strict pack JSON"
+if command -v python3 >/dev/null 2>&1; then
+  PACK_JSON_INPUTS=("$PACK" "$ROOT/pack/generated")
+  PACK_JSON_READY=1
+  if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    PACK_JSON_INPUTS=()
+    PACK_JSON_LIST="$(mktemp)"
+    if git -C "$ROOT" ls-files -z -- pack/.claude pack/generated > "$PACK_JSON_LIST"; then
+      while IFS= read -r -d '' rel; do
+        [[ "$rel" == *.json ]] && PACK_JSON_INPUTS+=("$ROOT/$rel")
+      done < "$PACK_JSON_LIST"
+    else
+      PACK_JSON_READY=0
+    fi
+    rm -f "$PACK_JSON_LIST"
+  fi
+  if [ "$PACK_JSON_READY" -eq 1 ] && [ "${#PACK_JSON_INPUTS[@]}" -gt 0 ] &&
+    python3 "$ROOT/scripts/validate-pack-json.py" "${PACK_JSON_INPUTS[@]}"; then
+    good "all canonical and generated pack JSON parses strictly"
+  else
+    bad "canonical or generated pack JSON is malformed"
+  fi
+else
+  bad "python3 is required for strict pack JSON validation"
+fi
+
+section "generated host artifact tree parity"
+HOST_ARTIFACT_TMP="$(mktemp -d)"
+if DEVRITES_HOST_ARTIFACT_DIR="$HOST_ARTIFACT_TMP" bash "$ROOT/scripts/build-host-artifacts.sh" >/tmp/dr_host_artifacts 2>&1; then
+  if diff -qr "$ROOT/pack/generated" "$HOST_ARTIFACT_TMP" >/tmp/dr_host_artifacts 2>&1; then
+    good "generated host artifact tree matches canonical sources"
+  else
+    sed -n '1,40p' /tmp/dr_host_artifacts
+    bad "pack/generated tree drifted from canonical sources"
+  fi
+else
+  cat /tmp/dr_host_artifacts
+  bad "host artifact generation failed"
+fi
+rm -rf "$HOST_ARTIFACT_TMP"
 
 
 # ---- 2d. shell install helper ownership ----------------------------------
@@ -119,21 +162,7 @@ else
   echo "skip: node not found"
 fi
 
-# ---- 6c. skill anatomy + routing + host parity ----------------------------
-section "skill anatomy"
-if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/validate-skill-anatomy.py" >/tmp/dr_skill_anatomy 2>&1; then cat /tmp/dr_skill_anatomy; good "skill anatomy contracts passed"; else cat /tmp/dr_skill_anatomy; bad "skill anatomy validation failed"; fi
-else
-  echo "skip: python3 not found"
-fi
-
-section "deterministic routing/collision evals"
-if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/run-routing-evals.py" >/tmp/dr_routing_evals 2>&1; then cat /tmp/dr_routing_evals; good "routing/collision evals passed"; else cat /tmp/dr_routing_evals; bad "routing/collision evals failed"; fi
-else
-  echo "skip: python3 not found"
-fi
-
+# ---- 6c. host parity -----------------------------------------------------
 section "command host parity"
 if command -v python3 >/dev/null 2>&1; then
   if python3 "$ROOT/scripts/validate-command-parity.py" >/tmp/dr_command_parity 2>&1; then cat /tmp/dr_command_parity; good "command host parity passed"; else cat /tmp/dr_command_parity; bad "command host parity failed"; fi
@@ -179,14 +208,6 @@ PY
   [ "$fail" -eq 0 ] && good "all reference links resolve" || true
 else
   echo "skip: python3 not found"
-fi
-
-# ---- 8. skill pruning + step contracts ----------------------------------
-section "skill pruning + step contracts"
-if command -v node >/dev/null 2>&1 && [ -f "$ROOT/scripts/skill-pruning-audit.mjs" ]; then
-  if node "$ROOT/scripts/skill-pruning-audit.mjs"; then good "skill pruning and step contracts passed"; else bad "skill pruning step contracts failed"; fi
-else
-  echo "skip: node or skill-pruning-audit.mjs not found"
 fi
 
 # ---- 9. DevRites engineering rules present -------------------------------
@@ -248,16 +269,6 @@ if command -v python3 >/dev/null 2>&1; then
   fi
 else
   echo "skip: python3 not found"
-fi
-
-# ---- 11c. user-facing completion reply contract --------------------------
-section "rite completion reply contract"
-if bash "$ROOT/scripts/check-reply-contract.sh" >/tmp/dr_reply_contract 2>&1; then
-  cat /tmp/dr_reply_contract
-  good "reply-contract check passed"
-else
-  cat /tmp/dr_reply_contract
-  bad "reply-contract check failed (see scripts/check-reply-contract.sh)"
 fi
 
 # ---- 12. no runtime-broken pack/.claude/ path in installed prose ---------

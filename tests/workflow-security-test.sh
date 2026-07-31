@@ -241,15 +241,6 @@ clean "dispatch input transported through env" "$TMP/dispatch-input-via-env.yml"
 # The repository's workflows must pass too.
 clean "repo workflows pass"        "$HERE/../.github/workflows"
 
-EVAL_WORKFLOW="$HERE/../.github/workflows/evals.yml"
-if grep -En -- 'secrets\.|--live([[:space:]\\]|$)|RUN-PAID-HOST-CONTRACTS|AUTH_FILE|API_KEY|runs-on:.*self-hosted|environment:[[:space:]]*live-evals' "$EVAL_WORKFLOW" >/dev/null; then
-  echo "FAIL [eval workflow is free]: found a credential or paid-runner path"
-  grep -En -- 'secrets\.|--live([[:space:]\\]|$)|RUN-PAID-HOST-CONTRACTS|AUTH_FILE|API_KEY|runs-on:.*self-hosted|environment:[[:space:]]*live-evals' "$EVAL_WORKFLOW"
-  fail=1
-else
-  echo "ok   [eval workflow is deterministic and free]"
-fi
-
 if [ "$fail" -ne 0 ]; then echo "WORKFLOW-SECURITY TESTS: FAIL"; exit 1; fi
 echo "WORKFLOW-SECURITY TESTS: PASS"
 exit 0

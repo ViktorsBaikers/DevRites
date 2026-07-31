@@ -1,33 +1,39 @@
 # `ship.md` template
 
-The durable record of what shipped and how. Written by `$rite-ship` into the
-workspace **before** close-out, so it travels into `.devrites/archive/<slug>/ship.md`.
+Write before close-out; it moves to `.devrites/archive/<slug>/ship.md`.
 
 ```markdown
 # Ship: <slug>
 
 - Shipped at: <iso>
-- Verdict: GO (see seal.md)
+- Verdict: GO (seal.md)
 - Branch: <branch>
 - Commit(s): <sha> [<sha> …]
-- Tag / PR: <vX.Y.Z | PR url | none>
+- Tag/PR: <value|none>
 
 ## What shipped
-<one-paragraph summary of the feature delivered, in the project's vocabulary>
+<project-vocabulary paragraph>
 
 ## Acceptance
-- Criteria proven: <n / total>   (full walk in evidence.md / seal.md)
-- Outstanding (shipped with known follow-ups): <list | none>
+- Proven: <n/total> (evidence.md/seal.md)
+- Outstanding: <rows below | none>
 
-## Evidence pointers
-- seal.md — final GO/NO-GO verdict + reviewer reconciliation
-- evidence.md — acceptance walk; browser-evidence.md (if UI)
-- review.md — multi-axis review findings
+## Evidence
+- seal.md — verdict/reconciliation
+- evidence.md — acceptance; browser-evidence.md if UI
+- review.md — review findings
 
-## Follow-ups (FYI, not blocking)
-- <recorded follow-up + where it's tracked> | none
+## Follow-up reconciliation
+Checked: strategy.md (if present), decisions.md, review.md, seal.md.
+
+| Source | Item | Disposition | Destination / rationale |
+|---|---|---|---|
+| <file + section> | <item> | tracked | <durable path/ID> |
+| <file + section> | <item> | no-action | <decision or explicit human no-action approval + reason/revisit> |
+
+<If empty: No residual items found.>
 ```
 
-Keep it short. It points at the existing audit files rather than restating them.
-The acceptance count must match `seal.md`; if they disagree, the seal is the source of
-truth and the ship should not have proceeded.
+Keep pointers short. Acceptance MUST match `seal.md`. Each source residual appears
+once; a missing target, unsupported `no-action`, vague disposition, or conflict blocks
+close-out.

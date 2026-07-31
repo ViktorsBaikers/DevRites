@@ -1,2 +1,0 @@
-exit 0
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"DevRites A1: the orchestrator must not edit source mid-build: the slice-wright is the only writer. Re-dispatch the wright (continue it once) or stop + escalate; do not patch the code yourself. (devrites-a1-guard)"}}

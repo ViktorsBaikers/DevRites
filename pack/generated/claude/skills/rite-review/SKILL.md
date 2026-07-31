@@ -3,7 +3,6 @@ name: rite-review
 description: Review polished feature diff for correctness, readability, architecture, security, tests proving acceptance, Critical/Important findings, and quality dimensions before seal.
 argument-hint: "[scope: slice N | feature] [--full]"
 user-invocable: true
-required-agent-roles: devrites-spec-reviewer, devrites-code-reviewer
 ---
 
 # /rite-review: feature-scoped review
@@ -16,7 +15,9 @@ tell the user to run `/rite-spec <feature>`.
 > `.devrites/work/<slug>/spec.md` first, runs Spec ↔ Code-review axes as
 > parallel fresh-context reviewers (see [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)), and gates feeding
 > into `/rite-seal`. Use `/code-review` for a one-off diff; use
-> `/rite-review` for a DevRites feature where the spec is the contract.
+> `/rite-review` for a DevRites feature where the spec is the contract. Use the shared depth rules in
+[`devrites-lib/reference/orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md);
+all workflow-named roles remain mandatory at every depth.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 Pull these via `Read` when the diff demands them:
@@ -36,16 +37,19 @@ Pull these via `Read` when the diff demands them:
 - **Review the finished product.** `/rite-polish` has already simplified code and
   normalized or polished UI. If review finds a remaining complexity issue, record it as
   a finding rather than rerunning a simplification pass.
+- Follow the shared
+  [`candidate-integrity.md`](../devrites-lib/reference/candidate-integrity.md).
+  Review starts only from the digest Polish closed.
 - Findings are labeled (below). Re-prove after any accepted correction.
-- **Reviewers judge; root reconciles; wright fixes.** Follow
-  [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns the verdict and
-  canonical writes; every accepted source/test correction routes to
-  `devrites-slice-wright`.
+- **Reviewers judge; root reconciles; wright fixes.** Per
+  [`agents.md`](../devrites-lib/reference/standards/agents.md), root directly
+  reconciles verdicts/writes artifacts; engines do not. Accepted corrections
+  route to `devrites-slice-wright`.
 
 ## Workflow
 0. Read `.claude/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
    on-demand rules above as the diff demands them.
-   Then run `devrites-engine preamble` for deterministic workspace orientation.
+   Then read the explicit or active workspace's `state.md` directly.
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`, `evidence.md`,
    `touched-files.md`, `.devrites/principles.md` (if present: the binding invariants to score
    the diff against), and the `git diff`. For "what would this change break"
@@ -53,7 +57,10 @@ Pull these via `Read` when the diff demands them:
    cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob); see
    `.claude/skills/devrites-lib/reference/standards/tooling.md`) over file reads;
    they answer impact/callers in one call. When a finding hinges on an external library's
-   current API, context7 if available can confirm the signature.
+   current API, context7 if available can confirm the signature. Run
+   `devrites-engine check candidate <slug>` and require its digest to match the
+   single `evidence.md` binding and the `browser-evidence.md` binding when that
+   file exists. A missing, malformed, or open candidate returns to Polish/Prove.
 2. **Review tests first:** do they prove the acceptance criteria? Missing,
    weak, or wrong tests are the first findings.
    **Completion:** every acceptance criterion maps to a proven test or a labeled finding.
@@ -62,8 +69,8 @@ Pull these via `Read` when the diff demands them:
    implements the wrong thing (Code-review pass, Spec fail), or code that does exactly
    what the spec asked but breaks project conventions (Spec pass, Code-review fail).
    Separate contexts prevent one axis from masking the other:
-   - Freeze the candidate and fresh-context dispatch **two** read-only reviewers in
-     parallel, each with its own `agent-packet/v1`, narrow brief, and no
+   - Freeze that closed digest and give the same digest to **two** read-only reviewers in
+     parallel, each with its own narrow brief and no
      cross-pollination:
      - **Spec axis** → `devrites-spec-reviewer`: "Apply your documented discipline on
        the active feature workspace + diff. Report (a) criteria the spec asked for that
@@ -87,7 +94,11 @@ Pull these via `Read` when the diff demands them:
    - **Do NOT merge or re-rank** their findings. Present them under separate
      `## Spec` and `## Code review` sub-sections in `review.md`. Surface contradictions
      between the axes explicitly (e.g. "Spec axis says complete, Code-review axis says
-     untestable"): `/rite-seal` decides what blocks.
+     untestable"): `/rite-seal` decides what blocks. Preserve each reviewer's
+     `Outcome:` and admit its account through
+     [`agents.md` § Result admission](../devrites-lib/reference/standards/agents.md#result-admission).
+     Either `Outcome: gap` stops Review; silence, failure, or malformed output never
+     becomes an empty findings list.
 4. **Reconcile, don't re-review.** With the two parallel reports in hand, the inline
    lead reconciles. It does **not** re-run the code-review axes over correctness /
    readability / architecture / maintainability that `devrites-code-reviewer` already
@@ -107,21 +118,14 @@ Pull these via `Read` when the diff demands them:
 6. **Performance:** apply `devrites-audit perf`
    ([performance-review](reference/performance-review.md)) only when performance is
    relevant or a regression risk is visible (measure first).
-7. Reconcile and accept only in-scope fixes. Consolidate them into one bounded wright
-   correction packet; never edit source in the reviewing context. Freeze the new candidate
-   and **run affected verification after changes** (`/rite-prove` logic), then perform at
-   most one narrow recheck of affected findings.
-8. The root updates `review.md`, `evidence.md`, and `state.md`.
+7. Reconcile and accept only in-scope fixes. Consolidate them into one bounded
+   wright correction; never edit source in the reviewing context. Any correction
+   updates the candidate manifest, returns through affected Prove, and then starts
+   a fresh Review on the new digest. Do not carry a prior reviewer account across it.
+8. The root updates `review.md` and `state.md`, writing exactly one candidate
+   binding in `review.md` for the digest given to every reviewer.
    **Completion:** the records name the reviewed candidate identity and every accepted
-   correction has affected proof plus its narrow recheck.
-9. **Require an account from every reviewer.** After `review.md` is written, run:
-   ```bash
-   devrites-engine review-integrity
-   devrites-engine review-fingerprints --write
-   ```
-   Exit 1 means an adversarial axis reported neither findings nor a justification. Re-run
-   that axis or add its `No-findings:` justification; do not carry a silent
-   axis into `/rite-seal` (where it surfaces as an Important).
+   correction has affected proof plus a fresh Review.
 
 ## Finding labels
 - **Critical:** must fix before seal (correctness/security/data loss).
@@ -136,22 +140,10 @@ change is already small: a pure noise-economics lever). Only a **`blocking` Crit
 seal; a `non-blocking` / `if-minor` finding is recorded, not a stop.
 
 ## Confidence and signal-to-noise
-Apply `/rite-vet`'s confidence rules. A reviewer that posts
-18 comments per PR teaches the team to ignore every one (below ~10% false-positive rate devs
-investigate each finding; past ~30% they label the tool noisy and skip it):
-- **Confidence-band each finding** (1-10) and state the band. A low-confidence finding (≤4)
-  you can't verify against the code is **suppressed**: roll it into one `Suppressed
-  (low-confidence): n` line, never raised as Critical/Important.
-- **Verify before you escalate.** Every Critical/Important quotes the spec line or cites the
-  `file:line` that proves it: no unverified blockers.
-- **Limit low-value comments.** Roll up trivia ("N style nits") into a single line; tooling already
-  catches style. Review's job is correctness + spec fidelity, not a lint dump.
-- **A silent axis is suspicious, not clean.** An adversarial axis that raises nothing must earn
-  it: end its `## Spec` / `## Code review` section with a **`No-findings:`** line naming the
-  passes it ran (missing/partial/incorrect for spec; edge cases, error paths, the riskiest
-  decision, a changed behavior whose test may not cover it for code) and why each came back
-  empty. Confidence bands suppress false positives; this requirement catches silent false
-  negatives ([`code-review.md` § Zero findings is suspicious](../devrites-lib/reference/standards/code-review.md)).
+Apply [`agents.md` § Result admission](../devrites-lib/reference/standards/agents.md#result-admission).
+Suppress unverifiable ≤4 hypotheses, require 7+ plus exact proof for
+Critical/Important, and make every silent/unusable account a blocking gap. Roll
+trivia into one line; review finds defects, not a quota.
 
 ## Severity orientation (labels, not score)
 
@@ -163,19 +155,4 @@ FYI` counts. There is no composite number. `/rite-seal` gates on
 
 ## Output → `review.md`
 
-Write the detailed review to `review.md`. In chat, run `devrites-engine progress` first, then use
-the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: review complete for <slice N | feature>.
-Changed: review.md, review-fingerprints.jsonl, evidence.md <updated|n/a>, state.md
-Evidence: open findings Critical 0 / Important <non-blocking n> / Suggestion <n> / Nit <n> / FYI <n>; re-verification <cmd -> pass|n/a>
-Open: <none | non-blocking Important/Suggestion follow-ups>
-Next: /rite-seal
-Record: .devrites/work/<slug>/review.md
-↻ Hygiene: /compact (review findings) if fixing now; /clear if clean
-```
-If a blocking Critical or required re-proof remains, use the shared `Stopped /
-blocked` form and route `Fix:` to the single repair or `/rite-prove`; do not
-recommend `/rite-seal`.
+Write the detailed review to `review.md`.

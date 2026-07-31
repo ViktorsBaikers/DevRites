@@ -8,10 +8,8 @@ trap 'rm -rf "$T"' EXIT
 
 files=(
   engine/internal/state/workflow_manifest.json
-  engine/internal/lib/readiness_contract.json
   docs/quick-reference.md
   docs/engine/state-schema.md
-  docs/cli.md
   SECURITY.md
   pack/.claude/skills/devrites-lib/reference/standards/core.md
 )

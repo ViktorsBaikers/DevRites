@@ -42,6 +42,18 @@ acceptance criterion. Assert what the element *does*, not that the markup exists
 Completeness counts tests; strength makes them mean something. A test that passes for *any*
 implementation is theatre, and it's the shape AI reaches for by default. Reject the weak forms:
 
+### Positive, discriminating proof
+
+A behavioral requirement is proved only by observed positive, discriminating evidence that
+would fail if the behavior were absent or wrong. Skipped, focused, filtered, or pending tests,
+zero-test runs, assertion-free tests, tautologies, unexecuted commands, and success inferred
+only from exit status cannot prove behavior.
+
+Build, compile, typecheck, and lint prove only their corresponding static criterion, never
+runtime behavior. Explicit shell assertions and golden/text comparisons remain valid when the
+criterion genuinely concerns a textual or command-line artifact and the assertion
+discriminates the required result.
+
 - **No tautological assertions.** `expect(result).toBeDefined()` / `.not.toBeNull()` /
   `assert x is not None` pass for almost any return value. Assert the **actual value or
   observable effect**: `expect(total).toBe(42)`, the specific error thrown, the state changed,
@@ -59,9 +71,8 @@ implementation is theatre, and it's the shape AI reaches for by default. Reject 
   and breaks on a harmless rename. **Execute** the code and assert its effect; reserve text
   scanning for genuinely textual artifacts (generated output, a committed manifest, a golden snapshot).
 - **Coverage says "ran"; mutation says "checked".** Line coverage proves a line executed, not
-  that a test would catch it breaking. Where the project has a mutation runner, the changed-files
-  mutation gate (`devrites-engine mutation-gate`) certifies the suite would fail on a wrong implementation; a
-  surviving mutant is a behaviour no test checks.
+  that a test would catch it breaking. Where the project has a mutation runner,
+  use its documented command; a surviving mutant is a behaviour no test checks.
 
 ## Never weaken a failing test (test integrity)
 A failing test is a signal, not an obstacle. Never delete it, skip it (`it.skip`, `xit`,
@@ -69,11 +80,11 @@ A failing test is a signal, not an obstacle. Never delete it, skip it (`it.skip`
 loosen its assertions to turn the suite green. A red test means one of two things: the code is
 wrong (fix the code) or the test is wrong (surface it as a blocking question and get the change
 agreed): never quietly make the red go away. A test weakened to clear a gate is a **Critical**
-finding; `devrites-engine test-integrity` diffs the test files against the slice base and exits non-zero when
-one is deleted, skipped, or loses assertions.
+finding. The root's diff review and dedicated test analysis compare the
+candidate with its base and reject deleted, skipped, focused, or weakened tests.
 
 ## The verification gap: green, but the test doesn't prove the change
-Test-integrity catches reaching green by *weakening* a test. This catches the quieter failure: a
+Diff review catches reaching green by *weakening* a test. This catches the quieter failure: a
 test that was never touched, is fully green, and still doesn't exercise the behavior that changed.
 A passing suite is not proof the *change* is proven: the suite could pass identically with the
 change reverted. Run this trace for each behavioral change in the diff:
@@ -90,9 +101,9 @@ change reverted. Run this trace for each behavioral change in the diff:
    advice; a gap you can't point at is not a finding (the verification gate applies).
 
 A changed behavior with no test that would fail on its regression is an **unproven gap**: the same
-standing as an untested element or an unproven acceptance criterion. `devrites-engine test-integrity`
-emits an advisory when a diff changes source but touches no test file; that signal is a pointer to
-run this trace, never a verdict on its own.
+standing as an untested element or an unproven acceptance criterion. A source
+change with no test-file delta is a pointer to run this trace, never a verdict
+on its own.
 
 ## DAMP over DRY in tests
 Test code optimizes for a different reader than production code: someone staring at a failure who
@@ -124,8 +135,8 @@ breaks, because it tested the stubs, not the code (see "Don't assert the mock" a
 - **Seam the clock; never read it raw in a tested path.** Route wall-clock reads through one
   injectable seam (an env override like `DEVRITES_NOW`, or an injected clock) so time/date-derived
   output is pinned in tests. A raw `time.Now()` feeding output makes a golden snapshot rot at the
-  next day boundary: green today, red tomorrow, for no code change. (Live example: `resolve
-  next-qid` did exactly this until the seam landed: see ADR-0006.)
+  next day boundary: green today, red tomorrow, for no code change. The test must control time so
+  its result depends on behavior, not when the suite runs.
 - **No elapsed-time assertions.** `assert elapsed < 200ms` / `took` under a threshold tests the
   CI runner's load, not your code: flaky by construction. Assert the *result*, not the duration;
   for ordering or concurrency use a deterministic signal (a fake clock, a channel), never a `sleep`.

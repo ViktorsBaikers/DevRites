@@ -1,19 +1,14 @@
 # Spec-quality checklists
 
-Before `$rite-define`, check that each requirement is complete, unambiguous, and
-measurable. These checklists evaluate the prose, not the implementation. For example,
-"the banner is prominent" fails because "prominent" has no threshold. Fixing that in
-the spec avoids a later reslice.
-
-These are not implementation tests. Ask "is *export* defined for an empty dataset?", not
-"does `exportCsv()` handle `[]`?". Implementation checks belong to `$rite-vet` and
-`$rite-prove`. These files never name a function, file, or library.
+Before `$rite-define`, test requirement prose for completeness, clarity, and
+measurability—not implementation. “Banner is prominent” lacks a threshold; ask
+whether export defines empty data, never whether `exportCsv()` handles `[]`.
+Function/file/library checks belong to `$rite-vet` and `$rite-prove`.
 
 ## Output: one file per requirement domain
 
-Emit `.devrites/work/<slug>/checklists/<domain>.md`, one per domain the spec covers.
-Skip a domain marked "none". The domains match the interview taxonomy, so each gap maps
-to a `devrites-interview` dimension:
+Emit `.devrites/work/<slug>/checklists/<domain>.md` per covered domain; skip
+`none`. Each domain maps gaps to a `devrites-interview` dimension:
 
 | Domain file | Tests the prose of |
 |---|---|
@@ -32,15 +27,14 @@ Scored: <iso>   Verdict: pass | gaps (<n CRITICAL / n minor>)
 | # | Question (tests the requirement prose) | Verdict | Spec line | Severity |
 |---|---|---|---|---|
 | 1 | Is every quantitative qualifier ("prominent", "fast", "large") given a number or reference? | fail | "banner is prominent" | **CRITICAL** |
-| 2 | Does each requirement name an observable outcome a test could check? | pass | FR-001..004 | — |
+| 2 | Does each requirement name an observable outcome a test could check? | pass | REQ-001..004 | — |
 | 3 | Are all enumerations closed — no "etc." / "and so on" / open "…"? | pass | — | — |
 ```
 
-Verdict is `pass` / `fail` / `n/a`. A `fail` carries a severity:
-- **CRITICAL:** the ambiguity would change the build or its acceptance: an unquantified
-  acceptance/success criterion, an incomplete enumeration in a requirement, an ambiguous data
-  shape, an undefined edge case on a stated flow, a contradictory pair of requirements.
-- **minor:** vague but nonessential prose. Record it; it does not block.
+Verdict: `pass | fail | n/a`. A fail is **CRITICAL** when ambiguity changes build
+or acceptance: unquantified success, open enumeration, ambiguous data shape,
+undefined stated-flow edge, or contradictory requirements. Other vague prose is
+**minor**: record it; do not block.
 
 ## Question bank
 
@@ -55,6 +49,11 @@ Each question checks one requirement-prose failure mode:
 - **Testability:** each acceptance criterion is binary and names (or clearly implies) its evidence.
   A criterion only provable by reading code is a fail.
 - **Consistency:** no requirement contradicts another, the data model, or a non-goal.
+- **Preservation:** each material brownfield outcome appears in `Existing behavior
+  to preserve` with preserving REQ/AC and current evidence. Missing/vague “no
+  regressions” or unjustified `none` is CRITICAL.
+- **Backstops:** each row names an independent held-out, property/metamorphic, or
+  direct behavioral check and the failure it discriminates; confidence/presence/self-review fail.
 - **Non-functional:** each NFR names affected REQ/AC IDs or a bounded `global` scope;
   human-only proof prerequisites name their owner.
 

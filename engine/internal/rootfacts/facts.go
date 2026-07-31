@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/gitenv"
 	"github.com/devrites/devrites/internal/safepath"
 )
 
@@ -255,16 +256,13 @@ func inspectWorkspaceState(facts *Facts) {
 	if root == "" {
 		return
 	}
-	for _, layout := range []string{"work", "features"} {
-		entries, err := os.ReadDir(filepath.Join(root, layout))
-		if err != nil {
-			continue
-		}
+	entries, err := os.ReadDir(filepath.Join(root, "work"))
+	if err == nil {
 		for _, entry := range entries {
 			if entry.Type()&os.ModeSymlink == 0 {
 				continue
 			}
-			path := filepath.Join(root, layout, entry.Name())
+			path := filepath.Join(root, "work", entry.Name())
 			if safepath.WithinResolved(path, root) {
 				continue
 			}
@@ -320,7 +318,7 @@ func inspectWorkspaceState(facts *Facts) {
 		})
 		return
 	}
-	if !isDir(filepath.Join(root, "work", slug)) && !isDir(filepath.Join(root, "features", slug)) {
+	if !isDir(filepath.Join(root, "work", slug)) {
 		facts.Hazards = append(facts.Hazards, Hazard{
 			ID:          "DRV-ACTIVE-STALE",
 			Severity:    "warning",
@@ -352,7 +350,7 @@ func gitPath(dir, flag string) (string, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "--path-format=absolute", flag)
-	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0")
+	cmd.Env = append(gitenv.Sanitize(os.Environ()), "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0")
 	out, err := cmd.Output()
 	if err != nil || ctx.Err() != nil {
 		return "", false

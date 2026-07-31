@@ -4,7 +4,6 @@ description: User-invoked throwaway prototype for one logic or UI design questio
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[the question the prototype is answering]"
-required-agent-roles: none
 ---
 
 # /rite-prototype: answer one question with throwaway code
@@ -90,11 +89,6 @@ After the prototype answers the question and the answer is recorded, return to t
 calling phase. The prototype itself does **not** ship.
 
 ## Output
-
-Reply-contract exception: scoped prototype detour. Run `devrites-engine progress` only when
-an active workspace exists; otherwise skip it. Use the compact labels from the shared
-completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 
 ```
 Done: prototype answered <question>.

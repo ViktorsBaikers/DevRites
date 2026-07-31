@@ -1,15 +1,9 @@
 package install
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
-	"io/fs"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,81 +38,39 @@ func TestInstallDryRunWritesNothing(t *testing.T) {
 	if !strings.Contains(out.String(), "[install] .claude/skills/rite/SKILL.md") {
 		t.Fatalf("dry-run output missing planned install:\n%s", out.String())
 	}
-}
-
-func TestExtractTarGzRejectsTooManyEntries(t *testing.T) {
-	tarball := filepath.Join(t.TempDir(), "many.tar.gz")
-	f, err := os.Create(tarball)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gz := gzip.NewWriter(f)
-	tw := tar.NewWriter(gz)
-	for i := 0; i <= maxUpdateEntries; i++ {
-		hdr := &tar.Header{Name: fmt.Sprintf("entry-%05d", i), Typeflag: tar.TypeDir, Mode: 0o755}
-		if err := tw.WriteHeader(hdr); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := tw.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if err := gz.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if err := f.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	err = extractTarGz(tarball, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "too many entries") {
-		t.Fatalf("extractTarGz error = %v, want entry-count rejection", err)
+	if strings.Contains(out.String(), "Next:") {
+		t.Fatalf("dry-run output claims a next move:\n%s", out.String())
 	}
 }
 
-func FuzzExtractTarGzPaths(f *testing.F) {
-	f.Add("safe/file.txt", []byte("content"))
-	f.Add("../escape", []byte("blocked"))
-	f.Add("/absolute", []byte("blocked"))
-	f.Fuzz(func(t *testing.T, name string, content []byte) {
-		if len(name) > 256 || len(content) > 4096 || strings.ContainsRune(name, '\x00') {
-			t.Skip()
-		}
-		base := t.TempDir()
-		tarball := filepath.Join(base, "input.tar.gz")
-		file, err := os.Create(tarball)
-		if err != nil {
-			t.Fatal(err)
-		}
-		gz := gzip.NewWriter(file)
-		tw := tar.NewWriter(gz)
-		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(content)), Typeflag: tar.TypeReg}); err != nil {
-			_ = tw.Close()
-			_ = gz.Close()
-			_ = file.Close()
-			return
-		}
-		if _, err := tw.Write(content); err != nil {
-			t.Fatal(err)
-		}
-		if err := tw.Close(); err != nil {
-			t.Fatal(err)
-		}
-		if err := gz.Close(); err != nil {
-			t.Fatal(err)
-		}
-		if err := file.Close(); err != nil {
-			t.Fatal(err)
-		}
-		dest := filepath.Join(base, "dest")
-		if err := os.Mkdir(dest, 0o755); err != nil {
-			t.Fatal(err)
-		}
-		_ = extractTarGz(tarball, dest)
-		if _, err := os.Stat(filepath.Join(base, "escape")); !os.IsNotExist(err) {
-			t.Fatalf("archive escaped destination through %q", name)
-		}
-	})
+func TestInstallPrintsFirstMoveForInstalledHosts(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+
+	for _, tc := range []struct {
+		name      string
+		withCodex bool
+		want      string
+	}{
+		{name: "Claude and Codex", withCodex: true, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex)."},
+		{name: "Claude only", withCodex: false, want: "Next: reopen the project, then run /rite."},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out bytes.Buffer
+			opts := DefaultOptions(ModeInstall)
+			opts.Target = t.TempDir()
+			opts.PayloadDir = testPayload(t)
+			opts.WithCodex = tc.withCodex
+			opts.Stdout = &out
+			opts.Stderr = &bytes.Buffer{}
+
+			if err := Apply(opts); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(out.String(), tc.want) {
+				t.Fatalf("install output missing first move %q:\n%s", tc.want, out.String())
+			}
+		})
+	}
 }
 
 func TestInstallManifestConflictAndPrune(t *testing.T) {
@@ -154,7 +106,8 @@ func TestMarkerMergeAndUninstallPreserveUserContent(t *testing.T) {
 	target := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(target, "AGENTS.md"), "user guidance\n")
 	testutil.WriteFile(t, filepath.Join(target, ".codex", "config.toml"), "model = \"x\"\n")
-	testutil.WriteFile(t, filepath.Join(target, ".codex", "hooks.json"), `{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo user"}]}]}}`+"\n")
+	userHooks := `{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo user"}]}]}}` + "\n"
+	testutil.WriteFile(t, filepath.Join(target, ".codex", "hooks.json"), userHooks)
 
 	runInstall(t, target, payload, func(o *Options) {})
 	runInstall(t, target, payload, func(o *Options) {})
@@ -166,12 +119,13 @@ func TestMarkerMergeAndUninstallPreserveUserContent(t *testing.T) {
 		t.Fatal("AGENTS user content lost")
 	}
 	config := testutil.ReadFile(t, filepath.Join(target, ".codex", "config.toml"))
-	if strings.Contains(config, "DEVRITES CODEX") || !strings.Contains(config, `model = "x"`) {
+	if strings.Count(config, "# BEGIN DEVRITES CODEX PERMISSIONS") != 1 ||
+		!strings.Contains(config, `default_permissions = "devrites-orchestrator"`) ||
+		!strings.Contains(config, `model = "x"`) {
 		t.Fatalf("config preservation wrong:\n%s", config)
 	}
-	hooks := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json"))
-	if strings.Count(hooks, "devrites-engine hook stop-gate") != 1 || !strings.Contains(hooks, "echo user") {
-		t.Fatalf("hooks merge wrong:\n%s", hooks)
+	if hooks := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json")); hooks != userHooks {
+		t.Fatalf("installer changed native Codex hooks:\n%s", hooks)
 	}
 
 	runUninstall(t, target)
@@ -181,7 +135,7 @@ func TestMarkerMergeAndUninstallPreserveUserContent(t *testing.T) {
 	if got := testutil.ReadFile(t, filepath.Join(target, ".codex", "config.toml")); !strings.Contains(got, `model = "x"`) || strings.Contains(got, "DEVRITES CODEX") {
 		t.Fatalf("config uninstall preservation wrong:\n%s", got)
 	}
-	if got := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json")); !strings.Contains(got, "echo user") || strings.Contains(got, "devrites-engine hook") {
+	if got := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json")); got != userHooks {
 		t.Fatalf("hooks uninstall preservation wrong:\n%s", got)
 	}
 	if !exists(filepath.Join(target, ".devrites", "ACTIVE")) {
@@ -233,21 +187,19 @@ func TestUninstallReportsUnreadableManifest(t *testing.T) {
 	}
 }
 
-func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
+func TestInstallMergesClaudePermissionsIntoExistingSettings(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	payload := testPayload(t)
-	testutil.WriteFile(t, filepath.Join(payload, "claude", "settings.json"), `{
-  "statusLine": {"type":"command","command":"devrites-engine hook statusline --harness=claude"},
-  "hooks": {
-    "Stop": [{"hooks":[{"type":"command","command":"devrites-engine hook stop-gate --harness=claude"}]}],
-    "SessionStart": [{"hooks":[{"type":"command","command":"devrites-engine hook orient --harness=claude"}]}]
-  }
-}`+"\n")
 	target := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(target, ".claude", "settings.json"), `{
-  "$comment": "DevRites hooks: keep my local notes",
+  "$comment": "keep my local notes",
   "theme": "dark",
   "statusLine": {"type":"command","command":"DEVRITES_THEME=dark echo user-status"},
+  "permissions": {
+    "defaultMode": "plan",
+    "allow": ["Bash(user-tool *)"],
+    "ask": ["Bash(rm *)"]
+  },
   "hooks": {"Stop":[{"hooks":[
     {"type":"command","command":"echo user-stop"},
     {"type":"command","command":"devrites-engine hook old-gate --harness=claude"}
@@ -259,42 +211,41 @@ func TestInstallMergesClaudeHooksIntoExistingSettings(t *testing.T) {
 	runInstall(t, target, payload, func(o *Options) { o.Stderr = &stderr })
 
 	settings := testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	for _, preserved := range []string{"DevRites hooks: keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
+	for _, preserved := range []string{"keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop", "Bash(user-tool *)", "Bash(rm *)"} {
 		if !strings.Contains(settings, preserved) {
 			t.Fatalf("Claude settings lost user content %q:\n%s", preserved, settings)
 		}
 	}
-	for _, command := range []string{"devrites-engine hook stop-gate", "devrites-engine hook orient"} {
-		if strings.Count(settings, command) != 1 {
-			t.Fatalf("Claude hook %q was not merged exactly once:\n%s", command, settings)
-		}
+	if strings.Count(settings, "Bash(devrites-engine check readiness *)") != 1 {
+		t.Fatalf("Claude permission was not merged exactly once:\n%s", settings)
 	}
-	if !strings.Contains(stderr.String(), "preserved existing Claude statusLine") {
-		t.Fatalf("missing statusLine conflict warning:\n%s", stderr.String())
+	if strings.Contains(settings, "devrites-engine hook") {
+		t.Fatalf("installer retained a legacy DevRites hook:\n%s", settings)
 	}
 	manifest := testutil.ReadFile(t, filepath.Join(target, ManifestName))
 	if !strings.Contains(manifest, "\n.claude/devrites.claude-hooks-merge\n") {
-		t.Fatalf("Claude hook merge marker missing:\n%s", manifest)
+		t.Fatalf("Claude settings merge marker missing:\n%s", manifest)
+	}
+	marker := testutil.ReadFile(t, filepath.Join(target, ".claude", "devrites.claude-hooks-merge"))
+	if !strings.Contains(marker, "default-mode=preexisting") {
+		t.Fatalf("Claude settings marker lost pre-existing plan-mode ownership:\n%s", marker)
 	}
 
 	runUninstall(t, target)
 	settings = testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	for _, preserved := range []string{"DevRites hooks: keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop"} {
+	for _, preserved := range []string{"keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop", "Bash(user-tool *)", "Bash(rm *)", `"defaultMode": "plan"`} {
 		if !strings.Contains(settings, preserved) {
 			t.Fatalf("Claude settings uninstall lost user content %q:\n%s", preserved, settings)
 		}
 	}
-	if strings.Contains(settings, "devrites-engine hook") {
-		t.Fatalf("Claude settings uninstall left DevRites hooks:\n%s", settings)
+	if strings.Contains(settings, "Bash(devrites-engine ") || strings.Contains(settings, "devrites-engine hook") {
+		t.Fatalf("Claude settings uninstall left DevRites configuration:\n%s", settings)
 	}
 }
 
 func TestInstallKeepsClaudeMergeOwnershipAcrossReinstall(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	payload := testPayload(t)
-	testutil.WriteFile(t, filepath.Join(payload, "claude", "settings.json"), `{
-  "hooks": {"Stop":[{"hooks":[{"type":"command","command":"devrites-engine hook stop-gate --harness=claude"}]}]}
-}`+"\n")
 	target := t.TempDir()
 	settingsPath := filepath.Join(target, ".claude", "settings.json")
 	testutil.WriteFile(t, settingsPath, "{}\n")
@@ -302,7 +253,7 @@ func TestInstallKeepsClaudeMergeOwnershipAcrossReinstall(t *testing.T) {
 	runInstall(t, target, payload, func(o *Options) {})
 	markerRel := ".claude/devrites.claude-hooks-merge"
 	if !exists(filepath.Join(target, filepath.FromSlash(markerRel))) {
-		t.Fatal("first install did not create the Claude hook merge marker")
+		t.Fatal("first install did not create the Claude settings merge marker")
 	}
 	manifestRecords, err := readManifest(filepath.Join(target, ManifestName))
 	if err != nil {
@@ -314,13 +265,17 @@ func TestInstallKeepsClaudeMergeOwnershipAcrossReinstall(t *testing.T) {
 	runInstall(t, target, payload, func(o *Options) {})
 
 	settings := testutil.ReadFile(t, settingsPath)
-	if strings.Count(settings, "devrites-engine hook stop-gate") != 1 {
-		t.Fatalf("Claude hooks lost merge ownership on reinstall (marker exists: %t):\nsettings:\n%s\nmanifest:\n%s",
+	if strings.Count(settings, `"defaultMode": "plan"`) != 1 ||
+		strings.Count(settings, "Bash(devrites-engine check readiness *)") != 1 {
+		t.Fatalf("Claude permissions lost merge ownership on reinstall (marker exists: %t):\nsettings:\n%s\nmanifest:\n%s",
 			exists(filepath.Join(target, filepath.FromSlash(markerRel))), settings, testutil.ReadFile(t, filepath.Join(target, ManifestName)))
+	}
+	if marker := testutil.ReadFile(t, filepath.Join(target, filepath.FromSlash(markerRel))); !strings.Contains(marker, "default-mode=added") {
+		t.Fatalf("Claude settings marker did not record owned plan mode:\n%s", marker)
 	}
 	manifest := testutil.ReadFile(t, filepath.Join(target, ManifestName))
 	if !strings.Contains(manifest, "\n.claude/devrites.claude-hooks-merge\n") {
-		t.Fatalf("Claude hook merge marker missing after reinstall:\n%s", manifest)
+		t.Fatalf("Claude settings merge marker missing after reinstall:\n%s", manifest)
 	}
 
 	runUninstall(t, target)
@@ -329,36 +284,23 @@ func TestInstallKeepsClaudeMergeOwnershipAcrossReinstall(t *testing.T) {
 	}
 }
 
-func TestInstallRefreshesSeededClaudeHooksWithoutManagingSettings(t *testing.T) {
+func TestInstallRejectsConflictingClaudeDefaultMode(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	payload := testPayload(t)
-	settingsPayload := filepath.Join(payload, "claude", "settings.json")
-	testutil.WriteFile(t, settingsPayload, `{
-  "$comment": "DevRites hooks",
-  "hooks": {"Stop":[{"hooks":[{"type":"command","command":"bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-stop-gate.sh\""}]}]}
-}`+"\n")
 	target := t.TempDir()
+	settingsPath := filepath.Join(target, ".claude", "settings.json")
+	original := `{"permissions":{"defaultMode":"acceptEdits"},"theme":"dark"}` + "\n"
+	testutil.WriteFile(t, settingsPath, original)
 
-	runInstall(t, target, payload, func(o *Options) {})
-	testutil.WriteFile(t, settingsPayload, `{
-  "$comment": "DevRites hooks — auto-approve the read-only orientation/gate scripts.",
-  "hooks": {"Stop":[{"hooks":[{"type":"command","command":"devrites-engine hook new-gate --harness=claude"}]}]}
-}`+"\n")
-	runInstall(t, target, payload, func(o *Options) {})
-
-	settings := testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	if strings.Contains(settings, ".claude/hooks/devrites-") || strings.Count(settings, "new-gate") != 1 {
-		t.Fatalf("seeded Claude hooks were not refreshed:\n%s", settings)
+	err := applyInstall(target, payload, false, false, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "requires plan mode") {
+		t.Fatalf("install error = %v, want conflicting default-mode rejection", err)
 	}
-	manifest := testutil.ReadFile(t, filepath.Join(target, ManifestName))
-	if strings.Contains(manifest, ".claude/devrites.claude-hooks-merge") {
-		t.Fatalf("seeded Claude settings became merge-managed:\n%s", manifest)
+	if got := testutil.ReadFile(t, settingsPath); got != original {
+		t.Fatalf("failed install changed Claude settings:\n%s", got)
 	}
-
-	runUninstall(t, target)
-	settings = testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	if !strings.Contains(settings, "new-gate") {
-		t.Fatalf("uninstall removed refreshed seeded Claude settings:\n%s", settings)
+	if exists(filepath.Join(target, ".claude", "devrites.claude-hooks-merge")) {
+		t.Fatal("failed install created a Claude settings marker")
 	}
 }
 
@@ -406,91 +348,50 @@ func TestInstallBinaryUsesEngineHandoff(t *testing.T) {
 	}
 }
 
-func TestAcquireBinaryBuildsWithoutVCSMetadata(t *testing.T) {
-	t.Setenv("DEVRITES_ENGINE_CLI", "")
-	t.Setenv("DEVRITES_UPDATE_BUNDLE", "")
-	t.Setenv("GOFLAGS", "-buildvcs=true")
-	source := t.TempDir()
-	if err := os.Mkdir(filepath.Join(source, ".git"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	testutil.WriteFile(t, filepath.Join(source, "engine", "go.mod"), "module github.com/devrites/devrites\n\ngo 1.23\n")
-	testutil.WriteFile(t, filepath.Join(source, "engine", "main.go"), "package main\nfunc main() {}\n")
+func TestAcquireBinaryRequiresCompatibleEngineHandoff(t *testing.T) {
+	engine := buildVersionBinary(t, "1.2.2")
+	t.Setenv("DEVRITES_ENGINE_CLI", engine)
 
-	r := runner{source: source}
-	staged, cleanup, err := r.acquireBinary("v1.2.3", githubBaseURL)
+	r := runner{}
+	_, cleanup, err := r.acquireBinary("v1.2.3")
 	defer cleanup()
-	if err != nil {
-		t.Fatalf("acquireBinary with unavailable VCS metadata: %v", err)
-	}
-	if !exists(staged) {
-		t.Fatalf("acquireBinary did not build %s", staged)
+	if err == nil || !strings.Contains(err.Error(), "version mismatch") {
+		t.Fatalf("acquireBinary error = %v, want handoff version mismatch", err)
 	}
 }
 
-func TestAcquireBinaryPrefersVerifiedReleaseOverStaleHandoff(t *testing.T) {
-	stale := filepath.Join(t.TempDir(), "devrites-engine")
-	testutil.WriteExecutable(t, stale, "#!/bin/sh\nif [ \"$1\" = version ]; then echo v1.2.2; fi\n")
-	t.Setenv("DEVRITES_ENGINE_CLI", stale)
-	t.Setenv("DEVRITES_UPDATE_BUNDLE", "")
-	t.Setenv("DEVRITES_REPO", "owner/repo")
-	tag := "v1.2.3"
-	asset := fmt.Sprintf("devrites-%s-%s", runtime.GOOS, runtime.GOARCH)
-	if runtime.GOOS == "windows" {
-		asset += ".exe"
-	}
-	path := "/owner/repo/releases/download/" + tag + "/" + asset
-	body := []byte("verified release binary")
-	sum := fmt.Sprintf("%x  %s\n", sha256.Sum256(body), asset)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		switch req.URL.Path {
-		case path:
-			_, _ = w.Write(body)
-		case path + ".sha256":
-			_, _ = w.Write([]byte(sum))
-		default:
-			http.NotFound(w, req)
-		}
-	}))
-	defer server.Close()
+func TestInstallBinaryRejectsIncompatibleEngineHandoff(t *testing.T) {
+	engine := buildVersionBinary(t, "1.2.2")
+	t.Setenv("DEVRITES_ENGINE_CLI", engine)
+	t.Setenv("DEVRITES_BIN_DIR", t.TempDir())
+	t.Setenv("DEVRITES_REF", "v1.2.3")
 
-	r := runner{releaseBinaryTag: tag}
-	staged, cleanup, err := r.acquireBinary(tag, server.URL)
-	defer cleanup()
-	if err != nil {
-		t.Fatalf("acquire verified release binary: %v", err)
-	}
-	got, err := os.ReadFile(staged)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(got, body) {
-		t.Fatalf("acquired binary = %q, want %q", got, body)
+	r := runner{opts: DefaultOptions(ModeInstall)}
+	if err := r.installBinary(); err == nil || !strings.Contains(err.Error(), "version mismatch") {
+		t.Fatalf("installBinary error = %v, want handoff version mismatch", err)
 	}
 }
 
-func TestAcquireBinaryRejectsReleaseChecksumMismatch(t *testing.T) {
-	t.Setenv("DEVRITES_ENGINE_CLI", "")
-	t.Setenv("DEVRITES_UPDATE_BUNDLE", "")
-	t.Setenv("DEVRITES_REPO", "owner/repo")
-	tag := "v1.2.3"
-	source := t.TempDir()
-	testutil.WriteFile(t, filepath.Join(source, "engine", "go.mod"), "module github.com/devrites/devrites\n\ngo 1.23\n")
-	testutil.WriteFile(t, filepath.Join(source, "engine", "main.go"), "package main\nfunc main() {}\n")
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if strings.HasSuffix(req.URL.Path, ".sha256") {
-			_, _ = w.Write([]byte("deadbeef\n"))
-			return
-		}
-		_, _ = w.Write([]byte("tampered release binary"))
-	}))
-	defer server.Close()
+func TestInstallBinaryRejectsMissingConfiguredEngineHandoff(t *testing.T) {
+	handoff := filepath.Join(t.TempDir(), "missing-devrites-engine")
+	t.Setenv("DEVRITES_ENGINE_CLI", handoff)
+	t.Setenv("DEVRITES_BIN_DIR", t.TempDir())
+	t.Setenv("DEVRITES_REF", "v1.2.3")
 
-	r := runner{source: source, releaseBinaryTag: tag}
-	_, cleanup, err := r.acquireBinary(tag, server.URL)
+	r := runner{opts: DefaultOptions(ModeInstall)}
+	if err := r.installBinary(); err == nil || !strings.Contains(err.Error(), handoff) {
+		t.Fatalf("installBinary error = %v, want missing configured handoff error", err)
+	}
+}
+
+func TestAcquireBinaryRejectsMissingEngineHandoff(t *testing.T) {
+	t.Setenv("DEVRITES_ENGINE_CLI", "")
+
+	r := runner{}
+	_, cleanup, err := r.acquireBinary("v1.2.3")
 	defer cleanup()
-	if err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
-		t.Fatalf("acquireBinary error = %v, want checksum mismatch", err)
+	if err == nil || !strings.Contains(err.Error(), "DEVRITES_ENGINE_CLI") {
+		t.Fatalf("acquireBinary error = %v, want missing handoff error", err)
 	}
 }
 
@@ -511,7 +412,24 @@ func TestInstallBinaryFailsWhenPreparedUpdateCannotBeWritten(t *testing.T) {
 	}
 }
 
-func TestInstallBinaryWarnsWhenHooksCannotResolveEngine(t *testing.T) {
+func TestInstallBinaryWithoutBinaryReportsSkip(t *testing.T) {
+	var stdout bytes.Buffer
+	opts := DefaultOptions(ModeInstall)
+	opts.WithBinary = false
+	opts.Stdout = &stdout
+
+	r := runner{opts: opts}
+	if err := r.installBinary(); err != nil {
+		t.Fatalf("installBinary() error = %v", err)
+	}
+
+	output := stdout.String()
+	if output != "  engine binary: skipped (--no-binary).\n" {
+		t.Fatalf("stdout = %q, want binary skip diagnostic", output)
+	}
+}
+
+func TestInstallBinaryDoesNotRequirePATH(t *testing.T) {
 	payload := testPayload(t)
 	target := t.TempDir()
 	binDir := t.TempDir()
@@ -528,8 +446,28 @@ func TestInstallBinaryWarnsWhenHooksCannotResolveEngine(t *testing.T) {
 		o.Stderr = &stderr
 	})
 
-	if !strings.Contains(stderr.String(), "not on PATH") {
-		t.Fatalf("missing PATH reachability warning:\n%s", stderr.String())
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want no PATH warning", stderr.String())
+	}
+}
+
+func TestBinaryInstallFailureWarnsAndContinues(t *testing.T) {
+	t.Setenv("DEVRITES_ENGINE_CLI", "")
+	var stderr bytes.Buffer
+	opts := DefaultOptions(ModeInstall)
+	opts.Stderr = &stderr
+
+	r := runner{opts: opts}
+	if err := r.binaryInstallFailure(fmt.Errorf("handoff unavailable")); err != nil {
+		t.Fatalf("binaryInstallFailure() error = %v, want nil", err)
+	}
+
+	warning := stderr.String()
+	if !strings.Contains(warning, "handoff unavailable") {
+		t.Fatalf("warning = %q, want handoff failure", warning)
+	}
+	if !strings.Contains(warning, "continuing without it") {
+		t.Fatalf("warning = %q, want non-blocking fallback", warning)
 	}
 }
 
@@ -555,74 +493,100 @@ func TestBinaryCandidatesSkipsUnsetBinDir(t *testing.T) {
 	}
 }
 
-func TestUpdateInstallsRequestedBundle(t *testing.T) {
+func TestUpdateRejectsRemovedAcquisitionFlags(t *testing.T) {
+	for _, arg := range []string{"--to=v2.0.0", "--pre"} {
+		t.Run(arg, func(t *testing.T) {
+			var stderr bytes.Buffer
+			if code := Run([]string{arg}, &bytes.Buffer{}, &stderr, ModeUpdate); code != 2 {
+				t.Fatalf("Run(%q) code = %d, want 2", arg, code)
+			}
+			if !strings.Contains(stderr.String(), "flag provided but not defined") {
+				t.Fatalf("Run(%q) stderr = %q, want unknown flag error", arg, stderr.String())
+			}
+		})
+	}
+}
+
+func TestUpdateInstallsLocalPayload(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	oldPayload := testPayload(t)
 	target := t.TempDir()
 	oldSource := testSource(t, "1.0.0")
-	runInstall(t, target, oldPayload, func(o *Options) { o.SourceDir = oldSource })
+	runInstall(t, target, oldPayload, func(o *Options) {
+		o.SourceDir = oldSource
+		o.WithAgents = false
+	})
 
-	bundleRoot := t.TempDir()
-	bundle := filepath.Join(bundleRoot, "devrites-v2.0.0")
-	testutil.WriteFile(t, filepath.Join(bundle, "install.sh"), "#!/usr/bin/env bash\n")
-	testutil.WriteFile(t, filepath.Join(bundle, "package.json"), `{"version":"2.0.0"}`+"\n")
-	payload := filepath.Join(bundle, "pack", "generated")
+	source := testSource(t, "2.0.0")
+	payload := filepath.Join(t.TempDir(), "generated")
 	writeTestPayload(t, payload)
 	testutil.WriteFile(t, filepath.Join(payload, "codex", "skills", "rite", "SKILL.md"), "updated rite\n")
-	t.Setenv("DEVRITES_UPDATE_BUNDLE", tarGzDir(t, bundleRoot))
 
 	opts := DefaultOptions(ModeUpdate)
 	opts.Target = target
-	opts.UpdateTo = "v2.0.0"
+	opts.SourceDir = source
+	opts.PayloadDir = payload
 	opts.Stdout = &bytes.Buffer{}
 	opts.Stderr = &bytes.Buffer{}
+	check := opts
+	check.UpdateCheck = true
+	if err := Apply(check); err == nil || !strings.Contains(err.Error(), "update available: 1.0.0 -> 2.0.0") {
+		t.Fatalf("update check error = %v, want local candidate report", err)
+	}
+	if got := manifestHeader(filepath.Join(target, ManifestName), "devrites-version"); got != "1.0.0" {
+		t.Fatalf("update check changed manifest version to %q", got)
+	}
 	if err := Apply(opts); err != nil {
 		t.Fatal(err)
 	}
 
 	if got := testutil.ReadFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != "updated rite\n" {
-		t.Fatalf("update did not install requested bundle payload: %q", got)
+		t.Fatalf("update did not install local payload: %q", got)
 	}
 	if got := manifestHeader(filepath.Join(target, ManifestName), "devrites-version"); got != "2.0.0" {
 		t.Fatalf("manifest version = %q, want 2.0.0", got)
 	}
+	if exists(filepath.Join(target, ".claude", "agents")) {
+		t.Fatal("update did not replay --no-agents from the manifest")
+	}
 }
 
-func TestUpdateBuildsGeneratedPayloadForSourceArchive(t *testing.T) {
+func TestUpdateRejectsMissingGeneratedPayload(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	oldPayload := testPayload(t)
 	target := t.TempDir()
 	runInstall(t, target, oldPayload, func(o *Options) { o.SourceDir = testSource(t, "1.0.0") })
 
-	bundleRoot := t.TempDir()
-	bundle := filepath.Join(bundleRoot, "devrites-v2.1.0")
-	testutil.WriteFile(t, filepath.Join(bundle, "install.sh"), "#!/usr/bin/env bash\n")
-	testutil.WriteFile(t, filepath.Join(bundle, "package.json"), `{"version":"2.1.0"}`+"\n")
-	testutil.WriteExecutable(t, filepath.Join(bundle, "scripts", "build-host-artifacts.sh"), `#!/usr/bin/env bash
-set -eu
-out="${DEVRITES_HOST_ARTIFACT_DIR:?}"
-mkdir -p "$out/claude/skills/rite" "$out/claude/agents" "$out/codex/skills/rite" "$out/codex/agents"
-printf 'source archive claude\n' > "$out/claude/skills/rite/SKILL.md"
-printf 'agent\n' > "$out/claude/agents/devrites-code-reviewer.md"
-printf '{}\n' > "$out/claude/settings.json"
-printf 'source archive codex\n' > "$out/codex/skills/rite/SKILL.md"
-printf 'name = "devrites-code-reviewer"\n' > "$out/codex/agents/devrites-code-reviewer.toml"
-printf '<!-- BEGIN DEVRITES CODEX -->\nDevRites\n<!-- END DEVRITES CODEX -->\n' > "$out/codex/AGENTS.md"
-printf '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"devrites-engine hook stop-gate"}]}]}}\n' > "$out/codex/hooks.json"
+	source := testSource(t, "2.1.0")
+	payload := filepath.Join(t.TempDir(), "generated")
+	builderMarker := filepath.Join(t.TempDir(), "builder-invoked")
+	t.Setenv("DEVRITES_TEST_BUILDER_MARKER", builderMarker)
+	testutil.WriteExecutable(t, filepath.Join(source, "scripts", "build-host-artifacts.sh"), `#!/usr/bin/env bash
+touch "${DEVRITES_TEST_BUILDER_MARKER:?}"
+exit 42
 `)
-	t.Setenv("DEVRITES_UPDATE_BUNDLE", tarGzDir(t, bundleRoot))
 
 	opts := DefaultOptions(ModeUpdate)
 	opts.Target = target
-	opts.UpdateTo = "v2.1.0"
+	opts.SourceDir = source
+	opts.PayloadDir = payload
 	opts.Stdout = &bytes.Buffer{}
 	opts.Stderr = &bytes.Buffer{}
-	if err := Apply(opts); err != nil {
-		t.Fatal(err)
+	err := Apply(opts)
+	if err == nil ||
+		!strings.Contains(err.Error(), "local update payload") ||
+		!strings.Contains(err.Error(), "missing claude/skills") ||
+		!strings.Contains(err.Error(), payload) {
+		t.Fatalf("update error = %v, want actionable missing payload error", err)
 	}
-
-	if got := testutil.ReadFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != "source archive codex\n" {
-		t.Fatalf("source archive update did not build generated payload: %q", got)
+	if exists(builderMarker) {
+		t.Fatal("update invoked the host artifact builder")
+	}
+	if got := testutil.ReadFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != "codex rite\n" {
+		t.Fatalf("rejected update changed installed payload: %q", got)
+	}
+	if got := manifestHeader(filepath.Join(target, ManifestName), "devrites-version"); got != "1.0.0" {
+		t.Fatalf("manifest version = %q, want 1.0.0 after rejected update", got)
 	}
 }
 
@@ -1017,16 +981,21 @@ func writeTestPayload(t *testing.T, root string) {
 	t.Helper()
 	testutil.WriteFile(t, filepath.Join(root, "claude", "skills", "rite", "SKILL.md"), "claude rite\n")
 	testutil.WriteFile(t, filepath.Join(root, "claude", "agents", "devrites-code-reviewer.md"), "agent\n")
-	testutil.WriteFile(t, filepath.Join(root, "claude", "settings.json"), "{}\n")
+	testutil.WriteFile(t, filepath.Join(root, "claude", "settings.json"), `{
+  "permissions": {
+    "defaultMode": "plan",
+    "allow": ["Bash(devrites-engine check readiness *)"]
+  }
+}`+"\n")
 	testutil.WriteFile(t, filepath.Join(root, "codex", "skills", "rite", "SKILL.md"), "codex rite\n")
 	testutil.WriteFile(t, filepath.Join(root, "codex", "agents", "devrites-code-reviewer.toml"), "name = \"devrites-code-reviewer\"\n")
 	testutil.WriteFile(t, filepath.Join(root, "codex", "AGENTS.md"), "<!-- BEGIN DEVRITES CODEX -->\nDevRites\n<!-- END DEVRITES CODEX -->\n")
-	hooks := map[string]any{"hooks": map[string]any{"Stop": []any{map[string]any{"hooks": []any{map[string]any{"type": "command", "command": "devrites-engine hook stop-gate"}}}}}}
-	data, err := json.MarshalIndent(hooks, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	testutil.WriteFile(t, filepath.Join(root, "codex", "hooks.json"), string(data)+"\n")
+	testutil.WriteFile(t, filepath.Join(root, "codex", "config.toml"), `# BEGIN DEVRITES CODEX PERMISSIONS
+default_permissions = "devrites-orchestrator"
+[permissions.devrites-orchestrator]
+extends = ":workspace"
+# END DEVRITES CODEX PERMISSIONS
+`)
 }
 
 func testSource(t *testing.T, version string) string {
@@ -1034,61 +1003,4 @@ func testSource(t *testing.T, version string) string {
 	root := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(root, "package.json"), `{"version":"`+version+`"}`+"\n")
 	return root
-}
-
-func tarGzDir(t *testing.T, root string) string {
-	t.Helper()
-	out := filepath.Join(t.TempDir(), "bundle.tar.gz")
-	f, err := os.Create(out)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gz := gzip.NewWriter(f)
-	tw := tar.NewWriter(gz)
-	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if path == root {
-			return nil
-		}
-		info, err := d.Info()
-		if err != nil {
-			return err
-		}
-		rel, err := filepath.Rel(root, path)
-		if err != nil {
-			return err
-		}
-		hdr, err := tar.FileInfoHeader(info, "")
-		if err != nil {
-			return err
-		}
-		hdr.Name = filepath.ToSlash(rel)
-		if err := tw.WriteHeader(hdr); err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		_, err = tw.Write(data)
-		return err
-	})
-	if closeErr := tw.Close(); err == nil {
-		err = closeErr
-	}
-	if closeErr := gz.Close(); err == nil {
-		err = closeErr
-	}
-	if closeErr := f.Close(); err == nil {
-		err = closeErr
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	return out
 }

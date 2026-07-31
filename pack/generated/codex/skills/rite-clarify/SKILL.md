@@ -1,29 +1,9 @@
 ---
 name: rite-clarify
-description: Run the topology-first decision-coverage scan after rite-spec and before strategy or architecture. Audit actors, journeys, states, data, integrations, operations, proof, assumptions, and must-NOT boundaries; close Partial/Missing rows and emit decision-coverage.md CLEAR. Use for missing/stale coverage or a missed pre-build product decision.
+description: Audit a completed spec for missing decisions before strategy or architecture. Use after $rite-spec when coverage is incomplete or stale; not for spec writing.
 argument-hint: "[feature-slug]"
 user-invocable: true
-required-agent-roles: none
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Installed `.agents/` mirrors may be Git-ignored. If a repository-aware file tool refuses an ignored path, read it with a native filesystem command instead; a tool refusal is not a completed task.
-- For automatic Engram calls, omit optional `project` and `session_id` unless an exact value came from Engram or repository configuration. Never derive either from `task_name`, a run ID, directory name, or normalized slug. Call `mem_session_summary` without them by default; on `unknown_session` or `unknown_project`, retry once with both optional fields omitted. If auto-detection is ambiguous, ask the user instead of guessing.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- **Invocation and dispatch are different:** invoke means run a skill in this context; dispatch means start a fresh agent with `spawn_agent`, await it, and reconcile its result. Never describe inline skill work as a dispatch.
-- On MultiAgent V2, call `spawn_agent` with the exact named `agent_type=devrites-<role>`, a unique `task_name`, and `fork_turns="none"`. A missing visible `agent_type` field is still V2—not capability loss, V1, or HITL—so send it anyway. If the named call rejects it, stop before any generic/default spawn. Codex loads the role TOML's `developer_instructions` natively; DevRites verifies the durable rollout, wait, completion, and delivered result.
-- Only after the runtime explicitly identifies MultiAgent V1, use generic `explorer` for a read-only role with `fork_turns="none"` and name exactly one `.codex/agents/devrites-<role>.toml` contract in the message. Trusted `.codex/hooks.json` injects that contract's exact `developer_instructions` and binds the child to the fail-closed reviewer read-only guard.
-- On explicitly identified MultiAgent V1, `devrites-slice-wright` uses generic `worker` with `fork_turns="none"` and the exact role TOML named in the message. Trusted `.codex/hooks.json` binds it to the active reconcile window and `.wright-allowlist`.
-- The invoked skill's `required-agent-roles` frontmatter arms the fail-closed Stop receipt. Every listed role must have a confirmed start, wait, and non-empty result in this turn.
-- If the required dispatch for the explicitly identified runtime is unavailable or rejected, stop for HITL. Never switch runtime lanes. Never execute a DevRites specialist role in the root context.
-- Wait for every required fresh-context dispatch before reconciling or advancing. A backgrounded or lost result is incomplete.
-- Codex project hooks are installed in `.codex/hooks.json`; declared-leaf hooks are scoped inside `.codex/agents/devrites-*.toml`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
 
 # $rite-clarify: resolve product decisions
 
@@ -55,46 +35,53 @@ dispatch uses
 
 ## Workflow
 
-0. **Orient.** Run `devrites-engine preamble` and `snapshot`. Require `spec.md` plus
-   `Spec gate: passed`; otherwise STOP → `$rite-spec`. For a later-phase retrofit, run
-   `devrites-engine clarify-return enter <slug>` **before any pause**; this persists the
-   return cursor and enters `Phase: clarify`.
-1. **Enumerate topology** from the spec, references, live code, and prior decisions: actors,
-   journeys/components, states, data lifecycles, interfaces/integrations, operations, and
-   proof. Add omitted surfaces to the spec. **Completion:** every material surface appears
-   once with a source or canonical spec reference.
-2. **Scan coverage** with `devrites-interview /clarify mode` and the reference taxonomy.
-   Mark each surface Clear/Partial/Missing with evidence; include must-NOT and out-of-scope
-   behavior. Unmentioned never means not applicable. **Completion:** the matrix records every
-   surface with evidence.
-3. **Eliminate factual unknowns** through code intelligence, project/decision docs,
-   manifests/lockfiles, and authoritative external docs. Dispatch independent topology/fact
-   questions to `devrites-evidence-scout` (maximum three at once), await the cited dossiers,
-   and reconcile them in the root context. The root folds accepted facts into `spec.md` or
-   `assumptions.md`; the scout never asks or writes. **Completion:** each factual unknown is
-   source-backed or reclassified as an owned decision/assumption.
-4. **Audit assumptions and decisions.** Record the fields required above. For high-cost or
-    hard-to-reverse product/constraint choices, present two or three viable options, recommendation
-   first. A genuinely undecidable behavior may take one bounded `$rite-prototype` detour.
-5. **Close human-owned gaps** using the shared option-set contract: one highest-impact packet
-   per turn. Persist answers immediately in `spec.md` plus `decisions.md`/`questions.md`.
-   AFK remains within its gate ceiling; irreversible risk and principle exceptions pause.
-6. **Re-scan after edits** until each material row is `closed`, `agent-owned`,
-   `not-applicable`, or justified `deferred-nonblocking` with owner and validation gate.
-   Partial/Missing, an unowned material assumption, or an open blocking/escalating question
-   means `NEEDS CLARIFICATION`.
-7. **Write the verdict.** Update `decision-coverage.md`; success requires exactly one
-   `DevRites contract: devrites.readiness-artifacts.v2` field and exactly
-   `Decision coverage: CLEAR`. Normal state is `Phase: clarify`, `Next step: $rite-temper`.
-   A contract-neutral retrofit runs `devrites-engine clarify-return restore <slug>`; a
-   changed behavior/acceptance contract leaves the return cursor unconsumed, writes
-   `drift.md`, and routes `$rite-plan repair`. Normal first-pass flow sets `$rite-temper`.
-8. **STOP.** Run `devrites-engine progress`; hand off only on `CLEAR`.
+1. **Orient.** Read `.devrites/ACTIVE`, `state.md`, and `spec.md`. Require
+   `Spec gate: passed`; otherwise stop at `$rite-spec`. Apply the native cursor
+   protocol below before changing workspace artifacts.
+2. **Enumerate the topology.** From the spec, live code, contracts, references,
+   and recorded decisions, list every material actor, journey/component, state,
+   data lifecycle, integration, operation, proof surface, and must-NOT boundary.
+3. **Scan coverage.** Apply `devrites-interview` in clarify mode and mark each
+   material surface Clear, Partial, Missing, not-applicable, or justified
+   deferred-nonblocking with evidence and an owner. Use native repository search
+   first. Ask the host to run `devrites-evidence-scout` only for a bounded missing
+   fact, then reconcile its cited result.
+4. **Close decisions.** Record facts and reversible technical choices directly.
+   Ask one coherent option packet only for product, scope, policy, irreversible
+   risk, or human-only access. Persist answers in the owning artifacts and repeat
+   the scan until no blocking Partial/Missing row or unowned material assumption
+   remains.
+5. **Write the verdict.** Write `Decision coverage: CLEAR` only after re-reading all inputs and confirming
+   every material row has current evidence and an owner. Normal flow sets `Phase: clarify` and
+   `Next step: $rite-temper`. A contract-neutral later-phase return uses
+   the native restore below; changed behavior or acceptance routes to
+   `$rite-plan repair` instead. Stop without starting the next phase.
+
+## Native clarify cursor protocol
+
+The controlling root edits only cursor rows in `state.md`; it must preserve unrelated Markdown and the file's existing table/bullet presentation.
+
+- **Normal entry from Spec:** set `phase=clarify`, `status=running`, and
+  `next_action=$rite-clarify <slug>`; omit both return fields.
+- **Already in Clarify:** no-op. Do not overwrite an existing valid return
+  cursor.
+- **Later-phase entry:** only `temper`, `define`, `plan`, `vet`, `build`,
+  `converge`, `prove`, `polish`, `review`, `seal`, or `ship` may return. First
+  copy the current `phase` and non-empty `next_action` to `return_phase` and
+  `return_next_action`; then set `phase=clarify`, `status=running`, and
+  `next_action=$rite-clarify <slug>`. Missing/unknown cursor values fail closed
+  before any write.
+- **Contract-neutral restore:** after a fresh `Decision coverage: CLEAR`, require
+  `phase=clarify`, both return fields, a recognized later `return_phase`, and a
+  non-empty `return_next_action`. Restore those values to `phase` and
+  `next_action`, set `status=running`, and remove both return fields in the same
+  rewrite. Re-read the cursor and confirm the return rows are absent.
+- **Contract changed:** do not restore the saved cursor. Record drift and route
+  through `$rite-plan repair`, which owns the changed plan and next action.
+
+Never normalize or rewrite the rest of `state.md` while applying this protocol.
 
 ## Output
-
-Run `devrites-engine progress`, then use the shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)):
 
 ```text
 Done: decision coverage closed for <slug>; <n> topology surfaces scanned.

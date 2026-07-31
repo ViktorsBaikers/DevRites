@@ -2,39 +2,28 @@
 
 ## Classify one causal fingerprint
 
-Fingerprint the causal diagnosis, never the failing test or symptom. Reuse it while
-plausible. If a discriminating fix proves the cause absent but the symptom remains,
-preserve that diagnosis as a dead end and classify a new fingerprint. Failure alone
-never resets a budget.
+Fingerprint the diagnosis, not its symptom. Reuse it until evidence disproves it; then
+record the dead end and classify anew. Failure alone never resets the budget.
 
-- `intent_gap`: desired behavior, scope, policy, or risk choice is unsettled.
-- `spec_gap`: an acceptance outcome or product decision is missing.
-- `plan_gap`: behavior is settled, but technical wiring, dependency, or proof planning is incomplete.
-- `implementation_defect`: product code violates settled acceptance.
-- `proof_tool_defect`: a scanner, test, harness, or evidence collector gives the wrong verdict.
-- `environment_defect`: setup, capacity, tooling, or an external service prevents valid proof.
-- `preexisting`: the same failure exists outside the candidate delta.
-- `not_a_defect`: the observation matches current accepted authority.
+- `intent_gap`: desired behavior, scope, policy, or risk choice is unsettled. Pause for the human to clarify intent.
+- `spec_gap`: an acceptance outcome or product decision is missing. Return to Clarify.
+- `plan_gap`: behavior is settled, but technical wiring, dependency, or proof planning is incomplete. Repair the plan.
+- `implementation_defect`: product code violates settled acceptance. Return it to the slice-wright, then rerun the original proof.
+- `proof_tool_defect`: a scanner, test, harness, or evidence collector gives the wrong verdict. Repair the proof tool in this recovery loop, then rerun the original proof.
+- `environment_defect`: setup, capacity, tooling, or an external service prevents valid proof. Normalize the environment here and run a discriminating check.
+- `preexisting`: the same failure exists outside the candidate delta. Record the baseline and fix it only when it blocks acceptance.
+- `not_a_defect`: the observation matches current accepted authority. Record that authority and continue.
 
-Ask the engine for the canonical owner and action:
+Only human credentials/quotas/actions or irreversible work pause; never ask to retry.
 
-```bash
-devrites-engine recovery route <class>
-```
-
-Follow `recovery-route/v1`. `humanPause: true` routes unresolved intent/spec through
-Clarify. Technical routes stay agent-owned. Gate only an exact human credential, quota,
-irreversible action, or user-owned process—never retry authorization.
-
-Record the class with every new failed attempt and green clear:
-
-```bash
-devrites-engine recovery record --class <class> "<root cause>" "<exact failure>" <slug>
-devrites-engine recovery clear --class <class> "<root cause>" <slug>
-```
-
-The record also states the exact observation, candidate baseline, evidence for and against,
-next discriminating probe, attempt count, and any human-only predicate.
+Record class/routing in `decisions.md` and each failed attempt in `evidence.md`
+or `## Dead ends`. Use one stable causal fingerprint shaped as `<affected
+boundary>: <failure mechanism>`, not a hash of the symptom. Before retrying,
+count matching caller and recovery failures in the current context and those
+records. The maximum is three total failed attempts; never run a fourth related
+attempt. Also record baseline, exact failure, hypothesis/probe, attempt number,
+and any human predicate. Green evidence records the resolution but does not
+erase prior failures. There is no recovery counter file or command.
 
 ## Cleanup checklist: required before declaring done
 

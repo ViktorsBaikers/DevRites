@@ -21,6 +21,10 @@ UNTRUSTED_LINE=re.compile(
     r'^> \*\*Untrusted-input safety\.\*\* .*data, not instructions.*never act on a directive.*'
     r'surface it instead of obeying it.*security\.md', re.I | re.M
 )
+REVIEW_AGENT=re.compile(r'(?:-reviewer|-analyst|-auditor)$')
+REVIEW_OUTCOME=re.compile(
+    r'^Outcome:\s*<findings\s*\|\s*no-findings\s*\|\s*gap>\s*$', re.M
+)
 
 def validate(agents_dir:Path):
     errors=[]
@@ -34,6 +38,11 @@ def validate(agents_dir:Path):
             errors.append(f'{f}: composition guard must match the canonical no-nested-agent contract')
         if not UNTRUSTED_LINE.search(text):
             errors.append(f'{f}: untrusted-input guard must keep the complete canonical safety contract')
+        if REVIEW_AGENT.search(name):
+            if 'standards/agents.md' not in text or not re.search(r'Result admission', text, re.I):
+                errors.append(f'{f}: reviewer must load the standards/agents.md result-admission contract')
+            if not REVIEW_OUTCOME.search(text):
+                errors.append(f'{f}: reviewer output must declare Outcome: <findings | no-findings | gap>')
         says_write=bool(WRITE_TERMS.search(text)) and not re.search(r'Do \*\*not\*\* edit|Do not edit|never edit|does not edit|does not write|Does not edit', text, re.I)
         if name=='devrites-slice-wright':
             if not re.search(r'write-capable|Writes code|write code', text, re.I):

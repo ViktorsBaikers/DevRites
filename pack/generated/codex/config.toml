@@ -1,0 +1,7 @@
+# BEGIN DEVRITES CODEX PERMISSIONS
+default_permissions = "devrites-orchestrator"
+
+[permissions.devrites-orchestrator]
+description = "Workspace-capable orchestrator; source and test edits must be delegated to devrites-slice-wright."
+extends = ":workspace"
+# END DEVRITES CODEX PERMISSIONS

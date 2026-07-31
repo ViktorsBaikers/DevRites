@@ -1,77 +1,35 @@
 package main_test
 
-// CLI coverage for Issue 04: completeness gates and the stop-gate rest-point
-// invariant against fixture workspaces.
+// CLI coverage for deterministic completeness and state-invariant gates.
 
 import (
-	"bytes"
-	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/devrites/devrites/internal/lib"
 	"github.com/devrites/devrites/internal/testutil"
 )
 
-// runDevritesIO is runDevrites with control over stdin and extra environment,
-// for the hooks that read a payload (stop-gate) or a mode env var.
-func runDevritesIO(t *testing.T, root, stdin string, extraEnv []string, args ...string) (stdout, stderr string, code int) {
-	t.Helper()
-	cmd := exec.Command(binPath, args...)
-	cmd.Env = append(append(os.Environ(), "DEVRITES_ROOT="+root), extraEnv...)
-	cmd.Stdin = strings.NewReader(stdin)
-	var outBuf, errBuf bytes.Buffer
-	cmd.Stdout = &outBuf
-	cmd.Stderr = &errBuf
-	err := cmd.Run()
-	if err != nil {
-		var ee *exec.ExitError
-		if !errors.As(err, &ee) {
-			t.Fatalf("running %v: %v", args, err)
-		}
-		code = ee.ExitCode()
-	}
-	return outBuf.String(), errBuf.String(), code
-}
-
-// setPhase rewrites the phase in a feature's feature.md frontmatter.
-func setPhase(t *testing.T, root, slug, phase string) {
-	t.Helper()
-	path := filepath.Join(root, "features", slug, "feature.md")
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	lines := strings.Split(string(raw), "\n")
-	for i, l := range lines {
-		if strings.HasPrefix(strings.TrimSpace(l), "phase:") {
-			lines[i] = "phase: " + phase
-		}
-	}
-	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestReadinessBlocksIncompletePhase(t *testing.T) {
 	root := newWorkspace(t)
-	out, _, code := runDevrites(t, root, "readiness", "auth-tokens") // build phase, tasks empty
+	out, _, code := runDevrites(t, root, "check", "readiness", "auth-tokens") // build phase, tasks empty
 	if code != 3 {
 		t.Fatalf("exit = %d, want 3 (blocked)", code)
 	}
-	if !strings.Contains(out, `result: blocked (missing to leave "build": tasks)`) {
+	if !strings.Contains(out, `result: blocked (missing to leave "build": tasks.md)`) {
 		t.Errorf("stdout missing the block line\n%s", out)
 	}
-	if !strings.Contains(out, "devrites-engine readiness auth-tokens") {
+	if !strings.Contains(out, "devrites-engine check readiness auth-tokens") {
 		t.Errorf("stdout missing the actionable retry step\n%s", out)
 	}
 }
 
 func TestReadinessPassesCompletePhase(t *testing.T) {
 	root := newWorkspace(t)
-	out, _, code := runDevrites(t, root, "readiness", "search-ranking") // spec phase, spec present
+	out, _, code := runDevrites(t, root, "check", "readiness", "search-ranking") // spec phase, spec present
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0 (pass)", code)
 	}
@@ -85,7 +43,7 @@ func TestReadinessPassesCompletePhase(t *testing.T) {
 	}
 }
 
-func TestReadinessAcceptsCanonicalTemperCursor(t *testing.T) {
+func TestReadinessUsesStructuralArtifactsOnly(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	testutil.WriteFile(t, filepath.Join(root, "work", "tempered", "state.md"), `# State
 
@@ -102,12 +60,12 @@ func TestReadinessAcceptsCanonicalTemperCursor(t *testing.T) {
 		"decisions.md":         "# Decisions\n\nNone open.\n",
 		"assumptions.md":       "# Assumptions\n\nNone.\n",
 		"questions.md":         "# Questions\n\nNone.\n",
-		"decision-coverage.md": "# Decision coverage\n\nCLEAR.\n",
+		"decision-coverage.md": "# Decision coverage\n\nNOT CLEAR: native agents own this judgment.\n",
 	} {
 		testutil.WriteFile(t, filepath.Join(root, "work", "tempered", name), body)
 	}
 
-	out, errOut, code := runDevrites(t, root, "readiness", "tempered")
+	out, errOut, code := runDevrites(t, root, "check", "readiness", "tempered")
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0; stderr:\n%s", code, errOut)
 	}
@@ -118,195 +76,214 @@ func TestReadinessAcceptsCanonicalTemperCursor(t *testing.T) {
 
 func TestSealBlocksWhenSealSectionsMissing(t *testing.T) {
 	root := newWorkspace(t)
-	out, _, code := runDevrites(t, root, "seal", "auth-tokens")
+	out, _, code := runDevrites(t, root, "check", "seal", "auth-tokens")
 	if code != 3 {
 		t.Fatalf("exit = %d, want 3 (blocked)", code)
 	}
-	// auth-tokens: tasks + proof empty; seal requires the full set.
-	if !strings.Contains(out, "result: blocked (missing to seal: tasks, proof)") {
+	if !strings.Contains(out, "result: blocked (missing to seal:") || !strings.Contains(out, "tasks.md") || !strings.Contains(out, "evidence.md") {
 		t.Errorf("unexpected seal block line\n%s", out)
 	}
 }
 
 func TestSealPassesWhenComplete(t *testing.T) {
-	root := newWorkspace(t)
-	// Fill the two empty sections auth-tokens is missing for a seal. tasks.md is
-	// a heading-only stub in the fixture; proof.md is absent (empty), so write it.
-	testutil.AppendFile(t, filepath.Join(root, "features", "auth-tokens", "tasks.md"), "\n- [x] mint\n")
-	if err := os.WriteFile(filepath.Join(root, "features", "auth-tokens", "proof.md"),
-		[]byte("# Proof\n\nAll acceptance tests pass.\n"), 0o644); err != nil {
+	project, root := newFinalSealRepo(t)
+	source := filepath.Join(project, "source.go")
+	if err := os.Chtimes(source, time.Unix(2_000_000_000, 0), time.Unix(2_000_000_000, 0)); err != nil {
 		t.Fatal(err)
 	}
-	out, _, code := runDevrites(t, root, "seal", "auth-tokens")
+	chdirForSeal(t, project)
+
+	out, errOut, code := runDevrites(t, root, "check", "seal", "final")
 	if code != 0 {
-		t.Fatalf("exit = %d, want 0 (pass)\n%s", code, out)
+		t.Fatalf("exit = %d, want 0\nstdout:\n%s\nstderr:\n%s", code, out, errOut)
 	}
-	if !strings.Contains(out, "result: pass") {
-		t.Errorf("stdout not a pass\n%s", out)
+	for _, want := range []string{
+		"result: pass",
+		"evidence-fresh: OK",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("stdout missing %q:\n%s", want, out)
+		}
 	}
 }
 
-func TestStopGateEnforceBlocksClaimedDoneButUnproven(t *testing.T) {
-	root := newWorkspace(t)
-	setPhase(t, root, "auth-tokens", "seal") // claims completion
-	writeActive(t, root, "auth-tokens")      // proof.md is empty
-	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
-	if code != 0 {
-		t.Fatalf("exit = %d, want 0 (a block is a decision, not a crash)", code)
-	}
-	if !strings.Contains(out, `"decision":"block"`) {
-		t.Errorf("stop-gate did not block a claimed-done-but-unproven rest point\n%s", out)
-	}
-	if !strings.Contains(out, "proof.md is empty") {
-		t.Errorf("block reason not actionable\n%s", out)
-	}
-}
-
-func TestStopGateDoesNotBlockNormalInProgress(t *testing.T) {
-	root := newWorkspace(t)
-	writeActive(t, root, "auth-tokens") // phase build: in progress, not claiming done
-	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
-	if code != 0 {
-		t.Fatalf("exit = %d, want 0", code)
-	}
-	if strings.TrimSpace(out) != "" {
-		t.Errorf("stop-gate blocked normal in-progress work\n%s", out)
-	}
-}
-
-func TestStopGateBlocksUnsurfacedBlockingQuestion(t *testing.T) {
-	root := newWorkspace(t)
-	writeActive(t, root, "auth-tokens")
-	featureDir := filepath.Join(root, "features", "auth-tokens")
-	if err := os.WriteFile(filepath.Join(featureDir, "state.md"), []byte("- Status: running\n"), 0o644); err != nil {
+func TestSealBlocksContentChangeWithRestoredMtime(t *testing.T) {
+	project, root := newFinalSealRepo(t)
+	codePath := filepath.Join(project, "source.go")
+	info, err := os.Stat(codePath)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(featureDir, "questions.md"), []byte(`## q-2026-07-07-001
-status: open
-gate: blocking
-
-Need a human answer.
-`), 0o644); err != nil {
+	testutil.WriteFile(t, codePath, "package changed\n")
+	if err := os.Chtimes(codePath, info.ModTime(), info.ModTime()); err != nil {
 		t.Fatal(err)
 	}
-	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
-	if code != 0 {
-		t.Fatalf("exit = %d, want 0 (a block is a decision, not a crash)", code)
+	chdirForSeal(t, project)
+
+	out, errOut, code := runDevrites(t, root, "check", "seal", "final")
+	if code != 3 {
+		t.Fatalf("exit = %d, want 3\nstdout:\n%s\nstderr:\n%s", code, out, errOut)
 	}
-	if !strings.Contains(out, `"decision":"block"`) {
-		t.Errorf("stop-gate did not block an unsurfaced blocking question\n%s", out)
+	if !strings.Contains(errOut, "candidate digest line does not match") {
+		t.Fatalf("stderr missing freshness block:\n%s", errOut)
 	}
-	if !strings.Contains(out, "questions.md") || !strings.Contains(out, "awaiting_human") {
-		t.Errorf("block reason not actionable\n%s", out)
+	if !strings.Contains(out, "reason: DRV-GATE-SEAL-MISSING") {
+		t.Fatalf("stdout missing stable blocked reason:\n%s", out)
 	}
 }
 
-func TestStopGateAllowsSurfacedBlockingQuestion(t *testing.T) {
-	root := newWorkspace(t)
-	writeActive(t, root, "auth-tokens")
-	featureDir := filepath.Join(root, "features", "auth-tokens")
-	if err := os.WriteFile(filepath.Join(featureDir, "state.md"), []byte("- Status: awaiting_human\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(featureDir, "questions.md"), []byte(`## q-2026-07-07-001
-status: open
-gate: validating
-
-Need validation.
-`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
-	if code != 0 {
-		t.Fatalf("exit = %d, want 0", code)
-	}
-	if out != "" {
-		t.Errorf("stop-gate stdout = %q, want empty", out)
-	}
-}
-
-// A .red sentinel (written by redwatch) is a rest-point violation on its own:
-// even in an otherwise in-progress build phase.
-func TestStopGateEnforceBlocksOnRed(t *testing.T) {
-	root := newWorkspace(t)
-	writeActive(t, root, "auth-tokens") // phase build: normally NOT blocked
-	if err := os.WriteFile(filepath.Join(root, "features", "auth-tokens", ".red"), []byte("npm test\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, []string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
-	if code != 0 {
-		t.Fatalf("exit = %d, want 0", code)
-	}
-	if !strings.Contains(out, `"decision":"block"`) || !strings.Contains(out, "RED") {
-		t.Errorf("stop-gate did not block on a .red sentinel\n%s", out)
-	}
-}
-
-func TestStopGateObserveModeNeverBlocks(t *testing.T) {
-	root := newWorkspace(t)
-	setPhase(t, root, "auth-tokens", "seal")
-	writeActive(t, root, "auth-tokens")
-	// Default mode (observe): even a violated invariant must not emit a block.
-	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, nil, "hook", "stop-gate", "--harness=claude")
-	if code != 0 || strings.TrimSpace(out) != "" {
-		t.Errorf("observe mode emitted a block: exit=%d out=%q", code, out)
-	}
-}
-
-func TestStopGateLoopGuardLetsStop(t *testing.T) {
-	root := newWorkspace(t)
-	setPhase(t, root, "auth-tokens", "seal")
-	writeActive(t, root, "auth-tokens")
-	// stop_hook_active=true: we already blocked once this cycle; must let it stop.
-	out, _, code := runDevritesIO(t, root, `{"stop_hook_active":true}`,
-		[]string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
-	if code != 0 || strings.TrimSpace(out) != "" {
-		t.Errorf("loop guard failed: exit=%d out=%q", code, out)
-	}
-}
-
-func TestStopGateInvalidInputFailsOpen(t *testing.T) {
-	root := newWorkspace(t)
-	setPhase(t, root, "auth-tokens", "seal")
-	writeActive(t, root, "auth-tokens")
+func TestSealBlocksInvalidCandidateBindings(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		payload string
+		name   string
+		mutate func(*testing.T, string)
 	}{
-		{"empty", ""},
-		{"malformed", "not-json"},
-		{"missing", `{}`},
-		{"wrong type", `{"stop_hook_active":"false"}`},
+		{name: "duplicate evidence digest", mutate: func(t *testing.T, dir string) {
+			path := filepath.Join(dir, "evidence.md")
+			body, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			line := body[strings.LastIndex(string(body), "Candidate SHA-256:"):]
+			testutil.WriteFile(t, path, string(body)+string(line))
+		}},
+		{name: "missing review digest", mutate: func(t *testing.T, dir string) {
+			path := filepath.Join(dir, "review.md")
+			body, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			start := strings.LastIndex(string(body), "Candidate SHA-256:")
+			testutil.WriteFile(t, path, string(body[:start]))
+		}},
+		{name: "optional browser missing digest", mutate: func(t *testing.T, dir string) {
+			testutil.WriteFile(t, filepath.Join(dir, "browser-evidence.md"), "# Browser evidence\n\nCapture present without binding.\n")
+		}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			for attempt := 1; attempt <= 2; attempt++ {
-				out, _, code := runDevritesIO(t, root, test.payload,
-					[]string{"DEVRITES_STOP_GATE=enforce"}, "hook", "stop-gate", "--harness=claude")
-				if code != 0 || strings.TrimSpace(out) != "" {
-					t.Errorf("attempt %d: invalid Stop input must fail open: exit=%d out=%q", attempt, code, out)
-				}
+			project, root := newFinalSealRepo(t)
+			test.mutate(t, filepath.Join(root, "work", "final"))
+			chdirForSeal(t, project)
+			out, errOut, code := runDevrites(t, root, "check", "seal", "final")
+			if code != 3 || !strings.Contains(out, "reason: DRV-GATE-SEAL-MISSING") || !strings.Contains(errOut, "evidence-fresh: BLOCKED") {
+				t.Fatalf("code=%d stdout=%q stderr=%q", code, out, errOut)
 			}
 		})
 	}
 }
 
-func TestStopGateControlPlaneKillPathsAllow(t *testing.T) {
-	root := newWorkspace(t)
-	setPhase(t, root, "auth-tokens", "seal")
-	writeActive(t, root, "auth-tokens")
-	for _, test := range []struct {
-		name string
-		env  []string
-	}{
-		{"disabled id", []string{"DEVRITES_STOP_GATE=enforce", "DEVRITES_DISABLED_HOOKS=stop-gate"}},
-		{"minimal profile", []string{"DEVRITES_STOP_GATE=enforce", "DEVRITES_HOOK_PROFILE=minimal"}},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			out, _, code := runDevritesIO(t, root, `{"stop_hook_active":false}`, test.env,
-				"hook", "stop-gate", "--harness=claude")
-			if code != 0 || strings.TrimSpace(out) != "" {
-				t.Errorf("control-plane kill must allow: exit=%d out=%q", code, out)
-			}
-		})
+func TestSealTracksCanonicalQuestionTableStatus(t *testing.T) {
+	project, root := newFinalSealRepo(t)
+	questions := filepath.Join(root, "work", "final", "questions.md")
+	table := `# Questions
+
+## Question register
+| Question ID | Status | Gate | Question | Answer | Impact |
+| --- | --- | --- | --- | --- | --- |
+| Q-001 | answered | validating | Include a header? | Yes. | AC-001 |
+`
+	testutil.WriteFile(t, questions, table)
+	chdirForSeal(t, project)
+
+	if out, errOut, code := runDevrites(t, root, "check", "seal", "final"); code != 0 {
+		t.Fatalf("answered table row blocked seal: exit=%d\nstdout:\n%s\nstderr:\n%s", code, out, errOut)
 	}
+
+	testutil.WriteFile(t, questions, strings.Replace(table, "| answered |", "| open |", 1))
+	out, errOut, code := runDevrites(t, root, "check", "seal", "final")
+	if code != 3 {
+		t.Fatalf("open table row exit=%d, want 3\nstdout:\n%s\nstderr:\n%s", code, out, errOut)
+	}
+	if !strings.Contains(out, "open validating human question(s) remain") {
+		t.Fatalf("seal did not report the canonical open table row:\n%s", out)
+	}
+}
+
+func newFinalSealRepo(t *testing.T) (string, string) {
+	t.Helper()
+	requireGit(t)
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	dir := filepath.Join(root, "work", "final")
+	initGitRepo(t, project)
+	for name, body := range map[string]string{
+		"state.md":             "| phase | seal |\n| status | running |\n",
+		"brief.md":             "# Brief\n\nFinal seal aggregate.\n",
+		"spec.md":              "# Spec\n\n## Acceptance Criteria\n- AC-001: final seal passes every deterministic gate.\n",
+		"decisions.md":         "# Decisions\n\n## Decisions stood\n- none\n",
+		"assumptions.md":       "# Assumptions\n\n- none\n",
+		"questions.md":         "# Questions\n\n- none\n",
+		"decision-coverage.md": "# Decision coverage\n\nCLEAR\n",
+		"architecture.md":      "# Architecture\n\nUse existing gates.\n",
+		"plan.md":              "# Plan\n\nCompose the final checks.\n",
+		"tasks.md":             "# Tasks\n\n- [x] Build final seal.\n",
+		"traceability.md":      "# Traceability\n\nAC-001 -> final seal.\n",
+		"eng-review.md":        "# Engineering review\n\nPASS\n",
+		"test-plan.md":         "# Test plan\n\nRun focused Go tests.\n",
+		"evidence.md":          "# Evidence\n\nFocused Go tests passed.\n",
+		"touched-files.md":     "# Touched files\n\n## Touched files\nCandidate paths are declared only in the manifest below.\n\n## Candidate manifest\n| State | File | Slice | Reason |\n| --- | --- | --- | --- |\n| present | `source.go` | S-1 | Final Seal fixture. |\n",
+		"review.md": `# Review
+
+## Spec
+No-findings: checked AC-001 against the final candidate.
+
+## Code review
+No-findings: checked the aggregate order and exit mapping.
+`,
+		"seal.md": finalSeal(true),
+	} {
+		testutil.WriteFile(t, filepath.Join(dir, name), body)
+	}
+	testutil.WriteFile(t, filepath.Join(project, "source.go"), "package source\n")
+	bindingOut, bindingErr, bindingCode := runDevrites(t, root, "check", "readiness", "--emit-binding", "final")
+	if bindingCode != 0 {
+		t.Fatalf("emit readiness binding exit=%d\nstdout:\n%s\nstderr:\n%s", bindingCode, bindingOut, bindingErr)
+	}
+	testutil.AppendFile(t, filepath.Join(dir, "eng-review.md"), "\n"+strings.TrimSuffix(bindingOut, "\n")+"\n")
+	digest, _, err := lib.CandidateIdentity(root, "final")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"evidence.md", "review.md", "seal.md"} {
+		path := filepath.Join(dir, name)
+		body, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		testutil.WriteFile(t, path, string(body)+"\nCandidate SHA-256: "+digest+"\n")
+	}
+	gitCommitAll(t, project, "test: final seal fixture")
+	return project, root
+}
+
+func finalSeal(proven bool) string {
+	checkbox := " "
+	if proven {
+		checkbox = "x"
+	}
+	return `# Seal
+
+## Acceptance Criteria
+- [` + checkbox + `] AC-001: final seal passes every deterministic gate.
+
+## Reviewer Accounts
+- devrites-spec-reviewer: review.md ` + "`## Spec`" + `
+- devrites-code-reviewer: review.md ` + "`## Code review`" + `
+- devrites-test-analyst: No-findings: focused and full test gates passed; no assertion gaps found.
+- devrites-frontend-reviewer: Not-applicable: no UI changes.
+- devrites-security-auditor: No-findings: checked CLI boundary and fail-closed exits.
+- devrites-performance-reviewer: Not-applicable: no hot path changed.
+- devrites-devex-reviewer: No-findings: checked command output and documentation.
+`
+}
+
+func chdirForSeal(t *testing.T, dir string) {
+	t.Helper()
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
 }

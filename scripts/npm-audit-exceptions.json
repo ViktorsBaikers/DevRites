@@ -14,13 +14,13 @@
   {
     "id": "GHSA-mh99-v99m-4gvg",
     "package": "brace-expansion",
-    "range": "<=5.0.7",
+    "range": ">=4.0.0 <5.0.8",
     "nodes": [
       "node_modules/npm/node_modules/brace-expansion"
     ],
     "source": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
     "owner": "release-maintainers",
-    "reason": "npm@11.18.0 bundles brace-expansion@5.0.7 through minimatch@10.2.5 via @semantic-release/npm. npm's bundled dependency tree ignores root overrides and npm audit cannot repair it; npm@12.0.1 and npm/cli's current source lock still contain 5.0.7. The release workflow supplies only repository-controlled package patterns. Remove this exception as soon as npm bundles brace-expansion@5.0.8 or newer.",
-    "expires": "2026-08-01"
+    "reason": "The installed @semantic-release/npm@13.1.5 chain uses npm@11.18.0 -> minimatch@10.2.5 -> brace-expansion@5.0.7. Inspected npm@11.19.0 and npm@12.0.2 packages still bundle brace-expansion@5.0.7, and root overrides cannot repair npm's bundled dependency tree. Remove this exception once npm bundles brace-expansion@5.0.8 or newer.",
+    "expires": "2026-08-08"
   }
 ]

@@ -1,2 +1,2 @@
 exit 0
-close-out: archived feat-x -> .devrites/archive/feat-x and cleared ACTIVE
+state close: archived feat-x -> archive/feat-x and cleared ACTIVE

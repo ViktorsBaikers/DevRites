@@ -1,36 +1,25 @@
 # `seal.md` template
 
-Loaded on demand by `/rite-seal`. The seal writes this template (filled in) to `.devrites/work/<slug>/seal.md` as the durable record of the GO / NO-GO verdict.
-
-```markdown
+```md
 # Seal: <Feature>
-
 Verdict: GO / NO-GO
-
+Candidate SHA-256: <64 lowercase hex>
 ## Acceptance Criteria
-- [ ] <criterion> — evidence: <...>
-
+- <AC>: <evidence>
 ## Verification Evidence
-<tests / build / lint summary>
-
-## Browser Evidence
-<summary | n/a>
-
-## Risks
-<ranked>
-
-## Blockers
-<must-fix before ship>
-
-## Non-blocking Follow-ups
-<deferred items>
-
-## Rollback / Recovery
-<how to back this out>
-
+<proof>
+## Reviewer Accounts
+- devrites-spec-reviewer: <outcome>
+- devrites-code-reviewer: <outcome>
+- devrites-test-analyst: <outcome>
+- devrites-frontend-reviewer: <outcome>
+- devrites-security-auditor: <outcome>
+- devrites-performance-reviewer: <outcome>
+- devrites-devex-reviewer: <outcome>
+## Risks / Rollback
+<risks/recovery>
+## Blockers / Follow-ups
+<blockers/follow-ups>
 ## Final Decision
-<one paragraph: verdict + why>
-
-## Footprint
-<deterministic fan-out from devrites-engine footprint — subagents · slices · wall-clock; never tokens/cost>
+<verdict/reason>
 ```

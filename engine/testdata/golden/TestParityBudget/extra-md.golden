@@ -1,5 +1,0 @@
-exit 0
-budget: extra
-  spec.md            5 lines  ~    3 tok  limit  260  ok
-  notes.md         210 lines  ~  105 tok  limit  200  OVER by 10
-budget: 1 file(s) over the line budget (advisory: pass --strict to fail)

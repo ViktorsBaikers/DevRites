@@ -45,13 +45,13 @@ const resolveState = `- Status: awaiting_human
 `
 
 func TestParityResolve(t *testing.T) {
-	// setup writes fixtures under .devrites/features/feat and returns the
+	// setup writes fixtures under .devrites/work/feat and returns the
 	// workspace root.
 	setup := func(t *testing.T, questions, state string) (gwork string) {
 		t.Helper()
 		gwork = t.TempDir()
-		writeFile(t, gwork, filepath.Join(".devrites", "features", "feat", "questions.md"), questions)
-		writeFile(t, gwork, filepath.Join(".devrites", "features", "feat", "state.md"), state)
+		writeFile(t, gwork, filepath.Join(".devrites", "work", "feat", "questions.md"), questions)
+		writeFile(t, gwork, filepath.Join(".devrites", "work", "feat", "state.md"), state)
 		writeFile(t, gwork, filepath.Join(".devrites", "ACTIVE"), "feat\n")
 		return gwork
 	}
@@ -59,14 +59,14 @@ func TestParityResolve(t *testing.T) {
 	// current subtest's golden.
 	run := func(t *testing.T, gwork string, args ...string) {
 		t.Helper()
-		out, code := runArgv(t, gwork, libRootEnv(gwork), "", binPath, append([]string{"resolve"}, args...)...)
+		out, code := runArgv(t, gwork, libRootEnv(gwork), "", binPath, append([]string{"state", "resolve"}, args...)...)
 		assertGolden(t, out, code)
 	}
 	// assertFileGolden snapshots the masked content of a mutated file under a
 	// per-file golden key (t.Name()+"/"+name).
 	assertFileGolden := func(t *testing.T, gwork, name string) {
 		t.Helper()
-		b, err := os.ReadFile(filepath.Join(gwork, ".devrites", "features", "feat", name))
+		b, err := os.ReadFile(filepath.Join(gwork, ".devrites", "work", "feat", name))
 		if err != nil {
 			t.Fatalf("reading %s: %v", name, err)
 		}
@@ -128,18 +128,8 @@ answer: prior
 		// Pointing DEVRITES_ROOT at the nonexistent .devrites child would instead
 		// be an explicit unsafe-root refusal, which is a different contract.
 		gwork := t.TempDir()
-		out, code := runArgv(t, gwork, libEnv, "", binPath, "resolve", "q-1", "x")
+		out, code := runArgv(t, gwork, libEnv, "", binPath, "state", "resolve", "q-1", "x")
 		assertGolden(t, out, code)
 	})
 
-	t.Run("next-qid", func(t *testing.T) {
-		// DEVRITES_NOW fixes the date used by next-qid so the snapshot stays stable.
-		// See ADR-0006.
-		dir := t.TempDir()
-		writeFile(t, dir, "questions.md", "## q-2024-01-01-001\nstatus: open\n")
-		qpath := filepath.Join(dir, "questions.md")
-		env := append(append([]string{}, libEnv...), "DEVRITES_NOW=2026-07-07")
-		out, code := runArgv(t, dir, env, "", binPath, "resolve", "next-qid", qpath)
-		assertGolden(t, out, code)
-	})
 }

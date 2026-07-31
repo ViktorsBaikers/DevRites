@@ -8,12 +8,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
-)
 
-var errNotGitRepository = errors.New("not a git repository")
+	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/gitenv"
+)
 
 const (
 	gitCommandTimeout = 30 * time.Second
@@ -61,15 +61,6 @@ func runGitCommand(dir string, env []string, args ...string) ([]byte, error) {
 	return runGitCommandIO(dir, env, nil, nil, args...)
 }
 
-func runGitCommandInput(dir string, env []string, input []byte, args ...string) ([]byte, error) {
-	return runGitCommandIO(dir, env, input, nil, args...)
-}
-
-func runGitCommandToWriter(dir string, env []string, stdout io.Writer, args ...string) error {
-	_, err := runGitCommandIO(dir, env, nil, stdout, args...)
-	return err
-}
-
 func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitCommandTimeout)
 	defer cancel()
@@ -81,9 +72,8 @@ func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, a
 	}
 	if env == nil {
 		env = os.Environ()
-	} else {
-		env = append([]string{}, env...)
 	}
+	env = gitenv.Sanitize(env)
 	cmd.Env = append(
 		env,
 		"GIT_TERMINAL_PROMPT=0",
@@ -123,37 +113,6 @@ func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, a
 	}
 }
 
-func gitErrorExitCode(err error) (int, bool) {
-	var commandErr *gitCommandError
-	if !errors.As(err, &commandErr) {
-		return 0, false
-	}
-	return commandErr.exitCode, commandErr.exitCode >= 0
-}
-
-// gitToplevel returns the absolute path of the Git working tree containing dir.
-// Repository absence is distinct from Git execution failure so integrity gates
-// can fail closed on a missing binary, corrupt repository, or poisoned runtime.
-func gitToplevel(dir string) (string, error) {
-	out, err := runGitCommand(dir, nil, "rev-parse", "--show-toplevel")
-	if err != nil {
-		var commandErr *gitCommandError
-		if errors.As(err, &commandErr) {
-			detail := strings.ToLower(commandErr.output)
-			if strings.Contains(detail, "not a git repository") ||
-				strings.Contains(detail, "not a git work tree") {
-				return "", errNotGitRepository
-			}
-		}
-		return "", err
-	}
-	root := strings.TrimSpace(string(out))
-	if root == "" {
-		return "", fmt.Errorf("git rev-parse returned an empty top-level path")
-	}
-	return filepath.Clean(root), nil
-}
-
 // gitDiffNames lists the paths that differ, relative to gitRoot. With one ref it
 // diffs the working tree against that ref; with two it diffs the two tree objects.
 func gitDiffNames(gitRoot string, refs ...string) ([]string, error) {
@@ -165,30 +124,30 @@ func gitDiffNames(gitRoot string, refs ...string) ([]string, error) {
 	return splitLinesNoTrailing(out), nil
 }
 
-// isAllDigits reports whether s is a non-empty run of ASCII digits.
-func isAllDigits(s string) bool {
-	if s == "" {
-		return false
+// argAt returns args[i] or "": the Go analogue of bash's ${N:-} positional reads.
+func argAt(args []string, i int) string {
+	if i < len(args) {
+		return args[i]
 	}
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
+	return ""
 }
 
-// featureFile is the path to a leaf file inside a feature's directory:
-// <root>/features/<slug>/<name>.
-func featureFile(root, slug, name string) string {
-	return filepath.Join(featureDir(root, slug), name)
+func featureDir(root, slug string) string {
+	return devritespaths.FeatureDir(root, slug)
 }
 
-// slugOrActive returns the slug named in args[0], falling back to the active
-// feature when none is given.
-func slugOrActive(root string, args []string) string {
-	if slug := argAt(args, 0); slug != "" {
-		return slug
+func activeSlug(root string) string {
+	slug, err := devritespaths.ActiveSlug(root)
+	if err != nil {
+		return ""
 	}
-	return activeSlug(root)
+	return slug
+}
+
+func splitLinesNoTrailing(data []byte) []string {
+	value := strings.TrimSuffix(string(data), "\n")
+	if value == "" {
+		return nil
+	}
+	return strings.Split(value, "\n")
 }

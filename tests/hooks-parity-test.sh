@@ -1,194 +1,129 @@
 #!/usr/bin/env bash
-# Keep DevRites hook coverage in sync across Claude and Codex.
-#
-# Both hosts call `devrites-engine hook <name> --harness=<h>`, so the test
-# compares hook names rather than script filenames. Root hooks live in host
-# settings. Codex also routes built-in explorer/worker identities through the
-# leaf guards; the engine keeps root work out of those policies.
-#
-# Codex provides the same core enforcement except for these Claude-only hooks:
-#   - source-cache-pre/-post: Claude fires these for WebFetch. Codex uses
-#     self-caching web_search and has nothing equivalent to revalidate.
-#   - statusline: Codex has no hook event matching Claude's statusLine setting.
-#   - auq: Codex has request_user_input but emits no hook event for it.
-#     PostToolUse covers only Bash, apply_patch, and MCP calls. The proposed
-#     user-input-requested event was closed as not planned (openai/codex#12524).
-#     Revisit this exception if Codex adds that event.
-# `agent-dispatch` is Codex-only because Claude natively enforces declared agent
-# types and lifecycle hooks from canonical skill/agent frontmatter.
-# `subagent-orient` is shared. Claude agent frontmatter and generated Codex TOML
-# files both carry `reviewer-readonly` and `wright-scope`.
+# Native host permissions own the writer/read-only split. Exact paths are
+# instruction-backed and no active agent profile retains an engine hook.
 set -u
-export DEVRITES_NO_BINARY=1   # This test covers pack configuration, not the engine binary.
+export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-target="$(mktemp -d)"; gen=""; trap 'rm -rf "$target"; [ -n "$gen" ] && rm -rf "$gen"' EXIT
+target="$(mktemp -d)"; gen=""
+trap 'rm -rf "$target"; [ -n "$gen" ] && rm -rf "$gen"' EXIT
+
 if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
   gen="$(mktemp -d)"
   DEVRITES_HOST_ARTIFACT_DIR="$gen" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
     || { echo "FAIL: could not build host artifacts"; exit 1; }
   export DEVRITES_HOST_ARTIFACT_DIR="$gen"
 fi
-bash "$ROOT/install.sh" --target "$target" >/dev/null 2>&1 || { echo "FAIL: install failed"; exit 1; }
+bash "$ROOT/install.sh" --target "$target" >/dev/null 2>&1 \
+  || { echo "FAIL: install failed"; exit 1; }
 
 python3 - "$ROOT" "$target" <<'PY'
-import json, re, sys, glob
-root, target = sys.argv[1], sys.argv[2]
-# Capture the hook name from every `devrites-engine hook <name>` invocation.
-RE = r"devrites-engine hook ([a-z0-9-]+)"
+import json
+import re
+import sys
+import tomllib
+from pathlib import Path
 
-def names(path):
-    return set(re.findall(RE, json.dumps(json.load(open(path)))))
-
-def json_commands(path):
-    commands = []
-    def walk(value):
-        if isinstance(value, dict):
-            for key, child in value.items():
-                if key == "command" and isinstance(child, str):
-                    commands.append(child)
-                else:
-                    walk(child)
-        elif isinstance(value, list):
-            for child in value:
-                walk(child)
-    walk(json.load(open(path)))
-    return commands
-
-def hook_locations(path, name):
-    out = []
-    payload = json.load(open(path))
-    for event, entries in payload.get("hooks", {}).items():
-        for entry in entries:
-            for hook in entry.get("hooks", []):
-                if f"devrites-engine hook {name}" in hook.get("command", ""):
-                    out.append((event, entry.get("matcher", ""), hook.get("command", "")))
-    return out
-
+root, target = map(Path, sys.argv[1:])
+hook_re = re.compile(r"devrites-engine hook ([a-z0-9-]+)")
 fail = []
-settings = json.load(open(f"{root}/pack/.claude/settings.json"))
-source_post_locations = []
-for event, entries in settings.get("hooks", {}).items():
-    for entry in entries:
-        if "devrites-engine hook source-cache-post" in json.dumps(entry):
-            source_post_locations.append((event, entry.get("matcher", "")))
-if source_post_locations != [("PostToolUse", "WebFetch")]:
-    fail.append(
-        "source-cache-post must remain Claude WebFetch PostToolUse-only; "
-        f"got {source_post_locations}"
-    )
 
-policy = open(f"{root}/engine/hookpolicy.go").read()
-BLOCKERS = set(re.findall(r'"([a-z0-9-]+)":\s*\{[^}]*canBlock:\s*true', policy))
-if not BLOCKERS:
-    fail.append("production hook registry exposes no canBlock hooks")
+claude_settings = json.loads((root / "pack/.claude/settings.json").read_text())
+if claude_settings.get("permissions", {}).get("defaultMode") != "plan":
+    fail.append("Claude root does not use native plan mode")
+if claude_settings.get("hooks"):
+    fail.append("Claude root retained project hooks")
 
-# Each canonical leaf declares its exact identity and fails closed before the
-# host exposes mutation or nested dispatch.
-agent_files = sorted(glob.glob(f"{root}/pack/.claude/agents/devrites-*.md"))
-for path in agent_files:
-    body = open(path).read()
-    role = re.search(r"(?m)^name:\s*(devrites-[a-z0-9-]+)\s*$", body)
-    if not role:
-        fail.append(f"{path}: missing exact devrites role name")
-        continue
-    role = role.group(1)
-    for required in (
-        "matcher: Edit|Write|MultiEdit|NotebookEdit|Bash|Agent|Task",
-        "DEVRITES_AGENT_RUN=1",
-        f"DEVRITES_ACTIVE_AGENT={role}",
-        "guard unavailable: install devrites-engine",
-    ):
-        if required not in body:
-            fail.append(f"{path}: agent guard missing {required!r}")
-    expected_hook = "wright-scope" if role == "devrites-slice-wright" else "reviewer-readonly"
-    if f"devrites-engine hook {expected_hook} --harness=claude" not in body:
-        fail.append(f"{path}: expected {expected_hook} guard")
-    command = re.search(r"(?m)^\s*command:\s*'([^']+)'\s*$", body)
-    if not command or "|| exit 0" in command.group(1):
-        fail.append(f"{path}: declared leaf guard is missing or fail-open")
+codex_config = tomllib.loads((target / ".codex/config.toml").read_text())
+if codex_config.get("default_permissions") != "devrites-orchestrator":
+    fail.append('Codex root default_permissions is not "devrites-orchestrator"')
+orchestrator = codex_config.get("permissions", {}).get("devrites-orchestrator", {})
+if orchestrator.get("extends") != ":workspace":
+    fail.append("Codex root profile does not extend :workspace")
+if (target / ".codex/hooks.json").exists():
+    fail.append("clean Codex install created a project hooks file")
 
-# Codex must carry every shared hook: all Claude settings and scoped agent hooks
-# except the documented Claude-only set.
-CLAUDE_ONLY = {"source-cache-pre", "source-cache-post", "statusline", "auq"}
-CODEX_ONLY = {"agent-dispatch"}
-claude_all = names(f"{root}/pack/.claude/settings.json")
-claude_commands = json_commands(f"{root}/pack/.claude/settings.json")
-for f in glob.glob(f"{root}/pack/.claude/agents/*.md"):
-    body = open(f).read()
-    claude_all |= set(re.findall(RE, body))
-    claude_commands += re.findall(r"(?m)^\s*command:\s*'([^']+)'\s*$", body)
-shared = claude_all - CLAUDE_ONLY
-if not shared:
-    fail.append("No shared hook names captured; parity regex or hook wiring is broken")
-codex_global = names(f"{target}/.codex/hooks.json")
-codex_commands = json_commands(f"{target}/.codex/hooks.json")
-for host, path, required_matchers in (
-    ("Claude", f"{root}/pack/.claude/settings.json", {"Bash"}),
-    ("Codex", f"{target}/.codex/hooks.json", {"Bash", "exec_command"}),
-):
-    locations = hook_locations(path, "git-guard")
-    if len(locations) != 1 or locations[0][0] != "PreToolUse":
-        fail.append(f"{host} git-guard must appear exactly once at PreToolUse: {locations}")
-        continue
-    matcher = set(locations[0][1].split("|"))
-    missing_matchers = required_matchers - matcher
-    if missing_matchers:
-        fail.append(f"{host} git-guard matcher missing {sorted(missing_matchers)}")
-codex_agents = set()
-for f in glob.glob(f"{target}/.codex/agents/*.toml"):
-    body = open(f).read()
-    codex_agents |= set(re.findall(RE, body))
-    codex_commands += re.findall(r"(?s)command\s*=\s*'''(.*?)'''", body)
-for leaf in ("reviewer-readonly", "wright-scope"):
-    locations = hook_locations(f"{target}/.codex/hooks.json", leaf)
-    if len(locations) != 1 or locations[0][0] != "PreToolUse":
-        fail.append(f"Codex {leaf} generic guard must appear exactly once at PreToolUse: {locations}")
-        continue
-    matcher = set(locations[0][1].split("|"))
-    missing_matchers = {"Bash", "Edit", "apply_patch", "exec", "spawn_agent"} - matcher
-    command = locations[0][2]
-    if missing_matchers:
-        fail.append(f"Codex {leaf} generic guard matcher missing {sorted(missing_matchers)}")
-    if (
-        "DEVRITES_CODEX_GENERIC_AGENT_COMPAT=1" not in command
-        or "devrites-codex-generic-guard" not in command
-    ):
-        fail.append(f"Codex {leaf} is not scoped to the fail-closed generic compatibility path")
-codex = codex_global | codex_agents
-missing = shared - codex
-if missing:
-    fail.append(f"Codex hooks.json is missing shared enforcement: {sorted(missing)}")
-leaked = CLAUDE_ONLY & codex
-if leaked:
-    fail.append(f"Claude-only hook leaked into Codex: {sorted(leaked)}")
+claude_agents = sorted((root / "pack/.claude/agents").glob("devrites-*.md"))
+codex_agents = sorted((target / ".codex/agents").glob("devrites-*.toml"))
+if len(claude_agents) != 17 or len(codex_agents) != 17:
+    fail.append(f"agent count mismatch: Claude={len(claude_agents)} Codex={len(codex_agents)}")
 
-# Both hosts must wire every production blocker. Hook commands inherit the
-# operator's profile and kill-list environment, so generated commands may not
-# clear or replace those control-plane variables before invoking the engine.
-for host, wired, commands, host_only in (
-    ("Claude", claude_all, claude_commands, CODEX_ONLY),
-    ("Codex", codex, codex_commands, set()),
-):
-    missing_blockers = BLOCKERS - host_only - wired
-    if missing_blockers:
-        fail.append(f"{host} missing production blockers: {sorted(missing_blockers)}")
-    for blocker in BLOCKERS:
-        matches = [command for command in commands if f"devrites-engine hook {blocker}" in command]
-        if not matches:
-            continue
-        for command in matches:
-            if (
-                "env -i" in command
-                or re.search(r"\bunset\s+(?:DEVRITES_HOOK_PROFILE|DEVRITES_DISABLED_HOOKS)\b", command)
-                or re.search(r"(?:^|[;\s])(?:DEVRITES_HOOK_PROFILE|DEVRITES_DISABLED_HOOKS)=", command)
-            ):
-                fail.append(f"{host} {blocker} command strips or overrides hook control-plane environment")
+claude_hooks = set()
+for path in claude_agents:
+    body = path.read_text()
+    role = path.stem
+    names = set(hook_re.findall(body))
+    claude_hooks |= names
+    if role == "devrites-slice-wright":
+        if "permissionMode: acceptEdits" not in body:
+            fail.append(f"{path}: missing native writer permission")
+    else:
+        if "permissionMode: plan" not in body:
+            fail.append(f"{path}: missing native plan permission mode")
+    if "hooks:" in body or names:
+        fail.append(f"{path}: retained an engine hook")
+
+codex_hooks = set()
+for path in codex_agents:
+    body = path.read_text()
+    profile = tomllib.loads(body)
+    names = set(hook_re.findall(body))
+    codex_hooks |= names
+    expected = ":workspace" if path.stem == "devrites-slice-wright" else ":read-only"
+    if profile.get("default_permissions") != expected:
+        fail.append(f"{path}: missing exact {expected} permission profile")
+    if "[[hooks." in body or names:
+        fail.append(f"{path}: Codex profile retained an engine hook")
+    if "sandbox_mode" in profile:
+        fail.append(f"{path}: retained legacy sandbox_mode")
+
+if claude_hooks:
+    fail.append(f"Claude hook set differs: {sorted(claude_hooks)}")
+if codex_hooks:
+    fail.append(f"Codex hook set differs: {sorted(codex_hooks)}")
+
+all_text = json.dumps(claude_settings) + "\n" + "\n".join(
+    path.read_text() for path in claude_agents + codex_agents
+)
+for removed in ("git-guard", "a1-guard", "stop-gate", "wright-scope"):
+    if removed in all_text:
+        fail.append(f"removed hook survived: {removed}")
+
+core = (root / "pack/.claude/skills/devrites-lib/reference/standards/core.md").read_text()
+afk = (root / "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md").read_text()
+ship = (root / "pack/.claude/skills/rite-ship/SKILL.md").read_text()
+git_ship = (root / "pack/.claude/skills/rite-ship/reference/git-ship.md").read_text()
+autocomplete_paths = [
+    root / "pack/.claude/skills/rite-autocomplete/SKILL.md",
+    root / "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md",
+    root / "pack/.claude/skills/rite-autocomplete/reference/loop.md",
+]
+
+if "Before advancing a phase, run" not in core:
+    fail.append("core guidance lost the readiness rest point")
+if "devrites-engine check readiness <slug>" not in core:
+    fail.append("core guidance lost the nested structural readiness check")
+if "devrites-engine check seal <slug>" not in core:
+    fail.append("core guidance lost rite-seal's final aggregate rest point")
+if "never make a fourth unchanged" not in re.sub(r"\s+", " ", afk):
+    fail.append("AFK guidance lost the hard three-attempt cap")
+if "devrites-engine check seal <slug>" not in ship:
+    fail.append("rite-ship preflight does not reuse the final seal aggregate")
+if "A seal GO is never authorization for Git" not in git_ship:
+    fail.append("rite-ship lost fresh exact Git approval")
+for path in autocomplete_paths:
+    if "never authorizes Git" not in path.read_text():
+        fail.append(f"{path}: autocomplete flag still lacks the Git-approval boundary")
+
+agents_bridge = (target / "AGENTS.md").read_text()
+if "any changed or retried plan needs fresh approval" not in agents_bridge:
+    fail.append("generated Codex AGENTS bridge lost fresh exact irreversible-action approval")
+if list((target / ".codex").glob("*.rules")):
+    fail.append("clean Codex install created preview exec-policy rules")
 
 if fail:
     print("HOOKS-PARITY: FAIL")
-    for f in fail: print("  " + f)
-    sys.exit(1)
-print(f"HOOKS-PARITY: PASS: Claude settings has {len(names(f'{root}/pack/.claude/settings.json'))} hooks; "
-      f"Codex global + agent-scoped hooks carry all {len(shared)} shared enforcement hooks; "
-      f"{len(CLAUDE_ONLY)} Claude-only by design (source-cache x2 + statusline + auq).")
+    for item in fail:
+        print("  " + item)
+    raise SystemExit(1)
+print("HOOKS-PARITY: PASS")
 PY

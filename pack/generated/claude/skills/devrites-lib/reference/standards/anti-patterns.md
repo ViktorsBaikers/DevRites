@@ -21,7 +21,7 @@ This file is the **single source** of the universal anti-rationalization table.
 | "It's faster to skip the small step." | Process shortcuts pay back later as drift, missed criteria, or unrecorded decisions. The step is the point. |
 | "I observed it pass; recording is bureaucracy." | Un-recorded pass = unproven. The next phase reads `evidence.md`, not your memory. |
 | "User clearly wants this, so I'll bypass the gate." | Gates exist for the failure modes asks miss. Honor the gate; the gate exists *because* of the ask. |
-| "The test is failing. I'll just skip it / loosen the assertion to get green." | Faking green is reward-hacking, not progress. Never delete / skip / `xfail` / `.only` / loosen a failing test: a red test means fix the code or agree the change. A weakened test is a Critical finding (`devrites-engine test-integrity`). |
+| "The test is failing. I'll just skip it / loosen the assertion to get green." | Faking green is reward-hacking, not progress. Never delete / skip / `xfail` / `.only` / loosen a failing test: a red test means fix the code or agree the change. Diff review and dedicated test analysis treat weakening as Critical. |
 | "This project principle doesn't really apply to my case." | A declared invariant (`.devrites/principles.md`) is not advisory. Either it genuinely needs relaxing (record a scoped, dated exception a human approves) or it applies and the change is wrong. Silently routing around a principle is the defect the gate exists to catch (`principles.md`). |
 
 ## Pack-wide red flags

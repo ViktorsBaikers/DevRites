@@ -1,104 +1,16 @@
 {
-  "$comment": "DevRites hooks call the global `devrites-engine` binary after an inline missing-binary check. The standard profile requires exact one-shot authority for destructive Git, approves only the engine's read-only helpers, injects active-workspace orientation, enforces declared leaf boundaries, records test and build failures, and checks Stop consistency. Use DEVRITES_HOOK_PROFILE=minimal|standard|strict for the shared profile and DEVRITES_DISABLED_HOOKS=<comma-separated ids> to disable hooks. When active, `git-guard` is enforced. The legacy A1 and Stop gates observe by default unless their own enforcement switch or the strict profile enables enforcement. Reviewer and wright guards live in agent frontmatter. DEVRITES_INGEST_WARNING=warn enables Claude's metadata-only WebFetch warning trial. The installer merges these hooks without replacing unrelated user settings.",
-  "statusLine": {
-    "type": "command",
-    "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook statusline --harness=claude || exit 0"
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook git-guard --harness=claude || exit 0" },
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook allow --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook a1-guard --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "matcher": "WebFetch",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook source-cache-pre --harness=claude || exit 0" }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook redwatch --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "matcher": "WebFetch",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook source-cache-post --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "matcher": "AskUserQuestion",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook auq || exit 0" }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook handoff-snapshot || exit 0" }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook stop-gate --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook refresh-indexes || exit 0" }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook cursor --harness=claude || exit 0" }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook orient --harness=claude || exit 0" }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook subagent-orient --harness=claude || exit 0" }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook event subagent-stop || exit 0" }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook event session-end || exit 0" }
-        ]
-      }
+  "$comment": "DevRites keeps the root orchestration context source-read-only. Native subagents own specialist execution; only devrites-slice-wright may edit source. Its task lists exact project-relative paths, and the root rejects any returned diff outside that contract.",
+  "permissions": {
+    "defaultMode": "plan",
+    "allow": [
+      "Bash(devrites-engine check candidate *)",
+      "Bash(devrites-engine check readiness *)",
+      "Bash(devrites-engine check seal *)",
+      "Bash(devrites-engine state resolve *)",
+      "Bash(devrites-engine state close *)",
+      "Bash(devrites-engine secret-scan --staged)",
+      "Bash(devrites-engine secret-scan --stdin)",
+      "Bash(devrites-engine version)"
     ]
   }
 }

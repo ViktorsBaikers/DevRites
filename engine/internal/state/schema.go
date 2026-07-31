@@ -2,23 +2,10 @@ package state
 
 //go:generate go run ./cmd/workflowmanifest -out workflow_manifest.json
 
-// SchemaVersion is the .devrites state-schema version this engine understands.
-// A workspace map may declare its own schemaVersion in frontmatter; the engine
-// refuses a version newer than this (see LoadFeature) and otherwise reads the
-// files, which evolve additively.
+// SchemaVersion versions the persisted workflow/state manifest.
 const SchemaVersion = 2
 
-const (
-	WorkspaceMapFile = "README.md"
-	EvidenceFile     = "evidence.md"
-)
-
-var workspaceMapFiles = []string{WorkspaceMapFile, "feature.md", "index.md"}
-
-// WorkspaceMapFiles returns the canonical workspace map followed by readable aliases.
-func WorkspaceMapFiles() []string {
-	return append([]string(nil), workspaceMapFiles...)
-}
+const EvidenceFile = "evidence.md"
 
 // Section is one single-purpose completeness file in a feature directory. Small
 // files use less context and make missing content easier to spot.
@@ -43,24 +30,19 @@ var Sections = []Section{
 	SectionStatus,
 }
 
-// sectionFiles lists the filenames that can satisfy each section, canonical name
-// first, then supported aliases: the same mapping `devrites-engine migrate`
-// normalizes (proof→evidence, status→state). A section
-// counts as present if any of its files has real content, so the engine reads a
-// live workspace before the pack sweep converges the filenames. The workspace
-// map is not a section; it is handled separately in LoadFeature.
+// sectionFiles maps each completeness section to its one canonical file.
 var sectionFiles = map[Section][]string{
 	SectionSpec:      {"spec.md"},
 	SectionPlan:      {"plan.md"},
 	SectionDecisions: {"decisions.md"},
 	SectionTasks:     {"tasks.md"},
-	SectionProof:     {EvidenceFile, "proof.md"},
-	SectionStatus:    {"state.md", "status.md"},
+	SectionProof:     {EvidenceFile},
+	SectionStatus:    {LedgerFile},
 }
 
-// LedgerFile is the working-state ledger the live pack writes. It carries the
-// phase in its canonical cursor table (legacy "- Phase: <p>" remains readable)
-// when no workspace map declares one, and it satisfies the status section.
+// LedgerFile is the working-state ledger the live pack writes. It is the phase
+// authority through either the canonical cursor table or the released bullet
+// form ("- Phase: <p>"), and it satisfies the status section.
 const LedgerFile = "state.md"
 
 // Phase is a workflow state. The order mirrors the rite-* arc.
@@ -92,7 +74,6 @@ type phaseDefinition struct {
 	resumeVerb          string
 	transitionRight     string
 	required            []Section
-	aliases             []string
 	workspaceRequired   []string
 	proofRequired       bool
 	blocksOpenQuestions bool
@@ -112,6 +93,7 @@ var (
 	workspacePlan    = append(append([]string(nil), workspaceClarify...), "architecture.md", "plan.md", "tasks.md", "traceability.md")
 	workspaceVetted  = append(append([]string(nil), workspacePlan...), "eng-review.md", "test-plan.md")
 	workspaceProof   = append(append([]string(nil), workspaceVetted...), "evidence.md", "touched-files.md")
+	workspaceFinal   = append(append([]string(nil), workspaceProof...), "review.md", "seal.md")
 )
 
 // Completeness is phase-relative: a section not yet required (e.g. proof during
@@ -119,20 +101,20 @@ var (
 // authoring; Plan is the approved/repaired checkpoint that resumes at Vet.
 var phaseDefinitions = []phaseDefinition{
 	{phase: PhaseFrame, resumeVerb: "frame", transitionRight: "Frame an unstructured request before lifecycle work.", workspaceRequired: workspaceFrame},
-	{phase: PhaseSpec, resumeVerb: "spec", transitionRight: "Author the product specification.", required: sectionsSpec, aliases: []string{"specced", "specifying"}, workspaceRequired: workspaceSpec},
-	{phase: PhaseClarify, resumeVerb: "clarify", transitionRight: "Close decision coverage in the written specification.", required: sectionsSpec, aliases: []string{"clarified", "clarifying"}, workspaceRequired: workspaceClarify, blocksOpenQuestions: true},
-	{phase: PhaseTemper, resumeVerb: "temper", transitionRight: "Optionally challenge the clarified specification strategy.", required: sectionsSpec, aliases: []string{"tempered", "tempering"}, workspaceRequired: workspaceClarify, blocksOpenQuestions: true},
-	{phase: PhaseDefine, resumeVerb: "define", transitionRight: "Author and approve the initial implementation plan.", required: sectionsPlan, aliases: []string{"defined", "defining"}, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
-	{phase: PhasePlan, resumeVerb: "vet", transitionRight: "Hold the approved or repaired plan checkpoint for engineering review.", required: sectionsPlan, aliases: []string{"planned", "planning"}, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
-	{phase: PhaseVet, resumeVerb: "vet", transitionRight: "Review implementation readiness before build.", required: sectionsBuild, aliases: []string{"vetted", "vetting"}, workspaceRequired: workspaceVetted, blocksOpenQuestions: true},
-	{phase: PhaseBuild, resumeVerb: "build", transitionRight: "Implement the next approved vertical slice.", required: sectionsBuild, aliases: []string{"building", "wip", "in", "in-progress"}, workspaceRequired: workspaceVetted, blocksOpenQuestions: true},
-	{phase: PhaseConverge, resumeVerb: "converge", transitionRight: "Recover unmet clarified intent into new slices.", required: sectionsBuild, aliases: []string{"converged", "converging"}, workspaceRequired: workspaceVetted, blocksOpenQuestions: true},
-	{phase: PhaseProve, resumeVerb: "prove", transitionRight: "Produce acceptance evidence for the implementation.", required: sectionsProof, aliases: []string{"proving", "proven", "testing"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
-	{phase: PhasePolish, resumeVerb: "polish", transitionRight: "Apply the bounded quality pass.", required: sectionsProof, aliases: []string{"polished", "polishing"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
-	{phase: PhaseReview, resumeVerb: "review", transitionRight: "Review the proven implementation.", required: sectionsProof, aliases: []string{"reviewed", "reviewing"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
-	{phase: PhaseSeal, resumeVerb: "seal", transitionRight: "Decide the final GO or NO-GO.", required: sectionsComplete, aliases: []string{"sealed", "sealing"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true, shippable: true},
-	{phase: PhaseShip, resumeVerb: "ship", transitionRight: "Perform authorized release and close-out mutations.", required: sectionsComplete, aliases: []string{"shipped", "shipping"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true, shippable: true},
-	{phase: PhaseDone, transitionRight: "Represent archived completion with no resume command.", required: sectionsComplete, aliases: []string{"closed", "complete", "completed"}, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true, shippable: true},
+	{phase: PhaseSpec, resumeVerb: "spec", transitionRight: "Author the product specification.", required: sectionsSpec, workspaceRequired: workspaceSpec},
+	{phase: PhaseClarify, resumeVerb: "clarify", transitionRight: "Close decision coverage in the written specification.", required: sectionsSpec, workspaceRequired: workspaceClarify, blocksOpenQuestions: true},
+	{phase: PhaseTemper, resumeVerb: "temper", transitionRight: "Optionally challenge the clarified specification strategy.", required: sectionsSpec, workspaceRequired: workspaceClarify, blocksOpenQuestions: true},
+	{phase: PhaseDefine, resumeVerb: "define", transitionRight: "Author and approve the initial implementation plan.", required: sectionsPlan, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
+	{phase: PhasePlan, resumeVerb: "vet", transitionRight: "Hold the approved or repaired plan checkpoint for engineering review.", required: sectionsPlan, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
+	{phase: PhaseVet, resumeVerb: "vet", transitionRight: "Review implementation readiness before build.", required: sectionsBuild, workspaceRequired: workspaceVetted, blocksOpenQuestions: true},
+	{phase: PhaseBuild, resumeVerb: "build", transitionRight: "Implement the next approved vertical slice.", required: sectionsBuild, workspaceRequired: workspaceVetted, blocksOpenQuestions: true},
+	{phase: PhaseConverge, resumeVerb: "converge", transitionRight: "Recover unmet clarified intent into new slices.", required: sectionsBuild, workspaceRequired: workspaceVetted, blocksOpenQuestions: true},
+	{phase: PhaseProve, resumeVerb: "prove", transitionRight: "Produce acceptance evidence for the implementation.", required: sectionsProof, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
+	{phase: PhasePolish, resumeVerb: "polish", transitionRight: "Apply the bounded quality pass.", required: sectionsProof, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
+	{phase: PhaseReview, resumeVerb: "review", transitionRight: "Review the proven implementation.", required: sectionsProof, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
+	{phase: PhaseSeal, resumeVerb: "seal", transitionRight: "Decide the final GO or NO-GO.", required: sectionsComplete, workspaceRequired: workspaceFinal, proofRequired: true, blocksOpenQuestions: true, shippable: true},
+	{phase: PhaseShip, resumeVerb: "ship", transitionRight: "Perform authorized release and close-out mutations.", required: sectionsComplete, workspaceRequired: workspaceFinal, proofRequired: true, blocksOpenQuestions: true, shippable: true},
+	{phase: PhaseDone, transitionRight: "Represent archived completion with no resume command.", required: sectionsComplete, workspaceRequired: workspaceFinal, proofRequired: true, blocksOpenQuestions: true, shippable: true},
 }
 
 // WorkflowPhase is the read-only cross-format view used to generate the compact
@@ -141,7 +123,6 @@ type WorkflowPhase struct {
 	ID                  Phase     `json:"id"`
 	ResumeVerb          string    `json:"resumeVerb,omitempty"`
 	TransitionRight     string    `json:"transitionRight"`
-	Aliases             []string  `json:"aliases,omitempty"`
 	RequiredSections    []Section `json:"requiredSections,omitempty"`
 	WorkspaceRequired   []string  `json:"workspaceRequired"`
 	ProofRequired       bool      `json:"proofRequired,omitempty"`
@@ -174,7 +155,6 @@ func WorkflowPhases() []WorkflowPhase {
 			ID:                  definition.phase,
 			ResumeVerb:          definition.resumeVerb,
 			TransitionRight:     definition.transitionRight,
-			Aliases:             append([]string(nil), definition.aliases...),
 			RequiredSections:    append([]Section(nil), definition.required...),
 			WorkspaceRequired:   append([]string(nil), definition.workspaceRequired...),
 			ProofRequired:       definition.proofRequired,
@@ -226,17 +206,11 @@ func ShippablePhase(p Phase) bool {
 	return ok && definition.shippable
 }
 
-// PhaseForName resolves a canonical phase ID or compatibility alias. Callers
-// should normalize surrounding syntax before querying it.
+// PhaseForName resolves a canonical phase ID.
 func PhaseForName(name string) (Phase, bool) {
 	for _, definition := range phaseDefinitions {
 		if string(definition.phase) == name {
 			return definition.phase, true
-		}
-		for _, alias := range definition.aliases {
-			if alias == name {
-				return definition.phase, true
-			}
 		}
 	}
 	return "", false

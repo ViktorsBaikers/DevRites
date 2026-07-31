@@ -6,8 +6,7 @@ These examples cover the common DevRites workflows. Start a new feature with
 lifecycle. Workspace phases first read the active workspace from
 `.devrites/ACTIVE` and `.devrites/work/<slug>/`. If none exists, they report the
 command that can create or select one. `/rite-upgrade [slug]` is the
-conditional maintenance route for an active workspace planned under older
-DevRites rules.
+compatibility audit for an older active workspace that cannot resume.
 
 - **Full command reference** → [`command-map.md`](command-map.md)
 - **Flow diagrams** → [`flow.md`](flow.md)
@@ -23,34 +22,30 @@ the work across compaction and new sessions:
 
 | File | Created by | Holds |
 |---|---|---|
-| `README.md` / `index.md` / `feature.md` | `/rite-spec` | compact workspace map: phase, status, next action, artifact map, read-next table, gates |
+| `README.md` | `/rite-spec` | canonical compact workspace map: phase, status, next action, artifact map, read-next table, gates |
 | `brief.md` | `/rite-spec` | one-line objective + definition of done |
-| `spec.md` | `/rite-spec` | product WHAT/WHY, requirements, acceptance, boundaries, measurable success |
-| `decision-coverage.md` | `/rite-clarify` | topology-first coverage plus semantic `CLEAR` verdict bound to all decision inputs and the current readiness-artifact contract |
+| `spec.md` | `/rite-spec` | product WHAT/WHY, requirements, acceptance, boundaries, measurable success, and one capability-impact declaration for new/materially revised specs |
+| `decision-coverage.md` | `/rite-clarify` | topology-first coverage and a native semantic `CLEAR` verdict reconciled against the spec, decisions, and assumptions |
 | `architecture.md` | `/rite-define` | owning module/layer, integration points, data/API/events, dependencies, risks |
 | `flows.md` | `/rite-spec` or `/rite-define` | optional Mermaid diagrams when sequence/state/data flow clarifies behavior |
 | `references/` + `references.md` | `/rite-spec` | saved design refs: screenshots, Figma, video, links |
 | `strategy.md` | `/rite-temper` | strategic spec review (optional): scope mode, pre-mortem, dimension scores |
-| `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback |
+| `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback, and conditional shared-contract provider/consumer proof |
 | `tasks.md` | `/rite-define` | ordered `SLICE-###` vertical slices, each mapped to `AC-###` and tagged `Mode: AFK \| HITL` + gate fields |
 | `traceability.md` | `/rite-define` | AC/REQ → slices → tests/proofs → evidence → touched files matrix |
-| `eng-review.md` | `/rite-vet` | mandatory engineering review with semantic, input-digest-bound readiness verdict and readiness-artifact contract |
-| `test-plan.md` | `/rite-vet` | build-readable coverage target and readiness-artifact contract: coverage diagram, per-gap test requirements, acceptance→test map (read by `/rite-build` + `/rite-prove`) |
+| `eng-review.md` | `/rite-vet` | mandatory native engineering review, reconciled `READY` verdict, and stable Build-input binding |
+| `test-plan.md` | `/rite-vet` | build-readable coverage target, per-gap test requirements, and acceptance-to-test map reviewed by native agents |
 | `state.md` | every phase | working cursor: phase, status, next action, slice, AFK budget, durable clarification return fields, and `Awaiting human` only when paused |
-| `recovery-attempts.jsonl` | technical recovery | durable three-failure budget per root-cause fingerprint |
-| `.wright-allowlist` | `/rite-build` root | exact normalized source/test paths the sole wright may change |
-| `status.md` | every phase | compatibility alias for the canonical `state.md` cursor |
 | `questions.md` | every phase | append-only Q&A: qid, slice, gate, status (`open` / `answered` / `dropped`), proposed answer, raised/answered timestamps |
 | `decisions.md` / `assumptions.md` | every phase | running logs |
 | `drift.md` | Spec Drift Guard | drift events + resolutions |
-| `touched-files.md` | `/rite-build` | what files this feature touched |
-| `evidence.md` | `/rite-build`, `/rite-prove` | canonical `EVID-###` command/action proof |
-| `proof.md` | `/rite-build`, `/rite-prove` | transition alias for `evidence.md` |
-| `browser-evidence.md` | `/rite-prove`, `/rite-polish` (UI) | screenshots, console, network, viewport runs |
-| `design-brief.md` | `devrites-frontend-craft` | shape, states, design references match |
+| `touched-files.md` | `/rite-build`, `/rite-polish` | strict manifest of the exact project candidate; Review trail is navigation only |
+| `evidence.md` | `/rite-build`, `/rite-prove` | canonical `EVID-###` command/action proof plus the exact candidate binding |
+| `browser-evidence.md` | `/rite-prove`, `/rite-polish` (UI) | screenshots, console, network, viewport runs, Visual Verdict, and exact candidate binding |
+| `design-brief.md` | `devrites-ux-shape` during `/rite-spec` | vetted shape, states, interaction model, and design-reference direction; a material later change returns through `/rite-vet` |
 | `polish-report.md` | `/rite-polish` | Phase 1-4 findings + fixes |
-| `review.md` | `/rite-review` | Spec + Standards axes, severity-labelled findings |
-| `seal.md` | `/rite-seal` | GO/NO-GO verdict + acceptance walk + blockers |
+| `review.md` | `/rite-review` | candidate-bound Spec + Standards axes and severity-labelled findings |
+| `seal.md` | `/rite-seal` | candidate-bound GO/NO-GO verdict + acceptance walk + blockers |
 | `ship.md` | `/rite-ship` | what shipped: commit SHA(s), branch, tag/PR, acceptance summary, follow-ups |
 
 When `/rite-ship` closes the task, it archives the whole workspace from
@@ -58,16 +53,15 @@ When `/rite-ship` closes the task, it archives the whole workspace from
 `.devrites/ACTIVE`. Every Markdown file remains in
 `.devrites/archive/<slug>/` as an audit trail.
 
-Backward compatibility: older `.devrites/features/<slug>/` workspaces remain
-readable; migration should add the canonical `.devrites/work` shape without
-deleting the old files. `feature.md`/`index.md` can still act as the workspace
-map, `status.md` as the cursor alias for `state.md`, and `proof.md` as the proof
-alias for `evidence.md`. Workspace maps use schema v2; migration upgrades
-compatible declarations but never fabricates clarification, readiness, or proof
-evidence. That structural schema is separate from the semantic planning
-contract. `/rite-upgrade` reconciles active unfinished planning with
-`devrites.readiness-artifacts.v2`; it does not rewrite current, completed, or
-archived workspaces.
+Compatibility is limited to official released cursors in
+`.devrites/work/<slug>/state.md`: v1/v2 bullet fields (`Phase`, `Next step`,
+`qid`) and v3 table fields (`phase`, `next_action`, `question_id`). Reads do not
+rewrite the workspace or emit telemetry. `/rite-upgrade` is the native,
+preservation-first audit: age/cursor encoding alone is not a defect, and only a
+cited current-contract failure routes repair through its phase owner. Completed
+work and evidence stay intact. Candidate defects may route current Prove,
+Polish, Review, and Seal in that order; old passes are never synthesized. The
+engine has no structural migration command.
 
 Project-root sentinel (outside the workspace):
 
@@ -90,7 +84,7 @@ You: I want some kind of reporting thing for admins.
   → asks you one question at a time, each with options + a best guess,
     until gaps are closed
   → gathers any design references you give
-  → writes spec.md (creates the workspace)
+  → writes spec.md with one Capability impact declaration (creates the workspace)
 
 /rite-clarify
   → scans the full topology; asks zero questions when the contract is complete
@@ -98,13 +92,23 @@ You: I want some kind of reporting thing for admins.
 
 /rite-define
   → reads the approved spec
-  → writes plan.md + vertical task slices + state
+  → writes plan.md + vertical task slices + state; a changed API/event/schema
+    boundary names one canonical Shared contract proof artifact and consuming
+    provider/consumer tests (otherwise a justified no-impact statement)
   → stops for confirmation
 
 /rite-vet
   → reviews every defined plan; uses a light or full pass based on stakes
-  → writes eng-review.md + test-plan.md before build
+  → writes eng-review.md + test-plan.md and binds their stable Build inputs
 ```
+
+For an existing capability, a MODIFIED requirement contains its full next
+version and preserves every prior scenario and normative/source-grounded claim
+unless an accepted `DEC-###` explicitly authorizes removal. During proof,
+behavior needs a positive, discriminating assertion and decisive observed
+signal. Skipped/filtered/pending or zero-test runs, assertion-free or
+tautological tests, unexecuted commands, and exit status alone do not prove
+behavior; compile, typecheck, lint, and build prove only their static criterion.
 
 ## 2) Normal feature: the build loop
 
@@ -122,33 +126,39 @@ You: I want some kind of reporting thing for admins.
 /rite-ship                   # type-GO + irreversible git ladder + close the task (archive + clear ACTIVE)
 ```
 
-`/rite-build` never starts the next slice automatically; you decide when it
-runs. For each slice, the root writes an exact `.wright-allowlist`. The snapshot,
-reconciliation check, test/package integrity, and close steps use the same
-original baseline. A retry snapshot refreshes only the dispatch boundary.
+In default HITL, `/rite-build` never starts the next slice automatically; you
+decide when it runs. The explicit `.devrites/AFK` sentinel is the bounded
+low-risk chaining exception described in §10. For each slice, the root states
+exact project-relative paths in the writer task, waits, rejects any extra path
+in `git diff --name-only`, reviews test integrity, runs repository proof, and
+maintains the strict candidate manifest.
+Prove binds real evidence to its content digest; Polish completes durable
+capability/design/ADR rollups and affected re-proof before Review. Ship never
+changes candidate paths and verifies exact staged and committed scope. See
+[candidate integrity](candidate-integrity.md).
 `/rite-seal` **decides**; `/rite-ship` **executes + closes**. To run the whole
 sequence unattended, see `/rite-autocomplete` (§11).
 
-## 2a) Continue a workspace planned under older rules
+## 2a) Audit an older workspace that cannot resume
 
-Run the upgrade after updating DevRites when build readiness reports code `8`,
-or invoke it directly for an older active workspace:
+Invoke the native compatibility route for an older active unfinished workspace:
 
 ```text
 /rite-upgrade ark-panda-redesign
-  → a fresh read-only devrites-upgrade-planner compares the active unfinished
-    planning surface with devrites.readiness-artifacts.v2
-  → completed source, slices, decisions, and evidence stay unchanged
-  → stale old-engine proof recipes and machine-local command wrappers leave the
-    active canonical plan
-  → current coverage and engineering-readiness gates run again
-  → an already-current workspace that passes readiness is a no-op; completed
-    workspaces and archives are also left alone
+  → exact read-only devrites-upgrade-planner cites each applicable current rule
+    and its workspace evidence
+  → returns current, repairable, unsupported, or gap; age is never enough
+  → only admitted defects route through Clarify, Plan repair, Converge, Vet,
+    Prove, Polish, Review, or Seal
+  → ambiguous legacy candidate scope is a gap; current owners run fresh proof
+    and never synthesize an old pass
+  → protected source, completed work, decisions, and evidence are rechecked
+  → current/completed work is a no-op; unsupported or unverifiable input stops
 ```
 
-This is not the same as `devrites-engine update`, which refreshes the installed
-engine and pack, or `devrites-engine migrate`, which normalizes workspace layout
-and structural state schema.
+This is separate from the npm/shell update flow, which acquires a local
+candidate and asks the engine to refresh the installed binary and pack. Upgrade
+does not update the pack or migrate workspace structure.
 
 ## 3) Spec drift mid-build
 
@@ -182,7 +192,11 @@ You: 2
 /rite-spec settings-theme-toggle
   → you give a Figma link + a screenshot of the target toggle; rite-spec
     views them, saves the screenshot to references/, indexes references.md
-  → writes spec.md
+  → devrites-ux-shape writes design-brief.md; rite-spec writes spec.md
+
+/rite-clarify
+  → scans the full topology; asks zero questions when the contract is complete
+  → writes fresh Decision coverage: CLEAR
 
 /rite-define
   → spec → slices; UI slice marked frontend-craft + browser-proof
@@ -211,8 +225,8 @@ You: 2
 ```
 
 If browser tooling is unavailable, the proof records exact manual steps and a
-status of **pending (manual)**. The seal then accounts for the remaining UI
-risk.
+status of **pending (manual)**. Pending work does not prove the affected
+criterion; Seal blocks when that criterion is required for acceptance.
 
 ## 5) Backend-only feature
 
@@ -302,6 +316,10 @@ If the answer changes acceptance criteria or scope, `/rite-resolve` recommends
 
 ## 10) AFK overnight run
 
+This is the explicit exception to the one-slice HITL return: the sentinel
+authorizes the same `/rite-build` invocation to chain only the slices admitted
+by its cap and pause rules.
+
 ```text
 # Drop the sentinel before bed. Keys are optional: empty file works.
 cat > .devrites/AFK <<'EOF'
@@ -331,8 +349,8 @@ EOF
 ```
 
 The loop does not mark a slice `built` while tests, type checks, or lint are
-red. It uses the same wright and durable three-failure recovery budget for each
-root-cause fingerprint. If the budget runs out, it records a blocker with the
+red. The caller and recovery loop count at most three failed attempts for each
+causal fingerprint from current context plus recorded Dead ends/evidence. If the budget runs out, it records a blocker with the
 reproduction and unsuccessful approaches instead of asking for retry approval.
 AFK never silently accepts
 genuine product, risk, or access decisions; see
@@ -356,12 +374,19 @@ full list.
 You: GO                        # → commit · push · tag, then archive + clear ACTIVE
 ```
 
-Add `--ship` (alias `--yolo`) to confirm the final type-`GO` automatically.
-Autocomplete then proceeds directly to `/rite-ship` without another prompt. It
-still pauses for genuine product/scope/policy decisions, irreversible risk,
-human-only access/actions, a NO-GO, exhausted `max_slices`, or low confidence.
-Objective red checks use bounded recovery instead. Args:
-`[idea] [--ship|--yolo] [--max-slices N]`.
+Add `--ship` (alias `--yolo`) to continue through `/rite-ship` preflight.
+Autocomplete discloses the exact Git plan, then still stops for a fresh literal
+`GO` and native host approval. It also pauses for genuine product/scope/policy
+decisions, irreversible risk, human-only access/actions, a NO-GO, exhausted
+`max_slices`, or low confidence. Objective red checks use bounded recovery
+instead. Args:
+`[idea] [--ship|--yolo] [--max-slices N] [--full] [--cross-model]`.
+Optional flags are inactive unless their exact token occurs in the invocation;
+`--max-slices` requires one positive base-10 integer. `--full` selects the Full
+execution profile, and `--cross-model` arms Vet's second opinion.
+Autocomplete never rewrites an existing `.devrites/AFK`. After Vet fixes the
+pending-slice count, it stores the lower effective budget in `state.md`; an
+existing remaining counter can only stay the same or decrease.
 
 ## Checking in
 
@@ -380,7 +405,9 @@ Objective red checks use bounded recovery instead. Args:
   it deliberately if the team agrees on AFK defaults). The sentinel is
   read-only config: it toggles your local session mode and sets the initial
   `max_slices` budget; nothing else. The mutable remaining-slice count lives
-  in `state.md` (`AFK slices remaining`), never in the sentinel.
+  in `state.md` (`AFK slices remaining`), never in the sentinel. The root
+  charges it once with each green pending → built transition and stops before
+  another dispatch at zero; malformed values fail closed.
 - One feature active at a time (`ACTIVE`). Start a new workspace with
   `/rite-spec <feature>`; switch to an existing one with `/rite use <slug>`.
 - **Recommended AFK progression**: HITL first to refine the prompt and plan,

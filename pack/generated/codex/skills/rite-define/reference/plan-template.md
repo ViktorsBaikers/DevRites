@@ -42,6 +42,20 @@ include a decision only when slices could choose incompatibly. Medium+ decisions
 `Binds:` and `Prevents:`. Cross-boundary interfaces name invariants, I/O, ordering/idempotency,
 errors, versioning, config, and relevant budgets.
 
+## Shared contract proof
+When this feature changes an API, event, schema, or other provider/consumer boundary,
+include exactly one table and omit the no-impact statement:
+
+| Boundary | Canonical contract artifact | Provider-side asserting test | Consumer-side asserting test |
+|---|---|---|---|
+| <provider → consumer surface> | <existing schema/type/fixture path> | <test path + assertion> | <test path + assertion> |
+
+Both tests must consume the same artifact. Reuse an existing canonical schema, type, or
+fixture when one exists; do not create one for ceremony. If no provider/consumer boundary
+changes, omit the table and write exactly:
+
+Shared contract impact: none — <specific justification>
+
 ## Dependency graph
 What must exist before what (text is fine):
 - SLICE-001 (no deps) → SLICE-002 (needs SLICE-001) → SLICE-004 (needs SLICE-002, SLICE-003)
@@ -99,6 +113,7 @@ decisions.md / evidence.md when used.
 - [ ] Every UI slice names `Design brief states` and binary `Visual acceptance`
 - [ ] `Key links` rows cover every cross-slice wiring (or state `none`)
 - [ ] Cross-boundary contracts name producer, consumer, invariants/errors/order, and proof
+- [ ] `Shared contract proof` contains one complete, consuming provider/consumer table, or one specific no-impact statement
 - [ ] Any wide mechanical refactor is sliced expand → migrate batches → contract, with green migrate batches or an integration branch + final verify slice
 - [ ] No `Gate: blocking` slice is implicitly chained behind an AFK slice without surfacing the dependency
 ```

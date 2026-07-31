@@ -1,8 +1,7 @@
 ---
 name: devrites-doubt
-description: Stress-test one non-trivial decision with an adversarial independent take. Use when the user says "are we sure", "double-check", "what could go wrong", or before boundary/data/auth/API/migration choices. Not for trivial choices.
+description: Stress-test one consequential decision independently. Use for uncertainty around boundaries, data, auth, APIs, or migrations; not trivial choices.
 user-invocable: false
-required-agent-roles: devrites-doubt-reviewer
 ---
 
 # devrites-doubt: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP
@@ -19,11 +18,10 @@ code · claiming "this is safe", "this scales", or "this matches the spec".
 
 - [ ] **1. CLAIM**: state the claim in 1-3 sentences + why it matters.
 - [ ] **2. EXTRACT**: isolate the smallest reviewable artifact + its contract; strip your reasoning so the reviewer sees only the code/decision.
-- [ ] **3. DOUBT**: fresh-context dispatch `devrites-doubt-reviewer` with an
-  `agent-packet/v1` and the adversarial objective *"find what's wrong; do not
-  validate."* Follow
+- [ ] **3. DOUBT**: ask the exact `devrites-doubt-reviewer` in a fresh context
+  to *"find what's wrong; do not validate."* Follow
   [`agents.md`](../devrites-lib/reference/standards/agents.md). Inline does not satisfy
-  independence; if no fresh-agent rung is available, stop for HITL.
+  independence; if the named agent is unavailable, stop for HITL.
 - [ ] **4. RECONCILE**: classify EVERY finding: contract misread | valid & actionable |
   valid trade-off | noise. **Doubt-theater check:** if two or more cycles find substantive
   issues but classify **zero** as actionable, the review is too agreeable. Sharpen the

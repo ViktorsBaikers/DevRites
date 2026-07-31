@@ -3,7 +3,6 @@ name: rite-quick
 description: Express lane for a small reversible change: typo/copy/config, rate-limit constant, error message, local variable rename, feature flag, README link, one-file/function fix.
 argument-hint: "<what to change>"
 user-invocable: true
-required-agent-roles: none
 ---
 
 # /rite-quick: express lane for small changes
@@ -12,7 +11,8 @@ The full DevRites lifecycle is right for real features; it is **ceremony** for a
 copy tweak, a one-function fix, or a small config change. `/rite-quick` keeps the
 discipline that matters (idiom, TDD, evidence, escape-to-full-lifecycle) and drops the
 artifacts that don't, in a **single pass**. Senior-engineer "right step, right time" made
-executable, not advisory.
+executable, not advisory. This lane uses the **Quick** depth profile from
+[`devrites-lib/reference/orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md).
 
 ## The significance gate (the whole safety story)
 
@@ -43,8 +43,9 @@ Load this lane's conditional standards when needed:
 
 
 ## Workflow
-0. **Orient.** Read `core.md`. If a `.devrites/` workspace is active, run the preamble to
-   see it; `/rite-quick` does **not** require one and does **not** create the full tree.
+0. **Orient.** Read `core.md`. If a `.devrites/` workspace is active, read its
+   `state.md` directly; `/rite-quick` does **not** require
+   a workspace and does **not** create the full tree.
 1. **Significance gate** (above). Fail → STOP, tell the user to run `/rite-spec <feature>`.
 2. **One-line contract.** Restate in 1-3 lines: the change, its **acceptance** (how you'll
    know it works), and the **scope boundary** (what you will NOT touch). This is the entire
@@ -71,21 +72,6 @@ If the "small" change turns out to be not small: a second slice appears, a real 
 decision surfaces, scope grows past the boundary, or you hit an irreversible-risk item:
 **STOP, say so, and route to `/rite-spec` / `/rite-define`**. Don't quietly grow a quick
 fix into an unreviewed feature; that's the exact drift the lifecycle guards against.
-
-## Output
-Run `devrites-engine progress` when a workspace is active; otherwise skip it. Then use the
-shared completion reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
-Default success shape:
-```
-Done: quick change complete — <one line>.
-Changed: <files touched>
-Evidence: tests <cmd -> pass>; assertion check <real asserts saw red | n/a>; boundary held yes
-Open: <none | non-blocking follow-up | tracked workspace needs ship>
-Next: <single recommended command>
-Record: <commit/PR path | .devrites/work/<slug>/evidence.md | not applicable>
-↻ Hygiene: /clear after commit
-```
 
 If the quick boundary does not hold or an escalation remains, use `Stopped / blocked`
 and route to the full lifecycle; do not render `Done`.

@@ -1,47 +1,51 @@
 # Acceptance proof
 
-Map every `spec.md` acceptance criterion to evidence and label its proof class:
-`test`, `command`, `browser`, or `judgment` with a one-line reason. Re-run the
-structured grammar gate before mapping scenarios:
+Map each `spec.md` criterion to `test | command | browser | judgment` evidence
+and one-line reason. Run `spec-grammar.md`'s Native grammar re-read on the saved
+spec before mapping; reopen after corrections. No parser/script may replace it.
 
-```bash
-devrites-engine spec-validate ".devrites/work/<slug>" --against .devrites/specs
-```
+Every structured WHEN/THEN scenario needs a passing asserting test. When
+`test-plan.md` exists, every acceptance/gap requirement, interactive element, and
+user flow needs a passing result. Missing coverage blocks.
 
-Each structured WHEN/THEN scenario needs a passing asserting test. If `test-plan.md`
-exists, every acceptance mapping, per-gap requirement, interactive element, and user
-flow needs a passing result. Missing coverage is an unproven blocker.
+Behavioral proof MUST be positive, discriminating, and observed under `testing.md`:
+assertion/output changes when behavior is absent or wrong. Skipped, focused,
+filtered, pending, zero-test, assertion-free, tautological, or unexecuted results
+do not count. Build/compile/typecheck/lint prove only their static criterion;
+discriminating shell assertions and golden/text comparisons may prove text/CLI.
+
+## Backstop disposition
+
+A `backstop` passes only on its spec-named independent held-out,
+property/metamorphic, or direct behavioral check plus discriminating observed
+output. Presence, test names without results, author judgment, or an expectation
+copied from the same implementation logic fails.
+
+Undefined/unavailable signal: `cannot_verify`, evidence
+`insufficient_spec: <missing fact or evidence surface>`, then Spec Drift; never
+judgment or pass.
 
 ## Critical-path assertion strength
 
-For regression-Critical, irreversible, and data-loss paths, fault-inject a small
-behavior break and confirm the covering test goes red, then revert. Use the existing
-mutation tool when present. Run:
-
-```bash
-devrites-engine test-integrity
-devrites-engine mutation-gate
-```
-
-A test that stays green on broken code is unproven. Pure transforms also get a
-round-trip or metamorphic property check when applicable.
+For regression-Critical, irreversible, and data-loss paths, inject a small break,
+confirm the covering test turns red, then revert; use the existing mutation tool.
+A green test on broken code is unproven. Pure transforms also get a round-trip or
+metamorphic property check when applicable.
 
 ## Runtime observability branch
 
-For endpoints, jobs, consumers, integrations, user-facing flows, or new error paths,
-apply the on-call test from `observability.md`: trigger the failure path and observe the
-required log, metric, or trace emit. Record the observation. Skip pure internal, docs,
-config, and type-only changes.
+For endpoints, jobs, consumers, integrations, user flows, or new error paths,
+trigger failure and observe the required log/metric/trace per `observability.md`;
+record it. Skip pure internal, docs, config, and type-only changes.
 
 ## Developer-facing branch
 
-For a public API, CLI, SDK, webhook, config contract, error path, or getting-started
-flow, execute the real entry point on clean state. Measure time-to-hello-world and
-capture verbatim failure output. Browser-capture docs/quickstarts when applicable.
-Write the measured scorecard to `devex.md` and headline evidence to `evidence.md`.
+For public API/CLI/SDK/webhook/config/error/onboarding, execute the real entry on
+clean state, measure time-to-hello-world, and capture verbatim failure output.
+Browser-capture docs/quickstarts when applicable. Write the scorecard to
+`devex.md` and headline evidence to `evidence.md`.
 
 ## Wiring branch
 
-Walk every key link declared by `plan.md` and exercise or follow it in the assembled
-feature. Record each as `EVID-###`; if none are declared, record that fact. An unwired
-link is a blocker.
+Exercise/follow every key `plan.md` link in the assembled feature; record each as
+`EVID-###`, or record none declared. An unwired link blocks.

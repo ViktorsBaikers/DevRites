@@ -40,14 +40,6 @@ jobs:
       - name: Install npm deps
         run: npm ci
 
-      - name: "Generate host artifacts (tracked files fresh: BLOCKING)"
-        run: |
-          bash scripts/build-host-artifacts.sh
-          git diff --exit-code -- pack/generated || {
-            echo "tracked pack/generated files drifted from pack/.claude sources; rerun scripts/build-host-artifacts.sh and commit the result" >&2
-            exit 1
-          }
-
       - name: Validate pack structure
         run: bash scripts/validate.sh
 
@@ -166,14 +158,6 @@ jobs:
       - name: go test -race (control plane + parity oracle)
         working-directory: engine
         run: go test ./... -race -count=1
-
-      - name: "Validate pack hook wiring (known ids + schema shape: BLOCKING)"
-        working-directory: engine
-        run: go run . validate-pack ../pack/.claude
-
-      - name: Harness compliance matrix in sync (generated doc drift-check)
-        working-directory: engine
-        run: go run . harness-matrix --check ../docs/harness-compliance.md
 
       - name: Cross-compile matrix smoke (all release targets build)
         run: bash scripts/build-binaries.sh 0.0.0-ci

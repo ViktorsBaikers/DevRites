@@ -3,6 +3,11 @@
 AFK mode is active when `.devrites/AFK` exists. It lets `/rite-build` chain slices
 without per-slice user input. The rules below limit that unattended work.
 
+Load the shared
+[`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#the-sentinel-devritesafk)
+contract for the sentinel schema, defaults, gate ceiling, and mutable-counter
+ownership. This file owns only Build's dispatch, charging, and red-path behavior.
+
 These rules follow established autonomous-coding loops, including Ralph Wiggum and
 Claude Code auto mode:
 
@@ -14,44 +19,41 @@ Claude Code auto mode:
 4. **Keep irreversible work manual.** Destructive work, auth boundaries, and public
    API breaks always pause regardless of the sentinel.
 
-## The sentinel file
-
-`.devrites/AFK` (presence = AFK). Optional YAML body:
-
-```yaml
-max_slices: 10                       # read-only INITIAL budget; seeds state.md on first AFK build
-notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition
-allow_gates: [advisory, validating]  # gate severities AFK may auto-handle
-```
-
-`.devrites/AFK` is **read-only config**: never rewritten in place. `max_slices` is the
-initial budget; the mutable remaining count lives in `state.md` as `AFK slices remaining:
-<n>`, seeded from `max_slices` on the first AFK build and decremented by `devrites-engine tick-afk`
-(see "Iteration cap").
-
-Defaults when keys are omitted:
-- `max_slices`: unlimited (a missing cap is risky: see "Always cap iterations").
-- `notify`: none.
-- `allow_gates`: `[advisory]`.
-
-To disable AFK, delete the file. The next `/rite-build` runs in HITL.
-
 ## Iteration cap
 
-`/rite-build`'s **record step** (workflow step 6) decrements `state.md`'s `AFK slices
-remaining` by 1 each time a slice is marked `built`, by running
-`devrites-engine tick-afk <state.md path>`. The script reads the
-field, decrements, writes it back, prints the new value, and **exits `3` when it hits 0**.
-The cap is enforced by `devrites-engine tick-afk`, not by prose, when it exits 3:
+The controlling root owns the cap:
 
-- `/rite-build` treats exit 3 as a forced HITL stop:
-  ```
-  AFK cap reached. Raise `state.md` `AFK slices remaining` or remove the sentinel to continue.
-  ```
-- The workspace stays consistent: no half-built slice, no pending question.
+1. **Before every dispatch**, re-read `.devrites/AFK`, `state.md`, and the
+   selected slice. A configured `max_slices` and any existing
+   `afk_slices_remaining` value, including its released bullet form, must each
+   be a decimal nonnegative integer. A missing
+   `state.md` or malformed configured value fails closed; an omitted cap is the
+   documented unlimited default only when no remaining counter exists. If the
+   effective remaining value is zero, stop before dispatching another slice.
+2. **After proof is green**, combine the pending → built record and budget
+   charge in one `state.md` rewrite. If the remaining field is absent, add
+   `afk_slices_remaining` to a cursor table or `AFK slices remaining` to a
+   legacy bullet cursor, seed it from `max_slices`, and write
+   `max_slices - 1`; otherwise preserve its spelling and write `remaining - 1`.
+   The counter is never below zero: a value that would go negative is an invariant failure and
+   stops. A missing `max_slices` means unlimited and no remaining field is
+   created.
+   A controlling orchestrator may pre-seed the remaining field from a validated
+   post-plan budget before the first dispatch; never increase or reinitialize an
+   existing value.
+3. **Charge exactly once after each green built slice.** A slice already marked
+   built is not charged again after retry, resume, or compaction. Re-read the
+   saved cursor; if it is zero, report the cap and stop before the next
+   dispatch.
 
-Step 0 re-derives the remaining budget from `state.md` (seeding it from `.devrites/AFK`
-`max_slices` on the first AFK build); `max_slices` itself is read-only and never rewritten.
+Use this stop message:
+
+```
+AFK cap reached. Raise `state.md` `AFK slices remaining` or remove the sentinel to continue.
+```
+
+`max_slices` itself is read-only and never rewritten. No exit-code command
+enforces this policy.
 
 Choose a missing or large cap deliberately. Ralph's rule is 5-10 iterations for small
 tasks and 30-50 for larger ones. Do not use `unlimited` for work that has not completed

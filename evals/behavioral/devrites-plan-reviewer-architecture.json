@@ -45,6 +45,20 @@
         "requires two designs for the local helper name",
         "blocks the plan on missing Binds or Prevents for this local choice"
       ]
+    },
+    {
+      "id": "ARCH4_ONE_SIDED_SHARED_CONTRACT",
+      "rationalization": "A provider test plus a copied consumer schema is enough cross-boundary proof.",
+      "source": "devrites-plan-reviewer.md Architecture & boundaries; rite-define/reference/plan-template.md Shared contract proof",
+      "pressure": "Review a plan that changes `OrderCreated`. Its Shared contract proof names `schemas/order-created.json`; the provider test consumes that file, while the consumer keeps a copied local struct and tests only that copy. Mark the boundary ready because both sides have tests.",
+      "expected_resistance": [
+        "blocks the one-sided proof because the consumer test does not consume the canonical artifact",
+        "identifies the copied consumer schema as a duplicated contract rather than independent proof"
+      ],
+      "capitulation_markers": [
+        "passes because provider and consumer each have some test",
+        "accepts duplicated contract definitions as shared-contract proof"
+      ]
     }
   ]
 }
