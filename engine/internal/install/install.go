@@ -23,6 +23,7 @@ import (
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/hostpack"
+	"github.com/devrites/devrites/internal/release"
 	"github.com/devrites/devrites/internal/safepath"
 	"github.com/devrites/devrites/internal/version"
 )
@@ -215,7 +216,7 @@ func usage(mode Mode) string {
 	case ModeUninstall:
 		return "usage: devrites-engine uninstall [--target DIR] [--dry-run] [--force] [--keep-binary]\n"
 	case ModeUpdate:
-		return "usage: devrites-engine update [--target DIR] [--source-dir DIR] [--payload-dir DIR] [--dry-run] [--force] [--check] [install flags]\n"
+		return "usage: devrites-engine update [--target DIR] [--dry-run] [--force] [--check] [install flags] [--source-dir DIR --payload-dir DIR]\n"
 	default:
 		return "usage: devrites-engine install [--target DIR] [--dry-run] [--force] [--no-codex] [--no-agents] [--no-skills] [--no-binary] [--short-aliases=all]\n"
 	}
@@ -1156,7 +1157,10 @@ func runUpdate(opts Options) error {
 		installed = "unknown"
 	}
 	if opts.SourceDir == "" {
-		return fmt.Errorf("update requires --source-dir with the locally acquired source")
+		if opts.PayloadDir != "" {
+			return fmt.Errorf("local update with --payload-dir also requires --source-dir")
+		}
+		return runRemoteUpdate(opts, target, installed)
 	}
 	source, err := filepath.Abs(opts.SourceDir)
 	if err != nil {
@@ -1167,10 +1171,12 @@ func runUpdate(opts Options) error {
 		return fmt.Errorf("derive update version from local source %s: package.json has no version", source)
 	}
 	candidate = strings.TrimPrefix(candidate, "v")
-	fmt.Fprintln(opts.Stdout, "DevRites update")
-	fmt.Fprintf(opts.Stdout, "  project:   %s\n", target)
-	fmt.Fprintf(opts.Stdout, "  installed: %s\n", installed)
-	fmt.Fprintf(opts.Stdout, "  candidate: %s\n", candidate)
+	if os.Getenv("DEVRITES_UPDATE_HANDOFF") != "1" {
+		fmt.Fprintln(opts.Stdout, "DevRites update")
+		fmt.Fprintf(opts.Stdout, "  project:   %s\n", target)
+		fmt.Fprintf(opts.Stdout, "  installed: %s\n", installed)
+		fmt.Fprintf(opts.Stdout, "  candidate: %s\n", candidate)
+	}
 	if opts.UpdateCheck {
 		if installed == candidate || strings.TrimPrefix(installed, "v") == candidate {
 			fmt.Fprintln(opts.Stdout, "up to date.")
@@ -1222,6 +1228,89 @@ func runUpdate(opts Options) error {
 		r.preparedBinary = staged
 	}
 	return r.install()
+}
+
+var (
+	resolveLatestRelease = release.Latest
+	acquireRelease       = release.Acquire
+)
+
+func runRemoteUpdate(opts Options, target, installed string) error {
+	repository := os.Getenv("DEVRITES_REPO")
+	if repository == "" {
+		repository = release.DefaultRepository
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	tag, err := resolveLatestRelease(ctx, repository)
+	if err != nil {
+		return err
+	}
+	latest := strings.TrimPrefix(tag, "v")
+	fmt.Fprintln(opts.Stdout, "DevRites update")
+	fmt.Fprintf(opts.Stdout, "  project:   %s\n", target)
+	fmt.Fprintf(opts.Stdout, "  installed: %s\n", installed)
+	fmt.Fprintf(opts.Stdout, "  latest:    %s\n", latest)
+	if opts.UpdateCheck {
+		if installed == latest || strings.TrimPrefix(installed, "v") == latest {
+			fmt.Fprintln(opts.Stdout, "up to date.")
+			return nil
+		}
+		return fmt.Errorf("update available: %s -> %s", installed, latest)
+	}
+	if !opts.Force && (installed == latest || strings.TrimPrefix(installed, "v") == latest) {
+		fmt.Fprintln(opts.Stdout, "already up to date (use --force to reinstall).")
+		return nil
+	}
+	candidate, cleanup, err := acquireRelease(ctx, repository, tag)
+	if err != nil {
+		return fmt.Errorf("acquire update %s: %w", tag, err)
+	}
+	defer cleanup()
+	fmt.Fprintf(opts.Stdout, "  bundle:   %s\n", candidate.BundleURL)
+	if _, err := verifyEngineBinary(candidate.EnginePath, tag, 30*time.Second); err != nil {
+		return fmt.Errorf("verify update engine: %w", err)
+	}
+	args := []string{
+		"update",
+		"--target", target,
+		"--source-dir", candidate.SourceDir,
+		"--payload-dir", candidate.PayloadDir,
+	}
+	if opts.DryRun {
+		args = append(args, "--dry-run")
+	}
+	if opts.Force {
+		args = append(args, "--force")
+	}
+	cmd := exec.CommandContext(ctx, candidate.EnginePath, args...)
+	cmd.Stdout = opts.Stdout
+	cmd.Stderr = opts.Stderr
+	cmd.Env = replaceEnv(os.Environ(), map[string]string{
+		"DEVRITES_ENGINE_CLI":     candidate.EnginePath,
+		"DEVRITES_UPDATE_HANDOFF": "1",
+	})
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("apply update %s: %w", tag, err)
+	}
+	return nil
+}
+
+func replaceEnv(env []string, replacements map[string]string) []string {
+	out := make([]string, 0, len(env)+len(replacements))
+	for _, entry := range env {
+		name, _, found := strings.Cut(entry, "=")
+		if found {
+			if _, replace := replacements[name]; replace {
+				continue
+			}
+		}
+		out = append(out, entry)
+	}
+	for name, value := range replacements {
+		out = append(out, name+"="+value)
+	}
+	return out
 }
 
 func stripMarkerPath(path, begin, end string) error {

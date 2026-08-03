@@ -13,7 +13,8 @@ deterministic safety/atomic primitives, while native skills and exact agents
 handle workflow policy and judgment. See
 [ADR-0001](docs/adr/0001-go-engine-as-control-plane.md) and
 [ADR-0022](docs/adr/0022-native-orchestration-thin-engine.md), as narrowed by
-[ADR-0024](docs/adr/0024-native-policy-offline-installer-boundary.md).
+[ADR-0024](docs/adr/0024-native-policy-offline-installer-boundary.md), as
+amended by [ADR-0028](docs/adr/0028-self-contained-engine-update.md).
 
 ## The two planes
 
@@ -79,7 +80,7 @@ is a native, preservation-first workflow edit. See
 
 | Path | What |
 |------|------|
-| `engine/` | The thin offline Go control plane: local managed install, structural checks, retained atomic state, secret scan, and version. |
+| `engine/` | The thin Go control plane: self-update plus local managed install, structural checks, retained atomic state, secret scan, and version. |
 | `engine/tests/` | Parity/golden + unit tests, incl. `adr_NNNN_*` guard tests. |
 | `pack/.claude/` | Canonical skills, agents, standards, and Claude configuration; Codex artifacts are generated from it. |
 | `install.sh` / `bin/` | Installer + npx entry; version is single-sourced from `package.json`. |
@@ -89,9 +90,10 @@ is a native, preservation-first workflow edit. See
 
 ## Invariants worth knowing
 
-- The engine makes **no** network or model calls. Explicit install/update
-  acquisition belongs to shell/npm entrypoints before they invoke the local
-  engine operation (ADR-0024).
+- The engine makes **no model calls**. Network access is isolated to bounded,
+  checksummed latest-release acquisition for direct `devrites-engine update`;
+  every workspace policy, state, proof, and install-application package remains
+  network-free (ADR-0028).
 - Public rites are the authoritative orchestrators. Fresh-context leaves run
   at depth one through exact named profiles; there is no generic-agent
   fallback. Reviewer leaves are natively read-only. Claude keeps the root in

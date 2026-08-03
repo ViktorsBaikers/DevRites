@@ -1,6 +1,6 @@
 # ADR-0024: Native policy and offline installer boundary
 
-- **Status:** Accepted
+- **Status:** Accepted in part; offline engine-update clause superseded by 0028
 - **Date:** 2026-08-01
 
 ## Context

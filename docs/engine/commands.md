@@ -53,18 +53,20 @@ explicit root-owned native procedures. The workflow owns reproduction,
 hypothesis ranking, tool selection, and routing. No replacement scripts or
 counter artifacts are introduced.
 
-## Offline install boundary
+## Install and update boundary
 
-The engine's install/update/uninstall operations accept an already-local source,
-pre-generated host payload, and optional staged binary. They never select a
-release or download a bundle/binary. Shell and npm entrypoints own acquisition
-and checksum verification, then invoke the local deterministic operation.
-`update --check` compares the installed manifest version with the supplied
-local candidate. `--to` and `--pre` are not supported engine flags.
+Install application and uninstall accept local source, pre-generated host
+payload, and optional staged binary inputs. Direct `devrites-engine update`
+selects the latest stable release, downloads its bundle and platform engine,
+then invokes that downloaded engine with local candidate paths. Shell and npm
+may instead acquire and pass the same local inputs. `update --check` compares
+installed and latest release metadata without downloading assets. `--to` and
+`--pre` are not supported engine flags.
 
-Remote acquisition is exact-SemVer, HTTPS-only at every redirect, bounded, and
-requires an exact-filename SHA-256 sidecar. Archive preflight completes before
-extraction and unchecked raw/source/default-branch fallbacks are absent.
+Remote acquisition is isolated to the release boundary, exact-SemVer,
+HTTPS-only at every redirect, bounded, and requires exact-filename SHA-256
+sidecars. Archive validation completes during bounded extraction and unchecked
+raw/source/default-branch fallbacks are absent.
 
 ## Secret scanning
 

@@ -143,20 +143,24 @@ re-read, qid allocation, Clarify cursor transitions, AFK/recovery accounting,
 and read-only diagnostics. `devrites-lib` documents that boundary and links common
 references; it does not implement an orchestration protocol.
 
-### Why install policy is local and acquisition stays at the edge
+### Why update acquisition is isolated from local installation
 `engine/internal/install` validates the pre-generated host payload and implements
 install, update, and uninstall behavior: manifest writing and pruning,
 shared-file marker merging and removal, legacy Codex hook removal, dry-run
-output, binary lifecycle, rollback, and install-flag replay. These operations
-consume only caller-supplied local source, payload, and binary candidates; the
-engine does not select releases or perform network I/O. `update --check`
-compares the installed manifest version with that local candidate. Engine
-`--to` and `--pre` selectors do not exist.
+output, binary lifecycle, rollback, and install-flag replay. Those mutations
+consume only local source, payload, and binary candidates.
+
+Direct `devrites-engine update` uses the separate `engine/internal/release`
+boundary to resolve the latest stable release and acquire its checksummed bundle
+and platform engine. It then invokes the downloaded engine with local paths, so
+the candidate validates its own payload schema. `update --check` resolves only
+release metadata and downloads no assets. Engine `--to` and `--pre` selectors do
+not exist.
 The shell entrypoints
 (`install.sh`, `uninstall.sh`, `update.sh`) and npm entrypoint
-(`bin/devrites.mjs`) are acquisition adapters. They acquire and verify the
-exact-release bundle or binary, then pass local paths and user flags through to
-the deterministic engine operation. Network paths require exact SemVer,
+(`bin/devrites.mjs`) remain equivalent acquisition adapters. They acquire and
+verify the exact-release bundle or binary, then pass local paths and user flags
+through to the deterministic engine operation. All network paths require exact SemVer,
 HTTPS-only redirects, exact-filename SHA-256 sidecars, private temporary
 directories, bounded transfers, and full archive preflight. They provide no
 unchecked raw, source-archive, tag, or default-branch fallback.
@@ -406,9 +410,10 @@ contract.
 - **Scope**: clarify → seal (decide) → ship (read-only preflight → type-GO →
   commit → optional approved push/tag/PR by project convention) → close. The CI
   pipeline stays with the project.
-- **Install**: project-local, manifest-managed host artifacts; shell/npm owns
-  acquisition, the engine performs offline local mutation, and the optional
-  shared engine binary is the only allowed global artifact.
+- **Install**: project-local, manifest-managed host artifacts; direct update,
+  shell, or npm may acquire a verified release, local install application owns
+  mutation, and the optional shared engine binary is the only allowed global
+  artifact.
 
 Candidate identity and bounded-input rationale are recorded in
 [ADR-0026](adr/0026-content-bound-proof-and-bounded-inputs.md). The

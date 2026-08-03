@@ -43,7 +43,7 @@ The Go surface is intentionally closed and deterministic:
 | Candidate and deterministic checks | `check candidate`, `check readiness [--emit-binding]`, `check seal` | Candidate validates/hashes the strict project manifest; readiness checks phase files or emits the vetted Build-input binding; seal checks final files/open gates, that binding, then exact candidate bindings. |
 | Atomic workspace state | `state resolve`, `state close` | Go owns answer/drop/batch resolution and transactional close. |
 | Security | `secret-scan` | `/rite-ship`, safe hooks, or an operator scans staged blobs, stdin, or touched files. |
-| Install/operator | `install`, `update`, `uninstall`, `version` | npm/bootstrap or a human operator supplies local candidates; the engine performs deterministic local changes. |
+| Install/operator | `install`, `update`, `uninstall`, `version` | Direct update acquires latest; npm/bootstrap may supply local candidates; the engine performs manifest-owned local changes. |
 | Native policy | no engine command | Skills/root own spec grammar re-read, qid allocation, Clarify cursor edits, AFK/recovery accounting, and read-only `/rite-doctor`. |
 
 `devrites-engine help` exhaustively lists the operational engine commands.
@@ -67,9 +67,11 @@ replacement objects disabled. `--stdin` accepts text through process stdin.
 Scans cap captured input at 64 MiB and entries/findings at 4,096; findings expose
 metadata only and source or limit errors fail closed.
 
-The shell/npm updater acquires the exact-release pack/binary, then invokes
-the offline local `devrites-engine update`. Its `--check` compares installed and
-local candidate versions; engine release selectors are unsupported.
+Direct `devrites-engine update` acquires the latest exact-release pack and
+platform binary, then hands local paths to the downloaded engine. Shell/npm may
+perform the same acquisition before invoking the local path. `--check` compares
+the installed version with latest release metadata without downloading assets;
+engine release selectors are unsupported.
 `/rite-upgrade` separately audits an older active workspace. Only a cited
 current-contract defect may route a repair through its existing Clarify, Plan
 repair, Converge, Vet, Prove, Polish, Review, or Seal owner.

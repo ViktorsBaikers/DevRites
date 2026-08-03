@@ -105,13 +105,12 @@ Some work needs a different route:
   cursor form alone never triggers repair; it is not a lifecycle phase.
 - [`/rite`](pack/.claude/skills/rite/SKILL.md) shows the command menu.
 
-The npm or shell updater acquires a local install candidate and uses
-`devrites-engine update` to refresh the installed engine and pack offline.
-For a pre-v4 install, do not retry an older engine directly if it reports
-`missing codex/hooks.json`. Run `npx devrites@latest update`, or verify the
-release `install.sh` as shown below and run `bash ./install.sh update`. The v4
-engine updates locally and offline; those adapters acquire its compatible
-candidate first.
+Run `devrites-engine update` from an installed project to acquire the latest
+stable release and update both the engine and pack. `npx devrites@latest update`
+and the verified release `install.sh` remain equivalent adapter routes. If an
+older engine instead reports `missing codex/hooks.json` or asks for
+`--source-dir`, use the npm or verified shell route once to cross to a release
+with the self-contained updater.
 `/rite-upgrade` is the separate native, preservation-first route for reconciling
 an unfinished workspace. It proves a current-contract defect before routing
 Clarify, Plan repair, Converge, Vet, Prove, Polish, Review, or Seal; it never
@@ -249,6 +248,10 @@ npx devrites@latest update
 npx devrites@latest update --check
 npx devrites@latest uninstall
 npx devrites@latest uninstall --keep-binary
+
+# The installed engine can update itself and the project pack directly
+devrites-engine update
+devrites-engine update --check
 ```
 
 Useful install flags:
@@ -336,11 +339,12 @@ path must report that version in a new process. The installer keeps a backup in
 the same directory until the second check passes. On failure, it restores the
 previous binary or removes a bad first install.
 
-The Go installer never downloads or selects a release. npm and the Bash
-bootstrap acquire the exact-release bundle and checksummed binary first,
-then invoke the engine with local paths. `update --check` compares the installed
-manifest version with that local candidate; release selectors belong to the
-acquisition layer, not the engine.
+Direct `devrites-engine update` resolves the latest stable release, acquires its
+bundle and platform binary, and hands local paths to the downloaded engine. The
+candidate engine therefore validates its own payload before replacing the
+installed pack and binary. npm and Bash may supply the same local candidate
+paths directly. `update --check` resolves and compares the latest version
+without downloading release assets.
 
 Network acquisition resolves an exact SemVer release, permits HTTPS at every
 redirect hop, requires an exact-filename SHA-256 sidecar, and uses private
@@ -412,11 +416,12 @@ configured engine, download the exact release binary with its mandatory checksum
 build a temporary engine from package-local Go source, or use `devrites-engine`
 on `PATH`. Remote fetches are HTTPS-only and bounded. Use
 `--no-binary` or `DEVRITES_NO_BINARY=1` to avoid keeping a shared binary outside
-the project. npm or the Bash bootstrap also acquires update candidates and
-checksums before invoking the offline engine operation. The engine itself is
-network-free, and install, update, and uninstall do not inspect target-project
-Git. Retained safety operations such as `secret-scan --staged` intentionally
-read the exact Git index and staged blobs they validate.
+the project. npm, Bash, and direct engine update all require checksummed release
+assets. Engine network access is isolated to bounded latest-release acquisition;
+the downloaded engine performs the local manifest-owned update. Install, update,
+and uninstall do not inspect target-project Git. Retained safety operations such
+as `secret-scan --staged` intentionally read the exact Git index and staged blobs
+they validate.
 
 Production Git subprocesses remove repository/config/object/ref/pathspec
 retargeting `GIT_*` variables while preserving unrelated Git environment. Seal

@@ -119,8 +119,8 @@ and `.codex/config.toml` without replacing unrelated user settings. The shared
 `devrites-engine` executable is the only allowed artifact outside the project.
 It is installed to `DEVRITES_BIN_DIR`, a writable `~/.local/bin`, or a writable
 `/usr/local/bin`; `--no-binary` / `DEVRITES_NO_BINARY=1` skips it. The bootstrap
-path may fetch the release bundle and checksummed engine assets. It never invokes
-`sudo` or edits shell startup files.
+and direct updater may fetch the release bundle and checksummed engine assets.
+They never invoke `sudo` or edit shell startup files.
 
 The documented Node-free boundary downloads the release-owned `install.sh` and
 its exact-name sidecar before execution; mutable default-branch scripts are not
@@ -133,14 +133,15 @@ exact-filename SHA-256 sidecar. Every redirect hop must remain HTTPS, private
 temporary-directory creation must succeed, and unchecked raw/source/default-
 branch fallbacks are absent. Representative in-stream ceilings are 1 MiB for
 release metadata, 4 KiB for a sidecar, and 64 MiB for an archive or binary, with
-at most five Node redirect hops. Archive preflight streams metadata first and
-paths second, permits at most 10,000 members, 4,096-byte paths, and 256 MiB of
-expanded regular files, and aborts the producer on the first breach before
-extraction. Failures retain only safe tag/asset and status, redirect, size,
-checksum, or preflight context, never response bodies. The adversarial contract is exercised by
+at most five Node or ten Go redirect hops. Archive handling rejects unsafe types
+and paths, permits at most 10,000 members and 256 MiB regular files across all
+routes, and applies stricter route-specific count, file, and expanded-byte caps
+where configured. Failures retain only safe tag/asset and status, redirect,
+size, checksum, or archive context, never response bodies. The adversarial
+contract is exercised by `engine/internal/release/release_test.go`,
 `tests/bootstrap-security-test.sh`, `tests/npx-pack-smoke.sh`, and
 `tests/release-tarball-test.sh`; [ADR-0026](docs/adr/0026-content-bound-proof-and-bounded-inputs.md)
-owns the rationale.
+and [ADR-0028](docs/adr/0028-self-contained-engine-update.md) own the rationale.
 
 ### npx install path
 

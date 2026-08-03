@@ -34,6 +34,20 @@ migration command.
 `check candidate` is additive; no existing engine command or public `/rite-*`
 workflow was removed or renamed.
 
+## Updates
+
+Run `devrites-engine update` in an installed project to resolve the latest
+stable release and update the project pack plus shared engine binary. The
+command downloads the release bundle and platform engine, verifies both exact
+filenames against their SHA-256 sidecars, then hands the extracted candidate to
+the downloaded engine. This avoids asking an old engine to validate a newer
+payload schema.
+
+`devrites-engine update --check` resolves and compares release metadata without
+downloading assets. `--source-dir` and `--payload-dir` remain the advanced local
+update path for npm, shell, source-checkout, and test callers; a local `--check`
+needs only `--source-dir`.
+
 ## npm adapter
 
 The `npx devrites` adapter accepts `add` as an alias for `install`, `upgrade` for
@@ -41,16 +55,15 @@ The `npx devrites` adapter accepts `add` as an alias for `install`, `upgrade` fo
 `devrites-engine` aliases; documentation and automation should prefer the
 canonical command names.
 
-Use `npx devrites update --check` to compare the installed manifest version with
-the exact release candidate selected by the adapter without changing the
-installation. Use `npx devrites uninstall --keep-binary` to remove managed host
-artifacts while retaining the shared `devrites-engine` binary.
+Use `npx devrites update --check` to perform the equivalent adapter-level
+comparison without changing the installation. Use
+`npx devrites uninstall --keep-binary` to remove managed host artifacts while
+retaining the shared `devrites-engine` binary.
 
-For a pre-v4 install, an older direct `devrites-engine update` can report
-`missing codex/hooks.json`; do not retry that command. Run
-`npx devrites@latest update`, or use a checksum-verified release `install.sh` and
-run `bash ./install.sh update`. The v4 engine update is local and offline; the
-npm or shell adapter acquires the compatible candidate before invoking it.
+If an older direct engine reports `missing codex/hooks.json` or asks for
+`--source-dir`, run `npx devrites@latest update`, or use a checksum-verified
+release `install.sh` and run `bash ./install.sh update` once to install a release
+with the self-contained updater.
 
 ## Checks
 
@@ -127,14 +140,14 @@ selection exits `2`; a malformed/unsafe manifest or candidate mismatch prints
 `DEVRITES_WORKSPACE` may select one explicit contained workspace. Mutating
 commands refuse ambiguous, escaped, symlinked, or otherwise unsafe roots.
 
-Install, update, and uninstall remain manifest-owned operations and perform no
-network acquisition. Shell and npm entrypoints acquire the local candidate
-bundle and optional checksummed binary before invoking them. Remote acquisition
-uses exact SemVer, HTTPS-only redirect hops, mandatory exact-filename SHA-256
-sidecars, private temporary directories, and byte/archive bounds; it has no
-unchecked raw/source/default-branch fallback. Update
-accepts `--check` to compare the installed manifest version with that local
-candidate; remote-selector flags such as `--to` and `--pre` are unsupported.
+Install, update application, and uninstall remain manifest-owned local
+operations. Direct engine update, shell, and npm may acquire a release candidate;
+all remote acquisition uses exact SemVer, HTTPS-only redirect hops, mandatory
+exact-filename SHA-256 sidecars, private temporary directories, and byte/archive
+bounds, with no unchecked raw/source/default-branch fallback. Update accepts
+`--check` to compare the installed manifest version with the latest stable
+release without downloading assets. Remote-selector flags such as `--to` and
+`--pre` are unsupported.
 `/rite-upgrade` is a native compatibility audit, not an engine migration. Its
 read-only planner must cite a current rule and exact workspace defect; admitted
 repairs run through the current Clarify, Plan, Converge, Vet, Prove, Polish,
