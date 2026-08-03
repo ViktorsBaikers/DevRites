@@ -203,7 +203,7 @@ func TestSecretScanIgnoresReplacementOfStagedBlob(t *testing.T) {
 	stagedOID := strings.TrimSpace(runSecretScanGit(t, project, "rev-parse", ":"+path))
 	safePath := filepath.Join(project, "safe-object.txt")
 	testutil.WriteFile(t, safePath, "safe replacement bytes\n")
-	safeOID := strings.TrimSpace(runSecretScanGit(t, project, "hash-object", "-w", "--", safePath))
+	safeOID := strings.TrimSpace(runSecretScanGit(t, project, "hash-object", "-w", "--no-filters", "--", safePath))
 	if err := os.Remove(safePath); err != nil {
 		t.Fatal(err)
 	}
@@ -480,25 +480,20 @@ func TestSecretScanScansUnusualStagedEntriesWithoutReadingWorktree(t *testing.T)
 	if err := os.Rename(filepath.Join(project, "old-name.txt"), filepath.Join(project, "new-name.txt")); err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{"new-name.txt", "space name.txt", "line\nbreak.txt"} {
+	for _, path := range []string{"new-name.txt", "space name.txt"} {
 		testutil.WriteFile(t, filepath.Join(project, path), secret+"\n")
 	}
 	if err := os.WriteFile(filepath.Join(project, "binary.dat"), append([]byte{0, 1, 2}, []byte(secret)...), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(secret, filepath.Join(project, "linked-secret")); err != nil {
-		t.Fatal(err)
-	}
 	runSecretScanGit(t, project, "add", "-A")
+	secretOID := strings.TrimSpace(runSecretScanGitInput(t, project, strings.NewReader(secret), "hash-object", "-w", "--stdin"))
+	indexEntries := "100644 blob " + secretOID + "\tline\nbreak.txt\x00" +
+		"120000 blob " + secretOID + "\tlinked-secret\x00"
+	runSecretScanGitInput(t, project, strings.NewReader(indexEntries), "update-index", "-z", "--index-info")
 
-	for _, path := range []string{"new-name.txt", "space name.txt", "line\nbreak.txt", "binary.dat"} {
+	for _, path := range []string{"new-name.txt", "space name.txt", "binary.dat"} {
 		testutil.WriteFile(t, filepath.Join(project, path), "safe worktree bytes\n")
-	}
-	if err := os.Remove(filepath.Join(project, "linked-secret")); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Symlink("safe-target", filepath.Join(project, "linked-secret")); err != nil {
-		t.Fatal(err)
 	}
 
 	var out, err bytes.Buffer
