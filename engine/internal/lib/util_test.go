@@ -25,7 +25,7 @@ func TestRunGitCommandIgnoresInheritedRepositoryTargets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := strings.TrimSpace(string(out)); got != want {
+	if got := filepath.FromSlash(strings.TrimSpace(string(out))); got != want {
 		t.Fatalf("git top level = %q, want %q", got, want)
 	}
 }
