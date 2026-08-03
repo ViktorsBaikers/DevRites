@@ -2,6 +2,7 @@ package install
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/devrites/devrites/internal/hostpack"
+	"github.com/devrites/devrites/internal/release"
 	"github.com/devrites/devrites/internal/testutil"
 )
 
@@ -484,6 +486,36 @@ func buildVersionBinary(t *testing.T, version string) string {
 	return binary
 }
 
+func buildUpdateHandoffBinary(t *testing.T, version string) string {
+	t.Helper()
+	dir := t.TempDir()
+	source := filepath.Join(dir, "main.go")
+	testutil.WriteFile(t, source, fmt.Sprintf(`package main
+import (
+	"fmt"
+	"os"
+	"strings"
+)
+func main() {
+	if len(os.Args) == 2 && os.Args[1] == "version" {
+		fmt.Println(%q)
+		return
+	}
+	output := strings.Join(os.Args[1:], "\n") + "\n" +
+		"DEVRITES_UPDATE_HANDOFF=" + os.Getenv("DEVRITES_UPDATE_HANDOFF") + "\n" +
+		"DEVRITES_ENGINE_CLI=" + os.Getenv("DEVRITES_ENGINE_CLI") + "\n"
+	if err := os.WriteFile(os.Getenv("DEVRITES_TEST_UPDATE_HANDOFF"), []byte(output), 0600); err != nil {
+		panic(err)
+	}
+}
+`, version))
+	binary := filepath.Join(dir, engineBinaryName())
+	if out, err := exec.Command("go", "build", "-o", binary, source).CombinedOutput(); err != nil {
+		t.Fatalf("build update handoff engine: %v\n%s", err, out)
+	}
+	return binary
+}
+
 func TestBinaryCandidatesSkipsUnsetBinDir(t *testing.T) {
 	t.Setenv("DEVRITES_BIN_DIR", "")
 
@@ -531,6 +563,7 @@ func TestUpdateInstallsLocalPayload(t *testing.T) {
 	opts.Stderr = &bytes.Buffer{}
 	check := opts
 	check.UpdateCheck = true
+	check.PayloadDir = ""
 	if err := Apply(check); err == nil || !strings.Contains(err.Error(), "update available: 1.0.0 -> 2.0.0") {
 		t.Fatalf("update check error = %v, want local candidate report", err)
 	}
@@ -549,6 +582,84 @@ func TestUpdateInstallsLocalPayload(t *testing.T) {
 	}
 	if exists(filepath.Join(target, ".claude", "agents")) {
 		t.Fatal("update did not replay --no-agents from the manifest")
+	}
+}
+
+func TestUpdateAcquiresLatestReleaseAndHandsOff(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	target := t.TempDir()
+	runInstall(t, target, testPayload(t), func(o *Options) {
+		o.SourceDir = testSource(t, "1.0.0")
+	})
+	source := testSource(t, "2.0.0")
+	payload := testPayload(t)
+	engine := buildUpdateHandoffBinary(t, "2.0.0")
+	marker := filepath.Join(t.TempDir(), "handoff.txt")
+	t.Setenv("DEVRITES_TEST_UPDATE_HANDOFF", marker)
+
+	oldResolve, oldAcquire := resolveLatestRelease, acquireRelease
+	resolveLatestRelease = func(context.Context, string) (string, error) { return "v2.0.0", nil }
+	cleaned := false
+	acquireRelease = func(context.Context, string, string) (release.Candidate, func(), error) {
+		return release.Candidate{
+			SourceDir:  source,
+			PayloadDir: payload,
+			EnginePath: engine,
+			BundleURL:  "https://example.invalid/devrites-v2.0.0.tar.gz",
+		}, func() { cleaned = true }, nil
+	}
+	t.Cleanup(func() {
+		resolveLatestRelease, acquireRelease = oldResolve, oldAcquire
+	})
+
+	var stdout, stderr bytes.Buffer
+	opts := DefaultOptions(ModeUpdate)
+	opts.Target = target
+	opts.Stdout = &stdout
+	opts.Stderr = &stderr
+	if err := Apply(opts); err != nil {
+		t.Fatalf("remote update: %v\n%s", err, stderr.String())
+	}
+	if !cleaned {
+		t.Fatal("remote update did not clean acquired release")
+	}
+	handoff := testutil.ReadFile(t, marker)
+	for _, want := range []string{
+		"update\n",
+		"--target\n" + target + "\n",
+		"--source-dir\n" + source + "\n",
+		"--payload-dir\n" + payload + "\n",
+		"DEVRITES_UPDATE_HANDOFF=1\n",
+		"DEVRITES_ENGINE_CLI=" + engine + "\n",
+	} {
+		if !strings.Contains(handoff, want) {
+			t.Fatalf("handoff missing %q:\n%s", want, handoff)
+		}
+	}
+	if !strings.Contains(stdout.String(), "latest:    2.0.0") || !strings.Contains(stdout.String(), "bundle:   https://example.invalid/") {
+		t.Fatalf("remote update output:\n%s", stdout.String())
+	}
+}
+
+func TestRemoteUpdateCheckDoesNotDownload(t *testing.T) {
+	target := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(target, ManifestName), "# devrites-version: 1.0.0\n")
+	oldResolve, oldAcquire := resolveLatestRelease, acquireRelease
+	resolveLatestRelease = func(context.Context, string) (string, error) { return "v2.0.0", nil }
+	acquireRelease = func(context.Context, string, string) (release.Candidate, func(), error) {
+		t.Fatal("--check downloaded release assets")
+		return release.Candidate{}, func() {}, nil
+	}
+	t.Cleanup(func() {
+		resolveLatestRelease, acquireRelease = oldResolve, oldAcquire
+	})
+	opts := DefaultOptions(ModeUpdate)
+	opts.Target = target
+	opts.UpdateCheck = true
+	opts.Stdout = &bytes.Buffer{}
+	opts.Stderr = &bytes.Buffer{}
+	if err := Apply(opts); err == nil || !strings.Contains(err.Error(), "update available: 1.0.0 -> 2.0.0") {
+		t.Fatalf("remote update check error = %v", err)
 	}
 }
 

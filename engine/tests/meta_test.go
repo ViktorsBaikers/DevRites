@@ -1,6 +1,6 @@
 package main_test
 
-// Cross-cutting assertion: first-party packages do not import forbidden network packages.
+// Cross-cutting assertion: release acquisition is the only engine network boundary.
 
 import (
 	"os/exec"
@@ -8,10 +8,9 @@ import (
 	"testing"
 )
 
-// TestFirstPartyMakesNoNetworkCalls asserts that no first-party Go package imports
-// a forbidden network package. This keeps the engine a network-free control plane
-// that makes zero model/API calls (PRD: "zero API").
-func TestFirstPartyMakesNoNetworkCalls(t *testing.T) {
+// TestNetworkImportsStayInReleaseBoundary keeps update networking isolated from
+// workspace state, policy, proof, and installation logic.
+func TestNetworkImportsStayInReleaseBoundary(t *testing.T) {
 	if _, err := exec.LookPath("go"); err != nil {
 		t.Skip("go toolchain unavailable")
 	}
@@ -22,6 +21,7 @@ func TestFirstPartyMakesNoNetworkCalls(t *testing.T) {
 		t.Fatalf("go list: %v", err)
 	}
 	forbidden := map[string]bool{"net": true, "net/http": true, "net/rpc": true, "net/smtp": true}
+	allowed := map[string]bool{"github.com/devrites/devrites/internal/release": true}
 	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		fields := strings.Fields(line)
 		if len(fields) == 0 {
@@ -29,7 +29,7 @@ func TestFirstPartyMakesNoNetworkCalls(t *testing.T) {
 		}
 		pkg, imports := fields[0], fields[1:]
 		for _, imp := range imports {
-			if forbidden[imp] {
+			if forbidden[imp] && !allowed[pkg] {
 				t.Errorf("first-party package %s imports forbidden network package %q", pkg, imp)
 			}
 		}

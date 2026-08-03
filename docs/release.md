@@ -22,9 +22,9 @@ its payload. Package and release installs validate and copy
 source checkout whose generated payload is incomplete, the shim may regenerate
 the missing host payload before handing that local candidate to the engine. The
 engine itself only validates and copies host payloads; it never generates them.
-The npm entrypoint and the verified release installer acquire only an exact-SemVer
-release bundle or platform binary with its mandatory exact-filename SHA-256
-sidecar.
+The npm entrypoint, verified release installer, and direct engine updater acquire
+only an exact-SemVer release bundle or platform binary with its mandatory
+exact-filename SHA-256 sidecar.
 Every redirect hop remains HTTPS; downloads use private temporary directories
 and fixed in-stream byte ceilings. The bootstrap first streams archive metadata,
 then paths, aborting the producer on a type, count, expanded-size, containment,
@@ -33,10 +33,10 @@ or path breach before extraction (at most 10,000 members, 4,096-byte paths, and
 archives/binaries at 64 MiB, and the Node adapter follows at most five redirects.
 There is no raw, source-archive, tag, or default-branch acquisition fallback;
 exact-release guarantees begin at the checksummed release `install.sh` asset.
-The Go install/update/uninstall core receives only local
-candidates and performs no network I/O. Its update `--check` compares the
-installed manifest with that local candidate; `--to` and `--pre` release
-selection belongs outside the engine and is not accepted there.
+The Go release boundary may acquire the latest stable candidate; the downloaded
+engine then supplies local paths to the manifest-owned update core. Engine
+`update --check` resolves release metadata but downloads no assets. `--to` and
+`--pre` release selection is not accepted.
 
 `bash scripts/validate.sh` is the single repository-validation authority. It
 performs strict recursive pack JSON parsing and render-to-temporary parity for
