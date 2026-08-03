@@ -2,6 +2,22 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.28...v4.0.0) (2026-08-03)
+
+### ⚠ BREAKING CHANGES
+
+* **repo:** use native host orchestration
+
+### Changed
+
+* **repo:** use native host orchestration ([0f871b2](https://github.com/ViktorsBaikers/DevRites/commit/0f871b2e2680290ed707006c693a91453619e079))
+
+### Fixed
+
+* **docs:** synchronize native orchestration contracts ([d80aaed](https://github.com/ViktorsBaikers/DevRites/commit/d80aaedf83d598b201060f51f0c58f570a7d676f))
+* **tests:** admit LF index fixture on Windows ([1d3cc3b](https://github.com/ViktorsBaikers/DevRites/commit/1d3cc3bc693f35ea0b1f4d2ce0eeb0f3ba3006a0))
+* **tests:** make Git fixtures portable on Windows ([287bcf6](https://github.com/ViktorsBaikers/DevRites/commit/287bcf65d15ef4a2a56913b358bee2ea22dff0b1))
+
 ## [3.2.28](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.27...v3.2.28) (2026-07-29)
 
 ### Fixed
