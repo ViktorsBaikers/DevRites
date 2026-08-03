@@ -46,6 +46,12 @@ the exact release candidate selected by the adapter without changing the
 installation. Use `npx devrites uninstall --keep-binary` to remove managed host
 artifacts while retaining the shared `devrites-engine` binary.
 
+For a pre-v4 install, an older direct `devrites-engine update` can report
+`missing codex/hooks.json`; do not retry that command. Run
+`npx devrites@latest update`, or use a checksum-verified release `install.sh` and
+run `bash ./install.sh update`. The v4 engine update is local and offline; the
+npm or shell adapter acquires the compatible candidate before invoking it.
+
 ## Checks
 
 - `check candidate <slug>` validates the strict `touched-files.md` manifest and

@@ -107,6 +107,11 @@ Some work needs a different route:
 
 The npm or shell updater acquires a local install candidate and uses
 `devrites-engine update` to refresh the installed engine and pack offline.
+For a pre-v4 install, do not retry an older engine directly if it reports
+`missing codex/hooks.json`. Run `npx devrites@latest update`, or verify the
+release `install.sh` as shown below and run `bash ./install.sh update`. The v4
+engine updates locally and offline; those adapters acquire its compatible
+candidate first.
 `/rite-upgrade` is the separate native, preservation-first route for reconciling
 an unfinished workspace. It proves a current-contract defect before routing
 Clarify, Plan repair, Converge, Vet, Prove, Polish, Review, or Seal; it never

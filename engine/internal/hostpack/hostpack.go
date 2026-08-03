@@ -93,6 +93,12 @@ var CodexConfigMerge = MarkerMerge{
 	MarkerText: ".codex/config.toml contains the DevRites read-only-root permission profile.",
 }
 
+var LegacyCodexHooksMerge = ManagedMerge{
+	MarkerRel: ".claude/devrites.codex-hooks-merge",
+	TargetRel: ".codex/hooks.json",
+	DryRun:    ".codex/hooks.json legacy DevRites hooks",
+}
+
 var managedMerges = []ManagedMerge{
 	{
 		MarkerRel: CodexAgentsMerge.MarkerRel,
@@ -113,6 +119,7 @@ var managedMerges = []ManagedMerge{
 		TargetRel: ClaudeSettingsMerge.TargetRel,
 		DryRun:    ".claude/settings.json DevRites permissions",
 	},
+	LegacyCodexHooksMerge,
 }
 
 func RequiredPayload(withCodex bool) []string {
