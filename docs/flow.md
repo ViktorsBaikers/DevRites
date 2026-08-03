@@ -10,8 +10,11 @@ For the full per-skill table, see [`command-map.md`](command-map.md). For the
 
 This diagram shows the normal path. Each arrow assumes that the previous
 phase's deterministic engine check and native semantic review passed. Findings
-route through `/rite-clarify`,
-`/rite-plan repair`, `/rite-upgrade`, or `devrites-debug-recovery`.
+route through `/rite-clarify`, `/rite-plan repair`, `/rite-upgrade`, or
+`devrites-debug-recovery`. Drift and failures are classified before routing:
+settled technical objectives use bounded recovery in the active phase, a wrong
+durable plan uses `/rite-plan repair`, and product, policy, or irreversible-risk
+decisions pause for the human.
 `/rite-upgrade` is an explicit compatibility audit, not a lifecycle phase; it
 routes only cited current-contract defects through existing phase owners.
 `/rite-clarify` always runs but may ask zero questions; `/rite-temper` is the
@@ -56,14 +59,17 @@ flowchart LR
     Polish -->|rollups complete<br/>candidate closed + re-proved| Review[/rite-review/]
     Review -->|review bound to candidate<br/>Critical == 0| Seal[/rite-seal/]
     Seal -->|GO| Ship2[/rite-ship/]
-    Ship2 -->|type-GO| Shipped([commit · push · tag · archive])
-    Seal -->|NO-GO| Repair[/rite-plan repair/]
+    Ship2 -->|read-only preflight<br/>then fresh type-GO| Shipped([commit · optional approved push/tag/PR · archive])
+    Seal -->|NO-GO; classify owner| Drift
     Repair --> Plan
 
-    Build -.->|Spec Drift Guard| Repair
-    Prove -.->|drift / failure| Repair
-    Polish -.->|drift| Repair
-    Review -.->|drift| Repair
+    Build -.->|Spec Drift Guard| Drift{classify drift / failure}
+    Prove -.->|drift / failure| Drift
+    Polish -.->|drift| Drift
+    Review -.->|drift| Drift
+    Drift -.->|settled technical objective| Recover[owning phase<br/>bounded recovery]
+    Drift -.->|durable plan wrong| Repair
+    Drift -.->|product / policy / irreversible risk| Await
 
     classDef phase fill:#1f2937,stroke:#60a5fa,stroke-width:1px,color:#f9fafb
     classDef done fill:#064e3b,stroke:#34d399,color:#ecfdf5
@@ -73,14 +79,16 @@ flowchart LR
     class Spec,Clarify,Temper,Define,Plan,Vet,Build,Resolve,Prove,Polish,Review,Seal,Ship2 phase
     class Shipped done
     class Repair,Upgrade repair
-    class Await gate
-    class Shape,Wright internal
+    class Await,Drift gate
+    class Shape,Wright,Recover internal
 ```
 
 Build is the manifest writer; Prove checks the candidate before and after real
 commands; Polish performs capability-ledger, design-memory, and ADR rollups and
 refreshes affected proof; Review and Seal bind to the closed digest. Ship is
-candidate-read-only and verifies the exact staged and committed state/path set.
+candidate-read-only: pre-GO is read-only disclosure, then literal `GO` permits
+exact staging and validation, commit and re-verification, optional approved
+push/tag/PR actions, and archive.
 See [candidate integrity](candidate-integrity.md).
 
 The same lifecycle carries semantic contracts without a new phase or registry:
@@ -155,9 +163,10 @@ agent executes no commands. Each stood decision also requires a
 `devrites-doubt-reviewer` verdict. Separately, the seven-account review roster
 runs all applicable reviewers, reconciles their findings, and binds its verdict
 to the same candidate. Seal decides GO or NO-GO and stops without running git.
-On GO, `/rite-ship` renders the type-GO prompt and runs the irreversible commit
-· push · tag · archive sequence. The gate uses severity, acceptance, and drift
-rather than an advisory score.
+On GO, `/rite-ship` runs read-only preflight and renders the exact type-GO
+prompt. A fresh literal `GO` authorizes commit plus only the optional approved
+push/tag/PR actions disclosed for that attempt, followed by archive. The gate
+uses severity, acceptance, and drift rather than an advisory score.
 
 ```mermaid
 flowchart TB
@@ -251,7 +260,7 @@ workflows need. There is no carrier skill or session-start autoload.
 
 ```mermaid
 flowchart TD
-    R[rite-* skill<br/>step 0] -->|always-on| Core[.claude/skills/devrites-lib/reference/standards/core.md]
+    R[workspace lifecycle skill<br/>step 0] -->|always-on| Core[.claude/skills/devrites-lib/reference/standards/core.md]
     R -->|on demand index| Idx[(.claude/skills/devrites-lib/reference/standards/README.md<br/>on-demand rule files)]
     Idx --> CS[coding-style.md]
     Idx --> EH[error-handling.md]
@@ -291,11 +300,12 @@ flowchart TD
 
 ## 7. Workspace state model
 
-Each phase reads its durable state from `.devrites/work/<feature-slug>/` before
-acting. Every `rite-*` skill checks the workspace first; if `ACTIVE` is unset,
-it tells the user to run `/rite-spec`. The optional
-`.devrites/AFK` sentinel sits beside `ACTIVE` and toggles the session-level
-run mode for all skills.
+Each workspace-operating lifecycle skill reads durable state from
+`.devrites/work/<feature-slug>/` before acting and reports the owning create or
+selection command when no workspace is active. Utility and on-ramp skills use
+their own stated preconditions. The optional `.devrites/AFK` sentinel sits
+beside `ACTIVE` and toggles the session-level run mode; `.devrites/CHECKPOINT`
+separately enables eligible local WIP checkpoint commits.
 
 ```mermaid
 erDiagram
@@ -412,7 +422,7 @@ flowchart TB
         I8[devrites-source-driven]
         I9[devrites-ux-shape]
         I10[devrites-prose-craft]
-        I11[devrites-lib<br/>library scripts]
+        I11[devrites-lib<br/>shared contracts · references · standards]
     end
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
@@ -440,7 +450,7 @@ stateDiagram-v2
     awaiting_human --> running: /rite-resolve --drop qid
     awaiting_human --> blocked: /rite-plan repair (scope change)
     blocked --> running: plan repaired
-    running --> done: sealed GO + /rite-ship<br/>(type-GO → commit · push · tag · archive)
+    running --> done: sealed GO + /rite-ship<br/>(read-only preflight → type-GO → commit · optional approved remote actions · archive)
     done --> [*]
 
     note right of awaiting_human

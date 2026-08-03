@@ -21,6 +21,8 @@ budgets, IDs, and read order live in
 .devrites/
   ACTIVE
   AFK                         # optional run-mode sentinel
+  CHECKPOINT                  # optional local WIP checkpoint sentinel
+  principles.md               # ratified project invariants
   specs/                      # living capability Markdown, maintained by skills
   work/
     <slug>/
@@ -42,6 +44,7 @@ budgets, IDs, and read order live in
       touched-files.md        # sole strict project-candidate manifest
       review.md               # closed-candidate review + digest binding
       seal.md                 # verdict + digest binding
+      ship.md                 # shipment record written before archive
       <conditional artifacts>
   archive/
     <slug>/

@@ -1,7 +1,10 @@
 # DevRites quick reference
 
-Install DevRites with `npx devrites ...`. The installer generates project-local
-Claude Code and Codex artifacts; plugin stores do not distribute them.
+Install DevRites with `npx devrites ...`. Normal installs from package and
+release candidates consume pre-generated project-local Claude Code and Codex
+artifacts; plugin stores do not distribute them. Source-checkout shell shims may
+regenerate missing payload components before the engine validates and copies
+them.
 
 ## Lifecycle
 

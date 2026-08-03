@@ -4,7 +4,7 @@
 each push to `main`, the `release` job in
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) checks the merged
 commit messages. A `feat:`, `fix:`, `perf:`, `refactor:`, `build:`,
-`docs(README):`, or `BREAKING CHANGE:` tells it to choose the next SemVer
+`remove:`, `docs(README):`, or `BREAKING CHANGE:` tells it to choose the next SemVer
 version and run these steps:
 
 1. Waits for the workflow's validation, full shell suite, strict Go-engine checks, Linux cross-compile smoke, and Windows Go tests.
@@ -15,12 +15,16 @@ version and run these steps:
 6. Publishes the `devrites` package to npm through `@semantic-release/npm`, using `NPM_TOKEN`. This is what `npx devrites@latest` resolves. `npm pack` regenerates the same `pack/generated/` artifacts during `prepack`; there is no `postpack` cleanup step.
 7. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates tag `v<version>`, and publishes a GitHub Release with the tarball, verified installer, binaries, and every checksum sidecar attached.
 
-Package prepack owns host artifact generation; the release archive consumes the
-validated generated files from the same Git index as the rest of its payload.
-Install and update validate and copy `pack/generated/{claude,codex}` without
-invoking host generators. The npm entrypoint and the verified release installer
-acquire only an exact-SemVer release bundle or platform binary with its mandatory
-exact-filename SHA-256 sidecar.
+Package prepack normally owns host artifact generation; the release archive
+consumes the validated generated files from the same Git index as the rest of
+its payload. Package and release installs validate and copy
+`pack/generated/{claude,codex}`. When a shell install or update shim runs from a
+source checkout whose generated payload is incomplete, the shim may regenerate
+the missing host payload before handing that local candidate to the engine. The
+engine itself only validates and copies host payloads; it never generates them.
+The npm entrypoint and the verified release installer acquire only an exact-SemVer
+release bundle or platform binary with its mandatory exact-filename SHA-256
+sidecar.
 Every redirect hop remains HTTPS; downloads use private temporary directories
 and fixed in-stream byte ceilings. The bootstrap first streams archive metadata,
 then paths, aborting the producer on a type, count, expanded-size, containment,
@@ -51,6 +55,10 @@ hidden semantic-release step.
 DevRites does not ship through Claude or Codex plugin stores. The release job
 waits for CI, so a broken `main` does not ship.
 
+Generated version sections in `CHANGELOG.md` are the release-note authority.
+Contributors **MUST NOT** maintain a parallel manual `Unreleased` section;
+semantic-release derives the next section from the accepted commits on `main`.
+
 `scripts/check-npm-audit.mjs` re-audits the live npm graph. Temporary entries in
 `scripts/npm-audit-exceptions.json` must remain exact-range, exact-node,
 owner-bound, justified, sourced, and near-term expiring; stale, broadened,
@@ -63,6 +71,7 @@ does not claim the advisory is fixed.
 | Commit prefix | Bump |
 |---|---|
 | `feat:` | **minor** (`0.1.0` → `0.2.0`) |
+| `remove:` | **minor**; grouped under Removed in release notes |
 | `fix:` / `perf:` / `refactor:` / `build:` / `docs(README):` | **patch** (`0.1.0` → `0.1.1`) |
 | Any type with `BREAKING CHANGE:` footer or `!` after type (e.g. `feat!:`) | **major** (`0.1.0` → `1.0.0`) |
 | `chore:` / `ci:` / `test:` / `docs:` (non-README) | no release |

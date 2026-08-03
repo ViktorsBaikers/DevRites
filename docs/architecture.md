@@ -35,9 +35,11 @@ cursor readers, traceability rules, and phase-relative completeness model, see
    `rite-customize`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
    `rite-pressure-test`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`, and
    `rite-autocomplete`. These are public commands. `rite-autocomplete` is the
-   unattended orchestrator. It drives the whole lifecycle (spec → … → seal →
-   ship), chooses the recommended option at each soft gate, and pauses only for
-   hard irreversible-risk, blocking, or escalating gates, or a NO-GO. The
+   unattended orchestrator. By default it drives the reversible lifecycle
+   through Seal GO and stops. Explicit `--ship` enters Ship preflight but still
+   waits for a fresh literal `GO` and native approval before mutation. It
+   chooses the recommended option at each soft gate and pauses for hard
+   irreversible-risk, blocking, or escalating gates, or a NO-GO. The
    `devrites-` prefix prevents collisions with bundled Claude Code skill names
    such as `prototype`, `handoff`, `triage`, and `diagnose`; it does not mark
    visibility. `rite-pressure-test` needs no prefix because it does not collide.
@@ -65,7 +67,7 @@ cursor readers, traceability rules, and phase-relative completeness model, see
    other 16 profiles read-only. The read-only set includes three
    bounded work leaves (`devrites-evidence-scout`, `devrites-plan-drafter`, and
    `devrites-proof-runner`), the fresh upgrade assessor, plus the
-   reviewers, auditors, judge, and retrospector. Public rites remain
+   reviewers, auditors, and retrospector. Public rites remain
    authoritative: leaves return bounded evidence, never ask the human, change
    phase, or write canonical `.devrites/**` state. See
    [`orchestration.md`](orchestration.md) for the host boundary.
@@ -159,9 +161,12 @@ HTTPS-only redirects, exact-filename SHA-256 sidecars, private temporary
 directories, bounded transfers, and full archive preflight. They provide no
 unchecked raw, source-archive, tag, or default-branch fallback.
 
-Package and release builds generate `pack/generated/{claude,codex}`. Install and
-update only validate and copy that payload; a missing or invalid payload stops
-the operation rather than triggering host generation at runtime.
+Package and release builds populate `pack/generated/{claude,codex}`, so normal
+installs consume a pre-generated payload. In a source checkout, the shell
+install and update shims may regenerate missing payload components before
+handing the local payload to the engine. The engine itself only validates and
+copies that payload; it never generates host artifacts, and invalid payloads
+fail closed.
 
 Directly managed manifest entries carry SHA-256 ownership records. Before the
 first refresh, prune, or uninstall mutation, the engine classifies every
@@ -302,13 +307,17 @@ engine check,
 writes the GO or NO-GO verdict to `seal.md`, and runs no git commands. On GO,
 it sets `state.md` to `Next step: /rite-ship` and stops.
 `/rite-ship` refuses to run without a GO in `seal.md` and remains
-candidate-read-only. It verifies exact manifest-to-index state and bytes before
-type-`GO`, then verifies the committed candidate again before push or tag. It
-runs the project-conventional irreversible Git ladder and writes `ship.md`.
-It then sets phase `done`, moves
+candidate-read-only. Before type-`GO`, it performs only read-only candidate,
+history, existing-index, and plan checks, then discloses the exact one-use Git
+attempt. After a fresh literal `GO`, it optionally collapses eligible
+checkpoints, stages exact manifest paths, validates staged scope, bytes,
+bindings, and secrets, commits, and reverifies the committed candidate. It runs
+push, tag, or PR actions only when the disclosed project convention requires
+them and they are approved, then writes `ship.md`. It sets phase `done` and
+moves
 `.devrites/work/<slug>/` to `.devrites/archive/<slug>/` with every `.md` file
-preserved, and clears `.devrites/ACTIVE`. The GO verdict does not authorize a
-push; the separate Ship step does.
+preserved, and clears `.devrites/ACTIVE`. The Seal GO verdict authorizes no Git
+mutation; only Ship's freshly approved disclosed attempt does.
 
 ### Why `/rite-autocomplete` exists (the unattended orchestrator)
 Some features are routine enough to run without human input at every phase.
@@ -394,8 +403,8 @@ contract.
   the workflow stops for HITL.
 - **Review**: **feature-scoped** multi-axis review with severity labels and
   fresh-context agents at the seal.
-- **Scope**: clarify → seal (decide) → ship (commit → push → tag or PR,
-  following the project's convention) → close. The CI
+- **Scope**: clarify → seal (decide) → ship (read-only preflight → type-GO →
+  commit → optional approved push/tag/PR by project convention) → close. The CI
   pipeline stays with the project.
 - **Install**: project-local, manifest-managed host artifacts; shell/npm owns
   acquisition, the engine performs offline local mutation, and the optional

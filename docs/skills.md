@@ -6,10 +6,13 @@ internal `devrites-lib` library. `devrites-lib` is not a command. It holds share
 references and the few explicit script exceptions.
 
 Install DevRites through npm with `npx devrites ...`. DevRites is not available
-through a Claude or Codex plugin store. The installer generates host-specific
-artifacts, copies Codex skill mirrors to `.agents/skills`, mirrors the rules
-under `.agents/skills/devrites-lib/reference/standards`, installs
-`.codex/agents`, and merges native Codex configuration and guidance.
+through a Claude or Codex plugin store. Package and release installs normally
+copy pre-generated host-specific artifacts. In a source checkout, the shims may
+regenerate missing payload components before installation; the engine validates
+and copies them but never generates them. The installer copies Codex skill
+mirrors to `.agents/skills`, mirrors the rules under
+`.agents/skills/devrites-lib/reference/standards`, installs `.codex/agents`, and
+merges native Codex configuration and guidance.
 
 The root and reviewers never write source. Claude enforces the root boundary in
 plan mode. Codex uses a workspace-capable root so its sole write-capable
@@ -101,7 +104,7 @@ For every new or materially changed instruction:
 
 ## Command invocation
 
-Every public `rite-<verb>` skill has four equivalent forms: Claude `/rite <verb>` or `/rite-<verb>`, and Codex `$rite <verb>` or `$rite-<verb>`. See the canonical [`command-map.md`](command-map.md) for the per-command inventory, triggers, and interactions.
+Every public `rite-<verb>` skill has four equivalent forms: Claude `/rite <verb>` or `/rite-<verb>`, and Codex `$rite <verb>` or `$rite-<verb>`. The router-only operations `/rite use <slug>` and `/rite guide` have no `/rite-use` or `/rite-guide` shortcut. See the canonical [`command-map.md`](command-map.md) for the per-command inventory, triggers, and interactions.
 
 ## Completion reply contract
 
@@ -213,7 +216,7 @@ and `Shipped`. Utility commands keep the same compact labels and one-next-action
 
 | Skill | What It Does | Use When |
 |---|---|---|
-| [`rite-ship`](../pack/.claude/skills/rite-ship/SKILL.md) | Candidate-read-only final phase. Verifies exact staged state/bytes, renders type-`GO`, commits, reverifies the committed candidate before push/tag/PR, writes `ship.md`, and archives/clears the task. | Seal returned GO; you say "ship it", "ship this", "push it out", "close the task". |
+| [`rite-ship`](../pack/.claude/skills/rite-ship/SKILL.md) | Begins with a read-only Seal/candidate check and exact plan disclosure, then requires fresh literal `GO`. Only then may it collapse checkpoints, stage and validate the exact candidate, commit and reverify, perform optional separately approved push/tag/PR actions, write `ship.md`, and archive/close. | Seal returned GO; you say "ship it", "ship this", "push it out", "close the task". |
 
 ### Utility: standalone helpers
 
@@ -240,25 +243,32 @@ and `Shipped`. Utility commands keep the same compact labels and one-next-action
 ## Fresh-context agents
 
 DevRites ships 17 role profiles at depth one. Both hosts have 16 read-only
-leaves and one source/test writer role. Four read-only
-roles handle bounded work while the root keeps authority:
+leaves and one source/test writer role. Four read-only work roles handle
+bounded evidence, planning, proof, and compatibility while the root keeps
+authority:
 
 | Agent | Purpose |
 |---|---|
 | [`devrites-evidence-scout`](../pack/.claude/agents/devrites-evidence-scout.md) | Build a bounded evidence dossier for spec, clarify, converge, or cited external facts. |
 | [`devrites-plan-drafter`](../pack/.claude/agents/devrites-plan-drafter.md) | Draft a planning candidate for define or plan repair; the root decides and writes artifacts. |
-| [`devrites-proof-runner`](../pack/.claude/agents/devrites-proof-runner.md) | Validate immutable artifacts from root-executed proof commands and return a proof report; execute no gates and change no files. |
+| [`devrites-proof-runner`](../pack/.claude/agents/devrites-proof-runner.md) | Validate immutable artifacts for `/rite-prove`, affected re-proof, and `/rite-seal`; return a proof report, execute no gates, and change no files. |
 | [`devrites-upgrade-planner`](../pack/.claude/agents/devrites-upgrade-planner.md) | Build a cited compatibility matrix and return `current`, `repairable`, `unsupported`, or `gap` with a canonical route; never change files. |
-| [`devrites-strategy-reviewer`](../pack/.claude/agents/devrites-strategy-reviewer.md) | **Pre-plan** spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention). Used by `/rite-temper`, not the seal fan-out. |
+
+Eleven independent read-only reviewers, analysts, and auditors challenge
+specific artifacts or claims:
+
+| Agent | Purpose |
+|---|---|
+| [`devrites-strategy-reviewer`](../pack/.claude/agents/devrites-strategy-reviewer.md) | **Pre-plan** spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention). Used by `/rite-temper` and a conditional `/rite-vet` recheck, not the seal fan-out. |
 | [`devrites-plan-reviewer`](../pack/.claude/agents/devrites-plan-reviewer.md) | **Pre-build** plan-vs-rubric engineering review (architecture / scope-reuse / plan code-quality / test-coverage design / performance / reversibility / failure-mode coverage), confidence-banded with a quote-the-source verification gate. Used by `/rite-vet`, not the seal fan-out. |
-| [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | Does the diff implement the spec? Missing / partial / wrong criteria; scope creep. |
+| [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | Does the diff implement the spec for `/rite-prove`, `/rite-review`, and `/rite-seal`? Missing / partial / wrong criteria; scope creep. |
 | [`devrites-code-reviewer`](../pack/.claude/agents/devrites-code-reviewer.md) | Correctness / readability / architecture / maintainability. |
-| [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | Do the tests prove the acceptance criteria? |
+| [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | Do the tests prove the acceptance criteria? Used by `/rite-build` and `/rite-seal`. |
 | [`devrites-frontend-reviewer`](../pack/.claude/agents/devrites-frontend-reviewer.md) | UX, a11y, responsive, design-system, anti-AI-slop. |
-| [`devrites-security-auditor`](../pack/.claude/agents/devrites-security-auditor.md) | OWASP Top 10, trust boundary, secrets, deps. |
-| [`devrites-performance-reviewer`](../pack/.claude/agents/devrites-performance-reviewer.md) | N+1s, hot paths, payload size. |
+| [`devrites-security-auditor`](../pack/.claude/agents/devrites-security-auditor.md) | OWASP Top 10, trust boundary, secrets, deps. Used by `devrites-audit security` and conditionally by `/rite-seal`. |
+| [`devrites-performance-reviewer`](../pack/.claude/agents/devrites-performance-reviewer.md) | N+1s, hot paths, payload size. Used by `devrites-audit perf` and conditionally by `/rite-seal`. |
 | [`devrites-devex-reviewer`](../pack/.claude/agents/devrites-devex-reviewer.md) | Developer-experience scorecard + the predict-vs-measure boomerang (TTHW, getting-started, error-message quality, ergonomics, docs): predicts at `/rite-vet`, measures + reconciles at `/rite-seal`, when a developer-facing surface (API / CLI / SDK / webhook / config / errors / getting-started) is in scope. |
-| [`devrites-doubt-reviewer`](../pack/.claude/agents/devrites-doubt-reviewer.md) | Adversarial check of a single claim/decision. |
+| [`devrites-doubt-reviewer`](../pack/.claude/agents/devrites-doubt-reviewer.md) | Adversarial check of a single claim or decision for `devrites-doubt` and `/rite-build` or `/rite-seal` stood-decision checks. |
 | [`devrites-simplifier-reviewer`](../pack/.claude/agents/devrites-simplifier-reviewer.md) | Independent simplification judgment (called by `devrites-audit simplify`). |
 
 **Cross-feature analyst** (read-only, scope is the archive not a diff):
@@ -273,12 +283,12 @@ Seal fan-out diagram: [`flow.md` § /rite-seal fan-out](flow.md#4-rite-seal-fan-
 
 ## Executor agent: fresh-context writer
 
-The catalog has one writer role. Claude and Codex run it with one bounded slice;
-every other agent remains read-only.
+The catalog has one writer role. Claude and Codex run it with one exact
+path-bounded slice or accepted correction; every other agent remains read-only.
 
 | Agent | Purpose |
 |---|---|
-| [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) | Turn ONE exact path-bounded slice into the smallest complete, idiomatic, proven implementation. Writes code + tests only; returns a concise result for the root to inspect, gate, and record. Writes no `.devrites/` bookkeeping; single-threaded per tree. |
+| [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) | Turn ONE exact path-bounded Build slice or accepted Prove, Polish, or Review correction into the smallest complete, idiomatic, proven implementation. Writes code + tests only; returns a concise result for the root to inspect, gate, and record. Writes no `.devrites/` bookkeeping; single-threaded per tree. |
 
 Native wright orchestration: [`rite-build/reference/wright-dispatch.md`](../pack/.claude/skills/rite-build/reference/wright-dispatch.md).
 The shared topology, exact named role → HITL stop, native writer permissions,

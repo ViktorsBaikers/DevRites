@@ -187,7 +187,7 @@ messages are rejected at commit time. There is no bypass.
 **Format:** `type(scope): subject`
 
 - **type** (required, lower-case): one of
-  `feat | fix | docs | style | refactor | perf | test | build | ci | chore | revert`
+  `feat | fix | remove | docs | style | refactor | perf | test | build | ci | chore | revert`
 - **scope** (required, lower-case): one of
   `skills | rite | devrites | agents | rules | installer | uninstall | scripts | docs | tests | deps | release | repo | ci`
 - **subject:** imperative mood, no leading capital, no trailing period.
@@ -199,6 +199,7 @@ messages are rejected at commit time. There is no bypass.
 ```
 feat(skills): add rite-prove browser proof ladder
 fix(installer): match first rule pack with leading-space guard
+remove(installer): drop the legacy plugin install path
 docs(rules): adapt common/agents.md for DevRites agents
 refactor(scripts): split sync-version into per-file helpers
 ```
@@ -236,7 +237,7 @@ npm run validate                # pack structure + frontmatter
 npm run audit                   # dependency advisory gate
 npm test                        # install/uninstall + fixture install + validation
 bash scripts/run-evals.sh       # run all eval files
-bash scripts/run-evals.sh rite-spec   # run a single skill's evals
+bash scripts/run-evals.sh evals/rite-spec.json   # run one eval file
 ```
 
 If a test fails locally that you didn't touch, file an issue rather than
@@ -249,6 +250,7 @@ Releases are fully automated via semantic-release on every push to `main`:
 | Commit prefix | Bump |
 |---|---|
 | `feat:` | **minor** (e.g. `0.1.0` → `0.2.0`) |
+| `remove:` | **minor**; grouped under Removed in release notes |
 | `fix:` / `perf:` / `refactor:` / `build:` / `docs(README):` | **patch** |
 | Any type with `BREAKING CHANGE:` footer or `!` after type | **major** |
 | `chore:` / `ci:` / `test:` / `docs:` (non-README) | no release |

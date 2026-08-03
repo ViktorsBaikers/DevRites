@@ -12,7 +12,8 @@ Free to use. Modification is permitted **for personal use**; any other use —
 distributing it, distributing modified versions, or commercial/organizational use —
 requires **approval on request**. See [`LICENSE`](LICENSE).
 
-## Claude Code
-DevRites is a skills pack for **Claude Code** and follows its skills, subagents, and
-rules conventions. "Claude" and "Claude Code" are products of Anthropic; DevRites is
-independent and unaffiliated.
+## Host runtimes
+DevRites integrates with **Claude Code** and **Codex** and follows each host's
+project-local skill, agent, and instruction conventions. "Claude" and "Claude
+Code" are products of Anthropic; "Codex" is a product of OpenAI. DevRites is
+independent and unaffiliated with Anthropic and OpenAI.
