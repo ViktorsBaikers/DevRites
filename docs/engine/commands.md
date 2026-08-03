@@ -4,7 +4,7 @@ The engine is a deterministic, stdlib-only control plane. It has no model or
 provider dependency and does not dispatch agents, interpret reviews, or choose
 workflow strategy.
 
-## Complete command inventory
+## Complete operational command inventory
 
 | Command | Deterministic responsibility |
 |---|---|
@@ -20,8 +20,11 @@ workflow strategy.
 | `secret-scan [--staged] [--stdin] [slug]` | Scan exact staged blobs, stdin, or touched regular files for credential material. |
 | `version` | Print the engine version. |
 
-`help` is exhaustive. Unlisted command forms are rejected as unknown; the
-engine has no compatibility aliases or tombstones.
+`help`, `-h`, and `--help` print this operational inventory. `version` and
+`--version` print the binary version. Other unlisted command forms are rejected
+as unknown; the engine has no compatibility aliases or tombstones. The
+`add`/`upgrade`/`remove` conveniences belong only to the `npx devrites` adapter,
+not to the engine command namespace.
 
 ## Check boundary
 

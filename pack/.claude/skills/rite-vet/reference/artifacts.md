@@ -39,7 +39,7 @@ Shared contract proof: <pass | gap: missing/one-sided/duplicated-contract/vague/
 ## 3. Axis findings (floor-gated)
 | Axis | Floor band | Findings (sev · confidence) |
 |---|---|---|
-| Architecture | strong/adequate/thin/broken | [Critical](9) … |
+| Architecture | strong/adequate/thin/broken | Critical (9) … |
 | Plan code-quality | … | … |
 | Test-coverage design | … | see test-plan.md |
 | Performance | … | … |

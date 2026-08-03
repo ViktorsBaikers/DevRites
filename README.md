@@ -20,12 +20,17 @@ Clarify is mandatory but adaptive, so it asks no questions when the contract
 is complete. Temper adds an optional strategic review. Vet is the only final
 readiness phase before Build.
 
-Seal decides whether the feature is ready without changing git. Ship owns the
-final commit, push, and tag, and it requires a typed `GO` confirmation.
-Unattended runs may create local WIP checkpoint commits along the way, but only
-Ship collapses and pushes them.
+Seal decides whether the feature is ready without changing git. Ship first runs
+a read-only preflight and discloses the exact Git attempt. A fresh literal `GO`
+then authorizes one attempt to collapse eligible checkpoints, stage and validate
+the exact candidate, commit and reverify it, perform any approved
+project-conventional push, tag, or PR action, and archive the workspace.
+Unattended runs may create local WIP checkpoint commits along the way, but they
+remain local unless Ship's disclosed plan includes an approved remote action.
 
 **Status:** [`v3.2.28`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v3.2.28): see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+
+This is the latest published release; `main` may contain unreleased work.
 
 ## Quick start
 
@@ -84,7 +89,7 @@ the same skill.
 | 9 | Polish | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | Cleans up the candidate, normalizes UI when needed, performs durable capability/design/ADR rollups, and refreshes affected proof before closing it. |
 | 10 | Review | [`/rite-review`](pack/.claude/skills/rite-review/SKILL.md) | Reviews the closed candidate against its spec and engineering standards and binds the result to its digest. |
 | 11 | Seal | [`/rite-seal`](pack/.claude/skills/rite-seal/SKILL.md) | Rechecks candidate-bound evidence and writes the final `GO` or `NO-GO` decision without changing git. |
-| 12 | Ship | [`/rite-ship`](pack/.claude/skills/rite-ship/SKILL.md) | On `GO`, verifies the exact staged and committed candidate, asks for typed confirmation, performs the approved git actions, and archives the workspace. |
+| 12 | Ship | [`/rite-ship`](pack/.claude/skills/rite-ship/SKILL.md) | Runs read-only preflight and discloses the exact Git plan. After a fresh literal `GO`, it stages and validates the candidate, commits and reverifies it, performs only optional approved push/tag/PR actions, and archives the workspace. |
 | n/a | Upgrade *(conditional)* | [`/rite-upgrade [slug]`](pack/.claude/skills/rite-upgrade/SKILL.md) | Audits an older active workspace against current contracts, then routes only evidence-backed defects through their normal phase owners. |
 
 Some work needs a different route:
@@ -122,6 +127,7 @@ the original decisions and proof.
 .devrites/
   ACTIVE                 # active feature slug
   AFK                    # optional unattended-mode configuration
+  CHECKPOINT             # optional local WIP checkpoint mode
   principles.md          # project rules that gate the workflow
   specs/                 # living structured capabilities
   work/<slug>/
@@ -235,7 +241,9 @@ npx devrites@latest --dry-run
 
 # Update or remove an existing installation
 npx devrites@latest update
+npx devrites@latest update --check
 npx devrites@latest uninstall
+npx devrites@latest uninstall --keep-binary
 ```
 
 Useful install flags:
@@ -246,12 +254,13 @@ Useful install flags:
 | `--dry-run` | Show planned file operations without changing anything. |
 | `--force` | Replace or remove foreign or customized managed files. The installer still rejects symlinks and path escapes. |
 | `--no-codex` | Skip `.agents`, `.codex`, and `AGENTS.md` integration. |
-| `--no-agents` | Skip the review agents. |
+| `--no-agents` | Skip hook-free native specialist profiles. |
 | `--no-skills` | Skip skills and their bundled standards. |
 | `--no-binary` | Do not keep the shared `devrites-engine` binary in a user or system bin directory. |
 | `--short-aliases=all` | Add `/define`, `/build`, `/prove`, and `/seal` aliases. |
 
-Run `npx devrites@latest --help` for the full option list.
+Run `npx devrites@latest --help` for common flags and
+`npx devrites@latest <command> --help` for command-specific flags.
 
 ### Bash bootstrap
 
@@ -399,8 +408,10 @@ build a temporary engine from package-local Go source, or use `devrites-engine`
 on `PATH`. Remote fetches are HTTPS-only and bounded. Use
 `--no-binary` or `DEVRITES_NO_BINARY=1` to avoid keeping a shared binary outside
 the project. npm or the Bash bootstrap also acquires update candidates and
-checksums before invoking the offline engine operation. The engine itself does
-not read the network or target-project Git metadata.
+checksums before invoking the offline engine operation. The engine itself is
+network-free, and install, update, and uninstall do not inspect target-project
+Git. Retained safety operations such as `secret-scan --staged` intentionally
+read the exact Git index and staged blobs they validate.
 
 Production Git subprocesses remove repository/config/object/ref/pathspec
 retargeting `GIT_*` variables while preserving unrelated Git environment. Seal

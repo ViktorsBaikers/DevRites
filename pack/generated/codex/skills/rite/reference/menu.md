@@ -1,7 +1,6 @@
 # Menu reference
 
-Phase-ordered command reference for `$rite`. Load only if the user wants detail on
-what each command does or how phases connect.
+Phase-ordered `$rite` reference. Load only for command detail or phase connections.
 
 ## Phases and commands
 
@@ -14,13 +13,13 @@ what each command does or how phases connect.
 | Plan | `$rite-define` | Turn the approved spec into plan + vertical task slices + state. |
 | Vet | `$rite-vet` | _Required before build._ Review every plan: scope · architecture · tests · perf; light for simple/reversible, full for high stakes. |
 | Re-plan | `$rite-plan` | The active plan is too big, wrong, stale, ambiguous, or blocked. |
-| Build | `$rite-build` | Implement the next single vertical slice. Stops after one slice. |
+| Build | `$rite-build` | One slice/wright; HITL stops; `.devrites/AFK` lets root bounded-chain slices. |
 | Converge | `$rite-converge` | _Recovery._ Code drifted from or falls short of intent after a resume, adoption, or stalled build: compare live code with spec/plan/tasks and append remaining work as new slices for `$rite-build`. |
 | Prove | `$rite-prove` | Prove the current scope: tests, build, runtime, browser evidence. |
 | Polish | `$rite-polish` | Code polish always; normalize and polish UI when in scope. Modes: `bolder/quieter/distill/harden/normalize-only`. |
 | Review | `$rite-review` | Feature-scoped review before sealing. |
 | Seal | `$rite-seal` | Final GO / NO-GO decision (no git). |
-| Ship | `$rite-ship` | Type-GO → commit/push/tag, then archive the task + clear ACTIVE. |
+| Ship | `$rite-ship` | Pre-GO read-only; fresh GO → commit → optional approved push/tag/PR → archive/close. |
 | Status | `$rite-status` | See where the active feature stands. |
 | Doctor | `$rite-doctor` | Diagnose install integrity and native host configuration. |
 | Upgrade | `$rite-upgrade` | _Explicit compatibility._ Audit an older released workspace; route cited defects through Clarify/Plan repair/Converge/Vet or current Prove/Polish/Review/Seal, preserve history, and never synthesize old proof. |

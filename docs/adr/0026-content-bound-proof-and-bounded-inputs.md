@@ -157,7 +157,7 @@ material candidate change. Streaming and fixed bounds cap memory, disk, and
 archive work. The cost is a versioned serialization format, migration guidance,
 and shared Go/shell parity that release work must maintain.
 
-The planned guard locations are
+The decision's planned guard locations were
 `engine/internal/lib/candidate_test.go`,
 `engine/internal/lib/evidencefresh_test.go`,
 `engine/internal/gate/gate_test.go`, `engine/root_routing_test.go`,
@@ -165,5 +165,5 @@ The planned guard locations are
 `tests/native-orchestration-contract-test.sh`,
 `tests/phase-gate-routing-test.sh`, `tests/install-smoke.sh`,
 `tests/update-smoke.sh`, `tests/npx-pack-smoke.sh`, and
-`tests/release-tarball-test.sh`. These are planned regression locations, not a
-claim that the implementation or tests already exist or pass.
+`tests/release-tarball-test.sh`. They now exist and own regression coverage for
+this decision.

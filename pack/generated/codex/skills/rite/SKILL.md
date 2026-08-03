@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # $rite: DevRites menu + router
 
-You are the DevRites entry point. Two modes:
+Two modes:
 
 - **No args** → render the menu and stop. Do not execute a phase or infer
   workspace status; `$rite-status` owns that.
@@ -115,7 +115,7 @@ PROVE         $rite prove              ≡    $rite-prove       tests + build + 
 POLISH        $rite polish             ≡    $rite-polish      code polish always; UI normalize + polish if UI
 REVIEW        $rite review             ≡    $rite-review      feature-scoped multi-axis review
 SEAL          $rite seal               ≡    $rite-seal        final GO / NO-GO decision (no git)
-SHIP          $rite ship               ≡    $rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
+SHIP          $rite ship               ≡    $rite-ship        pre-GO read-only; fresh GO → commit; optional approved push/tag/PR → archive
 STATUS        $rite status             ≡    $rite-status      active feature, next action, evidence, risks
 DOCTOR        $rite doctor             ≡    $rite-doctor      installation and native host diagnostics
 UPGRADE       $rite upgrade ...        ≡    $rite-upgrade     audit an older workspace; route only proven gaps
@@ -128,7 +128,7 @@ CUSTOMIZE     $rite customize ...      ≡    $rite-customize   author overrides
 SWITCH        $rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 GUIDE         $rite guide                                     first feature, guided — full lifecycle on one small real change (inline)
 RESUME        $rite resolve ...        ≡    $rite-resolve     answer a HITL checkpoint
-AUTO          $rite autocomplete ...   ≡    $rite-autocomplete  run the whole lifecycle unattended (--ship to push)
+AUTO          $rite autocomplete ...   ≡    $rite-autocomplete  unattended lifecycle; `--ship` stops at Ship preflight
 QUICK         $rite quick <change>     ≡    $rite-quick       express lane — one small reversible change (escalates if it grows)
 UTILITY       $rite frame | prototype | handoff | zoom-out | pressure-test  (or direct shortcuts)
 ```

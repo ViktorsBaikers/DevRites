@@ -68,7 +68,7 @@ Project-root sentinel (outside the workspace):
 | File | Created by | Holds |
 |---|---|---|
 | `.devrites/AFK` | you (presence = AFK mode active) | optional YAML: `max_slices`, `notify`, `allow_gates`. Empty file = AFK with defaults. See [`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md). |
-| `.devrites/CHECKPOINT` | you or `/rite-autocomplete` (presence = checkpoint mode) | empty sentinel. When set, `/rite-build` commits each proven slice local-only as `WIP(<slug>)` so a crash mid-build loses neither source nor reasoning; `/rite-ship` collapses the WIP run into the one feature commit. See [`pack/.claude/skills/rite-build/reference/checkpoint.md`](../pack/.claude/skills/rite-build/reference/checkpoint.md). |
+| `.devrites/CHECKPOINT` | you or `/rite-autocomplete` (presence = checkpoint mode) | empty sentinel. When set, `/rite-build` commits each proven slice local-only as `WIP(<slug>)` so a crash mid-build loses neither source nor reasoning; after literal `GO`, `/rite-ship` collapses an eligible disclosed WIP run into the feature commit. See [`pack/.claude/skills/rite-build/reference/checkpoint.md`](../pack/.claude/skills/rite-build/reference/checkpoint.md). |
 
 The shape of this directory is also documented in
 [`flow.md` § Workspace state model](flow.md#7-workspace-state-model).
@@ -123,7 +123,7 @@ behavior; compile, typecheck, lint, and build prove only their static criterion.
 /rite-polish                 # code polish (always) + UI normalize+polish (if UI)
 /rite-review                 # feature-scoped multi-axis review (Spec + Standards in parallel)
 /rite-seal                   # GO / NO-GO decision (no git) → on GO, points at /rite-ship
-/rite-ship                   # type-GO + irreversible git ladder + close the task (archive + clear ACTIVE)
+/rite-ship                   # read-only preflight → type-GO → commit + optional approved remote actions → close
 ```
 
 In default HITL, `/rite-build` never starts the next slice automatically; you
@@ -134,7 +134,10 @@ in `git diff --name-only`, reviews test integrity, runs repository proof, and
 maintains the strict candidate manifest.
 Prove binds real evidence to its content digest; Polish completes durable
 capability/design/ADR rollups and affected re-proof before Review. Ship never
-changes candidate paths and verifies exact staged and committed scope. See
+changes candidate paths. Its pre-GO work is read-only and discloses the exact
+attempt; literal `GO` then authorizes eligible checkpoint collapse, exact
+staging, staged scope/byte/binding/secret validation, commit and reverification,
+optional approved push/tag/PR actions, and archive. See
 [candidate integrity](candidate-integrity.md).
 `/rite-seal` **decides**; `/rite-ship` **executes + closes**. To run the whole
 sequence unattended, see `/rite-autocomplete` (§11).
@@ -185,6 +188,10 @@ You: 2
 /rite-plan repair    # updates spec/plan/tasks to per-session, marks drift resolved
 /rite-vet            # rechecks the repaired plan before build
 ```
+
+Settled technical objective failures stay with bounded recovery in the active
+slice. Plan repair runs only when the durable plan is wrong; product, policy,
+or irreversible-risk choices pause for the human.
 
 ## 4) UI feature with Playwright MCP
 
@@ -240,7 +247,7 @@ criterion; Seal blocks when that criterion is required for acceptance.
 /rite-polish                 # reference/code.md only (no UI scope detected)
 /rite-review                 # devrites-audit security fires (auth/abuse surface), measure-first perf
 /rite-seal                   # checks rollback for any config/migration change → GO/NO-GO
-/rite-ship                   # type-GO + commit/push/tag + close the task
+/rite-ship                   # read-only preflight → type-GO → commit + optional approved remote actions → close
 ```
 
 ## 6) UI-direction prompt: refinement modes
@@ -371,7 +378,7 @@ full list.
   → seal returns GO → autocomplete STOPS (default) and hands off to /rite-ship
 
 /rite-ship                     # human runs it → renders the type-GO prompt
-You: GO                        # → commit · push · tag, then archive + clear ACTIVE
+You: GO                        # → commit, optional approved push/tag/PR, then archive + clear ACTIVE
 ```
 
 Add `--ship` (alias `--yolo`) to continue through `/rite-ship` preflight.

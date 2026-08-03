@@ -107,7 +107,9 @@ Final state examples: `Shipped: <feature>`, `Stopped: <reason>`, `Awaiting human
 Do not write a narrative recap.
 
 ## Clean baseline and checkpoint mode
-- Before an autonomous run, require a clean or explicitly accepted baseline: refuse unrelated dirty work and record expected planning artifacts.
-- Arm `.devrites/CHECKPOINT` for the run so each proven slice can be checkpointed local-only; `$rite-ship` owns collapsing those checkpoints.
-- Stop on risky steps, red gates, NO-GO, stale evidence, or budget exhaustion.
-- Autocomplete gets one approved pass through the lifecycle; `$rite-build` still builds exactly one slice per invocation.
+- Before autonomy, require a clean or accepted baseline; refuse unrelated dirty work and record plan artifacts.
+- Arm `.devrites/CHECKPOINT`; `$rite-ship` collapses its local-only proven-slice checkpoints.
+- Stop on risky steps, red gates, NO-GO, stale evidence, or exhausted budget.
+- One autocomplete pass spans the lifecycle. Each wright returns after one slice;
+  explicit `.devrites/AFK` lets the Build root chain green slices under cap/pause rules;
+  otherwise HITL stops.

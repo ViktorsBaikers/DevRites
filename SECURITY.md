@@ -14,7 +14,8 @@ Please include:
 
 - A clear description of the vulnerability and its impact.
 - A minimal reproduction (commands, files, or a target project layout).
-- The DevRites version (commit SHA or release tag) and Claude Code version.
+- The DevRites version (commit SHA or release tag), affected host, and host
+  version (Claude Code or Codex).
 - Your name / handle for credit (optional).
 
 You should receive an acknowledgement within **5 business days** and a triage
@@ -92,11 +93,13 @@ nets for model-invocable rites are:
   all slices are built.
 - **Readiness gates**: each rite reads `.devrites/work/<slug>/state.md`
   before acting; phases out of order refuse to run.
-- **Spec Drift Guard**: any deviation from the spec halts and routes to
-  `rite-plan`.
+- **Spec Drift Guard**: deviations are classified before routing. Settled
+  technical objective failures use bounded recovery in the active slice;
+  `rite-plan repair` owns a wrong durable plan; product, policy, and
+  irreversible-risk decisions pause for the human.
 - **Interactive type-GO confirmation** in `rite-ship` before irreversible
-  git actions such as commit, push, or tag. This prompt remains after model
-  invocation; `rite-seal` only decides GO/NO-GO.
+  git actions such as commit or an optional push, tag, or PR. This prompt
+  remains after model invocation; `rite-seal` only decides GO/NO-GO.
 
 Claude documents the invocation controls in its official
 [skills reference](https://code.claude.com/docs/en/slash-commands). DevRites uses
@@ -195,10 +198,11 @@ Unrelated Git variables are preserved. Go and shell parity is covered by
 
 ### Third-party trust
 
-DevRites vendors no third-party code (see `NOTICE.md`). It depends on Claude
-Code itself. Codegraph, graphify, and Playwright MCP are optional user-selected
-tools that DevRites calls through their documented interfaces rather than
-bundling them.
+DevRites vendors no third-party code (see `NOTICE.md`). It runs through the
+external Claude Code or Codex host selected by the user and is independent of
+Anthropic and OpenAI. Codegraph, graphify, and Playwright MCP are optional
+user-selected tools that DevRites calls through their documented interfaces
+rather than bundling them.
 
 Repository npm-audit exceptions are temporary trust records, not claims that an
 upstream issue is fixed. Each entry in `scripts/npm-audit-exceptions.json` is

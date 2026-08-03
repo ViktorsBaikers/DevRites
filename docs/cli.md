@@ -7,7 +7,8 @@ cross-host primitives; it never dispatches an agent or grades reviewer prose.
 
 ## Command surface
 
-`devrites-engine help` is exhaustive:
+`devrites-engine help` lists the exhaustive operational surface. Standard
+`help`, `-h`, `--help`, `version`, and `--version` forms also remain supported:
 
 ```text
 devrites-engine install [flags]
@@ -26,11 +27,24 @@ devrites-engine secret-scan [--staged] [--stdin] [slug]
 devrites-engine version
 ```
 
-Commands outside this list are unsupported. There are no legacy aliases,
-tombstones, agent-protocol versions, semantic-readiness digests, compatibility
-telemetry, or workspace migration command.
+Commands outside this operational list and the standard help/version forms are
+unsupported. There are no legacy engine aliases, tombstones, agent-protocol
+versions, semantic-readiness digests, compatibility telemetry, or workspace
+migration command.
 `check candidate` is additive; no existing engine command or public `/rite-*`
 workflow was removed or renamed.
+
+## npm adapter
+
+The `npx devrites` adapter accepts `add` as an alias for `install`, `upgrade` for
+`update`, and `remove` for `uninstall`. These are adapter-only conveniences, not
+`devrites-engine` aliases; documentation and automation should prefer the
+canonical command names.
+
+Use `npx devrites update --check` to compare the installed manifest version with
+the exact release candidate selected by the adapter without changing the
+installation. Use `npx devrites uninstall --keep-binary` to remove managed host
+artifacts while retaining the shared `devrites-engine` binary.
 
 ## Checks
 
