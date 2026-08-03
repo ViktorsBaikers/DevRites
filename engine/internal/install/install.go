@@ -925,7 +925,11 @@ func (r *runner) pruneDropped() error {
 				if err := r.recheckPath(merge.TargetRel); err != nil {
 					return err
 				}
-				if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
+				if merge.MarkerRel == hostpack.LegacyCodexHooksMerge.MarkerRel {
+					if err := stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
+						return fmt.Errorf("strip hooks from %s: %w", merge.TargetRel, err)
+					}
+				} else if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
 					_ = r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), true)
 				} else {
 					_ = stripMarkerPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End)
@@ -1023,6 +1027,12 @@ func (r *runner) uninstall() error {
 		if err := r.recheckPath(merge.TargetRel); err != nil {
 			return err
 		}
+		if merge.MarkerRel == hostpack.LegacyCodexHooksMerge.MarkerRel {
+			if err := stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
+				return fmt.Errorf("strip hooks from %s: %w", merge.TargetRel, err)
+			}
+			continue
+		}
 		if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
 			if err := r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), true); err != nil {
 				return fmt.Errorf("strip DevRites settings from %s: %w", merge.TargetRel, err)
@@ -1090,6 +1100,26 @@ func (r *runner) uninstall() error {
 		fmt.Fprintln(r.opts.Stdout, "  kept .devrites/ACTIVE (active-feature cursor)")
 	}
 	return nil
+}
+
+func stripHooksPath(path string) error {
+	current, err := readJSON(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("load hooks config: %w", err)
+	}
+	next := stripDevritesHooks(current)
+	if len(next) == 0 {
+		return os.Remove(path)
+	}
+	data, err := json.MarshalIndent(next, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode hooks config: %w", err)
+	}
+	data = append(data, '\n')
+	return fsutil.WriteFileAtomic(path, data, 0o644)
 }
 
 func (r *runner) stripClaudeSettings(path string, preserveEmpty bool) error {
@@ -1310,9 +1340,12 @@ func stripDevritesHooks(config map[string]any) map[string]any {
 		}
 		next[k] = v
 	}
-	rawHooks, ok := next["hooks"].(map[string]any)
+	rawHooksValue, exists := next["hooks"]
+	if !exists {
+		return next
+	}
+	rawHooks, ok := rawHooksValue.(map[string]any)
 	if !ok {
-		delete(next, "hooks")
 		return next
 	}
 	hooks := map[string]any{}

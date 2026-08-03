@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -551,6 +552,106 @@ func TestUpdateInstallsLocalPayload(t *testing.T) {
 	}
 }
 
+func TestUpdateCleansLegacyCodexHooks(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	source := testSource(t, "4.0.0")
+
+	t.Run("preserves user hooks", func(t *testing.T) {
+		target := t.TempDir()
+		hooks := `{
+  "$comment": "DevRites hooks for Codex. Project hooks load only after trust.",
+  "hooks": {"Stop":[{"hooks":[
+    {"type":"command","command":"devrites-engine hook stop-gate --harness=codex"},
+    {"type":"command","command":"echo user"}
+  ]}]}
+}` + "\n"
+		seedLegacyCodexHooksInstall(t, target, hooks)
+
+		runLocalUpdate(t, target, source, payload)
+
+		if exists(filepath.Join(target, ".claude", "devrites.codex-hooks-merge")) {
+			t.Fatal("update kept the legacy Codex hooks marker")
+		}
+		got := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json"))
+		if strings.Contains(got, "devrites-engine hook") || strings.Contains(got, "DevRites hooks") || !strings.Contains(got, "echo user") {
+			t.Fatalf("legacy Codex hook cleanup mismatch:\n%s", got)
+		}
+	})
+
+	t.Run("removes empty hooks file", func(t *testing.T) {
+		target := t.TempDir()
+		hooks := `{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"devrites-engine hook stop-gate --harness=codex"}]}]}}` + "\n"
+		seedLegacyCodexHooksInstall(t, target, hooks)
+
+		runLocalUpdate(t, target, source, payload)
+
+		if exists(filepath.Join(target, ".codex", "hooks.json")) {
+			t.Fatal("update kept an empty legacy Codex hooks file")
+		}
+	})
+
+	t.Run("preserves unrecognized user hook shape", func(t *testing.T) {
+		target := t.TempDir()
+		seedLegacyCodexHooksInstall(t, target, `{"hooks":"user-defined"}`+"\n")
+
+		runLocalUpdate(t, target, source, payload)
+
+		got := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json"))
+		if !strings.Contains(got, `"hooks": "user-defined"`) {
+			t.Fatalf("legacy cleanup removed unrecognized user hooks: %s", got)
+		}
+	})
+
+	t.Run("malformed hooks keep ownership marker", func(t *testing.T) {
+		target := t.TempDir()
+		seedLegacyCodexHooksInstall(t, target, "{\n")
+
+		err := applyUpdate(target, source, payload)
+		if err == nil || !strings.Contains(err.Error(), "load hooks config") {
+			t.Fatalf("update error = %v, want malformed legacy hooks error", err)
+		}
+		if !exists(filepath.Join(target, ".claude", "devrites.codex-hooks-merge")) {
+			t.Fatal("failed cleanup removed the legacy ownership marker")
+		}
+		if got := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json")); got != "{\n" {
+			t.Fatalf("failed cleanup changed hooks: %q", got)
+		}
+	})
+
+	t.Run("uninstall preserves user hooks", func(t *testing.T) {
+		target := t.TempDir()
+		hooks := `{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"devrites-engine hook stop-gate"},{"type":"command","command":"echo user"}]}]}}` + "\n"
+		seedLegacyCodexHooksInstall(t, target, hooks)
+
+		runUninstall(t, target)
+
+		got := testutil.ReadFile(t, filepath.Join(target, ".codex", "hooks.json"))
+		if strings.Contains(got, "devrites-engine hook") || !strings.Contains(got, "echo user") {
+			t.Fatalf("legacy Codex hook uninstall mismatch:\n%s", got)
+		}
+	})
+}
+
+func TestLegacyCodexHooksMergeIsCleanupOnly(t *testing.T) {
+	legacy := hostpack.LegacyCodexHooksMerge
+	merge, ok := hostpack.ManagedMergeForMarker(legacy.MarkerRel)
+	if !ok || merge != legacy {
+		t.Fatalf("legacy marker lookup = %#v, %t", merge, ok)
+	}
+	if slices.Contains(hostpack.RequiredPayload(true), "codex/hooks.json") {
+		t.Fatal("legacy Codex hooks entered the required payload")
+	}
+	r := runner{opts: DefaultOptions(ModeInstall), payloadFS: os.DirFS(testPayload(t))}
+	desired, err := r.desiredInstallPaths()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if desired[legacy.MarkerRel] || desired[legacy.TargetRel] || slices.Contains(r.installMergeTargets(), legacy.TargetRel) {
+		t.Fatalf("legacy Codex hooks entered active install paths: desired=%v merge-targets=%v", desired, r.installMergeTargets())
+	}
+}
+
 func TestUpdateRejectsMissingGeneratedPayload(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	oldPayload := testPayload(t)
@@ -937,6 +1038,33 @@ func applyInstall(target, payload string, force, dryRun bool, out *bytes.Buffer)
 	opts.Stdout = out
 	opts.Stderr = &bytes.Buffer{}
 	return Apply(opts)
+}
+
+func applyUpdate(target, source, payload string) error {
+	opts := DefaultOptions(ModeUpdate)
+	opts.Target = target
+	opts.SourceDir = source
+	opts.PayloadDir = payload
+	opts.Stdout = &bytes.Buffer{}
+	opts.Stderr = &bytes.Buffer{}
+	return Apply(opts)
+}
+
+func runLocalUpdate(t *testing.T, target, source, payload string) {
+	t.Helper()
+	if err := applyUpdate(target, source, payload); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func seedLegacyCodexHooksInstall(t *testing.T, target, hooks string) {
+	t.Helper()
+	markerRel := ".claude/devrites.codex-hooks-merge"
+	marker := []byte(".codex/hooks.json contains DevRites managed hook entries.\n")
+	testutil.WriteFile(t, filepath.Join(target, ".codex", "hooks.json"), hooks)
+	testutil.WriteFile(t, filepath.Join(target, filepath.FromSlash(markerRel)), string(marker))
+	testutil.WriteFile(t, filepath.Join(target, ManifestName), "# DevRites install manifest - do not edit by hand.\n# devrites-version: 3.2.27\n# devrites-flags: \n")
+	addManifestRecord(t, filepath.Join(target, ManifestName), markerRel, marker)
 }
 
 func addManifestRecord(t *testing.T, manifest, rel string, data []byte) {
