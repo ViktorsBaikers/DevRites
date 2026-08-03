@@ -487,6 +487,8 @@ func TestSecretScanScansUnusualStagedEntriesWithoutReadingWorktree(t *testing.T)
 		t.Fatal(err)
 	}
 	runSecretScanGit(t, project, "add", "-A")
+	// Git for Windows otherwise rejects the fixture's index-only LF path.
+	runSecretScanGit(t, project, "config", "core.protectNTFS", "false")
 	secretOID := strings.TrimSpace(runSecretScanGitInput(t, project, strings.NewReader(secret), "hash-object", "-w", "--stdin"))
 	indexEntries := "100644 blob " + secretOID + "\tline\nbreak.txt\x00" +
 		"120000 blob " + secretOID + "\tlinked-secret\x00"
