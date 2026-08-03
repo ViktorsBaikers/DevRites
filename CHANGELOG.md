@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.0...v4.0.1) (2026-08-03)
+
+### Fixed
+
+* **installer:** clean legacy Codex hooks during v4 updates ([4908945](https://github.com/ViktorsBaikers/DevRites/commit/49089453ade730a9fede6c9fade180457d8ce2f9))
+
 ## [4.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.28...v4.0.0) (2026-08-03)
 
 ### ⚠ BREAKING CHANGES
