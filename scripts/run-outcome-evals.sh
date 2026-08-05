@@ -382,7 +382,7 @@ removed=(
 for command in "${removed[@]}"; do
   run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" "$command"
   [ "$CAPTURE_CODE" -eq 2 ] || fail "$command exit=$CAPTURE_CODE, want 2; $CAPTURED"
-  printf '%s' "$CAPTURED" | grep -Fq "unknown command \"$command\"" \
+  [[ "$CAPTURED" == *"unknown command \"$command\""* ]] \
     || fail "$command did not use unknown-command path: $CAPTURED"
 done
 printf '  PASS: all 20 retired top-level commands are unknown (no aliases)\n'
