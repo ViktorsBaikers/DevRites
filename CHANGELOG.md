@@ -2,6 +2,15 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.1...v4.0.2) (2026-08-05)
+
+### Fixed
+
+* **deps:** resolve blocking npm audit advisories ([5181daa](https://github.com/ViktorsBaikers/DevRites/commit/5181daa5e93e6edc4a862caa7db5bc11b40c978c))
+* **installer:** remove deprecated tar type check ([1ed3e0d](https://github.com/ViktorsBaikers/DevRites/commit/1ed3e0d600fc48ae020e958ea06d6cb945031994))
+* **installer:** restore self-contained engine updates ([3d851c6](https://github.com/ViktorsBaikers/DevRites/commit/3d851c67e4d740d793695e1f7caa30fddc8d832b))
+* **tests:** avoid flaky unknown-command pipe ([da584aa](https://github.com/ViktorsBaikers/DevRites/commit/da584aaf0d4195ed57ef6d1b21789f00ac81e390))
+
 ## [4.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.0...v4.0.1) (2026-08-03)
 
 ### Fixed
