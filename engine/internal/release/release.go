@@ -385,7 +385,7 @@ func extractTarGz(archive, destination string) error {
 			if err := os.MkdirAll(target, mode); err != nil {
 				return fmt.Errorf("create directory %s: %w", name, err)
 			}
-		case tar.TypeReg, tar.TypeRegA:
+		case tar.TypeReg:
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return fmt.Errorf("create directory for %s: %w", name, err)
 			}
