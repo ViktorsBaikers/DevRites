@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.2...v4.0.3) (2026-08-07)
+
+### Fixed
+
+* **deps:** update js-yaml security patch ([d0b066a](https://github.com/ViktorsBaikers/DevRites/commit/d0b066aed4ff4544567fae14eb1fd90a08ef9e6d))
+* **rite:** keep technical backtracking autonomous ([45b17af](https://github.com/ViktorsBaikers/DevRites/commit/45b17af86e18930b983ec49ae399dd9f91f37a52))
+
 ## [4.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.1...v4.0.2) (2026-08-05)
 
 ### Fixed
