@@ -20,7 +20,8 @@ but every profile keeps the exact plan-reviewer gate.
 Pull the standard named by the active axis: `principles.md`, `patterns.md`,
 `coding-style.md`, `testing.md`, `spec-grammar.md`, `performance.md`,
 `error-handling.md`, `development-workflow.md`, `afk-hitl.md`,
-`developer-experience.md`, `elicitation.md`, and `definition-of-done.md`.
+`one-shot-actions.md`, `developer-experience.md`, `elicitation.md`, and
+`definition-of-done.md`.
 
 
 ## Operating rules
@@ -97,6 +98,11 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
    unmeasurable conflict = gap. Record complete SHA-256 provenance inputs. Require
    every behavioral mapping to name a positive,
    discriminating assertion and decisive signal, not merely a command or expected exit zero.
+   Identify every consumptive action under `one-shot-actions.md`. Before admitting
+   it, require the exact durable retention surface, trust-safe diagnostic schema,
+   cleanup ordering, terminal-path coverage, and discriminating fixtures in
+   `test-plan.md`. Missing or stale one-shot evidence completeness is a technical
+   preflight gap; do not spend the action to learn what cleanup would erase.
    Preflight observes; it need not make future behavior pass.
 2c. **Implementation-readiness audit.** Goal-backward map every REQ/AC/NFR, interaction,
    edge/prohibition, and decision-coverage row to a slice and executable proof. Verify

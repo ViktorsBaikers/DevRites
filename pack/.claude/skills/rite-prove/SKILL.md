@@ -38,6 +38,8 @@ Pull these via `Read` when relevant:
   webhook / config / error messages / getting-started): **measure** the DX scorecard (run the flow,
   measure time-to-hello-world, and capture verbatim error text), rather than asserting it.
 - `definition-of-done.md`: acceptance, proof, gates, scope, rollback/docs.
+- `one-shot-actions.md`: pre-attempt evidence completeness and no-rerun handling for
+  consumptive proof actions.
 
 
 ## Operating rules
@@ -107,6 +109,13 @@ failure is a blocker; this Upgrade admission never authorizes source or test cha
    substituted commands, malformed manifests, zero-test/skipped/filtered results used as
    behavioral proof, success inferred only from exit status, and any source drift. Static
    gates prove only their named static criterion.
+   Immediately before any consumptive action, apply `one-shot-actions.md` to the
+   live candidate: require the vetted retained-artifact identity, bounds,
+   sanitization, terminal-path fixtures, and cleanup-survival proof. A missing,
+   stale, or disposable-only evidence surface returns to Vet inline and consumes
+   no attempt. Record the admitted artifact identity before execution. After a
+   failed consumptive action, triage from that artifact; never reproduce it by
+   rerunning the action.
 4. **UI feature?** The root applies the browser proof ladder with
    `design-brief.md`, `references.md`, the requested routes, browser harness, and
    allowed scratch path:

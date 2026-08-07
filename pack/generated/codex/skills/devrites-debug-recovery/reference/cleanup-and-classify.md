@@ -14,7 +14,8 @@ record the dead end and classify anew. Failure alone never resets the budget.
 - `preexisting`: the same failure exists outside the candidate delta. Record the baseline and fix it only when it blocks acceptance.
 - `not_a_defect`: the observation matches current accepted authority. Record that authority and continue.
 
-Only human credentials/quotas/actions or irreversible work pause; never ask to retry.
+Only human credentials/quotas/actions, irreversible work, or fresh authorization
+required by a consumptive action pause; never ask for a blind retry.
 
 Record class/routing in `decisions.md` and each failed attempt in `evidence.md`
 or `## Dead ends`. Use one stable causal fingerprint shaped as `<affected
@@ -30,7 +31,8 @@ file or command.
 
 ## Cleanup checklist: required before declaring done
 
-- [ ] Original repro no longer reproduces (re-run the Phase 1 loop).
+- [ ] Original repeatable repro no longer reproduces, or the consumptive action's
+      offline regression and evidence-completeness fixtures pass without a rerun.
 - [ ] Regression test passes (or absence of seam is documented).
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix).
 - [ ] Throwaway harnesses deleted (or moved to a clearly marked debug location).

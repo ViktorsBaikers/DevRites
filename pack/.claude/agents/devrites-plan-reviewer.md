@@ -55,7 +55,11 @@ line, and then assign the band. Do not choose a score and justify it afterward:
    model changes conservatively. Every destructive step needs a rollback.
 7. **Failure-mode coverage:** for each new codepath, find a realistic failure such
    as a timeout, nil value, race, or stale state. A silent failure with **no test AND
-   no error handling** is a critical gap.
+   no error handling** is a critical gap. For every consumptive action under
+   `one-shot-actions.md`, require durable bounded trust-safe evidence for every
+   terminal path plus unknown-well-formed, malformed/hostile, and cleanup-survival
+   fixtures. Missing evidence completeness is `broken`: the plan must not consume
+   the action to discover diagnostics that cleanup can erase.
 
 ## Confidence calibration + verification gate (mandatory)
 Give every finding a **confidence score from 1 to 10** and a quoted source:
@@ -73,7 +77,8 @@ Band each dimension `strong` / `adequate` / `thin` / `broken` (`broken` means
 Critical; `thin` means Important). For a borderline dimension, sample twice and
 take the **lower** band. The verdict uses the weakest dimension, not an average.
 Pass only when every dimension is at least `adequate`, no critical failure-mode gap
-remains, the shared-contract check passes, and the ID-and-meaning map contains no orphaned
+remains, every consumptive action passes one-shot evidence completeness, the
+shared-contract check passes, and the ID-and-meaning map contains no orphaned
 criterion, slice, or proof.
 
 ## Rules

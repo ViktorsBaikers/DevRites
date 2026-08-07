@@ -4,7 +4,10 @@ When a test/build/runtime/browser check fails, triage before fixing. Delegates t
 loop to `devrites-debug-recovery`.
 
 ## Triage ladder
-1. **Reproduce:** run the failing command again; capture the exact error (quote it).
+1. **Reproduce:** for a repeatable command, run it again and capture the exact
+   error (quote it). For a consumptive action under
+   [`one-shot-actions.md`](../../devrites-lib/reference/standards/one-shot-actions.md),
+   never rerun it: use the retained bounded artifact as the reproduction input.
 2. **Classify** the failure:
    - test is right, code is wrong → fix the code (in scope).
    - test is wrong/outdated → that may be **spec drift** (acceptance criteria wrong).
@@ -14,7 +17,9 @@ loop to `devrites-debug-recovery`.
 3. **Isolate:** minimize to the smallest failing case; bisect the diff if needed.
 4. **Fix within scope:** the current slice/feature only. If the fix reaches outside
    scope, stop and record a blocker in `state.md` (then `$rite-plan unblock`).
-5. **Re-run** the same command; confirm green; record both attempts in `evidence.md`.
+5. **Re-run** the same command when it is repeatable; confirm green and record both
+   attempts in `evidence.md`. A consumptive action needs re-vetted evidence
+   completeness and any fresh authorization before a new attempt.
 
 ## Rules
 - Quote the real error text; don't paraphrase it away.
