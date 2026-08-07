@@ -58,14 +58,18 @@ has no clear next move.
 - **Durably record class and rationale** in `decisions.md` and the applicable
   `evidence.md` or `## Dead ends` entry.
 - **One causal fingerprint, counted by the caller.** Normalize the root cause as
-  `<affected boundary>: <failure mechanism>` rather than hashing symptom text.
+  `<affected boundary>: <failed invariant/failure mechanism>` and bind its minimal
+  reproduction plus decisive signal rather than hashing symptom text.
   The caller and recovery attempts share one count: read the current context and
-  recorded `## Dead ends` / `evidence.md`, then include every failed attempt
+  recorded `## Dead ends` / `evidence.md`, then include every no-progress attempt
   with that fingerprint. Reclassify only on new causal evidence.
-- **A maximum of three total failed attempts per causal fingerprint stops the loop.** Record
-  attempt number, exact failure, hypothesis, probe, and failed idea after each
-  failure, and never make a fourth related attempt. There is no JSONL ledger,
+- **A maximum of three no-progress attempts per exact causal fingerprint stops the loop.**
+  Count an attempt only when its recheck preserves the same decisive failure.
+  Record attempt number, exact failure, hypothesis, probe, and failed idea after
+  each; closure is progress and a different Critical/Important invariant is a new
+  fingerprint. There is no JSONL ledger,
   counter command, or reset-on-green operation. Product/acceptance ambiguity, irreversible risk, or
   human-only access becomes a human gate; otherwise return reproducible `blocked` with
-  `Next: $rite-plan unblock`, never request attempt four. Coupled failure requiring behavior
-  change routes `$rite-plan repair`; behavior-neutral rerouting uses `unblock`.
+  `Next: none — technical recovery exhausted for <causal fingerprint>`, never request
+  attempt four. While budget remains, coupled failure requiring behavior change routes
+  `$rite-plan repair` inline; behavior-neutral rerouting uses `unblock` inline.

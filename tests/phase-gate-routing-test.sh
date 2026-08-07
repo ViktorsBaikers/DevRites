@@ -45,6 +45,8 @@ AUTOCOMPLETE="$ROOT/pack/.claude/skills/rite-autocomplete/SKILL.md"
 AUTOCOMPLETE_LOOP="$ROOT/pack/.claude/skills/rite-autocomplete/reference/loop.md"
 AUTOCOMPLETE_STOPS="$ROOT/pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md"
 BUILD_AFK="$ROOT/pack/.claude/skills/rite-build/reference/afk-discipline.md"
+DEBUG_RECOVERY="$ROOT/pack/.claude/skills/devrites-debug-recovery/SKILL.md"
+DEBUG_CLASSIFY="$ROOT/pack/.claude/skills/devrites-debug-recovery/reference/cleanup-and-classify.md"
 CANDIDATE_INTEGRITY="$ROOT/pack/.claude/skills/devrites-lib/reference/candidate-integrity.md"
 PROOF_RUNNER="$ROOT/pack/.claude/agents/devrites-proof-runner.md"
 DISCOVERY="$ROOT/pack/.claude/skills/rite-prove/reference/test-command-discovery.md"
@@ -99,7 +101,7 @@ for key in reuse conventions principles sources assumptions follow_ups; do
 done
 require "$WRIGHT_DISPATCH" 'Reject a result that omits any required key' 'root rejects incomplete wright results'
 require "$WRIGHT_DISPATCH" 'Persist the' 'root persists returned wright facts'
-require "$WRIGHT" 'three total failed attempts' 'wright shares the caller recovery budget'
+require "$WRIGHT" 'no-progress attempts' 'wright shares the per-fingerprint no-progress budget'
 forbid "$WRIGHT" 'devrites-engine state recovery' 'wright has no removed recovery counter command'
 
 require "$PROVE" 'sole approved runtime' 'prove treats test-plan as sole command authority'
@@ -118,10 +120,26 @@ require "$AFK_HITL" 'Next step: none — technical recovery exhausted' 'technica
 forbid "$AFK_HITL" 'Next step: /rite-plan unblock' 'technical exhaustion cannot hand plan unblock to the user'
 require "$BUILD_AFK" 'Next step: none — technical recovery exhausted' 'build exhaustion is terminal without a phase command'
 forbid "$BUILD_AFK" 'Next step: /rite-plan unblock' 'build exhaustion cannot hand plan unblock to the user'
+require "$BUILD" 'no-progress attempts' 'build counts only unchanged fingerprint failures'
+require "$BUILD_AFK" 'no-progress attempts' 'afk build recovery uses progress-aware accounting'
+require "$DEBUG_RECOVERY" 'no-progress attempts' 'debug recovery shares progress-aware accounting'
+require "$DEBUG_RECOVERY" 'Next: none' 'debug exhaustion has no runnable recovery command'
+forbid "$DEBUG_RECOVERY" 'Next: /rite-plan unblock' 'debug exhaustion cannot restart manual plan ping-pong'
+require "$DEBUG_CLASSIFY" 'no-progress attempts' 'debug classification derives the no-progress count'
+require "$FAILURE_TRIAGE" 'no-progress attempts' 'prove triage consumes only no-progress budget'
 require "$AUTOCOMPLETE_STOPS" 'no runnable recovery command' 'autocomplete terminal blockers do not advertise a retry command'
 require "$STATE_WORKSPACE" 'terminal: none' 'state cursor represents terminal technical exhaustion explicitly'
 require "$REPLY" 'Technical recovery exhausted' 'reply contract has a terminal technical blocker shape'
 require "$REPLY" 'No runnable recovery command' 'reply contract does not turn exhaustion into another user command'
+require "$AFK_HITL" 'three no-progress attempts per exact causal fingerprint' 'recovery budget attaches to the exact unresolved cause'
+require "$AFK_HITL" 'Closing a prior finding with discriminating evidence is progress' 'closed findings do not consume no-progress budget'
+require "$AFK_HITL" 'new Critical or Important finding' 'new high-severity blockers receive an independent fingerprint'
+require "$AFK_HITL" '`drift.md` and `evidence.md`' 'recovery progress uses existing durable artifacts'
+require "$AUTOCOMPLETE_LOOP" 'narrow Vet recheck' 'autocomplete rechecks repaired findings without restarting Full Vet'
+require "$VET" 'Recovery recheck' 'vet has an explicit bounded recovery mode'
+require "$VET" 'does not start another Full Vet' 'recovery recheck cannot restart the full review cycle'
+require "$VET" 'Suggestion, Nit, or FYI' 'lower-severity novelty cannot perpetuate recovery'
+require "$PROVE" 'three no-progress attempts on the exact same fingerprint' 'standalone prove uses progress-aware recovery accounting'
 require "$DISCOVERY" 'discovery evidence, not authorization' 'command discovery cannot authorize execution'
 require "$PROOF_RUNNER" 'reject missing, synthesized, or unapproved commands' 'proof runner rejects commands outside the approved plan'
 require "$SEAL_CONTRACT" 'devrites-proof-runner' 'seal delegates acceptance proof judgment natively'

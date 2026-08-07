@@ -33,8 +33,10 @@ See [`one-slice-cycle.md`](one-slice-cycle.md); candidate lifecycle is
    is not success.
 
    Technical failure uses bounded `devrites-debug-recovery`: reapply the host gate
-   before an accepted in-slice correction, keep one root cause/three total attempts,
-   and never rerun an unchanged check. Ask humans only for product decisions,
+   before an accepted in-slice correction, keep one exact fingerprint/three
+   no-progress attempts, and never rerun an unchanged check. A closed reproduction
+   is progress; a different Critical/Important invariant gets its own fingerprint.
+   Ask humans only for product decisions,
    irreversible risk, or genuinely human-only access.
 7. **Record.** After green proof, upsert `touched-files.md`'s authoritative candidate
    manifest from the actual scoped diff with explicit `present`/`deleted` rows;

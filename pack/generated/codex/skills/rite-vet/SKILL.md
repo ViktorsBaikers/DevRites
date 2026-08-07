@@ -43,6 +43,9 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
 - **Honor a recovery origin.** Preserve a valid technical-backtracking return
   cursor throughout review. Agent-owned `NEEDS REPLAN` returns internally to the
   controlling caller; it never becomes a request for the human to invoke Plan.
+- **Recovery recheck is bounded.** A valid technical-backtracking cursor plus a
+  recorded open fingerprint enters the Recovery recheck below. Recovery recheck
+  does not start another Full Vet or repeat unaffected axes/reviewers.
 
 ## Workflow
 0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`** first.
@@ -57,12 +60,26 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
    `.agents/skills/devrites-lib/reference/standards/tooling.md`) for placement / blast-radius / reuse checks.
 1. **Set review depth. Never skip this step.** Apply
    [`reference/depth.md`](reference/depth.md) exactly. Every plan leaves a recorded
-   engineering verdict and `test-plan.md` coverage map.
-1a. **Independent pass at every depth.** Freeze the candidate; dispatch exact
+   engineering verdict and `test-plan.md` coverage map. For an admitted Recovery
+   recheck, retain the prior depth and proceed to step 1b instead of starting a new
+   depth/pass.
+1a. **Independent pass at every initial depth.** Freeze the candidate; dispatch exact
    `devrites-plan-reviewer` fresh/read-only and validate its report. Add exact
    `devrites-devex-reviewer` for developer surfaces and require the current exact
    `devrites-strategy-reviewer` verdict after significant Temper. Missing accounts
    block; never substitute inline work.
+1b. **Recovery recheck.** Require the valid return cursor, prior accepted findings,
+   exact open fingerprint/reproduction, repaired candidate identity, changed
+   paths/criteria, and affected evidence from `drift.md` / `evidence.md`. Freeze
+   that packet and dispatch each exact owning reviewer once, fresh/read-only and
+   limited to those inputs. Do not rerun unaffected reviewers or the broad steps
+   2-4 inventory. Mark the prior fingerprint resolved only when discriminating
+   evidence closes its reproduction; otherwise record one no-progress outcome.
+   A newly caused or exposed Critical or Important finding may block only with a
+   different failed invariant, exact evidence in the changed/affected boundary,
+   and a new fingerprint. A Suggestion, Nit, or FYI cannot keep recovery open.
+   Reconcile the common artifact/readiness gates below, then return to the caller
+   or its next repair; never convert the nested result into a human command.
 2. **Scope challenge (blocking gate):** apply §0 of
    [`reference/review-axes.md`](reference/review-axes.md). Search accepted ADRs and
    relevant workspace `decisions.md` files directly. Harden to the smallest
