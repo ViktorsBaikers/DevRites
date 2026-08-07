@@ -35,6 +35,7 @@ Inventory/currentness: <pass/gaps> · slice order/independence: <pass/gaps> ·
 UX/spec/architecture: <pass/n-a/gaps> · operations/rollout/rollback: <pass/n-a/gaps>
 
 Shared contract proof: <pass | gap: missing/one-sided/duplicated-contract/vague/non-consuming>
+One-shot evidence completeness: <n/a | pass: action + retained artifact + bounds/sanitization + cleanup-survival fixtures | gap: exact missing proof>
 
 ## 3. Axis findings (floor-gated)
 | Axis | Floor band | Findings (sev · confidence) |
@@ -93,6 +94,11 @@ Prove recaptures the observed command, candidate identity, and result.
 Commands in this durable artifact are portable repository commands: no RTK or local shell
 aliases, user-specific absolute paths, or temporary proof trees. Evidence records
 the command actually executed.
+
+## Consumptive action gates
+| Action | Why one-shot/consumptive | Retained artifact | Bounds + sanitization | Terminal-path fixtures | Cleanup survival | Retry authority |
+|---|---|---|---|---|---|---|
+| <exact approved action or n/a> | <one attempt/quota/state/evidence deletion> | <durable operator-controlled path/schema> | <size/cardinality + known/unknown/malformed handling> | <success/known/unknown/hostile> | <assertion> | <none/fresh human authorization> |
 
 Every behavioral row names a positive, discriminating assertion and the decisive output it
 produces. A command or expected exit zero alone is not a behavioral assertion; static gates

@@ -37,6 +37,7 @@ WRIGHT="$ROOT/pack/.claude/agents/devrites-slice-wright.md"
 WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
 CORE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/core.md"
 AFK_HITL="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md"
+ONE_SHOT="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/one-shot-actions.md"
 STATE_WORKSPACE="$ROOT/pack/.claude/skills/rite-spec/reference/state-workspace.md"
 REPLY="$ROOT/pack/.claude/skills/devrites-lib/reference/reply-contract.md"
 PROVE="$ROOT/pack/.claude/skills/rite-prove/SKILL.md"
@@ -51,6 +52,8 @@ CANDIDATE_INTEGRITY="$ROOT/pack/.claude/skills/devrites-lib/reference/candidate-
 PROOF_RUNNER="$ROOT/pack/.claude/agents/devrites-proof-runner.md"
 DISCOVERY="$ROOT/pack/.claude/skills/rite-prove/reference/test-command-discovery.md"
 FAILURE_TRIAGE="$ROOT/pack/.claude/skills/rite-prove/reference/failure-triage.md"
+PLAN_REVIEWER="$ROOT/pack/.claude/agents/devrites-plan-reviewer.md"
+VET_ARTIFACTS="$ROOT/pack/.claude/skills/rite-vet/reference/artifacts.md"
 CUSTOMIZE="$ROOT/pack/.claude/skills/rite-customize/SKILL.md"
 UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
 UPGRADE_PLANNER="$ROOT/pack/.claude/agents/devrites-upgrade-planner.md"
@@ -140,6 +143,15 @@ require "$VET" 'Recovery recheck' 'vet has an explicit bounded recovery mode'
 require "$VET" 'does not start another Full Vet' 'recovery recheck cannot restart the full review cycle'
 require "$VET" 'Suggestion, Nit, or FYI' 'lower-severity novelty cannot perpetuate recovery'
 require "$PROVE" 'three no-progress attempts on the exact same fingerprint' 'standalone prove uses progress-aware recovery accounting'
+require "$ONE_SHOT" 'unknown but lexically well-formed non-secret values survive' 'one-shot evidence preserves safe unknown diagnostics'
+require "$ONE_SHOT" 'cleanup cannot delete or overwrite' 'one-shot gate proves failure evidence survives cleanup'
+require "$ONE_SHOT" 'Do not rerun the action during triage' 'one-shot failure handling forbids blind reproduction'
+require "$VET" 'one-shot evidence completeness' 'vet blocks READY without consumptive-action evidence retention'
+require "$PROVE" 'Record the admitted artifact identity before execution' 'prove checks one-shot evidence before execution'
+require "$FAILURE_TRIAGE" 'never rerun it' 'prove triage uses retained evidence for consumptive actions'
+require "$DEBUG_RECOVERY" 'MUST NOT be rerun during diagnosis' 'debug recovery does not reproduce consumptive actions'
+require "$PLAN_REVIEWER" 'Missing evidence completeness is `broken`' 'plan reviewer rejects unsafe one-shot plans'
+require "$VET_ARTIFACTS" '## Consumptive action gates' 'test plan records one-shot evidence authority durably'
 require "$DISCOVERY" 'discovery evidence, not authorization' 'command discovery cannot authorize execution'
 require "$PROOF_RUNNER" 'reject missing, synthesized, or unapproved commands' 'proof runner rejects commands outside the approved plan'
 require "$SEAL_CONTRACT" 'devrites-proof-runner' 'seal delegates acceptance proof judgment natively'

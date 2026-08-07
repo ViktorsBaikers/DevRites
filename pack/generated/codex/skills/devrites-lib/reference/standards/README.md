@@ -36,6 +36,7 @@ topic's owner.
 | `context-hygiene.md` | Choosing `/clear`, `/compact`, or a handoff. |
 | `anti-patterns.md` | A pack-wide rationalization or red flag appears. |
 | `afk-hitl.md` | A pause, question, resume, or AFK decision is possible. |
+| `one-shot-actions.md` | A proof/action may be attempted once, needs fresh retry authorization, consumes external state/quota, or can delete its own failure evidence. |
 | `tooling.md` | Structural lookup, current external facts, or architecture memory is needed. |
 | `skill-authoring.md` | Creating, editing, routing, evaluating, or pruning a DevRites skill. |
 | `definition-of-done.md` | Prove, Seal, Ship, or Quick must decide whether work is finished. |

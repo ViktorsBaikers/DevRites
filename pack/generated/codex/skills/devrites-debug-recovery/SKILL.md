@@ -18,10 +18,14 @@ has no clear next move.
 1. **Build the feedback loop:** create a fast, deterministic, agent-runnable pass/fail
    signal. Spend most of the investigation here.
    See [build-the-loop.md](reference/build-the-loop.md).
-2. **Reproduce:** run the loop. Confirm the failure matches the user's report
-   (not a nearby failure); capture the **exact error text**; confirm
-   reproducibility (or a high enough repro rate for flaky bugs). Do not proceed
-   without reproduction.
+2. **Reproduce:** run the loop for a repeatable action. Confirm the failure matches
+   the user's report (not a nearby failure); capture the **exact error text**;
+   confirm reproducibility (or a high enough repro rate for flaky bugs). For a
+   consumptive action under
+   [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md),
+   the retained bounded artifact
+   is the reproduction input and the action MUST NOT be rerun during diagnosis.
+   Do not proceed without one of those reproduction inputs.
 3. **Ranked hypotheses (3-5, falsifiable):** generate the list before testing
    any of them. Each must state a prediction.
    **Completion:** 3-5 distinct hypotheses each state an observable prediction.
@@ -51,8 +55,10 @@ has no clear next move.
 - **Do NOT loosen / delete a failing assertion** to get green: check whether
   it's drift first (route via `$rite-plan repair`).
 - **Do NOT hide flakiness** with sleeps / retries: characterize it.
-- **Re-run the original loop after the fix.** The minimized regression test is not
-  enough; prove the user-visible failure no longer reproduces.
+- **Re-run the original loop after the fix when it is repeatable.** For a
+  consumptive action, first re-vet evidence completeness and obtain any required
+  fresh authorization; offline fixtures remain mandatory but cannot authorize the
+  real attempt.
 - **Classify before routing** with
   [cleanup-and-classify.md](reference/cleanup-and-classify.md).
 - **Durably record class and rationale** in `decisions.md` and the applicable
