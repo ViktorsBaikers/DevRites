@@ -18,12 +18,15 @@ Only human credentials/quotas/actions or irreversible work pause; never ask to r
 
 Record class/routing in `decisions.md` and each failed attempt in `evidence.md`
 or `## Dead ends`. Use one stable causal fingerprint shaped as `<affected
-boundary>: <failure mechanism>`, not a hash of the symptom. Before retrying,
-count matching caller and recovery failures in the current context and those
-records. The maximum is three total failed attempts; never run a fourth related
-attempt. Also record baseline, exact failure, hypothesis/probe, attempt number,
-and any human predicate. Green evidence records the resolution but does not
-erase prior failures. There is no recovery counter file or command.
+boundary>: <failed invariant/failure mechanism>` and bind its minimal
+reproduction plus decisive signal, not a hash of the symptom. Before retrying,
+count matching caller and recovery no-progress attempts in the current context
+and those records. The maximum is three per exact fingerprint; count only a
+recheck that preserves the same decisive failure. Also record baseline, exact
+failure, hypothesis/probe, attempt number, and any human predicate. Green evidence
+records progress and resolution but does not erase prior failures. A different
+Critical/Important invariant is a new fingerprint. There is no recovery counter
+file or command.
 
 ## Cleanup checklist: required before declaring done
 

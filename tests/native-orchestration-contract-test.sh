@@ -488,7 +488,7 @@ for text, required in (
     (clarify, ("return_phase", "return_next_action", "preserve unrelated Markdown", "/rite-plan repair")),
     (afk_contract, ("read-only config", "afk_slices_remaining", "released bullet", "pre-seed", "never increased or reinitialized")),
     (afk, ("afk-hitl.md", "dispatch, charging, and red-path behavior", "exactly once after each green built slice", "never below zero", "fails closed", "before dispatching another slice")),
-    (recovery, ("caller and recovery attempts", "three total failed attempts", "## Dead ends", "never make a fourth")),
+    (recovery, ("caller and recovery attempts", "three no-progress attempts", "Count an attempt only", "## Dead ends", "Next: none — technical recovery exhausted")),
 ):
     for phrase in required:
         if phrase not in text:

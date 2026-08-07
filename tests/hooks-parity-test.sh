@@ -104,8 +104,8 @@ if "devrites-engine check readiness <slug>" not in core:
     fail.append("core guidance lost the nested structural readiness check")
 if "devrites-engine check seal <slug>" not in core:
     fail.append("core guidance lost rite-seal's final aggregate rest point")
-if "never make a fourth unchanged" not in re.sub(r"\s+", " ", afk):
-    fail.append("AFK guidance lost the hard three-attempt cap")
+if "three no-progress attempts per exact causal fingerprint" not in re.sub(r"\s+", " ", afk):
+    fail.append("AFK guidance lost the per-fingerprint no-progress cap")
 if "devrites-engine check seal <slug>" not in ship:
     fail.append("rite-ship preflight does not reuse the final seal aggregate")
 if "A seal GO is never authorization for Git" not in git_ship:

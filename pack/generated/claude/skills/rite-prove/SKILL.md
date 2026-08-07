@@ -60,7 +60,10 @@ Pull these via `Read` when relevant:
 - **Prove remains the controlling caller during technical backtracking.** Save
   its return cursor, invoke Plan/Vet or bounded remediation inline, consume each
   nested phase boundary, then resume the failed Prove step. Never make the human
-  submit an agent-owned repair, re-vet, or proof-rerun command.
+  submit an agent-owned repair, re-vet, or proof-rerun command. Apply `afk-hitl.md`
+  progress accounting: only three no-progress attempts on the exact same fingerprint
+  exhaust recovery; a closed prior finding or a genuinely new
+  Critical/Important fingerprint continues inside this invocation.
 
 ## Released-workspace refresh entry
 

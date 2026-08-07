@@ -5,6 +5,9 @@ the reason and one resume command when an actual human/safety/access action can
 change the state, notify if configured, and stop. Exhausted agent-owned
 technical recovery is terminal for its unchanged causal fingerprint: record
 `Next step: none` and no runnable recovery command. `--ship` cannot bypass them.
+Closure of a prior fingerprint is progress, not exhaustion. A separately evidenced
+Critical/Important failed invariant starts its own bounded fingerprint; it never
+resets or extends the budget of the one just closed.
 
 ## Always stop (irreversible-risk list: from `afk-hitl.md`)
 
@@ -24,8 +27,10 @@ Agent-owned backtracking is not a stop condition while its causal-fingerprint
 budget remains. The active caller invokes the earlier phase inline, follows Vet
 and any bounded remediation, then resumes the originating phase. Persist
 `Next step` for crash recovery, but do not surface it as a command the human must
-submit. Stop only when recovery is exhausted or the remaining choice is a real
-human/safety/access gate.
+submit. Use the repaired finding's narrow Vet recheck to distinguish resolution,
+the same decisive failure, and a genuinely new Critical/Important invariant.
+Stop only after three no-progress attempts on the exact same fingerprint or when
+the remaining choice is a real human/safety/access gate.
 
 On technical exhaustion, preserve the fingerprint, reproduction, attempts, and
 dead ends, then stop without `/rite-plan unblock` or another phase command.

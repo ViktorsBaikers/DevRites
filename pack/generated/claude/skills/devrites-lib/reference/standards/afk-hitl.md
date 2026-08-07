@@ -233,12 +233,22 @@ changes, not a request for permission to retry.
 
 ## Retry cap, no-progress loops, and self-resolve
 
-- **Cap retries:** three total attempts per root cause across wright and recovery is a hard
-  cap. The caller and recovery loop count every failed attempt with the same
-  causal fingerprint from the current context and recorded `## Dead ends` /
-  `evidence.md`. Persist the exact failure and attempted idea after each; never
-  make a fourth unchanged or related attempt for the same root cause. There is
-  no recovery counter file or command.
+- **Fingerprint the failed invariant, not the review round.** An exact causal
+  fingerprint is the owning gate/invariant plus its minimal reproduction and
+  decisive failure signal. A new DEC/DRIFT number, changed line number, reviewer
+  wording, or splitting one finding does not create a new fingerprint.
+- **Cap no-progress retries:** three no-progress attempts per exact causal fingerprint
+  across wright and recovery is a hard cap. Only a repair whose narrow recheck
+  leaves that fingerprint open or reproduces the same decisive failure consumes
+  an attempt. Closing a prior finding with discriminating evidence is progress:
+  mark that fingerprint resolved and do not charge it as no-progress. A genuinely
+  new Critical or Important finding with a different failed invariant and exact
+  evidence gets its own fingerprint and budget; Suggestion, Nit, FYI, or renamed
+  evidence cannot open, reset, or extend recovery.
+- **Persist accounting in existing records.** Record each fingerprint,
+  reproduction, attempted correction, `progress: resolved|no-progress`, and
+  decisive result in `drift.md` and `evidence.md`. Cold resume derives the count
+  from those records. There is no recovery counter file or command.
 - **Classify exhaustion:** human-owned contract/risk/access gaps open their gate. Otherwise
   preserve reproduction/dead ends, set `Status: blocked` and `Next step: none — technical recovery exhausted for <causal fingerprint>; requires new evidence or changed failure conditions`.
   Do not emit `/rite-plan unblock`, another phase command, a question, or

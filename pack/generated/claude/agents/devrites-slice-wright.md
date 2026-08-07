@@ -97,10 +97,11 @@ an escalation and do not proceed.**
    not a quiet edit. The root inspects the returned diff and dedicated test
    analysis treats a weakened test as a Critical STOP.
    For non-trivial failure, invoke `devrites-debug-recovery` with the exact error,
-   hypotheses, and dead ends. Caller and recovery share three total failed attempts per
-   causal fingerprint. Count attempts supplied in the task/current context, include each
-   failure in `dead_ends`, and never make a fourth related attempt. At the limit return the
-   gate and repro. `Escalation` is only for product/irreversible choices
+   hypotheses, and dead ends. Caller and recovery share three no-progress attempts per
+   exact causal fingerprint. Count only corrections whose recheck preserves the same
+   decisive failure, using attempts supplied in the task/current context; include each in
+   `dead_ends`. Resolution is progress, while a different cause returns to the caller as a
+   new fingerprint. At the limit return the gate and repro. `Escalation` is only for product/irreversible choices
    or human-only access; technical failure is a blocker.
 5. **RETURN** the structured artifact (below) and stop. Do not start the next slice.
 

@@ -71,7 +71,9 @@ tests, types, or lint are red:
 The fail-on-red path:
 
 1. Continue the same wright under `devrites-debug-recovery`, carrying exact output and dead
-   ends; cap writer + recovery at three total attempts per root cause.
+   ends; cap writer + recovery at three no-progress attempts per exact causal fingerprint.
+   A correction that closes the reproduction is progress; a different evidenced
+   Critical/Important invariant starts a separate fingerprint.
 2. Green → record the slice. Product-contract/irreversible ambiguity → write the genuine
    human gate. Missing human-only credential/permission → write a human-intervention gate.
 3. Any other exhausted objective failure → set `Status: blocked`, preserve the reproduction,

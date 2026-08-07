@@ -59,11 +59,19 @@ Autocomplete root remains the caller:
 
 1. Save the originating phase/action in the native return cursor unless a valid
    one already exists.
-2. Invoke the required repair, Vet, remediation, and proof skills inline. Their
+2. Invoke the required repair, Vet, remediation, and proof skills inline. After
+   Plan repair, run Vet in its recovery mode as a narrow Vet recheck of the prior
+   findings, changed paths/criteria, and affected evidence; do not restart a Full
+   Vet over unchanged axes. Their
    `STOP` instructions end only those nested phases.
 3. Re-read `state.md` after each nested phase and follow its intermediate
    `next_action`; do not hand the intermediate command to the user.
-4. When the prerequisite chain is green, restore and consume the return cursor,
+4. Reconcile each exact causal fingerprint from `drift.md` and `evidence.md`.
+   Continue automatically when the recheck closes a prior fingerprint or admits
+   a genuinely new Critical/Important fingerprint. Charge only a no-progress
+   outcome against the same fingerprint; lower-severity novelty cannot prolong
+   the chain.
+5. When the prerequisite chain is green, restore and consume the return cursor,
    resume the originating phase, and continue the forward table.
 
 Count failed corrections by causal fingerprint under `afk-hitl.md`. Ask only
