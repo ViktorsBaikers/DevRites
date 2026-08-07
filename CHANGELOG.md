@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.0.6](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.5...v4.0.6) (2026-08-07)
+
+### Fixed
+
+* **rite:** gate one-shot evidence retention ([621a549](https://github.com/ViktorsBaikers/DevRites/commit/621a549acdf9ec2a0d427b829b0df8852502380d))
+
 ## [4.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.4...v4.0.5) (2026-08-07)
 
 ### Fixed
