@@ -56,4 +56,16 @@ Record: .devrites/archive/<slug>/ship.md
 ```
 
 Claims such as proved, reviewed, sealed, shipped, or complete must point to real
-output or an artifact. Use exactly one recommended next action.
+output or an artifact. Use exactly one recommended next action except for
+terminal agent-owned technical exhaustion, which has no runnable action.
+
+For that terminal case use:
+
+```text
+Stopped: Technical recovery exhausted
+Blocking: <causal fingerprint and invariant>
+Attempts: <three failed approaches and decisive reproduction>
+No runnable recovery command: unchanged reinvocation remains blocked
+Next: none — requires new evidence or changed failure conditions
+Record: <artifact path>
+```

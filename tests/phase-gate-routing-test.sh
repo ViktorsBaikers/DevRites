@@ -36,6 +36,7 @@ BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
 WRIGHT="$ROOT/pack/.claude/agents/devrites-slice-wright.md"
 WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
 CORE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/core.md"
+AFK_HITL="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md"
 STATE_WORKSPACE="$ROOT/pack/.claude/skills/rite-spec/reference/state-workspace.md"
 REPLY="$ROOT/pack/.claude/skills/devrites-lib/reference/reply-contract.md"
 PROVE="$ROOT/pack/.claude/skills/rite-prove/SKILL.md"
@@ -43,6 +44,7 @@ DRIFT="$ROOT/pack/.claude/skills/rite-build/reference/spec-drift-guard.md"
 AUTOCOMPLETE="$ROOT/pack/.claude/skills/rite-autocomplete/SKILL.md"
 AUTOCOMPLETE_LOOP="$ROOT/pack/.claude/skills/rite-autocomplete/reference/loop.md"
 AUTOCOMPLETE_STOPS="$ROOT/pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md"
+BUILD_AFK="$ROOT/pack/.claude/skills/rite-build/reference/afk-discipline.md"
 CANDIDATE_INTEGRITY="$ROOT/pack/.claude/skills/devrites-lib/reference/candidate-integrity.md"
 PROOF_RUNNER="$ROOT/pack/.claude/agents/devrites-proof-runner.md"
 DISCOVERY="$ROOT/pack/.claude/skills/rite-prove/reference/test-command-discovery.md"
@@ -112,6 +114,14 @@ require "$AUTOCOMPLETE" 'follow agent-owned backward edges' 'autocomplete follow
 require "$AUTOCOMPLETE_LOOP" 'do not hand the intermediate command to the user' 'autocomplete loop retains phase orchestration ownership'
 require "$AUTOCOMPLETE_STOPS" 'Agent-owned backtracking is not a stop condition' 'autocomplete pauses only on a real stop condition'
 require "$FAILURE_TRIAGE" 'Ask only when the remaining decision is human-owned' 'prove exhaustion does not ask for mechanical recovery'
+require "$AFK_HITL" 'Next step: none — technical recovery exhausted' 'technical exhaustion is terminal without a phase command'
+forbid "$AFK_HITL" 'Next step: /rite-plan unblock' 'technical exhaustion cannot hand plan unblock to the user'
+require "$BUILD_AFK" 'Next step: none — technical recovery exhausted' 'build exhaustion is terminal without a phase command'
+forbid "$BUILD_AFK" 'Next step: /rite-plan unblock' 'build exhaustion cannot hand plan unblock to the user'
+require "$AUTOCOMPLETE_STOPS" 'no runnable recovery command' 'autocomplete terminal blockers do not advertise a retry command'
+require "$STATE_WORKSPACE" 'terminal: none' 'state cursor represents terminal technical exhaustion explicitly'
+require "$REPLY" 'Technical recovery exhausted' 'reply contract has a terminal technical blocker shape'
+require "$REPLY" 'No runnable recovery command' 'reply contract does not turn exhaustion into another user command'
 require "$DISCOVERY" 'discovery evidence, not authorization' 'command discovery cannot authorize execution'
 require "$PROOF_RUNNER" 'reject missing, synthesized, or unapproved commands' 'proof runner rejects commands outside the approved plan'
 require "$SEAL_CONTRACT" 'devrites-proof-runner' 'seal delegates acceptance proof judgment natively'

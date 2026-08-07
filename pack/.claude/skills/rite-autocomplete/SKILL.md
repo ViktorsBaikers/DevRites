@@ -92,6 +92,9 @@ default and **Full** for high-risk scope or explicit `--full`; profiles are defi
 5. **Apply stop conditions at every gate** ([reference/stop-conditions.md](reference/stop-conditions.md)):
    on hard-risk / blocking / escalating / NO-GO / budget-exhausted / still-low-confidence
    → write `state.md` (`Status`, `Next step`), surface *why*, and **STOP**.
+   Exhausted agent-owned technical recovery uses the terminal `Next step: none`
+   marker and never hands the user `/rite-plan unblock` or another routine
+   phase command.
    **Completion:** either no stop condition is active, or the stopped cursor and reason
    are durable and no later phase has been invoked.
 6. **Seal GO → ship boundary.** With `--ship` / `--yolo`, proceed through

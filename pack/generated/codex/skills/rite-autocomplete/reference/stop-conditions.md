@@ -1,8 +1,10 @@
 # Stop conditions: when autocomplete must pause for a human
 
 On these conditions, write `state.md` (`awaiting_human` or `blocked`), report
-the reason and one resume command, notify if configured, and stop. `--ship`
-cannot bypass them.
+the reason and one resume command when an actual human/safety/access action can
+change the state, notify if configured, and stop. Exhausted agent-owned
+technical recovery is terminal for its unchanged causal fingerprint: record
+`Next step: none` and no runnable recovery command. `--ship` cannot bypass them.
 
 ## Always stop (irreversible-risk list: from `afk-hitl.md`)
 
@@ -24,6 +26,10 @@ and any bounded remediation, then resumes the originating phase. Persist
 `Next step` for crash recovery, but do not surface it as a command the human must
 submit. Stop only when recovery is exhausted or the remaining choice is a real
 human/safety/access gate.
+
+On technical exhaustion, preserve the fingerprint, reproduction, attempts, and
+dead ends, then stop without `$rite-plan unblock` or another phase command.
+Reinvocation with unchanged evidence remains blocked and does not reset the cap.
 
 ## Stop on gate severity
 
@@ -69,6 +75,10 @@ human/safety/access gate.
 ## How to stop well
 
 State must be enough for a fresh agent to resume cold:
-- `state.md`: `Status`, the blocking reason, and a single `Next step` command.
+- `state.md`: `Status`, the blocking reason, and either a single actionable
+  `Next step` command or the terminal `none — technical recovery exhausted`
+  marker.
 - The relevant `questions.md` / `drift.md` / `seal.md` entry that explains the pause.
-- A one-line user-facing message: *what* stopped it and *what command* resumes.
+- A one-line user-facing message: *what* stopped it and, only when one exists,
+  *what human-owned action* resumes. A terminal technical blocker names no
+  routine Plan/Vet/retry command.
