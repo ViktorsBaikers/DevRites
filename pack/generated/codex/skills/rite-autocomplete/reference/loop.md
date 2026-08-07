@@ -52,6 +52,25 @@ Read each phase's `SKILL.md` and execute that workflow. Workspace files such as
 | 10 | `$rite-seal` | GO/NO-GO decision (no git here) |
 | 11 | `$rite-ship` | only if seal GO; `--ship` / `--yolo` never authorizes Git and only continues to the exact-plan literal-GO/native-approval boundary |
 
+## Backtrack without handing off
+
+When a later phase finds an agent-owned technical gap in an earlier phase, the
+Autocomplete root remains the caller:
+
+1. Save the originating phase/action in the native return cursor unless a valid
+   one already exists.
+2. Invoke the required repair, Vet, remediation, and proof skills inline. Their
+   `STOP` instructions end only those nested phases.
+3. Re-read `state.md` after each nested phase and follow its intermediate
+   `next_action`; do not hand the intermediate command to the user.
+4. When the prerequisite chain is green, restore and consume the return cursor,
+   resume the originating phase, and continue the forward table.
+
+Count failed corrections by causal fingerprint under `afk-hitl.md`. Ask only
+for a human-owned decision or mandatory safety/access action. Exhausted
+agent-owned recovery stops once with its reproduction and dead ends, never with
+another routine Plan/Vet command.
+
 ## Between phases
 
 - Re-read the active workspace before each phase (don't trust chat memory).

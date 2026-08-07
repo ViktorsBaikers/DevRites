@@ -40,6 +40,9 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
 - **Search before asking.** Verify facts and fold reversible technical hardening into the
   plan; ask only human-owned choices under `afk-hitl.md`. Dispatch uses the bounded
   [`agents.md`](../devrites-lib/reference/standards/agents.md) contract.
+- **Honor a recovery origin.** Preserve a valid technical-backtracking return
+  cursor throughout review. Agent-owned `NEEDS REPLAN` returns internally to the
+  controlling caller; it never becomes a request for the human to invoke Plan.
 
 ## Workflow
 0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`** first.
@@ -146,6 +149,11 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
    cross-model integration.
    Completion: the final axis floor clears, an objective technical blocker is recorded, or a
    genuine human-owned gate is recorded.
+   When READY has no pending remediation slice and a valid technical return
+   cursor exists, restore and consume the return cursor instead of defaulting to
+   `$rite-build`, then return the nested result to the controlling caller. If
+   vetted remediation remains, preserve the cursor while the caller follows it;
+   only a real stop condition reaches the human.
 7. **STOP.** Show the Build readback, scope verdict, lowest axis band, closed coverage
    gaps, preflight, action-time checkpoints, and failure-mode criticals; recommend
    `$rite-build` only when the entry contract is ready.

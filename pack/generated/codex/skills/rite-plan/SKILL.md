@@ -35,6 +35,10 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
 - **Root writes; drafter proposes.** Follow
   [`agents.md`](../devrites-lib/reference/standards/agents.md). The controlling chat owns
   human questions, decisions, reconciliation, and all planning-artifact writes.
+- **Nested repair preserves its caller.** When `state.md` contains a valid
+  technical-backtracking return cursor, preserve any valid return cursor
+  byte-for-byte. `$rite-vet` is the next internal prerequisite, not a command to
+  hand back to the human.
 
 ## Workflow
 0. Read `.agents/skills/devrites-lib/reference/standards/core.md` (operating rules) before reshaping anything.
@@ -93,7 +97,8 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
    `eng-review.md` exists, set `Implementation readiness: NEEDS REPLAN`. Never retain READY
    across changed planning inputs. Preserve `Plan approved` only for behavior/acceptance-neutral
    technical repair; clear and reconfirm it when the contract changed. If you stopped for drift,
-   mark the `drift.md` entry resolved.
+   mark the `drift.md` entry resolved. Never remove or overwrite a valid caller
+   return cursor while writing the Plan checkpoint.
 6. If product behavior/acceptance criteria change, confirm through `$rite-clarify` before
    writing, re-close `decision-coverage.md`, then reconcile the plan. After any edit to
    `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`, including a
@@ -110,6 +115,11 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
    plan ends at `$rite-vet` rather than returning directly to build. The `Shared contract proof`
    table or justified no-impact statement must still match the revised boundary set.
    If any check fails, loop back: don't hand off a half-reshaped plan.
+
+When invoked inline by a controlling rite, return the completed Plan checkpoint
+to that caller so it can invoke Vet immediately. The phase boundary is not a
+user-facing stop unless a genuine HITL, safety/access, or exhausted-recovery
+condition was recorded.
 
 > **Mid-flight discipline.** Do not change product behavior without confirmation or
 > absorb drift silently. See [`anti-patterns`](reference/anti-patterns.md).

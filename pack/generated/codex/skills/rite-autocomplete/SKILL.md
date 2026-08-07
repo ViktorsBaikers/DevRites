@@ -25,6 +25,10 @@ default and **Full** for high-risk scope or explicit `--full`; profiles are defi
   `--yolo` never authorizes Git; it reaches only the exact-plan literal-GO and
   native-approval boundary. Red checks run bounded recovery, then block unless
   the remaining decision is human-owned.
+- **Keep routine backtracking internal.** Always follow agent-owned backward edges
+  through repair, Vet, bounded implementation correction, and re-proof inside
+  the active run. A nested phase `STOP` or intermediate `Next step` is not a
+  user handoff; pause only on the shared real stop conditions.
 - **Budget from the post-vet slice count.** Vet may split/add slices.
   `--max-slices N` may lower the cap for a partial run; otherwise build all.
 - **Parse flags only from this invocation.** `--ship`, `--yolo`, `--max-slices`,
@@ -44,8 +48,9 @@ default and **Full** for high-risk scope or explicit `--full`; profiles are defi
   run `$rite-vet` on **every** feature (depth scales: a light pass on simple plans, full rigor on
   big/risky; never skipped). Unattended it auto-applies only *hardening* findings: added test
   requirements, error-handling / failure-mode coverage, tightened scope, reuse-over-rebuild,
-  dependency-order fixes (these never grow acceptance); **any finding that grows scope,
-  adds a slice, or changes acceptance is a blocking pause**, and irreversible-risk findings always
+  dependency-order fixes (these never grow acceptance); acceptance-preserving
+  reslicing or remediation remains agent-owned. **Any finding that grows product
+  scope or changes acceptance is a blocking pause**, and irreversible-risk findings always
   pause. Cross-model is off unless `--cross-model` was armed.
 
 ## Workflow
@@ -76,6 +81,9 @@ default and **Full** for high-risk scope or explicit `--full`; profiles are defi
    built; root charges the AFK budget once per green built slice) → `$rite-prove`
    → `$rite-polish` → `$rite-review` → `$rite-seal`.
    Read each `SKILL.md` and execute it; workspace files carry state, not chat.
+   Follow the loop's backward-edge contract whenever a later phase discovers an
+   agent-owned earlier-phase gap; keep the original return cursor until that
+   phase resumes.
    Immediately after `$rite-vet` and before the first Build dispatch, apply the loop's
    [mutable post-vet budget](reference/loop.md#derive-the-mutable-post-vet-budget)
    contract. **Completion:** the loop reaches Seal GO, or a stop condition is persisted

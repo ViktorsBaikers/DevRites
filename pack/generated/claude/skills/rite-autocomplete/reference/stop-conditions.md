@@ -16,6 +16,15 @@ Regardless of `allow_gates` or `--ship`:
 Red checks are hard non-advance gates. Run bounded `devrites-debug-recovery`;
 on exhaustion, stop as a technical blocker unless human-owned.
 
+## Not a stop: agent-owned backtracking
+
+Agent-owned backtracking is not a stop condition while its causal-fingerprint
+budget remains. The active caller invokes the earlier phase inline, follows Vet
+and any bounded remediation, then resumes the originating phase. Persist
+`Next step` for crash recovery, but do not surface it as a command the human must
+submit. Stop only when recovery is exhausted or the remaining choice is a real
+human/safety/access gate.
+
 ## Stop on gate severity
 
 - `blocking` gate fires → synchronous pause.
