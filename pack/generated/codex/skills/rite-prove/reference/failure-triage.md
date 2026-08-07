@@ -20,6 +20,7 @@ loop to `devrites-debug-recovery`.
 - Quote the real error text; don't paraphrase it away.
 - Don't loosen/delete a failing assertion to get green: investigate whether it's drift.
 - Don't add blanket retries/sleeps to hide flakiness.
-- Three failed fix attempts on the same root cause → escalate: `devrites-debug-recovery`
-  for a hypothesis-driven pass, or ask the user.
+- Three failed fix attempts on the same root cause consume the shared recovery
+  cap: preserve the reproduction and dead ends, then stop once as a technical
+  blocker. Ask only when the remaining decision is human-owned.
 - A failure you can't fix in scope is a recorded **blocker**, not a silent skip.

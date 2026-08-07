@@ -57,6 +57,10 @@ Pull these via `Read` when relevant:
   writes. The proof runner is read-only and validates immutable logs/artifacts.
   Every accepted source/test correction is one bounded
   `devrites-slice-wright` task, never an inline edit.
+- **Prove remains the controlling caller during technical backtracking.** Save
+  its return cursor, invoke Plan/Vet or bounded remediation inline, consume each
+  nested phase boundary, then resume the failed Prove step. Never make the human
+  submit an agent-owned repair, re-vet, or proof-rerun command.
 
 ## Released-workspace refresh entry
 
@@ -80,14 +84,15 @@ failure is a blocker; this Upgrade admission never authorizes source or test cha
    require its `state.md`, and read the cursor directly.
 1. **Confirm all slices built.** Read `spec.md`, `tasks.md`, `state.md`,
    `test-plan.md`, and the full diff.
-   A missing `test-plan.md` returns to Vet; it never authorizes ad hoc proof.
+   A missing `test-plan.md` enters caller-owned Vet backtracking; invoke Vet
+   inline and resume this step. It never authorizes ad hoc proof.
 2. **Discover commands** if not recorded:
    [test-command-discovery](reference/test-command-discovery.md): README, package
    scripts, Makefile, CI configs, Gemfile/Rakefile, pyproject, go.mod, Cargo.toml.
    Discovery only supplies evidence. `test-plan.md` is the sole approved runtime
    command list. If a discovered command is absent from it, do not run or
    silently approve the command: return to the current Vet contract to add and
-   vet it, refresh readiness, then return to Prove.
+   vet it inline, refresh readiness, then return to Prove without a user handoff.
    **Completion:** exact commands are approved in `test-plan.md` or unavailable.
 3. **Execute proof against a frozen candidate.** Run
    `devrites-engine check candidate <slug>` before any approved proof and retain
@@ -123,6 +128,11 @@ failure is a blocker; this Upgrade admission never authorizes source or test cha
    manifest from its actual scoped diff, rerun affected real proof and both
    candidate checks, then dispatch a fresh proof runner. If a fix would exceed
    scope, record a blocker.
+   If triage shows an agent-owned durable-plan error, apply the Spec Drift
+   Guard's inline return contract: preserve Prove as the origin, run repair and
+   Vet inside this invocation, and resume the exact failed proof rung. Ask only
+   for a human-owned decision; causal-fingerprint exhaustion stops once with a
+   technical blocker rather than another phase command.
 8. The root updates `evidence.md`, `browser-evidence.md` (when present),
    `traceability.md`, and `state.md`. Record exactly one binding for the observed
    digest in evidence and browser evidence. New proof goes to canonical

@@ -24,8 +24,8 @@ other phases reference it here.
      YES, active-slice technical/tool failure → log it and use Build's bounded debug
        recovery. Do not ask for retry authorization and do not re-plan unless the
        durable remaining-work instructions are wrong.
-     YES, durable plan is wrong → log it, run $rite-plan repair without a question,
-       re-vet, then resume.
+     YES, durable plan is wrong → log it, save the caller's return cursor, then
+       invoke `$rite-plan repair` and `$rite-vet` inline without a question and resume.
      NO, product/policy/irreversible-risk decision → ask the user (format below).
 5. Never continue on a known-wrong durable plan. A repaired active-slice implementation
    may continue only after bounded recovery, returned-diff review, and proof gates pass.
@@ -47,3 +47,13 @@ Which direction should DevRites take?
 
 Never turn an objective defect, environment repair, tool bug, or proof rerun into a
 human permission question. Re-plan only when the durable plan changed.
+
+## Inline return contract
+
+The phase that detected agent-owned drift owns the whole backtrack. Preserve it
+as `return_phase`/`return_next_action`; consume Plan and Vet's nested `STOP`
+boundaries internally; follow any vetted remediation required by the settled
+acceptance; then restore the cursor and resume the failed step. Do not hand an
+intermediate command to the human. The shared three-attempt causal-fingerprint
+cap still applies: exhaustion produces one technical blocker, while a genuinely
+human-owned decision uses the question format below.

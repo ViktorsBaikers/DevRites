@@ -30,15 +30,23 @@ echo "== phase-gate-routing-test =="
 SPEC="$ROOT/pack/.claude/skills/rite-spec/SKILL.md"
 CLARIFY="$ROOT/pack/.claude/skills/rite-clarify/SKILL.md"
 DEFINE="$ROOT/pack/.claude/skills/rite-define/SKILL.md"
+PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
+VET="$ROOT/pack/.claude/skills/rite-vet/SKILL.md"
 BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
 WRIGHT="$ROOT/pack/.claude/agents/devrites-slice-wright.md"
 WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
 CORE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/core.md"
+STATE_WORKSPACE="$ROOT/pack/.claude/skills/rite-spec/reference/state-workspace.md"
 REPLY="$ROOT/pack/.claude/skills/devrites-lib/reference/reply-contract.md"
 PROVE="$ROOT/pack/.claude/skills/rite-prove/SKILL.md"
+DRIFT="$ROOT/pack/.claude/skills/rite-build/reference/spec-drift-guard.md"
+AUTOCOMPLETE="$ROOT/pack/.claude/skills/rite-autocomplete/SKILL.md"
+AUTOCOMPLETE_LOOP="$ROOT/pack/.claude/skills/rite-autocomplete/reference/loop.md"
+AUTOCOMPLETE_STOPS="$ROOT/pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md"
 CANDIDATE_INTEGRITY="$ROOT/pack/.claude/skills/devrites-lib/reference/candidate-integrity.md"
 PROOF_RUNNER="$ROOT/pack/.claude/agents/devrites-proof-runner.md"
 DISCOVERY="$ROOT/pack/.claude/skills/rite-prove/reference/test-command-discovery.md"
+FAILURE_TRIAGE="$ROOT/pack/.claude/skills/rite-prove/reference/failure-triage.md"
 CUSTOMIZE="$ROOT/pack/.claude/skills/rite-customize/SKILL.md"
 UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
 UPGRADE_PLANNER="$ROOT/pack/.claude/agents/devrites-upgrade-planner.md"
@@ -94,6 +102,16 @@ forbid "$WRIGHT" 'devrites-engine state recovery' 'wright has no removed recover
 
 require "$PROVE" 'sole approved runtime' 'prove treats test-plan as sole command authority'
 require "$PROVE" 'return to the current Vet contract' 'prove routes newly discovered commands through Vet'
+require "$CORE" 'nested phase boundary, not a user-facing handoff' 'nested recovery returns to its controlling rite'
+require "$STATE_WORKSPACE" 'agent-owned technical backtracking' 'state cursor preserves the recovery origin'
+require "$DRIFT" 'invoke `/rite-plan repair` and `/rite-vet` inline' 'spec drift recovery stays inside the active caller'
+require "$PROVE" 'Prove remains the controlling caller' 'prove owns repair and re-vet continuation'
+require "$PLAN" 'preserve any valid return cursor' 'plan repair preserves its caller recovery target'
+require "$VET" 'restore and consume the return cursor' 'vet returns a repaired plan to the originating phase'
+require "$AUTOCOMPLETE" 'follow agent-owned backward edges' 'autocomplete follows technical backtracking internally'
+require "$AUTOCOMPLETE_LOOP" 'do not hand the intermediate command to the user' 'autocomplete loop retains phase orchestration ownership'
+require "$AUTOCOMPLETE_STOPS" 'Agent-owned backtracking is not a stop condition' 'autocomplete pauses only on a real stop condition'
+require "$FAILURE_TRIAGE" 'Ask only when the remaining decision is human-owned' 'prove exhaustion does not ask for mechanical recovery'
 require "$DISCOVERY" 'discovery evidence, not authorization' 'command discovery cannot authorize execution'
 require "$PROOF_RUNNER" 'reject missing, synthesized, or unapproved commands' 'proof runner rejects commands outside the approved plan'
 require "$SEAL_CONTRACT" 'devrites-proof-runner' 'seal delegates acceptance proof judgment natively'

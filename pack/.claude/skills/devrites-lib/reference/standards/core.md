@@ -45,6 +45,20 @@ After native proof/review, `/rite-seal` runs `devrites-engine check seal <slug>`
 for structure/freshness, not prose. HITL/blocked stops follow
 [Persistence before stopping](#persistence-before-stopping-handoff-discipline).
 
+## Caller-owned technical backtracking
+
+When an active rite invokes an earlier rite inline to repair an agent-owned
+technical gap, the original rite remains the controlling caller. A nested
+rite's `STOP` is a nested phase boundary, not a user-facing handoff. The caller
+re-reads `state.md`, follows the durable return cursor and intermediate
+`next_action`, and resumes its originating phase while no human-owned, safety,
+access, budget, or exhausted-recovery stop is active.
+
+An intermediate `Next step` is cold-resume metadata. Do not ask the human to
+copy routine `/rite-plan repair`, `/rite-vet`, `/rite-build`, or proof-rerun
+commands during the active recovery chain. Only the controlling caller emits
+the final response; standalone phase invocations still stop normally.
+
 ## Final response
 
 Immediately before its final response, each rite loads

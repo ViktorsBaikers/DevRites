@@ -105,8 +105,8 @@ None.
 | slice_mode | none |
 | risk | none |
 | next_action | <single command + reason> |
-| return_phase | <later phase; retrofit clarification only> |
-| return_next_action | <saved command; retrofit clarification only> |
+| return_phase | <originating later phase; clarification or agent-owned technical backtracking only> |
+| return_next_action | <saved originating command> |
 
 ## Awaiting human
 Only present when status is awaiting_human.
@@ -120,9 +120,16 @@ Only present when status is awaiting_human.
 `state.md` is a compact cursor, not a history file. Put proof in `evidence.md`,
 decisions in `decisions.md`, assumptions in `assumptions.md`, and drift in
 `drift.md`. Omit both `return_*` rows outside a later-phase `$rite-clarify`
-retrofit. The controlling root follows `$rite-clarify`'s native cursor protocol:
-save both fields before later-phase entry, restore and remove both only after a
-contract-neutral CLEAR verdict, and preserve every unrelated Markdown byte.
+retrofit or agent-owned technical backtracking chain.
+
+Before an active caller moves backward, it copies its current phase and
+non-empty action into the two return rows. Nested Plan, Vet, Build, and proof
+work preserves that valid cursor. Once the prerequisite chain is green, the
+controlling caller restores the saved phase/action and removes both rows in one
+rewrite. A real HITL or exhausted-recovery stop retains the cursor for cold
+resume. Never overwrite an existing valid return cursor, and preserve every
+unrelated Markdown byte. `$rite-clarify` applies its stricter native cursor
+protocol below.
 
 `afk_slices_remaining` is mutable runtime state, not `.devrites/AFK`
 configuration. Only the controlling root writes it under the shared
