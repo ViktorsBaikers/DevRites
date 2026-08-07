@@ -240,8 +240,10 @@ changes, not a request for permission to retry.
   make a fourth unchanged or related attempt for the same root cause. There is
   no recovery counter file or command.
 - **Classify exhaustion:** human-owned contract/risk/access gaps open their gate. Otherwise
-  preserve reproduction/dead ends, set `Status: blocked` and `Next step: /rite-plan unblock`,
-  with no question or `/rite-resolve`.
+  preserve reproduction/dead ends, set `Status: blocked` and `Next step: none — technical recovery exhausted for <causal fingerprint>; requires new evidence or changed failure conditions`.
+  Do not emit `/rite-plan unblock`, another phase command, a question, or
+  `/rite-resolve`. Reinvocation with the unchanged fingerprint remains blocked
+  and never resets the retry cap.
 - **Reassess no-progress loops:** After repeated attempts without progress, stop and
   reassess the failure and approach rather than continuing blindly.
 - **Resolve agent-owned questions first.** Before raising a question, try to answer it from the code, the docs,
