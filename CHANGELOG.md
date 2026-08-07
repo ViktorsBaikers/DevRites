@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.4...v4.0.5) (2026-08-07)
+
+### Fixed
+
+* **rite:** make recovery progress-aware ([87ecd07](https://github.com/ViktorsBaikers/DevRites/commit/87ecd07d406d8c9eed97f2d41ec3449b408e75bd))
+
 ## [4.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.3...v4.0.4) (2026-08-07)
 
 ### Fixed
