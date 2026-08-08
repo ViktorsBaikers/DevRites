@@ -103,7 +103,9 @@ Some work needs a different route:
   consumptive proof action never retries blindly: retained evidence drives
   offline repair and re-vetting. Ambiguous retained evidence first drives a vetted
   boundary-discriminating diagnostic design; only its next real acquisition attempt
-  needs a new GO.
+  needs a new GO. After an upgrade introduces a supported workflow-artifact writer,
+  Autocomplete reopens a stale missing-writer stop once instead of preserving the
+  obsolete recovery count.
 - [`/rite-upgrade [slug]`](pack/.claude/skills/rite-upgrade/SKILL.md) is a
   compatibility route for an older active workspace that cannot resume. Age or
   cursor form alone never triggers repair; it is not a lifecycle phase.

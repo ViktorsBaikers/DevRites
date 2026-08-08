@@ -64,6 +64,17 @@ Restore `return_phase` from the current phase and `return_next_action` only from
 the exact approved action recorded in `test-plan.md` / evidence; ambiguity returns
 to the applicable Vet contract and never licenses execution.
 
+Also reconcile a **stale writer-exhaustion cursor** against
+`workflow-artifacts.md`. When exact Vet-ready workflow-artifact paths and behavior
+exist, the old attempts only targeted the read-only drafter/reviewer or product
+wright, and there is **no controlling-root materialization attempt**, supported
+root ownership is a changed routing condition. Preserve the old fingerprint,
+record the new materialization fingerprint, and run that offline branch directly;
+do not charge or require product-slice/AFK budget, re-ask a resolved question, or
+request GO. Once a root materialization attempt exists, never apply this migration
+again—route its observed failure normally. This reconciliation runs even when all
+product slices are already built, before selecting the next forward phase.
+
 1. Save the originating phase/action in the native return cursor unless a valid
    one already exists.
 2. Invoke the required repair, Vet, remediation, and proof skills inline. After

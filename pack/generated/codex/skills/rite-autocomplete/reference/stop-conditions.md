@@ -46,6 +46,14 @@ no-progress corrections. A retained fingerprint with remaining offline budget is
 not terminal merely because `state.md` was written by the failed action or a prior
 session ended.
 
+A pre-ownership workflow-artifact writer stop is not unchanged evidence when the
+current contract supplies controlling-root materialization. Prior drafter/wright refusals do not count
+as root materialization attempts. Reopen only when exact paths and executable
+behavior passed Vet and there is **no controlling-root materialization attempt**;
+record the routing migration so it cannot reset again. Missing product slices,
+unresolved protocol choices, or a recorded root attempt remain under their normal
+gate/fingerprint rules.
+
 Past evidence being irretrievable is not by itself terminal. When an in-scope
 trusted diagnostic seam can make the next retained fingerprint uniquely
 actionable, Autocomplete must run diagnostic-amplification Plan repair and narrow

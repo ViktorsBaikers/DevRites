@@ -259,6 +259,12 @@ changes, not a request for permission to retry.
   recorded no-progress corrections still has recovery budget, even when an older
   `state.md` says `Next step: none`. Resume it; do not treat session age or the
   prior action's spent authorization as exhaustion.
+- **Treat a newly supported writer route as progress once.** For exact Vet-ready
+  workflow artifacts, apply `workflow-artifacts.md` when prior attempts only asked
+  a read-only role or product wright for implementation and evidence records
+  **no controlling-root materialization attempt**. Preserve the old attempts, but
+  do not count them against the new root-materialization fingerprint. Record the
+  migration; after a root attempt exists, normal fingerprint accounting applies.
 - **Classify exhaustion:** human-owned contract/risk/access gaps open their gate. Otherwise
   preserve reproduction/dead ends, set `Status: blocked` and `Next step: none — technical recovery exhausted for <causal fingerprint>; requires new evidence or changed failure conditions`.
   Do not emit `/rite-plan unblock`, another phase command, a question, or
