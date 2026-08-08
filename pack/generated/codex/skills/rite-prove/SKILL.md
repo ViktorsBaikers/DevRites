@@ -114,7 +114,8 @@ failure is a blocker; this Upgrade admission never authorizes source or test cha
    gates prove only their named static criterion.
    Immediately before any consumptive action, apply `one-shot-actions.md` to the
    live candidate: require the vetted retained-artifact identity, bounds,
-   sanitization, terminal-path fixtures, and cleanup-survival proof. A missing,
+   sanitization, injective boundary map, per-seam fault fixtures, collision mutant,
+   terminal-path fixtures, and cleanup-survival proof. A missing,
    stale, or disposable-only evidence surface returns to Vet inline and consumes
    no attempt. Record the admitted artifact identity before execution. After a
    failed consumptive action, triage from that artifact; never reproduce it by
@@ -155,6 +156,11 @@ failure is a blocker; this Upgrade admission never authorizes source or test cha
    reproduction to fix and re-vet the retained fingerprint. Once the failure
    condition is demonstrably changed, stop at the fresh-authorization boundary;
    only a new human GO may admit the next real attempt.
+   If the retained fingerprint is missing or ambiguous, the lost past evidence
+   does not prove that no safe future acquisition design exists. Treat an in-scope
+   discriminator as a diagnostic-amplification Plan gap: repair and narrow-Vet the
+   boundary map and collision proof inline, then stop for fresh GO before one
+   evidence-acquisition attempt. Do not guess the runtime fix or reuse the old GO.
 8. The root updates `evidence.md`, `browser-evidence.md` (when present),
    `traceability.md`, and `state.md`. Record exactly one binding for the observed
    digest in evidence and browser evidence. New proof goes to canonical

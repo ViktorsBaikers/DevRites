@@ -100,8 +100,10 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
    discriminating assertion and decisive signal, not merely a command or expected exit zero.
    Identify every consumptive action under `one-shot-actions.md`. Before admitting
    it, require the exact durable retention surface, trust-safe diagnostic schema,
-   cleanup ordering, terminal-path coverage, and discriminating fixtures in
-   `test-plan.md`. Missing or stale one-shot evidence completeness is a technical
+   cleanup ordering, terminal-path coverage, a finite injective boundary map,
+   per-boundary fault fixtures, and an executed collision mutant in `test-plan.md`.
+   Every retained failure fingerprint must identify one actionable seam; a broad
+   operation/cause shared by multiple emit sites is a gap. Missing or stale one-shot evidence completeness is a technical
    preflight gap; do not spend the action to learn what cleanup would erase.
    Preflight observes; it need not make future behavior pass.
 2c. **Implementation-readiness audit.** Goal-backward map every REQ/AC/NFR, interaction,

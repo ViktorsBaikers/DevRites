@@ -56,7 +56,10 @@ line, and then assign the band. Do not choose a score and justify it afterward:
    no error handling** is a critical gap. For every consumptive action under
    `one-shot-actions.md`, require durable bounded trust-safe evidence for every
    terminal path plus unknown-well-formed, malformed/hostile, and cleanup-survival
-   fixtures. Missing evidence completeness is `broken`: the plan must not consume
+   fixtures. Require a finite injective map from every failure emit site to one
+   stable non-secret boundary ID and one actionable failure seam, per-seam fault
+   injection, and a negative collision mutant. A shared broad operation/cause is
+   not actionable evidence. Missing evidence completeness is `broken`: the plan must not consume
    the action to discover diagnostics that cleanup can erase.
 
 ## Confidence calibration + verification gate (mandatory)

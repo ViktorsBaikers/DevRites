@@ -63,6 +63,11 @@ has no clear next move.
   retained artifact supplies a new Critical/Important fingerprint, continue
   offline diagnosis, correction, fixtures, and narrow Vet under that fingerprint's
   no-progress budget. Stop for fresh authorization only before the next real action.
+- **Ambiguous retained evidence requires diagnostic amplification, not a guessed
+  runtime fix.** If a trusted in-scope seam can add a stable unique boundary ID,
+  repair its finite map and collision/fault fixtures offline, narrow-Vet it, and
+  stop for fresh authorization before the evidence-acquisition attempt. Missing
+  past evidence is terminal only when no safe amplification seam exists.
 - **Classify before routing** with
   [cleanup-and-classify.md](reference/cleanup-and-classify.md).
 - **Durably record class and rationale** in `decisions.md` and the applicable
