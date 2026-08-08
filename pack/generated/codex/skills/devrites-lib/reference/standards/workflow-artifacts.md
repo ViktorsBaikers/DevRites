@@ -37,7 +37,9 @@ directly even when all product slices are built or the AFK slice budget is zero.
 Do not consume product-slice budget, reopen an answered human gate, or require GO
 for this offline work. After any controlling-root attempt is recorded, this
 migration cannot apply again; route its observed atomic/proof failure under the
-new fingerprint instead.
+new fingerprint instead. Applying the migration once does not make the first root
+attempt terminal: normal fingerprint accounting starts with that attempt and
+allows up to three no-progress corrections under `afk-hitl.md`.
 
 ## Admission
 
@@ -52,14 +54,38 @@ Before writing:
    or a request that a drafter supply code is a Plan gap, not implementation input.
 3. Record preimages or absence for every target plus protected product manifests
    and the current candidate digest. Resolve every parent no-follow before mutation.
+4. Before creating an active transaction, **preflight the materializer itself**.
+   Do this before any journal or admitted-target mutation. Compile/static-check
+   it, then run its
+   complete transaction machinery in a disposable same-layout fixture. Cover an
+   existing target, an absent target, full success, injected replacement failure,
+   rollback cleanup, retained-temporary cleanup, and idempotent rerun. Require the
+   fixture to prove that failures leave every simulated target at its bound
+   preimage and that no same-parent temporary escapes its admitted directory. Run
+   with the working directory outside the admitted parent, and execute negative
+   mutants where relative replacement omits either directory handle; both mutants
+   must fail before the active transaction is eligible.
 
 ## Materialize
 
 The root authors the smallest complete bytes for all admitted targets. Write each
 through a same-parent private temporary file, set the planned mode, flush it, and
 atomically replace the target; settle the whole set or roll back partial output.
+Anchor every relative rename/replace operand to its source and destination directory handles.
+For Python `os.replace`, pass both `src_dir_fd`
+and `dst_dir_fd`; a basename plus only the destination handle is not admitted.
 Do not install dependencies, touch Git, use the network, mutate product paths, or
 execute the consumptive action.
+
+Workflow-artifact materialization is not a consumptive action. Its active
+transaction may begin only after the disposable preflight is green. If an active
+attempt fails, preserve its journal, exact hashes, and decisive boundary before
+cleanup. When all targets remain at their recorded preimages and only bound
+same-parent temporaries remain, perform exact fail-closed cleanup, repair and
+preflight the materializer offline, then retry under the same causal fingerprint.
+The first controlling-root failure is attempt one of the shared cap, not terminal
+exhaustion; stop only after three no-progress corrections or a genuine
+human/safety/access gate.
 
 ## Verify and return
 

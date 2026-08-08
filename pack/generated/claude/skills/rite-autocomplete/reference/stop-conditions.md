@@ -52,7 +52,12 @@ as root materialization attempts. Reopen only when exact paths and executable
 behavior passed Vet and there is **no controlling-root materialization attempt**;
 record the routing migration so it cannot reset again. Missing product slices,
 unresolved protocol choices, or a recorded root attempt remain under their normal
-gate/fingerprint rules.
+gate/fingerprint rules. The first controlling-root failure is not exhaustion: it
+is the first no-progress result for the materializer fingerprint. If all targets
+still equal their recorded preimages, no real action ran, and only admitted bound
+temporaries remain, reopen an incorrectly persisted one-shot `1/1` terminal,
+preserve its evidence as attempt one, clean/repair/preflight offline, and continue
+within the shared three-attempt cap.
 
 Past evidence being irretrievable is not by itself terminal. When an in-scope
 trusted diagnostic seam can make the next retained fingerprint uniquely

@@ -23,7 +23,11 @@ See [`one-slice-cycle.md`](one-slice-cycle.md); candidate lifecycle is
    dispatch the exact `devrites-slice-wright` fresh. Root never writes those product
    paths, wright never widens, and a missing profile stops.
    For the workflow-artifact branch, the controlling root writes only the admitted
-   `.devrites/work/<slug>/` paths, proves the complete atomic set, rechecks an
+   `.devrites/work/<slug>/` paths. Before an active journal or target write, it
+   compiles the materializer and runs the exact transaction implementation in a
+   disposable same-layout fixture covering success, replacement failure, rollback,
+   retained-temporary cleanup, and rerun. It then proves the complete atomic set,
+   rechecks an
    identical product candidate, records hashes/evidence, and runs narrow Vet. Do not
    dispatch any agent as a substitute writer and do not charge a product slice.
 
