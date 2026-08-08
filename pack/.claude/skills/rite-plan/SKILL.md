@@ -85,6 +85,12 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
    require the drafter to apply `one-shot-actions.md` and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
    collision mutant. Past evidence loss alone is not a terminal conclusion.
+   The drafter never supplies implementation bodies. Bind the exact active
+   `.devrites/work/<slug>/` targets and complete executable contract; after Vet
+   READY, the controlling root materializes the exact vetted workflow-artifact paths
+   under
+   [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
+   without dispatching the product wright.
 3. Reason about dependencies: [dependency-graph](reference/dependency-graph.md).
    Reconcile `plan.md`'s canonical `Shared contract proof`: changed provider/consumer
    boundaries keep one reused contract artifact ahead of both asserting tests, and unaffected

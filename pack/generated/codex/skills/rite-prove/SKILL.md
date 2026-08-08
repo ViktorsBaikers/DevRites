@@ -40,6 +40,8 @@ Pull these via `Read` when relevant:
 - `definition-of-done.md`: acceptance, proof, gates, scope, rollback/docs.
 - `one-shot-actions.md`: pre-attempt evidence completeness and no-rerun handling for
   consumptive proof actions.
+- `workflow-artifacts.md`: exact root-owned executable proof/controller/harness
+  artifacts under the active feature workspace.
 
 
 ## Operating rules
@@ -57,8 +59,11 @@ Pull these via `Read` when relevant:
   [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns exact
   vetted gate execution, browser capability, the evidence verdict, and canonical
   writes. The proof runner is read-only and validates immutable logs/artifacts.
-  Every accepted source/test correction is one bounded
+  Every accepted product source/test correction is one bounded
   `devrites-slice-wright` task, never an inline edit.
+  Exact Vet-ready executable workflow artifacts under the active `.devrites/**`
+  workspace follow `workflow-artifacts.md` and are materialized by the controlling
+  root; they are not product writer work.
 - **Prove remains the controlling caller during technical backtracking.** Save
   its return cursor, invoke Plan/Vet or bounded remediation inline, consume each
   nested phase boundary, then resume the failed Prove step. Never make the human

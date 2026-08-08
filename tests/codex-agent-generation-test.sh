@@ -214,7 +214,8 @@ report(
 report(
     'devrites-slice-wright` alone uses `default_permissions = ":workspace"' in bridge_text
     and 'every other specialist uses `default_permissions = ":read-only"' in bridge_text
-    and "root must never edit source or tests itself" in bridge_text,
+    and "root must never edit product source or tests itself" in bridge_text
+    and "exact path-bounded executable workflow artifacts" in bridge_text,
     "AGENTS bridge keeps source writing in the exact native wright",
 )
 report(

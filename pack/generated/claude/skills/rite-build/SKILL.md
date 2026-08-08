@@ -14,7 +14,9 @@ first**; if none, tell the user to run `/rite-spec <feature>`.
 
 The root owns gates/workspace; a
 fresh-context [`devrites-slice-wright`](../../agents/devrites-slice-wright.md)
-writes source and tests. Apply the readiness, selection, host, HITL/AFK,
+writes product source and tests. Exact Vet-ready executable workflow artifacts use
+[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md).
+Apply the readiness, selection, host, HITL/AFK,
 dispatch, doubt, fail-on-red, record, and stop checks. See
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 
@@ -61,7 +63,9 @@ reads named on-demand rules while writing; root reads them for doubt/record gate
   principle was broken**; a fresh violation is handled like any irreversible-risk item: a
   human-approved, scoped exception in the register or a stop, never folded into the slice. No
   `.devrites/principles.md` → none declared → nothing to honor.
-- **You never edit source.** You write only `.devrites/` bookkeeping. Follow the
+- **You never edit product source/tests.** You write `.devrites/` bookkeeping and,
+  only through `workflow-artifacts.md`, an exact Vet-ready executable workflow-artifact set.
+  Follow the
   host gate in `wright-dispatch.md` before every build or recovery dispatch. On a
   supported host, the wright is the only writer of code and tests. Codex gives
   the root workspace permission only so that native writer dispatch can execute;
@@ -69,6 +73,11 @@ reads named on-demand rules while writing; root reads them for doubt/record gate
   list directly in the task, dispatch the exact `devrites-slice-wright`, then
   compare `git diff --name-only` with those task paths. Any extra source file is
   a hard STOP.
+- **Executable workflow-artifact branch.** If every implementation target is an
+  exact admitted path under the active `.devrites/work/<slug>/`, the controlling
+  root materializes and proves that atomic set itself. It does not dispatch the wright,
+  decrement/count a product slice, update the candidate manifest, or execute the
+  consumptive action. After narrow Vet, restore the caller cursor.
 
 ## Workflow
 

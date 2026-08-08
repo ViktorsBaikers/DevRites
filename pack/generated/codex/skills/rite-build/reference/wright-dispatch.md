@@ -15,6 +15,10 @@ the wright or recreate an engine bridge.
 
 1. Derive the smallest exact project-relative source/test path list; reject
    directories/globs, traversal, symlink escapes, duplicates, and `.devrites/**`.
+   A target composed only of vetted executable workflow artifacts routes to the
+   controlling root under
+   [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md);
+   its rejection here is not a blocker.
 2. Put it in the task with goal, verbatim acceptance, exclusions, context,
    `test-plan.md` proof commands, and applicable standards.
    A new path requires a new bounded contract; the wright cannot widen the task.

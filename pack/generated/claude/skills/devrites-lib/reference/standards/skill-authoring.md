@@ -132,4 +132,5 @@ Public commands need docs/generated hosts/reply marker;
 internal skills need trigger/not-for plus proof they are not an agent/reference.
 Agents need role/scope/mode/output/composition and
 [`agents.md` § Result admission](agents.md#result-admission) for review roles.
-Only `devrites-slice-wright` writes.
+Only `devrites-slice-wright` writes product source/tests. The controlling root's
+path-bounded `.devrites/**` workflow artifacts follow `workflow-artifacts.md`.

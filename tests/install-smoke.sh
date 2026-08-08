@@ -121,7 +121,8 @@ if grep -q 'fresh subagent thread' "$T/AGENTS.md" \
   && grep -q 'default_permissions = ":read-only"' "$T/AGENTS.md" \
   && grep -q 'default_permissions = ":workspace"' "$T/AGENTS.md" \
   && grep -q 'never substitute a generic/default child' "$T/AGENTS.md" \
-  && grep -q 'root must never edit source or tests itself' "$T/AGENTS.md" \
+  && grep -q 'root must never edit product source or tests itself' "$T/AGENTS.md" \
+  && grep -q 'exact path-bounded executable workflow artifacts' "$T/AGENTS.md" \
   && grep -q '`git diff --name-only`' "$T/AGENTS.md" \
   && grep -q 'reject any extra path' "$T/AGENTS.md" \
   && grep -q 'never recreate an engine dispatch bridge' "$T/AGENTS.md" \

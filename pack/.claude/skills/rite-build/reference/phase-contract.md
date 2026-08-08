@@ -8,16 +8,30 @@ See [`one-slice-cycle.md`](one-slice-cycle.md); candidate lifecycle is
    `Readiness inputs SHA-256`, all applicable exact reviewer accounts,
    ID-and-meaning traceability, and green proof preflight; run
    `devrites-engine check readiness <slug>`. Any miss/nonzero stops.
-2. **Select one slice.** Restate goal, acceptance criteria, exclusions, and exact
+2. **Select one target.** Restate goal, acceptance criteria, exclusions, and exact
    source/test paths. Before dispatch, validate relevant `assumptions.md` rows
    against live evidence. If one is disproved and changes acceptance, architecture,
    scope, or proof, use the Spec Drift Guard/plan recovery; a human-owned unknown
    stops. Resolve HITL before source work. AFK answers only permitted gates;
    human-owned or irreversible risk persists a question and stops for `/rite-resolve`.
-3. **Dispatch the sole writer.** Apply [`wright-dispatch.md`](wright-dispatch.md).
+   If the target is only an exact Vet-ready executable workflow-artifact set under
+   the active feature workspace, apply
+   [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md)
+   instead of treating it as a product slice.
+3. **Dispatch or materialize.** Product source/tests apply [`wright-dispatch.md`](wright-dispatch.md).
    Put the smallest exact project-relative source/test path list directly in the task;
-   dispatch the exact `devrites-slice-wright` fresh. Root never writes, wright never
-   widens, and a missing profile stops.
+   dispatch the exact `devrites-slice-wright` fresh. Root never writes those product
+   paths, wright never widens, and a missing profile stops.
+   For the workflow-artifact branch, the controlling root writes only the admitted
+   `.devrites/work/<slug>/` paths, proves the complete atomic set, rechecks an
+   identical product candidate, records hashes/evidence, and runs narrow Vet. Do not
+   dispatch any agent as a substitute writer and do not charge a product slice.
+
+### Executable workflow-artifact branch
+
+The controlling root materializes the exact admitted workflow-artifact set and
+**does not dispatch the wright**. This branch never changes product slice state or
+the candidate manifest; it returns through narrow Vet before any consumptive action.
 4. **Inspect the return.** Wait; compare its file list and `git diff --name-only`
    with the contract. Reject stale, partial, malformed, or out-of-scope work.
    Preserve user work; source restoration uses the same bounded wright.
