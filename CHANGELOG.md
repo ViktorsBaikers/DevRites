@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.0.7](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.6...v4.0.7) (2026-08-08)
+
+### Fixed
+
+* **rite:** resume retained one-shot recovery ([4bd5897](https://github.com/ViktorsBaikers/DevRites/commit/4bd58971f1f3b2f6d8d9bfc7cb22b64066b604be))
+
 ## [4.0.6](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.5...v4.0.6) (2026-08-07)
 
 ### Fixed
