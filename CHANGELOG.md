@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.0.11](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.10...v4.0.11) (2026-08-08)
+
+### Fixed
+
+* **rite:** recover workflow materializer failures ([4ab042b](https://github.com/ViktorsBaikers/DevRites/commit/4ab042b269c90ce7133bb425d3db15469035255e))
+
 ## [4.0.10](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.9...v4.0.10) (2026-08-08)
 
 ### Fixed
