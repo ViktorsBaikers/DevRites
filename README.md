@@ -83,7 +83,7 @@ the same skill.
 | 3 | Temper | [`/rite-temper`](pack/.claude/skills/rite-temper/SKILL.md) | Challenges scope and failure modes before Define. It is optional for small work and always runs in `/rite-autocomplete`. |
 | 4 | Define | [`/rite-define`](pack/.claude/skills/rite-define/SKILL.md) | Turns the approved spec into architecture, a plan, traceability, and vertical task slices; changed provider/consumer boundaries name one shared contract and consuming tests on both sides. |
 | 5 | Vet | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | Reviews every plan before implementation. The review depth scales with the risk. |
-| 6 | Build | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | In HITL, implements and verifies one product slice, then stops. Run it again for each remaining slice. An explicit `.devrites/AFK` sentinel permits bounded low-risk slice chaining under its cap and pause rules. Exact Vet-ready executable workflow artifacts under the active feature workspace are root-materialized and excluded from product slice accounting. |
+| 6 | Build | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | In HITL, implements and verifies one product slice, then stops. Run it again for each remaining slice. An explicit `.devrites/AFK` sentinel permits bounded low-risk slice chaining under its cap and pause rules. Exact Vet-ready executable workflow artifacts under the active feature workspace are root-materialized and excluded from product slice accounting; their transaction code is proved in a disposable same-layout fixture before active writes and uses normal bounded recovery rather than a one-shot budget. |
 | 7 | Converge | [`/rite-converge`](pack/.claude/skills/rite-converge/SKILL.md) | Runs only when recovery is needed. It compares the code with the recorded intent, adds missing slices, and sends the changed plan back to Vet. |
 | 8 | Prove | [`/rite-prove`](pack/.claude/skills/rite-prove/SKILL.md) | Runs positive, discriminating tests, build/runtime checks, and UI proof, then binds the evidence to the exact candidate digest. |
 | 9 | Polish | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | Cleans up the candidate, normalizes UI when needed, performs durable capability/design/ADR rollups, and refreshes affected proof before closing it. |
@@ -105,7 +105,8 @@ Some work needs a different route:
   boundary-discriminating diagnostic design; only its next real acquisition attempt
   needs a new GO. After an upgrade introduces a supported workflow-artifact writer,
   Autocomplete reopens a stale missing-writer stop once instead of preserving the
-  obsolete recovery count.
+  obsolete recovery count. The first real root-materializer failure then counts as
+  attempt one under normal fingerprint recovery; it is not terminal by itself.
 - [`/rite-upgrade [slug]`](pack/.claude/skills/rite-upgrade/SKILL.md) is a
   compatibility route for an older active workspace that cannot resume. Age or
   cursor form alone never triggers repair; it is not a lifecycle phase.

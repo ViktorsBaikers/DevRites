@@ -73,7 +73,11 @@ has no clear next move.
   workspace follow
   [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
   and are materialized by the controlling root. Never ask a read-only planner or
-  reviewer to return implementation bodies.
+  reviewer to return implementation bodies. Materializer failures are reversible
+  offline recovery, not consumptive one-shot execution: preserve the transaction
+  journal, preimage hashes, and bound temporaries, preflight the corrected
+  transaction in a disposable same-layout fixture, then retry only within the
+  existing materializer fingerprint budget.
 - **Classify before routing** with
   [cleanup-and-classify.md](reference/cleanup-and-classify.md).
 - **Durably record class and rationale** in `decisions.md` and the applicable

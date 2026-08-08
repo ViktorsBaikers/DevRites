@@ -72,7 +72,10 @@ root ownership is a changed routing condition. Preserve the old fingerprint,
 record the new materialization fingerprint, and run that offline branch directly;
 do not charge or require product-slice/AFK budget, re-ask a resolved question, or
 request GO. Once a root materialization attempt exists, never apply this migration
-again—route its observed failure normally. This reconciliation runs even when all
+again—route its observed failure normally. That one-time migration
+does not make the first root attempt terminal: record it as attempt one under the new
+materializer fingerprint and continue bounded offline correction while fewer than
+three no-progress corrections exist. This reconciliation runs even when all
 product slices are already built, before selecting the next forward phase.
 
 1. Save the originating phase/action in the native return cursor unless a valid

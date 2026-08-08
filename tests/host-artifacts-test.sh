@@ -84,6 +84,12 @@ grep -q 'stale writer-exhaustion cursor' "$OUT/codex/skills/rite-autocomplete/re
   && grep -q 'no controlling-root materialization attempt' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" \
   && ok "Codex autocomplete reopens pre-ownership workflow-artifact stops" \
   || no "Codex autocomplete can preserve a stale workflow-artifact terminal stop"
+grep -q 'materialization is not a consumptive action' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
+  && grep -q 'preflight the materializer itself' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
+  && grep -q 'omits either directory handle' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
+  && grep -q 'first controlling-root failure is not exhaustion' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" \
+  && ok "Codex workflow materialization uses preflight and bounded recovery" \
+  || no "Codex workflow materialization can become an unproved one-shot"
 grep -q 'Codex custom-agent version\|repository-aware file tool refuses an ignored path\|For automatic Engram calls' "$OUT/codex/agents/devrites-code-reviewer.toml" \
   && no "Codex agent artifact duplicates project-wide guidance" \
   || ok "Codex agent artifact contains only its converted role contract"

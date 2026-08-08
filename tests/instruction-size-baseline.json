@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 787675,
+  "total_bytes": 791355,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 6193,
     "pack/.claude/agents/devrites-devex-reviewer.md": 6037,
@@ -30,7 +30,7 @@
     "pack/.claude/skills/devrites-debug-recovery/reference/instrumentation.md": 703,
     "pack/.claude/skills/devrites-debug-recovery/reference/regression-test.md": 1241,
     "pack/.claude/skills/devrites-debug-recovery/reference/trace.md": 1112,
-    "pack/.claude/skills/devrites-debug-recovery/SKILL.md": 5997,
+    "pack/.claude/skills/devrites-debug-recovery/SKILL.md": 6312,
     "pack/.claude/skills/devrites-doubt/SKILL.md": 5799,
     "pack/.claude/skills/devrites-frontend-craft/reference/craft.md": 3754,
     "pack/.claude/skills/devrites-frontend-craft/reference/design-references.md": 7052,
@@ -45,7 +45,7 @@
     "pack/.claude/skills/devrites-lib/reference/orchestration-profiles.md": 1439,
     "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md": 2050,
     "pack/.claude/skills/devrites-lib/reference/reply-contract.md": 2434,
-    "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 16518,
+    "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 16648,
     "pack/.claude/skills/devrites-lib/reference/standards/agents.md": 4171,
     "pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md": 4027,
     "pack/.claude/skills/devrites-lib/reference/standards/browser-proof-checklist.md": 405,
@@ -65,7 +65,7 @@
     "pack/.claude/skills/devrites-lib/reference/standards/git-workflow.md": 2629,
     "pack/.claude/skills/devrites-lib/reference/standards/hooks.md": 1380,
     "pack/.claude/skills/devrites-lib/reference/standards/observability.md": 4350,
-    "pack/.claude/skills/devrites-lib/reference/standards/one-shot-actions.md": 5582,
+    "pack/.claude/skills/devrites-lib/reference/standards/one-shot-actions.md": 6038,
     "pack/.claude/skills/devrites-lib/reference/standards/patterns.md": 1722,
     "pack/.claude/skills/devrites-lib/reference/standards/performance.md": 1396,
     "pack/.claude/skills/devrites-lib/reference/standards/principles.md": 1487,
@@ -94,8 +94,8 @@
     "pack/.claude/skills/rite-adopt/reference/anti-patterns.md": 1514,
     "pack/.claude/skills/rite-adopt/SKILL.md": 2057,
     "pack/.claude/skills/rite-autocomplete/reference/decision-policy.md": 1992,
-    "pack/.claude/skills/rite-autocomplete/reference/loop.md": 7163,
-    "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md": 6341,
+    "pack/.claude/skills/rite-autocomplete/reference/loop.md": 7392,
+    "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md": 6758,
     "pack/.claude/skills/rite-autocomplete/SKILL.md": 10552,
     "pack/.claude/skills/rite-build/reference/afk-discipline.md": 7355,
     "pack/.claude/skills/rite-build/reference/anti-patterns.md": 1180,
@@ -104,7 +104,7 @@
     "pack/.claude/skills/rite-build/reference/frontend-trigger.md": 2120,
     "pack/.claude/skills/rite-build/reference/one-slice-cycle.md": 2431,
     "pack/.claude/skills/rite-build/reference/output.md": 1216,
-    "pack/.claude/skills/rite-build/reference/phase-contract.md": 4713,
+    "pack/.claude/skills/rite-build/reference/phase-contract.md": 4974,
     "pack/.claude/skills/rite-build/reference/spec-drift-guard.md": 2806,
     "pack/.claude/skills/rite-build/reference/tdd.md": 1294,
     "pack/.claude/skills/rite-build/reference/wright-dispatch.md": 2560,
@@ -212,6 +212,6 @@
     "pack/.claude/skills/rite-zoom-out/SKILL.md": 3213,
     "pack/.claude/skills/rite/reference/menu.md": 3828,
     "pack/.claude/skills/rite/SKILL.md": 8736,
-    "pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md": 4008
+    "pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md": 5880
   }
 }
