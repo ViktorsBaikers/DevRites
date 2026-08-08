@@ -20,6 +20,25 @@ technical-recovery exhaustion, while the vetted behavior and exact paths are
 complete. The root may not invent unresolved protocol choices; those return to
 Plan/Vet.
 
+## Cold-resume migration
+
+A **stale writer-exhaustion cursor** must reopen when all of these are durable:
+
+- Vet accepted the exact workflow-artifact paths and complete executable contract;
+- the recorded blocker is only missing implementation bodies or a writable actor;
+- prior no-progress attempts asked a read-only drafter/reviewer for bodies or sent
+  `.devrites/**` paths toward the product wright; and
+- evidence records **no controlling-root materialization attempt** for that exact set.
+
+This is a changed routing condition, not another correction attempt against the
+old unsupported-writer fingerprint. Preserve that history, close or supersede its
+terminal claim, record one new root-materialization fingerprint, and materialize
+directly even when all product slices are built or the AFK slice budget is zero.
+Do not consume product-slice budget, reopen an answered human gate, or require GO
+for this offline work. After any controlling-root attempt is recorded, this
+migration cannot apply again; route its observed atomic/proof failure under the
+new fingerprint instead.
+
 ## Admission
 
 Before writing:

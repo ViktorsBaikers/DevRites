@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 784185,
+  "total_bytes": 787675,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 6193,
     "pack/.claude/agents/devrites-devex-reviewer.md": 6037,
@@ -45,7 +45,7 @@
     "pack/.claude/skills/devrites-lib/reference/orchestration-profiles.md": 1439,
     "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md": 2050,
     "pack/.claude/skills/devrites-lib/reference/reply-contract.md": 2434,
-    "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 16033,
+    "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 16518,
     "pack/.claude/skills/devrites-lib/reference/standards/agents.md": 4171,
     "pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md": 4027,
     "pack/.claude/skills/devrites-lib/reference/standards/browser-proof-checklist.md": 405,
@@ -94,9 +94,9 @@
     "pack/.claude/skills/rite-adopt/reference/anti-patterns.md": 1514,
     "pack/.claude/skills/rite-adopt/SKILL.md": 2057,
     "pack/.claude/skills/rite-autocomplete/reference/decision-policy.md": 1992,
-    "pack/.claude/skills/rite-autocomplete/reference/loop.md": 6376,
-    "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md": 5811,
-    "pack/.claude/skills/rite-autocomplete/SKILL.md": 9949,
+    "pack/.claude/skills/rite-autocomplete/reference/loop.md": 7163,
+    "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md": 6341,
+    "pack/.claude/skills/rite-autocomplete/SKILL.md": 10552,
     "pack/.claude/skills/rite-build/reference/afk-discipline.md": 7355,
     "pack/.claude/skills/rite-build/reference/anti-patterns.md": 1180,
     "pack/.claude/skills/rite-build/reference/checkpoint-protocol.md": 7181,
@@ -212,6 +212,6 @@
     "pack/.claude/skills/rite-zoom-out/SKILL.md": 3213,
     "pack/.claude/skills/rite/reference/menu.md": 3828,
     "pack/.claude/skills/rite/SKILL.md": 8736,
-    "pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md": 2923
+    "pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md": 4008
   }
 }

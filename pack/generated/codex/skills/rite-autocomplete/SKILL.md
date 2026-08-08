@@ -18,6 +18,10 @@ default and **Full** for high-risk scope or explicit `--full`; profiles are defi
 When the cursor or approved plan contains a consumptive action, also read
 `.agents/skills/devrites-lib/reference/standards/one-shot-actions.md` before any
 stop/continue or execution decision.
+When a blocked cursor names missing executable controller/harness/bundle bytes or
+a missing writer under the active feature workspace, read
+`.agents/skills/devrites-lib/reference/standards/workflow-artifacts.md` before honoring
+the terminal cursor or its recovery count.
 
 ## Operating rules
 - **Use one initial human window.** Run spec and topology-first clarify; arm AFK
@@ -67,6 +71,11 @@ stop/continue or execution decision.
    terminal `next_action`, reconcile retained consumptive-action artifacts and
    per-fingerprint attempts from `drift.md` / `evidence.md`. A distinct retained
    fingerprint below its no-progress cap reopens caller-owned offline recovery;
+   a stale pre-ownership workflow-artifact writer stop reopens under
+   `workflow-artifacts.md` when no controlling-root materialization attempt exists.
+   That materialization runs directly as non-consumptive prerequisite recovery,
+   even with no pending product slice or AFK budget; it does not re-ask an answered
+   human gate.
    reconstruct any missing return cursor only from the current phase plus the
    exact approved action in `test-plan.md` / evidence, never from chat or guesswork.
    The idea + flags: `--ship` / `--yolo` (continue through ship preflight, then stop

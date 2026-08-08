@@ -80,6 +80,10 @@ grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive ei
 grep -q 'exact path-bounded executable workflow artifacts under the active `.devrites/work/<slug>/`' "$OUT/codex/AGENTS.md" \
   && ok "Codex root owns bounded executable workflow artifacts" \
   || no "Codex root cannot materialize executable workflow artifacts"
+grep -q 'stale writer-exhaustion cursor' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" \
+  && grep -q 'no controlling-root materialization attempt' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" \
+  && ok "Codex autocomplete reopens pre-ownership workflow-artifact stops" \
+  || no "Codex autocomplete can preserve a stale workflow-artifact terminal stop"
 grep -q 'Codex custom-agent version\|repository-aware file tool refuses an ignored path\|For automatic Engram calls' "$OUT/codex/agents/devrites-code-reviewer.toml" \
   && no "Codex agent artifact duplicates project-wide guidance" \
   || ok "Codex agent artifact contains only its converted role contract"
