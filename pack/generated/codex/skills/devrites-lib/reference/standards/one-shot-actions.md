@@ -27,7 +27,16 @@ the approved `test-plan.md` must bind all of the following:
 4. **Discriminating proof:** fixtures cover success, a known failure, an unknown
    well-formed failure, malformed/hostile input, and cleanup after failure. They
    prove cleanup cannot delete or overwrite the retained failure evidence.
-5. **Recovery sufficiency:** the retained bounded evidence is enough to choose an
+5. **Causal actionability:** every failure record includes a stable non-secret `boundary_id`
+   whose finite map is injective: one retained fingerprint identifies
+   one actionable failure seam and correction class. Broad operation/cause labels
+   are insufficient when multiple emit sites can produce them. `test-plan.md`
+   enumerates every emit site, its boundary ID, expected retained relation, and
+   offline decision.
+6. **Collision proof:** inject a failure at every mapped seam and require its exact
+   boundary ID. Execute a negative mutant that aliases two seams to one retained
+   fingerprint and prove the validator/reviewer rejects it.
+7. **Recovery sufficiency:** the retained bounded evidence is enough to choose an
    offline correction or a truthful terminal classification without consuming
    another attempt.
 
@@ -58,9 +67,29 @@ cap, resume recovery even if a prior writer stored `blocked` / `Next step: none`
 That terminal cursor is valid only for missing retention, a human/safety gate, or
 an actually exhausted fingerprint.
 
-A new real attempt is admissible only after the affected plan and fixtures are
-re-vetted, the failure condition is shown changed, and any required fresh
+A new real attempt is normally admissible only after the affected plan and fixtures
+are re-vetted, the failure condition is shown changed, and any required fresh
 authorization is obtained. Stop at that authorization boundary; never infer it
-from successful offline repair. If the attempt ran without complete retention,
-stop with the observed technical blocker because a blind retry cannot manufacture
-the destroyed evidence.
+from successful offline repair.
+
+## Diagnostic amplification
+
+If a retained artifact is absent or maps one fingerprint to multiple causal
+boundaries, do not guess a runtime correction. The fact that evidence from the
+past attempt is irretrievable does not prove that a safe future evidence-acquisition
+design is unavailable.
+
+When an in-scope trusted seam can add the missing stable discriminator, classify
+the ambiguity as an agent-owned **diagnostic-amplification plan gap**. Without
+executing the action, repair the diagnostic schema, finite boundary map, per-seam
+fault fixtures, cleanup-survival proof, and collision mutant; then run narrow Vet.
+Once READY, stop for fresh authorization before exactly one diagnostic-amplification attempt
+bound to that vetted design and artifact identity. This exception does not
+claim the runtime failure condition changed: the independently proven change is the
+evidence-acquisition invariant, and the attempt's acceptance signal is the promised
+unique retained boundary (or action success).
+
+Terminal `Next: none` is valid only when no safe in-scope diagnostic-amplification
+seam exists, the required change is human/risk/scope owned, or the exact evidence-gap
+fingerprint exhausts bounded recovery. A missing old artifact alone is not terminal,
+and an amplification attempt never inherits authorization from the failed action.

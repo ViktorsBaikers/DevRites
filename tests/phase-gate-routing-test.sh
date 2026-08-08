@@ -53,6 +53,7 @@ PROOF_RUNNER="$ROOT/pack/.claude/agents/devrites-proof-runner.md"
 DISCOVERY="$ROOT/pack/.claude/skills/rite-prove/reference/test-command-discovery.md"
 FAILURE_TRIAGE="$ROOT/pack/.claude/skills/rite-prove/reference/failure-triage.md"
 PLAN_REVIEWER="$ROOT/pack/.claude/agents/devrites-plan-reviewer.md"
+PLAN_DRAFTER="$ROOT/pack/.claude/agents/devrites-plan-drafter.md"
 VET_ARTIFACTS="$ROOT/pack/.claude/skills/rite-vet/reference/artifacts.md"
 CUSTOMIZE="$ROOT/pack/.claude/skills/rite-customize/SKILL.md"
 UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
@@ -151,7 +152,12 @@ require "$ONE_SHOT" 'cleanup cannot delete or overwrite' 'one-shot gate proves f
 require "$ONE_SHOT" 'Do not rerun the action during triage' 'one-shot failure handling forbids blind reproduction'
 require "$ONE_SHOT" 'consumes only the authorization' 'one-shot execution budget does not erase offline recovery'
 require "$ONE_SHOT" 'immediately runs' 'retained new evidence starts offline recovery in the caller'
+require "$ONE_SHOT" 'stable non-secret `boundary_id`' 'one-shot evidence identifies one actionable boundary'
+require "$ONE_SHOT" 'injective' 'one-shot gate rejects diagnostic collisions'
+require "$ONE_SHOT" 'diagnostic-amplification attempt' 'one-shot recovery can safely acquire a missing discriminator'
+require "$ONE_SHOT" 'past attempt is irretrievable' 'past evidence loss alone is not terminal when amplification is safe'
 require "$VET" 'one-shot evidence completeness' 'vet blocks READY without consumptive-action evidence retention'
+require "$VET" 'collision mutant' 'vet rejects two failure seams sharing one retained fingerprint'
 require "$PROVE" 'Record the admitted artifact identity before execution' 'prove checks one-shot evidence before execution'
 require "$PROVE" 'action budget is zero' 'prove does not misclassify spent execution authority as recovery exhaustion'
 require "$FAILURE_TRIAGE" 'never rerun it' 'prove triage uses retained evidence for consumptive actions'
@@ -173,8 +179,16 @@ require "$DEBUG_CLASSIFY" 'offline diagnosis or correction from retained evidenc
 require "$FAILURE_TRIAGE" 'fix it when agent-owned' 'environment failures are repaired before they become blockers'
 require "$AUTOCOMPLETE" 'blocked` label alone is not a stop condition' 'autocomplete routes technical blockers before stopping'
 require "$AUTOCOMPLETE" 'Red gates block forward advancement and enter' 'autocomplete backtracks on red without advancing or stopping early'
+require "$AUTOCOMPLETE_STOPS" 'Past evidence being irretrievable is not by itself terminal' 'autocomplete prepares diagnostic amplification before terminal exhaustion'
+require "$PROVE" 'does not prove that no safe future acquisition design exists' 'prove distinguishes missing past evidence from impossible future evidence'
+require "$FAILURE_TRIAGE" 'diagnostic-amplification plan gap' 'prove triage routes ambiguous one-shot evidence to plan repair'
+require "$DEBUG_RECOVERY" 'diagnostic amplification' 'debug recovery can improve evidence without guessing a runtime fix'
 require "$PLAN_REVIEWER" 'Missing evidence completeness is `broken`' 'plan reviewer rejects unsafe one-shot plans'
+require "$PLAN_REVIEWER" 'one actionable failure seam' 'plan reviewer requires causal diagnostic uniqueness'
+require "$PLAN_DRAFTER" 'diagnostic-amplification' 'plan drafter designs bounded evidence acquisition when past evidence is ambiguous'
 require "$VET_ARTIFACTS" '## Consumptive action gates' 'test plan records one-shot evidence authority durably'
+require "$VET_ARTIFACTS" 'Boundary map + collision proof' 'test plan binds diagnostic actionability proof'
+require "$REPLY" 'no safe in-scope diagnostic-amplification seam' 'terminal reply requires proof that amplification is unavailable'
 require "$DISCOVERY" 'discovery evidence, not authorization' 'command discovery cannot authorize execution'
 require "$PROOF_RUNNER" 'reject missing, synthesized, or unapproved commands' 'proof runner rejects commands outside the approved plan'
 require "$SEAL_CONTRACT" 'devrites-proof-runner' 'seal delegates acceptance proof judgment natively'

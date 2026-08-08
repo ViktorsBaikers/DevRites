@@ -23,6 +23,13 @@ slices in dependency order. Map every REQ and AC to a slice and executable proof
 name rollback and failure paths; keep acceptance-changing proposals separate. Durable
 proof commands must be portable repository commands, never host-local wrappers,
 user-specific absolute paths, or temporary proof trees.
+For every consumptive action, apply `one-shot-actions.md`: draft a durable bounded
+artifact, a finite injective map from every failure emit seam to a stable non-secret
+boundary ID and offline decision, per-seam fault fixtures, cleanup-survival proof,
+and a collision mutant. If prior retained evidence is missing or ambiguous, draft a
+diagnostic-amplification repair and narrow-Vet proof rather than guessing the
+runtime correction or declaring the old evidence loss terminal. Keep the future
+evidence-acquisition attempt separately gated by fresh human authorization.
 For `plan.md`, include exactly one canonical `Shared contract proof` table when an API,
 event, schema, or other provider/consumer boundary changes. Name a reused canonical artifact
 and asserting provider/consumer tests that both consume it, ordered through slice dependencies.

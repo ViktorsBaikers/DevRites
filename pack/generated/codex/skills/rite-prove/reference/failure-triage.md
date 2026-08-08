@@ -17,6 +17,10 @@ loop to `devrites-debug-recovery`.
    - flaky (passes on re-run, timing/order) → note it; don't paper over with retries.
    - external dependency down → record blocker; don't fake the result.
 3. **Isolate:** minimize to the smallest failing case; bisect the diff if needed.
+   If consumptive evidence maps to multiple causal seams, this is a
+   diagnostic-amplification plan gap: design and Vet an injective boundary
+   discriminator offline instead of guessing a runtime correction or declaring
+   the cleaned-away past state terminal.
 4. **Fix within scope:** the current slice/feature only. If the fix reaches outside
    scope, stop and record a blocker in `state.md` (then `$rite-plan unblock`).
 5. **Re-run** the same command when it is repeatable; confirm green and record both
@@ -24,6 +28,8 @@ loop to `devrites-debug-recovery`.
    completeness and any fresh authorization before a new attempt. Its spent
    action authorization does not stop offline recovery: a retained new fingerprint
    enters caller-owned diagnosis, correction, fixtures, and narrow Vet immediately.
+   A separately authorized diagnostic-amplification attempt may acquire the missing
+   discriminator after its evidence design passes Vet; it is not a blind rerun.
 
 ## Rules
 - Quote the real error text; don't paraphrase it away.

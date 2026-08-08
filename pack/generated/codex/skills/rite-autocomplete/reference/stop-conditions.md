@@ -46,6 +46,13 @@ no-progress corrections. A retained fingerprint with remaining offline budget is
 not terminal merely because `state.md` was written by the failed action or a prior
 session ended.
 
+Past evidence being irretrievable is not by itself terminal. When an in-scope
+trusted diagnostic seam can make the next retained fingerprint uniquely
+actionable, Autocomplete must run diagnostic-amplification Plan repair and narrow
+Vet inline, then pause for a fresh GO before the single evidence-acquisition
+attempt. Use `Next: none` only after proving no safe in-scope amplification seam
+exists, a real human/risk/scope gate owns it, or bounded recovery is exhausted.
+
 ## Stop on gate severity
 
 - `blocking` gate fires → synchronous pause.

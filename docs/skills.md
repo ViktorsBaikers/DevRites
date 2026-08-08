@@ -187,7 +187,7 @@ and `Shipped`. Utility commands keep the same compact labels and one-next-action
 
 | Skill | What It Does | Use When |
 |---|---|---|
-| [`rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | Positive, discriminating tests + build/runtime/browser evidence. Requires the same candidate digest before/after commands and records the exact binding. Consumptive actions must retain bounded diagnostics through cleanup; a failed action continues offline recovery from that artifact, while any next real execution waits for fresh authorization. | All slices built; ready for full verification. |
+| [`rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | Positive, discriminating tests + build/runtime/browser evidence. Requires the same candidate digest before/after commands and records the exact binding. Consumptive actions must retain bounded, causally unique diagnostics through cleanup; ambiguous evidence triggers a vetted diagnostic-amplification design, while any next real execution waits for fresh authorization. | All slices built; ready for full verification. |
 | [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | Browser proof ladder: Playwright MCP → Chrome DevTools MCP → `/run`+`/verify` → project E2E → manual. Auto-emits the structured **Visual Verdict** (per-criterion PASS/FAIL vs `design-brief.md`) for UI slices: consumed by `devrites-frontend-reviewer` and gated at `/rite-seal`. | Scope touches UI. |
 
 ### Polish: normalize, then check the details

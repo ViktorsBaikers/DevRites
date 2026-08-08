@@ -81,6 +81,10 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
    `devrites-plan-drafter` in `repair` mode with only the selected mode, affected artifact
    paths, settled contract, and observed failure/drift. Await one atomic `plan-candidate`;
    the drafter writes nothing and returns human-owned choices separately.
+   When the observed failure is missing or ambiguous consumptive-action evidence,
+   require the drafter to apply `one-shot-actions.md` and return the bounded
+   diagnostic-amplification design, injective boundary map, per-seam fixtures, and
+   collision mutant. Past evidence loss alone is not a terminal conclusion.
 3. Reason about dependencies: [dependency-graph](reference/dependency-graph.md).
    Reconcile `plan.md`'s canonical `Shared contract proof`: changed provider/consumer
    boundaries keep one reused contract artifact ahead of both asserting tests, and unaffected
