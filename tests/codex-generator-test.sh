@@ -68,7 +68,8 @@ grep -q 'never substitute a generic/default child' "$bridge" \
   || no "AGENTS bridge keeps a custom agent lifecycle"
 grep -q 'devrites-slice-wright.*default_permissions = ":workspace"' "$bridge" \
   && grep -q 'every other specialist.*default_permissions = ":read-only"' "$bridge" \
-  && grep -q 'root must never edit source or tests itself' "$bridge" \
+  && grep -q 'root must never edit product source or tests itself' "$bridge" \
+  && grep -q 'exact path-bounded executable workflow artifacts' "$bridge" \
   && grep -q '`git diff --name-only`' "$bridge" \
   && grep -q 'reject any extra path' "$bridge" \
   && grep -q 'never recreate an engine dispatch bridge' "$bridge" \

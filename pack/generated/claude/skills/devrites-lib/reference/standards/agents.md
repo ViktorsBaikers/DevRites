@@ -5,8 +5,9 @@ Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
 ## Authority
 
 - Root owns scope, questions/decisions/results, `.devrites/**`, and phase
-  transitions—not source/tests.
-- Only bounded wright writes source/tests; others inspect an immutable
+  transitions—not product source/tests. Exact vetted executable workflow artifacts
+  follow [`workflow-artifacts.md`](workflow-artifacts.md).
+- Only bounded wright writes product source/tests; others inspect an immutable
   candidate.
 - Every named role runs; unavailable → HITL, never skip/substitute.
 - Leaves never invoke agents, ask humans, change phase, commit/push,
@@ -48,10 +49,15 @@ Running/orphaned/unavailable = `gap`; no root/generic substitute.
 Claude grants only wright `acceptEdits`; Codex root is workspace-capable because
 children cannot elevate. Wright alone is `:workspace`; others are `:read-only`.
 
-Give wright the smallest exact project-relative file list—no directories/globs,
-traversal/`.devrites/**`. No scope widening. Root rejects
-`git diff --name-only` extras. Never patch in root, bypass/substitute wright,
+Give wright the smallest exact project-relative product source/test file list—no
+directories/globs, traversal/`.devrites/**`. No scope widening. Root rejects
+`git diff --name-only` extras. Never patch product source/tests in root, bypass/substitute wright,
 accept drift, or recreate a dispatch bridge.
+
+The controlling root may materialize only the exact Vet-ready executable workflow
+artifact paths under the active `.devrites/work/<slug>/` using
+[`workflow-artifacts.md`](workflow-artifacts.md). This is not a writer dispatch,
+product slice, candidate mutation, or exception to the source-writing boundary.
 
 ## Inputs and results
 

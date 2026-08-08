@@ -68,6 +68,12 @@ has no clear next move.
   repair its finite map and collision/fault fixtures offline, narrow-Vet it, and
   stop for fresh authorization before the evidence-acquisition attempt. Missing
   past evidence is terminal only when no safe amplification seam exists.
+- **Route by artifact ownership.** Product source/tests go to the exact bounded
+  wright. Exact Vet-ready executable proof artifacts under the active `.devrites/**`
+  workspace follow
+  [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
+  and are materialized by the controlling root. Never ask a read-only planner or
+  reviewer to return implementation bodies.
 - **Classify before routing** with
   [cleanup-and-classify.md](reference/cleanup-and-classify.md).
 - **Durably record class and rationale** in `decisions.md` and the applicable

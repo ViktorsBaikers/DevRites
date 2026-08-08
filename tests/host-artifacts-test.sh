@@ -33,6 +33,7 @@ fi
 
 for f in \
   "claude/skills/rite-build/SKILL.md" \
+  "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
   "claude/skills/rite-upgrade/SKILL.md" \
   "claude/agents/devrites-code-reviewer.md" \
   "claude/agents/devrites-upgrade-planner.md" \
@@ -40,6 +41,7 @@ for f in \
   "codex/skills/rite-build/SKILL.md" \
   "codex/skills/rite-build/reference/wright-dispatch.md" \
   "codex/skills/devrites-lib/reference/standards/core.md" \
+  "codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
   "codex/skills/devrites-lib/reference/reply-contract.md" \
   "codex/skills/rite-prove/SKILL.md" \
   "codex/skills/rite-prove/reference/test-command-discovery.md" \
@@ -75,6 +77,9 @@ grep -q 'repository-aware file tool refuses an ignored path.*native filesystem c
 grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' "$OUT/codex/AGENTS.md" \
   && ok "Codex AGENTS artifact preserves exact Engram identifiers" \
   || no "Codex AGENTS artifact can invent Engram identifiers"
+grep -q 'exact path-bounded executable workflow artifacts under the active `.devrites/work/<slug>/`' "$OUT/codex/AGENTS.md" \
+  && ok "Codex root owns bounded executable workflow artifacts" \
+  || no "Codex root cannot materialize executable workflow artifacts"
 grep -q 'Codex custom-agent version\|repository-aware file tool refuses an ignored path\|For automatic Engram calls' "$OUT/codex/agents/devrites-code-reviewer.toml" \
   && no "Codex agent artifact duplicates project-wide guidance" \
   || ok "Codex agent artifact contains only its converted role contract"

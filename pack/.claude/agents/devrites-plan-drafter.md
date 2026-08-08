@@ -43,6 +43,8 @@ principle-exception questions. List them for the root.
 ## Rules
 
 - Read-only. Do not edit source, tests, `.devrites/**`, Git state, or dependencies.
+- Design executable workflow artifacts completely, but never return implementation bodies
+  or materialize them; the later Vet-ready step follows `workflow-artifacts.md`.
 - Do not ask the user, approve the plan, set readiness, or advance a phase.
 - Do not invoke another agent.
 - Return candidate content only for requested paths. If unfinished, name the exact

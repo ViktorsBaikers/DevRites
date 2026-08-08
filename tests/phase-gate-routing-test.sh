@@ -38,6 +38,7 @@ WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.
 CORE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/core.md"
 AFK_HITL="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md"
 ONE_SHOT="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/one-shot-actions.md"
+WORKFLOW_ARTIFACTS="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md"
 STATE_WORKSPACE="$ROOT/pack/.claude/skills/rite-spec/reference/state-workspace.md"
 REPLY="$ROOT/pack/.claude/skills/devrites-lib/reference/reply-contract.md"
 PROVE="$ROOT/pack/.claude/skills/rite-prove/SKILL.md"
@@ -189,6 +190,18 @@ require "$PLAN_DRAFTER" 'diagnostic-amplification' 'plan drafter designs bounded
 require "$VET_ARTIFACTS" '## Consumptive action gates' 'test plan records one-shot evidence authority durably'
 require "$VET_ARTIFACTS" 'Boundary map + collision proof' 'test plan binds diagnostic actionability proof'
 require "$REPLY" 'no safe in-scope diagnostic-amplification seam' 'terminal reply requires proof that amplification is unavailable'
+require "$WORKFLOW_ARTIFACTS" 'controlling root is the sole materializer' 'root owns executable workflow proof artifacts'
+require "$WORKFLOW_ARTIFACTS" 'never dispatch `devrites-slice-wright`' 'workflow proof artifacts never widen the product writer'
+require "$WORKFLOW_ARTIFACTS" 'exact file list' 'workflow artifact materialization is path bounded'
+require "$WORKFLOW_ARTIFACTS" 'candidate digest remains identical' 'workflow artifacts cannot mutate the product candidate'
+require "$PLAN_DRAFTER" 'never return implementation bodies' 'plan drafter cannot be used as a proof-artifact writer'
+require "$PLAN" 'materializes the exact vetted workflow-artifact paths' 'plan repair gives executable workflow artifacts to the root'
+require "$BUILD" 'Executable workflow-artifact branch' 'build separates workflow artifacts from product slices'
+require "$BUILD" 'does not dispatch the wright' 'build never sends .devrites workflow artifacts to slice-wright'
+require "$PROVE" 'workflow-artifacts.md' 'prove routes proof-artifact implementation to root ownership'
+require "$DEBUG_RECOVERY" 'workflow-artifacts.md' 'debug recovery preserves proof-artifact root ownership'
+require "$WRIGHT_DISPATCH" 'reject' 'wright dispatch remains fail closed'
+require "$WRIGHT_DISPATCH" '`.devrites/**`' 'wright still rejects workflow artifact paths'
 require "$DISCOVERY" 'discovery evidence, not authorization' 'command discovery cannot authorize execution'
 require "$PROOF_RUNNER" 'reject missing, synthesized, or unapproved commands' 'proof runner rejects commands outside the approved plan'
 require "$SEAL_CONTRACT" 'devrites-proof-runner' 'seal delegates acceptance proof judgment natively'
