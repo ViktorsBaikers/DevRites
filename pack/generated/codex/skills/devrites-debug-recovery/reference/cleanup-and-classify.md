@@ -15,7 +15,9 @@ record the dead end and classify anew. Failure alone never resets the budget.
 - `not_a_defect`: the observation matches current accepted authority. Record that authority and continue.
 
 Only human credentials/quotas/actions, irreversible work, or fresh authorization
-required by a consumptive action pause; never ask for a blind retry.
+required before the next consumptive execution pause. Fresh authorization never
+pauses offline diagnosis or correction from retained evidence; never ask for a
+blind retry.
 
 Record class/routing in `decisions.md` and each failed attempt in `evidence.md`
 or `## Dead ends`. Use one stable causal fingerprint shaped as `<affected

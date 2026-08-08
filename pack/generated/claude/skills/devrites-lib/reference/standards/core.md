@@ -54,6 +54,10 @@ re-reads `state.md`, follows the durable return cursor and intermediate
 `next_action`, and resumes its originating phase while no human-owned, safety,
 access, budget, or exhausted-recovery stop is active.
 
+Derive `exhausted-recovery` from the exact fingerprint's recorded no-progress
+attempts, not from a stale `state.md` label. A consumed authorization for one
+real action does not exhaust offline recovery from its retained new evidence.
+
 An intermediate `Next step` is cold-resume metadata. Do not ask the human to
 copy routine `/rite-plan repair`, `/rite-vet`, `/rite-build`, or proof-rerun
 commands during the active recovery chain. Only the controlling caller emits

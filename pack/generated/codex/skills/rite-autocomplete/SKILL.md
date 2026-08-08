@@ -15,6 +15,9 @@ default and **Full** for high-risk scope or explicit `--full`; profiles are defi
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
 **Step 0:** Read `.agents/skills/devrites-lib/reference/standards/core.md` and `.agents/skills/devrites-lib/reference/standards/afk-hitl.md` first.
+When the cursor or approved plan contains a consumptive action, also read
+`.agents/skills/devrites-lib/reference/standards/one-shot-actions.md` before any
+stop/continue or execution decision.
 
 ## Operating rules
 - **Use one initial human window.** Run spec and topology-first clarify; arm AFK
@@ -29,6 +32,11 @@ default and **Full** for high-risk scope or explicit `--full`; profiles are defi
   through repair, Vet, bounded implementation correction, and re-proof inside
   the active run. A nested phase `STOP` or intermediate `Next step` is not a
   user handoff; pause only on the shared real stop conditions.
+- **Do not confuse an action budget with recovery exhaustion.** After a failed
+  consumptive action, zero remaining real attempts blocks only another execution.
+  New retained Critical/Important evidence starts offline repair and narrow Vet
+  inside this Autocomplete invocation. Stop for a fresh GO only after that repair
+  changes the failure condition and Vet is READY.
 - **Budget from the post-vet slice count.** Vet may split/add slices.
   `--max-slices N` may lower the cap for a partial run; otherwise build all.
 - **Parse flags only from this invocation.** `--ship`, `--yolo`, `--max-slices`,
@@ -55,7 +63,12 @@ default and **Full** for high-risk scope or explicit `--full`; profiles are defi
 
 ## Workflow
 1. **Orient + parse args.** Resolve the explicit or active slug, require its
-   `state.md`, and read the cursor directly.
+   `state.md`, and read the cursor directly. Before honoring `blocked` with a
+   terminal `next_action`, reconcile retained consumptive-action artifacts and
+   per-fingerprint attempts from `drift.md` / `evidence.md`. A distinct retained
+   fingerprint below its no-progress cap reopens caller-owned offline recovery;
+   reconstruct any missing return cursor only from the current phase plus the
+   exact approved action in `test-plan.md` / evidence, never from chat or guesswork.
    The idea + flags: `--ship` / `--yolo` (continue through ship preflight, then stop
    for literal-GO and native approval), `--max-slices N` (optional lower safety cap for a partial run; default =
    the plan's slice count, i.e. run all planned slices). Parse only the current
@@ -90,7 +103,9 @@ default and **Full** for high-risk scope or explicit `--full`; profiles are defi
    before any later phase runs; the cursor names the last completed phase and the
    effective remaining budget.
 5. **Apply stop conditions at every gate** ([reference/stop-conditions.md](reference/stop-conditions.md)):
-   on hard-risk / blocking / escalating / NO-GO / budget-exhausted / still-low-confidence
+   first route an agent-owned red technical result through the loop's bounded
+   recovery; its `blocked` label alone is not a stop condition. After that, on
+   hard-risk / human-owned blocking / escalating / NO-GO / budget-exhausted / still-low-confidence
    → write `state.md` (`Status`, `Next step`), surface *why*, and **STOP**.
    Exhausted agent-owned technical recovery uses the terminal `Next step: none`
    marker and never hands the user `$rite-plan unblock` or another routine
@@ -120,7 +135,9 @@ Do not write a narrative recap.
 ## Clean baseline and checkpoint mode
 - Before autonomy, require a clean or accepted baseline; refuse unrelated dirty work and record plan artifacts.
 - Arm `.devrites/CHECKPOINT`; `$rite-ship` collapses its local-only proven-slice checkpoints.
-- Stop on risky steps, red gates, NO-GO, stale evidence, or exhausted budget.
+- Red gates block forward advancement and enter caller-owned bounded recovery.
+  Stop only when the shared stop contract classifies risk/HITL or the exact
+  fingerprint's recovery budget is exhausted.
 - One autocomplete pass spans the lifecycle. Each wright returns after one slice;
   explicit `.devrites/AFK` lets the Build root chain green slices under cap/pause rules;
   otherwise HITL stops.

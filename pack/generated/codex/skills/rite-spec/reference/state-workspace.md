@@ -131,6 +131,13 @@ resume. Never overwrite an existing valid return cursor, and preserve every
 unrelated Markdown byte. `$rite-clarify` applies its stricter native cursor
 protocol below.
 
+On cold resume, a terminal `next_action` is a claim to verify, not a counter.
+Reconcile the exact fingerprint and its attempts in `drift.md` / `evidence.md`.
+If a consumptive action retained a distinct fingerprint below the no-progress
+cap, rewrite the cursor into caller-owned recovery and preserve or reconstruct
+the return rows only from the current phase and approved recorded action. The
+spent action authorization blocks another execution, not that rewrite.
+
 `afk_slices_remaining` is mutable runtime state, not `.devrites/AFK`
 configuration. Only the controlling root writes it under the shared
 [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#the-sentinel-devritesafk)

@@ -86,7 +86,10 @@ failure is a blocker; this Upgrade admission never authorizes source or test cha
 
 ## Workflow
 0. Read core, load relevant rules above, then resolve the active slug,
-   require its `state.md`, and read the cursor directly.
+   require its `state.md`, and read the cursor directly. On a blocked Prove cold
+   resume, reconcile any retained consumptive-action artifact against recorded
+   no-progress corrections before accepting `next_action: none`; a distinct
+   fingerprint below its cap resumes offline triage without another real action.
 1. **Confirm all slices built.** Read `spec.md`, `tasks.md`, `state.md`,
    `test-plan.md`, and the full diff.
    A missing `test-plan.md` enters caller-owned Vet backtracking; invoke Vet
@@ -115,7 +118,10 @@ failure is a blocker; this Upgrade admission never authorizes source or test cha
    stale, or disposable-only evidence surface returns to Vet inline and consumes
    no attempt. Record the admitted artifact identity before execution. After a
    failed consumptive action, triage from that artifact; never reproduce it by
-   rerunning the action.
+   rerunning the action. Consuming its authorization blocks only another real
+   execution. If the artifact identifies a new Critical/Important fingerprint,
+   continue offline recovery inside this Prove invocation; do not label the new
+   fingerprint exhausted because the action budget is zero.
 4. **UI feature?** The root applies the browser proof ladder with
    `design-brief.md`, `references.md`, the requested routes, browser harness, and
    allowed scratch path:
@@ -145,6 +151,10 @@ failure is a blocker; this Upgrade admission never authorizes source or test cha
    Vet inside this invocation, and resume the exact failed proof rung. Ask only
    for a human-owned decision; causal-fingerprint exhaustion stops once with a
    technical blocker rather than another phase command.
+   For a consumptive-action failure, use fixtures or another non-consumptive
+   reproduction to fix and re-vet the retained fingerprint. Once the failure
+   condition is demonstrably changed, stop at the fresh-authorization boundary;
+   only a new human GO may admit the next real attempt.
 8. The root updates `evidence.md`, `browser-evidence.md` (when present),
    `traceability.md`, and `state.md`. Record exactly one binding for the observed
    digest in evidence and browser evidence. New proof goes to canonical

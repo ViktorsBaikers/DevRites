@@ -59,7 +59,11 @@ Claims such as proved, reviewed, sealed, shipped, or complete must point to real
 output or an artifact. Use exactly one recommended next action except for
 terminal agent-owned technical exhaustion, which has no runnable action.
 
-For that terminal case use:
+Use that terminal case only after three recorded no-progress corrections of the
+exact fingerprint, or when required evidence was irretrievably absent. A spent
+consumptive-action authorization plus a retained new fingerprint is not terminal;
+it continues offline recovery and waits for fresh authorization only after repair.
+For a true terminal case use:
 
 ```text
 Stopped: Technical recovery exhausted

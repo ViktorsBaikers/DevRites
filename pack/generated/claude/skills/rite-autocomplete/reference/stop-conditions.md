@@ -9,6 +9,12 @@ Closure of a prior fingerprint is progress, not exhaustion. A separately evidenc
 Critical/Important failed invariant starts its own bounded fingerprint; it never
 resets or extends the budget of the one just closed.
 
+An exhausted consumptive-action authorization is not technical-recovery
+exhaustion. It blocks another real action, but retained evidence of a new
+Critical/Important fingerprint must enter offline caller-owned recovery while its
+own no-progress budget remains. After affected Vet is READY, pause for fresh action
+authorization; never execute from the old GO.
+
 ## Always stop (irreversible-risk list: from `afk-hitl.md`)
 
 Regardless of `allow_gates` or `--ship`:
@@ -35,6 +41,10 @@ the remaining choice is a real human/safety/access gate.
 On technical exhaustion, preserve the fingerprint, reproduction, attempts, and
 dead ends, then stop without `/rite-plan unblock` or another phase command.
 Reinvocation with unchanged evidence remains blocked and does not reset the cap.
+Here `unchanged` means the same fingerprint already has three recorded
+no-progress corrections. A retained fingerprint with remaining offline budget is
+not terminal merely because `state.md` was written by the failed action or a prior
+session ended.
 
 ## Stop on gate severity
 

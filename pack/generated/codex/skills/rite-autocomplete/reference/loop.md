@@ -57,6 +57,13 @@ Read each phase's `SKILL.md` and execute that workflow. Workspace files such as
 When a later phase finds an agent-owned technical gap in an earlier phase, the
 Autocomplete root remains the caller:
 
+On cold resume, reconcile the terminal cursor against durable fingerprint
+accounting first. A retained distinct fingerprint with fewer than three
+no-progress corrections is unfinished recovery, not an unchanged terminal stop.
+Restore `return_phase` from the current phase and `return_next_action` only from
+the exact approved action recorded in `test-plan.md` / evidence; ambiguity returns
+to the applicable Vet contract and never licenses execution.
+
 1. Save the originating phase/action in the native return cursor unless a valid
    one already exists.
 2. Invoke the required repair, Vet, remediation, and proof skills inline. After
@@ -71,6 +78,10 @@ Autocomplete root remains the caller:
    a genuinely new Critical/Important fingerprint. Charge only a no-progress
    outcome against the same fingerprint; lower-severity novelty cannot prolong
    the chain.
+   For a failed consumptive action, its spent authorization blocks only another
+   real execution. A retained artifact that identifies a new fingerprint is the
+   offline reproduction input: diagnose, repair, and narrow-Vet it now, then pause
+   for fresh authorization before any next consumptive execution.
 5. When the prerequisite chain is green, restore and consume the return cursor,
    resume the originating phase, and continue the forward table.
 

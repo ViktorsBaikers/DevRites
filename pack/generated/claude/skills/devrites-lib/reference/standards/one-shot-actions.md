@@ -39,8 +39,28 @@ retention design should have preserved.
 ## Failure handling
 
 After a consumptive action fails, its retained artifact is the reproduction input.
-Do not rerun the action during triage. A new attempt is admissible only after the
-evidence identifies a changed invariant or external condition, the affected plan
-and fixtures are re-vetted, and any required fresh authorization is obtained. If
-the attempt ran without complete retention, stop with the observed technical
-blocker; a blind retry cannot manufacture the destroyed evidence.
+Do not rerun the action during triage.
+
+Keep two budgets separate:
+
+- **Action authorization:** the failed execution consumes only the authorization
+  for that consumptive execution. Zero remaining action attempts prohibits another
+  real execution; it does not exhaust offline diagnosis or correction.
+- **Causal-fingerprint recovery:** when the retained artifact supplies a new
+  Critical/Important failed invariant, the controlling caller immediately runs
+  bounded offline triage, repair, fixtures, and narrow Vet in the same invocation.
+  Count only no-progress corrections of that exact fingerprint under
+  `afk-hitl.md`; do not stop merely because the action authorization was consumed.
+
+Cold resume does not make that fingerprint old or exhausted. Derive its offline
+no-progress count from `drift.md` and `evidence.md`; while the count is below the
+cap, resume recovery even if a prior writer stored `blocked` / `Next step: none`.
+That terminal cursor is valid only for missing retention, a human/safety gate, or
+an actually exhausted fingerprint.
+
+A new real attempt is admissible only after the affected plan and fixtures are
+re-vetted, the failure condition is shown changed, and any required fresh
+authorization is obtained. Stop at that authorization boundary; never infer it
+from successful offline repair. If the attempt ran without complete retention,
+stop with the observed technical blocker because a blind retry cannot manufacture
+the destroyed evidence.
