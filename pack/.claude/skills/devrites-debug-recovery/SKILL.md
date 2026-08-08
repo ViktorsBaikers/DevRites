@@ -59,6 +59,10 @@ has no clear next move.
   consumptive action, first re-vet evidence completeness and obtain any required
   fresh authorization; offline fixtures remain mandatory but cannot authorize the
   real attempt.
+- **A spent consumptive authorization is not a spent recovery budget.** When its
+  retained artifact supplies a new Critical/Important fingerprint, continue
+  offline diagnosis, correction, fixtures, and narrow Vet under that fingerprint's
+  no-progress budget. Stop for fresh authorization only before the next real action.
 - **Classify before routing** with
   [cleanup-and-classify.md](reference/cleanup-and-classify.md).
 - **Durably record class and rationale** in `decisions.md` and the applicable
@@ -68,7 +72,9 @@ has no clear next move.
   reproduction plus decisive signal rather than hashing symptom text.
   The caller and recovery attempts share one count: read the current context and
   recorded `## Dead ends` / `evidence.md`, then include every no-progress attempt
-  with that fingerprint. Reclassify only on new causal evidence.
+  with that fingerprint. Reclassify only on new causal evidence. On cold resume,
+  a retained fingerprint with fewer than three such attempts remains runnable
+  even if the previous action wrote a terminal cursor.
 - **A maximum of three no-progress attempts per exact causal fingerprint stops the loop.**
   Count an attempt only when its recheck preserves the same decisive failure.
   Record attempt number, exact failure, hypothesis, probe, and failed idea after

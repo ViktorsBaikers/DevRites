@@ -99,7 +99,9 @@ Some work needs a different route:
 - [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md) runs
   the reversible lifecycle unattended. With `--ship`, it continues through
   Ship preflight, discloses the exact Git plan, and waits for a fresh literal
-  `GO` plus native approval; without that flag, it stops at Seal GO.
+  `GO` plus native approval; without that flag, it stops at Seal GO. A failed
+  consumptive proof action never retries blindly: retained evidence drives
+  offline repair and re-vetting, and only the next real attempt needs a new GO.
 - [`/rite-upgrade [slug]`](pack/.claude/skills/rite-upgrade/SKILL.md) is a
   compatibility route for an older active workspace that cannot resume. Age or
   cursor form alone never triggers repair; it is not a lifecycle phase.

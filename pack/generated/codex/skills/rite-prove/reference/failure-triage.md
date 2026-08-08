@@ -11,7 +11,9 @@ loop to `devrites-debug-recovery`.
 2. **Classify** the failure:
    - test is right, code is wrong → fix the code (in scope).
    - test is wrong/outdated → that may be **spec drift** (acceptance criteria wrong).
-   - environment/setup (missing dep, wrong node/ruby) → fix setup or record blocker.
+   - environment/setup (missing dep, wrong node/ruby) → fix it when agent-owned;
+     record a blocker only for human/access ownership, scope overflow, or exhausted
+     fingerprint recovery.
    - flaky (passes on re-run, timing/order) → note it; don't paper over with retries.
    - external dependency down → record blocker; don't fake the result.
 3. **Isolate:** minimize to the smallest failing case; bisect the diff if needed.
@@ -19,7 +21,9 @@ loop to `devrites-debug-recovery`.
    scope, stop and record a blocker in `state.md` (then `$rite-plan unblock`).
 5. **Re-run** the same command when it is repeatable; confirm green and record both
    attempts in `evidence.md`. A consumptive action needs re-vetted evidence
-   completeness and any fresh authorization before a new attempt.
+   completeness and any fresh authorization before a new attempt. Its spent
+   action authorization does not stop offline recovery: a retained new fingerprint
+   enters caller-owned diagnosis, correction, fixtures, and narrow Vet immediately.
 
 ## Rules
 - Quote the real error text; don't paraphrase it away.

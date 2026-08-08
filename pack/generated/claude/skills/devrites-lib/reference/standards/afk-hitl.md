@@ -245,10 +245,20 @@ changes, not a request for permission to retry.
   new Critical or Important finding with a different failed invariant and exact
   evidence gets its own fingerprint and budget; Suggestion, Nit, FYI, or renamed
   evidence cannot open, reset, or extend recovery.
+- **Separate consumptive authority from recovery.** Spending a one-shot action's
+  authorization forbids another real execution but does not consume the offline
+  recovery budget for a newly evidenced fingerprint. The retained artifact starts
+  caller-owned diagnosis and correction immediately; only the next consumptive
+  execution waits for fresh authorization.
 - **Persist accounting in existing records.** Record each fingerprint,
   reproduction, attempted correction, `progress: resolved|no-progress`, and
   decisive result in `drift.md` and `evidence.md`. Cold resume derives the count
   from those records. There is no recovery counter file or command.
+- **Reconcile before honoring a terminal cursor.** A persisted distinct
+  Critical/Important fingerprint with retained evidence and fewer than three
+  recorded no-progress corrections still has recovery budget, even when an older
+  `state.md` says `Next step: none`. Resume it; do not treat session age or the
+  prior action's spent authorization as exhaustion.
 - **Classify exhaustion:** human-owned contract/risk/access gaps open their gate. Otherwise
   preserve reproduction/dead ends, set `Status: blocked` and `Next step: none — technical recovery exhausted for <causal fingerprint>; requires new evidence or changed failure conditions`.
   Do not emit `/rite-plan unblock`, another phase command, a question, or
