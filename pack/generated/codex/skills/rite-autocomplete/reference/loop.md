@@ -104,6 +104,24 @@ for a human-owned decision or mandatory safety/access action. Exhausted
 agent-owned recovery stops once with its reproduction and dead ends, never with
 another routine Plan/Vet command.
 
+## Continuous caller obligation
+
+No user-facing reply is permitted while the durable state contains an
+agent-owned `NEEDS_REPLAN`, an intermediate Plan/Vet `next_action`, or a distinct
+Critical/Important fingerprint with remaining recovery budget. Invoke the exact
+next Plan repair and Recovery Vet immediately. A narrow reviewer closing its input
+finding and exposing another Critical/Important invariant is progress: close the
+old fingerprint, open the new one, and continue without handing a command to the
+user.
+
+The number of completed repair/Vet cycles is not a stop condition and cannot be
+used as a surrogate recovery budget. Only three no-progress corrections of the
+same exact fingerprint exhaust. Context pressure, compaction, session duration,
+or a nested skill's completion footer also cannot convert an internal checkpoint
+into a stop; persist the checkpoint and resume from it inside the same controlling
+invocation. Autocomplete may emit its final reply only after reaching its requested
+rest point or one of the shared human/safety/access/exhaustion stop conditions.
+
 ## Between phases
 
 - Re-read the active workspace before each phase (don't trust chat memory).

@@ -144,8 +144,12 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
    After each fold-back rerun step 2a; missing/meaning-changing mappings block.
    Keep `state.md` non-READY for step 6.
 6. **One narrow recheck after edits.** If the candidate changed, dispatch exact
-   `devrites-plan-reviewer` once with accepted findings, changed paths/criteria,
-   and new identity. No full or third loop; if it changes the plan, repeat step 5.
+   `devrites-plan-reviewer` once per correction/fingerprint with accepted findings,
+   changed paths/criteria, and new identity. Within that same correction, no full
+   or third loop; if it changes the plan, repeat step 5. If the recheck closes its
+   input fingerprint but discovers a distinct Critical/Important invariant, return
+   that new fingerprint to the controlling caller as progress. It may start the
+   next bounded Plan/Recovery-Vet cycle; the prior reviewer count is not exhaustion.
    Then close the matrix and rerun step 2a's ID-and-meaning audit.
 
 6a. **Build readback.** From the final owning artifacts, add a cited five-line

@@ -54,6 +54,15 @@ Resume next session with: <single command, e.g. /rite-build slice 2>
 This is advice, not a gate. The user can ignore it. It reports a trade-off the model
 cannot inspect directly because no API reports context fullness.
 
+### Autocomplete exception
+
+Do not emit the footer or a resume command for a nested phase controlled by
+Autocomplete. An intermediate `NEEDS_REPLAN`, Plan/Vet checkpoint, or new
+agent-owned fingerprint must continue in the same invocation under the caller
+contract. If the host compacts, persist the current checkpoint and resume from it;
+context pressure is never permission to turn routine backtracking into a user
+handoff.
+
 ## When NOT to recommend `/clear` or `/compact`
 
 - The current phase is read-only and cheap (`/rite-status`, `/rite` menu): no

@@ -29,6 +29,11 @@ on exhaustion, stop as a technical blocker unless human-owned.
 
 ## Not a stop: agent-owned backtracking
 
+`NEEDS_REPLAN` is not a stop condition under an active Autocomplete caller. It
+blocks forward advancement, persists the return cursor, and immediately routes
+Plan repair plus Recovery Vet. The same applies to any intermediate nested
+`STOP`/`Next step` whose underlying decision is agent-owned.
+
 Agent-owned backtracking is not a stop condition while its causal-fingerprint
 budget remains. The active caller invokes the earlier phase inline, follows Vet
 and any bounded remediation, then resumes the originating phase. Persist
