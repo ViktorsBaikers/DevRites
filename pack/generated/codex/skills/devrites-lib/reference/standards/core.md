@@ -40,7 +40,10 @@ Repository conventions follow [Precedence](#precedence).
 ## Lifecycle rest points
 
 Before advancing a phase, run `devrites-engine check readiness <slug>` for
-structure; exact agents/checklists own semantics. Persist and stop on block.
+structure; exact agents/checklists own semantics. Standalone rites persist and stop
+on block. Under an active controlling caller, an agent-owned technical block is a
+persisted backward edge: return it to that caller instead of producing a
+user-facing stop.
 After native proof/review, `$rite-seal` runs `devrites-engine check seal <slug>`
 for structure/freshness, not prose. HITL/blocked stops follow
 [Persistence before stopping](#persistence-before-stopping-handoff-discipline).

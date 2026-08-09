@@ -36,6 +36,11 @@ the terminal cursor or its recovery count.
   through repair, Vet, bounded implementation correction, and re-proof inside
   the active run. A nested phase `STOP` or intermediate `Next step` is not a
   user handoff; pause only on the shared real stop conditions.
+- **Treat technical readiness as routing, not completion.** `NEEDS_REPLAN` is a backward edge
+  to Plan repair and narrow Vet; `NEEDS_CLARIFICATION` is likewise internal when
+  decision coverage can be resolved from existing authority. Neither state may
+  end Autocomplete unless its underlying fingerprint is actually exhausted or a
+  human/safety/access decision is required.
 - **Do not confuse an action budget with recovery exhaustion.** After a failed
   consumptive action, zero remaining real attempts blocks only another execution.
   New retained Critical/Important evidence starts offline repair and narrow Vet
@@ -73,6 +78,9 @@ the terminal cursor or its recovery count.
    fingerprint below its no-progress cap reopens caller-owned offline recovery;
    a stale pre-ownership workflow-artifact writer stop reopens under
    `workflow-artifacts.md` when no controlling-root materialization attempt exists.
+   A `NEEDS_REPLAN` cold resume with a valid technical return cursor immediately
+   invokes Plan repair and Recovery Vet before selecting a forward phase or
+   emitting any reply.
    That materialization runs directly as non-consumptive prerequisite recovery,
    even with no pending product slice or AFK budget; it does not re-ask an answered
    human gate.

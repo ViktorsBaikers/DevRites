@@ -90,6 +90,12 @@ grep -q 'materialization is not a consumptive action' "$OUT/codex/skills/devrite
   && grep -q 'first controlling-root failure is not exhaustion' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" \
   && ok "Codex workflow materialization uses preflight and bounded recovery" \
   || no "Codex workflow materialization can become an unproved one-shot"
+grep -q '`NEEDS_REPLAN` is a backward edge' "$OUT/codex/skills/rite-autocomplete/SKILL.md" \
+  && grep -q '`NEEDS_REPLAN` cold resume' "$OUT/codex/skills/rite-autocomplete/SKILL.md" \
+  && grep -q 'No user-facing reply is permitted' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" \
+  && grep -q 'Intermediate `NEEDS_REPLAN`' "$OUT/codex/skills/devrites-lib/reference/reply-contract.md" \
+  && ok "Codex autocomplete keeps technical Plan/Vet recovery internal" \
+  || no "Codex autocomplete can stop at an internal NEEDS_REPLAN checkpoint"
 grep -q 'Codex custom-agent version\|repository-aware file tool refuses an ignored path\|For automatic Engram calls' "$OUT/codex/agents/devrites-code-reviewer.toml" \
   && no "Codex agent artifact duplicates project-wide guidance" \
   || ok "Codex agent artifact contains only its converted role contract"

@@ -36,6 +36,7 @@ BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
 WRIGHT="$ROOT/pack/.claude/agents/devrites-slice-wright.md"
 WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
 CORE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/core.md"
+CONTEXT_HYGIENE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/context-hygiene.md"
 AFK_HITL="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md"
 ONE_SHOT="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/one-shot-actions.md"
 WORKFLOW_ARTIFACTS="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md"
@@ -68,6 +69,15 @@ require "$CORE" 'reply-contract.md' 'core names the universal reply contract'
 require "$CORE" 'devrites-engine check readiness <slug>' 'core preserves the structural lifecycle rest point'
 require "$CORE" 'devrites-engine check seal <slug>' 'core preserves the structural seal rest point'
 require "$REPLY" 'Use exactly one recommended next action' 'reply contract keeps one next action'
+require "$CORE" 'Standalone rites persist and stop' 'core distinguishes standalone gates from caller-owned backtracking'
+require "$AUTOCOMPLETE" '`NEEDS_REPLAN` is a backward edge' 'autocomplete treats technical readiness as internal recovery'
+require "$AUTOCOMPLETE" '`NEEDS_REPLAN` cold resume' 'autocomplete resumes an interrupted internal Plan/Vet edge'
+require "$AUTOCOMPLETE_LOOP" 'No user-facing reply is permitted' 'autocomplete cannot hand off an internal repair checkpoint'
+require "$AUTOCOMPLETE_LOOP" 'number of completed repair/Vet cycles' 'autocomplete does not stop because many distinct findings were closed'
+require "$AUTOCOMPLETE_STOPS" '`NEEDS_REPLAN` is not a stop condition' 'technical readiness failure cannot end autocomplete'
+require "$VET" 'per correction/fingerprint' 'vet reviewer loop limit does not cap distinct recovery findings'
+require "$REPLY" 'Intermediate `NEEDS_REPLAN`' 'completion reply rejects internal recovery states'
+require "$CONTEXT_HYGIENE" 'Autocomplete exception' 'context hygiene cannot surface nested phases as user handoffs'
 
 require "$SPEC" '/rite-clarify' 'spec routes topology coverage to clarify'
 require "$SPEC" 'update the existing workspace rather than overwrite it' 'spec updates an existing workspace safely'

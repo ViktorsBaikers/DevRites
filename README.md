@@ -107,6 +107,8 @@ Some work needs a different route:
   Autocomplete reopens a stale missing-writer stop once instead of preserving the
   obsolete recovery count. The first real root-materializer failure then counts as
   attempt one under normal fingerprint recovery; it is not terminal by itself.
+  Likewise, an internal `NEEDS_REPLAN` result stays inside Autocomplete: it runs
+  the next Plan repair and narrow Vet without returning a command to the user.
 - [`/rite-upgrade [slug]`](pack/.claude/skills/rite-upgrade/SKILL.md) is a
   compatibility route for an older active workspace that cannot resume. Age or
   cursor form alone never triggers repair; it is not a lifecycle phase.
