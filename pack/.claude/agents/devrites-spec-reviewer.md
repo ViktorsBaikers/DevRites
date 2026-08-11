@@ -28,6 +28,11 @@ From `.devrites/work/<slug>/`, read `spec.md`, `tasks.md`, `decisions.md`,
   quote each missing or changed criterion. Reject invented and label-only maps.
 - **Correctness:** wrong boundaries, states, defaults, or errors are `wrong`, not
   `partial`.
+- **Invariants and recovery:** verify each accepted invariant plus failure/partial-state
+  user outcome and retry/recovery rule by meaning; silent success or blind retry is `wrong`.
+- **Applicability:** compare topology/data/integration/security/UI/delivery declarations
+  with the final diff. A triggered concern marked not applicable, or an applicable concern
+  with no mapped requirement/proof, blocks.
 - **Preservation:** for every `Existing behavior to preserve` row, verify current
   evidence and map the outcome by meaning to its preserving REQ/AC plus candidate
   evidence. Direct proof may cover unchanged code. A missing brownfield outcome,

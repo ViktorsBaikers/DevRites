@@ -34,6 +34,8 @@ Pull these via `Read` when relevant:
   blocks, each scenario (WHEN/THEN) is one observable behavior to walk and prove.
 - `performance.md`: measure first when perf is in scope.
 - `observability.md`: runtime telemetry must be observed to emit.
+- `repository-topology.md`, `data-integrity.md`, `integration-reliability.md`: only
+  for applicable spec/plan rows; their required proof cases cannot be replaced by a generic green suite.
 - `developer-experience.md`: when the change ships a developer-facing surface (API / CLI / SDK /
   webhook / config / error messages / getting-started): **measure** the DX scorecard (run the flow,
   measure time-to-hello-world, and capture verbatim error text), rather than asserting it.

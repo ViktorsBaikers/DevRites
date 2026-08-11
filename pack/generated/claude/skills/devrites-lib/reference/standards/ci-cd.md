@@ -18,6 +18,25 @@ A designated Build Cop owns restoring a broken trunk by fixing or reverting, whi
 
 Keep incomplete or risky behavior disabled behind a flag so deploy and release remain separate and rollback does not require a redeploy. Every flag has an owner and a removal trigger; remove it through the [`deprecation.md`](deprecation.md) expand/contract path.
 
+## Deployment order and configuration
+
+- Derive an explicit order for schema, application, worker, contract, config, and flag
+  changes. Prove the system remains safe at every intermediate old/new combination;
+  "deploy together" is not an atomicity guarantee across units.
+- Validate required configuration at startup or the earliest safe boundary. Record names,
+  owners, environments, safe defaults, and rollback values without recording secrets.
+  A staging value copied by memory is not production evidence; a configuration mismatch
+  blocks exposure until the exact target value/owner is verified.
+- Documentation drift in commands, configuration, migration order, or rollback steps is a
+  delivery defect: update the canonical doc and execute the documented path before exposure.
+- Migration and destructive steps apply [`data-integrity.md`](data-integrity.md); service,
+  queue, webhook, and cache changes apply
+  [`integration-reliability.md`](integration-reliability.md). Their recovery/observability
+  gates precede exposure.
+- Feature flags separate exposure only when both states are tested, the off path preserves
+  current behavior, and disabling the flag stops the risky effect. A flag cannot undo an
+  already destructive schema or data change.
+
 ## Secrets
 
 Commit `.env.example` without values; never commit real `.env` files. Inject CI secrets from the platform store and scope them to the job. Build runners do not receive production credentials.

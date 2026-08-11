@@ -18,6 +18,8 @@ change.
 `coding-style.md`, `patterns.md`, and `edge-case-trace.md`. On Codex, use the
 mirrors under `.agents/skills/devrites-lib/reference/standards/`. Apply the current
 files, not a summary you remember.
+From `spec.md`'s applicability map, load only triggered `repository-topology.md`,
+`data-integrity.md`, or `integration-reliability.md`; their cases remain feature-scoped.
 
 ## Inputs
 You receive a feature slug or workspace path (`.devrites/work/<slug>/`) and the
@@ -36,7 +38,8 @@ feature scope and read the touched files.
     `file:line` and the test that misses it. See `testing.md` § The verification gap.
 - **Correctness:** check logic, null, empty, and boundary values, error paths, races,
   and assumptions. For branching or boundary changes, run the edge-case trace over
-  explicit paths, fixed-set siblings, and deletion contracts.
+  relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion
+  contracts. Verify the accepted failure/recovery disposition rather than re-listing cases.
 - **Readability:** check naming, function size, nesting, and comments that explain
   *why*. A new conditional **bolted onto an unrelated flow** is a design smell, not a
   nit; it may need its own helper, state, or policy. Repeated conditionals with the
@@ -50,6 +53,8 @@ feature scope and read the touched files.
     owning layer?
   - Has a type boundary been left implicit through an unnecessary `any`, `unknown`,
     cast, or silent fallback that hides an unclear invariant?
+  - Are repository/deployable roots, canonical contract and mutable-state ownership,
+    shared resources, and sync/async consistency boundaries preserved without a cycle?
 - **Maintainability:** dead code, leftover TODOs or logs, and convention drift. Check
   **file size as well as diff size**. If a small diff pushes an already-large file
   past a healthy boundary, flag decompose-then-add and recommend extracting helpers

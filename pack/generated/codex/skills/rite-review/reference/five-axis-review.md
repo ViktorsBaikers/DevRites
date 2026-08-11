@@ -11,11 +11,15 @@ is complete, and to scope anything the agent could not (e.g. UI-only lenses belo
 - Do tests exist for the changed behavior, and do they prove the acceptance criteria?
 - Would they fail if the code were wrong? (No assertion-free or tautological tests.)
 - Edge cases: empty, boundary, error, permission-denied, concurrency.
+- Applicable data/integration/topology cases use a risk-capable boundary; no
+  risk-erasing mock, one-tenant isolation claim, or one-root proof for another root.
 
 ## 1. Correctness
 - Does it do what the spec says? Off-by-one, null/undefined, error paths, race
   conditions, incorrect assumptions about inputs.
 - Does it handle the states the slice promised (loading/empty/error for UI)?
+- Does retry/interruption converge without duplicate effects; do partial/unknown external
+  outcomes, migrations, old/new versions, tenant scope, and rollback follow the accepted plan?
 
 ## 2. Readability
 - Can the next engineer understand it without the author? Naming, function length,
@@ -35,6 +39,8 @@ is complete, and to scope anything the agent could not (e.g. UI-only lenses belo
   dispatcher, separate orchestration from business logic, move feature logic to its owning
   package, delete a pass-through wrapper, split a large file. Prefer the move that removes
   moving pieces over one that re-centralizes the same complexity.
+- Are repository/deployable roots, canonical contract and mutable-state owners, shared
+  resources, and synchronous/asynchronous consistency boundaries preserved without a cycle?
 
 ## 4. Security
 - Trust boundaries, input validation, authz checks, secrets handling. Hand off to

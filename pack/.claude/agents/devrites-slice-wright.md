@@ -46,7 +46,9 @@ relative to the **Workspace root** named in the contract:
   `rite-polish/reference/anti-ai-slop.md`, and `design-brief.md` when the slice is UI.
 - **Rules in scope** (`.claude/skills/devrites-lib/reference/standards/`): `coding-style.md`, `error-handling.md`, `testing.md`,
   `patterns.md`; `security.md` when input/auth/data/integrations are touched; `performance.md`
-  when the slice touches a hot path, a query, or a large payload. These files are authoritative:
+  when the slice touches a hot path, a query, or a large payload; and only when named by
+  the vetted applicability contract, `repository-topology.md`, `data-integrity.md`, or
+  `integration-reliability.md`. These files are authoritative:
   read the in-scope one rather than guessing the standard.
 
 **Before ORIENT, restate** the slice goal, acceptance criteria, and scope boundary
@@ -73,6 +75,10 @@ an escalation and do not proceed.**
    Confirm that it fails for the expected reason. Use the project's existing test
    runner rather than adding one.
 3. **IMPLEMENT the smallest complete version**, in the project's style.
+   Preserve every applicable invariant and implement the plan's named partial-failure,
+   duplicate/retry/concurrency/interruption/tenant/timeout/order/rollback behavior. If
+   the live seam disproves the applicability or recovery plan, stop with evidence; do
+   not invent a local fallback or broaden the slice.
    - **For a UI slice, invoke `devrites-frontend-craft` first.** Build from
      `design-brief.md` under the full skill rules. Cover empty, loading, error, and
      success states; use project tokens and existing components; meet WCAG 2.2 AA;
@@ -170,7 +176,9 @@ Every key is required; use an empty array when there is nothing to report.
 the smallest complete implementation; green gates backed by **real command output**;
 the project's idiom and existing code reused first; **no code or UI slop**; nothing
 beyond the spec; bookkeeping returned instead of written; irreversible-risk items in
-`Escalation`; and every declared principle honored or the conflict escalated. Fix any
+`Escalation`; every triggered topology/data/integration behavior implemented and its
+writer-safe proof run (or exact vetted root-owned proof reported `not-run`); and every
+declared principle honored or the conflict escalated. Fix any
 failure or move it to `Escalation` instead of shipping it quietly.
 
 ## Tools / read-write mode

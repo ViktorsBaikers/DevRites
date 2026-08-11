@@ -36,6 +36,10 @@ line, and then assign the band. Do not choose a score and justify it afterward:
    table: one reused artifact plus provider- and consumer-side asserting tests that consume
    it. Missing, one-sided, duplicated-contract, vague, or non-consuming proof is `broken`; when no
    boundary changes, require the specific no-impact statement.
+   Compare the spec applicability map with live roots, deployables, data ownership,
+   integrations, and delivery units. Apply the triggered topology/data/integration standard;
+   a missing owner, intermediate deployment state, partial-failure recovery, or required
+   plan/proof row is `broken`.
 2. **Scope discipline & reuse:** ask whether this is the minimum diff that meets
    acceptance and whether existing code solves any sub-problem. More than eight
    files or two new services or modules is a complexity smell unless the complexity
@@ -48,6 +52,8 @@ line, and then assign the band. Do not choose a score and justify it afterward:
    Changed behavior without a regression test is critical. Select unit, integration/E2E,
    or eval by path. Shared-contract provider and consumer tests must both consume the
    artifact named in `Shared contract proof`.
+   Applicable data/integration/topology risks require discriminating cases; reject a mock
+   that cannot reproduce the risk or one member's tests offered as cross-root proof.
 5. **Performance:** check N+1 or unbounded queries, repeated hot-path work, and
    oversized payloads. The plan must measure them or name the measurement, not
    speculate about micro-optimizations.

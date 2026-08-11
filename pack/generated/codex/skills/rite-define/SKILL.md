@@ -18,6 +18,8 @@ Pull these via `Read` when shaping the plan:
 - `development-workflow.md`: small batches, trunk-always-green, definition of done.
 - `principles.md`: the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
 - `documentation.md`: record plan-time decisions and rationale.
+- `repository-topology.md`, `data-integrity.md`, and `integration-reliability.md`:
+  load only for matching `spec.md` applicability rows; each applicable owner is mandatory.
 - `../workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers.
 
 ## Operating rules
@@ -66,6 +68,9 @@ Pull these via `Read` when shaping the plan:
    **`design-brief.md` if the feature touches UI** (the UX/UI contract `$rite-spec` shaped:
    its key states, interaction model, and proof targets drive how UI slices are cut). If a blocking
    `[NEEDS CLARIFICATION]` remains, stop → `$rite-clarify`.
+   Reconcile every `Applicability map` row against live repository evidence. Load each
+   applicable standard; a false `not applicable` is a blocking spec gap, not a planning
+   shortcut.
 1a. **Draft from fresh context.** Freeze the planning inputs and dispatch
    `devrites-plan-drafter` in `define` mode for one atomic candidate bundle:
    `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md`, including proof mapping.
@@ -84,6 +89,10 @@ Pull these via `Read` when shaping the plan:
    models, public contracts, or dependencies, compare ≥2 viable approaches by drivers,
    trade-offs, and consequences. Specify cross-boundary interfaces for independent work:
    invariants, I/O, ordering/idempotency, errors, versioning, config, and relevant budgets.
+   Establish repository/deployable roots, state and contract ownership, shared mutable
+   resources, and deployment order under `repository-topology.md`. For applicable durable
+   data or integration rows, include the exact required plan table from `data-integrity.md`
+   or `integration-reliability.md`; do not replace it with "handle retries/migration" prose.
    For any changed provider/consumer boundary, complete `plan.md`'s canonical
    `Shared contract proof` table with one reused contract artifact and provider- and
    consumer-side asserting tests that both consume it. Otherwise record the exact justified
@@ -119,6 +128,8 @@ Pull these via `Read` when shaping the plan:
    criterion. Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`
    rows into `traceability.md` and `test-plan.md`; unresolved rows get a gate/owner. Each
    cross-slice boundary names producer, consumer, invariant, integration step, and proof.
+   Map each applicable topology/data/integration risk to a slice, failure/recovery path,
+   and discriminating proof; a risk cannot live only in the architecture narrative.
 4a. **Persist traceability natively.** The drafter proposes and root writes
    `traceability.md` (`AC/REQ ID → slice → proof → evidence ID → files → status`).
    Re-read spec, tasks, and proof fields: every ID must exist and every mapping
@@ -142,7 +153,7 @@ Pull these via `Read` when shaping the plan:
    meaning-changing mappings block.
 7. **Readiness gate** (plan-template): require CLEAR coverage, complete acceptance and
    cross-slice wiring/proof, complete `Shared contract proof`, risk-first acyclic order,
-   justified deviations, rollback, and a
+   justified deviations, applicable topology/data/integration outputs, rollback, and a
    closed decision sweep. **Stop and confirm** before code. Render the review-before-code
    digest first: `Intent` (one sentence from the spec), `Done means` (acceptance coverage x/y),
    `Plan sanity` (slice count + riskiest boundary/gate), `Expected build interruptions`

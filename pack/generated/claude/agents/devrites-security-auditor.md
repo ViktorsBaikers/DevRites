@@ -47,10 +47,11 @@ Apply the OWASP LLM Top 10 (`.claude/skills/devrites-lib/reference/standards/sec
   prompts and context. Enforce authorization server-side rather than in a prompt,
   and never transmit or log PII or secrets.
 - **Supply chain & poisoning (LLM03 / LLM04 / LLM08):** pin and vet models,
-  weights, datasets, and RAG or embedding sources. Treat them as untrusted.
+  weights, datasets, and RAG or embedding sources. Treat them as untrusted; check
+  provenance, tenant/ACL retrieval filters, poisoning, freshness, and deletion.
 - **Overreliance (LLM09)** / **unbounded consumption (LLM10):** ground
-  consequential calls and keep a human in the loop. Limit request rate, tokens,
-  cost, and time.
+  consequential calls, cite only supporting retrieved sources, define insufficient-context
+  behavior, and keep a human in the loop. Limit request rate, tokens, cost, and time.
 
 When the diff changes a DevRites agent, hook, or tool grant, apply the same checks
 to the pack. Confirm least agency, including read-only tools where required, no
@@ -60,6 +61,9 @@ secrets in prompts, and no trust in model or tool output as instructions.
 Apply the three-tier discipline from
 `.claude/skills/devrites-lib/reference/standards/security.md`. Flag any value that
 reaches the trusted tier without crossing the required boundary.
+Explicitly trace authn versus per-resource authz, tenant scope across storage/cache/search/
+jobs/model context, privilege-changing actions, resolved filesystem/archive paths, request
+forgery control, unsafe deserialization, and fail-closed environment defaults when relevant.
 
 ## Rules
 - Don't edit. Findings only, labeled Critical / Important / Suggestion / Nit / FYI with

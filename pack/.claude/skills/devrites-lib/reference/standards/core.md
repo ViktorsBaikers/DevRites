@@ -94,6 +94,11 @@ These universal musts link to their full rules; load depth only when needed.
 - **Three-tier trust boundary.** *untrusted* → validation/authz at the
   *boundary* → *trusted* core. A skipped boundary is a finding. →
   [`security.md`](security.md)
+- **Route system risk to its owner.** Multi-root/service ownership →
+  [`repository-topology.md`](repository-topology.md); durable data/migrations →
+  [`data-integrity.md`](data-integrity.md); APIs/webhooks/queues/caches →
+  [`integration-reliability.md`](integration-reliability.md). Load only the
+  applicable owner, but an applicable owner is mandatory.
 - **Measure before you optimize.** An optimisation without a measurement is a
   guess that adds complexity. → [`performance.md`](performance.md)
 - **Names reveal intent.** No `process()` / `handle()` / `data` / `temp`.

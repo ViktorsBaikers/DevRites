@@ -39,8 +39,9 @@ dispatch uses
    `Spec gate: passed`; otherwise stop at `/rite-spec`. Apply the native cursor
    protocol below before changing workspace artifacts.
 2. **Enumerate the topology.** From the spec, live code, contracts, references,
-   and recorded decisions, list every material actor, journey/component, state,
-   data lifecycle, integration, operation, proof surface, and must-NOT boundary.
+   and recorded decisions, list every material stakeholder/priority, invariant, actor,
+   journey/component, state, data lifecycle, integration, failure/recovery path,
+   operation, proof surface, applicability row, and must-NOT boundary.
 3. **Scan coverage.** Apply `devrites-interview` in clarify mode and mark each
    material surface Clear, Partial, Missing, not-applicable, or justified
    deferred-nonblocking with evidence and an owner. Use native repository search

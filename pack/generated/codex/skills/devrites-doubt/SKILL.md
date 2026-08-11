@@ -39,10 +39,9 @@ Wait for a second real caller before keeping a pass-through that fails this test
 
 ## Rules
 - For "where does this claim reach / what would change with it" questions, prefer a
-  code-intelligence index if available (codebase-memory-mcp (`detect_changes` / `trace_path`)
-  first, cross-checked with codegraph (`codegraph_impact` / `codegraph_callers`) + graphify,
-  else standard methods (LSP / Read/Grep/Glob); see `.agents/skills/devrites-lib/reference/standards/tooling.md`) over file
-  reads; they answer impact in one call without polluting context.
+  code-intelligence index under `standards/tooling.md`: use the primary available index,
+  add at most one cross-check for a named incomplete/stale/conflicting predicate, then fall
+  back to LSP or file search. Do not query several indexes for reassurance.
 - The reviewer prompt must be adversarial: its job is to break the claim, not to agree.
 - Strip your own justification before review; reasoning anchors the reviewer toward
   agreement.

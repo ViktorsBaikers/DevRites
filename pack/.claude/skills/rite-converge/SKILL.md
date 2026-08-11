@@ -27,9 +27,11 @@ Pull on demand:
 - `spec-grammar.md`: buildable acceptance criteria vs `## Success metrics` (outcome KPIs the
   code can't make true and this pass never enqueues); structured `### Requirement:` /
   `#### Scenario:` blocks, each scenario one behavior to check as built / partial / absent.
-- `tooling.md`: prefer a code-intelligence index (codebase-memory-mcp → codegraph → graphify,
-  else LSP / Read/Grep/Glob) to read the live code, not assumptions.
+- `tooling.md`: use the primary available code index; cross-check only a named unresolved
+  predicate, then fall back to LSP/file search. Read live code, not artifact claims.
 - `testing.md`: a criterion with code but no covering test is *partial*, not done.
+- `repository-topology.md`, `data-integrity.md`, `integration-reliability.md`: only for
+  triggered applicability rows; missing failure/recovery behavior is partial or absent.
 
 ## Operating rules
 - **APPEND-ONLY, never rewrite.** The only write to `tasks.md` is **appending** new

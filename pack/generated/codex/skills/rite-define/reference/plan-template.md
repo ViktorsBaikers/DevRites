@@ -19,6 +19,20 @@ Spec: ./spec.md   Decision coverage: ./decision-coverage.md   Date: <date>
 - Any product/constraint unknown that affects the approach routes to `$rite-clarify`;
   do not carry `[NEEDS CLARIFICATION]` into an approvable plan.
 
+## Applicability and system ownership
+
+Copy each `spec.md` applicability decision by meaning, then validate it against live
+repository evidence. For every `applies` row, load the named owner and include its
+**Required plan output** here or in a linked architecture section:
+
+- repository topology → `repository-topology.md` root/deployable/owner table;
+- durable data/migration/tenant/retention → `data-integrity.md` invariant/recovery table;
+- APIs/webhooks/queues/jobs/caches/services → `integration-reliability.md` boundary table;
+- security/UI/delivery → their existing focused standard and proof owner.
+
+Do not copy the standards. Record the feature-specific owner, failure/recovery decision,
+slice, and evidence. A changed `not applicable` decision returns through Spec Drift Guard.
+
 ## Global constraints
 Project-wide requirements from the spec that every slice implicitly includes — version
 floors, dependency limits, naming/copy rules, platform requirements. One line each, exact
@@ -60,6 +74,10 @@ Shared contract impact: none — <specific justification>
 What must exist before what (text is fine):
 - SLICE-001 (no deps) → SLICE-002 (needs SLICE-001) → SLICE-004 (needs SLICE-002, SLICE-003)
 - SLICE-003 (independent / parallelizable)
+
+Include non-code prerequisites and deployable units: contract/schema/config → old/new
+application/worker → migration/backfill → flag/exposure → contract removal. Name shared
+mutable resources that force serialization even when slice files differ.
 
 ## Implementation order
 Ordered slice list + the reason for the order (risk-first within a dependency tier).
@@ -103,6 +121,8 @@ decisions.md / evidence.md when used.
 - [ ] `decision-coverage.md` says `Decision coverage: CLEAR`
 - [ ] Every spec acceptance criterion is covered by a slice
 - [ ] Dependency order is acyclic and risk-first
+- [ ] Applicability matches the spec and live topology; every applicable standard's
+      required plan output names owner, failure/recovery, slice, and proof
 - [ ] An `MVP cut` is named, self-contained (ACs above the cut proven above the cut, no dependency reaching below), and marks a genuinely shippable scope
 - [ ] No unjustified deviation remains in the complexity gate
 - [ ] Rollback exists for every destructive / migration step
@@ -113,6 +133,8 @@ decisions.md / evidence.md when used.
 - [ ] Every UI slice names `Design brief states` and binary `Visual acceptance`
 - [ ] `Key links` rows cover every cross-slice wiring (or state `none`)
 - [ ] Cross-boundary contracts name producer, consumer, invariants/errors/order, and proof
+- [ ] Deployment/config/schema/application/worker/flag order is safe at every intermediate
+      old/new combination, or is specifically not applicable
 - [ ] `Shared contract proof` contains one complete, consuming provider/consumer table, or one specific no-impact statement
 - [ ] Any wide mechanical refactor is sliced expand → migrate batches → contract, with green migrate batches or an integration branch + final verify slice
 - [ ] No `Gate: blocking` slice is implicitly chained behind an AFK slice without surfacing the dependency

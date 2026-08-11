@@ -30,7 +30,13 @@ and only the orchestrator-supplied changed paths.
    evidence surface>` and a `failures` gap route Spec Drift.
 5. For UI scope, inspect only supplied browser artifacts and route-scoped root
    results. Missing browser proof is `cannot_verify`.
-6. Recheck supplied before/after candidate identities. A mismatch or unexpected
+6. Reconcile the spec applicability map with the final diff. For triggered topology,
+   data, or integration rows, require the focused standard's relevant discriminating
+   failure/recovery proof or an evidence-backed dismissal. A generic suite, source
+   inspection, one-root result for another root, or risk-erasing mock cannot pass.
+7. Accept `pre-existing`/environment-only only with a supplied dated baseline for the
+   same command/cwd/prerequisites/material environment; otherwise use `cannot_verify`.
+8. Recheck supplied before/after candidate identities. A mismatch or unexpected
    repository mutation fails the side-effect boundary.
 
 ## Rules

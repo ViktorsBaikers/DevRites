@@ -16,6 +16,8 @@ editing source code.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
 Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD criteria.
+Load `repository-topology.md`, `data-integrity.md`, or `integration-reliability.md`
+when the spec applicability map or observed drift triggers them.
 
 ## Operating rules
 - Update the spec when needed, but never plan around a known-wrong assumption.
@@ -47,12 +49,9 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
 1. Read `spec.md`, `decision-coverage.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`,
    `eng-review.md`, and the current `git diff` (if a repo). Read `decisions.md` and
    `assumptions.md`. Require `Decision coverage: CLEAR`; otherwise STOP → `$rite-clarify`.
-   If a code-intelligence
-   index is available: `codebase-memory-mcp` first, cross-checked with `codegraph`
-   (`.codegraph/` / `codegraph_*` tools) + `graphify` (`graphify-out/`), else standard methods
-   (LSP / `Read`/`Grep`/`Glob`); see `.agents/skills/devrites-lib/reference/standards/tooling.md`:
-   prefer it for structural questions (what calls X, what would
-   changing Y break) over reading whole files, to keep planning context lean. For an external
+   Apply `.agents/skills/devrites-lib/reference/standards/tooling.md`: use the
+   primary available structural index, and cross-check only for a named unresolved
+   predicate rather than reassurance. For an external
    dependency's current API surface, consult context7 if available.
 2. **Pick the mode** (`$ARGUMENTS` or infer):
    - **decompose:** first/again break the feature into vertical slices.
@@ -96,6 +95,8 @@ Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD cr
    boundaries keep one reused contract artifact ahead of both asserting tests, and unaffected
    plans retain the specific no-impact statement. Missing, one-sided, duplicated-contract, vague, or
    non-consuming proof routes to `$rite-vet` only after repair.
+   Reconcile the spec applicability map and retain every applicable standard's required
+   topology/data/integration owner, failure/recovery, deployment order, and proof output.
    **Completion:** the slice graph is cycle-free and every dependency names an existing slice.
 4. Re-slice using vertical-slice rules: [slicing](reference/slicing.md) and
    [task-breakdown](reference/task-breakdown.md). Prefer thin, shippable, verifiable.

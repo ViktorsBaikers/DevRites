@@ -19,6 +19,10 @@ declared invariants; an unavoidable principle violation is blocking.
 For behavioral/high-risk acceptance, use `spec-grammar.md` plus workspace schema;
 simple criteria stay flat `AC-###`. Apply
 [`acceptance-criteria.md`](reference/acceptance-criteria.md) so each is binary and observable.
+Use [`edge-case-trace.md`](../devrites-lib/reference/standards/edge-case-trace.md)
+to populate only relevant edge/prohibition rows. The spec's applicability map routes
+topology, data, integration, security, and delivery concerns to their focused standard;
+load a routed standard to discover required behavior, not to prescribe implementation.
 
 ## Operating rules (DevRites core)
 - No silent assumptions or guessing; prefer conventions; ask on scope,
@@ -65,6 +69,8 @@ simple criteria stay flat `AC-###`. Apply
    template's specific justification.
    Identify proof constraints now: human-only credentials, unavailable environments, approval
    windows, or acceptance not observable through existing test/runtime/browser surfaces.
+   An unfamiliar framework/version routes to `devrites-source-driven`; missing or
+   contradictory documentation is evidence to reconcile, never a license to guess.
    Split independent placement, blast-radius, and external-fact questions into at most three
    bounded `devrites-evidence-scout` tasks on one frozen candidate. Wait for and reconcile every
    cited dossier before step 4. The scout supplies facts only; it never asks the human or writes
@@ -102,7 +108,8 @@ simple criteria stay flat `AC-###`. Apply
    unrelated settled content. Write every required artifact and conditional
    annex exactly from [spec-template](reference/spec-template.md), including its
    capability impact, existing-behavior preservation, grammar/delta,
-   coverage-seed, qualified backstops, edge/prohibition, UI, and AI rules. Native
+   stakeholder/constraint/invariant, failure/recovery, applicability, coverage-seed,
+   qualified backstop, edge/prohibition, UI, and AI rules. Native
    hierarchical instructions remain stable; do not rewrite `AGENTS.md` or
    `CLAUDE.md` for the active workspace.
 5a. **Check the spec prose** with [spec-checklists](reference/spec-checklists.md).

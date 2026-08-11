@@ -21,7 +21,8 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
 `coding-style.md`, `testing.md`, `spec-grammar.md`, `performance.md`,
 `error-handling.md`, `development-workflow.md`, `afk-hitl.md`,
 `one-shot-actions.md`, `developer-experience.md`, `elicitation.md`, and
-`definition-of-done.md`.
+`definition-of-done.md`. Load `repository-topology.md`, `data-integrity.md`, and
+`integration-reliability.md` only when the spec applicability map or live plan triggers them.
 
 
 ## Operating rules

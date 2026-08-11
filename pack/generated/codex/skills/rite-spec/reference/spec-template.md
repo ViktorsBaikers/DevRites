@@ -33,10 +33,15 @@ No implementation detail. True greenfield: `none — no existing behavior in the
 | --- | --- | --- |
 | <outcome that must not regress> | REQ-001 / AC-001 | <current evidence> |
 
-## Users / actors
-| Actor | Need |
-| --- | --- |
-| <actor> | <goal> |
+## Stakeholders and priorities
+| Actor/stakeholder | Observable outcome | Conflict / priority rule |
+| --- | --- | --- |
+| <actor or affected owner> | <goal, protection, or operational need> | <none or how competing goals resolve> |
+
+## Constraints and invariants
+- INV-001: <fact that MUST remain true across success, failure, retry, and recovery>.
+- <security/privacy/accessibility/performance/compatibility/data/operational constraint,
+  or `none — <specific reason>` for a materially relevant category>.
 
 ## Requirements
 - REQ-001: The system MUST <observable product behavior>.
@@ -74,6 +79,24 @@ Bespoke only; generic security/privacy stays in standards. Status:
 | --- | --- | --- | --- |
 | PROH-001 | REQ-002 | resolved/test | <test/evidence link> |
 
+## Failure and recovery behavior
+| Trigger / partial state | User-visible outcome | System state | Recovery / retry rule | Requirement/AC |
+| --- | --- | --- | --- | --- |
+| <timeout, invalid input, interruption, dependency loss> | <clear bounded outcome> | <unchanged/pending/reconciling> | <who/what can safely recover> | <REQ/AC> |
+
+## Applicability map
+Use `applies | not applicable`; a non-applicable row needs a specific reason. The
+status routes Define/Vet/Build/Prove to the named standard without copying it here.
+
+| Concern | Status and trigger | Affected REQ/AC/invariant |
+| --- | --- | --- |
+| Repository topology (nested/mono/multi-repo, languages, services, generated/vendor) | <status + reason> | <ids> |
+| Data integrity (writes, schema/migration, concurrency, tenant, retention/privacy) | <status + reason> | <ids> |
+| Integration reliability (API/webhook/queue/job/cache/cross-service) | <status + reason> | <ids> |
+| Security boundary (authn/authz, hostile input/files, secrets, privilege) | <status + reason> | <ids> |
+| UI/accessibility/i18n/time-zone behavior | <status + reason> | <ids> |
+| Compatibility/delivery (old/new versions, config, flag, rollout/rollback) | <status + reason> | <ids> |
+
 ## Edge cases
 - <Boundary note not captured above.>
 
@@ -106,9 +129,15 @@ Bespoke only; generic security/privacy stays in standards. Status:
 
 ## Readiness gate
 - [ ] No blocking clarification; REQ/AC IDs are valid and ACs independently provable.
+- [ ] Stakeholder conflicts/priority rules, constraints, and invariants are explicit;
+      implementation preferences are not disguised as requirements.
 - [ ] Existing affected behavior maps to preserving REQ/AC + current evidence, or uses the exact justified greenfield `none`.
 - [ ] Edge rows target REQ/AC or justify dismissal; every backstop names independent discriminating evidence, else `unresolved`.
 - [ ] Prohibitions resolve/dismiss; `resolved/test` links evidence.
+- [ ] Each material failure/partial state names user outcome, system state, recovery,
+      and REQ/AC; no silent success or blind retry remains.
+- [ ] Every applicability row is `applies` with affected IDs or has a specific
+      evidence-backed `not applicable` reason.
 - [ ] AI has `ai-spec.md` and UI has `design-brief.md`; out-of-scope work states not applicable.
 - [ ] Non-goals/scope are explicit; capability impact is singular/specific and matches ledger deltas.
 - [ ] Architecture/flows/decisions are linked, not duplicated; Coverage seed names Clarify surfaces.

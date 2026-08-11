@@ -15,8 +15,8 @@ Emit `.devrites/work/<slug>/checklists/<domain>.md` per covered domain; skip
 | `functional.md` | Functional requirements + scenarios: is each capability stated, bounded, testable? |
 | `data-model.md` | Key entities / data model: shapes, fields, lifecycle, relationships (skip if "none"). |
 | `interaction.md` | API / UI impact + UX states: every screen state and contract named (skip if no UI/API). |
-| `non-functional.md` | Constraints, auth / data sensitivity, latency / scale / compatibility budgets, human-only proof prerequisites. |
-| `edge-cases.md` | Empty / boundary / invalid / concurrent / failure paths the requirements imply. |
+| `non-functional.md` | Invariants; security/privacy/accessibility, latency/scale, compatibility, operations, and human-only proof prerequisites. |
+| `edge-cases.md` | Empty/boundary/invalid/concurrent/failure/recovery paths plus the spec's applicability map. |
 
 ## Each item: a question, a verdict, the line it interrogates
 
@@ -46,9 +46,21 @@ Each question checks one requirement-prose failure mode:
   names its empty / error / boundary behaviour.
 - **Clarity:** one entity, one name (no `user`/`customer`/`account` drift); no requirement two
   readers would implement differently; no "should" where "MUST" is meant.
+- **Assumptions:** no material behavior, scope, data, security, or proof fact survives as a
+  hidden assumption; verify it or record an owned/deadlined assumption or blocking question.
 - **Testability:** each acceptance criterion is binary and names (or clearly implies) its evidence.
   A criterion only provable by reading code is a fail.
 - **Consistency:** no requirement contradicts another, the data model, or a non-goal.
+- **Stakeholders:** affected actors/operators are named; conflicting outcomes have an
+  explicit priority or decision owner rather than two simultaneously impossible promises.
+- **Applicability:** topology, data, integration, security, UI/i18n/time zone, and
+  compatibility/delivery rows are `applies` with IDs or specifically justified `not applicable`.
+- **Failure/recovery:** each partial, timeout, invalid, interrupted, or unavailable state
+  implied by an applicable row has a user outcome, system state, and safe retry/recovery rule.
+- **Data:** schema/backfill/concurrency/tenant/retention implications state invariants and
+  prohibited loss/leakage; implementation detail stays for Define.
+- **Integration:** timeout, invalid/partial response, auth/rate-limit/outage, duplicate,
+  ordering, and version-change behavior is specified when the boundary can produce it.
 - **Preservation:** each material brownfield outcome appears in `Existing behavior
   to preserve` with preserving REQ/AC and current evidence. Missing/vague “no
   regressions” or unjustified `none` is CRITICAL.

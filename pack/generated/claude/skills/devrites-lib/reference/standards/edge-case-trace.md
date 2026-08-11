@@ -1,19 +1,79 @@
 # Edge-case trace
 
-Use this when a diff changes branching logic, boundaries, validation, deletion, or a claim that a path is safe.
+Use this when requirements, plans, diffs, or proof change a boundary, branch,
+validation rule, deletion contract, retryable action, or claim that a path is safe.
+The trace finds relevant cases, records why irrelevant ones were dismissed, and prevents
+confidence from turning an untested negative claim into a pass.
 
-## Trace
+## Scope before enumeration
 
-1. **Scope the changed surface.** Name the changed function/API/state/config and the nearest observable caller.
-2. **Enumerate explicit paths.** Walk each `if`/`switch`/loop/error branch and boundary value the changed surface handles.
-3. **Enumerate fixed-set siblings.** If the change special-cases members of a known set (enum values, statuses, sentinels, flags, roles, modes) list the untouched siblings too. A handled `pending`/`failed` branch makes `success` an implicit branch to check.
-4. **Check deletion contracts.** For removed or replaced code, name the behavior or contract it carried and where the diff re-establishes it. If it was intentionally retired, cite the spec/decision that retires it.
-5. **Report only reachable gaps.** A finding needs `file:line`, trigger condition, missing guard/handling, and concrete consequence. If the path is already handled, drop it silently.
+Name the observable surface, caller/actor, state or data it owns, external boundaries,
+and the must-NOT outcome the author would reject even if the happy path worked. Do not
+expand into a whole-system checklist: a class applies only when the changed surface can
+reach it.
 
-## Output shape
+## Closed probe classes
+
+Probe each relevant class once:
+
+| Class | Questions |
+| --- | --- |
+| Boundary | Empty/missing, minimum/maximum, off-by-one, oversized, invalid encoding/shape. |
+| State | Initial, repeated, stale, terminal, illegal transition, interruption and resume. |
+| Ordering | Duplicate, out-of-order, retry, partial completion, clock/time-zone boundary. |
+| Concurrency | Competing writer, lost update, cancellation, race, deadlock or resource exhaustion. |
+| Authority | Unauthenticated, unauthorized, wrong tenant, forged identity, privilege increase. |
+| Dependency | Timeout, partial/invalid response, rate limit, outage, version/config mismatch. |
+| Persistence | Transaction split, crash, migration/backfill restart, rollback, retention/deletion. |
+| Compatibility | Old/new reader or writer, caller not updated, feature-flag off/on, environment difference. |
+| Wiring | Code exists but is not registered, called, awaited, persisted, emitted, or consumed with real data. |
+| Removal | Deleted behavior, caller, data, telemetry, docs, or fallback has no surviving owner. |
+
+Route detailed applicable cases to
+[`repository-topology.md`](repository-topology.md),
+[`data-integrity.md`](data-integrity.md),
+[`integration-reliability.md`](integration-reliability.md), or
+[`security.md`](security.md); do not repeat those standards here.
+
+## Trace procedure
+
+1. **Walk explicit paths.** Follow every changed condition, loop exit, error, and
+   boundary value to the nearest observable outcome.
+2. **Walk fixed-set siblings.** A special case for one enum/status/role/mode implies
+   every untouched sibling is a path to check.
+3. **Follow real wiring.** Verify existence, substance, registration/call path, and
+   real data flow. A complete-looking implementation can still be hollow, orphaned,
+   or a stub.
+4. **Check negative intent.** Ask what silently permitted outcome would violate a
+   requirement, invariant, non-goal, or security boundary. Add a prohibition only
+   when bespoke intent is not already owned by a standard.
+5. **Check removal.** Name the contract removed code carried and its surviving owner,
+   or cite the accepted decision that retires it.
+
+## Disposition and evidence
+
+Every applicable case receives one status:
+
+- `covered`: mapped to a REQ/AC and positive discriminating test or observed runtime proof;
+- `backstop`: an independent held-out, property/metamorphic, or direct behavioral check
+  names the wrong outcome it would detect;
+- `dismissed`: unreachable or irrelevant with a concrete reason and supporting evidence;
+- `unresolved`: a material case lacks a fact or proof surface and blocks the owning gate.
+
+Judgment may dismiss a demonstrably irrelevant case; it cannot prove behavior. When a
+case is not inferable from available evidence, say `unresolved`/`cannot_verify` rather
+than estimating confidence upward.
+
+## Outputs
+
+Spec records relevant cases in **Edge Coverage** and bespoke negative intent in
+**Prohibitions**. Plan/Vet maps applicable cases to a slice, recovery, and proof. Review
+reports only reachable gaps:
 
 ```md
-[Important] path:line — <trigger> reaches <unhandled path>; add <minimal guard/handling>. Consequence: <what breaks>.
+[Important] path:line — <trigger> reaches <unhandled outcome>; consequence:
+<observable harm>. Required correction: <minimal handling>. Missing proof: <test/signal>.
 ```
 
-Use the caller's severity scale. Do not create a separate edge-case score.
+Use the caller's severity scale. Do not create a separate edge score, pad rows with
+irrelevant classes, or report a case already handled and proven.

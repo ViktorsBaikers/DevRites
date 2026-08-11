@@ -23,6 +23,10 @@ slices in dependency order. Map every REQ and AC to a slice and executable proof
 name rollback and failure paths; keep acceptance-changing proposals separate. Durable
 proof commands must be portable repository commands, never host-local wrappers,
 user-specific absolute paths, or temporary proof trees.
+Reconcile `spec.md`'s applicability map against live evidence. When triggered, apply
+`repository-topology.md`, `data-integrity.md`, or `integration-reliability.md` and include
+its required plan output with owner, partial-failure/recovery path, deployment order, slice,
+and proof. Do not copy a standard or turn a false `not applicable` into a planning shortcut.
 For every consumptive action, apply `one-shot-actions.md`: draft a durable bounded
 artifact, a finite injective map from every failure emit seam to a stable non-secret
 boundary ID and offline decision, per-seam fault fixtures, cleanup-survival proof,
@@ -63,6 +67,7 @@ dependency_order: []
 technical_decisions: []
 human_owned_choices: []
 validation_commands: []
+applicability_disposition: []
 ```
 
 The root validates the cross-file bundle and persists accepted content.

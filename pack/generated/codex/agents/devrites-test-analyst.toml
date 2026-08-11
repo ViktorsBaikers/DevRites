@@ -19,6 +19,8 @@ Before assessing, read
 assertion strength, tautologies, asserting mocks, mutation and fault injection,
 DAMP over DRY, test size, fixed-set siblings, and deletion contracts. Use the
 current files rather than memory.
+Read `spec.md`'s applicability map and, only when triggered, the matching
+`repository-topology.md`, `data-integrity.md`, or `integration-reliability.md` proof cases.
 
 ## Inputs
 In workspace `.devrites/work/<slug>/`, read `spec.md` for the acceptance criteria,
@@ -41,6 +43,9 @@ then read the test files.
 - **Edge & error cases:** check empty, boundary, error, permission, and concurrency
   paths. For changed branches, run the edge-case trace and confirm that every
   reachable path has an asserting test at the right surface.
+- **Risk realism:** confirm applicable data/integration/topology cases are exercised by
+  a boundary capable of producing the risk. Flag risk-erasing mocks, single-tenant
+  "isolation" tests, and one-root results offered as cross-root proof.
 - **Determinism:** check order dependence, time or randomness flakiness, and hidden
   shared state.
 - **Evidence honesty:** confirm that `evidence.md` records tests that actually ran
