@@ -1,141 +1,136 @@
 # `plan.md` template
 
-Write **how** to build what `spec.md` defines. Use `/rite-plan` when evidence requires
-an update. Technology choices belong here, not in the spec.
+Build plan for `spec.md`; tech choices live here, not in spec. `/rite-plan` revises on
+new evidence.
 
 ```markdown
 # Plan: <Feature>
 Spec: ./spec.md   Decision coverage: ./decision-coverage.md   Date: <date>
 
 ## Summary
-1–2 sentences: the primary requirement + the chosen approach.
+<primary requirement + chosen approach, 1–2 sentences>
 
 ## Technical context
-- Language / runtime + version: <e.g. TypeScript 5, Node 20>
-- Frameworks / libraries in play: <...>
-- Storage / data: <...>
-- Testing tools + commands: <from spec "Commands discovered">
-- Target / platform / constraints: <...>
-- Any product/constraint unknown that affects the approach routes to `/rite-clarify`;
-  do not carry `[NEEDS CLARIFICATION]` into an approvable plan.
+- Language/runtime/version: <...>
+- Frameworks/libraries: <...>
+- Storage/data: <...>
+- Test commands: <from spec Commands discovered>
+- Target/platform/constraints: <...>
+- Approach-affecting product/constraint unknowns route to `/rite-clarify`;
+  `[NEEDS CLARIFICATION]` blocks approval.
 
 ## Applicability and system ownership
 
-Copy each `spec.md` applicability decision by meaning, then validate it against live
-repository evidence. For every `applies` row, load the named owner and include its
-**Required plan output** here or in a linked architecture section:
+Validate `spec.md` applicability against live evidence. Each `applies` row includes its
+owner's **Required plan output** here or in architecture:
 
-- repository topology → `repository-topology.md` root/deployable/owner table;
-- durable data/migration/tenant/retention → `data-integrity.md` invariant/recovery table;
-- APIs/webhooks/queues/jobs/caches/services → `integration-reliability.md` boundary table;
-- security/UI/delivery → their existing focused standard and proof owner.
+- topology → root/deployable/owner table;
+- data/migration/tenant/retention → invariant/recovery table;
+- API/webhook/queue/job/cache/service → boundary table;
+- security/UI/delivery → focused standard + proof owner.
 
-Do not copy the standards. Record the feature-specific owner, failure/recovery decision,
-slice, and evidence. A changed `not applicable` decision returns through Spec Drift Guard.
+Record feature owner, failure/recovery, slice, and evidence. Changed `not applicable`
+uses Spec Drift Guard.
 
 ## Global constraints
-Project-wide requirements from the spec that every slice implicitly includes — version
-floors, dependency limits, naming/copy rules, platform requirements. One line each, exact
-values **verbatim from spec.md** (a paraphrased constraint drifts by the time slice 4 builds).
+Exact `spec.md` requirements inherited by every slice.
 
 ## Approach
-The strategy in a few sentences. Why this over the alternatives considered.
-For high-cost/hard-to-reverse boundaries, models, contracts, or dependencies compare ≥2
-viable `Option · Drivers · Trade-offs · Consequence`; skip theater for routine choices.
+State strategy and rationale. For costly/hard-to-reverse boundaries, models, contracts,
+or dependencies compare ≥2 `Option · Drivers · Trade-offs · Consequence`.
 
 ## Slice strategy
-How the feature is split into vertical `SLICE-###` increments, why the order is
-risk-first within dependency tiers, and which acceptance criteria each slice covers. For a
-wide mechanical refactor, use expand → migrate batches → contract; keep every migrate batch
-green, or name the integration branch + final verify slice.
+List vertical `SLICE-###` increments, AC coverage, and risk-first order within dependency
+tiers. Wide refactors use expand → green migrate batches → contract, or an integration
+branch + final verify slice.
 
 ## Architecture decisions
-Key decisions + rationale (mirror into decisions.md). New pattern vs reuse — prefer
-reuse of existing project conventions. Record architecture as invariants, not scaffolding:
-include a decision only when slices could choose incompatibly. Medium+ decisions include
-`Binds:` and `Prevents:`. Cross-boundary interfaces name invariants, I/O, ordering/idempotency,
-errors, versioning, config, and relevant budgets.
+Decisions + rationale (mirror to `decisions.md`). Prefer reuse and invariants over
+scaffolding. Medium+ entries add `Binds:`/`Prevents:`. Interfaces name invariants, I/O,
+ordering/idempotency, errors, versioning, config, and budgets.
+
+## Decision horizons
+
+Classify every known unresolved/action item. Keep `HZN-###` across replans; never delete
+silently. Resolution/supersession needs evidence.
+
+| Horizon | Includes | Required disposition |
+|---|---|---|
+| Human-owned blocker | Product, acceptance, policy, irreversible risk | `/rite-clarify`; unresolved blocks approval/readiness. |
+| Planning-owned | Architecture, boundary, dependency, sequence, proof | Resolve from source. If executable evidence is necessary, plan a bounded risk spike with discriminating criteria + fallback branches. |
+| Implementation-local | Reversible detail unknowable before code/tests: exact helper name, final query shape after live evidence, or a refactor that may disappear | Owner slice + observable trigger + bounds/fallback + resolution proof; never “ask later.” |
+| Action-time checkpoint | Approval/evidence mandatory when acting | Owner + gate/signal + bounds/fallback + proof; cannot hide an earlier decision. |
+
+Never local: public contracts, security/data invariants, acceptance, migration/rollback,
+dependency choice, cross-slice interfaces. Output per item: `HZN-### · item · horizon ·
+owner/slice · evidence · trigger/checkpoint · bounds/fallback/branches · resolution proof ·
+status`. Only a complete sweep may write `Decision horizons: none — <evidence>`.
 
 ## Shared contract proof
-When this feature changes an API, event, schema, or other provider/consumer boundary,
-include exactly one table and omit the no-impact statement:
+Changed provider/consumer boundary: one table:
 
 | Boundary | Canonical contract artifact | Provider-side asserting test | Consumer-side asserting test |
 |---|---|---|---|
 | <provider → consumer surface> | <existing schema/type/fixture path> | <test path + assertion> | <test path + assertion> |
 
-Both tests must consume the same artifact. Reuse an existing canonical schema, type, or
-fixture when one exists; do not create one for ceremony. If no provider/consumer boundary
-changes, omit the table and write exactly:
+Tests consume the same artifact. Reuse an existing canonical artifact; no ceremony-only
+artifact. Without boundary change write exactly:
 
 Shared contract impact: none — <specific justification>
 
 ## Dependency graph
-What must exist before what (text is fine):
-- SLICE-001 (no deps) → SLICE-002 (needs SLICE-001) → SLICE-004 (needs SLICE-002, SLICE-003)
-- SLICE-003 (independent / parallelizable)
-
-Include non-code prerequisites and deployable units: contract/schema/config → old/new
-application/worker → migration/backfill → flag/exposure → contract removal. Name shared
-mutable resources that force serialization even when slice files differ.
+List slice prerequisites, non-code prerequisites, and deployable order:
+contract/schema/config → old/new app/worker → migration/backfill → exposure → removal.
+Name shared mutable resources that force serialization.
 
 ## Implementation order
-Ordered slice list + the reason for the order (risk-first within a dependency tier).
-`MVP cut: after SLICE-00N — <what ships if we stop here>` — the earliest prefix of the order
-that is a coherent, shippable feature on its own. This is the pre-agreed retreat position when
-the feature stalls or `/rite-plan` pivots: every acceptance criterion above the cut is proven by
-slices above the cut, and no slice above it depends on one below.
+Ordered slices + rationale (risk-first within dependency tiers).
+`MVP cut: after SLICE-00N — <what ships if we stop here>` — the earliest coherent,
+shippable prefix. Every acceptance criterion above it is proven there, with no dependency
+below it.
 
 ## Validation strategy
-After which slices to run tests / build / browser proof. For UI slices, name the visual
-acceptance targets from `design-brief.md`, not a generic "looks good" check.
-Each proof names exact command/cwd/signal, prerequisites, and mutable provenance inputs.
-Use portable repository commands; runtime wrappers and local absolute/temp paths do not
-belong in a durable plan.
+Name test/build/browser proof points. UI uses `design-brief.md` targets. Each proof names
+portable command/cwd/signal, prerequisites, and mutable provenance inputs.
 
-**Key links** — the wiring the assembled feature must exhibit, one row each:
-`<from> → <to> via <mechanism>` (route → handler via registration; producer → consumer via
-event). List only cross-slice links whose absence no single
-slice's tests would catch — `/rite-prove` walks each (step 5d). `Key links: none` is a
-deliberate single-slice call.
+**Key links** — assembled wiring, one row each:
+`<from> → <to> via <mechanism>`. List wiring no slice test catches; `/rite-prove` walks it.
+`Key links: none` is deliberate.
 
 ## Complexity & deviations gate
-List anything that deviates from DevRites defaults (prefer existing conventions, the
-simplest approach, feature scope only, no new deps/design system) and **justify it**.
-If you can't justify a deviation, simplify instead of recording it.
+Justify deviations from reuse, simplicity, scope, dependency/design-system rules;
+otherwise simplify.
 | Deviation | Why needed | Simpler option rejected because |
 |-----------|-----------|---------------------------------|
 | <e.g. new dependency X> | <reason> | <why the in-repo option won't work> |
 
 ## Rollback
-How to back out each risky step (migration down, feature flag, revert boundary, backup).
+Risky-step backout: migration/flag/revert/backup.
 
 ## Scope boundaries
-What this plan will NOT touch. Restate "Ask first" / "Never do" from the spec.
+Untouched scope; copy spec “Ask first”/“Never do.”
 
 ## Source docs needed
-Framework/library docs to consult (triggers devrites-source-driven). Record URLs in
-decisions.md / evidence.md when used.
+Framework/library sources (triggers source-driven).
 
 ## Readiness gate  *(must pass before /rite-build)*
 - [ ] `decision-coverage.md` says `Decision coverage: CLEAR`
-- [ ] Every spec acceptance criterion is covered by a slice
-- [ ] Dependency order is acyclic and risk-first
-- [ ] Applicability matches the spec and live topology; every applicable standard's
-      required plan output names owner, failure/recovery, slice, and proof
-- [ ] An `MVP cut` is named, self-contained (ACs above the cut proven above the cut, no dependency reaching below), and marks a genuinely shippable scope
-- [ ] No unjustified deviation remains in the complexity gate
-- [ ] Rollback exists for every destructive / migration step
-- [ ] Every `Mode: HITL` slice has `Gate`, `SLA`, and `Checkpoint` populated
-- [ ] Human-owned choices are resolved; surviving checkpoints need unavailable pre-code
-      evidence or action-time approval
-- [ ] Slice proof commands, cwd, prerequisites, and provenance inputs are portable and preflightable
-- [ ] Every UI slice names `Design brief states` and binary `Visual acceptance`
-- [ ] `Key links` rows cover every cross-slice wiring (or state `none`)
-- [ ] Cross-boundary contracts name producer, consumer, invariants/errors/order, and proof
-- [ ] Deployment/config/schema/application/worker/flag order is safe at every intermediate
-      old/new combination, or is specifically not applicable
-- [ ] `Shared contract proof` contains one complete, consuming provider/consumer table, or one specific no-impact statement
-- [ ] Any wide mechanical refactor is sliced expand → migrate batches → contract, with green migrate batches or an integration branch + final verify slice
-- [ ] No `Gate: blocking` slice is implicitly chained behind an AFK slice without surfacing the dependency
+- [ ] Every AC maps to a slice
+- [ ] Dependencies are acyclic/risk-first
+- [ ] Applicability matches live evidence; outputs name owner, recovery, slice, proof
+- [ ] `MVP cut` is shippable/self-contained: ACs proven, no dependency below
+- [ ] Deviations are justified
+- [ ] Destructive/migration steps have rollback
+- [ ] Each `Mode: HITL` slice has `Gate`, `SLA`, `Checkpoint`
+- [ ] Human choices resolved; checkpoints need unavailable pre-code evidence/action approval
+- [ ] All horizon items remain; blockers/planning items resolved or validly spiked;
+      local/checkpoint register fields fully populated
+- [ ] Proof command/cwd/prereqs/provenance portable + preflightable
+- [ ] UI slices name `Design brief states` + binary `Visual acceptance`
+- [ ] `Key links` cover cross-slice wiring (or `none`)
+- [ ] Contracts name producer, consumer, invariants/errors/order, proof
+- [ ] Deploy/config/schema/app/worker/flag order is safe across old/new or N/A
+- [ ] `Shared contract proof` has one consuming table or specific no-impact
+- [ ] Wide refactor is expand → green migrate batches → contract, or branch + final verify
+- [ ] No hidden `Gate: blocking` dependency behind an AFK slice
 ```

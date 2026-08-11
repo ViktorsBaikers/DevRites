@@ -1,35 +1,34 @@
 # Documentation
 
-Write the documentation that saves the next person time: no more, no less.
-
-## Explain why, keep it current
-- Document **intent and decisions**, not a restatement of the code. The *why* is what
-  can't be recovered from reading the source.
-- Out-of-date docs are worse than none. Update docs in the same change that changes the
-  behavior; stale docs erode trust in all docs.
+Document intent/decisions; public inputs, outputs, errors, and gotchas; non-obvious
+constraints; and real build/test/run commands. Update with behavior; prefer one runnable
+example. Do not restate code or types.
 
 ## Record decisions
-- Capture significant choices and their rationale (an ADR-style note: context, decision,
-  consequences). Future readers need to know *why this and not the obvious alternative*.
-  DevRites records these in `decisions.md`.
-- Note the trade-off you accepted and what would change the decision.
-- **The rejected alternatives are the highest-value part.** Anyone can read the decision from the
-  code; only the ADR records the options you weighed and *why each lost*. List them with the reason
-  each was rejected, or the note answers nothing the source doesn't already show.
-- **An ADR has a lifecycle:** `PROPOSED → ACCEPTED → SUPERSEDED / DEPRECATED`. When a decision
-  changes, write a **new** ADR that references and supersedes the old one: never edit or delete the
-  original, or you erase the record of why the project once chose differently.
 
-## What to document
-- **Public surfaces**: APIs, module boundaries, and config: inputs, outputs, errors,
-  and gotchas. Writing the contract down is the first test of the design: documenting a public
-  interface surfaces its rough edges before the code sets around them.
-- **READMEs that run**: setup, the real commands to build/test/run, and how to
-  get a working environment. Keep examples copy-pasteable and correct.
-- **Non-obvious constraints**: invariants, ordering requirements, "do not call X before
-  Y", and known limitations.
+- Capture significant context, decision, consequences, accepted trade-off, change trigger,
+  and why viable alternatives lost. DevRites uses `decisions.md` for feature decisions.
+- ADRs move `PROPOSED → ACCEPTED → SUPERSEDED / DEPRECATED`. Preserve accepted history;
+  a replacement ADR cites and supersedes the old one rather than rewriting it.
 
-## Keep it lean
-- Don't document the obvious or duplicate what the type signatures already say.
-- Prefer one good example over three paragraphs of prose.
-- Put long reference material where it's loaded on demand, not inline everywhere.
+## Promote durable guidance
+
+Promotion is maintenance of an existing authority, not a new memory system.
+
+1. **Trigger:** the same reviewed correction appears in at least two distinct features, or
+   one explicit product/architecture decision has durable rationale. A one-off, generic,
+   stale, or merely inferred observation does not trigger promotion.
+2. **Ground:** verify each current claim against live authoritative repository sources.
+   Report the source and currentness signal. Unverifiable means `unknown`, not false.
+3. **Scope:** state when the guidance applies and does not apply. Reject a candidate whose
+   observable trigger cannot be named.
+4. **Own and expose:** choose one existing canonical owner (`AGENTS.md`/`CLAUDE.md`, a scoped
+   standard, or an ADR) and name the phases, agents, or contributors that discover it and
+   how (direct read, index link, or existing on-demand route).
+5. **Reconcile:** search current guidance for duplicates, contradictions, and supersession.
+   Update, narrow, replace, or retire contradicted guidance at its owner; do not append a
+   competing rule. Record the conflict/retirement disposition.
+6. **Approve:** show evidence and the exact durable edit before writing; user approval is
+   required. Never create a learning ledger, index, queue, score, or parallel authority.
+
+Long reference material stays behind its existing on-demand route.

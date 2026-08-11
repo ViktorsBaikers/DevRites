@@ -8,51 +8,47 @@ disable-model-invocation: true
 
 # $rite-learn: review durable lessons
 
-Use native session memory and reviewed project Markdown instead of an engine
-miner, score, nudge, or convention registry. This command proposes durable
-guidance; it never turns an inferred pattern into a rule on its own.
+Use reviewed Markdown/native memory, not miners or registries. This proposes maintenance
+of one authority; it cannot promote a rule alone.
 
 ## Modes
 
 - `$rite-learn` reviews recurring evidence across shipped work.
-- `$rite-learn "<lesson>"` evaluates one proposed lesson or rejected direction.
+- `$rite-learn "<lesson>"` evaluates one lesson or rejected direction.
 
 ## Workflow
 
-1. Read the applicable `AGENTS.md` or `CLAUDE.md`, accepted ADRs, and relevant
-   `.devrites/archive/*/{decisions,drift,review,seal}.md` files. Use native host
-   memory or session history when available, but verify every durable claim
-   against repository evidence.
-2. For a broad review, ask the exact `devrites-retrospector` agent to inspect the
-   bounded archive in a fresh read-only context. Wait for its result and
-   reconcile it against the cited files.
-3. Keep a candidate only when it is specific and supported by either:
-   - the same correction in at least two distinct features; or
-   - one explicit, durable product/architecture decision with its rationale.
-4. Choose the smallest authoritative home:
-   - `AGENTS.md`, `CLAUDE.md`, or a scoped standards document for an operating
-     rule;
-   - an ADR for a significant durable architecture decision;
-   - the active feature's `decisions.md` for a feature-scoped decision;
-   - no change for a one-off, stale, or generic observation.
-5. Show the evidence and exact proposed edit. Apply it only after the user
-   approves the durable rule or decision.
+1. Read [durable promotion](../devrites-lib/reference/standards/documentation.md#promote-durable-guidance).
+   Bound the archive; inspect applicable
+   `AGENTS.md`/`CLAUDE.md`, accepted ADRs, and relevant
+   `.devrites/archive/*/{decisions,drift,review,seal}.md` files.
+2. In broad mode, dispatch exact `devrites-retrospector` fresh/read-only; reconcile its
+   claims against cited files.
+3. Keep a correction repeated in two features or one explicit durable product/architecture
+   decision with rationale. Drop one-off, generic, or stale items.
+4. Verify claims against live authoritative repository sources. State the currentness signal,
+   applies/does-not-apply scope, and `unknown` where unverifiable.
+5. Search guidance for the same/contrary rule. Choose one existing canonical owner: nearest
+   instruction/standard, architecture ADR, or feature `decisions.md`; name discovery.
+6. Show the exact edit and duplicate/conflict/supersession disposition. Update, narrow,
+   replace, or retire contradictions; apply only after user approval of the exact edits.
 
 ## Rules
 
-- Live repository evidence outranks memory.
-- Do not maintain a parallel learning ledger, convention score, health score,
-  timeline, fingerprint index, or promotion queue.
-- Do not duplicate guidance already stated by a higher or nearer authority.
-- A rejected direction returns only when new evidence changes its recorded
-  rationale.
+- Live repository evidence outranks memory; unverifiable is unknown, not false.
+- Never create a learning ledger/index/queue, score, timeline, or parallel authority.
+- Rejected directions return only when evidence changes their rationale.
 
 ## Output
 
 ```text
 Done: reviewed <scope>.
-Candidates: <specific proposals or none>.
-Evidence: <feature/file references>.
-Awaiting: <approval for exact edits | none>.
-Next: <single action>.
+Candidate: <specific proposal or none>
+Currentness: <live source + signal | unknown>
+Scope: applies <trigger>; does not apply <boundary>
+Authority: existing <path|none>; canonical <path>; consumers/discovery <route>
+Disposition: <no conflict | update/narrow/replace/retire path + reason>
+Evidence: <feature/file references>
+Awaiting: <approval for exact edits | none>
+Next: <single action>
 ```
