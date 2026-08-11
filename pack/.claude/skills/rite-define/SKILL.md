@@ -7,11 +7,9 @@ user-invocable: true
 
 # /rite-define: plan from the spec
 
-Turn the active feature's `spec.md` into a buildable workspace with architecture, an
-implementation approach, dependency-ordered **vertical slices**, traceability, and a
-state cursor. The spec defines what and why; this phase defines how. Keep spec,
-architecture, plan, tasks, and traceability in their phase-owned files. **Do not write
-code here.**
+Turn `spec.md` into architecture, approach, dependency-ordered **vertical slices**,
+traceability, and a state cursor. Spec owns what/why; Define owns how in phase-owned
+artifacts. **Do not write code.**
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 Pull these via `Read` when shaping the plan:
@@ -23,33 +21,27 @@ Pull these via `Read` when shaping the plan:
 - `../workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers.
 
 ## Operating rules
-- **Requires a readied spec.** Read the active workspace first; if `.devrites/ACTIVE` is empty,
-  the workspace has no `spec.md`, its readiness gate hasn't passed, or any spec-quality
-  `checklists/<domain>.md` has an open CRITICAL → **STOP** and tell the user to run
-  `/rite-spec <feature>` first. A missing or non-`CLEAR` `decision-coverage.md` routes to
-  `/rite-clarify`. **DO NOT plan from a missing, unreadied, or unclarified spec.**
-- Apply `afk-hitl.md` decision ownership. Prefer conventions; source-check new dependencies or
-  design systems, asking only about licensing/cost/security or explicit policy.
-- **Author one section at a time.** Write `architecture.md` and `plan.md` section by
-  section, pausing after each. For an open design choice or uncertain estimate, use a
-  relevant technique from
+- **Requires a readied spec.** Missing active workspace/spec/readiness, or an open CRITICAL
+  spec checklist, stops to `/rite-spec <feature>`. Missing/non-`CLEAR`
+  `decision-coverage.md` routes to `/rite-clarify`. Never plan unready/unclarified work.
+- Apply `afk-hitl.md` ownership. Prefer conventions; source-check new dependencies/design
+  systems, asking only about licensing, cost, security, or policy.
+- **Author one section at a time.** Pause after each `architecture.md`/`plan.md` section.
+  For an open design choice or uncertain estimate, use
   [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) (Tournament for two viable
-  designs, Delphi for the estimate) before it hardens into slices.
+  designs, Delphi for estimates) before slicing.
 - **Derive the slice count from the work.**
-  One per independently-shippable increment, sized by `slicing.md`, every acceptance
-  criterion mapped to ≥1 slice. A user-named count is a hint at most: slice logically and,
-  if your honest count differs, present it and why. Never pad or compress to hit a figure.
-  (`.devrites/AFK` `max_slices` is a separate AFK iteration budget, not the decomposition.)
-- **Complexity does not shrink accepted scope.** Split/reorder for context, size,
-  or dependencies; MUST NOT drop/defer approved REQ/AC. Reduction requires Spec
-  Drift Guard + recorded human decision; hard/large is a decomposition signal.
-- **Wide mechanical refactors slice expand → migrate → contract.** If one repeated change
-  crosses many files, don't fake vertical slices. Add a compatibility/adapter slice, migrate
-  small green batches, then remove the old path. If a batch cannot stay green, use an
-  integration branch plus a final verify slice.
+  One per independently-shippable increment, sized by `slicing.md`; map every acceptance
+  criterion. User counts are hints: explain honest differences, never pad/compress.
+  `.devrites/AFK` `max_slices` is an iteration budget, not decomposition.
+- **Complexity does not shrink scope.** Split/reorder; never drop/defer approved REQ/AC.
+  Reduction needs Drift Guard + human decision; hard/large means decompose.
+- **Wide refactors use expand → migrate → contract.** Add compatibility, migrate green
+  batches, then remove the old path; if batches cannot stay green, use an integration branch
+  plus final verify.
 - **Root writes; drafter proposes.** Use the native bounded fresh-context contract in
-  [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns architecture
-  decisions, human questions, approval, and every canonical artifact write.
+  [`agents.md`](../devrites-lib/reference/standards/agents.md). Root owns decisions,
+  questions, approval, and canonical writes.
 
 ## Workflow
 0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`:** the always-on operating rules and anti-rationalizations.
@@ -73,18 +65,15 @@ Pull these via `Read` when shaping the plan:
    shortcut.
 1a. **Draft from fresh context.** Freeze the planning inputs and dispatch
    `devrites-plan-drafter` in `define` mode for one atomic candidate bundle:
-   `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md`, including proof mapping.
-   Wait for and validate its bounded result. The drafter does not write or ask; any human-owned
-   choice returns to this root context.
-2. **Reconcile and decide the architecture + approach** (the HOW the spec deliberately
-   omitted). Validate the candidate against live seams and the following rules; the root writes
-   accepted content at step 6. Shape
+   `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` with proof mapping.
+   Validate its bounded result; it does not write/ask, and returns human choices to root.
+2. **Reconcile architecture + approach** against live seams; root writes accepted content
+   at step 6. Shape
    `architecture.md` for owning layer, boundaries, integration points, data/API/events,
    dependencies, risks, and affected areas; write only the build strategy in `plan.md`.
-   Use a
-   code-intelligence index if available (see
-   `.claude/skills/devrites-lib/reference/standards/tooling.md`) for structure/impact; for the current API or behaviour of
-   an external library/framework the architecture will rely on, consult context7 if available.
+   Use a code index for structure/impact (see
+   [`tooling.md`](../devrites-lib/reference/standards/tooling.md)); source-check current external
+   library/framework behavior, using context7 when available.
    Record significant options as `DEC-###`. For high-cost/hard-to-reverse boundaries, data
    models, public contracts, or dependencies, compare ≥2 viable approaches by drivers,
    trade-offs, and consequences. Specify cross-boundary interfaces for independent work:
@@ -97,17 +86,17 @@ Pull these via `Read` when shaping the plan:
    `Shared contract proof` table with one reused contract artifact and provider- and
    consumer-side asserting tests that both consume it. Otherwise record the exact justified
    no-impact statement. Missing, one-sided, duplicated-contract, vague, or non-consuming proof blocks.
-   **Deep-module check:** while sketching the major modules, look for opportunities
-   to extract a **deep module**: a small, stable interface that hides a meaningful chunk
-   of behavior and is independently testable. A *shallow* module whose interface is
-   nearly as complex as its implementation adds no value; deepen it or delete
-   it. Put independently testable deep-module behavior in the slice's `Tests/proof`;
-   `/rite-vet` confirms the level.
-2a. **Foreseeable-decision sweep.** Inspect questions, assumptions, architecture, dependencies,
-   proof prerequisites, and proposed checkpoints. Search facts and decide reversible technical
-   calls. New product/acceptance/policy/irreversible-risk gaps return to `/rite-clarify`; a build
-   checkpoint survives only for unavailable pre-code evidence or mandatory action-time approval.
-   **Completion:** no known implementation choice is postponed for build to ask later.
+   **Deep-module check:** prefer small, stable interfaces hiding meaningful, testable
+   behavior. Deepen/delete shallow modules whose interface matches implementation
+   complexity. Put their independent behavior in `Tests/proof`; `/rite-vet` confirms.
+2a. **Decision-horizon sweep.** Apply `reference/plan-template.md`'s classification to every
+   question, assumption, architecture/dependency/proof choice, and checkpoint. Resolve
+   planning items from source; only necessary executable evidence warrants a risk spike with
+   discriminating criteria/fallback branches. Human blockers route to `/rite-clarify`.
+   Implementation-local deferral needs owner slice, observable trigger, bounds/fallback,
+   and resolution proof; action checkpoints name their signal. Preserve entries until
+   evidence resolves/supersedes them. **Completion:** no blocker or unowned/unsupported
+   deferral; deferral is not “ask later.”
 3. **Create vertical tasks:** each delivers one independently verifiable, observable
    capability end to end; first is the thinnest useful path, ordered by dependency then
    risk. Apply the slice-count and broad-refactor rules above plus
@@ -151,10 +140,11 @@ Pull these via `Read` when shaping the plan:
    buildable AC/REQ maps to an existing slice/proof, every slice maps to real
    acceptance, and names/prose agree. Missing, duplicate, contradictory, or
    meaning-changing mappings block.
-7. **Readiness gate** (plan-template): require CLEAR coverage, complete acceptance and
-   cross-slice wiring/proof, complete `Shared contract proof`, risk-first acyclic order,
-   justified deviations, applicable topology/data/integration outputs, rollback, and a
-   closed decision sweep. **Stop and confirm** before code. Render the review-before-code
+7. **Readiness gate** (`plan-template.md`): require CLEAR coverage; complete acceptance,
+   wiring, shared-contract proof, applicable outputs, and rollback; risk-first acyclic order;
+   justified deviations; and every horizon item present, with blockers resolved, planning
+   items resolved/validly spiked, and local/action entries bounded and owned.
+   **Stop and confirm** before code. Render the review-before-code
    digest first: `Intent` (one sentence from the spec), `Done means` (acceptance coverage x/y),
    `Plan sanity` (slice count + riskiest boundary/gate), `Expected build interruptions`
    (`none` or only justified action-time gates), and `Build exactly this?` (yes → approve;

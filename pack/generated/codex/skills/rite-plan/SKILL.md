@@ -7,10 +7,9 @@ user-invocable: true
 
 # $rite-plan: (re)plan an active feature
 
-Update an existing plan when implementation evidence, drift, or a user decision makes it
-wrong. **Read the active workspace first.** If `.devrites/ACTIVE` is empty or its workspace
-is missing, stop and tell the
-user to run `$rite-spec <feature>`. **Revise mode is artifact-only**: reconcile
+Update a plan invalidated by evidence, drift, or user decision. **Read the active workspace
+first.** Missing `.devrites/ACTIVE`/workspace stops to `$rite-spec <feature>`. **Revise is
+artifact-only**: reconcile
 `spec.md` / `architecture.md` / `plan.md` / `tasks.md` / `traceability.md` without
 editing source code.
 
@@ -21,22 +20,20 @@ when the spec applicability map or observed drift triggers them.
 
 ## Operating rules
 - Update the spec when needed, but never plan around a known-wrong assumption.
-- If a change alters product behavior, scope, architecture, data model, UX, security,
-  or migration risk → search facts first, then route the human-owned contract decision
-  through `$rite-clarify` (using the Spec Drift Guard). Reversible technical repair is
-  agent-owned and must not become a question.
+- For product behavior, scope, architecture, data, UX, security, or migration changes,
+  search facts then route human-owned contract decisions through `$rite-clarify`/Drift
+  Guard. Reversible technical repair is agent-owned, not a question.
 - Keep each slice small enough for one focused build → prove cycle.
-- **Slice count is derived, never dictated:** reslice when a slice fails the sizing rule
-  (multiple "and"s, can't build+prove in one cycle), not to hit a user-named tally. A
-  requested count is a hint at most; slice logically and explain if it differs. See
-  [`reference/slicing.md`](reference/slicing.md) ("How many slices?").
+- **Derive slice count:** reslice when work cannot build+prove in one cycle, not to hit a
+  requested tally. Treat counts as hints and explain honest differences; see
+  [`slicing.md`](reference/slicing.md).
 - **Size by complexity, order by dependency.** A slice carries a `Complexity: N/5` score (from
   `$rite-define`); a slice scoring **>3** is a reslice trigger unless its inline reason justifies
   the irreducible complexity. Honor each slice's `depends_on:`: the next *buildable* slice is the
   lowest pending one whose dependencies are all built. This preserves one-slice-at-a-time execution.
 - **Root writes; drafter proposes.** Follow
   [`agents.md`](../devrites-lib/reference/standards/agents.md). The controlling chat owns
-  human questions, decisions, reconciliation, and all planning-artifact writes.
+  human questions, decisions, reconciliation, and planning writes.
 - **Nested repair preserves its caller.** When `state.md` contains a valid
   technical-backtracking return cursor, preserve any valid return cursor
   byte-for-byte. `$rite-vet` is the next internal prerequisite, not a command to
@@ -60,37 +57,34 @@ when the spec applicability map or observed drift triggers them.
    - **reorder:** fix the dependency order.
    - **split:** separate backend/frontend contracts (see `devrites-api-interface`).
    - **unblock:** a verification failed; re-route around the blocker.
-   - **course-correct:** a deliberate mid-build *pivot* (the user changed their mind), distinct
-     from accidental drift: classify the change, assess its impact across the remaining slices,
-     decide rollback vs forward-fix, and update `spec.md` + `plan.md` + `tasks.md` + `decisions.md`
-     atomically. An acceptance/behavior change still goes through the user first. When the plan
-     names an `MVP cut`, offer it as the retreat option: falling back to the cut is a pre-agreed
-     scope, not a new negotiation.
-   - **revise:** apply a requested planning-artifact revision and reconcile existing artifacts in
-     any direction; propose the file edit set first, confirm each file before writing, and **never
-     edit source code**. The sole confirmation exception is explicit `$rite-upgrade` with an
-     admitted `repairable` assessment naming current rule, evidence, gate, exact paths, and
-     delta; it authorizes only that neutral workspace edit, never source or history.
-     **Gate first: revise or new?** Same intent? More than 50% of existing scope
-     survives? original *not* completable without this? Two "no"s → new work: recommend
-     sealing/shipping the current workspace (MVP cut if named) then `$rite-spec` for the new
-     intent, and stop. Revise preserves context; a new workspace separates the work.
+   - **course-correct:** deliberate mid-build user pivot. Classify impact on remaining slices,
+     choose rollback/forward-fix, and update spec/plan/tasks/decisions atomically. Acceptance or
+     behavior still needs the user first; an `MVP cut` is the pre-agreed retreat.
+   - **revise:** reconcile a requested artifact revision; propose/confirm its file set and
+     **never edit source**. Only explicit `$rite-upgrade` with a `repairable` assessment naming
+     rule, evidence, gate, paths, and delta can authorize its neutral workspace edit—not source/history.
+     **Revise or new?** Same intent? >50% scope survives? Original not completable without it?
+     Two “no” answers mean new work: seal/ship current scope (`MVP cut` if named), then
+     `$rite-spec`, and stop.
    See [replan-and-repair](reference/replan-and-repair.md) for each mode's steps.
-2a. **Draft the repair from fresh context.** Freeze the inputs and dispatch
-   `devrites-plan-drafter` in `repair` mode with only the selected mode, affected artifact
-   paths, settled contract, and observed failure/drift. Await one atomic `plan-candidate`;
-   the drafter writes nothing and returns human-owned choices separately.
+2a. **Draft fresh.** Dispatch `devrites-plan-drafter` in `repair` mode with frozen mode,
+   affected artifacts, settled contract, and failure/drift. Await one atomic, read-only
+   `plan-candidate`; human choices return separately.
    When the observed failure is missing or ambiguous consumptive-action evidence,
    require the drafter to apply `one-shot-actions.md` and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
-   collision mutant. Past evidence loss alone is not a terminal conclusion.
-   The drafter never supplies implementation bodies. Bind the exact active
-   `.devrites/work/<slug>/` targets and complete executable contract; after Vet
-   READY, the controlling root materializes the exact vetted workflow-artifact paths
-   under
+   collision mutant. Past evidence loss is not terminal. The drafter supplies no bodies.
+   Bind exact active `.devrites/work/<slug>/` targets and executable contract; after Vet READY, root
+   materializes the exact vetted workflow-artifact paths under
    [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
    without dispatching the product wright.
 3. Reason about dependencies: [dependency-graph](reference/dependency-graph.md).
+   Reconcile the horizon register against `../rite-define/reference/plan-template.md`.
+   Preserve every `HZN-###` and unresolved item. Cite evidence when reclassifying the earliest
+   honest decision point; resolution or supersession also needs evidence. Never silently delete
+   an item. Planning choices resolve from source evidence or become bounded risk spikes with
+   discriminating criteria and fallback branches; local/checkpoint entries retain their owner,
+   trigger, bounds/fallback, and proof. A new human-owned blocker stops to `$rite-clarify`.
    Reconcile `plan.md`'s canonical `Shared contract proof`: changed provider/consumer
    boundaries keep one reused contract artifact ahead of both asserting tests, and unaffected
    plans retain the specific no-impact statement. Missing, one-sided, duplicated-contract, vague, or
@@ -107,7 +101,8 @@ when the spec applicability map or observed drift triggers them.
    the previous vet verdict: set `Phase: plan`, `Next step: $rite-vet`, and, when
    `eng-review.md` exists, set `Implementation readiness: NEEDS REPLAN`. Never retain READY
    across changed planning inputs. Preserve `Plan approved` only for behavior/acceptance-neutral
-   technical repair; clear and reconfirm it when the contract changed. If you stopped for drift,
+   technical repair; clear it for a contract-changing or newly blocking horizon item and
+   reconfirm only after Clarify and Vet close it. If you stopped for drift,
    mark the `drift.md` entry resolved. Never remove or overwrite a valid caller
    return cursor while writing the Plan checkpoint.
 6. If product behavior/acceptance criteria change, confirm through `$rite-clarify` before
@@ -123,7 +118,8 @@ when the spec applicability map or observed drift triggers them.
    left unjustified), the dependency order is acyclic, every `drift.md` entry you stopped for
    is marked resolved, revised artifacts agree with each other, no source files changed in
    `revise` mode, behavior-change-vs-not is confirmed (`no`, or clarified), and every changed
-   plan ends at `$rite-vet` rather than returning directly to build. The `Shared contract proof`
+   plan ends at `$rite-vet` rather than returning directly to build; horizon IDs stay stable,
+   reclassifications cite evidence, and no unresolved item vanished. The `Shared contract proof`
    table or justified no-impact statement must still match the revised boundary set.
    If any check fails, loop back: don't hand off a half-reshaped plan.
 
