@@ -28,6 +28,8 @@ Pull these via `Read` when the diff demands them:
 - `agents.md`: when to fan out to which review subagent.
 - `security.md`: when input / auth / data / integrations / secrets are in scope.
 - `security-checklist.md`: for the same security-sensitive scope, the compact trust-boundary sweep.
+- `repository-topology.md`, `data-integrity.md`, `integration-reliability.md`: only
+  when the spec applicability map or final diff triggers their ownership/failure/proof checks.
 - `performance.md`: only when perf is relevant or a regression risk is visible.
 
 ## Operating rules
@@ -53,10 +55,9 @@ Pull these via `Read` when the diff demands them:
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`, `evidence.md`,
    `touched-files.md`, `.devrites/principles.md` (if present: the binding invariants to score
    the diff against), and the `git diff`. For "what would this change break"
-   questions, prefer a code-intelligence index if available (codebase-memory-mcp first,
-   cross-checked with codegraph + graphify, else standard methods (LSP / Read/Grep/Glob); see
-   `.claude/skills/devrites-lib/reference/standards/tooling.md`) over file reads;
-   they answer impact/callers in one call. When a finding hinges on an external library's
+   questions, apply `.claude/skills/devrites-lib/reference/standards/tooling.md`: use
+   the primary available index and cross-check only one named unresolved predicate before
+   falling back to LSP/file search. When a finding hinges on an external library's
    current API, context7 if available can confirm the signature. Run
    `devrites-engine check candidate <slug>` and require its digest to match the
    single `evidence.md` binding and the `browser-evidence.md` binding when that

@@ -18,7 +18,7 @@ If it does not, do not merge it.
 ## What to check (tests first)
 1. **Tests:** do they exist and prove the behavior + failure modes (empty, error,
    boundary, concurrency)? Would they fail if the code were wrong?
-2. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the mechanical [`edge-case trace`](edge-case-trace.md): explicit paths, fixed-set siblings, and deletion contracts.
+2. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
 3. **Readability:** names, function size, control flow, intent obvious without the author.
 4. **Architecture:** right seam, coupling/cohesion, fits existing patterns, no premature
    abstraction. Check how it fits the larger system as well as its local behavior.

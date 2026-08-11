@@ -1,43 +1,62 @@
-# Staged rollout & rollback: when the ship includes a live deploy
+# Staged rollout and recovery: live deploys only
 
-Opt-in. `$rite-ship`'s job ends at the git ladder (commit → push → tag / PR) and archiving the
-workspace; most projects deploy from CI on merge, and their pipeline owns the rollout. Reach for
-this reference only when the ship *itself* drives a live, staged production rollout the agent is
-responsible for. When it doesn't apply, skip it: the same no-op discipline as the rest of the pack.
+Load this only when `$rite-ship` itself is explicitly authorized to drive a live
+deployment. Git-only Ship stops before rollout; CI-owned deployment follows the pipeline's
+runbook. A Seal GO or AFK setting never authorizes production action.
 
-The governing idea is the one already in [`git-workflow.md`](../../devrites-lib/reference/standards/git-workflow.md) and
-[`deprecation.md`](../../devrites-lib/reference/standards/deprecation.md): **a launch is only done when it's reversible,
-observable, and incremental.** Write the rollback plan *before* you deploy, not after it breaks.
+## Preconditions before exposure
 
-## The rollback plan is a pre-condition
-Before the first byte ships, the plan exists, with a measured **time-to-rollback** per mechanism:
-feature flag < 1 min, redeploy < 5 min, DB rollback < 15 min. If the fastest reversal is slow, that
-is a launch risk to fix (add a flag) before shipping, not after. A destructive/migration step ships
-only with its rollback proven (expand→contract, [`deprecation.md`](../../devrites-lib/reference/standards/deprecation.md)).
+Record one rollout sheet in `ship.md`/`evidence.md`:
 
-## Advance on evidence: the rollout decision thresholds
-Stage the exposure and, at each stage, read the signals ([`observability.md`](../../devrites-lib/reference/standards/observability.md))
-against a fixed table: advance on green, hold on yellow, roll back on red. Don't eyeball it.
+| Item | Required decision/evidence |
+| --- | --- |
+| Units and order | Repository/deployable, schema, config, application, worker, contract, and flag order; safe old/new combinations. |
+| Exposure stages | Project-native internal/canary/cohort/percentage/region stages and hold window. |
+| Advance/hold/abort signals | Project baseline or SLO, measurement window, minimum sample, exact threshold, and owner. |
+| Recovery | Fastest safe mechanism, steps, owner, measured/rehearsed time, and data/external-effect reconciliation. |
+| Observability | Watched dashboard/query/alert, failure signal, and executable first action. |
+| Authorization | Exact target/action approved for this attempt; no inferred retry permission. |
 
-| Signal | Green (advance) | Yellow (hold, investigate) | Red (roll back now) |
-|---|---|---|---|
-| Error rate | within ~10% of baseline | 10-100% over baseline | > 2× baseline |
-| p95 latency | within ~20% of baseline | 20-50% over | > 50% over |
-| Client JS errors | none new | < 0.1% of sessions | > 0.1% of sessions |
-| Business metric on the path | neutral or up | < 5% decline | > 5% decline |
+Do not import generic percentage, latency, error-rate, or time-to-rollback numbers. Use
+accepted product risk, current baseline/SLO, traffic volume, and platform capability. If the
+project has no defensible threshold or signal, the monitoring gap blocks live exposure.
 
-## Stage the exposure, with a monitoring window at each step
-Internal/team → canary ~5% (hold 24-48h) → 25% → 50% → 100%, advancing only when **all** thresholds
-are green and you can still roll back to the previous percentage at any point. Data integrity or a
-security regression is an **immediate** rollback regardless of the table.
+## Choose the smallest reversible mechanism
 
-## Feature-flag hygiene
-Every flag has an owner and an expiry; test both states in CI; don't nest flags (state explodes);
-remove the flag and its dead branch within ~2 weeks of full rollout: a lingering flag is the
-deprecation debt [`deprecation.md`](../../devrites-lib/reference/standards/deprecation.md) exists to prevent.
+- A feature flag is useful only when the off path preserves current behavior, both states
+  are tested, disabling it stops the risky effect, and it has an owner/removal trigger.
+  Do not add a flag to a change already reversible by a safe atomic deploy.
+- A flag cannot reverse destructive data/schema effects. Apply
+  [`data-integrity.md`](../../devrites-lib/reference/standards/data-integrity.md) and prove
+  restore or forward recovery separately.
+- External APIs, webhooks, queues, jobs, and caches apply
+  [`integration-reliability.md`](../../devrites-lib/reference/standards/integration-reliability.md):
+  reconcile unknown outcomes, drain/quarantine/replay safely, and protect downstream capacity.
+- Multi-root/service rollout follows
+  [`repository-topology.md`](../../devrites-lib/reference/standards/repository-topology.md);
+  references to another repository never grant write/deploy authority there.
 
-## Verify in the first hour (a runbook, not a vibe)
-Health endpoint returns 200 · the error dashboard is flat · latency within budget · one critical
-user flow driven by hand · logs/metrics/traces flowing ([`observability.md`](../../devrites-lib/reference/standards/observability.md)
-"verify the telemetry fires") · a rollback dry-run confirmed reversible. Record the observations in
-`ship.md` / `evidence.md`: an un-watched launch is an unproven one.
+## Stage, observe, decide
+
+At each authorized stage:
+
+1. Verify the intended versions/config/schema and candidate identity on the exact target.
+2. Exercise one critical success path and the declared degradation/recovery signal.
+3. Observe for the recorded window and sample; bind results to the stage and baseline.
+4. **Advance** only when every advance condition holds. **Hold** on ambiguous or
+   insufficient evidence. **Abort/recover** immediately on an abort condition, security or
+   tenant breach, data-integrity violation, unreconciled duplicate/unknown effect, or loss of
+   observability.
+5. Re-verify after recovery; record partial effects and reconciliation. A rollback command
+   exiting zero is not proof the prior state or data was restored.
+
+Never compress stages because an early sample "looks fine," continue through a monitoring
+gap, or retry a failed live action without fresh authorization when the attempt/target changes.
+
+## Completion
+
+Rollout is complete only when full intended exposure meets the recorded window/signals,
+telemetry is still watched, migrations/backfills and queues/reconciliation are settled,
+documentation matches deployed behavior, and temporary flags/compatibility paths have a
+dated removal owner. Otherwise report the exact current stage and remaining risk; do not call
+the launch done.

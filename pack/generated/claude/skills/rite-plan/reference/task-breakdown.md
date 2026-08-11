@@ -19,6 +19,8 @@ This reference owns decomposition; the shared schema owns field names and meanin
    provider/consumer boundary, map the plan's `Shared contract proof` artifact before its
    provider- and consumer-side asserting tests; both tests consume that same artifact and
    their slice dependencies preserve the order. Do not duplicate the contract in each slice.
+   For each applicable topology/data/integration row, assign its owner, failure/recovery
+   case, and proof to a slice; preserve deployment/resource ordering from the plan.
 5. Write or update `traceability.md` so every `AC-###` maps to ≥1 `SLICE-###`, a
    planned proof, evidence status, and likely touched files.
 6. Sanity check: every acceptance criterion in `spec.md` maps to ≥1 slice; no slice has

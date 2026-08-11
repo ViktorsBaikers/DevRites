@@ -9,7 +9,9 @@ See [`one-slice-cycle.md`](one-slice-cycle.md); candidate lifecycle is
    ID-and-meaning traceability, and green proof preflight; run
    `devrites-engine check readiness <slug>`. Any miss/nonzero stops.
 2. **Select one target.** Restate goal, acceptance criteria, exclusions, and exact
-   source/test paths. Before dispatch, validate relevant `assumptions.md` rows
+   source/test paths. Reconcile the spec/plan applicability map and include only the
+   triggered topology/data/integration standards plus their named failure/recovery/proof
+   cases in the writer contract. Before dispatch, validate relevant `assumptions.md` rows
    against live evidence. If one is disproved and changes acceptance, architecture,
    scope, or proof, use the Spec Drift Guard/plan recovery; a human-owned unknown
    stops. Resolve HITL before source work. AFK answers only permitted gates;
@@ -49,6 +51,9 @@ the candidate manifest; it returns through narrow Vet before any consumptive act
    verdict is Critical. Run only `test-plan.md` repository/CI commands, capture output,
    and recheck `git diff --name-only`. Missing, weakened, red, or source-mutating proof
    is not success.
+
+   A failure is `pre-existing` or environment-specific only with a same-command,
+   same-environment baseline predating the candidate; otherwise it remains unresolved.
 
    Technical failure uses bounded `devrites-debug-recovery`: reapply the host gate
    before an accepted in-slice correction, keep one exact fingerprint/three

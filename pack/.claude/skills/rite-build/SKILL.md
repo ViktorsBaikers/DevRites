@@ -31,6 +31,9 @@ reads named on-demand rules while writing; root reads them for doubt/record gate
 - `patterns.md`: composition over inheritance, avoid premature abstraction.
 - `principles.md`: the project invariants (`.devrites/principles.md`) the slice must honor; the wright reads them as **binding**, not priors.
 - `security.md`: when the slice touches user input, auth, data, or external integrations.
+- `repository-topology.md`: when targets span roots/languages/services or touch generated/vendor surfaces.
+- `data-integrity.md`: when the slice writes durable state or changes migration/concurrency/tenant/retention behavior.
+- `integration-reliability.md`: when the slice changes an API/webhook/queue/job/cache/cross-service boundary.
 - `definition-of-done.md`: standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
 
 

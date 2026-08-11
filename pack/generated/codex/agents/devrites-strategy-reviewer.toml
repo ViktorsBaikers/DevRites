@@ -23,10 +23,9 @@ and placement; and `strategy.md` for scope mode, forward pass, pre-mortem, YAGNI
 ledger, and cross-cutting table. Read `decisions.md` or `assumptions.md` only to
 check a claim. Do not read the author's chat reasoning.
 
-Use a code-intelligence index when available. Start with codebase-memory-mcp,
-cross-check with codegraph and graphify, then fall back to LSP or Read/Grep/Glob.
-Follow `.agents/skills/devrites-lib/reference/standards/tooling.md`. Use the index
-to check blast radius and placement claims.
+Follow `.agents/skills/devrites-lib/reference/standards/tooling.md`: use the primary
+available code index for blast radius and placement, add at most one cross-check for a
+named incomplete/stale/conflicting predicate, then fall back to LSP or file search.
 
 ## Score the nine dimensions
 For each dimension, **cite the spec line or its absence first**, then assign the

@@ -20,7 +20,10 @@ the wright or recreate an engine bridge.
    [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md);
    its rejection here is not a blocker.
 2. Put it in the task with goal, verbatim acceptance, exclusions, context,
-   `test-plan.md` proof commands, and applicable standards.
+   `test-plan.md` proof commands, and applicable standards. For each triggered
+   topology/data/integration standard, include only the feature-specific owner/invariant,
+   failure or partial-state case, recovery rule, and required proof from the vetted plan.
+   Do not paste the whole standard or silently omit an applicable risk.
    A new path requires a new bounded contract; the wright cannot widen the task.
 3. Record `git diff --name-only` before dispatch so unrelated work remains
    distinguishable.
@@ -38,6 +41,8 @@ writers in one worktree or substitute a generic agent.
    wright; root never widens scope or edits source.
 2. Inspect the test diff for deletion, skipping, focus markers, or loosened
    assertions. Dedicated test analysis treats weakening as Critical.
+   Confirm a test for a data/integration/topology risk can actually exhibit that risk;
+   mocks that erase it and one-root proof offered for another root are unproven.
 3. Run only repository proof already approved by `test-plan.md`, then inspect
    `git diff --name-only` again in case a proof tool changed source.
 4. Challenge decisions. Human choices return; native diagnosis routes failures.

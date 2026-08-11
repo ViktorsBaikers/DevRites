@@ -35,6 +35,9 @@ the settled spec requires.
 6. **Distribution check.** If the plan introduces a new artifact (CLI binary, package, container,
    deployable), does it include how it gets built / published / installed? If distribution is
    deferred, say so explicitly in "NOT in scope": don't let it silently drop.
+7. **Applicability check.** Compare `spec.md`'s topology/data/integration/security/delivery
+   decisions with live seams. A false `not applicable` or an `applies` row without the
+   focused standard's owner, failure/recovery, deployment order, and proof output is `broken`.
 
 > **STOP discipline.** Fold technical reduction into the plan; ask and stop only for a
 > human-owned choice.
@@ -51,6 +54,8 @@ with one owner/trade-off. HITL pauses there; AFK follows `depth.md`. Never inven
 
 ### 1. Architecture
 - Component boundaries, coupling, data-flow patterns, single points of failure. Architecture records invariants, not scaffolding: each medium+ decision should state `Binds:` and `Prevents:` so the builder knows what divergence it prevents.
+- Repository/deployable roots, canonical contract and mutable-state ownership, shared
+  resources, dependency cycles, and old/new deployment combinations when applicable.
 - Scaling characteristics; where the plan's approach breaks under real load.
 - Security architecture at the seams (auth, data access, API boundaries): does the plan name
   the trust boundary for each untrusted input?
@@ -72,6 +77,9 @@ Design tests before code so the build writes them alongside the implementation.
 - **Framework detection:** find the project's existing test runner + conventions; match them
   (never introduce a new runner to prove one change: `testing.md`).
 - **Map acceptance → tests.** Every spec acceptance criterion must map to ≥1 planned, surface-anchored test (the API response/UI state/CLI output the criterion names, not an internal proxy).
+- **Map applicable risk → tests.** Data and integration rows cover their relevant
+  duplicate/retry/concurrency/interruption/tenant/timeout/partial/outage/order/rollback cases,
+  or record an evidence-backed dismissal. A mock that cannot exhibit the named risk is a GAP.
 - **Tool per path:** unit (pure logic, single function, edge cases), integration/E2E (a user
   flow spanning 3+ components, an auth/payment/data-loss path, a mock-hides-failure boundary),
   eval (an LLM/prompt change that needs a quality bar).
@@ -151,12 +159,13 @@ Use `AskUserQuestion` per the pack's standard. Plan-review specifics:
    into `plan.md` §Scope boundaries + `spec.md` Non-goals (via the Guard) so it can't silently re-enter.
 2. **"What already exists":** existing code/flows that solve sub-problems, and whether the plan
    reuses or rebuilds them. Every missed reuse becomes a §0 finding.
-3. **Failure-mode table:** for each new codepath: a realistic failure, and whether (a) a test
-   covers it, (b) error handling exists, (c) the user sees a clear error or a silent failure. A
+3. **Failure-mode table:** for each new codepath: a realistic failure, partial/unknown effect,
+   recovery owner, and whether (a) a test covers it, (b) error handling exists, (c) the user sees a clear error or a silent failure. A
    failure with **no test AND no handling AND silent** is a **Critical gap**. (Shape in
    [`artifacts.md`](artifacts.md).)
 4. **Dependency safety:** verify the declared dependency graph, required execution order,
-   and conflicts where slices touch the same module. Correct unsafe or missing ordering in the
+   deployment/config/schema order, and conflicts through shared files, state, generated
+   contracts, locks, ports, queues, or environments. Correct unsafe or missing ordering in the
    plan; do not create a lane/scheduler artifact—the native host schedules eligible work.
 5. **Build-entry preflight:** commands/cwds, tools, package state, parser/browser smoke,
    prerequisites, and provenance ([`artifacts.md`](artifacts.md)).

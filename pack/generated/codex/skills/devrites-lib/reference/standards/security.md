@@ -37,6 +37,38 @@ services, `localhost`). Defenses, together:
 - Check authorization on every sensitive action, server-side. Guard against IDOR (acting
   on another user's object by changing an id).
 
+## Authentication, authorization, and tenant isolation
+
+- **Authentication establishes identity; authorization permits this action on this
+  resource.** A valid session is not an authorization decision. Re-check policy at every
+  public entry and background/job boundary using server-owned identity and resource data.
+- Deny by default. Role hierarchy, impersonation, service-to-service identity, admin
+  bypasses, and object ownership are explicit policy; do not infer privilege from route
+  location, UI visibility, email/domain, or a caller-supplied role/tenant id.
+- Tenant scope applies to queries, writes, caches, search indexes, object storage paths,
+  queues/jobs, exports, logs, and model/RAG context. Prove denial with two distinct tenants
+  and records; a filter present in source is not evidence that every path applies it.
+- A privilege-changing operation requires re-authorization at use time and an auditable
+  event. Prevent confused-deputy flows where a high-privilege service performs an action
+  solely because a low-privilege caller supplied an id.
+
+## Files, path traversal, parsing, and request integrity
+
+- Resolve filesystem targets beneath an allowed root; reject absolute paths, `..`, encoded
+  traversal, alternate separators, symlink escapes, and archive entries that leave it.
+  Validate the resolved path, not the raw string. Downloads use server-side object lookup,
+  not user-controlled filesystem paths.
+- For uploads, bound body and expanded size, verify content signature rather than trusting
+  filename/MIME, generate the storage name server-side, keep files outside executable/public
+  roots, enforce tenant/owner access, and scan/quarantine when project risk requires it.
+- Treat deserialization, templates, archive extraction, image/document parsers, and plugin
+  formats as code-adjacent boundaries. Use safe/non-executable modes, type/size/depth limits,
+  and isolate risky parsers; never deserialize untrusted data into executable objects.
+- Protect state-changing browser requests with the framework's request-forgery control,
+  appropriate SameSite cookies, and origin checks where supported. CORS is not CSRF defense.
+- Security-sensitive configuration fails closed in every environment. A missing auth key,
+  tenant scope, TLS check, or allowlist is startup/operation failure, never a debug fallback.
+
 ## Secrets
 - Never hard-code secrets or commit them. Use the project's secret mechanism / env /
   vault. Never log secrets, tokens, or personal data.
@@ -119,9 +151,13 @@ like the rest of this file: it applies when an LLM surface is in scope, not to e
   told it not to"; don't feed PII/secrets to a model or log prompts/outputs in the clear.
 - **Supply chain & poisoning (LLM03 / LLM04 / LLM08):** pin and vet models, weights, and datasets
   like dependencies; treat third-party models and training/RAG data as untrusted. Embedding and
-  retrieval sources are an injection and poisoning surface: validate what you index.
+  retrieval sources are an injection and poisoning surface: validate provenance before indexing,
+  enforce tenant/ACL filters at retrieval, and prevent one corpus from silently contaminating
+  another.
 - **Misinformation / overreliance (LLM09):** the model can be confidently wrong. Ground answers,
-  cite sources, keep a human in the loop for consequential decisions, and don't present generated
-  content as verified fact.
+  cite only retrieved sources that support the claim, define insufficient-context behavior, keep
+  a human in the loop for consequential decisions, and don't present generated content as verified
+  fact. Evaluate faithfulness and retrieval relevance on domain slices plus adversarial/empty
+  context before and after a prompt/model/index change; a fluent example is not an eval.
 - **Unbounded consumption (LLM10):** rate-limit, cap tokens/cost, and time-out model calls; an
   open-ended prompt loop is both a DoS and a bill.

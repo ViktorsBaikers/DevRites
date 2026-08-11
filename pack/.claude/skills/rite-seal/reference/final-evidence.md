@@ -18,6 +18,9 @@ discriminating shell/golden/text assertions remain valid for textual or CLI acce
 
 Require built slices, resolved or accepted findings, no drift/open validating
 question, required UI/boundary proof, and an exact doubt verdict per stood decision.
+Reconcile the final diff with the spec applicability map. Every triggered topology,
+data, integration, security, and delivery owner needs its relevant observed failure/
+recovery evidence or an evidence-backed dismissal; a generic green suite cannot close it.
 
 ## Candidate binding and test integrity
 

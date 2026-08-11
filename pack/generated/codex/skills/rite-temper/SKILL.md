@@ -20,7 +20,9 @@ Pull on demand: `patterns.md` +
 `coding-style.md` (the over-engineering / YAGNI rubric (reuse the pack's standard, don't
 invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md`
 (irreversible-risk list + gate ceiling), `elicitation.md` (the move-set to deepen a section
-that needs more than the default pre-mortem) selected by the section's risk).
+that needs more than the default pre-mortem) selected by the section's risk). Load
+`repository-topology.md`, `data-integrity.md`, or `integration-reliability.md` only when
+the spec applicability map triggers that risk family.
 
 ## Operating rules
 - **Raise outcome ambition without expanding the solution unnecessarily.** Solve the
@@ -67,6 +69,8 @@ that needs more than the default pre-mortem) selected by the section's risk).
    **Interruption pre-mortem:** audit the spec forecast and assumptions for unresolved behavior,
    proof prerequisites, approvals, access, and irreversible gates. Resolve facts and reversible
    details now; retain only unavailable-pre-code or mandatory action-time checkpoints.
+   Challenge each `not applicable` decision against live evidence and each applicable
+   topology/data/integration row against its worst credible partial-state/recovery case.
    - **Deepen on demand.** When a scope decision, requirement, or risk needs more analysis
      than the default pre-mortem provides, choose 3-5 techniques from
      [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) whose *when-to-reach-for-it* matches that

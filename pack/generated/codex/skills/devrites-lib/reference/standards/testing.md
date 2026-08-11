@@ -24,6 +24,10 @@ covered, not lines executed: 100% line coverage can still leave a button's click
 and a button with one asserting unit test is "covered" at far less than 100% lines. Chase the
 behavior, not the number.
 
+Poor test coverage or missing tests in a brownfield area is baseline risk, not permission to leave
+the changed behavior unproven. Add the smallest surface-anchored regression test and separate
+pre-existing failures with same-command evidence.
+
 Acceptance and tests are **surface-anchored**: assert the outermost surface the intent names. If the feature promised an API response, assert the API response; a database row behind it is supporting evidence, not proof.
 
 Put each test at the level that proves it cheapest and most reliably (the pyramid above):
@@ -61,7 +65,8 @@ discriminates the required result.
 - **Don't assert the mock.** A test that stubs a dependency to return `X` then asserts `X` came
   back tests the stub, not your code. Assert the real effect on real (or realistic) data.
 - **Cover the unhappy edges, not just the happy path.** AI is strong on "valid input → success"
-  and weak on empty / boundary / invalid-state / long-or-weird input: write those explicitly.
+  and weak on empty or missing input, omitted required fields, boundary values, invalid state,
+  and long-or-weird input: write those explicitly and assert the promised rejection/default.
 - **Prove it can fail.** For a critical or regression path, break the code deliberately and confirm the test goes red; use the project's mutation runner when one exists.
 - **Don't mirror the implementation.** A test whose assertions restate the code under test
   (same constant, same formula, same branch) stays green even when the logic is wrong. Assert
@@ -126,6 +131,44 @@ breaks, because it tested the stubs, not the code (see "Don't assert the mock" a
 | A third-party API or paid/rate-limited service | Your own internal utilities and transforms |
 | Anything non-deterministic or slow | Validation and mapping under test |
 
+## Prove the risk the design actually introduces
+
+Select cases from the accepted spec and applicable standards, not a generic count:
+
+- Durable data changes apply [`data-integrity.md`](data-integrity.md): invalid write,
+  duplicate/retry, concurrent update, interrupted migration/backfill, old/new version
+  coexistence, tenant denial, and rollback/forward recovery as relevant.
+- API/webhook/queue/cache work applies
+  [`integration-reliability.md`](integration-reliability.md): invalid/partial response,
+  auth failure, timeout/unknown outcome, rate limit, outage, duplicate, out-of-order,
+  poison/backlog, and stale-cache/partition behavior as relevant.
+- Multi-root/service work applies [`repository-topology.md`](repository-topology.md):
+  provider and consumer both consume the canonical contract and run from their proven
+  roots. One member's green suite cannot prove another member.
+- Compatibility/delivery work drives both feature-flag states and old/new caller or
+  schema combinations. Migration-before-code and code-before-migration order each need a
+  declared expected result.
+
+Dismiss an irrelevant case with a reason; silently omitting an applicable case is a gap.
+
+## False-positive and coincidental-reliance checks
+
+- **Trace cause to effect.** A test proves wiring only when real input reaches the new
+  implementation and its distinct output reaches the promised surface. Registration,
+  file existence, a spy call, or a fixture containing the expected text can pass while
+  production still uses the old path.
+- **Change the load-bearing input or implementation.** For a critical link, perturb the
+  input or break the link and observe the surface assertion fail. If another path happens
+  to produce the same output, the test relies on coincidence and needs a discriminating
+  fixture/assertion.
+- **Do not mock away the named risk.** A timeout test whose mock cannot time out, a
+  transaction test without transaction boundaries, or a tenant test with one tenant is
+  mislabeled coverage. Use a contract-capable fake, local integration surface, sandbox,
+  or authorized real boundary appropriate to the risk.
+- **Baseline environmental claims.** "Pre-existing", "only fails in CI", or "works in one
+  region/time zone" requires a before-candidate run or other dated baseline on the same
+  command and environment. Without it, classify the result as unresolved.
+
 ## Determinism: no flaky tests
 - A flaky test is a broken test. Isolate and fix it immediately; don't paper over it with
   retries or `sleep`.
@@ -137,6 +180,9 @@ breaks, because it tested the stubs, not the code (see "Don't assert the mock" a
   output is pinned in tests. A raw `time.Now()` feeding output makes a golden snapshot rot at the
   next day boundary: green today, red tomorrow, for no code change. The test must control time so
   its result depends on behavior, not when the suite runs.
+- Pin the time zone and locale independently of the instant. Cover offset/date rollover,
+  daylight-saving gap/fold where the product supports it, and serialization round trips;
+  a UTC-only unit test does not prove local-calendar behavior.
 - **No elapsed-time assertions.** `assert elapsed < 200ms` / `took` under a threshold tests the
   CI runner's load, not your code: flaky by construction. Assert the *result*, not the duration;
   for ordering or concurrency use a deterministic signal (a fake clock, a channel), never a `sleep`.

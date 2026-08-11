@@ -18,8 +18,11 @@ topic's owner.
 | `testing.md` | Designing tests or judging proof quality. |
 | `spec-grammar.md` | Structuring high-risk behavioral requirements or capability deltas. |
 | `code-review.md` | Reviewing a change or sealing review findings. |
-| `edge-case-trace.md` | Sweeping branches, boundaries, fixed-set siblings, or deletion contracts. |
+| `edge-case-trace.md` | Resolving relevant edge/prohibition classes and their evidence disposition. |
 | `security.md` | Handling input, auth, data, secrets, dependencies, or integrations. |
+| `repository-topology.md` | Work spans a monorepo member, nested root, multiple languages/services, or repositories. |
+| `data-integrity.md` | Durable writes, schemas, migrations/backfills, concurrency, retention, or tenant data are touched. |
+| `integration-reliability.md` | APIs, webhooks, queues/jobs, caches, or cross-service failure behavior is touched. |
 | `performance.md` | A measured performance concern is in scope. |
 | `observability.md` | A changed runtime path must be diagnosed in production. |
 | `developer-experience.md` | A public API, CLI, SDK, webhook, config, error, or getting-started surface changes. |

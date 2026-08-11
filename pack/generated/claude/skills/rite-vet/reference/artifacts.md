@@ -47,9 +47,9 @@ One-shot evidence completeness: <n/a | pass: action + retained artifact + bounds
 Suppressed (confidence ≤4, unverified): <count — one line each>
 
 ## 4. Failure modes
-| New codepath | Realistic failure | Test? | Handling? | Silent? | Verdict |
-|---|---|---|---|---|---|
-| <path> | timeout / nil / race / stale | y/n | y/n | y/n | ok / **CRITICAL gap** |
+| New codepath/boundary | Realistic failure | Partial/unknown effect | Recovery owner/path | Proof? | Silent? | Verdict |
+|---|---|---|---|---|---|---|
+| <path> | timeout / duplicate / race / stale | <state/effect> | <owner/action> | y/n | y/n | ok / **CRITICAL gap** |
 
 ## 5. Dependency safety
 <declared order is safe | exact dependency/order correction>
@@ -152,6 +152,8 @@ acceptance/behavior changes route through the **Spec Drift Guard**.
 - **Write directly into `plan.md` / `tasks.md`** (single canonical writer: you, not the reviewer):
   - `plan.md` §Scope boundaries ← "NOT in scope" items.
   - `plan.md` §Architecture decisions ← reuse-over-rebuild calls + named failure scenarios.
+  - `plan.md` §Applicability and system ownership ← corrected topology/data/integration
+    routing and each triggered standard's feature-specific output.
   - `plan.md` §Dependency graph / §Implementation order ← any dependency or ordering fix
     (e.g. refactor-before-feature split).
   - `plan.md` §Complexity & deviations gate ← any deviation the §0 challenge surfaced + its justification.

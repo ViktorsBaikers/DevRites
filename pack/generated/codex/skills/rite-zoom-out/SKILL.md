@@ -34,11 +34,10 @@ A **structural map**: terse. One pass should answer:
 
 ## Prefer a code-intelligence index (if available)
 
-If the project has them, start with `codebase-memory-mcp` (`get_architecture` / `search_graph`),
-then cross-check with `codegraph` (`.codegraph/`) and `graphify` (`graphify-out/`). For
-codegraph, `codegraph_context` + one `codegraph_explore` return the map in two calls: vastly
-cheaper than a file-walk and more accurate for callers/callees. Fall back to standard methods
-(LSP, then `Grep` + `Read`) when no index is available. See `.agents/skills/devrites-lib/reference/standards/tooling.md`.
+Apply `.agents/skills/devrites-lib/reference/standards/tooling.md`: use the primary
+available architecture/code index, add at most one cross-check for a named incomplete,
+stale, or conflicting predicate, then fall back to LSP and file search. Do not query
+multiple indexes merely to confirm the same map.
 
 ## Vocabulary discipline
 

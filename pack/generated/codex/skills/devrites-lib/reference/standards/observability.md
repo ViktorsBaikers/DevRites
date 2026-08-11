@@ -44,6 +44,11 @@ answers one of them. A signal that maps to no question is noise you pay to store
 - **Percentiles always, averages never.** Read latency as a histogram at p50 / p95 / p99. An
   average hides the tail, and the tail is where the pain (and the SLO breach) lives.
 
+For integrations and asynchronous work, include outcome class and recovery state: timeout,
+rate limit, invalid response, retry exhausted, duplicate suppressed, oldest-message age,
+backlog depth, poison/quarantine count, and reconciliation lag as applicable. Keep labels
+bounded; put provider/request/job identifiers in protected logs or traces.
+
 ## Traces (across a boundary)
 When a request crosses a service, queue, or async boundary, propagate a trace/correlation id
 so the end-to-end path is reconstructable, and span the external call and the slow operation.
@@ -62,6 +67,11 @@ Instrumentation you added but never watched emit is unproven: the same standing 
 never saw fail ([`testing.md`](testing.md) "See it fail first"). Trigger the path, confirm the
 log line / metric / span appears, and record the observation in `evidence.md`. "I
 added logging" with no observed emission is not done.
+
+Also prove the **monitoring gap is closed**: the signal reaches the dashboard/query or alert
+the declared owner actually watches, its threshold is tied to a project baseline or SLO, and
+the first recovery action is executable. An emitted metric with no consumer is orphaned
+telemetry, not rollout evidence.
 
 ## Confirm-before-remove
 Telemetry is also how you prove a removal is safe: query real usage before deleting code or a
