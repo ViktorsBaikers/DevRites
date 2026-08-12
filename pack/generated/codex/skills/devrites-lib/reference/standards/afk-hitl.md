@@ -33,7 +33,13 @@ it at decision time. There is no `state.md` run-mode field to drift out of sync.
 Presence = AFK active. The file body is optional YAML:
 
 ```yaml
-max_slices: 10                       # read-only INITIAL budget; seeds state.md `AFK slices remaining`
+max_slices: 10                       # whole-workspace writer budget; seeds state.md remaining count
+max_agents: 32                       # native agent dispatches in one host activation
+max_minutes: 120                     # wall-clock minutes in one host activation
+max_review_queue: 8                  # unresolved review/gate items admitted before fan-out stops
+expires_at: "<ISO-8601 UTC timestamp>" # absolute unattended-authority expiry
+# max_tokens: 200000                 # optional stricter host-observed token cap
+# max_cost_usd: 10                   # optional stricter host-observed cost cap
 notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
 ```
@@ -56,13 +62,32 @@ existing counter may be lowered but never increased or reinitialized. Once prese
 counter is the effective remaining budget even when the read-only sentinel omits
 `max_slices`.
 
-Missing keys fall back to defaults:
+## Unattended resource envelope
 
-| Key | Default | Meaning |
-|---|---|---|
-| `max_slices` | unlimited | a missing cap is unsafe; recommend setting one explicitly |
-| `notify` | none | no notification fires |
-| `allow_gates` | `[advisory]` | AFK auto-handles advisory only by default (auto-picks the recommended option) |
+AFK writer admission needs a bounded input queue, effective slice cap, and valid
+`max_agents`, `max_minutes`, `max_review_queue`, and `expires_at`. Existing sentinels
+missing/malforming these fail closed; cold resume keeps the state-owned slice counter.
+Read-only watchers use equivalent native caps from [`loop-operations.md`](loop-operations.md).
+
+`max_agents` counts every leaf in the native activation, including failures and
+parallel branches; do not add dispatch telemetry to `.devrites/`. `max_review_queue`
+counts open validating questions plus unresolved admitted Critical/Important findings.
+Above it stop; at it run only reconciliation that reduces the queue. `expires_at` is
+absolute ISO-8601 authority. Optional `max_tokens`/`max_cost_usd` lower enforceable
+native caps; if declared but unobservable, stop.
+
+Numeric limits are nonnegative decimals. Before costly checks, fan-out, or writing,
+run cheap readiness, reject overlap, count queue, and confirm agent/time/token/cost
+headroom; re-check after every result. Never start one call that can exceed remaining
+headroom. Agent/time/token/cost counters are per native activation and start fresh only
+for a genuinely new activation. Slices, recovery attempts, absolute expiry, and current
+review queue remain durable/recomputed across wakes. Persist each activation stop and
+checkpoint before notification.
+
+New sentinels use: `max_slices: 10`, `max_agents: 32`, `max_minutes: 120`,
+`max_review_queue: 8`, `expires_at: <arming + 4h>`, `allow_gates: [advisory]`, and no
+notification/token/cost cap. Post-Vet pending count may lower slices. Existing files
+never receive missing defaults implicitly.
 
 To leave AFK, delete the file. The next skill invocation reverts to HITL.
 

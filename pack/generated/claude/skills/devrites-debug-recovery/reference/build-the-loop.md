@@ -8,7 +8,7 @@ effort on a reliable reproduction loop.
 
 1. **Failing test** at whatever seam reaches the failure (unit / integration / e2e).
 2. **Direct CLI / curl invocation** against the running dev server or process.
-3. **Replay a captured trace:** save the offending request/payload/event to disk, replay it through the code path in isolation.
+3. **Replay:** build a non-sensitive behaviorally equivalent fixture with safe credentials/data; verify the decisive signal matches. Never replay redaction markers. Unknown equivalence is `cannot_verify` plus safe manual steps.
 4. **Throwaway harness:** spin up a minimal subset (one service, mocked deps) that triggers the failure with a single function call.
 5. **Headless browser script** (Chrome DevTools MCP / Playwright): drives the UI, asserts on DOM/console/network.
 6. **Bisection harness:** if the failure appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so `git bisect run` can find it.
@@ -29,13 +29,15 @@ Once it works, improve it:
 Prefer the shortest deterministic loop. A slow or flaky one makes each later
 diagnostic step less reliable.
 
+## Wait on a condition
+
+Poll one named observable from fresh state with a bound; timeout reports predicate, bound, and
+last value. Fixed delay is only for timing behavior or race reproduction—never readiness proof.
+
 ## Non-deterministic failures
 
-For a non-deterministic failure, increase reproduction rate instead of waiting
-for a perfect reproduction. Run the trigger 100 times, parallelize it,
-add stress, narrow timing windows, or inject sleeps. A 50% failure rate is
-practical to investigate; a 1% rate usually is not. Keep adjusting the loop until
-the failure occurs often enough to investigate.
+Increase reproduction rate instead of waiting for perfection: repeat/parallelize, add stress,
+or widen timing until the failure is practical to investigate.
 
 Classify the non-determinism before choosing a tactic:
 - **Timing** (race, ordering, async interleave): widen the window. Inject artificial delays at
@@ -51,11 +53,6 @@ Classify the non-determinism before choosing a tactic:
 
 ## When you genuinely cannot build a loop
 
-If you cannot build a reliable loop, stop, say so explicitly, list what you tried,
-and ask the user for:
-
-- access to whatever environment reproduces it,
-- a captured artifact (HAR file, log dump, core dump, screen recording with timestamps), or
-- permission to add temporary production instrumentation.
-
-Do not proceed until you have a reproduction loop you trust.
+If no reliable loop exists, stop, list attempts, and ask for reproducing-environment access,
+a sanitized HAR/log/dump/timestamped recording, or temporary instrumentation permission. Do
+not proceed without a trusted reproduction.

@@ -10,13 +10,14 @@ import (
 
 func TestValidatePayloadRequiresClaudeAndCodexFiles(t *testing.T) {
 	payload := fstest.MapFS{
-		"claude/skills/rite/SKILL.md":              {},
-		"claude/agents/devrites-code-reviewer.md":  {},
-		"claude/settings.json":                     {},
-		"codex/skills/rite/SKILL.md":               {},
-		"codex/agents/devrites-code-reviewer.toml": {},
-		"codex/AGENTS.md":                          {},
-		"codex/config.toml":                        {},
+		"claude/skills/rite/SKILL.md":                  {},
+		"claude/agents/devrites-code-reviewer.md":      {},
+		"claude/workflows/devrites-readonly-review.js": {},
+		"claude/settings.json":                         {},
+		"codex/skills/rite/SKILL.md":                   {},
+		"codex/agents/devrites-code-reviewer.toml":     {},
+		"codex/AGENTS.md":                              {},
+		"codex/config.toml":                            {},
 	}
 	if err := ValidatePayload(payload, true); err != nil {
 		t.Fatal(err)
@@ -38,9 +39,17 @@ func TestInstallTreesMapPayloadsToTargets(t *testing.T) {
 		{PayloadPrefix: "codex/skills", TargetPrefix: ".agents/skills"},
 		{PayloadPrefix: "claude/agents", TargetPrefix: ".claude/agents"},
 		{PayloadPrefix: "codex/agents", TargetPrefix: ".codex/agents"},
+		{PayloadPrefix: "claude/workflows", TargetPrefix: ".claude/workflows"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("InstallTrees() = %#v, want %#v", got, want)
+	}
+	for _, trees := range [][]Tree{InstallTrees(true, false, true), InstallTrees(false, true, true)} {
+		for _, tree := range trees {
+			if tree.PayloadPrefix == "claude/workflows" {
+				t.Fatal("Claude workflow installed without both skills and agents")
+			}
+		}
 	}
 }
 

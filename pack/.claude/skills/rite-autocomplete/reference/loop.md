@@ -9,15 +9,23 @@ Arm the gate policy up front without mutating it later:
 
 ```yaml
 allow_gates: [advisory]        # only advisory auto-handles; validating+ pause
-# notify: "<cmd>"              # optional — fired on any awaiting_human pause
-# max_slices: <N>              # include only for an explicit/configured cap
+max_slices: 10                 # explicit --max-slices N replaces this default
+max_agents: 32                 # native leaf dispatches in this host activation
+max_minutes: 120               # activation wall-clock cap
+max_review_queue: 8            # unresolved review/gate backlog cap
+expires_at: "<now + 4 hours>"  # write one absolute ISO-8601 UTC timestamp
+# max_tokens: <N>              # optional stricter native-host cap
+# max_cost_usd: <amount>        # optional stricter native-host cap
+# notify: "<cmd>"              # optional — fired after a durable stop
 ```
 
 Read an existing sentinel first. Preserve it byte-for-byte when valid; stop if its gate
-ceiling exceeds `advisory` or its `max_slices` conflicts with the invocation. If absent,
-write it once after clarity with `allow_gates: [advisory]` and an explicit
-`--max-slices N` only when supplied. The sentinel is read-only: never rewrite it after
-`/rite-vet` to inject a discovered plan count.
+ceiling exceeds `advisory`, its required resource envelope is missing/malformed/expired,
+or its `max_slices` conflicts with the invocation. If absent, write it once after clarity
+with the safe defaults above, replacing `max_slices` only for an explicit
+`--max-slices N` and resolving `expires_at` to one absolute timestamp. The sentinel is
+read-only: never rewrite it after `/rite-vet` to inject a discovered plan count or to
+reset resource authority.
 
 ### Derive the mutable post-vet budget
 
@@ -27,6 +35,19 @@ the first build dispatch, pre-seed `state.md` `afk_slices_remaining` when absent
 valid remaining counter already exists, retain the lower of it and the derived budget;
 never increase or reinitialize it. This keeps the crash-survivable budget in its mutable owner
 without changing AFK configuration mid-run.
+
+### Admit each unattended cycle
+
+Before every phase, parallel review fan-out, recovery dispatch, or writer dispatch,
+apply [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#unattended-resource-envelope):
+run the cheapest readiness/current-state check, reject overlapping work, count the
+current unresolved review queue, and check expiry plus native agent/token/cost/time
+headroom. Count every leaf, including failed/malformed/unavailable results. At the
+review cap, only reconciliation that reduces the queue may run. Any limit reached or
+unobservable declared cap ends the current activation before more work and persists
+its checkpoint/reason. A genuinely new native activation starts fresh agent/time/token/
+cost counters, but reuses durable slice/recovery state, absolute expiry, and recomputed
+review queue. It never resets those durable bounds.
 
 `allow_gates: [advisory]` prevents an open `gate: validating` from being queued until
 seal, where it would force NO-GO under `afk-hitl.md`. Autocomplete pauses on it instead. Widen
@@ -125,6 +146,8 @@ rest point or one of the shared human/safety/access/exhaustion stop conditions.
 ## Between phases
 
 - Re-read the active workspace before each phase (don't trust chat memory).
+- Re-run resource admission before each phase or native dispatch; stop before work
+  when expiry, review backlog, or agent/token/cost/time headroom is exhausted.
 - After a phase that edits code (build, polish, review), evidence may be stale: let
   the next gate re-prove rather than carrying a stale pass (see
   `.claude/skills/devrites-lib/reference/standards/development-workflow.md`).

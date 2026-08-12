@@ -36,6 +36,7 @@ topic's owner.
 | `principles.md` | Authoring or checking project invariants and approved exceptions. |
 | `deprecation.md` | Removing, replacing, or migrating behavior, code, APIs, or data. |
 | `agents.md` | Dispatching, awaiting, validating, or reconciling fresh-context agents. |
+| `loop-operations.md` | Running a goal-, time-, or event-activated loop through native host scheduling. |
 | `workflow-artifacts.md` | Materializing executable proof/controller/harness files under the active `.devrites/work/<slug>/`. |
 | `context-hygiene.md` | Choosing `/clear`, `/compact`, or a handoff. |
 | `anti-patterns.md` | A pack-wide rationalization or red flag appears. |

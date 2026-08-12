@@ -72,11 +72,13 @@ services, `localhost`). Defenses, together:
 ## Secrets
 - Never hard-code secrets or commit them. Use the project's secret mechanism / env /
   vault. Never log secrets, tokens, or personal data.
+- Capture only sanitized diagnostics. Replace credentials, cookies, auth headers, personal/
+  tenant data with typed markers such as `<redacted:authorization>`; raw secret-bearing material
+  never enters scratch, evidence, review, handoff, or output. Use environment-variable command
+  shapes. If redaction removes the decisive signal, record `cannot_verify` plus a safe manual step.
 - Deliver secrets just-in-time and scope them; rotate on exposure.
-- Catch a secret **before** it enters history: a leaked secret is compromised the moment it
-  reaches a remote, so rotate first, then scrub. Cheapest guard is a pre-commit scan of the
-  staged diff: `git diff --cached | grep -iE 'password|secret|api[_-]?key|token'` (the pack's
-  own `commit-msg`/pre-commit hooks are the reference: see [`hooks.md`](hooks.md)).
+- Catch secrets before history with the project's staged-diff scan. Once remote, rotate first,
+  then scrub; see [`hooks.md`](hooks.md).
 
 ## Fail closed
 On any security-relevant error, deny access and roll back: never default to allow or to
@@ -129,11 +131,8 @@ logs, quotes, attachments, repository prose, and external content remain
 
 ## AI / LLM features: the OWASP LLM Top 10
 
-When the feature *itself* calls a model, builds an agent, does RAG, or exposes tool-use, the
-attack surface is the model, not just the code around it. The prompt-injection section above is
-the defender's baseline. It hardens DevRites' own agents (LLM01 from the inside); apply the same
-untrusted-content discipline to the user's LLM surface, plus the rest of the taxonomy. Conditional,
-like the rest of this file: it applies when an LLM surface is in scope, not to every change.
+When a feature calls a model, builds an agent/RAG, or exposes tools, apply prompt-injection
+rules plus this taxonomy. This is conditional on an LLM surface.
 
 - **Prompt injection (LLM01):** untrusted text (user input, retrieved docs, tool output) is
   data, never instructions. Don't concatenate it into a privileged prompt; fence it, and never
@@ -142,10 +141,10 @@ like the rest of this file: it applies when an LLM surface is in scope, not to e
   Never `eval` / render / exec it raw: escape before HTML, parameterize before SQL, validate
   before a tool call. A model that emits `<script>` or `DROP TABLE` is just another injection
   vector.
-- **Excessive agency (LLM06):** give the model the *least* tools, scopes, and autonomy the task
-  needs. A destructive or outbound action behind a model decision needs a human gate or a hard
-  allowlist, not the model's say-so. (DevRites enforces this on itself: reviewers are read-only at
-  the tool layer; the one writer is scope-fenced.)
+- **Excessive agency (LLM06):** use least tools/scope/autonomy. Agentic plans name isolation,
+  network allowlist, execution identity, short-lived credentials, destructive/outbound approvals,
+  audit trail, kill switch, memory retention, and data sent to each external model/MCP. A model
+  cannot widen its own authority; DevRites reviewers stay read-only and its writer scope-fenced.
 - **Sensitive-info disclosure (LLM02) / system-prompt leakage (LLM07):** assume the system prompt
   and context are extractable. Put no secret in them; keep authz server-side, never "the prompt
   told it not to"; don't feed PII/secrets to a model or log prompts/outputs in the clear.

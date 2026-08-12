@@ -58,15 +58,14 @@ runtime behavior. Explicit shell assertions and golden/text comparisons remain v
 criterion genuinely concerns a textual or command-line artifact and the assertion
 discriminates the required result.
 
-- **No tautological assertions.** `expect(result).toBeDefined()` / `.not.toBeNull()` /
-  `assert x is not None` pass for almost any return value. Assert the **actual value or
-  observable effect**: `expect(total).toBe(42)`, the specific error thrown, the state changed,
-  the row written, the event emitted.
+- **Preserve producer failure.** `test-command | tail` may hide a failed producer. Require
+  upstream-failure semantics or separately check its status; truncated output is not a pass.
+- **No tautologies.** Defined/non-null passes for almost anything; assert exact value, error,
+  state change, row, or event.
 - **Don't assert the mock.** A test that stubs a dependency to return `X` then asserts `X` came
   back tests the stub, not your code. Assert the real effect on real (or realistic) data.
-- **Cover the unhappy edges, not just the happy path.** AI is strong on "valid input → success"
-  and weak on empty or missing input, omitted required fields, boundary values, invalid state,
-  and long-or-weird input: write those explicitly and assert the promised rejection/default.
+- **Cover unhappy edges:** empty/missing input, omitted fields, boundaries, invalid state, and
+  long/weird input; assert the promised rejection/default.
 - **Prove it can fail.** For a critical or regression path, break the code deliberately and confirm the test goes red; use the project's mutation runner when one exists.
 - **Don't mirror the implementation.** A test whose assertions restate the code under test
   (same constant, same formula, same branch) stays green even when the logic is wrong. Assert

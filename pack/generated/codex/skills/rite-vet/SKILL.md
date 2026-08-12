@@ -86,14 +86,13 @@ Pull the standard named by the active axis: `principles.md`, `patterns.md`,
    [`reference/review-axes.md`](reference/review-axes.md). Search accepted ADRs and
    relevant workspace `decisions.md` files directly. Harden to the smallest
    behavior-preserving plan; ask only when that changes acceptance or explicit architecture policy.
-2a. **Cross-artifact/project gates.** Apply explicit checklists to spec, tasks,
-   and traceability. Every AC/REQ maps by ID and meaning to a real slice/proof;
-   every slice maps back. Check terminology/conflicts, principles, anti-slop, and
-   conventions. Critical blocks; principle exceptions are human-owned. Recheck
-   after hardening and write `analysis.md`.
+2a. **Cross-artifact/project gates.** Check spec/tasks/traceability: every AC/REQ maps by
+   ID/meaning to slice/proof and back. Check terms, conflicts, principles, anti-slop, conventions;
+   Critical blocks and principle exceptions are human-owned. Recheck, then write `analysis.md`.
 2b. **Build-entry preflight.** Using [`reference/artifacts.md`](reference/artifacts.md), verify
-   every exact proof command/cwd/tool/version/prerequisite; package names against authoritative
-   source and nearest manifest/lockfile; parser-sensitive syntax in an isolated fixture;
+   exact command/cwd/tool/version/prerequisite; output filters must preserve upstream failure or
+   check producer status separately. Verify packages against authoritative source and nearest
+   manifest/lockfile; parser-sensitive syntax in an isolated fixture;
    applicable UI/browser harnesses. Remeasure decision-bearing counts/versions/state
    claims read-only: live facts win; conflicts mark stale artifacts;
    unmeasurable conflict = gap. Record complete SHA-256 provenance inputs. Require

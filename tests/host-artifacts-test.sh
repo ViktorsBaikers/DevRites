@@ -37,6 +37,7 @@ for f in \
   "claude/skills/rite-upgrade/SKILL.md" \
   "claude/agents/devrites-code-reviewer.md" \
   "claude/agents/devrites-upgrade-planner.md" \
+  "claude/workflows/devrites-readonly-review.js" \
   "claude/settings.json" \
   "codex/skills/rite-build/SKILL.md" \
   "codex/skills/rite-build/reference/wright-dispatch.md" \
@@ -58,6 +59,16 @@ for f in \
   [ -f "$OUT/$f" ] && ok "artifact present: $f" || no "artifact missing: $f"
 done
 [ ! -e "$OUT/codex/hooks.json" ] && ok "Codex root hooks artifact is absent" || no "Codex root hooks artifact survived"
+[ ! -e "$OUT/codex/workflows" ] && ok "Claude workflow pilot has no false Codex mirror" || no "Claude workflow pilot leaked into Codex artifacts"
+workflow="$OUT/claude/workflows/devrites-readonly-review.js"
+if grep -q "adapter: 'claude-dynamic-workflow-pilot-v1'" "$workflow" \
+  && grep -q "read_only: true" "$workflow" \
+  && grep -q "agentType: 'devrites-doubt-reviewer'" "$workflow" \
+  && ! grep -q "agentType: 'devrites-slice-wright'" "$workflow"; then
+  ok "Claude workflow pilot is read-only and adversarially verifies findings"
+else
+  no "Claude workflow pilot lost its read-only verification boundary"
+fi
 
 src_skills="$(find "$ROOT/pack/.claude/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
 claude_skills="$(find "$OUT/claude/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"

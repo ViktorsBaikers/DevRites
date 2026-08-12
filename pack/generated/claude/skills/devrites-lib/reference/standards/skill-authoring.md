@@ -1,27 +1,25 @@
 # Skill authoring
 
-> **Source-checkout only.** In a checkout where `pack/.claude/` exists, edit
-> only the canonical source; run `bash scripts/build-host-artifacts.sh`, then validate.
-> Installed generated mirrors are not authoring surfaces; never edit them.
+> **Source-checkout only:** where `pack/.claude/` exists, edit canonical source; run
+> `bash scripts/build-host-artifacts.sh`, then validate. Installed generated mirrors are not authoring surfaces.
 
 ## Surface lifecycle
 
-- **Promoted:** shipped in `pack/`, documented in `docs/skills.md` +
-  `docs/command-map.md`, validated.
-- **Draft:** local/research outside `pack/`.
-- **Deprecated:** compatibility bridge with replacement/removal note.
-- **Research:** `docs/research/` notes; never installed.
+- **Promoted:** validated in `pack/`, `docs/skills.md`, and `docs/command-map.md`.
+- **Draft:** local, outside `pack/`.
+- **Deprecated:** bridge with replacement/removal note.
+- **Research:** `docs/research/`, never installed.
 
 ## Routing metadata
 
-The description routes; it is not documentation.
+Description routes; it is not documentation.
 
 - **Model-invoked:** omit `disable-model-invocation`; use a trigger-bearing
   description.
 - **Explicit-only:** set `disable-model-invocation: true`, use a human summary,
   expose through `/rite`; generate Codex
   `policy.allow_implicit_invocation: false` without a stub description.
-- Description caps: public model-invoked 90 words; internal 75; explicit-only
+- Caps: public model-invoked 90 words; internal 75; explicit-only
   30; `devrites-lib` 60. Agent descriptions: 45 words.
 - Model-visible `name` + `description` ≤5,200 routing characters;
   `explicit-only` and bodies/references do not count.
@@ -44,15 +42,11 @@ Optional flags obey `core.md` rule 10.
 
 ## Body and placement
 
-- Ordered steps end in checkable completion criteria.
-- Active bodies show in one read: outcome/owner; `Use when`/`Not for`;
-  preconditions/context; ordered decisions + failure/escalation; artifact/write
-  owner; proof; exit/next route. Omit inapplicable fields; headings may vary.
-  Examples/anti-examples distinguish branches/misuse.
-- Split only for an independent activation/read path or fresh evals proving inline
-  premature exit; otherwise keep one owner.
-- Co-locate a concept's definition, rule, caveat, and example at one load tier;
-  branch references carry whole clusters.
+- Ordered steps end in checkable criteria.
+- One read shows outcome, triggers, preconditions, decisions/failure, write owner,
+  proof, exit; omit irrelevant fields. Examples distinguish branches.
+- Split only for independent load path or eval-proven inline failure; keep one owner;
+  move each definition/rule/caveat/example cluster together.
 - Every public optional-flag skill obeys the shared
   [`core.md`](core.md#operating-rules-every-phase): declare its
   complete flag surface in `argument-hint`,
@@ -92,17 +86,15 @@ regresses.
 External sources are references, not authority. Promote only when one
 `docs/research/` admission record contains:
 
-- **Provenance:** source, commit/date, files, license/attribution. Unclear rights →
-  reference-only, independently written DevRites prose.
-- **Gap + owner:** observed DevRites failure and existing canonical owner; extend
-  before adding a surface.
-- **Adaptation + cost:** exact DevRites delta without foreign brands/paths/chains/
-  host assumptions; justify dependency/context/process/hook/agent/command. Prefer
-  native/existing/stdlib/CLI.
-- **Proof + disposition:** distinguishing positive/negative checks, host/package
-  parity, and rejection reasons.
+- **Provenance:** origin, review date/files, adaptation, and derived targets; external assets add
+  source URL/SHA/path/license, local/user assets add relative path/digest/owner. Unverified
+  external origin/rights → reference-only, independently written prose.
+- **Gap + owner:** observed failure and existing canonical owner; extend before adding.
+- **Adaptation + cost:** native delta, no foreign brands/paths/host assumptions; justify every
+  dependency, context, process, hook, agent, or command.
+- **Proof + disposition:** positive/negative checks, host/package parity, rejection reasons.
 
-A missing field means no promotion.
+Missing field → no promotion.
 
 ## Match form to failure
 
@@ -115,9 +107,15 @@ A missing field means no promotion.
 
 Behavior-shaping prose is code:
 
-1. Run a no-guidance baseline; if it does not fail, do not add guidance.
-2. Run at least five fresh-context reps per variant; inspect every flagged run.
-3. Treat divergent interpretations as a rewrite signal, never an average.
+1. Baseline without guidance; if it passes, add none.
+2. Run ≥5 fresh-context reps/variant; inspect every flagged run.
+3. Divergent interpretations require rewrite, not averaging.
+4. Pin host/model/build, corpus, grader, and candidate digest or commit+path. Report tasks/trials,
+   arms, same-build A/A noise before A/B, sanitized per-trial verdicts/metrics, invalid/null results,
+   variance, process versus job outcome, and supported/unproved claims. Never capture raw transcripts;
+   lost grading signal is `cannot_verify`.
+
+CI validates only corpora/deterministic artifacts—never paid sessions or lexical-as-model claims.
 
 ## Pruning
 
@@ -126,11 +124,8 @@ guards. Fill omitted decisions or mark a deliberate branch.
 
 ## Contribution preflight
 
-Record catalog search, why an existing owner fails, evals, host parity, and
-public/internal surface.
-Public commands need docs/generated hosts/reply marker;
-internal skills need trigger/not-for plus proof they are not an agent/reference.
-Agents need role/scope/mode/output/composition and
-[`agents.md` § Result admission](agents.md#result-admission) for review roles.
-Only `devrites-slice-wright` writes product source/tests. The controlling root's
-path-bounded `.devrites/**` workflow artifacts follow `workflow-artifacts.md`.
+Record catalog search, owner gap, evals, host parity, and public/internal surface. Public
+commands need docs/generated hosts/reply marker; internal skills need trigger/exclusion and
+skill-not-agent proof. Agents need role/scope/mode/output/composition plus
+[Result admission](agents.md#result-admission) for reviewers. Only `devrites-slice-wright`
+writes product source/tests; root-owned bounded `.devrites/**` follows `workflow-artifacts.md`.

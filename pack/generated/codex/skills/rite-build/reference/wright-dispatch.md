@@ -11,6 +11,32 @@ Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root
 the exact `:workspace` wright, and read-only specialists. Never bypass/substitute
 the wright or recreate an engine bridge.
 
+## Isolated writer-worktree pilot
+
+Use native isolation only when the current host exposes an explicit named-writer
+worktree plus result reconciliation; separate agent threads or inherited sandboxes do
+not qualify. Codex CLI custom subagents therefore use `same-worktree` unless a future
+supported interface passes this capability gate—never create a manual worktree from the
+read-only root to imitate it. Also require `git rev-parse
+--show-superproject-working-tree` to be empty; resolved git/common dirs; committed,
+clean candidate/index; all inputs at `HEAD`; no other writer; and green cheap isolated
+baseline proof. Otherwise use serial same-worktree dispatch—never stash, commit, or
+discard user work to qualify. Ask host for an explicit current-`HEAD` base when
+supported. Regardless of host defaults, the wright's first command must prove actual `git rev-parse HEAD` equals supplied
+`worktree_base`. Mismatch returns a gap with no write before project reads or baseline proof.
+
+The isolated wright returns one local unpushed `transfer_commit`, its `worktree_base`,
+and exact files. Root proves descendant base, exact `git diff --name-only
+<base>..<transfer>`, no `.devrites/**`/submodule/symlink/unrelated delta, unchanged
+source base, and no user-work overwrite. Use only host-native explicit reconciliation;
+never ad hoc copy, cherry-pick, or merge from read-only root. Compare transferred bytes,
+run approved proof, record evidence, then let host remove worktree.
+
+Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
+preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
+Parallel writer work remains forbidden until this serial pilot measures transfer,
+conflict, proof, and review outcomes on both hosts.
+
 ## Prepare
 
 1. Derive the smallest exact project-relative source/test path list; reject
@@ -26,12 +52,14 @@ the wright or recreate an engine bridge.
    Do not paste the whole standard or silently omit an applicable risk.
    A new path requires a new bounded contract; the wright cannot widen the task.
 3. Record `git diff --name-only` before dispatch so unrelated work remains
-   distinguishable.
+   distinguishable. For an isolated pilot, also record committed base SHA and exact
+   baseline status before asking the host for isolation.
 
 ## Run
 
-Ask the host for the exact writer in fresh context and wait. Never run two
-writers in one worktree or substitute a generic agent.
+Ask the host for the exact writer in fresh context and wait. Use at most one writer
+across all linked worktrees for this workspace. Never run two writers in one worktree,
+run isolated and same-worktree writers concurrently, or substitute a generic agent.
 
 ## Inspect and prove
 
