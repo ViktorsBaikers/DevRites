@@ -13,63 +13,118 @@ import (
 	"testing"
 )
 
-func TestRequiredSectionsIsPhaseRelativeAndOrdered(t *testing.T) {
-	got := RequiredSections(PhaseBuild)
-	want := []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks}
-	if len(got) != len(want) {
-		t.Fatalf("RequiredSections(build) = %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("index %d: got %q, want %q", i, got[i], want[i])
-		}
-	}
-	if len(RequiredSections(PhaseFrame)) != 0 {
-		t.Errorf("frame should require no sections, got %v", RequiredSections(PhaseFrame))
+func expectedPhasePolicies() []PhasePolicy {
+	sectionsSpec := []Section{SectionSpec}
+	sectionsPlan := []Section{SectionSpec, SectionPlan}
+	sectionsBuild := []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks}
+	sectionsProof := []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof}
+	sectionsComplete := []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus}
+
+	artifactsFrame := []ArtifactPath{"state.md"}
+	artifactsSpec := []ArtifactPath{"brief.md", "spec.md", "state.md", "decisions.md", "assumptions.md", "questions.md"}
+	artifactsClarify := append(append([]ArtifactPath(nil), artifactsSpec...), "decision-coverage.md")
+	artifactsPlan := append(append([]ArtifactPath(nil), artifactsClarify...), "architecture.md", "plan.md", "tasks.md", "traceability.md")
+	artifactsVetted := append(append([]ArtifactPath(nil), artifactsPlan...), "eng-review.md", "test-plan.md")
+	artifactsProof := append(append([]ArtifactPath(nil), artifactsVetted...), "evidence.md", "touched-files.md")
+	artifactsFinal := append(append([]ArtifactPath(nil), artifactsProof...), "review.md", "seal.md")
+
+	return []PhasePolicy{
+		{Target: PhaseFrame, ResumeVerb: "frame", TransitionRight: "Frame an unstructured request before lifecycle work.", RequiredArtifacts: artifactsFrame},
+		{Target: PhaseSpec, ResumeVerb: "spec", TransitionRight: "Author the product specification.", RequiredSections: sectionsSpec, RequiredArtifacts: artifactsSpec},
+		{Target: PhaseClarify, ResumeVerb: "clarify", TransitionRight: "Close decision coverage in the written specification.", RequiredSections: sectionsSpec, RequiredArtifacts: artifactsClarify, BlocksOpenQuestions: true},
+		{Target: PhaseTemper, ResumeVerb: "temper", TransitionRight: "Optionally challenge the clarified specification strategy.", RequiredSections: sectionsSpec, RequiredArtifacts: artifactsClarify, BlocksOpenQuestions: true},
+		{Target: PhaseDefine, ResumeVerb: "define", TransitionRight: "Author and approve the initial implementation plan.", RequiredSections: sectionsPlan, RequiredArtifacts: artifactsPlan, BlocksOpenQuestions: true},
+		{Target: PhasePlan, ResumeVerb: "vet", TransitionRight: "Hold the approved or repaired plan checkpoint for engineering review.", RequiredSections: sectionsPlan, RequiredArtifacts: artifactsPlan, BlocksOpenQuestions: true},
+		{Target: PhaseVet, ResumeVerb: "vet", TransitionRight: "Review implementation readiness before build.", RequiredSections: sectionsBuild, RequiredArtifacts: artifactsVetted, BlocksOpenQuestions: true},
+		{Target: PhaseBuild, ResumeVerb: "build", TransitionRight: "Implement the next approved vertical slice.", RequiredSections: sectionsBuild, RequiredArtifacts: artifactsVetted, BlocksOpenQuestions: true},
+		{Target: PhaseConverge, ResumeVerb: "converge", TransitionRight: "Recover unmet clarified intent into new slices.", RequiredSections: sectionsBuild, RequiredArtifacts: artifactsVetted, BlocksOpenQuestions: true},
+		{Target: PhaseProve, ResumeVerb: "prove", TransitionRight: "Produce acceptance evidence for the implementation.", RequiredSections: sectionsProof, RequiredArtifacts: artifactsProof, ProofRequired: true, BlocksOpenQuestions: true},
+		{Target: PhasePolish, ResumeVerb: "polish", TransitionRight: "Apply the bounded quality pass.", RequiredSections: sectionsProof, RequiredArtifacts: artifactsProof, ProofRequired: true, BlocksOpenQuestions: true},
+		{Target: PhaseReview, ResumeVerb: "review", TransitionRight: "Review the proven implementation.", RequiredSections: sectionsProof, RequiredArtifacts: artifactsProof, ProofRequired: true, BlocksOpenQuestions: true},
+		{Target: PhaseSeal, ResumeVerb: "seal", TransitionRight: "Decide the final GO or NO-GO.", RequiredSections: sectionsComplete, RequiredArtifacts: artifactsFinal, ProofRequired: true, BlocksOpenQuestions: true, Shippable: true},
+		{Target: PhaseShip, ResumeVerb: "ship", TransitionRight: "Perform authorized release and close-out mutations.", RequiredSections: sectionsComplete, RequiredArtifacts: artifactsFinal, ProofRequired: true, BlocksOpenQuestions: true, Shippable: true},
+		{Target: PhaseDone, TransitionRight: "Represent archived completion with no resume command.", RequiredSections: sectionsComplete, RequiredArtifacts: artifactsFinal, ProofRequired: true, BlocksOpenQuestions: true, Shippable: true},
 	}
 }
 
-func TestLifecycleRegistryOwnsOrderAndResumeCommands(t *testing.T) {
-	phases := LifecyclePhases()
-	if len(phases) == 0 || phases[0] != PhaseFrame || phases[len(phases)-1] != PhaseDone {
-		t.Fatalf("LifecyclePhases()=%v, want frame...done", phases)
+func assertPhasePolicyEqual(t *testing.T, label string, got, want PhasePolicy) {
+	t.Helper()
+	if got.Target != want.Target ||
+		got.ResumeVerb != want.ResumeVerb ||
+		got.TransitionRight != want.TransitionRight ||
+		!slices.Equal(got.RequiredSections, want.RequiredSections) ||
+		!slices.Equal(got.RequiredArtifacts, want.RequiredArtifacts) ||
+		got.ProofRequired != want.ProofRequired ||
+		got.BlocksOpenQuestions != want.BlocksOpenQuestions ||
+		got.Shippable != want.Shippable {
+		t.Errorf("%s = %+v, want %+v", label, got, want)
 	}
-	wantPrefix := []Phase{PhaseFrame, PhaseSpec, PhaseClarify, PhaseTemper, PhaseDefine}
-	if len(phases) < len(wantPrefix) {
-		t.Fatalf("LifecyclePhases()=%v, want prefix %v", phases, wantPrefix)
-	}
-	for i, want := range wantPrefix {
-		if phases[i] != want {
-			t.Fatalf("LifecyclePhases()[%d]=%q, want %q (full=%v)", i, phases[i], want, phases)
-		}
-	}
-	if got := ResumeVerb(PhasePlan); got != "vet" {
-		t.Fatalf("ResumeVerb(plan)=%q, want vet", got)
-	}
-	if got := ResumeVerb(PhaseDone); got != "" {
-		t.Fatalf("ResumeVerb(done)=%q, want empty", got)
-	}
+}
 
-	phases[0] = PhaseDone
-	if got := LifecyclePhases()[0]; got != PhaseFrame {
-		t.Fatalf("LifecyclePhases exposed mutable registry: first=%q", got)
+func policyForTest(t *testing.T, target Phase) PhasePolicy {
+	t.Helper()
+	policy, ok := PolicyFor(target)
+	if !ok {
+		t.Fatalf("PolicyFor(%q) returned unknown", target)
 	}
+	return policy
+}
+
+func TestPhasePoliciesExposeCanonicalLifecycle(t *testing.T) {
+	want := expectedPhasePolicies()
+	got := PhasePolicies()
+	if len(got) != len(want) {
+		t.Fatalf("len(PhasePolicies()) = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		assertPhasePolicyEqual(t, "PhasePolicies", got[i], want[i])
+		lookedUp, ok := PolicyFor(want[i].Target)
+		if !ok {
+			t.Fatalf("PolicyFor(%q) returned unknown", want[i].Target)
+		}
+		assertPhasePolicyEqual(t, "PolicyFor", lookedUp, want[i])
+	}
+	for _, unknown := range []Phase{"", "planning"} {
+		policy, ok := PolicyFor(unknown)
+		if ok {
+			t.Errorf("PolicyFor(%q) = (%+v, true), want unknown lookup rejected", unknown, policy)
+		}
+		assertPhasePolicyEqual(t, "unknown PolicyFor result", policy, PhasePolicy{})
+	}
+}
+
+func TestPolicyForReturnsDefensiveNestedCopies(t *testing.T) {
+	want := expectedPhasePolicies()[7]
+	policy := policyForTest(t, PhaseBuild)
+	policy.RequiredSections[0] = SectionStatus
+	policy.RequiredArtifacts[0] = "mutated.md"
+
+	assertPhasePolicyEqual(t, "PolicyFor after mutation", policyForTest(t, PhaseBuild), want)
+}
+
+func TestPhasePoliciesReturnsDefensiveNestedCopies(t *testing.T) {
+	want := expectedPhasePolicies()
+	policies := PhasePolicies()
+	policies[7].Target = PhaseDone
+	policies[7].RequiredSections[0] = SectionStatus
+	policies[7].RequiredArtifacts[0] = "mutated.md"
+
+	assertPhasePolicyEqual(t, "sibling policy after mutation", policies[8], want[8])
+	fresh := PhasePolicies()
+	assertPhasePolicyEqual(t, "PhasePolicies after mutation", fresh[7], want[7])
 }
 
 func TestPrebuildWorkspaceRequirementsAreEnforcedByPhase(t *testing.T) {
 	requireFiles := func(phase Phase, names ...string) {
 		t.Helper()
-		definition, ok := definitionFor(phase)
-		if !ok {
-			t.Fatalf("missing phase definition for %q", phase)
-		}
-		got := make(map[string]bool, len(definition.workspaceRequired))
-		for _, name := range definition.workspaceRequired {
-			got[name] = true
+		policy := policyForTest(t, phase)
+		got := make(map[string]bool, len(policy.RequiredArtifacts))
+		for _, artifact := range policy.RequiredArtifacts {
+			got[string(artifact)] = true
 		}
 		for _, name := range names {
 			if !got[name] {
-				t.Errorf("phase %q does not require %s: %v", phase, name, definition.workspaceRequired)
+				t.Errorf("phase %q does not require %s: %v", phase, name, policy.RequiredArtifacts)
 			}
 		}
 	}
@@ -79,6 +134,34 @@ func TestPrebuildWorkspaceRequirementsAreEnforcedByPhase(t *testing.T) {
 	requireFiles(PhasePlan, "decision-coverage.md")
 	requireFiles(PhaseVet, "decision-coverage.md", "eng-review.md", "test-plan.md")
 	requireFiles(PhaseBuild, "decision-coverage.md", "eng-review.md", "test-plan.md")
+}
+
+func TestLoadFeatureObservesEveryLifecycleArtifact(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeWorkSection(t, root, "all-artifacts", "state.md", "- Phase: frame\n")
+	writeWorkSection(t, root, "all-artifacts", "seal.md", "# Seal\n\nGO\n")
+
+	feature, err := LoadFeature(root, "all-artifacts")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := map[string]bool{}
+	for _, policy := range PhasePolicies() {
+		for _, artifact := range policy.RequiredArtifacts {
+			expected[string(artifact)] = true
+		}
+	}
+	if len(feature.PresentFiles) != len(expected) {
+		t.Fatalf("PresentFiles has %d artifacts, want %d: %v", len(feature.PresentFiles), len(expected), feature.PresentFiles)
+	}
+	for name := range expected {
+		if _, observed := feature.PresentFiles[name]; !observed {
+			t.Errorf("PresentFiles does not observe lifecycle artifact %q", name)
+		}
+	}
+	if !feature.PresentFiles["seal.md"] {
+		t.Error("PresentFiles did not inspect a later-phase artifact for a frame workspace")
+	}
 }
 
 func TestRuntimeCompletenessUsesWorkspaceRequiredFiles(t *testing.T) {
@@ -110,7 +193,8 @@ func TestRuntimeCompletenessUsesWorkspaceRequiredFiles(t *testing.T) {
 
 func TestRuntimeCompletenessRejectsEmptyRequiredFile(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
-	for _, name := range RequiredWorkspaceFiles(PhaseClarify) {
+	for _, artifact := range policyForTest(t, PhaseClarify).RequiredArtifacts {
+		name := string(artifact)
 		body := "# " + name + "\n\nreal\n"
 		if name == "decision-coverage.md" {
 			body = ""
@@ -128,39 +212,71 @@ func TestRuntimeCompletenessRejectsEmptyRequiredFile(t *testing.T) {
 	}
 }
 
-func TestLifecycleRegistryInvariants(t *testing.T) {
+func TestPhasePolicyInvariants(t *testing.T) {
+	policies := PhasePolicies()
 	phaseNames := map[Phase]bool{}
 	transitionRights := map[string]Phase{}
-	for i, definition := range phaseDefinitions {
-		if definition.phase == "" || phaseNames[definition.phase] {
-			t.Fatalf("phase definition %d has empty or duplicate ID %q", i, definition.phase)
+	sectionOrder := make(map[Section]int, len(Sections))
+	for i, section := range Sections {
+		sectionOrder[section] = i
+	}
+
+	for i, policy := range policies {
+		if policy.Target == "" || phaseNames[policy.Target] {
+			t.Fatalf("policy %d has empty or duplicate target %q", i, policy.Target)
 		}
-		phaseNames[definition.phase] = true
-		if definition.transitionRight == "" || transitionRights[definition.transitionRight] != "" {
-			t.Fatalf("phase %q has empty or duplicate transition right %q", definition.phase, definition.transitionRight)
+		phaseNames[policy.Target] = true
+		if policy.TransitionRight == "" || transitionRights[policy.TransitionRight] != "" {
+			t.Fatalf("phase %q has empty or duplicate transition right %q", policy.Target, policy.TransitionRight)
 		}
-		transitionRights[definition.transitionRight] = definition.phase
-		if len(definition.workspaceRequired) == 0 {
-			t.Fatalf("phase %q has no workspace requirements", definition.phase)
+		transitionRights[policy.TransitionRight] = policy.Target
+		if len(policy.RequiredArtifacts) == 0 {
+			t.Fatalf("phase %q has no required artifacts", policy.Target)
 		}
-		for _, section := range definition.required {
-			known := false
-			for _, canonical := range Sections {
-				known = known || section == canonical
+
+		seenSections := map[Section]bool{}
+		previousSectionIndex := -1
+		for _, section := range policy.RequiredSections {
+			index, known := sectionOrder[section]
+			if !known || seenSections[section] || index <= previousSectionIndex {
+				t.Fatalf("phase %q has non-canonical required sections %v", policy.Target, policy.RequiredSections)
 			}
-			if !known {
-				t.Fatalf("phase %q requires unknown section %q", definition.phase, section)
+			seenSections[section] = true
+			previousSectionIndex = index
+		}
+		seenArtifacts := map[ArtifactPath]bool{}
+		for _, artifact := range policy.RequiredArtifacts {
+			if artifact == "" || seenArtifacts[artifact] {
+				t.Fatalf("phase %q has empty or duplicate required artifact %q", policy.Target, artifact)
+			}
+			seenArtifacts[artifact] = true
+		}
+
+		if i > 0 {
+			for _, section := range policies[i-1].RequiredSections {
+				if !seenSections[section] {
+					t.Errorf("phase %q dropped section %q required by %q", policy.Target, section, policies[i-1].Target)
+				}
+			}
+			for _, artifact := range policies[i-1].RequiredArtifacts {
+				if !seenArtifacts[artifact] {
+					t.Errorf("phase %q dropped artifact %q required by %q", policy.Target, artifact, policies[i-1].Target)
+				}
 			}
 		}
-		if definition.shippable && !definition.proofRequired {
-			t.Fatalf("shippable phase %q does not require proof", definition.phase)
+		if policy.Target == PhaseDone && policy.ResumeVerb != "" {
+			t.Errorf("done resume verb = %q, want empty", policy.ResumeVerb)
+		}
+		if policy.Shippable && !policy.ProofRequired {
+			t.Errorf("shippable phase %q does not require proof", policy.Target)
 		}
 	}
 }
 
 func TestStatusFixtureBuildIncomplete(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
-	for _, name := range RequiredWorkspaceFiles(PhaseBuild) {
+	for _, artifact := range policyForTest(t, PhaseBuild).RequiredArtifacts {
+		name := string(artifact)
 		body := "# " + name + "\n\nreal\n"
 		if name == "state.md" {
 			body = "- Phase: build\n"
@@ -180,7 +296,8 @@ func TestStatusFixtureBuildIncomplete(t *testing.T) {
 
 func TestStatusFixtureSpecComplete(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
-	for _, name := range RequiredWorkspaceFiles(PhaseSpec) {
+	for _, artifact := range policyForTest(t, PhaseSpec).RequiredArtifacts {
+		name := string(artifact)
 		body := "# " + name + "\n\nreal\n"
 		if name == "state.md" {
 			body = "- Phase: spec\n"
@@ -220,10 +337,10 @@ func TestCanonicalWorkspaceCompletenessUsesConcretePhaseFiles(t *testing.T) {
 
 func TestFinalPhasesRequireReviewAndSealArtifacts(t *testing.T) {
 	for _, phase := range []Phase{PhaseSeal, PhaseShip, PhaseDone} {
-		required := RequiredWorkspaceFiles(phase)
-		for _, name := range []string{"review.md", "seal.md"} {
+		required := policyForTest(t, phase).RequiredArtifacts
+		for _, name := range []ArtifactPath{"review.md", "seal.md"} {
 			if !slices.Contains(required, name) {
-				t.Errorf("RequiredWorkspaceFiles(%q) = %v, want %s", phase, required, name)
+				t.Errorf("PolicyFor(%q).RequiredArtifacts = %v, want %s", phase, required, name)
 			}
 		}
 	}

@@ -119,9 +119,9 @@ func verifyReadinessBinding(root, slug string) (string, error) {
 	return expected, nil
 }
 
-func phaseRequiresReadinessBinding(phase state.Phase) bool {
-	for _, name := range state.RequiredWorkspaceFiles(phase) {
-		if name == "eng-review.md" {
+func phaseRequiresReadinessBinding(policy state.PhasePolicy) bool {
+	for _, artifact := range policy.RequiredArtifacts {
+		if artifact == "eng-review.md" {
 			return true
 		}
 	}

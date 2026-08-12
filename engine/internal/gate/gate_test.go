@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/devrites/devrites/internal/reason"
+	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/testutil"
 )
 
@@ -149,6 +150,54 @@ func TestStateAwaitingHumanReadsCanonicalCursor(t *testing.T) {
 	}
 }
 
+func TestCheckAppliesOpenQuestionsByTargetPolicy(t *testing.T) {
+	const openQuestion = "## q-1\nstatus: open\ngate: blocking\n"
+	cases := []struct {
+		name          string
+		kind          Kind
+		current       state.Phase
+		required      state.Phase
+		wantTarget    state.Phase
+		wantBlocked   bool
+		wantReason    reason.ID
+		wantInvariant string
+	}{
+		{name: "frame readiness", kind: Readiness, current: state.PhaseFrame, required: state.PhaseFrame, wantTarget: state.PhaseFrame, wantReason: reason.GateReadinessPassed},
+		{name: "spec readiness", kind: Readiness, current: state.PhaseSpec, required: state.PhaseSpec, wantTarget: state.PhaseSpec, wantReason: reason.GateReadinessPassed},
+		{name: "clarify readiness", kind: Readiness, current: state.PhaseClarify, required: state.PhaseClarify, wantTarget: state.PhaseClarify, wantBlocked: true, wantReason: reason.GateReadinessMissing, wantInvariant: "open blocking human question(s) remain in questions.md but state.md is not awaiting_human"},
+		{name: "seal from spec", kind: Seal, current: state.PhaseSpec, required: state.PhaseSeal, wantTarget: state.PhaseSeal, wantBlocked: true, wantReason: reason.GateSealMissing, wantInvariant: "open blocking human question(s) remain in questions.md but state.md is not awaiting_human"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			writeCompleteGateFeature(t, root, "phase-policy", tc.current, tc.required, openQuestion)
+			if tc.kind == Seal {
+				binding, err := ReadinessBinding(root, "phase-policy")
+				if err != nil {
+					t.Fatal(err)
+				}
+				testutil.AppendFile(t, filepath.Join(root, "work", "phase-policy", "eng-review.md"), "\n"+binding+"\n")
+			}
+
+			got, err := Check(tc.kind, root, "phase-policy")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Target != tc.wantTarget || got.Blocked != tc.wantBlocked || got.ReasonID != tc.wantReason {
+				t.Fatalf("target=%q blocked=%v reason=%q, want target=%q blocked=%v reason=%q", got.Target, got.Blocked, got.ReasonID, tc.wantTarget, tc.wantBlocked, tc.wantReason)
+			}
+			if tc.wantInvariant == "" {
+				if len(got.StateProblems) != 0 {
+					t.Fatalf("StateProblems=%v, want none", got.StateProblems)
+				}
+			} else if strings.Join(got.StateProblems, "\n") != tc.wantInvariant {
+				t.Fatalf("StateProblems=%q, want %q", got.StateProblems, tc.wantInvariant)
+			}
+		})
+	}
+}
+
 func TestCheckBlocksOpenHumanQuestions(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
@@ -222,6 +271,30 @@ func TestOpenBlockingQuestionGates(t *testing.T) {
 	want := []string{"blocking", "validating", "escalating"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("openBlockingQuestionGates=%v, want %v", got, want)
+	}
+}
+
+func writeCompleteGateFeature(t *testing.T, root, slug string, current, required state.Phase, questions string) {
+	t.Helper()
+	policy, ok := state.PolicyFor(required)
+	if !ok {
+		t.Fatalf("PolicyFor(%q) returned unknown", required)
+	}
+	questionsRequired := false
+	for _, artifact := range policy.RequiredArtifacts {
+		name := string(artifact)
+		content := "# " + name + "\n\nreal\n"
+		switch name {
+		case "state.md":
+			content = "- Phase: " + string(current) + "\n- Status: running\n"
+		case "questions.md":
+			questionsRequired = true
+			content = questions
+		}
+		testutil.WriteFile(t, filepath.Join(root, "work", slug, name), content)
+	}
+	if !questionsRequired {
+		testutil.WriteFile(t, filepath.Join(root, "work", slug, "questions.md"), questions)
 	}
 }
 

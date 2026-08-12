@@ -1,5 +1,5 @@
 // Command workflowmanifest writes the deterministic cross-language derivative
-// of state.WorkflowPhases. The typed Go registry remains the authority.
+// of state.PhasePolicies. The typed Go registry remains the authority.
 package main
 
 import (
@@ -12,6 +12,35 @@ import (
 	"github.com/devrites/devrites/internal/state"
 )
 
+type workflowPhase struct {
+	ID                  state.Phase          `json:"id"`
+	ResumeVerb          string               `json:"resumeVerb,omitempty"`
+	TransitionRight     string               `json:"transitionRight"`
+	RequiredSections    []state.Section      `json:"requiredSections,omitempty"`
+	WorkspaceRequired   []state.ArtifactPath `json:"workspaceRequired"`
+	ProofRequired       bool                 `json:"proofRequired,omitempty"`
+	BlocksOpenQuestions bool                 `json:"blocksOpenQuestions,omitempty"`
+	Shippable           bool                 `json:"shippable,omitempty"`
+}
+
+func workflowPhases() []workflowPhase {
+	policies := state.PhasePolicies()
+	phases := make([]workflowPhase, len(policies))
+	for i, policy := range policies {
+		phases[i] = workflowPhase{
+			ID:                  policy.Target,
+			ResumeVerb:          policy.ResumeVerb,
+			TransitionRight:     policy.TransitionRight,
+			RequiredSections:    policy.RequiredSections,
+			WorkspaceRequired:   policy.RequiredArtifacts,
+			ProofRequired:       policy.ProofRequired,
+			BlocksOpenQuestions: policy.BlocksOpenQuestions,
+			Shippable:           policy.Shippable,
+		}
+	}
+	return phases
+}
+
 func main() {
 	outPath := flag.String("out", "workflow_manifest.json", "output path")
 	check := flag.Bool("check", false, "fail when the output is stale")
@@ -21,13 +50,13 @@ func main() {
 		GeneratedBy      string                 `json:"generatedBy"`
 		SchemaVersion    int                    `json:"schemaVersion"`
 		AuthorityPolicy  state.AuthorityPolicy  `json:"authorityPolicy"`
-		Phases           []state.WorkflowPhase  `json:"phases"`
+		Phases           []workflowPhase        `json:"phases"`
 		CursorKeyAliases []state.CursorKeyAlias `json:"cursorKeyAliases"`
 	}{
 		GeneratedBy:      "go generate ./internal/state; DO NOT EDIT",
 		SchemaVersion:    state.SchemaVersion,
 		AuthorityPolicy:  state.WorkflowAuthorityPolicy(),
-		Phases:           state.WorkflowPhases(),
+		Phases:           workflowPhases(),
 		CursorKeyAliases: state.CursorKeyAliases(),
 	}
 	data, err := json.MarshalIndent(document, "", "  ")

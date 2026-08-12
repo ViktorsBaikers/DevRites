@@ -53,20 +53,27 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 	if kind == Seal {
 		target = state.PhaseSeal
 	}
+	policy, ok := state.PolicyFor(target)
+	if !ok {
+		return nil, fmt.Errorf("gate %s: unknown target phase %q", kind, target)
+	}
+	target = policy.Target
 	missing := state.MissingFor(f, target)
 	missingFiles := state.MissingWorkspaceFiles(f, target)
 	blocked := len(missingFiles) > 0
 	readinessStale := false
 	var stateProblems []string
-	if gates, awaitingHuman := openHumanGates(devritespaths.FeatureDir(root, slug)); len(gates) > 0 {
-		problem := fmt.Sprintf("open %s human question(s) remain in questions.md", strings.Join(gates, "/"))
-		if !awaitingHuman {
-			problem += " but state.md is not awaiting_human"
+	if policy.BlocksOpenQuestions {
+		if gates, awaitingHuman := openHumanGates(devritespaths.FeatureDir(root, slug)); len(gates) > 0 {
+			problem := fmt.Sprintf("open %s human question(s) remain in questions.md", strings.Join(gates, "/"))
+			if !awaitingHuman {
+				problem += " but state.md is not awaiting_human"
+			}
+			stateProblems = append(stateProblems, problem)
+			blocked = true
 		}
-		stateProblems = append(stateProblems, problem)
-		blocked = true
 	}
-	if len(missingFiles) == 0 && phaseRequiresReadinessBinding(target) {
+	if len(missingFiles) == 0 && phaseRequiresReadinessBinding(policy) {
 		expected, bindingErr := verifyReadinessBinding(root, slug)
 		if bindingErr != nil {
 			readinessStale = true

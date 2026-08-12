@@ -286,15 +286,15 @@ func clearAwaiting(sfile, qid string) error {
 		return fmt.Errorf("read state %s: %w", sfile, err)
 	}
 	lines := splitLinesNoTrailing(data)
-	resumePhase := state.PhaseBuild
+	resumePolicy, _ := state.PolicyFor(state.PhaseBuild)
 	if rawPhase, ok := state.CursorField(lines, state.CursorPhase); ok {
 		if fields := strings.Fields(strings.ToLower(rawPhase)); len(fields) > 0 {
-			if phase, known := state.PhaseForName(fields[0]); known && state.ResumeVerb(phase) != "" {
-				resumePhase = phase
+			if policy, known := state.PolicyFor(state.Phase(fields[0])); known && policy.ResumeVerb != "" {
+				resumePolicy = policy
 			}
 		}
 	}
-	resumeCommand := workflow.ForVerb(state.ResumeVerb(resumePhase))
+	resumeCommand := workflow.ForVerb(resumePolicy.ResumeVerb)
 	// First check whether the awaiting block references this question at all.
 	inAw := false
 	var awaitingLines []string
@@ -337,7 +337,7 @@ func clearAwaiting(sfile, qid string) error {
 			continue
 		case inLog && hdrSpaceRe.MatchString(line):
 			if !logAppended {
-				out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePhase, qid))
+				out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePolicy.Target, qid))
 				logAppended = true
 			}
 			inLog = false
@@ -347,7 +347,7 @@ func clearAwaiting(sfile, qid string) error {
 		out = append(out, line)
 	}
 	if inLog && !logAppended {
-		out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePhase, qid))
+		out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePolicy.Target, qid))
 	}
 	out, _ = state.SetCursorField(out, state.CursorStatus, "running")
 	out, _ = state.SetCursorField(out, state.CursorNextAction, "(resume: `"+resumeCommand.Both()+"` to continue the workflow)")

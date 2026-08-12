@@ -9,7 +9,9 @@ import (
 	"testing"
 	"time"
 
+	internalgate "github.com/devrites/devrites/internal/gate"
 	"github.com/devrites/devrites/internal/lib"
+	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/testutil"
 )
 
@@ -71,6 +73,47 @@ func TestReadinessUsesStructuralArtifactsOnly(t *testing.T) {
 	}
 	if !strings.Contains(out, "phase: temper") || !strings.Contains(out, "result: pass") {
 		t.Fatalf("unexpected readiness output:\n%s", out)
+	}
+}
+
+func TestGateQuestionPolicyCLIContract(t *testing.T) {
+	const openQuestion = "## q-1\nstatus: open\ngate: blocking\n"
+	cases := []struct {
+		name       string
+		kind       string
+		current    state.Phase
+		required   state.Phase
+		wantCode   int
+		wantResult string
+		wantReason string
+	}{
+		{name: "frame-open", kind: "readiness", current: state.PhaseFrame, required: state.PhaseFrame, wantCode: 0, wantResult: "pass", wantReason: "DRV-GATE-READINESS-PASSED"},
+		{name: "spec-open", kind: "readiness", current: state.PhaseSpec, required: state.PhaseSpec, wantCode: 0, wantResult: "pass", wantReason: "DRV-GATE-READINESS-PASSED"},
+		{name: "clarify-open", kind: "readiness", current: state.PhaseClarify, required: state.PhaseClarify, wantCode: 3, wantResult: "blocked (state invariant)", wantReason: "DRV-GATE-READINESS-MISSING"},
+		{name: "seal-from-spec", kind: "seal", current: state.PhaseSpec, required: state.PhaseSeal, wantCode: 3, wantResult: "blocked (state invariant)", wantReason: "DRV-GATE-SEAL-MISSING"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := filepath.Join(t.TempDir(), ".devrites")
+			writeCompleteGateCLIWorkspace(t, root, tc.name, tc.current, tc.required, openQuestion)
+			if tc.kind == "seal" {
+				binding, err := internalgate.ReadinessBinding(root, tc.name)
+				if err != nil {
+					t.Fatal(err)
+				}
+				testutil.AppendFile(t, filepath.Join(root, "work", tc.name, "eng-review.md"), "\n"+binding+"\n")
+			}
+
+			out, errOut, code := runDevrites(t, root, "check", tc.kind, tc.name)
+			wantOut := "gate: " + tc.kind + "\nfeature: " + tc.name + "\nphase: " + string(tc.current) + "\nresult: " + tc.wantResult + "\nreason: " + tc.wantReason + "\n"
+			if tc.wantCode == 3 {
+				wantOut += "invariant: open blocking human question(s) remain in questions.md but state.md is not awaiting_human\nretry: devrites-engine check " + tc.kind + " " + tc.name + "\n"
+			}
+			if code != tc.wantCode || out != wantOut || errOut != "" {
+				t.Fatalf("code=%d stdout=%q stderr=%q, want code=%d stdout=%q stderr empty", code, out, errOut, tc.wantCode, wantOut)
+			}
+		})
 	}
 }
 
@@ -195,6 +238,30 @@ func TestSealTracksCanonicalQuestionTableStatus(t *testing.T) {
 	}
 	if !strings.Contains(out, "open validating human question(s) remain") {
 		t.Fatalf("seal did not report the canonical open table row:\n%s", out)
+	}
+}
+
+func writeCompleteGateCLIWorkspace(t *testing.T, root, slug string, current, required state.Phase, questions string) {
+	t.Helper()
+	policy, ok := state.PolicyFor(required)
+	if !ok {
+		t.Fatalf("PolicyFor(%q) returned unknown", required)
+	}
+	questionsRequired := false
+	for _, artifact := range policy.RequiredArtifacts {
+		name := string(artifact)
+		content := "# " + name + "\n\nreal\n"
+		switch name {
+		case "state.md":
+			content = "- Phase: " + string(current) + "\n- Status: running\n"
+		case "questions.md":
+			questionsRequired = true
+			content = questions
+		}
+		testutil.WriteFile(t, filepath.Join(root, "work", slug, name), content)
+	}
+	if !questionsRequired {
+		testutil.WriteFile(t, filepath.Join(root, "work", slug, "questions.md"), questions)
 	}
 }
 

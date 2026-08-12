@@ -12,9 +12,9 @@ workflow strategy.
 | `update [flags]` | Refresh an existing managed installation. |
 | `uninstall [flags]` | Remove managed artifacts while preserving runtime workspace state. |
 | `check candidate <slug>` | Validate the strict manifest and compute the content-bound project-candidate identity. |
-| `check readiness <slug>` | Check phase files, human gates, and the current stable Build-input binding when applicable. |
+| `check readiness <slug>` | Check target-Phase files, open human gates from Clarify onward, and the current stable Build-input binding when applicable. |
 | `check readiness --emit-binding <slug>` | Render the exact stable Build-input binding for Vet to record after review. |
-| `check seal <slug>` | Check final files, human gates, the stable Build-input binding, and exact candidate bindings. |
+| `check seal <slug>` | Check files required by target Phase `seal`, open human gates, the stable Build-input binding, and exact candidate bindings. |
 | `state resolve <qid> "<answer>"` | Resolve an open question and update `questions.md` plus `state.md` atomically. |
 | `state close <slug>` | Archive a shipped workspace and clear matching `ACTIVE`. |
 | `secret-scan [--staged] [--stdin] [slug]` | Scan exact staged blobs, stdin, or touched regular files for credential material. |
@@ -29,10 +29,12 @@ not to the engine command namespace.
 ## Check boundary
 
 The candidate gate validates and hashes path/state/type/mode/content identity;
-it does not infer scope from Git. The readiness gate checks structure plus the
-exact stable Build-input binding after Vet. The seal gate repeats that binding
-and checks exact candidate bindings in evidence, optional browser evidence,
-review, and seal. None judges the meaning of `CLEAR`/`READY` prose,
+it does not infer scope from Git. The readiness gate checks target-Phase
+structure and applies open-question blocking only when that target is Clarify
+or later, plus the exact stable Build-input binding after Vet. The seal gate
+always targets Phase `seal`, repeats that binding, and checks exact candidate
+bindings in evidence, optional browser evidence, review, and seal. None judges
+the meaning of `CLEAR`/`READY` prose,
 parses reviewer narratives, infers acceptance coverage, counts assertions,
 interprets capability deltas, or decides whether a technical plan is sound.
 

@@ -30,21 +30,21 @@ func Status(root, slug string) (*Report, error) {
 // NewReport computes the phase-relative required set and missing sections for a
 // loaded Feature.
 func NewReport(f *Feature) *Report {
-	required := make(map[Section]bool)
-	for _, s := range RequiredSections(f.Phase) {
-		required[s] = true
+	policy, _ := PolicyFor(f.Phase)
+	required := make(map[Section]bool, len(policy.RequiredSections))
+	for _, section := range policy.RequiredSections {
+		required[section] = true
 	}
-	requiredFiles := make(map[string]bool)
-	for _, name := range RequiredWorkspaceFiles(f.Phase) {
-		requiredFiles[name] = true
+	requiredFiles := make(map[string]bool, len(policy.RequiredArtifacts))
+	for _, artifact := range policy.RequiredArtifacts {
+		requiredFiles[string(artifact)] = true
 	}
-	missingFiles := MissingWorkspaceFiles(f, f.Phase)
 	return &Report{
 		Feature:       f,
 		Required:      required,
-		Missing:       MissingFor(f, f.Phase),
+		Missing:       missingSectionsForPolicy(f, policy),
 		RequiredFiles: requiredFiles,
-		MissingFiles:  missingFiles,
+		MissingFiles:  missingArtifactsForPolicy(f, policy),
 	}
 }
 
@@ -54,14 +54,15 @@ func NewReport(f *Feature) *Report {
 // (e.g. seal always checks the full seal-phase set), so its result is
 // independent of f.Phase.
 func MissingFor(f *Feature, p Phase) []Section {
-	required := make(map[Section]bool)
-	for _, s := range RequiredSections(p) {
-		required[s] = true
-	}
+	policy, _ := PolicyFor(p)
+	return missingSectionsForPolicy(f, policy)
+}
+
+func missingSectionsForPolicy(f *Feature, policy PhasePolicy) []Section {
 	var missing []Section
-	for _, s := range Sections {
-		if required[s] && !f.Present[s] {
-			missing = append(missing, s)
+	for _, section := range policy.RequiredSections {
+		if !f.Present[section] {
+			missing = append(missing, section)
 		}
 	}
 	return missing
@@ -71,8 +72,14 @@ func MissingFor(f *Feature, p Phase) []Section {
 // p that do not contain real content. It is the authoritative runtime
 // completeness view; Section completeness remains only a compact legacy view.
 func MissingWorkspaceFiles(f *Feature, p Phase) []string {
+	policy, _ := PolicyFor(p)
+	return missingArtifactsForPolicy(f, policy)
+}
+
+func missingArtifactsForPolicy(f *Feature, policy PhasePolicy) []string {
 	var missing []string
-	for _, name := range RequiredWorkspaceFiles(p) {
+	for _, artifact := range policy.RequiredArtifacts {
+		name := string(artifact)
 		if !f.PresentFiles[name] {
 			missing = append(missing, name)
 		}

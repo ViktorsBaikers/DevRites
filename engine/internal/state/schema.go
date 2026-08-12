@@ -66,18 +66,19 @@ const (
 	PhaseDone     Phase = "done"     // archived completion
 )
 
-// phaseDefinition owns lifecycle order and phase behavior. Workflow topology is
-// versioned application logic rather than deployment configuration, so the
-// compiler sees changes and every consumer derives the same ordering.
-type phaseDefinition struct {
-	phase               Phase
-	resumeVerb          string
-	transitionRight     string
-	required            []Section
-	workspaceRequired   []string
-	proofRequired       bool
-	blocksOpenQuestions bool
-	shippable           bool
+// ArtifactPath is a lifecycle-owned path relative to a feature workspace.
+type ArtifactPath string
+
+// PhasePolicy is the complete deterministic policy for one target Phase.
+type PhasePolicy struct {
+	Target              Phase
+	ResumeVerb          string
+	TransitionRight     string
+	RequiredSections    []Section
+	RequiredArtifacts   []ArtifactPath
+	ProofRequired       bool
+	BlocksOpenQuestions bool
+	Shippable           bool
 }
 
 var (
@@ -87,48 +88,43 @@ var (
 	sectionsProof    = []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof}
 	sectionsComplete = []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus}
 
-	workspaceFrame   = []string{"state.md"}
-	workspaceSpec    = []string{"brief.md", "spec.md", "state.md", "decisions.md", "assumptions.md", "questions.md"}
-	workspaceClarify = append(append([]string(nil), workspaceSpec...), "decision-coverage.md")
-	workspacePlan    = append(append([]string(nil), workspaceClarify...), "architecture.md", "plan.md", "tasks.md", "traceability.md")
-	workspaceVetted  = append(append([]string(nil), workspacePlan...), "eng-review.md", "test-plan.md")
-	workspaceProof   = append(append([]string(nil), workspaceVetted...), "evidence.md", "touched-files.md")
-	workspaceFinal   = append(append([]string(nil), workspaceProof...), "review.md", "seal.md")
+	artifactsFrame   = []ArtifactPath{"state.md"}
+	artifactsSpec    = []ArtifactPath{"brief.md", "spec.md", "state.md", "decisions.md", "assumptions.md", "questions.md"}
+	artifactsClarify = append(append([]ArtifactPath(nil), artifactsSpec...), "decision-coverage.md")
+	artifactsPlan    = append(append([]ArtifactPath(nil), artifactsClarify...), "architecture.md", "plan.md", "tasks.md", "traceability.md")
+	artifactsVetted  = append(append([]ArtifactPath(nil), artifactsPlan...), "eng-review.md", "test-plan.md")
+	artifactsProof   = append(append([]ArtifactPath(nil), artifactsVetted...), "evidence.md", "touched-files.md")
+	artifactsFinal   = append(append([]ArtifactPath(nil), artifactsProof...), "review.md", "seal.md")
 )
 
 // Completeness is phase-relative: a section not yet required (e.g. proof during
 // spec) never blocks. Requirements are additive down the arc. Define is active
 // authoring; Plan is the approved/repaired checkpoint that resumes at Vet.
-var phaseDefinitions = []phaseDefinition{
-	{phase: PhaseFrame, resumeVerb: "frame", transitionRight: "Frame an unstructured request before lifecycle work.", workspaceRequired: workspaceFrame},
-	{phase: PhaseSpec, resumeVerb: "spec", transitionRight: "Author the product specification.", required: sectionsSpec, workspaceRequired: workspaceSpec},
-	{phase: PhaseClarify, resumeVerb: "clarify", transitionRight: "Close decision coverage in the written specification.", required: sectionsSpec, workspaceRequired: workspaceClarify, blocksOpenQuestions: true},
-	{phase: PhaseTemper, resumeVerb: "temper", transitionRight: "Optionally challenge the clarified specification strategy.", required: sectionsSpec, workspaceRequired: workspaceClarify, blocksOpenQuestions: true},
-	{phase: PhaseDefine, resumeVerb: "define", transitionRight: "Author and approve the initial implementation plan.", required: sectionsPlan, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
-	{phase: PhasePlan, resumeVerb: "vet", transitionRight: "Hold the approved or repaired plan checkpoint for engineering review.", required: sectionsPlan, workspaceRequired: workspacePlan, blocksOpenQuestions: true},
-	{phase: PhaseVet, resumeVerb: "vet", transitionRight: "Review implementation readiness before build.", required: sectionsBuild, workspaceRequired: workspaceVetted, blocksOpenQuestions: true},
-	{phase: PhaseBuild, resumeVerb: "build", transitionRight: "Implement the next approved vertical slice.", required: sectionsBuild, workspaceRequired: workspaceVetted, blocksOpenQuestions: true},
-	{phase: PhaseConverge, resumeVerb: "converge", transitionRight: "Recover unmet clarified intent into new slices.", required: sectionsBuild, workspaceRequired: workspaceVetted, blocksOpenQuestions: true},
-	{phase: PhaseProve, resumeVerb: "prove", transitionRight: "Produce acceptance evidence for the implementation.", required: sectionsProof, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
-	{phase: PhasePolish, resumeVerb: "polish", transitionRight: "Apply the bounded quality pass.", required: sectionsProof, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
-	{phase: PhaseReview, resumeVerb: "review", transitionRight: "Review the proven implementation.", required: sectionsProof, workspaceRequired: workspaceProof, proofRequired: true, blocksOpenQuestions: true},
-	{phase: PhaseSeal, resumeVerb: "seal", transitionRight: "Decide the final GO or NO-GO.", required: sectionsComplete, workspaceRequired: workspaceFinal, proofRequired: true, blocksOpenQuestions: true, shippable: true},
-	{phase: PhaseShip, resumeVerb: "ship", transitionRight: "Perform authorized release and close-out mutations.", required: sectionsComplete, workspaceRequired: workspaceFinal, proofRequired: true, blocksOpenQuestions: true, shippable: true},
-	{phase: PhaseDone, transitionRight: "Represent archived completion with no resume command.", required: sectionsComplete, workspaceRequired: workspaceFinal, proofRequired: true, blocksOpenQuestions: true, shippable: true},
+var orderedPhasePolicies = []PhasePolicy{
+	{Target: PhaseFrame, ResumeVerb: "frame", TransitionRight: "Frame an unstructured request before lifecycle work.", RequiredArtifacts: artifactsFrame},
+	{Target: PhaseSpec, ResumeVerb: "spec", TransitionRight: "Author the product specification.", RequiredSections: sectionsSpec, RequiredArtifacts: artifactsSpec},
+	{Target: PhaseClarify, ResumeVerb: "clarify", TransitionRight: "Close decision coverage in the written specification.", RequiredSections: sectionsSpec, RequiredArtifacts: artifactsClarify, BlocksOpenQuestions: true},
+	{Target: PhaseTemper, ResumeVerb: "temper", TransitionRight: "Optionally challenge the clarified specification strategy.", RequiredSections: sectionsSpec, RequiredArtifacts: artifactsClarify, BlocksOpenQuestions: true},
+	{Target: PhaseDefine, ResumeVerb: "define", TransitionRight: "Author and approve the initial implementation plan.", RequiredSections: sectionsPlan, RequiredArtifacts: artifactsPlan, BlocksOpenQuestions: true},
+	{Target: PhasePlan, ResumeVerb: "vet", TransitionRight: "Hold the approved or repaired plan checkpoint for engineering review.", RequiredSections: sectionsPlan, RequiredArtifacts: artifactsPlan, BlocksOpenQuestions: true},
+	{Target: PhaseVet, ResumeVerb: "vet", TransitionRight: "Review implementation readiness before build.", RequiredSections: sectionsBuild, RequiredArtifacts: artifactsVetted, BlocksOpenQuestions: true},
+	{Target: PhaseBuild, ResumeVerb: "build", TransitionRight: "Implement the next approved vertical slice.", RequiredSections: sectionsBuild, RequiredArtifacts: artifactsVetted, BlocksOpenQuestions: true},
+	{Target: PhaseConverge, ResumeVerb: "converge", TransitionRight: "Recover unmet clarified intent into new slices.", RequiredSections: sectionsBuild, RequiredArtifacts: artifactsVetted, BlocksOpenQuestions: true},
+	{Target: PhaseProve, ResumeVerb: "prove", TransitionRight: "Produce acceptance evidence for the implementation.", RequiredSections: sectionsProof, RequiredArtifacts: artifactsProof, ProofRequired: true, BlocksOpenQuestions: true},
+	{Target: PhasePolish, ResumeVerb: "polish", TransitionRight: "Apply the bounded quality pass.", RequiredSections: sectionsProof, RequiredArtifacts: artifactsProof, ProofRequired: true, BlocksOpenQuestions: true},
+	{Target: PhaseReview, ResumeVerb: "review", TransitionRight: "Review the proven implementation.", RequiredSections: sectionsProof, RequiredArtifacts: artifactsProof, ProofRequired: true, BlocksOpenQuestions: true},
+	{Target: PhaseSeal, ResumeVerb: "seal", TransitionRight: "Decide the final GO or NO-GO.", RequiredSections: sectionsComplete, RequiredArtifacts: artifactsFinal, ProofRequired: true, BlocksOpenQuestions: true, Shippable: true},
+	{Target: PhaseShip, ResumeVerb: "ship", TransitionRight: "Perform authorized release and close-out mutations.", RequiredSections: sectionsComplete, RequiredArtifacts: artifactsFinal, ProofRequired: true, BlocksOpenQuestions: true, Shippable: true},
+	{Target: PhaseDone, TransitionRight: "Represent archived completion with no resume command.", RequiredSections: sectionsComplete, RequiredArtifacts: artifactsFinal, ProofRequired: true, BlocksOpenQuestions: true, Shippable: true},
 }
 
-// WorkflowPhase is the read-only cross-format view used to generate the compact
-// manifest consumed by non-Go release tooling.
-type WorkflowPhase struct {
-	ID                  Phase     `json:"id"`
-	ResumeVerb          string    `json:"resumeVerb,omitempty"`
-	TransitionRight     string    `json:"transitionRight"`
-	RequiredSections    []Section `json:"requiredSections,omitempty"`
-	WorkspaceRequired   []string  `json:"workspaceRequired"`
-	ProofRequired       bool      `json:"proofRequired,omitempty"`
-	BlocksOpenQuestions bool      `json:"blocksOpenQuestions,omitempty"`
-	Shippable           bool      `json:"shippable,omitempty"`
-}
+var phasePolicyIndex = func() map[Phase]int {
+	index := make(map[Phase]int, len(orderedPhasePolicies))
+	for i, policy := range orderedPhasePolicies {
+		index[policy.Target] = i
+	}
+	return index
+}()
 
 // AuthorityPolicy owns the small cross-format trust and tracking assertions
 // that otherwise drift between current docs.
@@ -147,122 +143,26 @@ func WorkflowAuthorityPolicy() AuthorityPolicy {
 	}
 }
 
-// WorkflowPhases returns copied metadata suitable for deterministic generation.
-func WorkflowPhases() []WorkflowPhase {
-	out := make([]WorkflowPhase, 0, len(phaseDefinitions))
-	for _, definition := range phaseDefinitions {
-		out = append(out, WorkflowPhase{
-			ID:                  definition.phase,
-			ResumeVerb:          definition.resumeVerb,
-			TransitionRight:     definition.transitionRight,
-			RequiredSections:    append([]Section(nil), definition.required...),
-			WorkspaceRequired:   append([]string(nil), definition.workspaceRequired...),
-			ProofRequired:       definition.proofRequired,
-			BlocksOpenQuestions: definition.blocksOpenQuestions,
-			Shippable:           definition.shippable,
-		})
-	}
-	return out
+func copyPhasePolicy(policy PhasePolicy) PhasePolicy {
+	policy.RequiredSections = append([]Section(nil), policy.RequiredSections...)
+	policy.RequiredArtifacts = append([]ArtifactPath(nil), policy.RequiredArtifacts...)
+	return policy
 }
 
-// LifecyclePhases returns the ordered lifecycle. The returned slice is a copy,
-// so callers cannot mutate the registry.
-func LifecyclePhases() []Phase {
-	phases := make([]Phase, len(phaseDefinitions))
-	for i, definition := range phaseDefinitions {
-		phases[i] = definition.phase
-	}
-	return phases
-}
-
-func definitionFor(p Phase) (phaseDefinition, bool) {
-	for _, definition := range phaseDefinitions {
-		if definition.phase == p {
-			return definition, true
-		}
-	}
-	return phaseDefinition{}, false
-}
-
-// KnownPhase reports whether p is a phase the engine understands.
-func KnownPhase(p Phase) bool {
-	_, ok := definitionFor(p)
-	return ok
-}
-
-// ResumeVerb returns the public rite verb that resumes p. Terminal and unknown
-// phases return an empty string.
-func ResumeVerb(p Phase) string {
-	definition, ok := definitionFor(p)
+// PolicyFor returns the complete policy for target. Unknown phases have no fallback.
+func PolicyFor(target Phase) (PhasePolicy, bool) {
+	index, ok := phasePolicyIndex[target]
 	if !ok {
-		return ""
+		return PhasePolicy{}, false
 	}
-	return definition.resumeVerb
+	return copyPhasePolicy(orderedPhasePolicies[index]), true
 }
 
-// ShippablePhase reports whether p is allowed to claim a sealed/shipped result.
-func ShippablePhase(p Phase) bool {
-	definition, ok := definitionFor(p)
-	return ok && definition.shippable
-}
-
-// PhaseForName resolves a canonical phase ID.
-func PhaseForName(name string) (Phase, bool) {
-	for _, definition := range phaseDefinitions {
-		if string(definition.phase) == name {
-			return definition.phase, true
-		}
+// PhasePolicies returns all policies in lifecycle order.
+func PhasePolicies() []PhasePolicy {
+	policies := make([]PhasePolicy, len(orderedPhasePolicies))
+	for i, policy := range orderedPhasePolicies {
+		policies[i] = copyPhasePolicy(policy)
 	}
-	return "", false
-}
-
-// RequiredSections returns the sections required to complete the given phase,
-// in canonical Sections order.
-func RequiredSections(p Phase) []Section {
-	definition, ok := definitionFor(p)
-	if !ok {
-		return nil
-	}
-	want := definition.required
-	set := make(map[Section]bool, len(want))
-	for _, s := range want {
-		set[s] = true
-	}
-	out := make([]Section, 0, len(want))
-	for _, s := range Sections {
-		if set[s] {
-			out = append(out, s)
-		}
-	}
-	return out
-}
-
-// RequiredWorkspaceFiles returns the canonical per-file completeness contract
-// for phase p. Unlike the legacy Section view, this includes every durable
-// workflow artifact (for example decision-coverage.md and test-plan.md), so
-// runtime gates cannot silently ignore files added to the lifecycle registry.
-func RequiredWorkspaceFiles(p Phase) []string {
-	definition, ok := definitionFor(p)
-	if !ok {
-		return nil
-	}
-	return append([]string(nil), definition.workspaceRequired...)
-}
-
-// WorkspaceFiles returns every lifecycle-owned workspace filename once, in
-// first-required order. It is derived from phaseDefinitions so the runtime
-// presence model and the generated workflow manifest share one authority.
-func WorkspaceFiles() []string {
-	seen := make(map[string]bool)
-	var out []string
-	for _, definition := range phaseDefinitions {
-		for _, name := range definition.workspaceRequired {
-			if seen[name] {
-				continue
-			}
-			seen[name] = true
-			out = append(out, name)
-		}
-	}
-	return out
+	return policies
 }

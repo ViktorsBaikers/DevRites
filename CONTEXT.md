@@ -52,9 +52,9 @@ Clarify is mandatory but adaptive, and it may ask no questions. Temper is
 optional. Vet is the only final readiness phase; there is no separate `ready`
 rite.
 
-Completeness is **phase-relative**. The typed `phaseDefinitions` registry in
-`engine/internal/state/schema.go` lists the structural sections and workspace
-artifacts required at each phase. `devrites-engine check readiness <slug>`
+Completeness is **phase-relative**. The typed Phase Policy in
+`engine/internal/state/schema.go` lists the structural sections, workspace
+artifacts, and applicability rules for each target Phase. `devrites-engine check readiness <slug>`
 checks that structure and, after Vet, the stable planning-input identity;
 `check seal <slug>` repeats that identity check and adds deterministic evidence
 freshness. A blocker that only a human can resolve uses reserved **exit code 3**.
@@ -73,6 +73,10 @@ is a native, preservation-first workflow edit. See
 | **Section** | One single-concern completeness file in a feature dir. |
 | **Phase** | Workflow state; gates are phase-relative. |
 | **Gate** | Deterministic structural boundary check; semantic findings route through the native workflow, while exit 3 represents a lifecycle or safety block. |
+| **Workspace Observation** | One deterministic, safe, typed account of lifecycle-owned artifacts at a point in time; every consumer uses the same facts rather than re-reading the workspace. |
+| **Phase Policy** | The deterministic requirements and applicability rules for a target phase, including required artifacts, open-question blocking, and proof requirements. |
+| **Acceptance-preserving Reslice** | A change to plan or task topology that leaves acceptance criteria and product behavior unchanged. |
+| **Workflow Artifact** | An executable file used only to plan, isolate, or prove an active workflow; it has separate identity and evidence and is excluded from the product candidate and readiness binding. |
 | **Harness** | Per-host edge adapter. Two hosts: Claude + Codex. See [ADR-0002](docs/adr/0002-dual-host-harness.md). |
 | **Pack** | The installed bundle under `pack/.claude/`: reviewer/writer agents, `rite-*` skills, and native host configuration. |
 

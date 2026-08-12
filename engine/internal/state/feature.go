@@ -86,17 +86,25 @@ func LoadFeature(root, slug string) (*Feature, error) {
 	if !ledgerDeclared {
 		return nil, fmt.Errorf("feature %q: no phase in %s ledger", slug, LedgerFile)
 	}
-	if !KnownPhase(phase) {
+	policy, ok := PolicyFor(phase)
+	if !ok {
 		return nil, fmt.Errorf("feature %q: unknown phase %q", slug, phase)
 	}
+	phase = policy.Target
 
 	present := make(map[Section]bool, len(Sections))
 	for _, section := range Sections {
 		present[section] = sectionPresentAny(dir, section)
 	}
 	presentFiles := make(map[string]bool)
-	for _, name := range WorkspaceFiles() {
-		presentFiles[name] = sectionPresent(filepath.Join(dir, name))
+	for _, lifecyclePolicy := range PhasePolicies() {
+		for _, artifact := range lifecyclePolicy.RequiredArtifacts {
+			name := string(artifact)
+			if _, observed := presentFiles[name]; observed {
+				continue
+			}
+			presentFiles[name] = sectionPresent(filepath.Join(dir, name))
+		}
 	}
 	return &Feature{
 		Slug:         slug,
@@ -133,8 +141,8 @@ func declaredPhaseFromLedger(path string) (Phase, bool, error) {
 		return "", false, nil
 	}
 	word := firstPhaseWord(value)
-	if phase, known := PhaseForName(word); known {
-		return phase, true, nil
+	if policy, known := PolicyFor(Phase(word)); known {
+		return policy.Target, true, nil
 	}
 	return Phase(word), true, nil
 }
