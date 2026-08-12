@@ -2,6 +2,14 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.12...v4.1.0) (2026-08-12)
+
+### Added
+
+* **rite:** add bounded host-native loop operations ([af8f50e](https://github.com/ViktorsBaikers/DevRites/commit/af8f50e434160a7ab33d7e4c8b5b387c4097bfdc))
+* **rite:** deepen engineering risk guidance ([a109d35](https://github.com/ViktorsBaikers/DevRites/commit/a109d35788d831f037361cbc5c491d0b2cb2dd64))
+* **rite:** govern decision horizons and learnings ([af48088](https://github.com/ViktorsBaikers/DevRites/commit/af48088157107e08f60a82659d7e445180ed1e96))
+
 ## [4.0.12](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.11...v4.0.12) (2026-08-09)
 
 ### Fixed
