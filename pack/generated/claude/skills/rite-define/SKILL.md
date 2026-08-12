@@ -7,9 +7,8 @@ user-invocable: true
 
 # /rite-define: plan from the spec
 
-Turn `spec.md` into architecture, approach, dependency-ordered **vertical slices**,
-traceability, and a state cursor. Spec owns what/why; Define owns how in phase-owned
-artifacts. **Do not write code.**
+Turn `spec.md` into architecture, vertical slices, traceability, and state. Spec owns
+what/why; Define owns how. **Do not write code.**
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 Pull these via `Read` when shaping the plan:
@@ -21,15 +20,13 @@ Pull these via `Read` when shaping the plan:
 - `../workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers.
 
 ## Operating rules
-- **Requires a readied spec.** Missing active workspace/spec/readiness, or an open CRITICAL
-  spec checklist, stops to `/rite-spec <feature>`. Missing/non-`CLEAR`
-  `decision-coverage.md` routes to `/rite-clarify`. Never plan unready/unclarified work.
+- **Requires a readied spec.** Missing workspace/spec/readiness or open CRITICAL checklist →
+  `/rite-spec`; missing/non-`CLEAR` decision coverage → `/rite-clarify`. Never plan it.
 - Apply `afk-hitl.md` ownership. Prefer conventions; source-check new dependencies/design
   systems, asking only about licensing, cost, security, or policy.
-- **Author one section at a time.** Pause after each `architecture.md`/`plan.md` section.
-  For an open design choice or uncertain estimate, use
-  [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) (Tournament for two viable
-  designs, Delphi for estimates) before slicing.
+- Author one `architecture.md`/`plan.md` section at a time. Before slicing, use
+  [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) Tournament for open
+  designs and Delphi for uncertain estimates.
 - **Derive the slice count from the work.**
   One per independently-shippable increment, sized by `slicing.md`; map every acceptance
   criterion. User counts are hints: explain honest differences, never pad/compress.
@@ -39,9 +36,8 @@ Pull these via `Read` when shaping the plan:
 - **Wide refactors use expand → migrate → contract.** Add compatibility, migrate green
   batches, then remove the old path; if batches cannot stay green, use an integration branch
   plus final verify.
-- **Root writes; drafter proposes.** Use the native bounded fresh-context contract in
-  [`agents.md`](../devrites-lib/reference/standards/agents.md). Root owns decisions,
-  questions, approval, and canonical writes.
+- **Root writes; drafter proposes** under bounded fresh context
+  ([`agents.md`](../devrites-lib/reference/standards/agents.md)); root owns choices and canonical files.
 
 ## Workflow
 0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`:** the always-on operating rules and anti-rationalizations.
@@ -67,16 +63,14 @@ Pull these via `Read` when shaping the plan:
    `devrites-plan-drafter` in `define` mode for one atomic candidate bundle:
    `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` with proof mapping.
    Validate its bounded result; it does not write/ask, and returns human choices to root.
-2. **Reconcile architecture + approach** against live seams; root writes accepted content
-   at step 6. Shape
-   `architecture.md` for owning layer, boundaries, integration points, data/API/events,
-   dependencies, risks, and affected areas; write only the build strategy in `plan.md`.
-   Use a code index for structure/impact (see
-   [`tooling.md`](../devrites-lib/reference/standards/tooling.md)); source-check current external
-   library/framework behavior, using context7 when available.
-   Record significant options as `DEC-###`. For high-cost/hard-to-reverse boundaries, data
-   models, public contracts, or dependencies, compare ≥2 viable approaches by drivers,
-   trade-offs, and consequences. Specify cross-boundary interfaces for independent work:
+2. **Reconcile architecture + approach** against live seams; root writes at step 6.
+   `architecture.md` owns layers/boundaries/integrations/data/dependencies/risks/impact;
+   `plan.md` owns build strategy. Use the code index for structure/impact
+   ([`tooling.md`](../devrites-lib/reference/standards/tooling.md)) and source-check external behavior.
+   Record significant options as `DEC-###` only for non-obvious real trade-offs where
+   independently built lower units could choose incompatibly; leave other details to convention/
+   slice. Compare ≥2 viable approaches for hard-to-reverse boundaries, models, contracts, or
+   dependencies by drivers, trade-offs, and consequences. Specify cross-boundary interfaces for independent work:
    invariants, I/O, ordering/idempotency, errors, versioning, config, and relevant budgets.
    Establish repository/deployable roots, state and contract ownership, shared mutable
    resources, and deployment order under `repository-topology.md`. For applicable durable
@@ -111,7 +105,10 @@ Pull these via `Read` when shaping the plan:
    provenance inputs; `/rite-vet` preflights them. Write the portable repository command,
    never RTK/local wrappers, user-specific absolute paths, or temporary proof trees. When a
    shared contract changes, order its canonical artifact before both asserting tests and make
-   the provider/consumer slice dependencies explicit.
+   provider/consumer dependencies explicit. Each exact `Characterization:
+   characterize-before-modify` row is the first touching slice's prerequisite: observe and test
+   unchanged baseline green, perturb realistic behavior red, restore green, then modify. Never
+   expand this into repository-wide coverage.
 4. **Map coverage and wiring:** every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
    (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
    criterion. Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`

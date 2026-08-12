@@ -10,9 +10,11 @@ Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
 - Only bounded wright writes product source/tests; others inspect an immutable
   candidate.
 - Every named role runs; unavailable → HITL, never skip/substitute.
-- Leaves never invoke agents, ask humans, change phase, commit/push,
-  install/deploy, migrate live data, or act irreversibly; return evidence/proposals
-  for root acceptance.
+- Leaves never invoke agents, ask humans, change phase, push, install/deploy,
+  migrate live data, or act irreversibly; return evidence/proposals for root
+  acceptance. The sole exception is one local, unpushed transfer commit by an
+  eligible native-worktree `devrites-slice-wright`; it is transport, not shipping
+  authority or a project checkpoint.
 
 ## Agents
 
@@ -53,6 +55,12 @@ Give wright the smallest exact project-relative product source/test file list—
 directories/globs, traversal/`.devrites/**`. No scope widening. Root rejects
 `git diff --name-only` extras. Never patch product source/tests in root, bypass/substitute wright,
 accept drift, or recreate a dispatch bridge.
+
+A native isolated-worktree pilot is allowed only under
+[`rite-build/reference/wright-dispatch.md`](../../../rite-build/reference/wright-dispatch.md#isolated-writer-worktree-pilot):
+one writer at a time, committed/clean baseline, no submodule parent, exact transfer
+commit, and candidate reconciliation before deletion. Isolation never enables
+parallel writers or weakens exact-path admission.
 
 The controlling root may materialize only the exact Vet-ready executable workflow
 artifact paths under the active `.devrites/work/<slug>/` using

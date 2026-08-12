@@ -46,8 +46,10 @@ the terminal cursor or its recovery count.
   New retained Critical/Important evidence starts offline repair and narrow Vet
   inside this Autocomplete invocation. Stop for a fresh GO only after that repair
   changes the failure condition and Vet is READY.
-- **Budget from the post-vet slice count.** Vet may split/add slices.
-  `--max-slices N` may lower the cap for a partial run; otherwise build all.
+- **Admit work under the AFK resource envelope.** Vet may split/add slices.
+  `--max-slices N` replaces the safe new-sentinel default of 10; post-Vet pending
+  count may lower it. Before every phase or leaf dispatch, also enforce expiry,
+  review-backlog, and native agent/token/cost/time limits from `afk-hitl.md`.
 - **Parse flags only from this invocation.** `--ship`, `--yolo`, `--max-slices`,
   `--full`, and `--cross-model` are active only when their exact standalone tokens
   occur in `$ARGUMENTS`; their presence in this skill, examples, or earlier messages
@@ -87,10 +89,11 @@ the terminal cursor or its recovery count.
    reconstruct any missing return cursor only from the current phase plus the
    exact approved action in `test-plan.md` / evidence, never from chat or guesswork.
    The idea + flags: `--ship` / `--yolo` (continue through ship preflight, then stop
-   for literal-GO and native approval), `--max-slices N` (optional lower safety cap for a partial run; default =
-   the plan's slice count, i.e. run all planned slices). Parse only the current
-   `$ARGUMENTS`; normalize the result to the idea, `ship_preflight: yes|no`,
-   `max_slices: N|plan`, `profile: standard|full`, and `cross_model: yes|no`.
+   for literal-GO and native approval), `--max-slices N` (optional explicit cap;
+   a newly created sentinel defaults to 10 and post-Vet pending count may lower it).
+   Parse only the current `$ARGUMENTS`; normalize the result to the idea,
+   `ship_preflight: yes|no`, `max_slices: N|default`, `profile: standard|full`, and
+   `cross_model: yes|no`.
    **Completion:** that normalized state is unambiguous and no sentinel or workspace
    file has been written.
 2. **Specify and clarify up front.** Use `devrites-interview`, `/rite-spec`, and
@@ -98,8 +101,10 @@ the terminal cursor or its recovery count.
    coverage never arms AFK. **Completion:** `decision-coverage.md` records `CLEAR`.
 3. **Arm AFK after clarity.** Require `Decision coverage: CLEAR`, then apply the
    loop's [one-write AFK contract](reference/loop.md#arm-afk-once): preserve a valid
-   existing sentinel byte-for-byte or create an advisory-only sentinel once; never
-   rewrite it after Vet. Also `touch .devrites/CHECKPOINT`: unattended runs use
+   existing sentinel byte-for-byte or create an advisory-only sentinel once with
+   bounded slices, agents, wall time, review queue, and four-hour absolute expiry;
+   never rewrite it after Vet or reset it on resume. Also `touch .devrites/CHECKPOINT`:
+   unattended runs use
    checkpoint mode so each proven slice is committed locally as a crash-survivable
    `WIP` ([rite-build/reference/checkpoint.md](../rite-build/reference/checkpoint.md));
    `/rite-ship` collapses them into the one feature commit. **Completion:** AFK config is
@@ -116,14 +121,16 @@ the terminal cursor or its recovery count.
    phase resumes.
    Immediately after `/rite-vet` and before the first Build dispatch, apply the loop's
    [mutable post-vet budget](reference/loop.md#derive-the-mutable-post-vet-budget)
-   contract. **Completion:** the loop reaches Seal GO, or a stop condition is persisted
+   contract, then apply resource admission before every phase and native dispatch.
+   **Completion:** the loop reaches Seal GO, or a stop condition is persisted
    before any later phase runs; the cursor names the last completed phase and the
    effective remaining budget.
 5. **Apply stop conditions at every gate** ([reference/stop-conditions.md](reference/stop-conditions.md)):
    first route an agent-owned red technical result through the loop's bounded
    recovery; its `blocked` label alone is not a stop condition. After that, on
-   hard-risk / human-owned blocking / escalating / NO-GO / budget-exhausted / still-low-confidence
-   → write `state.md` (`Status`, `Next step`), surface *why*, and **STOP**.
+   hard-risk / human-owned blocking / escalating / NO-GO / slice, agent, token,
+   cost, time, review-queue, or expiry exhaustion / still-low-confidence → write
+   `state.md` (`Status`, `Next step`), surface *why*, and **STOP**.
    Exhausted agent-owned technical recovery uses the terminal `Next step: none`
    marker and never hands the user `/rite-plan unblock` or another routine
    phase command.

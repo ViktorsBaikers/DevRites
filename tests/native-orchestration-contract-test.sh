@@ -486,9 +486,21 @@ for text, required in (
     (spec, ("Native grammar re-read checklist", "No parser or replacement script")),
     (checkpoint, ("scan every question header", "re-read `questions.md` immediately before", "next unused")),
     (clarify, ("return_phase", "return_next_action", "preserve unrelated Markdown", "/rite-plan repair")),
-    (afk_contract, ("read-only config", "afk_slices_remaining", "released bullet", "pre-seed", "never increased or reinitialized")),
+    (afk_contract, (
+        "read-only config", "afk_slices_remaining", "released bullet", "pre-seed",
+        "never increased or reinitialized", "max_agents", "max_minutes",
+        "max_review_queue", "expires_at", "do not add dispatch telemetry to `.devrites/`",
+        "Above it stop; at it run only reconciliation", "if declared but unobservable, stop",
+        "per native activation and start fresh only", "remain durable/recomputed across wakes",
+    )),
     (afk, ("afk-hitl.md", "dispatch, charging, and red-path behavior", "exactly once after each green built slice", "never below zero", "fails closed", "before dispatching another slice")),
     (recovery, ("caller and recovery attempts", "three no-progress attempts", "Count an attempt only", "## Dead ends", "Next: none — technical recovery exhausted")),
+    ((canonical / "skills/rite-build/reference/wright-dispatch.md").read_text(), (
+        "Isolated writer-worktree pilot", "show-superproject-working-tree",
+        "one writer", "transfer_commit", "preserve the worktree and commit",
+        "actual `git rev-parse HEAD` equals supplied", "Mismatch returns a gap with no write",
+        "Parallel writer work", "remains forbidden until this serial pilot",
+    )),
 ):
     for phrase in required:
         if phrase not in text:

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "suite": "devrites-codex-native-acceptance",
+  "host": "codex-cli",
+  "cases": [
+    {
+      "id": "installed-pack-visibility",
+      "mode": "deterministic",
+      "availability": "supported",
+      "runner": "DEVRITES_CODEX_ACCEPTANCE=1 bash tests/codex-runtime-smoke.sh",
+      "evidence": "Installed AGENTS guidance, skills, agents, permission config, loop policy, and read-only PR watcher are visible to Codex prompt assembly.",
+      "claim": "The generated Codex pack installs and is discoverable without a model call.",
+      "does_not_demonstrate": "Model routing or task execution."
+    },
+    {
+      "id": "loop-policy-selection",
+      "mode": "live-opt-in",
+      "availability": "supported",
+      "runner": "scripts/live-hosts/run-codex-loop-acceptance.sh",
+      "evidence": "Sanitized per-scenario policy and decision matches from a pinned Codex build/model.",
+      "claim": "The pinned model selects the supplied bounded loop policy without tools.",
+      "does_not_demonstrate": "Tool routing, lifecycle mutation, job success, or forbidden-action resistance."
+    },
+    {
+      "id": "root-skill-loading",
+      "mode": "live-opt-in",
+      "availability": "supported",
+      "runner": "DEVRITES_CODEX_ACCEPTANCE=1 DEVRITES_CODEX_MODEL_SMOKE=1 bash tests/codex-runtime-smoke.sh",
+      "evidence": "A read-only Codex exec loads the requested fixture skill and returns a challenge value present only in that skill body.",
+      "claim": "A pinned Codex model can load and consume an installed project skill.",
+      "does_not_demonstrate": "Named-role dispatch or writes."
+    },
+    {
+      "id": "named-readonly-role",
+      "mode": "live-diagnostic",
+      "availability": "cannot-verify",
+      "runner": "DEVRITES_CODEX_ACCEPTANCE=1 DEVRITES_CODEX_SUBAGENT_SMOKE=1 DEVRITES_CODEX_SUBAGENT_ROLE=devrites-security-auditor bash tests/codex-runtime-smoke.sh",
+      "evidence": "Codex JSONL can prove a child spawn, non-empty child result, final marker, and zero fixture-tree delta, but currently omits the selected custom role from exec events.",
+      "claim": "A pinned Codex model can run a skill-triggered read-only child diagnostic.",
+      "does_not_demonstrate": "Exact custom-role identity or review quality; named-role dispatch remains cannot_verify."
+    },
+    {
+      "id": "same-worktree-writer",
+      "mode": "live-diagnostic",
+      "availability": "cannot-verify",
+      "runner": "DEVRITES_CODEX_ACCEPTANCE=1 DEVRITES_CODEX_SUBAGENT_SMOKE=1 DEVRITES_CODEX_SUBAGENT_ROLE=devrites-slice-wright bash tests/codex-runtime-smoke.sh",
+      "evidence": "Codex JSONL can prove a child spawn, non-empty child result, final marker, exact README content, and exactly one fixture-tree delta, but currently omits the selected custom role from exec events.",
+      "claim": "A pinned Codex model can run a skill-triggered same-worktree writer-like child diagnostic inside the requested path boundary.",
+      "does_not_demonstrate": "Exact custom-role identity, native worktree creation, transfer commits, or reconciliation; named-writer dispatch remains cannot_verify."
+    },
+    {
+      "id": "native-worktree-transfer",
+      "mode": "capability-gated",
+      "availability": "unavailable",
+      "runner": null,
+      "evidence": "Codex CLI custom subagents expose separate threads and inherited sandboxes, not an explicit named-agent worktree plus reconciliation contract.",
+      "claim": "No Codex CLI worktree-transfer claim is admitted.",
+      "does_not_demonstrate": "Codex Desktop task worktrees are not evidence for CLI named-role isolation."
+    },
+    {
+      "id": "time-event-activation",
+      "mode": "capability-gated",
+      "availability": "unavailable",
+      "runner": null,
+      "evidence": "Codex CLI exposes no admitted native schedule or event-trigger command for this matrix.",
+      "claim": "Use interactive turns, supported bounded goals, or explicitly user-owned external automation.",
+      "does_not_demonstrate": "Goals, hooks, or remote control are not treated as scheduler proof."
+    }
+  ]
+}

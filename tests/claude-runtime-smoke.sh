@@ -45,6 +45,11 @@ if [ -f "$PROJECT/.claude/skills/rite-status/SKILL.md" ]; then
 else
   no "Claude skill missing"
 fi
+if [ -f "$PROJECT/.claude/workflows/devrites-readonly-review.js" ]; then
+  ok "Claude read-only workflow pilot installed"
+else
+  no "Claude read-only workflow pilot missing"
+fi
 
 version="$(
   cd "$PROJECT" &&

@@ -36,9 +36,8 @@ Pull these via `Read` when relevant:
 - `observability.md`: runtime telemetry must be observed to emit.
 - `repository-topology.md`, `data-integrity.md`, `integration-reliability.md`: only
   for applicable spec/plan rows; their required proof cases cannot be replaced by a generic green suite.
-- `developer-experience.md`: when the change ships a developer-facing surface (API / CLI / SDK /
-  webhook / config / error messages / getting-started): **measure** the DX scorecard (run the flow,
-  measure time-to-hello-world, and capture verbatim error text), rather than asserting it.
+- `developer-experience.md`: for developer surfaces, run the flow and measure TTHW plus exact
+  signal-bearing error text with typed redactions; never assert DX.
 - `definition-of-done.md`: acceptance, proof, gates, scope, rollback/docs.
 - `one-shot-actions.md`: pre-attempt evidence completeness and no-rerun handling for
   consumptive proof actions.
@@ -56,16 +55,11 @@ Pull these via `Read` when relevant:
   Prove owns proof binding, not manifest grammar or candidate hashing.
 - Spec Drift Guard applies: if tests/evidence reveal the spec is wrong, stop and handle
   drift (`rite-build/reference/spec-drift-guard.md`).
-- **Root executes; runner validates; root records; wright fixes.** Use the native
-  fresh-context contract in
-  [`agents.md`](../devrites-lib/reference/standards/agents.md). The root owns exact
-  vetted gate execution, browser capability, the evidence verdict, and canonical
-  writes. The proof runner is read-only and validates immutable logs/artifacts.
-  Every accepted product source/test correction is one bounded
-  `devrites-slice-wright` task, never an inline edit.
-  Exact Vet-ready executable workflow artifacts under the active `.devrites/**`
-  workspace follow `workflow-artifacts.md` and are materialized by the controlling
-  root; they are not product writer work.
+- **Root executes/records; runner validates; wright fixes.** Under
+  [`agents.md`](../devrites-lib/reference/standards/agents.md), root owns vetted gates, browser,
+  verdict, and canonical writes; read-only proof runner checks immutable evidence; each source/
+  test fix is one bounded wright task. Root materializes exact Vet-ready `.devrites/**`
+  executables under `workflow-artifacts.md`; they are not product writer work.
 - **Prove remains the controlling caller during technical backtracking.** Save
   its return cursor, invoke Plan/Vet or bounded remediation inline, consume each
   nested phase boundary, then resume the failed Prove step. Never make the human
@@ -112,8 +106,9 @@ failure is a blocker; this Upgrade admission never authorizes source or test cha
 3. **Execute proof against a frozen candidate.** Run
    `devrites-engine check candidate <slug>` before any approved proof and retain
    its exact digest. The root runs only commands declared by `test-plan.md`,
-   byte-for-byte, with exact cwd and prerequisites, capturing exit code and
-   decisive output in secure external scratch. Run the full relevant test suite
+   byte-for-byte, with exact cwd/prerequisites, exit code, and sanitized decisive output per
+   [`security.md` § Secrets](../devrites-lib/reference/standards/security.md#secrets). Never retain
+   raw secrets; lost signal is `cannot_verify` plus a safe manual step. Run the full relevant suite
    plus **build / typecheck / lint**. Then rerun the candidate check: require the
    identical digest and no candidate-source mutation. Reject synthesized or
    substituted commands, malformed manifests, zero-test/skipped/filtered results used as

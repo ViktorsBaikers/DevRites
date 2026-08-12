@@ -1,6 +1,6 @@
-# All 43 skills
+# All 44 skills
 
-The pack contains 43 skills: the `rite` menu, 31 user-invocable `rite-*`
+The pack contains 44 skills: the `rite` menu, 32 user-invocable `rite-*`
 workflow and utility skills, 10 model-invoked `devrites-*` specialists, and the
 internal `devrites-lib` library. `devrites-lib` is not a command. It holds shared
 references and the few explicit script exceptions.
@@ -37,7 +37,7 @@ contract when a rite names parallel reviewers.
 
 `rite-*` is the namespace for lifecycle and utility commands. Its utilities are
 `rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`, `rite-customize`,
-`rite-explain`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`, `rite-doctor`,
+`rite-explain`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`, `rite-watch-pr`, `rite-doctor`,
 `rite-upgrade`, `rite-prototype`, `rite-handoff`, `rite-zoom-out`, and
 `rite-pressure-test`.
 Some specialized utilities set `disable-model-invocation: true` and run only
@@ -231,6 +231,7 @@ and `Shipped`. Utility commands keep the same compact labels and one-next-action
 | [`rite-pov`](../pack/.claude/skills/rite-pov/SKILL.md) | Project-grounded verdict on a named external option: adopt / trial / hold / reject / not-our-problem after project + external floors clear. | "should we adopt X", "switch to Y", CVE/deprecation relevance, bounded external comparisons. |
 | [`rite-dogfood`](../pack/.claude/skills/rite-dogfood/SKILL.md) | Diff-scoped browser QA: map changed user journeys, run scenario matrix, fix small obvious breakages, write `dogfood.md`. | Explicit-only after prove/polish/review when browser UX confidence matters. |
 | [`rite-pr-feedback`](../pack/.claude/skills/rite-pr-feedback/SKILL.md) | Resolve PR review feedback: fetch unresolved threads, judge centrally, fix valid items, reply, resolve. | Explicit-only: `/rite-pr-feedback` / `/rite pr-feedback`. |
+| [`rite-watch-pr`](../pack/.claude/skills/rite-watch-pr/SKILL.md) | Observe one PR/CI/review snapshot and report one next action without mutation. | Read-only capability-admitted native schedule/event observation or `/rite-watch-pr`. |
 
 ### Foundation: engineering rules
 

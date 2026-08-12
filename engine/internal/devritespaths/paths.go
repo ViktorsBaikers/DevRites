@@ -13,10 +13,11 @@ import (
 const (
 	DevritesRootName = ".devrites"
 
-	ClaudeSkillsTarget = ".claude/skills"
-	CodexSkillsTarget  = ".agents/skills"
-	ClaudeAgentsTarget = ".claude/agents"
-	CodexAgentsTarget  = ".codex/agents"
+	ClaudeSkillsTarget    = ".claude/skills"
+	CodexSkillsTarget     = ".agents/skills"
+	ClaudeAgentsTarget    = ".claude/agents"
+	CodexAgentsTarget     = ".codex/agents"
+	ClaudeWorkflowsTarget = ".claude/workflows"
 
 	ManifestName = ".claude/devrites.manifest"
 )

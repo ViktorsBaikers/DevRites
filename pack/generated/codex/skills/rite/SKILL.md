@@ -54,6 +54,7 @@ What each verb does lives once, in the Menu below; this table is the invocation 
 | `pov [candidate]` | `$rite-pov` |
 | `dogfood [--port N]` | `$rite-dogfood` |
 | `pr-feedback [PR\|thread]` | `$rite-pr-feedback` |
+| `watch-pr [PR\|URL]` | `$rite-watch-pr` |
 | `customize [instruction \| skill \| agent \| plugin]` | `$rite-customize` |
 | `use <slug>` | (inline) |
 | `guide` | (inline) |
@@ -124,6 +125,7 @@ EXPLAIN       $rite explain ...        ≡    $rite-explain     grounded concept
 POV           $rite pov ...            ≡    $rite-pov         decide adopt / trial / hold / reject for an external option
 DOGFOOD       $rite dogfood ...        ≡    $rite-dogfood     browser QA by changed user journey
 PR FEEDBACK   $rite pr-feedback ...    ≡    $rite-pr-feedback fix and resolve PR review threads
+WATCH PR      $rite watch-pr ...       ≡    $rite-watch-pr    observe PR/CI once without mutation
 CUSTOMIZE     $rite customize ...      ≡    $rite-customize   author overrides/extensions without forking the pack
 SWITCH        $rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 GUIDE         $rite guide                                     first feature, guided — full lifecycle on one small real change (inline)

@@ -313,10 +313,14 @@ func TestGeneratedPayloadInstallsVerbatim(t *testing.T) {
 	target := t.TempDir()
 	sentinel := "generated sentinel"
 	testutil.WriteFile(t, filepath.Join(payload, "codex", "skills", "rite", "SKILL.md"), sentinel+"\n")
+	testutil.WriteFile(t, filepath.Join(payload, "claude", "workflows", "devrites-readonly-review.js"), sentinel+"\n")
 
 	runInstall(t, target, payload, func(o *Options) {})
 	if got := testutil.ReadFile(t, filepath.Join(target, ".agents", "skills", "rite", "SKILL.md")); got != sentinel+"\n" {
 		t.Fatalf("codex payload was not installed verbatim: %q", got)
+	}
+	if got := testutil.ReadFile(t, filepath.Join(target, ".claude", "workflows", "devrites-readonly-review.js")); got != sentinel+"\n" {
+		t.Fatalf("Claude workflow payload was not installed verbatim: %q", got)
 	}
 }
 
@@ -1220,6 +1224,7 @@ func writeTestPayload(t *testing.T, root string) {
 	t.Helper()
 	testutil.WriteFile(t, filepath.Join(root, "claude", "skills", "rite", "SKILL.md"), "claude rite\n")
 	testutil.WriteFile(t, filepath.Join(root, "claude", "agents", "devrites-code-reviewer.md"), "agent\n")
+	testutil.WriteFile(t, filepath.Join(root, "claude", "workflows", "devrites-readonly-review.js"), "return { read_only: true }\n")
 	testutil.WriteFile(t, filepath.Join(root, "claude", "settings.json"), `{
   "permissions": {
     "defaultMode": "plan",

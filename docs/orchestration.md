@@ -28,8 +28,9 @@ root reconciles semantics; engine checks deterministic structure/state/safety
   workspace-capable for its writer child to execute.
 - The role catalog has one source/test writer, `devrites-slice-wright`. Claude
   and Codex make only that exact specialist writable.
-- Leaves never invoke leaves, ask the human, change phase, commit, push, deploy,
-  migrate live data, or write canonical workflow state.
+- Leaves never invoke leaves, ask the human, change phase, push, deploy, migrate live
+  data, or write canonical workflow state. Only an eligible isolated-worktree wright
+  may create one local unpushed transfer commit; same-worktree leaves never commit.
 
 Skills name the exact role and bounded task in normal language. The host owns
 internal spawn fields, scheduling, waiting, follow-ups, and result delivery.
@@ -65,6 +66,35 @@ sibling cannot erase it.
 An evidenced clean result is valid. Reviewers must account for their rubric and
 inspected scope, but they never manufacture a finding to fill a quota.
 
+## Read-only Claude workflow pilot
+
+Claude installs `.claude/workflows/devrites-readonly-review.js` as an optional
+adapter for immutable-candidate discovery, four independent reviewer roles, one
+adversarial verification pass, and a completeness check. Its script owns only
+transient fan-out and intermediate results. It cannot write source, tests,
+`.devrites/**`, Git, proof, lifecycle state, or shared services; it never invokes
+`devrites-slice-wright`.
+
+The caller still admits every returned role result under the normal result-closure
+contract and performs final reconciliation. A workflow timeout, missing role,
+malformed result, unread input, or incomplete verification is a gap. The adapter does
+not replace `/rite-review`, alter required rosters, or create another durable state
+plane.
+
+Codex keeps the same portable skill/agent semantics through native agent dispatch and
+has no fake workflow mirror. Provider parity applies to review meaning and evidence,
+not to this optional Claude orchestration optimization. Use the pilot only when an
+immutable candidate already exists; lifecycle writes, proof execution, human gates,
+and final decisions remain with the rite root.
+
+Host capabilities are admitted independently. Codex CLI agent threads and inherited
+sandboxes establish context/permission separation, not filesystem worktree isolation;
+without an explicit named-agent worktree and reconciliation interface, Codex uses the
+serial same-worktree writer. Likewise, goals or hooks do not prove native time/event
+activation. Unsupported activation remains `unavailable` rather than being emulated by
+a DevRites scheduler or shell loop. The claim-bounded acceptance rows live in
+[`codex-acceptance.json`](../evals/native-host/codex-acceptance.json).
+
 ## Slice-wright lifecycle
 
 For Claude or Codex, the root states the smallest exact project-relative source
@@ -86,8 +116,19 @@ symlink escapes, duplicates, and `.devrites/**` are invalid.
 Exact-path scope is instruction-backed on both hosts; native sandboxes provide
 the broader writer/read-only split. An unauthorized delta is rejected and the
 same bounded writer must restore it before work continues. The root never
-widens the contract or rewrites source. Parallel source writers in one worktree
-are forbidden.
+widens the contract or rewrites source.
+
+A serial native-worktree pilot may isolate `devrites-slice-wright` when the candidate
+baseline is committed and clean, the repository is not a submodule child, baseline
+proof is green, and the host exposes explicit result reconciliation. The wright
+returns one local unpushed transfer commit; root proves its exact paths and unchanged
+base before native transfer, then re-proves the reconciled candidate. Missing transfer,
+conflict, extra paths, moved base, or cleanup failure stops with worktree evidence
+preserved. No ad hoc copy/cherry-pick/merge occurs from the read-only root.
+
+Isolation does not authorize throughput. At most one writer runs across all linked
+worktrees for the workspace; parallel writers remain forbidden until serial transfer,
+conflict, proof, and review measurements justify a separate design.
 
 ## Engine boundary
 

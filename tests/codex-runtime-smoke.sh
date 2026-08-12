@@ -18,11 +18,43 @@ source "$ROOT/tests/runtime-smoke-lib.sh"
 fail=0
 ok() { printf '  ok: %s\n' "$*"; }
 no() { printf '  FAIL: %s\n' "$*"; fail=1; }
+skip_or_fail() {
+  if [ "${DEVRITES_CODEX_ACCEPTANCE:-0}" = "1" ]; then
+    printf 'codex-runtime-smoke: FAIL (%s)\n' "$1" >&2
+    exit 1
+  fi
+  printf 'codex-runtime-smoke: SKIP (%s)\n' "$1"
+  exit 0
+}
+write_tree_manifest() {
+  python3 - "$PROJECT" "$1" <<'PY'
+import hashlib, json, os, pathlib, stat, sys
+root = pathlib.Path(sys.argv[1])
+out = pathlib.Path(sys.argv[2])
+manifest = {}
+for path in sorted(root.rglob("*")):
+    rel = path.relative_to(root)
+    if ".git" in rel.parts:
+        continue
+    info = path.lstat()
+    if stat.S_ISLNK(info.st_mode):
+        manifest[rel.as_posix()] = {"type": "symlink", "target": os.readlink(path)}
+    elif path.is_file():
+        manifest[rel.as_posix()] = {
+            "type": "file",
+            "mode": stat.S_IMODE(info.st_mode),
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+    elif path.is_dir():
+        manifest[rel.as_posix()] = {"type": "dir", "mode": stat.S_IMODE(info.st_mode)}
+out.write_text(json.dumps(manifest, sort_keys=True) + "\n")
+PY
+}
 
 SUBAGENT_ROLE="${DEVRITES_CODEX_SUBAGENT_ROLE:-devrites-security-auditor}"
 
-command -v codex >/dev/null 2>&1 || { echo "codex-runtime-smoke: SKIP (codex CLI not found)"; exit 0; }
-command -v python3 >/dev/null 2>&1 || { echo "codex-runtime-smoke: SKIP (python3 not found)"; exit 0; }
+command -v codex >/dev/null 2>&1 || skip_or_fail "codex CLI not found"
+command -v python3 >/dev/null 2>&1 || skip_or_fail "python3 not found"
 
 T="$(mktemp -d)"
 GEN=""
@@ -57,6 +89,19 @@ fi
 
 echo "== codex-runtime-smoke (target: $PROJECT) =="
 bash "$ROOT/install.sh" --target "$PROJECT" >/dev/null 2>&1 || no "install failed"
+[ -f "$PROJECT/.agents/skills/rite-watch-pr/SKILL.md" ] \
+  && ok "Codex read-only PR watcher installed" \
+  || no "Codex read-only PR watcher missing"
+[ -f "$PROJECT/.agents/skills/devrites-lib/reference/standards/loop-operations.md" ] \
+  && ok "Codex loop operation policy installed" \
+  || no "Codex loop operation policy missing"
+[ -f "$PROJECT/.codex/agents/devrites-slice-wright.toml" ] \
+  && ok "Codex exact writer installed" \
+  || no "Codex exact writer missing"
+[ ! -e "$PROJECT/.codex/workflows" ] \
+  && ok "no fake Codex workflow mirror installed" \
+  || no "unexpected Codex workflow mirror installed"
+MODEL_SKILL_CHALLENGE="DEVRITES-CODEX-GUIDANCE-$(basename "$T")-$$"
 mkdir -p "$PROJECT/.agents/skills/devrites-runtime-smoke"
 cat > "$PROJECT/.agents/skills/devrites-runtime-smoke/SKILL.md" <<EOF
 ---
@@ -64,7 +109,9 @@ name: devrites-runtime-smoke
 description: Authenticated fixture for exercising Codex named-role dispatch.
 ---
 
-$SKILL_DISPATCH_BODY
+Codex acceptance challenge: $MODEL_SKILL_CHALLENGE
+When asked for the acceptance challenge, return that value without spawning an agent.
+For the named-role check: $SKILL_DISPATCH_BODY
 EOF
 
 (
@@ -82,6 +129,7 @@ checks = {
     "DevRites AGENTS block visible": "BEGIN DEVRITES CODEX" in s,
     "DevRites rules mirror path visible": ".agents/skills/devrites-lib/reference/standards/core.md" in s,
     "DevRites Codex agents path visible": ".codex/agents" in s,
+    "Codex watcher skill visible": "rite-watch-pr" in s,
 }
 for label, passed in checks.items():
     print(("ok:" if passed else "FAIL:") + " " + label)
@@ -108,7 +156,7 @@ model_env_ready() {
 }
 
 prepare_live_codex_home() {
-  [ -f "$MODEL_CODEX_HOME/auth.json" ] || return 1
+  runtime_secure_auth_file_ready "$MODEL_CODEX_HOME/auth.json" || return 1
   mkdir -p "$LIVE_CODEX_HOME" || return 1
   cp "$MODEL_CODEX_HOME/auth.json" "$LIVE_CODEX_HOME/auth.json" || return 1
   chmod 600 "$LIVE_CODEX_HOME/auth.json" || return 1
@@ -138,11 +186,11 @@ if [ "${DEVRITES_CODEX_MODEL_SMOKE:-0}" = "1" ]; then
       --enable hooks \
       -c shell_environment_policy.inherit=all \
       -s read-only \
-      'Read AGENTS.md only. Reply with exactly: DEVRITES-CODEX-OK'
+      '$devrites-runtime-smoke Return only the value after "Codex acceptance challenge:" in this skill.'
   ) > "$T/exec.out" 2> "$T/exec.err"
   rc=$?
-  if [ "$rc" -eq 0 ] && grep -q 'DEVRITES-CODEX-OK' "$T/exec.out"; then
-    ok "codex exec model smoke passed"
+  if [ "$rc" -eq 0 ] && grep -Fq "$MODEL_SKILL_CHALLENGE" "$T/exec.out"; then
+    ok "codex exec loaded the requested skill challenge"
   else
     no "codex exec model smoke failed"
     sed -n '1,80p' "$T/exec.err"
@@ -179,6 +227,7 @@ if [ "${DEVRITES_CODEX_SUBAGENT_SMOKE:-0}" = "1" ]; then
 Review the installed smoke README without modifying the project.
 EOF
     printf '%s\n' 'README.md' > "$PROJECT/.devrites/work/codex-skill-smoke/touched-files.md"
+    write_tree_manifest "$T/tree.before.json"
     (
       cd "$PROJECT" || exit 1
       HOME="$MODEL_HOME" CODEX_HOME="$LIVE_CODEX_HOME" codex exec \
@@ -203,6 +252,55 @@ EOF
       no "requested final marker missing from public JSON output"
       subagent_ok=0
     fi
+    if python3 - "$T/subagent.jsonl" <<'PY'
+import json, pathlib, sys
+spawned = False
+returned = False
+for line in pathlib.Path(sys.argv[1]).read_text().splitlines():
+    try:
+        event = json.loads(line)
+    except json.JSONDecodeError:
+        continue
+    if event.get("type") != "item.completed" or not isinstance(event.get("item"), dict):
+        continue
+    item = event["item"]
+    if item.get("type") != "collab_tool_call" or item.get("status") != "completed":
+        continue
+    if item.get("tool") == "spawn_agent" and item.get("receiver_thread_ids"):
+        spawned = True
+    if item.get("tool") == "wait" and isinstance(item.get("agents_states"), dict):
+        returned = any(
+            isinstance(state, dict)
+            and state.get("status") == "completed"
+            and isinstance(state.get("message"), str)
+            and state["message"].strip()
+            for state in item["agents_states"].values()
+        )
+if not (spawned and returned):
+    raise SystemExit("missing structured child spawn/result evidence")
+PY
+    then
+      ok "structured child spawn and non-empty result observed"
+    else
+      no "structured child spawn/result evidence missing"
+      subagent_ok=0
+    fi
+    write_tree_manifest "$T/tree.after.json"
+    if python3 - "$T/tree.before.json" "$T/tree.after.json" "$SKILL_DISPATCH_ROLE" <<'PY'
+import json, pathlib, sys
+before = json.loads(pathlib.Path(sys.argv[1]).read_text())
+after = json.loads(pathlib.Path(sys.argv[2]).read_text())
+changed = {path for path in set(before) | set(after) if before.get(path) != after.get(path)}
+expected = {"README.md"} if sys.argv[3] == "devrites-slice-wright" else set()
+if changed != expected:
+    raise SystemExit(f"unexpected project tree delta: {sorted(changed)}; expected {sorted(expected)}")
+PY
+    then
+      ok "$SKILL_DISPATCH_ROLE stayed inside the complete fixture tree boundary"
+    else
+      no "$SKILL_DISPATCH_ROLE changed an unexpected fixture path"
+      subagent_ok=0
+    fi
     if printf '%s\n' "$SKILL_DISPATCH_EXPECTED_README" | cmp -s - "$PROJECT/README.md"; then
       ok "$SKILL_DISPATCH_ROLE produced the expected project content"
     else
@@ -210,7 +308,7 @@ EOF
       subagent_ok=0
     fi
     if [ "$subagent_ok" -eq 1 ]; then
-      ok "codex skill-triggered named-role observable smoke passed"
+      ok "codex skill-triggered child diagnostic passed; exact custom role not exposed"
     else
       sed -n '1,80p' "$T/subagent.err"
       sed -n '1,120p' "$T/subagent.jsonl"

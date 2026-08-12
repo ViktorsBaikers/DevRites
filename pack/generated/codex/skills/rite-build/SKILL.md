@@ -39,7 +39,10 @@ reads named on-demand rules while writing; root reads them for doubt/record gate
 
 ## Operating rules
 - **One slice per wright dispatch.** Every wright returns after it. The controlling
-  root applies the mode rule above before another dispatch.
+  root applies the mode rule above before another dispatch. Prefer the guarded serial
+  native-worktree pilot in `wright-dispatch.md` only when its committed-clean
+  preflight and explicit reconciliation path both hold; otherwise use the existing
+  serial same-worktree writer. Never run writers in parallel.
 - Evidence over confidence. Prefer existing conventions. Feature scope only: no
   drive-by refactors.
 - **Record adjacent issues; do not edit them.** An issue outside the exact paths

@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	ClaudeSkillsTarget = devritespaths.ClaudeSkillsTarget
-	CodexSkillsTarget  = devritespaths.CodexSkillsTarget
-	ClaudeAgentsTarget = devritespaths.ClaudeAgentsTarget
-	CodexAgentsTarget  = devritespaths.CodexAgentsTarget
+	ClaudeSkillsTarget    = devritespaths.ClaudeSkillsTarget
+	CodexSkillsTarget     = devritespaths.CodexSkillsTarget
+	ClaudeAgentsTarget    = devritespaths.ClaudeAgentsTarget
+	CodexAgentsTarget     = devritespaths.CodexAgentsTarget
+	ClaudeWorkflowsTarget = devritespaths.ClaudeWorkflowsTarget
 )
 
 //go:embed templates/*.tmpl
@@ -126,6 +127,7 @@ func RequiredPayload(withCodex bool) []string {
 	required := []string{
 		"claude/skills",
 		"claude/agents",
+		"claude/workflows",
 		"claude/settings.json",
 	}
 	if withCodex {
@@ -161,6 +163,9 @@ func InstallTrees(withSkills, withAgents, withCodex bool) []Tree {
 		if withCodex {
 			trees = append(trees, Tree{PayloadPrefix: "codex/agents", TargetPrefix: CodexAgentsTarget})
 		}
+	}
+	if withSkills && withAgents {
+		trees = append(trees, Tree{PayloadPrefix: "claude/workflows", TargetPrefix: ClaudeWorkflowsTarget})
 	}
 	return trees
 }

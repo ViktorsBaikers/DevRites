@@ -101,6 +101,13 @@ exists, a real human/risk/scope gate owns it, or bounded recovery is exhausted.
   remaining value, explicit flag, sentinel cap, or post-vet pending count) and the
   unbuilt slices. A malformed value also fails closed. Zero with no pending slices is
   normal completion → continue to `$rite-prove` without pausing.
+- **Resource envelope unavailable or exhausted:** stop before more work when the AFK
+  envelope is missing/malformed/expired; another run overlaps; native agent, token,
+  cost, or wall-time headroom is exhausted/unobservable despite a declared cap; or
+  unresolved review/gate backlog is above its cap. At the review cap, permit only
+  reconciliation that reduces the queue. Record the exact winning limit and observed
+  usage/count. A new activation gets fresh activation-local counters; it does not reset
+  durable slice/recovery budgets, expiry, or the recomputed queue.
 - **Still low-confidence after the interview:** the idea can't be pinned to testable
   acceptance criteria → stop and ask, rather than guessing the product.
 - **Repeated failure:** bounded recovery exhausts → stop with reproduction.

@@ -44,7 +44,7 @@ gap between the two ends is the signal:
    ergonomics question before the contract sets.
 2. **Measure:** at `/rite-prove`, exercise the surface (run the getting-started flow,
    call the endpoint, invoke the CLI, trigger the error) and record the *measured* scorecard with
-   evidence: real time-to-hello-world, the verbatim error text, the screenshot of the docs page.
+   evidence: real TTHW, security-redacted exact error text, and a safely captured docs screenshot.
 3. **Reconcile (the boomerang):** at `/rite-seal`, compare predicted against measured. A material
    gap: "the plan said 3 minutes, the getting-started flow took 8 and step 4 errored":
    is a finding, not a rounding error. The estimate was wrong *or* the surface regressed; either
@@ -81,10 +81,10 @@ The same discipline as `performance.md` "measure first" and `testing.md` "see it
 - **Run it, don't read it.** A scorecard backed by "the code looks fine" is Source mode and says
   so. The graded scorecard comes from invoking the surface (the getting-started flow on
   a clean state, the real CLI `--help`, the real error path) and recording what happened.
-- **Quote the artifact.** Paste the verbatim error string, the exact failing command, the measured
-  TTHW; for a docs/quickstart page, capture it through the browser-proof ladder
-  ([`../skills/devrites-browser-proof/SKILL.md`](../../../devrites-browser-proof/SKILL.md)) and
-  describe the screenshot. A path is not proof; the observation is.
+- **Quote the artifact.** Record exact signal-bearing error text with typed security redactions
+  (not paraphrase), secret-free command shape, and measured TTHW. For docs, use the
+  [browser-proof ladder](../../../devrites-browser-proof/SKILL.md) and describe the screenshot;
+  a path alone is not proof.
 - **No measurement → no DX claim**, and usually no finding above Suggestion. "Feels confusing" is
   a hypothesis to test, not a verdict.
 

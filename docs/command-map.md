@@ -19,8 +19,8 @@ mean that a skill is internal; each `SKILL.md` uses `user-invocable:` to set
 visibility. Public utilities use the `rite-*` prefix: `rite-quick`,
 `rite-frame`, `rite-adopt`, `rite-learn`, `rite-doctor`, `rite-customize`,
 `rite-zoom-out`, `rite-prototype`, `rite-handoff`, `rite-pressure-test`,
-`rite-autocomplete`, `rite-explain`, `rite-pov`, `rite-dogfood`, and
-`rite-pr-feedback`, plus the evidence-gated workspace compatibility command
+`rite-autocomplete`, `rite-explain`, `rite-pov`, `rite-dogfood`,
+`rite-pr-feedback`, and `rite-watch-pr`, plus the evidence-gated workspace compatibility command
 `rite-upgrade`. The host may invoke `devrites-*` specialists through the model.
 `devrites-lib` is the non-workflow library exception.
 
@@ -113,6 +113,7 @@ See [`cli.md`](cli.md).
 | [`/rite-pov`](../pack/.claude/skills/rite-pov/SKILL.md) | utility | `[candidate/link/question]` | Project-grounded verdict on one outside option after live repository and primary-source evidence. | live code/docs + external sources | `decisions.md` or ADR only on request |
 | [`/rite-dogfood`](../pack/.claude/skills/rite-dogfood/SKILL.md) | utility | `[feature-slug\|branch] [--port N]` | Diff-scoped browser QA: map changed user journeys, run scenario matrix, fix small obvious breakages, write dogfood report. Explicit-only. | diff + app routes + browser | `.devrites/work/<slug>/dogfood.md` + safe fixes |
 | [`/rite-pr-feedback`](../pack/.claude/skills/rite-pr-feedback/SKILL.md) | utility | `[PR number\|thread URL\|blank for current branch]` | Resolve GitHub PR review feedback: fetch unresolved threads, judge centrally, fix valid items, reply, resolve. Explicit-only. | PR threads + code | code/tests + PR replies/resolutions |
+| [`/rite-watch-pr`](../pack/.claude/skills/rite-watch-pr/SKILL.md) | utility | `[PR number\|PR URL\|blank for current branch]` | Observe one GitHub PR/CI/review snapshot, classify one next action, and stop. Safe for capability-admitted native schedules/events; never mutates code, Git, checks, threads, or PR state. | PR/check/review metadata + bounded failed-log excerpts | none |
 | [`/rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | utility | `[idea]` | Pressure-test a rough idea: 3 to 5 genuinely different options → converge on one with trade-off + hinge. | spec / surrounding code | `decisions.md` (optional) |
 | [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | none | Diagnose the DevRites binary, pack, schema, and native host permission/profile configuration. | install + host config | none |
 
@@ -183,7 +184,7 @@ index is in
 [`pack/.claude/skills/devrites-lib/reference/standards/README.md`](../pack/.claude/skills/devrites-lib/reference/standards/README.md).
 
 - `core.md` (always-on): operating rules + universal anti-rationalizations + 1-line craft disciplines + persistence-before-stopping summary.
-- On-demand rules and checklists (read by the phase that needs them): `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `edge-case-trace.md` · `principles.md` · `security.md` · `repository-topology.md` · `data-integrity.md` · `integration-reliability.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `ci-cd.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `elicitation.md` · `agents.md` · `context-hygiene.md` · `anti-patterns.md` · `afk-hitl.md` · `tooling.md` · `skill-authoring.md` · `definition-of-done.md` · `review-checklist.md` · `test-proof-checklist.md` · `browser-proof-checklist.md` · `security-checklist.md`
+- On-demand rules and checklists (read by the phase that needs them): `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `edge-case-trace.md` · `principles.md` · `security.md` · `repository-topology.md` · `data-integrity.md` · `integration-reliability.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `ci-cd.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `elicitation.md` · `agents.md` · `context-hygiene.md` · `anti-patterns.md` · `afk-hitl.md` · `loop-operations.md` · `tooling.md` · `skill-authoring.md` · `definition-of-done.md` · `review-checklist.md` · `test-proof-checklist.md` · `browser-proof-checklist.md` · `security-checklist.md`
 - `anti-patterns.md`: pack-wide rationalizations + red flags. Loaded by each per-phase `rite-*/reference/anti-patterns.md`; can be loaded directly for cross-phase reluctance.
 
 ## Trigger conditions (auto-selection)

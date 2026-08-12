@@ -1,21 +1,19 @@
 # Adoption: reverse-investigation
 
-Loaded on demand by `/rite-adopt`. Document what the code already does so the
-lifecycle starts from evidence rather than guesses.
+Loaded by `/rite-adopt`; record code reality before forward work.
 
-Capture the durable project shape:
+Capture visible behavior; architecture/placement/callers/seams; repository/CI commands;
+live naming/layering/error/data/test conventions; and non-obvious constraints.
 
-- current user-visible behavior;
-- architecture, placement, callers, and important seams;
-- real test, build, typecheck, and lint commands from repository scripts or CI;
-- naming, layering, error, data-access, and test patterns visible in live code;
-- non-obvious ordering or framework constraints.
+For each next-objective load-bearing seam without a discriminating test, append after its
+source in `spec.md` existing behavior's `Current evidence` cell:
 
-Use native code/file search and current repository documentation. Fresh source
-and CI configuration win over historical notes.
+```text
+Characterization: characterize-before-modify; risk: <risk>; first touch: <slice|unknown>
+```
 
-Write the adopted baseline and next objective to `spec.md`; put uncertain facts
-in `assumptions.md` and durable decisions in `decisions.md`. If an observed rule
-should govern future work, propose one reviewed update to `AGENTS.md`,
-`CLAUDE.md`, or the nearest scoped project document. Do not create a convention
-ledger, confidence band, score, or duplicated command cache.
+This is a touched-behavior ratchet, not repository-wide coverage.
+
+Use current code/search/docs; source and CI beat history. Put baseline/objective in
+`spec.md`, uncertainty in `assumptions.md`, durable choices in `decisions.md`, and guidance
+in nearest scoped instructions—never ledgers, scores, confidence bands, or command caches.

@@ -33,12 +33,20 @@ with one objective and exact permitted source/test paths.
    target/relevant call path, local implementation/error conventions, reuse seam,
    test seam, and in-scope principles/rules. Do not read for reassurance. If an
    essential item is missing from permitted context, return `Escalation`; never guess.
+8. **Isolated worktree transfer is explicit.** Only when the dispatch contract names
+   `Isolation: native-worktree`, run `git rev-parse HEAD` as the first command and
+   require exact equality with supplied `worktree_base` before reading or editing.
+   Mismatch returns a gap with no write. After green proof, create one local, unpushed
+   transfer commit. Never push, merge, rebase, or remove the worktree. Without that
+   exact mode, do not commit.
 
 ## The contract you receive
 The orchestrator supplies each item inline or by path. All workspace paths are
 relative to the **Workspace root** named in the contract:
 - **Slice:** id/name, goal, acceptance criteria, **scope boundary** (what it will and will
   **not** touch), mode (HITL/AFK + any budget).
+- **Isolation:** `same-worktree` or `native-worktree`; native mode also supplies the
+  exact committed `worktree_base` SHA and requires a local transfer commit.
 - **Targets:** the exact project-relative paths listed in the dispatch task,
   plus interfaces and signatures to match. Your return cannot widen this set.
 - **Context to read yourself:** `spec.md`, `plan.md`, `decisions.md`, `assumptions.md`,
@@ -109,7 +117,12 @@ an escalation and do not proceed.**
    `dead_ends`. Resolution is progress, while a different cause returns to the caller as a
    new fingerprint. At the limit return the gate and repro. `Escalation` is only for product/irreversible choices
    or human-only access; technical failure is a blocker.
-5. **RETURN** the structured artifact (below) and stop. Do not start the next slice.
+5. **TRANSFER when isolated.** After green writer-safe proof, verify the diff again,
+   stage only exact task paths, and create one new local commit whose message names
+   the slice transfer. Record its SHA. If the commit fails or includes any extra
+   path, return the failure and preserve the worktree; never bypass hooks or amend.
+   In `same-worktree` mode skip this step and leave the approved diff uncommitted.
+6. **RETURN** the structured artifact (below) and stop. Do not start the next slice.
 
 ## Code quality: consume the rules, don't reinvent them
 Apply the authoritative rule files and canonical anti-slop list named in the contract.
@@ -149,6 +162,9 @@ never authorizes a path:
 ```yaml
 slice: <id — name>
 restated_scope: <goal · acceptance · boundary>
+isolation: same-worktree | native-worktree
+worktree_base: <commit sha | none>
+transfer_commit: <commit sha | none>
 files_changed:
   - path: <project-relative path>
     line: <line|n/a>
@@ -184,7 +200,9 @@ failure or move it to `Escalation` instead of shipping it quietly.
 ## Tools / read-write mode
 
 Write-capable for code and tests only at the exact paths in the current slice
-contract; do not write `.devrites/` bookkeeping.
+contract; do not write `.devrites/` bookkeeping. In exact `native-worktree` mode,
+Git staging and one local transfer commit are permitted only for those paths; all
+other Git mutation and every remote action remain forbidden.
 
 ## Composition
 
