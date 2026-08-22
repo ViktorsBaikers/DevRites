@@ -26,6 +26,15 @@ from pathlib import Path
 SCRIPT = Path(sys.argv[1]).resolve()
 ARGS = sys.argv[2:]
 CANDIDATE_ROOT = SCRIPT.parent.parent
+
+
+def delivery_execution_prefix() -> list[str]:
+    """Prefer rtk proxy when available; CI runners may not install rtk."""
+    return ["rtk", "proxy"] if shutil.which("rtk") else []
+
+
+def with_delivery_execution_prefix(command: list[str]) -> list[str]:
+    return [*delivery_execution_prefix(), *command]
 AUTHORED = [
     "pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md",
     "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md",
@@ -2032,7 +2041,9 @@ def check_module_and_corpus(root: Path) -> None:
             env = os.environ.copy()
             env["DEVRITES_HOST_ARTIFACT_DIR"] = tmp
             generated = subprocess.run(
-                ["rtk", "proxy", "bash", str(root / "scripts/build-host-artifacts.sh")],
+                with_delivery_execution_prefix(
+                    ["bash", str(root / "scripts/build-host-artifacts.sh")]
+                ),
                 cwd=root, env=env, text=True, stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT, check=False,
             )
@@ -5465,7 +5476,7 @@ def write_journal_temporary_fixture(delivery: Path, journal: dict) -> None:
 def complete_gate_records_fixture() -> list[dict]:
     return [
         {
-            "command": command, "execution_prefix": ["rtk", "proxy"],
+            "command": command, "execution_prefix": delivery_execution_prefix(),
             "sha256": "0" * 64, "signal": signal or "exit=0",
         }
         for command, signal in DELIVERY_GATES
@@ -6729,7 +6740,7 @@ def check_gate_bytecode_isolation() -> None:
             mutant_env.pop("DEVRITES_REPO_ROOT", None)
             mutant_env.pop("PYTHONDONTWRITEBYTECODE", None)
             mutant = subprocess.run(
-                ["rtk", "proxy", *command], env=mutant_env,
+                with_delivery_execution_prefix(command), env=mutant_env,
                 preexec_fn=lambda: os.fchdir(repo_fd), pass_fds=(repo_fd,),
                 text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False,
             )
@@ -7000,24 +7011,41 @@ def check_drift_005_regressions() -> None:
         require(forbidden not in source, f"detached-session tracking remains: {forbidden}")
 
 
+def resolve_evidence_mapping_source(project: Path) -> tuple[Path, bool]:
+    """Prefer live work, then archive, then committed fixture (CI has no .devrites)."""
+    live = project / ".devrites/work/workflow-artifact-identity"
+    if (live / "evidence.md").is_file() and (live / "traceability.md").is_file():
+        return live, True
+    archive = project / ".devrites/archive/workflow-artifact-identity"
+    if (archive / "evidence.md").is_file() and (archive / "traceability.md").is_file():
+        return archive, False
+    fixture = SCRIPT.parent / "fixtures" / "workflow-artifact-identity-evidence-workspace"
+    require((fixture / "evidence.md").is_file() and (fixture / "traceability.md").is_file(),
+            "workflow-artifact evidence mapping fixture")
+    return fixture, False
+
+
 def check_workspace_evidence_mapping() -> None:
     project = project_root_for_tests(canonical_root())
-    live = project / ".devrites/work/workflow-artifact-identity"
+    source, is_live = resolve_evidence_mapping_source(project)
     schema = ["python3", "scripts/validate-workspace-schema.py"]
     unmapped_008 = "evidence ID EVID-008 from evidence/browser proof is not mapped"
     unmapped_010 = "evidence ID EVID-010 from evidence/browser proof is not mapped"
     unmapped_013 = "evidence ID EVID-013 from evidence/browser proof is not mapped"
-    live_evidence = (live / "evidence.md").read_bytes()
-    live_trace = (live / "traceability.md").read_bytes()
-    require(b"EVID-008" in live_evidence and b"EVID-010" in live_evidence
-            and b"EVID-013" in live_evidence,
-            "live evidence owns mapped IDs")
-    require(b"EVID-008" in live_trace and b"EVID-010" in live_trace
-            and b"EVID-013" in live_trace,
-            "live traceability maps locked evidence IDs")
+    source_evidence = (source / "evidence.md").read_bytes()
+    source_trace = (source / "traceability.md").read_bytes()
+    require(b"EVID-008" in source_evidence and b"EVID-010" in source_evidence
+            and b"EVID-013" in source_evidence,
+            "source evidence owns mapped IDs")
+    require(b"EVID-008" in source_trace and b"EVID-010" in source_trace
+            and b"EVID-013" in source_trace,
+            "source traceability maps locked evidence IDs")
     with tempfile.TemporaryDirectory() as tmp:
         copy = Path(tmp) / "workflow-artifact-identity"
-        shutil.copytree(live, copy, ignore=shutil.ignore_patterns(".generated-install"))
+        shutil.copytree(source, copy, ignore=shutil.ignore_patterns(
+            ".generated-install", ".root-proof*", ".prove-*", ".review-*",
+            ".candidate-*", "correction-baseline*.json", "build-baseline.json",
+        ))
         evidence = (copy / "evidence.md").read_text()
         require("EVID-008" in evidence and "EVID-010" in evidence
                 and "EVID-013" in evidence,
@@ -7048,16 +7076,22 @@ def check_workspace_evidence_mapping() -> None:
         require(red.returncode != 0 and unmapped_008 in red.stdout
                 and unmapped_010 in red.stdout and unmapped_013 in red.stdout,
                 f"unmapped evidence IDs must fail schema: {red.stdout[-1000:]}")
-    require((live / "evidence.md").read_bytes() == live_evidence
-            and (live / "traceability.md").read_bytes() == live_trace,
-            "live workspace files unchanged by mapping fixture")
-    green = subprocess.run(
-        schema + [".devrites/work/workflow-artifact-identity"], cwd=project, text=True,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, timeout=120,
-    )
-    require(green.returncode == 0
-            and "workspace-schema: OK: 1 workspace(s) validated" in green.stdout.splitlines(),
-            f"live workspace schema: {green.stdout[-1000:]}")
+        green_copy = Path(tmp) / "workflow-artifact-identity-green"
+        shutil.copytree(source, green_copy, ignore=shutil.ignore_patterns(
+            ".generated-install", ".root-proof*", ".prove-*", ".review-*",
+            ".candidate-*", "correction-baseline*.json", "build-baseline.json",
+        ))
+        green = subprocess.run(
+            schema + [str(green_copy)], cwd=project, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, timeout=120,
+        )
+        require(green.returncode == 0
+                and "workspace-schema: OK: 1 workspace(s) validated" in green.stdout.splitlines(),
+                f"source workspace schema: {green.stdout[-1000:]}")
+    if is_live:
+        require((source / "evidence.md").read_bytes() == source_evidence
+                and (source / "traceability.md").read_bytes() == source_trace,
+                "live workspace files unchanged by mapping fixture")
 
 
 def default_tests(root: Path) -> None:
@@ -7403,7 +7437,7 @@ def validate_delivery_journal(journal: dict, delivery_fd: int, repo_fd: int,
         for index, gate in enumerate(journal["gates"]):
             expected_command, expected_signal = DELIVERY_GATES[index]
             require(isinstance(gate, dict) and set(gate) == {"command", "execution_prefix", "sha256", "signal"}
-                    and gate["execution_prefix"] == ["rtk", "proxy"]
+                    and gate["execution_prefix"] == delivery_execution_prefix()
                     and gate["command"] == expected_command
                     and re.fullmatch(r"[0-9a-f]{64}", gate["sha256"]) is not None
                     and gate["signal"] == (expected_signal or "exit=0"), "delivery gate record")
@@ -7680,9 +7714,9 @@ def require_live_protected_identity() -> dict[str, dict]:
         records = protected_records_at(repo_fd)
     finally:
         os.close(repo_fd)
-    require({relative: record.get("sha256") for relative, record in records.items()}
-            == LIVE_PROTECTED_SHA256,
-            "current protected byte identity")
+    observed = {relative: record.get("sha256") for relative, record in records.items()}
+    require(observed == LIVE_PROTECTED_SHA256,
+            f"current protected byte identity: got {observed}")
     return records
 
 
@@ -8905,7 +8939,7 @@ def run_private_generator(repo_fd: int, stage_relative: str,
             env["BASH_ENV"] = f"/dev/fd/{bash_env_read}"
             env["DEVRITES_HOST_ARTIFACT_DIR"] = "."
             generated_ok, reason, output = run_delivery_process(
-                ["rtk", "proxy", "bash", "scripts/build-host-artifacts.sh"],
+                with_delivery_execution_prefix(["bash", "scripts/build-host-artifacts.sh"]),
                 None, aggregate_deadline, env, generator_preexec,
                 (repo_fd, stage_fd, held_out_fd, output_fd, bash_env_read),
             )
@@ -8979,7 +9013,7 @@ def run_gate(repo_fd: int, delivery_fd: int, proof_cache_relative: str,
     try:
         _set_gate_proof_cache_env(env, proof_cache_relative)
         ok, reason, output = run_delivery_process(
-            ["rtk", "proxy", *execution_command], expected, aggregate_deadline,
+            with_delivery_execution_prefix(list(execution_command)), expected, aggregate_deadline,
             env, lambda: os.fchdir(repo_fd), (repo_fd,),
         )
     finally:
@@ -8990,7 +9024,7 @@ def run_gate(repo_fd: int, delivery_fd: int, proof_cache_relative: str,
     if not ok:
         raise RuntimeError(f"delivery gate-{gate_index} failed: {reason}")
     return {
-        "command": command, "execution_prefix": ["rtk", "proxy"],
+        "command": command, "execution_prefix": delivery_execution_prefix(),
         "sha256": sha(output), "signal": expected or "exit=0",
     }
 
