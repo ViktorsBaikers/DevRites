@@ -7689,17 +7689,17 @@ def install_live_protected_fixtures(root: Path) -> list[tuple[Path, bytes | None
         ".devrites/work/workspace-observation/touched-files.md": observation_bytes,
     }
     for relative, content in wanted.items():
-        path = root / relative
+        fixture_path = root / relative
         previous: bytes | None
-        if path.is_file() and not path.is_symlink():
-            previous = path.read_bytes()
+        if fixture_path.is_file() and not fixture_path.is_symlink():
+            previous = fixture_path.read_bytes()
             if hashlib.sha256(previous).hexdigest() == LIVE_PROTECTED_SHA256[relative]:
                 continue
         else:
             previous = None
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(content)
-        restorations.append((path, previous))
+        fixture_path.parent.mkdir(parents=True, exist_ok=True)
+        fixture_path.write_bytes(content)
+        restorations.append((fixture_path, previous))
     return restorations
 
 
