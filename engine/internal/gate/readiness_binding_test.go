@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/devrites/devrites/internal/reason"
+	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/testutil"
 )
 
@@ -135,12 +136,12 @@ func TestReadinessBindingRejectsUnsafeInputsWithoutDisclosure(t *testing.T) {
 			}
 		}},
 		{name: "per input limit", mutate: func(t *testing.T, workspace string) {
-			if err := os.WriteFile(filepath.Join(workspace, "test-plan.md"), bytes.Repeat([]byte("a"), int(maxReadinessInputBytes)+1), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(workspace, "test-plan.md"), bytes.Repeat([]byte("a"), (1<<20)+1), 0o644); err != nil {
 				t.Fatal(err)
 			}
 		}},
 		{name: "aggregate limit", mutate: func(t *testing.T, workspace string) {
-			content := bytes.Repeat([]byte("a"), int(maxReadinessInputBytes))
+			content := bytes.Repeat([]byte("a"), 1<<20)
 			for _, name := range []string{"spec.md", "decision-coverage.md", "architecture.md", "plan.md", "tasks.md", "traceability.md", "test-plan.md", "strategy.md", "design-brief.md"} {
 				if err := os.WriteFile(filepath.Join(workspace, name), content, 0o644); err != nil {
 					t.Fatal(err)
@@ -173,11 +174,18 @@ func TestVerifyReadinessBindingRequiresOneStructuralStandaloneLine(t *testing.T)
 		wantErr bool
 	}{
 		{name: "exact", content: "# Engineering review\n\n" + expected + "\n"},
+		{name: "exact CRLF", content: "# Engineering review\r\n\r\n" + expected + "\r\n"},
 		{name: "exact plus fenced example", content: expected + "\n```text\n" + expected + "\n```\n"},
 		{name: "missing", content: "# Engineering review\n\nREADY\n", wantErr: true},
 		{name: "malformed", content: readinessBindingLabel + strings.Repeat("a", 63) + "\n", wantErr: true},
 		{name: "duplicate", content: expected + "\n" + expected + "\n", wantErr: true},
+		{name: "prefixed", content: "prefix " + expected + "\n", wantErr: true},
 		{name: "fenced only", content: "```text\n" + expected + "\n```\n", wantErr: true},
+		{name: "unterminated fence", content: "```text\n" + expected + "\n", wantErr: true},
+		{name: "tilde fenced only", content: "~~~text\n" + expected + "\n~~~~~\n", wantErr: true},
+		{name: "tilde fenced plus visible", content: "~~~text\n" + expected + "\n~~~~~\n" + expected + "\n"},
+		{name: "HTML comment remains structural", content: "<!--\n" + expected + "\n-->\n"},
+		{name: "inline comment marker does not hide binding", content: "`<!--`\n" + expected + "\n"},
 		{name: "mismatch", content: readinessBindingLabel + strings.Repeat("0", 64) + "\n", wantErr: true},
 		{name: "not standalone", content: " " + expected + "\n", wantErr: true},
 	}
@@ -185,7 +193,11 @@ func TestVerifyReadinessBindingRequiresOneStructuralStandaloneLine(t *testing.T)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			testutil.WriteFile(t, filepath.Join(workspace, "eng-review.md"), test.content)
-			got, err := verifyReadinessBinding(root, "markers")
+			observation, observeErr := state.ObserveWorkspace(root, "markers")
+			if observeErr != nil {
+				t.Fatal(observeErr)
+			}
+			got, err := verifyReadinessBinding(observation)
 			if (err != nil) != test.wantErr {
 				t.Fatalf("verifyReadinessBinding() error=%v, wantErr=%v", err, test.wantErr)
 			}
@@ -235,6 +247,117 @@ func TestCheckUsesReadinessBindingForBuildAndSeal(t *testing.T) {
 				t.Fatalf("stale output lacks recovery or expected binding:\n%s", rendered)
 			}
 		})
+	}
+}
+
+func TestReadinessBindingObservationUsesRetainedBytes(t *testing.T) {
+	root := t.TempDir()
+	workspace := writeReadinessFixture(t, root, "retained-binding", "build")
+	observation, err := state.ObserveWorkspace(root, "retained-binding")
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := readinessBindingFromObservation(observation)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testutil.WriteFile(t, filepath.Join(workspace, "spec.md"), "# Spec\n\nChanged after observation.\n")
+	testutil.WriteFile(t, filepath.Join(workspace, "strategy.md"), "# Strategy\n\nAdded after observation.\n")
+	after, err := readinessBindingFromObservation(observation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after != before {
+		t.Fatalf("retained observation binding changed: before=%q after=%q", before, after)
+	}
+}
+
+func TestReadinessBindingOptionalEmptyFilesRemainPresent(t *testing.T) {
+	forms := []struct {
+		name string
+		body string
+	}{
+		{name: "zero-byte"},
+		{name: "heading-only", body: "# Optional\n"},
+		{name: "frontmatter-only", body: "---\nkind: optional\n---\n"},
+	}
+	for _, logical := range []string{"strategy.md", "design-brief.md", "ai-spec.md", ".devrites/principles.md"} {
+		for _, form := range forms {
+			t.Run(logical+"/"+form.name, func(t *testing.T) {
+				root := t.TempDir()
+				workspace := writeReadinessFixture(t, root, "optional-empty", "build")
+				baseline := mustReadinessBinding(t, root, "optional-empty")
+				path := filepath.Join(workspace, logical)
+				if logical == ".devrites/principles.md" {
+					path = filepath.Join(root, "principles.md")
+				}
+				testutil.WriteFile(t, path, form.body)
+				present := mustReadinessBinding(t, root, "optional-empty")
+				if present == baseline {
+					t.Fatalf("adding %s %s did not encode present bytes", form.name, logical)
+				}
+				if err := os.Remove(path); err != nil {
+					t.Fatal(err)
+				}
+				if restored := mustReadinessBinding(t, root, "optional-empty"); restored != baseline {
+					t.Fatalf("removing %s did not restore absent binding: got %q want %q", logical, restored, baseline)
+				}
+			})
+		}
+	}
+}
+
+func TestCheckReadinessBindingDetectsEmptyOptionalAddAndRemove(t *testing.T) {
+	for _, logical := range []string{"strategy.md", "design-brief.md", "ai-spec.md", ".devrites/principles.md"} {
+		t.Run(logical, func(t *testing.T) {
+			root := t.TempDir()
+			workspace := writeReadinessFixture(t, root, "empty-stale", "build")
+			binding := mustReadinessBinding(t, root, "empty-stale")
+			testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+			path := filepath.Join(workspace, logical)
+			if logical == ".devrites/principles.md" {
+				path = filepath.Join(root, "principles.md")
+			}
+			testutil.WriteFile(t, path, "")
+
+			result, err := Check(Readiness, root, "empty-stale")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !result.Blocked || result.ReasonID != reason.GateReadinessStale {
+				t.Fatalf("empty optional add blocked=%v reason=%q", result.Blocked, result.ReasonID)
+			}
+			if err := os.Remove(path); err != nil {
+				t.Fatal(err)
+			}
+			result, err = Check(Readiness, root, "empty-stale")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Blocked {
+				t.Fatalf("empty optional removal remained blocked: %s", result.Render())
+			}
+		})
+	}
+}
+
+func TestReadinessDiagnosticPayloads(t *testing.T) {
+	for _, tc := range []struct {
+		diagnostic state.ArtifactDiagnostic
+		want       string
+	}{
+		{state.ArtifactDiagnostic{Path: "strategy.md", State: state.ArtifactMalformed, Code: state.DiagnosticMalformedMarkdown}, "readiness input strategy.md is malformed (malformed_markdown); replace invalid Markdown with valid Markdown"},
+		{state.ArtifactDiagnostic{Path: "strategy.md", State: state.ArtifactUnsafe, Code: state.DiagnosticParentSymlink}, "readiness input strategy.md is unsafe (parent_symlink); replace the symlinked parent with a real directory"},
+		{state.ArtifactDiagnostic{Path: "strategy.md", State: state.ArtifactUnsafe, Code: state.DiagnosticFinalSymlink}, "readiness input strategy.md is unsafe (final_symlink); replace the symlink with a regular file"},
+		{state.ArtifactDiagnostic{Path: "strategy.md", State: state.ArtifactUnsafe, Code: state.DiagnosticNonRegular}, "readiness input strategy.md is unsafe (non_regular); replace the non-regular entry with a regular file"},
+		{state.ArtifactDiagnostic{Path: "strategy.md", State: state.ArtifactUnsafe, Code: state.DiagnosticFileTooLarge}, "readiness input strategy.md is unsafe (file_too_large); reduce the file to at most 1 MiB"},
+		{state.ArtifactDiagnostic{Path: "strategy.md", State: state.ArtifactUnreadable, Code: state.DiagnosticPermissionDenied}, "readiness input strategy.md is unreadable (permission_denied); grant read permission"},
+		{state.ArtifactDiagnostic{Path: "strategy.md", State: state.ArtifactUnreadable, Code: state.DiagnosticReadFailure}, "readiness input strategy.md is unreadable (read_failure); restore a readable regular file"},
+	} {
+		if got := readinessDiagnosticError(tc.diagnostic).Error(); got != tc.want {
+			t.Errorf("readinessDiagnosticError(%+v)=%q, want %q", tc.diagnostic, got, tc.want)
+		}
 	}
 }
 

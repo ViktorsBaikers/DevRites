@@ -200,36 +200,97 @@ require "$PLAN_DRAFTER" 'diagnostic-amplification' 'plan drafter designs bounded
 require "$VET_ARTIFACTS" '## Consumptive action gates' 'test plan records one-shot evidence authority durably'
 require "$VET_ARTIFACTS" 'Boundary map + collision proof' 'test plan binds diagnostic actionability proof'
 require "$REPLY" 'no safe in-scope diagnostic-amplification seam' 'terminal reply requires proof that amplification is unavailable'
-require "$WORKFLOW_ARTIFACTS" 'controlling root is the sole materializer' 'root owns executable workflow proof artifacts'
-require "$WORKFLOW_ARTIFACTS" 'never dispatch `devrites-slice-wright`' 'workflow proof artifacts never widen the product writer'
-require "$WORKFLOW_ARTIFACTS" 'exact file list' 'workflow artifact materialization is path bounded'
-require "$WORKFLOW_ARTIFACTS" 'candidate digest remains identical' 'workflow artifacts cannot mutate the product candidate'
-require "$WORKFLOW_ARTIFACTS" 'stale writer-exhaustion cursor' 'workflow artifacts reopen stale pre-ownership terminal cursors'
-require "$WORKFLOW_ARTIFACTS" 'no controlling-root materialization attempt' 'workflow artifact migration is one-way and evidence-backed'
-require "$WORKFLOW_ARTIFACTS" 'materialization is not a consumptive action' 'workflow artifact writes do not invent a one-shot budget'
-require "$WORKFLOW_ARTIFACTS" 'three no-progress corrections' 'workflow artifact failures use bounded technical recovery'
-require "$WORKFLOW_ARTIFACTS" 'preflight the materializer itself' 'workflow artifact transaction code runs in disposable fixtures first'
-require "$WORKFLOW_ARTIFACTS" 'source and destination directory handles' 'workflow artifact replacement anchors both relative operands'
-require "$WORKFLOW_ARTIFACTS" 'working directory outside the admitted parent' 'workflow artifact preflight detects cwd-relative source lookup'
-require "$WORKFLOW_ARTIFACTS" 'omits either directory handle' 'workflow artifact preflight rejects either unanchored replace operand'
-require "$WORKFLOW_ARTIFACTS" 'targets remain at their recorded preimages' 'unchanged targets permit offline materializer correction'
+require "$WORKFLOW_ARTIFACTS" 'devrites.workflow-artifact-admission.v1' 'workflow artifacts expose one Vet admission contract'
+require "$WORKFLOW_ARTIFACTS" 'devrites.workflow-artifact-journal.v1' 'workflow artifacts expose one marker-owned journal contract'
+require "$WORKFLOW_ARTIFACTS" 'devrites.workflow-source.v1\0' 'workflow source handles use the frozen domain separator'
+require "$WORKFLOW_ARTIFACTS" 'devrites.workflow-identity.v1\0' 'workflow identities use ordered domain-separated bytes'
+require "$WORKFLOW_ARTIFACTS" 'only Python' 'workflow ownership uses the canonical Python flock domain'
+require "$WORKFLOW_ARTIFACTS" 'source and destination directory handles' 'workflow replacement anchors both relative operands'
+require "$WORKFLOW_ARTIFACTS" 'PREPARING → PREPARED' 'workflow artifacts define the success state graph centrally'
+require "$WORKFLOW_ARTIFACTS" 'ROLLING_BACK(index)' 'workflow artifacts define pre-proof rollback centrally'
+require "$WORKFLOW_ARTIFACTS" 'At/after durable `PROVED`' 'workflow recovery preserves proved targets'
+require "$WORKFLOW_ARTIFACTS" 'same-fingerprint count=3' 'workflow retry forbids attempt four'
+require "$WORKFLOW_ARTIFACTS" 'product_candidate_digest' 'workflow evidence avoids a second standalone candidate binding'
+require "$WORKFLOW_ARTIFACTS" 'WA-OP-002A-STALE-SOURCE-GC' 'workflow operation table includes binding-rollover cleanup'
+require "$WORKFLOW_ARTIFACTS" 'WA-IDEMPOTENT-RERUN' 'workflow routes include source-free terminal verification'
+require "$WORKFLOW_ARTIFACTS" 'WA-R022-STALE-SOURCE-GC-FAILED' 'workflow diagnostics use finite stale-cleanup semantics'
+require "$WORKFLOW_ARTIFACTS" 'next_action=none — technical recovery exhausted; requires new evidence or changed failure conditions' 'workflow exhaustion uses the frozen public action'
+forbid "$WORKFLOW_ARTIFACTS" 'technical recovery exhausted for <causal fingerprint>' 'workflow exhaustion does not append fingerprint text'
+require "$AFK_HITL" 'Next step: none — technical recovery exhausted; requires new evidence or changed failure conditions' 'AFK exhaustion uses the frozen public action'
+forbid "$AFK_HITL" 'technical recovery exhausted for <causal fingerprint>' 'AFK exhaustion does not append fingerprint text'
+forbid "$WORKFLOW_ARTIFACTS" '## Cold-resume migration' 'workflow authority removes actor-history migration'
+forbid "$WORKFLOW_ARTIFACTS" 'sole materializer' 'workflow authority removes generic materializer ownership'
 require "$PLAN_DRAFTER" 'never return implementation bodies' 'plan drafter cannot be used as a proof-artifact writer'
 require "$PLAN" 'materializes the exact vetted workflow-artifact paths' 'plan repair gives executable workflow artifacts to the root'
-require "$BUILD" 'Executable workflow-artifact branch' 'build separates workflow artifacts from product slices'
-require "$BUILD" 'does not dispatch the wright' 'build never sends .devrites workflow artifacts to slice-wright'
-require "$PROVE" 'workflow-artifacts.md' 'prove routes proof-artifact implementation to root ownership'
-require "$DEBUG_RECOVERY" 'workflow-artifacts.md' 'debug recovery preserves proof-artifact root ownership'
-require "$AUTOCOMPLETE" 'workflow-artifacts.md` before honoring' 'autocomplete loads workflow ownership before terminal reconciliation'
-require "$AUTOCOMPLETE_LOOP" 'stale writer-exhaustion cursor' 'autocomplete reopens pre-ownership materialization stops'
-require "$AUTOCOMPLETE_LOOP" 'changed routing condition' 'autocomplete treats supported root ownership as new recovery evidence'
-require "$AUTOCOMPLETE_LOOP" 'does not make the first root attempt terminal' 'autocomplete preserves recovery after first materializer failure'
-require "$AUTOCOMPLETE_STOPS" 'drafter/wright refusals do not count' 'old unsupported-writer attempts do not exhaust root materialization'
-require "$AUTOCOMPLETE_STOPS" 'no controlling-root materialization attempt' 'terminal migration cannot reset after a root attempt'
-require "$AUTOCOMPLETE_STOPS" 'first controlling-root failure is not exhaustion' 'materializer failure remains recoverable below the shared cap'
-require "$AFK_HITL" 'workflow-artifacts.md' 'shared recovery accounting recognizes workflow-artifact routing migration'
-require "$AFK_HITL" 'no controlling-root materialization attempt' 'shared recovery migration requires absence of a root attempt'
-require "$ONE_SHOT" 'Workflow-artifact materialization is reversible offline work' 'one-shot policy excludes workflow artifact materialization'
-require "$BUILD" 'disposable same-layout fixture' 'build preflights workflow artifact transaction machinery'
+if ! python3 - "$WORKFLOW_ARTIFACTS" <<'PY'
+import sys
+from pathlib import Path
+
+lines = Path(sys.argv[1]).read_text().splitlines()
+start = lines.index("|Route|Owner|Exact action|Durable state/status/next action|Cursor/output|") + 2
+rows = []
+while start < len(lines) and lines[start].startswith("|"):
+    rows.append([cell.strip().replace("`", "") for cell in lines[start].strip("|").split("|")])
+    start += 1
+expected = {
+    "PLAN_VET_REPAIR": [
+        "controlling root",
+        "run /rite-plan repair <slug> then /rite-vet <slug> internally",
+        "phase=plan, status=running, next_action=/rite-plan repair <slug> until Vet READY",
+        "restore saved caller cursor; Autocomplete emits no intermediate reply",
+    ],
+    "OFFLINE_RECOVERY": [
+        "controlling root",
+        "run /devrites-debug-recovery <slug>, disposable re-preflight, then narrow /rite-vet <slug>",
+        "status=running, next_action=/devrites-debug-recovery <slug>; retry only from durable FAILED and remaining cap",
+        "preserve cursor and attempt history; no real action",
+    ],
+}
+routes = {row[0]: row[1:] for row in rows}
+for route, facts in expected.items():
+    if routes.get(route) != facts:
+        raise SystemExit(f"FAIL: exact recovery route: {route}")
+    if any("<slug>" in value.replace("<slug>", "demo") for value in routes[route]):
+        raise SystemExit(f"FAIL: recovery slug binding: {route}")
+    for field in range(4):
+        mutant = routes[route].copy()
+        mutant[field] += "-MUTANT"
+        if mutant == facts:
+            raise SystemExit(f"FAIL: recovery field mutant: {route}:{field}")
+    slug_mutant = [value.replace("<slug>", "<other>") for value in routes[route]]
+    if slug_mutant == facts:
+        raise SystemExit(f"FAIL: recovery slug mutant: {route}")
+print("workflow-recovery-routes: PASS")
+PY
+then
+  fail=1
+fi
+if ! python3 - "$ROOT" <<'PY'
+import json, re, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+module = (root / "pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md").read_text()
+lines = module.splitlines(); start = lines.index("|Canonical adapter|Entry trigger|Canonical action|Return cursor|") + 2
+rows = []
+while start < len(lines) and lines[start].startswith("|"):
+    rows.append([cell.strip().replace("`", "") for cell in lines[start].strip("|").split("|")]); start += 1
+if len(rows) != 10 or any(len(row) != 4 for row in rows): raise SystemExit("FAIL: canonical adapter map")
+pattern = re.compile(r"^<!-- workflow-artifact-adapter: (\{.*\}) -->$", re.MULTILINE)
+for canonical, entry, action, returned in rows:
+    path = root / "pack/.claude/skills" / canonical
+    declarations = pattern.findall(path.read_text())
+    if len(declarations) != 1: raise SystemExit(f"FAIL: adapter declaration cardinality: {canonical}")
+    value = json.loads(declarations[0])
+    expected = {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":entry,"action":action,"return":returned}
+    if list(value) != ["module","entry","action","return"] or value != expected:
+        raise SystemExit(f"FAIL: adapter declaration mismatch: {canonical}")
+print("workflow-adapters: PASS")
+PY
+then
+  fail=1
+fi
+require "$AUTOCOMPLETE_LOOP" '"action":"invoke classifier once under owner lock; no actor-history migration"' 'autocomplete loop binds actor-history policy in its exact declaration'
+forbid "$AUTOCOMPLETE_LOOP" 'There is no actor-history migration.' 'autocomplete loop does not restate actor-history policy'
 require "$WRIGHT_DISPATCH" 'reject' 'wright dispatch remains fail closed'
 require "$WRIGHT_DISPATCH" '`.devrites/**`' 'wright still rejects workflow artifact paths'
 require "$DISCOVERY" 'discovery evidence, not authorization' 'command discovery cannot authorize execution'

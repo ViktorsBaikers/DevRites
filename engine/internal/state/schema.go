@@ -66,7 +66,7 @@ const (
 	PhaseDone     Phase = "done"     // archived completion
 )
 
-// ArtifactPath is a lifecycle-owned path relative to a feature workspace.
+// ArtifactPath is the logical identity of an observed workspace artifact.
 type ArtifactPath string
 
 // PhasePolicy is the complete deterministic policy for one target Phase.

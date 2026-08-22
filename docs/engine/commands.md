@@ -106,6 +106,63 @@ ambient Git state. Ordinary readiness and Seal require that exact standalone
 line in `eng-review.md`; stale input returns
 `reason: DRV-GATE-READINESS-STALE` and routes through `/rite-vet`.
 
+### Workspace observation diagnostics
+
+Lifecycle checks acquire the fixed workspace Markdown inventory once. Each
+artifact is classified as `absent`, `empty`, `malformed`, `unsafe`,
+`unreadable`, or `present`. Retained content is limited to 1 MiB per file and
+8 MiB aggregate. Diagnostic lines use this exact shape:
+`artifact: <logical-path>: <state> (<code>)`.
+
+The closed diagnostic codes and recoveries are:
+
+| Code | Exact Gate recovery | Exact standalone readiness-binding payload |
+|---|---|---|
+| `malformed_markdown` | `next: repair <logical-path>: replace invalid Markdown with valid Markdown; required artifacts need substantive content` | `readiness input <logical-path> is malformed (malformed_markdown); replace invalid Markdown with valid Markdown` |
+| `parent_symlink` | `next: repair <logical-path>: replace the symlinked parent with a real directory` | `readiness input <logical-path> is unsafe (parent_symlink); replace the symlinked parent with a real directory` |
+| `final_symlink` | `next: repair <logical-path>: replace the symlink with a regular file` | `readiness input <logical-path> is unsafe (final_symlink); replace the symlink with a regular file` |
+| `non_regular` | `next: repair <logical-path>: replace the non-regular entry with a regular file` | `readiness input <logical-path> is unsafe (non_regular); replace the non-regular entry with a regular file` |
+| `file_too_large` | `next: repair <logical-path>: reduce the file to at most 1 MiB` | `readiness input <logical-path> is unsafe (file_too_large); reduce the file to at most 1 MiB` |
+| `permission_denied` | `next: repair <logical-path>: grant read permission` | `readiness input <logical-path> is unreadable (permission_denied); grant read permission` |
+| `read_failure` | `next: repair <logical-path>: restore a readable regular file` | `readiness input <logical-path> is unreadable (read_failure); restore a readable regular file` |
+
+The Gate recovery column remains exact for target-policy-required artifacts. For
+a selected optional readiness input, the same code-specific repair appends
+`; optional readiness input may instead be removed` and does not call the input
+required.
+
+These seven codes are the closed Workspace Observation classification and
+recovery mapping outcomes. A selected public consumer emits only a code
+reachable for its consumed fixed logical path. Invalid workspace ancestry is
+`workspace_invalid`, not an artifact `parent_symlink` diagnostic.
+
+Status emits diagnostics without recovery or `next:` lines, after section rows
+and before `result`. Gate emits diagnostics after `reason` and before recovery,
+`invariant`, and `retry` lines. Generic add-content recovery applies only to
+absent or empty target-required artifacts. Standalone readiness-binding
+failures use the existing `readiness-binding: BLOCKED:` prefix and the logical
+readiness-input state/code plus recovery; they never disclose physical paths or
+content.
+
+Whole observation failures are `workspace_invalid`, `aggregate_too_large`, and
+`concurrent_change`. Their disclosure-safe payloads are exact:
+
+- `workspace observation: workspace_invalid: workspace is unavailable; verify the selected logical workspace and canonical workspace override, then retry`
+- `workspace observation: aggregate_too_large: retained content exceeds the 8 MiB aggregate limit; reduce retained Markdown below 8 MiB, then retry`
+- `workspace observation: concurrent_change: workspace changed during acquisition; retry`
+
+An absent or empty `state.md` appends `add real content to state.md and retry` to
+the existing logical error. A malformed, unsafe, or unreadable `state.md`
+appends `repair state.md and retry`. A ledger without a phase appends `record
+phase in state.md and retry`; an unknown phase appends `record a known phase in
+state.md and retry`.
+
+Whole observation failures use stderr, exit `2`, and no lifecycle result or
+reason on stdout. Standalone readiness-binding failures use one stderr line,
+exit `3`, and empty stdout. Per-artifact lifecycle blocks keep existing reason
+IDs and stdout exit `3`; successful checks keep stdout exit `0`. Seal evidence
+freshness still runs separately after a successful Seal gate.
+
 - `0`: passed or completed.
 - `2`: common invalid request or unreadable-state result.
 - `3`: common deterministic lifecycle or safety block.

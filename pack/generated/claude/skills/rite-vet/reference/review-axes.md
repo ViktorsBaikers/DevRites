@@ -3,6 +3,14 @@
 Run blocking §0, then the four axes and required outputs. Apply
 [`eng-lenses.md`](eng-lenses.md) throughout; calibrate every finding before presenting it.
 
+Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → fold technical topology; invalidate Vet/readiness; affected Vet before Build.
+- `GUARD_AND_REPAIR` → no planning writes; Spec Drift Guard → Clarify → Plan repair → affected Vet.
+- `BLOCKED_INPUT` → no planning writes; exact diagnostic; recover input; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
+
 ---
 
 ## §0. Scope challenge (blocking gate)
@@ -13,11 +21,11 @@ the settled spec requires.
 1. **What exists?** Find existing code/flows for each sub-problem (use the index per
    [`tooling.md`](../../devrites-lib/reference/standards/tooling.md)). Can the plan capture their outputs instead of building parallel work?
    Reuse → extend → build new; list missed reuse.
-2. **Minimum diff.** Find the smallest acceptance-complete change. Flag non-blocking work;
-   cutting acceptance requires Drift Guard.
+2. **Minimum diff.** Find the smallest contract-complete change. Flag non-blocking work;
+   use the marked action for topology cuts.
 3. **Complexity smell.** **>8 files** or **>2 new services/modules/classes** needs a justified
-   complexity gate; otherwise harden to the smallest acceptance-preserving plan. Ask only if
-   reduction changes acceptance or architecture policy.
+   complexity gate; otherwise harden to the smallest contract-complete plan. Use the
+   marked action for topology reduction.
 4. **Built-in check.** For each new pattern/infra/concurrency approach, dispatch
    `devrites-source-driven` to verify current framework/runtime support and cite it. Custom
    work where a built-in suffices is a scope-reduction finding.

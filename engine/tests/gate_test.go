@@ -17,31 +17,91 @@ import (
 
 func TestReadinessBlocksIncompletePhase(t *testing.T) {
 	root := newWorkspace(t)
-	out, _, code := runDevrites(t, root, "check", "readiness", "auth-tokens") // build phase, tasks empty
-	if code != 3 {
-		t.Fatalf("exit = %d, want 3 (blocked)", code)
-	}
-	if !strings.Contains(out, `result: blocked (missing to leave "build": tasks.md)`) {
-		t.Errorf("stdout missing the block line\n%s", out)
-	}
-	if !strings.Contains(out, "devrites-engine check readiness auth-tokens") {
-		t.Errorf("stdout missing the actionable retry step\n%s", out)
+	out, errOut, code := runDevrites(t, root, "check", "readiness", "auth-tokens") // build phase, tasks empty
+	wantOut := "gate: readiness\n" +
+		"feature: auth-tokens\n" +
+		"phase: build\n" +
+		"result: blocked (missing to leave \"build\": tasks.md)\n" +
+		"reason: DRV-GATE-READINESS-MISSING\n" +
+		"next: add real content to tasks.md\n" +
+		"retry: devrites-engine check readiness auth-tokens\n"
+	if code != 3 || out != wantOut || errOut != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q, want code=3 stdout=%q stderr empty", code, out, errOut, wantOut)
 	}
 }
 
 func TestReadinessPassesCompletePhase(t *testing.T) {
 	root := newWorkspace(t)
-	out, _, code := runDevrites(t, root, "check", "readiness", "search-ranking") // spec phase, spec present
-	if code != 0 {
-		t.Fatalf("exit = %d, want 0 (pass)", code)
+	out, errOut, code := runDevrites(t, root, "check", "readiness", "search-ranking")
+	wantOut := "gate: readiness\n" +
+		"feature: search-ranking\n" +
+		"phase: spec\n" +
+		"result: pass\n" +
+		"reason: DRV-GATE-READINESS-PASSED\n"
+	if code != 0 || out != wantOut || errOut != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q, want code=0 stdout=%q stderr empty", code, out, errOut, wantOut)
 	}
-	if !strings.Contains(out, "result: pass") {
-		t.Errorf("stdout not a pass\n%s", out)
+}
+
+func TestReadinessBlocksAbsentRequiredArtifactExactCLIContract(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	const slug = "absent-required"
+	writeCompleteGateCLIWorkspace(t, root, slug, state.PhaseSpec, state.PhaseSpec, "none\n")
+	if err := os.Remove(filepath.Join(root, "work", slug, "spec.md")); err != nil {
+		t.Fatal(err)
 	}
-	// A not-yet-required section (proof, empty at the spec phase) must not appear
-	// as a blocker.
-	if strings.Contains(out, "blocked") {
-		t.Errorf("an empty not-yet-required section blocked readiness\n%s", out)
+
+	out, errOut, code := runDevrites(t, root, "check", "readiness", slug)
+	wantOut := "gate: readiness\n" +
+		"feature: absent-required\n" +
+		"phase: spec\n" +
+		"result: blocked (missing to leave \"spec\": spec.md)\n" +
+		"reason: DRV-GATE-READINESS-MISSING\n" +
+		"next: add real content to spec.md\n" +
+		"retry: devrites-engine check readiness absent-required\n"
+	if code != 3 || out != wantOut || errOut != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q, want code=3 stdout=%q stderr empty", code, out, errOut, wantOut)
+	}
+}
+
+func TestReadinessEmitBindingPassesExactCLIContract(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	const slug = "binding-success"
+	writeCompleteGateCLIWorkspace(t, root, slug, state.PhaseBuild, state.PhaseBuild, "none\n")
+
+	out, errOut, code := runDevrites(t, root, "check", "readiness", "--emit-binding", slug)
+	const wantOut = "Readiness inputs SHA-256: 71c2d192ea09bca1d2c8806cb197e7fa4d1d08e0b331cf25b2e1bcb7ecac34e4\n"
+	if code != 0 || out != wantOut || errOut != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q, want code=0 stdout=%q stderr empty", code, out, errOut, wantOut)
+	}
+}
+
+func TestReadinessBlocksStaleBindingExactCLIContract(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	const slug = "stale-readiness"
+	writeCompleteGateCLIWorkspace(t, root, slug, state.PhaseBuild, state.PhaseBuild, "none\n")
+	workspace := filepath.Join(root, "work", slug)
+	binding, err := internalgate.ReadinessBinding(root, slug)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+	testutil.WriteFile(t, filepath.Join(workspace, "plan.md"), "# Plan\n\nChanged after Vet.\n")
+	expected, err := internalgate.ReadinessBinding(root, slug)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out, errOut, code := runDevrites(t, root, "check", "readiness", slug)
+	wantOut := "gate: readiness\n" +
+		"feature: " + slug + "\n" +
+		"phase: build\n" +
+		"result: blocked (state invariant)\n" +
+		"reason: DRV-GATE-READINESS-STALE\n" +
+		"invariant: readiness inputs are stale or the binding is invalid; rerun /rite-vet and record exactly one standalone line: " + expected + "\n" +
+		"retry: devrites-engine check readiness " + slug + "\n"
+	if code != 3 || out != wantOut || errOut != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q, want code=3 stdout=%q stderr empty", code, out, errOut, wantOut)
 	}
 }
 
@@ -134,19 +194,21 @@ func TestSealPassesWhenComplete(t *testing.T) {
 	if err := os.Chtimes(source, time.Unix(2_000_000_000, 0), time.Unix(2_000_000_000, 0)); err != nil {
 		t.Fatal(err)
 	}
+	digest, _, err := lib.CandidateIdentity(root, "final")
+	if err != nil {
+		t.Fatal(err)
+	}
 	chdirForSeal(t, project)
 
 	out, errOut, code := runDevrites(t, root, "check", "seal", "final")
-	if code != 0 {
-		t.Fatalf("exit = %d, want 0\nstdout:\n%s\nstderr:\n%s", code, out, errOut)
-	}
-	for _, want := range []string{
-		"result: pass",
-		"evidence-fresh: OK",
-	} {
-		if !strings.Contains(out, want) {
-			t.Fatalf("stdout missing %q:\n%s", want, out)
-		}
+	wantOut := "evidence-fresh: OK: candidate digest " + digest + " matches evidence, review, and seal.\n" +
+		"gate: seal\n" +
+		"feature: final\n" +
+		"phase: seal\n" +
+		"result: pass\n" +
+		"reason: DRV-GATE-SEAL-PASSED\n"
+	if code != 0 || out != wantOut || errOut != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q, want code=0 stdout=%q stderr empty", code, out, errOut, wantOut)
 	}
 }
 
@@ -239,6 +301,252 @@ func TestSealTracksCanonicalQuestionTableStatus(t *testing.T) {
 	if !strings.Contains(out, "open validating human question(s) remain") {
 		t.Fatalf("seal did not report the canonical open table row:\n%s", out)
 	}
+}
+
+func TestWorkspaceObservationEarlyStateErrorsCLIContract(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		slug        string
+		mutate      func(*testing.T, string)
+		wantErr     string
+		notDisclose []string
+	}{
+		{
+			name: "absent state",
+			slug: "absent-state",
+			mutate: func(t *testing.T, workspace string) {
+				if err := os.Remove(filepath.Join(workspace, "state.md")); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: `devrites: gate readiness: feature "absent-state": state.md is absent; add real content to state.md and retry
+`,
+		},
+		{
+			name: "empty state",
+			slug: "empty-state",
+			mutate: func(t *testing.T, workspace string) {
+				testutil.WriteFile(t, filepath.Join(workspace, "state.md"), "")
+			},
+			wantErr: `devrites: gate readiness: feature "empty-state": state.md is empty; add real content to state.md and retry
+`,
+		},
+		{
+			name: "malformed state",
+			slug: "malformed-state",
+			mutate: func(t *testing.T, workspace string) {
+				testutil.WriteFile(t, filepath.Join(workspace, "state.md"), "# State\n\nhostile-secret\x00\n")
+			},
+			wantErr: `devrites: gate readiness: feature "malformed-state": state.md is malformed (malformed_markdown); repair state.md and retry
+`,
+			notDisclose: []string{"hostile-secret"},
+		},
+		{
+			name: "unsafe state final symlink",
+			slug: "unsafe-state",
+			mutate: func(t *testing.T, workspace string) {
+				const target = "hostile-state-target.md"
+				statePath := filepath.Join(workspace, "state.md")
+				if err := os.Remove(statePath); err != nil {
+					t.Fatal(err)
+				}
+				testutil.WriteFile(t, filepath.Join(workspace, target), "- Phase: spec\n- Status: running\n")
+				if err := os.Symlink(target, statePath); err != nil {
+					t.Fatalf("create final symlink fixture: %v", err)
+				}
+			},
+			wantErr: `devrites: gate readiness: feature "unsafe-state": state.md is unsafe (final_symlink); repair state.md and retry
+`,
+			notDisclose: []string{"hostile-state-target.md"},
+		},
+		{
+			name: "state without phase",
+			slug: "state-without-phase",
+			mutate: func(t *testing.T, workspace string) {
+				testutil.WriteFile(t, filepath.Join(workspace, "state.md"), "# State\n\n- Status: running\n")
+			},
+			wantErr: `devrites: gate readiness: feature "state-without-phase": no phase in state.md ledger; record phase in state.md and retry
+`,
+		},
+		{
+			name: "state with unknown phase",
+			slug: "state-with-unknown-phase",
+			mutate: func(t *testing.T, workspace string) {
+				testutil.WriteFile(t, filepath.Join(workspace, "state.md"), "# State\n\n- Phase: mystery\n- Status: running\n")
+			},
+			wantErr: `devrites: gate readiness: feature "state-with-unknown-phase": unknown phase "mystery"; record a known phase in state.md and retry
+`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := filepath.Join(t.TempDir(), ".devrites")
+			writeCompleteGateCLIWorkspace(t, root, test.slug, state.PhaseSpec, state.PhaseSpec, "none\n")
+			workspace := filepath.Join(root, "work", test.slug)
+			test.mutate(t, workspace)
+
+			out, errOut, code := runDevrites(t, root, "check", "readiness", test.slug)
+			if code != 2 || out != "" || errOut != test.wantErr {
+				t.Fatalf("code=%d stdout=%q stderr=%q, want code=2 stdout empty stderr=%q", code, out, errOut, test.wantErr)
+			}
+			for _, secret := range test.notDisclose {
+				if strings.Contains(out, secret) || strings.Contains(errOut, secret) {
+					t.Errorf("CLI output disclosed hostile fixture content %q: stdout=%q stderr=%q", secret, out, errOut)
+				}
+			}
+		})
+	}
+}
+
+func TestWorkspaceObservationGateDiagnosticCLIContract(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeCompleteGateCLIWorkspace(t, root, "diagnostic", state.PhaseSpec, state.PhaseSpec, "none\n")
+	testutil.WriteFile(t, filepath.Join(root, "work", "diagnostic", "spec.md"), "hostile-secret\x00")
+
+	out, errOut, code := runDevrites(t, root, "check", "readiness", "diagnostic")
+	wantOut := "gate: readiness\n" +
+		"feature: diagnostic\n" +
+		"phase: spec\n" +
+		"result: blocked (missing to leave \"spec\": spec.md)\n" +
+		"reason: DRV-GATE-READINESS-MISSING\n" +
+		"artifact: spec.md: malformed (malformed_markdown)\n" +
+		"next: repair spec.md: replace invalid Markdown with valid Markdown; required artifacts need substantive content\n" +
+		"retry: devrites-engine check readiness diagnostic\n"
+	if code != 3 || out != wantOut || errOut != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q, want code=3 stdout=%q stderr empty", code, out, errOut, wantOut)
+	}
+}
+
+func TestWorkspaceObservationStandaloneBindingDiagnosticCLIContract(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeCompleteGateCLIWorkspace(t, root, "binding-diagnostic", state.PhaseBuild, state.PhaseBuild, "none\n")
+	testutil.WriteFile(t, filepath.Join(root, "work", "binding-diagnostic", "strategy.md"), "hostile-secret\x00")
+
+	out, errOut, code := runDevrites(t, root, "check", "readiness", "--emit-binding", "binding-diagnostic")
+	wantErr := "readiness-binding: BLOCKED: readiness input strategy.md is malformed (malformed_markdown); replace invalid Markdown with valid Markdown\n"
+	if code != 3 || out != "" || errOut != wantErr {
+		t.Fatalf("code=%d stdout=%q stderr=%q, want code=3 stdout empty stderr=%q", code, out, errOut, wantErr)
+	}
+}
+
+func TestWorkspaceObservationConstructibleDiagnosticsCLIContract(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		slug       string
+		mutate     func(*testing.T, string)
+		diagnostic string
+		recovery   string
+	}{
+		{
+			name: "final symlink gate",
+			slug: "final-symlink",
+			mutate: func(t *testing.T, workspace string) {
+				path := filepath.Join(workspace, "spec.md")
+				if err := os.Remove(path); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink("brief.md", path); err != nil {
+					t.Fatalf("create final symlink fixture: %v", err)
+				}
+			},
+			diagnostic: "artifact: spec.md: unsafe (final_symlink)\n",
+			recovery:   "next: repair spec.md: replace the symlink with a regular file\n",
+		},
+		{
+			name: "nonregular gate",
+			slug: "nonregular",
+			mutate: func(t *testing.T, workspace string) {
+				path := filepath.Join(workspace, "spec.md")
+				if err := os.Remove(path); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Mkdir(path, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			diagnostic: "artifact: spec.md: unsafe (non_regular)\n",
+			recovery:   "next: repair spec.md: replace the non-regular entry with a regular file\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := filepath.Join(t.TempDir(), ".devrites")
+			writeCompleteGateCLIWorkspace(t, root, test.slug, state.PhaseSpec, state.PhaseSpec, "none\n")
+			workspace := filepath.Join(root, "work", test.slug)
+			test.mutate(t, workspace)
+
+			out, errOut, code := runDevrites(t, root, "check", "readiness", test.slug)
+			wantOut := "gate: readiness\n" +
+				"feature: " + test.slug + "\n" +
+				"phase: spec\n" +
+				"result: blocked (missing to leave \"spec\": spec.md)\n" +
+				"reason: DRV-GATE-READINESS-MISSING\n" +
+				test.diagnostic +
+				test.recovery +
+				"retry: devrites-engine check readiness " + test.slug + "\n"
+			if code != 3 || out != wantOut || errOut != "" {
+				t.Fatalf("code=%d stdout=%q stderr=%q, want code=3 stdout=%q stderr empty", code, out, errOut, wantOut)
+			}
+		})
+	}
+
+	t.Run("file too large standalone binding", func(t *testing.T) {
+		root := filepath.Join(t.TempDir(), ".devrites")
+		writeCompleteGateCLIWorkspace(t, root, "binding-too-large", state.PhaseBuild, state.PhaseBuild, "none\n")
+		testutil.WriteFile(t, filepath.Join(root, "work", "binding-too-large", "strategy.md"), strings.Repeat("x", (1<<20)+1))
+
+		out, errOut, code := runDevrites(t, root, "check", "readiness", "--emit-binding", "binding-too-large")
+		wantErr := "readiness-binding: BLOCKED: readiness input strategy.md is unsafe (file_too_large); reduce the file to at most 1 MiB\n"
+		if code != 3 || out != "" || errOut != wantErr {
+			t.Fatalf("code=%d stdout=%q stderr=%q, want code=3 stdout empty stderr=%q", code, out, errOut, wantErr)
+		}
+	})
+}
+
+func TestWorkspaceObservationWholeFailureCLIChannels(t *testing.T) {
+	t.Run("workspace invalid gate", func(t *testing.T) {
+		root := filepath.Join(t.TempDir(), ".devrites")
+		if err := os.MkdirAll(root, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		out, errOut, code := runDevrites(t, root, "check", "readiness", "missing")
+		wantErr := "devrites: gate readiness: workspace observation: workspace_invalid: workspace is unavailable; verify the selected logical workspace and canonical workspace override, then retry\n"
+		if code != 2 || out != "" || errOut != wantErr {
+			t.Fatalf("code=%d stdout=%q stderr=%q, want code=2 stdout empty stderr=%q", code, out, errOut, wantErr)
+		}
+	})
+
+	t.Run("workspace invalid binding", func(t *testing.T) {
+		root := filepath.Join(t.TempDir(), ".devrites")
+		if err := os.MkdirAll(root, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		out, errOut, code := runDevrites(t, root, "check", "readiness", "--emit-binding", "missing")
+		wantErr := "readiness-binding: BLOCKED: workspace observation: workspace_invalid: workspace is unavailable; verify the selected logical workspace and canonical workspace override, then retry\n"
+		if code != 3 || out != "" || errOut != wantErr {
+			t.Fatalf("code=%d stdout=%q stderr=%q, want code=3 stdout empty stderr=%q", code, out, errOut, wantErr)
+		}
+	})
+
+	t.Run("aggregate too large gate and binding", func(t *testing.T) {
+		root := filepath.Join(t.TempDir(), ".devrites")
+		writeCompleteGateCLIWorkspace(t, root, "aggregate", state.PhaseBuild, state.PhaseBuild, "none\n")
+		for i, name := range []string{"state.md", "brief.md", "spec.md", "decisions.md", "assumptions.md", "questions.md", "decision-coverage.md", "architecture.md", "plan.md"} {
+			prefix := "retained content\n"
+			if i == 0 {
+				prefix = "- Phase: build\n"
+			}
+			body := prefix + strings.Repeat("x", (1<<20)-len(prefix))
+			testutil.WriteFile(t, filepath.Join(root, "work", "aggregate", name), body)
+		}
+		wantFailure := "workspace observation: aggregate_too_large: retained content exceeds the 8 MiB aggregate limit; reduce retained Markdown below 8 MiB, then retry"
+		out, errOut, code := runDevrites(t, root, "check", "readiness", "aggregate")
+		if code != 2 || out != "" || errOut != "devrites: gate readiness: "+wantFailure+"\n" {
+			t.Fatalf("gate code=%d stdout=%q stderr=%q", code, out, errOut)
+		}
+		out, errOut, code = runDevrites(t, root, "check", "readiness", "--emit-binding", "aggregate")
+		if code != 3 || out != "" || errOut != "readiness-binding: BLOCKED: "+wantFailure+"\n" {
+			t.Fatalf("binding code=%d stdout=%q stderr=%q", code, out, errOut)
+		}
+	})
 }
 
 func writeCompleteGateCLIWorkspace(t *testing.T, root, slug string, current, required state.Phase, questions string) {

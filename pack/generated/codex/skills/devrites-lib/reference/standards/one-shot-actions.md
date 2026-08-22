@@ -7,12 +7,7 @@ privileged/external state so a rerun is not equivalent, and actions whose cleanu
 can destroy the failure state needed for diagnosis. Successful cleanup does not
 make a consumptive action repeatable.
 
-Workflow-artifact materialization is reversible offline work when every admitted
-target has a bound preimage or absence marker, rollback is local to the active
-feature workspace, and no privileged/external real action executes. It is not a
-consumptive action and must not receive a one-shot authorization budget. Failures
-of its materializer, atomic replacement, rollback, or offline proof use the normal
-causal-fingerprint recovery cap in `afk-hitl.md`.
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"workflow proof completes before any consumptive one-shot action","action":"PROVE_AND_RETURN; require fresh real-action authorization","return":"saved one-shot action boundary"} -->
 
 ## Pre-attempt gate
 

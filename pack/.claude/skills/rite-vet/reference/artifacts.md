@@ -3,6 +3,14 @@
 `eng-review.md` records review; `test-plan.md` drives Build. Fold accepted findings
 into `plan.md`/`tasks.md`; prose alone never changes Build.
 
+Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → fold technical topology; invalidate Vet/readiness; affected Vet before Build.
+- `GUARD_AND_REPAIR` → no planning writes; Spec Drift Guard → Clarify → Plan repair → affected Vet.
+- `BLOCKED_INPUT` → no planning writes; exact diagnostic; recover input; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
+
 ## `eng-review.md`: the record
 Write/update `.devrites/work/<slug>/eng-review.md`; never clobber.
 
@@ -146,8 +154,7 @@ Conflicts: Lanes A and B both touch models/ — sequential or coordinate.
 ```
 
 ## Fold-back: the part the build follows
-Vet *is* the plan-hardening phase, so behavior-preserving refinements are written **directly**;
-acceptance/behavior changes route through the **Spec Drift Guard**.
+Vet hardens the plan. Use the marked action before fold-back.
 
 - **Write directly into `plan.md` / `tasks.md`** (single canonical writer: you, not the reviewer):
   - `plan.md` §Scope boundaries ← "NOT in scope" items.
@@ -161,10 +168,7 @@ acceptance/behavior changes route through the **Spec Drift Guard**.
     failure-mode coverage, tightened slice scope, a split of a refactor+behavior slice into two.
     Adjust a slice's `Gate:` upward when vet reveals higher stakes (e.g. an unflagged migration).
   - Re-run the `plan.md` Readiness gate after edits; it must still pass.
-- **Route through the Spec Drift Guard** (record `drift.md` + a recorded decision, then `/rite-plan
-  repair` for any structural reslice) for anything that **changes an acceptance criterion, product
-  behavior, or the spec**, including a scope reduction that drops a criterion. A folded change with
-  no recorded decision is the batch-dump failure.
+- **Reslice:** marked action only; no local predicate.
 - **`decisions.md`:** one ADR per material call: `context · decision · why-not-the-alternative ·
   what-would-change-it`.
 - **`assumptions.md`:** every "we'll probably need X" demoted to an explicit assumption-to-verify,

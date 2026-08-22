@@ -1,154 +1,116 @@
 # The autocomplete loop: arm AFK, drive every phase
 
-Autocomplete sequences existing `/rite-*` workflows and enforces stop
-conditions without pausing between routine phases.
+Autocomplete sequences existing `/rite-*` workflows without pausing between
+routine phases. Acceptance-preserving Reslice authority is
+`.agents/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → keep Plan repair/affected Vet internal; no stop solely for topology/count.
+- `GUARD_AND_REPAIR` → enter Spec Drift Guard/Clarify; pause only at an existing human-owned gate; resume Plan/Vet internally.
+- `BLOCKED_INPUT` → no planning writes; stop internal branch; exact diagnostic; recover authority; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
 
 ## Arm AFK once
 
-Arm the gate policy up front without mutating it later:
-
 ```yaml
-allow_gates: [advisory]        # only advisory auto-handles; validating+ pause
-max_slices: 10                 # explicit --max-slices N replaces this default
-max_agents: 32                 # native leaf dispatches in this host activation
-max_minutes: 120               # activation wall-clock cap
-max_review_queue: 8            # unresolved review/gate backlog cap
-expires_at: "<now + 4 hours>"  # write one absolute ISO-8601 UTC timestamp
-# max_tokens: <N>              # optional stricter native-host cap
-# max_cost_usd: <amount>        # optional stricter native-host cap
-# notify: "<cmd>"              # optional — fired after a durable stop
+allow_gates: [advisory]
+max_slices: 10
+max_agents: 32
+max_minutes: 120
+max_review_queue: 8
+expires_at: "<now + 4 hours>"
+# max_tokens: <N>
+# max_cost_usd: <amount>
+# notify: "<cmd>"
 ```
 
-Read an existing sentinel first. Preserve it byte-for-byte when valid; stop if its gate
-ceiling exceeds `advisory`, its required resource envelope is missing/malformed/expired,
-or its `max_slices` conflicts with the invocation. If absent, write it once after clarity
-with the safe defaults above, replacing `max_slices` only for an explicit
-`--max-slices N` and resolving `expires_at` to one absolute timestamp. The sentinel is
-read-only: never rewrite it after `$rite-vet` to inject a discovered plan count or to
-reset resource authority.
+Read an existing sentinel first. Preserve it byte-for-byte when valid; stop if
+its gate ceiling exceeds advisory, required envelope is malformed/expired, or
+`max_slices` conflicts with the invocation. If absent, write it once after
+clarity, replacing the safe slice default only for explicit `--max-slices N`
+and resolving one absolute UTC expiry. It is read-only: never rewrite it after
+Vet or reset it on resume.
 
 ### Derive the mutable post-vet budget
 
-After `$rite-vet`, count remaining pending slices and derive the run budget as the
-minimum of that count, an explicit `--max-slices`, and a configured sentinel cap. Before
-the first build dispatch, pre-seed `state.md` `afk_slices_remaining` when absent. If a
-valid remaining counter already exists, retain the lower of it and the derived budget;
-never increase or reinitialize it. This keeps the crash-survivable budget in its mutable owner
-without changing AFK configuration mid-run.
+After Vet, count pending slices and take the minimum of that count, explicit
+flag, and sentinel cap. Before first Build, seed absent state-owned
+`afk_slices_remaining`; retain the lower valid existing value and never increase
+or reinitialize it. AFK configuration itself stays unchanged.
 
 ### Admit each unattended cycle
 
-Before every phase, parallel review fan-out, recovery dispatch, or writer dispatch,
-apply [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#unattended-resource-envelope):
-run the cheapest readiness/current-state check, reject overlapping work, count the
-current unresolved review queue, and check expiry plus native agent/token/cost/time
-headroom. Count every leaf, including failed/malformed/unavailable results. At the
-review cap, only reconciliation that reduces the queue may run. Any limit reached or
-unobservable declared cap ends the current activation before more work and persists
-its checkpoint/reason. A genuinely new native activation starts fresh agent/time/token/
-cost counters, but reuses durable slice/recovery state, absolute expiry, and recomputed
-review queue. It never resets those durable bounds.
+Before every phase, review fan-out, recovery, or writer dispatch, apply
+`afk-hitl.md#unattended-resource-envelope`: cheapest current-state/readiness
+check first; reject overlap; count unresolved review; check expiry and native
+agent/token/cost/time headroom. Count every leaf result. At the review cap, only
+reconciliation that reduces the queue may run. Any reached or unobservable
+bound stops before more work and persists the winning reason. A new activation
+gets fresh activation-local counters but retains durable slice/recovery state,
+expiry, and recomputed queue.
 
-`allow_gates: [advisory]` prevents an open `gate: validating` from being queued until
-seal, where it would force NO-GO under `afk-hitl.md`. Autocomplete pauses on it instead. Widen
-`allow_gates` only outside autocomplete through an explicit human configuration change;
-autocomplete itself never widens the ceiling.
+`allow_gates: [advisory]` means validating gates pause now rather than becoming
+Seal NO-GO. Only explicit human configuration outside Autocomplete may widen it.
 
-## Drive the phases
+## Phase arc
 
-Read each phase's `SKILL.md` and execute that workflow. Workspace files such as
-`state.md`, `tasks.md`, and `evidence.md` carry state between phases; chat does not.
+Workspace files carry state; chat does not. Read and execute each phase skill:
 
-| Step | Phase | Loop / gate |
-|---|---|---|
-| 1 | `$rite-spec` | interactive window: investigate, feed intent answers, write `spec.md` |
-| 2 | `$rite-clarify` | same interactive window: topology-first scan; write `decision-coverage.md`; proceed only on `CLEAR`, then arm AFK |
-| 3 | `$rite-temper` | significance-gated strategic review; harden spec + write `strategy.md`. Skip low-stakes specs in one line. AFK: `hold-rigor` / `reduce-to-MVP` auto-apply; **any `expand` pauses (blocking)**; irreversible-risk pauses |
-| 4 | `$rite-define` | reads `decision-coverage.md` + `strategy.md`; writes `plan.md` + `tasks.md`; records `Plan approved` |
-| 5 | `$rite-vet` | engineering/readiness review on **every** plan (light pass on simple plans, full on big/risky; never skipped); harden `plan.md` / `tasks.md` + write `eng-review.md` (`Implementation readiness: READY`) + `test-plan.md`. AFK: hardening / coverage findings auto-apply; **any scope-growing / acceptance-changing finding pauses (blocking)**; irreversible-risk pauses. Derive and pre-seed the state-owned slice budget after this (vet may split a slice); never rewrite the AFK sentinel |
-| 6 | `$rite-build` ×N | **loop** while any slice is `pending`; build one, then let the root charge exactly one budget unit with the built-state record. Zero ⇒ STOP before another dispatch. |
-| 7 | `$rite-prove` | once all slices `built`; walks `test-plan.md`; on failure → `devrites-debug-recovery` within scope |
-| 8 | `$rite-polish` | re-verify after code edits (evidence must stay fresh) |
-| 9 | `$rite-review` | apply in-scope fixes; re-prove if code changed |
-| 10 | `$rite-seal` | GO/NO-GO decision (no git here) |
-| 11 | `$rite-ship` | only if seal GO; `--ship` / `--yolo` never authorizes Git and only continues to the exact-plan literal-GO/native-approval boundary |
+| Step | Phase | Completion / edge |
+| --- | --- | --- |
+| 1 | `$rite-spec` | investigate and write testable intent |
+| 2 | `$rite-clarify` | topology-first scan; require `Decision coverage: CLEAR`, then arm AFK |
+| 3 | `$rite-temper` | harden or reduce; expansion and irreversible risk pause |
+| 4 | `$rite-define` | approved plan/tasks/traceability |
+| 5 | `$rite-vet` | every plan; derive mutable budget after READY |
+| 6 | `$rite-build` ×N | one pending slice per wright; charge once only after green built state |
+| 7 | `$rite-prove` | all slices built; approved proof; recovery on red |
+| 8 | `$rite-polish` | re-prove after code edits |
+| 9 | `$rite-review` | in-scope correction then fresh proof |
+| 10 | `$rite-seal` | GO/NO-GO; no Git |
+| 11 | `$rite-ship` | only after GO; `--ship` never authorizes Git; stop at literal-GO/native approval |
+
+Before advancing, check resource admission and
+[stop-conditions.md](stop-conditions.md). After source edits, discard stale pass
+evidence. Re-read the active workspace before each phase.
 
 ## Backtrack without handing off
 
-When a later phase finds an agent-owned technical gap in an earlier phase, the
-Autocomplete root remains the caller:
+The active Autocomplete root remains caller whenever a later phase exposes an
+agent-owned earlier-phase gap:
 
-On cold resume, reconcile the terminal cursor against durable fingerprint
-accounting first. A retained distinct fingerprint with fewer than three
-no-progress corrections is unfinished recovery, not an unchanged terminal stop.
-Restore `return_phase` from the current phase and `return_next_action` only from
-the exact approved action recorded in `test-plan.md` / evidence; ambiguity returns
-to the applicable Vet contract and never licenses execution.
+1. Save the originating phase/action unless a valid native return cursor exists.
+2. On cold resume, reconcile the terminal cursor against durable fingerprint
+   accounting. Restore `return_next_action` only from the approved
+   `test-plan.md`/evidence action; ambiguity returns to Vet and never licenses
+   execution.
+3. Invoke required Plan repair, affected Vet, remediation, and proof inline.
+   Recovery Vet is a narrow Vet recheck of prior findings, changed paths/criteria,
+   and affected evidence; it never restarts unaffected axes. A nested `STOP`
+   ends that phase only; do not hand the intermediate command to the user.
+4. Re-read state after each nested phase. Reconcile exact causal fingerprints
+   from `drift.md`/`evidence.md`. A closed reproduction is progress. A different
+   Critical/Important invariant gets a separate budget; Suggestion/Nit/FYI does
+   not prolong the chain. Only a no-progress result charges the same fingerprint.
+5. For failed consumptive action, spent authorization blocks only another real
+   execution. Use retained evidence for offline diagnosis, repair, and narrow
+   Vet; after READY, pause for fresh authorization.
+6. Restore and consume the original cursor when prerequisites are green.
 
-Also reconcile a **stale writer-exhaustion cursor** against
-`workflow-artifacts.md`. When exact Vet-ready workflow-artifact paths and behavior
-exist, the old attempts only targeted the read-only drafter/reviewer or product
-wright, and there is **no controlling-root materialization attempt**, supported
-root ownership is a changed routing condition. Preserve the old fingerprint,
-record the new materialization fingerprint, and run that offline branch directly;
-do not charge or require product-slice/AFK budget, re-ask a resolved question, or
-request GO. Once a root materialization attempt exists, never apply this migration
-again—route its observed failure normally. That one-time migration
-does not make the first root attempt terminal: record it as attempt one under the new
-materializer fingerprint and continue bounded offline correction while fewer than
-three no-progress corrections exist. This reconciliation runs even when all
-product slices are already built, before selecting the next forward phase.
-
-1. Save the originating phase/action in the native return cursor unless a valid
-   one already exists.
-2. Invoke the required repair, Vet, remediation, and proof skills inline. After
-   Plan repair, run Vet in its recovery mode as a narrow Vet recheck of the prior
-   findings, changed paths/criteria, and affected evidence; do not restart a Full
-   Vet over unchanged axes. Their
-   `STOP` instructions end only those nested phases.
-3. Re-read `state.md` after each nested phase and follow its intermediate
-   `next_action`; do not hand the intermediate command to the user.
-4. Reconcile each exact causal fingerprint from `drift.md` and `evidence.md`.
-   Continue automatically when the recheck closes a prior fingerprint or admits
-   a genuinely new Critical/Important fingerprint. Charge only a no-progress
-   outcome against the same fingerprint; lower-severity novelty cannot prolong
-   the chain.
-   For a failed consumptive action, its spent authorization blocks only another
-   real execution. A retained artifact that identifies a new fingerprint is the
-   offline reproduction input: diagnose, repair, and narrow-Vet it now, then pause
-   for fresh authorization before any next consumptive execution.
-5. When the prerequisite chain is green, restore and consume the return cursor,
-   resume the originating phase, and continue the forward table.
-
-Count failed corrections by causal fingerprint under `afk-hitl.md`. Ask only
-for a human-owned decision or mandatory safety/access action. Exhausted
-agent-owned recovery stops once with its reproduction and dead ends, never with
-another routine Plan/Vet command.
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"loop tick sees Workflow Artifact trigger/state","action":"invoke classifier once under owner lock; no actor-history migration","return":"same loop cursor; no budget charge for verify/rerun"} -->
+Ask only for a human-owned decision or mandatory safety/access action. Three
+no-progress corrections of one exact fingerprint exhaust; preserve its
+reproduction and dead ends without another Plan/Vet command.
 
 ## Continuous caller obligation
 
-No user-facing reply is permitted while the durable state contains an
-agent-owned `NEEDS_REPLAN`, an intermediate Plan/Vet `next_action`, or a distinct
-Critical/Important fingerprint with remaining recovery budget. Invoke the exact
-next Plan repair and Recovery Vet immediately. A narrow reviewer closing its input
-finding and exposing another Critical/Important invariant is progress: close the
-old fingerprint, open the new one, and continue without handing a command to the
-user.
+No user-facing reply is permitted while durable state contains agent-owned
+`NEEDS_REPLAN`, an intermediate Plan/Vet action, or a distinct retained
+Critical/Important fingerprint below its cap. Invoke the next internal repair
+immediately. A narrow reviewer closing one finding and exposing another
+Critical/Important invariant is progress, not exhaustion.
 
-The number of completed repair/Vet cycles is not a stop condition and cannot be
-used as a surrogate recovery budget. Only three no-progress corrections of the
-same exact fingerprint exhaust. Context pressure, compaction, session duration,
-or a nested skill's completion footer also cannot convert an internal checkpoint
-into a stop; persist the checkpoint and resume from it inside the same controlling
-invocation. Autocomplete may emit its final reply only after reaching its requested
-rest point or one of the shared human/safety/access/exhaustion stop conditions.
-
-## Between phases
-
-- Re-read the active workspace before each phase (don't trust chat memory).
-- Re-run resource admission before each phase or native dispatch; stop before work
-  when expiry, review backlog, or agent/token/cost/time headroom is exhausted.
-- After a phase that edits code (build, polish, review), evidence may be stale: let
-  the next gate re-prove rather than carrying a stale pass (see
-  `.agents/skills/devrites-lib/reference/standards/development-workflow.md`).
-- Check [stop-conditions.md](stop-conditions.md) at every gate **before** advancing.
+The number of completed repair/Vet cycles is not a stop condition. Context
+pressure, compaction, session duration, and nested completion do not convert an
+internal checkpoint into a handoff. Persist it and resume until the requested
+rest point or a shared human/safety/access/exhaustion condition.

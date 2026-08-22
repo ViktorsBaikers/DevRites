@@ -6,11 +6,8 @@ package gate
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/reason"
 	"github.com/devrites/devrites/internal/state"
 )
@@ -27,44 +24,68 @@ const (
 	Seal Kind = "seal"
 )
 
-// Result is a gate outcome. Blocked is true iff a required section is missing;
-// Missing lists them in canonical order for an actionable message.
+// Result is a gate outcome. Blocked is true iff a deterministic requirement
+// failed; missing files and diagnostics retain their canonical policy order.
 type Result struct {
-	Kind          Kind
-	Slug          string
-	Phase         state.Phase
-	Target        state.Phase     // the phase whose requirements were checked
-	Missing       []state.Section // compact legacy view
-	MissingFiles  []string        // authoritative per-file view
-	StateProblems []string        // deterministic cross-file invariant failures
-	Blocked       bool
-	ReasonID      reason.ID
+	Kind            Kind
+	Slug            string
+	Phase           state.Phase
+	Target          state.Phase
+	Missing         []state.Section
+	MissingFiles    []string
+	Diagnostics     []state.ArtifactDiagnostic
+	AddContentFiles []string
+	StateProblems   []string
+	Blocked         bool
+	ReasonID        reason.ID
 }
 
-// Check runs a gate against feature <slug> under root. It reads workspace files
-// directly instead of trusting a cache. Invalid requests and unreadable state
-// return errors; missing required content returns a blocked Result.
+// Check runs a gate against feature <slug> under root. One workspace observation
+// supplies every lifecycle, question, and readiness fact used by the result.
 func Check(kind Kind, root, slug string) (*Result, error) {
-	f, err := state.LoadFeature(root, slug)
+	observation, err := state.ObserveWorkspace(root, slug)
 	if err != nil {
 		return nil, fmt.Errorf("gate %s: %w", kind, err)
 	}
-	target := f.Phase
+	result, err := checkObservation(kind, observation)
+	if err != nil {
+		return nil, fmt.Errorf("gate %s: %w", kind, err)
+	}
+	return result, nil
+}
+
+func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Result, error) {
+	phase, err := observation.DeclaredPhase()
+	if err != nil {
+		return nil, err
+	}
+	target := phase
 	if kind == Seal {
 		target = state.PhaseSeal
 	}
 	policy, ok := state.PolicyFor(target)
 	if !ok {
-		return nil, fmt.Errorf("gate %s: unknown target phase %q", kind, target)
+		return nil, fmt.Errorf("unknown target phase %q", target)
 	}
 	target = policy.Target
-	missing := state.MissingFor(f, target)
-	missingFiles := state.MissingWorkspaceFiles(f, target)
+
+	missing := missingSections(observation, policy.RequiredSections)
+	missingArtifacts, diagnostics := observation.Missing(policy.RequiredArtifacts)
+	missingFiles := make([]string, len(missingArtifacts))
+	var addContentFiles []string
+	for i, artifact := range missingArtifacts {
+		missingFiles[i] = string(artifact)
+		fact, ok := observation.Fact(artifact)
+		if ok && (fact.State() == state.ArtifactAbsent || fact.State() == state.ArtifactEmpty) {
+			addContentFiles = append(addContentFiles, string(artifact))
+		}
+	}
 	blocked := len(missingFiles) > 0
 	readinessStale := false
 	var stateProblems []string
+
 	if policy.BlocksOpenQuestions {
-		if gates, awaitingHuman := openHumanGates(devritespaths.FeatureDir(root, slug)); len(gates) > 0 {
+		if gates, awaitingHuman := retainedHumanGates(observation); len(gates) > 0 {
 			problem := fmt.Sprintf("open %s human question(s) remain in questions.md", strings.Join(gates, "/"))
 			if !awaitingHuman {
 				problem += " but state.md is not awaiting_human"
@@ -74,10 +95,11 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 		}
 	}
 	if len(missingFiles) == 0 && phaseRequiresReadinessBinding(policy) {
-		expected, bindingErr := verifyReadinessBinding(root, slug)
+		expected, bindingErr := verifyReadinessBinding(observation)
 		if bindingErr != nil {
 			readinessStale = true
 			blocked = true
+			diagnostics = append(diagnostics, readinessDiagnostics(observation)...)
 			if expected == "" {
 				stateProblems = append(stateProblems, bindingErr.Error()+"; repair the input and rerun /rite-vet")
 			} else {
@@ -85,21 +107,42 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 			}
 		}
 	}
+
 	result := &Result{
-		Kind:          kind,
-		Slug:          slug,
-		Phase:         f.Phase,
-		Target:        target,
-		Missing:       missing,
-		MissingFiles:  missingFiles,
-		StateProblems: stateProblems,
-		Blocked:       blocked,
+		Kind:            kind,
+		Slug:            observation.Slug(),
+		Phase:           phase,
+		Target:          target,
+		Missing:         missing,
+		MissingFiles:    missingFiles,
+		Diagnostics:     diagnostics,
+		AddContentFiles: addContentFiles,
+		StateProblems:   stateProblems,
+		Blocked:         blocked,
 	}
 	result.ReasonID = ResultReasonID(kind, blocked)
 	if readinessStale {
 		result.ReasonID = reason.GateReadinessStale
 	}
 	return result, nil
+}
+
+func missingSections(observation *state.WorkspaceObservation, required []state.Section) []state.Section {
+	var missing []state.Section
+	for _, section := range required {
+		artifact := state.ArtifactPath(string(section) + ".md")
+		switch section {
+		case state.SectionProof:
+			artifact = state.EvidenceFile
+		case state.SectionStatus:
+			artifact = state.LedgerFile
+		}
+		fact, ok := observation.Fact(artifact)
+		if !ok || fact.State() != state.ArtifactPresent {
+			missing = append(missing, section)
+		}
+	}
+	return missing
 }
 
 // ResultReasonID returns the typed outcome owned by the lifecycle gate.
@@ -121,7 +164,7 @@ func ResultReasonID(kind Kind, blocked bool) reason.ID {
 }
 
 // Render returns stable, greppable output with a trailing newline. A blocked
-// result names the missing files and the command to rerun.
+// result names missing files, selected diagnostics, recovery, and the retry.
 func (r *Result) Render() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "gate: %s\n", r.Kind)
@@ -142,8 +185,17 @@ func (r *Result) Render() string {
 		fmt.Fprintf(&b, "result: blocked (missing to leave %q: %s)\n", r.Phase, strings.Join(missing, ", "))
 	}
 	fmt.Fprintf(&b, "reason: %s\n", r.ReasonID)
-	if len(missing) > 0 {
-		fmt.Fprintf(&b, "next: add real content to %s\n", strings.Join(missing, ", "))
+	for _, diagnostic := range r.Diagnostics {
+		fmt.Fprintf(&b, "artifact: %s: %s (%s)\n", diagnostic.Path, diagnostic.State, diagnostic.Code)
+	}
+	if len(r.AddContentFiles) > 0 {
+		fmt.Fprintf(&b, "next: add real content to %s\n", strings.Join(r.AddContentFiles, ", "))
+	}
+	for _, diagnostic := range r.Diagnostics {
+		if recovery := diagnosticRecovery(diagnostic, targetRequiresArtifact(r.Target, diagnostic.Path)); recovery != "" {
+			b.WriteString(recovery)
+			b.WriteByte('\n')
+		}
 	}
 	for _, problem := range r.StateProblems {
 		fmt.Fprintf(&b, "invariant: %s\n", problem)
@@ -152,19 +204,68 @@ func (r *Result) Render() string {
 	return b.String()
 }
 
+func diagnosticRecovery(diagnostic state.ArtifactDiagnostic, required bool) string {
+	prefix := fmt.Sprintf("next: repair %s: ", diagnostic.Path)
+	repair := diagnosticRepair(diagnostic.Code)
+	if repair == "" {
+		return ""
+	}
+	if required && diagnostic.Code == state.DiagnosticMalformedMarkdown {
+		repair += "; required artifacts need substantive content"
+	}
+	if !required {
+		repair += "; optional readiness input may instead be removed"
+	}
+	return prefix + repair
+}
+
+func targetRequiresArtifact(target state.Phase, path state.ArtifactPath) bool {
+	policy, ok := state.PolicyFor(target)
+	if !ok {
+		return false
+	}
+	for _, required := range policy.RequiredArtifacts {
+		if required == path {
+			return true
+		}
+	}
+	return false
+}
+
+func diagnosticRepair(code state.DiagnosticCode) string {
+	switch code {
+	case state.DiagnosticMalformedMarkdown:
+		return "replace invalid Markdown with valid Markdown"
+	case state.DiagnosticParentSymlink:
+		return "replace the symlinked parent with a real directory"
+	case state.DiagnosticFinalSymlink:
+		return "replace the symlink with a regular file"
+	case state.DiagnosticNonRegular:
+		return "replace the non-regular entry with a regular file"
+	case state.DiagnosticFileTooLarge:
+		return "reduce the file to at most 1 MiB"
+	case state.DiagnosticPermissionDenied:
+		return "grant read permission"
+	case state.DiagnosticReadFailure:
+		return "restore a readable regular file"
+	default:
+		return ""
+	}
+}
+
 const gateSpaceChars = " \t\n\v\f\r"
 
-func openHumanGates(featureDir string) ([]string, bool) {
-	qdata, err := os.ReadFile(filepath.Join(featureDir, "questions.md"))
-	if err != nil {
+func retainedHumanGates(observation *state.WorkspaceObservation) ([]string, bool) {
+	questions, ok := observation.Fact("questions.md")
+	if !ok || (questions.State() != state.ArtifactPresent && questions.State() != state.ArtifactEmpty) {
 		return nil, false
 	}
-	gates := openBlockingQuestionGates(qdata)
+	gates := openBlockingQuestionGates(questions.Bytes())
 	if len(gates) == 0 {
 		return nil, false
 	}
-	sdata, err := os.ReadFile(filepath.Join(featureDir, "state.md"))
-	return gates, err == nil && stateAwaitingHuman(sdata)
+	ledger, ok := observation.Fact(state.LedgerFile)
+	return gates, ok && ledger.State() == state.ArtifactPresent && stateAwaitingHuman(ledger.Bytes())
 }
 
 func openBlockingQuestionGates(data []byte) []string {

@@ -6,85 +6,94 @@ import (
 )
 
 // Report is the computed completeness status of a feature at its current phase.
-// It embeds the loaded Feature (Slug, Phase, Present) and adds the phase-relative
-// required set and the missing sections.
 type Report struct {
-	*Feature
+	Slug          string
+	Phase         Phase
 	Required      map[Section]bool
-	Missing       []Section // legacy required-but-empty sections, in Sections order
+	Missing       []Section // required-but-empty sections, in policy order
 	RequiredFiles map[string]bool
 	MissingFiles  []string // required-but-empty workspace files, in lifecycle order
+	present       map[Section]bool
+	diagnostics   []ArtifactDiagnostic
 }
 
-// Status computes the status report for feature <slug> under root by reading
-// the files directly. It reports completeness relative to the feature's current
-// phase only.
+// Status computes phase-relative completeness from one retained workspace observation.
 func Status(root, slug string) (*Report, error) {
-	f, err := LoadFeature(root, slug)
+	return statusWithCallback(root, slug, nil)
+}
+
+func statusWithCallback(root, slug string, callback observationCallback) (*Report, error) {
+	observation, err := observeWorkspace(root, slug, callback)
+	if err != nil {
+		return nil, err
+	}
+	phase, err := observation.DeclaredPhase()
 	if err != nil {
 		return nil, fmt.Errorf("compute status: %w", err)
 	}
-	return NewReport(f), nil
+	policy, _ := PolicyFor(phase)
+	return newObservationReport(observation, phase, policy), nil
 }
 
-// NewReport computes the phase-relative required set and missing sections for a
-// loaded Feature.
-func NewReport(f *Feature) *Report {
-	policy, _ := PolicyFor(f.Phase)
-	required := make(map[Section]bool, len(policy.RequiredSections))
-	for _, section := range policy.RequiredSections {
-		required[section] = true
-	}
-	requiredFiles := make(map[string]bool, len(policy.RequiredArtifacts))
-	for _, artifact := range policy.RequiredArtifacts {
-		requiredFiles[string(artifact)] = true
+func newObservationReport(observation *WorkspaceObservation, phase Phase, policy PhasePolicy) *Report {
+	present := observationSectionPresence(observation)
+	required := requiredSections(policy)
+	requiredFiles := requiredArtifactSet(policy)
+	missingArtifacts, diagnostics := observation.Missing(policy.RequiredArtifacts)
+	missingFiles := make([]string, len(missingArtifacts))
+	for i, artifact := range missingArtifacts {
+		missingFiles[i] = string(artifact)
 	}
 	return &Report{
-		Feature:       f,
+		Slug:          observation.Slug(),
+		Phase:         phase,
 		Required:      required,
-		Missing:       missingSectionsForPolicy(f, policy),
+		Missing:       missingObservationSections(present, policy.RequiredSections),
 		RequiredFiles: requiredFiles,
-		MissingFiles:  missingArtifactsForPolicy(f, policy),
+		MissingFiles:  missingFiles,
+		present:       present,
+		diagnostics:   diagnostics,
 	}
 }
 
-// MissingFor returns the sections required to complete phase p that the feature
-// does not yet have real content for, in canonical Sections order. Gates use it
-// to check completeness against a phase other than the feature's current one
-// (e.g. seal always checks the full seal-phase set), so its result is
-// independent of f.Phase.
-func MissingFor(f *Feature, p Phase) []Section {
-	policy, _ := PolicyFor(p)
-	return missingSectionsForPolicy(f, policy)
+func observationSectionPresence(observation *WorkspaceObservation) map[Section]bool {
+	present := make(map[Section]bool, len(Sections))
+	for _, section := range Sections {
+		for _, name := range sectionFiles[section] {
+			fact, ok := observation.Fact(ArtifactPath(name))
+			if ok && fact.State() == ArtifactPresent {
+				present[section] = true
+				break
+			}
+		}
+	}
+	return present
 }
 
-func missingSectionsForPolicy(f *Feature, policy PhasePolicy) []Section {
+func missingObservationSections(present map[Section]bool, required []Section) []Section {
 	var missing []Section
-	for _, section := range policy.RequiredSections {
-		if !f.Present[section] {
+	for _, section := range required {
+		if !present[section] {
 			missing = append(missing, section)
 		}
 	}
 	return missing
 }
 
-// MissingWorkspaceFiles returns the concrete lifecycle artifacts required for
-// p that do not contain real content. It is the authoritative runtime
-// completeness view; Section completeness remains only a compact legacy view.
-func MissingWorkspaceFiles(f *Feature, p Phase) []string {
-	policy, _ := PolicyFor(p)
-	return missingArtifactsForPolicy(f, policy)
+func requiredSections(policy PhasePolicy) map[Section]bool {
+	required := make(map[Section]bool, len(policy.RequiredSections))
+	for _, section := range policy.RequiredSections {
+		required[section] = true
+	}
+	return required
 }
 
-func missingArtifactsForPolicy(f *Feature, policy PhasePolicy) []string {
-	var missing []string
+func requiredArtifactSet(policy PhasePolicy) map[string]bool {
+	required := make(map[string]bool, len(policy.RequiredArtifacts))
 	for _, artifact := range policy.RequiredArtifacts {
-		name := string(artifact)
-		if !f.PresentFiles[name] {
-			missing = append(missing, name)
-		}
+		required[string(artifact)] = true
 	}
-	return missing
+	return required
 }
 
 // Complete reports whether every concrete canonical-workspace file required by
@@ -99,18 +108,21 @@ func (r *Report) Render() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "feature: %s\n", r.Slug)
 	fmt.Fprintf(&b, "phase: %s\n", r.Phase)
-	for _, s := range Sections {
+	for _, section := range Sections {
 		state := "empty"
-		if r.Present[s] {
+		if r.present[section] {
 			state = "present"
 		}
 		mark := ""
-		if r.Required[s] {
+		if r.Required[section] {
 			mark = "required"
 		}
-		line := fmt.Sprintf("  %-10s %-8s %s", s, state, mark)
+		line := fmt.Sprintf("  %-10s %-8s %s", section, state, mark)
 		b.WriteString(strings.TrimRight(line, " "))
 		b.WriteByte('\n')
+	}
+	for _, diagnostic := range r.diagnostics {
+		fmt.Fprintf(&b, "artifact: %s: %s (%s)\n", diagnostic.Path, diagnostic.State, diagnostic.Code)
 	}
 	if r.Complete() {
 		b.WriteString("result: complete\n")

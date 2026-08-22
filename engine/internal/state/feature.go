@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
-	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/rootfacts"
 )
 
@@ -22,15 +21,6 @@ func ResolveRoot(override string) (string, error) {
 		return "", err
 	}
 	return facts.PhysicalRoot, nil
-}
-
-// Feature is a loaded per-feature workspace: its declared phase plus which
-// completeness sections currently have real content.
-type Feature struct {
-	Slug         string
-	Phase        Phase
-	Present      map[Section]bool
-	PresentFiles map[string]bool
 }
 
 // featureDir is the canonical per-feature state directory under root.
@@ -71,82 +61,6 @@ func regularFileExists(path string) bool {
 	return err == nil && info.Mode().IsRegular()
 }
 
-// LoadFeature reads a canonical feature workspace. state.md is the sole
-// lifecycle authority; optional README.md metadata is not runtime state.
-func LoadFeature(root, slug string) (*Feature, error) {
-	dir := featureDir(root, slug)
-	if !regularFileExists(filepath.Join(dir, LedgerFile)) {
-		return nil, fmt.Errorf("feature %q not found", slug)
-	}
-
-	phase, ledgerDeclared, err := declaredPhaseFromLedger(filepath.Join(dir, LedgerFile))
-	if err != nil {
-		return nil, fmt.Errorf("feature %q: %w", slug, err)
-	}
-	if !ledgerDeclared {
-		return nil, fmt.Errorf("feature %q: no phase in %s ledger", slug, LedgerFile)
-	}
-	policy, ok := PolicyFor(phase)
-	if !ok {
-		return nil, fmt.Errorf("feature %q: unknown phase %q", slug, phase)
-	}
-	phase = policy.Target
-
-	present := make(map[Section]bool, len(Sections))
-	for _, section := range Sections {
-		present[section] = sectionPresentAny(dir, section)
-	}
-	presentFiles := make(map[string]bool)
-	for _, lifecyclePolicy := range PhasePolicies() {
-		for _, artifact := range lifecyclePolicy.RequiredArtifacts {
-			name := string(artifact)
-			if _, observed := presentFiles[name]; observed {
-				continue
-			}
-			presentFiles[name] = sectionPresent(filepath.Join(dir, name))
-		}
-	}
-	return &Feature{
-		Slug:         slug,
-		Phase:        phase,
-		Present:      present,
-		PresentFiles: presentFiles,
-	}, nil
-}
-
-func sectionPresentAny(dir string, s Section) bool {
-	for _, name := range sectionFiles[s] {
-		if sectionPresent(filepath.Join(dir, name)) {
-			return true
-		}
-	}
-	return false
-}
-
-func declaredPhaseFromLedger(path string) (Phase, bool, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", false, nil
-		}
-		return "", false, fmt.Errorf("read %s: %w", LedgerFile, err)
-	}
-	structural, err := markdowntext.Structural(raw)
-	if err != nil {
-		return "", false, fmt.Errorf("read %s: %w", LedgerFile, err)
-	}
-	lines := strings.Split(string(structural), "\n")
-	value, ok := CursorField(lines, CursorPhase)
-	if !ok {
-		return "", false, nil
-	}
-	word := firstPhaseWord(value)
-	if policy, known := PolicyFor(Phase(word)); known {
-		return policy.Target, true, nil
-	}
-	return Phase(word), true, nil
-}
-
 func firstPhaseWord(value string) string {
 	word := strings.ToLower(strings.TrimSpace(value))
 	if i := strings.IndexAny(word, " 	"); i > 0 {
@@ -159,27 +73,6 @@ func firstPhaseWord(value string) string {
 // is empty or starts with '#' (a Markdown ATX heading).
 func blankOrHash(trimmed string) bool {
 	return trimmed == "" || strings.HasPrefix(trimmed, "#")
-}
-
-// sectionPresent reports whether a section file has real content: it exists
-// and, after removing a leading YAML frontmatter block, ATX (`#`) headings, and
-// whitespace, some content remains. A stub that is only a heading counts as
-// empty, so scaffolding a file never fakes completeness.
-func sectionPresent(path string) bool {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	if _, err := markdowntext.Structural(raw); err != nil {
-		return false
-	}
-	body := stripFrontmatter(raw)
-	for _, line := range strings.Split(string(body), "\n") {
-		if !blankOrHash(strings.TrimSpace(line)) {
-			return true
-		}
-	}
-	return false
 }
 
 // stripFrontmatter removes a well-formed leading frontmatter block when
@@ -199,7 +92,7 @@ func stripFrontmatter(raw []byte) []byte {
 		}
 	}
 	if end < 0 {
-		return raw // no closing fence: treat as if there were no frontmatter
+		return raw
 	}
 	return []byte(strings.Join(lines[end+1:], "\n"))
 }

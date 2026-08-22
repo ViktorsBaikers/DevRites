@@ -64,16 +64,7 @@ has no clear next move.
 - Ambiguous retained evidence needs diagnostic amplification, not a guessed fix. If an in-scope
   seam can add a stable unique boundary ID, repair its finite map/collision/fault fixtures,
   narrow-Vet, then seek fresh action authority. Stop only when no safe amplification seam exists.
-- **Route by artifact ownership.** Product source/tests go to the exact bounded
-  wright. Exact Vet-ready executable proof artifacts under the active `.devrites/**`
-  workspace follow
-  [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
-  and are materialized by the controlling root. Never ask a read-only planner or
-  reviewer to return implementation bodies. Materializer failures are reversible
-  offline recovery, not consumptive one-shot execution: preserve the transaction
-  journal, preimage hashes, and bound temporaries, preflight the corrected
-  transaction in a disposable same-layout fixture, then retry only within the
-  existing materializer fingerprint budget.
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"durable active failure or ambiguous admitted state","action":"OFFLINE_RECOVERY; correct offline, re-preflight, narrow Vet, retry only under cap","return":"saved caller or exact Plan/Vet route"} -->
 - **Classify before routing** with
   [cleanup-and-classify.md](reference/cleanup-and-classify.md).
 - **Durably record class and rationale** in `decisions.md` and the applicable
