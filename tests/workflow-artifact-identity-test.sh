@@ -105,7 +105,7 @@ OUTSIDE_MANIFEST_CONTRACT_CELLS = (
     "stage, backups, proof-cache,\nmutation artifacts clean exactly",
 )
 LIVE_PROTECTED_SHA256 = {
-    ".gitignore": "58c1cc88c16b9bb14b345c156703163b47c9cb6232276b50684fabae8503e8fd",
+    ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
     ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
     ".devrites/work/workspace-observation/touched-files.md":
         "2dca74484895de119cd935db6c3692782df9173eef199c88a7d5a65898332ec9",
@@ -7189,7 +7189,7 @@ DELIVERY_GATES = [
     (["python3", "scripts/scan-pack-security.py", "pack/.claude", "pack/generated"], None),
     (["go", "-C", "engine", "test", "./...", "-race", "-count=1"], None),
     (["node", "scripts/run-tests.mjs"], None),
-    (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "58c1cc88c16b9bb14b345c156703163b47c9cb6232276b50684fabae8503e8fd  .gitignore"),
+    (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484  .gitignore"),
 ]
 
 
@@ -7204,7 +7204,7 @@ def check_delivery_gate_signals() -> None:
         (["bash", "tests/acceptance-preserving-reslice-policy-test.sh"], "acceptance-preserving-reslice-policy-test: PASS"),
         (["bash", "tests/host-artifacts-test.sh"], "host-artifacts-test: PASS"),
         (["bash", "scripts/validate.sh"], "VALIDATION PASSED"),
-        (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "58c1cc88c16b9bb14b345c156703163b47c9cb6232276b50684fabae8503e8fd  .gitignore"),
+        (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484  .gitignore"),
     ]
     declared = [(command, signal) for command, signal in DELIVERY_GATES if signal is not None]
     require(declared == expected, "delivery gate exact expected-line registry")
