@@ -4487,7 +4487,7 @@ def check_actual_engine_separation(root: Path) -> None:
             require(engine.is_file(), "configured engine CLI")
         else:
             version = command_output(["go", "-C", str(project / "engine"), "env", "GOVERSION"])
-            require(version.returncode == 0 and "go1.26.5" in version.stdout, "module-selected Go 1.26.5")
+            require(version.returncode == 0 and "go1.26.7" in version.stdout, "module-selected Go 1.26.7")
             engine = private / "bin/devrites-engine"
             engine.parent.mkdir()
             build = command_output(["go", "-C", str(project / "engine"), "build", "-o", str(engine), "."])
@@ -7174,7 +7174,7 @@ DELIVERY_STATE_PATTERN = re.compile(
     r"|INSTALLING\([1-9][0-9]*\)|ROLLING_BACK\([1-9][0-9]*\))"
 )
 DELIVERY_GATES = [
-    (["bash", "-c", "bash --version && python3 --version && node --version && go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.5"),
+    (["bash", "-c", "bash --version && python3 --version && node --version && go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.7"),
     (["python3", "scripts/validate-workspace-schema.py", ".devrites/work/workflow-artifact-identity"], "workspace-schema: OK: 1 workspace(s) validated"),
     (["bash", "tests/workflow-artifact-identity-test.sh"], "workflow-artifact-identity: PASS"),
     (["bash", "tests/workflow-artifact-identity-test.sh", "--prove-walkthrough"], "WORKFLOW_ARTIFACT_WALKTHROUGH PASS"),
@@ -7195,7 +7195,7 @@ DELIVERY_GATES = [
 
 def check_delivery_gate_signals() -> None:
     expected = [
-        (["bash", "-c", "bash --version && python3 --version && node --version && go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.5"),
+        (["bash", "-c", "bash --version && python3 --version && node --version && go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.7"),
         (["python3", "scripts/validate-workspace-schema.py", ".devrites/work/workflow-artifact-identity"], "workspace-schema: OK: 1 workspace(s) validated"),
         (["bash", "tests/workflow-artifact-identity-test.sh"], "workflow-artifact-identity: PASS"),
         (["bash", "tests/workflow-artifact-identity-test.sh", "--prove-walkthrough"], "WORKFLOW_ARTIFACT_WALKTHROUGH PASS"),
@@ -7618,6 +7618,60 @@ def delivery_lock(delivery_fd: int) -> int:
 
 def protected_records_at(repo_fd: int) -> dict[str, dict]:
     return {rel: file_record_at(repo_fd, rel) for rel in PROTECTED}
+
+
+PROTECTED_ACTIVE_BYTES = b"workflow-artifact-identity\n"
+PROTECTED_OBSERVATION_FIXTURE = (
+    SCRIPT.parent / "fixtures"
+    / "workflow-artifact-protected-workspace-observation-touched-files.md"
+)
+
+
+def install_live_protected_fixtures(root: Path) -> list[tuple[Path, bytes | None]]:
+    """Ensure live protected paths match LIVE_PROTECTED_SHA256 for CI/local.
+
+    Returns restorations as (path, previous_bytes_or_None_if_created).
+    """
+    restorations: list[tuple[Path, bytes | None]] = []
+    observation_bytes = PROTECTED_OBSERVATION_FIXTURE.read_bytes()
+    require(
+        hashlib.sha256(observation_bytes).hexdigest()
+        == LIVE_PROTECTED_SHA256[".devrites/work/workspace-observation/touched-files.md"],
+        "protected observation fixture digest",
+    )
+    wanted = {
+        ".devrites/ACTIVE": PROTECTED_ACTIVE_BYTES,
+        ".devrites/work/workspace-observation/touched-files.md": observation_bytes,
+    }
+    for relative, content in wanted.items():
+        path = root / relative
+        previous: bytes | None
+        if path.is_file() and not path.is_symlink():
+            previous = path.read_bytes()
+            if hashlib.sha256(previous).hexdigest() == LIVE_PROTECTED_SHA256[relative]:
+                continue
+        else:
+            previous = None
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        restorations.append((path, previous))
+    return restorations
+
+
+def restore_live_protected_fixtures(restorations: list[tuple[Path, bytes | None]]) -> None:
+    for path, previous in reversed(restorations):
+        if previous is None:
+            path.unlink(missing_ok=True)
+            # Remove empty parents we likely created under .devrites/work/...
+            parent = path.parent
+            while parent.name and parent != parent.parent:
+                try:
+                    parent.rmdir()
+                except OSError:
+                    break
+                parent = parent.parent
+        else:
+            path.write_bytes(previous)
 
 
 def require_live_protected_identity() -> dict[str, dict]:
@@ -9802,10 +9856,15 @@ def main() -> None:
     }:
         raise SystemExit(usage)
     if not args:
-        protected_before = require_live_protected_identity()
-        default_tests(canonical_root())
-        require(require_live_protected_identity() == protected_before,
-                "protected identity unchanged by private checks")
+        root = project_root_for_tests(canonical_root())
+        restorations = install_live_protected_fixtures(root)
+        try:
+            protected_before = require_live_protected_identity()
+            default_tests(canonical_root())
+            require(require_live_protected_identity() == protected_before,
+                    "protected identity unchanged by private checks")
+        finally:
+            restore_live_protected_fixtures(restorations)
         print("workflow-artifact-identity: PASS")
         return
     if args == ["--check-delivery-gate-signals"]:

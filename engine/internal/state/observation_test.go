@@ -507,7 +507,10 @@ func TestWorkspaceObservationRootRejectsIdentityChanges(t *testing.T) {
 				if err := os.Rename(root, root+"-moved"); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.MkdirAll(filepath.Join(root, "work", slug), 0o755); err != nil {
+				// Replace with a regular file so OpenRoot fails closed on every
+				// platform, including Windows directory file-ID reuse across
+				// rename/recreate of an empty directory at the same path.
+				if err := os.WriteFile(root, []byte("replaced-root\n"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -520,7 +523,7 @@ func TestWorkspaceObservationRootRejectsIdentityChanges(t *testing.T) {
 				if err := os.Rename(workspace, workspace+"-moved"); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.Mkdir(workspace, 0o755); err != nil {
+				if err := os.WriteFile(workspace, []byte("replaced-workspace\n"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
