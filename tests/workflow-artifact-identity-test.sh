@@ -689,6 +689,13 @@ def file_record_at(root_fd: int, relative: str) -> dict:
     }
 
 
+def compatible_tracked_modes(expected: int) -> set[int]:
+    """Git tracks only the executable bit; checkout umask may yield 0644 or 0600."""
+    if expected & 0o111:
+        return {expected}
+    return {0o600, 0o644}
+
+
 def require_fixed_reslice_records(root_fd: int) -> None:
     require(len(RESLICE_PRIOR_RECORDS) == 30
             and sha(("\n".join(sorted(RESLICE_PRIOR_RECORDS)) + "\n").encode())
@@ -697,7 +704,7 @@ def require_fixed_reslice_records(root_fd: int) -> None:
     for relative, (mode, digest) in RESLICE_PRIOR_RECORDS.items():
         record = file_record_at(root_fd, relative)
         require(record["state"] == "present"
-                and record["mode"] == mode
+                and record["mode"] in compatible_tracked_modes(mode)
                 and record["sha256"] == digest,
                 f"historical Reslice record identity: {relative}")
 
@@ -735,7 +742,9 @@ def check_historical_reslice_identity() -> None:
             fixture = Path(tmp).resolve() / "prior-reslice"
             fixture.mkdir()
             for relative, (mode, _digest) in RESLICE_PRIOR_RECORDS.items():
-                data = read_file_at(root_fd, relative, modes={mode})
+                data = read_file_at(
+                    root_fd, relative, modes=compatible_tracked_modes(mode),
+                )
                 destination = fixture / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 atomic_write(destination, data, mode)
@@ -744,7 +753,9 @@ def check_historical_reslice_identity() -> None:
                 require_fixed_reslice_records(fixture_fd)
                 mutated = "pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md"
                 mode = RESLICE_PRIOR_RECORDS[mutated][0]
-                data = read_file_at(fixture_fd, mutated, modes={mode})
+                data = read_file_at(
+                    fixture_fd, mutated, modes=compatible_tracked_modes(mode),
+                )
                 atomic_write(fixture / mutated, data + b"\n", mode)
                 try:
                     require_fixed_reslice_records(fixture_fd)
