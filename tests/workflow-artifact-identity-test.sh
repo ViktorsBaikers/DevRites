@@ -4522,7 +4522,7 @@ def check_actual_engine_separation(root: Path) -> None:
         workspace = fixture / ".devrites/work/demo"
         workspace.mkdir(parents=True)
         (fixture / ".devrites/ACTIVE").write_text("demo\n")
-        source_workspace = project / ".devrites/work/workflow-artifact-identity"
+        source_workspace, _is_live = resolve_evidence_mapping_source(project)
         readiness_files = ["spec.md", "decision-coverage.md", "architecture.md", "plan.md", "tasks.md", "traceability.md", "test-plan.md"]
         for name in readiness_files:
             source = source_workspace / name
