@@ -9,7 +9,7 @@
     "source": "https://github.com/advisories/GHSA-r292-9mhp-454m",
     "owner": "release-maintainers",
     "reason": "The latest npm 11.x and 12.x packages still bundle tar@7.5.19 through @semantic-release/npm. The plugin invokes npm for authentication and publishing over trusted local source; it does not select or extract members from untrusted tar archives. Remove this exception as soon as npm bundles tar@7.5.21 or newer.",
-    "expires": "2026-08-12"
+    "expires": "2026-09-23"
   },
   {
     "id": "GHSA-mh99-v99m-4gvg",
@@ -21,7 +21,7 @@
     "source": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
     "owner": "release-maintainers",
     "reason": "The installed @semantic-release/npm@13.1.5 chain uses npm@11.18.0 -> minimatch@10.2.5 -> brace-expansion@5.0.7. Inspected npm@11.19.0 and npm@12.0.2 packages still bundle brace-expansion@5.0.7, and root overrides cannot repair npm's bundled dependency tree. Remove this exception once npm bundles brace-expansion@5.0.8 or newer.",
-    "expires": "2026-08-12"
+    "expires": "2026-09-23"
   },
   {
     "id": "GHSA-rgw5-rvv9-x895",
@@ -33,7 +33,7 @@
     "source": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
     "owner": "release-maintainers",
     "reason": "The latest npm 11.x and 12.x packages still bundle brace-expansion@5.0.7 through @semantic-release/npm. DevRites does not pass untrusted expansion patterns to this release-only dependency. Remove this exception as soon as npm bundles brace-expansion@5.0.9 or newer.",
-    "expires": "2026-08-12"
+    "expires": "2026-09-23"
   },
   {
     "id": "GHSA-mwp4-54f8-5fhr",
@@ -45,7 +45,7 @@
     "source": "https://github.com/advisories/GHSA-mwp4-54f8-5fhr",
     "owner": "release-maintainers",
     "reason": "The latest npm 11.x and 12.x packages still bundle ip-address@10.2.0 through @semantic-release/npm. DevRites does not use this release-only dependency for SSRF filtering or trust-boundary decisions. Remove this exception as soon as npm bundles a version outside the affected range.",
-    "expires": "2026-08-12"
+    "expires": "2026-09-23"
   },
   {
     "id": "GHSA-4xrf-jv44-h6hh",
@@ -57,7 +57,7 @@
     "source": "https://github.com/advisories/GHSA-4xrf-jv44-h6hh",
     "owner": "release-maintainers",
     "reason": "The latest npm 11.x and 12.x packages still bundle ip-address@10.2.0 through @semantic-release/npm. DevRites does not use this release-only dependency for SSRF filtering or trust-boundary decisions. Remove this exception as soon as npm bundles a version outside the affected range.",
-    "expires": "2026-08-12"
+    "expires": "2026-09-23"
   },
   {
     "id": "GHSA-22jq-vg5j-6vgg",
@@ -69,7 +69,7 @@
     "source": "https://github.com/advisories/GHSA-22jq-vg5j-6vgg",
     "owner": "release-maintainers",
     "reason": "The latest npm 11.x and 12.x packages still bundle ip-address@10.2.0 through @semantic-release/npm. DevRites does not use this release-only dependency for SSRF filtering or trust-boundary decisions. Remove this exception as soon as npm bundles a version outside the affected range.",
-    "expires": "2026-08-12"
+    "expires": "2026-09-23"
   },
   {
     "id": "GHSA-8xcm-r25x-g524",
@@ -81,7 +81,7 @@
     "source": "https://github.com/advisories/GHSA-8xcm-r25x-g524",
     "owner": "release-maintainers",
     "reason": "The latest npm 11.x and 12.x packages still bundle undici@6.27.0 through @semantic-release/npm. DevRites does not configure npm's retry interceptor or proxy untrusted HTTP responses through this release-only dependency. Remove this exception as soon as npm bundles undici@6.28.0 or newer.",
-    "expires": "2026-08-12"
+    "expires": "2026-09-23"
   },
   {
     "id": "GHSA-m8rv-5g2x-5cg5",
@@ -93,7 +93,7 @@
     "source": "https://github.com/advisories/GHSA-m8rv-5g2x-5cg5",
     "owner": "release-maintainers",
     "reason": "The latest npm 11.x and 12.x packages still bundle undici@6.27.0 through @semantic-release/npm. DevRites does not construct blob-like request bodies from untrusted values in this release-only dependency. Remove this exception as soon as npm bundles undici@6.28.0 or newer.",
-    "expires": "2026-08-12"
+    "expires": "2026-09-23"
   },
   {
     "id": "GHSA-v3r7-h72x-cjcm",
@@ -105,6 +105,6 @@
     "source": "https://github.com/advisories/GHSA-v3r7-h72x-cjcm",
     "owner": "release-maintainers",
     "reason": "The latest npm 11.x and 12.x packages still bundle undici@6.27.0 through @semantic-release/npm. DevRites does not construct cookie domains or set-cookie fields from untrusted values in this release-only dependency. Remove this exception as soon as npm bundles undici@6.28.0 or newer.",
-    "expires": "2026-08-12"
+    "expires": "2026-09-23"
   }
 ]

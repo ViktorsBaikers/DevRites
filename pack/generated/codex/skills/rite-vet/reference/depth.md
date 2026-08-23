@@ -10,6 +10,14 @@ A four-section deep-dive on a one-file reversible plan is wasteful; rubber-stamp
 migration-touching plan is dangerous. Match the effort to the stakes, but **always** leave a
 recorded engineering verdict and a coverage plan.
 
+Authority: `.agents/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → fold technical topology; invalidate Vet/readiness; affected Vet before Build.
+- `GUARD_AND_REPAIR` → no planning writes; Spec Drift Guard → Clarify → Plan repair → affected Vet.
+- `BLOCKED_INPUT` → no planning writes; exact diagnostic; recover input; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
+
 ## Full pass when ANY trips
 - **Irreversible-risk contact:** the plan touches anything on the `afk-hitl.md` irreversible-risk
   list: destructive data migration, auth/authz boundary, public-API break, external-service
@@ -19,7 +27,7 @@ recorded engineering verdict and a coverage plan.
   `../../devrites-lib/reference/standards/tooling.md`) or an honest estimate) crosses
   module/service boundaries or has many dependents.
 - **Complexity:** `plan.md` touches **>8 files** or adds **>2 new services/modules/classes**.
-- **Multi-slice / multi-day**, or a new dependency / pattern / second design system.
+- **Multi-slice / multi-day work**, new dependency/pattern/design system. Slice count alone never creates a human pause.
 - **The user asked**, or `--full`.
 
 Full pass = §0 scope challenge + all four axes (each walked finding-by-finding) + the failure-mode
@@ -46,8 +54,7 @@ triggers above, **never skipped**. Under the AFK gate ceiling:
 - **Auto-apply (no pause):** hardening findings: added test requirements, error-handling /
   failure-mode coverage, tightened scope, reuse-over-rebuild, dependency-order fixes
   (these never grow acceptance). Record the rationale in `decisions.md`.
-- **Blocking pause:** any finding that **grows scope, adds a slice, changes an acceptance
-  criterion, or alters product behavior**.
+- **Topology findings:** marked action; slice count alone never pauses.
 - **Always pause:** irreversible-risk findings, and any axis still below bar after the
   ≤3-iteration reviewer loop.
 - **Cross-model** is off by default; it runs only if `--cross-model` was explicitly armed.

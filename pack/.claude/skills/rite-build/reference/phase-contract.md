@@ -16,28 +16,14 @@ See [`one-slice-cycle.md`](one-slice-cycle.md); candidate lifecycle is
    scope, or proof, use the Spec Drift Guard/plan recovery; a human-owned unknown
    stops. Resolve HITL before source work. AFK answers only permitted gates;
    human-owned or irreversible risk persists a question and stops for `/rite-resolve`.
-   If the target is only an exact Vet-ready executable workflow-artifact set under
-   the active feature workspace, apply
+   If the target is an exact Vet-ready Workflow Artifact set, apply
    [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md)
    instead of treating it as a product slice.
-3. **Dispatch or materialize.** Product source/tests apply [`wright-dispatch.md`](wright-dispatch.md).
+3. **Dispatch or transact.** Product source/tests apply [`wright-dispatch.md`](wright-dispatch.md).
    Put the smallest exact project-relative source/test path list directly in the task;
    dispatch the exact `devrites-slice-wright` fresh. Root never writes those product
    paths, wright never widens, and a missing profile stops.
-   For the workflow-artifact branch, the controlling root writes only the admitted
-   `.devrites/work/<slug>/` paths. Before an active journal or target write, it
-   compiles the materializer and runs the exact transaction implementation in a
-   disposable same-layout fixture covering success, replacement failure, rollback,
-   retained-temporary cleanup, and rerun. It then proves the complete atomic set,
-   rechecks an
-   identical product candidate, records hashes/evidence, and runs narrow Vet. Do not
-   dispatch any agent as a substitute writer and do not charge a product slice.
-
-### Executable workflow-artifact branch
-
-The controlling root materializes the exact admitted workflow-artifact set and
-**does not dispatch the wright**. This branch never changes product slice state or
-the candidate manifest; it returns through narrow Vet before any consumptive action.
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Build gate enters or resumes transaction","action":"invoke canonical operation table; reconcile exact result","return":"same slice/checkpoint cursor or Plan/Vet route"} -->
 4. **Inspect the return.** Wait; compare its file list and `git diff --name-only`
    with the contract. Reject stale, partial, malformed, or out-of-scope work.
    Preserve user work; source restoration uses the same bounded wright.

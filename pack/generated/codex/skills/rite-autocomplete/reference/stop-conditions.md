@@ -1,131 +1,92 @@
-# Stop conditions: when autocomplete must pause for a human
+# Stop conditions: when autocomplete pauses
 
-On these conditions, write `state.md` (`awaiting_human` or `blocked`), report
-the reason and one resume command when an actual human/safety/access action can
-change the state, notify if configured, and stop. Exhausted agent-owned
-technical recovery is terminal for its unchanged causal fingerprint: record
-`Next step: none` and no runnable recovery command. `--ship` cannot bypass them.
-Closure of a prior fingerprint is progress, not exhaustion. A separately evidenced
-Critical/Important failed invariant starts its own bounded fingerprint; it never
-resets or extends the budget of the one just closed.
+On a real stop, write `state.md` as `awaiting_human` or `blocked`, persist the
+reason, and include one resume command only when an actual human/safety/access
+action can change it. Exhausted agent-owned recovery records terminal
+`Next step: none` and no runnable recovery command. `--ship` never bypasses a
+stop.
 
-An exhausted consumptive-action authorization is not technical-recovery
-exhaustion. It blocks another real action, but retained evidence of a new
-Critical/Important fingerprint must enter offline caller-owned recovery while its
-own no-progress budget remains. After affected Vet is READY, pause for fresh action
-authorization; never execute from the old GO.
+Authority: `.agents/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
-## Always stop (irreversible-risk list: from `afk-hitl.md`)
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → keep Plan repair/affected Vet internal; no stop solely for topology/count.
+- `GUARD_AND_REPAIR` → enter Spec Drift Guard/Clarify; pause only at an existing human-owned gate; resume Plan/Vet internally.
+- `BLOCKED_INPUT` → no planning writes; stop internal branch; exact diagnostic; recover authority; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
 
-Regardless of `allow_gates` or `--ship`:
-- Destructive data migration (drop column/table, irreversible backfill).
-- Auth / authz boundary change.
-- Public-API break (response shape, removed endpoint, changed status semantics).
-- External-service contract change.
-- Filesystem destruction outside the workspace.
+## Always stop
 
-Red checks are hard non-advance gates. Run bounded `devrites-debug-recovery`;
-on exhaustion, stop as a technical blocker unless human-owned.
+Regardless of flags or AFK ceiling:
 
-## Not a stop: agent-owned backtracking
+- destructive data migration;
+- auth/authz boundary change;
+- public API break;
+- external-service contract change; or
+- filesystem destruction outside the workspace.
 
-`NEEDS_REPLAN` is not a stop condition under an active Autocomplete caller. It
-blocks forward advancement, persists the return cursor, and immediately routes
-Plan repair plus Recovery Vet. The same applies to any intermediate nested
-`STOP`/`Next step` whose underlying decision is agent-owned.
+Red proof cannot advance. Run bounded Debug Recovery; stop after proven
+exhaustion unless the remaining owner is human.
 
-Agent-owned backtracking is not a stop condition while its causal-fingerprint
-budget remains. The active caller invokes the earlier phase inline, follows Vet
-and any bounded remediation, then resumes the originating phase. Persist
-`Next step` for crash recovery, but do not surface it as a command the human must
-submit. Use the repaired finding's narrow Vet recheck to distinguish resolution,
-the same decisive failure, and a genuinely new Critical/Important invariant.
-Stop only after three no-progress attempts on the exact same fingerprint or when
-the remaining choice is a real human/safety/access gate.
+## Not stops: internal technical routing
 
-On technical exhaustion, preserve the fingerprint, reproduction, attempts, and
-dead ends, then stop without `$rite-plan unblock` or another phase command.
-Reinvocation with unchanged evidence remains blocked and does not reset the cap.
-Here `unchanged` means the same fingerprint already has three recorded
-no-progress corrections. A retained fingerprint with remaining offline budget is
-not terminal merely because `state.md` was written by the failed action or a prior
-session ended.
+`NEEDS_REPLAN` is not a stop condition under active Autocomplete. It blocks
+forward work, persists the return cursor, and invokes Plan repair plus Recovery
+Vet inline. The same applies to nested `STOP`/`Next step` when its decision is
+agent-owned.
 
-A pre-ownership workflow-artifact writer stop is not unchanged evidence when the
-current contract supplies controlling-root materialization. Prior drafter/wright refusals do not count
-as root materialization attempts. Reopen only when exact paths and executable
-behavior passed Vet and there is **no controlling-root materialization attempt**;
-record the routing migration so it cannot reset again. Missing product slices,
-unresolved protocol choices, or a recorded root attempt remain under their normal
-gate/fingerprint rules. The first controlling-root failure is not exhaustion: it
-is the first no-progress result for the materializer fingerprint. If all targets
-still equal their recorded preimages, no real action ran, and only admitted bound
-temporaries remain, reopen an incorrectly persisted one-shot `1/1` terminal,
-preserve its evidence as attempt one, clean/repair/preflight offline, and continue
-within the shared three-attempt cap.
+Agent-owned backtracking is not a stop condition while the exact causal
+fingerprint has budget. Invoke the earlier phase, affected Vet, remediation, and
+proof; then resume the origin. Stop only after three no-progress corrections of
+that exact fingerprint or a real human/safety/access gate. Preserve reproduction,
+attempts, and dead ends; never offer `$rite-plan unblock` or another routine
+phase command. Reinvocation with unchanged evidence does not reset the cap.
+`unchanged` means the same fingerprint already has three recorded no-progress
+corrections. Closure is progress; a separately evidenced Critical/Important
+invariant starts its own cap and cannot extend the closed one.
 
-Past evidence being irretrievable is not by itself terminal. When an in-scope
-trusted diagnostic seam can make the next retained fingerprint uniquely
-actionable, Autocomplete must run diagnostic-amplification Plan repair and narrow
-Vet inline, then pause for a fresh GO before the single evidence-acquisition
-attempt. Use `Next: none` only after proving no safe in-scope amplification seam
-exists, a real human/risk/scope gate owns it, or bounded recovery is exhausted.
+Spent consumptive-action authorization is not technical-recovery exhaustion.
+It blocks another execution; retained new Critical/Important evidence still
+enters offline recovery. After affected Vet is READY, pause for fresh action
+authorization and never reuse old GO.
 
-## Stop on gate severity
+Past evidence being irretrievable is not by itself terminal. If an in-scope
+trusted seam can uniquely discriminate the next failure, run diagnostic-
+amplification Plan repair and narrow Vet inline, then pause for fresh GO before
+one evidence-acquisition attempt. Use terminal none only when no safe in-scope
+seam exists, a real human/risk/scope gate owns it, or bounded recovery is
+exhausted.
 
-- `blocking` gate fires → synchronous pause.
-- `escalating` gate fires → pause, route to the specialist tag.
-- Any `questions.md` entry with `gate: validating` and `status: open` → pause (it is a
-  seal NO-GO by definition; stop before reaching seal).
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"classifier returns owner-busy, exhausted, or existing hard gate","action":"stop on exact WAIT_ACTIVE_OWNER, BLOCKED_EXHAUSTED, or BLOCKED_GATE result","return":"unchanged cursor plus fixed route-owned output"} -->
+## Other stop classes
 
-## Stop on strategic-review scope expansion (`$rite-temper`)
+- **Gate severity:** blocking or escalating gate; any open validating question.
+- **Temper:** any `expand` or added acceptance criterion. `hold-rigor`,
+  `reduce-to-MVP`, and a justified skip do not pause.
+- **Clarify:** material Partial/Missing/unowned decision coverage or a
+  low-confidence high-consequence assumption. Continue the initial interview;
+  never arm AFK early.
+- **Seal:** NO-GO, with every blocker and fix direction. Never round up to GO.
+- **Reslice:** execute its marked action before deciding continue/stop.
+- **Slice budget:** any validated root-owned remaining value of zero stops before the next dispatch
+  when slices remain; malformed state also stops. Report whether the winning
+  bound was the pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count.
+  Zero with no pending slices is normal completion and proceeds to Prove.
+- **Resource envelope:** missing/malformed/expired AFK, overlapping run,
+  exhausted/unobservable declared agent/token/cost/time headroom, or review queue
+  above cap. At cap, only queue-reducing reconciliation may run. Persist winning
+  bound and observed usage; a new activation does not reset durable budgets or
+  expiry.
+- **Confidence:** intent still cannot become testable acceptance after interview.
+- **Repeated failure:** the exact fingerprint's bounded recovery is exhausted.
 
-- Any `expand` or added acceptance criterion pauses regardless of
-  `allow_gates`/`--ship`. Only `hold-rigor` and `reduce-to-MVP` auto-apply;
-  skipped low-stakes specs and those two modes do not pause.
+## Final GO and durable stop
 
-## Stop on incomplete decision coverage (`$rite-clarify`)
+`--ship`/`--yolo` never authorizes Git. With a flag, complete Ship preflight,
+disclose the exact plan, and stop for literal `GO` plus native approval. Without
+one, stop at Seal GO with `$rite-ship`. Seal GO, AFK, prior approval, and flags
+never satisfy Ship approval.
 
-- Stop on any material Partial/Missing/unowned row or low-confidence, high-consequence
-  assumption. Continue the up-front window with the next genuine decision packet; never arm
-  AFK or carry it into build. Resolve facts and reversible choices automatically.
-
-## Stop on workflow state
-
-- **NO-GO at seal** → stop; surface every blocker with `file:line` and the fix
-  direction. Do not round NO-GO up to GO.
-- **Spec Drift Guard fires** (`$rite-build` finds the plan is wrong and the change
-  alters product behaviour) → stop; route through `$rite-plan repair`.
-- **Budget exhausted with slices still pending:** any validated root-owned remaining
-  value of zero stops before the next dispatch. Report which bound won (pre-existing
-  remaining value, explicit flag, sentinel cap, or post-vet pending count) and the
-  unbuilt slices. A malformed value also fails closed. Zero with no pending slices is
-  normal completion → continue to `$rite-prove` without pausing.
-- **Resource envelope unavailable or exhausted:** stop before more work when the AFK
-  envelope is missing/malformed/expired; another run overlaps; native agent, token,
-  cost, or wall-time headroom is exhausted/unobservable despite a declared cap; or
-  unresolved review/gate backlog is above its cap. At the review cap, permit only
-  reconciliation that reduces the queue. Record the exact winning limit and observed
-  usage/count. A new activation gets fresh activation-local counters; it does not reset
-  durable slice/recovery budgets, expiry, or the recomputed queue.
-- **Still low-confidence after the interview:** the idea can't be pinned to testable
-  acceptance criteria → stop and ask, rather than guessing the product.
-- **Repeated failure:** bounded recovery exhausts → stop with reproduction.
-
-## The final type-GO
-
-- `--ship` / `--yolo` never authorizes Git. Continue through ship preflight,
-  disclose the exact plan, then stop for literal `GO` and native approval.
-- Without either flag, stop at seal GO with `$rite-ship` as the resume command.
-  Seal GO, AFK, prior approval, and flags never satisfy ship approval.
-
-## How to stop well
-
-State must be enough for a fresh agent to resume cold:
-- `state.md`: `Status`, the blocking reason, and either a single actionable
-  `Next step` command or the terminal `none — technical recovery exhausted`
-  marker.
-- The relevant `questions.md` / `drift.md` / `seal.md` entry that explains the pause.
-- A one-line user-facing message: *what* stopped it and, only when one exists,
-  *what human-owned action* resumes. A terminal technical blocker names no
-  routine Plan/Vet/retry command.
+A cold-resumable stop records `state.md` status, exact reason, and either one
+human-owned resume action or `none — technical recovery exhausted`; the owning
+question/drift/seal entry explains it. The user-facing line says what stopped
+and, only when applicable, what human action resumes it.

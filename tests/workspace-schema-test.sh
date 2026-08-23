@@ -8,6 +8,19 @@ CANONICAL_SCHEMA="$ROOT/pack/.claude/skills/devrites-lib/reference/workspace-art
 
 python3 "$VALIDATOR" "$FIXTURES" >/tmp/devrites-workspace-schema-ok.txt
 
+for phase in frame spec; do
+  if python3 "$ROOT/scripts/workflow_schema.py" phase-property "$phase" blocksOpenQuestions; then
+    echo "FAIL: $phase unexpectedly blocks open questions"
+    exit 1
+  fi
+done
+for phase in clarify temper define plan vet build converge prove polish review seal ship done; do
+  if ! python3 "$ROOT/scripts/workflow_schema.py" phase-property "$phase" blocksOpenQuestions; then
+    echo "FAIL: $phase does not block open questions"
+    exit 1
+  fi
+done
+
 PENDING_SLICE="$(mktemp -d)"
 cp -R "$FIXTURES" "$PENDING_SLICE/fixtures"
 perl -0pi -e 's/(\| SLICE-002 \| Pagination metadata \| AC-002 \| AFK \| advisory \| )built( \|)/${1}pending${2}/' \

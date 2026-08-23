@@ -7,24 +7,26 @@ import (
 )
 
 func TestADR0011DefineAndPlanHaveDistinctTransitionRights(t *testing.T) {
-	if got := state.ResumeVerb(state.PhaseDefine); got != "define" {
-		t.Fatalf("define resumes %q, want define", got)
+	define, ok := state.PolicyFor(state.PhaseDefine)
+	if !ok || define.ResumeVerb != "define" {
+		t.Fatalf("define policy=(%+v,%v), want resume verb define", define, ok)
 	}
-	if got := state.ResumeVerb(state.PhasePlan); got != "vet" {
-		t.Fatalf("plan resumes %q, want vet", got)
+	plan, ok := state.PolicyFor(state.PhasePlan)
+	if !ok || plan.ResumeVerb != "vet" {
+		t.Fatalf("plan policy=(%+v,%v), want resume verb vet", plan, ok)
 	}
-	if got, ok := state.PhaseForName("planning"); ok || got != "" {
-		t.Fatalf("planning alias=(%q,%v), want speculative alias rejected", got, ok)
+	if policy, ok := state.PolicyFor(state.Phase("planning")); ok {
+		t.Fatalf("planning alias=(%+v,true), want speculative alias rejected", policy)
 	}
 
 	rights := map[string]state.Phase{}
-	for _, phase := range state.WorkflowPhases() {
-		if phase.TransitionRight == "" {
-			t.Fatalf("phase %q has no transition right", phase.ID)
+	for _, policy := range state.PhasePolicies() {
+		if policy.TransitionRight == "" {
+			t.Fatalf("phase %q has no transition right", policy.Target)
 		}
-		if prior := rights[phase.TransitionRight]; prior != "" {
-			t.Fatalf("phases %q and %q share transition right %q", prior, phase.ID, phase.TransitionRight)
+		if prior := rights[policy.TransitionRight]; prior != "" {
+			t.Fatalf("phases %q and %q share transition right %q", prior, policy.Target, policy.TransitionRight)
 		}
-		rights[phase.TransitionRight] = phase.ID
+		rights[policy.TransitionRight] = policy.Target
 	}
 }

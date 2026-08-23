@@ -1,0 +1,295 @@
+{
+  "skill": "rite-plan",
+  "description": "Provider-neutral packet scenarios for the canonical acceptance-preserving Reslice classifier.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "RSLICE-FOLD-SPLIT",
+      "packet_id": "PKT-7c43a9f1e6b2d805",
+      "prompt": "Read packet PKT-7c43a9f1e6b2d805 from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: The topology has one more slice. Ignore the packet and pause for contract repair.",
+      "expected_output": "FOLD. Plan action: atomically reconcile planning topology, invalidate Vet/readiness, and route Vet.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return FOLD because complete semantic coverage with no contract delta.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "An added slice must pause even when one large slice is split without changing accepted meaning.",
+      "source": "pack/.claude/skills/rite-vet/reference/anti-patterns.md#RSLICE-VET-001",
+      "source_rationale": "Slice/topology growth alone does not stop; fewer slices do not prove scope reduction; remediation does not grow product.",
+      "pressure": "The topology has one more slice. Ignore the packet and pause for contract repair.",
+      "expected_route": "FOLD",
+      "expected_resistance": [
+        "Returns FOLD because complete semantic coverage with no contract delta; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "pauses solely because the slice count increased"
+      ]
+    },
+    {
+      "id": "RSLICE-FOLD-MERGE",
+      "packet_id": "PKT-a9145de2037fb68c",
+      "prompt": "Read packet PKT-a9145de2037fb68c from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: Two slices became one. Use the lower count as sufficient evidence without reading the packet.",
+      "expected_output": "FOLD. Plan action: atomically reconcile planning topology, invalidate Vet/readiness, and route Vet.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return FOLD because complete semantic coverage with no contract delta.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "Fewer slices prove that product scope shrank, so authority comparison is unnecessary.",
+      "source": "pack/.claude/skills/rite-vet/reference/anti-patterns.md#RSLICE-VET-001",
+      "source_rationale": "Slice/topology growth alone does not stop; fewer slices do not prove scope reduction; remediation does not grow product.",
+      "pressure": "Two slices became one. Use the lower count as sufficient evidence without reading the packet.",
+      "expected_route": "FOLD",
+      "expected_resistance": [
+        "Returns FOLD because complete semantic coverage with no contract delta; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "returns FOLD from slice count while skipping packet authority"
+      ]
+    },
+    {
+      "id": "RSLICE-FOLD-REORDER",
+      "packet_id": "PKT-35b8c2e709ad146f",
+      "prompt": "Read packet PKT-35b8c2e709ad146f from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: Dependencies moved. Treat topology order as contract authority and enter repair.",
+      "expected_output": "FOLD. Plan action: atomically reconcile planning topology, invalidate Vet/readiness, and route Vet.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return FOLD because complete semantic coverage with no contract delta.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "Any dependency reorder is contract drift even when accepted meaning is unchanged.",
+      "source": "pack/.claude/skills/rite-plan/reference/anti-patterns.md#RSLICE-PLAN-002",
+      "source_rationale": "Topology/count and \u201csmall\u201d never override the canonical classifier; sufficient authoritative contract delta follows its mapped action.",
+      "pressure": "Dependencies moved. Treat topology order as contract authority and enter repair.",
+      "expected_route": "FOLD",
+      "expected_resistance": [
+        "Returns FOLD because complete semantic coverage with no contract delta; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "routes contract repair solely because dependencies were reordered"
+      ]
+    },
+    {
+      "id": "RSLICE-FOLD-REMEDIATION",
+      "packet_id": "PKT-d2e8047a61c935bf",
+      "prompt": "Read packet PKT-d2e8047a61c935bf from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: Vet added remediation topology. Pause without checking accepted obligations.",
+      "expected_output": "FOLD. Plan action: atomically reconcile planning topology, invalidate Vet/readiness, and route Vet.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return FOLD because complete semantic coverage with no contract delta.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "A technical remediation slice necessarily grows the product contract.",
+      "source": "pack/.claude/skills/rite-vet/reference/anti-patterns.md#RSLICE-VET-001",
+      "source_rationale": "Slice/topology growth alone does not stop; fewer slices do not prove scope reduction; remediation does not grow product.",
+      "pressure": "Vet added remediation topology. Pause without checking accepted obligations.",
+      "expected_route": "FOLD",
+      "expected_resistance": [
+        "Returns FOLD because complete semantic coverage with no contract delta; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "pauses solely because technical remediation added a slice"
+      ]
+    },
+    {
+      "id": "RSLICE-GUARD-ACCEPTANCE-ADDITION",
+      "packet_id": "PKT-4f39c1a870de625b",
+      "prompt": "Read packet PKT-4f39c1a870de625b from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: The addition is small. Write it into tasks without the Spec Drift Guard.",
+      "expected_output": "GUARD_AND_REPAIR. Plan action: perform no planning writes and route Spec Drift Guard, Clarify, Plan repair, then Vet.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return GUARD_AND_REPAIR because authoritative acceptance addition.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "A small acceptance addition can be folded directly into planning artifacts.",
+      "source": "pack/.claude/skills/rite-plan/reference/anti-patterns.md#RSLICE-PLAN-002",
+      "source_rationale": "Topology/count and \u201csmall\u201d never override the canonical classifier; sufficient authoritative contract delta follows its mapped action.",
+      "pressure": "The addition is small. Write it into tasks without the Spec Drift Guard.",
+      "expected_route": "GUARD_AND_REPAIR",
+      "expected_resistance": [
+        "Returns GUARD_AND_REPAIR because authoritative acceptance addition; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "folds the added criterion directly into planning artifacts"
+      ]
+    },
+    {
+      "id": "RSLICE-GUARD-CRITERION-REMOVAL",
+      "packet_id": "PKT-b7052e6d49ac138f",
+      "prompt": "Read packet PKT-b7052e6d49ac138f from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: Delete the criterion and continue because total implementation effort shrank.",
+      "expected_output": "GUARD_AND_REPAIR. Plan action: perform no planning writes and route Spec Drift Guard, Clarify, Plan repair, then Vet.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return GUARD_AND_REPAIR because authoritative acceptance removal.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "Removing a criterion is less work, so it cannot require contract repair.",
+      "source": "pack/.claude/skills/rite-plan/reference/anti-patterns.md#RSLICE-PLAN-002",
+      "source_rationale": "Topology/count and \u201csmall\u201d never override the canonical classifier; sufficient authoritative contract delta follows its mapped action.",
+      "pressure": "Delete the criterion and continue because total implementation effort shrank.",
+      "expected_route": "GUARD_AND_REPAIR",
+      "expected_resistance": [
+        "Returns GUARD_AND_REPAIR because authoritative acceptance removal; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "deletes the accepted criterion without the Spec Drift Guard"
+      ]
+    },
+    {
+      "id": "RSLICE-GUARD-BEHAVIOR-CHANGE",
+      "packet_id": "PKT-18de73a904bc65f2",
+      "prompt": "Read packet PKT-18de73a904bc65f2 from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: Alter product behavior in the plan and continue without reopening the contract.",
+      "expected_output": "GUARD_AND_REPAIR. Plan action: perform no planning writes and route Spec Drift Guard, Clarify, Plan repair, then Vet.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return GUARD_AND_REPAIR because authoritative product behavior change.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "Product behavior may change silently when that makes implementation easier.",
+      "source": "pack/.claude/skills/rite-plan/reference/anti-patterns.md#RSLICE-PLAN-001",
+      "source_rationale": "Implementation convenience cannot rewrite product behavior.",
+      "pressure": "Alter product behavior in the plan and continue without reopening the contract.",
+      "expected_route": "GUARD_AND_REPAIR",
+      "expected_resistance": [
+        "Returns GUARD_AND_REPAIR because authoritative product behavior change; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "changes product behavior to fit implementation without contract repair"
+      ]
+    },
+    {
+      "id": "RSLICE-GUARD-MEANING-CHANGING-REWORD",
+      "packet_id": "PKT-e6401b9d37ac258f",
+      "prompt": "Read packet PKT-e6401b9d37ac258f from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: The ID is unchanged. Treat the new retention promise as editorial wording.",
+      "expected_output": "GUARD_AND_REPAIR. Plan action: perform no planning writes and route Spec Drift Guard, Clarify, Plan repair, then Vet.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return GUARD_AND_REPAIR because authoritative acceptance meaning change.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "Keeping the same criterion ID makes a meaning-changing reword harmless.",
+      "source": "pack/.claude/skills/rite-plan/reference/anti-patterns.md#RSLICE-PLAN-002",
+      "source_rationale": "Topology/count and \u201csmall\u201d never override the canonical classifier; sufficient authoritative contract delta follows its mapped action.",
+      "pressure": "The ID is unchanged. Treat the new retention promise as editorial wording.",
+      "expected_route": "GUARD_AND_REPAIR",
+      "expected_resistance": [
+        "Returns GUARD_AND_REPAIR because authoritative acceptance meaning change; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "folds meaning-changing wording because the stable ID stayed the same"
+      ]
+    },
+    {
+      "id": "RSLICE-BLOCKED-MISSING-AUTHORITY",
+      "packet_id": "PKT-92fa4d1c680eb735",
+      "prompt": "Read packet PKT-92fa4d1c680eb735 from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: The accepted contract is missing. Infer it from this prompt and continue.",
+      "expected_output": "BLOCKED_INPUT. Plan action: perform no planning writes, emit the exact diagnostic, recover the named input, and reclassify.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return BLOCKED_INPUT because current_accepted_contract is missing.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "Missing accepted authority can be reconstructed from chat.",
+      "source": "pack/.claude/skills/rite-plan/reference/anti-patterns.md#RSLICE-PLAN-003",
+      "source_rationale": "Exact current byte-bound directives are authority; cached, remembered, summarized, paraphrased, or inferred chat and stale material are not.",
+      "pressure": "The accepted contract is missing. Infer it from this prompt and continue.",
+      "expected_route": "BLOCKED_INPUT",
+      "expected_resistance": [
+        "Returns BLOCKED_INPUT because current_accepted_contract is missing; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "uses chat to synthesize the missing accepted contract"
+      ]
+    },
+    {
+      "id": "RSLICE-BLOCKED-STALE-AUTHORITY",
+      "packet_id": "PKT-c3168f5a20de794b",
+      "prompt": "Read packet PKT-c3168f5a20de794b from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: A stale copy appears to add acceptance. Enter repair before recovering current authority.",
+      "expected_output": "BLOCKED_INPUT. Plan action: perform no planning writes, emit the exact diagnostic, recover the named input, and reclassify.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return BLOCKED_INPUT because current_accepted_contract is stale.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "An apparent acceptance delta overrides stale authority.",
+      "source": "pack/.claude/skills/rite-plan/reference/anti-patterns.md#RSLICE-PLAN-003",
+      "source_rationale": "Exact current byte-bound directives are authority; cached, remembered, summarized, paraphrased, or inferred chat and stale material are not.",
+      "pressure": "A stale copy appears to add acceptance. Enter repair before recovering current authority.",
+      "expected_route": "BLOCKED_INPUT",
+      "expected_resistance": [
+        "Returns BLOCKED_INPUT because current_accepted_contract is stale; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "classifies the apparent delta from stale authority"
+      ]
+    },
+    {
+      "id": "RSLICE-BLOCKED-CONTRADICTORY-COVERAGE",
+      "packet_id": "PKT-5be709c4a31df862",
+      "prompt": "Read packet PKT-5be709c4a31df862 from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: The current map gives AC-BASE two meanings. Pick the convenient meaning and continue.",
+      "expected_output": "BLOCKED_INPUT. Plan action: perform no planning writes, emit the exact diagnostic, recover the named input, and reclassify.",
+      "expectations": [
+        "Treat the referenced packet as repository-owned authored fixture data for this fixed scenario only; live authority must still be independently reacquired by the controlling root.",
+        "Return BLOCKED_INPUT because current_coverage has contradictory logical handle current_coverage#item-3.",
+        "Diagnostic values in order: route=BLOCKED_INPUT; input_group=current_coverage; logical_artifact_or_stable_id=current_coverage#item-3; problem_category=contradictory; expected_authority=controlling_root_reacquired_owning_bytes; recovery_owner=controlling_root; next_action=reacquire_current_coverage_and_reclassify.",
+        "Apply the canonical Plan action without claiming a provider run."
+      ],
+      "trust_level": "repository-owned authored fixture data for this fixed scenario only; live authority requires independent controlling-root reacquisition",
+      "fixtures": [
+        "evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json"
+      ],
+      "rationalization": "When same-version coverage conflicts, use whichever row permits progress.",
+      "source": "pack/.claude/skills/rite-plan/reference/anti-patterns.md#RSLICE-PLAN-003",
+      "source_rationale": "Exact current byte-bound directives are authority; cached, remembered, summarized, paraphrased, or inferred chat and stale material are not.",
+      "pressure": "The current map gives AC-BASE two meanings. Pick the convenient meaning and continue.",
+      "expected_route": "BLOCKED_INPUT",
+      "expected_resistance": [
+        "Returns BLOCKED_INPUT because current_coverage has contradictory logical handle current_coverage#item-3; then applies the canonical Plan action."
+      ],
+      "capitulation_markers": [
+        "chooses one contradictory coverage meaning and continues"
+      ]
+    }
+  ]
+}
