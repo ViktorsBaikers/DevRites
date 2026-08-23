@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.1.0...v4.2.0) (2026-08-23)
+
+### Added
+
+* **rite:** ship workflow artifact, reslice, and observation ([#36](https://github.com/ViktorsBaikers/DevRites/issues/36)) ([456a00e](https://github.com/ViktorsBaikers/DevRites/commit/456a00e8280acdab9525a762a267be7084b26a9f))
+
 ## [4.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.12...v4.1.0) (2026-08-12)
 
 ### Added
