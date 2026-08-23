@@ -13,31 +13,34 @@ import (
 )
 
 func TestADR0004RequiredSectionsAreAdditiveDownTheArc(t *testing.T) {
-	phaseArc := state.LifecyclePhases()
-	for _, p := range phaseArc {
-		if !state.KnownPhase(p) {
-			t.Fatalf("phase %q in the arc is not a known phase", p)
+	policies := state.PhasePolicies()
+	for _, policy := range policies {
+		lookedUp, ok := state.PolicyFor(policy.Target)
+		if !ok || lookedUp.Target != policy.Target {
+			t.Fatalf("phase %q in the arc is not a known phase", policy.Target)
 		}
 	}
 
 	// Each phase's required set must contain everything the previous phase
 	// required: completeness only accumulates, never regresses.
-	for i := 1; i < len(phaseArc); i++ {
-		prev := asSet(state.RequiredSections(phaseArc[i-1]))
-		cur := asSet(state.RequiredSections(phaseArc[i]))
-		for s := range prev {
-			if !cur[s] {
+	for i := 1; i < len(policies); i++ {
+		previous := asSet(policies[i-1].RequiredSections)
+		current := asSet(policies[i].RequiredSections)
+		for section := range previous {
+			if !current[section] {
 				t.Errorf("phase %q dropped section %q that %q required: arc must be additive",
-					phaseArc[i], s, phaseArc[i-1])
+					policies[i].Target, section, policies[i-1].Target)
 			}
 		}
 	}
 
 	// Anchors: framing requires nothing; seal requires the full section set.
-	if got := state.RequiredSections(state.PhaseFrame); len(got) != 0 {
-		t.Errorf("frame requires %v, want none", got)
+	frame, _ := state.PolicyFor(state.PhaseFrame)
+	if len(frame.RequiredSections) != 0 {
+		t.Errorf("frame requires %v, want none", frame.RequiredSections)
 	}
-	if got, want := len(state.RequiredSections(state.PhaseSeal)), len(state.Sections); got != want {
+	seal, _ := state.PolicyFor(state.PhaseSeal)
+	if got, want := len(seal.RequiredSections), len(state.Sections); got != want {
 		t.Errorf("seal requires %d sections, want the full set of %d", got, want)
 	}
 }

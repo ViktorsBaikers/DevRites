@@ -2,6 +2,14 @@
 
 `/rite-plan` runs in one of these modes. Pick from `$ARGUMENTS` or infer from state.
 
+Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → reconcile `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` atomically; invalidate Vet/readiness; Vet.
+- `GUARD_AND_REPAIR` → no planning writes; Spec Drift Guard → Clarify → Plan repair → Vet.
+- `BLOCKED_INPUT` → no planning writes; exact diagnostic; recover input; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
+
 ## decompose
 First (or fresh) breakdown into vertical slices. Use `task-breakdown.md` +
 `slicing.md`. Output: a populated `tasks.md` and an ordered `plan.md` graph.
@@ -20,8 +28,7 @@ A drift event stopped the build. Steps:
    reality. Adjust acceptance criteria if they were wrong.
 4. Mark the `drift.md` entry **resolved** with the resolution + date.
 5. Resume at the corrected slice.
-Never repair by quietly deleting the inconvenient requirement, if behavior changes,
-that was a user question.
+Never quietly delete a requirement; use the marked action before contract edits.
 
 ## reorder
 Dependency order is wrong or suboptimal. Recompute the graph (`dependency-graph.md`),
@@ -39,4 +46,4 @@ end and plan a new diagnosis/proof fingerprint. Never clear/reuse old one.
 
 ## Always
 Update `state.md` (phase, next step) and append a dated line to `decisions.md`
-explaining *why* the plan changed. Ask the user before any product-behavior change.
+explaining *why* the plan changed. Preserve mapped-action decisions.

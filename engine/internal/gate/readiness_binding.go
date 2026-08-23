@@ -7,26 +7,20 @@ import (
 	"errors"
 	"fmt"
 	"hash"
-	"io"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/state"
 )
 
 const (
-	readinessBindingLabel         = "Readiness inputs SHA-256: "
-	readinessBindingDomain        = "devrites-readiness-inputs"
-	readinessBindingVersion       = "1"
-	maxReadinessInputBytes  int64 = 1 << 20
-	maxReadinessTotalBytes  int64 = 8 << 20
+	readinessBindingLabel   = "Readiness inputs SHA-256: "
+	readinessBindingDomain  = "devrites-readiness-inputs"
+	readinessBindingVersion = "1"
 )
 
 type readinessInput struct {
-	logical  string
+	logical  state.ArtifactPath
 	required bool
 }
 
@@ -46,31 +40,24 @@ var readinessInputs = [...]readinessInput{
 
 // ReadinessBinding returns the exact line Vet records in eng-review.md.
 func ReadinessBinding(root, slug string) (string, error) {
-	workspace, err := devritespaths.ExistingFeatureDirChecked(root, slug)
+	observation, err := state.ObserveWorkspace(root, slug)
 	if err != nil {
-		return "", errors.New("readiness inputs: feature workspace is unavailable")
+		return "", err
 	}
+	return readinessBindingFromObservation(observation)
+}
 
+func readinessBindingFromObservation(observation *state.WorkspaceObservation) (string, error) {
 	digest := sha256.New()
 	writeReadinessField(digest, readinessBindingDomain)
 	writeReadinessField(digest, readinessBindingVersion)
 	writeReadinessField(digest, fmt.Sprintf("%d", len(readinessInputs)))
-	var total int64
 	for _, input := range readinessInputs {
-		path := filepath.Join(workspace, filepath.FromSlash(input.logical))
-		if input.logical == ".devrites/principles.md" {
-			path = filepath.Join(root, "principles.md")
-		}
-		content, present, err := readReadinessInput(path, input.logical, input.required)
+		content, present, err := retainedReadinessInput(observation, input)
 		if err != nil {
 			return "", err
 		}
-		total += int64(len(content))
-		if total > maxReadinessTotalBytes {
-			return "", fmt.Errorf("readiness input %s exceeds the 8 MiB aggregate limit", input.logical)
-		}
-
-		writeReadinessField(digest, input.logical)
+		writeReadinessField(digest, string(input.logical))
 		if present {
 			writeReadinessField(digest, "present")
 		} else {
@@ -79,31 +66,64 @@ func ReadinessBinding(root, slug string) (string, error) {
 		writeReadinessLength(digest, uint64(len(content)))
 		_, _ = digest.Write(content)
 	}
-
 	return readinessBindingLabel + hex.EncodeToString(digest.Sum(nil)), nil
 }
 
-func verifyReadinessBinding(root, slug string) (string, error) {
-	expected, err := ReadinessBinding(root, slug)
+func retainedReadinessInput(observation *state.WorkspaceObservation, input readinessInput) ([]byte, bool, error) {
+	fact, ok := observation.Fact(input.logical)
+	if !ok {
+		return nil, false, fmt.Errorf("readiness input %s cannot be inspected", input.logical)
+	}
+	switch fact.State() {
+	case state.ArtifactAbsent:
+		if input.required {
+			return nil, false, fmt.Errorf("readiness input %s is missing", input.logical)
+		}
+		return nil, false, nil
+	case state.ArtifactEmpty, state.ArtifactPresent:
+		return fact.Bytes(), true, nil
+	case state.ArtifactMalformed, state.ArtifactUnsafe, state.ArtifactUnreadable:
+		diagnostic, _ := fact.Diagnostic()
+		return nil, false, readinessDiagnosticError(diagnostic)
+	default:
+		return nil, false, fmt.Errorf("readiness input %s cannot be inspected", input.logical)
+	}
+}
+
+func readinessDiagnostics(observation *state.WorkspaceObservation) []state.ArtifactDiagnostic {
+	var diagnostics []state.ArtifactDiagnostic
+	for _, input := range readinessInputs {
+		fact, ok := observation.Fact(input.logical)
+		if !ok {
+			continue
+		}
+		if diagnostic, hasDiagnostic := fact.Diagnostic(); hasDiagnostic {
+			diagnostics = append(diagnostics, diagnostic)
+		}
+	}
+	return diagnostics
+}
+
+func verifyReadinessBinding(observation *state.WorkspaceObservation) (string, error) {
+	expected, err := readinessBindingFromObservation(observation)
 	if err != nil {
 		return "", err
 	}
-	workspace, err := devritespaths.ExistingFeatureDirChecked(root, slug)
-	if err != nil {
-		return "", errors.New("readiness input eng-review.md cannot be inspected")
+	fact, ok := observation.Fact("eng-review.md")
+	if !ok || fact.State() == state.ArtifactAbsent {
+		return expected, errors.New("readiness input eng-review.md is missing")
 	}
-	content, _, err := readReadinessInput(filepath.Join(workspace, "eng-review.md"), "eng-review.md", true)
-	if err != nil {
-		return expected, err
+	if diagnostic, hasDiagnostic := fact.Diagnostic(); hasDiagnostic {
+		return expected, readinessDiagnosticError(diagnostic)
 	}
-	structural, err := markdowntext.Structural(content)
+	visible, err := markdowntext.Structural(fact.Bytes())
 	if err != nil {
 		return expected, errors.New("readiness input eng-review.md is invalid Markdown")
 	}
 
 	attempts := 0
 	matches := 0
-	for _, raw := range strings.Split(string(structural), "\n") {
+	for _, raw := range strings.Split(string(visible), "\n") {
 		line := strings.TrimSuffix(raw, "\r")
 		if !strings.Contains(line, readinessBindingLabel) {
 			continue
@@ -119,76 +139,22 @@ func verifyReadinessBinding(root, slug string) (string, error) {
 	return expected, nil
 }
 
-func phaseRequiresReadinessBinding(phase state.Phase) bool {
-	for _, name := range state.RequiredWorkspaceFiles(phase) {
-		if name == "eng-review.md" {
+func readinessDiagnosticError(diagnostic state.ArtifactDiagnostic) error {
+	prefix := fmt.Sprintf("readiness input %s is %s (%s); ", diagnostic.Path, diagnostic.State, diagnostic.Code)
+	repair := diagnosticRepair(diagnostic.Code)
+	if repair == "" {
+		repair = "restore a readable regular file"
+	}
+	return errors.New(prefix + repair)
+}
+
+func phaseRequiresReadinessBinding(policy state.PhasePolicy) bool {
+	for _, artifact := range policy.RequiredArtifacts {
+		if artifact == "eng-review.md" {
 			return true
 		}
 	}
 	return false
-}
-
-func readReadinessInput(path, logical string, required bool) ([]byte, bool, error) {
-	before, err := os.Lstat(path)
-	if errors.Is(err, os.ErrNotExist) {
-		if required {
-			return nil, false, fmt.Errorf("readiness input %s is missing", logical)
-		}
-		return nil, false, nil
-	}
-	if err != nil {
-		return nil, false, fmt.Errorf("readiness input %s cannot be inspected", logical)
-	}
-	if before.Mode()&os.ModeSymlink != 0 {
-		return nil, false, fmt.Errorf("readiness input %s is a symlink", logical)
-	}
-	if !before.Mode().IsRegular() {
-		return nil, false, fmt.Errorf("readiness input %s is not a regular file", logical)
-	}
-	if before.Size() < 0 || before.Size() > maxReadinessInputBytes {
-		return nil, false, fmt.Errorf("readiness input %s exceeds the 1 MiB limit", logical)
-	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, false, fmt.Errorf("readiness input %s cannot be opened", logical)
-	}
-	defer file.Close()
-	opened, err := file.Stat()
-	if err != nil {
-		return nil, false, fmt.Errorf("readiness input %s cannot be inspected", logical)
-	}
-	if !opened.Mode().IsRegular() || opened.Size() != before.Size() || !os.SameFile(before, opened) {
-		return nil, false, fmt.Errorf("readiness input %s changed type while opening", logical)
-	}
-	content, err := io.ReadAll(io.LimitReader(file, maxReadinessInputBytes+1))
-	if err != nil {
-		return nil, false, fmt.Errorf("readiness input %s cannot be read", logical)
-	}
-	if int64(len(content)) > maxReadinessInputBytes {
-		return nil, false, fmt.Errorf("readiness input %s exceeds the 1 MiB limit", logical)
-	}
-	after, err := file.Stat()
-	if err != nil {
-		return nil, false, fmt.Errorf("readiness input %s cannot be inspected", logical)
-	}
-	current, err := os.Lstat(path)
-	if err != nil {
-		return nil, false, fmt.Errorf("readiness input %s cannot be inspected", logical)
-	}
-	if current.Mode()&os.ModeSymlink != 0 ||
-		!current.Mode().IsRegular() ||
-		!after.Mode().IsRegular() ||
-		after.Size() != opened.Size() ||
-		after.Size() != int64(len(content)) ||
-		!os.SameFile(opened, after) ||
-		!os.SameFile(opened, current) {
-		return nil, false, fmt.Errorf("readiness input %s changed size or type while reading", logical)
-	}
-	if _, err := markdowntext.Structural(content); err != nil {
-		return nil, false, fmt.Errorf("readiness input %s is invalid Markdown", logical)
-	}
-	return content, true, nil
 }
 
 func writeReadinessField(digest hash.Hash, value string) {

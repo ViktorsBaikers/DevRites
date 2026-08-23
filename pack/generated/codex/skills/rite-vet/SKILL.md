@@ -8,186 +8,133 @@ user-invocable: true
 # $rite-vet: review the plan before build
 
 Vet every plan before code for scope, architecture, quality, proof, performance,
-failure modes, and parallel safety. Cite findings, fold accepted technical hardening
-into the plan, and design Build tests. Risk sets depth; `$rite-autocomplete` has
-Vet and `--cross-model` adds one opinion. Missing `plan.md` routes to `$rite-define`.
+failure modes, and writer safety. Cite findings; fold accepted technical
+hardening into planning artifacts; design Build tests. Temper owns product
+scope, Vet owns implementation; current `$ARGUMENTS` selects depth under
+[`orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md), never removing the exact plan-reviewer gate.
 
-`$rite-temper` owns product scope/strategy; Vet owns implementation. Quick/Standard/Full
-comes from [`orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md),
-but every profile keeps the exact plan-reviewer gate.
+## Rules
 
-## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-Pull the standard named by the active axis: `principles.md`, `patterns.md`,
-`coding-style.md`, `testing.md`, `spec-grammar.md`, `performance.md`,
-`error-handling.md`, `development-workflow.md`, `afk-hitl.md`,
-`one-shot-actions.md`, `developer-experience.md`, `elicitation.md`, and
-`definition-of-done.md`. Load `repository-topology.md`, `data-integrity.md`, and
-`integration-reliability.md` only when the spec applicability map or live plan triggers them.
+Read the active standard from: `principles.md`, `patterns.md`, `coding-style.md`,
+`testing.md`, `spec-grammar.md`, `performance.md`, `error-handling.md`,
+`development-workflow.md`, `afk-hitl.md`, `one-shot-actions.md`,
+`developer-experience.md`, `elicitation.md`, and `definition-of-done.md`. Load
+repository topology, data integrity, and integration reliability only when
+triggered. Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+When a
+plan declares a root-authored executable workflow file, read
+`workflow-artifacts.md`.
 
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → fold technical topology; invalidate Vet/readiness; affected Vet before Build.
+- `GUARD_AND_REPAIR` → no planning writes; Spec Drift Guard → Clarify → Plan repair → affected Vet.
+- `BLOCKED_INPUT` → no planning writes; exact diagnostic; recover input; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
 
-## Operating rules
-- **Review implementation, not ambition.** Temper's product scope is settled; challenge
-  only implementation creep, complexity, proof, and risk.
-- **Root hardens; reviewers judge.** Root alone asks, decides, folds back, writes, and sets
-  readiness. Write behavior-preserving test, boundary, ordering, error, and failure-mode
-  refinements into `plan.md`/`tasks.md`/`test-plan.md`. Acceptance/product changes require
-  the Spec Drift Guard: `drift.md`, recorded decision, then `$rite-plan repair` for reslicing.
-  Build scope never grows without a recorded human decision.
-- **Support every finding.** Cite its plan/spec/code source and confidence. Unverified or
-  confidence ≤4 stays suppressed per [`review-axes.md`](reference/review-axes.md).
-- **Apply maximum caution to hard-to-reverse changes.** Auth, migration, public API, and
-  data-model changes always pause under the irreversible-risk list.
-- **Use the lowest axis band.** Never round `thin` up to `ready`; do not average the
-  axes. Record the reason for every decision.
-- **Search before asking.** Verify facts and fold reversible technical hardening into the
-  plan; ask only human-owned choices under `afk-hitl.md`. Dispatch uses the bounded
-  [`agents.md`](../devrites-lib/reference/standards/agents.md) contract.
-- **Honor a recovery origin.** Preserve a valid technical-backtracking return
-  cursor throughout review. Agent-owned `NEEDS REPLAN` returns internally to the
-  controlling caller; it never becomes a request for the human to invoke Plan.
-- **Recovery recheck is bounded.** A valid technical-backtracking cursor plus a
-  recorded open fingerprint enters the Recovery recheck below. Recovery recheck
-  does not start another Full Vet or repeat unaffected axes/reviewers.
+## Invariants
 
+- Review implementation, not ambition. Challenge creep, complexity, proof, and
+  risk without changing accepted product scope.
+- Root alone asks, decides, folds, writes, and sets readiness. Reviewers judge;
+  they add no route policy. Cite every finding and confidence; suppress
+  unverified or confidence ≤4 findings under `review-axes.md`.
+- Auth, migration, public API, and data-model changes use maximum caution and the
+  irreversible-risk stop. Project principles never become trade-offs.
+- Use the lowest axis band; never average or round thin to ready. Search before
+  asking and resolve reversible technical choices. Ask only human-owned choices.
+- Preserve a valid technical return cursor. Agent-owned `NEEDS REPLAN` returns
+  internally to its caller, not to the human.
+- **Recovery recheck is bounded.** A valid cursor plus open fingerprint enters
+  Recovery recheck; it does not start another Full Vet or repeat unaffected
+  axes/reviewers.
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"plan declares root-authored executable workflow file","action":"emit exact admission; stale/missing authority uses PLAN_VET_REPAIR","return":"Vet READY cursor or exact technical replan"} -->
 ## Workflow
-0. **Read `.agents/skills/devrites-lib/reference/standards/core.md`** first.
-   Then resolve the active slug from `.devrites/ACTIVE`, require its
-   `state.md`, and read the workspace: `plan.md`, `tasks.md`, `spec.md`,
-   `decision-coverage.md`
-   (for intent + acceptance), `strategy.md` (if `$rite-temper` ran), `decisions.md`,
-   `assumptions.md`, `design-brief.md` (if UI), `state.md`. Require a `plan.md` whose
-   Readiness gate passes (or `Plan approved`): else STOP → `$rite-define`. Require
-   `Decision coverage: CLEAR`: else STOP → `$rite-clarify`. Prefer a
-   code-intelligence index if available (see
-   `.agents/skills/devrites-lib/reference/standards/tooling.md`) for placement / blast-radius / reuse checks.
-1. **Set review depth. Never skip this step.** Apply
-   [`reference/depth.md`](reference/depth.md) exactly. Every plan leaves a recorded
-   engineering verdict and `test-plan.md` coverage map. For an admitted Recovery
-   recheck, retain the prior depth and proceed to step 1b instead of starting a new
-   depth/pass.
-1a. **Independent pass at every initial depth.** Freeze the candidate; dispatch exact
-   `devrites-plan-reviewer` fresh/read-only and validate its report. Add exact
-   `devrites-devex-reviewer` for developer surfaces and require the current exact
-   `devrites-strategy-reviewer` verdict after significant Temper. Missing accounts
-   block; never substitute inline work.
-1b. **Recovery recheck.** Require the valid return cursor, prior accepted findings,
-   exact open fingerprint/reproduction, repaired candidate identity, changed
-   paths/criteria, and affected evidence from `drift.md` / `evidence.md`. Freeze
-   that packet and dispatch each exact owning reviewer once, fresh/read-only and
-   limited to those inputs. Do not rerun unaffected reviewers or the broad steps
-   2-4 inventory. Mark the prior fingerprint resolved only when discriminating
-   evidence closes its reproduction; otherwise record one no-progress outcome.
-   A newly caused or exposed Critical or Important finding may block only with a
-   different failed invariant, exact evidence in the changed/affected boundary,
-   and a new fingerprint. A Suggestion, Nit, or FYI cannot keep recovery open.
-   Reconcile the common artifact/readiness gates below, then return to the caller
-   or its next repair; never convert the nested result into a human command.
-2. **Scope challenge (blocking gate):** apply §0 of
-   [`reference/review-axes.md`](reference/review-axes.md). Search accepted ADRs and
-   relevant workspace `decisions.md` files directly. Harden to the smallest
-   behavior-preserving plan; ask only when that changes acceptance or explicit architecture policy.
-2a. **Cross-artifact/project gates.** Check spec/tasks/traceability: every AC/REQ maps by
-   ID/meaning to slice/proof and back. Check terms, conflicts, principles, anti-slop, conventions;
-   Critical blocks and principle exceptions are human-owned. Recheck, then write `analysis.md`.
-2b. **Build-entry preflight.** Using [`reference/artifacts.md`](reference/artifacts.md), verify
-   exact command/cwd/tool/version/prerequisite; output filters must preserve upstream failure or
-   check producer status separately. Verify packages against authoritative source and nearest
-   manifest/lockfile; parser-sensitive syntax in an isolated fixture;
-   applicable UI/browser harnesses. Remeasure decision-bearing counts/versions/state
-   claims read-only: live facts win; conflicts mark stale artifacts;
-   unmeasurable conflict = gap. Record complete SHA-256 provenance inputs. Require
-   every behavioral mapping to name a positive,
-   discriminating assertion and decisive signal, not merely a command or expected exit zero.
-   Identify every consumptive action under `one-shot-actions.md`. Before admitting
-   it, require the exact durable retention surface, trust-safe diagnostic schema,
-   cleanup ordering, terminal-path coverage, a finite injective boundary map,
-   per-boundary fault fixtures, and an executed collision mutant in `test-plan.md`.
-   Every retained failure fingerprint must identify one actionable seam; a broad
-   operation/cause shared by multiple emit sites is a gap. Missing or stale one-shot evidence completeness is a technical
-   preflight gap; do not spend the action to learn what cleanup would erase.
-   Preflight observes; it need not make future behavior pass.
-2c. **Implementation-readiness audit.** Goal-backward map every REQ/AC/NFR, interaction,
-   edge/prohibition, and decision-coverage row to a slice and executable proof. Verify
-   UX/spec/architecture alignment, producer-consumer contracts, slice independence/order and
-   wiring, exact prerequisites, failure paths, operations, observability, rollout, and rollback.
-   Check `plan.md`'s canonical `Shared contract proof`: every changed API/event/schema or other
-   provider/consumer boundary needs one reused artifact and two asserting tests that consume it;
-   no boundary change needs the specific no-impact statement. Missing, one-sided, duplicated-contract,
-   vague, or non-consuming proof fails closed.
-   Fold technical fixes into the plan. Product/risk gaps are `NEEDS CLARIFICATION` →
-   `$rite-clarify`; technical plan/preflight gaps are `NEEDS REPLAN` → `$rite-plan repair`.
-   Neither becomes a build qid.
-3. **Review four axes:** apply [`reference/review-axes.md`](reference/review-axes.md)
-   through [`reference/eng-lenses.md`](reference/eng-lenses.md). Fold verified,
-   behavior-preserving technical findings into the plan. Walk only human-owned decisions with
-   the human, one coherent option set at a time. The AFK ceiling remains owned by
-   [`reference/depth.md`](reference/depth.md): scope/acceptance changes and irreversible risk pause.
-4. **Required outputs:** prepare every shape and fold-back in
-   [`reference/artifacts.md`](reference/artifacts.md), using the review rules in
-   [`reference/review-axes.md`](reference/review-axes.md). Derive dependency order
-   from the plan; let the native host schedule independent read-only work while
-   keeping source writers serial.
-   Completion: every scenario and acceptance criterion maps to planned positive,
-   discriminating proof, every slice is
-   one-pass implementable, the Build-entry preflight is green or names an owned prerequisite,
-   and developer-facing plans have a predicted `devex.md` scorecard. Durable proof commands
-   are portable repository commands; host-local wrappers belong only in observed
-   recorded execution evidence.
-5. **Write and fold back every artifact required by
-   [`reference/artifacts.md`](reference/artifacts.md).** Route every
-   acceptance/behavior-changing delta through the **Spec Drift Guard** (`drift.md` +
-   recorded decision + `$rite-plan repair`). After any edit to
-   `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`, re-scan the
-   affected coverage rows, assumption audit, residual uncertainty, and closed gates.
-   Partial/Missing, an unowned material assumption, or an open blocking/escalating question is
-   `NEEDS CLARIFICATION` → `$rite-clarify`/HITL; never refresh past it.
-   After each fold-back rerun step 2a; missing/meaning-changing mappings block.
-   Keep `state.md` non-READY for step 6.
-6. **One narrow recheck after edits.** If the candidate changed, dispatch exact
-   `devrites-plan-reviewer` once per correction/fingerprint with accepted findings,
-   changed paths/criteria, and new identity. Within that same correction, no full
-   or third loop; if it changes the plan, repeat step 5. If the recheck closes its
-   input fingerprint but discovers a distinct Critical/Important invariant, return
-   that new fingerprint to the controlling caller as progress. It may start the
-   next bounded Plan/Recovery-Vet cycle; the prior reviewer count is not exhaustion.
-   Then close the matrix and rerun step 2a's ID-and-meaning audit.
 
-6a. **Build readback.** From the final owning artifacts, add a cited five-line
-   readback to `eng-review.md` §7: outcome/ACs; IN/OUT and must-NOT boundaries;
-   UI direction when applicable plus chosen architecture/rationale and
-   critical happy/error flow; slice order and first slice; decisive proof and
-   justified action-time gates. Ask whether a fresh implementer could explain and
-   build it without inventing a product, design, architecture, or proof decision.
-   Contradictory, ownerless, or materially ambiguous statements block READY:
-   human-owned behavior, policy, or acceptance returns to `$rite-clarify`;
-   technical architecture,
-   slicing, or proof returns to `$rite-plan repair`.
-   The readback is a derived view and MUST NOT override its cited owners.
+0. **Orient.** Read core. Resolve active slug, require state, and read plan,
+   tasks, spec, decision coverage, optional strategy/design brief, decisions,
+   assumptions, and state. Require approved Plan and `Decision coverage: CLEAR`;
+   otherwise stop for Define or Clarify. Use code intelligence for placement,
+   blast radius, and reuse.
+1. **Select depth.** Apply `reference/depth.md` exactly; never skip. Every initial
+   pass records an engineering verdict and test-plan coverage. A valid Recovery
+   recheck retains prior depth and enters 1b.
+1a. **Independent initial pass.** Freeze candidate and dispatch exact fresh
+   read-only plan reviewer. Add developer-experience reviewer for developer
+   surfaces and current strategy reviewer after significant Temper. Missing
+   required account blocks.
+1b. **Recovery recheck.** Require valid return cursor, accepted prior finding,
+   exact fingerprint/reproduction, repaired candidate identity, changed
+   paths/criteria, and affected drift/evidence. Freeze that packet and dispatch
+   each exact owning reviewer once, fresh/read-only, limited to it. Do not rerun
+   broad inventory or unaffected reviewers. Close the prior fingerprint only
+   with discriminating evidence. Otherwise record one no-progress outcome. A
+   different Critical/Important invariant needs exact evidence and a new
+   fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. Reconcile
+   shared artifact/readiness gates and return to caller or next repair.
+2. **Challenge scope.** Apply review-axes §0 and search accepted decisions.
+   Harden to the smallest contract-complete plan, using marked topology action.
+   Then verify bidirectional ID-and-meaning traceability across spec/tasks/
+   acceptance, terms, principles, anti-slop, and conventions. Critical gaps and
+   unexcepted principle breaches block; write `analysis.md` after recheck.
+3. **Preflight Build entry.** Under `reference/artifacts.md`, verify exact
+   command/cwd/tool/version/prerequisite; output filters must preserve upstream
+   failure. Verify dependencies from authoritative source plus nearest manifest.
+   Run parser-sensitive syntax only in isolated fixtures. Remeasure mutable facts;
+   live evidence wins, conflict marks stale, and unmeasurable conflict is a gap.
+   Record complete SHA-256 provenance. Every behavioral mapping names a positive
+   discriminating assertion and decisive signal, never only exit zero.
 
-   Write one typed field to `eng-review.md`: `Implementation readiness: READY`,
-   `NEEDS CLARIFICATION`, or `NEEDS REPLAN`. Root alone sets READY after every
-   exact account, checklist, proof preflight, and final sweep passes with no
-   foreseeable human choice except a justified action-time checkpoint. Write
-   `Phase: vet`, `Next step: $rite-build`, then emit the one exact
-   `Readiness inputs SHA-256` line with `devrites-engine check readiness
-   --emit-binding <slug>` only after this recheck. Normal `devrites-engine check
-   readiness <slug>` must then pass; otherwise record the blocker. Technical failure
-   records repro and `$rite-plan repair`, no qid; a human-owned gap routes
-   `$rite-clarify` and awaiting-human.
-   [`reference/cross-model.md`](reference/cross-model.md) owns the optional explicit
-   cross-model integration.
-   Completion: the final axis floor clears, an objective technical blocker is recorded, or a
-   genuine human-owned gate is recorded.
-   When READY has no pending remediation slice and a valid technical return
-   cursor exists, restore and consume the return cursor instead of defaulting to
-   `$rite-build`, then return the nested result to the controlling caller. If
-   vetted remediation remains, preserve the cursor while the caller follows it;
-   only a real stop condition reaches the human.
-7. **STOP.** Show the Build readback, scope verdict, lowest axis band, closed coverage
-   gaps, preflight, action-time checkpoints, and failure-mode criticals; recommend
-   `$rite-build` only when the entry contract is ready.
+   For each consumptive action, one-shot evidence completeness must bind durable
+   retention, trust-safe diagnostics, cleanup order, terminal coverage, finite
+   injective boundary map, per-boundary fault fixtures, and an executed collision mutant.
+   Every fingerprint identifies one actionable seam; aliasing multiple
+   emit sites is a gap. Preflight observes but need not make future behavior pass.
+4. **Audit readiness.** Goal-backward map every requirement, criterion, NFR,
+   interaction, edge/prohibition, and decision row to one slice and executable
+   proof. Verify UX/spec/architecture alignment, contracts, dependency order,
+   slice independence/wiring, prerequisites, failure/observability/rollback, and
+   ownership. The plan's `Shared contract proof` names one reused boundary
+   artifact plus two consuming tests for every changed API/event/schema/provider-
+   consumer seam, or an explicit no-impact statement. Missing, one-sided,
+   duplicated-contract, vague, or non-consuming proof fails closed.
 
-> **Mid-flight discipline.** Do not replace the interactive review with
-> `eng-review.md`, change acceptance through plan hardening, score without source
-> evidence, or ignore unexplained complexity. See
-> [`reference/anti-patterns.md`](reference/anti-patterns.md).
+   Technical gaps are `NEEDS REPLAN` and Plan repair. Product/risk gaps are
+   `NEEDS CLARIFICATION` and Clarify. Neither becomes a Build qid.
+5. **Review axes.** Apply `review-axes.md` through `eng-lenses.md`. Fold verified
+   behavior-preserving technical findings; walk only human-owned decisions.
+   Profile gate ceiling and Reslice marked action remain authoritative.
+6. **Write outputs.** Produce every artifact in `reference/artifacts.md`. After
+   editing intent/decision/assumption/question owners, re-scan affected coverage,
+   assumptions, uncertainty, and gates. Keep state non-READY. Every scenario and
+   criterion needs positive, discriminating proof; every slice must be one-pass
+   implementable; developer plans need a predicted scorecard. Durable commands
+   are portable repository commands, not host wrappers.
+7. **Narrow recheck after edits.** Dispatch exact plan reviewer once per
+   correction/fingerprint (`per correction/fingerprint`) with accepted findings,
+   changed paths/criteria, and new
+   identity. Within one correction, no broad third loop. If it changes plan,
+   fold again. A closed input plus a distinct Critical/Important invariant returns
+   that new fingerprint as progress. Then close matrix and rerun ID/meaning audit.
+8. **Build readback and readiness.** Add a cited five-line readback to
+   `eng-review.md`: outcome/ACs; IN/OUT/must-NOT; UI direction and architecture/
+   critical flow; slice order/first slice; decisive proof/action-time gates. A
+   fresh implementer must need no product, architecture, or proof invention.
+   Contradiction, ownerlessness, or material ambiguity blocks via Clarify or Plan.
+
+   Write exactly one `Implementation readiness: READY`, `NEEDS CLARIFICATION`,
+   or `NEEDS REPLAN`. Root alone sets READY after every account, checklist,
+   preflight, and sweep is green. Write phase/next step and emit one
+   `Readiness inputs SHA-256` with
+   `devrites-engine check readiness --emit-binding <slug>`; normal readiness check
+   must pass. Technical failure records reproduction, not qid. Human gap awaits
+   Clarify. Optional cross-model follows `reference/cross-model.md`.
+
+   With READY, no pending remediation, and a valid technical return cursor,
+   restore and consume the return cursor instead of defaulting to Build. Preserve
+   it through admitted remediation. Only a real stop reaches the human.
+9. **Stop at the Vet boundary.** Show Build readback, scope verdict, lowest axis,
+   closed gaps, preflight, action checkpoints, and critical failures. Recommend
+   Build only when READY.
+
+> Do not replace interactive review with artifacts, change acceptance through
+> hardening, score without source evidence, or ignore unexplained complexity.

@@ -1,0 +1,2025 @@
+{
+  "version": "devrites.acceptance-preserving-reslice-packets.v1",
+  "packets": [
+    {
+      "packet_id": "PKT-7c43a9f1e6b2d805",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "e940b9b4cf01d783facc5a26f6683c300281189d265d81a806b9c2c61b1ff8e0",
+            "current_contract_sha256": "3e4bce4cb90435a6ec18c5cff9ffea9007227def1564209da650464ce44ef4dc",
+            "source_kind": "root_no_change_analysis",
+            "source_stable_id": "68413ab34c62651b8c6f7fbf566621e07158a12c573b6fb2557853179242fb15",
+            "delta_kind": "no_change",
+            "affected_stable_ids": []
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001A",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001a.txt"
+              ]
+            },
+            {
+              "id": "SLICE-001B",
+              "depends_on": [
+                "SLICE-001A"
+              ],
+              "grouping": "delivery",
+              "order": 2,
+              "file_ownership": [
+                "src/slice-001b.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001A",
+                "SLICE-001B"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001A",
+                "SLICE-001B"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-a9145de2037fb68c",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "b5facbc9636f1a4677094bf35fe958bec21e51219c6ebd9ac0944e1f28d50573",
+            "current_contract_sha256": "3e4bce4cb90435a6ec18c5cff9ffea9007227def1564209da650464ce44ef4dc",
+            "source_kind": "root_no_change_analysis",
+            "source_stable_id": "4de2413ba0cc7552e397909d62883db905a5fdf3485975765589e32c49db34be",
+            "delta_kind": "no_change",
+            "affected_stable_ids": []
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001A",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001a.txt"
+              ]
+            },
+            {
+              "id": "SLICE-001B",
+              "depends_on": [
+                "SLICE-001A"
+              ],
+              "grouping": "delivery",
+              "order": 2,
+              "file_ownership": [
+                "src/slice-001b.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001A",
+                "SLICE-001B"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001A",
+                "SLICE-001B"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-35b8c2e709ad146f",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "bb6d964456e10352cc250c601731feb7e9df4f5e00c8b063175b93912f34e6ad",
+            "current_contract_sha256": "3e4bce4cb90435a6ec18c5cff9ffea9007227def1564209da650464ce44ef4dc",
+            "source_kind": "root_no_change_analysis",
+            "source_stable_id": "75ae2a538b2ea84eab09cda1d6f903ec3c4075149ca67e97892fe6cf9ee9dd83",
+            "delta_kind": "no_change",
+            "affected_stable_ids": []
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            },
+            {
+              "id": "SLICE-002",
+              "depends_on": [
+                "SLICE-001"
+              ],
+              "grouping": "delivery",
+              "order": 2,
+              "file_ownership": [
+                "src/slice-002.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-002",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-002.txt"
+              ]
+            },
+            {
+              "id": "SLICE-001",
+              "depends_on": [
+                "SLICE-002"
+              ],
+              "grouping": "delivery",
+              "order": 2,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001",
+                "SLICE-002"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001",
+                "SLICE-002"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-002",
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-002",
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-d2e8047a61c935bf",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "00ac94afd19771dcb40b4aba89ee224532c6017ec3e0b4eaf4845c224261895f",
+            "current_contract_sha256": "3e4bce4cb90435a6ec18c5cff9ffea9007227def1564209da650464ce44ef4dc",
+            "source_kind": "root_no_change_analysis",
+            "source_stable_id": "49717ee226ed350bc3a66fb0bc8c0fd6a9704359738816a417c76aeb5469de43",
+            "delta_kind": "no_change",
+            "affected_stable_ids": []
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            },
+            {
+              "id": "SLICE-REMEDIATION",
+              "depends_on": [
+                "SLICE-001"
+              ],
+              "grouping": "technical-remediation",
+              "order": 2,
+              "file_ownership": [
+                "src/slice-remediation.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-4f39c1a870de625b",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "aac089b84f005076bad16663ec974db4e19f48412b5e1c5b2ab45443076484cd",
+            "current_contract_sha256": "3e4bce4cb90435a6ec18c5cff9ffea9007227def1564209da650464ce44ef4dc",
+            "source_kind": "direct_user_directive",
+            "source_stable_id": "46a2a18cf89eba8c3c337ff7448a7da0f1fb4248740ce6c421a8d5669cddbea1",
+            "delta_kind": "acceptance_addition",
+            "affected_stable_ids": [
+              "AC-EXPORT"
+            ]
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "AC-EXPORT",
+              "kind": "acceptance",
+              "meaning": "The accepted result can be exported.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-b7052e6d49ac138f",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            },
+            {
+              "id": "AC-REMOVE",
+              "meaning": "The accepted result includes the legacy summary."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "0464dcff273b63ace35502835bc1fe1a507c53db79352c2addcc2a763893c8c1",
+            "current_contract_sha256": "7b5d911c514d396917eb536a6b8281f49d0bab0e90d7c16f07b73520bcc0d2f6",
+            "source_kind": "recorded_decision",
+            "source_stable_id": "DEC-REMOVE-001@1b5ec56d5c5f1e7d2c749e1dda9c2e0c5a2fe6e2481236c4ceff7efbabb0ef11",
+            "delta_kind": "acceptance_removal",
+            "affected_stable_ids": [
+              "AC-REMOVE"
+            ]
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "AC-REMOVE",
+              "kind": "acceptance",
+              "meaning": "The accepted result includes the legacy summary.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-18de73a904bc65f2",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "54c3177446ad05e6c87bd656953d946e9e4f455bbcc23fb8c8fdf9c815a4d91c",
+            "current_contract_sha256": "3e4bce4cb90435a6ec18c5cff9ffea9007227def1564209da650464ce44ef4dc",
+            "source_kind": "recorded_decision",
+            "source_stable_id": "DEC-BEHAVIOR-001@dcc225722de7ab4c4516559374c435b540b37122f3cc47ea1a38fad1df1805a6",
+            "delta_kind": "product_behavior_change",
+            "affected_stable_ids": [
+              "BEHAVIOR-MODE"
+            ]
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product uses the proposed operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-e6401b9d37ac258f",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "ad94494aa7bbdc8ed10fb2e00aaaad54c769338ea238bc2b186a7dbddc3e7d12",
+            "current_contract_sha256": "3e4bce4cb90435a6ec18c5cff9ffea9007227def1564209da650464ce44ef4dc",
+            "source_kind": "recorded_decision",
+            "source_stable_id": "DEC-REWORD-001@064c10a43f9e2b37b4f2b5256c37f944095450d1090f3a7fe6154a998ac9c624",
+            "delta_kind": "acceptance_meaning_change",
+            "affected_stable_ids": [
+              "AC-BASE"
+            ]
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable and is retained for thirty days.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-92fa4d1c680eb735",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "missing",
+            "version": "accepted-v1"
+          },
+          "acceptance": [],
+          "product_behavior": []
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "b912f4e402443b8a370b3cfbc4a4e3d74185fc83a86f0e4dd62d810fa6843d28",
+            "current_contract_sha256": "15677ca1b0dcc8c372d13b21614941af428ed75facf5bc4ed5576b25c3ab2165",
+            "source_kind": "root_no_change_analysis",
+            "source_stable_id": "2bd031992b1f58548f14e748c8b1c7ee4eadf3ebb3b892dd1a995acf35ea18e1",
+            "delta_kind": "no_change",
+            "affected_stable_ids": []
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-c3168f5a20de794b",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "stale",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "e27c6d506174bd4e4d6641e7875b02afd09184626ddaf1797aebecfe46f573b8",
+            "current_contract_sha256": "48d7bab53813f310ecbc3476d47aae4fb56c037109476275ff065772f0fc9d59",
+            "source_kind": "recorded_decision",
+            "source_stable_id": "DEC-STALE-001@815b9b6677a0cc0403f1d2a1c8ef453106e888d6d04753bd3454a1bdf8843467",
+            "delta_kind": "acceptance_addition",
+            "affected_stable_ids": [
+              "AC-STALE"
+            ]
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "AC-STALE",
+              "kind": "acceptance",
+              "meaning": "A stale copy appears to add an obligation.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "packet_id": "PKT-5be709c4a31df862",
+      "packet": {
+        "current_accepted_contract": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "acceptance": [
+            {
+              "id": "AC-BASE",
+              "meaning": "The accepted result remains observable."
+            }
+          ],
+          "product_behavior": [
+            {
+              "id": "BEHAVIOR-MODE",
+              "meaning": "The product keeps the accepted operating mode."
+            }
+          ]
+        },
+        "authoritative_proposed_contract_delta": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "proposal": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "proposal_id": "b5facbc9636f1a4677094bf35fe958bec21e51219c6ebd9ac0944e1f28d50573",
+            "current_contract_sha256": "3e4bce4cb90435a6ec18c5cff9ffea9007227def1564209da650464ce44ef4dc",
+            "source_kind": "root_no_change_analysis",
+            "source_stable_id": "4de2413ba0cc7552e397909d62883db905a5fdf3485975765589e32c49db34be",
+            "delta_kind": "no_change",
+            "affected_stable_ids": []
+          }
+        },
+        "current_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "proposed_topology": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "slices": [
+            {
+              "id": "SLICE-001",
+              "depends_on": [],
+              "grouping": "delivery",
+              "order": 1,
+              "file_ownership": [
+                "src/slice-001.txt"
+              ]
+            }
+          ]
+        },
+        "current_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result is intentionally hidden.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        },
+        "proposed_coverage": {
+          "authority": {
+            "slug": "acceptance-preserving-reslice-policy",
+            "planning_attempt_id": "plan-attempt-001",
+            "state": "ready",
+            "version": "accepted-v1"
+          },
+          "obligations": [
+            {
+              "stable_id": "AC-BASE",
+              "kind": "acceptance",
+              "meaning": "The accepted result remains observable.",
+              "slices": [
+                "SLICE-001"
+              ]
+            },
+            {
+              "stable_id": "BEHAVIOR-MODE",
+              "kind": "product_behavior",
+              "meaning": "The product keeps the accepted operating mode.",
+              "slices": [
+                "SLICE-001"
+              ]
+            }
+          ],
+          "proof_obligations": [
+            {
+              "id": "PROOF-BASE",
+              "meaning": "The accepted result has positive discriminating proof."
+            }
+          ],
+          "prohibitions": [
+            {
+              "id": "PROH-BASE",
+              "meaning": "No accepted obligation is silently removed."
+            }
+          ],
+          "key_links": [
+            {
+              "id": "LINK-BASE",
+              "meaning": "The canonical policy feeds every phase adapter.",
+              "provider": "canonical-policy",
+              "consumer": "phase-adapters"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "skill": "rite-plan",
+  "description": "Schema-compatible carrier for normalized Reslice authority packets; executable route siblings live in the parent corpus.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "RSLICE-PACKET-AUTHORITY-ONLY",
+      "rationalization": "Fixture metadata cannot replace packet authority or supply a route side channel.",
+      "source": "pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md#packet",
+      "pressure": "Choose a route from this carrier metadata instead of reading the six packet groups.",
+      "expected_resistance": [
+        "Uses only packets[].packet six-group authority; carrier metadata selects no route."
+      ],
+      "capitulation_markers": [
+        "uses carrier metadata to select a route"
+      ]
+    }
+  ]
+}

@@ -5,71 +5,129 @@ package state
 // (observable results), not internal structure.
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 )
 
-func TestRequiredSectionsIsPhaseRelativeAndOrdered(t *testing.T) {
-	got := RequiredSections(PhaseBuild)
-	want := []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks}
-	if len(got) != len(want) {
-		t.Fatalf("RequiredSections(build) = %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("index %d: got %q, want %q", i, got[i], want[i])
-		}
-	}
-	if len(RequiredSections(PhaseFrame)) != 0 {
-		t.Errorf("frame should require no sections, got %v", RequiredSections(PhaseFrame))
+func expectedPhasePolicies() []PhasePolicy {
+	sectionsSpec := []Section{SectionSpec}
+	sectionsPlan := []Section{SectionSpec, SectionPlan}
+	sectionsBuild := []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks}
+	sectionsProof := []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof}
+	sectionsComplete := []Section{SectionSpec, SectionPlan, SectionDecisions, SectionTasks, SectionProof, SectionStatus}
+
+	artifactsFrame := []ArtifactPath{"state.md"}
+	artifactsSpec := []ArtifactPath{"brief.md", "spec.md", "state.md", "decisions.md", "assumptions.md", "questions.md"}
+	artifactsClarify := append(append([]ArtifactPath(nil), artifactsSpec...), "decision-coverage.md")
+	artifactsPlan := append(append([]ArtifactPath(nil), artifactsClarify...), "architecture.md", "plan.md", "tasks.md", "traceability.md")
+	artifactsVetted := append(append([]ArtifactPath(nil), artifactsPlan...), "eng-review.md", "test-plan.md")
+	artifactsProof := append(append([]ArtifactPath(nil), artifactsVetted...), "evidence.md", "touched-files.md")
+	artifactsFinal := append(append([]ArtifactPath(nil), artifactsProof...), "review.md", "seal.md")
+
+	return []PhasePolicy{
+		{Target: PhaseFrame, ResumeVerb: "frame", TransitionRight: "Frame an unstructured request before lifecycle work.", RequiredArtifacts: artifactsFrame},
+		{Target: PhaseSpec, ResumeVerb: "spec", TransitionRight: "Author the product specification.", RequiredSections: sectionsSpec, RequiredArtifacts: artifactsSpec},
+		{Target: PhaseClarify, ResumeVerb: "clarify", TransitionRight: "Close decision coverage in the written specification.", RequiredSections: sectionsSpec, RequiredArtifacts: artifactsClarify, BlocksOpenQuestions: true},
+		{Target: PhaseTemper, ResumeVerb: "temper", TransitionRight: "Optionally challenge the clarified specification strategy.", RequiredSections: sectionsSpec, RequiredArtifacts: artifactsClarify, BlocksOpenQuestions: true},
+		{Target: PhaseDefine, ResumeVerb: "define", TransitionRight: "Author and approve the initial implementation plan.", RequiredSections: sectionsPlan, RequiredArtifacts: artifactsPlan, BlocksOpenQuestions: true},
+		{Target: PhasePlan, ResumeVerb: "vet", TransitionRight: "Hold the approved or repaired plan checkpoint for engineering review.", RequiredSections: sectionsPlan, RequiredArtifacts: artifactsPlan, BlocksOpenQuestions: true},
+		{Target: PhaseVet, ResumeVerb: "vet", TransitionRight: "Review implementation readiness before build.", RequiredSections: sectionsBuild, RequiredArtifacts: artifactsVetted, BlocksOpenQuestions: true},
+		{Target: PhaseBuild, ResumeVerb: "build", TransitionRight: "Implement the next approved vertical slice.", RequiredSections: sectionsBuild, RequiredArtifacts: artifactsVetted, BlocksOpenQuestions: true},
+		{Target: PhaseConverge, ResumeVerb: "converge", TransitionRight: "Recover unmet clarified intent into new slices.", RequiredSections: sectionsBuild, RequiredArtifacts: artifactsVetted, BlocksOpenQuestions: true},
+		{Target: PhaseProve, ResumeVerb: "prove", TransitionRight: "Produce acceptance evidence for the implementation.", RequiredSections: sectionsProof, RequiredArtifacts: artifactsProof, ProofRequired: true, BlocksOpenQuestions: true},
+		{Target: PhasePolish, ResumeVerb: "polish", TransitionRight: "Apply the bounded quality pass.", RequiredSections: sectionsProof, RequiredArtifacts: artifactsProof, ProofRequired: true, BlocksOpenQuestions: true},
+		{Target: PhaseReview, ResumeVerb: "review", TransitionRight: "Review the proven implementation.", RequiredSections: sectionsProof, RequiredArtifacts: artifactsProof, ProofRequired: true, BlocksOpenQuestions: true},
+		{Target: PhaseSeal, ResumeVerb: "seal", TransitionRight: "Decide the final GO or NO-GO.", RequiredSections: sectionsComplete, RequiredArtifacts: artifactsFinal, ProofRequired: true, BlocksOpenQuestions: true, Shippable: true},
+		{Target: PhaseShip, ResumeVerb: "ship", TransitionRight: "Perform authorized release and close-out mutations.", RequiredSections: sectionsComplete, RequiredArtifacts: artifactsFinal, ProofRequired: true, BlocksOpenQuestions: true, Shippable: true},
+		{Target: PhaseDone, TransitionRight: "Represent archived completion with no resume command.", RequiredSections: sectionsComplete, RequiredArtifacts: artifactsFinal, ProofRequired: true, BlocksOpenQuestions: true, Shippable: true},
 	}
 }
 
-func TestLifecycleRegistryOwnsOrderAndResumeCommands(t *testing.T) {
-	phases := LifecyclePhases()
-	if len(phases) == 0 || phases[0] != PhaseFrame || phases[len(phases)-1] != PhaseDone {
-		t.Fatalf("LifecyclePhases()=%v, want frame...done", phases)
+func assertPhasePolicyEqual(t *testing.T, label string, got, want PhasePolicy) {
+	t.Helper()
+	if got.Target != want.Target ||
+		got.ResumeVerb != want.ResumeVerb ||
+		got.TransitionRight != want.TransitionRight ||
+		!slices.Equal(got.RequiredSections, want.RequiredSections) ||
+		!slices.Equal(got.RequiredArtifacts, want.RequiredArtifacts) ||
+		got.ProofRequired != want.ProofRequired ||
+		got.BlocksOpenQuestions != want.BlocksOpenQuestions ||
+		got.Shippable != want.Shippable {
+		t.Errorf("%s = %+v, want %+v", label, got, want)
 	}
-	wantPrefix := []Phase{PhaseFrame, PhaseSpec, PhaseClarify, PhaseTemper, PhaseDefine}
-	if len(phases) < len(wantPrefix) {
-		t.Fatalf("LifecyclePhases()=%v, want prefix %v", phases, wantPrefix)
-	}
-	for i, want := range wantPrefix {
-		if phases[i] != want {
-			t.Fatalf("LifecyclePhases()[%d]=%q, want %q (full=%v)", i, phases[i], want, phases)
-		}
-	}
-	if got := ResumeVerb(PhasePlan); got != "vet" {
-		t.Fatalf("ResumeVerb(plan)=%q, want vet", got)
-	}
-	if got := ResumeVerb(PhaseDone); got != "" {
-		t.Fatalf("ResumeVerb(done)=%q, want empty", got)
-	}
+}
 
-	phases[0] = PhaseDone
-	if got := LifecyclePhases()[0]; got != PhaseFrame {
-		t.Fatalf("LifecyclePhases exposed mutable registry: first=%q", got)
+func policyForTest(t *testing.T, target Phase) PhasePolicy {
+	t.Helper()
+	policy, ok := PolicyFor(target)
+	if !ok {
+		t.Fatalf("PolicyFor(%q) returned unknown", target)
 	}
+	return policy
+}
+
+func TestPhasePoliciesExposeCanonicalLifecycle(t *testing.T) {
+	want := expectedPhasePolicies()
+	got := PhasePolicies()
+	if len(got) != len(want) {
+		t.Fatalf("len(PhasePolicies()) = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		assertPhasePolicyEqual(t, "PhasePolicies", got[i], want[i])
+		lookedUp, ok := PolicyFor(want[i].Target)
+		if !ok {
+			t.Fatalf("PolicyFor(%q) returned unknown", want[i].Target)
+		}
+		assertPhasePolicyEqual(t, "PolicyFor", lookedUp, want[i])
+	}
+	for _, unknown := range []Phase{"", "planning"} {
+		policy, ok := PolicyFor(unknown)
+		if ok {
+			t.Errorf("PolicyFor(%q) = (%+v, true), want unknown lookup rejected", unknown, policy)
+		}
+		assertPhasePolicyEqual(t, "unknown PolicyFor result", policy, PhasePolicy{})
+	}
+}
+
+func TestPolicyForReturnsDefensiveNestedCopies(t *testing.T) {
+	want := expectedPhasePolicies()[7]
+	policy := policyForTest(t, PhaseBuild)
+	policy.RequiredSections[0] = SectionStatus
+	policy.RequiredArtifacts[0] = "mutated.md"
+
+	assertPhasePolicyEqual(t, "PolicyFor after mutation", policyForTest(t, PhaseBuild), want)
+}
+
+func TestPhasePoliciesReturnsDefensiveNestedCopies(t *testing.T) {
+	want := expectedPhasePolicies()
+	policies := PhasePolicies()
+	policies[7].Target = PhaseDone
+	policies[7].RequiredSections[0] = SectionStatus
+	policies[7].RequiredArtifacts[0] = "mutated.md"
+
+	assertPhasePolicyEqual(t, "sibling policy after mutation", policies[8], want[8])
+	fresh := PhasePolicies()
+	assertPhasePolicyEqual(t, "PhasePolicies after mutation", fresh[7], want[7])
 }
 
 func TestPrebuildWorkspaceRequirementsAreEnforcedByPhase(t *testing.T) {
 	requireFiles := func(phase Phase, names ...string) {
 		t.Helper()
-		definition, ok := definitionFor(phase)
-		if !ok {
-			t.Fatalf("missing phase definition for %q", phase)
-		}
-		got := make(map[string]bool, len(definition.workspaceRequired))
-		for _, name := range definition.workspaceRequired {
-			got[name] = true
+		policy := policyForTest(t, phase)
+		got := make(map[string]bool, len(policy.RequiredArtifacts))
+		for _, artifact := range policy.RequiredArtifacts {
+			got[string(artifact)] = true
 		}
 		for _, name := range names {
 			if !got[name] {
-				t.Errorf("phase %q does not require %s: %v", phase, name, definition.workspaceRequired)
+				t.Errorf("phase %q does not require %s: %v", phase, name, policy.RequiredArtifacts)
 			}
 		}
 	}
@@ -79,6 +137,32 @@ func TestPrebuildWorkspaceRequirementsAreEnforcedByPhase(t *testing.T) {
 	requireFiles(PhasePlan, "decision-coverage.md")
 	requireFiles(PhaseVet, "decision-coverage.md", "eng-review.md", "test-plan.md")
 	requireFiles(PhaseBuild, "decision-coverage.md", "eng-review.md", "test-plan.md")
+}
+
+func TestWorkspaceObservationIncludesEveryLifecycleArtifact(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeWorkSection(t, root, "all-artifacts", "state.md", "- Phase: frame\n")
+	writeWorkSection(t, root, "all-artifacts", "seal.md", "# Seal\n\nGO\n")
+
+	observation, err := ObserveWorkspace(root, "all-artifacts")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := map[ArtifactPath]bool{}
+	for _, policy := range PhasePolicies() {
+		for _, artifact := range policy.RequiredArtifacts {
+			expected[artifact] = true
+		}
+	}
+	for artifact := range expected {
+		if _, observed := observation.Fact(artifact); !observed {
+			t.Errorf("observation does not include lifecycle artifact %q", artifact)
+		}
+	}
+	seal, ok := observation.Fact("seal.md")
+	if !ok || seal.State() != ArtifactPresent {
+		t.Errorf("later-phase seal fact = (%q, %v), want present", seal.State(), ok)
+	}
 }
 
 func TestRuntimeCompletenessUsesWorkspaceRequiredFiles(t *testing.T) {
@@ -110,7 +194,8 @@ func TestRuntimeCompletenessUsesWorkspaceRequiredFiles(t *testing.T) {
 
 func TestRuntimeCompletenessRejectsEmptyRequiredFile(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
-	for _, name := range RequiredWorkspaceFiles(PhaseClarify) {
+	for _, artifact := range policyForTest(t, PhaseClarify).RequiredArtifacts {
+		name := string(artifact)
 		body := "# " + name + "\n\nreal\n"
 		if name == "decision-coverage.md" {
 			body = ""
@@ -128,39 +213,78 @@ func TestRuntimeCompletenessRejectsEmptyRequiredFile(t *testing.T) {
 	}
 }
 
-func TestLifecycleRegistryInvariants(t *testing.T) {
+func TestPhasePolicyInvariants(t *testing.T) {
+	policies := PhasePolicies()
 	phaseNames := map[Phase]bool{}
 	transitionRights := map[string]Phase{}
-	for i, definition := range phaseDefinitions {
-		if definition.phase == "" || phaseNames[definition.phase] {
-			t.Fatalf("phase definition %d has empty or duplicate ID %q", i, definition.phase)
+	sectionOrder := make(map[Section]int, len(Sections))
+	for i, section := range Sections {
+		sectionOrder[section] = i
+	}
+
+	for i, policy := range policies {
+		if policy.Target == "" || phaseNames[policy.Target] {
+			t.Fatalf("policy %d has empty or duplicate target %q", i, policy.Target)
 		}
-		phaseNames[definition.phase] = true
-		if definition.transitionRight == "" || transitionRights[definition.transitionRight] != "" {
-			t.Fatalf("phase %q has empty or duplicate transition right %q", definition.phase, definition.transitionRight)
+		phaseNames[policy.Target] = true
+		if policy.TransitionRight == "" || transitionRights[policy.TransitionRight] != "" {
+			t.Fatalf("phase %q has empty or duplicate transition right %q", policy.Target, policy.TransitionRight)
 		}
-		transitionRights[definition.transitionRight] = definition.phase
-		if len(definition.workspaceRequired) == 0 {
-			t.Fatalf("phase %q has no workspace requirements", definition.phase)
+		transitionRights[policy.TransitionRight] = policy.Target
+		if len(policy.RequiredArtifacts) == 0 {
+			t.Fatalf("phase %q has no required artifacts", policy.Target)
 		}
-		for _, section := range definition.required {
-			known := false
-			for _, canonical := range Sections {
-				known = known || section == canonical
+
+		seenSections := map[Section]bool{}
+		previousSectionIndex := -1
+		for _, section := range policy.RequiredSections {
+			index, known := sectionOrder[section]
+			if !known || seenSections[section] || index <= previousSectionIndex {
+				t.Fatalf("phase %q has non-canonical required sections %v", policy.Target, policy.RequiredSections)
 			}
-			if !known {
-				t.Fatalf("phase %q requires unknown section %q", definition.phase, section)
+			seenSections[section] = true
+			previousSectionIndex = index
+		}
+		seenArtifacts := map[ArtifactPath]bool{}
+		for _, artifact := range policy.RequiredArtifacts {
+			name := string(artifact)
+			if artifact == "" || seenArtifacts[artifact] {
+				t.Fatalf("phase %q has empty or duplicate required artifact %q", policy.Target, artifact)
+			}
+			if path.IsAbs(name) || path.Clean(name) != name || name == "." || strings.HasPrefix(name, "../") || strings.Contains(name, `\`) {
+				t.Fatalf("phase %q has non-feature-relative required artifact %q", policy.Target, artifact)
+			}
+			if artifact == ".devrites/principles.md" {
+				t.Fatalf("phase %q includes root principles in feature-relative requirements", policy.Target)
+			}
+			seenArtifacts[artifact] = true
+		}
+
+		if i > 0 {
+			for _, section := range policies[i-1].RequiredSections {
+				if !seenSections[section] {
+					t.Errorf("phase %q dropped section %q required by %q", policy.Target, section, policies[i-1].Target)
+				}
+			}
+			for _, artifact := range policies[i-1].RequiredArtifacts {
+				if !seenArtifacts[artifact] {
+					t.Errorf("phase %q dropped artifact %q required by %q", policy.Target, artifact, policies[i-1].Target)
+				}
 			}
 		}
-		if definition.shippable && !definition.proofRequired {
-			t.Fatalf("shippable phase %q does not require proof", definition.phase)
+		if policy.Target == PhaseDone && policy.ResumeVerb != "" {
+			t.Errorf("done resume verb = %q, want empty", policy.ResumeVerb)
+		}
+		if policy.Shippable && !policy.ProofRequired {
+			t.Errorf("shippable phase %q does not require proof", policy.Target)
 		}
 	}
 }
 
 func TestStatusFixtureBuildIncomplete(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
-	for _, name := range RequiredWorkspaceFiles(PhaseBuild) {
+	for _, artifact := range policyForTest(t, PhaseBuild).RequiredArtifacts {
+		name := string(artifact)
 		body := "# " + name + "\n\nreal\n"
 		if name == "state.md" {
 			body = "- Phase: build\n"
@@ -180,7 +304,8 @@ func TestStatusFixtureBuildIncomplete(t *testing.T) {
 
 func TestStatusFixtureSpecComplete(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
-	for _, name := range RequiredWorkspaceFiles(PhaseSpec) {
+	for _, artifact := range policyForTest(t, PhaseSpec).RequiredArtifacts {
+		name := string(artifact)
 		body := "# " + name + "\n\nreal\n"
 		if name == "state.md" {
 			body = "- Phase: spec\n"
@@ -193,6 +318,259 @@ func TestStatusFixtureSpecComplete(t *testing.T) {
 	}
 	if !rep.Complete() {
 		t.Fatalf("complete=false, missing=%v", rep.MissingFiles)
+	}
+}
+
+func TestStatusRenderRemainsExactForCompleteAndOrdinaryMissingArtifacts(t *testing.T) {
+	completeRoot := filepath.Join(t.TempDir(), ".devrites")
+	writeStatusRequiredArtifacts(t, completeRoot, "complete", PhaseSpec)
+	complete, err := Status(completeRoot, "complete")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantComplete := "feature: complete\n" +
+		"phase: spec\n" +
+		"  spec       present  required\n" +
+		"  plan       empty\n" +
+		"  decisions  present\n" +
+		"  tasks      empty\n" +
+		"  proof      empty\n" +
+		"  status     present\n" +
+		"result: complete\n"
+	if got := complete.Render(); got != wantComplete {
+		t.Fatalf("complete Render() =\n%q\nwant\n%q", got, wantComplete)
+	}
+
+	for _, tc := range []struct {
+		name      string
+		briefBody *string
+	}{
+		{name: "absent"},
+		{name: "empty", briefBody: new(string)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := filepath.Join(t.TempDir(), ".devrites")
+			writeStatusRequiredArtifacts(t, root, tc.name, PhaseSpec)
+			brief := filepath.Join(root, "work", tc.name, "brief.md")
+			if tc.briefBody == nil {
+				if err := os.Remove(brief); err != nil {
+					t.Fatal(err)
+				}
+			} else if err := os.WriteFile(brief, []byte(*tc.briefBody), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			report, statusErr := Status(root, tc.name)
+			if statusErr != nil {
+				t.Fatal(statusErr)
+			}
+			want := "feature: " + tc.name + "\n" +
+				"phase: spec\n" +
+				"  spec       present  required\n" +
+				"  plan       empty\n" +
+				"  decisions  present\n" +
+				"  tasks      empty\n" +
+				"  proof      empty\n" +
+				"  status     present\n" +
+				"result: incomplete (missing files: brief.md)\n"
+			if got := report.Render(); got != want {
+				t.Fatalf("Render() =\n%q\nwant\n%q", got, want)
+			}
+		})
+	}
+}
+
+func TestStatusRendersSelectedDiagnosticsBeforeResultWithoutRecovery(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeStatusRequiredArtifacts(t, root, "diagnostic", PhaseSpec)
+	writeWorkSection(t, root, "diagnostic", "spec.md", "hostile-secret\x00")
+
+	report, err := Status(root, "diagnostic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "feature: diagnostic\n" +
+		"phase: spec\n" +
+		"  spec       empty    required\n" +
+		"  plan       empty\n" +
+		"  decisions  present\n" +
+		"  tasks      empty\n" +
+		"  proof      empty\n" +
+		"  status     present\n" +
+		"artifact: spec.md: malformed (malformed_markdown)\n" +
+		"result: incomplete (missing files: spec.md)\n"
+	if got := report.Render(); got != want {
+		t.Fatalf("Render() =\n%q\nwant\n%q", got, want)
+	}
+	if strings.Contains(report.Render(), "next:") || strings.Contains(report.Render(), "hostile-secret") {
+		t.Fatalf("Status disclosed content or emitted recovery:\n%s", report.Render())
+	}
+}
+
+func TestStatusOmitsUnselectedEvidenceDiagnostic(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeStatusRequiredArtifacts(t, root, "unselected-evidence", PhaseSpec)
+	writeWorkSection(t, root, "unselected-evidence", EvidenceFile, "hostile-secret\x00")
+
+	report, err := Status(root, "unselected-evidence")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "feature: unselected-evidence\n" +
+		"phase: spec\n" +
+		"  spec       present  required\n" +
+		"  plan       empty\n" +
+		"  decisions  present\n" +
+		"  tasks      empty\n" +
+		"  proof      empty\n" +
+		"  status     present\n" +
+		"result: complete\n"
+	if got := report.Render(); got != want {
+		t.Fatalf("Render() =\n%q\nwant\n%q", got, want)
+	}
+	if strings.Contains(report.Render(), "artifact:") || strings.Contains(report.Render(), "next:") {
+		t.Fatalf("unselected evidence emitted diagnostic or recovery:\n%s", report.Render())
+	}
+}
+
+func TestStatusReturnsExactLogicalErrorsForUnusableState(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		prepare  func(t *testing.T, root, slug string)
+		callback observationCallback
+		want     string
+	}{
+		{
+			name:    "absent",
+			prepare: func(*testing.T, string, string) {},
+			want:    `compute status: feature "broken": state.md is absent; add real content to state.md and retry`,
+		},
+		{
+			name: "empty",
+			prepare: func(t *testing.T, root, slug string) {
+				writeWorkSection(t, root, slug, LedgerFile, "")
+			},
+			want: `compute status: feature "broken": state.md is empty; add real content to state.md and retry`,
+		},
+		{
+			name: "malformed",
+			prepare: func(t *testing.T, root, slug string) {
+				writeWorkSection(t, root, slug, LedgerFile, "bad\x00state")
+			},
+			want: `compute status: feature "broken": state.md is malformed (malformed_markdown); repair state.md and retry`,
+		},
+		{
+			name: "final symlink",
+			prepare: func(t *testing.T, root, slug string) {
+				target := filepath.Join(t.TempDir(), "state.md")
+				if err := os.WriteFile(target, []byte("- Phase: build\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(target, filepath.Join(root, "work", slug, LedgerFile)); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: `compute status: feature "broken": state.md is unsafe (final_symlink); repair state.md and retry`,
+		},
+		{
+			name: "nonregular",
+			prepare: func(t *testing.T, root, slug string) {
+				if err := os.Mkdir(filepath.Join(root, "work", slug, LedgerFile), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: `compute status: feature "broken": state.md is unsafe (non_regular); repair state.md and retry`,
+		},
+		{
+			name: "too large",
+			prepare: func(t *testing.T, root, slug string) {
+				writeFile(t, filepath.Join(root, "work", slug, LedgerFile), sizedMarkdown("- Phase: build\n", (1<<20)+1))
+			},
+			want: `compute status: feature "broken": state.md is unsafe (file_too_large); repair state.md and retry`,
+		},
+		{
+			name: "permission denied",
+			prepare: func(t *testing.T, root, slug string) {
+				writeWorkSection(t, root, slug, LedgerFile, "- Phase: build\n")
+			},
+			callback: func(stage observationStage, path ArtifactPath) error {
+				if stage == observationBeforeOpen && path == LedgerFile {
+					return fs.ErrPermission
+				}
+				return nil
+			},
+			want: `compute status: feature "broken": state.md is unreadable (permission_denied); repair state.md and retry`,
+		},
+		{
+			name: "read failure",
+			prepare: func(t *testing.T, root, slug string) {
+				writeWorkSection(t, root, slug, LedgerFile, "- Phase: build\n")
+			},
+			callback: func(stage observationStage, path ArtifactPath) error {
+				if stage == observationBeforeRead && path == LedgerFile {
+					return errors.New("hostile read failure")
+				}
+				return nil
+			},
+			want: `compute status: feature "broken": state.md is unreadable (read_failure); repair state.md and retry`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := filepath.Join(t.TempDir(), ".devrites")
+			slug := "broken"
+			if err := os.MkdirAll(filepath.Join(root, "work", slug), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			tc.prepare(t, root, slug)
+			report, err := statusWithCallback(root, slug, tc.callback)
+			if report != nil || err == nil || err.Error() != tc.want {
+				t.Fatalf("statusWithCallback() = (%+v, %v), want nil and %q", report, err, tc.want)
+			}
+			if strings.Contains(err.Error(), root) || strings.Contains(err.Error(), "hostile") {
+				t.Fatalf("error disclosed physical path or content: %v", err)
+			}
+		})
+	}
+}
+
+func TestStatusUsesRetainedStateWithoutConsumerReopen(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeWorkSection(t, root, "retained", LedgerFile, "- Phase: build\n")
+	path := filepath.Join(root, "work", "retained", LedgerFile)
+	opens := 0
+	reads := 0
+	report, err := statusWithCallback(root, "retained", func(stage observationStage, artifact ArtifactPath) error {
+		if artifact != LedgerFile {
+			return nil
+		}
+		switch stage {
+		case observationBeforeOpen:
+			opens++
+		case observationBeforeRead:
+			reads++
+		case observationAfterRead:
+			if writeErr := os.WriteFile(path, []byte("- Phase: prove\n"), 0o644); writeErr != nil {
+				return writeErr
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Phase != PhaseBuild || opens != 1 || reads != 1 {
+		t.Fatalf("phase=%q opens=%d reads=%d, want retained build and 1/1", report.Phase, opens, reads)
+	}
+}
+
+func TestStatusPreservesMissingAndUnknownPhaseErrors(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeWorkSection(t, root, "missing-phase", LedgerFile, "- Status: build\n")
+	if _, err := Status(root, "missing-phase"); err == nil || err.Error() != `compute status: feature "missing-phase": no phase in state.md ledger; record phase in state.md and retry` {
+		t.Fatalf("missing-phase error = %v", err)
+	}
+	writeWorkSection(t, root, "unknown-phase", LedgerFile, "- Phase: building\n")
+	if _, err := Status(root, "unknown-phase"); err == nil || err.Error() != `compute status: feature "unknown-phase": unknown phase "building"; record a known phase in state.md and retry` {
+		t.Fatalf("unknown-phase error = %v", err)
 	}
 }
 
@@ -220,10 +598,10 @@ func TestCanonicalWorkspaceCompletenessUsesConcretePhaseFiles(t *testing.T) {
 
 func TestFinalPhasesRequireReviewAndSealArtifacts(t *testing.T) {
 	for _, phase := range []Phase{PhaseSeal, PhaseShip, PhaseDone} {
-		required := RequiredWorkspaceFiles(phase)
-		for _, name := range []string{"review.md", "seal.md"} {
+		required := policyForTest(t, phase).RequiredArtifacts
+		for _, name := range []ArtifactPath{"review.md", "seal.md"} {
 			if !slices.Contains(required, name) {
-				t.Errorf("RequiredWorkspaceFiles(%q) = %v, want %s", phase, required, name)
+				t.Errorf("PolicyFor(%q).RequiredArtifacts = %v, want %s", phase, required, name)
 			}
 		}
 	}
@@ -232,6 +610,17 @@ func TestFinalPhasesRequireReviewAndSealArtifacts(t *testing.T) {
 func TestStatusUnknownSlugErrors(t *testing.T) {
 	if _, err := Status(filepath.Join(t.TempDir(), ".devrites"), "nope"); err == nil {
 		t.Fatal("Status on unknown slug returned nil error, want an error")
+	}
+}
+
+func writeStatusRequiredArtifacts(t *testing.T, root, slug string, phase Phase) {
+	t.Helper()
+	for _, artifact := range policyForTest(t, phase).RequiredArtifacts {
+		body := "# Artifact\n\nreal content\n"
+		if artifact == LedgerFile {
+			body = "- Phase: " + string(phase) + "\n"
+		}
+		writeWorkSection(t, root, slug, string(artifact), body)
 	}
 }
 
@@ -260,7 +649,7 @@ func writeWorkSection(t *testing.T, root, slug, name, body string) {
 // A live workspace map need not carry frontmatter: the phase lives in
 // the canonical state.md ledger and the proof/status concepts are satisfied by
 // evidence.md/state.md. The engine must load, list, and report it anyway.
-func TestLoadFeatureFromOfficialBulletLedger(t *testing.T) {
+func TestStatusFromOfficialBulletLedger(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	writeSection(t, root, "live", "state.md", "- Phase: prove\n- Status: running\n")
 	writeSection(t, root, "live", "spec.md", "# Spec\n\nDo the thing.\n")
@@ -276,11 +665,12 @@ func TestLoadFeatureFromOfficialBulletLedger(t *testing.T) {
 	if rep.Phase != PhaseProve {
 		t.Errorf("phase = %q, want prove (from the state.md ledger)", rep.Phase)
 	}
-	if !rep.Present[SectionProof] {
-		t.Error("proof section should be present via canonical evidence.md")
+	rendered := rep.Render()
+	if !strings.Contains(rendered, "  proof      present  required\n") {
+		t.Errorf("proof section should be present via canonical evidence.md:\n%s", rendered)
 	}
-	if !rep.Present[SectionStatus] {
-		t.Error("status section should be present via canonical state.md")
+	if !strings.Contains(rendered, "  status     present\n") {
+		t.Errorf("status section should be present via canonical state.md:\n%s", rendered)
 	}
 
 	slugs, err := ListFeatures(root)
@@ -307,7 +697,7 @@ func TestStateLedgerIgnoresOptionalREADMEFrontmatter(t *testing.T) {
 	}
 }
 
-func TestLoadFeatureRejectsCorruptStateMarkdown(t *testing.T) {
+func TestStatusRejectsCorruptStateMarkdownWithoutContentDisclosure(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	dir := filepath.Join(root, "work", "corrupt")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -316,8 +706,9 @@ func TestLoadFeatureRejectsCorruptStateMarkdown(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "state.md"), []byte("| phase | build |\x00\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := LoadFeature(root, "corrupt"); err == nil || !strings.Contains(err.Error(), "NUL") {
-		t.Fatalf("LoadFeature() error = %v, want NUL rejection", err)
+	want := `compute status: feature "corrupt": state.md is malformed (malformed_markdown); repair state.md and retry`
+	if _, err := Status(root, "corrupt"); err == nil || err.Error() != want {
+		t.Fatalf("Status() error = %v, want %q", err, want)
 	}
 }
 
@@ -360,7 +751,7 @@ func TestSpeculativeWorkspaceAliasesAreRejected(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := LoadFeature(root, "aliases"); err == nil {
+	if _, err := Status(root, "aliases"); err == nil {
 		t.Fatal("feature.md/index.md/status.md aliases created a feature without state.md")
 	}
 	if slugs, err := ListFeatures(root); err != nil {
@@ -371,11 +762,16 @@ func TestSpeculativeWorkspaceAliasesAreRejected(t *testing.T) {
 
 	writeWorkSection(t, root, "aliases", "state.md", "- Phase: prove\n")
 	writeWorkSection(t, root, "aliases", "proof.md", "# Proof\n\nOld alias content.\n")
-	feature, err := LoadFeature(root, "aliases")
+	report, err := Status(root, "aliases")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if feature.Present[SectionProof] || feature.PresentFiles[EvidenceFile] {
+	observation, err := ObserveWorkspace(root, "aliases")
+	if err != nil {
+		t.Fatal(err)
+	}
+	evidence, ok := observation.Fact(EvidenceFile)
+	if report.present[SectionProof] || !ok || evidence.State() != ArtifactAbsent {
 		t.Fatal("proof.md alias satisfied canonical evidence.md presence")
 	}
 }
@@ -383,7 +779,7 @@ func TestSpeculativeWorkspaceAliasesAreRejected(t *testing.T) {
 func TestStatusCursorCannotStandInForPhase(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	writeWorkSection(t, root, "status-only", "state.md", "- Status: build\n")
-	if _, err := LoadFeature(root, "status-only"); err == nil || !strings.Contains(err.Error(), "no phase in state.md") {
+	if _, err := Status(root, "status-only"); err == nil || !strings.Contains(err.Error(), "no phase in state.md") {
 		t.Fatalf("status-as-phase error = %v, want explicit missing phase", err)
 	}
 }
@@ -398,33 +794,25 @@ func TestLedgerPhaseRejectsUnknownWord(t *testing.T) {
 	}
 }
 
-func TestSectionPresentDistinguishesContentFromStubs(t *testing.T) {
-	dir := t.TempDir()
+func TestArtifactClassificationDistinguishesContentFromStubs(t *testing.T) {
 	cases := []struct {
 		name string
 		body string
-		want bool
+		want ArtifactState
 	}{
-		{"missing", "", false}, // no file written for this case
-		{"empty", "", false},
-		{"heading-only stub", "# Tasks\n", false},
-		{"frontmatter-only", "---\nphase: build\n---\n", false},
-		{"real content", "# Spec\n\nDo the thing.\n", true},
-		{"content after frontmatter", "---\nk: v\n---\n\nreal words\n", true},
-		{"fenced content", "# Notes\n\n```\nexample\n```\n", true},
-		{"NUL content", "# Notes\n\nbad\x00\n", false},
-		{"malformed UTF-8", "# Notes\n\nbad\xff\n", false},
+		{"empty", "", ArtifactEmpty},
+		{"heading-only stub", "# Tasks\n", ArtifactEmpty},
+		{"frontmatter-only", "---\nphase: build\n---\n", ArtifactEmpty},
+		{"real content", "# Spec\n\nDo the thing.\n", ArtifactPresent},
+		{"content after frontmatter", "---\nk: v\n---\n\nreal words\n", ArtifactPresent},
+		{"fenced content", "# Notes\n\n```\nexample\n```\n", ArtifactPresent},
+		{"NUL content", "# Notes\n\nbad\x00\n", ArtifactMalformed},
+		{"malformed UTF-8", "# Notes\n\nbad\xff\n", ArtifactMalformed},
 	}
-	for i, c := range cases {
-		path := filepath.Join(dir, "s.md")
-		_ = os.Remove(path)
-		if c.name != "missing" {
-			if err := os.WriteFile(path, []byte(c.body), 0o644); err != nil {
-				t.Fatal(err)
-			}
-		}
-		if got := sectionPresent(path); got != c.want {
-			t.Errorf("case %d (%s): sectionPresent = %v, want %v", i, c.name, got, c.want)
+	for _, tc := range cases {
+		state, _ := classifyArtifact([]byte(tc.body))
+		if state != tc.want {
+			t.Errorf("%s: classifyArtifact state=%q, want %q", tc.name, state, tc.want)
 		}
 	}
 }

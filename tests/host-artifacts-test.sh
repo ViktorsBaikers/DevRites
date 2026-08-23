@@ -91,16 +91,17 @@ grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive ei
 grep -q 'exact path-bounded executable workflow artifacts under the active `.devrites/work/<slug>/`' "$OUT/codex/AGENTS.md" \
   && ok "Codex root owns bounded executable workflow artifacts" \
   || no "Codex root cannot materialize executable workflow artifacts"
-grep -q 'stale writer-exhaustion cursor' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" \
-  && grep -q 'no controlling-root materialization attempt' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" \
-  && ok "Codex autocomplete reopens pre-ownership workflow-artifact stops" \
-  || no "Codex autocomplete can preserve a stale workflow-artifact terminal stop"
-grep -q 'materialization is not a consumptive action' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
-  && grep -q 'preflight the materializer itself' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
-  && grep -q 'omits either directory handle' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
-  && grep -q 'first controlling-root failure is not exhaustion' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" \
-  && ok "Codex workflow materialization uses preflight and bounded recovery" \
-  || no "Codex workflow materialization can become an unproved one-shot"
+grep -q '"action":"invoke classifier once under owner lock; no actor-history migration"' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" \
+  && ! grep -q 'There is no actor-history migration\.' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" \
+  && grep -q '"action":"stop on exact WAIT_ACTIVE_OWNER, BLOCKED_EXHAUSTED, or BLOCKED_GATE result"' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" \
+  && ok "Codex autocomplete uses canonical Workflow Artifact routes" \
+  || no "Codex autocomplete duplicates stale actor-history routing"
+grep -q 'devrites.workflow-artifact-admission.v1' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
+  && grep -q 'WA-OP-002A-STALE-SOURCE-GC' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
+  && grep -q 'source and destination directory handles' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
+  && grep -q '"action":"OFFLINE_RECOVERY; correct offline, re-preflight, narrow Vet, retry only under cap"' "$OUT/codex/skills/devrites-debug-recovery/SKILL.md" \
+  && ok "Codex Workflow Artifact contract preserves identity and recovery" \
+  || no "Codex Workflow Artifact contract lost canonical identity or recovery"
 grep -q '`NEEDS_REPLAN` is a backward edge' "$OUT/codex/skills/rite-autocomplete/SKILL.md" \
   && grep -q '`NEEDS_REPLAN` cold resume' "$OUT/codex/skills/rite-autocomplete/SKILL.md" \
   && grep -q 'No user-facing reply is permitted' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" \

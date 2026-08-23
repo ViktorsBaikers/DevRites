@@ -14,15 +14,20 @@ artifact-only**: reconcile
 editing source code.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD criteria.
+Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD
+criteria.
 Load `repository-topology.md`, `data-integrity.md`, or `integration-reliability.md`
 when the spec applicability map or observed drift triggers them.
+Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → reconcile `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` atomically; invalidate Vet/readiness; Vet.
+- `GUARD_AND_REPAIR` → no planning writes; Spec Drift Guard → Clarify → Plan repair → Vet.
+- `BLOCKED_INPUT` → no planning writes; exact diagnostic; recover input; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
 
 ## Operating rules
 - Update the spec when needed, but never plan around a known-wrong assumption.
-- For product behavior, scope, architecture, data, UX, security, or migration changes,
-  search facts then route human-owned contract decisions through `/rite-clarify`/Drift
-  Guard. Reversible technical repair is agent-owned, not a question.
 - Keep each slice small enough for one focused build → prove cycle.
 - **Derive slice count:** reslice when work cannot build+prove in one cycle, not to hit a
   requested tally. Treat counts as hints and explain honest differences; see
@@ -57,9 +62,8 @@ when the spec applicability map or observed drift triggers them.
    - **reorder:** fix the dependency order.
    - **split:** separate backend/frontend contracts (see `devrites-api-interface`).
    - **unblock:** a verification failed; re-route around the blocker.
-   - **course-correct:** deliberate mid-build user pivot. Classify impact on remaining slices,
-     choose rollback/forward-fix, and update spec/plan/tasks/decisions atomically. Acceptance or
-     behavior still needs the user first; an `MVP cut` is the pre-agreed retreat.
+   - **course-correct:** mid-build user pivot; apply the marked action, choose
+     rollback/forward-fix, and update permitted artifacts atomically (`MVP cut` is the named retreat).
    - **revise:** reconcile a requested artifact revision; propose/confirm its file set and
      **never edit source**. Only explicit `/rite-upgrade` with a `repairable` assessment naming
      rule, evidence, gate, paths, and delta can authorize its neutral workspace edit—not source/history.
@@ -105,19 +109,15 @@ when the spec applicability map or observed drift triggers them.
    reconfirm only after Clarify and Vet close it. If you stopped for drift,
    mark the `drift.md` entry resolved. Never remove or overwrite a valid caller
    return cursor while writing the Plan checkpoint.
-6. If product behavior/acceptance criteria change, confirm through `/rite-clarify` before
-   writing, re-close `decision-coverage.md`, then reconcile the plan. After any edit to
-   `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`, including a
-   behavior-neutral technical rationale appended to `decisions.md`, re-scan the affected coverage
-   rows, assumption audit, residual uncertainty, and closed gates. Partial/Missing, an unowned
-   material assumption, or an open blocking/escalating question routes `/rite-clarify`/HITL.
-   Re-read every affected row and require current evidence before restoring `CLEAR`.
-   **Completion:** the change is classified, and every behavior/acceptance change has explicit
-   confirmation recorded before the artifacts are updated.
+6. Apply the marked action before writes and retain its decision/coverage evidence.
+   After editing `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`,
+   re-scan affected coverage, assumptions, uncertainty, and gates. Partial/Missing, unowned
+   material assumption, or open blocking/escalating question routes `/rite-clarify`/HITL.
+   Restore `CLEAR` only from current evidence.
 7. **Done when:** every slice is sized (builds + proves in one cycle; no slice scoring >3
    left unjustified), the dependency order is acyclic, every `drift.md` entry you stopped for
    is marked resolved, revised artifacts agree with each other, no source files changed in
-   `revise` mode, behavior-change-vs-not is confirmed (`no`, or clarified), and every changed
+   `revise` mode, the marked action is complete, and every changed
    plan ends at `/rite-vet` rather than returning directly to build; horizon IDs stay stable,
    reclassifications cite evidence, and no unresolved item vanished. The `Shared contract proof`
    table or justified no-impact statement must still match the revised boundary set.
