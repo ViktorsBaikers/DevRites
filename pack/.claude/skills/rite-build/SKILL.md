@@ -18,7 +18,7 @@ Omitted flag or `N=1` ≡ today's one-slice path (no fan-out). Integer **2≤N�
 may batch up to N **path-disjoint** pending slices in distinct git worktrees,
 then serially integrate on all-green. Non-integer or `N>3` → **hard refuse**
 (no silent clamp). Overlapping slice paths → force serial with reason. Details:
-[`reference/parallel-batch.md`](reference/parallel-batch.md) (when present).
+[`reference/parallel-batch.md`](reference/parallel-batch.md).
 
 Root owns gates/bookkeeping. Fresh
 [`devrites-slice-wright`](../../agents/devrites-slice-wright.md) writes product

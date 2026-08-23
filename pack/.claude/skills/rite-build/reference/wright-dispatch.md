@@ -34,8 +34,11 @@ run approved proof, record evidence, then let host remove worktree.
 
 Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
 preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
-Parallel writer work remains forbidden until this serial pilot measures transfer,
-conflict, proof, and review outcomes on both hosts.
+Parallel writers are allowed **only** under `/rite-build --parallel N` when path-disjoint,
+abort-batch, and a control `parallel-lease.md` apply (see
+[`parallel-batch.md`](parallel-batch.md)). Same-worktree multi-writer and root-emulated
+worktrees remain forbidden. The serial isolated pilot still measures single-slice transfer,
+conflict, proof, and review; it does not authorize same-worktree concurrency.
 
 ## Prepare
 
@@ -57,9 +60,12 @@ conflict, proof, and review outcomes on both hosts.
 
 ## Run
 
-Ask the host for the exact writer in fresh context and wait. Use at most one writer
+Ask the host for the exact writer in fresh context and wait. Default: at most one writer
 across all linked worktrees for this workspace. Never run two writers in one worktree,
 run isolated and same-worktree writers concurrently, or substitute a generic agent.
+Opt-in `/rite-build --parallel N` may fan out path-disjoint writers into distinct worktrees
+only under [`parallel-batch.md`](parallel-batch.md) (path-disjoint + abort-batch + control
+lease); it does not authorize same-worktree multi-writer.
 
 ## Inspect and prove
 
