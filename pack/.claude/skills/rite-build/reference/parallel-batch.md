@@ -26,14 +26,32 @@ have empty intersection. Same prepare rules as
 [`wright-dispatch.md`](wright-dispatch.md): exact files only; no directories/globs;
 normalize `\`→`/`; reject `..`, duplicates, absolutes, and `.devrites/**`.
 
-**Preflight helper (MVP):** `scripts/check-path-disjoint.py`
+**Preflight helper (authoritative):** `devrites-engine check path-disjoint [--root <dir>] [<json-file>|-]`
 
-- Call **only when N≥2** candidate slices are selected. The helper errors on
+- Call **only when N≥2** candidate slices are selected. The command errors on
   fewer than two slices; that is intentional — do not call it for the one-slice path.
 - **Must** pass `--root <control-repo>` so symlink paths under the control tree are
   rejected. Without `--root`, symlink rejection is skipped (JSON-only dry runs).
-- Exit `0` → pairwise disjoint; nonzero → overlap or dirty paths → **force serial**
+- Exit `0` → pairwise disjoint; exit `3` → overlap or dirty paths → **force serial**
   with the stderr reason (do not fan out).
+- `scripts/check-path-disjoint.py` remains for Task 7 compatibility tests; skill
+  orchestration must call the engine going forward (Go is SSOT).
+
+**Orchestration helper (authoritative):** `devrites-engine parallel …` — create/remove
+`.scratch/parallel-wt/` worktrees, write/read/clear control
+`parallel-lease.md`, path-disjoint gate, and staging integrate (`ff-only` when
+possible, else cherry-pick replay of `B..transfer`). Skill calls the engine instead
+of ad-hoc git or bash. Subcommands:
+
+```text
+devrites-engine parallel create --root <repo> --slug <slug> --batch <id> --base <sha> --json <file|->
+devrites-engine parallel record-green --root <repo> --slug <slug> --slice <id> --commit <sha>
+devrites-engine parallel abort --root <repo> --slug <slug> [--force]
+devrites-engine parallel integrate --root <repo> --slug <slug> [--apply-to-control] [--force]
+devrites-engine parallel cleanup --root <repo> --slug <slug> [--force]
+devrites-engine parallel status --root <repo> --slug <slug>
+devrites-engine parallel lease-write|lease-read|lease-clear --root <repo> --slug <slug> ...
+```
 
 Shared test helpers claimed by two slices ⇒ not eligible together. Overlap discovered
 only at inspect (extra/shared path returned) ⇒ treat that sibling as **gap** → abort
@@ -115,7 +133,7 @@ Engine flock/readiness enforcement is B3 — not required for MVP.
     upsert `touched-files.md` from the **combined** scoped diff vs `B`, update
     `state.md` / `evidence.md`, charge AFK once per integrated green slice, run
     `devrites-engine check candidate <slug>` when the phase expects a binding refresh.
-10. **Cleanup.** Success: remove worktrees + local parallel branches after evidence.
+9. **Cleanup.** Success: remove worktrees + local parallel branches after evidence.
     Abort / integrate-failed: keep until human/root acknowledges (lease holds paths).
     Never delete user work.
 
