@@ -848,7 +848,11 @@ def manifest_at(root_fd: int, excluded: set[str], excluded_prefix: str,
                 require_outside_manifest_deadline(deadline)
                 target = os.readlink(name, dir_fd=directory_fd)
                 require_outside_manifest_deadline(deadline)
-                require_manifest_path_identity(before, path_info(directory_fd, name))
+                after = path_info(directory_fd, name)
+                require_manifest_path_identity(before, after)
+                # Linux may reuse the inode on unlink+symlink; re-read target.
+                require(os.readlink(name, dir_fd=directory_fd) == target,
+                        "outside manifest pathname replacement")
                 add(relative, {
                     "type": "symlink", **manifest_metadata(before), "target": target,
                 })
