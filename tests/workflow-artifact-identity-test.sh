@@ -6947,11 +6947,15 @@ def check_delivery_mode_entry_guard() -> None:
         hostile_env["PYTHONDONTWRITEBYTECODE"] = "1"
         hostile_env["PATH"] = f"{hostile_path}{os.pathsep}{hostile_env['PATH']}"
         reason = "delivery modes require executable bash PATH"
+        # Invoke with absolute bash so Linux /usr/bin/env does not die on the
+        # looping PATH entry before require_delivery_mode_environment runs.
+        host_bash = shutil.which("bash")
+        require(host_bash is not None, "host bash for delivery PATH guard")
         for args in (["--delivery-prepare"], ["--delivery-install", str(delivery)],
                      ["--delivery-recover", str(delivery)]):
             rejected = subprocess.run(
-                [str(SCRIPT), *args], env=hostile_env, text=True, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT, check=False, timeout=10,
+                [host_bash, str(SCRIPT), *args], env=hostile_env, text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, timeout=10,
             )
             require(rejected.returncode != 0
                     and rejected.stdout.splitlines()[-1:] == [f"AssertionError: {reason}"],
