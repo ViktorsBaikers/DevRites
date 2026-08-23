@@ -77,9 +77,32 @@ def check_disjoint(slices, root=None):
     return [item.get("id") or str(index) for index, item in enumerate(slices)]
 
 
+def read_input_text(path):
+    if path == "-":
+        try:
+            return sys.stdin.read()
+        except OSError as exc:
+            raise ValueError(f"cannot read stdin: {exc}") from exc
+
+    normalized = os.path.normpath(path)
+    if normalized == ".." or normalized.startswith(f"..{os.sep}") or f"{os.sep}.." in normalized:
+        raise ValueError(f"input path must not contain '..': {path!r}")
+
+    try:
+        with open(normalized, encoding="utf-8") as handle:
+            return handle.read()
+    except OSError as exc:
+        raise ValueError(f"cannot read input {path!r}: {exc}") from exc
+
+
 def load_payload(path):
-    text = sys.stdin.read() if path == "-" else open(path, encoding="utf-8").read()
-    data = json.loads(text)
+    text = read_input_text(path)
+
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid JSON: {exc}") from exc
+
     if isinstance(data, list):
         return data
     if isinstance(data, dict) and "slices" in data:
@@ -115,4 +138,4 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"path-disjoint: {exc}", file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from None
