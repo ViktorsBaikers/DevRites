@@ -1,6 +1,7 @@
 # rite-build output
 
 **Slices remain:**
+
 ```text
 Done: built slice <n> — <name>.
 Changed: <files>; state.md, touched-files.md, evidence.md
@@ -12,6 +13,7 @@ Record: .devrites/work/<slug>/evidence.md
 ```
 
 **All built:**
+
 ```text
 Done: built slice <n> — <name>; all slices built.
 Changed: <files>; state.md, touched-files.md, evidence.md

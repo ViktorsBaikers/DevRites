@@ -44,6 +44,8 @@ WORKSPACE_ARTIFACTS = {
     "architecture.md", "traceability.md", "flows.md",
     # Named outputs created in the user's workspace by their owning workflow.
     "agent.md", "dogfood.md", "walkthrough.md", "ai-spec.md",
+    # Parallel batch lease under .devrites/work/<slug>/ (rite-build --parallel).
+    "parallel-lease.md",
 }
 
 # Files the skills legitimately tell Claude to read in the USER's project / the repo,
@@ -81,8 +83,12 @@ CANONICAL_RE = re.compile(r"[Cc]anonical version:\s*`?\s*`?([A-Za-z0-9._/\-]+\.m
 errors = []
 
 for path in md_files:
-    with open(path, encoding="utf-8") as fh:
-        text = fh.read()
+    try:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError as exc:
+        errors.append(f"{path}: cannot read markdown file: {exc}")
+        continue
     here = os.path.dirname(path)
 
     # 1. markdown links to .md

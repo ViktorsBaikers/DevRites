@@ -26,8 +26,8 @@ supported. Regardless of host defaults, the wright's first command must prove ac
 `worktree_base`. Mismatch returns a gap with no write before project reads or baseline proof.
 
 The isolated wright returns one local unpushed `transfer_commit`, its `worktree_base`,
-and exact files. Root proves descendant base, exact `git diff --name-only
-<base>..<transfer>`, no `.devrites/**`/submodule/symlink/unrelated delta, unchanged
+and exact files. Root proves descendant base, exact `git diff --name-only`
+`` `<base>..<transfer>` ``, no `.devrites/**`/submodule/symlink/unrelated delta, unchanged
 source base, and no user-work overwrite. Use only host-native explicit reconciliation;
 never ad hoc copy, cherry-pick, or merge from read-only root. Compare transferred bytes,
 run approved proof, record evidence, then let host remove worktree.
@@ -35,7 +35,10 @@ run approved proof, record evidence, then let host remove worktree.
 Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
 preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
 Parallel writer work remains forbidden until this serial pilot measures transfer,
-conflict, proof, and review outcomes on both hosts.
+conflict, proof, and review outcomes on both hosts. Opt-in `/rite-build --parallel N`
+(2≤N≤3) is the only exception: path-disjoint fan-out, abort-batch, and control
+`parallel-lease.md` under [`parallel-batch.md`](parallel-batch.md). Same-worktree multi-writer / root-emulated
+worktrees stay forbidden.
 
 ## Prepare
 
@@ -60,6 +63,7 @@ conflict, proof, and review outcomes on both hosts.
 Ask the host for the exact writer in fresh context and wait. Use at most one writer
 across all linked worktrees for this workspace. Never run two writers in one worktree,
 run isolated and same-worktree writers concurrently, or substitute a generic agent.
+Opt-in `/rite-build --parallel N` fans out only under [`parallel-batch.md`](parallel-batch.md).
 
 ## Inspect and prove
 

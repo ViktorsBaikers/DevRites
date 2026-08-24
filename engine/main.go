@@ -10,6 +10,7 @@ import (
 	"github.com/devrites/devrites/internal/gate"
 	"github.com/devrites/devrites/internal/install"
 	"github.com/devrites/devrites/internal/lib"
+	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/version"
 )
@@ -24,6 +25,9 @@ Usage:
   devrites-engine check readiness <slug>   Check required files and the stable Build-input binding
   devrites-engine check readiness --emit-binding <slug>  Emit the stable Build-input binding for Vet
   devrites-engine check seal <slug>        Recheck the Build-input binding, final files, and evidence freshness
+  devrites-engine check path-disjoint [--root <dir>] [<json-file>|-]
+                                         Verify slice path sets are pairwise disjoint
+  devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/cleanup
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
   devrites-engine secret-scan [--staged] [--stdin] [slug]  Scan exact staged blobs, stdin, or touched files; HIGH blocks
@@ -71,7 +75,9 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "uninstall":
 		return install.Run(args[1:], stdout, stderr, install.ModeUninstall)
 	case "check":
-		return cmdCheck(args[1:], stdout, stderr)
+		return cmdCheck(args[1:], stdin, stdout, stderr)
+	case "parallel":
+		return parallel.Run("parallel", args[1:], stdin, stdout, stderr)
 	case "state":
 		return cmdState(root, args[1:], stdout, stderr)
 	case "secret-scan":
@@ -88,9 +94,9 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 }
 
-func cmdCheck(args []string, stdout, stderr io.Writer) int {
+func cmdCheck(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine check <candidate|readiness|seal> ...")
+		fmt.Fprintln(stderr, "usage: devrites-engine check <candidate|readiness|seal|path-disjoint> ...")
 		return exitUsage
 	}
 	sub, rest := args[0], args[1:]
@@ -99,6 +105,8 @@ func cmdCheck(args []string, stdout, stderr io.Writer) int {
 		return cmdCandidate(rest, stdout, stderr)
 	case "readiness", "seal":
 		return cmdGate(gate.Kind(sub), rest, stdout, stderr)
+	case "path-disjoint":
+		return parallel.Run("path-disjoint", rest, stdin, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "devrites: unknown check %q\n", sub)
 		return exitUsage
