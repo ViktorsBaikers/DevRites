@@ -57,6 +57,11 @@ func validateSlicePaths(paths []string, label, root string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", label, err)
 		}
+		// Parallel eligibility must reject workspace control metadata so slices
+		// cannot claim control-tree / SSOT files (docs: ".devrites/**").
+		if path == ".devrites" || strings.HasPrefix(path, ".devrites/") {
+			return nil, fmt.Errorf("%s: path must not include .devrites: %q", label, path)
+		}
 		if _, ok := seen[path]; ok {
 			return nil, fmt.Errorf("%s: duplicate path %q", label, path)
 		}

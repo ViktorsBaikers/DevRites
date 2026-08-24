@@ -53,6 +53,17 @@ func TestCheckPathDisjointOK(t *testing.T) {
 	}
 }
 
+func TestCheckPathDisjointRejectsDevritesPaths(t *testing.T) {
+	t.Parallel()
+	_, err := CheckPathDisjoint([]SlicePaths{
+		{ID: "a", Paths: []string{".devrites/work/state.md"}},
+		{ID: "b", Paths: []string{"src/b.go"}},
+	}, "")
+	if err == nil || !strings.Contains(err.Error(), ".devrites") {
+		t.Fatalf("expected .devrites rejection error, got %v", err)
+	}
+}
+
 func TestCheckPathDisjointSymlinkRoot(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
