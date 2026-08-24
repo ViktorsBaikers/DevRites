@@ -64,7 +64,13 @@ if (!existsSync(baselinePath)) {
   console.error(`FAIL: missing ${relative(root, baselinePath)}; run node scripts/check-instruction-size-baseline.mjs --write`);
   process.exit(1);
 }
-const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
+let baseline;
+try {
+  baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
+} catch (error) {
+  console.error(`FAIL: invalid ${relative(root, baselinePath)}: ${error.message}`);
+  process.exit(1);
+}
 if (baseline.version !== 2 || !baseline.files || !Number.isInteger(baseline.total_bytes)) {
   console.error(`FAIL: ${relative(root, baselinePath)} uses an obsolete schema; regenerate it with --write`);
   process.exit(1);
