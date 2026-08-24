@@ -126,9 +126,12 @@ base before native transfer, then re-proves the reconciled candidate. Missing tr
 conflict, extra paths, moved base, or cleanup failure stops with worktree evidence
 preserved. No ad hoc copy/cherry-pick/merge occurs from the read-only root.
 
-Isolation does not authorize throughput. At most one writer runs across all linked
-worktrees for the workspace; parallel writers remain forbidden until serial transfer,
-conflict, proof, and review measurements justify a separate design.
+Isolation does not authorize same-worktree throughput. Parallel writers are allowed
+**only** under `/rite-build --parallel N` when path-disjoint eligibility, abort-batch,
+and a control `parallel-lease.md` apply (see
+[`parallel-batch.md`](../pack/.claude/skills/rite-build/reference/parallel-batch.md)).
+Same-worktree multi-writer and root-emulated worktrees remain forbidden; default
+`/rite-build` stays one writer across linked worktrees.
 
 ## Engine boundary
 
