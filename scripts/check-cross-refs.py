@@ -83,8 +83,12 @@ CANONICAL_RE = re.compile(r"[Cc]anonical version:\s*`?\s*`?([A-Za-z0-9._/\-]+\.m
 errors = []
 
 for path in md_files:
-    with open(path, encoding="utf-8") as fh:
-        text = fh.read()
+    try:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError as exc:
+        errors.append(f"{path}: cannot read markdown file: {exc}")
+        continue
     here = os.path.dirname(path)
 
     # 1. markdown links to .md
