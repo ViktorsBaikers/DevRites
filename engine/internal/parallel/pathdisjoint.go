@@ -31,7 +31,7 @@ func NormalizePath(raw string) (string, error) {
 		return "", fmt.Errorf("path must be project-relative, not absolute: %q", raw)
 	}
 	parts := make([]string, 0, strings.Count(path, "/")+1)
-	for _, part := range strings.Split(path, "/") {
+	for part := range strings.SplitSeq(path, "/") {
 		if part == "" || part == "." {
 			continue
 		}

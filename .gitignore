@@ -27,6 +27,3 @@ dist/
 # Copy `.mcp.example.json` to `.mcp.json` and fill in keys locally.
 .mcp.json
 .mcp.local.json
-
-# Parallel rite-build worktrees (local)
-.scratch/
