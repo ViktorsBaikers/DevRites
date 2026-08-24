@@ -7123,7 +7123,7 @@ def default_tests(root: Path) -> None:
     check_normal_generator_contract_delta()
     check_complete_stage_gate_failure_rollback()
     instruction_count, instruction_total = check_instruction_size_baseline(root)
-    require(instruction_count == 217 and instruction_total <= 855000
+    require(instruction_count == 218 and instruction_total <= 855000
             and 855000 - instruction_total > 14,
             "instruction size count/cap/headroom")
     check_walkthrough_outer_bound()
