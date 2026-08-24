@@ -21,18 +21,31 @@ import sys
 from pathlib import Path
 
 
+def _is_executable(path: str | os.PathLike[str]) -> bool:
+    """True when path exists and is executable; never raises on missing/invalid paths."""
+    try:
+        return os.path.isfile(path) and os.access(path, os.X_OK)
+    except OSError:
+        return False
+
+
 def resolve_engine() -> str:
-    for key in ("DEVRITES_ENGINE_CLI", "DEVRITES_ENGINE"):
-        env = os.environ.get(key)
-        if env and os.path.isfile(env) and os.access(env, os.X_OK):
-            return env
-    which = shutil.which("devrites-engine")
-    if which:
-        return which
-    root = Path(__file__).resolve().parents[1]
-    for cand in (root / "engine" / "devrites", root / "bin" / "devrites-engine"):
-        if cand.is_file() and os.access(cand, os.X_OK):
-            return str(cand)
+    try:
+        for key in ("DEVRITES_ENGINE_CLI", "DEVRITES_ENGINE"):
+            env = os.environ.get(key)
+            if env and _is_executable(env):
+                return env
+        which = shutil.which("devrites-engine")
+        if which:
+            return which
+        root = Path(__file__).resolve().parents[1]
+        for cand in (root / "engine" / "devrites", root / "bin" / "devrites-engine"):
+            if _is_executable(cand):
+                return str(cand)
+    except OSError as exc:
+        raise FileNotFoundError(
+            f"devrites-engine lookup failed: {exc}"
+        ) from exc
     raise FileNotFoundError(
         "devrites-engine not found; set DEVRITES_ENGINE_CLI or build engine/"
     )
