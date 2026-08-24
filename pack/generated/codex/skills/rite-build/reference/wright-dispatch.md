@@ -37,8 +37,7 @@ preserve the worktree and commit. Without explicit reconciliation, use same-work
 Parallel writer work remains forbidden until this serial pilot measures transfer,
 conflict, proof, and review outcomes on both hosts. Opt-in `$rite-build --parallel N`
 (2≤N≤3) is the only exception: path-disjoint fan-out, abort-batch, and control
-[`parallel-lease.md`](../../devrites-lib/reference/parallel-lease.md) under
-[`parallel-batch.md`](parallel-batch.md). Same-worktree multi-writer / root-emulated
+`parallel-lease.md` under [`parallel-batch.md`](parallel-batch.md). Same-worktree multi-writer / root-emulated
 worktrees stay forbidden.
 
 ## Prepare
