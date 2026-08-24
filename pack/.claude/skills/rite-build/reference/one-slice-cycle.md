@@ -3,13 +3,14 @@
 One wright dispatch builds one thin, proven slice. HITL stops; only explicit
 `.devrites/AFK` lets the controlling root chain another pending slice under the
 green-proof, cap, and pause rules. Each wright returns after exactly one slice.
+Opt-in fan-out: [`parallel-batch.md`](parallel-batch.md) (`--parallel N`); this is default.
 
 ## The cycle
 
 The orchestrator (`/rite-build`) gates and records; the **wright** writes. See
 [`wright-dispatch.md`](wright-dispatch.md).
 
-```
+```text
 SELECT    → orchestrator: restate slice goal + acceptance + scope boundary; HITL gate (pause pre-code)
 (SHAPE)   → orchestrator: missing UI design-brief.md → shape it, then /rite-vet before dispatch
 DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). Inside the wright:
@@ -28,8 +29,7 @@ NEXT      → HITL root reports and stops; AFK root may repeat only under afk-di
 
 ## Why the boundary matters
 
-- Keeps diffs reviewable and reveals integration or drift early.
-- Preserves a HITL decision point and prevents unproven pile-ups.
+Reviewable diffs, early drift signal, HITL decision point, no unproven pile-ups.
 
 ## Restate the scope boundary
 

@@ -6,6 +6,14 @@ CHECK="$ROOT/scripts/check-path-disjoint.py"
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 
+# Wrapper shells to Go SSOT. Prefer shared test engine; else build engine/devrites.
+if [ -z "${DEVRITES_ENGINE_CLI:-}" ]; then
+  if [ ! -x "$ROOT/engine/devrites" ] || ! "$ROOT/engine/devrites" check path-disjoint -h >/dev/null 2>&1; then
+    (cd "$ROOT/engine" && CGO_ENABLED=0 go build -o devrites .)
+  fi
+  export DEVRITES_ENGINE_CLI="$ROOT/engine/devrites"
+fi
+
 run() {
   python3 "$CHECK" "$@" 2>&1
 }
@@ -107,5 +115,15 @@ cat >"$T/symlink.json" <<'JSON'
 JSON
 assert_fail "symlink path is rejected with --root" "symlink path is not allowed" \
   --root "$T/repo" "$T/symlink.json"
+
+cat >"$T/devrites.json" <<'JSON'
+{
+  "slices": [
+    {"id": "slice-a", "paths": ["src/a.go"]},
+    {"id": "slice-b", "paths": [".devrites/work/x.md"]}
+  ]
+}
+JSON
+assert_fail "devrites paths are rejected" "must not include .devrites" "$T/devrites.json"
 
 echo "ok: path-disjoint helper accepts disjoint sets and rejects overlap and dirty paths"

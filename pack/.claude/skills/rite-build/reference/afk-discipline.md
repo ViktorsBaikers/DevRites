@@ -8,16 +8,8 @@ Load the shared
 contract for the sentinel schema, defaults, gate ceiling, and mutable-counter
 ownership. This file owns only Build's dispatch, charging, and red-path behavior.
 
-These rules follow established autonomous-coding loops, including Ralph Wiggum and
-Claude Code auto mode:
-
-1. **Require green feedback.** Tests, types, and lint must pass before a slice is
-   marked `built`.
-2. **Cap iterations.** `max_slices` is the hard limit.
-3. **Run gates before the action they control.** A post-action gate is only a review
-   queue.
-4. **Keep irreversible work manual.** Destructive work, auth boundaries, and public
-   API breaks always pause regardless of the sentinel.
+Rules: green before `built`; hard `max_slices` cap; gates before the action they
+control; irreversible work (destructive/auth/public API) always pauses.
 
 ## Iteration cap
 
@@ -41,32 +33,33 @@ The controlling root owns the cap:
    A controlling orchestrator may pre-seed the remaining field from a validated
    post-plan budget before the first dispatch; never increase or reinitialize an
    existing value.
-3. **Charge exactly once after each green built slice.** A slice already marked
-   built is not charged again after retry, resume, or compaction. Re-read the
-   saved cursor; if it is zero, report the cap and stop before the next
-   dispatch.
+3. **Charge exactly once per green built slice on the control tree.** A slice
+   already marked built is not charged again after retry, resume, or
+   compaction. Re-read the saved cursor; if it is zero, report the cap and stop
+   before the next dispatch.
+   - **Serial:** charge when fail-on-red is green and the built record is written
+     (same rewrite as step 2).
+   - **Parallel `--parallel`:** charge only after **successful serial integrate**
+     — once per integrated green sibling. Abort / integrate-failed → charge **0**.
+     Do not charge on worktree-green before integrate. See
+     [`parallel-batch.md`](parallel-batch.md).
 
 Use this stop message:
 
-```
+```text
 AFK cap reached. Raise `state.md` `AFK slices remaining` or remove the sentinel to continue.
 ```
 
 `max_slices` itself is read-only and never rewritten. No exit-code command
 enforces this policy.
 
-Choose a missing or large cap deliberately. Ralph's rule is 5-10 iterations for small
-tasks and 30-50 for larger ones. Do not use `unlimited` for work that has not completed
-successfully in HITL.
+Choose caps deliberately (≈5–10 small, ≈30–50 larger). Avoid `unlimited` until HITL
+has succeeded for the work.
 
 ## Fail-on-red
 
-The **fail-on-red step** (workflow step 5) refuses to mark a slice `built` if targeted
-tests, types, or lint are red:
-
-- A red signal means either the slice's contract is wrong or the implementation/proof path is.
-  The slice cannot advance, but an objective root cause is agent-owned recovery work.
-- Marking it `built` would let the next slice build on broken state.
+The **fail-on-red step** refuses `built` when targeted tests/types/lint are red. Red means
+wrong contract or proof path — agent-owned recovery; never advance on broken state.
 
 The fail-on-red path:
 

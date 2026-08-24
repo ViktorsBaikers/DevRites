@@ -6,10 +6,9 @@ the wright writes them and invokes no agent.
 
 ## Host gate
 
-Follow the canonical [source-writing boundary](../../devrites-lib/reference/standards/agents.md#source-writing-boundary):
-Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root,
-the exact `:workspace` wright, and read-only specialists. Never bypass/substitute
-the wright or recreate an engine bridge.
+Follow the [source-writing boundary](../../devrites-lib/reference/standards/agents.md#source-writing-boundary):
+Claude → exact wright `acceptEdits`; Codex → workspace root + `:workspace` wright +
+read-only specialists. Never bypass the wright or recreate an engine bridge.
 
 ## Isolated writer-worktree pilot
 
@@ -26,16 +25,17 @@ supported. Regardless of host defaults, the wright's first command must prove ac
 `worktree_base`. Mismatch returns a gap with no write before project reads or baseline proof.
 
 The isolated wright returns one local unpushed `transfer_commit`, its `worktree_base`,
-and exact files. Root proves descendant base, exact `git diff --name-only
-<base>..<transfer>`, no `.devrites/**`/submodule/symlink/unrelated delta, unchanged
+and exact files. Root proves descendant base, exact `git diff --name-only`
+`` `<base>..<transfer>` ``, no `.devrites/**`/submodule/symlink/unrelated delta, unchanged
 source base, and no user-work overwrite. Use only host-native explicit reconciliation;
 never ad hoc copy, cherry-pick, or merge from read-only root. Compare transferred bytes,
 run approved proof, record evidence, then let host remove worktree.
 
 Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
 preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
-Parallel writer work remains forbidden until this serial pilot measures transfer,
-conflict, proof, and review outcomes on both hosts.
+Parallel writers only under `/rite-build --parallel N` with path-disjoint,
+abort-batch, and control `parallel-lease.md` ([`parallel-batch.md`](parallel-batch.md)).
+Same-worktree multi-writer / root-emulated worktrees stay forbidden.
 
 ## Prepare
 
@@ -57,9 +57,9 @@ conflict, proof, and review outcomes on both hosts.
 
 ## Run
 
-Ask the host for the exact writer in fresh context and wait. Use at most one writer
-across all linked worktrees for this workspace. Never run two writers in one worktree,
-run isolated and same-worktree writers concurrently, or substitute a generic agent.
+Ask the host for the exact writer in fresh context and wait. Default: one writer.
+Never two writers in one worktree, mixed modes, or generic substitutes. Opt-in
+`/rite-build --parallel N` fans out only under [`parallel-batch.md`](parallel-batch.md).
 
 ## Inspect and prove
 

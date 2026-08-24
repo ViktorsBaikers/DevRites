@@ -427,16 +427,16 @@ Map to product A1–A8 / D1–D8:
 **Files:**
 - Modify or Create: `evals/behavioral/rite-build.json` and/or `evals/behavioral/rite-build-parallel.json`
 
-- [ ] Cover A1–A8 gates: overlap→serial, red→abort, success→union + AFK K
-- [ ] Commit
+- [x] Cover A1–A8 gates: overlap→serial, red→abort, success→union + AFK K
+- [x] Commit
 
 ### Task 10: pack regen + validate
 
 **Files:**
 - Touch via generator only: `pack/generated/**`
 
-- [ ] Run project pack generate + validate targets; fix only generator inputs if needed
-- [ ] Commit
+- [x] Run project pack generate + validate targets; fix only generator inputs if needed
+- [x] Commit
 
 ### Deferred (not this Execute wave)
 
@@ -465,3 +465,4 @@ Map to product A1–A8 / D1–D8:
 
 | 2026-08-23 | plan locked | User Lock→Execute. Branch `feat/rite-build-parallel-worktrees`. Execute B2 T3–T10; B3/B4 deferred. |
 | 2026-08-24 | execute pivot | User locked: discard bash parallel-wt; ship Go `devrites-engine` path-disjoint + lease + worktree create/abort/integrate/cleanup (Task 6). |
+| 2026-08-24 | execute closeout | Restored parallel carve-outs after Task 10 size-trim regression; MD040/MD033 fixed; Python path-disjoint → engine wrapper; plan T9/T10 checked; regen+validate. |

@@ -2,6 +2,7 @@
 
 See [`one-slice-cycle.md`](one-slice-cycle.md); candidate lifecycle is
 [`candidate-integrity.md`](../../devrites-lib/reference/candidate-integrity.md).
+Opt-in `--parallel N` uses [`parallel-batch.md`](parallel-batch.md) instead of steps 2–8.
 
 1. **Orient and gate.** Read core, `.devrites/ACTIVE`, `state.md`, and required
    slice artifacts. Require `Implementation readiness: READY`, its current

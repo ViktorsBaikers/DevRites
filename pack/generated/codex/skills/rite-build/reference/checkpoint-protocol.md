@@ -1,29 +1,22 @@
 # Checkpoint protocol: what `$rite-build` does when a slice is HITL
 
-When `$rite-build` reaches a slice with `Mode: HITL`, it does **not** start writing code. It
-surfaces the checkpoint as a ranked **option set** and resolves it **before** any code lands:
+HITL slices pause **pre-action** as a ranked **option set** before any code:
 
-- **Human present (interactive):** ask inline via `AskUserQuestion` (the option set below).
-  The human picks; record the pick to `questions.md` (`answered`) + `decisions.md`, clear the
-  gate, and **continue building in place**: no STOP, no `$rite-resolve` round-trip.
-- **Human absent / AFK-pausing / notify-only:** persist the checkpoint (`questions.md` open +
-  `state.md` `Awaiting human`), fire the `notify:` hook, and **stop**. Resume later via
-  `$rite-resolve` (or `--batch`).
-
-Either way the pause is **pre-action**, not post-action: code never lands before the gate.
+- **Interactive:** `AskUserQuestion`; record to `questions.md`/`decisions.md`; clear gate;
+  continue in place (no `$rite-resolve` round-trip).
+- **Absent / AFK / notify-only:** persist open question + `Awaiting human`, notify, **stop**.
+  Resume via `$rite-resolve` (or `--batch`).
 
 ## Render contract
 
-The checkpoint must be rendered in user-facing output **and** persisted to the workspace.
-Both are required: the output is for the human in the room (or the notification target),
-the persisted form is for the next session or the AFK observer.
+Render the checkpoint in user-facing output **and** persist it for the next session / AFK
+observer.
 
 ### User-facing render: the option set
 
-Present the checkpoint as an `AskUserQuestion` with a ranked **option set**
-(`afk-hitl.md` → "Option set"): 2-4 options, **recommended first** + labelled `(Recommended)`,
-each option's description carrying the dimension-tagged rationale + the trade-off it accepts,
-plus the escape hatch. The header names the slice + gate:
+Present as `AskUserQuestion` ranked **option set** (`afk-hitl.md`): 2–4 options,
+recommended first + `(Recommended)`, dimension-tagged trade-offs, plus escape hatch.
+Header names slice + gate:
 
 ```
 Slice <N — name> — HITL (<gate>, SLA <SLA>). <Checkpoint text from tasks.md>
@@ -35,12 +28,9 @@ Slice <N — name> — HITL (<gate>, SLA <SLA>). <Checkpoint text from tasks.md>
   4. Something else — I'll describe it
 ```
 
-The recommended option (#1) is **required**: a checkpoint without a recommendation is a worse
-interrupt than one with shape; the human reacts to a ranked draft faster than to a blank prompt
-(the "give the human something to approve" rule). The recommendation reflects *this* project
-(its conventions, stack, scale), not a generic default. On an interactive pick, resolve in
-place; when persisting a pause instead, the same set is written to `questions.md` `options:`
-and the resume line is `$rite-resolve <qid> "<answer>"` (or `--drop <qid> "<reason>"`).
+Option #1 (recommended) is **required** and must reflect *this* project. Interactive pick →
+resolve in place; pause → persist the same set to `questions.md` `options:` with resume
+`$rite-resolve <qid> "<answer>"` (or `--drop <qid> "<reason>"`).
 
 ### Workspace mutations
 
@@ -93,58 +83,33 @@ rewrite; do not claim cross-file atomicity):
    sh -c "$notify_cmd"
    ```
 
-   The hook fires after the workspace write so the notification target sees a workspace
-   that already records the pause. Failures in the hook **do not** roll back the pause:
-   the gate is authoritative; the notification is best-effort.
+   Fire after workspace write. Hook failure does **not** roll back the pause (best-effort).
 
 ## qid generation
 
-Format: `q-YYYY-MM-DD-NNN`, where `NNN` is the next sequential integer for that date in
-`questions.md`. The controlling root must scan every question header matching
-today's prefix, collect its numeric suffixes, and select one above the highest
-observed suffix (or `001` when none exist), advancing until it is unused. Then
-re-read `questions.md` immediately before the append and repeat the scan. Append only if
-the same candidate is still the next unused id; otherwise recompute. There is no
-reservation or engine command for qids.
+Format `q-YYYY-MM-DD-NNN`: scan today's headers, take next unused suffix (`001` if none),
+re-read immediately before append and recompute if raced. No reservation/engine qid API.
 
 ## When AFK is active
 
-If `.devrites/AFK` exists and the slice's `Gate` is in `allow_gates`, `$rite-build` does
-**not** invoke the checkpoint protocol. Instead:
+If `.devrites/AFK` exists and the slice `Gate` is in `allow_gates`, skip this protocol and
+auto-pick recommended option 1:
 
-- For `advisory`: log a `gate: advisory` entry to `questions.md`, record the trade-off in
-  `decisions.md`, and **dispatch the wright** to build the slice (workflow step 3).
-- For `validating` (only when `allow_gates` includes it): **dispatch the wright** (step 3); on
-  return, write a `gate: validating` entry to `questions.md`, mark the slice
-  `built (pending review)` in `state.md`, and continue. A slice's only states are `pending` and `built`:
-  acceptance is proven at the **feature** level by `$rite-prove` (recorded in
-  `evidence.md`), not per slice. The `built (pending review)` slice is not done until the
-  open `validating` gate resolves via `$rite-resolve`; an open `validating` gate is a
-  NO-GO at seal.
+- `advisory`: log `gate: advisory` + `decisions.md`, then dispatch wright.
+- `validating` (only if allowed): dispatch wright; on return log `gate: validating`, mark
+  `built (pending review)`, continue. Slice states remain `pending|built`; feature
+  acceptance is `$rite-prove`. Open `validating` is NO-GO at seal until `$rite-resolve`.
 
-For gates in `allow_gates`, AFK **auto-picks the recommended option** (option 1 of the set)
-instead of pausing, recording it as above. For `blocking` and `escalating` (and every
-irreversible-risk item), AFK **always** invokes the checkpoint protocol: the sentinel does
-not unlock these gates and no AFK key can override them. See `afk-discipline.md`
-for the irreversible-risk list.
+`blocking` / `escalating` / irreversible-risk always use this protocol (`afk-discipline.md`).
 
 ## Multi-question pauses
 
-The current protocol is **one question per pause**. If a slice has multiple HITL
-checkpoints, split it into sub-slices via `$rite-plan reslice` so each pause is
-single-question. Multi-question pauses are reserved future shape; `Awaiting human` is
-written as a single block.
+**One question per pause.** Multiple HITL checkpoints → `$rite-plan reslice`.
 
 ## What NOT to do
 
-- **Don't write code first and pause after.** The pre-action rule is the whole point.
-- **Don't render the checkpoint without persisting.** Output without `state.md` + `questions.md`
-  updates means the workspace lies on `/clear`.
-- **Don't self-answer a question that *paused* for a human.** When a gate stopped the session
-  (an AFK queue, or a HITL pause the human walked away from), `$rite-resolve` requires an
-  explicit answer: the agent doesn't confirm its own `proposed:` on resume. This is distinct
-  from the two legitimate auto-resolutions: an interactive `AskUserQuestion` pick the human
-  just made, and an AFK auto-pick of the recommended option on a gate `allow_gates` permits.
-- **Don't bundle the `notify:` hook output into chat.** Fire-and-forget; the chat already
-  has the user-facing render.
-- **Don't fire `notify:` on `advisory`-downgraded entries.** It's reserved for true pauses.
+- Don't write code then pause — pre-action only.
+- Don't render without persisting `state.md` + `questions.md`.
+- Don't self-answer a human pause via `proposed:` — `$rite-resolve` needs an explicit
+  answer (distinct from interactive pick / AFK auto-pick on `allow_gates`).
+- Don't put `notify:` output in chat; don't fire `notify:` on advisory-only entries.
