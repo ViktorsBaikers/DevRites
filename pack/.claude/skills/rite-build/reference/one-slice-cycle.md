@@ -3,9 +3,6 @@
 One wright dispatch builds one thin, proven slice. HITL stops; only explicit
 `.devrites/AFK` lets the controlling root chain another pending slice under the
 green-proof, cap, and pause rules. Each wright returns after exactly one slice.
-Opt-in multi-slice fan-out is
-[`parallel-batch.md`](parallel-batch.md) (`/rite-build --parallel N`); this cycle
-remains the default path.
 
 ## The cycle
 

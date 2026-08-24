@@ -1,24 +1,16 @@
 ---
 name: rite-build
-description: Build the next approved vertical slice with evidence. Default one-slice-then-stop (HITL); explicit AFK may chain bounded green slices serially. Opt-in `--parallel N` (2≤N≤3) fans out path-disjoint slices in git worktrees when eligible.
-argument-hint: "[--parallel N] [slice number or name]"
+description: Build the next approved vertical slice with evidence. HITL stops after one; explicit AFK may chain bounded green slices.
+argument-hint: "[slice number or name]"
 user-invocable: true
 ---
 
-# /rite-build: one verified slice (default)
+# /rite-build: one verified slice
 
-Build and prove **one** slice, then stop. HITL never auto-starts the next slice;
-a later user invocation picks up the next pending slice. Explicit `.devrites/AFK`
-alone lets the controlling root chain pending slices **serially** under green
-proof, caps, and pause rules. Every wright returns after one slice. Read the
-active workspace first; without one, route `/rite-spec <feature>`.
-
-**Opt-in parallel:** `/rite-build --parallel N` is the only parallel entry.
-Omitted flag or `N=1` ≡ today's one-slice path (no fan-out). Integer **2≤N≤3**
-may batch up to N **path-disjoint** pending slices in distinct git worktrees,
-then serially integrate on all-green. Non-integer or `N>3` → **hard refuse**
-(no silent clamp). Overlapping slice paths → force serial with reason. Details:
-[`reference/parallel-batch.md`](reference/parallel-batch.md).
+Build and prove one slice. HITL stops; a later user invocation starts the next.
+Explicit `.devrites/AFK` alone lets the controlling root chain pending slices
+under green proof, caps, and pause rules. Every wright returns after it.
+`--parallel` uses [`reference/parallel-batch.md`](reference/parallel-batch.md).
 
 Root owns gates/bookkeeping. Fresh
 [`devrites-slice-wright`](../../agents/devrites-slice-wright.md) writes product
@@ -45,13 +37,9 @@ it never patches source itself.
 
 ## Invariants
 
-- Default: one slice per invocation; writers are serial on the control tree.
-  Parallel writers are allowed **only** via `--parallel N` (2≤N≤3) when slices
-  are path-disjoint, the host supports concurrent worktree wrights, and batch
-  rules in [`reference/parallel-batch.md`](reference/parallel-batch.md) apply;
-  same-worktree multi-writer and root-emulated concurrency remain forbidden.
-  Use the native-worktree pilot for single-slice isolation only when
-  `wright-dispatch.md`'s clean preflight and reconciliation both hold.
+- One slice per wright dispatch; writers are serial. Use the native-worktree pilot
+  only when `wright-dispatch.md`'s clean preflight and reconciliation both hold,
+  otherwise serial same-worktree writing.
 - Exact feature scope only. Record adjacent issues and Things I didn't touch;
   reject any returned diff outside the task's explicit source/test paths.
 - Never rerun an unchanged check. Re-prove after edits.
@@ -72,24 +60,7 @@ it never patches source itself.
 ## Workflow Artifact branch
 
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Vet-ready admitted bytes require root authorship outside product wright","action":"ROOT_TRANSACTION; root writes only admitted .devrites/** targets","return":"saved Build slice cursor; wright product allowlist unchanged"} -->
-## `--parallel N` (opt-in)
-
-| Input | Behavior |
-|-------|----------|
-| Flag omitted | One-slice-then-stop (HITL/AFK serial path unchanged) |
-| `--parallel 1` | Same as omitted — one slice, no fan-out |
-| `--parallel 2` or `--parallel 3` | Parallel batch mode when eligibility passes |
-| Non-integer or `N>3` | Hard refuse with message; do not clamp or guess |
-
-Parallel mode selects up to N pending slices whose exact source/test path sets
-are pairwise path-disjoint, fans out one wright per worktree, proves each slice
-fail-on-red in its cwd, then **serially integrates** all-green siblings onto
-the control line. One red/gap sibling → abort the whole batch (no partial
-integrate). Control tree owns `.devrites/**` bookkeeping; wrights never write
-there. AFK charges once per successfully integrated green slice; abort charges
-zero. While a parallel lease is `running`, refuse another `/rite-build`.
 ## Execute and reply
-
 
 Run every step in `reference/phase-contract.md`: readiness, one target, dispatch
 or canonical transaction, return inspection, independent doubt/test analysis,

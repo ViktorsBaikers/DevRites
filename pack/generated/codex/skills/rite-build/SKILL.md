@@ -9,8 +9,8 @@ user-invocable: true
 
 Build and prove one slice. HITL stops; a later user invocation starts the next.
 Explicit `.devrites/AFK` alone lets the controlling root chain pending slices
-under green proof, caps, and pause rules. Every wright returns after it. Read the
-active workspace first; without one, route `$rite-spec <feature>`.
+under green proof, caps, and pause rules. Every wright returns after it.
+`--parallel` uses [`reference/parallel-batch.md`](reference/parallel-batch.md).
 
 Root owns gates/bookkeeping. Fresh
 [`devrites-slice-wright`](.codex/agents/devrites-slice-wright.toml) writes product

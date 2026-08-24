@@ -30,9 +30,8 @@ The controlling root owns the cap:
    `state.md` or malformed configured value fails closed; an omitted cap is the
    documented unlimited default only when no remaining counter exists. If the
    effective remaining value is zero, stop before dispatching another slice.
-2. **After a slice is recorded `built` on the control tree**, combine the
-   pending → built record and budget charge in one `state.md` rewrite. If the
-   remaining field is absent, add
+2. **After proof is green**, combine the pending → built record and budget
+   charge in one `state.md` rewrite. If the remaining field is absent, add
    `afk_slices_remaining` to a cursor table or `AFK slices remaining` to a
    legacy bullet cursor, seed it from `max_slices`, and write
    `max_slices - 1`; otherwise preserve its spelling and write `remaining - 1`.
@@ -42,20 +41,10 @@ The controlling root owns the cap:
    A controlling orchestrator may pre-seed the remaining field from a validated
    post-plan budget before the first dispatch; never increase or reinitialize an
    existing value.
-3. **Charge exactly once per green built slice on the control tree.** A slice
-   already marked built is not charged again after retry, resume, or
-   compaction. Re-read the saved cursor; if it is zero, report the cap and stop
-   before the next dispatch.
-   - **Serial one-slice path:** charge when that slice's fail-on-red proof is
-     green and the built record is written (same rewrite as step 2).
-   - **Parallel `--parallel` batch (A8/D8):** charge only after **successful
-     serial integrate** of the whole batch — once per successfully integrated
-     green sibling (`budget → budget − K` for K integrated members). Abort and
-     integrate-failed leave the budget **unchanged** (charge **0**). Do **not**
-     charge when a worktree proves green but integrate has not completed, and
-     do **not** double-charge or skip an integrated member. Lifecycle and
-     failure matrix:
-     [`parallel-batch.md`](parallel-batch.md).
+3. **Charge exactly once after each green built slice.** A slice already marked
+   built is not charged again after retry, resume, or compaction. Re-read the
+   saved cursor; if it is zero, report the cap and stop before the next
+   dispatch.
 
 Use this stop message:
 
@@ -116,7 +105,7 @@ The hook is a single shell command run on the `awaiting_human` transition. Envir
 the hook receives:
 
 | Var | Value |
-|---|---|
+| --- | --- |
 | `DEVRITES_QID` | the new qid (e.g. `q-2026-05-28-001`) |
 | `DEVRITES_GATE` | `advisory` / `validating` / `blocking` / `escalating` |
 | `DEVRITES_SLICE` | `<N — name>` |
@@ -128,6 +117,7 @@ The hook is best effort: a non-zero exit does **not** roll back the pause. Failu
 logged to `evidence.md` so the user sees them on return.
 
 Example targets:
+
 - `curl -d "$DEVRITES_QID: $DEVRITES_QUESTION" ntfy.sh/my-topic`
 - `osascript -e "display notification \"$DEVRITES_QUESTION\" with title \"DevRites: $DEVRITES_GATE\""`
 - `pb push "$DEVRITES_SLUG: $DEVRITES_QUESTION"` (via pushbullet CLI)

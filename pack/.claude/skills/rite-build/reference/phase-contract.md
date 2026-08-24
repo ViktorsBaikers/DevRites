@@ -2,9 +2,6 @@
 
 See [`one-slice-cycle.md`](one-slice-cycle.md); candidate lifecycle is
 [`candidate-integrity.md`](../../devrites-lib/reference/candidate-integrity.md).
-Opt-in `/rite-build --parallel N` follows
-[`parallel-batch.md`](parallel-batch.md) (lease, fan-out, abort/integrate) instead of
-steps 2–8 as a single-slice loop.
 
 1. **Orient and gate.** Read core, `.devrites/ACTIVE`, `state.md`, and required
    slice artifacts. Require `Implementation readiness: READY`, its current
@@ -27,14 +24,14 @@ steps 2–8 as a single-slice loop.
    dispatch the exact `devrites-slice-wright` fresh. Root never writes those product
    paths, wright never widens, and a missing profile stops.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Build gate enters or resumes transaction","action":"invoke canonical operation table; reconcile exact result","return":"same slice/checkpoint cursor or Plan/Vet route"} -->
-4. **Inspect the return.** Wait; compare its file list and `git diff --name-only`
+1. **Inspect the return.** Wait; compare its file list and `git diff --name-only`
    with the contract. Reject stale, partial, malformed, or out-of-scope work.
    Preserve user work; source restoration uses the same bounded wright.
-5. **Challenge stood decisions.** For each stood decision, run exact
+2. **Challenge stood decisions.** For each stood decision, run exact
    `devrites-doubt-reviewer` fresh/read-only and record accepted or resolved-rejected
    in `decisions.md`. A missing verdict, principle breach, scope change, or
    irreversible risk blocks.
-6. **Prove without guessing.** Against the frozen pre-slice candidate, inspect
+3. **Prove without guessing.** Against the frozen pre-slice candidate, inspect
    test hunks for deletion, skipping/focus, tautology, or weaker expectations. Dispatch exact
    `devrites-test-analyst` on that immutable diff; missing account or adverse criterion
    verdict is Critical. Run only `test-plan.md` repository/CI commands, capture output,
@@ -50,14 +47,14 @@ steps 2–8 as a single-slice loop.
    is progress; a different Critical/Important invariant gets its own fingerprint.
    Ask humans only for product decisions,
    irreversible risk, or genuinely human-only access.
-7. **Record.** After green proof, upsert `touched-files.md`'s authoritative candidate
+4. **Record.** After green proof, upsert `touched-files.md`'s authoritative candidate
    manifest from the actual scoped diff with explicit `present`/`deleted` rows;
    update `state.md`, `evidence.md`, and applicable UI/browser evidence. The manifest
    stays mutable until Polish closes it.
    Record stood decisions/dead ends in `decisions.md`; update checked assumptions'
    status/evidence, never leaving a disproved row live. If code reveals a durable
    project rule, propose a reviewed `AGENTS.md`/nearest-doc update, not a scored ledger.
-8. **AFK and reply.** Under `afk-discipline.md`, root charges
+5. **AFK and reply.** Under `afk-discipline.md`, root charges
    exactly once after each green built slice, never below zero; stop before another dispatch at zero, and fail closed
    on malformed budget. Use the reply contract; name the next pending slice or, only
    when all slices are built, `/rite-prove`. Emit no decorative progress renderer or

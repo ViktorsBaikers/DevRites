@@ -105,7 +105,7 @@ The hook is a single shell command run on the `awaiting_human` transition. Envir
 the hook receives:
 
 | Var | Value |
-|---|---|
+| --- | --- |
 | `DEVRITES_QID` | the new qid (e.g. `q-2026-05-28-001`) |
 | `DEVRITES_GATE` | `advisory` / `validating` / `blocking` / `escalating` |
 | `DEVRITES_SLICE` | `<N — name>` |
@@ -117,6 +117,7 @@ The hook is best effort: a non-zero exit does **not** roll back the pause. Failu
 logged to `evidence.md` so the user sees them on return.
 
 Example targets:
+
 - `curl -d "$DEVRITES_QID: $DEVRITES_QUESTION" ntfy.sh/my-topic`
 - `osascript -e "display notification \"$DEVRITES_QUESTION\" with title \"DevRites: $DEVRITES_GATE\""`
 - `pb push "$DEVRITES_SLUG: $DEVRITES_QUESTION"` (via pushbullet CLI)
