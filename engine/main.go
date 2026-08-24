@@ -27,6 +27,9 @@ Usage:
   devrites-engine check seal <slug>        Recheck the Build-input binding, final files, and evidence freshness
   devrites-engine check path-disjoint [--root <dir>] [<json-file>|-]
                                          Verify slice path sets are pairwise disjoint
+  devrites-engine check task-graph <slug>  Validate tasks.md slice dependency graph
+  devrites-engine check skill-trust <path> Scan one skill/agent Markdown for trust violations
+  devrites-engine observe summary <slug>   Emit sanitized JSON workspace summary
   devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/cleanup
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
@@ -75,9 +78,11 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "uninstall":
 		return install.Run(args[1:], stdout, stderr, install.ModeUninstall)
 	case "check":
-		return cmdCheck(args[1:], stdin, stdout, stderr)
+		return cmdCheck(root, args[1:], stdin, stdout, stderr)
 	case "parallel":
 		return parallel.Run("parallel", args[1:], stdin, stdout, stderr)
+	case "observe":
+		return cmdObserve(root, args[1:], stdout, stderr)
 	case "state":
 		return cmdState(root, args[1:], stdout, stderr)
 	case "secret-scan":
@@ -94,9 +99,9 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 }
 
-func cmdCheck(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine check <candidate|readiness|seal|path-disjoint> ...")
+		fmt.Fprintln(stderr, "usage: devrites-engine check <candidate|readiness|seal|path-disjoint|task-graph|skill-trust> ...")
 		return exitUsage
 	}
 	sub, rest := args[0], args[1:]
@@ -107,6 +112,10 @@ func cmdCheck(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdGate(gate.Kind(sub), rest, stdout, stderr)
 	case "path-disjoint":
 		return parallel.Run("path-disjoint", rest, stdin, stdout, stderr)
+	case "task-graph":
+		return cmdTaskGraph(root, rest, stdout, stderr)
+	case "skill-trust":
+		return cmdSkillTrust(rest, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "devrites: unknown check %q\n", sub)
 		return exitUsage
@@ -192,4 +201,56 @@ func cmdGate(kind gate.Kind, args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprint(stdout, result.Render())
 	return exitOK
+}
+
+func cmdTaskGraph(root string, args []string, stdout, stderr io.Writer) int {
+	if len(args) != 1 {
+		fmt.Fprintln(stderr, "usage: devrites-engine check task-graph <slug>")
+		return exitUsage
+	}
+	if root == "" {
+		var err error
+		root, err = state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
+		if err != nil {
+			fmt.Fprintf(stderr, "devrites: %v\n", err)
+			return exitUsage
+		}
+	}
+	return lib.RunTaskGraphCheck(root, args[0], stdout, stderr)
+}
+
+func cmdSkillTrust(args []string, stdout, stderr io.Writer) int {
+	if len(args) != 1 {
+		fmt.Fprintln(stderr, "usage: devrites-engine check skill-trust <path>")
+		return exitUsage
+	}
+	return lib.RunSkillTrustCheck(args[0], stdout, stderr)
+}
+
+func cmdObserve(root string, args []string, stdout, stderr io.Writer) int {
+	if len(args) == 0 {
+		fmt.Fprintln(stderr, "usage: devrites-engine observe summary <slug>")
+		return exitUsage
+	}
+	if args[0] != "summary" {
+		fmt.Fprintf(stderr, "devrites: unknown observe command %q\n", args[0])
+		return exitUsage
+	}
+	if root == "" {
+		var err error
+		root, err = state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
+		if err != nil {
+			fmt.Fprintf(stderr, "devrites: %v\n", err)
+			return exitUsage
+		}
+	}
+	slug, code, err := lib.ActiveSlug(root, args[1:])
+	if err != nil {
+		fmt.Fprintf(stderr, "observe: %v\n", err)
+		if code == 0 {
+			code = exitUsage
+		}
+		return code
+	}
+	return lib.RunObserveSummary(root, slug, stdout, stderr)
 }

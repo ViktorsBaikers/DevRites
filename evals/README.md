@@ -12,6 +12,8 @@ Codex or Claude or claim to measure model behavior.
   `scripts/run-outcome-evals.sh`.
 - `behavioral/` contains pressure scenarios for gating skills. CI validates their
   shape with `scripts/run-behavioral-evals.sh`.
+- `coverage.json` lists gating skills that must have behavioral corpora. CI
+  validates the ledger with `scripts/check-gating-eval-ledger.sh`.
 
 Use Codex or Claude's native evaluation/session facilities to measure routing or
 behavior. DevRites owns only the corpora and deterministic artifact invariants.

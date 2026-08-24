@@ -126,7 +126,7 @@ func TestNestedCommandFamilyUsageListsOnlyRetainedCommands(t *testing.T) {
 		want    string
 		removed []string
 	}{
-		{args: []string{"check"}, want: "check <candidate|readiness|seal|path-disjoint>", removed: []string{"spec"}},
+		{args: []string{"check"}, want: "check <candidate|readiness|seal|path-disjoint|task-graph|skill-trust>", removed: []string{"spec"}},
 		{args: []string{"state"}, want: "state <resolve|close>", removed: []string{"clarify", "tick-afk", "recovery"}},
 	} {
 		t.Run(test.args[0], func(t *testing.T) {
