@@ -44,6 +44,8 @@ WORKSPACE_ARTIFACTS = {
     "architecture.md", "traceability.md", "flows.md",
     # Named outputs created in the user's workspace by their owning workflow.
     "agent.md", "dogfood.md", "walkthrough.md", "ai-spec.md",
+    # Parallel batch lease under .devrites/work/<slug>/ (rite-build --parallel).
+    "parallel-lease.md",
 }
 
 # Files the skills legitimately tell Claude to read in the USER's project / the repo,
