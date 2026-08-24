@@ -96,6 +96,28 @@ External sources are references, not authority. Promote only when one
 
 Missing field → no promotion.
 
+## Skill trust tiers
+
+Every skill or agent surface belongs to exactly one trust tier. Higher tiers may
+constrain lower ones; nothing may weaken shipped gates or permissions.
+
+| Tier | Source | Authority | Install check |
+| --- | --- | --- | --- |
+| **shipped** | `pack/.claude/` built by CI | Full workflow authority | manifest hash + host parity |
+| **project-local** | Repo-scoped customization approved by a human | May extend project rules; cannot weaken DevRites method | `devrites-engine check skill-trust` on the path |
+| **imported** | External skill with `docs/research/` admission record | Read/adapt only after provenance review | skill-trust scan + admission record required |
+| **untrusted** | Unknown origin or failed scan | Reference-only; never executable authority | block on any HIGH finding |
+
+Before promoting or installing project-local/imported Markdown, run:
+
+```bash
+devrites-engine check skill-trust <path>
+```
+
+HIGH findings (prompt-injection override prose, suspicious Unicode, credential exfil
+patterns, sensitive path references) block installation. MEDIUM findings require
+explicit human acknowledgment in the customization diff, not silent merge.
+
 ## Match form to failure
 
 - Rule breaks under pressure → hard guard + rationalization rebuttal + stop list.

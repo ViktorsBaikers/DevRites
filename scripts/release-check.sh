@@ -27,6 +27,9 @@ ok "install/update/uninstall smoke"
 bash scripts/run-behavioral-evals.sh >/tmp/devrites-release-behavioral.log
 ok "behavioral eval schema"
 
+bash scripts/check-gating-eval-ledger.sh >/tmp/devrites-release-eval-coverage.log
+ok "eval coverage ledger"
+
 bash tests/release-tarball-test.sh >/tmp/devrites-release-tarball.log
 ok "release tarball reproducible and confined"
 
