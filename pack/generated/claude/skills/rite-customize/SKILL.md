@@ -16,8 +16,9 @@ standalone token occurs in current `$ARGUMENTS`; earlier context cannot activate
 1. Map policy→instruction, reusable work→skill, specialist→agent, external capability→plugin/MCP.
 2. Inspect target/host docs; reuse before copying.
 3. Draft smallest nearest-scope change; do not restate safeguards.
-4. Show path/exact diff; wait.
-5. Write approved artifacts, validate natively, keep no mirror.
+4. For any new or edited skill/agent Markdown, run `devrites-engine check skill-trust <path>` before showing the diff. HIGH findings block; MEDIUM findings need explicit human acknowledgment in the proposal.
+5. Show path/exact diff; wait.
+6. Write approved artifacts, validate natively, keep no mirror.
 
 Here, edit canonical source and generate; never edit derived artifacts.
 

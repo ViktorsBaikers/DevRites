@@ -36,6 +36,9 @@ Mark edges that cross a frontend/backend or service boundary. Those slices shoul
 define the contract first (so both sides can proceed) and trigger `devrites-doubt`
 before standing the interface.
 
+After editing `tasks.md`, run `devrites-engine check task-graph <slug>` before Vet.
+Cycles or unknown dependencies block readiness.
+
 For monorepos/multiple repositories, annotate the proven root and deployable on each node.
 For data/integration changes, include recovery ordering: expand before new writers,
 backfill before contract, consumer compatibility before provider exposure, and monitoring

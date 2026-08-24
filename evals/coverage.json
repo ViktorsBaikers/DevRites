@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "description": "Eval coverage ledger for gating skills and CI validation.",
+  "gating_skills": [
+    "rite-autocomplete",
+    "rite-build",
+    "rite-clarify",
+    "rite-converge",
+    "rite-prove",
+    "rite-review",
+    "rite-seal",
+    "rite-upgrade",
+    "rite-vet"
+  ],
+  "require_behavioral": [
+    "rite-autocomplete",
+    "rite-build",
+    "rite-clarify",
+    "rite-converge",
+    "rite-prove",
+    "rite-review",
+    "rite-seal",
+    "rite-upgrade",
+    "rite-vet"
+  ],
+  "require_trigger": "all_public_skills_except_devrites-lib"
+}

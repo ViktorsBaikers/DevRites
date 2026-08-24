@@ -7,14 +7,17 @@ import (
 
 // Report is the computed completeness status of a feature at its current phase.
 type Report struct {
-	Slug          string
-	Phase         Phase
-	Required      map[Section]bool
-	Missing       []Section // required-but-empty sections, in policy order
-	RequiredFiles map[string]bool
-	MissingFiles  []string // required-but-empty workspace files, in lifecycle order
-	present       map[Section]bool
-	diagnostics   []ArtifactDiagnostic
+	Slug              string
+	Phase             Phase
+	Status            string
+	NextAction        string
+	PrinciplesPresent bool
+	Required          map[Section]bool
+	Missing           []Section // required-but-empty sections, in policy order
+	RequiredFiles     map[string]bool
+	MissingFiles      []string // required-but-empty workspace files, in lifecycle order
+	present           map[Section]bool
+	diagnostics       []ArtifactDiagnostic
 }
 
 // Status computes phase-relative completeness from one retained workspace observation.
@@ -35,6 +38,24 @@ func statusWithCallback(root, slug string, callback observationCallback) (*Repor
 	return newObservationReport(observation, phase, policy), nil
 }
 
+func observationCursorFields(observation *WorkspaceObservation) (status, nextAction string, principlesPresent bool) {
+	if fact, ok := observation.Fact(".devrites/principles.md"); ok && fact.State() == ArtifactPresent {
+		principlesPresent = true
+	}
+	fact, ok := observation.Fact(LedgerFile)
+	if !ok || fact.State() != ArtifactPresent {
+		return "", "", principlesPresent
+	}
+	lines := strings.Split(string(fact.Bytes()), "\n")
+	if value, ok := CursorField(lines, CursorStatus); ok {
+		status = value
+	}
+	if value, ok := CursorField(lines, CursorNextAction); ok {
+		nextAction = value
+	}
+	return status, nextAction, principlesPresent
+}
+
 func newObservationReport(observation *WorkspaceObservation, phase Phase, policy PhasePolicy) *Report {
 	present := observationSectionPresence(observation)
 	required := requiredSections(policy)
@@ -44,15 +65,19 @@ func newObservationReport(observation *WorkspaceObservation, phase Phase, policy
 	for i, artifact := range missingArtifacts {
 		missingFiles[i] = string(artifact)
 	}
+	status, nextAction, principlesPresent := observationCursorFields(observation)
 	return &Report{
-		Slug:          observation.Slug(),
-		Phase:         phase,
-		Required:      required,
-		Missing:       missingObservationSections(present, policy.RequiredSections),
-		RequiredFiles: requiredFiles,
-		MissingFiles:  missingFiles,
-		present:       present,
-		diagnostics:   diagnostics,
+		Slug:              observation.Slug(),
+		Phase:             phase,
+		Status:            status,
+		NextAction:        nextAction,
+		PrinciplesPresent: principlesPresent,
+		Required:          required,
+		Missing:           missingObservationSections(present, policy.RequiredSections),
+		RequiredFiles:     requiredFiles,
+		MissingFiles:      missingFiles,
+		present:           present,
+		diagnostics:       diagnostics,
 	}
 }
 

@@ -23,7 +23,7 @@ else
   FILES=()
   while IFS= read -r f; do
     FILES+=("$f")
-  done < <(find "$EVALS_DIR" -maxdepth 1 -type f -name '*.json' | sort)
+  done < <(find "$EVALS_DIR" -maxdepth 1 -type f -name '*.json' ! -name 'coverage.json' | sort)
 fi
 
 if [[ ${#FILES[@]} -eq 0 ]]; then

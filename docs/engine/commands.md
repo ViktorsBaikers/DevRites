@@ -15,6 +15,10 @@ workflow strategy.
 | `check readiness <slug>` | Check target-Phase files, open human gates from Clarify onward, and the current stable Build-input binding when applicable. |
 | `check readiness --emit-binding <slug>` | Render the exact stable Build-input binding for Vet to record after review. |
 | `check seal <slug>` | Check files required by target Phase `seal`, open human gates, the stable Build-input binding, and exact candidate bindings. |
+| `check path-disjoint [--root <dir>] [<json-file>|-]` | Verify slice path sets are pairwise disjoint. |
+| `check task-graph <slug>` | Validate `tasks.md` slice dependency graph for cycles and unknown dependencies. |
+| `check skill-trust <path>` | Scan one skill/agent Markdown file for structural trust violations. |
+| `observe summary <slug>` | Emit sanitized JSON workspace summary from one retained observation. |
 | `state resolve <qid> "<answer>"` | Resolve an open question and update `questions.md` plus `state.md` atomically. |
 | `state close <slug>` | Archive a shipped workspace and clear matching `ACTIVE`. |
 | `secret-scan [--staged] [--stdin] [slug]` | Scan exact staged blobs, stdin, or touched regular files for credential material. |
