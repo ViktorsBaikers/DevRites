@@ -87,8 +87,13 @@ rewrite; do not claim cross-file atomicity):
 
 ## qid generation
 
-Format `q-YYYY-MM-DD-NNN`: scan today's headers, take next unused suffix (`001` if none),
-re-read immediately before append and recompute if raced. No reservation/engine qid API.
+Format: `q-YYYY-MM-DD-NNN`, where `NNN` is the next sequential integer for that date in
+`questions.md`. The controlling root must scan every question header matching
+today's prefix, collect its numeric suffixes, and select one above the highest
+observed suffix (or `001` when none exist), advancing until it is unused. Then
+re-read `questions.md` immediately before the append and repeat the scan. Append only if
+the same candidate is still the next unused id; otherwise recompute. There is no
+reservation or engine command for qids.
 
 ## When AFK is active
 

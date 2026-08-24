@@ -33,7 +33,7 @@ The controlling root owns the cap:
    A controlling orchestrator may pre-seed the remaining field from a validated
    post-plan budget before the first dispatch; never increase or reinitialize an
    existing value.
-3. **Charge exactly once per green built slice on the control tree.** A slice
+3. **Charge exactly once after each green built slice.** On the control tree, a slice
    already marked built is not charged again after retry, resume, or
    compaction. Re-read the saved cursor; if it is zero, report the cap and stop
    before the next dispatch.

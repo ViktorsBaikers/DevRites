@@ -22,7 +22,7 @@ Execute [`reference/phase-contract.md`](reference/phase-contract.md); dispatch u
 
 ## Required rules
 
-Read `devrites-lib/reference/standards/core.md` first. Load only triggered rules:
+Read `.agents/skills/devrites-lib/reference/standards/core.md` first. Load only triggered rules:
 coding/error/testing/[`tdd.md`](reference/tdd.md)/patterns/DoD; binding
 `.devrites/principles.md`; security; topology; data integrity; integration reliability.
 Wright applies anti-slop; root verifies returns and never patches source.
@@ -52,6 +52,7 @@ Wright applies anti-slop; root verifies returns and never patches source.
 Omitted/`1` ≡ serial; `2`/`3` → path-disjoint fan-out when eligible; else hard refuse.
 All-green serial integrate; one red/gap aborts. AFK charges after integrate only.
 Running lease blocks another `$rite-build`. Details: `parallel-batch.md`.
+
 ## Execute and reply
 
 Run every step in `reference/phase-contract.md`: readiness, one target, dispatch

@@ -6,9 +6,10 @@ the wright writes them and invokes no agent.
 
 ## Host gate
 
-Follow the [source-writing boundary](../../devrites-lib/reference/standards/agents.md#source-writing-boundary):
-Claude → exact wright `acceptEdits`; Codex → workspace root + `:workspace` wright +
-read-only specialists. Never bypass the wright or recreate an engine bridge.
+Follow the canonical [source-writing boundary](../../devrites-lib/reference/standards/agents.md#source-writing-boundary):
+Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root,
+the exact `:workspace` wright, and read-only specialists. Never bypass/substitute
+the wright or recreate an engine bridge.
 
 ## Isolated writer-worktree pilot
 
@@ -33,9 +34,12 @@ run approved proof, record evidence, then let host remove worktree.
 
 Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
 preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
-Parallel writers only under `/rite-build --parallel N` with path-disjoint,
-abort-batch, and control `parallel-lease.md` ([`parallel-batch.md`](parallel-batch.md)).
-Same-worktree multi-writer / root-emulated worktrees stay forbidden.
+Parallel writer work remains forbidden until this serial pilot measures transfer,
+conflict, proof, and review outcomes on both hosts. Opt-in `/rite-build --parallel N`
+(2≤N≤3) is the only exception: path-disjoint fan-out, abort-batch, and control
+[`parallel-lease.md`](../../devrites-lib/reference/parallel-lease.md) under
+[`parallel-batch.md`](parallel-batch.md). Same-worktree multi-writer / root-emulated
+worktrees stay forbidden.
 
 ## Prepare
 
@@ -57,9 +61,10 @@ Same-worktree multi-writer / root-emulated worktrees stay forbidden.
 
 ## Run
 
-Ask the host for the exact writer in fresh context and wait. Default: one writer.
-Never two writers in one worktree, mixed modes, or generic substitutes. Opt-in
-`/rite-build --parallel N` fans out only under [`parallel-batch.md`](parallel-batch.md).
+Ask the host for the exact writer in fresh context and wait. Use at most one writer
+across all linked worktrees for this workspace. Never run two writers in one worktree,
+run isolated and same-worktree writers concurrently, or substitute a generic agent.
+Opt-in `/rite-build --parallel N` fans out only under [`parallel-batch.md`](parallel-batch.md).
 
 ## Inspect and prove
 
