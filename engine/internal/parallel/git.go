@@ -19,13 +19,17 @@ func git(repo string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", repo}, args...)...)
-	cmd.Env = append(gitenv.Sanitize(os.Environ()),
+	env := append(gitenv.Sanitize(os.Environ()),
 		"GIT_TERMINAL_PROMPT=0",
 		"GCM_INTERACTIVE=never",
 		"GIT_PAGER=cat",
 		"PAGER=cat",
 		"LC_ALL=C",
 	)
+	if gitOpNeedsIdentity(args) {
+		env = ensureGitIdentityEnv(env)
+	}
+	cmd.Env = env
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -46,6 +50,39 @@ func git(repo string, args ...string) (string, error) {
 		return out, fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, detail)
 	}
 	return out, nil
+}
+
+func gitOpNeedsIdentity(args []string) bool {
+	for _, a := range args {
+		switch a {
+		case "cherry-pick", "commit", "merge", "rebase", "am":
+			return true
+		}
+	}
+	return false
+}
+
+// ensureGitIdentityEnv fills author/committer when the host has none (common on
+// CI images). Prefer existing env identity when present.
+func ensureGitIdentityEnv(env []string) []string {
+	keys := map[string]string{
+		"GIT_AUTHOR_NAME":     "devrites-engine",
+		"GIT_AUTHOR_EMAIL":    "engine@devrites.invalid",
+		"GIT_COMMITTER_NAME":  "devrites-engine",
+		"GIT_COMMITTER_EMAIL": "engine@devrites.invalid",
+	}
+	have := make(map[string]bool, len(env))
+	for _, e := range env {
+		if i := strings.IndexByte(e, '='); i > 0 {
+			have[e[:i]] = true
+		}
+	}
+	for k, v := range keys {
+		if !have[k] {
+			env = append(env, k+"="+v)
+		}
+	}
+	return env
 }
 
 func revParse(repo, rev string) (string, error) {
