@@ -134,7 +134,7 @@ dr_build_engine() {
   [ -d "$_dr_source_dir/engine" ] && [ -n "$_dr_go_bin" ] || return 1
   _dr_tag="$(dr_release_tag "$_dr_source_dir")"
   [ -n "$_dr_tag" ] || _dr_tag="dev"
-  ( cd "$_dr_source_dir/engine" && GOCACHE="$(dirname "$_dr_out")/go-cache" CGO_ENABLED=0 "$_dr_go_bin" build -trimpath -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=$_dr_tag" -o "$_dr_out" . ) 2>/dev/null || return 1
+  ( cd "$_dr_source_dir/engine" && GOCACHE="${GOCACHE:-$(dirname "$_dr_out")/go-cache}" CGO_ENABLED=0 "$_dr_go_bin" build -trimpath -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=$_dr_tag" -o "$_dr_out" . ) 2>/dev/null || return 1
   chmod +x "$_dr_out" 2>/dev/null || true
 }
 
