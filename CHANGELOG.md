@@ -2,13 +2,6 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
-## [4.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.2.0...v4.3.0) (2026-08-25)
-
-### Added
-
-* **devrites:** add skill-trust, task-graph, and observe commands ([#38](https://github.com/ViktorsBaikers/DevRites/issues/38)) ([2562355](https://github.com/ViktorsBaikers/DevRites/commit/2562355a970726fb95e57e2f328961ca136c9f81))
-* **rite-build:** opt-in parallel worktree slices (N≤3) ([#37](https://github.com/ViktorsBaikers/DevRites/issues/37)) ([fe71d67](https://github.com/ViktorsBaikers/DevRites/commit/fe71d672408559af030e95f700b18ead798f18fc))
-
 ## [4.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.1.0...v4.2.0) (2026-08-23)
 
 ### Added

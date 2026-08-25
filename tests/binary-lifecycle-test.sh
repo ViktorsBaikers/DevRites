@@ -15,6 +15,9 @@ command -v go >/dev/null 2>&1 || { echo "  SKIP: go toolchain not available"; ex
 [ -d "$ROOT/engine" ] || { echo "  SKIP: no engine/ (tarball install)"; exit 0; }
 
 BIN="$(mktemp -d)"; TGT="$(mktemp -d)"; ENGINE_TMP_ROOT="$(mktemp -d)"; NETBIN="$(mktemp -d)"; GEN=""
+GOCACHE="${GOCACHE:-$BIN/go-cache}"
+mkdir -p "$GOCACHE"
+export GOCACHE
 trap 'rm -rf "$BIN" "$TGT" "$ENGINE_TMP_ROOT" "$NETBIN"; [ -n "$GEN" ] && rm -rf "$GEN"' EXIT
 printf '#!/bin/sh\nexit 22\n' > "$NETBIN/curl"
 chmod +x "$NETBIN/curl"
@@ -66,7 +69,7 @@ bash "$ROOT/uninstall.sh" --target "$TGT" --keep-binary >/dev/null 2>&1
 
 # 8) An unstamped source build ("dev") can be upgraded to a release. The
 #    downgrade guard compares only semantic versions, so "dev" is never newer.
-( cd "$ROOT/engine" && GOCACHE="$BIN/go-cache-dev" CGO_ENABLED=0 go build -o "$BIN/devrites-engine" . ) >/dev/null 2>&1
+( cd "$ROOT/engine" && CGO_ENABLED=0 go build -o "$BIN/devrites-engine" . ) >/dev/null 2>&1
 [ "$("$BIN/devrites-engine" version 2>/dev/null)" = "dev" ] && ok "planted a dev build" || no "could not plant a dev build"
 DEVRITES_REF="v9.9.9" bash "$ROOT/install.sh" --target "$TGT" --force >/dev/null 2>&1
 v="$("$BIN/devrites-engine" version 2>/dev/null || true)"

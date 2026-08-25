@@ -73,18 +73,14 @@ jobs:
       - name: Anti-slop detector (advisory)
         run: bash scripts/devrites-detect.sh || true
 
-  # Every tests/*.sh through the same runner developers use locally (npm test).
-  # run-tests.mjs auto-discovers the suite, so a new test file is gated here
-  # without touching this workflow: no more hand-enumerated steps drifting
-  # behind the tests/ directory.
-  tests:
-    name: shell test suite (node ${{ matrix.node }})
+  # Build shared host artifacts + engine once; every shard downloads instead of
+  # rebuilding locally (saves ~15–30s per shard and warms GOCACHE for lifecycle tests).
+  test-prep:
+    name: prepare test artifacts
     runs-on: ubuntu-latest
-    needs: validate
-    strategy:
-      fail-fast: false
-      matrix:
-        node: ['18', '24']   # engines floor + current LTS; brackets the supported range
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
@@ -93,8 +89,73 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Go is needed so run-tests.mjs can build the shared engine binary the
-      # install/update/uninstall + binary-lifecycle + conventions-ledger tests exercise.
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.7'
+          cache-dependency-path: engine/go.sum
+
+      - name: Build shared host artifacts
+        run: |
+          mkdir -p ci-test-artifacts/host
+          DEVRITES_HOST_ARTIFACT_DIR="$PWD/ci-test-artifacts/host" bash scripts/build-host-artifacts.sh
+
+      - name: Build shared test engine + warm GOCACHE
+        run: |
+          mkdir -p ci-test-artifacts/engine ci-test-artifacts/gocache
+          version="$(node -p "require('./package.json').version")"
+          export GOCACHE="$PWD/ci-test-artifacts/gocache" CGO_ENABLED=0
+          # Shared CLI used by most shell tests.
+          go build -C engine -trimpath \
+            -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=v${version}" \
+            -o "$PWD/ci-test-artifacts/engine/devrites-engine" .
+          # Warm patterns binary-lifecycle / install-lib exercise (unstamped + pinned tags).
+          go build -C engine -trimpath -o /tmp/devrites-engine-dev .
+          for tag in v9.9.9 v9.9.10 v9.9.11 v9.9.12 v9.9.13; do
+            go build -C engine -trimpath \
+              -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=${tag}" \
+              -o /tmp/devrites-engine-warm .
+          done
+
+      - name: Upload shared test artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: devrites-test-artifacts
+          path: ci-test-artifacts/
+          retention-days: 1
+
+  # Every tests/*.sh through the same runner developers use locally (npm test).
+  # run-tests.mjs auto-discovers the suite and supports weighted CI sharding so
+  # the slow integration tests (workflow-artifact-identity, binary-lifecycle,
+  # install/uninstall smokes) run on separate runners in parallel.
+  tests:
+    name: shell test suite (shard ${{ matrix.shard }}/8)
+    runs-on: ubuntu-latest
+    needs: [validate, test-prep]
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Download shared test artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: devrites-test-artifacts
+          path: ci-test-artifacts
+
+      - name: Restore shared test artifact permissions
+        run: chmod +x ci-test-artifacts/engine/devrites-engine
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
@@ -104,11 +165,19 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: ${{ matrix.node }}
+          node-version: '24'
           cache: 'npm'
 
-      - name: Run full shell test suite (tests/*.sh)
-        run: node scripts/run-tests.mjs
+      - name: Run shell test shard (tests/*.sh)
+        env:
+          DEVRITES_TEST_JOBS: '8'
+          DEVRITES_WAI_PARALLEL_WORKERS: '4'
+          DEVRITES_WAI_BOUNDARY_SHARDS: '4'
+          DEVRITES_WAI_CORE_SHARDS: '2'
+          DEVRITES_HOST_ARTIFACT_DIR: ${{ github.workspace }}/ci-test-artifacts/host
+          DEVRITES_ENGINE_CLI: ${{ github.workspace }}/ci-test-artifacts/engine/devrites-engine
+          GOCACHE: ${{ github.workspace }}/ci-test-artifacts/gocache
+        run: node scripts/run-tests.mjs --shard ${{ matrix.shard }}/8
 
   engine:
     name: engine (go test + cross-compile)
