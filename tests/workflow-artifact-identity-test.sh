@@ -306,6 +306,56 @@ def delivery_test_skip_generated() -> str | None:
     return _DELIVERY_TEST["skip_generated"]
 
 
+def delivery_parallel_workers() -> int:
+    raw = os.environ.get("DEVRITES_WAI_PARALLEL_WORKERS", "4")
+    try:
+        workers = int(raw)
+    except ValueError:
+        workers = 4
+    return max(1, min(8, workers))
+
+
+def parse_boundary_shard_spec() -> tuple[int, int] | None:
+    spec = os.environ.get("DEVRITES_WAI_BOUNDARY_SHARD", "").strip()
+    if not spec:
+        return None
+    match = re.fullmatch(r"(\d+)/(\d+)", spec)
+    require(match is not None, f"invalid DEVRITES_WAI_BOUNDARY_SHARD: {spec}")
+    index = int(match.group(1))
+    total = int(match.group(2))
+    require(1 <= index <= total, f"invalid DEVRITES_WAI_BOUNDARY_SHARD: {spec}")
+    return index, total
+
+
+def filter_boundary_shard(boundaries: set[str]) -> set[str]:
+    spec = parse_boundary_shard_spec()
+    if spec is None:
+        return boundaries
+    index, total = spec
+    selected = [
+        boundary for offset, boundary in enumerate(sorted(boundaries))
+        if offset % total == index - 1
+    ]
+    require(len(selected) > 0, f"empty workflow-artifact boundary shard: {index}/{total}")
+    return set(selected)
+
+
+def wai_skip_delivery_modes() -> bool:
+    return os.environ.get("DEVRITES_WAI_SKIP_DELIVERY_MODES") == "1"
+
+
+def wai_skip_delivery_model_matrix() -> bool:
+    return os.environ.get("DEVRITES_WAI_SKIP_DELIVERY_MODEL_MATRIX") == "1"
+
+
+def wai_boundary_only() -> bool:
+    return os.environ.get("DEVRITES_WAI_BOUNDARY_ONLY") == "1"
+
+
+def wai_delivery_model_only() -> bool:
+    return os.environ.get("DEVRITES_WAI_DELIVERY_MODEL_ONLY") == "1"
+
+
 def reject_delivery_fixture_environment() -> None:
     present = [name for name in DELIVERY_FIXTURE_ENV if name in os.environ]
     require(not present, "delivery modes reject fixture environment")
@@ -5021,13 +5071,28 @@ def delivery_boundary_case(kind: str, boundary: str) -> None:
 
 def check_actual_delivery_modes() -> None:
     executed: set[str] = set()
-    prepare_boundaries = {
+    full_prepare_boundaries = {
         boundary for boundary in DELIVERY_BOUNDARIES
         if boundary == "journal-created" or boundary.startswith("bootstrap-")
         or boundary.startswith("snapshot-") or boundary.startswith("authored-")
     }
-    rollback_boundaries = {boundary for boundary in DELIVERY_BOUNDARIES if boundary.startswith("rollback-")}
-    install_boundaries = set(DELIVERY_BOUNDARIES) - prepare_boundaries - rollback_boundaries
+    full_rollback_boundaries = {boundary for boundary in DELIVERY_BOUNDARIES if boundary.startswith("rollback-")}
+    full_install_boundaries = set(DELIVERY_BOUNDARIES) - full_prepare_boundaries - full_rollback_boundaries
+    if parse_boundary_shard_spec() is not None:
+        allowed = filter_boundary_shard(set(DELIVERY_BOUNDARIES))
+        prepare_boundaries = full_prepare_boundaries & allowed
+        rollback_boundaries = full_rollback_boundaries & allowed
+        install_boundaries = full_install_boundaries & allowed
+        require(prepare_boundaries or rollback_boundaries or install_boundaries,
+                "workflow-artifact boundary shard has no assigned boundaries")
+    else:
+        prepare_boundaries = full_prepare_boundaries
+        rollback_boundaries = full_rollback_boundaries
+        install_boundaries = full_install_boundaries
+    expected_boundaries = (
+        filter_boundary_shard(set(DELIVERY_BOUNDARIES))
+        if parse_boundary_shard_spec() is not None else set(DELIVERY_BOUNDARIES)
+    )
 
     def terminal(repo: Path, delivery: Path, before: dict[str, dict], expected_post: list[dict] | None,
                  expected_state: str) -> None:
@@ -5071,7 +5136,7 @@ def check_actual_delivery_modes() -> None:
 
     prepare_results = []
     try:
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=delivery_parallel_workers()) as executor:
             prepare_futures = [executor.submit(prepare_case, boundary)
                                for boundary in sorted(prepare_boundaries)]
             prepare_failure = None
@@ -5113,7 +5178,7 @@ def check_actual_delivery_modes() -> None:
 
     install_results = []
     try:
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=delivery_parallel_workers()) as executor:
             install_futures = [executor.submit(install_case, boundary)
                                for boundary in sorted(install_boundaries)]
             install_failure = None
@@ -5149,7 +5214,7 @@ def check_actual_delivery_modes() -> None:
 
     rollback_results = []
     try:
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=delivery_parallel_workers()) as executor:
             rollback_futures = [executor.submit(rollback_case, boundary)
                                 for boundary in sorted(rollback_boundaries)]
             rollback_failure = None
@@ -5168,72 +5233,73 @@ def check_actual_delivery_modes() -> None:
         for temporary, *_rest in rollback_results:
             temporary.cleanup()
 
-    with tempfile.TemporaryDirectory() as tmp:
-        repo = Path(tmp).resolve() / "repo"; create_actual_delivery_repo(repo)
-        require(run_actual_delivery_mode(repo, ["--delivery-prepare"]).returncode == 0,
-                "post-commit mutant prepare")
-        delivery = actual_delivery_directory(repo)
-        committed = run_actual_delivery_mode(repo, ["--delivery-install", str(delivery)], "commit-recorded")
-        committed_journal = json.loads((delivery / "journal.json").read_text())
-        expected_post = committed_journal["expected_post"]
-        require(committed.returncode == 86 and committed_journal["state"] == "COMMITTED",
-                "post-commit mutant terminal")
-        target = repo / AUTHORED[0]; original = target.read_bytes(); mode = stat.S_IMODE(target.stat().st_mode)
-        target.unlink()
-        require(not valid_delivery_destination_observation(observe_delivery_destinations(repo), expected_post),
-                "post-commit removal mutant rejected")
-        atomic_write(target, original, mode)
-        atomic_write(target, b"corrupt\n", mode)
-        require(not valid_delivery_destination_observation(observe_delivery_destinations(repo), expected_post),
-                "post-commit corruption mutant rejected")
-        atomic_write(target, original, mode); target.chmod(0o600 if mode != 0o600 else 0o700)
-        require(not valid_delivery_destination_observation(observe_delivery_destinations(repo), expected_post),
-                "post-commit mode mutant rejected")
-        target.chmod(mode)
-        observed = observe_delivery_destinations(repo)
-        require(not valid_delivery_destination_observation(observed + [observed[0]], expected_post),
-                "post-commit cardinality mutant rejected")
-        require(valid_delivery_destination_observation(observe_delivery_destinations(repo), expected_post),
-                "post-commit mutant restoration")
-        require(run_actual_delivery_mode(repo, ["--delivery-recover", str(delivery)]).returncode == 0,
-                "post-commit mutant cleanup")
+    if parse_boundary_shard_spec() is None or parse_boundary_shard_spec()[0] == 1:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp).resolve() / "repo"; create_actual_delivery_repo(repo)
+            require(run_actual_delivery_mode(repo, ["--delivery-prepare"]).returncode == 0,
+                    "post-commit mutant prepare")
+            delivery = actual_delivery_directory(repo)
+            committed = run_actual_delivery_mode(repo, ["--delivery-install", str(delivery)], "commit-recorded")
+            committed_journal = json.loads((delivery / "journal.json").read_text())
+            expected_post = committed_journal["expected_post"]
+            require(committed.returncode == 86 and committed_journal["state"] == "COMMITTED",
+                    "post-commit mutant terminal")
+            target = repo / AUTHORED[0]; original = target.read_bytes(); mode = stat.S_IMODE(target.stat().st_mode)
+            target.unlink()
+            require(not valid_delivery_destination_observation(observe_delivery_destinations(repo), expected_post),
+                    "post-commit removal mutant rejected")
+            atomic_write(target, original, mode)
+            atomic_write(target, b"corrupt\n", mode)
+            require(not valid_delivery_destination_observation(observe_delivery_destinations(repo), expected_post),
+                    "post-commit corruption mutant rejected")
+            atomic_write(target, original, mode); target.chmod(0o600 if mode != 0o600 else 0o700)
+            require(not valid_delivery_destination_observation(observe_delivery_destinations(repo), expected_post),
+                    "post-commit mode mutant rejected")
+            target.chmod(mode)
+            observed = observe_delivery_destinations(repo)
+            require(not valid_delivery_destination_observation(observed + [observed[0]], expected_post),
+                    "post-commit cardinality mutant rejected")
+            require(valid_delivery_destination_observation(observe_delivery_destinations(repo), expected_post),
+                    "post-commit mutant restoration")
+            require(run_actual_delivery_mode(repo, ["--delivery-recover", str(delivery)]).returncode == 0,
+                    "post-commit mutant cleanup")
 
-    with tempfile.TemporaryDirectory() as tmp:
-        repo = Path(tmp).resolve() / "repo"; before = create_actual_delivery_repo(repo)
-        require(run_actual_delivery_mode(repo, ["--delivery-prepare"]).returncode == 0,
-                "skipped replacement mutant prepare")
-        delivery = actual_delivery_directory(repo)
-        skipped = run_actual_delivery_mode(
-            repo, ["--delivery-install", str(delivery)], skip_generated=0,
-        )
-        require(skipped.returncode != 0 and "generated replacement effect" in skipped.stdout,
-                "skipped changed generated replacement rejected")
-        require(json.loads((delivery / "journal.json").read_text())["state"] == "FAILED",
-                "skipped replacement rolls back")
-        assert_actual_delivery_records(repo, before)
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp).resolve() / "repo"; before = create_actual_delivery_repo(repo)
+            require(run_actual_delivery_mode(repo, ["--delivery-prepare"]).returncode == 0,
+                    "skipped replacement mutant prepare")
+            delivery = actual_delivery_directory(repo)
+            skipped = run_actual_delivery_mode(
+                repo, ["--delivery-install", str(delivery)], skip_generated=0,
+            )
+            require(skipped.returncode != 0 and "generated replacement effect" in skipped.stdout,
+                    "skipped changed generated replacement rejected")
+            require(json.loads((delivery / "journal.json").read_text())["state"] == "FAILED",
+                    "skipped replacement rolls back")
+            assert_actual_delivery_records(repo, before)
 
-    with tempfile.TemporaryDirectory() as tmp:
-        base = Path(tmp).resolve()
-        repo = base / "repo"; create_actual_delivery_repo(repo)
-        candidate = base / "private-candidate"
-        for relative in AUTHORED:
-            source = canonical_root() / relative
-            destination = candidate / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, destination)
-        private_driver = candidate / "tests/workflow-artifact-identity-test.sh"
-        prepared = run_actual_delivery_mode(repo, ["--delivery-prepare"], driver=private_driver)
-        require(prepared.returncode == 0, f"private bootstrap prepare: {prepared.stdout[-1000:]}")
-        delivery = actual_delivery_directory(repo)
-        installed_driver = repo / "tests/workflow-artifact-identity-test.sh"
-        installed = run_actual_delivery_mode(
-            repo, ["--delivery-install", str(delivery)], driver=installed_driver,
-        )
-        require(installed.returncode == 0 and "delivery_state=CLEANED" in installed.stdout,
-                f"private bootstrap installed-driver handoff: {installed.stdout[-1000:]}")
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp).resolve()
+            repo = base / "repo"; create_actual_delivery_repo(repo)
+            candidate = base / "private-candidate"
+            for relative in AUTHORED:
+                source = canonical_root() / relative
+                destination = candidate / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            private_driver = candidate / "tests/workflow-artifact-identity-test.sh"
+            prepared = run_actual_delivery_mode(repo, ["--delivery-prepare"], driver=private_driver)
+            require(prepared.returncode == 0, f"private bootstrap prepare: {prepared.stdout[-1000:]}")
+            delivery = actual_delivery_directory(repo)
+            installed_driver = repo / "tests/workflow-artifact-identity-test.sh"
+            installed = run_actual_delivery_mode(
+                repo, ["--delivery-install", str(delivery)], driver=installed_driver,
+            )
+            require(installed.returncode == 0 and "delivery_state=CLEANED" in installed.stdout,
+                    f"private bootstrap installed-driver handoff: {installed.stdout[-1000:]}")
 
-    require(executed == set(DELIVERY_BOUNDARIES),
-            f"delivery registry execution mismatch: {sorted(set(DELIVERY_BOUNDARIES) - executed)}")
+    require(executed == expected_boundaries,
+            f"delivery registry execution mismatch: {sorted(expected_boundaries - executed)}")
 
 
 def check_delivery_third_state_guards() -> None:
@@ -6547,12 +6613,16 @@ def check_delivery_model_matrix() -> None:
     faults.extend(f"snapshot-{index}-{side}" for index in range(38) for side in ("before", "after"))
     faults.extend(f"authored-{index}-{side}" for index in range(16) for side in ("before", "after"))
     faults.extend(f"generated-{index}-{side}" for index in range(22) for side in ("before", "after"))
-    for fault in faults:
+
+    def verify_fault(fault: str) -> None:
         state, journal = run_delivery_model(fault)
         if fault in {"commit-after", "cleanup-after"}:
             require(state == "CLEANED" and "RESTORED" not in journal, f"post-commit cleanup only: {fault}")
         else:
             require(state == "FAILED" and journal[-2:] == ["RESTORED", "FAILED"], f"pre-commit restore: {fault}")
+
+    with ThreadPoolExecutor(max_workers=delivery_parallel_workers()) as executor:
+        list(executor.map(verify_fault, faults))
     state, _ = run_delivery_model(None)
     require(state == "CLEANED", "delivery success")
     state, journal = run_delivery_model(None, extra_stage=True)
@@ -7116,77 +7186,104 @@ def check_workspace_evidence_mapping() -> None:
 def default_tests(root: Path) -> None:
     check_drift_005_regressions()
     require(writer_allowlist_digest() == WRITER_ALLOWLIST_SHA256, "frozen writer allowlist")
-    check_empty_generated_delta_install()
-    check_module_and_corpus(root)
-    check_historical_reslice_identity()
-    check_workspace_evidence_mapping()
-    check_normal_generator_contract_delta()
-    check_complete_stage_gate_failure_rollback()
-    instruction_count, instruction_total = check_instruction_size_baseline(root)
-    require(instruction_count == 219 and instruction_total <= 860000
-            and 860000 - instruction_total > 14,
-            "instruction size count/cap/headroom")
-    check_walkthrough_outer_bound()
-    check_golden_vector()
-    check_markdown_backslash_parity()
-    check_admission_parser()
-    check_limit_boundaries()
-    check_complete_writes()
-    check_complete_write_matrix()
-    check_atomic_write_death_recovery()
-    check_descriptor_ancestor_mutants()
-    check_manifest_exclusions()
-    check_manifest_descriptor_substitution()
-    check_file_record_descriptor_identity_and_bound()
-    check_generated_stage_manifest_security_bounds()
-    check_validate_delivery_stage_deadline()
-    check_gate_descriptor_ancestor_replacement()
-    check_gate_bytecode_isolation()
-    check_gate_proof_cache_isolation()
-    check_delivery_mode_entry_guard()
-    check_production_delivery_fixture_env()
-    check_generator_descriptor_confinement()
-    check_held_stage_generator_symlink_swap()
-    check_held_stage_generator_held_out_symlink_plant()
-    check_held_stage_generator_artifacts_symlink_plant()
-    check_held_stage_generator_out_root_basename_plant()
-    check_absolute_directory_acquisition()
-    check_evidence_ownership()
-    check_evidence_matrix()
-    check_flock()
-    check_filesystem_adversaries()
-    check_source_lifecycle()
-    check_process_group_timeout()
-    check_proof_matrix()
-    check_delivery_execution_bounds()
-    check_delivery_generator_umask()
-    check_operation_oracle(root)
-    check_classifier_and_diagnostics(root)
-    check_retry_and_source_loss(root)
-    check_product_separation_lifecycle(root)
-    check_actual_engine_separation(root)
-    check_actual_delivery_modes()
-    check_delivery_third_state_guards()
-    check_drift_016_delivery_mutants()
-    check_first_authored_claim_exception_rollback()
-    check_drift_017_prepare_outside_drift()
-    check_delivery_recovery_identity()
-    check_temporary_journal_successors()
-    check_future_journal_clock_rollback()
-    check_recursive_outside_directory_protection()
-    check_terminal_recovery_idempotence()
-    check_outside_manifest_bounds()
-    check_outside_manifest_hard_wall()
-    check_outside_manifest_sidecar_metadata()
-    check_outside_manifest_sidecar_integrity()
-    check_prejournal_sidecar_reuse()
-    check_bootstrap_sidecar_temporary_adversaries()
-    check_bootstrap_journal_temporary_adversaries()
-    check_initial_journal_strict_prefix_recovery()
-    check_delivery_journal_adversaries()
-    check_delivery_model_matrix()
-    check_journal_retry_stability()
-    check_cleanup_recovery()
+
+    checks: list[tuple[str, object]] = [
+        ("empty_generated_delta_install", check_empty_generated_delta_install),
+        ("module_and_corpus", lambda: check_module_and_corpus(root)),
+        ("historical_reslice_identity", check_historical_reslice_identity),
+        ("workspace_evidence_mapping", check_workspace_evidence_mapping),
+        ("normal_generator_contract_delta", check_normal_generator_contract_delta),
+        ("complete_stage_gate_failure_rollback", check_complete_stage_gate_failure_rollback),
+        ("instruction_size_baseline", lambda: (
+            (lambda measured: require(
+                measured[0] == 219 and measured[1] <= 860000 and 860000 - measured[1] > 14,
+                "instruction size count/cap/headroom",
+            ))(check_instruction_size_baseline(root))
+        )),
+        ("walkthrough_outer_bound", check_walkthrough_outer_bound),
+        ("golden_vector", check_golden_vector),
+        ("markdown_backslash_parity", check_markdown_backslash_parity),
+        ("admission_parser", check_admission_parser),
+        ("limit_boundaries", check_limit_boundaries),
+        ("complete_writes", check_complete_writes),
+        ("complete_write_matrix", check_complete_write_matrix),
+        ("atomic_write_death_recovery", check_atomic_write_death_recovery),
+        ("descriptor_ancestor_mutants", check_descriptor_ancestor_mutants),
+        ("manifest_exclusions", check_manifest_exclusions),
+        ("manifest_descriptor_substitution", check_manifest_descriptor_substitution),
+        ("file_record_descriptor_identity_and_bound", check_file_record_descriptor_identity_and_bound),
+        ("generated_stage_manifest_security_bounds", check_generated_stage_manifest_security_bounds),
+        ("validate_delivery_stage_deadline", check_validate_delivery_stage_deadline),
+        ("gate_descriptor_ancestor_replacement", check_gate_descriptor_ancestor_replacement),
+        ("gate_bytecode_isolation", check_gate_bytecode_isolation),
+        ("gate_proof_cache_isolation", check_gate_proof_cache_isolation),
+        ("delivery_mode_entry_guard", check_delivery_mode_entry_guard),
+        ("production_delivery_fixture_env", check_production_delivery_fixture_env),
+        ("generator_descriptor_confinement", check_generator_descriptor_confinement),
+        ("held_stage_generator_symlink_swap", check_held_stage_generator_symlink_swap),
+        ("held_stage_generator_held_out_symlink_plant", check_held_stage_generator_held_out_symlink_plant),
+        ("held_stage_generator_artifacts_symlink_plant", check_held_stage_generator_artifacts_symlink_plant),
+        ("held_stage_generator_out_root_basename_plant", check_held_stage_generator_out_root_basename_plant),
+        ("absolute_directory_acquisition", check_absolute_directory_acquisition),
+        ("evidence_ownership", check_evidence_ownership),
+        ("evidence_matrix", check_evidence_matrix),
+        ("flock", check_flock),
+        ("filesystem_adversaries", check_filesystem_adversaries),
+        ("source_lifecycle", check_source_lifecycle),
+        ("process_group_timeout", check_process_group_timeout),
+        ("proof_matrix", check_proof_matrix),
+        ("delivery_execution_bounds", check_delivery_execution_bounds),
+        ("delivery_generator_umask", check_delivery_generator_umask),
+        ("operation_oracle", lambda: check_operation_oracle(root)),
+        ("classifier_and_diagnostics", lambda: check_classifier_and_diagnostics(root)),
+        ("retry_and_source_loss", lambda: check_retry_and_source_loss(root)),
+        ("product_separation_lifecycle", lambda: check_product_separation_lifecycle(root)),
+        ("actual_engine_separation", lambda: check_actual_engine_separation(root)),
+        ("delivery_third_state_guards", check_delivery_third_state_guards),
+        ("drift_016_delivery_mutants", check_drift_016_delivery_mutants),
+        ("first_authored_claim_exception_rollback", check_first_authored_claim_exception_rollback),
+        ("drift_017_prepare_outside_drift", check_drift_017_prepare_outside_drift),
+        ("delivery_recovery_identity", check_delivery_recovery_identity),
+        ("temporary_journal_successors", check_temporary_journal_successors),
+        ("future_journal_clock_rollback", check_future_journal_clock_rollback),
+        ("recursive_outside_directory_protection", check_recursive_outside_directory_protection),
+        ("terminal_recovery_idempotence", check_terminal_recovery_idempotence),
+        ("outside_manifest_bounds", check_outside_manifest_bounds),
+        ("outside_manifest_hard_wall", check_outside_manifest_hard_wall),
+        ("outside_manifest_sidecar_metadata", check_outside_manifest_sidecar_metadata),
+        ("outside_manifest_sidecar_integrity", check_outside_manifest_sidecar_integrity),
+        ("prejournal_sidecar_reuse", check_prejournal_sidecar_reuse),
+        ("bootstrap_sidecar_temporary_adversaries", check_bootstrap_sidecar_temporary_adversaries),
+        ("bootstrap_journal_temporary_adversaries", check_bootstrap_journal_temporary_adversaries),
+        ("initial_journal_strict_prefix_recovery", check_initial_journal_strict_prefix_recovery),
+        ("delivery_journal_adversaries", check_delivery_journal_adversaries),
+        ("journal_retry_stability", check_journal_retry_stability),
+        ("cleanup_recovery", check_cleanup_recovery),
+    ]
+    if not wai_skip_delivery_modes():
+        checks.append(("actual_delivery_modes", check_actual_delivery_modes))
+    if not wai_skip_delivery_model_matrix():
+        checks.append(("delivery_model_matrix", check_delivery_model_matrix))
+
+    core_spec = os.environ.get("DEVRITES_WAI_CORE_SHARD", "").strip()
+    if core_spec:
+        match = re.fullmatch(r"(\d+)/(\d+)", core_spec)
+        require(match is not None, f"invalid DEVRITES_WAI_CORE_SHARD: {core_spec}")
+        index = int(match.group(1))
+        total = int(match.group(2))
+        require(1 <= index <= total, f"invalid DEVRITES_WAI_CORE_SHARD: {core_spec}")
+        start = ((index - 1) * len(checks)) // total
+        end = (index * len(checks)) // total
+        checks = checks[start:end]
+        require(len(checks) > 0, f"empty workflow-artifact core shard: {core_spec}")
+
+    # Keep core checks on the main thread: several install signal handlers and
+    # process-group helpers require signal.signal, which is main-thread only.
+    for name, fn in checks:
+        try:
+            fn()
+        except BaseException as error:
+            raise AssertionError(f"workflow-artifact core check failed: {name}") from error
 
 
 def writer_allowlist_digest() -> str:
@@ -9909,6 +10006,17 @@ def main() -> None:
     }:
         raise SystemExit(usage)
     if not args:
+        if wai_boundary_only():
+            check_actual_delivery_modes()
+            print(
+                "workflow-artifact-identity: PASS "
+                f"(boundary shard {os.environ.get('DEVRITES_WAI_BOUNDARY_SHARD', '?')})"
+            )
+            return
+        if wai_delivery_model_only():
+            check_delivery_model_matrix()
+            print("workflow-artifact-identity: PASS (delivery-model-matrix)")
+            return
         root = project_root_for_tests(canonical_root())
         restorations = install_live_protected_fixtures(root)
         try:
