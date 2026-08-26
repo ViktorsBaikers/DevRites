@@ -56,8 +56,9 @@ Completeness is **phase-relative**. The typed Phase Policy in
 `engine/internal/state/schema.go` lists the structural sections, workspace
 artifacts, and applicability rules for each target Phase. `devrites-engine check readiness <slug>`
 checks that structure and, after Vet, the stable planning-input identity;
-`check seal <slug>` repeats that identity check and adds deterministic evidence
-freshness. A blocker that only a human can resolve uses reserved **exit code 3**.
+from Define onward it also rejects an invalid `tasks.md` slice graph.
+`check seal <slug>` repeats that identity check, the slice graph, and adds
+deterministic evidence freshness. A blocker that only a human can resolve uses reserved **exit code 3**.
 The active skill and exact reviewers—not Go heuristics—judge whether the spec,
 plan, traceability, tests, and evidence mean what they claim. Semantic upgrade
 is a native, preservation-first workflow edit. See

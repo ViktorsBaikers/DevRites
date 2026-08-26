@@ -22,9 +22,9 @@ Usage:
   devrites-engine update [flags]           Update an existing DevRites install in place
   devrites-engine uninstall [flags]        Remove a DevRites install, preserving runtime state
   devrites-engine check candidate <slug>   Validate and hash the closed project candidate
-  devrites-engine check readiness <slug>   Check required files and the stable Build-input binding
+  devrites-engine check readiness <slug>   Check required files, tasks.md graph, and Build-input binding
   devrites-engine check readiness --emit-binding <slug>  Emit the stable Build-input binding for Vet
-  devrites-engine check seal <slug>        Recheck the Build-input binding, final files, and evidence freshness
+  devrites-engine check seal <slug>        Recheck files, tasks.md graph, Build-input binding, and evidence freshness
   devrites-engine check path-disjoint [--root <dir>] [<json-file>|-]
                                          Verify slice path sets are pairwise disjoint
   devrites-engine check task-graph <slug>  Validate tasks.md slice dependency graph

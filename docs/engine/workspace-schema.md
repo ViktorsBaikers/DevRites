@@ -166,11 +166,11 @@ The engine provides only:
 - `check candidate`: strict candidate-manifest validation and content-bound
   identity;
 - `check readiness`: phase-relative file completeness, open-human-gate check,
-  and the stable vetted Build-input binding whenever `eng-review.md` is
-  required;
-- `check seal`: final file completeness and open-human-gate checks, then the
-  readiness-binding recheck, then exact candidate bindings after that aggregate
-  gate passes;
+  the `tasks.md` slice graph when that artifact is required, and the stable
+  vetted Build-input binding whenever `eng-review.md` is required;
+- `check seal`: final file completeness and open-human-gate checks, the
+  `tasks.md` slice graph, then the readiness-binding recheck, then exact
+  candidate bindings after that aggregate gate passes;
 - atomic `state resolve` answer/drop/batch and transactional `state close`;
 - secret scanning, version reporting, and local install lifecycle primitives.
 

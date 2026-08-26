@@ -148,6 +148,15 @@ func readinessDiagnosticError(diagnostic state.ArtifactDiagnostic) error {
 	return errors.New(prefix + repair)
 }
 
+func phaseRequiresTasks(policy state.PhasePolicy) bool {
+	for _, artifact := range policy.RequiredArtifacts {
+		if artifact == "tasks.md" {
+			return true
+		}
+	}
+	return false
+}
+
 func phaseRequiresReadinessBinding(policy state.PhasePolicy) bool {
 	for _, artifact := range policy.RequiredArtifacts {
 		if artifact == "eng-review.md" {
