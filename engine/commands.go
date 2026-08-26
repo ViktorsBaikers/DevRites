@@ -26,7 +26,7 @@ const (
 func rootModeFor(command string, args []string) rootMode {
 	subcommand := firstRootOperand(args)
 	switch command {
-	case "secret-scan":
+	case "secret-scan", "open-visual":
 		return rootLenient
 	case "state":
 		switch subcommand {

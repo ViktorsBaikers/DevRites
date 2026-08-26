@@ -15,7 +15,8 @@ Load that schema before creating or updating workspace artifacts.
       brief.md
       spec.md
       architecture.md            # from $rite-define
-      flows.md                   # optional, only when useful
+      flows.md                   # optional Mermaid-first; only when useful
+      visual/                    # optional HTML+outline companions (never readiness)
       decisions.md
       assumptions.md
       questions.md
@@ -38,6 +39,26 @@ Load that schema before creating or updating workspace artifacts.
     <feature-slug>/
 ```
 
+## `flows.md` (optional Mermaid-first)
+
+Write `flows.md` only when sequence/state/data/lifecycle diagrams clarify the feature.
+Keep **Mermaid in `flows.md`** when that is enough. When a richer reviewable presentation
+is needed, **also** emit `.devrites/work/<slug>/visual/<flow>.html` +
+`visual/<flow>.outline.md` and link the pair from `flows.md`.
+
+Before any HTML:
+
+1. Open matching playbooks via
+   [`../../devrites-lib/reference/visual-playbooks/index.md`](../../devrites-lib/reference/visual-playbooks/index.md)
+   (progressive; never preload all seven).
+2. Copy required outline headings from
+   [`outline-template.md`](../../devrites-lib/reference/visual-playbooks/outline-template.md).
+3. Dual-read: agents treat the outline as SSOT; **outline wins** on conflict. No Lavish
+   runtime; this is not a new lifecycle phase and never inflates readiness.
+
+`$rite-spec` may seed a thin `flows.md` when investigation already needs a diagram;
+`$rite-define` owns richer architecture/flow companions beside `architecture.md`.
+
 ## Creation rules
 
 - Create or reuse the slug exactly under the canonical schema's
@@ -45,10 +66,12 @@ Load that schema before creating or updating workspace artifacts.
   contract.
 - `$rite-spec` creates the workspace map, `brief.md`, `spec.md`, `decisions.md`,
   `assumptions.md`, `questions.md`, `state.md`, optional `references.md` /
-  `references/`, and optional `design-brief.md` for UI.
+  `references/`, optional `flows.md` when a diagram already clarifies investigation,
+  and optional `design-brief.md` for UI.
 - `$rite-clarify` adds `decision-coverage.md`.
 - `$rite-define` adds `architecture.md`, `plan.md`, `tasks.md`, and
-  `traceability.md`.
+  `traceability.md`; may add or enrich `flows.md` and optional `visual/` HTML+outline
+  companions when Mermaid alone is not enough.
 - `$rite-vet` adds `eng-review.md` and `test-plan.md`.
 - Later phases add only the artifact they own. Do not create optional files as
   empty placeholders; absence means the phase has not produced that artifact.

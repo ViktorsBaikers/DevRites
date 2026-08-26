@@ -86,9 +86,25 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
    **Completion:** the explanation connects a known project anchor to the new model without a fact dump.
 3. **Show the load-bearing detail.** Quote the actual diff hunk, the real function, the specific
    config, with `file:line` pointers so the developer can go read it.
-4. **Visual where it earns it.** A small diagram, a before/after, or a worked trace when the shape
-   is spatial or sequential. Not decoration: only when it carries the idea faster than prose.
-   **Completion:** the visual carries a named relationship faster than prose, or this branch is explicitly skipped.
+4. **Visual where it earns it.** When the idea is spatial or relational (flows, before/after,
+   architecture, comparable options) and a richer reviewable page would carry it faster than prose
+   or an inline Mermaid sketch, treat this as a soft-required dual-read branch — not decoration and
+   not a new lifecycle phase:
+   1. Open matching playbooks via
+      [`../devrites-lib/reference/visual-playbooks/index.md`](../devrites-lib/reference/visual-playbooks/index.md)
+      first (progressive load; open every matching id; **never** preload all seven).
+   2. Emit the pair under either the active workspace
+      `.devrites/work/<slug>/visual/<name>.{html,outline.md}` **or** the explainers run dir with the
+      same contract (`$RUN_DIR/visual/<name>.{html,outline.md}`). Copy required outline headings from
+      [`outline-template.md`](../devrites-lib/reference/visual-playbooks/outline-template.md).
+   3. Agents treat the outline as SSOT; if HTML and outline disagree, **outline wins** until both are
+      regenerated. No Lavish runtime (`window.lavish.*`, `data-lavish-*`, poll/queue/share/ht-ml.app).
+   4. In the reply, `Changed` / `Record` may cite the HTML+outline pair. Optionally tip the human to
+      run `devrites-engine open-visual <path-or-name>` (T4 opener; document the tip only).
+   Skip the branch when prose (or a tiny Mermaid/SVG sketch inside `explainer.md`) already carries
+   the named relationship.
+   **Completion:** matching playbooks loaded when taken; dual-read pair written with outline-wins /
+   no-Lavish / no-new-phase; or the branch is explicitly skipped because prose won.
 5. **Human voice.** Follow [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md):
    no throat-clearing, no false-binary contrast, no marketing adjectives. One senior engineer
    explaining to another.
@@ -123,10 +139,10 @@ not force it; offer once.
 
 ```
 Done: explained <the one thing> as a <concept|diff|idea|recap> explainer OR walked through <change> for human review.
-Changed: .devrites/explainers/<date>-<slug>/<explainer.md|walkthrough.md>
-Evidence: grounded in <artifacts/files quoted>; check-in <offered+result | skipped>; walkthrough stops <count>
+Changed: .devrites/explainers/<date>-<slug>/<explainer.md|walkthrough.md>[; visual/<name>.html + visual/<name>.outline.md]
+Evidence: grounded in <artifacts/files quoted>; check-in <offered+result | skipped>; walkthrough stops <count>; visual <pair|skipped>
 Open: <none | next-time topics deferred | check-in awaiting the user>
-Next: <single command — usually back to the calling phase, or $rite-learn if a repo rule surfaced>
-Record: .devrites/explainers/<date>-<slug>/explainer.md
+Next: <single command — usually back to the calling phase, or $rite-learn if a repo rule surfaced; optional tip: devrites-engine open-visual …>
+Record: .devrites/explainers/<date>-<slug>/explainer.md | walkthrough.md | visual/<name>.outline.md
 ↻ Hygiene: /clear after reading; the explainer is on disk
 ```

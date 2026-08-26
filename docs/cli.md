@@ -24,6 +24,7 @@ devrites-engine state resolve <qid> "<answer>"
 devrites-engine state close <slug>
 
 devrites-engine secret-scan [--staged] [--stdin] [slug]
+devrites-engine open-visual <path-or-name> [--slug <slug>] [--no-open]
 devrites-engine version
 ```
 
@@ -69,10 +70,12 @@ with the self-contained updater.
 
 - `check candidate <slug>` validates the strict `touched-files.md` manifest and
   hashes its exact path/state/type/mode/content identity. A pass prints:
+
   ```text
   candidate-sha256: <64 lowercase hex>
   candidate-files: <manifest row count>
   ```
+
 - `check readiness <slug>` verifies the files required to leave the workspace's
   current phase and, once `eng-review.md` is required, its exact stable
   Build-input binding.
@@ -117,6 +120,18 @@ secret bytes. It accepts at most 4,096 entries, 64 MiB total captured input, and
 
 Findings include only severity, a redacted or escaped source label, category,
 and zero-based byte offset. HIGH findings exit `3`.
+
+## Open visual
+
+`open-visual` resolves a portable HTML visualization under the active or
+`--slug` workspace `visual/` directory, or an absolute/relative `.html` path.
+Unless `--no-open` is set, it launches the OS default browser for that local
+file only. A missing sibling `.outline.md` prints a stderr warning and still
+succeeds. When the outline exists, inventory ids missing from HTML also warn
+(non-fatal; HTML-only decorative ids are ignored). Stdout prints compact agent
+tips: absolute HTML path, outline path (or missing), the playbook index hint,
+and `ids=ok` / `ids=mismatch` when an inventory is present. The command never
+fetches remote hosts.
 
 ## Output and exits
 
