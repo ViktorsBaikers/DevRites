@@ -36,6 +36,8 @@ lifecycle state from chat or optional `README.md`.
   content-bound candidate lifecycle from Build through Ship.
 - [`reference/reply-contract.md`](reference/reply-contract.md): compact user-facing
   completion states. The host renders the response normally.
+- [`reference/visual-playbooks/index.md`](reference/visual-playbooks/index.md): progressive
+  visual HTML playbook router (load matching ids only; dual-read outline).
 
 ## Deterministic engine surface
 

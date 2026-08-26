@@ -119,8 +119,11 @@ status routes Define/Vet/Build/Prove to the named standard without copying it he
 
 ## References
 - `brief.md`: request/outcome/scope; `architecture.md`: placement/integration;
-  `flows.md`: diagrams; `decisions.md`: decisions; `decision-coverage.md`: Clarify
-  topology/verdict; `traceability.md`: Define coverage; `design-brief.md`: UI direction.
+  `flows.md`: Mermaid-first diagrams (optional `visual/<flow>.html`+`.outline.md` companion
+  + link when richer presentation earns it — load playbooks via
+  `devrites-lib/reference/visual-playbooks/index.md`); `decisions.md`: decisions;
+  `decision-coverage.md`: Clarify topology/verdict; `traceability.md`: Define coverage;
+  `design-brief.md`: UI direction.
 
 ## Open questions
 | Question ID | Gate | Question | Impact |
