@@ -7,7 +7,7 @@ workflow strategy.
 ## Complete operational command inventory
 
 | Command | Deterministic responsibility |
-|---|---|
+| --- | --- |
 | `install [flags]` | Install manifest-owned host artifacts and the optional shared binary. |
 | `update [flags]` | Refresh an existing managed installation. |
 | `uninstall [flags]` | Remove managed artifacts while preserving runtime workspace state. |
@@ -15,13 +15,14 @@ workflow strategy.
 | `check readiness <slug>` | Check target-Phase files, open human gates from Clarify onward, and the current stable Build-input binding when applicable. |
 | `check readiness --emit-binding <slug>` | Render the exact stable Build-input binding for Vet to record after review. |
 | `check seal <slug>` | Check files required by target Phase `seal`, open human gates, the stable Build-input binding, and exact candidate bindings. |
-| `check path-disjoint [--root <dir>] [<json-file>|-]` | Verify slice path sets are pairwise disjoint. |
+| `check path-disjoint` with optional `--root DIR` and optional `JSON-FILE` or `-` | Verify slice path sets are pairwise disjoint. |
 | `check task-graph <slug>` | Validate `tasks.md` slice dependency graph for cycles and unknown dependencies. |
 | `check skill-trust <path>` | Scan one skill/agent Markdown file for structural trust violations. |
 | `observe summary <slug>` | Emit sanitized JSON workspace summary from one retained observation. |
 | `state resolve <qid> "<answer>"` | Resolve an open question and update `questions.md` plus `state.md` atomically. |
 | `state close <slug>` | Archive a shipped workspace and clear matching `ACTIVE`. |
 | `secret-scan [--staged] [--stdin] [slug]` | Scan exact staged blobs, stdin, or touched regular files for credential material. |
+| `open-visual <path-or-name> [--slug <slug>] [--no-open]` | Resolve a local visual HTML file, optionally open it in the OS browser, warn if the sibling outline is missing or inventory ids are absent from HTML, and print agent path tips. No network. |
 | `version` | Print the engine version. |
 
 `help`, `-h`, and `--help` print this operational inventory. `version` and
@@ -86,6 +87,19 @@ Each invocation accepts at most 4,096 entries, 64 MiB total captured input, and
 4,096 findings. Findings never include matched bytes, excerpts, or value hashes.
 Input, limit, and output errors exit `2`; HIGH findings exit `3`.
 
+## Open visual
+
+`open-visual` resolves `<path-or-name>` to a local `.html` file under the
+active/`DEVRITES_WORKSPACE`/`--slug` workspace `visual/` directory, or via an
+absolute/relative path. Missing sibling `.outline.md` warns on stderr but does
+not hard-fail. When the outline exists, the engine compares `## ID inventory`
+ids to HTML `id="..."` attributes and warns (non-fatal) for inventory ids
+missing from HTML; HTML-only decorative ids are ignored. Unless `--no-open`,
+the engine starts the OS opener (`open`, `xdg-open`, or Windows `start`) for
+the local file only — never a network fetch. Stdout prints the absolute HTML
+path, outline path tip, playbook index hint, and an `ids=ok` / `ids=mismatch`
+summary when an inventory is present.
+
 ## Output and exit contracts
 
 `check candidate` passes with exactly:
@@ -121,7 +135,7 @@ artifact is classified as `absent`, `empty`, `malformed`, `unsafe`,
 The closed diagnostic codes and recoveries are:
 
 | Code | Exact Gate recovery | Exact standalone readiness-binding payload |
-|---|---|---|
+| --- | --- | --- |
 | `malformed_markdown` | `next: repair <logical-path>: replace invalid Markdown with valid Markdown; required artifacts need substantive content` | `readiness input <logical-path> is malformed (malformed_markdown); replace invalid Markdown with valid Markdown` |
 | `parent_symlink` | `next: repair <logical-path>: replace the symlinked parent with a real directory` | `readiness input <logical-path> is unsafe (parent_symlink); replace the symlinked parent with a real directory` |
 | `final_symlink` | `next: repair <logical-path>: replace the symlink with a regular file` | `readiness input <logical-path> is unsafe (final_symlink); replace the symlink with a regular file` |

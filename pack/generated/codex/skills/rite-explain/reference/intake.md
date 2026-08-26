@@ -7,7 +7,7 @@ source for classification; the SKILL improvises none of it.
 ## The four shapes
 
 | Shape | The input is… | Grounds in | Composes as | Check-in |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | **concept** | a named idea / pattern / technology ("explain optimistic locking", "how does our gate engine work") | this repo's footprint of the concept (codegraph first) + external sources only if they sharpen it | build the mental model from a known part of *this* codebase outward | **checked exercise** |
 | **diff** | a specific change: a ref, a slice, a PR, "this diff" | `git diff` / the hunks + `decisions.md` + `seal.md` for the *why* + `touched-files.md` `Review trail` when present | explainer, or **walkthrough** when the user asks to review/approve/checkpoint the change | **predict-then-reveal** |
 | **idea** | a hypothesis or "what if" with no code yet | the user's framing + prior art (external, date-weighted; year is 2026) | steelman the idea, name its hinge and its failure mode | **checked exercise** |
@@ -18,7 +18,7 @@ source for classification; the SKILL improvises none of it.
 If the user's input carries any of these tokens, they **override** shape inference:
 
 | Token | Meaning |
-|---|---|
+| --- | --- |
 | `diff:<ref>` | force the **diff** shape against `<ref>` (a commit, range, or slug) |
 | `walkthrough:<ref>` | force the **diff** shape and compose a human review walkthrough instead of a teaching explainer |
 | `since:<when>` | force the **recap** shape over the window (`since:1w`, `since:last-ship`, an ISO date) |
@@ -59,6 +59,15 @@ A walkthrough is for human review, not retention. Write it under the normal run 
 6. **Decision options:** approve / rework / ask for a targeted review, each with the next command.
 
 Completion criterion: every concern has at least one clickable repo-relative `path:line` stop, or the walkthrough states why the change has no source stops.
+
+## Visual dual-read (when composition earns it)
+
+If the explainer or walkthrough needs a spatial/relational page, follow the SKILL's
+"Visual where it earns it" branch: load matching playbooks from
+[`../../devrites-lib/reference/visual-playbooks/index.md`](../../devrites-lib/reference/visual-playbooks/index.md),
+emit `visual/<name>.html` + `visual/<name>.outline.md` (workspace or `$RUN_DIR`), treat
+outline as SSOT, and never invent a new phase or Lavish dependency. Classification still
+owns shape; the visual branch does not change which shape you are in.
 
 ### Predict-then-reveal (diff / recap)
 

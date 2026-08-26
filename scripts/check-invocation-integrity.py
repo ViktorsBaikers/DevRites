@@ -10,7 +10,13 @@ calls into the void at runtime. Also asserts the Claude→Codex skill/rule mirro
 Self-contained: installs DevRites into a temp dir to get the Codex tree, sweeps, cleans up.
 Run: python3 scripts/check-invocation-integrity.py    (exit 0 clean, 1 on any unresolved reference)
 """
-import os, re, sys, glob, subprocess, tempfile, shutil
+import glob
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACK = os.path.join(REPO, "pack/.claude")
@@ -28,6 +34,8 @@ NONSKILL = {
     "devrites-codex-wright-guard",
     # Codex permission profile used by rite-doctor, not a skill or agent invocation
     "devrites-orchestrator",
+    # HTML JSON embed element id in visual/ artifacts, not a skill
+    "devrites-outline",
 }
 # names a skill deliberately mentions as NON-existent (self-documenting prose).
 DOCUMENTED_NONEXISTENT = {"rite-use"}
