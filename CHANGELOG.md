@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.3.0...v4.4.0) (2026-08-26)
+
+### Added
+
+* **devrites:** add local visual HTML artifacts and open-visual ([#42](https://github.com/ViktorsBaikers/DevRites/issues/42)) ([577389e](https://github.com/ViktorsBaikers/DevRites/commit/577389ec3016312e51bbdcad918179b161386aed))
+
 ## [4.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.1.0...v4.2.0) (2026-08-23)
 
 ### Added
