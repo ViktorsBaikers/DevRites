@@ -28,7 +28,7 @@ project-conventional push, tag, or PR action, and archive the workspace.
 Unattended runs may create local WIP checkpoint commits along the way, but they
 remain local unless Ship's disclosed plan includes an approved remote action.
 
-**Status:** [`v4.3.0`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v4.3.0): see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+**Status:** [`v4.4.0`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v4.4.0): see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
 This is the latest published release; `main` may contain unreleased work.
 
@@ -51,7 +51,7 @@ DevRites scales the process to the change. Start with the least ceremony that
 still protects the work:
 
 | Need | Claude Code | Codex |
-|---|---|---|
+| --- | --- | --- |
 | Small, reversible change | `/rite-quick fix the CSV header typo` | `$rite-quick fix the CSV header typo` |
 | New feature or risky behavior | `/rite-spec add-csv-export` | `$rite-spec add-csv-export` |
 | Resume an active feature | `/rite-status` | `$rite-status` |
@@ -77,7 +77,7 @@ forms with `$`: `$rite <verb>` and `$rite-<verb>`. The menu and direct forms run
 the same skill.
 
 | # | Stage | Direct command | What happens |
-|---:|---|---|---|
+| ---: | --- | --- | --- |
 | 1 | Spec | [`/rite-spec <feature>`](pack/.claude/skills/rite-spec/SKILL.md) | Inspects the request and codebase, asks about product gaps, and writes a lossless `spec.md` with an explicit capability impact. |
 | 2 | Clarify | [`/rite-clarify`](pack/.claude/skills/rite-clarify/SKILL.md) | Checks the whole feature for missing decisions before planning. It asks no questions when everything is clear. |
 | 3 | Temper | [`/rite-temper`](pack/.claude/skills/rite-temper/SKILL.md) | Challenges scope and failure modes before Define. It is optional for small work and always runs in `/rite-autocomplete`. |
@@ -266,7 +266,7 @@ devrites-engine update --check
 Useful install flags:
 
 | Flag | Effect |
-|---|---|
+| --- | --- |
 | `--target DIR` | Use another project directory. |
 | `--dry-run` | Show planned file operations without changing anything. |
 | `--force` | Replace or remove foreign or customized managed files. The installer still rejects symlinks and path escapes. |
