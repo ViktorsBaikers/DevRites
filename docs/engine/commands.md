@@ -201,22 +201,3 @@ Production Go and shell Git callers remove environment variables that can
 retarget the repository, worktree, index, objects, refs, config, or pathspec,
 while retaining unrelated Git variables. This isolation is shared caller
 policy, not another public command.
-
-⚠ 1 unresolved conflict detected
-
-- ours = HEAD
-- theirs = origin/main
-NOTICE: Inspect a block by reading `conflict://<N>` (add `/ours` / `/theirs` / `/base` to render a single side). Resolve with `write({ path: "conflict://<N>", content })`, or bulk-resolve every registered conflict with `write({ path: "conflict://*", content })`. Writes replace ONLY the marker block (markers + all sides) — never repeat the lines before/after it; they stay in place.
-`content` shorthand: a line that is exactly `@ours` / `@theirs` / `@base` / `@both` expands to that recorded section. `@both` is ours-then-theirs with no separator — only for additive conflicts where each side adds something different; NEVER for competing edits of the same lines (pick a side or write the combined text). Lines that are not a token pass through verbatim, so `"// keep both\n@ours\n@theirs"` literally writes the comment, then ours, then theirs.
-Per-id bulk: `write({ path: "conflict://*", content: "1: @ours\n2: @theirs\n…" })` resolves each listed id with that side in ONE call — the cheapest way through many pick-one conflicts; unlisted ids stay registered.
-Resolve each block faithfully: keep one side (`@ours`/`@theirs`), or combine them when both intents apply — never invent content beyond the recorded sides, and never stack both sides of competing edits. Resolve several conflicts in a single turn by issuing multiple `write` calls at once; ids stay valid as earlier blocks are resolved.
-
-──── #2  L17-25 ────
-<<< ours
-| `check seal <slug>` | Check files required by target Phase `seal`, open human gates, the `tasks.md` slice graph, the stable Build-input binding, and exact candidate bindings. |
-| `check path-disjoint [--root <dir>] [<json-file>|-]` | Verify slice path sets are pairwise disjoint. |
-| `check task-graph <slug>` | Validate `tasks.md` slice dependency graph for cycles, unknown deps, malformed tokens, duplicate IDs, missing `Dependencies`, and `depends_on` mismatch. |
->>> theirs
-| `check seal <slug>` | Check files required by target Phase `seal`, open human gates, the stable Build-input binding, and exact candidate bindings. |
-| `check path-disjoint` with optional `--root DIR` and optional `JSON-FILE` or `-` | Verify slice path sets are pairwise disjoint. |
-| `check task-graph <slug>` | Validate `tasks.md` slice dependency graph for cycles and unknown dependencies. |
