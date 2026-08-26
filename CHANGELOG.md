@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.4.1](https://github.com/ViktorsBaikers/DevRites/compare/v4.4.0...v4.4.1) (2026-08-26)
+
+### Fixed
+
+* **rite:** enforce task-graph integrity and restore 4.3.0 identity ([#40](https://github.com/ViktorsBaikers/DevRites/issues/40)) ([54b0727](https://github.com/ViktorsBaikers/DevRites/commit/54b07277ffb249d92d09130379040b6191b480b6)), closes [#39](https://github.com/ViktorsBaikers/DevRites/issues/39)
+
 ## [4.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.3.0...v4.4.0) (2026-08-26)
 
 ### Added
