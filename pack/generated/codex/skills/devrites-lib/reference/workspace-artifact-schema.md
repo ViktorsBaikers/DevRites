@@ -31,7 +31,7 @@ Readers continue to accept safe legacy basenames; no ordinary phase renames one.
 | vet/build/converge | plan artifacts plus `eng-review.md`, `test-plan.md`; Build creates and maintains `touched-files.md` after its first green slice |
 | prove/polish/review | vetted plan artifacts plus `evidence.md`, `touched-files.md` |
 | seal/ship/done | proof artifacts plus `review.md`, `seal.md` |
-| conditional | `flows.md` when diagrams clarify; `design-brief.md` and `browser-evidence.md` for UI; `drift.md` for drift; `handoff.md` only when requested; `references.md` + `references/` when references exist |
+| conditional | `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `drift.md` for drift; `handoff.md` only when requested; `references.md` + `references/` when references exist |
 
 ## What each file owns
 
@@ -44,6 +44,9 @@ Readers continue to accept safe legacy basenames; no ordinary phase renames one.
 | `strategy.md` | temper verdict, scope mode/deltas, pre-mortem risks, deferred ambition | 180 lines |
 | `architecture.md` | owning layer, integration points, data/API/events, dependencies, risks, affected boundaries | 180 lines |
 | `flows.md` | useful Mermaid sequence/state/data/lifecycle diagrams with why-it-matters text and related IDs | 160 lines |
+| `visual/<name>.html` | optional portable human-viewable visualization; pair with sibling `.outline.md`; self-contained preferred | 400 lines |
+| `visual/<name>.outline.md` | required machine dual-read companion for the sibling HTML; outline wins on conflict; never a candidate path | 200 lines |
+| `visual/README.md` | optional index of visuals in the workspace | 80 lines |
 | `decisions.md` | ADR-style `DEC-###` log: status, context, options, decision, consequences, related IDs | 200 lines |
 | `assumptions.md` | assumptions with confidence, owner, validation status | 160 lines |
 | `questions.md` | current `q-YYYY-MM-DD-NNN` (or released `Q-###`) open/resolved questions, gate, answer, impact | 180 lines |
@@ -59,6 +62,11 @@ Readers continue to accept safe legacy basenames; no ordinary phase renames one.
 | `touched-files.md` | sole candidate manifest plus a concern-ordered `## Review trail` of `path:line` stops for human review | 160 lines |
 | `design-brief.md` | UI design direction, states, interaction model | 160 lines |
 | `handoff.md` | cold-resume guide: current objective, last completed slice, next action, blockers, read-next links | 120 lines |
+
+When emitting `visual/` HTML+outline pairs, open matching playbooks via
+[`visual-playbooks/index.md`](visual-playbooks/index.md) (progressive load; do not
+preload all seven). Required outline headings:
+[`visual-playbooks/outline-template.md`](visual-playbooks/outline-template.md).
 
 ## Candidate manifest and bindings
 
@@ -88,12 +96,14 @@ candidate scope; only manifest rows do.
 The public candidate limits are a 1 MiB manifest, 4,096 rows, a 4,096-byte
 path, 64 MiB per present file, and 256 MiB across all present files.
 
-Workspace and audit artifacts are not candidate paths. Durable project files
-include `.devrites/specs/**`, `DESIGN.md`, and `docs/adr/**`, plus the exact
-`.devrites/principles.md` owner. Under `.devrites`, only those principles and
-spec owners may be candidates; `ACTIVE`, `AFK`, `CHECKPOINT`, `archive/**`,
-`work/**`, and every other sibling fail closed. Engine owns malformed path,
-type, and size rejection; phases do not reinterpret a rejected manifest.
+Workspace and audit artifacts are not candidate paths. That includes every path
+under `.devrites/work/<slug>/visual/` (HTML, `.outline.md`, and optional
+`visual/README.md`). Durable project files include `.devrites/specs/**`,
+`DESIGN.md`, and `docs/adr/**`, plus the exact `.devrites/principles.md` owner.
+Under `.devrites`, only those principles and spec owners may be candidates;
+`ACTIVE`, `AFK`, `CHECKPOINT`, `archive/**`, `work/**`, and every other sibling
+fail closed. Engine owns malformed path, type, and size rejection; phases do
+not reinterpret a rejected manifest.
 
 `evidence.md`, `review.md`, and `seal.md` each contain exactly one unindented standalone
 binding line; `browser-evidence.md` does too when that file exists:
@@ -122,7 +132,9 @@ The digest binds reviewed bytes; it never substitutes for semantic review. Norma
 checks structure plus that binding, and Seal rechecks it.
 
 Proof commands must be repository-portable: no host wrappers, user-specific absolute paths,
-or temporary proof trees. Evidence records the executed command.
+or temporary proof trees. Evidence records the executed command. Optional `visual/`
+artifacts never inflate readiness: they are not readiness inputs and do not substitute
+for `decision-coverage.md`, `eng-review.md`, or `test-plan.md`.
 
 ## Canonical slice grammar
 
@@ -186,7 +198,9 @@ unless the stated reason makes the boundary irreducible.
 - Do not copy acceptance criteria into `plan.md`; reference `AC-###`.
 - Do not copy full proof into `handoff.md`; link to `evidence.md`.
 - Do not make `state.md` an append-only log; keep only the current cursor.
-- Do not create optional files before their phase; absence is meaningful.
+- Do not create optional files before their phase; absence is meaningful. Do not
+  treat `visual/` as required for readiness; emit HTML+outline only when a writer
+  earns a richer visual, and keep Mermaid in `flows.md` when that is enough.
 
 ## ID contract
 
@@ -209,3 +223,4 @@ append-only identities, not display positions:
 Old `AC1` and `Slice 1` forms are legacy and should not be generated for new
 workspaces. Preserve released legacy forms unless an explicit upgrade owns the
 migration; never renumber them incidentally.
+

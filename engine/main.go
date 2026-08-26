@@ -34,6 +34,8 @@ Usage:
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
   devrites-engine secret-scan [--staged] [--stdin] [slug]  Scan exact staged blobs, stdin, or touched files; HIGH blocks
+  devrites-engine open-visual <path-or-name> [--slug <slug>] [--no-open]
+                                         Resolve a visual HTML file, optionally open it locally, print agent paths
   devrites-engine version                  Print the engine binary's version
 Exit codes:
   0  ok / gate passed
@@ -87,6 +89,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdState(root, args[1:], stdout, stderr)
 	case "secret-scan":
 		return lib.SecretScan(root, args[1:], stdin, stdout, stderr)
+	case "open-visual":
+		return lib.OpenVisual(root, args[1:], stdout, stderr)
 	case "version", "--version":
 		fmt.Fprintln(stdout, version.Version)
 		return exitOK

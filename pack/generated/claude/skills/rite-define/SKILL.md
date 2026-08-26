@@ -11,7 +11,9 @@ Turn `spec.md` into architecture, vertical slices, traceability, and state. Spec
 what/why; Define owns how. **Do not write code.**
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+
 Pull these via `Read` when shaping the plan:
+
 - `development-workflow.md`: small batches, trunk-always-green, definition of done.
 - `principles.md`: the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
 - `documentation.md`: record plan-time decisions and rationale.
@@ -20,6 +22,7 @@ Pull these via `Read` when shaping the plan:
 - `../workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers.
 
 ## Operating rules
+
 - **Requires a readied spec.** Missing workspace/spec/readiness or open CRITICAL checklist →
   `/rite-spec`; missing/non-`CLEAR` decision coverage → `/rite-clarify`. Never plan it.
 - Apply `afk-hitl.md` ownership. Prefer conventions; source-check new dependencies/design
@@ -40,6 +43,7 @@ Pull these via `Read` when shaping the plan:
   ([`agents.md`](../devrites-lib/reference/standards/agents.md)); root owns choices and canonical files.
 
 ## Workflow
+
 0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`:** the always-on operating rules and anti-rationalizations.
    Resolve the active slug from `.devrites/ACTIVE`, require its `state.md`, and
    re-open `spec.md` and apply `spec-grammar.md`'s Native grammar re-read
@@ -132,7 +136,12 @@ Pull these via `Read` when shaping the plan:
    exception a human approves. Never ready a plan that silently violates an invariant. (Re-scored
    as a blocking gate at `/rite-vet`; no file → none declared → nothing to check.)
 6. **Write** `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md`; update
-   `state.md` (phase: plan → next `/rite-vet`).
+   `state.md` (phase: plan → next `/rite-vet`). When diagrams clarify, also write optional
+   `flows.md` (**Mermaid-first**). If a richer reviewable visual earns it, emit
+   `visual/<flow>.html` + `visual/<flow>.outline.md` after loading matching playbooks from
+   [`../devrites-lib/reference/visual-playbooks/index.md`](../devrites-lib/reference/visual-playbooks/index.md)
+   (progressive; never preload all seven), link the pair from `flows.md`, treat outline as
+   SSOT (outline wins), and never require Lavish or a new phase.
 6a. **Cross-artifact gate.** Read spec, tasks, and traceability together: every
    buildable AC/REQ maps to an existing slice/proof, every slice maps to real
    acceptance, and names/prose agree. Missing, duplicate, contradictory, or

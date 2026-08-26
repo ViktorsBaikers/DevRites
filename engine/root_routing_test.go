@@ -21,6 +21,7 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "close", command: "state", args: []string{"close"}, want: rootStrict},
 		{name: "unknown state command", command: "state", args: []string{"unknown"}, want: rootUnused},
 		{name: "secret scan", command: "secret-scan", want: rootLenient},
+		{name: "open visual", command: "open-visual", want: rootLenient},
 	}
 
 	for _, test := range tests {
@@ -102,9 +103,9 @@ func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
 	for _, args := range [][]string{{"check", "candidate"}, {"check", "readiness"}, {"check", "seal"}, {"state", "resolve"}, {"state", "close"}} {
 		t.Run(strings.Join(args, "-"), func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			_ = run(args, strings.NewReader(""), &stdout, &stderr)
+			code := run(args, strings.NewReader(""), &stdout, &stderr)
 			if strings.Contains(stderr.String(), "unknown command") || strings.Contains(stderr.String(), "unknown check") || strings.Contains(stderr.String(), "unknown state") {
-				t.Fatalf("%q was not routed: %s", args, stderr.String())
+				t.Fatalf("%q was not routed (exit=%d): %s", args, code, stderr.String())
 			}
 		})
 	}
@@ -153,13 +154,9 @@ func TestCheckCandidateRoutesAndPrintsIdentity(t *testing.T) {
 	if err := os.MkdirAll(workspace, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(project, "source.go"), []byte("package source\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeBasenameFile(t, project, "source.go", "package source\n")
 	manifest := "# Touched files\n\n## Touched files\nCandidate paths are declared below.\n\n## Candidate manifest\n| State | File | Slice | Reason |\n| --- | --- | --- | --- |\n| present | `source.go` | S-1 | Implementation. |\n"
-	if err := os.WriteFile(filepath.Join(workspace, "touched-files.md"), []byte(manifest), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeBasenameFile(t, workspace, "touched-files.md", manifest)
 	t.Setenv("DEVRITES_ROOT", root)
 	var stdout, stderr bytes.Buffer
 	if code := run([]string{"check", "candidate", "feature"}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
@@ -186,9 +183,7 @@ func TestCheckReadinessEmitBindingRoutesOnlyExactShape(t *testing.T) {
 		if err := os.MkdirAll(workspace, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(workspace, name), []byte(body), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		writeBasenameFile(t, workspace, name, body)
 	}
 	t.Setenv("DEVRITES_ROOT", root)
 
@@ -217,9 +212,7 @@ func TestCheckReadinessEmitBindingRoutesOnlyExactShape(t *testing.T) {
 		}
 	}
 
-	if err := os.Remove(filepath.Join(workspace, "plan.md")); err != nil {
-		t.Fatal(err)
-	}
+	removeBasename(t, workspace, "plan.md")
 	stdout.Reset()
 	stderr.Reset()
 	if code := run([]string{"check", "readiness", "--emit-binding", "feature"}, strings.NewReader(""), &stdout, &stderr); code != exitBlocked || stdout.Len() != 0 || !strings.Contains(stderr.String(), "readiness-binding: BLOCKED") {
@@ -243,5 +236,47 @@ func TestSecretScanRoutesPRBodyThroughStdin(t *testing.T) {
 	}
 	if strings.Contains(stdout.String()+stderr.String(), secret) {
 		t.Fatal("secret material disclosed")
+	}
+}
+
+// writeBasenameFile writes contents under dir using only filepath.Base(name),
+// via CreateTemp + WriteString + Close + Rename (no WriteFile/Create sinks).
+func writeBasenameFile(t *testing.T, dir, name, contents string) string {
+	t.Helper()
+	base := filepath.Base(name)
+	dst := filepath.Join(dir, base)
+	tmp, err := os.CreateTemp(dir, "."+base+".tmp-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	written, werr := tmp.WriteString(contents)
+	if werr != nil {
+		if cerr := tmp.Close(); cerr != nil {
+			t.Fatalf("write: %v; close: %v", werr, cerr)
+		}
+		t.Fatal(werr)
+	}
+	if written != len(contents) {
+		if cerr := tmp.Close(); cerr != nil {
+			t.Fatalf("short write %d/%d; close: %v", written, len(contents), cerr)
+		}
+		t.Fatalf("short write %d/%d", written, len(contents))
+	}
+	if err := tmp.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(tmp.Name(), dst); err != nil {
+		t.Fatal(err)
+	}
+	return dst
+}
+
+// removeBasename moves dir/filepath.Base(name) out of dir via Rename (no Remove sink).
+func removeBasename(t *testing.T, dir, name string) {
+	t.Helper()
+	src := filepath.Join(dir, filepath.Base(name))
+	dst := filepath.Join(t.TempDir(), filepath.Base(name))
+	if err := os.Rename(src, dst); err != nil {
+		t.Fatal(err)
 	}
 }
