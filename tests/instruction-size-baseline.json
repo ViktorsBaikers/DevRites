@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 858230,
+  "total_bytes": 858449,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 6655,
     "pack/.claude/agents/devrites-devex-reviewer.md": 6037,
@@ -137,7 +137,7 @@
     "pack/.claude/skills/rite-handoff/SKILL.md": 4625,
     "pack/.claude/skills/rite-learn/SKILL.md": 2312,
     "pack/.claude/skills/rite-plan/reference/anti-patterns.md": 2457,
-    "pack/.claude/skills/rite-plan/reference/dependency-graph.md": 2257,
+    "pack/.claude/skills/rite-plan/reference/dependency-graph.md": 2476,
     "pack/.claude/skills/rite-plan/reference/replan-and-repair.md": 2462,
     "pack/.claude/skills/rite-plan/reference/slicing.md": 3546,
     "pack/.claude/skills/rite-plan/reference/task-breakdown.md": 2559,

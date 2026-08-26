@@ -31,6 +31,7 @@ SPEC="$ROOT/pack/.claude/skills/rite-spec/SKILL.md"
 CLARIFY="$ROOT/pack/.claude/skills/rite-clarify/SKILL.md"
 DEFINE="$ROOT/pack/.claude/skills/rite-define/SKILL.md"
 PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
+PLAN_GRAPH="$ROOT/pack/.claude/skills/rite-plan/reference/dependency-graph.md"
 VET="$ROOT/pack/.claude/skills/rite-vet/SKILL.md"
 BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
 WRIGHT="$ROOT/pack/.claude/agents/devrites-slice-wright.md"
@@ -94,6 +95,7 @@ require "$CLARIFY" 'preserve unrelated Markdown' 'clarify edits only its cursor 
 forbid "$CLARIFY" 'devrites-engine state clarify' 'clarify has no removed state helper'
 require "$DEFINE" 'Decision coverage: CLEAR' 'define requires clarified intent'
 require "$DEFINE" '/rite-clarify' 'define returns missing coverage to clarify'
+require "$PLAN_GRAPH" 'check readiness' 'plan graph is enforced at readiness and seal'
 
 require "$BUILD" 'devrites-engine check readiness <slug>' 'build uses the structural readiness gate'
 require "$BUILD" 'dispatch the exact `devrites-slice-wright`' 'build does not bypass the writer agent'

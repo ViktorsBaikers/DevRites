@@ -70,7 +70,7 @@ func TestReadinessEmitBindingPassesExactCLIContract(t *testing.T) {
 	writeCompleteGateCLIWorkspace(t, root, slug, state.PhaseBuild, state.PhaseBuild, "none\n")
 
 	out, errOut, code := runDevrites(t, root, "check", "readiness", "--emit-binding", slug)
-	const wantOut = "Readiness inputs SHA-256: 71c2d192ea09bca1d2c8806cb197e7fa4d1d08e0b331cf25b2e1bcb7ecac34e4\n"
+	const wantOut = "Readiness inputs SHA-256: f72109687057f33d5d7f05e5436a4dcc88ccf87367d0933afd9fdcf1a023f5c0\n"
 	if code != 0 || out != wantOut || errOut != "" {
 		t.Fatalf("code=%d stdout=%q stderr=%q, want code=0 stdout=%q stderr empty", code, out, errOut, wantOut)
 	}
@@ -565,6 +565,8 @@ func writeCompleteGateCLIWorkspace(t *testing.T, root, slug string, current, req
 		case "questions.md":
 			questionsRequired = true
 			content = questions
+		case "tasks.md":
+			content = testutil.CanonicalTasksMarkdown
 		}
 		testutil.WriteFile(t, filepath.Join(root, "work", slug, name), content)
 	}
@@ -590,7 +592,7 @@ func newFinalSealRepo(t *testing.T) (string, string) {
 		"decision-coverage.md": "# Decision coverage\n\nCLEAR\n",
 		"architecture.md":      "# Architecture\n\nUse existing gates.\n",
 		"plan.md":              "# Plan\n\nCompose the final checks.\n",
-		"tasks.md":             "# Tasks\n\n- [x] Build final seal.\n",
+		"tasks.md":             testutil.CanonicalTasksMarkdown,
 		"traceability.md":      "# Traceability\n\nAC-001 -> final seal.\n",
 		"eng-review.md":        "# Engineering review\n\nPASS\n",
 		"test-plan.md":         "# Test plan\n\nRun focused Go tests.\n",

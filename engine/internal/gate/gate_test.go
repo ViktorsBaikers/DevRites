@@ -12,6 +12,114 @@ import (
 	"github.com/devrites/devrites/internal/testutil"
 )
 
+func TestCheckBlocksCyclicTaskGraphWhenTasksAreRequired(t *testing.T) {
+	root := t.TempDir()
+	workspace := writeReadinessFixture(t, root, "cyclic", "build")
+	testutil.WriteFile(t, filepath.Join(workspace, "tasks.md"), `# Tasks
+
+## SLICE-001 A
+Dependencies: SLICE-002
+
+## SLICE-002 B
+Dependencies: SLICE-001
+`)
+	binding := mustReadinessBinding(t, root, "cyclic")
+	testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+
+	res, err := Check(Readiness, root, "cyclic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Blocked || res.ReasonID != reason.GateReadinessMissing {
+		t.Fatalf("blocked=%v reason=%q, want blocked missing", res.Blocked, res.ReasonID)
+	}
+	joined := strings.Join(res.StateProblems, "\n")
+	if !strings.Contains(joined, "task-graph: dependency cycle:") {
+		t.Fatalf("StateProblems=%q", joined)
+	}
+	if !strings.Contains(res.Render(), "result: blocked (state invariant)") {
+		t.Fatalf("Render()=\n%s", res.Render())
+	}
+}
+
+func TestCheckBlocksCyclicTaskGraphAtSeal(t *testing.T) {
+	root := t.TempDir()
+	writeCompleteGateFeature(t, root, "cyclic-seal", state.PhaseSeal, state.PhaseSeal, "none\n")
+	workspace := filepath.Join(root, "work", "cyclic-seal")
+	testutil.WriteFile(t, filepath.Join(workspace, "tasks.md"), `# Tasks
+
+## SLICE-001 A
+Dependencies: SLICE-002
+
+## SLICE-002 B
+Dependencies: SLICE-001
+`)
+	binding := mustReadinessBinding(t, root, "cyclic-seal")
+	testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+
+	res, err := Check(Seal, root, "cyclic-seal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Blocked || res.ReasonID != reason.GateSealMissing {
+		t.Fatalf("blocked=%v reason=%q, want blocked %s", res.Blocked, res.ReasonID, reason.GateSealMissing)
+	}
+	joined := strings.Join(res.StateProblems, "\n")
+	if !strings.Contains(joined, "task-graph: dependency cycle:") {
+		t.Fatalf("StateProblems=%q", joined)
+	}
+	if !strings.Contains(res.Render(), "result: blocked (state invariant)") {
+		t.Fatalf("Render()=\n%s", res.Render())
+	}
+}
+
+func TestCheckBlocksMalformedTaskGraphInsteadOfDroppingTokens(t *testing.T) {
+	root := t.TempDir()
+	workspace := writeReadinessFixture(t, root, "malformed", "define")
+	testutil.WriteFile(t, filepath.Join(workspace, "tasks.md"), `# Tasks
+
+## SLICE-001 Ready
+Dependencies: none
+
+## SLICE-002 Next
+Dependencies: SLICE-001 and later
+`)
+
+	res, err := Check(Readiness, root, "malformed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Blocked {
+		t.Fatal("expected malformed dependency to block readiness")
+	}
+	joined := strings.Join(res.StateProblems, "\n")
+	if !strings.Contains(joined, `malformed dependency "and"`) || !strings.Contains(joined, `malformed dependency "later"`) {
+		t.Fatalf("StateProblems=%q", joined)
+	}
+}
+
+func TestCheckBlocksMissingDependenciesInsteadOfTreatingSliceAsIndependent(t *testing.T) {
+	root := t.TempDir()
+	workspace := writeReadinessFixture(t, root, "nodeps", "define")
+	testutil.WriteFile(t, filepath.Join(workspace, "tasks.md"), `# Tasks
+
+## SLICE-001 Ready
+Goal: looks complete without an ordering field
+`)
+
+	res, err := Check(Readiness, root, "nodeps")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Blocked {
+		t.Fatal("expected missing Dependencies to block readiness")
+	}
+	joined := strings.Join(res.StateProblems, "\n")
+	if !strings.Contains(joined, "SLICE-001 is missing Dependencies") {
+		t.Fatalf("StateProblems=%q", joined)
+	}
+}
+
 func TestCheckAndRenderReadiness(t *testing.T) {
 	root := t.TempDir()
 	writeFeature(t, root, "alpha", map[string]string{
@@ -505,6 +613,8 @@ func writeCompleteGateFeature(t *testing.T, root, slug string, current, required
 		case "questions.md":
 			questionsRequired = true
 			content = questions
+		case "tasks.md":
+			content = testutil.CanonicalTasksMarkdown
 		}
 		testutil.WriteFile(t, filepath.Join(root, "work", slug, name), content)
 	}
