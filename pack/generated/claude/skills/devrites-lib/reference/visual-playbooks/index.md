@@ -3,8 +3,7 @@
 Progressive references for DevRites `visual/` HTML + outline pairs.
 Load **only** matching playbooks before writing HTML. Do not preload all seven.
 
-**Spec SSOT:** `.mstar/specs/visual-html-artifacts.md`  
-**Schema:** [`../workspace-artifact-schema.md`](../workspace-artifact-schema.md)  
+**Spec / schema SSOT:** [`../workspace-artifact-schema.md`](../workspace-artifact-schema.md) (Visual HTML artifacts)  
 **Outline companion:** [`outline-template.md`](outline-template.md)
 
 ## Load rules
