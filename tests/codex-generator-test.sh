@@ -32,6 +32,34 @@ grep -q '`spawn_agent` call' "$rewritten" && ok "rewrites the dispatch primitive
 grep -q '\$rite-build' "$rewritten" && grep -q '\$rite-seal' "$rewritten" && ok "rewrites slash invocations" || no "did not rewrite slash invocations"
 grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$rewritten" && no "rewritten markdown kept Claude paths" || ok "rewritten markdown has no Claude paths"
 
+# Preserve-and-verify the pre-install fallback contract: the Claude skill
+# keeps it; the Codex transform must resolve the installed path and drop the
+# fallback line instead of checking the same file twice.
+fallback_sample="$TMP_GEN_DIR/fallback.md"
+cat > "$fallback_sample" <<'EOF'
+Try post-install path first, fall back to pre-install:
+
+```bash
+F=.claude/skills/rite-$V/SKILL.md
+[ -f "$F" ] || F=pack/.claude/skills/rite-$V/SKILL.md
+[ -f "$OTHER" ] || echo keep
+```
+EOF
+gen_codex_markdown_file "$fallback_sample" "$TMP_GEN_DIR/fallback.codex.md"
+grep -q 'Resolve the installed skill path:' "$TMP_GEN_DIR/fallback.codex.md" \
+  && ! grep -q 'fall back to pre-install' "$TMP_GEN_DIR/fallback.codex.md" \
+  && ok "rewrites the resolver prose" \
+  || no "kept the stale pre-install prose"
+if grep -q '^\[ -f "\$F" \] || F=' "$TMP_GEN_DIR/fallback.codex.md"; then
+  no "dropped the dead duplicate-path fallback line"
+else
+  ok "drops the dead duplicate-path fallback line"
+fi
+grep -q '^\[ -f "\$OTHER" \] || echo keep' "$TMP_GEN_DIR/fallback.codex.md" \
+  && ok "keeps unrelated continuation guards" \
+  || no "deleted an unrelated guard line"
+
+
 skill_dir="$TMP_GEN_DIR/devrites-sample"
 mkdir -p "$skill_dir"
 cat > "$skill_dir/SKILL.md" <<'EOF'
