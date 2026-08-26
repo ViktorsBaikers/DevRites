@@ -7,6 +7,9 @@ import (
 	"testing"
 )
 
+// CanonicalTasksMarkdown is a minimal valid slice graph for gate fixtures.
+const CanonicalTasksMarkdown = "# Tasks\n\n## SLICE-001 Ready\nDependencies: none\n"
+
 // CopyTree recursively copies the directory tree at src into dst, creating dst
 // and any parents. It is used to give each test an isolated, writable copy of a
 // read-only fixture.

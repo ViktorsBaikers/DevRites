@@ -7,21 +7,25 @@ import (
 	"github.com/devrites/devrites/internal/state"
 )
 
+// ObserveTaskGraph is the slice-graph subset of ObserveSummary.
+type ObserveTaskGraph struct {
+	SliceCount int      `json:"slice_count"`
+	Cycle      []string `json:"cycle,omitempty"`
+	Unknown    []string `json:"unknown_dependencies,omitempty"`
+	Problems   []string `json:"problems,omitempty"`
+	OK         bool     `json:"ok"`
+}
+
 // ObserveSummary is a sanitized, machine-readable workspace snapshot.
 type ObserveSummary struct {
-	Slug              string   `json:"slug"`
-	Phase             string   `json:"phase,omitempty"`
-	Status            string   `json:"status,omitempty"`
-	NextAction        string   `json:"next_action,omitempty"`
-	MissingSections   []string `json:"missing_sections,omitempty"`
-	MissingFiles      []string `json:"missing_files,omitempty"`
-	PrinciplesPresent bool     `json:"principles_present"`
-	TaskGraph         *struct {
-		SliceCount int      `json:"slice_count"`
-		Cycle      []string `json:"cycle,omitempty"`
-		Unknown    []string `json:"unknown_dependencies,omitempty"`
-		OK         bool     `json:"ok"`
-	} `json:"task_graph,omitempty"`
+	Slug              string            `json:"slug"`
+	Phase             string            `json:"phase,omitempty"`
+	Status            string            `json:"status,omitempty"`
+	NextAction        string            `json:"next_action,omitempty"`
+	MissingSections   []string          `json:"missing_sections,omitempty"`
+	MissingFiles      []string          `json:"missing_files,omitempty"`
+	PrinciplesPresent bool              `json:"principles_present"`
+	TaskGraph         *ObserveTaskGraph `json:"task_graph,omitempty"`
 }
 
 // ObserveSummaryFor builds a summary for one feature slug.
@@ -40,16 +44,12 @@ func ObserveSummaryFor(root, slug string) (ObserveSummary, error) {
 		MissingSections:   missingSectionNames(report.Missing),
 	}
 
-	if graph, graphErr := CheckTaskGraph(root, slug); graphErr == nil && len(graph.Slices) > 0 {
-		summary.TaskGraph = &struct {
-			SliceCount int      `json:"slice_count"`
-			Cycle      []string `json:"cycle,omitempty"`
-			Unknown    []string `json:"unknown_dependencies,omitempty"`
-			OK         bool     `json:"ok"`
-		}{
+	if graph, graphErr := CheckTaskGraph(root, slug); graphErr == nil && (len(graph.Slices) > 0 || len(graph.Problems) > 0) {
+		summary.TaskGraph = &ObserveTaskGraph{
 			SliceCount: len(graph.Slices),
-			Cycle:      graph.Cycle,
-			Unknown:    graph.Unknown,
+			Cycle:      append([]string(nil), graph.Cycle...),
+			Unknown:    append([]string(nil), graph.Unknown...),
+			Problems:   append([]string(nil), graph.Problems...),
 			OK:         len(graph.Problems) == 0,
 		}
 	}

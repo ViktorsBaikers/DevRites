@@ -37,7 +37,10 @@ define the contract first (so both sides can proceed) and trigger `devrites-doub
 before standing the interface.
 
 After editing `tasks.md`, run `devrites-engine check task-graph <slug>` before Vet.
-Cycles or unknown dependencies block readiness.
+`check readiness` and `check seal` also reject cycles, unknown dependencies,
+malformed tokens, duplicate slice IDs, a missing `Dependencies`/`depends_on`
+line, and a `depends_on` set that disagrees with `Dependencies`. Cycles or
+unknown dependencies block readiness.
 
 For monorepos/multiple repositories, annotate the proven root and deployable on each node.
 For data/integration changes, include recovery ordering: expand before new writers,

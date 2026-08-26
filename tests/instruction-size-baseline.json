@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 888509,
+  "total_bytes": 888707,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 6655,
     "pack/.claude/agents/devrites-devex-reviewer.md": 6037,
@@ -89,7 +89,7 @@
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/code.md": 2407,
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/comparison.md": 2050,
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/diagram.md": 3476,
-    "pack/.claude/skills/devrites-lib/reference/visual-playbooks/index.md": 3657,
+    "pack/.claude/skills/devrites-lib/reference/visual-playbooks/index.md": 3636,
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/input.md": 2747,
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/outline-template.md": 3850,
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/plan.md": 2444,
@@ -146,7 +146,7 @@
     "pack/.claude/skills/rite-handoff/SKILL.md": 4625,
     "pack/.claude/skills/rite-learn/SKILL.md": 2312,
     "pack/.claude/skills/rite-plan/reference/anti-patterns.md": 2457,
-    "pack/.claude/skills/rite-plan/reference/dependency-graph.md": 2257,
+    "pack/.claude/skills/rite-plan/reference/dependency-graph.md": 2476,
     "pack/.claude/skills/rite-plan/reference/replan-and-repair.md": 2462,
     "pack/.claude/skills/rite-plan/reference/slicing.md": 3546,
     "pack/.claude/skills/rite-plan/reference/task-breakdown.md": 2559,

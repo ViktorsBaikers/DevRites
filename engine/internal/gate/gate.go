@@ -94,6 +94,15 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 			blocked = true
 		}
 	}
+	if len(missingFiles) == 0 && phaseRequiresTasks(policy) {
+		if fact, ok := observation.Fact("tasks.md"); ok && fact.State() == state.ArtifactPresent {
+			graph := state.ParseTaskGraph(fact.Bytes())
+			for _, problem := range graph.Problems {
+				stateProblems = append(stateProblems, "task-graph: "+problem)
+				blocked = true
+			}
+		}
+	}
 	if len(missingFiles) == 0 && phaseRequiresReadinessBinding(policy) {
 		expected, bindingErr := verifyReadinessBinding(observation)
 		if bindingErr != nil {

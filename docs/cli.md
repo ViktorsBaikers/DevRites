@@ -77,15 +77,15 @@ with the self-contained updater.
   ```
 
 - `check readiness <slug>` verifies the files required to leave the workspace's
-  current phase and, once `eng-review.md` is required, its exact stable
-  Build-input binding.
+  current phase, the `tasks.md` slice graph once that artifact is required, and,
+  once `eng-review.md` is required, its exact stable Build-input binding.
 - `check readiness --emit-binding <slug>` renders the exact stable Build-input
   binding for Vet to record after semantic review.
-- `check seal <slug>` checks final required files and open human gates. Once
-  those files are complete, it verifies the stable readiness binding; only
-  after that aggregate check passes does it verify that `evidence.md`,
-  `review.md`, `seal.md`, and optional `browser-evidence.md` contain exactly one
-  binding to the current candidate digest.
+- `check seal <slug>` checks final required files, open human gates, and the
+  `tasks.md` slice graph. Once those files are complete, it verifies the stable
+  readiness binding; only after that aggregate check passes does it verify that
+  `evidence.md`, `review.md`, `seal.md`, and optional `browser-evidence.md`
+  contain exactly one binding to the current candidate digest.
 
 Semantic readiness, traceability, acceptance interpretation, evidence quality,
 doubt, test quality, reviewer reconciliation, and capability interpretation

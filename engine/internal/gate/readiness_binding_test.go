@@ -91,7 +91,7 @@ func TestReadinessBindingBindsOnlyStableBuildInputs(t *testing.T) {
 func TestReadinessBindingGoldenDigest(t *testing.T) {
 	root := t.TempDir()
 	writeReadinessFixture(t, root, "golden", "build")
-	const want = "Readiness inputs SHA-256: d84b9050bd8db742c6a379a966bd7457cde04a69d6811130817729776d976ebe"
+	const want = "Readiness inputs SHA-256: c4a073e85373f5fd9f9302c61b6772e766e4fa2a3da2ccc77bad23756c9f412d"
 	if got := mustReadinessBinding(t, root, "golden"); got != want {
 		t.Fatalf("ReadinessBinding()=%q, want %q", got, want)
 	}
@@ -374,7 +374,7 @@ func writeReadinessFixture(t *testing.T, root, slug, phase string) string {
 		"decision-coverage.md": "# Decision coverage\n\nCLEAR\n",
 		"architecture.md":      "# Architecture\n\nReady.\n",
 		"plan.md":              "# Plan\n\nReady.\n",
-		"tasks.md":             "# Tasks\n\nReady.\n",
+		"tasks.md":             testutil.CanonicalTasksMarkdown,
 		"traceability.md":      "# Traceability\n\nReady.\n",
 		"eng-review.md":        "# Engineering review\n\nREADY\n",
 		"test-plan.md":         "# Test plan\n\nReady.\n",

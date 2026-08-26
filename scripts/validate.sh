@@ -343,6 +343,18 @@ else
   good "public/generated guidance points at the devrites-engine binary, not deleted shell helpers"
 fi
 
+# ---- 14c. published version identity -------------------------------------
+# Keep package.json, README, CHANGELOG, and package-lock at or above the
+# highest git tag so a squash merge cannot silently revert a release bump.
+section "published version identity"
+if bash "$ROOT/tests/published-version-identity-test.sh" >/tmp/dr_published_version 2>&1; then
+  cat /tmp/dr_published_version
+  good "published version identity matches package.json, changelog, README, and git tags"
+else
+  cat /tmp/dr_published_version
+  bad "published version identity drifted behind the latest git tag or across manifests"
+fi
+
 # ---- 15. shellcheck (error = blocking, warning = advisory) ---------------
 # CI runners include shellcheck and enforce the error-level gate on every PR.
 # Local validation skips this gate only when shellcheck is not installed.
