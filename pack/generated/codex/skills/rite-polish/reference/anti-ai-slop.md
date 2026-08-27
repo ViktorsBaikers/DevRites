@@ -90,6 +90,8 @@ Each is pass/fail by counting or grep, not judgment:
 - **Layout families** (hero, image+text split, card grid, bento, table…): no family more
   than twice per page; never 3 consecutive image+text zigzags.
 - **Icons**: 0 emoji-as-icon; exactly one icon set imported.
+- **State presence in code**: default+hover+focus-visible+active+disabled for every interactive element; loading/error/empty where data delays or fails — an unreachable state's screenshot proves nothing.
+- **Form inputs**: no border-width shifts between states; focus ring from outline/ring (not border swap); consistent control height; reserved helper slot; disabled beyond opacity alone.
 
 ## Code anti-slop (UI **and** backend)
 - **Over-defensive checks** — `if (x && x.length > 0)` repeated, layered null guards,
