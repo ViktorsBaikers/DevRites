@@ -39,7 +39,7 @@ Repository conventions follow [Precedence](#precedence).
 
 ## Lifecycle rest points
 
-Advance a phase only after `devrites-engine check readiness <slug>` passes structure (semantics belong to exact agents/checklists). Standalone rites persist and stop on block; under a controlling caller, agent-owned technical blocks return backward instead of stopping user-facing. `/rite-seal` runs `check seal <slug>` for structure/freshness, not prose. HITL/blocked stops follow [Persistence before stopping](#persistence-before-stopping-handoff-discipline).
+Before advancing a phase, run `devrites-engine check readiness <slug>` for structure (semantics belong to exact agents/checklists). Standalone rites persist and stop on block; under a controlling caller, agent-owned technical blocks return backward as a nested phase boundary, not a user-facing handoff. `/rite-seal` runs `devrites-engine check seal <slug>` for structure/freshness, not prose. HITL/blocked stops follow [Persistence before stopping](#persistence-before-stopping-handoff-discipline).
 
 ### Gate contract
 
