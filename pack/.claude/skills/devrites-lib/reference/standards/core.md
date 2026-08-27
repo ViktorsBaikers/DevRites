@@ -39,23 +39,14 @@ Repository conventions follow [Precedence](#precedence).
 
 ## Lifecycle rest points
 
-Before advancing a phase, run `devrites-engine check readiness <slug>` for
-structure; exact agents/checklists own semantics. Standalone rites persist and stop
-on block. Under an active controlling caller, an agent-owned technical block is a
-persisted backward edge: return it to that caller instead of producing a
-user-facing stop.
-After native proof/review, `/rite-seal` runs `devrites-engine check seal <slug>`
-for structure/freshness, not prose. HITL/blocked stops follow
-[Persistence before stopping](#persistence-before-stopping-handoff-discipline).
+Before advancing a phase, run `devrites-engine check readiness <slug>` for structure (semantics belong to exact agents/checklists). Standalone rites persist and stop on block; under a controlling caller, agent-owned technical blocks return backward as a nested phase boundary, not a user-facing handoff. `/rite-seal` runs `devrites-engine check seal <slug>` for structure/freshness, not prose. HITL/blocked stops follow [Persistence before stopping](#persistence-before-stopping-handoff-discipline).
 
+### Gate contract
+
+Each gate is declared as **Name · Precondition · Satisfying observation (exact command/artifact state) · Pass/Fail · What failure blocks**, with one type: `preflight`, `revision`, `escalation` (human-only), `abort`. Engine gates keep exit codes; semantic gates are judged by their owner against this contract. A gate whose failure consequence cannot be named is decoration — sharpen or delete it.
 ## Caller-owned technical backtracking
 
-When an active rite invokes an earlier rite inline to repair an agent-owned
-technical gap, the original rite remains the controlling caller. A nested
-rite's `STOP` is a nested phase boundary, not a user-facing handoff. The caller
-re-reads `state.md`, follows the durable return cursor and intermediate
-`next_action`, and resumes its originating phase while no human-owned, safety,
-access, budget, or exhausted-recovery stop is active.
+When a rite invokes an earlier rite inline to repair an agent-owned technical gap, the original rite stays the controlling caller: a nested `STOP` is a phase boundary, not user-facing. The caller re-reads `state.md`, follows the return cursor/`next_action`, and resumes unless a human-owned, safety, access, budget, or exhausted-recovery stop is active ([Persistence before stopping](#persistence-before-stopping-handoff-discipline)). Derive `exhausted-recovery` from the fingerprint's recorded no-progress attempts; one consumed authorization doesn't exhaust offline recovery from retained new evidence.
 
 Derive `exhausted-recovery` from the exact fingerprint's recorded no-progress
 attempts, not from a stale `state.md` label. A consumed authorization for one
