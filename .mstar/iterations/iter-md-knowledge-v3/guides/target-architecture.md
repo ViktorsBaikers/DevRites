@@ -102,7 +102,7 @@ No change to the four-layer precedence stack in `core.md`. **Deltas are additive
 
 | ID | Pass | Evidence |
 | --- | --- | --- |
-| R1 | yes | `guides/research-inventory.md` — 25 rows, SHAs, sampling for #10/#16/#23/#25 |
+| R1 | yes | `guides/research-inventory.md` — 25 rows, SHAs; paste oversized #10/#16/#23/#25 sampled (inventory #10/#17/#24/#25) with explicit paths |
 | R2 | yes | `guides/prior-adoption-ledger.md` — 08-02/08-11/benchmark sources only |
 | R3 | yes | `guides/devrites-md-architecture-map.md` — diagram + byte baseline commands |
 | R4 | yes | `guides/dossiers-index.md` + `/tmp/.../dossiers/*.md` (25); `guides/open-web-research.md` |

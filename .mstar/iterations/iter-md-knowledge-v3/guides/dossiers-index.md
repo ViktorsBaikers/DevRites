@@ -2,6 +2,7 @@
 
 - **Audit date:** 2026-08-27
 - **Ephemeral path prefix:** `/tmp/devrites-markdown-research-v3-redo-2026-08-27/dossiers/`
+- **Sampling:** paste oversized repos (#10/#16/#23/#25) documented in `research-inventory.md` § Brief paste `#` vs inventory `#`; dossiers for those repos label sampled paths explicitly.
 
 | repo | dossier path | top matrix candidates |
 | --- | --- | --- |
