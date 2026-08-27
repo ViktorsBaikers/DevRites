@@ -1,11 +1,11 @@
 # Skill authoring
 
-> **Source-checkout only:** where `pack/.claude/` exists, edit canonical source; run
+> **Source-checkout only:** edit canonical `pack/.claude/`; run
 > `bash scripts/build-host-artifacts.sh`, then validate. Installed generated mirrors are not authoring surfaces.
 
 ## Surface lifecycle
 
-- **Promoted:** validated in `pack/`, `docs/skills.md`, and `docs/command-map.md`.
+- **Promoted:** validated in `pack/`, `docs/skills.md`, `docs/command-map.md`.
 - **Draft:** local, outside `pack/`.
 - **Deprecated:** bridge with replacement/removal note.
 - **Research:** `docs/research/`, never installed.
@@ -23,10 +23,11 @@ Description routes; it is not documentation.
   30; `devrites-lib` 60. Agent descriptions: 45 words.
 - Model-visible `name` + `description` ≤5,200 routing characters;
   `explicit-only` and bodies/references do not count.
-- Front-load one stable prompt/docs trigger. Allow at most one `Use when` and one
-  `Not for` branch; collapse or move other detail into the body.
+- Front-load one stable prompt/docs trigger. Allow at most one `Use when` and one `Not for` branch;
+  move other detail into the body.
 - State the nearest sibling's **defining constraint** (Seal decides; Ship mutates
   Git). Routing evals test it.
+- A routing/tie-breaker change cites the mis-route it fixes and passes trigger corpora; no failing case, no change.
 - Put examples/edges/rationale/procedure in body/reference—not frontmatter.
 
 ### Activation order
@@ -45,23 +46,20 @@ Optional flags obey `core.md` rule 10.
 - Ordered steps end in checkable criteria.
 - One read shows outcome, triggers, preconditions, decisions/failure, write owner,
   proof, exit; omit irrelevant fields. Examples distinguish branches.
-- Split only for independent load path or eval-proven inline failure; keep one owner;
-  move each definition/rule/caveat/example cluster together.
+- Split only for independent load path or eval-proven inline failure; keep one owner; co-locate each rule/caveat/example cluster.
 - Every public optional-flag skill obeys the shared
   [`core.md`](core.md#operating-rules-every-phase): declare its
   complete flag surface in `argument-hint`,
   normalize the current invocation once
   before writes, fail closed on value-flag absence/malformed/duplicate/conflict,
   and add a fail-closed regression check for value flags.
-  A narrow explicit-only utility may state the equivalent local guard instead of
-  loading unrelated core rules.
+  - A narrow explicit-only utility may state the equivalent local guard instead of loading core.
 - Add setup/engine pointers only when absence makes output wrong.
 
 Classify active instructions by load path:
 
 - `core.md`: required by every workspace rite;
-- on-demand reference: one rule, at least two named active consumers, same
-  observable failure when absent;
+- on-demand reference: one rule, ≥2 named active consumers, same observable failure when absent;
 - workflow/agent local: one owner, scoped procedure;
 - human/research docs: explanatory/proposed, never active-run authority.
 
@@ -78,15 +76,14 @@ regresses.
 - Internal `devrites-*`: stay off the public menu unless named as implementation.
 - A public docs card states purpose, invocation, lifecycle position, defining
   constraint in plain prose, and completion evidence; never copy the full process.
-- Model-invoked skills need positive/negative implicit-routing evals. Explicit-only
-  public skills need direct-command evals; non-workflow libraries are exempt.
+- Model-invoked skills need positive/negative implicit-routing evals; explicit-only public skills need direct-command evals; non-workflow libraries are exempt.
 
 ## Source intake
 
 External sources are references, not authority. Promote only when one
 `docs/research/` admission record contains:
 
-- **Provenance:** origin, review date/files, adaptation, and derived targets; external assets add
+- **Provenance:** origin, review date/files, adaptation, derived targets; external assets add
   source URL/SHA/path/license, local/user assets add relative path/digest/owner. Unverified
   external origin/rights → reference-only, independently written prose.
 - **Gap + owner:** observed failure and existing canonical owner; extend before adding.
@@ -108,15 +105,13 @@ constrain lower ones; nothing may weaken shipped gates or permissions.
 | **imported** | External skill with `docs/research/` admission record | Read/adapt only after provenance review | skill-trust scan + admission record required |
 | **untrusted** | Unknown origin or failed scan | Reference-only; never executable authority | block on any HIGH finding |
 
-Before promoting or installing project-local/imported Markdown, run:
+Before promoting/installing project-local/imported Markdown, run:
 
 ```bash
 devrites-engine check skill-trust <path>
 ```
 
-HIGH findings (prompt-injection override prose, suspicious Unicode, credential exfil
-patterns, sensitive path references) block installation. MEDIUM findings require
-explicit human acknowledgment in the customization diff, not silent merge.
+HIGH findings (injection override prose, suspicious Unicode, credential exfil, sensitive paths) block install; MEDIUM requires explicit human acknowledgment in the diff, not silent merge.
 
 ## Match form to failure
 
@@ -137,7 +132,7 @@ Behavior-shaping prose is code:
    variance, process versus job outcome, and supported/unproved claims. Never capture raw transcripts;
    lost grading signal is `cannot_verify`.
 
-CI validates only corpora/deterministic artifacts—never paid sessions or lexical-as-model claims.
+CI validates only corpora/deterministic artifacts—never paid sessions or lexical claims.
 
 ## Pruning
 
@@ -155,6 +150,6 @@ writes product source/tests; root-owned bounded `.devrites/**` follows `workflow
 ## Coverage-gap review (maintainer pass)
 
 1. Verdict each candidate domain `covered`/`partial`/`absent` against named owners.
-2. Gap needs consumer evidence: frequency × purpose (observable failure without it); unverifiable frequency ⇒ no adoption.
+2. Gap needs consumer evidence: frequency × purpose (observable failure without it); unverifiable ⇒ no adoption.
 3. ≤2 net-new guidance files per round; prefer extending a standard; accepted file names load trigger + non-trigger before shipping.
 4. Rejections record reasons; revisit only on changed evidence.
