@@ -36,7 +36,7 @@
 | T05 | `pack/.claude/skills/rite-spec/reference/spec-checklists.md` | modify | spec-kit checklist merge |
 | T06 | `pack/.claude/skills/rite-define/reference/plan-template.md` | modify | BMAD architecture admission |
 | T07 | `pack/.claude/skills/rite-adopt/SKILL.md` | modify | agent-skills characterize; OSKTRA pre-flight |
-| T08 | `pack/.claude/skills/rite-vet/SKILL.md` | modify | reverse-skill protected config |
+| T08 | `pack/.claude/skills/rite-vet/SKILL.md` | modify | reverse-skill authorization scope gate |
 | T09 | `pack/.claude/skills/rite-build/SKILL.md` | modify | mattpocock step exits |
 | T10 | `pack/.claude/skills/rite-prove/SKILL.md` | modify | mattpocock step exits |
 | T11 | `pack/.claude/skills/rite-converge/SKILL.md` | modify | gstack completion evidence |
@@ -50,7 +50,7 @@
 | T19 | `pack/.claude/skills/devrites-lib/reference/standards/agents.md` | modify | OMC calibration + reviewer schema |
 | T20 | `pack/.claude/skills/devrites-lib/reference/visual-playbooks/index.md` | modify | taste-skill anti-slop triggers |
 | T21 | `pack/.claude/agents/devrites-code-reviewer.md` | modify | silent-failure probe |
-| T22 | `pack/.claude/agents/devrites-security-reviewer.md` | modify | report schema alignment |
+| T22 | `pack/.claude/agents/devrites-security-auditor.md` | modify | report schema alignment |
 | T23 | `pack/.claude/agents/devrites-spec-reviewer.md` | modify | report schema alignment |
 | T24 | `pack/.claude/agents/devrites-devex-reviewer.md` | modify | report schema alignment |
 | T25 | `pack/.claude/agents/devrites-doubt-reviewer.md` | modify | report schema alignment |
@@ -102,10 +102,10 @@ No change to the four-layer precedence stack in `core.md`. **Deltas are additive
 
 | ID | Pass | Evidence |
 | --- | --- | --- |
-| R1 | yes | `guides/research-inventory.md` — 25 rows, SHAs; paste oversized #10/#16/#23/#25 sampled (inventory #10/#17/#24/#25) with explicit paths |
-| R2 | yes | `guides/prior-adoption-ledger.md` — 08-02/08-11/benchmark sources only |
-| R3 | yes | `guides/devrites-md-architecture-map.md` — diagram + byte baseline commands |
+| R1 | yes | `guides/research-inventory.md` — 25 rows, SHAs; paste oversized #10/#16/#23/#25 sampled (inventory #10/#17/#24/#25) with `git ls-files`-verified paths |
+| R2 | yes | `guides/prior-adoption-ledger.md` — 08-02/08-11/benchmark `source_doc` enum + `upstream_note` column |
+| R3 | yes | `guides/devrites-md-architecture-map.md` — diagram + git-reproducible byte baseline (bootstrap vs tracked split) |
 | R4 | yes | `guides/dossiers-index.md` + `/tmp/.../dossiers/*.md` (25); `guides/open-web-research.md` |
 | R5 | yes | `guides/adoption-matrix.md` — full columns + track syntheses A–F |
-| R6 | yes | this file — touch list, anti-sprawl, GO block, zero blockers |
+| R6 | yes | this file — touch list @ `1da70cec` (T22 → `devrites-security-auditor.md`); anti-sprawl, GO block, zero blockers |
 | R7 | yes | No `pack/` edits in 003; `git diff --name-only pack/` empty for 003 commits |

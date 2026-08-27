@@ -28,7 +28,7 @@ The brief paste table (`local://paste-1.md`) numbers repos differently from this
 | 7 | skills | <https://github.com/mattpocock/skills.git> | main | `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76` | 2026-08-24 | MIT (`LICENSE`) | 112 | full |
 | 8 | agent-skills | <https://github.com/addyosmani/agent-skills.git> | main | `36fc35c13b28e4c58320eb6db7a6eee843453b47` | 2026-08-27 | MIT (`LICENSE`) | 89 | full |
 | 9 | ek-skills | <https://github.com/emilkowalski/skills.git> | main | `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` | 2026-08-21 | MIT (`LICENSE`) | 20 | full |
-| 10 | claude-skills | <https://github.com/Jeffallan/claude-skills.git> | main | `882ef55e377dbf9a4dbe496bb41ac6ccd0e555cf` | 2026-08-07 | MIT (`LICENSE`) | 506 | **Sampled** (paste #10): depth-3 history; audited `skills/devops-engineer/SKILL.md`, `docs/skill-authoring.md`, `commands/review.md`, `README.md`; 4 paths / 506 tracked `.md` (~0.8%) |
+| 10 | claude-skills | <https://github.com/Jeffallan/claude-skills.git> | main | `882ef55e377dbf9a4dbe496bb41ac6ccd0e555cf` | 2026-08-07 | MIT (`LICENSE`) | 506 | **Sampled** (paste #10): depth-3 history; audited `skills/devops-engineer/SKILL.md`, `SKILLS_GUIDE.md`, `docs/local_skill_development.md`, `README.md` (verified @ SHA via `git ls-files`; `docs/skill-authoring.md` and `commands/review.md` absent); 4 paths / 506 tracked `.md` (~0.8%) |
 | 11 | one-skill-to-rule-them-all | <https://github.com/rebelytics/one-skill-to-rule-them-all.git> | main | `281f13466cd3a73e9ebc9d210907748e1941a3dd` | 2026-07-17 | CC-BY-4.0 (`LICENSE.txt`) | 6 | full |
 | 12 | i-have-adhd | <https://github.com/ayghri/i-have-adhd.git> | main | `cbe69fb83c08a37cf54d5ec9ec6bb88c8bc9973c` | 2026-08-26 | MIT (`LICENSE`) | 21 | full |
 | 13 | superpowers | <https://github.com/obra/superpowers.git> | main | `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` | 2026-08-12 | MIT (`LICENSE`) | 94 | full |
@@ -43,7 +43,7 @@ The brief paste table (`local://paste-1.md`) numbers repos differently from this
 | 22 | deep-research-skills | <https://github.com/Weizhena/Deep-Research-skills.git> | master | `6ce38f60e3f8b22502c29873f96503a4e0c5addb` | 2026-08-23 | MIT (`LICENSE`) | 34 | full |
 | 23 | file-search-skill | <https://github.com/netresearch/file-search-skill.git> | main | `3703cad2074d629ebc53a91d801794f40edd7e1d` | 2026-08-27 | CC-BY-SA-4.0 (`LICENSE-CC-BY-SA-4.0`) | 13 | full |
 | 24 | Anthropic-Cybersecurity-Skills | <https://github.com/mukul975/Anthropic-Cybersecurity-Skills.git> | main | `1b3f6b2286981381a5cc0566551ef3bb6bc38383` | 2026-08-24 | Apache-2.0 (`LICENSE`) | 2588 | **Sampled** (paste #23): depth-3 history; audited `AGENTS.md`, `skills/operating-havoc-c2/SKILL.md`, `skills/operating-sliver-c2/SKILL.md`, `skills/containing-active-breach/SKILL.md`, `skills/exploiting-aws-with-pacu/SKILL.md`, `skills/automating-ioc-enrichment/SKILL.md`, `skills/detecting-wmi-persistence/SKILL.md`, `skills/analyzing-cyber-kill-chain/SKILL.md`, `skills/detecting-rootkit-activity/SKILL.md`, `skills/abusing-dpapi-for-credential-access/references/api-reference.md`, `skills/abusing-dpapi-for-credential-access/references/standards.md`; 11 paths / 2588 tracked `.md` (~0.4%) |
-| 25 | reverse-skill | <https://github.com/zhaoxuya520/reverse-skill.git> | main | `37162cf9547c571c680c07005e9863d4610282dd` | 2026-08-27 | MIT (`LICENSE`) | 440 | **Sampled** (paste #25): depth-3 history; audited `SKILL.md`, `references/pre-flight.md`, `references/governance-protected-config.md`, `README.md`; 4 paths / 440 tracked `.md` (~0.9%) |
+| 25 | reverse-skill | <https://github.com/zhaoxuya520/reverse-skill.git> | main | `37162cf9547c571c680c07005e9863d4610282dd` | 2026-08-27 | MIT (`LICENSE`) | 440 | **Sampled** (paste #25): depth-3 history; audited `RULES.md` (case-init authorization gate), `AGENTS.md`, `skills/pentest-tools/templates/scope.md`, `README.md` (verified @ SHA via `git ls-files`; root `SKILL.md` and `references/*` absent); 4 paths / 440 tracked `.md` (~0.9%) |
 
 ## Sample SHA verification (Completion Report)
 
@@ -62,4 +62,26 @@ e21aa352fdc80fd2d3cc4e83404a76a18d118b96
 
 git -C /tmp/devrites-markdown-research-v3-redo-2026-08-27/Anthropic-Cybersecurity-Skills rev-parse HEAD
 1b3f6b2286981381a5cc0566551ef3bb6bc38383
+```
+
+## Sampled path verification (QC F-001 fix)
+
+```text
+# claude-skills @ 882ef55e — present paths
+git -C /tmp/devrites-markdown-research-v3-redo-2026-08-27/claude-skills ls-files \
+  skills/devops-engineer/SKILL.md SKILLS_GUIDE.md docs/local_skill_development.md README.md
+
+# claude-skills @ 882ef55e — absent (removed from audit set)
+git -C /tmp/devrites-markdown-research-v3-redo-2026-08-27/claude-skills ls-files \
+  docs/skill-authoring.md commands/review.md
+# (empty)
+
+# reverse-skill @ 37162cf9 — present paths
+git -C /tmp/devrites-markdown-research-v3-redo-2026-08-27/reverse-skill ls-files \
+  RULES.md AGENTS.md skills/pentest-tools/templates/scope.md README.md
+
+# reverse-skill @ 37162cf9 — absent (removed from audit set)
+git -C /tmp/devrites-markdown-research-v3-redo-2026-08-27/reverse-skill ls-files \
+  SKILL.md references/pre-flight.md references/governance-protected-config.md
+# (empty)
 ```

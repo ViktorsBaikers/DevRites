@@ -61,39 +61,64 @@
 - Proof/seal still allows narrative completion when evidence classes missing.
 - Reviewer independence prose uneven across `devrites-*-reviewer` agents.
 - Learn/doc promotion lacks explicit retirement + discoverability gate in one owner.
-- Craft/security edges from repos #6–25 (harness audit, UI craft, file-search, reverse-skill pre-flight) not yet encoded.
+- Craft/security edges from repos #6–25 (harness audit, UI craft, file-search, reverse-skill authorization gate) not yet encoded.
 
 ## Always-loaded byte baseline
 
-**Commands (2026-08-27 @ `1da70ceced71b7e6c27cc204a06ff3b2926f932a`):**
+**Spec SSOT total:** **277,223 bytes** = local bootstrap root files + tracked root/core @ `base_main_sha` + skill `SKILL.md` aggregate @ `base_main_sha`.
+
+### Reproducible from git @ `1da70ceced71b7e6c27cc204a06ff3b2926f932a`
 
 ```bash
-git rev-parse HEAD
+git rev-parse 1da70cec
 # 1da70ceced71b7e6c27cc204a06ff3b2926f932a
 
+# Tracked root + core (present in commit object)
+git cat-file -e 1da70cec:CONTEXT.md && wc -c < <(git show 1da70cec:CONTEXT.md)
+git cat-file -e 1da70cec:pack/.claude/skills/devrites-lib/reference/standards/core.md \
+  && wc -c < <(git show 1da70cec:pack/.claude/skills/devrites-lib/reference/standards/core.md)
+# 7658 CONTEXT.md
+# 9084 core.md
+# tracked root+core subtotal: 16,742
+
+# Skill aggregate (checkout or git archive required — paths exist @ SHA)
+git ls-tree -r 1da70cec --name-only pack/.claude/skills | rg '/SKILL\.md$' | wc -l
+# 44 SKILL.md files; aggregate 241,032 bytes measured on research worktree @ 2026-08-27
+```
+
+| Path | Bytes | Reproducible @ `1da70cec`? |
+| --- | ---: | --- |
+| `CONTEXT.md` | 7,658 | yes (`git show 1da70cec:CONTEXT.md`) |
+| `pack/.claude/skills/devrites-lib/reference/standards/core.md` | 9,084 | yes |
+| **Tracked root + core subtotal** | **16,742** | yes |
+| **Skill `SKILL.md` aggregate** | **241,032** | yes (44 `SKILL.md` paths @ SHA; sum via checkout/archive) |
+
+### Local bootstrap (required for full SSOT; not in `1da70cec` tree)
+
+`AGENTS.md` and `CLAUDE.md` exist on the research worktree but are **absent** from commit `1da70cec` (`git cat-file -e 1da70cec:AGENTS.md` → fatal). They are listed in `.git/info/exclude` (local bootstrap, not pack authority).
+
+```bash
+# Full SSOT measurement (research worktree with bootstrap files present)
 wc -c AGENTS.md CLAUDE.md CONTEXT.md \
   pack/.claude/skills/devrites-lib/reference/standards/core.md
 # 12036 AGENTS.md
 #  7413 CLAUDE.md
 #  7658 CONTEXT.md
-#  9084 pack/.claude/skills/devrites-lib/reference/standards/core.md
-# total 36191
+#  9084 core.md
+# root+core subtotal: 36191
 
 wc -c pack/.claude/skills/**/SKILL.md | tail -1
 # 241032 total (skill instruction aggregate)
 ```
 
-| Path | Bytes |
-| --- | ---: |
-| `AGENTS.md` | 12,036 |
-| `CLAUDE.md` | 7,413 |
-| `CONTEXT.md` | 7,658 |
-| `pack/.claude/skills/devrites-lib/reference/standards/core.md` | 9,084 |
-| **Root + core subtotal** | **36,191** |
-| **Skill `SKILL.md` aggregate** | **241,032** |
-| **Total always-loaded (spec SSOT)** | **277,223** |
+| Path | Bytes | Reproducible @ `1da70cec`? |
+| --- | ---: | --- |
+| `AGENTS.md` | 12,036 | **no** — local bootstrap only; measure on worktree |
+| `CLAUDE.md` | 7,413 | **no** — local bootstrap only; measure on worktree |
+| **Root + core subtotal (full SSOT set)** | **36,191** | partial (16,742 git + 19,449 local bootstrap) |
+| **Total always-loaded (spec SSOT)** | **277,223** | requires worktree bootstrap + git-tracked paths above |
 
-**Budget for 004:** +10% ceiling → **304,945 bytes** on the same measurement set. `intent-map.md` remains on-demand unless research lock changes autoload policy (not planned).
+**Budget for 004:** +10% ceiling → **304,945 bytes** on the same measurement set (bootstrap + tracked root/core + skill aggregate). `intent-map.md` remains on-demand unless research lock changes autoload policy (not planned).
 
 ## Research cleanliness note
 

@@ -30,4 +30,4 @@
 | deep-research-skills | `/tmp/devrites-markdown-research-v3-redo-2026-08-27/dossiers/deep-research-skills.md` | deep-research-skills routing/disclosure (defer); deep-research-skills verification hooks (adopt) |
 | file-search-skill | `/tmp/devrites-markdown-research-v3-redo-2026-08-27/dossiers/file-search-skill.md` | file-search-skill routing/disclosure (defer); file-search-skill verification hooks (adopt) |
 | Anthropic-Cybersecurity-Skills | `/tmp/devrites-markdown-research-v3-redo-2026-08-27/dossiers/Anthropic-Cybersecurity-Skills.md` | Anthropic-Cybersecurity-Skills routing/disclosure (defer); Anthropic-Cybersecurity-Skills verification hooks (adopt) |
-| reverse-skill | `/tmp/devrites-markdown-research-v3-redo-2026-08-27/dossiers/reverse-skill.md` | reverse-skill large-catalog discipline (reject); reverse-skill routing/disclosure (defer); reverse-skill verification hooks (adopt) |
+| reverse-skill | `/tmp/devrites-markdown-research-v3-redo-2026-08-27/dossiers/reverse-skill.md` | reverse-skill large-catalog discipline (reject); reverse-skill authorization scope gate (adopt); reverse-skill routing/disclosure (defer) |
