@@ -43,6 +43,9 @@ Wright applies anti-slop; root verifies returns and never patches source.
 - Evidence beats confidence. Never weaken tests, skip TDD, widen writers, or
   self-approve. Drift → [`spec-drift-guard.md`](reference/spec-drift-guard.md);
   checkpoint → [`checkpoint.md`](reference/checkpoint.md).
+- Async readiness waits during slice work follow
+  [`debug-recovery.md`](../devrites-lib/reference/standards/debug-recovery.md)
+  (bounded poll + last-signal artifact; no blind sleep as primary strategy).
 
 ## Workflow Artifact branch
 
@@ -62,3 +65,12 @@ approved fail-on-red proof, record, AFK accounting, and stop. Use
 [`reply contract`](../devrites-lib/reference/reply-contract.md). HITL never starts
 the next slice automatically; AFK chains only within its durable remaining
 budget; Prove starts only after all slices are built.
+
+## Phase exit (observable)
+
+**Complete when:** the dispatched wright returns green proof for the slice,
+`git diff --name-only` ⊆ allowlist, independent test analysis admits no Critical
+gap, and `state.md` cursor advances with recorded evidence paths.
+
+**Failing case:** wright reports "done" but proof command was not executed or
+failed → slice incomplete; do not advance cursor.

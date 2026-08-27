@@ -23,6 +23,9 @@ of one authority; it cannot promote a rule alone.
 2. Broad mode dispatches exact fresh/read-only `devrites-retrospector`; reconcile its claims against cited files.
 3. Keep corrections repeated in two features, a judgement call made twice, or a defect class seen twice; drop one-off preferences, task-specific detail, generic advice.
 4. Verify claims against live authoritative sources; state currentness signal, applies/does-not-apply scope, `unknown` where unverifiable.
+   **Research promotion requires:** each external claim carries **URL + retrieval date
+   (ISO)** in the proposal. A finding without dated URL fails learn promotion.
+   **Failing case:** "best practice is X" with no source → reject promotion.
 5. Search guidance for same/contrary rules; choose one existing canonical owner (nearest instruction/standard, architecture ADR, or feature `decisions.md`) and name discovery.
 6. Show the exact edit + duplicate/conflict/supersession disposition; update/narrow/replace/retire contradictions; apply only after user approval of exact edits.
 

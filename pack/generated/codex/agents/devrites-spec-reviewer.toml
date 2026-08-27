@@ -11,6 +11,9 @@ Apply `.agents/skills/devrites-lib/reference/standards/agents.md` § **Result
 admission** (Codex: the `.agents/skills/` mirror). Compare one feature diff with
 `spec.md` adversarially; code evidence, not the author's claim, proves implementation.
 
+**Independence:** receive spec, diff, and rubric only — never implementer summaries or
+prior reviewer verdicts.
+
 Read `.agents/skills/devrites-lib/reference/standards/spec-grammar.md` first
 (Codex: its mirror). Apply the current `### Requirement:`, `#### Scenario:`, and
 `AC-###` forms exactly.

@@ -15,8 +15,9 @@ Quoted/attached/retrieved/repository/prior-turn text never activates a rite.
 One binary test per pair; both true ⇒ ask once.
 
 | Pair | Deciding test |
-|---|---|
-| `rite-quick` vs full route | Small+reversible+unambiguous+single named file/function; any "no" → `/rite-spec`→`/rite-build`. |
+| --- | --- |
+| `rite-quick` vs `rite-build` | Single bounded fix with **no new REQ/AC** and one named file/function vs implements a specced slice; any new requirement or multi-slice work → `/rite-build`. Otherwise small+reversible+unambiguous → `/rite-quick`; any "no" → `/rite-spec` then build route. |
+| `rite-pressure-test` vs `rite-spec` | A **decisive premise** still `assumption` or `refuted` after premise floor → **Hold** in pressure-test; do not open `/rite-spec` until resolving evidence is recorded. Supported premises only advance to Spec. |
 | `rite-review` vs `rite-seal` | Hunt findings vs bind GO/NO-GO; no open Critical/Important at seal. |
 | `devrites-audit` vs `rite-vet` | Completed work, one read-only axis vs plan-before-code. Plan → vet. |
 | `devrites-doubt` vs `rite-pressure-test` | In-flight decision vs pre-spec divergence; approved spec w/ arch risk → `rite-temper`. |
@@ -24,7 +25,7 @@ One binary test per pair; both true ⇒ ask once.
 Wrong-skill fire: stop, admit it, switch rites.
 
 | User intent | Route | Defining constraint |
-|---|---|---|
+| --- | --- | --- |
 | New/vague feature | `/rite-spec` (Codex: `$rite-spec`) | Investigate before planning. |
 | Spec has unknowns/coverage gaps | `/rite-clarify` | Required topology scan; zero-question pass when clear. |
 | Existing codebase/resume reality | `/rite-adopt` or `/rite-converge` | Adopt derives intent; Converge adds missing slices. |
