@@ -40,3 +40,5 @@ On exhaustion/contention: stop spawning; collect running results; batch/serializ
 Never restart/orphan the cohort or infer approval.
 
 Reviewers are read-only; accounts store evidence, never telemetry.
+
+Scale: past 3–4 compatible readers per wave, coordination cost outruns findings — batch serially. Capacity rejection is backpressure, not failure (collect running results; retry batches; never silently shrink a roster). Arbitration/independence → [agents.md § Independence](standards/agents.md#independence); writer batches → [`parallel-batch.md`](../../rite-build/reference/parallel-batch.md).

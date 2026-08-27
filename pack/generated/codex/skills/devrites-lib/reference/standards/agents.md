@@ -4,17 +4,10 @@ Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
 
 ## Authority
 
-- Root owns scope, questions/decisions/results, `.devrites/**`, and phase
-  transitions—not product source/tests. Exact vetted executable workflow artifacts
-  follow [`workflow-artifacts.md`](workflow-artifacts.md).
-- Only bounded wright writes product source/tests; others inspect an immutable
-  candidate.
+- Root owns scope, questions/decisions/results, `.devrites/**`, phase transitions — not product source/tests; vetted executable workflow artifacts follow [`workflow-artifacts.md`](workflow-artifacts.md).
+- Only bounded wright writes product source/tests; others inspect an immutable candidate.
 - Every named role runs; unavailable → HITL, never skip/substitute.
-- Leaves never invoke agents, ask humans, change phase, push, install/deploy,
-  migrate live data, or act irreversibly; return evidence/proposals for root
-  acceptance. The sole exception is one local, unpushed transfer commit by an
-  eligible native-worktree `devrites-slice-wright`; it is transport, not shipping
-  authority or a project checkpoint.
+- Leaves never invoke agents, ask humans, change phase, push, install/deploy, migrate live data, or act irreversibly; they return evidence/proposals for root acceptance. Sole exception: one local unpushed transfer commit by an eligible native-worktree `devrites-slice-wright` — transport, not shipping authority or a checkpoint.
 
 ## Agents
 
@@ -42,38 +35,24 @@ Files own briefs; [`parallel-dispatch.md`](../parallel-dispatch.md) owns rosters
 
 ## Native invocation
 
-Skills name exact fresh roles, omit native fields; hosts spawn/wait/deliver.
-Root MUST NOT advance/claim completion before admitting required results.
-Running/orphaned/unavailable = `gap`; no root/generic substitute.
+Skills name exact fresh roles, omit native fields;
+hosts spawn/wait/deliver. Root MUST NOT advance/claim completion before admitting required results;
+running/orphaned/unavailable = `gap` — no root/generic substitute.
 
 ## Source-writing boundary
 
-Claude grants only wright `acceptEdits`; Codex root is workspace-capable because
-children cannot elevate. Wright alone is `:workspace`; others are `:read-only`.
+Claude grants only wright `acceptEdits`; Codex root is workspace-capable (children cannot elevate). Wright alone `:workspace`; others `:read-only`. Wright gets the smallest exact project-relative source/test list — no directories/globs, traversal, or `.devrites/**`; no scope widening; root rejects `git diff --name-only` extras. Never patch product source/tests in root, bypass/substitute wright, accept drift, or recreate a dispatch bridge.
 
-Give wright the smallest exact project-relative product source/test file list—no
-directories/globs, traversal/`.devrites/**`. No scope widening. Root rejects
-`git diff --name-only` extras. Never patch product source/tests in root, bypass/substitute wright,
-accept drift, or recreate a dispatch bridge.
+Isolated-worktree pilot only under [`wright-dispatch.md`](../../../rite-build/reference/wright-dispatch.md#isolated-writer-worktree-pilot): one writer, committed/clean baseline, non-submodule parent, exact transfer commit, candidate reconciliation — never parallel writers nor weaker exact-path admission. Root may materialize only exact Vet-ready workflow-artifact paths per [`workflow-artifacts.md`](workflow-artifacts.md) — not a writer dispatch or candidate mutation.
 
-A native isolated-worktree pilot is allowed only under
-[`rite-build/reference/wright-dispatch.md`](../../../rite-build/reference/wright-dispatch.md#isolated-writer-worktree-pilot):
-one writer at a time, committed/clean baseline, no submodule parent, exact transfer
-commit, and candidate reconciliation before deletion. Isolation never enables
-parallel writers or weakens exact-path admission.
+Each job gets objective/exclusions, exact paths/immutable candidate, rubric/result shape. Briefs MUST NOT seed verdict/severity cap/conclusion/suppression. Results state status/scope, outcome, commands/escalation; wright adds paths, changed files, gates, stood decisions; results never widen scope.
 
-The controlling root may materialize only the exact Vet-ready executable workflow
-artifact paths under the active `.devrites/work/<slug>/` using
-[`workflow-artifacts.md`](workflow-artifacts.md). This is not a writer dispatch,
-product slice, candidate mutation, or exception to the source-writing boundary.
+## Independence
 
-## Inputs and results
-
-Each job gets objective/exclusions, exact paths/immutable candidate, rubric/result
-shape. Briefs MUST NOT seed verdict/severity cap/conclusion/suppression.
-Results state status/scope,
-outcome, commands/escalation; wright adds paths, changed files, gates, stood
-decisions. Results never widen scope.
+- A fresh result sees scope/paths-diff/rubric only — never another result's or the root's conclusions, severities, expected verdicts, or edited context; seeding voids the packet.
+- A parent-context pass contributes attributed evidence but is not independent: exclude it from independent accounting and name the lost coverage.
+- Final severity is set at reconciliation after re-verifying the claimed consequence at the cited site (reviewer severity advisory); dismissals record a reason, and true facts about neighboring code route elsewhere instead of being dismissed.
+- Conflicting required results are arbitrated by re-verifying evidence at the site; the deciding evidence is recorded, truly unresolved conflicts stay open blockers.
 
 ## Result admission
 

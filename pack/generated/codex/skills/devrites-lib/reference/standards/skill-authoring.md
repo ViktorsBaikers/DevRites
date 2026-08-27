@@ -151,3 +151,10 @@ commands need docs/generated hosts/reply marker; internal skills need trigger/ex
 skill-not-agent proof. Agents need role/scope/mode/output/composition plus
 [Result admission](agents.md#result-admission) for reviewers. Only `devrites-slice-wright`
 writes product source/tests; root-owned bounded `.devrites/**` follows `workflow-artifacts.md`.
+
+## Coverage-gap review (maintainer pass)
+
+1. Verdict each candidate domain `covered`/`partial`/`absent` against named owners.
+2. Gap needs consumer evidence: frequency × purpose (observable failure without it); unverifiable frequency ⇒ no adoption.
+3. ≤2 net-new guidance files per round; prefer extending a standard; accepted file names load trigger + non-trigger before shipping.
+4. Rejections record reasons; revisit only on changed evidence.

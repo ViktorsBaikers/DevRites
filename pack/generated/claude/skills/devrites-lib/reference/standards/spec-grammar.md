@@ -1,36 +1,19 @@
 # Spec grammar: testable requirements, checked by native re-read
 
-Acceptance criteria are the contract the seal checks ([`testing.md`](testing.md),
-[`code-review.md`](code-review.md)). Prose criteria work, but a requirement written as free
-text is graded by a human reading carefully, and an ambiguous one ("handle errors
-gracefully") slips past every gate because nothing can falsify it. This rule adds an
-**optional, recommended structure** that makes a behavioral requirement testable by
-construction. The root checks it by re-reading the written spec before
-`/rite-define` plans against a malformed requirement.
-
-It is the grammar counterpart to [`testing.md`](testing.md): testing says *prove every
-behavior*; this says *write each behavior so it can be proven*.
-
+Acceptance criteria are the contract the seal checks ([`testing.md`](testing.md), [`code-review.md`](code-review.md)). Prose criteria can't falsify ambiguity ("handle errors gracefully") — it slips every gate. This adds an **optional, recommended structure** making behavioral requirements testable by construction; the root re-reads the spec before `/rite-define` plans against a malformed requirement. Grammar counterpart to testing: testing proves behavior; this writes each behavior so it can be proven.
 ## Progressive rigor: when to use the structured form
 
-Match the rigor to the stakes; don't pay grammar ceremony for a one-liner.
+Match rigor to stakes:
 
-- **Simple / routine change:** the flat checklist form is correct and stays. One bullet per
-  criterion, each tagged with an `AC-###` id:
+- **Routine change:** flat checklist form stays — one bullet per criterion, tagged `AC-###`:
   ```markdown
   ## Acceptance criteria
   - [ ] AC-001: export returns a CSV with a header row
   - [ ] AC-002: an empty dataset returns 204, not an empty 200
   ```
-- **Behavioral / high-risk / cross-boundary requirement:** auth, data model, state machine,
-  public API, money, a migration, anything with non-obvious edge cases: use the structured
-  **Requirement / Scenario** grammar below. The act of writing the WHEN/THEN forces the edge
-  cases into the open at spec time, where they're cheapest to resolve.
+- **High-risk requirement** (auth, data model, state machine, public API, money, migration): use the structured **Requirement / Scenario** grammar below — writing WHEN/THEN forces edge cases out at spec time.
 
-A spec mixes both: most criteria stay flat bullets; the two or three that carry real risk get
-the structured treatment. **Absence of structured requirements is never a failure**: the
-native checklist has nothing structured to inspect on a flat-bullet spec, the same discipline as the principles gate
-([`principles.md`](principles.md)).
+A spec mixes both. **Absence of structured requirements is never a failure** (nothing to inspect on flat bullets, same as the principles gate).
 
 ## The structured form
 
@@ -52,15 +35,9 @@ The normative rules the root checks:
 - **`### Requirement: <name>`:** a level-3 heading. Its block MUST carry a **SHALL** or
   **MUST** statement (in the header or the body) describing the core behavior. Keep the name
   descriptive and under ~50 characters.
-- **Header identity is the key.** Requirement names are **unique** within a spec: tooling (and
-  any future spec sync) matches a requirement by its header text, so two requirements can't
-  share a name. Renaming a requirement is a remove + add, not an in-place edit, so the change
-  is visible.
-- **`#### Scenario: <name>`:** every requirement owns **at least one**. A requirement with no
-  scenario is an assertion no test can target.
-- **WHEN / THEN:** every scenario states a trigger (**WHEN**) and an observable outcome
-  (**THEN**); chain extra conditions with **AND**. Keywords are uppercase so they parse
-  unambiguously. A scenario missing either half isn't falsifiable.
+- **Header identity:** names are unique per spec (matching is by header text); renaming = remove + add.
+- **Scenario ownership:** every `### Requirement:` owns ≥1 `#### Scenario:`; none = an assertion no test targets.
+- **WHEN/THEN:** trigger + observable outcome (AND chains extra conditions); uppercase keywords; either half missing isn't falsifiable.
 
 ## Behavior first: WHAT, not HOW
 
@@ -209,3 +186,11 @@ At the spec gate, apply the native grammar re-read checklist above to the
 feature spec, then compare current ledger blocks using the
 ADDED/MODIFIED/REMOVED rules above. Any grammar or delta mismatch blocks
 readiness.
+
+
+## Unresolved-question markers (fail closed)
+
+- `spec.md` may mark an unknown in place as `` `[NEEDS DECISION: q-YYYY-MM-DD-NNN]` `` beside the affected requirement/criterion; released workspaces use their recorded `Q-###` form.
+- The id must exist in `questions.md`, status open, with a `gate:` naming the resolving phase. Spec readiness treats any surviving marker as an open-question blocker (fail closed).
+- Resolution removes the marker in the same edit that records the answer; markers pointing at resolved/dropped ids block too.
+- Markers are forbidden in plan-stage artifacts and inside acceptance-criteria rows — unresolved criteria get reclassified or removed, not fenced.

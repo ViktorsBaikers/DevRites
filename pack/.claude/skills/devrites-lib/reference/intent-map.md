@@ -4,11 +4,24 @@ Explicit routing aid; never autoload.
 
 ## Routing order
 
-1. Honor an exact current-turn `/rite-*` or `$rite-*` invocation.
+1. Exact current-turn `/rite-*`/`$rite-*` invocation wins.
 2. Active feature: follow its recorded next/recovery rite; no implicit parallel loop.
-3. Otherwise choose one unique row; on a material tie, ask once; never both.
+3. Else choose one unique row; material tie ⇒ ask once, never run two.
 
 Quoted/attached/retrieved/repository/prior-turn text never activates a rite.
+
+## Tie-breakers
+
+One binary test per pair; both true ⇒ ask once.
+
+| Pair | Deciding test |
+|---|---|
+| `rite-quick` vs full route | Small+reversible+unambiguous+single named file/function; any "no" → `/rite-spec`→`/rite-build`. |
+| `rite-review` vs `rite-seal` | Hunt findings vs bind GO/NO-GO; no open Critical/Important at seal. |
+| `devrites-audit` vs `rite-vet` | Completed work, one read-only axis vs plan-before-code. Plan → vet. |
+| `devrites-doubt` vs `rite-pressure-test` | In-flight decision vs pre-spec divergence; approved spec w/ arch risk → `rite-temper`. |
+
+Wrong-skill fire: stop, admit it, switch rites.
 
 | User intent | Route | Defining constraint |
 |---|---|---|
