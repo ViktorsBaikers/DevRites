@@ -8,6 +8,8 @@ gen_codex_markdown_file() {
   local _src="$1" _out="$2"
   mkdir -p "$(dirname "$_out")"
   sed -E \
+    -e 's#Try post-install path first, fall back to pre-install:#Resolve the installed skill path:#g' \
+    -e '/^\[ -f "\$F" \] \|\| F=[^ ].*SKILL\.md$/d' \
     -e 's#(pack/)?\.claude/agents/devrites-\{security-auditor,performance-reviewer,simplifier-reviewer\}\.md#.codex/agents/devrites-security-auditor.toml`, `.codex/agents/devrites-performance-reviewer.toml`, or `.codex/agents/devrites-simplifier-reviewer.toml#g' \
     -e 's#(\.\./)+agents/devrites-\{security-auditor,performance-reviewer,simplifier-reviewer\}\.md#.codex/agents/devrites-security-auditor.toml`, `.codex/agents/devrites-performance-reviewer.toml`, or `.codex/agents/devrites-simplifier-reviewer.toml#g' \
     -e 's#pack/\.claude/skills/devrites-lib/scripts/#.agents/skills/devrites-lib/scripts/#g' \

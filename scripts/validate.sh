@@ -9,6 +9,10 @@ PACK="$ROOT/pack/.claude"
 SKILLS="$PACK/skills"
 AGENTS="$PACK/agents"
 fail=0
+# Per-run scratch dir: two concurrent validate runs must not corrupt each
+# other's logs the way fixed /tmp/dr_* paths did.
+DR_SCRATCH="$(mktemp -d 2>/dev/null || echo /tmp/dr-validate-$$)"
+trap 'rm -rf "${DR_SCRATCH}"' EXIT
 section() { printf '\n=== %s ===\n' "$1"; }
 bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
 good() { printf 'ok: %s\n' "$*"; }
@@ -21,7 +25,7 @@ for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/hooks/*.sh
   [ -f "$f" ] && SH_LIST+=("$f")
 done
 for f in "${SH_LIST[@]}"; do
-  if bash -n "$f" 2>/tmp/dr_synerr; then good "syntax ${f#$ROOT/}"; else bad "syntax ${f#$ROOT/}: $(cat /tmp/dr_synerr)"; fi
+  if bash -n "$f" 2>${DR_SCRATCH}/dr_synerr; then good "syntax ${f#$ROOT/}"; else bad "syntax ${f#$ROOT/}: $(cat ${DR_SCRATCH}/dr_synerr)"; fi
 done
 
 # ---- 2. python syntax ----------------------------------------------------
@@ -29,8 +33,8 @@ section "python syntax"
 if command -v python3 >/dev/null 2>&1; then
   for f in "$ROOT"/scripts/*.py; do
     [ -f "$f" ] || continue
-    if python3 -c "import py_compile,sys; py_compile.compile('$f', doraise=True)" 2>/tmp/dr_pyerr; then
-      good "compiles ${f#$ROOT/}"; else bad "py ${f#$ROOT/}: $(cat /tmp/dr_pyerr)"; fi
+    if python3 -c "import py_compile,sys; py_compile.compile('$f', doraise=True)" 2>${DR_SCRATCH}/dr_pyerr; then
+      good "compiles ${f#$ROOT/}"; else bad "py ${f#$ROOT/}: $(cat ${DR_SCRATCH}/dr_pyerr)"; fi
   done
 else
   echo "skip: python3 not found"
@@ -65,15 +69,15 @@ fi
 
 section "generated host artifact tree parity"
 HOST_ARTIFACT_TMP="$(mktemp -d)"
-if DEVRITES_HOST_ARTIFACT_DIR="$HOST_ARTIFACT_TMP" bash "$ROOT/scripts/build-host-artifacts.sh" >/tmp/dr_host_artifacts 2>&1; then
-  if diff -qr "$ROOT/pack/generated" "$HOST_ARTIFACT_TMP" >/tmp/dr_host_artifacts 2>&1; then
+if DEVRITES_HOST_ARTIFACT_DIR="$HOST_ARTIFACT_TMP" bash "$ROOT/scripts/build-host-artifacts.sh" >${DR_SCRATCH}/dr_host_artifacts 2>&1; then
+  if diff -qr "$ROOT/pack/generated" "$HOST_ARTIFACT_TMP" >${DR_SCRATCH}/dr_host_artifacts 2>&1; then
     good "generated host artifact tree matches canonical sources"
   else
-    sed -n '1,40p' /tmp/dr_host_artifacts
+    sed -n '1,40p' ${DR_SCRATCH}/dr_host_artifacts
     bad "pack/generated tree drifted from canonical sources"
   fi
 else
-  cat /tmp/dr_host_artifacts
+  cat ${DR_SCRATCH}/dr_host_artifacts
   bad "host artifact generation failed"
 fi
 rm -rf "$HOST_ARTIFACT_TMP"
@@ -151,11 +155,11 @@ done
 # ---- 6b. skill inventory / documentation counts --------------------------
 section "skills inventory"
 if command -v node >/dev/null 2>&1; then
-  if node "$ROOT/scripts/skills-inventory.mjs" >/tmp/dr_skills_inventory 2>&1; then
-    cat /tmp/dr_skills_inventory
+  if node "$ROOT/scripts/skills-inventory.mjs" >${DR_SCRATCH}/dr_skills_inventory 2>&1; then
+    cat ${DR_SCRATCH}/dr_skills_inventory
     good "skills inventory matches docs"
   else
-    cat /tmp/dr_skills_inventory
+    cat ${DR_SCRATCH}/dr_skills_inventory
     bad "skills inventory drifted"
   fi
 else
@@ -165,14 +169,14 @@ fi
 # ---- 6c. host parity -----------------------------------------------------
 section "command host parity"
 if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/validate-command-parity.py" >/tmp/dr_command_parity 2>&1; then cat /tmp/dr_command_parity; good "command host parity passed"; else cat /tmp/dr_command_parity; bad "command host parity failed"; fi
+  if python3 "$ROOT/scripts/validate-command-parity.py" >${DR_SCRATCH}/dr_command_parity 2>&1; then cat ${DR_SCRATCH}/dr_command_parity; good "command host parity passed"; else cat ${DR_SCRATCH}/dr_command_parity; bad "command host parity failed"; fi
 else
   echo "skip: python3 not found"
 fi
 
 section "agent composition"
 if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/validate-agent-composition.py" >/tmp/dr_agent_composition 2>&1; then cat /tmp/dr_agent_composition; good "agent composition contracts passed"; else cat /tmp/dr_agent_composition; bad "agent composition validation failed"; fi
+  if python3 "$ROOT/scripts/validate-agent-composition.py" >${DR_SCRATCH}/dr_agent_composition 2>&1; then cat ${DR_SCRATCH}/dr_agent_composition; good "agent composition contracts passed"; else cat ${DR_SCRATCH}/dr_agent_composition; bad "agent composition validation failed"; fi
 else
   echo "skip: python3 not found"
 fi
@@ -221,50 +225,50 @@ fi
 # ---- 10. no global writes ------------------------------------------------
 section "no personal paths in shipped artifacts"
 if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/check-no-personal-paths.py" >/tmp/dr_personal_paths 2>&1; then cat /tmp/dr_personal_paths; good "no personal paths check passed"; else cat /tmp/dr_personal_paths; bad "personal path check failed"; fi
+  if python3 "$ROOT/scripts/check-no-personal-paths.py" >${DR_SCRATCH}/dr_personal_paths 2>&1; then cat ${DR_SCRATCH}/dr_personal_paths; good "no personal paths check passed"; else cat ${DR_SCRATCH}/dr_personal_paths; bad "personal path check failed"; fi
 else
   echo "skip: python3 not found"
 fi
 
 # ---- 10b. no global writes ------------------------------------------------
 section "no global ~/.claude writes"
-if bash "$ROOT/scripts/check-no-global-writes.sh" >/tmp/dr_glob 2>&1; then good "no-global-writes check passed"; else bad "no-global-writes check failed"; cat /tmp/dr_glob; fi
+if bash "$ROOT/scripts/check-no-global-writes.sh" >${DR_SCRATCH}/dr_glob 2>&1; then good "no-global-writes check passed"; else bad "no-global-writes check failed"; cat ${DR_SCRATCH}/dr_glob; fi
 
 # ---- 11. principle uniqueness: each canonical heading appears exactly once
 section "principle uniqueness"
-if bash "$ROOT/scripts/check-rule-uniqueness.sh" >/tmp/dr_uniq 2>&1; then
-  cat /tmp/dr_uniq
+if bash "$ROOT/scripts/check-rule-uniqueness.sh" >${DR_SCRATCH}/dr_uniq 2>&1; then
+  cat ${DR_SCRATCH}/dr_uniq
   good "rule-uniqueness check passed"
 else
-  cat /tmp/dr_uniq
+  cat ${DR_SCRATCH}/dr_uniq
   bad "rule-uniqueness check failed (see scripts/check-rule-uniqueness.sh)"
 fi
 
 # ---- 11b. generated workspace schema fixtures ----------------------------
 section "workspace artifact schema"
 if command -v go >/dev/null 2>&1; then
-  if (cd "$ROOT/engine" && go run ./internal/state/cmd/workflowmanifest -check -out internal/state/workflow_manifest.json) >/tmp/dr_workflow_manifest 2>&1; then
+  if (cd "$ROOT/engine" && go run ./internal/state/cmd/workflowmanifest -check -out internal/state/workflow_manifest.json) >${DR_SCRATCH}/dr_workflow_manifest 2>&1; then
     good "workflow manifest is fresh"
   else
-    cat /tmp/dr_workflow_manifest
+    cat ${DR_SCRATCH}/dr_workflow_manifest
     bad "workflow manifest drifted from the typed state registry"
   fi
 else
   echo "skip: go not found; workflow manifest freshness not checked"
 fi
 if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/check-authority-drift.py" >/tmp/dr_authority_drift 2>&1; then
-    cat /tmp/dr_authority_drift
+  if python3 "$ROOT/scripts/check-authority-drift.py" >${DR_SCRATCH}/dr_authority_drift 2>&1; then
+    cat ${DR_SCRATCH}/dr_authority_drift
     good "authority-derived docs are current"
   else
-    cat /tmp/dr_authority_drift
+    cat ${DR_SCRATCH}/dr_authority_drift
     bad "authority-derived docs drifted"
   fi
-  if python3 "$ROOT/scripts/validate-workspace-schema.py" "$ROOT/tests/fixtures/workspace-schema" >/tmp/dr_workspace_schema 2>&1; then
-    cat /tmp/dr_workspace_schema
+  if python3 "$ROOT/scripts/validate-workspace-schema.py" "$ROOT/tests/fixtures/workspace-schema" >${DR_SCRATCH}/dr_workspace_schema 2>&1; then
+    cat ${DR_SCRATCH}/dr_workspace_schema
     good "workspace artifact schema fixtures valid"
   else
-    cat /tmp/dr_workspace_schema
+    cat ${DR_SCRATCH}/dr_workspace_schema
     bad "workspace artifact schema fixtures failed"
   fi
 else
@@ -347,11 +351,11 @@ fi
 # Keep package.json, README, CHANGELOG, and package-lock at or above the
 # highest git tag so a squash merge cannot silently revert a release bump.
 section "published version identity"
-if bash "$ROOT/tests/published-version-identity-test.sh" >/tmp/dr_published_version 2>&1; then
-  cat /tmp/dr_published_version
+if bash "$ROOT/tests/published-version-identity-test.sh" >${DR_SCRATCH}/dr_published_version 2>&1; then
+  cat ${DR_SCRATCH}/dr_published_version
   good "published version identity matches package.json, changelog, README, and git tags"
 else
-  cat /tmp/dr_published_version
+  cat ${DR_SCRATCH}/dr_published_version
   bad "published version identity drifted behind the latest git tag or across manifests"
 fi
 

@@ -19,12 +19,11 @@ When they ask how phases connect, load [`reference/menu.md`](reference/menu.md).
 
 ## Dispatch
 
-If `$ARGUMENTS` starts with a verb in this table, **load the matching skill and execute its workflow** with the remainder of `$ARGUMENTS` as that skill's argument. Try post-install path first, fall back to pre-install:
+If `$ARGUMENTS` starts with a verb in this table, **load the matching skill and execute its workflow** with the remainder of `$ARGUMENTS` as that skill's argument. Resolve the installed skill path:
 
 ```bash
 V=<verb>; ARGS="<remaining args>"
 F=.agents/skills/rite-$V/SKILL.md
-[ -f "$F" ] || F=.agents/skills/rite-$V/SKILL.md
 # Then Read "$F" and follow its workflow with $ARGS as that skill's $ARGUMENTS.
 ```
 
