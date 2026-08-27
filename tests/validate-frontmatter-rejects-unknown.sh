@@ -116,6 +116,78 @@ body
 EOF
 assert_ok "canonical-skill" "$TMP/ok.md"
 
+# 8) name missing should be rejected
+cat > "$TMP/no-name.md" <<'EOF'
+---
+description: A skill without a name field.
+user-invocable: true
+---
+body
+EOF
+assert_fail "missing-name" "$TMP/no-name.md"
+
+# 9) reserved name substrings (agentskills.io/Anthropic rules) must be rejected
+cat > "$TMP/reserved-name.md" <<'EOF'
+---
+name: claude-helper
+description: A bogus skill whose name uses a reserved substring.
+user-invocable: true
+---
+body
+EOF
+assert_fail "reserved-name-substring" "$TMP/reserved-name.md"
+
+# 10) non-kebab names must be rejected
+cat > "$TMP/Bad_Name.md" <<'EOF'
+---
+name: Bad_Name
+description: A bogus skill whose name breaks kebab-case.
+user-invocable: true
+---
+body
+EOF
+assert_fail "non-kebab-name" "$TMP/Bad_Name.md"
+
+# 13) missing/empty description must still be rejected
+cat > "$TMP/no-desc.md" <<'EOF'
+---
+name: no-desc
+user-invocable: true
+---
+body
+EOF
+assert_fail "missing-description" "$TMP/no-desc.md"
+
+# 14) a bare SKILL.md path (no directory component) must not crash the harness
+bare="$TMP/bare-check"
+mkdir -p "$bare"
+(cd "$bare" && printf '%s\n' '---' 'name: bare-skill' 'description: A skill validated from a directory-less path.' 'user-invocable: true' '---' body > SKILL.md && python3 "$PY" SKILL.md >/dev/null 2>&1; code=$?; [ "$code" -ne 2 ] || { printf 'FAIL: bare-path crashed validator\n'; fail=1; }; [ "$code" -eq 0 ] || { printf 'ok: bare-path handled cleanly (exit %s)\n' "$code"; })
+
+# 11) a real <dir>/SKILL.md whose dir does not match its name must be rejected
+mkdir -p "$TMP/wrong-dir/other-name"
+cat > "$TMP/wrong-dir/other-name/SKILL.md" <<'EOF'
+---
+name: wrong-dir
+description: A canonical-layout skill whose directory disagrees with its name.
+user-invocable: true
+---
+body
+EOF
+assert_fail "skill-name-dir-mismatch" "$TMP/wrong-dir/other-name/SKILL.md"
+
+# 12) a matching <dir>/SKILL.md layout should pass
+mkdir -p "$TMP/matching-name"
+cat > "$TMP/matching-name/SKILL.md" <<'EOF'
+---
+name: matching-name
+description: A canonical-layout skill whose directory matches its name.
+user-invocable: true
+---
+body
+EOF
+assert_ok "skill-name-dir-match" "$TMP/matching-name/SKILL.md"
+
+
 rm -rf "$TMP"
 
 if [ "$fail" -ne 0 ]; then
