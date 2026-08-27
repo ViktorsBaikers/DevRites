@@ -52,13 +52,10 @@ match the neighbors.
   dots as set dressing.
 
 ### Copy & data realism
-Placeholder content is a tell even when the layout is clean:
-- **Fake-perfect numbers** — `99.99%`, `10,000+`, `$1M`. Real data is ragged: `47.2%`, `1,283`.
-- **Placeholder people/brands** — "John Doe", "Acme", "Nexus". Invent specific, plausible ones.
-- **Filler verbs** — Elevate / Seamless / Unleash / Supercharge / Next-Gen. Say what it does.
-- **Copy self-audit** — re-read every visible string before shipping; anything grammatically
-  broken, referent-unclear, or "an LLM trying to sound thoughtful" gets rewritten. AI-cute
-  copy is worse than boring copy.
+Placeholder content is a tell even when the layout is clean: fake-perfect numbers
+(`99.99%`, `10,000+` — real data is ragged), placeholder people/brands ("John Doe",
+"Acme"), filler verbs (Elevate / Seamless / Unleash). Re-read every visible string before
+shipping; AI-cute copy is worse than boring copy.
 
 ### Category-reflex check — run at two altitudes
 
@@ -160,49 +157,11 @@ Each is pass/fail by counting or grep, not judgment:
   Reuse → extend → build new (`coding-style.md`, `patterns.md`); duplication beats the *wrong*
   abstraction, but pasted clones are slop, not a deliberate AHA call.
 
-### Comment density — before / after
-
-```js
-// Before (slop): a comment narrating almost every line
-function calculateTotal(items) {
-  // initialize the total to zero
-  let total = 0;
-  // loop through each item in the items array
-  for (const item of items) {
-    // add the item price to the total
-    total += item.price;
-  }
-  // return the final total
-  return total;
-}
-
-// After: the names carry it; no comment needed
-function sumPrices(items) {
-  return items.reduce((total, item) => total + item.price, 0);
-}
-
-// A comment that earns its place — it explains WHY, not what:
-// Prices are in minor units (cents); the gateway rejects fractional amounts.
-const total = sumPrices(items);
-```
-
-## Why these are banned
-They signal "a model generated this" rather than "this team designed/wrote this." They
-ignore the product's register and the project's idiom, add noise, hide bugs (defensive
-catches), bloat the diff (over-engineering, beyond-spec), and often fail accessibility
-or correctness review. They're cargo-cult, not craft.
-
-## What to do instead
-- **UI**: project tokens / shared components / consistent type & spacing
-  (`design-system-discovery.md`); content shapes layout; motion serves feedback;
-  reserve modals for focused interrupting tasks.
-- **Code**: validate at trust boundaries (don't sprinkle null checks); catch narrow,
-  recover or rethrow; one clear name per concept; one responsibility per function;
-  reuse before write (`coding-style.md`); implement exactly the spec; let inherent
-  complexity be — don't pad with ceremony.
-- If the project **does** use one of these intentionally, follow the project. Consistency
-  beats the rule.
-
-## When in doubt: ask
-A "robust" check or shiny abstraction you can't justify in one sentence is probably slop.
-Delete it; or ask the user if it should exist.
+## Why banned, what instead
+They signal model-generated rather than team-designed work: they ignore register and
+idiom, add noise, hide bugs (defensive catches), bloat diffs, and often fail a11y or
+correctness review. Instead: project tokens/components, validate at trust boundaries,
+catch narrow and rethrow, one clear name per concept, reuse first (`coding-style.md`),
+implement exactly the spec. If the project intentionally uses one of these, follow the
+project — consistency beats the rule. A check or abstraction you can't justify in one
+sentence is slop: delete it or ask.

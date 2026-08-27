@@ -18,6 +18,7 @@ no upstream prose ships in this pack.
 - [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — Apache 2.0: earlier derivative material remains in-tree; this round's Verify-vs-Refuse framing influenced the browser-proof checklist rewrite. Concept-level adaptation.
 - [netresearch/file-search-skill](https://github.com/netresearch/file-search-skill) — MIT AND CC BY-SA 4.0: only the *idea* of a question-type→tool matrix was used; `standards/tooling.md`'s table was rebuilt natively from DevRites tools (no structural transplant, honoring share-alike).
 - [Nutlope/hallmark](https://github.com/Nutlope/hallmark), [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill), [educlopez/ui-craft](https://github.com/educlopez/ui-craft), [Weizhena/Deep-Research-skills](https://github.com/Weizhena/Deep-Research-skills) — MIT: viewport/state-capture checks, mechanical slop counters, coverage markers, and research checkpoint ideas, adapted concept-level.
+- [OWASP Top 10 for Agentic Applications 2026 / Agentic Skills Top 10](https://genai.owasp.org/) — CC BY-SA 4.0: only the ASI identifier vocabulary is referenced from `standards/security.md` § Framework references at finding time; no catalog content or structure is adapted.
 
 
 ## License

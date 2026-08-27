@@ -28,6 +28,9 @@ Description routes; it is not documentation.
 - State the nearest sibling's **defining constraint** (Seal decides; Ship mutates
   Git). Routing evals test it.
 - A routing/tie-breaker change cites the mis-route it fixes and passes trigger corpora; no failing case, no change.
+- Descriptions stay **mutually exclusive** across the pack: two skills claiming one trigger
+  phrase is a routing defect fixed in the same change; rising wrong-skill fires signal a
+  rotted trigger.
 - Put examples/edges/rationale/procedure in body/reference—not frontmatter.
 
 ### Activation order

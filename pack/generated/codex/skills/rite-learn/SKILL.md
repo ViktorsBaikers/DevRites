@@ -35,6 +35,8 @@ of one authority; it cannot promote a rule alone.
 - Never create a learning ledger/index/queue, score, timeline, or parallel authority; rejected directions return only when evidence changes their rationale.
 - A declined lesson persists as a declined decision entry (reason recorded) in the nearest owning decisions file — not re-litigated without new evidence.
 - Contradiction outranks staleness: actively misleading guidance outranks merely old guidance.
+- A proposal names the **retrospective failing case**: the concrete past feature/artifact the
+  rule would have caught. None → generic advice — drop.
 - ≤3 accepted lessons per round; proposals extend/narrow but never lower an existing bar (revisions show old text beside new); duplicates consolidate into one canonical edit — simplification (deletions/merges) counts toward the cap.
 
 ## Output

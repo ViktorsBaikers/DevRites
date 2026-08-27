@@ -115,7 +115,10 @@ otherwise simplify.
 | <e.g. new dependency X> | <reason> | <why the in-repo option won't work> |
 
 ## Rollback
-Risky-step backout: migration/flag/revert/backup.
+Every risky step (migration, destructive write, flag widening, contract change) names its
+backout before Build: **trigger** (what aborts it), **procedure** (down-migration / flag
+off / revert / restore), and **rollback-verification proof** (command + observed state).
+"Revert if needed" is not a rollback plan.
 
 ## Scope boundaries
 Untouched scope; copy spec “Ask first”/“Never do.”
@@ -130,7 +133,7 @@ Framework/library sources (triggers source-driven).
 - [ ] Applicability matches live evidence; outputs name owner, recovery, slice, proof
 - [ ] `MVP cut` is shippable/self-contained: ACs proven, no dependency below
 - [ ] Deviations are justified
-- [ ] Destructive/migration steps have rollback
+- [ ] Destructive/migration steps have rollback (trigger + procedure + verification proof); spec Prohibitions carry into slices verbatim
 - [ ] Each `Mode: HITL` slice has `Gate`, `SLA`, `Checkpoint`
 - [ ] Human choices resolved; checkpoints need unavailable pre-code evidence/action approval
 - [ ] All horizon items remain; blockers/planning items resolved or validly spiked;

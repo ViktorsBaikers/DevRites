@@ -3,9 +3,10 @@
 Contract WHAT users get, WHY, success, and scope. HOW belongs in `plan.md`,
 topology in `architecture.md`/`flows.md`, coverage in `traceability.md`.
 
-Use `[NEEDS CLARIFICATION: <question>]` (blocking stops `$rite-clarify`) and
-stable `REQ-001`/`AC-001` IDs. Link, never duplicate, source artifacts. Over
-schema budget requires `Budget override: <reason>`.
+Use `[NEEDS CLARIFICATION: <question>]` (blocking stops `$rite-clarify`); before readiness
+every surviving marker converts to a gated `Q-###` open question (`spec-grammar.md` §
+Unresolved-question markers — fail closed). Stable `REQ-001`/`AC-001` IDs; link, never
+duplicate, source artifacts; over-budget requires `Budget override: <reason>`.
 
 ```markdown
 # Spec: <Feature>
@@ -110,7 +111,7 @@ status routes Define/Vet/Build/Prove to the named standard without copying it he
 - Model/RAG/agent/eval/LLM-output scope: `ai-spec.md` from `ai-spec-template.md`.
 - Otherwise: not applicable.
 
-## Measurable success
+## Success metrics
 - <Metric or observable proof.>
 
 ## Scope boundaries

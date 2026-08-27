@@ -101,5 +101,4 @@ Conditional on a model/RAG/tool surface; prompt-injection rules above always app
 - **LLM06 unbounded consumption:** rate-limit, cap tokens/cost/time; an open loop is DoS and bill.
 
 ## Framework references on findings
-
-Bind findings to framework identifiers **where written**: ATT&CK technique ids for adversary behavior, D3FEND countermeasures when a mitigation is named, NIST CSF function-categories for governance framing, ATLAS ids for model-facing techniques. Rules carry ids at authorship; summaries derive from those citations later. Annotation, not busywork — omit when no identifier strengthens remediation. Severity follows [`code-review.md`](code-review.md); Critical blocks Seal.
+Bind findings to framework identifiers **where written**: ATT&CK technique ids for adversary behavior, D3FEND countermeasures when a mitigation is named, NIST CSF function-categories for governance framing, ATLAS ids or ASI ids (OWASP Agentic Applications / Agentic Skills Top 10) for model/agent-facing techniques. Rules carry ids at authorship; summaries derive from those citations later. Annotation, not busywork — omit when no identifier strengthens remediation. Severity follows [`code-review.md`](code-review.md); Critical blocks Seal.
