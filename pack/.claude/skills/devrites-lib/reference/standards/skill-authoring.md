@@ -1,6 +1,6 @@
 # Skill authoring
 
-> **Source-checkout only:** edit canonical `pack/.claude/`; run
+> **Source-checkout only:** where `pack/.claude/` exists, edit canonical source; run
 > `bash scripts/build-host-artifacts.sh`, then validate. Installed generated mirrors are not authoring surfaces.
 
 ## Surface lifecycle
