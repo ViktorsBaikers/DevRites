@@ -2,6 +2,28 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.4.2...v4.5.0) (2026-08-27)
+
+### Added
+
+* **skills:** v3 methodology falsifiable gates T01-T27 ([bb0a816](https://github.com/ViktorsBaikers/DevRites/commit/bb0a816e6c9c9b598a24a0f1bd2f578c6f8592fd))
+
+### Fixed
+
+* **devrites:** align oversized-repo sampling with brief paste table ([5d9d9ae](https://github.com/ViktorsBaikers/DevRites/commit/5d9d9ae4dcd2e7c6f0d289e5ac8137b722344eaf)), closes [23/#25](https://github.com/23/DevRites/issues/25)
+* **devrites:** resolve QC F-001–F-005 on research guides ([861d60a](https://github.com/ViktorsBaikers/DevRites/commit/861d60a0dd15be509dea5868c8511330c3351ed9))
+* **scripts:** allow repo-root NOTICE in cross-ref checker ([f9a605a](https://github.com/ViktorsBaikers/DevRites/commit/f9a605a6cee90423f84655a3fb9ecfad8dbd52cd))
+
+### Documentation
+
+* **devrites:** complete 003 research lock guides ([b96dce4](https://github.com/ViktorsBaikers/DevRites/commit/b96dce40dae397fb11c187e51a202057c76a696e))
+* **devrites:** lock iter-md-knowledge-v3 Phase 1 compass and plans ([31a4d6a](https://github.com/ViktorsBaikers/DevRites/commit/31a4d6ab2ebe225c54c572fa49c2b1b7a5b97328))
+* **devrites:** record QA blocker fixes B-001 and B-002 ([edeb6d9](https://github.com/ViktorsBaikers/DevRites/commit/edeb6d9b02e59d772f3783a01987d061dfcdde93)), closes [#46](https://github.com/ViktorsBaikers/DevRites/issues/46)
+* **skills:** apply external methodology round with attributions ([#44](https://github.com/ViktorsBaikers/DevRites/issues/44)) ([4cde1a2](https://github.com/ViktorsBaikers/DevRites/commit/4cde1a257f08d46fbb4512e7a65b2d00e7af4f50))
+* **skills:** complete SDD evidence bundle and upgrade doc closeout ([685038d](https://github.com/ViktorsBaikers/DevRites/commit/685038d1ab2f845546010e0b8bc1eb4be9dafd2b))
+* **skills:** record PR URL in upgrade doc ([dee03db](https://github.com/ViktorsBaikers/DevRites/commit/dee03db431c57a6dd283b41cbeb0c7d3cd09d255))
+* **skills:** supplement external methodology round with missed sources and web research ([#45](https://github.com/ViktorsBaikers/DevRites/issues/45)) ([1da70ce](https://github.com/ViktorsBaikers/DevRites/commit/1da70ceced71b7e6c27cc204a06ff3b2926f932a)), closes [#24](https://github.com/ViktorsBaikers/DevRites/issues/24) [#25](https://github.com/ViktorsBaikers/DevRites/issues/25)
+
 ## [4.4.2](https://github.com/ViktorsBaikers/DevRites/compare/v4.4.1...v4.4.2) (2026-08-27)
 
 ### Fixed
