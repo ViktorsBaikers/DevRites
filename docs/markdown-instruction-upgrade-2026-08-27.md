@@ -121,7 +121,7 @@ Full transcripts: `.mstar/sdd/004-md-knowledge-v3-implement/validation-log.md`
 
 ## Pull request
 
-**PR:** _pending — recorded after `gh pr create`_  
+**PR:** <https://github.com/ViktorsBaikers/DevRites/pull/46>  
 **Base:** `main` ← **Head:** `iteration/md-knowledge-v3`  
 **Title:** Markdown knowledge-layer v3 — methodology upgrade  
 **CI:** pending at open
