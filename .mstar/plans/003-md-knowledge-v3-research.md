@@ -55,11 +55,11 @@
 - **Produces:** inventory table conforming to primary spec column schema (`#`, `repo`, `url`, `branch`, `sha`, `date`, `license`, `md_count`, `sampling`)
 - **Consumes by 004:** none directly; AC-1 verification
 
-- [ ] **Step 1:** Create fresh research directory (not `…-research-v3`); record absolute path for GO `research_dir`.
-- [ ] **Step 2:** Clone all 25; retry failures; record unavailable repos with date (row still required with `sha: unavailable`).
-- [ ] **Step 3:** For oversized repos (#10, #16, #23, #25): document sampling method in `sampling` column (paths audited, tools used, coverage estimate).
-- [ ] **Step 4:** Write inventory markdown in iteration `guides/` with all required columns.
-- [ ] **Step 5:** Evidence = inventory file + at least 3 `git -C <clone> rev-parse HEAD` samples pasted in Completion Report.
+- [x] **Step 1:** Create fresh research directory (not `…-research-v3`); record absolute path for GO `research_dir`.
+- [x] **Step 2:** Clone all 25; retry failures; record unavailable repos with date (row still required with `sha: unavailable`).
+- [x] **Step 3:** For oversized repos (#10, #16, #23, #25): document sampling method in `sampling` column (paths audited, tools used, coverage estimate).
+- [x] **Step 4:** Write inventory markdown in iteration `guides/` with all required columns.
+- [x] **Step 5:** Evidence = inventory file + at least 3 `git -C <clone> rev-parse HEAD` samples pasted in Completion Report.
 
 ### Task 2: Prior-adoption ledger + DevRites map
 
@@ -85,10 +85,10 @@ find pack/.claude/skills -name SKILL.md -print0 | xargs -0 wc -c | tail -1
 
 Record per-path bytes, skill aggregate, **total always-loaded sum**, command transcript, and timestamp.
 
-- [ ] **Step 1:** Ledger — one row per 08-02/08-11 adoption concept with columns: `concept`, `source_doc`, `disposition`, `canonical_owner`, `action_v3`, `overturn_rationale` (when applicable).
-- [ ] **Step 2:** Map canonical vs generated; agents/skills/standards/lifecycle; strengths/weaknesses; text diagram of pack layers.
-- [ ] **Step 3:** Byte baseline table per primary spec § Anti-sprawl budgets.
-- [ ] **Step 4:** Record `git status --short` at research start; confirm no `pack/` writes (`git diff --name-only pack/` empty).
+- [x] **Step 1:** Ledger — one row per 08-02/08-11 adoption concept with columns: `concept`, `source_doc`, `disposition`, `canonical_owner`, `action_v3`, `overturn_rationale` (when applicable).
+- [x] **Step 2:** Map canonical vs generated; agents/skills/standards/lifecycle; strengths/weaknesses; text diagram of pack layers.
+- [x] **Step 3:** Byte baseline table per primary spec § Anti-sprawl budgets.
+- [x] **Step 4:** Record `git status --short` at research start; confirm no `pack/` writes (`git diff --name-only pack/` empty).
 
 ### Task 3: Dossiers + open-web research
 
@@ -111,9 +111,9 @@ Record per-path bytes, skill aggregate, **total always-loaded sum**, command tra
 4. Weaknesses / traps
 5. Candidates for matrix (`concept` stubs with `disposition` recommendation)
 
-- [ ] **Step 1:** Audit each repo Markdown per brief §7 framework (concrete findings, not “reviewed”).
-- [ ] **Step 2:** Open-web searches per track + §10; record query, date, URL, takeaway in `open-web-research.md`.
-- [ ] **Step 3:** `dossiers-index.md` lists all 25 with path to ephemeral dossier + top 3 matrix candidates.
+- [x] **Step 1:** Audit each repo Markdown per brief §7 framework (concrete findings, not “reviewed”).
+- [x] **Step 2:** Open-web searches per track + §10; record query, date, URL, takeaway in `open-web-research.md`.
+- [x] **Step 3:** `dossiers-index.md` lists all 25 with path to ephemeral dossier + top 3 matrix candidates.
 
 ### Task 4: Adoption matrix + track synthesis + target architecture + GO
 
@@ -165,11 +165,11 @@ Record per-path bytes, skill aggregate, **total always-loaded sum**, command tra
 | … | | |
 ```
 
-- [ ] **Step 1:** Build matrix per brief §8 with all spec columns; every **adopt** row has non-empty `004_touch`.
-- [ ] **Step 2:** Write six track syntheses (A–F): one canonical DevRites answer each; no “import whole methodology.”
-- [ ] **Step 3:** Target architecture + planned file touch list + anti-sprawl plan with projected metrics.
-- [ ] **Step 4:** Complete Research lock GO; `status: GO` only when `blockers` empty and R1–R7 pass.
-- [ ] **Step 5:** Completion Report lists GO status + `base_main_sha` + touch-list file count.
+- [x] **Step 1:** Build matrix per brief §8 with all spec columns; every **adopt** row has non-empty `004_touch`.
+- [x] **Step 2:** Write six track syntheses (A–F): one canonical DevRites answer each; no “import whole methodology.”
+- [x] **Step 3:** Target architecture + planned file touch list + anti-sprawl plan with projected metrics.
+- [x] **Step 4:** Complete Research lock GO; `status: GO` only when `blockers` empty and R1–R7 pass.
+- [x] **Step 5:** Completion Report lists GO status + `base_main_sha` + touch-list file count.
 
 ## Plan self-review (PM before locked)
 

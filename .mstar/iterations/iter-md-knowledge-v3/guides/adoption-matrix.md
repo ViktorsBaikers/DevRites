@@ -1,0 +1,50 @@
+# Adoption matrix (v3 research lock)
+
+- **Baseline `main` SHA:** `1da70ceced71b7e6c27cc204a06ff3b2926f932a`
+- **Research dir:** `/tmp/devrites-markdown-research-v3-redo-2026-08-27`
+- **Ledger:** `prior-adoption-ledger.md` (08-02/08-11/benchmark only)
+
+| source | concept | gap | existing_owner | context_impact | conflict | validation | disposition | 004_touch |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| gstack `394db326…` · `review/specialists/` | silent-failure hunting in review | Reviewers lack explicit “fail-open path” probe for partial success | `devrites-code-reviewer.md`, Review skill | medium | compatible | Scenario: green tests + broken error path → finding required | adopt | `pack/.claude/agents/devrites-code-reviewer.md`, `pack/.claude/skills/rite-review/SKILL.md` |
+| gstack `394db326…` · ship completion sections | plan completion evidence contract | Converge allows narrative “done” without artifact checklist | `rite-converge/SKILL.md` | low | compatible | Missing proof artifact blocks converge exit | adopt | `pack/.claude/skills/rite-converge/SKILL.md` |
+| OpenSpec `a0ddb60d…` · layered instructions | scoped project rules vs runtime state | Already fixed in 08-11; risk of regression if second store added | `core.md` | none | duplicate system if imported | Ledger fold checks still pass | retain | |
+| mattpocock/skills `6654f6b6…` · step completion | falsifiable step exit criteria | Several phase skills end on vague “complete when satisfied” | phase `rite-*` skills | medium | compatible | Each touched skill lists observable exit + failing case | adopt | `pack/.claude/skills/rite-build/SKILL.md`, `rite-prove/SKILL.md`, `rite-vet/SKILL.md` |
+| spec-kit `241d9163…` · assess research/decide | contrary evidence for decisive premises | Pressure Test branch exists; tie-breaker to Spec not explicit in intent-map | `rite-pressure-test`, `intent-map.md` | low | compatible | Unsupported premise → Hold + visible contrary evidence | adopt | `pack/.claude/skills/rite-pressure-test/SKILL.md`, `intent-map.md` |
+| gsd-core `bbecc6a0…` · edge disposition | backstop row honesty | edge-case-trace allows “covered” without evidence class | `edge-case-trace.md`, Prove | medium | compatible | Row without evidence → cannot_verify | adopt | `pack/.claude/skills/devrites-lib/reference/standards/edge-case-trace.md`, `rite-prove/reference/acceptance-proof.md` |
+| BMAD `f1d8bd8b…` · architecture admission | derivable decisions promoted to ADR | Define still admits routine choices as architecture | Define template, ADR promotion | low | compatible | Reversible config choice stays local | adopt | `pack/.claude/skills/rite-define/reference/plan-template.md` |
+| superpowers `b36e0829…` · condition-based wait | bounded polling recipe | Debug guidance rejects sleep but lacks poll template | debug recovery reference | low | compatible | Async wait times out with last signal captured | adopt | `pack/.claude/skills/devrites-lib/reference/standards/debug-recovery.md` |
+| oh-my-claudecode `08db8be0…` · harsh critic benchmark | reviewer calibration record | Eval docs lack structured malformed/silent reviewer fixtures | `evals/README.md`, agents.md | low | compatible | Clean vs flawed reviewer fixtures discriminated | adopt | `evals/README.md`, `pack/.claude/skills/devrites-lib/reference/standards/agents.md` |
+| ECC `5eddf1a3…` · verification-loop | piped producer failure masking | 08-11 adopted; spot-check shows vet/prove prose drift risk | testing standards, Vet | low | compatible | `cmd \| filter` with failing producer exits non-zero | retain | `pack/.claude/skills/devrites-lib/reference/standards/testing.md` |
+| agent-skills `36fc35c1…` · characterize-before-modify | first-touch seam map | Adopt mentions seam but not mandatory disposition field | `rite-adopt/SKILL.md` | low | compatible | Untested seam without characterize row fails Adopt | adopt | `pack/.claude/skills/rite-adopt/SKILL.md` |
+| compound-engineering `5985d821…` · ce-retune A/A | eval noise floor reporting | Manual evals omit same-build variance | `evals/README.md` | low | compatible | Report shows A/A spread + claim boundary | combine | `evals/README.md` |
+| mstar-harness `23ece319…` · audit report templates | structured review report sections | DevRites reviewers vary section headers | `devrites-*-reviewer.md` set | medium | compatible | Each reviewer output schema includes severity/location/fix | adopt | `pack/.claude/agents/devrites-code-reviewer.md`, `devrites-security-reviewer.md`, `devrites-spec-reviewer.md`, `devrites-devex-reviewer.md`, `devrites-doubt-reviewer.md` |
+| claude-skills `882ef55e…` · large catalog discipline | skill cardinality without router | Temptation to import 500+ skills | none | high | duplicate system | Count stays ≤43 canonical skills | reject | |
+| one-skill-to-rule-them-all `281f1346…` · pre-flight principle | workspace anchor before edits | Adopt/Vet do not name protected config paths | `rite-adopt`, `rite-vet` | low | compatible | Missing workspace slug blocks adopt | adopt | `pack/.claude/skills/rite-adopt/SKILL.md`, `rite-vet/SKILL.md` |
+| i-have-adhd `cbe69fb8…` · focus routing | task split for executive function | DevRites already has lifecycle; no ADHD-specific mode | intent-map | low | conflicts if mandatory mode | Ordinary rite routing unchanged | reject | |
+| ruflo `e21aa352…` · swarm orchestration | multi-agent swarm state | Parallel dispatch already bounds fan-out | parallel-dispatch | high | duplicate system | No swarm graph import | reject | |
+| taste-skill `ccbc1563…` · research-backed craft heuristics | visual taste without measurement | polish/playbooks lack “anti-slop” checklist | visual-playbooks, polish | low | compatible | Slop pattern list triggers playbook load | adopt | `pack/.claude/skills/devrites-lib/reference/visual-playbooks/index.md`, `rite-polish/SKILL.md` |
+| impeccable `63b04e25…` · direction review axes | completeness vs distinction axes | `/rite-polish` conflates completeness with craft | `rite-polish/SKILL.md` | low | compatible | Incomplete comparison flagged separately from style | adopt | `pack/.claude/skills/rite-polish/SKILL.md` |
+| ui-craft `6ae35d02…` · ux_coverage axis | second review axis for completeness | Missing in polish guidance | `rite-polish/SKILL.md` | low | compatible | Omitted comparison ≠ agreement | adopt | `pack/.claude/skills/rite-polish/SKILL.md` |
+| hallmark `13ac0ec7…` · theme slop tests | measurable slop gate count | No numeric gate—use qualitative checklist | polish | low | compatible | Checklist rejects generic hero-only layout | adopt | `pack/.claude/skills/rite-polish/SKILL.md` |
+| deep-research-skills `6ce38f60…` · dated source citation | research steps omit date/URL requirement | rite-learn / research phases accept bare claims | `rite-learn/SKILL.md` | low | compatible | Finding without dated URL fails learn promotion | adopt | `pack/.claude/skills/rite-learn/SKILL.md` |
+| file-search-skill `3703cad2…` · tool-selection routing | structural search before grep-only loops | tooling.md primary-first but weak tie-break | `tooling.md`, intent-map | low | compatible | Repeated grep loop without index attempt fails Build orient | adopt | `pack/.claude/skills/devrites-lib/reference/standards/tooling.md` |
+| Anthropic-Cybersecurity-Skills `1b3f6b22…` · scenario library | security scenario breadth | security.md strong but missing parser/request-integrity cases | `security.md` | medium | compatible | Parser differential scenario listed with failing case | adopt | `pack/.claude/skills/devrites-lib/reference/standards/security.md` |
+| reverse-skill `37162cf9…` · governance-protected config | protected config edit guard | Vet lacks explicit “governance-protected” class | `rite-vet/SKILL.md`, security | low | compatible | Protected path edit without approval → Vet fail | adopt | `pack/.claude/skills/rite-vet/SKILL.md` |
+| ek-skills `d23d7f88…` · thin animation skills | micro-skill wrappers | Already covered by skill-authoring placement gate | skill-authoring | none | compatible | No new imports | reject | |
+| 08-11 ledger · reviewer fingerprints | second-wave dedup | Deferred with rationale | Review | medium | duplicate roles | Fresh roles sufficient | defer | |
+| 08-11 ledger · browser daemon | browser proof runtime | Engine scope | Prove | high | conflicts | Markdown notes limitation only | defer | |
+
+## Track syntheses (A–F)
+
+**Track A — Lifecycle & gates:** DevRites keeps the fixed fifteen-stage lifecycle as the sole orchestration graph. Gates strengthen at artifact boundaries (Spec, Vet, Prove, Seal) with fail-closed oracles and fresh reviewers—not a parallel SDLC store or artifact chain like OpenSpec/gstack runtime.
+
+**Track B — Skills & routing:** One canonical router (`intent-map.md` + skill triggers) with explicit → active lifecycle → single implicit match. Progressive disclosure via references and on-demand standards; reject catalog imports (claude-skills, ECC, ruflo). Host instruction budgets inform anti-sprawl but do not change DevRites precedence.
+
+**Track C — Spec & planning:** Spec owns preservation, applicability, invariants, and failure/recovery; Define/Plan/Vet own decision horizons with honest deferral checks. No second constitution, preset engine, or OpenSpec archive lifecycle.
+
+**Track D — Proof & review:** Proof-runner and required reviewers remain independent; discriminating proof perturbs load-bearing wiring; piped commands cannot mask producer failure; eval docs report A/A noise and separate process vs job success.
+
+**Track E — Context efficiency:** Always-loaded baseline 277,223 bytes with +10% cap; consolidate reassurance duplicates into tooling primary-first; no always-on domain standards; skill instruction ratchet preserved.
+
+**Track F — Security, integrity, craft, learn:** Extend triggered standards (security, data-integrity, integration) with falsifiable scenarios; craft via on-demand visual playbooks + polish axes; learn promotions require dated sources and retirement of conflicts; NOTICE for CC BY-SA/Apache adaptations.
