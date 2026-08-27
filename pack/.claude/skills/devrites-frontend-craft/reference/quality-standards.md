@@ -207,9 +207,8 @@ rung that carries the structure.
   (`rite-polish/reference/anti-ai-slop.md`).
 
 ### NEVER (UI numerical bar)
-- Never ship a pure `#000` or `#fff` raw value.
+- Never reintroduce anything [`rite-polish` anti-ai-slop](../../rite-polish/reference/anti-ai-slop.md) bans.
 - Never hard-code a spacing value the 4 pt scale or project tokens cover.
-- Never use bounce/elastic easing without an explicit design-system reason.
 - Never animate an exit at 100 % of enter duration (feels uncontrolled).
 - Never use raw `z-index` numbers outside the semantic scale.
 - Never use viewport queries for component-internal reflows when the

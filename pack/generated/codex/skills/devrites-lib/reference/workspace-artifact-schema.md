@@ -61,7 +61,7 @@ Readers continue to accept safe legacy basenames; no ordinary phase renames one.
 | `drift.md` | `DRIFT-###` spec/plan drift and resolution | 160 lines |
 | `touched-files.md` | sole candidate manifest plus a concern-ordered `## Review trail` of `path:line` stops for human review | 160 lines |
 | `design-brief.md` | UI design direction, states, interaction model | 160 lines |
-| `handoff.md` | cold-resume guide: current objective, last completed slice, next action, blockers, read-next links | 120 lines |
+| `handoff.md` | cold-resume guide: objective, last slice, next action, blockers, read-next. Sections carry content or `Nothing yet`; unevidenced recollections go under `Not tried yet`, never as results | 120 lines |
 
 When emitting `visual/` HTML+outline pairs, open matching playbooks via
 [`visual-playbooks/index.md`](visual-playbooks/index.md) (progressive load; do not

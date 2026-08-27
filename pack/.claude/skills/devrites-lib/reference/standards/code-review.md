@@ -59,17 +59,16 @@ correctness bug, a failing case, a measured number) > **the project's stated sty
 objection bottoms out at the last tier, it's a Suggestion at most: say so, and don't block on it.
 An author who is factually right wins over a reviewer's taste.
 
+## Reviewer-vs-reviewer adjudication
+
+Root re-verifies each claimed consequence at the cited site, keeps the surviving evidence, sets final severity itself (reviewer severity advisory), records what decided ([agents.md § Independence](agents.md#independence)); unresolved conflicts stay open blockers.
+
 ## Scope discipline
 Review the change, not the whole project. Out-of-scope problems become follow-ups, not
 drive-by edits that balloon the diff.
 
 ## Receiving review feedback
-Treat external review as claims to verify, not orders to obey. Clarify unclear feedback before a
-partial fix; check each claim against the live code; push back with evidence when it is wrong;
-then implement blocking → simple → complex items one at a time and test each fix. Technical
-replies state the evidence and next action: no performative agreement, no gratitude theater:
-"Fixed: <what> in <where>" beats "Great catch, thanks!". About to write "Thanks"? Delete it
-and state the fix.
+Treat external review as claims to verify, not orders. Clarify unclear feedback first; check claims against live code; push back with evidence when wrong; implement blocking → simple → complex items one at a time with tests. State evidence and next action — "Fixed: <what> in <where>" beats gratitude theater.
 
 ## Principles and charter are pass/fail gates
 Two project layers are evaluated at `/rite-vet` and re-checked against the diff
