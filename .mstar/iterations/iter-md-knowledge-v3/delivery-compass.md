@@ -1,7 +1,8 @@
 ---
 iteration_id: iter-md-knowledge-v3
 start_date: 2026-08-27
-status: locked
+status: completed
+end_date: 2026-08-27
 iteration_base_branch: main
 target_branch: main
 spec_integration_branch: iteration/md-knowledge-v3
@@ -31,8 +32,8 @@ Locked spec points:
 
 | plan_id | Name | Status | Notes |
 |---------|------|--------|-------|
-| 003-md-knowledge-v3-research | Research lock (Phases 1–5 of brief) | Todo | No DevRites Markdown edits until research lock evidence exists |
-| 004-md-knowledge-v3-implement | Implement + validate (Phases 6–7 + report) | Todo | Blocked until 003 Done |
+| 003-md-knowledge-v3-research | Research lock (Phases 1–5 of brief) | Done | QC Approve @ a69ec6dc; PM acceptance |
+| 004-md-knowledge-v3-implement | Implement + validate (Phases 6–7 + report) | Done | QA Pass 9/9 @ edeb6d9b; PR #46 |
 
 Status values: `Todo` | `InProgress` | `InReview` | `Done` | `Blocked`
 
@@ -41,9 +42,9 @@ Status values: `Todo` | `InProgress` | `InReview` | `Done` | `Blocked`
 | Milestone | Target date | Status |
 | ----------- | ------------- | -------- |
 | Spec freeze (Review & Edit + PM lock) | 2026-08-27 | done |
-| Research lock (003 Done) | 2026-08-28 | pending |
-| Implement + validate (004 Done) | 2026-08-29 | pending |
-| Iteration close + PR merge-ready | 2026-08-30 | pending |
+| Research lock (003 Done) | 2026-08-28 | done |
+| Implement + validate (004 Done) | 2026-08-29 | done |
+| Iteration close + PR merge-ready | 2026-08-30 | done |
 
 ## Acceptance Criteria
 
@@ -82,7 +83,7 @@ Product boundary: this iteration improves **what agents read and how they are in
 
 ## Roadmap Position
 
-- **Current (iter-md-knowledge-v3):** Strict redo of Markdown knowledge-layer v3—research lock (003) → implement + validate + PR (004). User-visible win: stronger `/rite-*` guidance with measured context discipline.
+- **Current (iter-md-knowledge-v3):** **Delivered** — research lock (003) + implement + validate + PR (004). User-visible win: stronger `/rite-*` guidance with measured context discipline (+1.5% always-loaded).
 - **Next:** Engine/runtime enforcement for gates that Markdown alone cannot enforce—trigger when round-3 upgrade doc §15 “Remaining limitations” names a gate the loader cannot express; owner: future PM + engine track.
 - **North star:** DevRites Markdown (agents, skills, standards, workflows) is the strongest coherent agent-harness methodology layer—high falsifiability, fail-closed proof, no context sprawl, no false completion.
 
@@ -134,17 +135,31 @@ See [`README.md`](README.md) for the full index (core documents, planned `guides
 
 ## Quality Gate Summary
 
-> Filled at iteration-close.
-
 | plan_id | QC decision | QA gate | Residuals | Durable summary |
 |---------|-------------|---------|-----------|-----------------|
-| 003-md-knowledge-v3-research | TBD | pm-acceptance (research artifacts) | TBD | TBD |
-| 004-md-knowledge-v3-implement | TBD | mandatory | TBD | TBD |
+| 003-md-knowledge-v3-research | **Approve** (tri-seat; fix @ `a69ec6dc`) | pm-acceptance | none | Research lock GO; 25-repo inventory; adoption matrix + tracks A–F; 004 handoff ready |
+| 004-md-knowledge-v3-implement | **Approve** (tri-seat) | mandatory **Pass** 9/9 @ `edeb6d9b` | none | T01–T27 pack edits; anti-sprawl +1.5%; validation PASS; PR [#46](https://github.com/ViktorsBaikers/DevRites/pull/46) |
 
 ## Compound Round Summary
 
-> Filled at iteration-close.
+**Package inventory:** `.mstar/iterations/iter-md-knowledge-v3/guides/` (research-inventory, adoption-matrix, target-architecture, prior-adoption-ledger, dossiers-index, open-web-research, devrites-md-architecture-map) retained as iteration SSOT pointers — SHAs and clones live in `/tmp`, not promoted to repo tree.
+
+**Knowledge promotion:** No project `{KNOWLEDGE_DIR}/` in DevRites; durable user-facing knowledge crystallized in:
+
+- `docs/markdown-instruction-upgrade-2026-08-27.md` (round-3 upgrade report)
+- `.mstar/specs/md-knowledge-layer-v3.md` (long-lived product spec)
+- `NOTICE.md` attributions (CC BY / Apache where required)
+
+**Skipped:** Per-repo dossiers under `/tmp` — ephemeral research artifacts per brief §3 rule 31.
 
 ## Iteration Retrospective (minimal)
 
-> Filled at iteration-close.
+| What worked | What to improve |
+| --- | --- |
+| Strict 003→004 gate prevented implement before research lock | QC caught phantom sampled paths early — verify `git ls-files` at pinned SHA in 003 checklist |
+| Anti-sprawl budgets held (+1.5% always-loaded) | Instruction-size test hardcoded file count (228) — update alongside baseline when consolidations add canonical MD |
+| Tri-seat QC + mandatory QA caught cross-ref and commitlint blockers before merge | Full CI shell shard failure (instruction count) was out of AC-8 scope — align AC-8 vs full-workflow green in future iterations |
+
+**Delivered:** Markdown knowledge-layer v3 on `iteration/md-knowledge-v3`; merge via PR #46 when CI fully green.
+
+[You have received this identical output 3 times. Re-reading '/Users/brooke/Documents/Work/DevRites/.mstar/iterations/iter-md-knowledge-v3/delivery-compass.md:raw' will not change it — use a narrower selector (path:A-B), or proceed with the edit.]

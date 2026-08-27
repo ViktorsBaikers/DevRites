@@ -1,7 +1,7 @@
 {
   "version": 1,
   "workflow_id": "wf-iter-md-knowledge-v3",
-  "updated_at": "2026-08-27T17:30:00Z",
+  "updated_at": "2026-08-27T20:15:00Z",
   "branch": {
     "base": "main",
     "integration": "iteration/md-knowledge-v3",
@@ -11,10 +11,10 @@
     {
       "plan_id": "003-md-knowledge-v3-research",
       "file": "plans/003-md-knowledge-v3-research.md",
-      "status": "Todo",
-      "phase": "Prepare",
-      "gate": "open",
-      "notes": "Phase 1 draft; awaiting Review & Edit + PM lock",
+      "status": "Done",
+      "phase": "Execute",
+      "gate": "closed",
+      "notes": "Research lock GO; QC Approve after a69ec6dc; PM acceptance 2026-08-27",
       "metadata": {
         "iteration_id": "iter-md-knowledge-v3",
         "iteration_refs": [
@@ -33,10 +33,10 @@
     {
       "plan_id": "004-md-knowledge-v3-implement",
       "file": "plans/004-md-knowledge-v3-implement.md",
-      "status": "Todo",
-      "phase": "Prepare",
-      "gate": "blocked",
-      "notes": "Blocked until 003 Done",
+      "status": "Done",
+      "phase": "Execute",
+      "gate": "closed",
+      "notes": "QC Approve; QA Pass 9/9 @ edeb6d9b; PR #46; CI shard 7 watch",
       "metadata": {
         "iteration_id": "iter-md-knowledge-v3",
         "iteration_refs": [
@@ -49,8 +49,7 @@
         "execution_mode": "sdd",
         "task_category": "docs",
         "findings_cleanup": "zero-residual",
-        "qa_gate": "mandatory",
-        "blocked_by": "003-md-knowledge-v3-research"
+        "qa_gate": "mandatory"
       }
     }
   ]
