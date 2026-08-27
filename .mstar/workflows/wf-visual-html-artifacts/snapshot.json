@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "workflow_id": "wf-visual-html-artifacts",
+  "updated_at": "2026-08-26T19:50:00Z",
+  "branch": {
+    "base": "main",
+    "target": "main",
+    "integration": "feat/visual-html-artifacts"
+  },
+  "plans": [
+    {
+      "plan_id": "002-visual-html-artifacts",
+      "file": "plans/002-visual-html-artifacts.md",
+      "status": "Done",
+      "phase": "Done",
+      "gate": "closed",
+      "notes": "T1–T5 Approved; T6 QC Approve + QA Pass (reports/T6-qa.md). HEAD 9396c4f on feat/visual-html-artifacts.",
+      "metadata": {
+        "working_branch": "feat/visual-html-artifacts",
+        "findings_cleanup": "zero-residual",
+        "execution_mode": "sdd",
+        "task_category": "docs",
+        "head": "9396c4f",
+        "qa_report": "sdd/002-visual-html-artifacts/reports/T6-qa.md",
+        "qc_gate": "sdd/002-visual-html-artifacts/review/qc-consolidated.md"
+      }
+    }
+  ]
+}

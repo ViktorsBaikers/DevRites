@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "updated_at": "2026-08-27T17:30:00Z",
+  "workflows": [
+    {
+      "id": "wf-rite-build-parallel",
+      "kind": "standalone",
+      "title": "rite-build parallel worktree slices",
+      "created_at": "2026-08-23T19:16:53Z",
+      "snapshot": "workflows/wf-rite-build-parallel/snapshot.json"
+    },
+    {
+      "id": "wf-visual-html-artifacts",
+      "kind": "standalone",
+      "title": "Visual HTML artifacts (lavish-inspired)",
+      "created_at": "2026-08-26T09:31:05Z",
+      "snapshot": "workflows/wf-visual-html-artifacts/snapshot.json",
+      "status": "Done"
+    },
+    {
+      "id": "wf-iter-md-knowledge-v3",
+      "kind": "iteration",
+      "type": "iteration",
+      "title": "Markdown knowledge-layer upgrade v3",
+      "created_at": "2026-08-27T17:30:00Z",
+      "started_at": "2026-08-27T17:30:00Z",
+      "dir": "workflows/wf-iter-md-knowledge-v3",
+      "snapshot": "workflows/wf-iter-md-knowledge-v3/snapshot.json",
+      "status": "active",
+      "metadata": {
+        "iteration_id": "iter-md-knowledge-v3",
+        "iteration_base_branch": "main",
+        "spec_integration_branch": "iteration/md-knowledge-v3",
+        "target_branch": "main"
+      }
+    }
+  ]
+}

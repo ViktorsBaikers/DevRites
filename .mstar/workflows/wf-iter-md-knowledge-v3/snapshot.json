@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "workflow_id": "wf-iter-md-knowledge-v3",
+  "updated_at": "2026-08-27T17:30:00Z",
+  "branch": {
+    "base": "main",
+    "integration": "iteration/md-knowledge-v3",
+    "target": "main"
+  },
+  "plans": [
+    {
+      "plan_id": "003-md-knowledge-v3-research",
+      "file": "plans/003-md-knowledge-v3-research.md",
+      "status": "Todo",
+      "phase": "Prepare",
+      "gate": "open",
+      "notes": "Phase 1 draft; awaiting Review & Edit + PM lock",
+      "metadata": {
+        "iteration_id": "iter-md-knowledge-v3",
+        "iteration_refs": [
+          "iterations/iter-md-knowledge-v3/delivery-compass.md"
+        ],
+        "primary_spec": "specs/md-knowledge-layer-v3.md",
+        "spec_integration_branch": "iteration/md-knowledge-v3",
+        "merge_target": "iteration/md-knowledge-v3",
+        "working_branch": "plan/003-md-knowledge-v3-research",
+        "execution_mode": "sdd",
+        "task_category": "deep",
+        "findings_cleanup": "zero-residual",
+        "qa_gate": "pm-acceptance"
+      }
+    },
+    {
+      "plan_id": "004-md-knowledge-v3-implement",
+      "file": "plans/004-md-knowledge-v3-implement.md",
+      "status": "Todo",
+      "phase": "Prepare",
+      "gate": "blocked",
+      "notes": "Blocked until 003 Done",
+      "metadata": {
+        "iteration_id": "iter-md-knowledge-v3",
+        "iteration_refs": [
+          "iterations/iter-md-knowledge-v3/delivery-compass.md"
+        ],
+        "primary_spec": "specs/md-knowledge-layer-v3.md",
+        "spec_integration_branch": "iteration/md-knowledge-v3",
+        "merge_target": "iteration/md-knowledge-v3",
+        "working_branch": "plan/004-md-knowledge-v3-implement",
+        "execution_mode": "sdd",
+        "task_category": "docs",
+        "findings_cleanup": "zero-residual",
+        "qa_gate": "mandatory",
+        "blocked_by": "003-md-knowledge-v3-research"
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "workflow_id": "wf-rite-build-parallel",
+  "updated_at": "2026-08-23T19:40:00Z",
+  "branch": {
+    "base": "main",
+    "target": "main",
+    "integration": "feat/rite-build-parallel-worktrees"
+  },
+  "plans": [
+    {
+      "plan_id": "001-rite-build-parallel-worktrees",
+      "file": "plans/001-rite-build-parallel-worktrees.md",
+      "status": "InProgress",
+      "phase": "Execute",
+      "gate": "implement",
+      "notes": "Plan locked. B2 MVP T3-T10. Starting Task 7 path-disjoint helper.",
+      "metadata": {
+        "working_branch": "feat/rite-build-parallel-worktrees",
+        "findings_cleanup": "allow-residual",
+        "execution_mode": "sdd"
+      }
+    }
+  ]
+}
