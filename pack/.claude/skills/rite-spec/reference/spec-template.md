@@ -33,6 +33,12 @@ No implementation detail. True greenfield: `none — no existing behavior in the
 | --- | --- | --- |
 | <outcome that must not regress> | REQ-001 / AC-001 | <current evidence> |
 
+Each preservation row **must** cite current evidence (test, runtime, contract, or
+observed behavior). An empty or vague evidence cell blocks Spec readiness.
+
+**Failing case:** row lists REQ-001 with evidence "none" or "TBD" → readiness gate
+fails until evidence is named or the outcome is removed from scope.
+
 ## Stakeholders and priorities
 | Actor/stakeholder | Observable outcome | Conflict / priority rule |
 | --- | --- | --- |

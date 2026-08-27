@@ -26,6 +26,19 @@ live in `reference/code.md` and `reference/ui.md`; read only the phase in scope.
   [`agents.md`](../devrites-lib/reference/standards/agents.md). Never edit source inline or
   run two correction writers concurrently.
 
+## Polish axes (C3 — completeness vs craft)
+
+Score **separately**; conflating them hides gaps:
+
+| Axis | Question | Failing case |
+| --- | --- | --- |
+| **ux_coverage** | Did we compare every stated alternative/state? | Omitted empty/error state treated as agreement |
+| **completeness** | Are required states, copy, and flows present? | Hero-only layout with no loading/error |
+| **craft / anti-slop** | Does the UI avoid generic template patterns? | Inter + purple gradient hero with no product-specific hierarchy |
+| **distinction** | Is there one intentional signature detail? | Polished but indistinguishable from a template |
+
+Incomplete comparison is **not** agreement. Record axis deltas in `polish-report.md`.
+
 ## Orchestration
 
 0. **Read** `.agents/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules). The

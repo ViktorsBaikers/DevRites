@@ -64,6 +64,17 @@ Judgment may dismiss a demonstrably irrelevant case; it cannot prove behavior. W
 case is not inferable from available evidence, say `unresolved`/`cannot_verify` rather
 than estimating confidence upward.
 
+## Backstop honesty (fail-closed)
+
+A row marked `covered` or `backstop` **must** name an evidence class: test path,
+command output, observed runtime, or an independent held-out/property check. A row
+with disposition but **no** evidence class is **`cannot_verify`** at Prove/Seal — not
+a pass.
+
+**Failing case:** the happy-path suite is green, the trace lists "error path handled"
+with no test or runtime proof → Prove blocks until the row gains a discriminating
+surface or moves to `unresolved`.
+
 ## Outputs
 
 Spec records relevant cases in **Edge Coverage** and bespoke negative intent in

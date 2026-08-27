@@ -21,7 +21,9 @@ prerequisite skill to run.
 > review use `/rite-review`; to prove a finished feature use `/rite-prove`.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
+
 Pull on demand:
+
 - `principles.md`: the project invariants (`.devrites/principles.md`); code that violates a
   MUST principle is the highest-severity gap and produces a remediation slice.
 - `spec-grammar.md`: buildable acceptance criteria vs `## Success metrics` (outcome KPIs the
@@ -34,6 +36,7 @@ Pull on demand:
   triggered applicability rows; missing failure/recovery behavior is partial or absent.
 
 ## Operating rules
+
 - **APPEND-ONLY, never rewrite.** The only write to `tasks.md` is **appending** new
   `SLICE-###` entries. Never rewrite, renumber, reorder, or delete an existing slice
   (including slices a prior convergence appended). Never edit `spec.md` or `plan.md`. Never
@@ -58,6 +61,7 @@ Pull on demand:
   workspace changes.
 
 ## Workflow
+
 0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`** first (the always-on
    operating rules), then resolve the active slug, require its `state.md`, and
    read the cursor directly.
@@ -103,10 +107,25 @@ Pull on demand:
    `/rite-prove` if the code already
    converged).
 
+## Completion evidence (fail-closed)
+
+Before reporting "clean" or recommending `/rite-prove`, confirm:
+
+- [ ] Every buildable AC/REQ in the assessment inventory has a built/partial/absent
+      classification with live-code citation
+- [ ] `tasks.md` is byte-for-byte unchanged when clean, or append-only when gaps exist
+- [ ] `traceability.md` updated only for appended slices
+- [ ] No narrative "done" without the checklist above
+
+**Failing case:** all units marked built but one AC lacks a test or runtime citation →
+report partial, append slice, route `/rite-vet`.
+
 ## Appended slice format
+
 Use the complete
 [`canonical slice grammar`](../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar)
 with one added `Convergence:` field after `Satisfies:`:
+
 ```markdown
 <!-- Convergence 2026-07-07: slices below appended by /rite-converge — live code assessed against intent. -->
 ## SLICE-014 <name of the unmet capability>

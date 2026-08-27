@@ -12,6 +12,7 @@ Use when the idea—not only requirements—is rough. Compare directions before
 first and write only workspace/ticket artifacts.
 
 ## Diverge (widen)
+
 - Search `decisions.md`, accepted ADRs, and relevant archives for rejected directions;
   revive one only with evidence that answers its recorded reason, citing both.
 - Generate 3-5 different shapes, including obvious, smaller, and different-boundary/data/
@@ -20,6 +21,7 @@ first and write only workspace/ticket artifacts.
 - For each, name concrete entities/flows/surfaces, optimization, rough cost, and main risk.
 
 ## Converge (commit)
+
 - Weigh options against the goal, constraints, and existing codebase conventions.
 - Prefer felt pain over nice-to-have. Rank differentiation: new capability > 10× gain >
   new audience > new context > better UX > cheaper; do not dress a vitamin as a painkiller.
@@ -33,10 +35,13 @@ If the hinge is an uncertain material fact, freeze at most three questions for
 `unavailable`, never support. Record claim, support, strongest contrary evidence, and
 `supported | assumption | refuted`. Refutation changes the recommendation; an assumption
 advances only when non-decisive with bounded downside. Weak/conflicting decisive evidence
-returns **Hold** with the resolving evidence, never `/rite-spec`. Do not research preferences
+returns **Hold** with the resolving evidence, never `/rite-spec`. Tie-breaker:
+see [`intent-map.md`](../devrites-lib/reference/intent-map.md) (`rite-pressure-test`
+vs `rite-spec`). Do not research preferences
 or reversible implementation choices.
 
 ## Boundaries
+
 - This is exploration, not specification. Output a **direction**, not a finished spec:
   `/rite-spec` writes the spec.
 - Don't over-explore: 3-5 options, one pass of convergence. If the user already knows

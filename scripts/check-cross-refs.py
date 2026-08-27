@@ -56,7 +56,7 @@ WORKSPACE_ARTIFACTS = {
 # which are not part of the shipped pack.
 PROJECT_DOCS = {
     "CLAUDE.md", "AGENTS.md", "DESIGN.md", "PRODUCT.md", "CONTEXT.md", "NOTES.md",
-    "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "cli.md",
+    "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "NOTICE.md", "cli.md",
     "ADR-NNN.md",  # generated per-decision ADR in the user repo (docs/adr/), promoted at /rite-ship
 }
 

@@ -14,6 +14,16 @@ filtered, pending, zero-test, assertion-free, tautological, or unexecuted result
 do not count. Build/compile/typecheck/lint prove only their static criterion;
 discriminating shell assertions and golden/text comparisons may prove text/CLI.
 
+## Silent-failure probe
+
+When tests pass but error paths, dropped results, or partial success could hide
+failure, require at least one **discriminating** check that would fail if the silent
+path regressed (assert the failure surface, not only the happy path).
+
+**Failing case:** handler returns success while logging or swallowing internally; the
+suite stays green → map `cannot_verify` unless a test asserts the user-visible or
+contract failure outcome.
+
 ## Backstop disposition
 
 A `backstop` passes only on its spec-named independent held-out,

@@ -44,6 +44,16 @@ List vertical `SLICE-###` increments, AC coverage, and risk-first order within d
 tiers. Wide refactors use expand → green migrate batches → contract, or an integration
 branch + final verify slice.
 
+## Architecture admission
+
+Promote to ADR only **irreversible cross-boundary** choices (public contract,
+security invariant, migration that cannot roll back). Reversible config, helper
+placement, library version, or env default stays in `plan.md` / `decisions.md` as
+implementation-local or planning-owned — not architecture.
+
+**Failing case:** "Use env `FOO=bar` as default" recorded under Architecture decisions
+→ Vet requests downgrade to implementation-local horizon with observable trigger.
+
 ## Architecture decisions
 Decisions + rationale (mirror to `decisions.md`). Prefer reuse and invariants over
 scaffolding. Medium+ entries add `Binds:`/`Prevents:`. Interfaces name invariants, I/O,

@@ -11,7 +11,7 @@ Emit `.devrites/work/<slug>/checklists/<domain>.md` per covered domain; skip
 `none`. Each domain maps gaps to a `devrites-interview` dimension:
 
 | Domain file | Tests the prose of |
-|---|---|
+| --- | --- |
 | `functional.md` | Functional requirements + scenarios: is each capability stated, bounded, testable? |
 | `data-model.md` | Key entities / data model: shapes, fields, lifecycle, relationships (skip if "none"). |
 | `interaction.md` | API / UI impact + UX states: every screen state and contract named (skip if no UI/API). |
@@ -39,6 +39,7 @@ undefined stated-flow edge, or contradictory requirements. Other vague prose is
 ## Question bank
 
 Each question checks one requirement-prose failure mode:
+
 - **Measurability:** every "good / fast / prominent / simple / secure" carries a number, a budget,
   or a named reference. No adjective stands in for a threshold.
 - **Completeness:** every enumeration is closed (no "etc."); every requirement with a precondition
@@ -64,6 +65,8 @@ Each question checks one requirement-prose failure mode:
 - **Preservation:** each material brownfield outcome appears in `Existing behavior
   to preserve` with preserving REQ/AC and current evidence. Missing/vague “no
   regressions” or unjustified `none` is CRITICAL.
+  **Failing case:** brownfield login still works but the table has no evidence column
+  → CRITICAL until a test path, command, or observed contract is named.
 - **Backstops:** each row names an independent held-out, property/metamorphic, or
   direct behavioral check and the failure it discriminates; confidence/presence/self-review fail.
 - **Non-functional:** each NFR names affected REQ/AC IDs or a bounded `global` scope;
@@ -80,6 +83,7 @@ unchecked**. A spec without checklists is not yet checked, so define stops and r
 back here.
 
 ## Discipline
+
 - Score honestly. Do not soften a checklist question to pass a weak spec.
 - Don't pad. Five real questions that find one CRITICAL beat thirty rubber-stamped rows.
 - If a question needs a function name, it belongs in `$rite-vet`'s `test-plan.md`.

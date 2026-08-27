@@ -55,3 +55,14 @@ Home: `.devrites/work/<slug>/visual/`. Optional artifact; never a new lifecycle 
 - [ ] CDN dependencies (if any) listed for the outline
 - [ ] Claims cite real repo paths when they touch the tree
 - [ ] After write: inventory ids present in HTML (`open-visual` warns inventory → HTML mismatches; HTML-only decorative ids are ignored)
+
+## Anti-slop triggers (load polish / playbooks)
+
+When HTML/visual work shows **two or more** of: generic Inter/system font with no
+brief justification, hero-only layout, purple/blue gradient CTA with no brand token,
+lorem or placeholder copy in shipped states, or identical card grid with no product
+hierarchy — load [`rite-polish`](../../../rite-polish/SKILL.md) **ux_coverage** and
+craft axes before sign-off.
+
+**Failing case:** visual ships with three slop patterns and no axis record → Review
+Important finding.
