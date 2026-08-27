@@ -28,7 +28,7 @@ project-conventional push, tag, or PR action, and archive the workspace.
 Unattended runs may create local WIP checkpoint commits along the way, but they
 remain local unless Ship's disclosed plan includes an approved remote action.
 
-**Status:** [`v4.4.2`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v4.4.2): see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+**Status:** [`v4.5.0`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v4.5.0): see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
 This is the latest published release; `main` may contain unreleased work.
 
