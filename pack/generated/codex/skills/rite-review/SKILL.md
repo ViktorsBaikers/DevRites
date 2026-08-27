@@ -20,7 +20,9 @@ tell the user to run `$rite-spec <feature>`.
 all workflow-named roles remain mandatory at every depth.
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
+
 Pull these via `Read` when the diff demands them:
+
 - `code-review.md`: small PRs, severity labels, tests-first review focus.
 - `review-checklist.md`: compact pass/fail sweep before reporting the verdict.
 - `principles.md`: declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
@@ -33,9 +35,13 @@ Pull these via `Read` when the diff demands them:
 - `performance.md`: only when perf is relevant or a regression risk is visible.
 
 ## Operating rules
+
 - **Feature scope only.** Review touched files + the diff. **NO whole-project refactors,
   NO drive-by cleanup.** DO NOT delete suspected dead code outside this feature without
   asking. Spec Drift Guard applies.
+- **Silent-failure hunt:** when the suite is green, require proof that error paths and
+  partial-success branches would fail tests if broken. **Failing case:** tests pass but
+  handler returns success on internal error → Critical until an asserting test exists.
 - **Review the finished product.** `$rite-polish` has already simplified code and
   normalized or polished UI. If review finds a remaining complexity issue, record it as
   a finding rather than rerunning a simplification pass.
@@ -49,6 +55,7 @@ Pull these via `Read` when the diff demands them:
   route to `devrites-slice-wright`.
 
 ## Workflow
+
 0. Read `.agents/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
    on-demand rules above as the diff demands them.
    Then read the explicit or active workspace's `state.md` directly.
@@ -129,6 +136,7 @@ Pull these via `Read` when the diff demands them:
    correction has affected proof plus a fresh Review.
 
 ## Finding labels
+
 - **Critical:** must fix before seal (correctness/security/data loss).
 - **Important:** should fix before seal (likely bug, real maintainability risk).
 - **Suggestion:** worth doing, not blocking.
@@ -141,6 +149,7 @@ change is already small: a pure noise-economics lever). Only a **`blocking` Crit
 seal; a `non-blocking` / `if-minor` finding is recorded, not a stop.
 
 ## Confidence and signal-to-noise
+
 Apply [`agents.md` § Result admission](../devrites-lib/reference/standards/agents.md#result-admission).
 Suppress unverifiable ≤4 hypotheses, require 7+ plus exact proof for
 Critical/Important, and make every silent/unusable account a blocking gap. Roll

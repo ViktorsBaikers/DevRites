@@ -40,6 +40,12 @@ plan declares a root-authored executable workflow file, read
   unverified or confidence ≤4 findings under `review-axes.md`.
 - Auth, migration, public API, and data-model changes use maximum caution and the
   irreversible-risk stop. Project principles never become trade-offs.
+- **Governance-protected paths** (`.devrites/**`, pack skill/agent trees,
+  `NOTICE.md` generator regions, CI/hook config named in repo docs) require explicit
+  human approval before plan slices may edit them. A slice touching a protected path
+  without approval → Vet **NEEDS CLARIFICATION**.
+  **Failing case:** plan edits another feature's `state.md` without recorded approval →
+  fail closed.
 - Use the lowest axis band; never average or round thin to ready. Search before
   asking and resolve reversible technical choices. Ask only human-owned choices.
 - Preserve a valid technical return cursor. Agent-owned `NEEDS REPLAN` returns
@@ -138,3 +144,11 @@ plan declares a root-authored executable workflow file, read
 
 > Do not replace interactive review with artifacts, change acceptance through
 > hardening, score without source evidence, or ignore unexplained complexity.
+
+## Phase exit (observable)
+
+**Complete when:** `eng-review.md` records exactly one readiness verdict, readiness
+binding SHA-256 passes, and every required reviewer account is admitted.
+
+**Failing case:** READY written while a required reviewer returned `Outcome: gap` →
+not complete; restore NEEDS REPLAN or dispatch missing reviewer.

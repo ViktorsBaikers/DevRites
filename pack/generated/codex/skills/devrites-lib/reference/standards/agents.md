@@ -12,7 +12,7 @@ Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
 ## Agents
 
 | Agent |
-|---|
+| --- |
 | `devrites-evidence-scout` |
 | `devrites-plan-drafter` |
 | `devrites-upgrade-planner` |
@@ -59,10 +59,15 @@ Each job gets objective/exclusions, exact paths/immutable candidate, rubric/resu
 Each required reviewer/analyst/auditor starts with exactly one:
 `Outcome: findings`, `Outcome: no-findings`, or `Outcome: gap`.
 
-- **`findings`:** each states severity, confidence 1–10, exact artifact section or
-  `file:line`, observed quote/command/result/measurement, reachable failure or
-  contract impact, and smallest correction. Critical/Important requires 7+, exact
-  evidence, and concrete impact.
+**Canonical finding shape (C2 — all `devrites-*-reviewer` / auditor agents):**
+
+```text
+Outcome: <findings | no-findings | gap>
+Finding: <severity> | <file:line or artifact section> | <observed quote/result> | <impact> | <minimum fix>
+```
+
+- **`findings`:** each row uses the shape above; confidence 1–10 on Critical/Important.
+  Critical/Important requires 7+, exact evidence, and concrete impact.
 - **`no-findings`:** `No-findings:` names checks and inspected evidence. Bare
   pass, empty list, or “looks good” is malformed.
 - **`gap`:** names missing/unreadable/stale input; skipped/failed required check;

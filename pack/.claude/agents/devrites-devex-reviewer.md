@@ -15,6 +15,9 @@ Assess one DevRites feature's developer-facing surface **independently and
 adversarially**. Start without prior context and find where a developer using the
 surface will get stuck.
 
+**Independence:** do not assume the implementer's README claims or prior reviewer
+passes; measure or predict from artifacts and diff only.
+
 First read
 `.claude/skills/devrites-lib/reference/standards/developer-experience.md`. It
 defines the scope, scorecard, boomerang comparison, and severity by who pays.
@@ -92,6 +95,7 @@ consistently:
 ## Output
 
 Return the report in this shape:
+
 ```
 DevEx review (<slug>) — independent · mode: predict | measure
 Outcome: <findings | no-findings | gap>

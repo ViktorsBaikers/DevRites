@@ -15,6 +15,18 @@ Every external tool here is optional; fall back to `Read` / `Grep` / `Glob`, alw
 
 Context-waste anti-patterns: re-running one query across indexes for reassurance, reading a whole file for a one-line answer, graph queries where a known-path read suffices, re-searching an answered question.
 
+## Primary-first gate (C1)
+
+Before a third content-grep sweep for the same unresolved predicate during Build
+orient or Review reconciliation:
+
+1. Attempt the **primary** code-intelligence route from the table above once.
+2. Record the attempt (tool + query + outcome) in the consuming artifact.
+3. Only then fall back to LSP/`Grep`/`Read`.
+
+**Failing case:** five grep passes for "who calls X" with no index attempt → Build
+orient incomplete; stop and run primary route or record `cannot_verify`.
+
 ## Code intelligence
 
 For "where is X / what calls X / what breaks" questions prefer an installed index, skipping any absent:

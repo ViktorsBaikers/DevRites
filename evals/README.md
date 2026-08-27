@@ -29,7 +29,7 @@ claim-bounded report:
   and trial date;
 - distinguish a task from each repeated trial and name control/treatment arms;
 - before attributing a small wording difference, run same-build A/A repeats and report the
-  observed noise floor;
+  observed noise floor; record spread as `aa_noise_floor` in the report header;
 - retain sanitized per-trial arm verdicts/metrics, invalid/null results, and variance; never
   capture raw transcripts, and record `cannot_verify` when sanitization loses grading signal;
 - score process adherence separately from job success—a compliant trace can still produce
@@ -85,7 +85,7 @@ the repository's current result.
 CLI capabilities. Every row has one bounded claim and non-claim:
 
 | Case | Evidence path | Repository result |
-|---|---|---|
+| --- | --- | --- |
 | Installed pack visibility | strict deterministic runtime smoke | normal test suite |
 | Loop-policy selection | fail-closed `run-codex-loop-acceptance.sh` wrapper | live opt-in; not run |
 | Root skill loading | hidden-challenge model smoke | live opt-in; not run |

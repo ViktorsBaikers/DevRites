@@ -111,3 +111,12 @@ test changes.
 
 > Do not claim an unobserved pass, skip browser proof, or proceed with pending
 > slices. Load `reference/anti-patterns.md` when tempted to do so.
+
+## Phase exit (observable)
+
+**Complete when:** every criterion in `acceptance-proof.md` has discriminating
+evidence bound to the current candidate digest, both independent validators admit
+accounts, and `state.md` records Prove complete with no open `cannot_verify` rows.
+
+**Failing case:** narrative "all tests passed" without `evidence.md` binding and
+proof-runner admission → phase not complete; Seal blocks.
