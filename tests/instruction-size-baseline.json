@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 898619,
+  "total_bytes": 898615,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 7210,
     "pack/.claude/agents/devrites-devex-reviewer.md": 6178,
@@ -75,7 +75,7 @@
     "pack/.claude/skills/devrites-lib/reference/standards/performance.md": 1396,
     "pack/.claude/skills/devrites-lib/reference/standards/principles.md": 1487,
     "pack/.claude/skills/devrites-lib/reference/standards/prose-style.md": 7366,
-    "pack/.claude/skills/devrites-lib/reference/standards/README.md": 3793,
+    "pack/.claude/skills/devrites-lib/reference/standards/README.md": 3789,
     "pack/.claude/skills/devrites-lib/reference/standards/release/ship-checklist.md": 363,
     "pack/.claude/skills/devrites-lib/reference/standards/repository-topology.md": 4026,
     "pack/.claude/skills/devrites-lib/reference/standards/review-checklist.md": 436,
