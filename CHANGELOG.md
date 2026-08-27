@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.4.2](https://github.com/ViktorsBaikers/DevRites/compare/v4.4.1...v4.4.2) (2026-08-27)
+
+### Fixed
+
+* **scripts:** resolve codex skill path without dead fallback ([#43](https://github.com/ViktorsBaikers/DevRites/issues/43)) ([4d80520](https://github.com/ViktorsBaikers/DevRites/commit/4d805201a123ef123b3581a38fbb1c812297a024))
+
 ## [4.4.1](https://github.com/ViktorsBaikers/DevRites/compare/v4.4.0...v4.4.1) (2026-08-26)
 
 ### Fixed
