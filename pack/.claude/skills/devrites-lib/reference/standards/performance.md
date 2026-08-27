@@ -11,6 +11,10 @@ Measure first. An optimization without a measurement is a guess that adds comple
 ## Optimize responsibly
 - Fix the **measured** bottleneck, then **re-measure** to prove the win (before/after).
   An optimization that doesn't move the number is just added complexity: revert it.
+- **Measurement not reproducible in CI** (noisy host, external dependency): label the claim
+  `Lab (<named command/environment>)` — never an elapsed-time assertion in shared CI (a
+  flaking wall-clock test is a flaky test, [`testing.md`](testing.md)). Budget regression:
+  re-measure; fix to budget or record the accepted regression with reason and owner.
 
 ## Frontend: Core Web Vitals
 For UI work, measure-first means LCP / INP / CLS judged against real numbers, each labeled

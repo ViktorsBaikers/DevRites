@@ -85,13 +85,10 @@ through the layers (DB → service → API → UI) one capability at a time, app
 engineering rules to the backend and this craft to the frontend, map every contract error
 to a real UI state, and **prove both layers** (contract tests + browser proof).
 
-## Anti-AI-slop (banned defaults unless the project's system uses them)
-Purple/blue gradients · gradient text · glassmorphism by default · cards-in-cards ·
-identical card grids everywhere · rounded-square icon tile above every heading ·
-gray-on-color text · hero-metric cliché · decorative bounce/elastic easing · random
-Inter-for-everything · modal-first thinking · ghost-card (border + big shadow) · fake
-UI-in-a-div · placeholder copy/data. Full list + the countable mechanical pre-flight:
-`rite-polish/reference/anti-ai-slop.md`.
+## Anti-AI-slop
+The banned-defaults list and the countable mechanical pre-flight live in
+`rite-polish/reference/anti-ai-slop.md` (canonical owner): run both at build and polish
+time — a slop pattern in the slice is a polish finding.
 
 ## Default vs departure
 Preserve the existing identity (default, ~90%). Reject it only on an explicit signal (a

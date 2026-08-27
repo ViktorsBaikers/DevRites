@@ -43,14 +43,11 @@ Before advancing a phase, run `devrites-engine check readiness <slug>` for struc
 
 ### Gate contract
 
-Each gate is declared as **Name · Precondition · Satisfying observation (exact command/artifact state) · Pass/Fail · What failure blocks**, with one type: `preflight`, `revision`, `escalation` (human-only), `abort`. Engine gates keep exit codes; semantic gates are judged by their owner against this contract. A gate whose failure consequence cannot be named is decoration — sharpen or delete it.
+Each gate is declared as **Name · Precondition · Satisfying observation (exact command/artifact state) · Pass/Fail · What failure blocks**, with one type: `preflight`, `revision`, `escalation` (human-only), `abort`. Engine gates keep exit codes; semantic gates are judged by their owner against this contract. A gate whose failure consequence cannot be named is decoration — sharpen or delete it. A mechanical gate's satisfying observation is a command or artifact state a reviewer can re-run or re-read — narrative-only passes are unproven.
+
 ## Caller-owned technical backtracking
 
-When a rite invokes an earlier rite inline to repair an agent-owned technical gap, the original rite stays the controlling caller: a nested `STOP` is a phase boundary, not user-facing. The caller re-reads `state.md`, follows the return cursor/`next_action`, and resumes unless a human-owned, safety, access, budget, or exhausted-recovery stop is active ([Persistence before stopping](#persistence-before-stopping-handoff-discipline)). Derive `exhausted-recovery` from the fingerprint's recorded no-progress attempts; one consumed authorization doesn't exhaust offline recovery from retained new evidence.
-
-Derive `exhausted-recovery` from the exact fingerprint's recorded no-progress
-attempts, not from a stale `state.md` label. A consumed authorization for one
-real action does not exhaust offline recovery from its retained new evidence.
+When a rite invokes an earlier rite inline to repair an agent-owned technical gap, the original rite stays the controlling caller: a nested `STOP` is a phase boundary, not user-facing. The caller re-reads `state.md`, follows the return cursor/`next_action`, and resumes unless a human-owned, safety, access, budget, or exhausted-recovery stop is active ([Persistence before stopping](#persistence-before-stopping-handoff-discipline)). Derive `exhausted-recovery` from the fingerprint's recorded no-progress attempts, not from a stale `state.md` label; one consumed authorization doesn't exhaust offline recovery from retained new evidence.
 
 An intermediate `Next step` is cold-resume metadata. Do not ask the human to
 copy routine `/rite-plan repair`, `/rite-vet`, `/rite-build`, or proof-rerun

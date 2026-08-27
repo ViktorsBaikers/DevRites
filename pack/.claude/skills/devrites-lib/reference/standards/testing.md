@@ -114,8 +114,8 @@ Test code optimizes for a different reader than production code: someone staring
 needs the whole scenario in front of them. A test should read like a spec: arrange, act, assert,
 visible in one screen. Prefer a little repetition over a clever shared helper that hides what the
 test exercises; **D**escriptive **A**nd **M**eaningful **P**hrases beat **D**on't **R**epeat **Y**ourself
-here. (This trades against production `coding-style.md` reuse-first on purpose: a shared fixture
-that makes the reader scroll away to understand the case has cost more than the duplication saved.)
+here. (Deliberately trades against production reuse-first: a fixture that makes the reader
+scroll away to understand the case costs more than the duplication saved.)
 
 ## Test doubles: reach for the real thing first
 Prefer, in order: **real > fake > stub > mock**. Use the real collaborator when it's fast and
