@@ -123,8 +123,9 @@ with the self-contained updater.
 `/rite-upgrade` is the separate native, preservation-first route for reconciling
 an unfinished workspace. It proves a current-contract defect before routing
 Clarify, Plan repair, Converge, Vet, Prove, Polish, Review, or Seal; it never
-migrates cursor format or invents historical proof. The engine has no workspace
-migration command. See the [CLI contract](docs/cli.md).
+migrates cursor format or invents historical proof. `devrites-engine migrate`
+owns deterministic v5 schema normalization; see the [CLI contract](docs/cli.md)
+and [ADR-0029](docs/adr/0029-v5-workspace-schema-and-native-migration.md).
 
 The [command map](docs/command-map.md) covers every command, trigger, input, and
 output. The [worked examples](docs/usage.md) show normal features, plan drift,

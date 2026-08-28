@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -20,7 +21,7 @@ const workspaceSchemaKey = CursorSchema
 // WorkspaceSchema reports the schema version declared by the feature's
 // state.md cursor. A missing row means the pre-v5 (schema 2) contract.
 func WorkspaceSchema(root, slug string) (int, error) {
-	raw, err := os.ReadFile(featureDir(root, slug) + "/" + LedgerFile)
+	raw, err := os.ReadFile(filepath.Join(featureDir(root, slug), LedgerFile))
 	if err != nil {
 		return 0, fmt.Errorf("read workspace schema for %s: %w", slug, err)
 	}

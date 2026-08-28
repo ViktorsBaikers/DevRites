@@ -32,8 +32,10 @@ engine-owned.
 - `devrites-engine migrate` performs fail-closed normalization: cursor-form
   conversion through the existing dual-form primitives, missing required
   artifacts as empty stubs with no synthesized content, and byte-exact
-  preservation of bound proof files. Invalidation of a proof binding requires
-  explicit per-finding confirmation and is recorded.
+  preservation of bound proof files. The v2→v3 normalization cannot invalidate
+  a binding — it only creates missing files and rewrites the unbound ledger —
+  and any future schema delta that would modify a bound file requires explicit
+  per-finding confirmation before it applies.
 - This supersedes the no-migrator invariant of ADR-0022 as applied by ADR-0025
   for deterministic schema normalization only. `/rite-upgrade` keeps
   preservation-first routing for judgment work and may hand mechanical

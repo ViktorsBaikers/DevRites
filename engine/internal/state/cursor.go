@@ -190,10 +190,12 @@ func CursorForm(lines []string) string {
 }
 
 // ConvertCursorToTable rewrites legacy bullet cursor fields into canonical
-// table rows in place. Prose lines, including log bullets that merely resemble
-// cursor fields, are preserved, and a value carrying a raw pipe keeps its
-// bullet form because a table cell cannot represent it. It reports whether any
-// line changed.
+// table rows in place. A bullet whose key resolves to a canonical cursor key
+// is a cursor field wherever it appears — the same rule CursorField uses to
+// read — so such a bullet is converted even inside prose sections. Prose
+// without a canonical cursor key is preserved, and a value carrying a raw pipe
+// keeps its bullet form because a table cell cannot represent it. It reports
+// whether any line changed.
 func ConvertCursorToTable(lines []string) ([]string, bool) {
 	changed := false
 	out := append([]string(nil), lines...)

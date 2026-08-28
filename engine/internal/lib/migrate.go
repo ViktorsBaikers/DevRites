@@ -71,28 +71,6 @@ func Migrate(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "migrate: %v\n", err)
 		return 2
 	}
-	ledger := filepath.Join(work, "state.md")
-	raw, err := os.ReadFile(ledger)
-	if err != nil {
-		fmt.Fprintf(stderr, "migrate: %v\n", err)
-		return 2
-	}
-	lines := strings.Split(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n")
-
-	version, err := state.WorkspaceSchema(root, slug)
-	if err != nil {
-		fmt.Fprintf(stderr, "migrate: %v\n", err)
-		return 2
-	}
-	if version > state.SchemaVersion {
-		fmt.Fprintf(stderr, "migrate: workspace %s declares schema %d, newer than this engine's %d; upgrade devrites\n", slug, version, state.SchemaVersion)
-		return 3
-	}
-	if version == state.SchemaVersion {
-		fmt.Fprintf(stdout, "migrate: %s already at schema %d; nothing to do\n", slug, version)
-		return 0
-	}
-
 	answered := map[string]string{}
 	for _, pair := range answerPairs {
 		id, value, ok := strings.Cut(pair, "=")
@@ -103,30 +81,54 @@ func Migrate(root string, args []string, stdout, stderr io.Writer) int {
 		answered[strings.TrimSpace(id)] = strings.TrimSpace(value)
 	}
 
-	plan := buildMigratePlan(root, slug, lines, answered)
-	if len(plan.questions) > 0 {
-		for _, q := range plan.questions {
-			fmt.Fprintf(stderr, "migrate: question %s: %s\n", q.id, q.prompt)
-		}
-		fmt.Fprintln(stderr, "migrate: nothing written; re-run with --answer id=choice")
-		return 3
-	}
-	if plan.phase == string(state.PhaseDone) {
-		fmt.Fprintf(stdout, "migrate: %s is done; archived workspaces are no-ops\n", slug)
-		return 0
-	}
-
-	if *dryRun {
-		fmt.Fprintf(stdout, "migrate: plan for %s\n", slug)
-		for _, step := range plan.steps {
-			fmt.Fprintf(stdout, "  [%s] %s\n", step.kind, step.detail)
-		}
-		fmt.Fprintln(stdout, "migrate: dry run; nothing written")
-		return 0
-	}
-
-	applied := 0
+	// Read, plan, and apply under one feature lock so a concurrent
+	// `state resolve`/`close` can never be clobbered by a stale read.
+	ledger := filepath.Join(work, "state.md")
+	var applied int
+	var exit int
+	var result string
 	err = state.WithFeatureLock(root, slug, func() error {
+		raw, err := os.ReadFile(ledger)
+		if err != nil {
+			return err
+		}
+		lines := strings.Split(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n")
+
+		version, err := state.WorkspaceSchema(root, slug)
+		if err != nil {
+			return err
+		}
+		if version > state.SchemaVersion {
+			fmt.Fprintf(stderr, "migrate: workspace %s declares schema %d, newer than this engine's %d; upgrade devrites\n", slug, version, state.SchemaVersion)
+			exit = 3
+			return nil
+		}
+		if version == state.SchemaVersion {
+			result = fmt.Sprintf("migrate: %s already at schema %d; nothing to do\n", slug, version)
+			exit = 0
+			return nil
+		}
+
+		plan := buildMigratePlan(root, slug, lines, answered)
+		if len(plan.questions) > 0 {
+			for _, q := range plan.questions {
+				fmt.Fprintf(stderr, "migrate: question %s: %s\n", q.id, q.prompt)
+			}
+			fmt.Fprintln(stderr, "migrate: nothing written; re-run with --answer id=choice")
+			exit = 3
+			return nil
+		}
+
+		if *dryRun {
+			fmt.Fprintf(stdout, "migrate: plan for %s\n", slug)
+			for _, step := range plan.steps {
+				fmt.Fprintf(stdout, "  [%s] %s\n", step.kind, step.detail)
+			}
+			fmt.Fprintln(stdout, "migrate: dry run; nothing written")
+			exit = 0
+			return nil
+		}
+
 		// New stub files go first: they are idempotent, never bound, and
 		// state.md is the commit point written last.
 		for _, step := range plan.steps {
@@ -152,14 +154,19 @@ func Migrate(root string, args []string, stdout, stderr io.Writer) int {
 			next = converted
 		}
 		next = state.UpsertCursorField(next, state.CursorSchema, fmt.Sprint(state.SchemaVersion))
-		return fsutil.WriteFileAtomic(ledger, []byte(strings.Join(next, "\n")), 0o644)
+		if err := fsutil.WriteFileAtomic(ledger, []byte(strings.Join(next, "\n")), 0o644); err != nil {
+			return err
+		}
+		result = fmt.Sprintf("migrate: %s normalized to schema %d (%d stub(s) created)\n", slug, state.SchemaVersion, applied)
+		exit = 0
+		return nil
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "migrate: %v\n", err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "migrate: %s normalized to schema %d (%d stub(s) created)\n", slug, state.SchemaVersion, applied)
-	return 0
+	fmt.Fprint(stdout, result)
+	return exit
 }
 
 func buildMigratePlan(root, slug string, lines []string, answered map[string]string) migratePlan {

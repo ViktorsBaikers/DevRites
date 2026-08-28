@@ -116,18 +116,22 @@ func TestMigrateUnknownPhaseAsksAndWritesNothing(t *testing.T) {
 	}
 }
 
-func TestMigrateDoneWorkspaceIsNoOp(t *testing.T) {
+// A done workspace migrates like any other: it is fully artifacted (zero
+// stubs), and normalizing it unblocks `state close`, which refuses pre-v5
+// workspaces. A special no-op would strand done workspaces between migrate
+// and close.
+func TestMigrateDoneWorkspaceNormalizesWithoutStubs(t *testing.T) {
 	root, workspace := seedPreV5Workspace(t, "done")
 	var stdout, stderr strings.Builder
 	if code := Migrate(root, []string{"feature"}, &stdout, &stderr); code != 0 {
-		t.Fatalf("code=%d", code)
-	}
-	if !strings.Contains(stdout.String(), "no-ops") {
-		t.Fatalf("stdout=%q", stdout.String())
+		t.Fatalf("code=%d stderr=%q", code, stderr.String())
 	}
 	body, _ := os.ReadFile(filepath.Join(workspace, "state.md"))
-	if strings.Contains(string(body), "| schema |") {
-		t.Fatalf("done workspace was rewritten: %q", body)
+	if !strings.Contains(string(body), "| schema | 3 |") {
+		t.Fatalf("done workspace not normalized:\n%s", body)
+	}
+	if !strings.Contains(stdout.String(), "normalized to schema 3") {
+		t.Fatalf("stdout=%q", stdout.String())
 	}
 }
 
