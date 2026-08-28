@@ -15,7 +15,7 @@ var ErrWorkspaceSchemaRefused = errors.New("workspace schema version refused")
 // workspaceSchemaKey is the state.md cursor row carrying the workspace schema
 // version. Workspaces written before the v5 engine carry no row and resolve to
 // schema 2, the last pre-v5 contract.
-const workspaceSchemaKey = "schema"
+const workspaceSchemaKey = CursorSchema
 
 // WorkspaceSchema reports the schema version declared by the feature's
 // state.md cursor. A missing row means the pre-v5 (schema 2) contract.

@@ -28,7 +28,7 @@ func runCloseOut(t *testing.T, root string, args ...string) (int, string) {
 
 func TestCloseOutRejectsRootOverrideArgument(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "inside\n")
+	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "inside\n- Schema: 3\n")
 
 	code, out := runCloseOut(t, root, "feat", t.TempDir())
 	if code != 4 || !strings.Contains(out, "usage: devrites-engine state close <slug>") {
@@ -65,7 +65,7 @@ func TestCloseOutRejectsWorkspaceSymlinkEscape(t *testing.T) {
 func TestCloseOutRejectsArchiveSymlinkEscape(t *testing.T) {
 	root := t.TempDir()
 	outside := t.TempDir()
-	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "inside\n")
+	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "inside\n- Schema: 3\n")
 	if err := os.Symlink(outside, filepath.Join(root, "archive")); err != nil {
 		t.Skipf("symlinks unavailable: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestCloseOutRollsBackArchiveWhenActiveCannotBeCleared(t *testing.T) {
 		t.Skip("permission model differs on Windows")
 	}
 	root := t.TempDir()
-	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "inside\n")
+	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "inside\n- Schema: 3\n")
 	writeFile(t, filepath.Join(root, "ACTIVE"), "feat\n")
 	if err := os.MkdirAll(filepath.Join(root, "archive"), 0o755); err != nil {
 		t.Fatal(err)
