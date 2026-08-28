@@ -36,6 +36,7 @@ func TestParityCloseOut(t *testing.T) {
 		slug := "feat-x"
 		gw := t.TempDir()
 		writeFile(t, gw, filepath.Join(".devrites/work", slug, "spec.md"), "# spec\n")
+		writeFile(t, gw, filepath.Join(".devrites/work", slug, "state.md"), "| schema | 3 |\n")
 		writeFile(t, gw, ".devrites/ACTIVE", slug+"\n")
 
 		run(t, gw, slug)
@@ -59,6 +60,7 @@ func TestParityCloseOut(t *testing.T) {
 		other := "someone-else\n"
 		gw := t.TempDir()
 		writeFile(t, gw, filepath.Join(".devrites/work", slug, "spec.md"), "# spec\n")
+		writeFile(t, gw, filepath.Join(".devrites/work", slug, "state.md"), "| schema | 3 |\n")
 		writeFile(t, gw, ".devrites/ACTIVE", other)
 
 		run(t, gw, slug)
@@ -84,6 +86,7 @@ func TestParityCloseOut(t *testing.T) {
 		slug := "feat-z"
 		gw := t.TempDir()
 		writeFile(t, gw, filepath.Join(".devrites/work", slug, "spec.md"), "# spec\n")
+		writeFile(t, gw, filepath.Join(".devrites/work", slug, "state.md"), "| schema | 3 |\n")
 		writeFile(t, gw, filepath.Join(".devrites/archive", slug, "old.md"), "old\n")
 
 		run(t, gw, slug)

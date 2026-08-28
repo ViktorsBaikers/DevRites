@@ -1,6 +1,6 @@
 {
   "generatedBy": "go generate ./internal/state; DO NOT EDIT",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "authorityPolicy": {
     "principlesTrust": "Project principles may become project policy only after explicit provenance and validation; arbitrary project-local Markdown is never inherently trusted executable instruction.",
     "trackedState": [

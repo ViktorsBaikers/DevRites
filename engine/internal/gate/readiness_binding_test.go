@@ -77,7 +77,13 @@ func TestReadinessBindingBindsOnlyStableBuildInputs(t *testing.T) {
 	}
 
 	for _, name := range []string{"state.md", "questions.md", "decisions.md", "assumptions.md", "eng-review.md", "evidence.md", "review.md", "seal.md", "handoff.md", "ambient.md"} {
-		testutil.WriteFile(t, filepath.Join(workspace, name), "# Mutable\n\nChanged outside the stable contract.\n")
+		// state.md stays a valid v5 workspace when mutated: the schema row is
+		// part of the contract, not part of the bound inputs.
+		body := "# Mutable\n\nChanged outside the stable contract.\n"
+		if name == "state.md" {
+			body = "| phase | build |\n| schema | 3 |\n" + body
+		}
+		testutil.WriteFile(t, filepath.Join(workspace, name), body)
 		if got := mustReadinessBinding(t, root, "stable"); got != baseline {
 			t.Fatalf("excluded %s altered binding", name)
 		}
@@ -365,7 +371,7 @@ func writeReadinessFixture(t *testing.T, root, slug, phase string) string {
 	t.Helper()
 	workspace := filepath.Join(root, "work", slug)
 	for name, body := range map[string]string{
-		"state.md":             "| phase | " + phase + " |\n",
+		"state.md":             "| phase | " + phase + " |\n| schema | 3 |\n",
 		"brief.md":             "# Brief\n\nReady.\n",
 		"spec.md":              "# Spec\n\nReady.\n",
 		"decisions.md":         "# Decisions\n\nNone.\n",

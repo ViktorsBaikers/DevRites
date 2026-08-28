@@ -45,6 +45,9 @@ func writeCandidateTestWorkspace(t *testing.T, manifest string) (project, root s
 			t.Fatal(err)
 		}
 	}
+	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("| schema | 3 |\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	return project, root
 }
 

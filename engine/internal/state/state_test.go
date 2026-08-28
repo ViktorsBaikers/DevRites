@@ -703,7 +703,7 @@ func TestStatusRejectsCorruptStateMarkdownWithoutContentDisclosure(t *testing.T)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "state.md"), []byte("| phase | build |\x00\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "state.md"), []byte("| phase | build |\x00\n| schema | 3 |\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	want := `compute status: feature "corrupt": state.md is malformed (malformed_markdown); repair state.md and retry`
@@ -720,7 +720,7 @@ func TestOnlyCanonicalWorkLayoutIsDiscovered(t *testing.T) {
 	if err := os.MkdirAll(legacy, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(legacy, "state.md"), []byte("- Phase: spec\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(legacy, "state.md"), []byte("- Phase: spec\n- Schema: 3\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Status(root, "alias"); err == nil {

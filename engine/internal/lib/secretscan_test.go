@@ -348,6 +348,7 @@ func TestSecretScanBlocksHighSeverityTouchedFile(t *testing.T) {
 	root := filepath.Join(project, ".devrites")
 	testutil.WriteFile(t, filepath.Join(root, "ACTIVE"), "leak\n")
 	testutil.WriteFile(t, filepath.Join(root, "work", "leak", "touched-files.md"), candidateTestManifest(candidateTestRow{state: "present", path: "secrets.txt", slice: "S-1", reason: "Credential check."}))
+	testutil.WriteFile(t, filepath.Join(root, "work", "leak", "state.md"), "| schema | 3 |\n")
 	secret := "ghp_" + strings.Repeat("f", 32)
 	testutil.WriteFile(t, filepath.Join(project, "secrets.txt"), secret+"\n")
 	var out, err bytes.Buffer

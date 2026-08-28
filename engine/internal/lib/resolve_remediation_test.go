@@ -55,6 +55,6 @@ func resolveWorkspace(t *testing.T, questions string) string {
 	root := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(root, "ACTIVE"), "feat\n")
 	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "questions.md"), questions)
-	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "state.md"), "- Status: running\n- Next step: continue\n")
+	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "state.md"), "- Status: running\n- Next step: continue\n- Schema: 3\n")
 	return root
 }
