@@ -16,6 +16,8 @@ Use native file search; do not use engine miners, indexes, telemetry, or agents.
 
 - Keep two-feature corrections or one rationale-backed durable product/architecture decision.
 - Verify live claims; cite currentness. Unverifiable = `unknown`, not false.
+- Source order: live repository source outranks an archive's recorded claim; where they
+  conflict, follow live and record the delta as part of the finding.
 - Name trigger/non-trigger; drop generic, stale, one-off, unbounded advice.
 - Search instructions/standards/ADRs for duplicate, contrary, or superseded guidance;
   choose one canonical home + discovery route.

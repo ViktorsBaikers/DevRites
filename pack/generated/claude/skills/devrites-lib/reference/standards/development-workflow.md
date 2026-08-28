@@ -10,8 +10,16 @@ Ship small, integrate often, and keep the main branch releasable. Workflow phase
 - Prefer short-lived branches off the main branch.
 - The main branch is **always in a releasable state**. Validate every change through a
   **fast, reliable CI pipeline** (tests + build) before it merges.
+- **Trunk broken?** Revert first (default repair); fix forward only when revert is harder. Red trunk blocks all merges.
 - Hide incomplete work behind a **feature flag / toggle** rather than a long branch, so
   partial work can land without blocking releases or breaking the trunk.
+
+## Feature-flag lifecycle
+
+- Name the **removal trigger** at flag creation; delete the flag once the work ships — a
+  flag past its trigger is **flag debt**, a review finding. Prove **both states**
+  ([`testing.md`](testing.md)); widen rollout only with the rollback path recorded
+  ([`data-integrity.md`](data-integrity.md)).
 
 ## Review gate
 - A human reviews every change before merge; `code-review.md` owns review scope and evidence.

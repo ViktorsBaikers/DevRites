@@ -26,8 +26,8 @@ these are the floor, not the ceiling.
 - **Test** with keyboard, a screen reader, and an automated checker (e.g. axe): early.
 
 ## Motion
-- Purposeful only; UI feedback ~≤200 ms, transitions ~≤500 ms. Never animate to mask slow
-  loading. Honor `prefers-reduced-motion` (reduce/remove non-essential motion).
+- Purposeful only; UI feedback ~≤200 ms, transitions ~≤500 ms (class table below). Never
+  animate to mask slow loading; honor `prefers-reduced-motion`.
 
 ## Responsive
 - Fluid layouts; no fixed widths that break. Verify at **320 / 768 / 1024 / 1440** px; no

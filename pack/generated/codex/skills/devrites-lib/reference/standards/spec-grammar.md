@@ -85,11 +85,10 @@ a separate **`## Success metrics`** heading:
 - Support tickets about export drop by half within a quarter
 ```
 
-Why the split earns its place: an outcome metric tagged `AC-###` poisons traceability in
-both directions. No slice can honestly `Satisfies:` a quarterly KPI, and no feature test can
-observe a quarter of production traffic. The metric still matters (it is *why* the feature
-exists) but belongs to intent (`brief.md` / `spec.md` overview), not criteria the lifecycle
-proves. The load-bearing test: **can one slice make this true and one test show it?** If no,
+Why the split: an outcome metric tagged `AC-###` poisons traceability both ways — no slice
+can honestly `Satisfies:` a quarterly KPI and no test observes a quarter of traffic. The
+metric matters (it is *why* the feature exists) but belongs to intent, not provable
+criteria. The load-bearing test: **can one slice make this true and one test show it?** If no,
 it is a success metric, not an acceptance criterion. Native traceability reviews map only
 buildable `AC-###` IDs and meanings.
 
@@ -190,7 +189,7 @@ readiness.
 
 ## Unresolved-question markers (fail closed)
 
-- `spec.md` may mark an unknown in place as `` `[NEEDS DECISION: q-YYYY-MM-DD-NNN]` `` beside the affected requirement/criterion; released workspaces use their recorded `Q-###` form.
+- `spec.md` may mark an unknown in place as `` `[NEEDS DECISION: q-YYYY-MM-DD-NNN]` `` beside the affected requirement/criterion; released workspaces use their recorded `Q-###` form. A free-text `` `[NEEDS CLARIFICATION: <question>]` `` placeholder is the drafting form from the spec template; it converts to the id-bound marker before readiness.
 - The id must exist in `questions.md`, status open, with a `gate:` naming the resolving phase. Spec readiness treats any surviving marker as an open-question blocker (fail closed).
 - Resolution removes the marker in the same edit that records the answer; markers pointing at resolved/dropped ids block too.
 - Markers are forbidden in plan-stage artifacts and inside acceptance-criteria rows — unresolved criteria get reclassified or removed, not fenced.

@@ -16,6 +16,17 @@ recoverable.
 - If you catch, either recover meaningfully, or rethrow/wrap with added context. Don't
   log-and-continue past an error you didn't handle.
 
+## Classify the outcome before retrying
+
+Never retry blind — match the outcome first:
+
+- **Rejected** (refused: validation/authz/conflict): fix input; unchanged retry fails again.
+- **Unknown** (timed out mid-call): check state at the source before any retry.
+- **Partial** (half-committed): [`data-integrity.md`](data-integrity.md) § partial failure — reconcile or roll back, never resume blind.
+- **Clean failure** (not started / fully rolled back): safe to retry after fixing the cause.
+
+**Failing case:** an **Unknown** outcome retried unchanged double-applies (duplicate charge). Idempotency: [`data-integrity.md`](data-integrity.md); outcome taxonomies: [`integration-reliability.md`](integration-reliability.md). Not provable → `cannot_verify` and stop.
+
 ## Meaningful messages
 - Error messages state what failed, the relevant context (ids, inputs, not secrets),
   and ideally how to recover. Cryptic messages cost hours.

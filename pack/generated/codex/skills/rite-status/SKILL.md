@@ -18,6 +18,8 @@ artifacts only as needed. Never infer lifecycle state from `README.md` or chat.
 
 If no workspace exists, recommend `$rite-spec <feature>` and stop.
 
+If `state.md` is unreadable/malformed: report a gap with the defect and stop — never infer the phase from other files; `$rite-doctor`/`$rite-upgrade` own repair.
+
 ## Report
 
 1. feature and one-line objective;

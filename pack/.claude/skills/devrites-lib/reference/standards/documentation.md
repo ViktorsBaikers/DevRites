@@ -4,6 +4,12 @@ Document intent/decisions; public inputs, outputs, errors, and gotchas; non-obvi
 constraints; and real build/test/run commands. Update with behavior; prefer one runnable
 example. Do not restate code or types.
 
+## Drift check (docs describe what runs)
+
+A documented command/example that no longer runs is a **documentation-drift finding** at
+review/polish: run it — failure plus output is the evidence. A behavior change updates the
+doc or records the divergence; doc and code never hold contradictory "truths".
+
 ## Record decisions
 
 - Capture significant context, decision, consequences, accepted trade-off, change trigger,
