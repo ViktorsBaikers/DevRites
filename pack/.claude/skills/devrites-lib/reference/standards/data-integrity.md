@@ -16,6 +16,10 @@ Name before planning implementation:
 - retention/deletion obligation, including backups, replicas, caches, indexes, and
   derived stores;
 - old and new readers/writers that coexist during rollout.
+- Timestamps normalize before they persist: one storage scale (UTC instants), explicit
+  conversion only at input/display boundaries; two writers storing different scales for
+  the same fact is an invariant violation caught in review. TZ/DST behavioral coverage
+  lives in [`testing.md`](testing.md).
 
 An invariant enforced only by prose is not a control. Prefer a database constraint or
 atomic storage primitive, then add behavioral proof at the public surface.

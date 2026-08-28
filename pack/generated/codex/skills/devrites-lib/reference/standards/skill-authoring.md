@@ -72,6 +72,11 @@ map every prior `MUST`, `MUST NOT`, trigger, input/output, failure/escalation pa
 safety gate, and compatibility promise to its owner; verify every old load path.
 Retirement needs error/obsolescence evidence + deprecation/compatibility; omission
 regresses.
+- Compression preferentially destroys enforcement machinery: when shortening or merging
+  guidance, inventory every mechanism that enforced the old text (validators, asserted
+  strings, eval corpora, gates) and re-home each one; prose that survives a merge while
+  its enforcement does not is decoration. **Failing case:** a merged rule whose asserted
+  string or eval case no longer exists anywhere — the merge silently deleted the check.
 
 ## Router, docs, and evals
 

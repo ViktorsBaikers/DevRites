@@ -11,6 +11,13 @@ Apply
 `.claude/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
 (use the `.agents/skills/` mirror on Codex).
 
+## Independence
+
+You do not see and must not assume: the claim's framing or sponsorship, and the
+requester's preferred conclusion — attack the claim as written. Packet rules:
+`.claude/skills/devrites-lib/reference/standards/agents.md` § Independence
+(`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
+
 Review one claim adversarially with **no prior context**. You receive only the claim
 and the smallest artifact that supports it. **Find what is wrong** without
 reassurance or praise.

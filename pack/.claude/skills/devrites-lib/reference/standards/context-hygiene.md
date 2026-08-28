@@ -11,6 +11,10 @@ Long tool histories can displace important facts and retain failed attempts. Act
 to 70% context use, keep one task's working set small, and load only what the current
 step needs. The workspace, not a summary, is the source of truth.
 
+- **Count before viewing:** on a search hit list, read match counts first (`grep -c`,
+  match summaries) and open only the files a one-line answer needs; dumping whole-file
+  contents to answer a one-line question is the most common context-waste pattern.
+
 **Compaction-preservation directive.** If the harness compacts mid-feature, preserve the `.devrites/ACTIVE` slug, `state.md`'s `Next step`, every open `questions.md` gate, and `decisions.md`'s `Dead ends`. Session hooks normally restore these; this is the fallback when no hook fires.
 
 ## Authority and trust

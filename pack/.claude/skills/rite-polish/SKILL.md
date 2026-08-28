@@ -20,6 +20,10 @@ live in `reference/code.md` and `reference/ui.md`; read only the phase in scope.
   Polish owns every candidate-affecting correction and durable rollup before Review.
 - Feature scope only.
 - For UI, **normalize before polishing**. Do not add decoration on top of drift.
+- **Bounded polish passes.** Verification runs in bounded passes, not a loop: after the
+  Phase 4 assessment, at most one more correction round for **new** findings, then stop —
+  residual subjective preference is recorded in `polish-report.md`, not re-polished.
+  **Failing case:** the same surface reopened a third time with no new failing evidence.
 - **Root selects; wright edits.** The controlling chat assesses and reconciles, but every
   accepted source/test correction is dispatched to the sole writer,
   `devrites-slice-wright`, through

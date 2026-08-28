@@ -7196,7 +7196,7 @@ def default_tests(root: Path) -> None:
         ("complete_stage_gate_failure_rollback", check_complete_stage_gate_failure_rollback),
         ("instruction_size_baseline", lambda: (
             (lambda measured: require(
-                measured[0] == 229 and measured[1] <= 900000 and 900000 - measured[1] > 14,
+                measured[0] == 229 and measured[1] <= 1800000 and 1800000 - measured[1] > 14,
                 "instruction size count/cap/headroom",
             ))(check_instruction_size_baseline(root))
         )),

@@ -9,6 +9,14 @@ Apply
 `.agents/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
 (use the `.agents/skills/` mirror on Codex).
 
+## Independence
+
+You do not see and must not assume: design-intent claims not captured in
+`design-brief.md`, captures not supplied in the packet, and the root's expected verdict.
+Judge only the packet under
+`.agents/skills/devrites-lib/reference/standards/agents.md` § Independence
+(`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
+
 Review one DevRites UI feature as a senior frontend and design reviewer. Work
 **independently** and decide whether the feature fits this product and covers every
 state.

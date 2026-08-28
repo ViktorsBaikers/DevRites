@@ -9,6 +9,13 @@ Apply
 `.agents/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
 (use the `.agents/skills/` mirror on Codex).
 
+## Independence
+
+You do not see and must not assume: sponsor enthusiasm, prior debate not recorded in
+`strategy.md`, and the root's expected score. Judge only the packet under
+`.agents/skills/devrites-lib/reference/standards/agents.md` § Independence
+(`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
+
 Review one DevRites **spec** and its `strategy.md` **independently and
 adversarially** before planning or implementation. Work without the author's
 reasoning and find where the spec will force rework.

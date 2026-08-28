@@ -21,6 +21,13 @@ One binary test per pair; both true ⇒ ask once.
 | `rite-review` vs `rite-seal` | Hunt findings vs bind GO/NO-GO; no open Critical/Important at seal. |
 | `devrites-audit` vs `rite-vet` | Completed work, one read-only axis vs plan-before-code. Plan → vet. |
 | `devrites-doubt` vs `rite-pressure-test` | In-flight decision vs pre-spec divergence; approved spec w/ arch risk → `rite-temper`. |
+| `rite-polish` vs `rite-review` | Candidate still being changed/hardened vs verdict-only findings pass; polish edits, review judges. |
+| `devrites-frontend-craft` vs `rite-polish` | Building new UI vs finishing built UI; craft sets standards at build, polish runs the catch pass. |
+| `devrites-ux-shape` vs `rite-spec` | Interaction/state/flow design question vs behavior-contract gap; shaped UX feeds the spec. |
+| `devrites-prose-craft` vs `devrites-frontend-craft` | Long-form prose (docs/README/replies) vs visible product copy; boundary lives in `browser-proof-checklist.md`. |
+| `rite-frame` vs `rite-quick` | Ask underspecified/vague vs small, reversible, unambiguous; frame first when the ask cannot name its outcome. |
+| `devrites-interview` vs `rite-pressure-test` | No stated idea yet (extract intent) vs idea exists (stress-test it). |
+| `rite-handoff` vs `rite-status` | Syncing chat-only context into the workspace for a fresh agent vs read-only current-state report. |
 
 Wrong-skill fire: stop, admit it, switch rites.
 

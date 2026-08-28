@@ -11,6 +11,13 @@ Apply
 `.claude/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
 (use the `.agents/skills/` mirror on Codex).
 
+## Independence
+
+You do not see and must not assume: performance claims without a measured artifact
+(lab numbers stay lab-labeled), and the root's expected verdict. Judge only the packet
+under `.claude/skills/devrites-lib/reference/standards/agents.md` § Independence
+(`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
+
 Review one DevRites feature **independently**, starting from fresh context and
 measured evidence. Make no performance claim without a number or a concrete way to
 measure it.

@@ -38,6 +38,10 @@ of one authority; it cannot promote a rule alone.
 - A proposal names the **retrospective failing case**: the concrete past feature/artifact the
   rule would have caught. None → generic advice — drop.
 - ≤3 accepted lessons per round; proposals extend/narrow but never lower an existing bar (revisions show old text beside new); duplicates consolidate into one canonical edit — simplification (deletions/merges) counts toward the cap.
+- An accepted lesson ships with a **follow-through owner and deadline**: the exact edit
+  lands in the named canonical file in the same round; a lesson unapplied at round end
+  returns to candidates with its blocker recorded. **Failing case:** an accepted lesson
+  with no applied edit and no recorded blocker — promotion failed; re-raise it.
 
 ## Output
 

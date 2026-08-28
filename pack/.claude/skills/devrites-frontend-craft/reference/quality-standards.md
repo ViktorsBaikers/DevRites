@@ -158,10 +158,15 @@ three axes from light:
 If the project has dark tokens already, follow them. If not and dark is in
 scope, propose the compensation rather than ship a flat invert.
 
-### Focus & states (8 required)
+### Focus & states (8 required, 3 conditional)
 Every interactive element ships **8 visual/interaction states**:
 `default`, `hover`, `active`, `focus-visible`, `disabled`, `loading`,
-`selected`, and an error/invalid surface when relevant.
+`selected`, and an error/invalid surface when relevant. Data surfaces add the
+conditional three whenever the data can produce them: **partial** (a missing field
+renders an explicit em-dash/placeholder — never `null` or `0`), **conflict** (a
+concurrent-edit/version-mismatch surface), and **offline/unreachable** (stale-data
+banner with retry, not a silently cached render). **Failing case:** a row with a
+missing value renders `0` or blank and the review reads it as real data.
 - `:focus-visible` ring: **2 - 3 px**, **≥ 3:1** contrast against the
   background, **offset 2 px** so the focus is unambiguous on dense layouts.
 

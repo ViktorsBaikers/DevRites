@@ -21,6 +21,10 @@ Next: <one recommended action>
 Record: <primary durable artifact path>
 ```
 
+Pre-send check: delete an opening sentence that only announces ("I'll now…") and a
+closing sentence that only recaps; then apply the two-line test — a reader seeing only
+the first and last lines must know what happened and what to do next.
+
 If a required decision, proof, or invariant is missing, use one of these states
 instead of `Done`:
 

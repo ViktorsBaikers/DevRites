@@ -32,6 +32,9 @@ Never retry blind — match the outcome first:
   and ideally how to recover. Cryptic messages cost hours.
 - Distinguish *expected* failures (validation, not-found) from *unexpected* (bugs);
   handle the first as flow, surface the second.
+- Structured error surfaces carry one consistent envelope — **severity, stable code,
+  human message, fix** — so callers and logs can act programmatically; a bare string that
+  forces callers to parse prose is a contract gap.
 
 ## Fail closed (security-relevant paths)
 - On error in an auth/permission/transaction path, **deny and roll back**: never
