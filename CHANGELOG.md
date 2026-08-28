@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [4.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.5.0...v4.6.0) (2026-08-28)
+
+### Added
+
+* **skills:** markdown knowledge-layer round 4 ([#48](https://github.com/ViktorsBaikers/DevRites/issues/48)) ([9dab7af](https://github.com/ViktorsBaikers/DevRites/commit/9dab7af644c219ab3f3411b4a701947b9da9108b))
+
 ## [4.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.4.2...v4.5.0) (2026-08-27)
 
 ### Added
