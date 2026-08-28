@@ -17,6 +17,7 @@ const (
 	rootUnused rootMode = iota
 	rootLenient
 	rootStrict
+	rootStrictUsage
 )
 
 // rootModeFor is the single policy boundary between diagnostic/read-only
@@ -32,6 +33,18 @@ func rootModeFor(command string, args []string) rootMode {
 		switch subcommand {
 		case "resolve", "close":
 			return rootStrict
+		}
+		return rootUnused
+	case "check":
+		switch subcommand {
+		case "candidate", "readiness", "seal", "task-graph":
+			return rootStrictUsage
+		}
+		return rootUnused
+	case "observe":
+		switch subcommand {
+		case "summary":
+			return rootStrictUsage
 		}
 		return rootUnused
 	default:
@@ -67,6 +80,14 @@ func resolveRootFor(command string, args []string) (string, int, error) {
 			return fallbackRoot(), exitOK, nil
 		}
 		return "", exitUsage, err
+	case rootStrictUsage:
+		root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
+		if err != nil {
+			// Workspace-requiring read/check commands have always mapped every
+			// resolution failure to the usage exit code.
+			return "", exitUsage, err
+		}
+		return root, exitOK, nil
 	default:
 		panic("unknown root resolution mode")
 	}

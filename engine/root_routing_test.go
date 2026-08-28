@@ -16,7 +16,13 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		want    rootMode
 	}{
 		{name: "unrelated command", command: "unknown", want: rootUnused},
-		{name: "check family", command: "check", args: []string{"readiness"}, want: rootUnused},
+		{name: "check candidate", command: "check", args: []string{"candidate"}, want: rootStrictUsage},
+		{name: "check readiness", command: "check", args: []string{"readiness"}, want: rootStrictUsage},
+		{name: "check seal", command: "check", args: []string{"seal"}, want: rootStrictUsage},
+		{name: "check task-graph", command: "check", args: []string{"task-graph"}, want: rootStrictUsage},
+		{name: "check path-disjoint", command: "check", args: []string{"path-disjoint"}, want: rootUnused},
+		{name: "check skill-trust", command: "check", args: []string{"skill-trust"}, want: rootUnused},
+		{name: "observe summary", command: "observe", args: []string{"summary"}, want: rootStrictUsage},
 		{name: "resolve", command: "state", args: []string{"resolve"}, want: rootStrict},
 		{name: "close", command: "state", args: []string{"close"}, want: rootStrict},
 		{name: "unknown state command", command: "state", args: []string{"unknown"}, want: rootUnused},

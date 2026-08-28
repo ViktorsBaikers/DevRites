@@ -11,7 +11,6 @@ import (
 	"github.com/devrites/devrites/internal/install"
 	"github.com/devrites/devrites/internal/lib"
 	"github.com/devrites/devrites/internal/parallel"
-	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/version"
 )
 
@@ -111,9 +110,9 @@ func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 	sub, rest := args[0], args[1:]
 	switch sub {
 	case "candidate":
-		return cmdCandidate(rest, stdout, stderr)
+		return cmdCandidate(root, rest, stdout, stderr)
 	case "readiness", "seal":
-		return cmdGate(gate.Kind(sub), rest, stdout, stderr)
+		return cmdGate(root, gate.Kind(sub), rest, stdout, stderr)
 	case "path-disjoint":
 		return parallel.Run("path-disjoint", rest, stdin, stdout, stderr)
 	case "task-graph":
@@ -126,14 +125,9 @@ func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 	}
 }
 
-func cmdCandidate(args []string, stdout, stderr io.Writer) int {
+func cmdCandidate(root string, args []string, stdout, stderr io.Writer) int {
 	if len(args) != 1 {
 		fmt.Fprintln(stderr, "usage: devrites-engine check candidate <slug>")
-		return exitUsage
-	}
-	root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
 	}
 	digest, files, err := lib.CandidateIdentity(root, args[0])
@@ -164,15 +158,10 @@ func cmdState(root string, args []string, stdout, stderr io.Writer) int {
 // cmdGate runs readiness completeness or the final seal aggregate. Missing or
 // failed requirements return the HITL pause code; invalid gate state returns
 // the usage/internal code.
-func cmdGate(kind gate.Kind, args []string, stdout, stderr io.Writer) int {
+func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Writer) int {
 	emitBinding := kind == gate.Readiness && len(args) == 2 && args[0] == "--emit-binding"
 	if !emitBinding && len(args) != 1 {
 		fmt.Fprintf(stderr, "usage: devrites-engine check %s <slug>\n", kind)
-		return exitUsage
-	}
-	root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
 	}
 	if emitBinding {
@@ -212,14 +201,6 @@ func cmdTaskGraph(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "usage: devrites-engine check task-graph <slug>")
 		return exitUsage
 	}
-	if root == "" {
-		var err error
-		root, err = state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
-		if err != nil {
-			fmt.Fprintf(stderr, "devrites: %v\n", err)
-			return exitUsage
-		}
-	}
 	return lib.RunTaskGraphCheck(root, args[0], stdout, stderr)
 }
 
@@ -239,14 +220,6 @@ func cmdObserve(root string, args []string, stdout, stderr io.Writer) int {
 	if args[0] != "summary" {
 		fmt.Fprintf(stderr, "devrites: unknown observe command %q\n", args[0])
 		return exitUsage
-	}
-	if root == "" {
-		var err error
-		root, err = state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
-		if err != nil {
-			fmt.Fprintf(stderr, "devrites: %v\n", err)
-			return exitUsage
-		}
 	}
 	slug, code, err := lib.ActiveSlug(root, args[1:])
 	if err != nil {
