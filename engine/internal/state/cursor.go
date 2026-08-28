@@ -208,21 +208,36 @@ func ConvertCursorToTable(lines []string) ([]string, bool) {
 		if strings.Contains(value, "|") {
 			continue
 		}
+		spelling, ok := canonicalCursorSpelling(key)
+		if !ok {
+			continue
+		}
 		indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
-		out[i] = indent + "| " + normalizeCursorKey(key) + " | " + value + " |"
+		out[i] = indent + "| " + spelling + " | " + value + " |"
 		changed = true
 	}
 	return out, changed
 }
 
 func isMigratableCursorKey(key string) bool {
-	switch normalizeCursorKey(key) {
-	case CursorPhase, CursorStatus, CursorNextAction, CursorQuestionID,
+	_, ok := canonicalCursorSpelling(key)
+	return ok
+}
+
+// canonicalCursorSpelling maps a cursor key (including aliases) to the
+// canonical table-row spelling. Matching is normalization-based, so
+// "Next step" resolves to the "next_action" spelling.
+func canonicalCursorSpelling(key string) (string, bool) {
+	normalized := normalizeCursorKey(key)
+	canonicals := []string{CursorPhase, CursorStatus, CursorNextAction, CursorQuestionID,
 		CursorActiveSlice, CursorAFKSlicesRemaining, CursorReturnPhase,
-		CursorReturnNextAction, CursorSchema:
-		return true
+		CursorReturnNextAction, CursorSchema}
+	for _, canonical := range canonicals {
+		if normalized == normalizeCursorKey(canonical) {
+			return canonical, true
+		}
 	}
-	return false
+	return "", false
 }
 
 func structuralCursorLines(lines []string) ([]string, bool) {

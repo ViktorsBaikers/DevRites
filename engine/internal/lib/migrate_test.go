@@ -16,7 +16,7 @@ func seedPreV5Workspace(t *testing.T, phase string) (root, workspace string) {
 	if err := os.MkdirAll(workspace, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	body := "- Phase: " + phase + "\n- Status: running\n\n# Status\n\nMinting middleware landed.\n"
+	body := "- Phase: " + phase + "\n- Status: running\n- Next step: continue slice S-2\n\n# Status\n\nMinting middleware landed.\n"
 	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -59,6 +59,12 @@ func TestMigrateExecutesCursorConversionAndStubs(t *testing.T) {
 	text := string(body)
 	if !strings.Contains(text, "| phase | build |") || !strings.Contains(text, "| status | running |") {
 		t.Fatalf("cursor bullets not converted:\n%s", text)
+	}
+	if !strings.Contains(text, "| next_action | continue slice S-2 |") {
+		t.Fatalf("next step not converted to canonical spelling:\n%s", text)
+	}
+	if strings.Contains(text, "- Next step:") {
+		t.Fatalf("legacy next step bullet survived:\n%s", text)
 	}
 	if !strings.Contains(text, "| schema | 3 |") {
 		t.Fatalf("schema row missing:\n%s", text)
