@@ -22,6 +22,7 @@ devrites-engine check seal <slug>
 
 devrites-engine state resolve <qid> "<answer>"
 devrites-engine state close <slug>
+devrites-engine migrate <slug> [--dry-run] [--answer id=choice]
 
 devrites-engine secret-scan [--staged] [--stdin] [slug]
 devrites-engine open-visual <path-or-name> [--slug <slug>] [--no-open]
@@ -30,8 +31,7 @@ devrites-engine version
 
 Commands outside this operational list and the standard help/version forms are
 unsupported. There are no legacy engine aliases, tombstones, agent-protocol
-versions, semantic-readiness digests, compatibility telemetry, or workspace
-migration command.
+versions, semantic-readiness digests, or compatibility telemetry.
 `check candidate` is additive; no existing engine command or public `/rite-*`
 workflow was removed or renamed.
 

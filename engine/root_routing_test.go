@@ -40,7 +40,7 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 }
 
 func TestRemovedCommandsAreUnknown(t *testing.T) {
-	for _, command := range []string{"snapshot", "readiness", "seal", "spec-validate", "check-acceptance", "evidence-fresh", "coverage", "doubt-coverage", "test-integrity", "review-integrity", "build-readiness", "readiness-digest", "analyze", "ledger", "resolve", "clarify-return", "tick-afk", "recovery", "close-out", "migrate", "status", "budget", "mutation-gate", "validate-pack", "doctor"} {
+	for _, command := range []string{"snapshot", "readiness", "seal", "spec-validate", "check-acceptance", "evidence-fresh", "coverage", "doubt-coverage", "test-integrity", "review-integrity", "build-readiness", "readiness-digest", "analyze", "ledger", "resolve", "clarify-return", "tick-afk", "recovery", "close-out", "status", "budget", "mutation-gate", "validate-pack", "doctor"} {
 		for _, args := range [][]string{{command}, {command, "--json"}} {
 			t.Run(strings.Join(args, "-"), func(t *testing.T) {
 				var stdout, stderr bytes.Buffer

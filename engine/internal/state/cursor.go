@@ -20,6 +20,7 @@ const (
 	CursorAFKSlicesRemaining = "afk_slices_remaining"
 	CursorReturnPhase        = "return_phase"
 	CursorReturnNextAction   = "return_next_action"
+	CursorSchema             = "schema"
 )
 
 var cursorKeyAliases = map[string]string{
@@ -166,6 +167,62 @@ func DeleteCursorField(lines []string, key string) []string {
 		out = append(out, lines[i])
 	}
 	return out
+}
+
+// CursorForm reports the presentation of the state.md cursor: "table" when a
+// canonical table row exists, "legacy" when only bullet fields exist, and
+// "none" when neither is present.
+func CursorForm(lines []string) string {
+	form := "none"
+	for _, line := range lines {
+		_, _, kind, ok := parseCursorLine(line)
+		if !ok {
+			continue
+		}
+		if kind == cursorLineTable {
+			return "table"
+		}
+		if form == "none" {
+			form = "legacy"
+		}
+	}
+	return form
+}
+
+// ConvertCursorToTable rewrites legacy bullet cursor fields into canonical
+// table rows in place. Prose lines, including log bullets that merely resemble
+// cursor fields, are preserved, and a value carrying a raw pipe keeps its
+// bullet form because a table cell cannot represent it. It reports whether any
+// line changed.
+func ConvertCursorToTable(lines []string) ([]string, bool) {
+	changed := false
+	out := append([]string(nil), lines...)
+	for i, line := range out {
+		key, value, kind, ok := parseCursorLine(line)
+		if !ok || kind != cursorLineLegacy {
+			continue
+		}
+		if !isMigratableCursorKey(key) {
+			continue
+		}
+		if strings.Contains(value, "|") {
+			continue
+		}
+		indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		out[i] = indent + "| " + normalizeCursorKey(key) + " | " + value + " |"
+		changed = true
+	}
+	return out, changed
+}
+
+func isMigratableCursorKey(key string) bool {
+	switch normalizeCursorKey(key) {
+	case CursorPhase, CursorStatus, CursorNextAction, CursorQuestionID,
+		CursorActiveSlice, CursorAFKSlicesRemaining, CursorReturnPhase,
+		CursorReturnNextAction, CursorSchema:
+		return true
+	}
+	return false
 }
 
 func structuralCursorLines(lines []string) ([]string, bool) {

@@ -32,6 +32,7 @@ Usage:
   devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/cleanup
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
+  devrites-engine migrate <slug> [--dry-run]  Normalize a pre-v5 workspace to the current schema
   devrites-engine secret-scan [--staged] [--stdin] [slug]  Scan exact staged blobs, stdin, or touched files; HIGH blocks
   devrites-engine open-visual <path-or-name> [--slug <slug>] [--no-open]
                                          Resolve a visual HTML file, optionally open it locally, print agent paths
@@ -86,6 +87,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdObserve(root, args[1:], stdout, stderr)
 	case "state":
 		return cmdState(root, args[1:], stdout, stderr)
+	case "migrate":
+		return lib.Migrate(root, args[1:], stdout, stderr)
 	case "secret-scan":
 		return lib.SecretScan(root, args[1:], stdin, stdout, stderr)
 	case "open-visual":
