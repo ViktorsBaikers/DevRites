@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/devrites/devrites/internal/state"
@@ -42,9 +43,19 @@ func workflowPhases() []workflowPhase {
 }
 
 func main() {
-	outPath := flag.String("out", "workflow_manifest.json", "output path")
-	check := flag.Bool("check", false, "fail when the output is stale")
-	flag.Parse()
+	os.Exit(run(os.Args[1:], os.Stderr))
+}
+
+// run is the testable entry point. It returns the process exit code.
+func run(args []string, stderr io.Writer) int {
+	flags := flag.NewFlagSet("workflowmanifest", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	outPath := flags.String("out", "workflow_manifest.json", "output path")
+	check := flags.Bool("check", false, "fail when the output is stale")
+	if err := flags.Parse(args); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
 
 	document := struct {
 		GeneratedBy      string                 `json:"generatedBy"`
@@ -61,25 +72,25 @@ func main() {
 	}
 	data, err := json.MarshalIndent(document, "", "  ")
 	if err != nil {
-		fatal(err)
+		fmt.Fprintln(stderr, err)
+		return 1
 	}
 	data = append(data, '\n')
 	if *check {
 		current, err := os.ReadFile(*outPath)
 		if err != nil {
-			fatal(err)
+			fmt.Fprintln(stderr, err)
+			return 1
 		}
 		if !bytes.Equal(current, data) {
-			fatal(fmt.Errorf("%s is stale; run go generate ./internal/state", *outPath))
+			fmt.Fprintf(stderr, "%s is stale; run go generate ./internal/state\n", *outPath)
+			return 1
 		}
-		return
+		return 0
 	}
 	if err := os.WriteFile(*outPath, data, 0o644); err != nil {
-		fatal(err)
+		fmt.Fprintln(stderr, err)
+		return 1
 	}
-}
-
-func fatal(err error) {
-	fmt.Fprintln(os.Stderr, err)
-	os.Exit(1)
+	return 0
 }

@@ -44,6 +44,12 @@ to invent a root or convention.
   edge is not "internal" merely because both sides live in one monorepo.
 - Give mutable state one owner. If two services can write the same fact, define the
   authority, conflict rule, and reconciliation path before build.
+- **Topology records diverge from defaults, not ecosystem basics.** An entry earns its
+  line by stating what this repository does differently from the platform default; a
+  restatement of default behavior is noise that hides the entry that matters. **Failing
+  case:** “Postgres stores relational data” listed as a topology fact while the actual
+  cross-root contract goes unrecorded.
+  authority, conflict rule, and reconciliation path before build.
 - A dependency cycle is a boundary defect. Break it with an existing lower-level
   contract, dependency inversion, or a deliberately owned integration seam; do not
   hide it behind duplicated types or runtime import tricks.

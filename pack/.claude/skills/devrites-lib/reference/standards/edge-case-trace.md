@@ -56,7 +56,9 @@ Every applicable case receives one status:
 
 - `covered`: mapped to a REQ/AC and positive discriminating test or observed runtime proof;
 - `backstop`: an independent held-out, property/metamorphic, or direct behavioral check
-  names the wrong outcome it would detect;
+  names the wrong outcome it would detect — and is **exogenous**: not produced or
+  executed by the same code path it validates (a check the changed code also controls is
+  `covered` evidence, not a backstop);
 - `dismissed`: unreachable or irrelevant with a concrete reason and supporting evidence;
 - `unresolved`: a material case lacks a fact or proof surface and blocks the owning gate.
 

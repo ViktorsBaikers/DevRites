@@ -1,11 +1,11 @@
-# `.devrites/` state schema (v2)
+# `.devrites/` state schema (v3)
 
 The engine reads workflow state from plain files under `.devrites/`. Those
 human-editable files remain authoritative; the engine has no database or
 semantic cache.
 
 <!-- authority:schema-version:start -->
-`schemaVersion: 2`.
+`schemaVersion: 3`.
 <!-- authority:schema-version:end -->
 
 For root selection, supported legacy cursors, and the full artifact layout, see

@@ -9,6 +9,16 @@ import (
 	"strings"
 )
 
+// Test seams: indirection over the real primitives so discriminating tests
+// can inject transient failures without touching the filesystem.
+var (
+	writeLease     = WriteLease
+	removeWorktree = worktreeRemove
+	warnf          = func(format string, args ...any) {
+		fmt.Fprintf(os.Stderr, "warning: parallel: "+format+"\n", args...)
+	}
+)
+
 // CreateOpts configures parallel worktree creation.
 type CreateOpts struct {
 	Root    string
@@ -54,13 +64,16 @@ func Create(opts CreateOpts) (*Lease, error) {
 	createdBranches := make([]string, 0, len(opts.Slices))
 	cleanupPartial := func() {
 		for _, p := range createdPaths {
-			_ = worktreeRemove(opts.Root, p)
+			if err := removeWorktree(opts.Root, p); err != nil {
+				warnf("worktree cleanup %s: %v", p, err)
+			}
 		}
 		for _, b := range createdBranches {
-			_ = deleteBranch(opts.Root, b)
+			if err := deleteBranch(opts.Root, b); err != nil {
+				warnf("branch cleanup %s: %v", b, err)
+			}
 		}
 	}
-
 	slices := make([]LeaseSlice, 0, len(opts.Slices))
 	for _, sp := range opts.Slices {
 		if err := validateSliceID(sp.ID); err != nil {
@@ -252,12 +265,28 @@ func Integrate(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 	}
 
 	fail := func(reason error) (string, *Lease, error) {
-		_ = worktreeRemove(opts.Root, stageWT)
-		_ = deleteBranch(opts.Root, ibranch)
-		_, _ = git(opts.Root, "worktree", "prune")
+		if err := removeWorktree(opts.Root, stageWT); err != nil {
+			warnf("staging worktree cleanup: %v", err)
+		}
+		if err := deleteBranch(opts.Root, ibranch); err != nil {
+			warnf("integrate branch cleanup: %v", err)
+		}
+		if _, err := git(opts.Root, "worktree", "prune"); err != nil {
+			warnf("worktree prune: %v", err)
+		}
 		lease.Status = StatusIntegrateFailed
-		_ = WriteLease(leasePath, lease)
-		_ = ensureControlAtBase(opts.Root, base, true)
+		if err := writeLease(leasePath, lease); err != nil {
+			// The integrate-failed transition must survive a transient write
+			// failure: a stale running lease still blocks create and stays
+			// retryable, but the honest state must be recorded when possible.
+			if retryErr := writeLease(leasePath, lease); retryErr != nil {
+				warnf("lease %s still status=%s (write failed twice: %v)",
+					leasePath, StatusRunning, retryErr)
+			}
+		}
+		if err := ensureControlAtBase(opts.Root, base, true); err != nil {
+			warnf("control reset to base: %v", err)
+		}
 		return "", lease, reason
 	}
 
@@ -313,8 +342,18 @@ func Integrate(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 	if err != nil {
 		return fail(err)
 	}
-	_ = worktreeRemove(opts.Root, stageWT)
-	_, _ = git(opts.Root, "worktree", "prune")
+	if err := removeWorktree(opts.Root, stageWT); err != nil {
+		if _, statErr := os.Stat(stageWT); statErr == nil {
+			// The directory is genuinely stuck; failing now keeps the lease in
+			// integrate-failed and avoids compounding into un-cleanable branch
+			// state. Retrying integrate re-attempts the same removals.
+			return fail(fmt.Errorf("staging worktree could not be removed; retry integrate after cleanup: %w", err))
+		}
+		warnf("staging worktree cleanup: %v", err)
+	}
+	if _, err := git(opts.Root, "worktree", "prune"); err != nil {
+		warnf("worktree prune: %v", err)
+	}
 
 	if opts.ApplyToControl {
 		if err := mergeFFOnly(opts.Root, tip); err != nil {
@@ -361,17 +400,29 @@ func Cleanup(repoRoot, slug string, force bool) error {
 	}
 	for _, sl := range lease.Slices {
 		if sl.WorktreePath != "" {
-			_ = worktreeRemove(repoRoot, sl.WorktreePath)
-			_ = os.RemoveAll(sl.WorktreePath)
+			if err := removeWorktree(repoRoot, sl.WorktreePath); err != nil {
+				warnf("worktree cleanup %s: %v", sl.WorktreePath, err)
+			}
+			if err := os.RemoveAll(sl.WorktreePath); err != nil {
+				warnf("worktree dir cleanup %s: %v", sl.WorktreePath, err)
+			}
 		}
 		if sl.Branch != "" {
-			_ = deleteBranch(repoRoot, sl.Branch)
+			if err := deleteBranch(repoRoot, sl.Branch); err != nil {
+				warnf("branch cleanup %s: %v", sl.Branch, err)
+			}
 		}
 	}
 	ibranch := IntegrateBranchName(slug, lease.BatchID)
-	_ = deleteBranch(repoRoot, ibranch)
-	_ = os.RemoveAll(filepath.Join(ScratchRoot(repoRoot), lease.BatchID))
-	_, _ = git(repoRoot, "worktree", "prune")
+	if err := deleteBranch(repoRoot, ibranch); err != nil {
+		warnf("integrate branch cleanup %s: %v", ibranch, err)
+	}
+	if err := os.RemoveAll(filepath.Join(ScratchRoot(repoRoot), lease.BatchID)); err != nil {
+		warnf("scratch cleanup: %v", err)
+	}
+	if _, err := git(repoRoot, "worktree", "prune"); err != nil {
+		warnf("worktree prune: %v", err)
+	}
 	return ClearLease(leasePath)
 }
 

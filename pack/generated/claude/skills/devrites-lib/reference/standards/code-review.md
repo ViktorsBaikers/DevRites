@@ -17,7 +17,8 @@ If it does not, do not merge it.
 
 ## What to check (tests first)
 1. **Tests:** do they exist and prove the behavior + failure modes (empty, error,
-   boundary, concurrency)? Would they fail if the code were wrong?
+   boundary, concurrency)? Would they fail if the code were wrong? A `skip`/`only`/
+   `TODO` placeholder or assertion-free test is a finding, not coverage.
 2. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
 3. **Readability:** names, function size, control flow, intent obvious without the author.
 4. **Architecture:** right seam, coupling/cohesion, fits existing patterns, no premature
@@ -44,6 +45,10 @@ If it does not, do not merge it.
   never approval or silent demotion.
 - **Skipped checks are recorded.** A check you couldn't run gets a
   `Skipped: <check> — <why>` line.
+- **Unreviewed is not clean.** A report that never names an area does not prove that area
+  was inspected; the consolidated account names what was not covered or marks `gap`.
+  **Failing case:** a findings list silent on, say, migration safety is not a clean
+  migration review — name the inspection or the gap.
 - Let automation (linters, formatters, CI) catch the trivial stuff so review focuses on
   design and correctness.
 

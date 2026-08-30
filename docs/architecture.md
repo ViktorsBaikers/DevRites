@@ -212,7 +212,7 @@ delta; Clarify, Plan repair, Converge, Vet, Prove, Polish, Review, or Seal then
 performs it under normal gates. Candidate repair runs current real proof and
 never synthesizes a historical pass; ambiguous legacy candidate scope is a gap.
 
-The engine has no structural migration command or compatibility telemetry. It
+The engine owns deterministic v5 schema normalization (`devrites-engine migrate`) or compatibility telemetry. It
 directly reads the official v1/v2 bullet and v3 table `state.md` cursors without
 rewriting them. Wider pre-release compatibility experiments are not runtime
 contracts. See [ADR-0025](adr/0025-evidence-gated-workspace-upgrades.md) and

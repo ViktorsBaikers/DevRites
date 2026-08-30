@@ -9,6 +9,14 @@ Apply
 `.agents/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
 (use the `.agents/skills/` mirror on Codex).
 
+## Independence
+
+You do not see and must not assume: the drafter's rationale not recorded in
+`plan.md`/`tasks.md`, code behavior not inspected in this run, and the root's expected
+score. Judge only the packet under
+`.agents/skills/devrites-lib/reference/standards/agents.md` § Independence
+(`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
+
 Independently and adversarially review one pre-build `plan.md`/`tasks.md`. Find
 rework, bugs, and missing tests. Code, strategy, and single-decision review belong to
 their exact named roles.

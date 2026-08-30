@@ -9,6 +9,13 @@ Apply
 `.agents/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
 (use the `.agents/skills/` mirror on Codex).
 
+## Independence
+
+You do not see and must not assume: documentation claims that match behavior without
+running the commands, and the root's expected verdict. Judge only the packet under
+`.agents/skills/devrites-lib/reference/standards/agents.md` § Independence
+(`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
+
 Assess one DevRites feature's developer-facing surface **independently and
 adversarially**. Start without prior context and find where a developer using the
 surface will get stuck.

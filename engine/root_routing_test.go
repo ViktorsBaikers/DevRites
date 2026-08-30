@@ -16,7 +16,13 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		want    rootMode
 	}{
 		{name: "unrelated command", command: "unknown", want: rootUnused},
-		{name: "check family", command: "check", args: []string{"readiness"}, want: rootUnused},
+		{name: "check candidate", command: "check", args: []string{"candidate"}, want: rootStrictUsage},
+		{name: "check readiness", command: "check", args: []string{"readiness"}, want: rootStrictUsage},
+		{name: "check seal", command: "check", args: []string{"seal"}, want: rootStrictUsage},
+		{name: "check task-graph", command: "check", args: []string{"task-graph"}, want: rootStrictUsage},
+		{name: "check path-disjoint", command: "check", args: []string{"path-disjoint"}, want: rootUnused},
+		{name: "check skill-trust", command: "check", args: []string{"skill-trust"}, want: rootUnused},
+		{name: "observe summary", command: "observe", args: []string{"summary"}, want: rootStrictUsage},
 		{name: "resolve", command: "state", args: []string{"resolve"}, want: rootStrict},
 		{name: "close", command: "state", args: []string{"close"}, want: rootStrict},
 		{name: "unknown state command", command: "state", args: []string{"unknown"}, want: rootUnused},
@@ -34,7 +40,7 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 }
 
 func TestRemovedCommandsAreUnknown(t *testing.T) {
-	for _, command := range []string{"snapshot", "readiness", "seal", "spec-validate", "check-acceptance", "evidence-fresh", "coverage", "doubt-coverage", "test-integrity", "review-integrity", "build-readiness", "readiness-digest", "analyze", "ledger", "resolve", "clarify-return", "tick-afk", "recovery", "close-out", "migrate", "status", "budget", "mutation-gate", "validate-pack", "doctor"} {
+	for _, command := range []string{"snapshot", "readiness", "seal", "spec-validate", "check-acceptance", "evidence-fresh", "coverage", "doubt-coverage", "test-integrity", "review-integrity", "build-readiness", "readiness-digest", "analyze", "ledger", "resolve", "clarify-return", "tick-afk", "recovery", "close-out", "status", "budget", "mutation-gate", "validate-pack", "doctor"} {
 		for _, args := range [][]string{{command}, {command, "--json"}} {
 			t.Run(strings.Join(args, "-"), func(t *testing.T) {
 				var stdout, stderr bytes.Buffer
@@ -157,6 +163,7 @@ func TestCheckCandidateRoutesAndPrintsIdentity(t *testing.T) {
 	writeBasenameFile(t, project, "source.go", "package source\n")
 	manifest := "# Touched files\n\n## Touched files\nCandidate paths are declared below.\n\n## Candidate manifest\n| State | File | Slice | Reason |\n| --- | --- | --- | --- |\n| present | `source.go` | S-1 | Implementation. |\n"
 	writeBasenameFile(t, workspace, "touched-files.md", manifest)
+	writeBasenameFile(t, workspace, "state.md", "| schema | 3 |\n")
 	t.Setenv("DEVRITES_ROOT", root)
 	var stdout, stderr bytes.Buffer
 	if code := run([]string{"check", "candidate", "feature"}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
@@ -172,6 +179,7 @@ func TestCheckReadinessEmitBindingRoutesOnlyExactShape(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	workspace := filepath.Join(root, "work", "feature")
 	for name, body := range map[string]string{
+		"state.md":             "| schema | 3 |\n",
 		"spec.md":              "# Spec\n\nReady.\n",
 		"decision-coverage.md": "# Decision coverage\n\nCLEAR\n",
 		"architecture.md":      "# Architecture\n\nReady.\n",

@@ -125,7 +125,12 @@ The runtime reads only official released workspace formats:
 The canonical workspace location remains `.devrites/work/<slug>/`; canonical
 map, cursor, and proof files are `README.md`, `state.md`, and `evidence.md`.
 Compatibility reads do not rewrite a workspace and do not emit local telemetry.
-There is no structural migration command. `/rite-upgrade` first audits an older
+Since engine v5, workspaces declare their schema through a `schema` row in the
+`state.md` cursor; an absent row means the pre-v5 schema 2 contract. `state
+resolve` and `state close` refuse workspaces whose declared schema is not the
+current one: pre-v5 workspaces run `devrites-engine migrate <slug>`, and newer
+workspaces require upgrading devrites.
+`/rite-upgrade` first audits an older
 active workspace against named current contracts; only a cited defect may route
 an edit through its normal phase owner. For released unfinished post-Build
 workspaces, candidate defects route through current Prove, Polish, Review, and
@@ -134,8 +139,9 @@ an old pass.
 
 Other pre-release layouts, filename substitutions, and phase encodings are
 not runtime authorities. See
-[ADR-0022](../adr/0022-native-orchestration-thin-engine.md) and
-[ADR-0025](../adr/0025-evidence-gated-workspace-upgrades.md).
+[ADR-0022](../adr/0022-native-orchestration-thin-engine.md),
+[ADR-0025](../adr/0025-evidence-gated-workspace-upgrades.md), and
+[ADR-0029](../adr/0029-v5-workspace-schema-and-native-migration.md).
 
 ## Native policy state
 

@@ -2,8 +2,9 @@ package state
 
 //go:generate go run ./cmd/workflowmanifest -out workflow_manifest.json
 
-// SchemaVersion versions the persisted workflow/state manifest.
-const SchemaVersion = 2
+// SchemaVersion versions the persisted workflow/state manifest and the
+// workspace contract the engine accepts.
+const SchemaVersion = 3
 
 const EvidenceFile = "evidence.md"
 

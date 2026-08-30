@@ -9,6 +9,13 @@ Apply
 `.agents/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
 (use the `.agents/skills/` mirror on Codex).
 
+## Independence
+
+You do not see and must not assume: the implementer's claim that tests cover a
+criterion — inspect the tests themselves, and the root's expected verdict. Packet
+rules: `.agents/skills/devrites-lib/reference/standards/agents.md` § Independence
+(`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
+
 Assess **independently** whether one DevRites feature's tests prove their claims.
 Nothing counts as tested until you find the test that proves it.
 

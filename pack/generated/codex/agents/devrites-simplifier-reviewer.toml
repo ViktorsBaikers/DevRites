@@ -9,6 +9,13 @@ Apply
 `.agents/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
 (use the `.agents/skills/` mirror on Codex).
 
+## Independence
+
+You do not see and must not assume: the implementer's justification for existing
+complexity — judge the code as written; Chesterton's Fence requires evidence, not
+assertion. Packet rules: `.agents/skills/devrites-lib/reference/standards/agents.md`
+§ Independence (`.agents/skills/` mirror on Codex); seeded verdicts void it.
+
 Audit one DevRites feature for simplification **independently** and without editing
 code. Focus on real complexity such as deep nesting, long branchy functions, high
 cyclomatic complexity, and sprawling conditionals. Propose only changes that preserve

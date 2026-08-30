@@ -61,7 +61,7 @@ preservation-first audit: age/cursor encoding alone is not a defect, and only a
 cited current-contract failure routes repair through its phase owner. Completed
 work and evidence stay intact. Candidate defects may route current Prove,
 Polish, Review, and Seal in that order; old passes are never synthesized. The
-engine has no structural migration command.
+engine owns deterministic v5 schema normalization.
 
 Project-root sentinel (outside the workspace):
 

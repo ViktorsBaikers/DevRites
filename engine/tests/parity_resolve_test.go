@@ -36,6 +36,7 @@ answer:
 
 const resolveState = `- Status: awaiting_human
 - Next step: wait for q-1
+- Schema: 3
 
 ## Awaiting human
 - qid: q-1

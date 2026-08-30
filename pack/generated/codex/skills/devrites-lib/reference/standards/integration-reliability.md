@@ -11,6 +11,15 @@ schema, optional and unknown fields, ordering guarantee, rate limit, timeout bud
 retry responsibility, idempotency key, and user-visible degradation. Validate an
 external response as hostile input before trusted code consumes it.
 
+**Uploads and paginated collections are boundary contracts, not transport details.** An
+upload names body and expanded-size caps, chunk/resume behavior, partial-upload
+reconciliation, and the rejection path for oversized or malformed payloads. A paginated
+collection names cursor/offset semantics, page-size cap, the terminal “no more pages”
+signal, and how rows written during paging surface — skipped or duplicated rows are
+contract data, not surprises. **Failing case:** a client pages by offset while rows
+insert ahead of it and silently misses records; a boundary contract that cannot name
+this behavior fails Vet.
+
 For every call or delivery, classify the observed outcome:
 
 | Outcome | Required behavior |
@@ -35,9 +44,11 @@ For every call or delivery, classify the observed outcome:
 - A poison message must not block the partition forever. Bound redelivery, retain the
   failure reason without secrets, move to the project's quarantine/dead-letter path,
   and define replay after correction.
-- A queue needs backlog age/depth, processing/failure rate, saturation, and ownership
-  signals. A queue backlog needs an accepted capacity/drain/recovery action; auto-scaling
-  without downstream capacity protection only moves the outage.
+- A queue emits observability signals — backlog depth, poison/quarantine count,
+  reconciliation lag, saturation, ownership — with [`observability.md`](observability.md)
+  as the signal-taxonomy owner. A queue backlog still needs an accepted
+  capacity/drain/recovery action; auto-scaling without downstream capacity protection
+  only moves the outage.
 
 ## Partial failure and recovery
 
@@ -67,9 +78,10 @@ For each boundary, `plan.md` records:
 | `<provider → consumer>` | `<budgets/key>` | `<rules>` | `<user/system path>` | `<signals/owner>` | `<test/rehearsal>` |
 
 Proof drives success, invalid shape, partial response, auth failure, rate limit, timeout,
-duplicate, out-of-order delivery, and outage when relevant. Use a contract-capable fake
-or sandbox for deterministic cases and at least one real boundary check when authorized
-and safe. A mock that simply returns the expected payload does not prove the risk.
+duplicate, out-of-order delivery, and outage when relevant. Deterministic cases use a
+contract-capable fake or sandbox per [`testing.md`](testing.md) — never a mock that
+simply returns the expected payload (that tests the stub, not the boundary) — plus at
+least one real boundary check when authorized and safe.
 
 ## Stop conditions
 

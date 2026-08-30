@@ -35,6 +35,9 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 	if !isFile(sfile) {
 		return fail(stderr, "state.md missing at "+sfile, 2)
 	}
+	if err := state.RequireWorkspaceSchema(root, slug); err != nil {
+		return fail(stderr, err.Error(), 3)
+	}
 
 	var mode, qid, payload string
 	switch first := argAt(args, 0); first {

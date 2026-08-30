@@ -259,7 +259,7 @@ func TestObserveSummaryExposesTaskGraphProblems(t *testing.T) {
 	if err := os.MkdirAll(workspace, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("| phase | define |\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("| phase | define |\n| schema | 3 |\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	body := `# Tasks
@@ -308,7 +308,7 @@ func TestObserveSummaryExposesProblemsWhenNoSliceHeaders(t *testing.T) {
 	if err := os.MkdirAll(workspace, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("| phase | define |\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("| phase | define |\n| schema | 3 |\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(workspace, "tasks.md"), []byte("# Tasks\n\n- do the work\n"), 0o644); err != nil {

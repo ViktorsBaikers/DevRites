@@ -20,6 +20,7 @@ const (
 	CursorAFKSlicesRemaining = "afk_slices_remaining"
 	CursorReturnPhase        = "return_phase"
 	CursorReturnNextAction   = "return_next_action"
+	CursorSchema             = "schema"
 )
 
 var cursorKeyAliases = map[string]string{
@@ -166,6 +167,79 @@ func DeleteCursorField(lines []string, key string) []string {
 		out = append(out, lines[i])
 	}
 	return out
+}
+
+// CursorForm reports the presentation of the state.md cursor: "table" when a
+// canonical table row exists, "legacy" when only bullet fields exist, and
+// "none" when neither is present.
+func CursorForm(lines []string) string {
+	form := "none"
+	for _, line := range lines {
+		_, _, kind, ok := parseCursorLine(line)
+		if !ok {
+			continue
+		}
+		if kind == cursorLineTable {
+			return "table"
+		}
+		if form == "none" {
+			form = "legacy"
+		}
+	}
+	return form
+}
+
+// ConvertCursorToTable rewrites legacy bullet cursor fields into canonical
+// table rows in place. A bullet whose key resolves to a canonical cursor key
+// is a cursor field wherever it appears — the same rule CursorField uses to
+// read — so such a bullet is converted even inside prose sections. Prose
+// without a canonical cursor key is preserved, and a value carrying a raw pipe
+// keeps its bullet form because a table cell cannot represent it. It reports
+// whether any line changed.
+func ConvertCursorToTable(lines []string) ([]string, bool) {
+	changed := false
+	out := append([]string(nil), lines...)
+	for i, line := range out {
+		key, value, kind, ok := parseCursorLine(line)
+		if !ok || kind != cursorLineLegacy {
+			continue
+		}
+		if !isMigratableCursorKey(key) {
+			continue
+		}
+		if strings.Contains(value, "|") {
+			continue
+		}
+		spelling, ok := canonicalCursorSpelling(key)
+		if !ok {
+			continue
+		}
+		indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		out[i] = indent + "| " + spelling + " | " + value + " |"
+		changed = true
+	}
+	return out, changed
+}
+
+func isMigratableCursorKey(key string) bool {
+	_, ok := canonicalCursorSpelling(key)
+	return ok
+}
+
+// canonicalCursorSpelling maps a cursor key (including aliases) to the
+// canonical table-row spelling. Matching is normalization-based, so
+// "Next step" resolves to the "next_action" spelling.
+func canonicalCursorSpelling(key string) (string, bool) {
+	normalized := normalizeCursorKey(key)
+	canonicals := []string{CursorPhase, CursorStatus, CursorNextAction, CursorQuestionID,
+		CursorActiveSlice, CursorAFKSlicesRemaining, CursorReturnPhase,
+		CursorReturnNextAction, CursorSchema}
+	for _, canonical := range canonicals {
+		if normalized == normalizeCursorKey(canonical) {
+			return canonical, true
+		}
+	}
+	return "", false
 }
 
 func structuralCursorLines(lines []string) ([]string, bool) {

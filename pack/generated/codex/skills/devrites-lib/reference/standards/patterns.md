@@ -46,6 +46,22 @@ Use a pattern only when it makes the design easier to understand and reduces cou
   abstraction over two things that aren't really the same).
 - Speculative generality: config, hooks, and extension points with no current user.
 
+## Symptom → suspect pattern
+
+Route an observed code symptom to the review it should trigger; the symptom is the
+evidence, not the diagnosis:
+
+| Observable symptom | Suspect | First check |
+| --- | --- | --- |
+| Every change funnels through one file/module | God object / missing seam | ownership map (§ Boundaries and state ownership) |
+| Tests stub half the module to exercise one function | I/O and logic entangled | separate I/O, domain logic, presentation |
+| Adding one field requires editing many unrelated files | Shotgun coupling | coupling direction; [`repository-topology.md`](repository-topology.md) |
+| Two components write the same mutable state | Authority conflict | one authoritative owner per fact |
+| Config/flag exists with no current consumer | Speculative generality | delete or name the current user (anti-patterns above) |
+
+**Failing case:** a review that names a pattern without pointing at the observed symptom
+that motivated it is architecture preference, not finding.
+
 ## In a codebase
 Match the patterns the project already uses before introducing a new one. A consistent
 "good enough" pattern beats a locally-superior but foreign one. Document the *why* of any

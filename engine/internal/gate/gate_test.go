@@ -123,7 +123,7 @@ Goal: looks complete without an ordering field
 func TestCheckAndRenderReadiness(t *testing.T) {
 	root := t.TempDir()
 	writeFeature(t, root, "alpha", map[string]string{
-		"state.md":             "- Phase: build\n",
+		"state.md":             "- Phase: build\n- Schema: 3\n",
 		"brief.md":             "brief\n",
 		"spec.md":              "real spec\n",
 		"assumptions.md":       "none\n",
@@ -164,7 +164,7 @@ func TestCheckAndRenderReadiness(t *testing.T) {
 func TestCheckUsesConcreteWorkspaceRequirements(t *testing.T) {
 	root := t.TempDir()
 	files := map[string]string{
-		"state.md":             "| phase | vet |\n",
+		"state.md":             "| phase | vet |\n| schema | 3 |\n",
 		"brief.md":             "brief\n",
 		"spec.md":              "spec\n",
 		"decisions.md":         "decisions\n",
@@ -192,7 +192,7 @@ func TestCheckUsesConcreteWorkspaceRequirements(t *testing.T) {
 func TestSealRequiresDurableReviewAndSealArtifacts(t *testing.T) {
 	root := t.TempDir()
 	files := map[string]string{
-		"state.md":             "| phase | seal |\n",
+		"state.md":             "| phase | seal |\n| schema | 3 |\n",
 		"brief.md":             "brief\n",
 		"spec.md":              "spec\n",
 		"decisions.md":         "decisions\n",
@@ -373,7 +373,7 @@ func TestCheckBlocksOpenHumanQuestions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
 			writeFeature(t, root, "alpha", map[string]string{
-				"state.md":     "- Phase: build\n- Status: " + tc.status + "\n",
+				"state.md":     "- Phase: build\n- Status: " + tc.status + "\n- Schema: 3\n",
 				"spec.md":      "spec\n",
 				"plan.md":      "plan\n",
 				"decisions.md": "decisions\n",
@@ -412,7 +412,7 @@ func TestCheckUsesWorkspaceOverrideForStateInvariants(t *testing.T) {
 	override := filepath.Join(physicalRoot, "work", "alpha")
 	t.Setenv("DEVRITES_WORKSPACE", override)
 	testutil.WriteFile(t, filepath.Join(override, "README.md"), "---\nphase: spec\nschemaVersion: 1\n---\n")
-	testutil.WriteFile(t, filepath.Join(override, "state.md"), "- Phase: build\n- Status: running\n")
+	testutil.WriteFile(t, filepath.Join(override, "state.md"), "- Phase: build\n- Status: running\n- Schema: 3\n")
 	testutil.WriteFile(t, filepath.Join(override, "spec.md"), "spec\n")
 	testutil.WriteFile(t, filepath.Join(override, "questions.md"), "## q-1\nstatus: open\ngate: blocking\n")
 
@@ -443,7 +443,7 @@ func TestCheckObservationUsesRetainedPhaseQuestionsReadinessAndReview(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	testutil.WriteFile(t, filepath.Join(workspace, "state.md"), "- Phase: spec\n- Status: running\n")
+	testutil.WriteFile(t, filepath.Join(workspace, "state.md"), "- Phase: spec\n- Status: running\n- Schema: 3\n")
 	testutil.WriteFile(t, filepath.Join(workspace, "questions.md"), "## q-1\nstatus: open\ngate: blocking\n")
 	testutil.WriteFile(t, filepath.Join(workspace, "plan.md"), "# Plan\n\nChanged after observation.\n")
 	testutil.WriteFile(t, filepath.Join(workspace, "eng-review.md"), "# Engineering review\n\nNo binding.\n")
@@ -609,7 +609,7 @@ func writeCompleteGateFeature(t *testing.T, root, slug string, current, required
 		content := "# " + name + "\n\nreal\n"
 		switch name {
 		case "state.md":
-			content = "- Phase: " + string(current) + "\n- Status: running\n"
+			content = "- Phase: " + string(current) + "\n- Status: running\n- Schema: 3\n"
 		case "questions.md":
 			questionsRequired = true
 			content = questions

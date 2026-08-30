@@ -21,6 +21,7 @@ workflow strategy.
 | `observe summary <slug>` | Emit sanitized JSON workspace summary from one retained observation. `task_graph.ok` is true iff `task_graph.problems` is empty; `problems` lists cycle, unknown-dep, malformed-token, duplicate-id, and missing-`Dependencies` blockers. |
 | `state resolve <qid> "<answer>"` | Resolve an open question and update `questions.md` plus `state.md` atomically. |
 | `state close <slug>` | Archive a shipped workspace and clear matching `ACTIVE`. |
+| `migrate <slug> [--dry-run] [--answer id=choice]` | Normalize a pre-v5 workspace to the current schema; fail-closed, one-shot. |
 | `secret-scan [--staged] [--stdin] [slug]` | Scan exact staged blobs, stdin, or touched regular files for credential material. |
 | `open-visual <path-or-name> [--slug <slug>] [--no-open]` | Resolve a local visual HTML file, optionally open it in the OS browser, warn if the sibling outline is missing or inventory ids are absent from HTML, and print agent path tips. No network. |
 | `version` | Print the engine version. |
@@ -54,6 +55,14 @@ reports against live artifacts and observed repository proof.
 State mutations use the shared physical-root checks, feature lock, and atomic
 write path. `state resolve` additionally supports `--drop` and `--batch`;
 `state close` owns transactional archive plus `ACTIVE` clearing.
+
+`migrate` normalizes a pre-v5 workspace: legacy bullet cursor fields become
+canonical table rows, the `schema` row is recorded, and missing required
+artifacts are created as empty stubs (content is never synthesized, and bound
+proof files stay byte-exact). It is one-shot and fail-closed: on ambiguity it
+writes nothing, prints its questions, and exits `3`; answers arrive on rerun
+via `--answer id=choice`. `--dry-run` prints the plan and always writes
+nothing. See [ADR-0029](../adr/0029-v5-workspace-schema-and-native-migration.md).
 
 Normative spec grammar checks, qid allocation, Clarify cursor transitions, AFK
 slice accounting, recovery attempt accounting, and installation diagnostics are

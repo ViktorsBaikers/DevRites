@@ -8,7 +8,7 @@ Every external tool here is optional; fall back to `Read` / `Grep` / `Glob`, alw
 | --- | --- | --- | --- |
 | Relationship/impact (who calls X, blast radius) | Code-intelligence index below | LSP find-references + Grep | Grep-everything, read every hit |
 | Exact string/literal (error text, config value) | Grep | — | Opening whole files to scan by eye |
-| Structural/AST shape ("every fn like X") | AST-aware search if installed; else index + filter | Grep w/ punctuation patterns | Regex approximating syntax |
+| Structural/AST shape ("every fn like X") | AST-aware search if installed; else index + filter | Grep w/ punctuation patterns | Regex approximating syntax — call-site greps are high-false-positive on equivalent queries; prefer the AST route |
 | File name / location | Glob/fd-style listing | `ls` walks | Content-grepping filenames |
 | Binary/archive/document content | Dedicated extractors when present | `cannot_verify` rather than guess | Reading binary as text |
 | Size/scale survey (LOC, largest files) | Line-count tooling when present | Shell one-liners (`wc`/`find`) | Manual counting in editors |

@@ -376,16 +376,16 @@ removed=(
   readiness seal spec-validate check-acceptance evidence-fresh coverage
   doubt-coverage test-integrity review-integrity build-readiness
   readiness-digest analyze ledger resolve clarify-return tick-afk recovery
-  close-out migrate doctor
+  close-out doctor
 )
-[ "${#removed[@]}" -eq 20 ] || fail "removed command inventory is not 20"
+[ "${#removed[@]}" -eq 19 ] || fail "removed command inventory is not 19"
 for command in "${removed[@]}"; do
   run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" "$command"
   [ "$CAPTURE_CODE" -eq 2 ] || fail "$command exit=$CAPTURE_CODE, want 2; $CAPTURED"
   [[ "$CAPTURED" == *"unknown command \"$command\""* ]] \
     || fail "$command did not use unknown-command path: $CAPTURED"
 done
-printf '  PASS: all 20 retired top-level commands are unknown (no aliases)\n'
+printf '  PASS: all 19 retired top-level commands are unknown (no aliases)\n'
 
 printf '\n== removed nested policy commands ==\n'
 assert_removed_nested() {

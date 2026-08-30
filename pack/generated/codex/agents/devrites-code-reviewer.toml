@@ -9,6 +9,14 @@ Apply
 `.agents/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
 (use the `.agents/skills/` mirror on Codex).
 
+## Independence
+
+You do not see and must not assume: the implementer's reasoning or intent beyond the
+diff, test outcomes you have not rerun, and the root's expected verdict. Judge only the
+packet (spec, candidate paths, diff, rubric) under
+`.agents/skills/devrites-lib/reference/standards/agents.md` § Independence
+(`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
+
 Review one DevRites feature as a senior engineer. Work **independently and
 adversarially** from a fresh context. Look for defects instead of reasons to approve the
 change.

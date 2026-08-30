@@ -41,7 +41,7 @@ The Go surface is intentionally closed and deterministic:
 | Lane | Commands | Owner |
 |---|---|---|
 | Candidate and deterministic checks | `check candidate`, `check readiness [--emit-binding]`, `check seal`, `check task-graph`, `check path-disjoint`, `check skill-trust` | Candidate validates/hashes the strict project manifest; readiness checks phase files, the required `tasks.md` slice graph, or emits the vetted Build-input binding; seal checks final files/open gates, that graph and binding, then exact candidate bindings. |
-| Atomic workspace state | `state resolve`, `state close` | Go owns answer/drop/batch resolution and transactional close. |
+| Atomic workspace state | `state resolve`, `state close`, `migrate [--dry-run] [--answer id=choice]` | Go owns answer/drop/batch resolution, transactional close, and fail-closed v5 schema normalization. |
 | Security | `secret-scan` | `/rite-ship`, safe hooks, or an operator scans staged blobs, stdin, or touched files. |
 | Install/operator | `install`, `update`, `uninstall`, `version` | Direct update acquires latest; npm/bootstrap may supply local candidates; the engine performs manifest-owned local changes. |
 | Native policy | no engine command | Skills/root own spec grammar re-read, qid allocation, Clarify cursor edits, AFK/recovery accounting, and read-only `/rite-doctor`. |
@@ -53,7 +53,7 @@ prints exactly
 `candidate-sha256: <64 lowercase hex>` and `candidate-files: <row count>` on a
 pass; usage/root errors exit `2` and candidate blocks exit `3`. There are no
 semantic readiness commands, reviewer-prose parsers, capability-ledger engine,
-compatibility telemetry, or migration command.
+or compatibility telemetry.
 
 Claude Code and Codex own native dispatch. Installed skills and exact agents
 own semantic readiness, traceability, acceptance/evidence quality, doubt,

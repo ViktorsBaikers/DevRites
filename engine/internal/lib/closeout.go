@@ -37,6 +37,10 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "state close: invalid workspace for %s: %v\n", slug, err)
 		return 1
 	}
+	if err := state.RequireWorkspaceSchema(dv, slug); err != nil {
+		fmt.Fprintf(stderr, "state close: %v\n", err)
+		return 3
+	}
 	archiveDir, err := devritespaths.ArchiveDirChecked(dv)
 	if err != nil {
 		fmt.Fprintf(stderr, "state close: invalid archive directory: %v\n", err)

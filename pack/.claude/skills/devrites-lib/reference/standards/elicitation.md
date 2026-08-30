@@ -10,6 +10,11 @@ this is the menu you reach into: named reasoning techniques, each with the shape
 2. Read its **risk**, then pull the 3-5 techniques below whose *When to reach for it* matches.
 3. Present them as a short numbered menu; the human picks one (or `skip`).
 4. Run that technique on that section, apply the result, move on.
+5. **No-yield exit:** when the technique surfaces nothing that changes the section — no
+   new requirement, mitigation, estimate change, or blocking question — record
+   `elicitation: <technique> — no yield` in the phase artifact and stop offering menus
+   for that section. **Failing case:** repeated technique menus on a settled section are
+   ceremony, not diligence; a second menu without new section input is a process defect.
 
 Selection is by the section's risk, not taste. Reach for the row that fits:
 
