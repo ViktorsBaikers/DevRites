@@ -422,7 +422,10 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           # Trusted publishing: do not restore a shared npm cache into the
           # publish job (cache poisoning was a 2026 npm incident path).
-          cache: false
+          # setup-node v6 treats `cache` as a package-manager name, so
+          # `cache: false` becomes Caching for 'false' is not supported.
+          # Omit `cache` and disable automatic packageManager caching instead.
+          package-manager-cache: false
 
       # prepack (npm publish path) regenerates pack/generated via
       # scripts/build-host-artifacts.sh, which needs python3 on PATH.

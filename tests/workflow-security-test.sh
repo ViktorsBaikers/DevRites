@@ -239,7 +239,8 @@ finds "dispatch input with spaced run key" "$TMP/dispatch-key-spacing.yml"
 clean "dispatch input transported through env" "$TMP/dispatch-input-via-env.yml"
 
 # Trusted publishing: the release job must not carry a long-lived npm write token.
-if grep -n 'NPM_TOKEN' "$HERE/../.github/workflows/ci.yml" >/dev/null; then
+CIYML="$HERE/../.github/workflows/ci.yml"
+if grep -n 'NPM_TOKEN' "$CIYML" >/dev/null; then
   echo "FAIL [ci.yml still sets NPM_TOKEN]"; fail=1
 else
   echo "ok   [ci.yml has no NPM_TOKEN]"
@@ -248,6 +249,30 @@ if grep -n 'using `NPM_TOKEN`' "$HERE/../docs/release.md" >/dev/null; then
   echo "FAIL [docs/release.md still documents NPM_TOKEN publish]"; fail=1
 else
   echo "ok   [docs/release.md does not document NPM_TOKEN publish]"
+fi
+
+# setup-node v6 treats `cache` as a package-manager name. `cache: false` becomes
+# Caching for 'false' is not supported and aborts semantic-release on main.
+if awk '
+  /uses:[[:space:]]*actions\/setup-node@/ {in_node=1; next}
+  in_node && /^[[:space:]]*-[[:space:]]/ {in_node=0}
+  in_node && /^[[:space:]]*[A-Za-z0-9_-]+:/ && $0 !~ /^[[:space:]]{2,}(with|node-version|registry-url|cache|cache-dependency-path|package-manager-cache|check-latest|token|always-auth|scope|architecture|mirror|mirror-url):/ {in_node=0}
+  in_node && /^[[:space:]]*cache:[[:space:]]*false[[:space:]]*$/ {bad=1}
+  END {exit bad ? 0 : 1}
+' "$CIYML"; then
+  echo "FAIL [ci.yml setup-node uses invalid cache: false]"; fail=1
+else
+  echo "ok   [ci.yml setup-node does not use cache: false]"
+fi
+if awk '
+  /^[[:space:]]*name:[[:space:]]*semantic-release[[:space:]]*$/ {in_rel=1; next}
+  in_rel && /^[A-Za-z0-9_-]+:/ {in_rel=0}
+  in_rel && /^[[:space:]]*package-manager-cache:[[:space:]]*false[[:space:]]*$/ {found=1}
+  END {exit found ? 0 : 1}
+' "$CIYML"; then
+  echo "ok   [semantic-release disables package-manager-cache]"
+else
+  echo "FAIL [semantic-release missing package-manager-cache: false]"; fail=1
 fi
 
 # Nightly fuzz is bounded and not a required PR check.
