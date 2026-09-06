@@ -419,12 +419,12 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
-          # Trusted publishing: do not restore a shared npm cache into the
-          # publish job (cache poisoning was a 2026 npm incident path).
-          # setup-node v6 treats `cache` as a package-manager name, so
-          # `cache: false` becomes Caching for 'false' is not supported.
-          # Omit `cache` and disable automatic packageManager caching instead.
+          # Do not restore a shared npm cache into the publish job (cache
+          # poisoning was a 2026 npm incident path). setup-node v6 treats
+          # `cache` as a package-manager name, so omit it and disable
+          # automatic packageManager caching instead of `cache: false`.
+          # Also omit registry-url: it injects a placeholder NODE_AUTH_TOKEN
+          # that breaks @semantic-release/npm auth verification.
           package-manager-cache: false
 
       # prepack (npm publish path) regenerates pack/generated via
@@ -449,6 +449,11 @@ jobs:
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # OIDC trusted publishing is preferred (id-token: write), but npm's
+          # OIDC exchange still returns "package not found" until a Trusted
+          # Publisher is configured for `devrites`. Keep the repo secret as
+          # the working publish credential, matching the v4.7.0 release path.
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GIT_AUTHOR_NAME: github-actions[bot]
           GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
