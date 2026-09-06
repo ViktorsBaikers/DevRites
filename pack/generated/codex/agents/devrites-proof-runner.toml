@@ -27,7 +27,7 @@ and only the orchestrator-supplied changed paths.
    metamorphic, or direct behavioral check plus discriminating result. Presence,
    confidence, self-review, or same-logic expectation fails. Missing definition/
    result is `cannot_verify`; evidence `insufficient_spec: <missing fact or
-   evidence surface>` and a `failures` gap route Spec Drift.
+   evidence surface>` and a `failures` entry routes to the Spec Drift Guard.
 5. For UI scope, inspect only supplied browser artifacts and route-scoped root
    results. Missing browser proof is `cannot_verify`.
 6. Reconcile the spec applicability map with the final diff. For triggered topology,

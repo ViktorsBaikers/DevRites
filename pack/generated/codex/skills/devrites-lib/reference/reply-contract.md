@@ -6,9 +6,9 @@ artifact.
 
 Keep the reply compact and evidence-backed:
 
-When an active rite is the controlling caller, Intermediate `NEEDS_REPLAN`, a
-nested phase `STOP`, and a routine Plan/Vet `Next step` are not eligible completion
-states. Return them to the caller without a user-facing reply. Autocomplete may
+When an active rite is the controlling caller, Intermediate `NEEDS_REPLAN` (the reply
+token for the workspace's `NEEDS REPLAN` readiness value), a nested phase `STOP`, and a
+routine Plan/Vet `Next step` are not eligible completion states. Autocomplete may
 use the shapes below only after its requested rest point or a shared genuine
 human/safety/access/exhausted-recovery stop is reached.
 
@@ -83,3 +83,6 @@ No runnable recovery command: unchanged reinvocation remains blocked
 Next: none — requires new evidence or changed failure conditions
 Record: <artifact path>
 ```
+
+The terminal cursor marker is `Next: none` exactly as shown; a stored `Next step: none`
+names the same exhausted state.

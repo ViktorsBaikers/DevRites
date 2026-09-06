@@ -7,13 +7,20 @@ commit messages. A `feat:`, `fix:`, `perf:`, `refactor:`, `build:`,
 `remove:`, `docs(README):`, or `BREAKING CHANGE:` tells it to choose the next SemVer
 version and run these steps:
 
-1. Waits for the workflow's validation, full shell suite, strict Go-engine checks, Linux cross-compile smoke, and Windows Go tests.
+1. Waits for the workflow's validation, full shell suite, strict Go-engine checks, Linux cross-compile smoke, Windows and macOS Go tests.
 2. Regenerates `CHANGELOG.md` from the commits.
 3. Syncs the new version into `package.json` and the README status line (`scripts/sync-version.sh`), then stages only those known overlays plus the generated changelog so the release index owns their bytes.
 4. Builds `dist/devrites-v<version>.tar.gz` and `dist/install.sh`, each with an exact-filename SHA-256 sidecar, via `scripts/build-release-tarball.sh`. Payload paths and bytes are materialized from the repository-root Git index; the build fails outside that index and never copies a divergent live worktree file. A stdlib Go packager sorts member names and normalizes ownership, modes, timestamps, and the gzip header, so identical indexed sources produce identical archives. `SOURCE_DATE_EPOCH` selects the canonical timestamp and defaults to `0`. The bundle includes the checked-in host-native Claude/Codex artifacts under `pack/generated/`; symlinks and other non-regular payload entries are rejected.
 5. Cross-compiles five `devrites-engine` release binaries (macOS arm64/amd64, Linux arm64/amd64, Windows amd64) plus a SHA-256 sidecar for each.
-6. Publishes the `devrites` package to npm through `@semantic-release/npm`, using `NPM_TOKEN`. This is what `npx devrites@latest` resolves. `npm pack` regenerates the same `pack/generated/` artifacts during `prepack`; there is no `postpack` cleanup step.
-7. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates tag `v<version>`, and publishes a GitHub Release with the tarball, verified installer, binaries, and every checksum sidecar attached.
+6. Publishes the `devrites` package to npm through `@semantic-release/npm` with
+   provenance attestation, using OIDC trusted publishing (`id-token: write`).
+   There is no long-lived `NPM_TOKEN` on this job. Maintainers keep npm
+   "Require two-factor authentication and disallow tokens" enabled for the
+   package so only the trusted publisher can publish. This is what
+   `npx devrites@latest` resolves. `npm pack` regenerates the same
+   `pack/generated/` artifacts during `prepack`; there is no `postpack` cleanup
+   step.
+7. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates tag `v<version>`, and publishes a GitHub Release with the tarball, verified installer, binaries, and every checksum sidecar attached. The release job then attests the artifacts with build provenance (`actions/attest-build-provenance`), independent of npm provenance.
 
 Package prepack normally owns host artifact generation; the release archive
 consumes the validated generated files from the same Git index as the rest of
@@ -25,6 +32,44 @@ engine itself only validates and copies host payloads; it never generates them.
 The npm entrypoint, verified release installer, and direct engine updater acquire
 only an exact-SemVer release bundle or platform binary with its mandatory
 exact-filename SHA-256 sidecar.
+
+Verify a downloaded engine binary from a GitHub Release:
+
+```bash
+curl -LO "https://github.com/ViktorsBaikers/DevRites/releases/download/v<version>/devrites-<os>-<arch>[.exe]"
+curl -LO "https://github.com/ViktorsBaikers/DevRites/releases/download/v<version>/devrites-<os>-<arch>[.exe].sha256"
+( cd "$(dirname "$0")" && shasum -a 256 -c devrites-<os>-<arch>[.exe].sha256 )
+```
+
+Every release artifact also carries a GitHub artifact attestation (build
+provenance generated inside the release job, bound to the artifact digest).
+Verify it, pinning the signer workflow so an attestation minted from any other
+workflow path in this repository is rejected — provenance proves where a build
+ran, not that the publishing step was the intended one:
+
+```bash
+gh attestation verify devrites-<os>-<arch>[.exe] -R ViktorsBaikers/DevRites \
+  --signer-workflow ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main
+```
+
+Releases with binaries also attach CycloneDX SBOMs: `devrites-npm.cdx.json`
+for the npm dependency tree (`npm sbom`) and
+`devrites-engine-linux-amd64.cdx.json` for the shipped engine binary
+(Anchore Syft). The engine itself is stdlib-only, so the binary SBOM is
+nominally just the module plus the Go toolchain — it exists so a consumer's
+vulnerability or license tooling has a machine-readable input.
+
+Treat attestations as independent of npm provenance, not as a safety signal:
+the 2026 TanStack and `@redhat-cloud-services` incidents published malicious
+packages with valid SLSA provenance. Verify the artifact digest; provenance
+only proves where a build ran.
+
+npm packages published from `main` use OIDC trusted publishing with
+`publishConfig.provenance: true` in `package.json` and no `NPM_TOKEN` in the
+release job. Provenance attests build origin, not package safety — still pin
+versions and audit the dependency tree. A long-lived npm write token is not
+part of the release path.
+
 Every redirect hop remains HTTPS; downloads use private temporary directories
 and fixed in-stream byte ceilings. The bootstrap first streams archive metadata,
 then paths, aborting the producer on a type, count, expanded-size, containment,
@@ -62,14 +107,16 @@ semantic-release derives the next section from the accepted commits on `main`.
 `scripts/check-npm-audit.mjs` re-audits the live npm graph. Temporary entries in
 `scripts/npm-audit-exceptions.json` must remain exact-range, exact-node,
 owner-bound, justified, sourced, and near-term expiring; stale, broadened,
-unmatched, or expired entries fail validation. The current `brace-expansion`
-entry documents an advisory still present in npm's bundled dependency chain; it
-does not claim the advisory is fixed.
+unmatched, expired, or inside-the-7-day-refresh-horizon entries fail
+validation. `osv-scanner.toml` `ignoreUntil` dates must match those expiries.
+Do not extend an expiry silently: refresh the ancestor (today, pin
+`@semantic-release/npm`'s bundled `npm` to `11.19.1` via `overrides`) or
+remove the exception.
 
 ## Authoring commits that trigger releases
 
 | Commit prefix | Bump |
-|---|---|
+| --- | --- |
 | `feat:` | **minor** (`0.1.0` → `0.2.0`) |
 | `remove:` | **minor**; grouped under Removed in release notes |
 | `fix:` / `perf:` / `refactor:` / `build:` / `docs(README):` | **patch** (`0.1.0` → `0.1.1`) |

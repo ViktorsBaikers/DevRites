@@ -70,7 +70,7 @@ func TestReadinessEmitBindingPassesExactCLIContract(t *testing.T) {
 	writeCompleteGateCLIWorkspace(t, root, slug, state.PhaseBuild, state.PhaseBuild, "none\n")
 
 	out, errOut, code := runDevrites(t, root, "check", "readiness", "--emit-binding", slug)
-	const wantOut = "Readiness inputs SHA-256: f72109687057f33d5d7f05e5436a4dcc88ccf87367d0933afd9fdcf1a023f5c0\n"
+	const wantOut = "Readiness inputs SHA-256: 72cf891ac97737493a27ead330a827e93c28d8e7e0103e4e972fa35fdcaa8158\n"
 	if code != 0 || out != wantOut || errOut != "" {
 		t.Fatalf("code=%d stdout=%q stderr=%q, want code=0 stdout=%q stderr empty", code, out, errOut, wantOut)
 	}
@@ -595,7 +595,7 @@ func newFinalSealRepo(t *testing.T) (string, string) {
 		"tasks.md":             testutil.CanonicalTasksMarkdown,
 		"traceability.md":      "# Traceability\n\nAC-001 -> final seal.\n",
 		"eng-review.md":        "# Engineering review\n\nPASS\n",
-		"test-plan.md":         "# Test plan\n\nRun focused Go tests.\n",
+		"test-plan.md":         "# Test plan\n\nRun focused Go tests for AC-001.\n",
 		"evidence.md":          "# Evidence\n\nFocused Go tests passed.\n",
 		"touched-files.md":     "# Touched files\n\n## Touched files\nCandidate paths are declared only in the manifest below.\n\n## Candidate manifest\n| State | File | Slice | Reason |\n| --- | --- | --- | --- |\n| present | `source.go` | S-1 | Final Seal fixture. |\n",
 		"review.md": `# Review

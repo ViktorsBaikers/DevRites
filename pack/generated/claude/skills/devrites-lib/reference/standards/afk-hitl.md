@@ -6,6 +6,23 @@ callers are `/rite-build`, `/rite-status`, `/rite-resolve`, and
 
 The contract uses one sentinel, one queue, and one resume verb.
 
+## Contents
+
+- [Run modes](#run-modes)
+- [The sentinel: `.devrites/AFK`](#the-sentinel-devritesafk)
+- [Unattended resource envelope](#unattended-resource-envelope)
+- [The four gates](#the-four-gates)
+- [Option set: how every gap is presented](#option-set-how-every-gap-is-presented)
+- [Decision ownership: search before asking](#decision-ownership-search-before-asking)
+- [Irreversible-risk list (always pause)](#irreversible-risk-list-always-pause)
+- [`questions.md` schema](#questionsmd-schema)
+- [`state.md` `Awaiting human` block](#statemd-awaiting-human-block)
+- [The resume verb: `/rite-resolve`](#the-resume-verb-riteresolve)
+- [AFK exception for discretionary pauses](#afk-exception-for-discretionary-pauses)
+- [Retry cap, no-progress loops, and self-resolve](#retry-cap-no-progress-loops-and-self-resolve)
+- [What the rule does NOT cover](#what-the-rule-does-not-cover)
+- [Cross-reference](#cross-reference)
+
 ## Run modes
 
 - **HITL (default):** human is present. At a gap/checkpoint the skill **asks inline** via
@@ -40,7 +57,7 @@ max_review_queue: 8                  # unresolved review/gate items admitted bef
 expires_at: "<ISO-8601 UTC timestamp>" # absolute unattended-authority expiry
 # max_tokens: 200000                 # optional stricter host-observed token cap
 # max_cost_usd: 10                   # optional stricter host-observed cost cap
-notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition
+notify: "ntfy.sh/my-topic"           # shell command; examples: rite-build/reference/afk-discipline.md
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
 ```
 
@@ -66,7 +83,8 @@ counter is the effective remaining budget even when the read-only sentinel omits
 
 AFK writer admission needs a bounded input queue, effective slice cap, and valid
 `max_agents`, `max_minutes`, `max_review_queue`, and `expires_at`. Existing sentinels
-missing/malforming these fail closed; cold resume keeps the state-owned slice counter.
+that declare writer admission but miss/malform these fail closed; cold resume keeps the
+state-owned slice counter.
 Read-only watchers use equivalent native caps from [`loop-operations.md`](loop-operations.md).
 
 `max_agents` counts every leaf in the native activation, including failures and
@@ -84,9 +102,8 @@ for a genuinely new activation. Slices, recovery attempts, absolute expiry, and 
 review queue remain durable/recomputed across wakes. Persist each activation stop and
 checkpoint before notification.
 
-New sentinels use: `max_slices: 10`, `max_agents: 32`, `max_minutes: 120`,
-`max_review_queue: 8`, `expires_at: <arming + 4h>`, `allow_gates: [advisory]`, and no
-notification/token/cost cap. Post-Vet pending count may lower slices. Existing files
+New sentinels default `expires_at` to arming + 4h with no notification/token/cost cap.
+Post-Vet pending count may lower slices. Existing files
 never receive missing defaults implicitly.
 
 To leave AFK, delete the file. The next skill invocation reverts to HITL.
@@ -120,7 +137,7 @@ Wherever a gap, checkpoint, or non-trivial decision surfaces (`/rite-spec`, `/ri
 - **2-4 concrete options**, the **recommended one first**, labelled `(Recommended)`.
 - Each option has a **one-line, dimension-tagged rationale**: `logic · infra · business ·
   architecture` (add `security` / `UX` / `risk` in scope) and trade-off.
-- Always include an escape hatch (`Something else — I'll describe it`).
+- Always include an escape hatch (`Something else — describe it`).
 - With more than four materially distinct choices, first ask a discriminating question or use
   sequential packets, then obtain final confirmation. Materially distinct options MUST NOT
   be silently dropped, merged, or preselected to fit the UI.
@@ -244,6 +261,11 @@ When `/rite-resolve` does resume a stopped session, the skill does **not** auto-
 `devrites-doubt` and similar skills that "ask the user" follow this rule when
 `.devrites/AFK` exists:
 
+Ceiling comparison order: Suggestion/Nit/FYI < Important < Critical; gates advisory <
+validating < blocking < escalating; a finding is ≤ the ceiling when its severity's gate
+class (Suggestion/Nit/FYI→advisory, Important→validating, Critical→blocking) is at or
+below the slice's gate.
+
 - Finding severity ≤ slice's gate ceiling (slice's `Gate:` plus `.devrites/AFK`
   `allow_gates`) → log to `questions.md` as `gate: advisory`, record the trade-off in
   `decisions.md`, proceed.
@@ -290,15 +312,11 @@ changes, not a request for permission to retry.
   Do not emit `/rite-plan unblock`, another phase command, a question, or
   `/rite-resolve`. Reinvocation with the unchanged fingerprint remains blocked
   and never resets the retry cap.
-- **Reassess no-progress loops:** After repeated attempts without progress, stop and
-  reassess the failure and approach rather than continuing blindly.
 - **Resolve agent-owned questions first.** Before raising a question, try to answer it from the code, the docs,
   or `decisions.md`. Communicate only for a blocked environment, a deliverable to hand over,
-  critical info you genuinely can't access, or a credential / permission you lack. This narrows
-  needless pauses and never weakens the blocking / escalating / irreversible gates.
-- **Use human intervention only for human-owned work.** A `human_intervention` pause is for what the agent
-  literally cannot do (create a cloud account, click a console button): never for writing code,
-  writing tests, or reviewing. The agent's own work is not a valid human gate.
+  critical info you genuinely can't access, or a credential / permission you lack — never for
+  writing code, writing tests, or reviewing; the agent's own work is not a valid human gate.
+  This narrows needless pauses and never weakens the blocking / escalating / irreversible gates.
 
 ## What the rule does NOT cover
 
@@ -317,8 +335,9 @@ AFK changes which decisions are automatic. It changes nothing else.
 
 - Skill: `/rite-resolve` (`.claude/skills/rite-resolve/SKILL.md`).
 - Workflow integration: `/rite-build` (`.claude/skills/rite-build/SKILL.md`),
-  workflow steps 0 + 2a (readiness / HITL pre-flight) and steps 4-6 (doubt / fail-on-red /
-  record) on the wright's return.
+  the readiness / HITL pre-flight stages before dispatch, and the DOUBT → PROVE
+  (fail-on-red) → RECORD stages on the wright's return
+  (`reference/one-slice-cycle.md`).
 - Render contract: `.claude/skills/rite-build/reference/checkpoint-protocol.md`.
 - Loop discipline: `.claude/skills/rite-build/reference/afk-discipline.md`.
 - Gate taxonomy: `.claude/skills/rite-define/reference/gates.md`.

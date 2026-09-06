@@ -81,6 +81,10 @@ for key in ("skill", "description", "scenarios"):
     if key not in data:
         errors.append(f"missing top-level key: {key}")
 
+agent = data.get("agent")
+if agent is not None and (not isinstance(agent, str) or not agent.strip()):
+    errors.append("agent must be a non-empty string when present")
+
 scenarios = data.get("scenarios", [])
 if not isinstance(scenarios, list):
     errors.append("scenarios is not a list")

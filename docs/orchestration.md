@@ -160,8 +160,10 @@ Native hosts, skills, exact agents, repository tools, or CI own:
 - session history, compaction, status prose, progress, plugins, and memory.
 
 The engine has no agent bridge, semantic readiness protocol/digests, heuristic
-prose parser, capability-ledger interpreter, compatibility telemetry, migration
-command, or old aliases.
+prose parser, capability-ledger interpreter, compatibility telemetry, or old
+aliases. Its `migrate` command performs deterministic schema normalization;
+artifact stubs do not establish semantic readiness or historical proof
+([ADR-0029](adr/0029-v5-workspace-schema-and-native-migration.md)).
 
 Provider/consumer changes use the existing plan and traceability artifacts: one
 canonical contract plus provider- and consumer-side asserting tests that both

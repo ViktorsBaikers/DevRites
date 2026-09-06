@@ -18,6 +18,7 @@ const gitTimeout = 60 * time.Second
 func git(repo string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
 	defer cancel()
+	// #nosec G204 -- git -C <worktree>; fixed binary, sanitized env
 	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", repo}, args...)...)
 	env := append(gitenv.Sanitize(os.Environ()),
 		"GIT_TERMINAL_PROMPT=0",

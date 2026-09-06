@@ -33,7 +33,8 @@ Read `spec.md`'s applicability map and, only when triggered, the matching
 
 ## Inputs
 In workspace `.devrites/work/<slug>/`, read `spec.md` for the acceptance criteria,
-then `evidence.md` and `tasks.md`. Run `git diff` to inspect the code and tests,
+then `evidence.md` and `tasks.md`. Run `git diff` limited to `touched-files.md` paths to
+inspect the code and tests,
 then read the test files.
 
 ## Assess

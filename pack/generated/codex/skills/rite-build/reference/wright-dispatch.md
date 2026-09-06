@@ -34,10 +34,9 @@ run approved proof, record evidence, then let host remove worktree.
 
 Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
 preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
-Parallel writer work remains forbidden until this serial pilot measures transfer,
-conflict, proof, and review outcomes on both hosts. Opt-in `$rite-build --parallel N`
-(2≤N≤3) is the only exception: path-disjoint fan-out, abort-batch, and control
-`parallel-lease.md` under [`parallel-batch.md`](parallel-batch.md). Same-worktree multi-writer / root-emulated
+Parallel isolated-writer worktrees remain forbidden until this serial pilot measures
+transfer, conflict, proof, and review outcomes on both hosts; opt-in `$rite-build --parallel N`
+(2≤N≤3) path-disjoint fan-out is the only sanctioned parallel mode. Same-worktree multi-writer / root-emulated
 worktrees stay forbidden.
 
 ## Prepare
@@ -56,7 +55,8 @@ worktrees stay forbidden.
    A new path requires a new bounded contract; the wright cannot widen the task.
 3. Record `git diff --name-only` before dispatch so unrelated work remains
    distinguishable. For an isolated pilot, also record committed base SHA and exact
-   baseline status before asking the host for isolation.
+   baseline status before asking the host for isolation. **Failing case:** paths that
+   were dirty at that baseline are listed as slice-owned after dispatch.
 
 ## Run
 
@@ -68,8 +68,8 @@ Opt-in `$rite-build --parallel N` fans out only under [`parallel-batch.md`](para
 ## Inspect and prove
 
 1. Compare the returned file list and `git diff --name-only` with task paths.
-   Reject a result that omits any required key, including empty-or-filled
-   bookkeeping arrays, or adds a path. Restore only through the same bounded
+   Reject a result that omits any required key — the bookkeeping arrays count
+   whether empty or filled — or adds a path. Restore only through the same bounded
    wright; root never widens scope or edits source.
 2. Inspect the test diff for deletion, skipping, focus markers, or loosened
    assertions. Dedicated test analysis treats weakening as Critical.

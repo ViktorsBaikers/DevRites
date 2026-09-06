@@ -21,11 +21,12 @@ duplicates, absolutes, `.devrites/**`. Empty pairwise intersection required.
 
 **SSOT:** `devrites-engine check path-disjoint [--root <dir>] [<json-file>|-]`
 (N≥2 only; pass `--root`). Exit `0` → fan-out; else force serial. Inspect-time
-overlap → sibling **gap** → abort.
+overlap → sibling **gap** → abort. **Failing case:** two parallel wrights share a
+path and fan-out proceeds without that check.
 
 ## Control vs workers
 
-Control owns `.devrites/work/<slug>/` (`parallel-lease.md` + bookkeeping).
+Control owns `.devrites/work/<slug>/` (lease + bookkeeping).
 Workers: `.scratch/parallel-wt/<batch>/<slice>/` on
 `devrites/parallel/<slug>/<batch>/<slice>` @ base `B`. Wrights never write
 `.devrites/**`.
@@ -56,6 +57,22 @@ devrites-engine parallel lease-write|lease-read|lease-clear
 ```
 
 Go is SSOT. Skill calls the engine — never ad-hoc git/bash orchestration.
+
+## Runtime isolation
+
+Each parallel worktree must own isolated runtime resources. Before fan-out,
+assign per-slice env (document in the lease or worktree README):
+
+| Resource | Pattern |
+| --- | --- |
+| HTTP port | `PORT=<base+N>` or `DEVRITES_PARALLEL_PORT_<slice>` |
+| Compose | `COMPOSE_PROJECT_NAME=devrites-<slug>-<batch>-<slice>` |
+| SQLite/DB file | separate path under the worktree or `/tmp` |
+| Dev server | one process per worktree; never share a listener |
+
+Reusing the control worktree's running server, DB, or compose stack across
+siblings causes cross-slice pollution and flaky proof. Abort if isolation cannot
+be established.
 
 ## Host
 

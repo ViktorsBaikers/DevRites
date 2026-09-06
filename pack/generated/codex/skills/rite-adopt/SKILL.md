@@ -12,10 +12,10 @@ parallel convention system.
 
 ## Workflow
 
-0. **Pre-flight (workspace anchor).** Resolve the active `.devrites/work/<slug>/` path
-   and confirm `state.md` is writable. Missing slug, wrong repo root, or unreadable
-   workspace blocks Adopt before inspection. **Failing case:** adopt starts without a
-   confirmed workspace slug → stop; do not infer from cwd alone.
+0. **Pre-flight (workspace anchor).** Resolve the repo root; take the target slug from
+   the user (ask once if material); a missing/ambiguous slug, wrong repo root, or
+   unwritable `.devrites/` blocks Adopt. **Failing case:** adopt infers the slug from
+   cwd alone → stop.
 
 1. Read core; resolve repository/sub-area and next objective. Ask once only if material.
 2. Follow [`reference/adoption.md`](reference/adoption.md): inspect current
@@ -29,10 +29,11 @@ parallel convention system.
 3. Create the workspace and write `spec.md`, `decisions.md`, `assumptions.md`,
    `questions.md`, and `state.md`. The spec separates the current baseline from
    the measurable next objective.
-4. For a structured baseline, follow the native ledger workflow in
-   [`ledger.md`](../rite-polish/reference/ledger.md): read current specs, preview
-   ADDED entries, confirm paths, refuse escape/symlink/clobber/ignored targets,
-   write, lint, and require an empty re-preview.
+4. For a structured baseline, follow the ledger's read workflow in
+   [`ledger.md`](../rite-polish/reference/ledger.md) § Reading in Spec and Adopt:
+   list ledger specs with the host filesystem and read only the touched capabilities;
+   classify against current file content, never memory. The native preview/write
+   workflow runs during Polish, not Adopt.
 5. For a verified non-obvious policy or recurring/costly mistake, prefer existing hook/lint/
    CI/type/schema enforcement; else propose one evidence-cited nearest-scope instruction edit.
    Apply only after review; never create convention bands, scores, or a command cache.

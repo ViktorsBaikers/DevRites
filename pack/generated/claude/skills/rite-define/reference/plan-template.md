@@ -14,7 +14,7 @@ Spec: ./spec.md   Decision coverage: ./decision-coverage.md   Date: <date>
 - Language/runtime/version: <...>
 - Frameworks/libraries: <...>
 - Storage/data: <...>
-- Test commands: <from spec Commands discovered>
+- Test commands: <discovered runner commands; discovery contract: rite-prove/reference/test-command-discovery.md>
 - Target/platform/constraints: <...>
 - Approach-affecting product/constraint unknowns route to `/rite-clarify`;
   `[NEEDS CLARIFICATION]` blocks approval.
@@ -71,7 +71,7 @@ silently. Resolution/supersession needs evidence.
 | Implementation-local | Reversible detail unknowable before code/tests: exact helper name, final query shape after live evidence, or a refactor that may disappear | Owner slice + observable trigger + bounds/fallback + resolution proof; never “ask later.” |
 | Action-time checkpoint | Approval/evidence mandatory when acting | Owner + gate/signal + bounds/fallback + proof; cannot hide an earlier decision. |
 
-Never local: public contracts, security/data invariants, acceptance, migration/rollback,
+Never local (SSOT; mirrored by rite-vet review-axes §0.8): public contracts, security/data invariants, acceptance, migration/rollback,
 dependency choice, cross-slice interfaces. Output per item: `HZN-### · item · horizon ·
 owner/slice · evidence · trigger/checkpoint · bounds/fallback/branches · resolution proof ·
 status`. Only a complete sweep may write `Decision horizons: none — <evidence>`.

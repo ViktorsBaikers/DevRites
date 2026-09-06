@@ -93,10 +93,39 @@ Followed `git-workflow.md`: the *why*, wrapped, in plain language.
 Cut the opener and vague phrasing. Kept the retry count, status code, evidence gap, two possible
 outcomes, and exact alert text. A smoother sentence that picked one outcome would be fabrication.
 
-## The pattern across all seven
+## 8. `review.md` finding (narrated candor)
+
+**Before (slop):**
+> I want to be upfront: two caveats I would rather flag than let you discover later. First,
+> Windows is untested. Second, the numbers in the commit message don't reproduce on this
+> hardware. Let me think step by step about what that means for seal.
+
+**After:**
+> Two caveats: Windows is untested, and the numbers in the commit message don't reproduce on
+> this hardware. Seal stays NO-GO until those are measured or scoped out.
+
+Cut the candor frame and the reasoning-chain opener. Kept both caveats and the gate implication.
+
+## 9. Chat reply (prompt restatement)
+
+**Before (slop):**
+> That's a great question. You're asking about whether we should stream the export. Thanks for
+> the rollback plan you already wrote — that legwork is what made this possible. Breaking this
+> down: streaming avoids the OOM.
+
+**After:**
+> Stream the export. Buffering OOM-ed on the 1M-row fixture (see `evidence.md`). Your rollback
+> plan still applies.
+
+Dropped the prompt echo, the recap-flattery, and "Breaking this down". Led with the decision
+and the evidence.
+
+## The pattern across all nine
 
 1. Lead with the concrete thing (what it is, what's done, what's wrong).
 2. Replace every "robust/seamless/leverage" flourish with the specific behavior + its proof.
-3. Drop negative-parallelism hooks ("not just X, it's Y") and importance labels ("pivotal").
+3. Drop negative-parallelism hooks ("not just X, it's Y"), importance labels ("pivotal"),
+   candor frames ("I want to be upfront"), and reasoning-chain scaffolding ("let me think
+   step by step").
 4. Keep the technical register intact: exact identifiers, status codes, numbered criteria,
    real enumerations. Precision is not slop.

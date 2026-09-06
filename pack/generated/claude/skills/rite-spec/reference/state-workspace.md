@@ -14,6 +14,7 @@ Load that schema before creating or updating workspace artifacts.
       README.md                  # compact workspace map
       brief.md
       spec.md
+      checklists/                # from /rite-spec step 5a
       architecture.md            # from /rite-define
       flows.md                   # optional Mermaid-first; only when useful
       visual/                    # optional HTML+outline companions (never readiness)
@@ -21,6 +22,7 @@ Load that schema before creating or updating workspace artifacts.
       assumptions.md
       questions.md
       decision-coverage.md       # from /rite-clarify
+      strategy.md                # from /rite-temper
       plan.md                    # from /rite-define
       tasks.md                   # from /rite-define
       traceability.md            # from /rite-define
@@ -96,11 +98,12 @@ last_updated: <date>
 | brief.md | Objective and bounds |
 | spec.md | Product contract |
 | decision-coverage.md | Clarification verdict; absent until /rite-clarify |
+| strategy.md | Temper record; absent until /rite-temper |
 | architecture.md | Technical map; absent until /rite-define |
 | plan.md | Technical approach; absent until /rite-define |
 | tasks.md | Vertical slices; absent until /rite-define |
 | traceability.md | Coverage dashboard; absent until /rite-define |
-| evidence.md | Proof log; absent until /rite-prove |
+| evidence.md | Proof log; absent until /rite-build or /rite-prove |
 
 ## Read next
 | Phase / role | Read |
@@ -151,8 +154,7 @@ work preserves that valid cursor. Once the prerequisite chain is green, the
 controlling caller restores the saved phase/action and removes both rows in one
 rewrite. A real HITL or exhausted-recovery stop retains the cursor for cold
 resume. Never overwrite an existing valid return cursor, and preserve every
-unrelated Markdown byte. `/rite-clarify` applies its stricter native cursor
-protocol below.
+unrelated Markdown byte. `/rite-clarify` applies its stricter native cursor protocol in `/rite-clarify`.
 
 On cold resume, a terminal `next_action` is a claim to verify, not a counter.
 Reconcile the exact fingerprint and its attempts in `drift.md` / `evidence.md`.
@@ -177,6 +179,7 @@ slices remaining`; preserve that presentation rather than migrating it.
 status: open | answered | dropped
 slice: spec | plan | SLICE-001
 gate: advisory | validating | blocking | escalating
+route: <specialist tag> (escalating only; omit otherwise)
 question: <one crisp sentence>
 options:
   1. <recommended> (Recommended) - <trade-off>

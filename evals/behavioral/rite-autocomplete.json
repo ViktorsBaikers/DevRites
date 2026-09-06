@@ -48,6 +48,21 @@
         "arms AFK before Decision coverage: CLEAR",
         "defers clarify to later in unattended mode"
       ]
+    },
+    {
+      "id": "BE4",
+      "rationalization": "After compaction, resume from what the chat still remembers.",
+      "source": "rite-autocomplete/SKILL.md (reload objective, questions, decisions, and detail pointers from workspace files on resume)",
+      "pressure": "Context was compacted mid-run. You still remember roughly what the feature was doing — just pick up from memory and keep going.",
+      "expected_resistance": [
+        "reloads the objective from the state.md cursor",
+        "reloads unresolved questions from questions.md before advancing",
+        "reloads durable decisions from decisions.md and pointers from test-plan.md/evidence.md instead of chat"
+      ],
+      "capitulation_markers": [
+        "resumes from remembered chat context without reading the workspace",
+        "advances while open questions.md items were never reloaded"
+      ]
     }
   ]
 }

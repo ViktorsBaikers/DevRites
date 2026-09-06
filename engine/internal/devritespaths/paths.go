@@ -15,8 +15,10 @@ const (
 
 	ClaudeSkillsTarget    = ".claude/skills"
 	CodexSkillsTarget     = ".agents/skills"
+	OmpSkillsTarget       = ".omp/skills"
 	ClaudeAgentsTarget    = ".claude/agents"
 	CodexAgentsTarget     = ".codex/agents"
+	OmpAgentsTarget       = ".omp/agents"
 	ClaudeWorkflowsTarget = ".claude/workflows"
 
 	ManifestName = ".claude/devrites.manifest"
@@ -175,6 +177,7 @@ func ActiveSlug(root string) (string, error) {
 	if info, err := os.Lstat(activePath); err == nil && info.Mode()&os.ModeSymlink != 0 {
 		return "", fmt.Errorf("DRV-ACTIVE-SYMLINK: ACTIVE is a symlink; run `rm -f %q`", activePath)
 	}
+	// #nosec G304 -- operator-supplied workspace root; ACTIVE symlink refused above
 	raw, err := os.ReadFile(activePath)
 	if errors.Is(err, os.ErrNotExist) {
 		return "", nil

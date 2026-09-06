@@ -253,8 +253,8 @@ func observeWorkspace(root, slug string, callback observationCallback) (*Workspa
 	if err != nil {
 		return nil, ObservationWorkspaceInvalid
 	}
-	defer roots.devrites.Close()
-	defer roots.workspace.Close()
+	defer func() { _ = roots.devrites.Close() }()
+	defer func() { _ = roots.workspace.Close() }()
 
 	inventory := observationInventory()
 	facts := make([]ArtifactFact, 0, len(inventory))
@@ -456,7 +456,7 @@ func observeArtifact(location artifactLocation, callback observationCallback) (A
 	if err != nil {
 		return artifactFailureResult(location.path, snapshot, artifactUnchanged(location, snapshot), err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	openedInfo, err := file.Stat()
 	if err != nil {

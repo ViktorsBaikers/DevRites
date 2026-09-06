@@ -68,7 +68,7 @@ Approval requires an **explicit** yes. Treat these replies differently:
 For a short or vague request (`"design a contact page"`), do not ask isolated questions.
 Sketch the **decision tree** first, then resolve each branch **depth-first** with the
 protocol above. Domain branches per area:
-`rite-spec/reference/interview-patterns.md`.
+[`../rite-spec/reference/interview-patterns.md`](../rite-spec/reference/interview-patterns.md).
 
 ## Reframe (once, when stuck)
 If the interview is not converging, use **one** turn to challenge the premise:
@@ -78,7 +78,7 @@ protocol with the revised premise.
 ## /clarify mode: coverage scan of an existing spec
 When clarifying a written spec rather than extracting intent from scratch, first enumerate
 its actors, journeys/components, states, data boundaries, interfaces/integrations, and
-operational/proof surfaces. Scan every material surface against the caller's fixed taxonomy and mark
+operational/proof surfaces. Scan every material surface against that taxonomy and mark
 **Clear / Partial / Missing** with evidence. Ask at most **3 prioritized decision packets per
 pass**, targeting Missing before Partial, one per turn with an explicit recommendation and reason.
 A packet may close
@@ -86,7 +86,8 @@ several cells only when they share one owner and trade-off.
 
 **Integrate each answer into the relevant spec section** immediately. A Q&A log alone is
 insufficient.
-Append a dated **`## Clarifications`** block to `spec.md` with the question and resolution.
+Record each question and resolution in `decision-coverage.md` as scan evidence, not a
+transcript block in `spec.md`.
 Re-run the scan after each pass. Packet limits control cognitive load, never readiness. Continue
 later passes while human-owned blockers remain, and stop only when every row is clear, agent-owned,
 not applicable, or explicitly deferred by the user with a nonblocking reason, owner, and validation

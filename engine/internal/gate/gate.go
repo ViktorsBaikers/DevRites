@@ -103,6 +103,12 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 			}
 		}
 	}
+	if len(missingFiles) == 0 {
+		for _, problem := range acceptanceMapProblems(observation, policy) {
+			stateProblems = append(stateProblems, "acceptance-map: "+problem)
+			blocked = true
+		}
+	}
 	if len(missingFiles) == 0 && phaseRequiresReadinessBinding(policy) {
 		expected, bindingErr := verifyReadinessBinding(observation)
 		if bindingErr != nil {
@@ -134,6 +140,30 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 		result.ReasonID = reason.GateReadinessStale
 	}
 	return result, nil
+}
+
+func acceptanceMapProblems(observation *state.WorkspaceObservation, policy state.PhasePolicy) []string {
+	requireTasks := phaseRequiresTasks(policy)
+	requireTestPlan := phaseRequiresTestPlan(policy)
+	if !requireTasks && !requireTestPlan {
+		return nil
+	}
+	spec, ok := observation.Fact("spec.md")
+	if !ok || spec.State() != state.ArtifactPresent {
+		return nil
+	}
+	var tasks, testPlan []byte
+	if requireTasks {
+		if fact, ok := observation.Fact("tasks.md"); ok && fact.State() == state.ArtifactPresent {
+			tasks = fact.Bytes()
+		}
+	}
+	if requireTestPlan {
+		if fact, ok := observation.Fact("test-plan.md"); ok && fact.State() == state.ArtifactPresent {
+			testPlan = fact.Bytes()
+		}
+	}
+	return state.ParseAcceptanceMap(spec.Bytes(), tasks, testPlan, requireTasks, requireTestPlan).Problems
 }
 
 func missingSections(observation *state.WorkspaceObservation, required []state.Section) []state.Section {

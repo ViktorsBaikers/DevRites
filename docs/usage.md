@@ -8,6 +8,7 @@ lifecycle. Workspace phases first read the active workspace from
 command that can create or select one. `/rite-upgrade [slug]` is the
 compatibility audit for an older active workspace that cannot resume.
 
+- **First install** → [README Quick start](../README.md#quick-start) (`npx devrites@latest`)
 - **Full command reference** → [`command-map.md`](command-map.md)
 - **Flow diagrams** → [`flow.md`](flow.md)
 - **Architecture rationale** → [`architecture.md`](architecture.md)

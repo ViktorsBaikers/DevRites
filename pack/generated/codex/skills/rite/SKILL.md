@@ -27,6 +27,8 @@ F=.agents/skills/rite-$V/SKILL.md
 # Then Read "$F" and follow its workflow with $ARGS as that skill's $ARGUMENTS.
 ```
 
+`use` and `guide` are handled inline per the sections below, not via a skill file.
+
 What each verb does lives once, in the Menu below; this table is the invocation map only.
 
 | Verb | Skill |
@@ -95,7 +97,7 @@ Called phase skills own the shared completion reply contract
 1. **Verb in `$ARGUMENTS`** → invoke the matching skill per the table above.
 2. **No args** → menu mode, as above.
 3. **Unrecognized first token** → tell the user the known verbs and stop. Don't guess.
-4. **No active feature** and the user asked "where am I" or named no verb → point at `$rite spec <feature>` (or `$rite-spec`). Don't summarize state yourself: `$rite status` (or `$rite-status`) owns that.
+4. **No active feature** and the user asked "where am I" → point at `$rite spec <feature>` (or `$rite-spec`). Don't summarize state yourself: `$rite status` (or `$rite-status`) owns that.
 
 ## Menu
 

@@ -32,22 +32,22 @@ Ordered source aggregate SHA-256: `9ab6e686078d6e4612a15146d9daf1bb9c3050838964b
 
 | File | SHA-256 |
 | --- | --- |
-| `CONTEXT.md` | `7b0a9fede9c35181030bf212847c32e28f488105a7fbb64e3feae8252a77badf` |
-| `docs/engine/commands.md` | `665e8f89160d5fbf80b6e1ff639cf0e24ec6afa2d227b1498819f121a4cea325` |
-| `engine/internal/gate/gate.go` | `f8b463855b7c84de0fafa91103e6689b5e6e9188eec4f12fd5811fd2e5c408dc` |
-| `engine/internal/gate/gate_test.go` | `44bf4a499a7906d62ab7c532464bd6ae107d4f1837c98a917f3ece07de7123a3` |
-| `engine/internal/gate/readiness_binding.go` | `38702d46fffaf636767b59613757630403279353b003ad3eb01299997928581e` |
-| `engine/internal/gate/readiness_binding_test.go` | `e82cee433908c056c0dc103396ffa1978d3af67aa2abb2bc101aa74a954ce165` |
+| `CONTEXT.md` | `49536ca1334fcbb428760bbb0298d242b3bd1b6053845a151c961181a772d547` |
+| `docs/engine/commands.md` | `9a76ac77ff37e35502223e19a66015ceb989aef90fff8dbd3652154ce5e11d80` |
+| `engine/internal/gate/gate.go` | `df1e546893699ef2a1a66370e0ca67d9b3f376fb54867402b800b2bd355e8823` |
+| `engine/internal/gate/gate_test.go` | `31418952c6bb6189cf0a643603b2176ae9a53ba820c552b5c5deb334d2890611` |
+| `engine/internal/gate/readiness_binding.go` | `53aadadbe176a73c3987745fcdbf900c4bcaf831a5cd2721c43dd2157efb0fa3` |
+| `engine/internal/gate/readiness_binding_test.go` | `d364232b94c11875cb28e9007bb58ceb198469fde9a5142ce82c01e4a49e9de1` |
 | `engine/internal/state/feature.go` | `c0aacd856df6499c305eb34234ca7e080c77f3a571f170950cfe759e9a537e10` |
-| `engine/internal/state/observation.go` | `3c4bfbcfbb07a8f876b299c62f14d60e558ab8b7f4e395126bccb90645c1489a` |
+| `engine/internal/state/observation.go` | `2a52f991415ee1d53bf50e58d0cc0890bde40e93e7d8ac4e13c049405db82c89` |
 | `engine/internal/state/observation_open_other.go` | `5054756800578cff65f9f0f7aa0bd1e36c101e92aadccdc05f7d68b11ba8543a` |
 | `engine/internal/state/observation_open_unix.go` | `eb650dbce77f018ea2c4cb6b333ec33124c2d20144c34db87973722c80d47449` |
-| `engine/internal/state/observation_test.go` | `2aa944e0f091d9cbc1ea266307e02d0ecaff51777798163c4b4024108767145d` |
+| `engine/internal/state/observation_test.go` | `6d803aa1655a3fbbbfd6a1bdaac374cef161b14f336e52b7778d8d912633d1fb` |
 | `engine/internal/state/observation_unix_test.go` | `d1753787d86d5d892a295a3b97ae3b95a75295e38b8f8791fab8c2fbf782785e` |
-| `engine/internal/state/schema.go` | `1375c0aae4302b6b744680cb0a48bc96b5a7bd7c48710a95596b2652c8ad032b` |
-| `engine/internal/state/state_test.go` | `20dc824c638eeda54dd79ed2ce7887de845bf3ec4335ea01e3f6965f9a6ed2c9` |
-| `engine/internal/state/status.go` | `68fad1ef014af93333182fdd44197e0fb5cb5a4002dda09c3052917f6828b257` |
-| `engine/tests/gate_test.go` | `81fd365288c608056e8ac43e8de52e6afd04deda6cfbf3c85ed9d5c8eeb2018a` |
+| `engine/internal/state/schema.go` | `8bc7e8575ae94beeaa0ebd8676525a0970cb03ab9582e3bbb8e5fcaa24fced32` |
+| `engine/internal/state/state_test.go` | `4275340b10bfeba2b726f8c16e06cc6240df9d2d84c01e84c5b7c2e6f2d72be6` |
+| `engine/internal/state/status.go` | `dfb601037d73228ed574a584f55e9aae364bfa329c3b47a100682a25dbad81f5` |
+| `engine/tests/gate_test.go` | `844aadde4a817ac9064434ba2ea21563ce5cb2e209756fdca3fc56d69830ca42` |
 | `engine/tests/workspace_observation_migration_test.go` | `7ae184db9c3d395f2b48a5bd915fa96b72f0a44c5d319d88114fa397c99882a4` |
 
 ## Deliberately untouched

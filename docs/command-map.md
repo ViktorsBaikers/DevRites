@@ -40,7 +40,8 @@ The Go surface is intentionally closed and deterministic:
 
 | Lane | Commands | Owner |
 |---|---|---|
-| Candidate and deterministic checks | `check candidate`, `check readiness [--emit-binding]`, `check seal`, `check task-graph`, `check path-disjoint`, `check skill-trust` | Candidate validates/hashes the strict project manifest; readiness checks phase files, the required `tasks.md` slice graph, or emits the vetted Build-input binding; seal checks final files/open gates, that graph and binding, then exact candidate bindings. |
+| Candidate and deterministic checks | `check candidate`, `check readiness [--emit-binding]`, `check seal`, `check task-graph`, `check path-disjoint`, `check skill-trust`, `check indexes` | Candidate validates/hashes the strict project manifest; readiness checks phase files, the required `tasks.md` slice graph, or emits the vetted Build-input binding; seal checks final files/open gates, that graph and binding, then exact candidate bindings. `check indexes` reports install manifest and optional code-index directory presence as JSON. |
+| Workspace observation | `observe summary`, `orient` | JSON workspace snapshot for agents; `orient` is an alias for `observe summary`. |
 | Atomic workspace state | `state resolve`, `state close`, `migrate [--dry-run] [--answer id=choice]` | Go owns answer/drop/batch resolution, transactional close, and fail-closed v5 schema normalization. |
 | Security | `secret-scan` | `/rite-ship`, safe hooks, or an operator scans staged blobs, stdin, or touched files. |
 | Install/operator | `install`, `update`, `uninstall`, `version` | Direct update acquires latest; npm/bootstrap may supply local candidates; the engine performs manifest-owned local changes. |
@@ -133,7 +134,7 @@ the shared reference library.
 | [`devrites-doubt`](../pack/.claude/skills/devrites-doubt/SKILL.md) | non-trivial decision in build/review | CLAIM → EXTRACT → DOUBT → RECONCILE → STOP | adversarial; the root gates genuine human-owned uncertainty |
 | [`devrites-ux-shape`](../pack/.claude/skills/devrites-ux-shape/SKILL.md) | UI detected in `/rite-spec` | Plan UX/UI before code → `design-brief.md` (direction, states, interaction, visual-direction probe) | the build target; refs: brief-template/visual-direction-probe |
 | [`devrites-frontend-craft`](../pack/.claude/skills/devrites-frontend-craft/SKILL.md) | UI detected in build/polish | Build **to** `design-brief.md`: register, refine-per-slice, states, anti-slop | refs: shape/craft/design-references |
-| [`devrites-prose-craft`](../pack/.claude/skills/devrites-prose-craft/SKILL.md) | a phase writes prose; `/rite-polish` Phase 1 catch | Human-voice writing: strip LLM tells, keep precise lists/terms | refs: banned-phrases, structures, examples |
+| [`devrites-prose-craft`](../pack/.claude/skills/devrites-prose-craft/SKILL.md) | a phase writes prose; `/rite-polish` Phase 1 catch | Human-voice writing: strip LLM tells (including assistant leaks), keep precise lists/terms | refs: banned-phrases, structures, examples |
 | [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | UI in prove/polish | Browser proof ladder + evidence schema + the structured **Visual Verdict** table | harness preferred |
 | [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | failing tests/build/runtime | 7-step: loop → reproduce → hypotheses → trace → instrument → fix → cleanup | caller + recovery count three failed attempts per causal fingerprint from context and Dead ends/evidence |
 | [`devrites-api-interface`](../pack/.claude/skills/devrites-api-interface/SKILL.md) | cross-boundary slice | Stable API/contract design | FE/BE split |

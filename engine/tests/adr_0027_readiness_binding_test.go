@@ -26,7 +26,7 @@ func TestADR0027ReadinessBindingBlocksPlanDriftWithRestoredMtime(t *testing.T) {
 		"tasks.md":             testutil.CanonicalTasksMarkdown,
 		"traceability.md":      "# Traceability\n\nAC-001 -> slice A.\n",
 		"eng-review.md":        "# Engineering review\n\nREADY\n",
-		"test-plan.md":         "# Test plan\n\nRun focused Go tests.\n",
+		"test-plan.md":         "# Test plan\n\nRun focused Go tests for AC-001.\n",
 	} {
 		testutil.WriteFile(t, filepath.Join(workspace, name), body)
 	}

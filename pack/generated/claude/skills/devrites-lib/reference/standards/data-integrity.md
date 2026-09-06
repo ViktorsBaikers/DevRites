@@ -1,7 +1,8 @@
 # Data integrity
 
 Load this when a change writes durable state, changes a schema, migrates or backfills
-records, changes retention, or can expose one tenant's data to another. Data work is
+records, changes retention, can expose one tenant's data to another, or feeds a
+model/feature pipeline (training data, features, labels, embeddings). Data work is
 complete only when normal operation, interruption, retry, and rollback preserve the
 declared invariants.
 
@@ -16,13 +17,29 @@ Name before planning implementation:
 - retention/deletion obligation, including backups, replicas, caches, indexes, and
   derived stores;
 - old and new readers/writers that coexist during rollout.
-- Timestamps normalize before they persist: one storage scale (UTC instants), explicit
-  conversion only at input/display boundaries; two writers storing different scales for
-  the same fact is an invariant violation caught in review. TZ/DST behavioral coverage
-  lives in [`testing.md`](testing.md).
+
+Timestamps normalize before they persist: one storage scale (UTC instants), explicit
+conversion only at input/display boundaries; two writers storing different scales for
+the same fact is an invariant violation caught in review. TZ/DST behavioral coverage
+lives in [`testing.md`](testing.md).
 
 An invariant enforced only by prose is not a control. Prefer a database constraint or
 atomic storage primitive, then add behavioral proof at the public surface.
+
+## Model and feature pipelines
+
+Durable-state rules apply to ML-adjacent writes with their own failure modes:
+
+- **Data contract:** producers and consumers bind to a versioned schema plus quality rules
+  owned beside the pipeline. Two stages reading one field under different implicit schemas
+  is an invariant violation caught like any schema drift.
+- **Point-in-time correctness:** a feature may use only data available at prediction time.
+  Label leakage through later-arriving data invalidates the artifact silently. **Failing
+  case:** a feature computed from post-prediction-time data passes review; a backfilled
+  label join reads as valid history.
+- **Training/serving skew:** the same feature computed two ways is a behavioral difference
+  to test, not a deployment note; drift monitoring rides the observability owner
+  ([`observability.md`](observability.md)).
 
 ## Migration and backfill path
 
@@ -95,5 +112,7 @@ data scale, before/after counts, rejected rows, invariant results, and observed 
   forward-only recovery accepted by the human owner.
 - No migration GO with unknown old readers/writers, unresolved invariant violations,
   unbounded backfill, missing interruption state, or no production-scale risk estimate.
+  **Failing case:** GO with "revert if needed" and no rehearsal command or before/after
+  counts → NO-GO.
 - No data-loss or cross-tenant risk may be dismissed as "pre-existing" without baseline
   evidence from before the candidate.

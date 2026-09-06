@@ -57,8 +57,7 @@ Only after functionality is complete **and** Phase 3 is done. Systematic detail
 pass against the UI quality bar below: zoom in, squint, use the thing. Little
 things add up.
 
-Meet the **2026 quality bar**. CWV (LCP ≤ 2.5s / INP ≤ 200ms / CLS ≤ 0.1) and
-WCAG 2.2 AA. Avoid [anti-ai-slop.md](anti-ai-slop.md). If the spec saved design
+Meet the measurable bar below. Avoid [anti-ai-slop.md](anti-ai-slop.md). If the spec saved design
 references in `references/`, **match them**.
 
 Run the production-hardening sweep before declaring polish done (extreme
@@ -97,7 +96,9 @@ Polish verifies against the frontend quality standards
 (`devrites-frontend-craft/reference/quality-standards.md`), measured not assumed:
 - Core Web Vitals (p75): **LCP ≤ 2.5 s · INP ≤ 200 ms · CLS ≤ 0.1**.
 - WCAG 2.2 AA: semantic HTML, keyboard-operable, visible focus ≥ 3:1, no drag-only.
-- Responsive at **320 / 768 / 1024 / 1440**; survives 200% text zoom; no horizontal scroll.
+- Responsive at the canonical viewport set (quality-standards § Responsive — currently
+  **320 / 768 / 1024 / 1440**, plus the 320–1920 no-horizontal-scroll sweep); survives
+  200% text zoom.
 - No console errors/warnings; no axe violations; `prefers-reduced-motion` honored.
 Cite the evidence in `browser-evidence.md`.
 

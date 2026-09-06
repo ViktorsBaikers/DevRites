@@ -65,7 +65,7 @@ func runUpdate(opts Options) error {
 	if err != nil {
 		return fmt.Errorf("resolve payload %s: %w", opts.PayloadDir, err)
 	}
-	if err := hostpack.ValidatePayload(os.DirFS(payload), true); err != nil {
+	if err := hostpack.ValidatePayload(os.DirFS(payload), true, true); err != nil {
 		return fmt.Errorf("local update payload under %s is invalid: %w", payload, err)
 	}
 	installFlags := manifestHeader(mf, "devrites-flags")
@@ -153,6 +153,7 @@ func runRemoteUpdate(opts Options, target, installed string) error {
 	if opts.Force {
 		args = append(args, "--force")
 	}
+	// #nosec G204 -- re-execs the located engine binary with fixed migration args
 	cmd := exec.CommandContext(ctx, candidate.EnginePath, args...)
 	cmd.Stdout = opts.Stdout
 	cmd.Stderr = opts.Stderr

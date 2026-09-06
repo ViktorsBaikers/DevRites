@@ -18,37 +18,73 @@ func TestValidatePayloadRequiresClaudeAndCodexFiles(t *testing.T) {
 		"codex/agents/devrites-code-reviewer.toml":     {},
 		"codex/AGENTS.md":                              {},
 		"codex/config.toml":                            {},
+		"omp/skills/rite/SKILL.md":                     {},
+		"omp/agents/devrites-code-reviewer.md":         {},
+		"omp/.omp-plugin/plugin.json":                  {},
 	}
-	if err := ValidatePayload(payload, true); err != nil {
+	if err := ValidatePayload(payload, true, true); err != nil {
 		t.Fatal(err)
 	}
 	delete(payload, "codex/config.toml")
-	err := ValidatePayload(payload, true)
+	err := ValidatePayload(payload, true, true)
 	if err == nil || !strings.Contains(err.Error(), "missing codex/config.toml") {
 		t.Fatalf("ValidatePayload error = %v, want missing codex/config.toml", err)
 	}
-	if err := ValidatePayload(payload, false); err != nil {
+	if err := ValidatePayload(payload, false, true); err != nil {
 		t.Fatalf("claude-only payload should not require codex files: %v", err)
+	}
+	delete(payload, "omp/.omp-plugin/plugin.json")
+	err = ValidatePayload(payload, false, true)
+	if err == nil || !strings.Contains(err.Error(), "missing omp/.omp-plugin/plugin.json") {
+		t.Fatalf("ValidatePayload error = %v, want missing omp/.omp-plugin/plugin.json", err)
+	}
+	if err := ValidatePayload(payload, false, false); err != nil {
+		t.Fatalf("claude-only payload should not require omp files: %v", err)
 	}
 }
 
 func TestInstallTreesMapPayloadsToTargets(t *testing.T) {
-	got := InstallTrees(true, true, true)
+	got := InstallTrees(true, true, true, true)
 	want := []Tree{
 		{PayloadPrefix: "claude/skills", TargetPrefix: ".claude/skills"},
 		{PayloadPrefix: "codex/skills", TargetPrefix: ".agents/skills"},
+		{PayloadPrefix: "omp/skills", TargetPrefix: ".omp/skills"},
 		{PayloadPrefix: "claude/agents", TargetPrefix: ".claude/agents"},
 		{PayloadPrefix: "codex/agents", TargetPrefix: ".codex/agents"},
+		{PayloadPrefix: "omp/agents", TargetPrefix: ".omp/agents"},
 		{PayloadPrefix: "claude/workflows", TargetPrefix: ".claude/workflows"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("InstallTrees() = %#v, want %#v", got, want)
 	}
-	for _, trees := range [][]Tree{InstallTrees(true, false, true), InstallTrees(false, true, true)} {
+	for _, trees := range [][]Tree{InstallTrees(true, false, true, true), InstallTrees(false, true, true, true)} {
 		for _, tree := range trees {
 			if tree.PayloadPrefix == "claude/workflows" {
 				t.Fatal("Claude workflow installed without both skills and agents")
 			}
+		}
+	}
+	for _, tree := range InstallTrees(true, true, true, false) {
+		if strings.HasPrefix(tree.TargetPrefix, ".omp/") {
+			t.Fatalf("omp tree installed with withOmp=false: %#v", tree)
+		}
+	}
+}
+
+func TestAliasTargetsIncludeOmpWhenEnabled(t *testing.T) {
+	got := AliasTargets(Alias{Name: "define"}, true, true)
+	want := []string{
+		".claude/skills/define/SKILL.md",
+		".agents/skills/define/SKILL.md",
+		".omp/skills/define/SKILL.md",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("AliasTargets() = %#v, want %#v", got, want)
+	}
+	got = AliasTargets(Alias{Name: "define"}, true, false)
+	for _, rel := range got {
+		if strings.HasPrefix(rel, ".omp/") {
+			t.Fatalf("omp alias installed with withOmp=false: %s", rel)
 		}
 	}
 }

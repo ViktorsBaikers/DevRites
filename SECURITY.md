@@ -209,9 +209,9 @@ Repository npm-audit exceptions are temporary trust records, not claims that an
 upstream issue is fixed. Each entry in `scripts/npm-audit-exceptions.json` is
 restricted to an exact advisory, package range, installed node path, owner,
 reason, source, and near-term expiry; validation re-audits the live dependency
-graph and fails stale, broadened, unmatched, or expired entries. In particular,
-the `brace-expansion` advisory remains present in npm's bundled dependency chain
-until a patched ancestor is available.
+graph and fails stale, broadened, unmatched, expired, or inside-the-7-day
+refresh-horizon entries. Prefer pinning a patched ancestor (see
+`package.json` `overrides`) over extending an expiry.
 
 ### Agentic trust boundaries
 

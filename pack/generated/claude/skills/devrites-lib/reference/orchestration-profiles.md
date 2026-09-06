@@ -17,6 +17,11 @@ ownership, relaxes a gate, or authorizes an irreversible action. Missing or
 incompatible exact roles stop for HITL; the root never substitutes a generic
 agent or performs the specialist's work inline.
 
+A child result is a claim. Admit it only against observations (`git diff
+--name-only`, recorded commands, artifact existence) — never against the
+child's prose. **Failing case:** a wright reports "done" and the parent
+advances without comparing touched paths to the path contract.
+
 The complete 17-role catalog and source-writing boundary live in
 [`standards/agents.md`](standards/agents.md). Review-specific applicability
 lives in [`parallel-dispatch.md`](parallel-dispatch.md).

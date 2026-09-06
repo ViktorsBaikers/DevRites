@@ -60,6 +60,7 @@ Fold verified technical findings into the plan; present each human-owned decisio
 uses `depth.md`. Never invent findings.
 
 ### 1. Architecture
+
 - Boundaries, coupling, data flow, single points of failure. Record invariants, not
   scaffolding; medium+ decisions state `Binds:`/`Prevents:`.
 - Repository/deployable roots, canonical contract and mutable-state ownership, shared
@@ -72,6 +73,7 @@ uses `depth.md`. Never invent findings.
   build will write? Name the files that should carry one.
 
 ### 2. Plan code-quality
+
 - Implied modules and planned cross-slice repetition.
 - Error-handling + edge cases the plan names, and the ones it doesn't (call those out explicitly).
 - Over-engineering (premature abstraction, an extension point with no second caller) vs
@@ -79,7 +81,9 @@ uses `depth.md`. Never invent findings.
 - Tech-debt hotspots and diagrams the change makes stale.
 
 ### 3. Test-coverage design
+
 Design tests before code.
+
 - **Framework:** match the existing runner/conventions; never add a runner for one change.
 - **Acceptance → tests.** Every AC maps to a planned surface assertion, not an internal proxy.
 - **Map applicable risk → tests.** Data and integration rows cover their relevant
@@ -95,9 +99,10 @@ Design tests before code.
 - Produce the **coverage diagram** (shape below) and add a specific test requirement per GAP.
 
 #### Coverage diagram (write to `test-plan.md`)
+
 Both code paths and user flows in one view; mark E2E-worthy `[→E2E]` and eval-worthy `[→EVAL]`:
 
-```
+```text
 CODE PATHS                                          USER FLOWS
 [+] services/billing                                [+] Checkout
   ├── processPayment()                                ├── [★★★ planned] complete purchase — checkout.e2e
@@ -106,13 +111,15 @@ CODE PATHS                                          USER FLOWS
   └── refundPayment()                               [+] Error states
       └── [★  planned] full refund only               └── [GAP]        network-timeout UX
 
-COVERAGE: 4/9 planned (44%)  |  GAPS: 5 (2 E2E)  |  REGRESSIONS: 1 (Critical)
+COVERAGE: 3/7 planned (43%)  |  GAPS: 4 (1 E2E)  |  REGRESSIONS: 0
 ```
+
 Legend: ★★★ behavior+edge+error · ★★ happy path · ★ smoke · [→E2E] integration · [→EVAL] LLM eval.
 **Fast path:** every acceptance criterion already maps to a planned test → "Test coverage: all
 acceptance criteria covered ✓" and continue.
 
 ### 4. Performance
+
 - N+1 / unbounded queries and DB access patterns; memory concerns; caching opportunities;
   high-complexity hot paths.
 - Per `performance.md`: name a number to measure or a budget: don't recommend speculative
@@ -121,7 +128,9 @@ acceptance criteria covered ✓" and continue.
 ---
 
 ## Confidence and verification gate
+
 Tag each finding `[severity] (confidence: N/10) <plan/task/spec ref> — finding`:
+
 - **9-10** verified against a quoted line · **7-8** strong pattern match → report normally.
 - **5-6** moderate → report with "verify this is real".
 - **≤4** speculative → **suppress from the walk-through**, appendix only.
@@ -132,7 +141,9 @@ Quote supporting lines. Without them confidence is ≤4 and suppressed; never in
 ---
 
 ## Present human-owned decisions
+
 Use standard `AskUserQuestion`:
+
 - **One decision = one call.** Never ask about agent work or batch unrelated choices.
 - Concrete: name the plan/task section + the quoted line.
 - 2-3 options, including "do nothing / proceed as-is" where reasonable.
@@ -148,6 +159,7 @@ Use standard `AskUserQuestion`:
 ---
 
 ## Required outputs (after the axes)
+
 1. **"NOT in scope":** considered/deferred work + rationale, folded into plan boundaries and
    spec Non-goals via the Guard.
 2. **"What exists":** solving code/flows and reuse/rebuild disposition; missed reuse is §0.

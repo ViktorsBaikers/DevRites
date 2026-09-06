@@ -32,6 +32,8 @@ the same decisions from it.
   decision, and voice-bearing detail. Restructure freely; keep the information.
 - Keep quotations, titles, proper names, code spans/fences, CLI output, error strings, and text
   discussed as an example exact unless the user asks to edit that material.
+- Keep YAML frontmatter, markdown tables, URLs, and file paths exact unless the user asked to
+  change them. A wording fix is not worth corrupting structured content.
 - Let unknowns stay unknown. Name the missing evidence or assumption, and state what the available
   evidence does establish. Plausible history or behavior is still invented.
 - Add only facts, opinions, anecdotes, slang, and quirks supported by the source or an explicit
@@ -51,6 +53,8 @@ the same decisions from it.
 | Hedging stacks. "It's important to note that, generally, in most cases" | Make the claim, or cut it. |
 | False agency: "the data tells us", "the complaint becomes a fix", "the decision emerges" | Name who did it. "The grader reads X and returns Y." |
 | Meta-narration, "In this section we'll…", "Let me walk you through…", "as we'll see" | Let the text move; delete the announcement. |
+| Reasoning-chain scaffolding. "Let me think step by step", "Breaking this down", "First, let's consider" | State the conclusion, then the evidence. |
+| Assistant leaks. Cutoff disclaimers, unfilled placeholders, chatbot citation markup, `utm_source=chatgpt.com` | Delete the leak; keep the fact. See `devrites-prose-craft/reference/banned-phrases.md`. |
 
 ## Voice (prose register)
 
@@ -99,6 +103,9 @@ Scrubbing hard has a failure mode: flat, uniformly-paced text with no position t
 A `decisions.md` that won't say which option is better, or a review that reports without
 judging, is its own kind of slop. Keep the engineering point of view: recommend, rank,
 name the trade-off. Direct is the goal; lifeless is not.
+
+Pattern hits are writing-quality signals, not proof of authorship. One isolated tell is
+not a verdict; act on clusters or a clear register mismatch.
 
 ## Output hygiene: what not to surface
 

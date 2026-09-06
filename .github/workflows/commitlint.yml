@@ -20,10 +20,12 @@ jobs:
   commitlint:
     name: commitlint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -60,6 +62,9 @@ jobs:
           LINT_STATUS: ${{ steps.lint.outputs.status }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
+          # The echo lines below are intentional literal content (backticks,
+          # $-forms) rendered into the PR comment; no expansion is wanted.
+          # shellcheck disable=SC2016
           {
             echo 'body<<COMMENT_EOF'
             if [ "$LINT_STATUS" = "0" ]; then

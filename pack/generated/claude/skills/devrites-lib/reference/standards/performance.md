@@ -29,3 +29,23 @@ Baseline checks + measurement commands:
 Optimize what the change touches or what a measurement flags. Project-wide performance
 work is its own effort: record it as a follow-up, don't smuggle it into an unrelated
 change.
+
+## Unbounded work (failing cases)
+
+These are performance defects even before a budget exists. Name the bound or
+record `cannot_verify` with the missing measurement.
+
+- **N+1 / fan-out:** a list or handler that issues one query/call per item
+  with no cap, batch, or pagination. **Failing case:** a 10-row fixture is
+  green; 10k rows time out in production.
+- **Unbounded render:** a view that mounts the full collection with no
+  windowing, pagination, or virtualization when the set can grow.
+- **Cache without invalidation:** a cache write with no TTL, explicit
+  invalidate-on-write, or stampeded-miss plan. **Failing case:** a stale
+  read is the only proof the cache "works."
+- **Environment skew:** a lab number from a local SSD or empty dataset
+  labeled as field/production evidence ([`testing.md`](testing.md) elapsed-time
+  rule still applies). Re-measure on the named environment or keep the `Lab`
+  label.
+- **Unmeasured hot path:** an optimization on a path with no before-number.
+  Revert; it is complexity.

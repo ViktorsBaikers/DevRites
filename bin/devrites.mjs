@@ -62,6 +62,7 @@ Common flags:
   --dry-run             Show the plan, change nothing
   --force               Overwrite existing non-DevRites files
   --no-codex            Skip Codex support files (.agents, .codex, AGENTS.md)
+  --no-omp              Skip OMP support files (.omp/skills, .omp/agents)
   --short-aliases=all   Also install /define /build /prove /seal
   --no-agents           Skip hook-free native specialist profiles
   --no-skills           Skip skills and bundled engineering standards

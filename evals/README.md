@@ -12,8 +12,11 @@ Codex or Claude or claim to measure model behavior.
   `scripts/run-outcome-evals.sh`.
 - `behavioral/` contains pressure scenarios for gating skills. CI validates their
   shape with `scripts/run-behavioral-evals.sh`.
-- `coverage.json` lists gating skills that must have behavioral corpora. CI
-  validates the ledger with `scripts/check-gating-eval-ledger.sh`.
+- `coverage.json` lists gating skills and P0 agents that must have behavioral
+  corpora. CI runs `scripts/check-gating-eval-ledger.sh` blocking for
+  `require_behavioral` and `require_behavioral_agents`. `--advisory` still
+  prints the full scoreboard with exit 0. Agent-owned files (filename prefix or
+  `"agent"`) count for that agent only; they do not satisfy a skill's ledger row.
 
 Use Codex or Claude's native evaluation/session facilities to measure routing or
 behavior. DevRites owns only the corpora and deterministic artifact invariants.

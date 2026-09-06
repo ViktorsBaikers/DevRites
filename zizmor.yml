@@ -1,0 +1,17 @@
+# zizmor configuration. https://docs.zizmor.sh/configuration/
+#
+# The two scoped ignores below cover one deliberate design only:
+# dependabot-auto-merge.yml uses pull_request_target (a Dependabot PR carries a
+# read-only token, so approve/merge needs the elevated trigger) and gates on
+# github.actor == 'dependabot[bot]'. The workflow never checks out or executes
+# PR code, the pattern is allowlisted and enforced by
+# scripts/validate-workflow-security.py (dependabot-only actor, zero checkout),
+# and scripts/scan-supply-chain-iocs.py guards the dependency tree. Every other
+# audit applies to every workflow without exception.
+rules:
+  dangerous-triggers:
+    ignore:
+      - dependabot-auto-merge.yml
+  bot-conditions:
+    ignore:
+      - dependabot-auto-merge.yml

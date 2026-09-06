@@ -16,7 +16,7 @@ handle workflow policy and judgment. See
 [ADR-0024](docs/adr/0024-native-policy-offline-installer-boundary.md), as
 amended by [ADR-0028](docs/adr/0028-self-contained-engine-update.md).
 
-## The two planes
+## The three planes
 
 - **Control plane: the engine** (`engine/`): a single stdlib-only Go binary
   (`CGO_ENABLED=0`, no model or network calls). It owns local managed
@@ -37,7 +37,9 @@ amended by [ADR-0028](docs/adr/0028-self-contained-engine-update.md).
   completeness uses six logical **sections** (`spec`, `plan`, `decisions`,
   `tasks`, `proof`, `status`); the canonical live map/cursor/proof files are
   `README.md`, `state.md`, and `evidence.md` (ADR-0007). The current state schema
-  is v2; the runtime also directly reads official v1/v2 bullet cursors.
+  is v3. Readers support official older cursor encodings; state mutations require
+  the current schema. Deterministic normalization uses `devrites-engine migrate`;
+  semantic readiness remains phase-owned ([ADR-0029](docs/adr/0029-v5-workspace-schema-and-native-migration.md)).
 
 ## The lifecycle (rites → phases)
 
@@ -56,9 +58,10 @@ Completeness is **phase-relative**. The typed Phase Policy in
 `engine/internal/state/schema.go` lists the structural sections, workspace
 artifacts, and applicability rules for each target Phase. `devrites-engine check readiness <slug>`
 checks that structure and, after Vet, the stable planning-input identity;
-from Define onward it also rejects an invalid `tasks.md` slice graph.
-`check seal <slug>` repeats that identity check, the slice graph, and adds
-deterministic evidence freshness. A blocker that only a human can resolve uses reserved **exit code 3**.
+from Define onward it also rejects an invalid `tasks.md` slice graph and
+unmapped canonical `AC-###` IDs.
+`check seal <slug>` repeats that identity check, the slice graph, the AC ID
+map, and adds deterministic evidence freshness. A blocker that only a human can resolve uses reserved **exit code 3**.
 The active skill and exact reviewers—not Go heuristics—judge whether the spec,
 plan, traceability, tests, and evidence mean what they claim. Semantic upgrade
 is a native, preservation-first workflow edit. See
@@ -102,8 +105,8 @@ is a native, preservation-first workflow edit. See
 - Public rites are the authoritative orchestrators. Fresh-context leaves run
   at depth one through exact named profiles; there is no generic-agent
   fallback. Reviewer leaves are natively read-only. Claude keeps the root in
-  plan mode; Codex uses a workspace-capable root because a child cannot elevate
-  above its parent, so the root's source/test non-writing boundary is
+  plan mode; Codex uses a workspace-capable root (a child cannot elevate
+  above its parent), so the root's source/test non-writing boundary is
   instruction-enforced there. Both hosts make only the exact slice-wright
   writable among specialists; the task states its exact paths and the root
   rejects an out-of-scope diff. Leaves never own human questions, phase
@@ -116,10 +119,15 @@ is a native, preservation-first workflow edit. See
   writer may not expand them. The root compares the returned file list and `git
   diff --name-only` with that contract, reviews test integrity, and runs
   repository proof.
-- Version is **single-sourced** from `package.json`; the engine binary is stamped
+- Version is **single-sourced**: release stamps use the semantic-release
+  computed version (synced into `package.json` by `scripts/sync-version.sh`),
+  dev/test builds stamp from `package.json`; the engine binary is stamped
   via `-ldflags` at build; install.sh + `bin/devrites.mjs` read it at runtime.
   There are no hand-maintained embedded version literals to drift.
-- Wall-clock reads that feed output go through a seam (`DEVRITES_NOW`); see
+- Wall-clock reads that feed **date-derived `resolve` output** go through a seam
+  (`DEVRITES_NOW`); operational timestamps (parallel leases, install manifests)
+  read real time by design; see
   [ADR-0006](docs/adr/0006-clock-seam-and-engine-ci-gates.md).
 - Engine CI is the strictest gate: `gofmt`, `go vet`, `staticcheck`,
-  `govulncheck`, `go test -race`.
+  `govulncheck`, `go test -race -shuffle=on`. Local `make quality` also runs
+  `gosec`, `golangci-lint`, and `osv-scanner`.

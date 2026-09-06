@@ -18,6 +18,8 @@ Candidate SHA-256: <64 lowercase hex>
 - devrites-devex-reviewer: <outcome>
 ## Risks / Rollback
 <risks/recovery>
+## Stood Decisions
+<doubt verdict per stood decision>
 ## Blockers / Follow-ups
 <blockers/follow-ups>
 ## Final Decision

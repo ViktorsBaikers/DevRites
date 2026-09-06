@@ -50,6 +50,26 @@ match the neighbors.
   sketchy SVG scenery. Ship a real capture/asset or nothing (quality-standards — Materiality).
 - **Hero prop badges** — version labels (`V0.6`, `BETA`) and decorative pulsing status
   dots as set dressing.
+- **Unstyled UA chrome** — shipping the browser's default blue selection, caret,
+  scrollbar, or focus outline as the look (quality-standards § Browser chrome).
+- **Invented metrics** — precise-looking numbers with no source (`+247% faster`,
+  `99.99% uptime`). **Off-token color** — a hex used inline that the token set doesn't
+  define. Both are realism failures, not styling choices.
+
+### Required remediations (fix the hit, don't just flag it)
+A slop finding names its remediation from this table; a ban without a stated fix is
+an incomplete finding.
+
+| Signature | Required remediation |
+| --- | --- |
+| Default purple/blue gradient; gradient text; glassmorphism default | Re-derive from the scene sentence and colour commitment, then re-run both category-reflex tests |
+| Invented metric | Replace with the state lattice's missing-data placeholder (quality-standards § Focus & states) plus a "metric to confirm" question, or delete the proof slot |
+| Off-token color | Lift into the token set as a named color; replace every inline use |
+| Wrapping CTA / nav overflow | Shorter label, `white-space: nowrap`, or a collapsed nav — never a shrunken tap target |
+| Horizontal scroll in 320–1920 | `minmax(0, 1fr)` on content tracks + `overflow-x: clip` on `html`/`body` (quality-standards § Responsive) |
+| Fake UI-in-a-div screenshot | Ship a real capture/asset or remove the block |
+| Sticky sub-nav hidden by a banner | Offset by the banner's token height; split z-index roles instead of one raised value |
+| Unstyled UA selection / focus ring / caret / scrollbar | Theme from tokens per quality-standards § Browser chrome, or decline in `design-brief.md` |
 
 ### Copy & data realism
 Placeholder content is a tell even when the layout is clean: fake-perfect numbers

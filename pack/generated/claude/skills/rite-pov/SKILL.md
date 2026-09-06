@@ -12,7 +12,9 @@ named outside candidate.
 
 ## Workflow
 
-1. Frame the candidate, decision intent, and reversibility tier. Route an
+1. Frame the candidate, decision intent, and reversibility tier (two-way = locally
+   reversible; bounded-one-way = reversible via a recorded rollback; high-stakes =
+   irreversible or costly). Route an
    open-ended market search to `/rite-pressure-test` or `/rite-spec`.
 2. Inspect the live repository for at least one concrete project fact: an
    incumbent dependency/call site, integration seam, relevant ADR/decision, or
@@ -41,3 +43,16 @@ Record: <path | not written>
 
 No project evidence or no primary external source means `Hold`, not a generic
 technology opinion.
+
+## Non-trigger
+
+Not a market survey or premise stress-test (`/rite-pressure-test` / `/rite-spec`),
+not implementation, not a patch plan. A CVE still needs a live advisory URL
+before any `Adopt`/`Trial`.
+
+## Failure and recovery
+
+- Missing project evidence or missing live primary source → `Hold`. **Failing
+  case:** "Adopt Redis" with no incumbent call site and no opened docs URL.
+- High-stakes / irreversible without a named rollback → cannot be `Adopt`.
+- Persist only when asked; a chat-only verdict is not a decision record.

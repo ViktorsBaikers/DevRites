@@ -28,8 +28,8 @@ scope; `tasks.md` for vertical slices and gates; and `spec.md` for the objective
 acceptance criteria. Read `strategy.md`, `decisions.md`, or `assumptions.md` only
 when needed to check a claim. Do not read the author's chat reasoning.
 
-Use the index order in `standards/tooling.md` to check blast radius, placement,
-and reuse; fall back to LSP/Read/Grep/Glob.
+Use the index order in `.agents/skills/devrites-lib/reference/standards/tooling.md` to
+check blast radius, placement, and reuse; fall back to Read/Grep/Glob.
 
 ## Score the seven dimensions
 For each dimension, **cite the evidence first**, including an absent plan or spec
@@ -83,6 +83,8 @@ Give every finding a **confidence score from 1 to 10** and a quoted source:
 - **5-6:** moderate; could be a false positive. Report with the caveat "verify this is real".
 - **≤4:** speculative. **Suppress from the main report**; list in an appendix only.
 
+Findings below confidence 7 cannot be Critical/Important.
+
 **Gate:** quote the exact motivating line as `<ref>` before promoting a finding.
 Missing quotes force confidence ≤4 and suppression. For generated symbols, quote the
 construct that creates them. Never inflate confidence.
@@ -97,7 +99,7 @@ shared-contract check passes, and the ID-and-meaning map contains no orphaned
 criterion, slice, or proof.
 
 ## Rules
-- `$rite-vet` may request one initial pass and one narrow recheck.
+- `$rite-vet` may request one initial pass and one narrow recheck per correction/fingerprint.
 - Label each finding **Critical / Important / Suggestion / Nit / FYI** and include
   the relevant plan or task section, confidence score, and a concrete fix. Do not
   pad the report with praise.

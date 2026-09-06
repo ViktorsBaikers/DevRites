@@ -54,12 +54,13 @@ assert_check_seal() {
     || fail "check-seal reason missing: want $want_reason; $CAPTURED"
 }
 
-stage_workspace() {
-  local project="$1"
-  local slug="$2"
+stage_workspace_from() {
+  local src="$1"
+  local project="$2"
+  local slug="$3"
   local ws="$project/.devrites/work/$slug"
   mkdir -p "$ws"
-  cp -R "$GOOD/." "$ws/"
+  cp -R "$src/." "$ws/"
 
   python3 - "$project" "$ws" <<'PY'
 from pathlib import Path
@@ -93,6 +94,10 @@ PY
   for artifact in evidence.md review.md seal.md; do
     replace_once "$ws/$artifact" "__CANDIDATE_SHA256__" "$digest"
   done
+}
+
+stage_workspace() {
+  stage_workspace_from "$GOOD" "$1" "$2"
 }
 
 snapshot_tree() {
@@ -408,4 +413,50 @@ for legacy in blocked-feature near-miss-unproven-ac; do
   printf '  PASS: %s remains NO-GO\n' "$legacy"
 done
 
-printf '\nOutcome evals passed: native boundary + 15 isolated final-outcome negatives + candidate/readiness content binding + removed-command rejections.\n'
+printf '\n== adversarial negative fixtures ==\n'
+run_capture bash "$GRADER" --json "$ROOT/evals/golden/unauthorized-spec-drift"
+[ "$CAPTURE_CODE" -eq 1 ] || fail "unauthorized-spec-drift grader exit=$CAPTURE_CODE; $CAPTURED"
+assert_grade "NO-GO" "final.acceptance.ids"
+python3 - "$ROOT/evals/golden/unauthorized-spec-drift" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+ws = Path(sys.argv[1])
+canonical = re.compile(r"\bAC-\d{3}\b")
+spec_ids = set(canonical.findall((ws / "spec.md").read_text()))
+if "AC-004" not in spec_ids:
+    raise SystemExit("unauthorized-spec-drift spec.md must declare AC-004")
+for name in ("tasks.md", "test-plan.md", "seal.md"):
+    if "AC-004" in (ws / name).read_text():
+        raise SystemExit(f"{name} unexpectedly references AC-004")
+PY
+drift_project="$tmp/unauthorized-spec-drift"
+stage_workspace_from "$ROOT/evals/golden/unauthorized-spec-drift" "$drift_project" "unauthorized-spec-drift"
+run_capture env DEVRITES_ROOT="$drift_project" "$ENGINE" check readiness "unauthorized-spec-drift"
+[ "$CAPTURE_CODE" -ne 0 ] || fail "unauthorized-spec-drift check readiness unexpectedly passed: $CAPTURED"
+printf '%s\n' "$CAPTURED" | grep -Fq "acceptance-map: acceptance AC-004 is not referenced in tasks.md" \
+  || fail "unauthorized-spec-drift missing tasks map: $CAPTURED"
+printf '%s\n' "$CAPTURED" | grep -Fq "acceptance-map: acceptance AC-004 is not referenced in test-plan.md" \
+  || fail "unauthorized-spec-drift missing test-plan map: $CAPTURED"
+printf '  PASS: unauthorized-spec-drift grader NO-GO + readiness AC map\n'
+
+python3 - "$ROOT/evals/golden/out-of-scope-writer-diff" <<'PY'
+from pathlib import Path
+import sys
+
+ws = Path(sys.argv[1])
+extra = "src/utils/format.ts"
+if f"`{extra}`" not in (ws / "touched-files.md").read_text():
+    raise SystemExit("out-of-scope-writer-diff candidate missing extra path")
+if extra in (ws / "tasks.md").read_text():
+    raise SystemExit("tasks.md unexpectedly names the extra writer path")
+PY
+writer_project="$tmp/out-of-scope-writer-diff"
+stage_workspace_from "$ROOT/evals/golden/out-of-scope-writer-diff" "$writer_project" "out-of-scope-writer-diff"
+run_capture env DEVRITES_ROOT="$writer_project" "$ENGINE" check candidate "out-of-scope-writer-diff"
+[ "$CAPTURE_CODE" -eq 0 ] || fail "out-of-scope-writer-diff candidate should hash: $CAPTURED"
+[ -f "$writer_project/src/utils/format.ts" ] || fail "out-of-scope-writer-diff extra product file missing"
+printf '  PASS: out-of-scope-writer-diff extra candidate path is not in tasks.md\n'
+
+printf '\nOutcome evals passed: native boundary + 15 isolated final-outcome negatives + candidate/readiness content binding + removed-command rejections + 2 adversarial fixtures.\n'

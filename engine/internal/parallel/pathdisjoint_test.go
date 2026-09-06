@@ -9,7 +9,10 @@ import (
 
 func TestNormalizePathRejectsDirty(t *testing.T) {
 	t.Parallel()
-	cases := []string{"", " ", "/", "/abs", `C:\windows`, `..`, "a/../b", "../x"}
+	cases := []string{"", " ", "/", "/abs", `C:\windows`, `..`, "a/../b", "../x",
+		// Segment-edge whitespace previously survived normalization
+		// ("0 /." collapsed to "0 "), making the mapping non-idempotent.
+		"0 /.", "src /a.go", "./ \n/x"}
 	for _, raw := range cases {
 		if _, err := NormalizePath(raw); err == nil {
 			t.Fatalf("NormalizePath(%q) should fail", raw)

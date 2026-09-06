@@ -46,7 +46,9 @@ mechanics per shape. Do not improvise classification from this file; the detail 
 one stays legible, and skipping it means guessing the shape.
 
 **Bare invocation** (no input): ask **one** blocking question (`AskUserQuestion` when the harness
-has it, else the harness's blocking-question tool: `request_user_input` on Codex). "What should I
+has it, else the harness's blocking-question tool: `request_user_input` on Codex; no interactive
+question tool → render the ranked options as a plain numbered list and end the turn
+(afk-hitl.md)). "What should I
 explain?": offering "a recap of my recent work in this repo" as a shortcut option alongside free
 text. Never emit a default explainer unprompted.
 
@@ -100,7 +102,7 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
    3. Agents treat the outline as SSOT; if HTML and outline disagree, **outline wins** until both are
       regenerated. No Lavish runtime (`window.lavish.*`, `data-lavish-*`, poll/queue/share/ht-ml.app).
    4. In the reply, `Changed` / `Record` may cite the HTML+outline pair. Optionally tip the human to
-      run `devrites-engine open-visual <path-or-name>` (T4 opener; document the tip only).
+      run `devrites-engine open-visual <path-or-name>` (document the tip only).
    Skip the branch when prose (or a tiny Mermaid/SVG sketch inside `explainer.md`) already carries
    the named relationship.
    **Completion:** matching playbooks loaded when taken; dual-read pair written with outline-wins /
@@ -112,7 +114,9 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
 ### 4. Offer the check-in (optional, active recall)
 
 Retention comes from *retrieving*, not re-reading. After the explainer, offer one check-in via the
-harness's blocking-question tool (`AskUserQuestion`, or `request_user_input` on Codex): the user
+harness's blocking-question tool (`AskUserQuestion`, or `request_user_input` on Codex; no
+interactive question tool → render the ranked options as a plain numbered list and end the turn
+(afk-hitl.md)): the user
 answers **first**, then you confirm or correct. The shape sets the
 form (mechanics in the intake reference):
 
@@ -132,8 +136,8 @@ not force it; offer once.
   Wikipedia paragraph. If it has footprint in this repo, quote the repo.
 - **Not a review.** `$rite-explain` never judges the code or files findings, that is `$rite-review`.
   It explains what *is*, adversarially neutral.
-- **Not `$rite-learn`.** It writes to `.devrites/explainers/`, never to `learnings.md`,
-  `principles.md`, or any rule file. Teaching the human is not promoting a repo rule.
+- **Not `$rite-learn`.** It writes to `.devrites/explainers/`, never to `principles.md`
+  or any rule file. Teaching the human is not promoting a repo rule.
 
 ## Output
 

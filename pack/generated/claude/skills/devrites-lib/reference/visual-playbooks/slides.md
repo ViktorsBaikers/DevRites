@@ -36,7 +36,5 @@ Plan the story before markup: open with the point → context → evidence → d
 
 - **Home:** `.devrites/work/<slug>/visual/<name>.html` + `<name>.outline.md`.
 - Outline: [`outline-template.md`](outline-template.md); list each `slide-<n>` in ID inventory with its one idea.
-- **Outline wins** on conflict.
 - Feedback/choices on a deck still use [`input.md`](input.md) → outline `## Answers` / `questions.md`, not Lavish queue APIs.
-- **No new phase**; optional; not readiness-required.
 - Router: [`index.md`](index.md).

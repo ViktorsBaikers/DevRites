@@ -12,12 +12,15 @@ Authority: `.agents/skills/devrites-lib/reference/standards/acceptance-preservin
 <!-- END RESLICE ROUTE-TO-ACTION -->
 
 ## `eng-review.md`: the record
+
 Write/update `.devrites/work/<slug>/eng-review.md`; never clobber.
 
 ```markdown
 # Eng review: <slug>
 Vetted: <iso>   Cross-model: ran (codex) | off
 Implementation readiness: <READY | NEEDS CLARIFICATION | NEEDS REPLAN>
+(`NEEDS REPLAN` is the eng-review field value; `NEEDS_REPLAN` with an underscore
+is the autocomplete/reply-contract routing token — do not conflate.)
 Readiness inputs SHA-256: <64 lowercase hex>
 
 ## 1. Depth
@@ -83,6 +86,7 @@ Suppressed (confidence ≤4, unverified): <count — one line each>
 ```
 
 ## `test-plan.md`: the build-readable coverage target
+
 Write/update `.devrites/work/<slug>/test-plan.md`. `$rite-build`'s slice-wright
 writes tests from it; `$rite-prove` walks it against `evidence.md`. Specify
 *what/where* to test, not implementation.
@@ -131,17 +135,19 @@ fails any row with no passing result — an unverified element is a NO-GO, like 
 | email field | field | unit | <form.test> | invalid → error; valid → accepted |
 | login | flow ★★★ | E2E | <login.e2e> | submit → dashboard |
 ```
+
 Omit the whole section only for a slice with **no** interactive surface (pure backend/logic).
 
 ## Acceptance → test map
+
 - <spec acceptance criterion> → <T1, T3>   # every criterion maps to ≥1 test
-```
 
 For every row in `plan.md`'s `Shared contract proof`, the per-gap requirements name both
 provider- and consumer-side asserting tests and state how each consumes the same canonical
 artifact. Reference the plan row; do not reproduce its contract table here.
 
 ## Parallelization table (in `eng-review.md` §5 when there's an opportunity)
+
 ```markdown
 | Step / workstream | Modules touched (dir-level) | Depends on |
 |---|---|---|
@@ -154,6 +160,7 @@ Conflicts: Lanes A and B both touch models/ — sequential or coordinate.
 ```
 
 ## Fold-back: the part the build follows
+
 Vet hardens the plan. Use the marked action before fold-back.
 
 - **Write directly into `plan.md` / `tasks.md`** (single canonical writer: you, not the reviewer):
@@ -175,6 +182,7 @@ Vet hardens the plan. Use the marked action before fold-back.
   never smuggled into scope as a fact.
 
 ## Write discipline
+
 - **Single canonical writer.** The skill writes review/test-plan and edits plan/tasks;
   `devrites-plan-reviewer` is **read-only** and returns findings + bands.
 - **No silent scope.** Growing acceptance without a decision, or dropping a criterion

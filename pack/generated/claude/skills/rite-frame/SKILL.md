@@ -67,7 +67,7 @@ map + worked examples: [`reference/failure-modes.md`](reference/failure-modes.md
 
 - [ ] **1 · Silent assumption**: did I pick one reading of an ambiguous ask and run with it?
       Any value, contract, or behavior I *guessed*? → surface it; route material ones through
-      the Spec Drift Guard (`core.md` #2/#3).
+      the Spec Drift Guard (`core.md` #4; surface per #2/#3).
 - [ ] **2 · Overcomplication**: an abstraction / flag / indirection nobody asked for? 200 lines
       where 50 would do? A defensive check inside trusted code? → apply the **deletion test**;
       simplify (`coding-style.md`, `patterns.md`, `devrites-audit simplify`).

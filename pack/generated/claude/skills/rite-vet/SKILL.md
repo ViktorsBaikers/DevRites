@@ -10,8 +10,9 @@ user-invocable: true
 Vet every plan before code for scope, architecture, quality, proof, performance,
 failure modes, and writer safety. Cite findings; fold accepted technical
 hardening into planning artifacts; design Build tests. Temper owns product
-scope, Vet owns implementation; current `$ARGUMENTS` selects depth under
-[`orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md), never removing the exact plan-reviewer gate.
+scope, Vet owns implementation; current `$ARGUMENTS` (`--full`) feeds the depth triggers in
+`reference/depth.md`; profiles never remove the exact plan-reviewer gate
+([orchestration-profiles.md](../devrites-lib/reference/orchestration-profiles.md)).
 
 ## Rules
 
@@ -38,6 +39,8 @@ plan declares a root-authored executable workflow file, read
 - Root alone asks, decides, folds, writes, and sets readiness. Reviewers judge;
   they add no route policy. Cite every finding and confidence; suppress
   unverified or confidence ≤4 findings under `review-axes.md`.
+  Lens arrows in `eng-lenses.md` are heuristics; band findings only under the
+  four `review-axes.md` names.
 - Auth, migration, public API, and data-model changes use maximum caution and the
   irreversible-risk stop. Project principles never become trade-offs.
 - **Governance-protected paths** (`.devrites/**`, pack skill/agent trees,
@@ -79,9 +82,12 @@ plan declares a root-authored executable workflow file, read
    shared artifact/readiness gates and return to caller or next repair.
 2. **Challenge scope.** Apply review-axes §0 and search accepted decisions.
    Harden to the smallest contract-complete plan, using marked topology action.
-   Then verify bidirectional ID-and-meaning traceability across spec/tasks/
-   acceptance, terms, principles, anti-slop, and conventions. Critical gaps and
-   unexcepted principle breaches block; write `analysis.md` after recheck.
+   Then verify bidirectional ID-and-meaning traceability across spec/plan/
+   tasks/test-plan/traceability, acceptance, terms, principles, anti-slop,
+   and conventions; every slice and test-plan row maps to a live requirement
+   and vice versa. Critical gaps and
+   unexcepted principle breaches block; record the challenge result in `eng-review.md`
+   §2 (Scope challenge) after recheck.
 3. **Preflight Build entry.** Under `reference/artifacts.md`, verify exact
    command/cwd/tool/version/prerequisite; output filters must preserve upstream
    failure. Verify dependencies from authoritative source plus nearest manifest.
@@ -90,10 +96,8 @@ plan declares a root-authored executable workflow file, read
    Record complete SHA-256 provenance. Every behavioral mapping names a positive
    discriminating assertion and decisive signal, never only exit zero.
 
-   For each consumptive action, one-shot evidence completeness must bind durable
-   retention, trust-safe diagnostics, cleanup order, terminal coverage, finite
-   injective boundary map, per-boundary fault fixtures, and an executed collision mutant.
-   Every fingerprint identifies one actionable seam; aliasing multiple
+   For each consumptive action, bind every `reference/artifacts.md` Consumptive
+   action gates column; every fingerprint identifies one actionable seam; aliasing multiple
    emit sites is a gap. Preflight observes but need not make future behavior pass.
 4. **Audit readiness.** Goal-backward map every requirement, criterion, NFR,
    interaction, edge/prohibition, and decision row to one slice and executable
@@ -122,7 +126,7 @@ plan declares a root-authored executable workflow file, read
    fold again. A closed input plus a distinct Critical/Important invariant returns
    that new fingerprint as progress. Then close matrix and rerun ID/meaning audit.
 8. **Build readback and readiness.** Add a cited five-line readback to
-   `eng-review.md`: outcome/ACs; IN/OUT/must-NOT; UI direction and architecture/
+   `eng-review.md` (artifacts.md §7 rows 1–5): outcome/ACs; IN/OUT/must-NOT; UI direction and architecture/
    critical flow; slice order/first slice; decisive proof/action-time gates. A
    fresh implementer must need no product, architecture, or proof invention.
    Contradiction, ownerlessness, or material ambiguity blocks via Clarify or Plan.

@@ -1,0 +1,27 @@
+# golangci-lint v2 — curated complement to the existing strict gates
+# (staticcheck, govulncheck, gosec). Enables only checkers that add findings
+# staticcheck does not produce; see the engine job in ci.yml and `make lint`.
+version: "2"
+
+linters:
+  default: none
+  enable:
+    # Unchecked error returns: staticcheck does not flag ignored errors.
+    - errcheck
+    # Assignments never read: distinct from staticcheck's unused analysis.
+    - ineffassign
+  settings:
+    errcheck:
+      # The engine's CLI boundary reports via exit paths, not error returns;
+      # writes to the operator's stdout/stderr streams fail only on closed
+      # writers.
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (*bytes.Buffer).WriteByte
+        - (*strings.Builder).WriteByte
+        - (*strings.Builder).WriteString
+
+formatters:
+  default: none

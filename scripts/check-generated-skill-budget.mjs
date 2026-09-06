@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const base = process.argv[2] || join(root, 'pack', '.claude', 'skills');
-const totalLimit = Number(process.env.DEVRITES_SKILL_TOTAL_BUDGET || 1_800_000);
+const totalLimit = Number(process.env.DEVRITES_SKILL_TOTAL_BUDGET || 1_100_000);
 const fileLimit = Number(process.env.DEVRITES_SKILL_FILE_BUDGET || 64_000);
 const referenceFileLimit = Number(process.env.DEVRITES_REFERENCE_FILE_BUDGET || 32_000);
 const routingLimit = Number(process.env.DEVRITES_SKILL_ROUTING_BUDGET || 5_200);

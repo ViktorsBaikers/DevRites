@@ -66,7 +66,7 @@ discriminates the required result.
   back tests the stub, not your code. Assert the real effect on real (or realistic) data.
 - **Cover unhappy edges:** empty/missing input, omitted fields, boundaries, invalid state, and
   long/weird input; assert the promised rejection/default.
-- **Prove it can fail.** For a critical or regression path, break the code deliberately and confirm the test goes red; use the project's mutation runner when one exists.
+- **Prove it can fail.** Critical or regression paths require the [safe perturbation contract](#safe-perturbation); use the project's mutation runner when present. Unrelated baseline failures, setup/fixture crashes, collection/import errors, or a skipped/filtered target are not target-attributable RED. **Failing case:** the suite was already red elsewhere and the new test never ran.
 - **Don't mirror the implementation.** A test whose assertions restate the code under test
   (same constant, same formula, same branch) stays green even when the logic is wrong. Assert
   an **independently-derived** expected value: reasoned from the spec, not copied from the code.
@@ -77,6 +77,25 @@ discriminates the required result.
 - **Coverage says "ran"; mutation says "checked".** Line coverage proves a line executed, not
   that a test would catch it breaking. Where the project has a mutation runner,
   use its documented command; a surviving mutant is a behaviour no test checks.
+
+### Safe perturbation
+
+For required mutation or critical-link probes, use a faithful isolated copy of the
+current candidate, including its staged/unstaged content, never the shared proof/reviewer
+tree or HEAD alone. Bind its starting content to the candidate; retain the original
+candidate check before/after per [`candidate-integrity.md`](../candidate-integrity.md).
+Only an exact path-bounded wright may hand-edit source; an existing mutation runner
+runs under normal approved command authority. Isolation grants no live-service or
+destructive authority. Input fault injection must likewise leave candidate sources intact.
+Critical/regression mutation must break the relevant implementation; an input-only
+probe cannot replace it. Critical-link checks may perturb the load-bearing input.
+
+Record the perturbation, executed target assertion's attributable RED, restoration,
+normal GREEN, and unchanged original candidate. A surviving break is an unproven gap.
+Unavailable isolation, authority, or attributable evidence is `cannot_verify`, blocking
+the required proof and Seal; never waive critical/regression obligations. **Failing
+case:** mutating a clean HEAD copy proves an older implementation while dirty candidate
+changes remain untested.
 
 ## Never weaken a failing test (test integrity)
 A failing test is a signal, not an obstacle. Never delete it, skip it (`it.skip`, `xit`,
@@ -170,7 +189,8 @@ Dismiss an irrelevant case with a reason; silently omitting an applicable case i
 
 ## Determinism: no flaky tests
 - A flaky test is a broken test. Isolate and fix it immediately; don't paper over it with
-  retries or `sleep`.
+  retries or `sleep`. **Failing case:** a known-flaky test is left with retries so the
+  suite is paper-green at Prove/Seal → NO-GO.
 - Mock/stub external services so tests are predictable and fast. Use stable selectors in
   UI tests, not brittle positional ones.
 - No hidden shared state or order-dependence between tests.

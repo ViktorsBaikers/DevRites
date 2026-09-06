@@ -46,8 +46,6 @@ When uncertainty remains, add `id="viz-open-questions"` with 1–few open questi
 
 - **Home:** `.devrites/work/<slug>/visual/<name>.html` + `<name>.outline.md`.
 - **Outline companion:** copy headings from [`outline-template.md`](outline-template.md); list this id under `## Playbooks used`.
-- **Outline wins** on conflict with HTML (and with `#devrites-outline` JSON) until both regenerate together.
-- Keep Mermaid in workspace `flows.md` when that is enough; richer presentation **also** emits `visual/` and may link from `flows.md` (T3 hooks).
+- Keep Mermaid in workspace `flows.md` when that is enough; richer presentation **also** emits `visual/` and may link from `flows.md`.
 - **Consistency:** `open-visual` warns when outline inventory ids are missing from HTML (non-fatal). HTML-only decorative ids are not reported.
-- **No new lifecycle phase.** Optional artifact; never readiness-required.
 - Router: [`index.md`](index.md).

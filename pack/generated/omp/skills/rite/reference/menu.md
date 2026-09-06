@@ -1,0 +1,48 @@
+# Menu reference
+
+Phase-ordered `/rite` reference. Load only for command detail or phase connections.
+
+## Phases and commands
+
+| Phase | Command | Use when |
+|---|---|---|
+| Spec | `/rite-spec <feature>` | **New feature.** Investigate → write spec.md. Asks with options; gathers attached design references (optional). |
+| Adopt | `/rite-adopt` | Onboard an existing codebase instead of starting fresh: reverse-derive spec.md and propose project guidance. |
+| Clarify | `/rite-clarify` | _Required after spec._ Topology-first decision-coverage scan; zero-question fast path when already clear. |
+| Temper | `/rite-temper` | _Optional, before define._ Strategic review of the spec: scope mode (expand/selective/hold-rigor/reduce) + pre-mortem; hardens the spec. Best on big/risky features; mandatory in `/rite-autocomplete`. |
+| Plan | `/rite-define` | Turn the approved spec into plan + vertical task slices + state. |
+| Vet | `/rite-vet` | _Required before build._ Review every plan: scope · architecture · tests · perf; light for simple/reversible, full for high stakes. |
+| Re-plan | `/rite-plan` | The active plan is too big, wrong, stale, ambiguous, or blocked. |
+| Build | `/rite-build` | One slice/wright; HITL stops; `.devrites/AFK` lets root bounded-chain slices. |
+| Converge | `/rite-converge` | _Recovery._ Code drifted from or falls short of intent after a resume, adoption, or stalled build: compare live code with spec/plan/tasks and append remaining work as new slices for `/rite-build`. |
+| Prove | `/rite-prove` | Prove the current scope: tests, build, runtime, browser evidence. |
+| Polish | `/rite-polish` | Code polish always; normalize and polish UI when in scope. Modes: `bolder/quieter/distill/harden/normalize-only`. |
+| Review | `/rite-review` | Feature-scoped review before sealing. |
+| Seal | `/rite-seal` | Final GO / NO-GO decision (no git). |
+| Ship | `/rite-ship` | Pre-GO read-only; fresh GO → commit → optional approved push/tag/PR → archive/close. |
+| Status | `/rite-status` | See where the active feature stands. |
+| Doctor | `/rite-doctor` | Diagnose install integrity and native host configuration. |
+| Upgrade | `/rite-upgrade` | _Explicit compatibility._ Audit an older released workspace; route cited defects through Clarify/Plan repair/Converge/Vet or current Prove/Polish/Review/Seal, preserve history, and never synthesize old proof. |
+| Learn | `/rite-learn` | Review native memory and archived evidence → propose durable project guidance. |
+
+## Typical orderings
+
+- **Every feature**: `/rite-spec` (spec) → `/rite-clarify` (decision coverage) →
+  *(big feature? `/rite-temper`: strategic review)* →
+  `/rite-define` (plan) → `/rite-vet` (engineering review; light or full) →
+  `/rite-build` ×N (all slices) → `/rite-prove` (once all built) →
+  `/rite-polish` (always: code + UI if UI) → `/rite-review` → `/rite-seal` → `/rite-ship`.
+- **Existing codebase**: `/rite-adopt` → `/rite-clarify` → `/rite-define` → `/rite-vet` → build.
+- **Drift mid-build**: classify → bounded recovery for objective defects, `/rite-plan`
+  repair for a wrong durable plan, or one user decision for real product/risk drift.
+- **Older workspace cannot resume**: `/rite-upgrade` audits first → only proven gaps use
+  Clarify/Plan repair/Converge/Vet or Prove/Polish/Review/Seal → resume. It never
+  migrates cursor format or invents a prior pass.
+- **Resumed / adopted / stalled**: `/rite-converge` (assess live code vs intent → append the
+  remaining slices) → `/rite-vet` → `/rite-build` ×N → continue at `/rite-prove`.
+
+## Rules this menu obeys
+
+- `/rite` never edits code or runs a phase workflow.
+- Menu mode is static; `/rite-status` owns workspace status.
+- It suggests; the user (or Claude, when appropriate) invokes the real skill.

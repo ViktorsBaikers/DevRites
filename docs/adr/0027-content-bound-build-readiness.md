@@ -75,3 +75,11 @@ the check; hostile concurrent workspace mutation remains outside the local
 agent-workflow threat model.
 
 Guard test: `engine/tests/adr_0027_readiness_binding_test.go`.
+
+## Amendment (2026-09-04)
+
+When `tasks.md` is required, `check readiness` and `check seal` also require
+every canonical `AC-###` ID in `spec.md`'s Acceptance criteria section to appear
+as a literal substring in `tasks.md`. When `test-plan.md` is required, the same
+IDs must appear there. This is identity presence, not semantic coverage. Guard:
+`engine/internal/state/acceptance_test.go`.

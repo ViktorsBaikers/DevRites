@@ -68,11 +68,12 @@ func ScanSkillTrust(path string) (SkillTrustResult, error) {
 	if info.Size() > 1<<20 {
 		return SkillTrustResult{}, fmt.Errorf("skill-trust: %q exceeds 1 MiB limit", path)
 	}
+	// #nosec G304 -- installed skill file; 1 MiB cap checked above
 	file, err := os.Open(path)
 	if err != nil {
 		return SkillTrustResult{}, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(file, 1<<20+1))
 	if err != nil {
 		return SkillTrustResult{}, err

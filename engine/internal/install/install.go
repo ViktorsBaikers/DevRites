@@ -34,6 +34,7 @@ type Options struct {
 	WithSkills  bool
 	WithAgents  bool
 	WithCodex   bool
+	WithOmp     bool
 	WithBinary  bool
 	KeepBinary  bool
 	AliasMode   string
@@ -82,6 +83,7 @@ func DefaultOptions(mode Mode) Options {
 		WithSkills: true,
 		WithAgents: true,
 		WithCodex:  true,
+		WithOmp:    true,
 		WithBinary: true,
 		AliasMode:  "safe",
 		Stdout:     io.Discard,
@@ -132,6 +134,7 @@ func parseArgs(args []string, opts *Options) error {
 	dryRun := flags.Bool("dry-run", opts.DryRun, "")
 	force := flags.Bool("force", opts.Force, "")
 	noCodex := flags.Bool("no-codex", !opts.WithCodex, "")
+	noOmp := flags.Bool("no-omp", !opts.WithOmp, "")
 	noAgents := flags.Bool("no-agents", !opts.WithAgents, "")
 	noSkills := flags.Bool("no-skills", !opts.WithSkills, "")
 	noBinary := flags.Bool("no-binary", !opts.WithBinary, "")
@@ -158,6 +161,7 @@ func parseArgs(args []string, opts *Options) error {
 	opts.DryRun = *dryRun
 	opts.Force = *force
 	opts.WithCodex = !*noCodex
+	opts.WithOmp = !*noOmp
 	opts.WithAgents = !*noAgents
 	opts.WithSkills = !*noSkills
 	opts.WithBinary = !*noBinary
@@ -204,7 +208,7 @@ func usage(mode Mode) string {
 	case ModeUpdate:
 		return "usage: devrites-engine update [--target DIR] [--dry-run] [--force] [--check] [install flags] [--source-dir DIR --payload-dir DIR]\n"
 	default:
-		return "usage: devrites-engine install [--target DIR] [--dry-run] [--force] [--no-codex] [--no-agents] [--no-skills] [--no-binary] [--short-aliases=all]\n"
+		return "usage: devrites-engine install [--target DIR] [--dry-run] [--force] [--no-codex] [--no-omp] [--no-agents] [--no-skills] [--no-binary] [--short-aliases=all]\n"
 	}
 }
 
@@ -329,7 +333,7 @@ func (r *runner) validatePayload() error {
 	if r.payload == "" {
 		return fmt.Errorf("generated install payload not found; pass --payload-dir or run scripts/build-host-artifacts.sh")
 	}
-	if err := hostpack.ValidatePayload(r.payloadFS, r.opts.WithCodex); err != nil {
+	if err := hostpack.ValidatePayload(r.payloadFS, r.opts.WithCodex, r.opts.WithOmp); err != nil {
 		return fmt.Errorf("generated install payload under %s: %w", r.payload, err)
 	}
 	return nil
@@ -340,7 +344,12 @@ func isGlobalTarget(target string) bool {
 	if target == home {
 		return true
 	}
-	for _, global := range []string{filepath.Join(home, ".claude"), filepath.Join(home, ".codex")} {
+	for _, global := range []string{
+		filepath.Join(home, ".claude"),
+		filepath.Join(home, ".codex"),
+		filepath.Join(home, ".omp"),
+		filepath.Join(home, ".omp", "agent"),
+	} {
 		if target == global || strings.HasPrefix(target, global+string(os.PathSeparator)) {
 			return true
 		}
@@ -361,6 +370,7 @@ func pruneEmptyDirs(start, stop string) {
 }
 
 func exists(path string) bool {
+	// #nosec G703 -- existence probe on managed install paths
 	_, err := os.Lstat(path)
 	return err == nil
 }

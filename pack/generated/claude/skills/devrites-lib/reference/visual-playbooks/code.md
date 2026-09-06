@@ -41,6 +41,4 @@ Place path, language, and reason immediately before each render. Group multi-fil
 
 - **Home:** `.devrites/work/<slug>/visual/<name>.html` + `<name>.outline.md`.
 - Outline: [`outline-template.md`](outline-template.md); list `code` under Playbooks used; note CDN if `@pierre/diffs` or similar is used.
-- **Outline wins** on conflict — include path/line claims in Citations even when HTML renders diffs.
 - Often combines with `plan`, `table`, or `comparison` — open every match ([`index.md`](index.md)).
-- **No new phase**; optional; not readiness-required.

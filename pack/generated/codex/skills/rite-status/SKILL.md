@@ -28,7 +28,8 @@ If `state.md` is unreadable/malformed: report a gap with the defect and stop —
 4. the single `Next step` recorded in `state.md`;
 5. proven versus unproven evidence;
 6. open questions by gate, including the exact resolving command when awaiting
-   a human;
+   a human; list `gate: escalating` entries separately under **Escalating:**
+   with their `route:` specialist tag (do not mix with synchronous blockers);
 7. unresolved drift and material risks;
 8. handoff readiness.
 
@@ -47,6 +48,7 @@ Feature: <slug> — <objective>
 Phase: <phase>; slice: <slice|n/a>; mode: <HITL|AFK>; status: <status>
 Evidence: <fresh/proven summary | gaps>
 Open: <questions/drift/blockers | none>
+Escalating: <qid route:tag … | none>
 Handoff: <ready | missing durable context>
 Next: <single persisted command>
 ```

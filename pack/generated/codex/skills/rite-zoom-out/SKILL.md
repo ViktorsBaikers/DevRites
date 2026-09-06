@@ -12,8 +12,8 @@ When the agent (or the user) is staring at unfamiliar code without a working men
 model of how it fits the larger system. Stops the "open more files" reflex by returning
 a single, structured map instead.
 
-Read `.agents/skills/devrites-lib/reference/standards/core.md` first: chiefly its vocabulary / existing-conventions
-disciplines, which keep the map in the project's own language. The other rule files load
+Read `.agents/skills/devrites-lib/reference/standards/core.md` first: chiefly its existing-conventions
+discipline, which keeps the map in the project's own language. The other rule files load
 on demand.
 
 ## What this skill returns
@@ -58,11 +58,11 @@ end; don't try to fix it here.
 
 ```
 Done: mapped <area> in the project's vocabulary.
-Changed: workspace only
+Changed: none (read-only)
 Evidence: modules <n>; callers <n>; callees <n>; decisions <n>
 Open: <none | fuzzy term | suspected drift | open question>
 Next: <single recommended command>
-Record: <decision/ADR path | not applicable>
+Record: not applicable (paths printed only)
 ↻ Hygiene: /clear if this was only orientation; $rite-handoff if it informs active work
 ```
 

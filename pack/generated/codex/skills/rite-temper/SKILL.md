@@ -53,7 +53,7 @@ the spec applicability map triggers that risk family.
    repair` (record in `drift.md`), not a blind spec edit.
 1. **Significance test:** [`reference/significance.md`](reference/significance.md). Low-stakes
    / shape-not-meaning work → write the exact one-line `skipped — low stakes (<trigger>)` verdict to `strategy.md`,
-   set `state.md` `Next step: $rite-define`, and recommend it. Otherwise fire the full pass below.
+   set `state.md` `Phase: temper` + `Next step: $rite-define`, and recommend it. Otherwise fire the full pass below.
 2. **FORWARD pass + mode selection:** [`reference/scope-modes.md`](reference/scope-modes.md).
    First, the **one-sentence-intent test**: state the whole change's intent in a single sentence.
    If you can't without an "and" that joins two unrelated outcomes, it is **two features**: the
@@ -85,21 +85,21 @@ the spec applicability map triggers that risk family.
    records the interactive review but does not replace it. Present each material scope decision through
    `AskUserQuestion`, one at a time, best-guess + **why**. Each material scope call ends as a
    **recorded decision**: a resolved `questions.md` qid (HITL) or a `decisions.md` ADR (AFK):
-   so the review leaves an auditable record outside chat. (AFK gate policy is single-sourced in
-   [`reference/significance.md`](reference/significance.md): `hold-rigor` + `reduce-to-MVP`
+   so the review leaves an auditable record outside chat. (AFK gate policy —
+   [`reference/significance.md`](reference/significance.md) — `hold-rigor` + `reduce-to-MVP`
    auto-apply, **any `expand` is a blocking pause**, irreversible-risk always pauses.)
    Apply objective clarity, mitigation, and assumption fixes directly.
 6. **Write `strategy.md` + fold back:** [`reference/strategy-template.md`](reference/strategy-template.md).
    **Choose the drift path based on whether a plan exists:** *no `plan.md` yet* (the normal pre-define
-   case) → update `spec.md` **through the Spec Drift Guard**. *Success criteria* **and**
-   *Acceptance criteria* for each opt-in expansion / cut, **Non-goals** for every deferred item,
-   *Constraints* **and** *Risks* the pre-mortem demands, and the gaps/decisions table; *`plan.md`
+   case) → update `spec.md` **through the Spec Drift Guard**. *Success metrics* (outcome-level, no AC id)
+   **and** *Acceptance criteria* for each opt-in expansion / cut, **Non-goals** for every deferred item,
+   *Constraints and invariants*, with top failure modes + mitigations folded into *Failure and recovery
+   behavior* rows, and the *Open questions* table; *`plan.md`
    already exists* → do **not** edit `spec.md` here: write the deltas to `drift.md` and hand off
    to `$rite-plan repair`. Either way, append `decisions.md` (one ADR per scope call: context ·
    decision · why-not · what-would-change-it) and `assumptions.md` (every "we'll probably need X" →
-   assumption-to-verify). **Every scope delta must carry a recorded human decision**: a resolved
-   `questions.md` qid (HITL) or a `decisions.md` ADR (AFK within the ceiling); a folded change with
-   no recorded decision is invalid. **Re-check the spec Readiness gate** (it fails if
+   assumption-to-verify). (every delta carries the step-5 recorded decision; an untraceable
+   fold is invalid). **Re-check the spec Readiness gate** (it fails if
    any folded scope delta lacks its decision or leaves a foreseeable human build choice).
    After any edit to `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or
    `questions.md`, re-scan the affected coverage rows, assumption audit, residual uncertainty,

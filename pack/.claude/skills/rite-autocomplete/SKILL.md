@@ -34,8 +34,8 @@ executable controller/harness/bundle bytes or a missing writer, read
   under [decision policy](reference/decision-policy.md).
 - Safety is not bypassable. `--ship`/`--yolo` reaches only the exact-plan
   literal-GO and native-approval boundary; it never authorizes Git.
-- **Treat technical readiness as routing, not completion.** `NEEDS_REPLAN` is a backward edge
-  to Plan repair and narrow Vet. `NEEDS_REPLAN` cold resume follows a valid
+- **Treat technical readiness as routing, not completion.** `NEEDS REPLAN` is a backward edge
+  to Plan repair and narrow Vet. `NEEDS REPLAN` cold resume follows a valid
   technical return cursor before forward work or any reply. Clarification is
   likewise internal when current authority resolves it.
 - Always follow agent-owned backward edges through repair, affected Vet,
@@ -63,15 +63,18 @@ executable controller/harness/bundle bytes or a missing writer, read
 
 ## Workflow
 
-1. **Orient and parse.** Resolve the explicit or active slug, require `state.md`,
-   and read its cursor. Before honoring `blocked` with terminal `next_action`,
+1. **Orient and parse.** Resolve the explicit or active slug; when a workspace exists,
+   require its `state.md` and read its cursor; a fresh idea starts empty at step 2.
+   Before honoring `blocked` with terminal `next_action`,
    reconcile retained consumptive evidence and fingerprint attempts from
    `drift.md`/`evidence.md`; a retained fingerprint below its cap resumes offline
    recovery.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"lifecycle cursor encounters admitted set or resumable journal","action":"invoke classifier; execute returned route internally","return":"saved phase/action; zero intermediate reply"} -->
    Reconstruct a missing return cursor only from
    the current phase and exact approved action in `test-plan.md`/evidence, never
-   from chat. Normalize current arguments to idea, `ship_preflight: yes|no`,
+   from chat. After compaction or a resumed session, read `.devrites/ACTIVE`, then
+   the `state.md` cursor, `questions.md`, `decisions.md`, and `test-plan.md`/`evidence.md`.
+   Normalize current arguments to idea, `ship_preflight: yes|no`,
    `max_slices: N|default`, `profile: standard|full`, and `cross_model: yes|no`.
    **Completion:** normalized state is unambiguous and no sentinel or workspace file has been written.
 2. **Specify and clarify.** Run `devrites-interview`, `/rite-spec`, and
@@ -111,7 +114,7 @@ Use one terse line:
 
 ```text
 Autocomplete: <slug>
-spec <done|stopped> · clarify <clear|stopped> · temper <done|skipped|stopped> · define <done|stopped> · vet <ready|stopped> · build <n/N|stopped> · prove <done|stopped> · polish <done|stopped> · review <done|stopped> · seal <GO|NO-GO|stopped>
+spec <done|stopped> · clarify <clear|stopped> · temper <done|stopped> · define <done|stopped> · vet <ready|stopped> · build <n/N|stopped> · prove <done|stopped> · polish <done|stopped> · review <done|stopped> · seal <GO|NO-GO|stopped>
 ```
 
 Final state is `Shipped`, `Stopped`, `Awaiting human`, `NO-GO`, or `GO`; do not

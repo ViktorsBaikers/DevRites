@@ -25,6 +25,7 @@ func readManifestList(path string) ([]string, error) {
 }
 
 func parseManifest(path string) (map[string]managedRecord, []string, error) {
+	// #nosec G304 -- install manifest under the operator-selected target
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -75,6 +76,7 @@ func validManagedHash(hash string) bool {
 }
 
 func manifestHeader(path, key string) string {
+	// #nosec G304 -- install manifest under the operator-selected target
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return ""
@@ -90,6 +92,7 @@ func manifestHeader(path, key string) string {
 
 func installedVersion(source string) string {
 	if source != "" {
+		// #nosec G304 -- package.json inside the operator-selected install source
 		data, err := os.ReadFile(filepath.Join(source, "package.json"))
 		if err != nil {
 			return "unknown"

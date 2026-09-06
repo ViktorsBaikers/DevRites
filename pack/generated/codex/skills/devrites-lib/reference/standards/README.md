@@ -43,11 +43,18 @@ topic's owner.
 | `afk-hitl.md` | A pause, question, resume, or AFK decision is possible. |
 | `one-shot-actions.md` | A proof/action may be attempted once, needs fresh retry authorization, consumes external state/quota, or can delete its own failure evidence. |
 | `tooling.md` | Structural lookup, current external facts, or architecture memory is needed. |
+| `code-navigation.md` | Choosing graph, LSP, grep, or read routes before cross-file edits. |
 | `skill-authoring.md` | Creating, editing, routing, evaluating, or pruning a DevRites skill. |
 | `definition-of-done.md` | Prove, Seal, Ship, or Quick must decide whether work is finished. |
 | `review-checklist.md` | A compact review pass/fail sweep is enough. |
 | `test-proof-checklist.md` | Test and evidence quality needs a compact sweep. |
 | `browser-proof-checklist.md` | UI behavior needs browser proof. |
 | `security-checklist.md` | Auth, input, data, or integration work needs a compact security sweep. |
+| `acceptance-preserving-reslice.md` | Classifying or reviewing a Reslice in Plan, Vet, or Autocomplete. |
+| `debug-recovery.md` | Waiting on async readiness (server start, job completion, browser signal) needs a bounded condition-based poll. |
+
+The table is a load trigger, not an exemption. [`core.md` § Rule summary](core.md#rule-summary-load-the-full-file-when-in-scope)
+makes every *applicable* owner mandatory. **Failing case:** a security or data-integrity
+gate is skipped because the standard is "on-demand / modular."
 
 These guide judgment; workflows and engine gates enforce.

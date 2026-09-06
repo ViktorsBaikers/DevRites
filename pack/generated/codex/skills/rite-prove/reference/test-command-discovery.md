@@ -6,7 +6,6 @@ the sole approved runtime command list.
 
 | Discovery source | Look for |
 |---|---|
-| `spec.md` → "Commands discovered" | previously found candidates |
 | `package.json` `scripts` | `test`, `build`, `typecheck`, `lint`, `dev`, `e2e` |
 | `Makefile` / `Justfile` / `Taskfile` | `test`, `build`, `check`, `lint` targets |
 | `Gemfile` / `Rakefile` | `rake test`, `rspec`, `bin/rails test` |

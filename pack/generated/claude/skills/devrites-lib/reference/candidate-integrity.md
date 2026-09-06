@@ -6,15 +6,7 @@ exact `touched-files.md` and binding grammar remain in
 here and state only their phase action.
 
 `devrites-engine check candidate <slug>` is the only candidate hash authority.
-Record its exact digest with this unindented standalone line:
-
-```text
-Candidate SHA-256: <64 lowercase hex>
-```
-
-The line appears exactly once in `evidence.md`, `review.md`, and `seal.md`, and
-exactly once in `browser-evidence.md` when that file exists. A missing,
-duplicate, malformed, or mismatched binding stops the lifecycle.
+A missing, duplicate, malformed, or mismatched binding stops the lifecycle.
 
 ## Lifecycle
 

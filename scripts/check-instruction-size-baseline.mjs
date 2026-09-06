@@ -13,7 +13,7 @@ function option(name, fallback) {
 const root = resolve(option('--root', defaultRoot));
 const baselinePath = resolve(option('--baseline', join(root, 'tests', 'instruction-size-baseline.json')));
 const write = argv.includes('--write');
-const ratchetLimit = 1_800_000;
+const ratchetLimit = 1_100_000;
 
 function lfBytes(text) {
   return Buffer.byteLength(text.replace(/\r\n/g, '\n'));

@@ -26,8 +26,8 @@ Invert. Two subtractive moves:
 - **YAGNI ledger.** Each candidate scope item gets the "imagine the later refactor" test: if
   adding it *later* isn't materially more expensive, **defer it** (with a revisit note).
   Bias hard toward defer: most presumed-needed features are never used. Reuse the
-  pack's existing `patterns.md` standards, including "no abstraction before two real callers"
-  and "speculative generality." Don't invent a new YAGNI rule.
+  pack's existing `patterns.md` standard ('no speculative abstraction or pattern
+  without a current need'). Don't invent a new YAGNI rule.
 
 ## The four modes: commit exactly one
 Mode selection is the first convergence move. Record the chosen mode + rationale + the

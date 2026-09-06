@@ -43,7 +43,6 @@ When frontend UX matters, prefer a visual mock of the experience under a consist
 
 - **Home:** `.devrites/work/<slug>/visual/<name>.html` + `<name>.outline.md`.
 - Does **not** replace workspace `plan.md` / `spec.md` — optional richer presentation beside them.
-- Outline: [`outline-template.md`](outline-template.md); **outline wins** on conflict.
+- Outline: [`outline-template.md`](outline-template.md).
 - Open questions may point into workspace `questions.md` ids; durable answers belong there and/or outline `## Answers` if `input` was used.
-- **No new lifecycle phase.**
 - Router: [`index.md`](index.md).

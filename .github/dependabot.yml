@@ -11,6 +11,10 @@ updates:
       timezone: "Etc/UTC"
     open-pull-requests-limit: 5
     versioning-strategy: "increase"
+    # Release-age cooldown: freshly published versions (the Shai-Hulud 2025-2026
+    # propagation window) wait a week before Dependabot proposes them.
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "build"
       prefix-development: "build"
@@ -43,6 +47,9 @@ updates:
       time: "06:00"
       timezone: "Etc/UTC"
     open-pull-requests-limit: 5
+    # Same release-age cooldown as the npm ecosystem.
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "ci"
       include: "scope"

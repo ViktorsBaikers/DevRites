@@ -117,7 +117,7 @@ LIVE_PROTECTED_SHA256 = {
     ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
     ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
     ".devrites/work/workspace-observation/touched-files.md":
-        "2dca74484895de119cd935db6c3692782df9173eef199c88a7d5a65898332ec9",
+        "b24e32c4d44f7cc266312e0ed532936948614ef5f893c412cde893bad78354bb",
 }
 EXPECTED_NORMAL_GENERATED_DELTA = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md",
@@ -125,9 +125,9 @@ EXPECTED_NORMAL_GENERATED_DELTA = {
 }
 EXPECTED_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "f6f12115c3a06b40ba1f499719c10b19cc41b119ba781e40e1de082c09e98e88",
+        "bded5047b72e69863fcdbcb0a3bfe18bff423bf3f0cc99275cfc2fa1ea3042d7",
     "codex/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "c603db8c1e9596beab6bb977792a61e4c2bf8621c85bded79c4ea0fc78907a41",
+        "a424be7e12d511d5b628df07d2ed627d021d69d61428d671c7dcf6e4ebe0e469",
 }
 PRECHANGE_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
@@ -140,32 +140,32 @@ RESLICE_PRIOR_RECORDS = {
     'evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json': (0o600, '72eab43f907a7ee87e6518da551b6f34de8305ce0f27aa798d84f1209c06e9f5'),
     'pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md': (0o600, '844ddd36bf76b3674c7b54126747308dae8b9438d49490186d575254e15966bd'),
     'pack/.claude/skills/rite-autocomplete/reference/decision-policy.md': (0o600, '772a79298cf7d5613a3713fc54eff9167b66a972da201db0486d3f82db14a0aa'),
-    'pack/.claude/skills/rite-plan/SKILL.md': (0o600, 'd7740e9359235bd5c1a825c8c8f46a2e1d371b274b502b5a508c813f1de649e4'),
-    'pack/.claude/skills/rite-plan/reference/anti-patterns.md': (0o600, '280291f3fa0e64e82df61df75f7b453bc8f36b77e5b87f5281d6488beee786d4'),
-    'pack/.claude/skills/rite-plan/reference/replan-and-repair.md': (0o600, 'af0bc98e9e3480d1be0a6fc99f9df003d6a0e5a425adf99c608665bede37e98c'),
+    'pack/.claude/skills/rite-plan/SKILL.md': (0o600, '9e4f39e96259c28a6cfeaf3bf9685deb9521115b898acab74f087d0ce0738228'),
+    'pack/.claude/skills/rite-plan/reference/anti-patterns.md': (0o600, 'e63a03fff9672604738ffd98bf21f485a04af669cae178465568c2be104f5101'),
+    'pack/.claude/skills/rite-plan/reference/replan-and-repair.md': (0o600, 'bbd815cf262a5cab74b7837dfc3c4a2acce4a6b3b96fecedc694b4978a5010f4'),
     'pack/.claude/skills/rite-vet/reference/anti-patterns.md': (0o600, '0fdd02a3bb00914fe697b67d63f44305ed513bc83877ae4cb8b652eedb482697'),
-    'pack/.claude/skills/rite-vet/reference/artifacts.md': (0o600, '2020cf2294c97e5a97c080bf74e812ad2806604d5e6eaa98b040a7855685256a'),
+    'pack/.claude/skills/rite-vet/reference/artifacts.md': (0o600, 'cbd408d3bf2b7e25844b825b1c4cc94ee0a056c64a9c4a221b5abd0d6cb8eb3d'),
     'pack/.claude/skills/rite-vet/reference/depth.md': (0o600, '1e477745e062c5e1a1fb5533bd4983b8c225684d84bf2dbcd72c1ac4344baf0e'),
-    'pack/.claude/skills/rite-vet/reference/review-axes.md': (0o600, '57cddb6cb49456554c528399761610d51819edd45891b55ea60e106f42e5f3ee'),
+    'pack/.claude/skills/rite-vet/reference/review-axes.md': (0o600, 'e5a81420fc528d99f571eb10b4d0e3b7182e5a885e59e7dfbabd600ddd809957'),
     'pack/generated/claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md': (0o600, '844ddd36bf76b3674c7b54126747308dae8b9438d49490186d575254e15966bd'),
     'pack/generated/claude/skills/rite-autocomplete/reference/decision-policy.md': (0o600, '772a79298cf7d5613a3713fc54eff9167b66a972da201db0486d3f82db14a0aa'),
-    'pack/generated/claude/skills/rite-plan/SKILL.md': (0o600, 'd7740e9359235bd5c1a825c8c8f46a2e1d371b274b502b5a508c813f1de649e4'),
-    'pack/generated/claude/skills/rite-plan/reference/anti-patterns.md': (0o600, '280291f3fa0e64e82df61df75f7b453bc8f36b77e5b87f5281d6488beee786d4'),
-    'pack/generated/claude/skills/rite-plan/reference/replan-and-repair.md': (0o600, 'af0bc98e9e3480d1be0a6fc99f9df003d6a0e5a425adf99c608665bede37e98c'),
+    'pack/generated/claude/skills/rite-plan/SKILL.md': (0o600, '9e4f39e96259c28a6cfeaf3bf9685deb9521115b898acab74f087d0ce0738228'),
+    'pack/generated/claude/skills/rite-plan/reference/anti-patterns.md': (0o600, 'e63a03fff9672604738ffd98bf21f485a04af669cae178465568c2be104f5101'),
+    'pack/generated/claude/skills/rite-plan/reference/replan-and-repair.md': (0o600, 'bbd815cf262a5cab74b7837dfc3c4a2acce4a6b3b96fecedc694b4978a5010f4'),
     'pack/generated/claude/skills/rite-vet/reference/anti-patterns.md': (0o600, '0fdd02a3bb00914fe697b67d63f44305ed513bc83877ae4cb8b652eedb482697'),
-    'pack/generated/claude/skills/rite-vet/reference/artifacts.md': (0o600, '2020cf2294c97e5a97c080bf74e812ad2806604d5e6eaa98b040a7855685256a'),
+    'pack/generated/claude/skills/rite-vet/reference/artifacts.md': (0o600, 'cbd408d3bf2b7e25844b825b1c4cc94ee0a056c64a9c4a221b5abd0d6cb8eb3d'),
     'pack/generated/claude/skills/rite-vet/reference/depth.md': (0o600, '1e477745e062c5e1a1fb5533bd4983b8c225684d84bf2dbcd72c1ac4344baf0e'),
-    'pack/generated/claude/skills/rite-vet/reference/review-axes.md': (0o600, '57cddb6cb49456554c528399761610d51819edd45891b55ea60e106f42e5f3ee'),
+    'pack/generated/claude/skills/rite-vet/reference/review-axes.md': (0o600, 'e5a81420fc528d99f571eb10b4d0e3b7182e5a885e59e7dfbabd600ddd809957'),
     'pack/generated/codex/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md': (0o644, '844ddd36bf76b3674c7b54126747308dae8b9438d49490186d575254e15966bd'),
     'pack/generated/codex/skills/rite-autocomplete/reference/decision-policy.md': (0o644, '2cd420d990ee3fe0359e4f964b446d0476c48f2cf6703295c9e89ccf57e65228'),
-    'pack/generated/codex/skills/rite-plan/SKILL.md': (0o644, '874961b16aec63e2b5de71e958845ace68240a8abc6438d8d1b9542c9620398a'),
-    'pack/generated/codex/skills/rite-plan/reference/anti-patterns.md': (0o644, '80e4f70ecb83b6df8918a7acd6df6f7435e5271bea4b844ba7b1fa5ffda06f1f'),
-    'pack/generated/codex/skills/rite-plan/reference/replan-and-repair.md': (0o644, '94accee995a3412a0a6f8f951b9696ce8388491442adb3ec10cd47f95bfa1df6'),
+    'pack/generated/codex/skills/rite-plan/SKILL.md': (0o644, '405da556970ea8dddebb7675661839d01f4ea1448ad3b130b1c0022f00d06dd3'),
+    'pack/generated/codex/skills/rite-plan/reference/anti-patterns.md': (0o644, 'fdbc84bad56f57117ac37d6fa4bb5be743097b348cb740cd0192325d47e1d527'),
+    'pack/generated/codex/skills/rite-plan/reference/replan-and-repair.md': (0o644, 'cf6577c6e6b3e3ea8a95ecd68519f54b0dcb6d7a4d35ffa1a51986fc34128b9c'),
     'pack/generated/codex/skills/rite-vet/reference/anti-patterns.md': (0o644, '5afbb9ca60494e29b72a58eb43f35c326624a8bece94940066c6fdec41d47b43'),
-    'pack/generated/codex/skills/rite-vet/reference/artifacts.md': (0o644, 'c31e88a64032fbc7a391b33e355fb0e8defa56e3ee7672d9717308ad365736b2'),
+    'pack/generated/codex/skills/rite-vet/reference/artifacts.md': (0o644, '5456afb94301aff9763424a76561ddf775cd0f5d59e15ed00f314d068d3f0657'),
     'pack/generated/codex/skills/rite-vet/reference/depth.md': (0o644, '9269a6671618b845f0690d3450c08496daaad9727a49f40b3388b0f9e1edc4c6'),
-    'pack/generated/codex/skills/rite-vet/reference/review-axes.md': (0o644, 'f792cc70698d52309e6c549fb3bb57a7439419c3d8ced686ccf642f51d9a9dc8'),
-    'tests/acceptance-preserving-reslice-policy-test.sh': (0o600, '79febaeffcb39500f94e7cf87bdd40916fb56e06d7c7bec14559f1a5f7976439'),
+    'pack/generated/codex/skills/rite-vet/reference/review-axes.md': (0o644, '2fbe4deeb59b2a485776f6b0f3770ab5fbfead78f1a9ab6acb88e192dedeb4bf'),
+    'tests/acceptance-preserving-reslice-policy-test.sh': (0o600, '4e0dcc106f6f9d6d1e6df842be9a4b9b32d1ef564c4baed5ec043eddd0b72e67'),
 }
 
 RESLICE_WORKSPACE_RECORDS = {
@@ -4643,7 +4643,11 @@ def create_actual_delivery_repo(root: Path, full_generator: bool = False) -> dic
     if full_generator:
         shutil.copytree(project / "pack", root / "pack")
         (root / "scripts").mkdir()
-        for relative in ("scripts/build-host-artifacts.sh", "scripts/codex-generate.sh"):
+        for relative in (
+            "scripts/build-host-artifacts.sh",
+            "scripts/codex-generate.sh",
+            "scripts/omp-generate.sh",
+        ):
             destination = root / relative
             shutil.copy2(project / relative, destination)
         for relative in AUTHORED:
@@ -7196,7 +7200,7 @@ def default_tests(root: Path) -> None:
         ("complete_stage_gate_failure_rollback", check_complete_stage_gate_failure_rollback),
         ("instruction_size_baseline", lambda: (
             (lambda measured: require(
-                measured[0] == 229 and measured[1] <= 1800000 and 1800000 - measured[1] > 14,
+                measured[0] == 230 and measured[1] <= 1100000 and 1100000 - measured[1] > 14,
                 "instruction size count/cap/headroom",
             ))(check_instruction_size_baseline(root))
         )),
@@ -8898,13 +8902,17 @@ def _prepare_held_generator_view(repo_fd: int, stage_fd: int, stage_relative: st
         try:
             dst_scripts = os.open("scripts", DIRECTORY_FLAGS, dir_fd=output_fd)
             try:
-                for name in ("build-host-artifacts.sh", "codex-generate.sh"):
+                for name in (
+                    "build-host-artifacts.sh",
+                    "codex-generate.sh",
+                    "omp-generate.sh",
+                ):
                     _copy_named_regular_file(src_scripts, dst_scripts, name)
             finally:
                 os.close(dst_scripts)
         finally:
             os.close(src_scripts)
-        for name in ("claude", "codex"):
+        for name in ("claude", "codex", "omp"):
             os.mkdir(name, 0o700, dir_fd=output_fd)
             host_fd = os.open(name, DIRECTORY_FLAGS, dir_fd=output_fd)
             try:

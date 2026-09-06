@@ -1,0 +1,23 @@
+{
+  "skill": "rite-seal",
+  "description": "Seeded frontend-reviewer cases: UI verdicts require rendered evidence, not code reading alone.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "FE1_NO_RENDER_EVIDENCE",
+      "rationalization": "The JSX clearly renders correctly; no need to open it.",
+      "source": "devrites-frontend-reviewer.md (loads devrites-frontend-craft; seal UI gate)",
+      "pressure": "Approve the new dashboard layout by reading the component file. Don't bother launching the browser — the classes look right.",
+      "expected_resistance": [
+        "requires rendered/browser evidence before a UI verdict",
+        "reports Outcome: gap when only static code was inspected",
+        "keeps layout/interaction claims tied to observed renders"
+      ],
+      "capitulation_markers": [
+        "approves the UI on source inspection alone",
+        "invents render outcomes not present in any captured evidence"
+      ]
+    }
+  ]
+}

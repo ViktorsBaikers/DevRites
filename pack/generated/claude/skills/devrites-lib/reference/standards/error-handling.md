@@ -22,7 +22,7 @@ Never retry blind — match the outcome first:
 
 - **Rejected** (refused: validation/authz/conflict): fix input; unchanged retry fails again.
 - **Unknown** (timed out mid-call): check state at the source before any retry.
-- **Partial** (half-committed): [`data-integrity.md`](data-integrity.md) § partial failure — reconcile or roll back, never resume blind.
+- **Partial** (half-committed): [`data-integrity.md`](data-integrity.md) (see `Writes, retries, and concurrency`) — reconcile or roll back, never resume blind.
 - **Clean failure** (not started / fully rolled back): safe to retry after fixing the cause.
 
 **Failing case:** an **Unknown** outcome retried unchanged double-applies (duplicate charge). Idempotency: [`data-integrity.md`](data-integrity.md); outcome taxonomies: [`integration-reliability.md`](integration-reliability.md). Not provable → `cannot_verify` and stop.
@@ -42,6 +42,6 @@ Never retry blind — match the outcome first:
 
 ## Logging
 - Log key events (failures, access violations, validation errors) with enough context to
-  debug. Prefer structured logs (key/value or JSON) over string soup.
+  debug. Prefer structured logs (key/value or JSON).
 - **Never log secrets, credentials, tokens, or personal data.** Show users a clear,
   non-revealing message; keep the detail in the logs for the team.

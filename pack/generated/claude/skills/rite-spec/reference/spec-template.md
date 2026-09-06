@@ -138,7 +138,7 @@ status routes Define/Vet/Build/Prove to the named standard without copying it he
 | Q-001 | blocking | [NEEDS CLARIFICATION: <question>] | AC-001 |
 
 ## Readiness gate
-- [ ] No blocking clarification; REQ/AC IDs are valid and ACs independently provable.
+- [ ] No blocking clarification or open `blocking`/`escalating` question; REQ/AC IDs are valid and ACs independently provable.
 - [ ] Stakeholder conflicts/priority rules, constraints, and invariants are explicit;
       implementation preferences are not disguised as requirements.
 - [ ] Existing affected behavior maps to preserving REQ/AC + current evidence, or uses the exact justified greenfield `none`.

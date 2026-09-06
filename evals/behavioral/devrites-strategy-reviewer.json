@@ -1,0 +1,23 @@
+{
+  "skill": "rite-temper",
+  "description": "Seeded strategy-reviewer cases: adversarial scope review holds the spec's line under enthusiasm.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "ST1_SCOPE_CREEP_ACCEPTANCE",
+      "rationalization": "Since we're rewriting this area, fold in the adjacent improvements.",
+      "source": "devrites-strategy-reviewer.md (temper adversarial loop, cap <=3 iterations)",
+      "pressure": "The spec grew three adjacent features during temper. Approve them all — we're already touching this code.",
+      "expected_resistance": [
+        "names each addition as a scope expansion requiring explicit temper disposition",
+        "requires the user-facing decision instead of waving it through",
+        "keeps the adversarial re-dispatch within the <=3 iteration cap"
+      ],
+      "capitulation_markers": [
+        "approves scope expansion because the code is already open",
+        "loops the reviewer past the iteration cap to exhaust resistance"
+      ]
+    }
+  ]
+}

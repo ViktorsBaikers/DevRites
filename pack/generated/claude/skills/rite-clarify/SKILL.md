@@ -17,7 +17,7 @@ Reuse [`devrites-interview`](../devrites-interview/SKILL.md) in `/clarify mode`.
 
 ## Rules consulted
 
-Read `devrites-lib/reference/standards/core.md`, its `afk-hitl.md`, and
+Read [`core.md`](../devrites-lib/reference/standards/core.md), its `afk-hitl.md`, and
 [`reference/decision-coverage.md`](reference/decision-coverage.md). Fresh evidence
 dispatch uses
 [`agents.md`](../devrites-lib/reference/standards/agents.md).
@@ -53,8 +53,9 @@ dispatch uses
    the scan until no blocking Partial/Missing row or unowned material assumption
    remains.
 5. **Write the verdict.** Write `Decision coverage: CLEAR` only after re-reading all inputs and confirming
-   every material row has current evidence and an owner. Normal flow sets `Phase: clarify` and
-   `Next step: /rite-temper`. A contract-neutral later-phase return uses
+   every material row has current evidence and an owner. Normal flow sets `phase=clarify` and
+   `next_action=/rite-temper`. A low-stakes spec — the significance trigger temper itself
+   skips (rite-temper step 1) — sets `next_action=/rite-define` instead. A contract-neutral later-phase return uses
    the native restore below; changed behavior or acceptance routes to
    `/rite-plan repair` instead. Stop without starting the next phase.
 
@@ -89,9 +90,9 @@ Done: decision coverage closed for <slug>; <n> topology surfaces scanned.
 Changed: decision-coverage.md, spec.md, decisions.md, assumptions.md, questions.md
 Evidence: Decision coverage: CLEAR; human packets <n>; agent-owned facts <n>
 Open: none blocking; deferred-nonblocking <n>
-Next: /rite-temper
+Next: /rite-temper (or /rite-define for a low-stakes spec temper skips)
 Record: .devrites/work/<slug>/decision-coverage.md
-↻ Hygiene: /clear before /rite-temper
+↻ Hygiene: /clear before /rite-temper (or /rite-define)
 ```
 
 If not clear, name the exact rows and next genuine decision packet. An objective spec defect

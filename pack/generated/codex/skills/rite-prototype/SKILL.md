@@ -13,8 +13,8 @@ question.
 
 ## 0. Read core rules
 
-Read `.agents/skills/devrites-lib/reference/standards/core.md` first: the operating rules and the "capture the answer"
-persistence discipline apply even to throwaway code. The other rule files load on demand.
+Read `.agents/skills/devrites-lib/reference/standards/core.md` first: the operating rules and the Persistence-before-stopping
+discipline apply even to throwaway code. The other rule files load on demand.
 
 ## 1. Name the question
 

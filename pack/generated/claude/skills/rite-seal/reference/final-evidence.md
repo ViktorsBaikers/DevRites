@@ -9,10 +9,9 @@ results and exact `devrites-spec-reviewer` checks implementation and proof
 against its meaning. Bug fixes require original-symptom proof; self-report,
 inspection alone, and generic "tests pass" do not count.
 
-Behavioral claims require positive, discriminating evidence under `testing.md`.
-Skipped/focused/filtered/pending, zero-test, assertion-free, tautological, unexecuted, or
-exit-only results are unproven. Static gates prove only their named static criterion;
-discriminating shell/golden/text assertions remain valid for textual or CLI acceptance.
+Apply [`testing.md`'s positive, discriminating proof](../../devrites-lib/reference/standards/testing.md#positive-discriminating-proof),
+including invalid-result exclusions and static/textual criterion boundaries.
+Unsupported behavioral claims remain unproven: NO-GO.
 
 ## Cross-check
 
@@ -37,5 +36,5 @@ devrites-engine check seal "<slug>"
 ```
 
 This checks structure and exact candidate bindings, never acceptance, test
-quality, doubt, or review. Mutation stays optional unless project policy or
-`test-plan.md` requires it.
+quality, doubt, or review. Apply [`testing.md`'s safe perturbation](../../devrites-lib/reference/standards/testing.md#safe-perturbation)
+for its mandatory critical/regression cases and any additional project/test-plan requirement.

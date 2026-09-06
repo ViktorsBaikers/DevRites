@@ -9,7 +9,14 @@ user-invocable: true
 
 Polish code for every feature. When the feature touches UI, normalize and polish the
 UI as well. Complete this self-review before `/rite-review`. The code and UI phases
-live in `reference/code.md` and `reference/ui.md`; read only the phase in scope.
+live in [`reference/code.md`](reference/code.md)
+([`anti-ai-slop.md`](reference/anti-ai-slop.md),
+[`backend-polish.md`](reference/backend-polish.md))
+and [`reference/ui.md`](reference/ui.md)
+([`browser-polish-evidence.md`](reference/browser-polish-evidence.md),
+[`design-system-discovery.md`](reference/design-system-discovery.md),
+[`harden-checklist.md`](reference/harden-checklist.md));
+read only the phase in scope.
 
 ## Operating rules
 
@@ -85,7 +92,7 @@ Incomplete comparison is **not** agreement. Record axis deltas in `polish-report
    validation, refreshed evidence/browser bindings, and an updated candidate
    manifest. Record a **`Re-verification:`** line in `polish-report.md`. Close
    the candidate for Review only after these checks are green.
-7. **Aggregate output:** both phases append to the single `polish-report.md`.
+7. **Aggregate output:** each phase appends to the single `polish-report.md`.
 
 ## Refinement modes
 
@@ -95,7 +102,3 @@ quality bar; they apply after the system is aligned. See `reference/ui.md`.
 > **Mid-flight discipline.** When tempted to polish UI without normalize, cite
 > clean lint as proof of quality, skip Phase 2 on a backend diff, or delete a
 > Chesterton's Fence: see [anti-patterns](reference/anti-patterns.md).
-
-## Output → `polish-report.md`
-
-Write the detailed report to `polish-report.md`.

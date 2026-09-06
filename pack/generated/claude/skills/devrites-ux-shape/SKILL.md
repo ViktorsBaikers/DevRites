@@ -27,18 +27,17 @@ gathered:
 - Design system + register (tokens, components, type, spacing, neighbors; brand-vs-product)
   → `../devrites-frontend-craft/reference/design-references.md`.
 - `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` if present: anchors that reduce questions.
-  `DESIGN.md` is the project's **rolled-up design memory** (tokens, calibration baseline,
-  proven component behaviors) earlier features closed during Polish via
-  `../rite-polish/reference/design-memory.md`;
-  treat it as the inherited system: read it before re-discovering, depart only on signal.
+  `DESIGN.md` is the rolled-up design memory (`../rite-polish/reference/design-memory.md`;
+  see `../devrites-frontend-craft/reference/design-references.md`) — read it before
+  re-discovering, depart only on signal.
 - `references.md` + `references/`: the screenshots / Figma / video / links the human
   supplied. Honor each recorded role: **target** = fidelity contract, **constraint** =
   required rule, **inspiration** = extract only the cited principle.
 
 ## 2. Discovery: one round, assert-then-confirm
 Understand the feature deeply enough to make excellent design calls: **no code, no
-markup**. Use the `devrites-interview` cadence: 2-3 questions per round, best-guess
-attached, stop when answers converge. One round is the default; add a second only for
+markup**. Use the `devrites-interview` cadence: one question per turn (≤3 per pass),
+best-guess attached, stop when answers converge. One round is the default; add a second only for
 material gaps. When `PRODUCT.md` + the spec already pin an answer, **assert it and ask to
 confirm** ("reads as Restrained: confirm?"), don't offer a four-option menu. Cover:
 - **Purpose & user:** who, in what state of mind (rushed / exploring / anxious / focused).

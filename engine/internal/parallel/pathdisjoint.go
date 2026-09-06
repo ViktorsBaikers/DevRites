@@ -32,6 +32,12 @@ func NormalizePath(raw string) (string, error) {
 	}
 	parts := make([]string, 0, strings.Count(path, "/")+1)
 	for part := range strings.SplitSeq(path, "/") {
+		// Edge whitespace on a segment would survive segment filtering and
+		// make normalization non-idempotent ("0\n." collapsing to "0\n"),
+		// so reject it outright like the other malformed shapes.
+		if trimmed := strings.TrimSpace(part); trimmed != part {
+			return "", fmt.Errorf("path segment must not have leading or trailing whitespace: %q", raw)
+		}
 		if part == "" || part == "." {
 			continue
 		}

@@ -1,13 +1,13 @@
 ---
 name: rite-watch-pr
-description: Observe one GitHub PR and CI state without mutating code, Git, threads, checks, or shared state. Safe for admitted native host schedules and events.
+description: Observe one GitHub PR and CI state without mutating code, Git, threads, checks, or shared state. Safe for native host schedules and events.
 argument-hint: "[PR number|PR URL|blank for current branch]"
 user-invocable: true
 ---
 
 # /rite-watch-pr: read-only PR and CI observation
 
-Observe one PR once. Return a bounded snapshot and stop. A proven native host
+Observe one PR once. Return a bounded snapshot and stop. A native host
 schedule, routine, channel, automation, or GitHub event may invoke another fresh
 observation. When that activation is absent or uncertain, use an explicit turn or
 user-owned automation; never create a polling daemon, detached process, shell loop, or

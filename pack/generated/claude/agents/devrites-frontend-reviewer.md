@@ -33,32 +33,44 @@ catalog.
 
 ## Inputs
 In workspace `.devrites/work/<slug>/`, read `design-brief.md`,
-`browser-evidence.md`, `spec.md` for UI impact and acceptance, and
-`polish-report.md`. Run `git diff`, inspect the touched UI files, and check the
+`polish-report.md`. Run `git diff` limited to `touched-files.md` paths, inspect the
+touched UI files, and check the
 project's tokens, shared components, and neighboring screens.
 
 ## Review
+Before the gate sweep, stamp a **pre-emit critique** over six axes — philosophy
+(does the surface serve the brief's intent), hierarchy, execution, specificity,
+restraint, variety — each scored 1–5 in the report. Any axis below 3 produces a
+revision finding before gate-level nits are worth listing; two critique passes are
+normal, three means the brief itself is wrong and escalates to the root.
+**Failing case:** the sweep passes a surface whose hierarchy axis is a
+self-admitted 2.
+
 - **Design-system alignment:** compare tokens with hard-coded values, shared
   components with one-offs, and the information architecture and flow with
   neighboring screens. Name the root cause of any drift.
-- **States:** check default, loading, empty, error, success, disabled, and
-  long-content states. The empty state needs a welcoming next action, and the error
-  state must support recovery. Flag every missing state.
+- **States:** check the canonical 8 + 3 state lattice
+  (`devrites-frontend-craft/reference/quality-standards.md` § Focus & states),
+  not a shorter local list. The empty state needs a welcoming next action, and the
+  error state must support recovery. Flag every missing state.
 - **Accessibility:** check focus order, visible focus, labels, WCAG AA contrast,
   keyboard operation, semantics, and touch targets of at least 44px.
-- **Responsive:** check small and large viewports for behavior and layout shift.
-- **Anti-AI-slop:** purple/blue gradients, gradient text, default glassmorphism,
-  cards-in-cards, identical card grids, icon-tile-above-heading, gray-on-color,
-  hero-metric cliché, decorative bounce easing, random Inter, modal-first,
-  ghost-card with a border and large shadow, fake UI-in-a-div, and placeholder copy
-  or data. Run the **mechanical pre-flight** for em-dash count, eyebrow cap, and
-  repeated layout families from `rite-polish/reference/anti-ai-slop.md`.
+- **Responsive:** check the canonical viewport set (§ Responsive in the same
+  reference, including the 320–1920 horizontal-scroll sweep) for behavior and
+  layout shift.
+- **Anti-AI-slop:** run the UI anti-slop catalog and the mechanical pre-flight
+  (em-dash count, eyebrow cap, repeated layout families) from
+  `.claude/skills/rite-polish/reference/anti-ai-slop.md`. Report each hit with the
+  required remediation named in that file, not just the ban.
+- **Copy boundary:** judge only functional copy inside surfaces — controls name
+  their action, errors name the recovery. Do not rewrite product copy, invent
+  specificity, or judge prose style; prose quality routes to prose craft.
 - **Persona lenses:** walk the flow as a first-time user, power user,
   keyboard or screen-reader user, phone user, and stress tester with large data or
   a slow network. Name what breaks and for whom.
 - **Evidence honesty:** confirm that browser evidence includes described screenshots
   and a clean console rather than an unsupported assertion. If the browser could not
-  run, it must be marked `pending-manual`.
+  run, it must be marked `pending (manual)`.
 - **Visual Verdict:** read the `## Visual Verdict` table in
   `browser-evidence.md`, which scores each design-brief or reference criterion. Do
   not rebuild it. Confirm each row against the screenshot and **promote its
@@ -71,6 +83,13 @@ project's tokens, shared components, and neighboring screens.
 ## Rules
 - Don't edit. Return findings only, labeled Critical / Important / Suggestion / Nit / FYI
   with `file:line` and a concrete fix. Feature scope only.
+- **Bounded verification ceiling:** one batched evidence pass (all viewports in one
+  round), one batched fix reconciliation, at most one confirm pass. A further round
+  needs new failing evidence; open-ended screenshot loops are a defect in the review,
+  not thoroughness.
+- **Non-trigger:** if the diff touches no rendered UI surface (pure logic, config, or
+  build change), return `Not-applicable: no rendered UI surface in diff`; style
+  findings must not fire on backend-only work.
 
 ## Output
 
@@ -79,13 +98,14 @@ Return the report in this shape:
 Frontend review (<slug>) — independent
 Outcome: <findings | no-findings | gap>
 Account: <admitted findings | No-findings | Gap per Result admission>
+Critique: <philosophy n · hierarchy n · execution n · specificity n · restraint n · variety n>
 System alignment: <drift by root cause>
 States: <covered / missing>
 A11y: <issues>
 Responsive: <issues>
-Slop: <none | which>
+Slop: <none | which — with remediation>
 Visual Verdict: <PASS | PARTIAL(n) | FAIL(n) | absent> — <acceptance-mapped FAILs, if any>
-Evidence: <real / asserted / pending-manual>
+Evidence: <real / asserted / pending (manual)>
 Verdict: UI shippable? <yes/partial/no — blockers>
 ```
 

@@ -8,9 +8,6 @@ multi-axis review and shape the severity labels on UX findings.
 findings". 3 is "good with minor gaps". 2 is "partial: significant gaps". 0-1 is a
 Critical / Important.
 
-Heuristics are Jakob Nielsen's 10 (1994, refreshed 2020): public usability canon,
-referenced by every serious design discipline.
-
 ## 1. Visibility of system status
 Users know what's happening, when, and where.
 - Loading indicators on async operations.
@@ -120,10 +117,9 @@ Users can find what they need without leaving the surface.
 
 ## Reporting
 
-In `/rite-review` output, surface only the heuristics scoring **≤2** as findings,
-plus any 3 with a specific noted gap. Heuristics at 4 are not reported individually.
-They roll up into the UX axis. Heuristics at 3 with no specific gap are not
-reported. Each surfaced finding gets a severity label per `rite-review/SKILL.md`.
+In `/rite-review` output, surface heuristics scoring **≤2**, plus any 3 with a specific
+noted gap, as findings; every score feeds the UX axis. Each surfaced finding gets a
+severity label per `rite-review/SKILL.md`.
 
 The rubric is descriptive, not gating. A score of 2 on aesthetic-minimalist isn't
 an automatic NO-GO; the `rite-seal` gate is `Critical == 0`, not "every heuristic

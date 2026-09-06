@@ -74,11 +74,14 @@ for need in \
   package/update.sh \
   package/scripts/ \
   package/scripts/codex-generate.sh \
+  package/scripts/omp-generate.sh \
   package/scripts/build-host-artifacts.sh \
   package/pack/generated/claude/skills/rite-build/SKILL.md \
   package/pack/generated/codex/skills/rite-build/SKILL.md \
   package/pack/generated/codex/agents/devrites-code-reviewer.toml \
   package/pack/generated/codex/config.toml \
+  package/pack/generated/omp/skills/rite-build/SKILL.md \
+  package/pack/generated/omp/.omp-plugin/plugin.json \
   package/pack/.claude/ ; do
   echo "$contents" | grep -q "^$need" && ok "tarball ships $need" || no "tarball MISSING $need (files allowlist?)"
 done
@@ -86,7 +89,8 @@ shipped_scripts="$(printf '%s\n' "$contents" | grep '^package/scripts/.' | grep 
 runtime_scripts="$(printf '%s\n' \
   package/scripts/build-host-artifacts.sh \
   package/scripts/codex-generate.sh \
-  package/scripts/install-lib.sh | sort)"
+  package/scripts/install-lib.sh \
+  package/scripts/omp-generate.sh | sort)"
 [ "$shipped_scripts" = "$runtime_scripts" ] \
   && ok "tarball scripts are limited to the closed runtime set" \
   || { no "tarball ships repository-only or misses runtime scripts"; printf '    shipped:\n%s\n' "$shipped_scripts"; }

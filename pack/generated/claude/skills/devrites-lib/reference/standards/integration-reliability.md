@@ -36,11 +36,22 @@ For every call or delivery, classify the observed outcome:
 - Retry only a named transient failure and only when the operation is idempotent or has
   a durable deduplication key. Bound attempts, elapsed time, and exponential backoff;
   add jitter when many workers could synchronize.
+- Assign one retry owner across SDK, worker and queue, or explicitly share one
+  end-to-end attempt/deadline budget that redelivery cannot reset. Prove exhaustion
+  by counting physical downstream calls, including inner retries, and advancing a
+  controlled/injected clock to the deadline. Assert exhaustion, not wall-clock
+  duration ([testing.md](testing.md#determinism-no-flaky-tests)); elapsed-time logs
+  are observations, never timing assertions in tests.
+  **Failing case:** each of three layers permits four attempts, producing 64 calls;
+  three passing local retry tests do not prove the operation's budget. Budget
+  overrun blocks proof and Seal until retry ownership or shared accounting is fixed.
 - A timeout is not proof the provider did nothing. Query by idempotency key/status or
   reconcile before creating a second effect.
 - Webhook/queue consumers acknowledge only after durable success or durable handoff.
   Duplicate delivery, duplicate jobs, and out-of-order delivery are normal inputs:
   deduplicate durably and reject, buffer, or reconcile stale sequence/version values by contract.
+  **Failing case:** the handler acks before the durable write; a duplicate delivery
+  creates a second effect.
 - A poison message must not block the partition forever. Bound redelivery, retain the
   failure reason without secrets, move to the project's quarantine/dead-letter path,
   and define replay after correction.
@@ -56,9 +67,9 @@ Map each multi-step effect as `not started | committed | unknown | compensating 
 reconciled`. If one system commits and another fails, name the durable record that
 drives retry or compensation. Do not catch/log/continue into a false success.
 
-For synchronous versus asynchronous design, decide from the user-visible consistency
-need, latency budget, failure coupling, and recovery model. Async processing changes the
-contract to accepted/pending/failed/retryable; it does not make the failure disappear.
+For synchronous versus asynchronous design, apply [`patterns.md`](patterns.md); async
+processing changes the contract to accepted/pending/failed/retryable; it does not make the
+failure disappear.
 
 ## Cache and partition behavior
 

@@ -88,6 +88,7 @@ func Migrate(root string, args []string, stdout, stderr io.Writer) int {
 	var exit int
 	var result string
 	err = state.WithFeatureLock(root, slug, func() error {
+		// #nosec G304 -- workspace ledger path resolved from the operator root
 		raw, err := os.ReadFile(ledger)
 		if err != nil {
 			return err

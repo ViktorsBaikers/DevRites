@@ -4,10 +4,25 @@ Workflow Artifact plans/isolates/proves; never enters product candidate/readines
 built count or authorizes consumption. Module owns semantics; callers retain only
 link and entry/return.
 
+## Contents
+
+- [Vet admission](#vet-admission)
+- [Workflow Artifact admission](#workflow-artifact-admission)
+  - [Owner, namespace, promotion, and reads](#owner-namespace-promotion-and-reads)
+- [Frozen source and identity](#frozen-source-and-identity)
+- [Journal and complete writes](#journal-and-complete-writes)
+  - [Workflow Artifact journal](#workflow-artifact-journal)
+- [Canonical operation table](#canonical-operation-table)
+- [State, proof, and retry](#state-proof-and-retry)
+- [Route classifier](#route-classifier)
+- [Public diagnostics](#public-diagnostics)
+- [Phase adapters](#phase-adapters)
+
 ## Vet admission
 
-Vet admits one `test-plan.md` block; no target records
-`Workflow Artifact admission: not applicable — no active target admitted`.
+Vet admits one `test-plan.md` block when a target is active; when no active
+target, record `Workflow Artifact admission: not applicable — no active target
+admitted` instead.
 
 ```markdown
 ## Workflow Artifact admission
@@ -100,12 +115,12 @@ Golden input: slug `demo`, zero-64hex binding, `scripts/prove.py`, mode `0755`
 
 | Value | Exact result |
 | --- | --- |
-| source filename|`00000000`|
-| content SHA-256|`3a66aebdedbad3cf107d24e72a07d4b735819b1cf4020fdd922f63c064708172`|
-| handle digest|`1557f28b7dbf713ae3828b0dc4e914702ba34063f65393d4f8b57d99bc6af3ad`|
-| logical handle|`wsrc:1557f28b7dbf713ae3828b0dc4e914702ba34063f65393d4f8b57d99bc6af3ad`|
-| resolver path|`.workflow-artifact-sources/1557f28b7dbf713ae3828b0dc4e914702ba34063f65393d4f8b57d99bc6af3ad`|
-| identity digest|`ce333944056552cf645c36cd03b5cd65774d167b5e920118639c6062e29f5c82`|
+| source filename | `00000000` |
+| content SHA-256 | `3a66aebdedbad3cf107d24e72a07d4b735819b1cf4020fdd922f63c064708172` |
+| handle digest | `1557f28b7dbf713ae3828b0dc4e914702ba34063f65393d4f8b57d99bc6af3ad` |
+| logical handle | `wsrc:1557f28b7dbf713ae3828b0dc4e914702ba34063f65393d4f8b57d99bc6af3ad` |
+| resolver path | `.workflow-artifact-sources/1557f28b7dbf713ae3828b0dc4e914702ba34063f65393d4f8b57d99bc6af3ad` |
+| identity digest | `ce333944056552cf645c36cd03b5cd65774d167b5e920118639c6062e29f5c82` |
 
 ### Owner, namespace, promotion, and reads
 
@@ -297,6 +312,7 @@ mutation artifacts clean exactly.
 Candidate/destination and every generated-stage regular-file authority is acquired no-follow through one held descriptor; initial/opened/final pathname identity must match and each read caps at 16,777,216 bytes. Complete staged/current generated-tree scans share one finite absolute deadline: install delivery aggregate; recovery 600 seconds.
 
 `PROVING` runs each trusted Vet-approved admitted argv command and its descendants
+
 in one fresh process group, where they remain until exit; output and command/
 aggregate time are bounded. A declared expected signal must be exactly one
 standalone output line. It adds no network or filesystem sandbox and

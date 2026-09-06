@@ -55,7 +55,8 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    primary available structural index, and cross-check only for a named unresolved
    predicate rather than reassurance. For an external
    dependency's current API surface, consult context7 if available.
-2. **Pick the mode** (`$ARGUMENTS` or infer):
+2. **Pick the mode** (`$ARGUMENTS` or infer): Apply the marked action before writes and
+   retain its decision/coverage evidence.
    - **decompose:** first/again break the feature into vertical slices.
    - **reslice:** a slice is too large; split into thinner end-to-end slices.
    - **repair:** a Spec Drift Guard event; fold the resolution into plan + tasks.
@@ -73,7 +74,7 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    See [replan-and-repair](reference/replan-and-repair.md) for each mode's steps.
 2a. **Draft fresh.** Dispatch `devrites-plan-drafter` in `repair` mode with frozen mode,
    affected artifacts, settled contract, and failure/drift. Await one atomic, read-only
-   `plan-candidate`; human choices return separately.
+   the drafter's `candidate_files` bundle; human choices return separately.
    When the observed failure is missing or ambiguous consumptive-action evidence,
    require the drafter to apply `one-shot-actions.md` and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
@@ -109,8 +110,7 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    reconfirm only after Clarify and Vet close it. If you stopped for drift,
    mark the `drift.md` entry resolved. Never remove or overwrite a valid caller
    return cursor while writing the Plan checkpoint.
-6. Apply the marked action before writes and retain its decision/coverage evidence.
-   After editing `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`,
+6. After editing `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`,
    re-scan affected coverage, assumptions, uncertainty, and gates. Partial/Missing, unowned
    material assumption, or open blocking/escalating question routes `/rite-clarify`/HITL.
    Restore `CLEAR` only from current evidence.

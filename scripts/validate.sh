@@ -374,6 +374,58 @@ if command -v shellcheck >/dev/null 2>&1; then
 else
   echo "skip: shellcheck not installed locally (optional: CI enforces the error-level gate)"
 fi
+# ---- 16. eval coverage ledger (blocking gating skills + P0 agents) ------
+section "eval coverage ledger (blocking)"
+if bash "$ROOT/scripts/check-gating-eval-ledger.sh" >${DR_SCRATCH}/dr_eval_scoreboard 2>&1; then
+  cat ${DR_SCRATCH}/dr_eval_scoreboard
+  good "eval coverage ledger (gating skills + P0 agents)"
+else
+  cat ${DR_SCRATCH}/dr_eval_scoreboard
+  bad "eval coverage ledger (gating skill or P0 agent corpus missing)"
+fi
+
+# ---- 16b. osv.dev dependency scan ----------------------------------------
+# OSV.dev data source (broader than the npm advisory DB npm audit uses) over
+# the npm lockfile and the engine module. Allowlist: osv-scanner.toml, which
+# mirrors scripts/npm-audit-exceptions.json policy.
+section "osv dependency scan (lockfile + engine module)"
+if command -v osv-scanner >/dev/null 2>&1; then
+  if osv-scanner scan --config "$ROOT/osv-scanner.toml" \
+      --lockfile "$ROOT/package-lock.json" \
+      --lockfile "$ROOT/engine/go.mod" >${DR_SCRATCH}/dr_osv 2>&1; then
+    good "osv dependency scan passed"
+  else
+    sed -n '1,40p' ${DR_SCRATCH}/dr_osv
+    bad "osv dependency scan failed"
+  fi
+else
+  echo "skip: osv-scanner not installed locally (CI installs and enforces)"
+fi
+
+# ---- 17. workflow lint (actionlint · zizmor) ------------------------------
+section "workflow lint (actionlint · zizmor)"
+if command -v actionlint >/dev/null 2>&1; then
+  # No -color flag: it is boolean in actionlint, so `-color never` made
+  # actionlint treat "never" as a workflow filename and exit 3. Color is off
+  # anyway outside a TTY.
+  if actionlint .github/workflows/*.yml; then
+    good "actionlint"
+  else
+    bad "actionlint reported workflow issues"
+  fi
+else
+  echo "skip: actionlint not installed locally (CI installs and enforces)"
+fi
+if command -v zizmor >/dev/null 2>&1; then
+  if zizmor --offline .github/workflows/; then
+    good "zizmor"
+  else
+    bad "zizmor reported workflow security issues"
+  fi
+else
+  echo "skip: zizmor not installed locally (CI installs and enforces)"
+fi
+
 
 # ---- summary -------------------------------------------------------------
 printf '\n========================================\n'

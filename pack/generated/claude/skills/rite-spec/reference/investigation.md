@@ -47,9 +47,7 @@ Use native file search over `.devrites/archive/*/{spec,decisions}.md`.
    action-time decisions the acceptance path requires. Separate these from agent-owned
    implementation and diagnostic work.
 
-Gather any design or reference materials the human supplies, including screenshots,
-Figma, links, or video. See [references-intake](references-intake.md). Record whether
-each is a target, constraint, or inspiration for later phases.
+Design/reference materials the human supplies: see [references-intake](references-intake.md).
 
 ## Gap analysis (present → desired)
 State the present and desired states. Their delta defines the work; unknowns in that

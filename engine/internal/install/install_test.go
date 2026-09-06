@@ -52,10 +52,13 @@ func TestInstallPrintsFirstMoveForInstalledHosts(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
 		withCodex bool
+		withOmp   bool
 		want      string
 	}{
-		{name: "Claude and Codex", withCodex: true, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex)."},
-		{name: "Claude only", withCodex: false, want: "Next: reopen the project, then run /rite."},
+		{name: "Claude, Codex, and OMP", withCodex: true, withOmp: true, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex) or /skill:rite."},
+		{name: "Claude and Codex", withCodex: true, withOmp: false, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex)."},
+		{name: "Claude and OMP", withCodex: false, withOmp: true, want: "Next: reopen the project, then run /rite or /skill:rite."},
+		{name: "Claude only", withCodex: false, withOmp: false, want: "Next: reopen the project, then run /rite."},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var out bytes.Buffer
@@ -63,6 +66,7 @@ func TestInstallPrintsFirstMoveForInstalledHosts(t *testing.T) {
 			opts.Target = t.TempDir()
 			opts.PayloadDir = testPayload(t)
 			opts.WithCodex = tc.withCodex
+			opts.WithOmp = tc.withOmp
 			opts.Stdout = &out
 			opts.Stderr = &bytes.Buffer{}
 
@@ -754,7 +758,7 @@ func TestLegacyCodexHooksMergeIsCleanupOnly(t *testing.T) {
 	if !ok || merge != legacy {
 		t.Fatalf("legacy marker lookup = %#v, %t", merge, ok)
 	}
-	if slices.Contains(hostpack.RequiredPayload(true), "codex/hooks.json") {
+	if slices.Contains(hostpack.RequiredPayload(true, true), "codex/hooks.json") {
 		t.Fatal("legacy Codex hooks entered the required payload")
 	}
 	r := runner{opts: DefaultOptions(ModeInstall), payloadFS: os.DirFS(testPayload(t))}
@@ -1053,7 +1057,7 @@ func TestVerifyEngineBinary(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "engine")
 			testutil.WriteExecutable(t, path, "#!/bin/sh\n"+tc.body+"\n")
-			_, err := verifyEngineBinary(path, tc.want, time.Second)
+			_, err := verifyEngineBinary(path, tc.want, 5*time.Second)
 			if (err == nil) != tc.ok {
 				t.Fatalf("verifyEngineBinary error = %v, ok = %t", err, tc.ok)
 			}
@@ -1128,7 +1132,7 @@ func TestBackupRestoreBinaryIsPlatformSafe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(backup)
+	defer func() { _ = os.Remove(backup) }()
 	if filepath.Dir(backup) != filepath.Dir(dest) {
 		t.Fatalf("backup %s is not beside %s", backup, dest)
 	}
@@ -1240,6 +1244,9 @@ default_permissions = "devrites-orchestrator"
 extends = ":workspace"
 # END DEVRITES CODEX PERMISSIONS
 `)
+	testutil.WriteFile(t, filepath.Join(root, "omp", "skills", "rite", "SKILL.md"), "omp rite\n")
+	testutil.WriteFile(t, filepath.Join(root, "omp", "agents", "devrites-code-reviewer.md"), "omp agent\n")
+	testutil.WriteFile(t, filepath.Join(root, "omp", ".omp-plugin", "plugin.json"), "{}\n")
 }
 
 func testSource(t *testing.T, version string) string {

@@ -20,9 +20,6 @@ Assess one DevRites feature's developer-facing surface **independently and
 adversarially**. Start without prior context and find where a developer using the
 surface will get stuck.
 
-**Independence:** do not assume the implementer's README claims or prior reviewer
-passes; measure or predict from artifacts and diff only.
-
 First read
 `.agents/skills/devrites-lib/reference/standards/developer-experience.md`. It
 defines the scope, scorecard, boomerang comparison, and severity by who pays.
@@ -42,7 +39,8 @@ The available artifacts select one of two modes:
   the prediction with the measurement. A material gap is a finding. For example,
   if the plan predicted a TTHW of about 3 minutes but the measured flow took 8
   minutes and a documented step failed, either the estimate was wrong or the
-  surface regressed. The consumer pays in both cases.
+  surface regressed. The consumer pays in both cases. No measured artifacts at seal →
+  `Outcome: gap` naming the missing evidence.
 
 ## Inputs
 
@@ -50,8 +48,8 @@ You receive a feature slug or workspace path (`.devrites/work/<slug>/`) and the
 diff scope. Read `spec.md`, `plan.md`, `decisions.md`, `touched-files.md`, and
 `.devrites/principles.md` if present. Public API invariants in the principles file
 are binding. Read `devex.md` if present for predicted or measured scores, plus
-`evidence.md`, `browser-evidence.md`, and the root-supplied immutable diff and
-quickstart log for the measured run. Inspect the developer-facing files it
+`evidence.md`, `browser-evidence.md`, and the root-supplied immutable diff for the
+measured run. Inspect the developer-facing files it
 touches, including route handlers, CLI entry points, exported signatures, README
 or quickstart instructions, and error or exit paths.
 

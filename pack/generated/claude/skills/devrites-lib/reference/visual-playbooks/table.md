@@ -38,7 +38,5 @@ Column groups should follow the decision they support: identity → evidence →
 
 - **Home:** `.devrites/work/<slug>/visual/<name>.html` + `<name>.outline.md`.
 - Outline: [`outline-template.md`](outline-template.md); cite this id under Playbooks used.
-- **Outline wins** on HTML/outline conflict.
 - Prefer linking dense evidence from existing artifacts (`traceability.md`, `test-plan.md`) rather than duplicating whole files into the visual.
-- **No new phase**; optional; not readiness-required.
 - Router: [`index.md`](index.md).

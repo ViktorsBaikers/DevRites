@@ -12,6 +12,11 @@ The work lives under `.devrites/`, not in chat history. A later session or a
 different agent can read the same plan, decisions, state, and evidence before it
 continues.
 
+Executive fast path: **Spec → Build → Prove**. `/rite-spec` writes the
+contract, `/rite-build` implements one slice, `/rite-prove` binds evidence.
+Adaptive Clarify/Vet still run; they ask nothing when the contract is already
+complete. `/rite-quick` covers a small reversible change.
+
 The core path is:
 
 `SPEC -> CLARIFY -> [TEMPER] -> DEFINE -> VET -> BUILD -> PROVE -> POLISH -> REVIEW -> SEAL -> SHIP`
@@ -83,7 +88,11 @@ the same skill.
 | 3 | Temper | [`/rite-temper`](pack/.claude/skills/rite-temper/SKILL.md) | Challenges scope and failure modes before Define. It is optional for small work and always runs in `/rite-autocomplete`. |
 | 4 | Define | [`/rite-define`](pack/.claude/skills/rite-define/SKILL.md) | Turns the approved spec into architecture, a plan, traceability, and vertical task slices; changed provider/consumer boundaries name one shared contract and consuming tests on both sides. |
 | 5 | Vet | [`/rite-vet`](pack/.claude/skills/rite-vet/SKILL.md) | Reviews every plan before implementation. The review depth scales with the risk. |
-| 6 | Build | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | In HITL, implements and verifies one product slice, then stops. Run it again for each remaining slice. An explicit `.devrites/AFK` sentinel permits bounded low-risk slice chaining under its cap and pause rules. Exact Vet-ready executable workflow artifacts under the active feature workspace are root-materialized and excluded from product slice accounting; their transaction code is proved in a disposable same-layout fixture before active writes and uses normal bounded recovery rather than a one-shot budget. |
+| 6 | Build | [`/rite-build`](pack/.claude/skills/rite-build/SKILL.md) | In HITL, implements and verifies one product slice, then stops. Run it again for each remaining slice. An explicit `.devrites/AFK` sentinel permits bounded low-risk slice chaining under its cap and pause rules. Exact Vet-ready
+executable workflow artifacts under the active feature workspace are root-materialized
+and excluded from product slice accounting. Their transaction code is proved in a
+disposable same-layout fixture before active writes, and uses normal bounded recovery
+rather than a one-shot budget. |
 | 7 | Converge | [`/rite-converge`](pack/.claude/skills/rite-converge/SKILL.md) | Runs only when recovery is needed. It compares the code with the recorded intent, adds missing slices, and sends the changed plan back to Vet. |
 | 8 | Prove | [`/rite-prove`](pack/.claude/skills/rite-prove/SKILL.md) | Runs positive, discriminating tests, build/runtime checks, and UI proof, then binds the evidence to the exact candidate digest. |
 | 9 | Polish | [`/rite-polish`](pack/.claude/skills/rite-polish/SKILL.md) | Cleans up the candidate, normalizes UI when needed, performs durable capability/design/ADR rollups, and refreshes affected proof before closing it. |
@@ -100,13 +109,14 @@ Some work needs a different route:
   the reversible lifecycle unattended. With `--ship`, it continues through
   Ship preflight, discloses the exact Git plan, and waits for a fresh literal
   `GO` plus native approval; without that flag, it stops at Seal GO. A failed
-  consumptive proof action never retries blindly: retained evidence drives
-  offline repair and re-vetting. Ambiguous retained evidence first drives a vetted
-  boundary-discriminating diagnostic design; only its next real acquisition attempt
-  needs a new GO. After an upgrade introduces a supported workflow-artifact writer,
-  Autocomplete reopens a stale missing-writer stop once instead of preserving the
-  obsolete recovery count. The first real root-materializer failure then counts as
-  attempt one under normal fingerprint recovery; it is not terminal by itself.
+  consumptive proof action never retries blindly. Retained evidence drives
+  offline repair and re-vetting. When retained evidence is ambiguous,
+  Autocomplete first designs a vetted boundary-discriminating diagnostic; only
+  the next real acquisition attempt needs a new GO. After an upgrade introduces
+  a supported workflow-artifact writer, Autocomplete reopens a stale
+  missing-writer stop once instead of preserving the obsolete recovery count.
+  The first real root-materializer failure then counts as attempt one under
+  normal fingerprint recovery — it is not terminal by itself.
   Likewise, an internal `NEEDS_REPLAN` result stays inside Autocomplete: it runs
   the next Plan repair and narrow Vet without returning a command to the user.
 - [`/rite-upgrade [slug]`](pack/.claude/skills/rite-upgrade/SKILL.md) is a
@@ -225,13 +235,19 @@ and continue:
 
 ```yaml
 max_slices: 10
+max_agents: 32
+max_minutes: 120
+max_review_queue: 8
+expires_at: "<ISO-8601 UTC timestamp>"
 allow_gates: [advisory]
 ```
 
 The workflow treats this file as configuration and never rewrites it.
 `max_slices` seeds the remaining budget in the active feature's `state.md`; the
 root charges that state exactly once after each green built slice and stops
-before another dispatch at zero. Malformed counters fail closed. Delete `.devrites/AFK` to
+before another dispatch at zero. Unattended slice work additionally requires a
+valid `max_agents`, `max_minutes`, `max_review_queue`, and `expires_at`;
+sentinels that miss or malform these fail closed. Delete `.devrites/AFK` to
 return to HITL.
 
 AFK still pauses for product, scope, or policy choices, irreversible risk,
@@ -263,6 +279,13 @@ npx devrites@latest uninstall --keep-binary
 devrites-engine update
 devrites-engine update --check
 ```
+
+Release binaries and installers ship with SHA-256 sidecars and build-provenance
+attestations. Verify a download with `shasum -a 256 -c <file>.sha256` or
+`gh attestation verify <file> -R ViktorsBaikers/DevRites --signer-workflow ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`
+(pinning the signer workflow matters: valid provenance proves where a build
+ran, not that the publishing step was the intended one); see
+[docs/release.md](docs/release.md).
 
 Useful install flags:
 

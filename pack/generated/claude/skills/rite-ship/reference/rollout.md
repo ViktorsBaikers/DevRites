@@ -6,7 +6,7 @@ runbook. A Seal GO or AFK setting never authorizes production action.
 
 ## Preconditions before exposure
 
-Record one rollout sheet in `ship.md`/`evidence.md`:
+Record one rollout sheet in `ship.md`:
 
 | Item | Required decision/evidence |
 | --- | --- |

@@ -84,8 +84,8 @@ Spec records relevant cases in **Edge Coverage** and bespoke negative intent in
 reports only reachable gaps:
 
 ```md
-[Important] path:line — <trigger> reaches <unhandled outcome>; consequence:
-<observable harm>. Required correction: <minimal handling>. Missing proof: <test/signal>.
+Finding: <severity> | path:line | <trigger> reaches <unhandled outcome> | <observable harm> |
+<minimal handling>; missing proof: <test/signal>.
 ```
 
 Use the caller's severity scale. Do not create a separate edge score, pad rows with

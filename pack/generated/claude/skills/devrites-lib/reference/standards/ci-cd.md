@@ -12,7 +12,7 @@ Read this only when creating or changing a build/deploy pipeline. [`hooks.md`](h
 
 Read the specific failure, fix its root cause, verify locally, then push again. Do not blind-rerun a flaky pipeline. Use `devrites-debug-recovery` when a test or build failure needs reproduction.
 
-A designated Build Cop owns restoring a broken trunk by fixing or reverting, whichever is faster. Restoring trunk outranks feature work.
+A designated Build Cop (a human/team role, not a pack agent) owns restoring a broken trunk by fixing or reverting, whichever is faster. Restoring trunk outranks feature work.
 
 ## Deploy versus release
 

@@ -97,7 +97,7 @@ func TestReadinessBindingBindsOnlyStableBuildInputs(t *testing.T) {
 func TestReadinessBindingGoldenDigest(t *testing.T) {
 	root := t.TempDir()
 	writeReadinessFixture(t, root, "golden", "build")
-	const want = "Readiness inputs SHA-256: c4a073e85373f5fd9f9302c61b6772e766e4fa2a3da2ccc77bad23756c9f412d"
+	const want = "Readiness inputs SHA-256: 6a0d4991d86f5a0e78333289840b5fb1a123adbb18b53243b1af34fcffcf1961"
 	if got := mustReadinessBinding(t, root, "golden"); got != want {
 		t.Fatalf("ReadinessBinding()=%q, want %q", got, want)
 	}
@@ -364,6 +364,48 @@ func TestReadinessDiagnosticPayloads(t *testing.T) {
 		if got := readinessDiagnosticError(tc.diagnostic).Error(); got != tc.want {
 			t.Errorf("readinessDiagnosticError(%+v)=%q, want %q", tc.diagnostic, got, tc.want)
 		}
+	}
+}
+
+func TestCheckReadinessBlocksUnmappedAcceptance(t *testing.T) {
+	root := t.TempDir()
+	workspace := writeReadinessFixture(t, root, "unmapped", "build")
+	testutil.WriteFile(t, filepath.Join(workspace, "spec.md"), "# Spec\n\n## Acceptance criteria\n- AC-002: extra requirement.\n")
+	binding := mustReadinessBinding(t, root, "unmapped")
+	testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+
+	result, err := Check(Readiness, root, "unmapped")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Blocked || result.ReasonID != reason.GateReadinessMissing {
+		t.Fatalf("blocked=%v reason=%q render=%s", result.Blocked, result.ReasonID, result.Render())
+	}
+	joined := strings.Join(result.StateProblems, "\n")
+	for _, want := range []string{
+		"acceptance-map: acceptance AC-002 is not referenced in tasks.md",
+		"acceptance-map: acceptance AC-002 is not referenced in test-plan.md",
+	} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("missing %q in %q", want, joined)
+		}
+	}
+}
+
+func TestCheckReadinessPassesMappedAcceptance(t *testing.T) {
+	root := t.TempDir()
+	workspace := writeReadinessFixture(t, root, "mapped", "build")
+	testutil.WriteFile(t, filepath.Join(workspace, "spec.md"), "# Spec\n\n## Acceptance criteria\n- AC-001: bind readiness inputs.\n")
+	testutil.WriteFile(t, filepath.Join(workspace, "test-plan.md"), "# Test plan\n\nAC-001 focused tests.\n")
+	binding := mustReadinessBinding(t, root, "mapped")
+	testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+
+	result, err := Check(Readiness, root, "mapped")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Blocked {
+		t.Fatalf("mapped acceptance blocked: %s", result.Render())
 	}
 }
 

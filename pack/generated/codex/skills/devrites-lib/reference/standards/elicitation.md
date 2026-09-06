@@ -82,4 +82,4 @@ Run the technique on the **section in front of you**, not the whole document: a 
 everything is a move applied to nothing. Record what it changed in the phase artifact (a new
 requirement, a mitigation, a blocking question), not just that you ran it.
 
-A project can append its own house techniques to this file: same three-column shape.
+A project can append its own house techniques to this file: same entry shape — **name (when to reach for it)** → the shape it produces.

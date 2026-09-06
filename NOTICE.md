@@ -17,3 +17,9 @@ DevRites integrates with **Claude Code** and **Codex** and follows each host's
 project-local skill, agent, and instruction conventions. "Claude" and "Claude
 Code" are products of Anthropic; "Codex" is a product of OpenAI. DevRites is
 independent and unaffiliated with Anthropic and OpenAI.
+
+## Framework identifiers
+
+`pack/.claude/skills/devrites-lib/reference/standards/security.md` cites published
+OWASP GenAI Top 10 identifier names (LLM01–LLM10, ASI01–ASI10) as mapping keys
+for interoperability. DevRites does not vendor OWASP documents.
