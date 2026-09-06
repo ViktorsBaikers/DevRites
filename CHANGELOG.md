@@ -2,6 +2,23 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.7.0...v5.0.0) (2026-09-06)
+
+### ⚠ BREAKING CHANGES
+
+* **release:** restore secrets.NPM_TOKEN for semantic-release publish
+* **ci:** unblock semantic-release on setup-node v6 cache input
+* **repo:** land guidance audit, CI hardening, and omp host pack (#57)
+
+### Added
+
+* **repo:** land guidance audit, CI hardening, and omp host pack ([#57](https://github.com/ViktorsBaikers/DevRites/issues/57)) ([764ad9b](https://github.com/ViktorsBaikers/DevRites/commit/764ad9b0dd43f837d43f1556cf1b395eabdbd0c6))
+
+### Fixed
+
+* **ci:** unblock semantic-release on setup-node v6 cache input ([e357ad9](https://github.com/ViktorsBaikers/DevRites/commit/e357ad916d3b880c9d69239c798bf0f803ee335a))
+* **release:** restore secrets.NPM_TOKEN for semantic-release publish ([24ee2e4](https://github.com/ViktorsBaikers/DevRites/commit/24ee2e4f23eac04cc1f82efe0d2f4e88595f88c7))
+
 ## [4.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.6.0...v4.7.0) (2026-08-30)
 
 ### Added
