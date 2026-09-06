@@ -238,17 +238,22 @@ finds "dispatch shell substitution in run" "$TMP/dispatch-shell-substitution.yml
 finds "dispatch input with spaced run key" "$TMP/dispatch-key-spacing.yml"
 clean "dispatch input transported through env" "$TMP/dispatch-input-via-env.yml"
 
-# Trusted publishing: the release job must not carry a long-lived npm write token.
+# Release auth: NPM_TOKEN may only come from GitHub Actions secrets (no literals).
 CIYML="$HERE/../.github/workflows/ci.yml"
-if grep -n 'NPM_TOKEN' "$CIYML" >/dev/null; then
-  echo "FAIL [ci.yml still sets NPM_TOKEN]"; fail=1
+if grep -n "NPM_TOKEN: \${{ secrets.NPM_TOKEN }}" "$CIYML" >/dev/null; then
+  echo "ok   [ci.yml wires secrets.NPM_TOKEN for semantic-release]"
 else
-  echo "ok   [ci.yml has no NPM_TOKEN]"
+  echo "FAIL [ci.yml missing secrets.NPM_TOKEN for semantic-release]"; fail=1
 fi
-if grep -n 'using `NPM_TOKEN`' "$HERE/../docs/release.md" >/dev/null; then
-  echo "FAIL [docs/release.md still documents NPM_TOKEN publish]"; fail=1
+if grep -nE '^[[:space:]]*NPM_TOKEN:' "$CIYML" | grep -v 'secrets\.NPM_TOKEN' >/dev/null; then
+  echo "FAIL [ci.yml appears to hardcode an NPM_TOKEN value]"; fail=1
 else
-  echo "ok   [docs/release.md does not document NPM_TOKEN publish]"
+  echo "ok   [ci.yml does not hardcode NPM_TOKEN]"
+fi
+if grep -n 'secrets.NPM_TOKEN' "$HERE/../docs/release.md" >/dev/null; then
+  echo "ok   [docs/release.md documents secrets.NPM_TOKEN publish fallback]"
+else
+  echo "FAIL [docs/release.md missing secrets.NPM_TOKEN publish fallback]"; fail=1
 fi
 
 # setup-node v6 treats `cache` as a package-manager name. `cache: false` becomes

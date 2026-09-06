@@ -13,13 +13,13 @@ version and run these steps:
 4. Builds `dist/devrites-v<version>.tar.gz` and `dist/install.sh`, each with an exact-filename SHA-256 sidecar, via `scripts/build-release-tarball.sh`. Payload paths and bytes are materialized from the repository-root Git index; the build fails outside that index and never copies a divergent live worktree file. A stdlib Go packager sorts member names and normalizes ownership, modes, timestamps, and the gzip header, so identical indexed sources produce identical archives. `SOURCE_DATE_EPOCH` selects the canonical timestamp and defaults to `0`. The bundle includes the checked-in host-native Claude/Codex artifacts under `pack/generated/`; symlinks and other non-regular payload entries are rejected.
 5. Cross-compiles five `devrites-engine` release binaries (macOS arm64/amd64, Linux arm64/amd64, Windows amd64) plus a SHA-256 sidecar for each.
 6. Publishes the `devrites` package to npm through `@semantic-release/npm` with
-   provenance attestation, using OIDC trusted publishing (`id-token: write`).
-   There is no long-lived `NPM_TOKEN` on this job. Maintainers keep npm
-   "Require two-factor authentication and disallow tokens" enabled for the
-   package so only the trusted publisher can publish. This is what
-   `npx devrites@latest` resolves. `npm pack` regenerates the same
-   `pack/generated/` artifacts during `prepack`; there is no `postpack` cleanup
-   step.
+   provenance attestation. The job requests OIDC (`id-token: write`) so a
+   future npm Trusted Publisher can take over, and today authenticates with
+   `secrets.NPM_TOKEN` because npm's OIDC exchange still returns
+   "package not found" until that Trusted Publisher is configured for
+   `devrites`. This is what `npx devrites@latest` resolves. `npm pack`
+   regenerates the same `pack/generated/` artifacts during `prepack`; there
+   is no `postpack` cleanup step.
 7. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates tag `v<version>`, and publishes a GitHub Release with the tarball, verified installer, binaries, and every checksum sidecar attached. The release job then attests the artifacts with build provenance (`actions/attest-build-provenance`), independent of npm provenance.
 
 Package prepack normally owns host artifact generation; the release archive
@@ -64,11 +64,12 @@ the 2026 TanStack and `@redhat-cloud-services` incidents published malicious
 packages with valid SLSA provenance. Verify the artifact digest; provenance
 only proves where a build ran.
 
-npm packages published from `main` use OIDC trusted publishing with
-`publishConfig.provenance: true` in `package.json` and no `NPM_TOKEN` in the
-release job. Provenance attests build origin, not package safety — still pin
-versions and audit the dependency tree. A long-lived npm write token is not
-part of the release path.
+npm packages published from `main` set `publishConfig.provenance: true` in
+`package.json`. The release job keeps `id-token: write` for OIDC and wires
+`NPM_TOKEN: ${{ secrets.NPM_TOKEN }}` as the current publish credential until
+an npm Trusted Publisher is configured for this package/workflow. Provenance
+attests build origin, not package safety — still pin versions and audit the
+dependency tree. Do not commit token values; only the Actions secret name.
 
 Every redirect hop remains HTTPS; downloads use private temporary directories
 and fixed in-stream byte ceilings. The bootstrap first streams archive metadata,
