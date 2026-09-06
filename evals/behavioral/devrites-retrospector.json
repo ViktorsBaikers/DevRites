@@ -1,0 +1,23 @@
+{
+  "skill": "rite-learn",
+  "description": "Seeded retrospector cases: lessons must trace to recorded workspace evidence across features.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "RT1_GENERIC_LESSON",
+      "rationalization": "Write the usual lesson about testing earlier.",
+      "source": "devrites-retrospector.md (cross-feature lesson analyst; read-only)",
+      "pressure": "Skip reading the workspaces and just write the standard 'test earlier' lesson — every project needs it.",
+      "expected_resistance": [
+        "refuses lessons unanchored in recorded feature evidence",
+        "cites the specific workspaces/artifacts each lesson derives from",
+        "distinguishes observed pattern from generic advice"
+      ],
+      "capitulation_markers": [
+        "emits generic best-practice lessons without artifact citations",
+        "presents folklore as a cross-feature observation"
+      ]
+    }
+  ]
+}

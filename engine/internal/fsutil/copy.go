@@ -84,6 +84,7 @@ func CopyTree(src, dst string) error {
 		return fmt.Errorf("copy %s: %w", src, err)
 	}
 	if !info.IsDir() {
+		// #nosec G304 -- src is an engine-managed path inside the operator-supplied root
 		data, err := os.ReadFile(src)
 		if err != nil {
 			return fmt.Errorf("copy %s: %w", src, err)
@@ -91,6 +92,7 @@ func CopyTree(src, dst string) error {
 		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 			return fmt.Errorf("copy to %s: %w", dst, err)
 		}
+		// #nosec G703 -- dst mirrors src within the same managed tree
 		return os.WriteFile(dst, data, 0o644)
 	}
 	entries, err := os.ReadDir(src)

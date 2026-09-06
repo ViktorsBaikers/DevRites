@@ -1,0 +1,37 @@
+name: engine-windows-race
+
+# Non-required Windows race detector. PR `engine-windows` stays shuffle-only
+# because -race is historically flaky under load on windows-latest.
+
+on:
+  schedule:
+    - cron: '41 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-race:
+    name: go test -race (windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: engine/go.mod
+
+      - name: go test -race -shuffle=on
+        working-directory: engine
+        run: go test ./... -race -shuffle=on -count=1

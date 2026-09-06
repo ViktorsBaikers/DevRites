@@ -5,7 +5,7 @@
 ```text
 Done: built slice <n> — <name>.
 Changed: <files>; state.md, touched-files.md, evidence.md
-Evidence: acceptance met; tests <cmd->pass>; browser <summary|n/a>; drift <none|handled>
+Evidence: acceptance met; tests <cmd> → pass; browser <summary|n/a>; drift <none|handled>
 Open: <none|blockers|questions>
 Next: /rite-build
 Record: .devrites/work/<slug>/evidence.md
@@ -17,7 +17,7 @@ Record: .devrites/work/<slug>/evidence.md
 ```text
 Done: built slice <n> — <name>; all slices built.
 Changed: <files>; state.md, touched-files.md, evidence.md
-Evidence: acceptance met; tests <cmd->pass>; browser <summary|n/a>; drift <none|handled>
+Evidence: acceptance met; tests <cmd> → pass; browser <summary|n/a>; drift <none|handled>
 Open: <none|blockers|questions>
 Next: /rite-prove
 Record: .devrites/work/<slug>/evidence.md

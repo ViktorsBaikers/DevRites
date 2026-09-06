@@ -65,6 +65,7 @@ func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, a
 	ctx, cancel := context.WithTimeout(context.Background(), gitCommandTimeout)
 	defer cancel()
 	commandArgs := append([]string{"-C", dir}, args...)
+	// #nosec G204 -- git -C <operator repo dir>; fixed binary, sanitized env
 	cmd := exec.CommandContext(ctx, "git", commandArgs...)
 	cmd.WaitDelay = 2 * time.Second
 	if input != nil {

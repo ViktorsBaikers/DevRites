@@ -34,7 +34,9 @@ the human before dispatch.
    reconciles and decides what to accept.
 
 Use one task per axis. If several axes are requested, keep their inputs separate with
-no cross-pollination and the shared maximum of three concurrent read-only roles.
+no cross-pollination; batch or serialize per
+[`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md) when readers
+exceed ~3 per wave.
 
 ## Fallback and scope
 

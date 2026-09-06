@@ -13,7 +13,7 @@ persist (spec, plan, tasks, decisions, evidence, drift, review). This skill capt
 what the **chat** is holding that is **not** in the workspace, so a fresh agent (or
 the same user after `/clear`) can pick the work up without re-reading the transcript.
 
-Read `.claude/skills/devrites-lib/reference/standards/core.md` first: its "Persistence before stopping" discipline is
+Read [`core.md`](../devrites-lib/reference/standards/core.md) first: its "Persistence before stopping" discipline is
 exactly what this skill executes. The other rule files load on demand.
 
 Then read the explicit or active workspace's `state.md` directly.

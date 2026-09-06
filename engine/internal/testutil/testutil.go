@@ -8,7 +8,7 @@ import (
 )
 
 // CanonicalTasksMarkdown is a minimal valid slice graph for gate fixtures.
-const CanonicalTasksMarkdown = "# Tasks\n\n## SLICE-001 Ready\nDependencies: none\n"
+const CanonicalTasksMarkdown = "# Tasks\n\n## SLICE-001 Ready\nSatisfies: AC-001\nDependencies: none\n"
 
 // CopyTree recursively copies the directory tree at src into dst, creating dst
 // and any parents. It is used to give each test an isolated, writable copy of a
@@ -48,11 +48,12 @@ func WriteFileMode(t *testing.T, path, data string, perm os.FileMode) {
 // missing or unwritable.
 func AppendFile(t *testing.T, path, data string) {
 	t.Helper()
+	// #nosec G304 -- test fixture path under t.TempDir()
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := f.WriteString(data); err != nil {
 		t.Fatal(err)
 	}
@@ -61,6 +62,7 @@ func AppendFile(t *testing.T, path, data string) {
 // ReadFile returns the contents of path, failing the test on any error.
 func ReadFile(t *testing.T, path string) string {
 	t.Helper()
+	// #nosec G304 -- test fixture path under t.TempDir()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)

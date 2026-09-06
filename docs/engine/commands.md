@@ -12,9 +12,9 @@ workflow strategy.
 | `update [flags]` | Refresh an existing managed installation. |
 | `uninstall [flags]` | Remove managed artifacts while preserving runtime workspace state. |
 | `check candidate <slug>` | Validate the strict manifest and compute the content-bound project-candidate identity. |
-| `check readiness <slug>` | Check target-Phase files, open human gates from Clarify onward, the `tasks.md` slice graph when that artifact is required, and the current stable Build-input binding when applicable. |
+| `check readiness <slug>` | Check target-Phase files, open human gates from Clarify onward, the `tasks.md` slice graph when that artifact is required, canonical `AC-###` presence in `tasks.md`/`test-plan.md` when those artifacts are required, and the current stable Build-input binding when applicable. |
 | `check readiness --emit-binding <slug>` | Render the exact stable Build-input binding for Vet to record after review. |
-| `check seal <slug>` | Check files required by target Phase `seal`, open human gates, the `tasks.md` slice graph, the stable Build-input binding, and exact candidate bindings. |
+| `check seal <slug>` | Check files required by target Phase `seal`, open human gates, the `tasks.md` slice graph, canonical `AC-###` presence when `tasks.md`/`test-plan.md` are required, the stable Build-input binding, and exact candidate bindings. |
 | `check path-disjoint [--root <dir>] [<json-file> | -]` | Verify slice path sets are pairwise disjoint. |
 | `check task-graph <slug>` | Validate `tasks.md` slice dependency graph for cycles, unknown deps, malformed tokens, duplicate IDs, missing `Dependencies`, and `depends_on` mismatch. |
 | `check skill-trust <path>` | Scan one skill/agent Markdown file for structural trust violations. |
@@ -38,12 +38,14 @@ The candidate gate validates and hashes path/state/type/mode/content identity;
 it does not infer scope from Git. The readiness gate checks target-Phase
 structure and applies open-question blocking only when that target is Clarify
 or later, plus the exact `tasks.md` slice graph when `tasks.md` is required,
-plus the exact stable Build-input binding after Vet. The seal gate
-always targets Phase `seal`, repeats that graph and binding, and checks exact candidate
-bindings in evidence, optional browser evidence, review, and seal. None judges
-the meaning of `CLEAR`/`READY` prose,
-parses reviewer narratives, infers acceptance coverage, counts assertions,
-interprets capability deltas, or decides whether a technical plan is sound.
+plus canonical `AC-###` ID presence in `tasks.md` and `test-plan.md` when those
+artifacts are required, plus the exact stable Build-input binding after Vet. The
+seal gate always targets Phase `seal`, repeats that graph, ID map, and binding,
+and checks exact candidate bindings in evidence, optional browser evidence,
+review, and seal. None judges the meaning of `CLEAR`/`READY` prose,
+parses reviewer narratives, infers semantic acceptance coverage, counts
+assertions, interprets capability deltas, or decides whether a technical plan is
+sound.
 
 Those judgments are made by the current skill and exact native roles, including
 `devrites-plan-reviewer`, `devrites-proof-runner`, `devrites-spec-reviewer`,

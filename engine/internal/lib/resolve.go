@@ -98,6 +98,7 @@ func resolveMutation(mode, qid, payload, qfile, sfile string, stdout, stderr io.
 		fmt.Fprintf(stdout, "Reason:   %s\n", payload)
 		fmt.Fprintf(stdout, "Workspace: questions.md + state.md updated.\n")
 	case "batch":
+		// #nosec G304 -- operator-passed --batch file argument
 		data, err := os.ReadFile(payload)
 		if err != nil {
 			return fail(stderr, "Batch file not found: "+payload, 5)
@@ -188,6 +189,7 @@ func nowUTC() string { return clockNow().UTC().Format("2006-01-02T15:04:05Z") }
 // status, answer, and answered-at time in one pass. Returns 0, or 3 (qid
 // not found) / 4 (qid not open), writing the message on failure.
 func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
+	// #nosec G304 -- questions.md path inside the feature workspace
 	data, err := os.ReadFile(qfile)
 	if err != nil {
 		return fail(stderr, "questions.md missing at "+qfile, 2)
@@ -284,6 +286,7 @@ var (
 // running, clears the Next step, and appends a Log entry. It is a no-op when the
 // workspace is not waiting on this question.
 func clearAwaiting(sfile, qid string) error {
+	// #nosec G304 -- state.md path inside the feature workspace
 	data, err := os.ReadFile(sfile)
 	if err != nil {
 		return fmt.Errorf("read state %s: %w", sfile, err)

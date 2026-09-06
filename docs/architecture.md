@@ -212,10 +212,14 @@ delta; Clarify, Plan repair, Converge, Vet, Prove, Polish, Review, or Seal then
 performs it under normal gates. Candidate repair runs current real proof and
 never synthesizes a historical pass; ambiguous legacy candidate scope is a gap.
 
-The engine owns deterministic v5 schema normalization (`devrites-engine migrate`) or compatibility telemetry. It
-directly reads the official v1/v2 bullet and v3 table `state.md` cursors without
-rewriting them. Wider pre-release compatibility experiments are not runtime
-contracts. See [ADR-0025](adr/0025-evidence-gated-workspace-upgrades.md) and
+The engine owns deterministic v5 schema normalization (`devrites-engine migrate`),
+not compatibility telemetry. Readers accept official v1/v2 bullet and v3 table
+`state.md` cursors; mutations require the current state schema (v3). Migration
+can create missing artifact stubs, but those stubs prove neither semantic
+readiness nor completed work. Wider pre-release compatibility experiments are
+not runtime contracts. [ADR-0029](adr/0029-v5-workspace-schema-and-native-migration.md)
+records native migration alongside the semantic boundary established by
+[ADR-0025](adr/0025-evidence-gated-workspace-upgrades.md) and
 [ADR-0022](adr/0022-native-orchestration-thin-engine.md).
 
 ### Why `/engine` was rejected

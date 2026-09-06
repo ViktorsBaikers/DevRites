@@ -225,6 +225,7 @@ func readJSONInput(path string, stdin io.Reader) ([]byte, error) {
 	if strings.Contains(path, "..") {
 		return nil, fmt.Errorf("json path must not contain '..'")
 	}
+	// #nosec G304 -- path traversal refused just above
 	return os.ReadFile(path)
 }
 

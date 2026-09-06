@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Inert until a merge queue is enabled on the repo; when enabled, the
+  # workflow runs on the queue's checks_requested event with the same
+  # scoping (detect-changes sees a non-PR event and runs the full matrix).
+  merge_group:
   workflow_dispatch:        # manual release / re-run
 
 permissions:
@@ -18,13 +22,39 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  validate:
-    name: validate pack
+  detect-changes:
+    name: detect change scope
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      run_engine: ${{ steps.scope.outputs.run_engine }}
+      run_pack_evals: ${{ steps.scope.outputs.run_pack_evals }}
+      run_full: ${{ steps.scope.outputs.run_full }}
+      run_tests: ${{ steps.scope.outputs.run_tests }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
+      - id: scope
+        run: bash scripts/ci-change-scope.sh
+
+  validate:
+    name: validate pack
+    needs: detect-changes
+    # Docs-only PRs (README/CHANGELOG/LICENSE/docs//.scratch/ exclusively)
+    # skip the pack validators; the job-level skip still reports success for
+    # required checks.
+    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_full == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        # Shallow: validate.sh only needs rev-parse/ls-files; no job here reads
+        # history or tags (the identity test stays tag-blind on PRs by design).
+        with:
+          fetch-depth: 1
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -39,6 +69,22 @@ jobs:
 
       - name: Install npm deps
         run: npm ci
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: engine/go.mod
+          # Tool installs only; engine job owns the shared build cache snapshot.
+          cache: false
+
+      - name: Install workflow linters + osv-scanner
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.10
+          go install github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.5.1
+          python3 -m pip install --disable-pip-version-check zizmor
+          command -v actionlint
+          command -v osv-scanner
+          command -v zizmor
 
       - name: Validate pack structure
         run: bash scripts/validate.sh
@@ -61,77 +107,48 @@ jobs:
       - name: Audit npm dependency advisories (BLOCKING)
         run: npm run audit
 
+      # OSV.dev data source: broader than the npm advisory DB npm audit uses,
+      # and covers the engine module. Allowlist lives in osv-scanner.toml and
+      # mirrors scripts/npm-audit-exceptions.json policy.
+      - name: "OSV.dev dependency scan (lockfile + engine module: BLOCKING)"
+        run: osv-scanner scan --config osv-scanner.toml --lockfile package-lock.json --lockfile engine/go.mod
+
       - name: Validate trigger eval schemas
+        if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_pack_evals == 'true'
         run: bash scripts/run-evals.sh
 
       - name: Validate outcome evals (deterministic grader)
+        if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_pack_evals == 'true'
         run: bash scripts/run-outcome-evals.sh
 
       - name: Validate behavioral evals (shape gate)
+        if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_pack_evals == 'true'
         run: bash scripts/run-behavioral-evals.sh
+
+      - name: Eval coverage ledger (gating skills + P0 agents)
+        if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_pack_evals == 'true'
+        run: bash scripts/check-gating-eval-ledger.sh
 
       - name: Anti-slop detector (advisory)
         run: bash scripts/devrites-detect.sh || true
 
-  # Build shared host artifacts + engine once; every shard downloads instead of
-  # rebuilding locally (saves ~15–30s per shard and warms GOCACHE for lifecycle tests).
-  test-prep:
-    name: prepare test artifacts
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: write
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: '3.11'
-
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: engine/go.mod
-          cache-dependency-path: engine/go.sum
-
-      - name: Build shared host artifacts
-        run: |
-          mkdir -p ci-test-artifacts/host
-          DEVRITES_HOST_ARTIFACT_DIR="$PWD/ci-test-artifacts/host" bash scripts/build-host-artifacts.sh
-
-      - name: Build shared test engine + warm GOCACHE
-        run: |
-          mkdir -p ci-test-artifacts/engine ci-test-artifacts/gocache
-          version="$(node -p "require('./package.json').version")"
-          export GOCACHE="$PWD/ci-test-artifacts/gocache" CGO_ENABLED=0
-          # Shared CLI used by most shell tests.
-          go build -C engine -trimpath \
-            -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=v${version}" \
-            -o "$PWD/ci-test-artifacts/engine/devrites-engine" .
-          # Warm patterns binary-lifecycle / install-lib exercise (unstamped + pinned tags).
-          go build -C engine -trimpath -o /tmp/devrites-engine-dev .
-          for tag in v9.9.9 v9.9.10 v9.9.11 v9.9.12 v9.9.13; do
-            go build -C engine -trimpath \
-              -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=${tag}" \
-              -o /tmp/devrites-engine-warm .
-          done
-
-      - name: Upload shared test artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: devrites-test-artifacts
-          path: ci-test-artifacts/
-          retention-days: 1
-
   # Every tests/*.sh through the same runner developers use locally (npm test).
-  # run-tests.mjs auto-discovers the suite and supports weighted CI sharding so
+  # run-tests.mjs auto-discovers the suite, supports weighted CI sharding so
   # the slow integration tests (workflow-artifact-identity, binary-lifecycle,
-  # install/uninstall smokes) run on separate runners in parallel.
+  # install/uninstall smokes) run on separate runners in parallel, and
+  # self-provisions the host artifacts + engine CLI. The setup-go cache
+  # (keyed on engine/go.mod + ci.yml) keeps those builds warm across runs;
+  # the engine job primes the version-stamp patterns into the same snapshot.
   tests:
     name: shell test suite (shard ${{ matrix.shard }}/8)
-    runs-on: ubuntu-latest
-    needs: [validate, test-prep]
+    needs: detect-changes
+    # Docs-only skip via run_full; engine-only PRs skip shards via run_tests
+    # (validate still runs). Job-level skip reports success for required checks.
+    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_tests == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    # Independent of validate and test-prep: every check still runs and gates
+    # the PR, but nothing serializes ahead of the suites.
     permissions:
       contents: read
       actions: read
@@ -141,15 +158,8 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-
-      - name: Download shared test artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: devrites-test-artifacts
-          path: ci-test-artifacts
-
-      - name: Restore shared test artifact permissions
-        run: chmod +x ci-test-artifacts/engine/devrites-engine
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -160,7 +170,19 @@ jobs:
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: engine/go.mod
-          cache-dependency-path: engine/go.sum
+          # Restore-only (engine job owns the save); keeps this job's inline
+          # engine build and the stamp builds warm.
+          cache: false
+
+      - name: Restore Go build cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: engine-go-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          restore-keys: |
+            engine-go-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -172,25 +194,42 @@ jobs:
         env:
           DEVRITES_TEST_JOBS: '8'
           DEVRITES_WAI_PARALLEL_WORKERS: '4'
-          DEVRITES_WAI_BOUNDARY_SHARDS: '4'
-          DEVRITES_WAI_CORE_SHARDS: '2'
-          DEVRITES_HOST_ARTIFACT_DIR: ${{ github.workspace }}/ci-test-artifacts/host
-          DEVRITES_ENGINE_CLI: ${{ github.workspace }}/ci-test-artifacts/engine/devrites-engine
-          GOCACHE: ${{ github.workspace }}/ci-test-artifacts/gocache
+          DEVRITES_WAI_BOUNDARY_SHARDS: '6'
+          DEVRITES_WAI_CORE_SHARDS: '4'
         run: node scripts/run-tests.mjs --shard ${{ matrix.shard }}/8
 
   engine:
     name: engine (go test + cross-compile)
+    needs: detect-changes
+    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_engine == 'true'
     runs-on: ubuntu-latest
-    needs: validate
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: engine/go.mod
-          cache-dependency-path: engine/go.sum
+          # This job owns the shared Go snapshot (see restore below): setup-go's
+          # auto-save would let a thin shard snapshot clobber it, so caching is
+          # handled explicitly.
+          cache: false
+
+      # Fat snapshot (build cache + modules incl. analysis tools + stamps).
+      # Unique key per commit => re-saved every run; restore-keys fall back to
+      # the newest earlier snapshot.
+      - name: Restore Go build cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: engine-go-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          restore-keys: |
+            engine-go-${{ runner.os }}-${{ runner.arch }}-
 
       - name: gofmt (no diffs)
         working-directory: engine
@@ -202,11 +241,12 @@ jobs:
         working-directory: engine
         run: go vet ./...
 
-      - name: Install analysis tools (staticcheck + govulncheck + gosec)
+      - name: Install analysis tools (staticcheck + govulncheck + gosec + golangci-lint)
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@2026.1
           go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
           go install github.com/securego/gosec/v2/cmd/gosec@v2.28.0
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
 
       - name: "staticcheck (static analysis: BLOCKING)"
         working-directory: engine
@@ -216,20 +256,48 @@ jobs:
         working-directory: engine
         run: govulncheck ./...
 
-      # G204/G304 and their taint variants G702/G703 are excluded: this is a project-local
-      # CLI that by design execs git/go and reads paths the operator passes in, so every
-      # subprocess argument and file path is "tainted". Permission expectations for the
-      # files the engine writes (0644 files / 0755 dirs+binaries) live in .gosec.json.
+      # No rule-class exclusions: every G204/G304/G702/G703 site carries a
+      # per-call `// #nosec GXXX -- <justification>` in the source instead, so a
+      # genuinely new injection or traversal sink fails this gate. Permission
+      # expectations for the files the engine writes (0644 files / 0755
+      # dirs+binaries) live in .gosec.json.
       - name: "gosec (security static analysis: BLOCKING)"
         working-directory: engine
-        run: gosec -conf .gosec.json -exclude=G204,G304,G702,G703 ./...
+        run: gosec -conf .gosec.json ./...
 
-      - name: go test -race (control plane + parity oracle)
+      # Curated complement to staticcheck (errcheck + ineffassign; .golangci.yml).
+      - name: "golangci-lint (unchecked errors + dead assignments: BLOCKING)"
         working-directory: engine
-        run: go test ./... -race -count=1
+        run: golangci-lint run ./...
+
+      - name: go test -race -shuffle=on (control plane + parity oracle)
+        working-directory: engine
+        run: go test ./... -race -shuffle=on -count=1
+
+      # Prime the version-stamp builds the shard tests exercise (unstamped +
+      # pinned tags) into the shared Go build cache this job saves; keeps the
+      # shards from cold-building them every run.
+      - name: Prime shared stamp builds
+        run: |
+          CGO_ENABLED=0 go build -C engine -trimpath -o /tmp/devrites-engine-dev .
+          for tag in v9.9.9 v9.9.10 v9.9.11 v9.9.12 v9.9.13; do
+            CGO_ENABLED=0 go build -C engine -trimpath \
+              -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=${tag}" \
+              -o /tmp/devrites-engine-warm .
+          done
 
       - name: Cross-compile matrix smoke (all release targets build)
         run: bash scripts/build-binaries.sh 0.0.0-ci
+
+      - name: Verify release binary checksum sidecars
+        run: |
+          shopt -s nullglob
+          for bin in dist/bin/devrites-*; do
+            [[ "$bin" == *.sha256 ]] && continue
+            sidecar="${bin}.sha256"
+            test -f "$sidecar" || { echo "missing checksum sidecar for $bin" >&2; exit 1; }
+            ( cd dist/bin && shasum -a 256 -c "$(basename "$sidecar")" )
+          done
 
       # Same script semantic-release's prepare step runs: prove the release
       # tarball (+ sha256 sidecar) builds BEFORE publish time, not during it.
@@ -243,24 +311,79 @@ jobs:
 
   # DevRites ships a Windows engine binary; run the Go tests where path
   # separators, file locking, and %USERPROFILE% semantics differ.
-  # Ubuntu stays the full strict gate (staticcheck/govulncheck/gosec/-race);
-  # this job only proves the binary logic on Windows.
+  # Ubuntu and macOS run the strict gate (staticcheck/govulncheck/gosec/-race
+  # on Ubuntu; -race on macOS); this job only proves the binary logic on
+  # Windows, where the race detector is historically flaky under load.
   engine-windows:
     name: engine (go test, windows)
+    needs: detect-changes
+    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_engine == 'true'
     runs-on: windows-latest
-    needs: validate
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: engine/go.mod
-          cache-dependency-path: engine/go.sum
+          cache-dependency-path: |
+            engine/go.mod
+            .github/workflows/ci.yml
 
       - name: go test (path / root / workspace / ledger behavior)
         working-directory: engine
-        run: go test ./... -count=1
+        run: go test ./... -shuffle=on -count=1
+
+  engine-macos:
+    name: engine (go test, macos)
+    needs: detect-changes
+    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_engine == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: engine/go.mod
+          cache-dependency-path: |
+            engine/go.mod
+            .github/workflows/ci.yml
+
+      - name: go test -race (darwin path semantics + race detector)
+        working-directory: engine
+        run: go test ./... -race -shuffle=on -count=1
+
+  # The release matrix ships linux/arm64; run the suite natively on a free
+  # arm64 hosted runner instead of trusting the cross-compile smoke alone.
+  engine-linux-arm:
+    name: engine (go test, linux arm64)
+    needs: detect-changes
+    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_engine == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: engine/go.mod
+          cache-dependency-path: |
+            engine/go.mod
+            .github/workflows/ci.yml
+
+      - name: go test -race (arm64 path semantics + race detector)
+        working-directory: engine
+        run: go test ./... -race -shuffle=on -count=1
 
   # Release runs in the same workflow as a final gate, so it (a) shows up as a
   # commit check, and (b) runs on the exact commit CI validated, on the real
@@ -270,7 +393,8 @@ jobs:
   release:
     name: semantic-release
     runs-on: ubuntu-latest
-    needs: [validate, tests, engine, engine-windows]
+    needs: [detect-changes, validate, tests, engine, engine-windows, engine-macos, engine-linux-arm]
+    timeout-minutes: 60
     # Push to main (the chore(release) commit carries [skip ci] so it never
     # re-triggers) or a manual dispatch: never on a PR.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -279,6 +403,7 @@ jobs:
       issues: write
       pull-requests: write
       id-token: write
+      attestations: write
     # Serial, never cancelled mid-flight: a second push waits, it doesn't abort.
     concurrency:
       group: release-main
@@ -294,7 +419,10 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
-          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+          # Trusted publishing: do not restore a shared npm cache into the
+          # publish job (cache poisoning was a 2026 npm incident path).
+          cache: false
 
       # prepack (npm publish path) regenerates pack/generated via
       # scripts/build-host-artifacts.sh, which needs python3 on PATH.
@@ -311,7 +439,6 @@ jobs:
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: engine/go.mod
-          cache-dependency-path: engine/go.sum
 
       - name: Install dependencies
         run: npm ci
@@ -319,9 +446,48 @@ jobs:
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GIT_AUTHOR_NAME: github-actions[bot]
           GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: npx semantic-release
+
+      # Build provenance for every release artifact, independent of npm
+      # provenance: 2026's TanStack/Miasma waves shipped malicious packages
+      # carrying valid SLSA provenance, so consumers verify this attestation
+      # (gh attestation verify, see docs/release.md) against the artifact
+      # digest, not against the npm publish record.
+      - name: Attest release artifacts
+        if: hashFiles('dist/bin/*') != ''
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: |
+            dist/bin/devrites-*
+            dist/devrites-v*.tar.gz
+            dist/install.sh
+
+      # CycloneDX SBOMs for the npm package and the shipped linux/amd64
+      # engine binary. Attached to the GitHub Release when semantic-release
+      # published one for this exact HEAD (git describe --exact-match).
+      - name: Generate npm SBOM (CycloneDX)
+        run: npm sbom --sbom-format cyclonedx > dist/devrites-npm.cdx.json
+
+      - name: Generate engine binary SBOM (CycloneDX)
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          format: cyclonedx-json
+          artifact: dist/bin/devrites-linux-amd64
+          output-file: dist/devrites-engine-linux-amd64.cdx.json
+          upload-artifact: false
+
+      - name: Attach SBOMs to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
+            TAG="$(git describe --exact-match --tags HEAD)"
+            gh release upload "$TAG" dist/devrites-npm.cdx.json dist/devrites-engine-linux-amd64.cdx.json --clobber
+            echo "SBOMs attached to ${TAG}"
+          else
+            echo "HEAD is not a release tag; no release this run — SBOMs not attached"
+          fi

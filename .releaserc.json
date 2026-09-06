@@ -40,7 +40,8 @@
       "prepareCmd": "bash scripts/sync-version.sh ${nextRelease.version} && git add -- CHANGELOG.md README.md package.json && bash scripts/build-release-tarball.sh ${nextRelease.version} && bash scripts/build-binaries.sh ${nextRelease.version}"
     }],
     ["@semantic-release/npm", {
-      "npmPublish": true
+      "npmPublish": true,
+      "provenance": true
     }],
     ["@semantic-release/git", {
       "assets": [

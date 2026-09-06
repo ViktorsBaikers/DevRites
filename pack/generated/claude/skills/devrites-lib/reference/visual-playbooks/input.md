@@ -42,6 +42,5 @@ Make each decision surface visible: what is chosen, what options mean, and what 
 
 - **Home:** `.devrites/work/<slug>/visual/<name>.html` + `<name>.outline.md`.
 - Outline template: [`outline-template.md`](outline-template.md) — include optional `## Answers` when this playbook is used.
-- **Outline wins** on conflict; answers in the outline (and/or `questions.md`) are the machine SSOT.
-- Does not create a new phase or replace Clarify/`questions.md` ownership — the visual is an optional collection surface.
+- Does not replace Clarify/`questions.md` ownership — the visual is an optional collection surface.
 - Router: [`index.md`](index.md).

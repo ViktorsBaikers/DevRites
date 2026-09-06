@@ -36,6 +36,7 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
 	if r.opts.DryRun {
 		verb := "create DevRites block"
+		// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
 		current, readErr := os.ReadFile(dest)
 		if readErr == nil {
 			if bytes.Contains(current, []byte(merge.Begin)) {
@@ -52,6 +53,7 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 			return err
 		}
 		next := block
+		// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
 		current, readErr := os.ReadFile(dest)
 		if readErr == nil {
 			next = hostpack.MergeMarkerBlock(current, block, merge.Begin, merge.End)
@@ -80,6 +82,7 @@ func (r *runner) mergeCodexConfig() error {
 		return err
 	}
 	var current []byte
+	// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
 	if data, readErr := os.ReadFile(dest); readErr == nil {
 		current = stripMarkerBlock(data, merge.Begin, merge.End)
 		current = stripMarkerBlock(current, "# BEGIN DEVRITES CODEX MCP", "# END DEVRITES CODEX MCP")
@@ -183,6 +186,7 @@ func (r *runner) stripClaudeSettings(path string, preserveEmpty bool) error {
 }
 
 func stripMarkerPath(path, begin, end string) error {
+	// #nosec G304 -- managed file path from the install manifest
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -236,6 +240,7 @@ func hasTopLevelTOMLKey(data []byte, key string) bool {
 }
 
 func readJSON(path string) (map[string]any, error) {
+	// #nosec G304 -- engine-written workspace or metadata JSON
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", path, err)

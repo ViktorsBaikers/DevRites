@@ -26,12 +26,22 @@ these are the floor, not the ceiling.
 - **Test** with keyboard, a screen reader, and an automated checker (e.g. axe): early.
 
 ## Motion
-- Purposeful only; UI feedback ~≤200 ms, transitions ~≤500 ms (class table below). Never
-  animate to mask slow loading; honor `prefers-reduced-motion`.
+- Purposeful only (class table below). Never animate to mask slow loading; honor
+  `prefers-reduced-motion`.
 
 ## Responsive
-- Fluid layouts; no fixed widths that break. Verify at **320 / 768 / 1024 / 1440** px; no
-  horizontal scroll; survives **200% text zoom**.
+- Fluid layouts; no fixed widths that break. Verify at **320 / 768 / 1024 / 1440** px;
+  preserve content and controls at **200% text zoom** and **400% browser zoom from
+  1280 px** (320 CSS px). This is the canonical viewport set for UI evidence: `rite-polish/reference/ui.md`, `browser-proof-checklist.md`, and
+  `browser-polish-evidence.md` cite it rather than restating it.
+- **No page-level horizontal scroll anywhere in 320–1920.** Sweep between checkpoints:
+  a `1fr` track given a 1024 px image can overflow at 900 px. Fix intrinsic sizing
+  (for example `minmax(0, 1fr)`), wrapping and media constraints; root clipping is
+  not a reflow fix. Clip decoration only, never text, controls or focus indicators.
+  A necessary two-dimensional table/map may scroll inside a named, bounded,
+  keyboard-accessible region; surrounding headings, text and pagination must reflow.
+  Record and test that exception. **Failing case:** a localized CTA disappears behind
+  `overflow-x: clip`; the missing scrollbar does not prove accessible reflow.
 - **`dvh`, not `vh`**, for full-height surfaces (`min-height: 100dvh`, never `h-screen` /
   `100vh`: mobile address bars break them). A hero fits the *initial* viewport: headline
   ≤2 lines, primary CTA above the fold.
@@ -42,8 +52,8 @@ these are the floor, not the ceiling.
 
 ### Consistency locks (one per surface)
 Lock these in `design-brief.md` and hold them page-wide: mid-scroll drift ("a different
-website by section 7") is a tell: **one accent** (no new accent appearing later on the
-page), **one radius scale**, **one theme** (light or dark, not both).
+website by section 7") is a tell: **one declared color strategy and role budget**
+(§ Color commitment; no unbriefed accent appearing later), **one radius scale**, **one theme** (light or dark, not both).
 
 ## Numerical bar (enforceable specifics)
 
@@ -58,7 +68,11 @@ Project tokens win when stricter; these are the floor.
   too clinical; use a near-black (`oklch(0.18 0 0)`) and near-white
   (`oklch(0.98 0 0)`) or the project's surface tokens.
 - Contrast follows WCAG 2.2: text ≥ 4.5:1, UI/graphics ≥ 3:1. Verify
-  against the *rendered* background, not the theoretical one.
+  against the *rendered* background, not the theoretical one. Procedure: pair every
+  `color` declaration with its computed background; a button whose text and fill sit
+  within 5% lightness and 0.05 chroma of each other fails regardless of the palette.
+- **Restrained accent, capped:** one accent covers **≤5% of the viewport** at rest
+  (3–5 placements above the fold). Accent-filled panels fail this strategy; another strategy requires the explicit brief and role budgets below.
 - **Tint neutrals toward the brand hue:** pure-grey neutrals look sterile.
   Nudge every grey 0.005-0.01 chroma toward the brand colour: invisible at
   a glance, but the surface stops feeling generic.
@@ -68,23 +82,22 @@ Project tokens win when stricter; these are the floor.
   `destructive`/`on-destructive`, …) so contrast is designed in, not patched after.
 
 #### Color commitment: pick the strategy before the palette
-Decide *how committed* the surface is to colour before opening the picker.
-Four positions on a single axis; pick one, then design within it:
+Decide *how committed* the surface is to colour before opening the picker. Four positions on a single axis; pick one, then design within it:
 
 | Strategy | Rough coverage | Use for |
 |---|---|---|
-| **Restrained** | tinted neutrals + 1 accent ≤ ~10% of the surface | Most product UI; brand surfaces that want to look quiet. |
+| **Restrained** | tinted neutrals + 1 accent ≤5% of the viewport at rest | Most product UI; brand surfaces that want to look quiet. |
 | **Committed** | one saturated colour carries 30-60% of the surface | Brand pages with a strong identity; product feature surfaces that need a hero colour. |
 | **Multi-role** | 3-4 named colour roles, each used deliberately | Brand campaigns; product data-viz with distinct meanings. |
 | **Saturated** | the surface *is* the colour: full-bleed colour ground | Brand heroes, campaign pages, splash moments. |
 
 Two corollaries:
-- The "one accent ≤ ~10%" rule belongs to **Restrained only.** Committed /
-  Multi-role / Saturated exceed it deliberately. Don't collapse every
-  surface back to Restrained by reflex.
+- The ≤5% accent cap belongs to **Restrained only**. For Committed / Multi-role /
+  Saturated, the brief must name the strategy, purpose, tokens and measured coverage
+  budget per role and viewport. No blanket waiver: an unbudgeted colored panel fails.
+  Preserve distinct success/warning/error meanings; semantic states do not authorize decorative accents. Check rendered captures against the declared budgets.
 - *Register* (brand vs product) doesn't pick the strategy by itself: brand
-  surfaces aren't always Saturated, product surfaces aren't always
-  Restrained. Pick from the scene, not the category.
+  surfaces aren't always Saturated, product surfaces aren't always Restrained. Pick from the scene, not the category.
 
 ### Calibration: density & motion
 Colour commitment fixes *how much colour*; two more axes fix *how much space* and
@@ -130,6 +143,13 @@ Corollaries (same shape as colour commitment):
 - **Product surfaces**: **fixed rem scale** (1.125 - 1.2 ratio). One family
   usually carries headings, body, labels, data.
 - Body line-height ~1.5; headings ~1.1 - 1.25. Prose width ~ 65-75 ch.
+- Adjacent hierarchy levels differ by **≥1.5× in at least one signal** (size, weight,
+  or color); verified under a blur(8px) squint — a flat field means the hierarchy is
+  decorative. **Failing case:** label and helper text differ only by 0.05rem.
+- All-caps display text sets **line-height ≥1.0**; tighter collides cap heights.
+- **Hero font-scale attribution:** a hero headline that wraps past its planned lines at
+  the target viewport is a font-size error first — fix the scale, don't shorten the
+  copy. **Failing case:** a four-line hero headline "fixed" by cutting the sentence.
 - Display ceiling: `clamp()` max ≤ ~6rem: larger is shouting. Display
   letter-spacing floor **≥ −0.04em**; tighter and the letters touch.
 - `text-wrap: balance` on h1-h3; `text-wrap: pretty` on long prose.
@@ -146,7 +166,21 @@ Corollaries (same shape as colour commitment):
 - **Bounce / elastic easing banned** unless the project's design system
   explicitly uses it.
 - Honor `prefers-reduced-motion`: reduce or remove non-essential motion
-  entirely.
+  entirely. Reduced means fewer and gentler, never zero feedback.
+- **Loading feedback appears by ~200 ms**: skeletons/spinners replace stillness
+  after that threshold; below it, feedback flicker reads as jank. Hover intents
+  may delay 150–300 ms; focus indication never fades in — the ring is instant.
+
+### Forms
+- Inputs match button height (44 px floor); visual targets under 24 px expand
+  their hit area with a pseudo-element to the 44 px minimum.
+- Helper/error text reserves **`min-height: 1lh`** so messages never shift layout.
+- Border width is pinned across states (state changes recolor, never resize).
+- Disabled is visible through **three channels**: muted color, `not-allowed`
+  cursor, and blocked interaction — color alone fails.
+- Mobile inputs set **≥16 px** font (smaller triggers iOS zoom-on-focus).
+- Numeric/data columns set **`font-variant-numeric: tabular-nums`**; columns of
+  figures align or the surface reads broken.
 
 ### Dark mode (three-axis compensation)
 A token-flip dark mode is sterile. When the project ships dark, compensate
@@ -161,7 +195,7 @@ scope, propose the compensation rather than ship a flat invert.
 ### Focus & states (8 required, 3 conditional)
 Every interactive element ships **8 visual/interaction states**:
 `default`, `hover`, `active`, `focus-visible`, `disabled`, `loading`,
-`selected`, and an error/invalid surface when relevant. Data surfaces add the
+`selected`, and an error/invalid surface (required wherever the element can be invalid). Data surfaces add the
 conditional three whenever the data can produce them: **partial** (a missing field
 renders an explicit em-dash/placeholder — never `null` or `0`), **conflict** (a
 concurrent-edit/version-mismatch surface), and **offline/unreachable** (stale-data
@@ -169,6 +203,14 @@ banner with retry, not a silently cached render). **Failing case:** a row with a
 missing value renders `0` or blank and the review reads it as real data.
 - `:focus-visible` ring: **2 - 3 px**, **≥ 3:1** contrast against the
   background, **offset 2 px** so the focus is unambiguous on dense layouts.
+
+### Browser chrome
+User-agent defaults are unfinished craft. Per UI slice, theme or explicitly
+decline (briefed) each of: `::selection` (token colors, not UA blue),
+`caret-color` on editable fields, scrollbar styling or a recorded
+`scrollbar-width` decision, and the project focus-ring token in place of the
+unstyled UA outline. **Failing case:** layout, type, and the 8+3 states pass
+while the UA blue focus ring and default selection remain.
 
 ### Container queries vs viewport queries
 - **Component breakpoints:** use **container queries** (`@container`). The
@@ -227,12 +269,26 @@ rung that carries the structure.
 - [ ] Renders with **no console errors/warnings**
 - [ ] **Keyboard**: tab through reaches everything; focus visible; Esc/Enter behave
 - [ ] **Screen reader** conveys content + structure
-- [ ] **All states**: default / loading / empty / error / success / disabled
-- [ ] **Responsive** at 320 / 768 / 1024 / 1440; no overflow; zoom-safe
+- [ ] **All states**: the canonical 8 + 3 lattice above (§ Focus & states), not a
+      shorter local list
+- [ ] **Responsive** at the canonical viewport set (§ Responsive); no lost content or
+      controls, no page overflow; bounded exceptions tested; zoom-safe
 - [ ] **No accessibility violations** (axe or equivalent)
 - [ ] Meets the **CWV budget** above (measure, don't assume)
 - [ ] Aligned to the **design system** (tokens, components, type, spacing)
+- [ ] **Browser chrome** themed or declined in the brief (§ Browser chrome)
 - [ ] Clickables show `cursor: pointer` + a hover state; icons are SVG from the one set
       (no emoji); nothing trapped under fixed/sticky bars
-- [ ] **Consistency locks hold** (one accent / one radius scale / one theme) and the
+- [ ] **Consistency locks hold** (declared color strategy/roles / one radius scale / one theme) and the
       mechanical pre-flight passes (`rite-polish/reference/anti-ai-slop.md`)
+
+## Craft convergence bar
+
+Craft work terminates; it does not loop. Findings classify as **Critical /
+Major / Minor**: done means zero Critical, zero Major, and every remaining Minor
+accepted **in writing** (owner + reason) in `polish-report.md` — an unwritten
+minor is an ignored finding, not an accepted one. Re-running the full bar after a
+fix pass happens only on an explicit opt-in ("re-run the full bar"); "keep going"
+is not opt-in. Each pass captures every supported viewport, not only the one that
+failed. **Failing case:** the 375 px overflow is fixed, 320 px still overflows,
+and the report reads clean.

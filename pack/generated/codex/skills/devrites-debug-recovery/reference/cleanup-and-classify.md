@@ -20,16 +20,9 @@ pauses offline diagnosis or correction from retained evidence; never ask for a
 blind retry.
 
 Record class/routing in `decisions.md` and each failed attempt in `evidence.md`
-or `## Dead ends`. Use one stable causal fingerprint shaped as `<affected
-boundary>: <failed invariant/failure mechanism>` and bind its minimal
-reproduction plus decisive signal, not a hash of the symptom. Before retrying,
-count matching caller and recovery no-progress attempts in the current context
-and those records. The maximum is three per exact fingerprint; count only a
-recheck that preserves the same decisive failure. Also record baseline, exact
-failure, hypothesis/probe, attempt number, and any human predicate. Green evidence
-records progress and resolution but does not erase prior failures. A different
-Critical/Important invariant is a new fingerprint. There is no recovery counter
-file or command.
+or `## Dead ends`. Apply the causal-fingerprint and three-attempt rules in
+`devrites-debug-recovery/SKILL.md` Hard rules; record baseline, exact failure,
+hypothesis/probe, attempt number, and any human predicate.
 
 ## Cleanup checklist: required before declaring done
 

@@ -43,7 +43,8 @@ use the diff shape with walkthrough composition.
 ## Check-in mechanics
 
 Retention comes from retrieval. Offer exactly one check-in via the harness's blocking-question tool
-(`AskUserQuestion`, or `request_user_input` on Codex); the user answers **before** any reveal. Grade honestly: a wrong prediction that gets corrected teaches more than a
+(`AskUserQuestion`, or `request_user_input` on Codex; no interactive question tool → render the
+ranked options as a plain numbered list and end the turn (afk-hitl.md)); the user answers **before** any reveal. Grade honestly: a wrong prediction that gets corrected teaches more than a
 confirmed one, so do not lead the witness.
 
 ## Walkthrough composition (diff only)

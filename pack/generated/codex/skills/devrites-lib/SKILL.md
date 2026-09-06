@@ -33,7 +33,8 @@ lifecycle state from chat or optional `README.md`.
 - [`reference/standards/agents.md`](reference/standards/agents.md): native custom-agent roles,
   immutable inputs, result contracts, and source-boundary review.
 - [`reference/candidate-integrity.md`](reference/candidate-integrity.md): the
-  content-bound candidate lifecycle from Build through Ship.
+  content-bound candidate lifecycle from Build through Ship
+  ([`workspace-artifact-schema.md`](reference/workspace-artifact-schema.md)).
 - [`reference/reply-contract.md`](reference/reply-contract.md): compact user-facing
   completion states. The host renders the response normally.
 - [`reference/visual-playbooks/index.md`](reference/visual-playbooks/index.md): progressive

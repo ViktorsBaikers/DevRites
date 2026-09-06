@@ -45,8 +45,6 @@ Wait for a second real caller before keeping a pass-through that fails this test
 - The reviewer prompt must be adversarial: its job is to break the claim, not to agree.
 - Strip your own justification before review; reasoning anchors the reviewer toward
   agreement.
-- Loop **max 3 times**. After 3, ask only for human-owned product/risk uncertainty; return
-  objective technical findings as a blocker with exact required changes.
 - Act on "valid & actionable" findings (fix or re-plan). Accept "valid trade-off"
   explicitly in `decisions.md`. Discard "noise" with a one-line reason. Re-check
   "contract misread" against the actual contract text.
@@ -65,11 +63,11 @@ Wait for a second real caller before keeping a pass-through that fails this test
 When `.devrites/AFK` exists and the user is away, `escalated to user` is unavailable in
 real time. Map the verdict to a `questions.md` entry instead of a synchronous prompt:
 
-- **Finding severity ≤ slice's gate ceiling** (the slice's `Gate:` plus `.devrites/AFK`
-  `allow_gates`, default `[advisory]`): append a `questions.md` entry with
-  `gate: advisory`, record the trade-off in `decisions.md`, and proceed with the best
-  inference. The advisory is surfaced by `$rite-status` so the user sees it on return.
-- **Finding severity > gate ceiling, OR the claim touches destructive migration,
+- **Findings classified `valid trade-off`, `noise`, or `contract misread`**: append a
+  `questions.md` entry with `gate: advisory`, record the trade-off in `decisions.md`, and
+  proceed with the best inference. The advisory is surfaced by `$rite-status` so the user
+  sees it on return.
+- **Any `valid & actionable` finding, OR the claim touches destructive migration,
   auth/authz boundaries, public APIs, irreversible data writes**: append a
   `questions.md` entry with `gate: blocking`, set `state.md` `Status: awaiting_human`,
   fire the `notify:` hook, and STOP. AFK never silently accepts irreversible risk.

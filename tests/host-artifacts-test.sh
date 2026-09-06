@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# host-artifacts-test.sh: validate prebuilt Claude/Codex host artifacts.
+# host-artifacts-test.sh: validate prebuilt Claude/Codex/omp host artifacts.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
@@ -55,6 +55,12 @@ for f in \
   "codex/agents/devrites-upgrade-planner.toml" \
   "codex/AGENTS.md" \
   "codex/config.toml" \
+  "omp/skills/rite-build/SKILL.md" \
+  "omp/skills/devrites-lib/reference/standards/core.md" \
+  "omp/skills/rite-build/reference/wright-dispatch.md" \
+  "omp/agents/devrites-slice-wright.md" \
+  "omp/agents/devrites-code-reviewer.md" \
+  "omp/.omp-plugin/plugin.json" \
   "README.md" ; do
   [ -f "$OUT/$f" ] && ok "artifact present: $f" || no "artifact missing: $f"
 done
@@ -70,11 +76,13 @@ else
   no "Claude workflow pilot lost its read-only verification boundary"
 fi
 
-src_skills="$(find "$ROOT/pack/.claude/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
-claude_skills="$(find "$OUT/claude/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
-codex_skills="$(find "$OUT/codex/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
+src_skills="$(find "$ROOT/pack/.claude/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+claude_skills="$(find "$OUT/claude/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+codex_skills="$(find "$OUT/codex/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+omp_skills="$(find "$OUT/omp/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
 [ "$claude_skills" = "$src_skills" ] && ok "Claude artifact skill count matches source" || no "Claude artifact skill count mismatch"
 [ "$codex_skills" = "$src_skills" ] && ok "Codex artifact skill count matches source" || no "Codex artifact skill count mismatch"
+[ "$omp_skills" = "$src_skills" ] && ok "omp artifact skill count matches source" || no "omp artifact skill count mismatch"
 
 grep -q '## Codex compatibility' "$OUT/codex/skills/rite-build/SKILL.md" \
   && no "Codex skill artifact duplicates project-wide guidance" \
@@ -102,8 +110,8 @@ grep -q 'devrites.workflow-artifact-admission.v1' "$OUT/codex/skills/devrites-li
   && grep -q '"action":"OFFLINE_RECOVERY; correct offline, re-preflight, narrow Vet, retry only under cap"' "$OUT/codex/skills/devrites-debug-recovery/SKILL.md" \
   && ok "Codex Workflow Artifact contract preserves identity and recovery" \
   || no "Codex Workflow Artifact contract lost canonical identity or recovery"
-grep -q '`NEEDS_REPLAN` is a backward edge' "$OUT/codex/skills/rite-autocomplete/SKILL.md" \
-  && grep -q '`NEEDS_REPLAN` cold resume' "$OUT/codex/skills/rite-autocomplete/SKILL.md" \
+grep -q '`NEEDS REPLAN` is a backward edge' "$OUT/codex/skills/rite-autocomplete/SKILL.md" \
+  && grep -q '`NEEDS REPLAN` cold resume' "$OUT/codex/skills/rite-autocomplete/SKILL.md" \
   && grep -q 'No user-facing reply is permitted' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" \
   && grep -q 'Intermediate `NEEDS_REPLAN`' "$OUT/codex/skills/devrites-lib/reference/reply-contract.md" \
   && ok "Codex autocomplete keeps technical Plan/Vet recovery internal" \
@@ -115,6 +123,28 @@ grep -q '.codex/agents/devrites-slice-wright.toml' "$OUT/codex/skills/rite-build
   && ok "Codex skill artifact references Codex agent TOML" \
   || no "Codex skill artifact missing Codex agent TOML"
 
+grep -q '.omp/skills/devrites-lib/reference/standards/core.md' "$OUT/omp/skills/rite-build/SKILL.md" \
+  && ok "omp skill artifact uses mirrored rules path" \
+  || no "omp skill artifact missing mirrored rules path"
+grep -q '.omp/agents/devrites-slice-wright.md' "$OUT/omp/skills/rite-build/SKILL.md" \
+  && ok "omp skill artifact references omp agent markdown" \
+  || no "omp skill artifact missing omp agent markdown"
+grep -qE '\.claude/skills|\.codex/skills|\.agents/skills|\.codex/agents|\.claude/agents' "$OUT/omp/skills/rite-build/SKILL.md" \
+  && no "omp skill artifact retains foreign host paths" \
+  || ok "omp skill artifact has no foreign host paths"
+if grep -qE '\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.toml' \
+  "$OUT/omp/agents/devrites-slice-wright.md" \
+  "$OUT/omp/agents/devrites-code-reviewer.md"; then
+  no "omp sample agents retain foreign host or TOML agent paths"
+else
+  ok "omp sample agents rewrite to .omp/agents markdown"
+fi
+grep -q '"name": "devrites"' "$OUT/omp/.omp-plugin/plugin.json" \
+  && grep -q '"skills"' "$OUT/omp/.omp-plugin/plugin.json" \
+  && grep -q '"agents"' "$OUT/omp/.omp-plugin/plugin.json" \
+  && ok "omp plugin.json names the pack and lists skills and agents" \
+  || no "omp plugin.json missing name, skills, or agents"
+
 grep -q 'Immediately before its final response' "$OUT/codex/skills/devrites-lib/reference/standards/core.md" \
   && ok "Codex core preserves the universal reply boundary" \
   || no "Codex core lost the universal reply boundary"
@@ -122,14 +152,14 @@ grep -q 'devrites-engine check readiness <slug>' "$OUT/codex/skills/devrites-lib
   && ok "Codex core preserves lifecycle rest points" \
   || no "Codex core lost lifecycle rest points"
 if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out|migrate)([[:space:]`]|$)' \
-  "$OUT/claude" "$OUT/codex" >/tmp/dr_host_artifacts_retired 2>/dev/null; then
+  "$OUT/claude" "$OUT/codex" "$OUT/omp" >/tmp/dr_host_artifacts_retired 2>/dev/null; then
   no "generated host artifacts retain retired engine commands"
   sed -n '1,20p' /tmp/dr_host_artifacts_retired
 else
   ok "generated host artifacts use only nested thin-engine commands"
 fi
 if grep -R -nE 'devrites-engine[[:space:]]+(check[[:space:]]+spec|state[[:space:]]+(clarify|tick-afk|recovery)([[:space:]`]|$)|state[[:space:]]+resolve[[:space:]]+next-qid|doctor([[:space:]`]|$))' \
-  "$OUT/claude" "$OUT/codex" >"$T/removed-policy-commands.log" 2>/dev/null; then
+  "$OUT/claude" "$OUT/codex" "$OUT/omp" >"$T/removed-policy-commands.log" 2>/dev/null; then
   no "generated host artifacts retain removed engine policy commands"
   sed -n '1,20p' "$T/removed-policy-commands.log"
 else
@@ -138,13 +168,14 @@ fi
 if grep -R -nE 'ADR-[0-9]{4}' \
   "$OUT/claude/skills" "$OUT/claude/agents" \
   "$OUT/codex/skills" "$OUT/codex/agents" "$OUT/codex/AGENTS.md" \
+  "$OUT/omp/skills" "$OUT/omp/agents" \
   >"$T/source-adr.log" 2>/dev/null; then
   no "generated model-visible artifacts contain source ADR identifiers"
   sed -n '1,20p' "$T/source-adr.log"
 else
   ok "generated model-visible artifacts contain no source ADR identifiers"
 fi
-for host in claude codex; do
+for host in claude codex omp; do
   authoring="$OUT/$host/skills/devrites-lib/reference/standards/skill-authoring.md"
   if grep -q 'Source-checkout only' "$authoring" \
     && grep -q 'where `pack/\.claude/` exists' "$authoring" \
@@ -200,7 +231,7 @@ grep -q -- '--import-legacy' "$OUT/codex/skills/rite-customize/SKILL.md" \
 grep -q 'earlier context cannot activate it' "$OUT/codex/skills/rite-customize/SKILL.md" \
   && ok "Codex customize preserves literal-only legacy mode" \
   || no "Codex customize can infer legacy mode from context"
-for host in claude codex; do
+for host in claude codex omp; do
   grep -q 'Older provenance, cursor form, or pack version alone is never a defect' \
     "$OUT/$host/skills/rite-upgrade/SKILL.md" \
     && ok "$host upgrade requires an observed current-contract defect" \
@@ -229,6 +260,14 @@ else
   ok "Codex artifacts contain no stale runtime Claude paths or slash invocations"
 fi
 
+if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills' "$OUT/omp/skills" "$OUT/omp/agents" \
+  || grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/omp/skills" "$OUT/omp/agents"; } >/tmp/dr_host_artifacts_omp_paths 2>/dev/null; then
+  no "omp artifacts contain leftover Claude/Codex paths"
+  sed -n '1,40p' /tmp/dr_host_artifacts_omp_paths
+else
+  ok "omp artifacts contain no leftover Claude/Codex paths"
+fi
+
 if command -v python3 >/dev/null 2>&1; then
   python3 - "$OUT" <<'PY'
 import json, pathlib, sys, tomllib
@@ -240,13 +279,7 @@ PY
   if [ "$rc" -eq 0 ]; then
     ok "Codex agent and root config TOML artifacts parse"
   else
-    if python3 - <<'PY' >/dev/null 2>&1
-try:
-    import tomllib  # noqa: F401
-except ModuleNotFoundError:
-    raise SystemExit(1)
-PY
-    then
+    if python3 -c 'import tomllib' >/dev/null 2>&1; then
       no "Codex agent/root config TOML artifacts invalid"
     else
       ok "Codex TOML parse skipped (python has no tomllib)"
@@ -257,5 +290,9 @@ else
 fi
 
 echo ""
-[ "$fail" -eq 0 ] && echo "host-artifacts-test: PASS" || echo "host-artifacts-test: FAIL"
+if [ "$fail" -eq 0 ]; then
+  echo "host-artifacts-test: PASS"
+else
+  echo "host-artifacts-test: FAIL"
+fi
 exit "$fail"

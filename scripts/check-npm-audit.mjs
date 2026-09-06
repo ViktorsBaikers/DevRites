@@ -62,7 +62,13 @@ if (affected > 0 && concrete.size === 0) fail('blocking audit findings have no c
 
 const exceptions = load(exceptionsPath);
 if (!Array.isArray(exceptions)) fail('npm audit exceptions must be a JSON array');
-const today = new Date().toISOString().slice(0, 10);
+const today = process.env.DEVRITES_TODAY || new Date().toISOString().slice(0, 10);
+const horizonDays = 7;
+const horizon = (() => {
+  const d = new Date(`${today}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + horizonDays);
+  return d.toISOString().slice(0, 10);
+})();
 const seen = new Set();
 for (const exception of Array.isArray(exceptions) ? exceptions : []) {
   const required = ['id', 'package', 'range', 'source', 'owner', 'reason', 'expires'];
@@ -79,6 +85,9 @@ for (const exception of Array.isArray(exceptions) ? exceptions : []) {
   if (seen.has(exception.id)) fail(`${exception.id}: duplicate exception`);
   seen.add(exception.id);
   if (exception.expires < today) fail(`${exception.id}: exception expired ${exception.expires}`);
+  if (exception.expires <= horizon) {
+    fail(`${exception.id}: exception expires ${exception.expires}; refresh or remove at least ${horizonDays} days before expiry`);
+  }
 
   const finding = concrete.get(exception.id);
   if (!finding) {

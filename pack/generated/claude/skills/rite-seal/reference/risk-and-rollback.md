@@ -38,7 +38,7 @@ For each risky step, state how to back it out:
   or no outage/backlog recovery and monitoring is **NO-GO**.
 - Unsafe intermediate deployment order, unvalidated required configuration, or no watched
   rollout signal/owner is **NO-GO** for live exposure.
-- Record the chosen rollback path in `seal.md` → "Rollback / Recovery".
+- Record the chosen rollback path in `seal.md` → "Risks / Rollback".
 
 ## Fresh-context availability
 

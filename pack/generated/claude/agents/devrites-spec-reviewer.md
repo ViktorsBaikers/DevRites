@@ -11,6 +11,7 @@ permissionMode: plan
 
 Apply `.claude/skills/devrites-lib/reference/standards/agents.md` § **Result
 admission** (Codex: the `.agents/skills/` mirror). Compare one feature diff with
+`spec.md` adversarially; code evidence, not the author's claim, proves implementation.
 
 ## Independence
 
@@ -18,7 +19,6 @@ You do not see and must not assume: stakeholder intent not written in the spec o
 workspace artifacts, and the root's expected verdict — judge the spec text as written.
 Packet rules: `.claude/skills/devrites-lib/reference/standards/agents.md` § Independence
 (`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
-`spec.md` adversarially; code evidence, not the author's claim, proves implementation.
 
 **Independence:** receive spec, diff, and rubric only — never implementer summaries or
 prior reviewer verdicts.
@@ -30,7 +30,8 @@ Read `.claude/skills/devrites-lib/reference/standards/spec-grammar.md` first
 ## Inputs
 
 From `.devrites/work/<slug>/`, read `spec.md`, `tasks.md`, `decisions.md`,
-`assumptions.md`, and `drift.md`; inspect the active feature's `git diff`.
+`assumptions.md`, and `drift.md`; inspect the active feature's `git diff` limited to
+the `touched-files.md` manifest paths.
 
 ## Assess
 

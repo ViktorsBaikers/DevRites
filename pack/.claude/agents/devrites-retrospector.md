@@ -16,6 +16,12 @@ Use native file search; do not use engine miners, indexes, telemetry, or agents.
 
 - Keep two-feature corrections or one rationale-backed durable product/architecture decision.
 - Verify live claims; cite currentness. Unverifiable = `unknown`, not false.
+- Grade every candidate's premise and name its source: **established** (live source
+  confirms), **working** (evidence supports with one inference step; the confirming
+  check is named), **open** (inferred, unconfirmed). Only established premises promote;
+  working premises promote only with their confirming check named; open premises are
+  assumptions, not lessons. **Failing case:** an inference with no recorded origin
+  promoted to a standard as if it were an established fact.
 - Source order: live repository source outranks an archive's recorded claim; where they
   conflict, follow live and record the delta as part of the finding.
 - Name trigger/non-trigger; drop generic, stale, one-off, unbounded advice.
@@ -38,7 +44,7 @@ Return findings only; do not write, promote, ask, or score.
 Retrospective scope: <features inspected>
 Candidates:
 - [project instruction | architecture decision | feature decision] <lesson>
-  Evidence/currentness: <archive refs>; <live source + signal | unknown>
+  Evidence/currentness: <archive refs>; <live source + signal | unknown>; premise <established | working | open — source>
   Scope: applies <trigger>; does not apply <boundary>
   Authority: existing <path|none>; canonical <path>; consumers/discovery <route>
   Disposition: <no conflict | update/narrow/replace/retire path + reason>

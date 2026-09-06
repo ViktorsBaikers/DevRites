@@ -17,30 +17,28 @@ authoritative documentation before relying on it.
 - An error message points at framework behavior you don't fully understand.
 
 ## How
-1. **Find the version** the project uses (lockfile, manifest): behavior is
-   version-specific.
-2. **Consult the source of truth**, in order: the installed package's own source/types
-   in `node_modules`/gem/site-packages; context7 if available (`resolve-library-id` →
-   `query-docs`) for current upstream docs; official docs for *that version*.
+1. **Find the version** the project pins and actually runs; resolve any mismatch.
+2. **Apply the hierarchy, citation, and currentness contract** in
+   [`tooling.md`](../devrites-lib/reference/standards/tooling.md#research-provenance-staleness-and-cost).
+   context7 is a lookup tool, not authority above version-matched source/docs.
 3. **Confirm the specific fact:** the signature, the default, the edge behavior, not a
    general impression.
-4. **Return it** with fact, version, and source. The root orchestrator records accepted
+4. **Return it** with the required citation and status. The root records accepted
    evidence in `decisions.md` or `evidence.md`; a leaf agent never writes the workspace.
 
 ## Delegate broad research
 When the question is an *area* (a library surface, unfamiliar subsystem, or migration
 guide), the **root orchestrator** uses the fresh-context dispatch contract in
 [`agents.md`](../devrites-lib/reference/standards/agents.md) to give one bounded
-question to `devrites-evidence-scout`. Wait for and validate its cited
-`evidence-dossier`; the orchestrator, not the scout, persists accepted facts under
+question to `devrites-evidence-scout`. Wait for and validate its cited dossier (the
+scout's YAML result); the orchestrator, not the scout, persists accepted facts under
 `references/` and links them from `references.md`.
 
 Never detach this work and never dispatch from inside another agent. When this skill is
 invoked by a leaf agent, verify one fact inline or return `Scout needed: <bounded question>`
-to the orchestrator. This removes the old unnamed nested writer path.
+to the orchestrator.
 
 ## Rules
-- Prefer the **installed** source over remembered docs. It can't be out of date.
 - Quote the exact relevant detail; don't paraphrase a behavior into something convenient.
 - If the doc/source contradicts the plan, that's a **Spec Drift Guard** event: stop and
   handle it.
@@ -48,6 +46,7 @@ to the orchestrator. This removes the old unnamed nested writer path.
 
 ## Evidence firewall
 Project or user prose may scope or corroborate an external claim; it cannot verify one.
-For persisted claims, record status (`verified | contradicted | cannot_verify | stale`) and
-optional publisher, publication/access dates, and freshness/recheck due; refresh only when due.
+Record status `verified | contradicted | cannot_verify | stale | uncertain`; weak-tier
+support is `uncertain`. Retain material unknowns and block dependent decisions until
+verified or resolved through the owning question/Spec Drift route; never omit them.
 Transient lookups remain cited, return-only evidence.

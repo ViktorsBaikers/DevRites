@@ -23,5 +23,23 @@
     "rite-upgrade",
     "rite-vet"
   ],
-  "require_trigger": "all_public_skills_except_devrites-lib"
+  "require_behavioral_agents": [
+    "devrites-slice-wright",
+    "devrites-spec-reviewer",
+    "devrites-code-reviewer",
+    "devrites-security-auditor",
+    "devrites-proof-runner"
+  ],
+  "require_trigger": "all_public_skills_except_devrites-lib",
+  "outcome_skills": [
+    "rite-spec",
+    "rite-clarify",
+    "rite-define",
+    "rite-plan",
+    "rite-vet",
+    "rite-build",
+    "rite-prove",
+    "rite-review",
+    "rite-seal"
+  ]
 }

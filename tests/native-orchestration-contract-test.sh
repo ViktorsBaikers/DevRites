@@ -194,23 +194,21 @@ for phase, path in lifecycle_owners.items():
 candidate_text = " ".join(candidate_integrity.read_text().split())
 for phrase in (
     "workspace-artifact-schema.md",
+    "binding grammar remain in",
     "Build maintains",
     "Prove binds",
     "Polish closes",
     "Review binds",
     "Seal binds",
     "Ship is candidate-read-only",
-    "Candidate SHA-256: <64 lowercase hex>",
-    "exactly once in `evidence.md`, `review.md`, and `seal.md`",
-    "`browser-evidence.md` when that file exists",
     "refresh the manifest and rerun real proof",
     "Never synthesize a historical pass",
     "no legacy fallback",
 ):
     if phrase not in candidate_text:
         raise SystemExit(f"candidate lifecycle contract missing {phrase!r}")
-if candidate_integrity.read_text().count("Candidate SHA-256: <64 lowercase hex>") != 1:
-    raise SystemExit("candidate lifecycle must state the exact digest binding once")
+if "Candidate SHA-256" in candidate_integrity.read_text():
+    raise SystemExit("candidate lifecycle must defer the digest grammar to the schema")
 
 schema_text = " ".join(schema.read_text().split())
 for phrase in (
@@ -225,6 +223,8 @@ for phrase in (
     "Workspace and audit artifacts are not candidate paths",
     "`.devrites/specs/**`, `DESIGN.md`, and `docs/adr/**`",
     "Engine owns malformed path, type, and size rejection",
+    "each contain exactly one unindented standalone",
+    "`browser-evidence.md` does too when that file exists",
 ):
     if phrase not in schema_text:
         raise SystemExit(f"candidate manifest schema missing {phrase!r}")
@@ -499,7 +499,7 @@ for text, required in (
         "Isolated writer-worktree pilot", "show-superproject-working-tree",
         "one writer", "transfer_commit", "preserve the worktree and commit",
         "actual `git rev-parse HEAD` equals supplied", "Mismatch returns a gap with no write",
-        "Parallel writer work", "remains forbidden until this serial pilot",
+        "Parallel isolated-writer worktrees", "remain forbidden until this serial pilot",
     )),
 ):
     for phrase in required:
@@ -522,7 +522,7 @@ build_mode_contracts = {
     canonical / "skills/rite-build/SKILL.md": (
         "HITL stops; a later user invocation starts the next",
         "Explicit `.devrites/AFK` alone lets the controlling root chain",
-        "Every wright returns after it",
+        "Every wright returns after one slice",
     ),
     canonical / "skills/rite-build/reference/output.md": (
         "Only explicit `.devrites/AFK` lets the controlling root chain",

@@ -1,5 +1,10 @@
 # DevRites quick reference
 
+Executive fast path: **Spec → Build → Prove**. `/rite-spec` writes the
+contract, `/rite-build` implements one slice, `/rite-prove` binds evidence.
+Adaptive Clarify/Vet still run; they ask nothing when the contract is already
+complete. Use `/rite-quick` for a small reversible change.
+
 Install DevRites with `npx devrites ...`. Normal installs from package and
 release candidates consume pre-generated project-local Claude Code and Codex
 artifacts; plugin stores do not distribute them. Source-checkout shell shims may

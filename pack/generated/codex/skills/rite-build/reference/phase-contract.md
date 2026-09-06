@@ -25,14 +25,14 @@ Opt-in `--parallel N` uses [`parallel-batch.md`](parallel-batch.md) instead of s
    dispatch the exact `devrites-slice-wright` fresh. Root never writes those product
    paths, wright never widens, and a missing profile stops.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Build gate enters or resumes transaction","action":"invoke canonical operation table; reconcile exact result","return":"same slice/checkpoint cursor or Plan/Vet route"} -->
-1. **Inspect the return.** Wait; compare its file list and `git diff --name-only`
+4. **Inspect the return.** Wait; compare its file list and `git diff --name-only`
    with the contract. Reject stale, partial, malformed, or out-of-scope work.
    Preserve user work; source restoration uses the same bounded wright.
-2. **Challenge stood decisions.** For each stood decision, run exact
+5. **Challenge stood decisions.** For each stood decision, run exact
    `devrites-doubt-reviewer` fresh/read-only and record accepted or resolved-rejected
    in `decisions.md`. A missing verdict, principle breach, scope change, or
    irreversible risk blocks.
-3. **Prove without guessing.** Against the frozen pre-slice candidate, inspect
+6. **Prove without guessing.** Against the frozen pre-slice candidate, inspect
    test hunks for deletion, skipping/focus, tautology, or weaker expectations. Dispatch exact
    `devrites-test-analyst` on that immutable diff; missing account or adverse criterion
    verdict is Critical. Run only `test-plan.md` repository/CI commands, capture output,
@@ -48,14 +48,14 @@ Opt-in `--parallel N` uses [`parallel-batch.md`](parallel-batch.md) instead of s
    is progress; a different Critical/Important invariant gets its own fingerprint.
    Ask humans only for product decisions,
    irreversible risk, or genuinely human-only access.
-4. **Record.** After green proof, upsert `touched-files.md`'s authoritative candidate
+7. **Record.** After green proof, upsert `touched-files.md`'s authoritative candidate
    manifest from the actual scoped diff with explicit `present`/`deleted` rows;
    update `state.md`, `evidence.md`, and applicable UI/browser evidence. The manifest
    stays mutable until Polish closes it.
    Record stood decisions/dead ends in `decisions.md`; update checked assumptions'
    status/evidence, never leaving a disproved row live. If code reveals a durable
    project rule, propose a reviewed `AGENTS.md`/nearest-doc update, not a scored ledger.
-5. **AFK and reply.** Under `afk-discipline.md`, root charges
+8. **AFK and reply.** Under `afk-discipline.md`, root charges
    exactly once after each green built slice, never below zero; stop before another dispatch at zero, and fail closed
    on malformed budget. Use the reply contract; name the next pending slice or, only
    when all slices are built, `$rite-prove`. Emit no decorative progress renderer or

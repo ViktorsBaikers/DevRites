@@ -336,7 +336,7 @@ func TestWorkspaceObservationSymlinkClassifiesParent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }()
 
 	fact, _, err := observeArtifact(artifactLocation{
 		path: ArtifactPath("spec.md"),

@@ -103,7 +103,7 @@ func TestWriteEntriesRejectsChangedSource(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer sourceRoot.Close()
+	defer func() { _ = sourceRoot.Close() }()
 	entries, err := collectEntries(sourceRoot, "devrites-v1")
 	if err != nil {
 		t.Fatal(err)
@@ -138,7 +138,7 @@ func TestWriteEntriesRejectsEscapingSymlinkSwap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer sourceRoot.Close()
+	defer func() { _ = sourceRoot.Close() }()
 	entries, err := collectEntries(sourceRoot, "devrites-v1")
 	if err != nil {
 		t.Fatal(err)
@@ -199,12 +199,12 @@ func readArchive(t *testing.T, archivePath string, epoch time.Time) archiveConte
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	gz, err := gzip.NewReader(file)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 	if !gz.ModTime.Equal(epoch) || gz.OS != 255 || gz.Name != "" || gz.Comment != "" || len(gz.Extra) != 0 {
 		t.Fatalf("gzip header is not normalized: %#v", gz.Header)
 	}

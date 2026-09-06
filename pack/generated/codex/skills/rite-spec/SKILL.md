@@ -106,7 +106,8 @@ load a routed standard to discover required behavior, not to prescribe implement
    [state-workspace](reference/state-workspace.md). If the slug already exists,
    update the existing workspace rather than overwrite it; preserve history and
    unrelated settled content. Write every required artifact and conditional
-   annex exactly from [spec-template](reference/spec-template.md), including its
+   annex exactly from [spec-template](reference/spec-template.md)
+   ([ai-spec-template](reference/ai-spec-template.md)), including its
    capability impact, existing-behavior preservation, grammar/delta,
    stakeholder/constraint/invariant, failure/recovery, applicability, coverage-seed,
    qualified backstop, edge/prohibition, UI, and AI rules. Native

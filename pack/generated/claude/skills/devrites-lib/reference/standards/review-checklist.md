@@ -1,10 +1,12 @@
 # Review checklist
 
+Compact sweep only. Contracts live in [`code-review.md`](code-review.md)
+(scope, skip/only, unreviewed ≠ clean), [`agents.md`](agents.md) § Result
+admission (C2 finding shape), and [`testing.md`](testing.md) (verification gap).
+
 - Scope matches the active feature and touched files.
-- Diff implements the spec and every acceptance criterion.
-- Tests would fail for the bug/feature if the implementation were removed.
-- Errors fail closed and messages help the operator.
-- No principle or convention violation lacks an approved exception.
-- Findings are severity-labeled with `file:line` and a concrete fix.
+- Every AC has a named evidence path ([`definition-of-done.md`](definition-of-done.md)).
+- Errors fail closed; operator messages name the recovery.
+- Findings use the C2 shape; bare "looks good" is malformed.
 
 Detailed standard: `code-review.md`.

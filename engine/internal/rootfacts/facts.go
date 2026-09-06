@@ -299,6 +299,7 @@ func inspectWorkspaceState(facts *Facts) {
 		})
 		return
 	}
+	// #nosec G304 -- workspace ACTIVE path; symlink policy enforced by state.ResolveRoot
 	raw, err := os.ReadFile(activePath)
 	if err != nil {
 		return
@@ -349,6 +350,7 @@ func probeGit(dir string) GitFacts {
 func gitPath(dir, flag string) (string, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	// #nosec G204 -- git -C <operator repo dir>, fixed args, sanitized env
 	cmd := exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "--path-format=absolute", flag)
 	cmd.Env = append(gitenv.Sanitize(os.Environ()), "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0")
 	out, err := cmd.Output()
@@ -441,6 +443,7 @@ func within(candidate, parent string) bool {
 }
 
 func isDir(path string) bool {
+	// #nosec G703 -- existence probe on a safepath-resolved candidate
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
 }

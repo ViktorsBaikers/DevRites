@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # /rite-upgrade: reconcile a released workspace safely
 
-Use when an unfinished workspace from an older release cannot resume. This is a
+Use when an unfinished workspace from an older release cannot resume. This is an
 audit/orchestrator—not a pack update, cursor conversion, release replay,
 structural migration, or generic cleanup.
 
@@ -107,6 +107,6 @@ Changed: <admitted active-workspace paths | none>
 Evidence: assessment=current; candidate rc=<n|n/a>; seal rc=<n|n/a>; readiness rc=<n|n/a>; protected history/source unchanged
 Open: <none | exact unsupported shape, evidence gap, or human gate>
 Next: <state.md next action | one owning rite>
-Record: .devrites/work/<slug>/state.md
+Record: <owning rite's state.md — written by the owner, not Upgrade>
 ↻ Hygiene: /clear before the next lifecycle step
 ```

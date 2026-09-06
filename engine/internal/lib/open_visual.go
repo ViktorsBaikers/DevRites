@@ -77,7 +77,9 @@ func OpenVisual(root string, args []string, stdout, stderr io.Writer) int {
 	var idReport VisualIDConsistency
 	idsChecked := false
 	if !outlineMissing {
+		// #nosec G304 -- visual evidence files inside the workspace
 		htmlBody, herr := os.ReadFile(htmlPath)
+		// #nosec G304 -- visual evidence files inside the workspace
 		outlineBody, oerr := os.ReadFile(outlinePath)
 		switch {
 		case herr != nil:
@@ -239,12 +241,15 @@ func openLocalFile(path string) error {
 	switch runtime.GOOS {
 	case "darwin":
 		// argv only — no shell.
+		// #nosec G204 -- fixed platform opener; path passed as argv, no shell
 		cmd = exec.Command("open", path)
 	case "windows":
 		// Avoid cmd.exe /c shell composition; FileProtocolHandler takes one path argv.
+		// #nosec G204 -- fixed platform opener; path passed as argv, no shell
 		cmd = exec.Command("rundll32.exe", "url.dll,FileProtocolHandler", path)
 	default:
 		// argv only — no shell.
+		// #nosec G204 -- fixed platform opener; path passed as argv, no shell
 		cmd = exec.Command("xdg-open", path)
 	}
 	if err := cmd.Start(); err != nil {

@@ -72,25 +72,7 @@ feature only.
 
 See [backend-polish.md](backend-polish.md). For server-side scope (handlers,
 services, routes, models, migrations, queries, jobs, auth). Polish the server
-side to ship-quality:
-
-- **Error responses consistent** + correct status codes + custom error classes
-  + fail closed on auth/permission/transaction errors. No blanket `catch`es.
-- **Logging hygiene:** structured logs with context (request id, user, op);
-  log key events; **never** log secrets / tokens / PII. No leftover
-  `console.log` / debug prints.
-- **Data & queries:** no N+1, no unbounded result sets, parameterized
-  queries, right transaction boundaries, return only what the caller needs.
-- **API contract** matches the spec (and any saved `references/`); idempotency
-  where applicable; consistent pagination/sorting/filtering; validation at the
-  boundary.
-- **Performance:** measure-first; obvious wins applied; no quadratic loops on
-  growing collections (`devrites-audit perf`).
-- **Cleanup:** remove dead routes, unused endpoints + bad naming this feature
-  added.
-- **Code anti-slop:** kill over-defensive layered null/length checks, useless
-  wrappers, generic AI naming, "robust" catches that hide bugs, anything
-  outside the spec ([anti-ai-slop.md](anti-ai-slop.md). Code section).
+side to ship-quality.
 
 ## Output → appends to `polish-report.md`
 

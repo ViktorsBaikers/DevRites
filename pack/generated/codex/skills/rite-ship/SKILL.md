@@ -13,7 +13,7 @@ if absent, route to `$rite-spec <feature>`. Ship only with current **GO** in `se
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
 **Step 0:** Read `core.md`, then pull as needed:
 - `git-workflow.md`: Conventional Commits, atomicity, never-commit list.
-- `afk-hitl.md`: type-GO irreversible-action gate.
+- `afk-hitl.md`: AFK pause rules for irreversible actions (the type-GO gate itself: [`git-ship.md`](reference/git-ship.md), [`rollout.md`](reference/rollout.md)).
 - `definition-of-done.md`: acceptance, evidence, drift, rollback, docs.
 - [`release/ship-checklist.md`](../devrites-lib/reference/standards/release/ship-checklist.md): final pass/fail sweep.
 
@@ -77,7 +77,8 @@ if absent, route to `$rite-spec <feature>`. Ship only with current **GO** in `se
    unchanged pre-GO reconciliation.
 6. **Close.** Set `state.md` phase `done`; follow
    [`close-out.md`](reference/close-out.md) and run `devrites-engine state close <slug>`
-   to move `.devrites/work/<slug>` → `.devrites/archive/<slug>` and clear `ACTIVE`.
+   to move `.devrites/work/<slug>` → `.devrites/archive/<slug>` and clear `ACTIVE`
+   only if it names this slug; preserve another active feature's cursor.
    Preserve every `.md`; stable hierarchical instructions need no active-workspace sync.
 
 > **Mid-flight discipline.** No seal GO, skipped type-GO, out-of-manifest stage, or

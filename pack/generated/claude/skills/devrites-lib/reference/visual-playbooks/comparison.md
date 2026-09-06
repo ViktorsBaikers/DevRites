@@ -39,6 +39,4 @@ If the human must pick, also load [`input.md`](input.md).
 
 - **Home:** `.devrites/work/<slug>/visual/<name>.html` + `<name>.outline.md`.
 - Outline template: [`outline-template.md`](outline-template.md). Capture tradeoffs in `## Relationships` and assumptions there or via `questions.md` pointers.
-- **Outline wins** on conflict.
 - Often pairs with `plan` or `diagram` — open every matching playbook ([`index.md`](index.md)).
-- **No new phase**; optional visual; not readiness-required.

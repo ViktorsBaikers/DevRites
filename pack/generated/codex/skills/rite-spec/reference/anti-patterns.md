@@ -25,4 +25,3 @@ Pack-wide rationalizations + red flags: see [standards/anti-patterns.md](../../d
 - A `[NEEDS CLARIFICATION]` marker remains on a blocking item.
 - Design references were attached but never opened, saved, or indexed in `references.md`.
 - The investigation didn't read the module/component that currently owns this area.
-- A material decision landed in `spec.md` / `assumptions.md` that the human never picked from an option set: decided on the agent's confidence alone.

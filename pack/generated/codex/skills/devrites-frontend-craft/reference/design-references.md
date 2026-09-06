@@ -18,7 +18,7 @@ What to read in the project before designing, and how register changes the rules
 ## Register-specific rules
 **Product surface** (dashboard/admin/app):
 - System fonts are legitimate (`-apple-system, BlinkMacSystemFont, "Segoe UI",
-  system-ui, sans-serif`); Inter is a fine default for a reason.
+  system-ui, sans-serif`); Inter is a reasonable fallback only when the project has no established family.
 - One family usually carries headings, body, labels, data.
 - Fixed rem scale (not fluid `clamp()` headings); tighter ratio (1.125-1.2).
 - Density is a feature; tables can run dense; prose still ~65-75ch.
@@ -53,8 +53,7 @@ Examples:
   in afternoon light, on a 13-inch laptop" → forces a calm light theme with one
   committed accent for the running total.
 
-Run the sentence, not the category. When the user supplies the brief, paraphrase the
-sentence back to them as confirmation before designing.
+Run the sentence, not the category.
 
 ## Named anchor references: steer with specifics, not adjectives
 After the scene sentence, name **2-3 specific anchors** the surface should feel like:

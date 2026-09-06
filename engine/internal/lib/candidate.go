@@ -103,11 +103,12 @@ func readBoundedRegularFile(name string, limit int64) ([]byte, error) {
 	if before.Size() < 0 || before.Size() > limit {
 		return nil, fmt.Errorf("artifact exceeds %s limit", byteLimitName(limit))
 	}
+	// #nosec G304 -- candidate artifact path; size cap checked above
 	file, err := os.Open(name)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	opened, err := file.Stat()
 	if err != nil {
 		return nil, err
@@ -440,11 +441,12 @@ func hashCandidateFile(digest hash.Hash, project string, row candidateRow) error
 		return errors.New("present path disappeared before reading")
 	}
 	name := filepath.Join(project, filepath.FromSlash(row.path))
+	// #nosec G304 -- row path validated against the workspace contract (validateCandidateRow)
 	file, err := os.Open(name)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	opened, err := file.Stat()
 	if err != nil {
 		return err

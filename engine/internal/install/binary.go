@@ -48,6 +48,7 @@ func (r *runner) installBinary() error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
+	// #nosec G304 -- staged artifact from the checksum-verified release temp dir
 	data, err := os.ReadFile(staged)
 	if err != nil {
 		return err
@@ -57,7 +58,7 @@ func (r *runner) installBinary() error {
 		return err
 	}
 	if backup != "" {
-		defer os.Remove(backup)
+		defer func() { _ = os.Remove(backup) }()
 	}
 	if err := fsutil.WriteFileAtomic(dest, data, 0o755); err != nil {
 		if restoreErr := restoreBinary(dest, backup, oldMode, hadOld); restoreErr != nil {
@@ -100,6 +101,7 @@ func backupBinary(dest string) (string, fs.FileMode, bool, error) {
 	if !info.Mode().IsRegular() {
 		return "", 0, false, fmt.Errorf("refusing to replace non-regular engine binary: %s", dest)
 	}
+	// #nosec G304 -- existing engine binary under the operator install dir; regular-file checked above
 	data, err := os.ReadFile(dest)
 	if err != nil {
 		return "", 0, false, fmt.Errorf("read existing engine binary: %w", err)
@@ -127,6 +129,7 @@ func restoreBinary(dest, backup string, mode fs.FileMode, hadOld bool) error {
 		}
 		return nil
 	}
+	// #nosec G304 -- backup of the same install-dir binary
 	data, err := os.ReadFile(backup)
 	if err != nil {
 		return err
@@ -235,6 +238,7 @@ func verifyEngineBinary(path, want string, timeout time.Duration) (string, error
 func readEngineVersion(path string, timeout time.Duration) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+	// #nosec G204,G702 -- execs the staged engine binary itself for a version probe
 	out, err := exec.CommandContext(ctx, path, "version").Output()
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {

@@ -45,17 +45,17 @@ stays stable.
 - **Model variants as discriminated unions**, each state carrying only its own fields, so an
   impossible combination can't be constructed in the first place.
 
-## Enables the split
-A clear contract lets `$rite-plan split` proceed: the backend slice can land against the
-contract with a stub consumer; the frontend slice can build against a mock or the real
-contract. Neither side blocks on the other.
-
 ## Doubt the contract
-Before standing the interface, run `devrites-doubt`: boundary decisions are exactly the
-non-trivial kind worth an adversarial check.
+Before standing the interface, run `devrites-doubt`.
 
 ## Done when
 The contract is complete only when **every** field carries a type + optionality + unit,
 **every** success and error status code is enumerated with its error-body shape, the
-`devrites-doubt` verdict is accept, and the contract + rationale are recorded in
-`decisions.md`. A contract that pins only the happy-path shape is not done.
+`devrites-doubt` verdict is accept (on reject: revise the contract and re-doubt), and the
+contract + rationale are recorded in `decisions.md`. A contract that pins only the
+happy-path shape is not done.
+
+## Enables the split
+A clear contract lets `$rite-plan split` proceed: the backend slice can land against the
+contract with a stub consumer; the frontend slice can build against a mock or the real
+contract. Neither side blocks on the other.

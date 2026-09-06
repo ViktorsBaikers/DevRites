@@ -19,7 +19,7 @@ executable, not advisory. This lane uses the **Quick** depth profile from
 **Run this first. If ANY of these holds, STOP and route to `$rite-spec`. Do NOT use the
 express lane:**
 - Touches **auth / authz**, a **data migration**, a **public API contract**, or any
-  **destructive / data-loss** path in the irreversible-risk list. See `standards/afk-hitl.md`.
+  **destructive / data-loss** path in the irreversible-risk list. See `../devrites-lib/reference/standards/afk-hitl.md`.
 - Spans **more than one vertical slice**, or more than a couple of files of real logic.
 - **Ambiguous scope:** you'd have to guess what "done" means, or the ask hides a design
   decision (data model, new dependency, second design system).
@@ -32,7 +32,7 @@ If none hold, the change is small + reversible + unambiguous → proceed. **When
 escalate**: the cost of the full lifecycle on a small change is minutes; the cost of the
 express lane on a risky one is the failure mode the lifecycle exists to prevent.
 
-## Rules consulted
+## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
 Load this lane's conditional standards when needed:
 - `coding-style.md`: naming, guard clauses, reuse-first.
 - `testing.md`: TDD, **completeness** (every touched behavior/element asserted) +
@@ -50,7 +50,8 @@ Load this lane's conditional standards when needed:
 2. **One-line contract.** Restate in 1-3 lines: the change, its **acceptance** (how you'll
    know it works), and the **scope boundary** (what you will NOT touch). This is the entire
    "spec + plan" for a quick change: keep it in the chat; optionally drop a `brief.md` +
-   `evidence.md` under `.devrites/work/<slug>/` if the user wants a record. This is the
+   `evidence.md` under an unused `.devrites/work/<slug>/` (no `state.md`; not a workspace
+   cursor) if the user wants a record. This is the
    `$rite-frame` FRAME move: if the acceptance won't reduce to a check that could be *false*,
    the ask is ambiguous → escalate per the significance gate. Its AUDIT pass is the diff
    self-review in step 5.
@@ -64,7 +65,8 @@ Load this lane's conditional standards when needed:
 5. **Review-lite + ship.** Self-review the diff for correctness, scope, and idiom. If
    `.devrites/principles.md` exists, confirm that no declared invariant is broken. This is
    `$rite-frame`'s AUDIT pass: one pass, no subagent fan-out. Show the diff, then on the user's confirm commit it
-   (Conventional Commits, atomic), or hand to `$rite-ship` if a workspace is active. **Never push
+   (Conventional Commits, atomic), or hand to `$rite-ship` only when the change belongs to the active
+   feature's candidate; otherwise commit standalone. **Never push
    without the user asking.**
 
 ## Escalation (mid-flight): the Spec Drift Guard still applies

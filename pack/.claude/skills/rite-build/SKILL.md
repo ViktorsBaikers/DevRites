@@ -9,15 +9,18 @@ user-invocable: true
 
 Build and prove one slice. HITL stops; a later user invocation starts the next.
 Explicit `.devrites/AFK` alone lets the controlling root chain pending slices
-serially under green proof, caps, and pause rules. Every wright returns after it.
+serially under green proof, caps, and pause rules. Every wright returns after one slice.
 **Opt-in:** `/rite-build --parallel N` (2≤N≤3; N=1≡serial) follows
-[`reference/parallel-batch.md`](reference/parallel-batch.md).
+[`reference/parallel-batch.md`](reference/parallel-batch.md)
+([`one-slice-cycle.md`](reference/one-slice-cycle.md)).
 
 Root owns gates/bookkeeping. Fresh
 [`devrites-slice-wright`](../../agents/devrites-slice-wright.md) writes product
 source/tests. Workflow Artifact paths use
 [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md).
-Execute [`reference/phase-contract.md`](reference/phase-contract.md); dispatch uses
+Execute [`reference/phase-contract.md`](reference/phase-contract.md)
+([`one-slice-cycle.md`](reference/one-slice-cycle.md),
+[`afk-discipline.md`](reference/afk-discipline.md)); dispatch uses
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 
 ## Required rules

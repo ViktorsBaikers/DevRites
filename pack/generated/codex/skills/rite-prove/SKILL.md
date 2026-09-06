@@ -7,8 +7,8 @@ user-invocable: true
 
 # $rite-prove: prove the completed feature
 
-Read the active workspace and prove the whole assembled feature once. Without
-one, use `/verify` or `/run`; if any task is pending, stop for `$rite-build`.
+Read the active workspace and prove the whole assembled feature once. With no
+active workspace, use `/verify` or `/run` instead; if any task is pending, stop for `$rite-build`.
 Never report an unobserved pass. After Polish/Review code edits, repeat affected
 criteria and bind evidence to the changed candidate digest.
 
@@ -24,7 +24,7 @@ TTHW, and exact signal-bearing errors; never assert DX.
 - Evidence over confidence. Apply positive, discriminating proof to every
   behavioral claim; a green command without executing assertion and decisive
   signal is unproven.
-- Follow `candidate-integrity.md`. Prove owns proof binding, not candidate
+- Follow [`candidate-integrity.md`](../devrites-lib/reference/candidate-integrity.md). Prove owns proof binding, not candidate
   grammar/hashing. Spec Drift Guard owns revealed contract drift.
 - Root executes vetted gates/browser and records evidence. A read-only proof
   runner validates immutable evidence. The sole bounded wright fixes product
@@ -56,14 +56,14 @@ test changes.
    and no-progress corrections before accepting terminal none; a distinct
    fingerprint below cap resumes offline triage without another real action.
 2. **Freeze scope.** Read spec, tasks, state, test plan, and full diff. Require
-   every slice built. Missing `test-plan.md` invokes caller-owned Vet and returns
-   here; it never authorizes ad hoc proof.
+   every slice built. Missing `test-plan.md` returns to Vet inline (Prove stays the controlling
+   caller) and resumes here; it never authorizes ad hoc proof.
 3. **Approve commands.** If absent, use
    [test-command-discovery](reference/test-command-discovery.md) over repository
    manifests/CI. Discovery is evidence only: `test-plan.md` is the sole approved runtime
    command list. A newly found command must return to the current Vet contract,
    refresh readiness, then resume without user handoff.
-4. **Execute a frozen candidate.** Run candidate check and retain its digest.
+4. **Execute a frozen candidate.** Run `devrites-engine check candidate <slug>` and retain its digest.
    The root runs only commands declared by `test-plan.md`, with exact approved
    command, cwd, prerequisites, exit, and sanitized
    decisive output. Run relevant suite plus build/typecheck/lint. Recheck the

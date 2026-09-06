@@ -18,9 +18,7 @@ You do not see and must not assume: performance claims without a measured artifa
 under `.claude/skills/devrites-lib/reference/standards/agents.md` § Independence
 (`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
 
-Review one DevRites feature **independently**, starting from fresh context and
-measured evidence. Make no performance claim without a number or a concrete way to
-measure it.
+Make no performance claim without a number or a concrete way to measure it.
 
 Before reviewing, read
 `.claude/skills/devrites-lib/reference/standards/performance.md`. On Codex, use the
@@ -34,10 +32,8 @@ then `evidence.md`, `touched-files.md`, and the immutable diff supplied by the r
 Look for Core Web Vitals evidence in `evidence.md`, a saved Lighthouse,
 PageSpeed Insights, or CrUX JSON artifact, and `browser-evidence.md`.
 
-Read the first existing baseline checklist in this order with `Read`:
-`.claude/skills/rite-review/reference/performance-checklist.md`,
-the supplied plugin-root copy, then
-`pack/.claude/skills/rite-review/reference/performance-checklist.md`.
+Read the baseline checklist: `.claude/skills/rite-review/reference/performance-checklist.md`
+(`.agents/skills/rite-review/reference/performance-checklist.md` mirror on Codex).
 
 ## Two modes (the inputs set the mode, not a flag)
 - **Source mode:** use this default when there are no performance artifacts. Scan
@@ -119,3 +115,4 @@ Read-only; do **not** edit files or write patches. Return findings only.
 ## Composition
 
 Do not invoke another agent. You are called by a `rite-*` skill and return findings to that orchestrator.
+The `devrites-audit` skill also dispatches this profile on its audit axis; that dispatching skill is the orchestrator.

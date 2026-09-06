@@ -6,7 +6,7 @@ don't build "all backend, then all frontend", that hides integration risk until 
 ## Contract first
 Define the **API / data contract** before either side codes against it: shape, field
 types + units, status codes, **error bodies**, pagination, idempotency. Use
-`devrites-api-interface`; doubt it with `devrites-doubt` before standing it. With the
+`devrites-api-interface` (it owns the doubt gate). With the
 contract fixed:
 - the **backend** slice can land against it (consumer stubbed),
 - the **frontend** slice can build against a mock or the real contract.
@@ -21,8 +21,9 @@ thinnest end-to-end path so integration surprises surface early and cheap.
 ## Apply the right discipline to each layer
 - **Backend part** → the engineering rules: validate untrusted input at the boundary,
   authz on every sensitive action, parameterized queries, fail closed, no secrets in
-  logs (`security.md`); fail-fast errors with meaningful messages (`error-handling.md`);
-  measure-first performance (no N+1) (`performance.md`).
+  logs; fail-fast errors with meaningful messages; measure-first performance (no N+1)
+  (lib standards: `security.md`, `error-handling.md`, `performance.md` under
+  `devrites-lib/reference/standards/`).
 - **Frontend part** → frontend craft: shape (all states), the design system, and the
   2026 [quality-standards](quality-standards.md) (CWV, WCAG 2.2, responsive, motion).
 - Map the API's error/edge responses to **real UI states**: every error the contract can

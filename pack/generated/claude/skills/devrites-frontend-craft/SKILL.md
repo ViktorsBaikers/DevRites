@@ -13,15 +13,7 @@ tells. Integrated into the feature slice, not a separate design project.
 Framework, routing, components, tokens, CSS methodology, icon set, existing UI patterns,
 and any `PRODUCT.md` / `DESIGN.md` / design docs. Use the project's system: don't
 import a new one. (Detail: `reference/design-references.md`.)
-- **Load the design brief + references the spec gathered**:
-  `.devrites/work/<slug>/design-brief.md` (the UX/UI contract from `devrites-ux-shape`: the
-  primary build target) plus `references.md` + the saved files in `references/`
-  (screenshots, Figma, video, links). Honor the role in `references.md`: match **targets**,
-  satisfy **constraints**, and extract only the named principle from **inspiration** (pull
-  Figma context if a Figma integration is available). For targets, extract type / spacing /
-  color-roles / layout / component behavior deliberately; don't eyeball it
-  (`reference/design-references.md`. *Building to a supplied reference*). A reference that
-  conflicts with the design system is a question for the user, not a silent choice.
+- Load the design brief + references the spec gathered (roles: target / constraint / inspiration — detail: `reference/design-references.md`).
 
 ## Reuse first: search before you build
 Before creating any new component, style, token, icon, hook, util, or helper, search the
@@ -61,9 +53,10 @@ before coding. **Ask before coding if the visual direction or UX flow is still a
 ## 5. Verify & record (meet the bar)
 - Hit the [2026 quality bar](reference/quality-standards.md): Core Web Vitals
   (LCP ≤2.5s / INP ≤200ms / CLS ≤0.1), WCAG 2.2 AA (keyboard, visible focus, contrast,
-  ≥24px targets / 44px touch, no drag-only), responsive at 320/768/1024/1440, and run
+  ≥24px targets / 44px touch, no drag-only), responsive at 320/768/1024/1440, Browser
+  chrome (themed selection/caret/scrollbar/focus — not UA defaults), and run
   its verification gate (no console errors, no axe violations, all states).
-- Run the **visual convergence loop** in the browser (`devrites-browser-proof`): render the
+- Run the **visual convergence loop** in the browser (using `devrites-browser-proof`; deltas land in its Visual Verdict scorecard): render the
   slice's named states/viewports/input modes, open the screenshots, compare them with the
   brief + target R-ids, record material deltas, fix, and re-render until none remain. A
   detector/checklist is a floor, not the visual verdict.
@@ -72,11 +65,8 @@ before coding. **Ask before coding if the visual direction or UX flow is still a
   what it *does* (validation, toggle, options, enabled/disabled, handler); critical journeys
   get one E2E. Browser proof shows it renders; the asserting test proves it works. No element
   ships unverified: `standards/testing.md` "Completeness"; inventory in `test-plan.md`.
-- **Append build-time refinements** to `.devrites/work/<slug>/design-brief.md`: the
-  design-contract artifact `devrites-ux-shape` produced at spec; this skill refines it per
-  slice (the "Build-time refinements" section), it does not own or recreate it. `/rite-polish`
-  reads it in its UI phase and `/rite-seal` includes it in its artifact read list. Record
-  runtime evidence in `browser-evidence.md`.
+- **Append build-time refinements** to `design-brief.md` (§3); `/rite-polish` Phase 4 and
+  `/rite-seal`'s frontend reviewer read it. Record runtime evidence in `browser-evidence.md`.
 
 ## Fullstack (frontend + backend in one feature)
 When the feature needs both sides, follow [reference/fullstack.md](reference/fullstack.md):

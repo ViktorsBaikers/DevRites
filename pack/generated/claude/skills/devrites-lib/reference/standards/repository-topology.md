@@ -19,7 +19,9 @@ owners and roots before planning paths or commands.
    new coordination document.
 
 Record the dirty working tree baseline before planning paths. Preserve unrelated user
-changes and separate existing generated/vendor modifications from the candidate. Missing or
+changes and separate existing generated/vendor modifications from the candidate. **Failing
+case:** Build attributes pre-existing dirty-tree diffs to the slice and advances
+without a recorded baseline. Missing or
 contradictory documentation is a gap to resolve against live source/tests/config; missing documentation is not a reason
 to invent a root or convention.
 
@@ -49,7 +51,6 @@ to invent a root or convention.
   restatement of default behavior is noise that hides the entry that matters. **Failing
   case:** “Postgres stores relational data” listed as a topology fact while the actual
   cross-root contract goes unrecorded.
-  authority, conflict rule, and reconciliation path before build.
 - A dependency cycle is a boundary defect. Break it with an existing lower-level
   contract, dependency inversion, or a deliberately owned integration seam; do not
   hide it behind duplicated types or runtime import tricks.

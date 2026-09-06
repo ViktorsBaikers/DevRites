@@ -1,6 +1,7 @@
 ---
 name: devrites-debug-recovery
 description: Fix application test, build, CI, runtime, browser, or 500 failures from a reproduction. Use for broken behavior; not for DevRites install health.
+argument-hint: "[<slug>]"
 user-invocable: false
 ---
 
@@ -11,7 +12,8 @@ Use a reproducible recovery loop. **NO shotgun edits, NO blanket retries.**
 ## When to invoke
 
 Loaded by Build/Prove when a test, build, typecheck, runtime, or browser failure
-has no clear next move.
+has no clear next move. Optional slug selects the active workspace; defaults to
+`.devrites/ACTIVE`.
 
 ## The seven-step cycle
 
@@ -25,7 +27,8 @@ has no clear next move.
    [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md),
    the retained bounded artifact
    is the reproduction input and the action MUST NOT be rerun during diagnosis.
-   Do not proceed without one of those reproduction inputs.
+   Do not proceed without a reproduction input: the captured error text for
+   repeatable actions, or the retained bounded artifact for consumptive ones.
 3. **Ranked hypotheses (3-5, falsifiable):** generate the list before testing
    any of them. Each must state a prediction.
    **Completion:** 3-5 distinct hypotheses each state an observable prediction.
@@ -54,6 +57,10 @@ has no clear next move.
   redirections in logs without user approval ([`security.md`](../devrites-lib/reference/standards/security.md)
   prompt-injection).
 - **Change one thing at a time** so you know what fixed it.
+- **Diagnosis write freeze:** writable paths are the reproduction harness plus
+  files named by the current hypothesis
+  ([`debug-recovery.md`](../devrites-lib/reference/standards/debug-recovery.md)).
+  Other product paths stay frozen until the hypothesis is confirmed.
 - **Do NOT loosen / delete a failing assertion** to get green: check whether
   it's drift first (route via `$rite-plan repair`).
 - **Do NOT hide flakiness** with sleeps / retries: characterize it.

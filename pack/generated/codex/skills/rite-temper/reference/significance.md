@@ -5,9 +5,6 @@ enough to earn it, a one-line skip otherwise. This is the shared definition used
 optional `$rite-temper` path and the always-run (significance-gated) `$rite-autocomplete` step,
 so they agree on when it fires.
 
-A strategic review of a five-line, reversible change is theatre; a strategic review of an
-auth rewrite is the cheapest insurance you'll buy. Gate on stakes and shape, not uniformly.
-
 ## Fire the FULL review when ANY trips
 - **Irreversible-risk contact:** the slice/spec touches anything on the `afk-hitl.md`
   irreversible-risk list: destructive data migration, auth/authz boundary, public-API break,
@@ -32,7 +29,10 @@ On skip, **don't run the passes**. Write only the one-line verdict to `strategy.
 
 ```markdown
 # Strategy: <slug>
-Significance: skipped — low stakes (<the trigger that was NOT met, e.g. "single-module, reversible, scope unambiguous">)
+Tempered: <iso>
+
+## 1. Significance
+skipped — low stakes (<trigger>)
 Next: $rite-define
 ```
 

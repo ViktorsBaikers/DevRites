@@ -16,6 +16,7 @@ The single most recognizable tell. It mimics insight by manufacturing a contrast
 | "This isn't about X. It's about Y." | "This is about Y." |
 | "X isn't the problem. Y is." | "Y is the problem." |
 | "No X. No Y. Just Z." | "Z." or a normal sentence naming Z. |
+| Negation chain: "No fluff, no filler, no jargon." / "It didn't ask. It didn't wait." | Say what the thing is. One negation earns its place when the reader would assume the opposite; a drumroll of them does not. Carve-out: factual inventories ("takes no arguments, no headers, and no body") stay. |
 
 Drop the negation; lead with the thing you actually mean.
 
@@ -91,6 +92,7 @@ Front the actor: the script, the gate, the function, the engineer, or "you".
 | "The result? Devastating." (self-posed Q&A) | Fold into a statement. |
 | "What if [reframe]?" as a hook | Make the point directly. |
 | "Think about it:" / "Here's what I mean:" | Delete; the next sentence already does the work. |
+| Performed insight: "that's not nothing", "the punchline is", "sit with that", "that's the whole point", "Turns out…" | State the claim the phrase was gesturing at. One hit can be voice; several in one piece is a tell. |
 
 ## Inflated constructions
 
@@ -132,3 +134,63 @@ deleted on cascade"). Don't contort a sentence to name an actor that doesn't mat
   existing style genuinely uses definition lists (a glossary, an API reference).
 - No emoji in headings or section titles (artifacts and code both).
 - Don't over-bold. Bold the one load-bearing term, not every noun.
+
+## Reasoning-chain scaffolding
+
+Internal monologue leaking into published prose. The reader needs the conclusion and the
+evidence, not the tour of how the model thought.
+
+| Pattern | Fix |
+|---|---|
+| "Let me think step by step", "Breaking this down", "To approach this systematically" | State the conclusion, then the evidence. |
+| "Here's my thought process", "Working through this logically", "Step 1:" as inner narration | Numbered *argument* stays; numbered *self-talk* goes. |
+
+A `review.md` finding that walks error paths in order is an argument. A chat reply that
+announces "First, let's consider…" is scaffolding.
+
+## Narrated candor
+
+Announcing that you are about to be honest, instead of being honest.
+
+| Pattern | Fix |
+|---|---|
+| "I want to be upfront:", "To be fully transparent:", "Two caveats I would rather flag than let you discover later:" | "Two caveats:" plus the caveats. |
+| "Rather than bury this, I'll say it plainly:" | Say it. |
+
+**Deletion test.** Cut the frame. If nothing is lost, it was never content.
+
+**Keep:** the disclosure itself ("I haven't tested this on Windows"), and a real
+conflict-of-interest label ("I own shares in the company discussed here").
+
+## Prompt restatement and recap-flattery
+
+| Pattern | Fix |
+|---|---|
+| "You're asking about…", "To answer your question…", "That's a great question. The…" | Answer. The reader knows what they asked. |
+| Recap-flattery: restating the other person's own work back at them as praise before the point | Substance first. If thanks is warranted: one plain clause, no recap. |
+
+Distinct from sycophancy ("Great question!"), which validates the reader without recapping
+their work.
+
+## Self-labeling significance
+
+After listing items, pointing back and labeling one as contrarian / clever / the real story.
+
+| Pattern | Fix |
+|---|---|
+| "That last move is the contrarian one." / "This is the interesting part." / "The third bullet is the real story." | Put the load-bearing item first, or expand it with specifics, and cut the label. |
+
+If the move is actually contrarian, the description already shows it. The label is unearned
+when the reader cannot see the contrast without it.
+
+## Diff-anchored writing
+
+Docs or comments narrating the edit instead of describing the thing as it is.
+
+| Pattern | Fix |
+|---|---|
+| "This function was added to replace the previous approach of iterating through all items." | "This function uses a hash map for O(1) lookups." |
+
+**Carve-out:** changelogs, release notes, migration guides, and `decisions.md` narrate
+change on purpose. Leave them. The tell is a README, comment, or spec overview written as
+archaeology of the last diff.

@@ -12,10 +12,14 @@ to 70% context use, keep one task's working set small, and load only what the cu
 step needs. The workspace, not a summary, is the source of truth.
 
 - **Count before viewing:** on a search hit list, read match counts first (`grep -c`,
-  match summaries) and open only the files a one-line answer needs; dumping whole-file
-  contents to answer a one-line question is the most common context-waste pattern.
+  match summaries) and open only the files a one-line answer needs; dumping whole
+  files for a one-line question is common waste.
+- **Cut before load, not after.** Drop low-signal files, prior-turn dumps, and
+  duplicate index queries before they enter context. Truncating a bloated window
+  after the fact is not an efficiency strategy — the cost is already paid.
+  **Failing case:** five whole-file reads, then `/compact`, treated as cost control.
 
-**Compaction-preservation directive.** If the harness compacts mid-feature, preserve the `.devrites/ACTIVE` slug, `state.md`'s `Next step`, every open `questions.md` gate, and `decisions.md`'s `Dead ends`. Session hooks normally restore these; this is the fallback when no hook fires.
+**Compaction-preservation directive.** If the harness compacts mid-feature, read `.devrites/ACTIVE`, then reload the `state.md` cursor, open `questions.md` gates, durable `decisions.md`, and `test-plan.md`/`evidence.md` proof pointers. Session hooks normally restore these; this is the fallback when no hook fires.
 
 ## Authority and trust
 

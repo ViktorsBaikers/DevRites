@@ -108,7 +108,8 @@ npm test               # install + uninstall smoke + fixture install + pack vali
 When an upstream tool bundles a vulnerable dependency and no patched ancestor
 release exists, `scripts/npm-audit-exceptions.json` may carry one exact,
 owner-bound, reasoned exception with an expiry date. Unknown, mismatched, stale,
-or expired exceptions fail the gate.
+expired, or inside-the-7-day-refresh-horizon exceptions fail the gate. Prefer
+an `overrides` pin of the patched ancestor over extending an expiry.
 
 You do not need Claude Code for most development work. The validators and tests
 run as plain shell scripts.

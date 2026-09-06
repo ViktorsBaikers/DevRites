@@ -94,6 +94,43 @@ cat > "$T/orphans.json" <<'JSON'
 JSON
 run_ok "reference governance accepts owned expiring exception" node "$ROOT/scripts/check-reference-governance.mjs" --skills-dir "$T/refs" --allowlist "$T/orphans.json"
 
+# Reference files over ~300 lines need a ## Contents table of contents.
+mkdir -p "$T/toc/demo/reference"
+printf '# demo\n[long](reference/long.md)\n' > "$T/toc/demo/SKILL.md"
+{
+  printf '# long\n\n'
+  i=1
+  while [ "$i" -le 301 ]; do
+    printf 'line %s\n' "$i"
+    i=$((i + 1))
+  done
+} > "$T/toc/demo/reference/long.md"
+printf '{}\n' > "$T/toc-allow.json"
+run_fail_contains "reference governance requires TOC over 300 lines" "needs a ## Contents" node "$ROOT/scripts/check-reference-governance.mjs" --skills-dir "$T/toc" --allowlist "$T/toc-allow.json"
+printf '# long\n\n## Contents\n\n- [One](#one)\n\n## One\n\n' > "$T/toc/demo/reference/long.md"
+i=1
+while [ "$i" -le 301 ]; do
+  printf 'line %s\n' "$i" >> "$T/toc/demo/reference/long.md"
+  i=$((i + 1))
+done
+run_ok "reference governance accepts TOC over 300 lines" node "$ROOT/scripts/check-reference-governance.mjs" --skills-dir "$T/toc" --allowlist "$T/toc-allow.json"
+
+# One-hop: a skill-local reference must not hide another file in that skill.
+mkdir -p "$T/hop/demo/reference"
+printf '# demo\n[mid](reference/mid.md)\n' > "$T/hop/demo/SKILL.md"
+printf '# mid\n[hidden](hidden.md)\n' > "$T/hop/demo/reference/mid.md"
+printf '# hidden\n' > "$T/hop/demo/reference/hidden.md"
+printf '{}\n' > "$T/hop-allow.json"
+run_fail_contains "reference governance rejects a planted two-hop" "two-hop via" node "$ROOT/scripts/check-reference-governance.mjs" --skills-dir "$T/hop" --allowlist "$T/hop-allow.json"
+printf '# demo\n[mid](reference/mid.md)\n[hidden](reference/hidden.md)\n' > "$T/hop/demo/SKILL.md"
+run_ok "reference governance accepts a SKILL that also links the hidden file" node "$ROOT/scripts/check-reference-governance.mjs" --skills-dir "$T/hop" --allowlist "$T/hop-allow.json"
+mkdir -p "$T/hop-index/demo/reference"
+printf '# demo\n[core](reference/core.md)\n' > "$T/hop-index/demo/SKILL.md"
+printf '# core\n[hidden](hidden.md)\n' > "$T/hop-index/demo/reference/core.md"
+printf '# hidden\n' > "$T/hop-index/demo/reference/hidden.md"
+printf '{}\n' > "$T/hop-index-allow.json"
+run_ok "reference governance allows two-hops through core.md as an index" node "$ROOT/scripts/check-reference-governance.mjs" --skills-dir "$T/hop-index" --allowlist "$T/hop-index-allow.json"
+
 # Dependency audit exceptions are exact, owner-bound, expiring, and stale-intolerant.
 cat > "$T/npm-audit.json" <<'JSON'
 {"auditReportVersion":2,"vulnerabilities":{"npm":{"severity":"moderate","via":["tar"],"nodes":["node_modules/npm"]},"tar":{"severity":"moderate","via":[{"name":"tar","url":"https://github.com/advisories/GHSA-r292-9mhp-454m","severity":"moderate","range":"<=7.5.20"}],"nodes":["node_modules/npm/node_modules/tar"]}}}
@@ -101,11 +138,69 @@ JSON
 cat > "$T/npm-audit-exceptions.json" <<'JSON'
 [{"id":"GHSA-r292-9mhp-454m","package":"tar","range":"<=7.5.20","nodes":["node_modules/npm/node_modules/tar"],"source":"https://github.com/advisories/GHSA-r292-9mhp-454m","owner":"security","reason":"fixture","expires":"2099-01-01"}]
 JSON
-run_ok "npm audit accepts one exact temporary exception" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-exceptions.json"
+run_ok "npm audit accepts one exact temporary exception" env DEVRITES_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-exceptions.json"
 node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p[0].expires="2000-01-01";fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit-exceptions.json" "$T/npm-audit-expired.json"
-run_fail_contains "npm audit rejects an expired exception" "expired" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-expired.json"
+run_fail_contains "npm audit rejects an expired exception" "expired" env DEVRITES_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-expired.json"
+node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p[0].expires="2026-09-08";fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit-exceptions.json" "$T/npm-audit-soon.json"
+run_fail_contains "npm audit rejects an exception inside the 7-day refresh horizon" "refresh or remove" env DEVRITES_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-soon.json"
+node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p[0].expires="2026-09-12";fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit-exceptions.json" "$T/npm-audit-horizon-ok.json"
+run_ok "npm audit accepts an exception outside the 7-day refresh horizon" env DEVRITES_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-horizon-ok.json"
+printf '[]\n' > "$T/npm-audit-empty.json"
+printf '{"auditReportVersion":2,"vulnerabilities":{}}\n' > "$T/npm-audit-clean.json"
+run_ok "npm audit accepts an empty exception list on a clean graph" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit-clean.json" --exceptions "$T/npm-audit-empty.json"
 node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p.vulnerabilities.other={severity:"moderate",via:[{name:"other",url:"https://github.com/advisories/GHSA-aaaa-bbbb-cccc",severity:"moderate",range:"<2"}],nodes:["node_modules/other"]};fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit.json" "$T/npm-audit-extra.json"
 run_fail_contains "npm audit rejects an unexcepted advisory" "not excepted" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit-extra.json" --exceptions "$T/npm-audit-exceptions.json"
+
+# Every npm-audit exception ID must appear in osv-scanner.toml with a matching
+# ignoreUntil. Extra OSV ignores (below the npm moderate+ gate) must still expire.
+python3 - "$ROOT" <<'PY'
+import json, re, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+exceptions = json.loads((root / "scripts/npm-audit-exceptions.json").read_text())
+text = (root / "osv-scanner.toml").read_text()
+blocks = re.findall(r"(?m)^\[\[IgnoredVulns\]\](.*?)(?=\n\[\[|\Z)", text, re.S)
+osv = {}
+for block in blocks:
+    mid = re.search(r'id\s*=\s*"([^"]+)"', block)
+    until = re.search(r"ignoreUntil\s*=\s*(\d{4}-\d{2}-\d{2})", block)
+    if not mid:
+        raise SystemExit("osv-scanner.toml IgnoredVulns block is missing id")
+    if not until:
+        raise SystemExit(f"{mid.group(1)}: osv ignore is missing ignoreUntil")
+    osv[mid.group(1)] = until.group(1)
+for exception in exceptions:
+    advisory = exception["id"]
+    if advisory not in osv:
+        raise SystemExit(f"{advisory}: missing from osv-scanner.toml")
+    if osv[advisory] != exception["expires"]:
+        raise SystemExit(f"{advisory}: ignoreUntil {osv[advisory]} != expires {exception['expires']}")
+PY
+if [ $? -eq 0 ]; then ok "osv-scanner.toml ignoreUntil matches npm-audit exceptions"; else no "osv-scanner.toml ignoreUntil mismatch"; fi
+
+# Patched ancestors that retired the 2026-09 bundled-npm and fast-uri exceptions.
+python3 - "$ROOT" <<'PY'
+import json, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+pkg = json.loads((root / "package.json").read_text())
+overrides = pkg.get("overrides") or {}
+npm = ((overrides.get("@semantic-release/npm") or {}).get("npm"))
+fast_uri = overrides.get("fast-uri")
+if npm != "11.19.1":
+    raise SystemExit(f"package.json must pin @semantic-release/npm.npm to 11.19.1, got {npm!r}")
+if fast_uri != "3.1.6":
+    raise SystemExit(f"package.json must pin fast-uri to 3.1.6, got {fast_uri!r}")
+lock = json.loads((root / "package-lock.json").read_text())
+packages = lock.get("packages") or {}
+got_npm = (packages.get("node_modules/npm") or {}).get("version")
+got_fast = (packages.get("node_modules/fast-uri") or {}).get("version")
+if got_npm != "11.19.1":
+    raise SystemExit(f"package-lock.json npm is {got_npm!r}, expected 11.19.1")
+if got_fast != "3.1.6":
+    raise SystemExit(f"package-lock.json fast-uri is {got_fast!r}, expected 3.1.6")
+PY
+if [ $? -eq 0 ]; then ok "release toolchain pins patched npm 11.19.1 and fast-uri 3.1.6"; else no "release toolchain pin missing"; fi
 
 # The advertised local quality gate must be self-contained and pin the same
 # three external analyzers used by CI.

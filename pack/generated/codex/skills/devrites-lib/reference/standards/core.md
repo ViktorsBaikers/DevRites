@@ -9,7 +9,7 @@ Repository conventions follow [Precedence](#precedence).
 1. **Right step, right time:** use the smallest workflow and load only relevant
    files. Batch independent reads and cover the relevant code, not just the first
    match. Prefer an available code index for structure; see
-   [`tooling.md`](tooling.md).
+   [`tooling.md`](tooling.md) and [`code-navigation.md`](code-navigation.md).
 2. **No silent assumptions:** surface material assumptions; ask when the answer
    changes scope, architecture, data model, UX, security, migration risk, or
    acceptance.
@@ -17,7 +17,10 @@ Repository conventions follow [Precedence](#precedence).
    conflict, stop, name the conflict, present options, wait for resolution
    when the answer changes the product.
 4. **Keep the spec current:** change spec / plan only through the Spec Drift Guard;
-   never code against a known-wrong plan.
+   never code against a known-wrong plan. A later phase MUST NOT rewrite a sealed
+   artifact in place so the code "matches." Append a dated delta through the
+   owning rite, or record drift. **Failing case:** Build edits `spec.md`
+   acceptance criteria to fit the implementation.
 5. **One slice at a time:** leave one vertical slice working and proven, then
    stop. HITL never auto-continues; AFK runs to its slice budget
    ([`afk-hitl.md`](afk-hitl.md)).
@@ -43,7 +46,27 @@ Before advancing a phase, run `devrites-engine check readiness <slug>` for struc
 
 ### Gate contract
 
-Each gate is declared as **Name · Precondition · Satisfying observation (exact command/artifact state) · Pass/Fail · What failure blocks**, with one type: `preflight`, `revision`, `escalation` (human-only), `abort`. Engine gates keep exit codes; semantic gates are judged by their owner against this contract. A gate whose failure consequence cannot be named is decoration — sharpen or delete it. A mechanical gate's satisfying observation is a command or artifact state a reviewer can re-run or re-read — narrative-only passes are unproven.
+Each gate is declared as **Name · Precondition · Satisfying observation (exact command/artifact state) · Verdict · What failure blocks**, with one type: `preflight`, `revision`, `escalation` (human-only; distinct from the afk-hitl `escalating` severity), `abort`. Engine gates keep exit codes; semantic gates are judged by their owner against this contract. A gate whose failure consequence cannot be named is decoration — sharpen or delete it. A mechanical gate's satisfying observation is a command or artifact state a reviewer can re-run or re-read — narrative-only passes are unproven.
+
+Verdict discipline — no vacuous verdicts:
+
+- The precondition asserts the artifact **exists and is non-empty**, not merely that its
+  path resolves. **Failing case:** a phase passes its prerequisite gate, then dies
+  mid-analysis reading a missing spec.
+- A verdict is **PASS**, **FAIL**, or **NOT-RUN**. A NOT-RUN carries its named marker
+  (`unavailable: <reason>`, `unproven`, `partial: <what ran>`) in the consuming artifact;
+  it never renders as clean and never goes silent. **Failing case:** a review sub-step
+  that never ran is simply omitted from the summary, which reads as a clean run.
+- A PASS is valid only when the observation states a **positive count of items actually
+  checked**; zero checked items is FAIL. **Failing case:** an unparseable checklist yields
+  an empty result set and a green verdict over zero evidence.
+- Scope-bearing gates name their **baseline** and fail only on issues attributable to the
+  change; "could not run" (timeout, unreachable, parse failure) is never recorded as
+  "failed". **Failing case:** a dependency gate reddens on a pre-existing advisory
+  unrelated to the diff.
+- Failure behavior is **abort** (stop; the blocked step is named) or **record-and-continue**
+  (the FAIL/NOT-RUN is recorded with its marker and the run proceeds). Both are legal;
+  silent is not.
 
 ## Caller-owned technical backtracking
 
@@ -103,12 +126,13 @@ These universal musts link to their full rules; load depth only when needed.
 ## Persistence before stopping (handoff discipline)
 
 Before any `rite-*` skill stops:
+
 - Open question? → `questions.md` (with `status`, `gate`, `slice`, `proposed`,
   `raised_at`). Decision discussed? → `decisions.md`.
 - Assumption made? → `assumptions.md`. Drift raised? → `drift.md`.
 - Approach tried that **failed**? → a `## Dead ends` section in `decisions.md` (what you
-  tried, why it failed, what it rules out). Compaction and the next agent must not repeat a
-  dead end because later work must not repeat an invalidated approach.
+  tried, why it failed, what it rules out). Compaction and the next agent must not repeat an
+  invalidated approach.
 - Next-action ambiguous? → resolve to one command in `state.md`.
 - HITL pause? → write the `Awaiting human` block to `state.md` and set
   `Status: awaiting_human` before stopping; resume via `$rite-resolve <qid> "<answer>"`.
@@ -118,12 +142,12 @@ A skill that stops without doing this leaves the workspace incomplete.
 
 ## Context hygiene (end of every phase)
 
-Long contexts degrade reasoning quality (Liu et al. 2023 "lost in the middle";
-"context rot" on long inputs). Act on context at **50-70% used, not 95%**.
+Long contexts degrade reasoning quality. Act on context at **50-70% used, not 95%**.
 
-Every `rite-*` skill ends with a one-line **Session hygiene** advisory naming
-the right move (`/clear` vs `/compact`) and the single resume command. Full
-phase-by-phase guidance: [`context-hygiene.md`](context-hygiene.md).
+Compact utilities end with a one-line `↻ Hygiene:` advisory naming the right move
+(`/clear` vs `/compact`) and the single resume command; other rites name the single
+resume command in their stop output. Full phase-by-phase guidance:
+[`context-hygiene.md`](context-hygiene.md).
 
 ## Precedence
 

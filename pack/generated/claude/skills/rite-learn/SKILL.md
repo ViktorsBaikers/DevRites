@@ -23,17 +23,29 @@ of one authority; it cannot promote a rule alone.
 2. Broad mode dispatches exact fresh/read-only `devrites-retrospector`; reconcile its claims against cited files.
 3. Keep corrections repeated in two features, a judgement call made twice, or a defect class seen twice; drop one-off preferences, task-specific detail, generic advice.
 4. Verify claims against live authoritative sources; state currentness signal, applies/does-not-apply scope, `unknown` where unverifiable.
-   **Research promotion requires:** each external claim carries **URL + retrieval date
-   (ISO)** in the proposal. A finding without dated URL fails learn promotion.
+   **Research promotion requires:** each external claim carries a dated citation per
+   [`tooling.md` § Research provenance](../devrites-lib/reference/standards/tooling.md#research-provenance-staleness-and-cost).
    **Failing case:** "best practice is X" with no source → reject promotion.
-5. Search guidance for same/contrary rules; choose one existing canonical owner (nearest instruction/standard, architecture ADR, or feature `decisions.md`) and name discovery.
+5. Apply durable promotion's recoverability test; search same/contrary rules, choose one existing owner (nearest instruction/standard, ADR, or feature `decisions.md`), and name discovery.
 6. Show the exact edit + duplicate/conflict/supersession disposition; update/narrow/replace/retire contradictions; apply only after user approval of exact edits.
 
 ## Rules
 
 - Live repository evidence outranks memory; unverifiable is unknown, not false.
+- A lesson's premise is graded **established / working / open** with its source
+  (retrospector output): only established premises — or working premises whose
+  confirming check is named — may be proposed; open premises return as recorded
+  assumptions, not lessons.
 - Never create a learning ledger/index/queue, score, timeline, or parallel authority; rejected directions return only when evidence changes their rationale.
-- A declined lesson persists as a declined decision entry (reason recorded) in the nearest owning decisions file — not re-litigated without new evidence.
+- A declined lesson persists as a declined decision entry (reason recorded) in the
+  nearest owning decisions file **in the same round** — a refusal recorded only in
+  conversation or on an unmerged branch is lost and will be re-litigated.
+  **Failing case:** the same rejected proposal returns next round because no tracked
+  entry exists.
+- A lesson proposing a new recurring check names its **controls**: the real past
+  instance it would have caught (positive) and a near-miss class it must not fire on
+  (negative). **Failing case:** a trigger patterned on an imagined command that never
+  matched real history.
 - Contradiction outranks staleness: actively misleading guidance outranks merely old guidance.
 - A proposal names the **retrospective failing case**: the concrete past feature/artifact the
   rule would have caught. None → generic advice — drop.
@@ -47,6 +59,7 @@ of one authority; it cannot promote a rule alone.
 
 ```text
 Done: reviewed <scope>.
+Changed: none (proposal only)
 Candidate: <specific proposal or none>
 Currentness: <live source + signal | unknown>
 Scope: applies <trigger>; does not apply <boundary>
@@ -55,4 +68,5 @@ Disposition: <no conflict | update/narrow/replace/retire path + reason>
 Evidence: <feature/file references>
 Awaiting: <approval for exact edits | none>
 Next: <single action>
+Record: <nearest owning decisions file | chat-only>
 ```

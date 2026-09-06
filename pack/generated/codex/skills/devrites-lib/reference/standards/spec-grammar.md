@@ -38,6 +38,15 @@ The normative rules the root checks:
 - **Header identity:** names are unique per spec (matching is by header text); renaming = remove + add.
 - **Scenario ownership:** every `### Requirement:` owns ≥1 `#### Scenario:`; none = an assertion no test targets.
 - **WHEN/THEN:** trigger + observable outcome (AND chains extra conditions); uppercase keywords; either half missing isn't falsifiable.
+- **EARS (optional):** for state and error, the five standard clauses are also valid and recommended. Existing WHEN/THEN scenario lines stay valid; a spec may mix both.
+
+  | Kind | Form |
+  | --- | --- |
+  | Ubiquitous | The system SHALL \<behavior> |
+  | Event-driven | WHEN \<trigger> the system SHALL \<behavior> |
+  | State-driven | WHILE \<in state> the system SHALL \<behavior> |
+  | Unwanted | IF \<unwanted> THEN the system SHALL \<response> |
+  | Optional | WHERE \<feature on> the system SHALL \<behavior> |
 
 ## Behavior first: WHAT, not HOW
 
@@ -55,24 +64,17 @@ support proof, but they are not the criterion unless the spec's surface is expli
 
 ## How it composes (no new gate, no duplication)
 
-- **`AC-###` ids nest inside scenarios.** Tag each scenario's checkable line with an `AC-###`
-  id exactly as the flat form does. At the end of the lifecycle, the exact proof runner maps
-  immutable observed evidence and the exact spec reviewer checks implementation against the
-  criterion's meaning. The native grammar re-read checks shape only; reviewers judge proof.
-- **`$rite-prove` and `$rite-review` get concrete hooks.** Each scenario is one behavior to
-  prove and the test analyst's unit of "is this covered": the WHEN/THEN maps
-  straight to an arrange/assert ([`testing.md`](testing.md)).
-- **The spec-quality checklists still apply.** The grammar makes a requirement *structured*; the
-  `checklists/<domain>.md` "unit tests for English" still score whether it's *complete and
-  measurable* ("is 'prominent' quantified?"). Structure doesn't excuse vagueness inside a THEN.
+- **`AC-###` ids nest inside scenarios.** Same ids as the flat form. Proof maps
+  observed evidence; spec review checks meaning. Native re-read checks shape only.
+- **Prove/Review hooks.** Each scenario is one behavior: WHEN/THEN or EARS maps
+  to arrange/assert ([`testing.md`](testing.md)).
+- **Checklists still apply.** Structure does not excuse a vague THEN.
 
 ## Outcome metrics are not acceptance criteria
 
 A **buildable** acceptance criterion names an observable behavior a slice delivers and a test
-proves: "export returns a CSV with a header row", "a token past 15m is rejected with 401". An
-**outcome metric** names a post-launch business result: "reduce support tickets 50%", "lift
-signup conversion 3pts", "cut p95 latency in prod under real traffic". The distinction is not
-pedantic: it decides what the coverage gate is allowed to check.
+proves. An **outcome metric** names a post-launch business result. The distinction decides
+what the coverage gate may check.
 
 Tag only buildable criteria with an `AC-###` id. An outcome metric carries no id and lives under
 a separate **`## Success metrics`** heading:
@@ -85,12 +87,9 @@ a separate **`## Success metrics`** heading:
 - Support tickets about export drop by half within a quarter
 ```
 
-Why the split: an outcome metric tagged `AC-###` poisons traceability both ways — no slice
-can honestly `Satisfies:` a quarterly KPI and no test observes a quarter of traffic. The
-metric matters (it is *why* the feature exists) but belongs to intent, not provable
-criteria. The load-bearing test: **can one slice make this true and one test show it?** If no,
-it is a success metric, not an acceptance criterion. Native traceability reviews map only
-buildable `AC-###` IDs and meanings.
+Load-bearing test: **can one slice make this true and one test show it?** If no, it is a
+success metric, not an acceptance criterion. Native traceability reviews map only
+buildable `AC-###` IDs.
 
 ## Capability-impact declaration
 
@@ -119,8 +118,7 @@ each item against the file's exact headings and text. **No parser or replacement
 - [ ] Every `### Requirement:` header is non-empty and unique.
 - [ ] Every structured requirement contains a normative `SHALL` or `MUST`
   statement and at least one `#### Scenario:`.
-- [ ] Every scenario has an observable uppercase `WHEN` and `THEN`, plus an
-  `AC-###` criterion; it describes behavior rather than implementation.
+- [ ] Every scenario has an observable trigger/outcome (WHEN/THEN or EARS WHILE/IF), plus an `AC-###` criterion; it describes behavior rather than implementation.
 - [ ] Delta headings use only ADDED, MODIFIED, or REMOVED. Each named capability
   is contained under `.devrites/specs/`, and MODIFIED/REMOVED headers match the
   current ledger exactly.
@@ -161,7 +159,7 @@ The system SHALL default to the OS colour-scheme on first load.
 Removed — superseded by system-preference detection.
 ```
 
-The native capability-ledger workflow previews and writes the fold through the host
+The Polish fold (`$rite-polish`) previews and writes through the host
 filesystem. **ADDED** appends, **MODIFIED** replaces the same-named requirement, and
 **REMOVED** deletes it. Matching is by **header identity** (the rule
 above: names are unique and a rename is a remove + add), so the section MUST use the exact ledger
@@ -182,9 +180,13 @@ omission blocks readiness; it is not cleanup.
   every block were ADDED. Never pay delta ceremony for behavior that has no prior record.
 
 At the spec gate, apply the native grammar re-read checklist above to the
-feature spec, then compare current ledger blocks using the
-ADDED/MODIFIED/REMOVED rules above. Any grammar or delta mismatch blocks
-readiness.
+feature spec, then rehearse the fold against the current ledger before readiness:
+each **MODIFIED** and **REMOVED** header must exist verbatim in the current
+ledger, and each **ADDED** header must be absent from it. Any grammar or delta
+mismatch blocks readiness — a delta that would fail the Polish fold is a spec
+defect, not a polish-time discovery. **Failing case:** a MODIFIED block renaming
+its requirement passes review, then the fold deletes nothing and appends a
+duplicate after implementation has already shipped.
 
 
 ## Unresolved-question markers (fail closed)

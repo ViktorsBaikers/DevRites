@@ -81,7 +81,7 @@ func writeArchive(root, output, prefix string, epoch time.Time) error {
 	if err != nil {
 		return fmt.Errorf("open staged release tree: %w", err)
 	}
-	defer sourceRoot.Close()
+	defer func() { _ = sourceRoot.Close() }()
 
 	entries, err := collectEntries(sourceRoot, prefix)
 	if err != nil {
@@ -96,7 +96,7 @@ func writeArchive(root, output, prefix string, epoch time.Time) error {
 		return fmt.Errorf("create temporary archive: %w", err)
 	}
 	tmpName := tmp.Name()
-	defer os.Remove(tmpName)
+	defer func() { _ = os.Remove(tmpName) }()
 	if err := tmp.Chmod(0o644); err != nil {
 		return errors.Join(fmt.Errorf("set archive mode: %w", err), tmp.Close())
 	}

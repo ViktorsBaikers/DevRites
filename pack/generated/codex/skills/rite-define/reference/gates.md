@@ -27,8 +27,9 @@ Recording the choice for posterity."
 **Stakes:** medium. The slice can be built but should not merge before a human signs off.
 Async: the human reviews when they get to it, but the loop does not stall.
 
-**Behavior:** in HITL mode, `$rite-build` pauses on this gate and writes
-`Awaiting human` to `state.md`. In AFK mode with `allow_gates: [advisory, validating]`,
+**Behavior:** in HITL mode, `$rite-build` builds the slice, writes the
+validating question + `Awaiting human`, and stops at the normal one-slice boundary; the open
+answer does not block the next dispatch. In AFK mode with `allow_gates: [advisory, validating]`,
 `$rite-build` builds the slice but marks it `built (pending review)` and writes the
 validating question; the feature does not seal until the entry is resolved. An open
 `gate: validating` entry is **merge-blocking by definition**: a slice marked
@@ -46,8 +47,8 @@ not days.
 the loop stops.
 
 **Behavior:** **always pauses regardless of `.devrites/AFK` config.** `$rite-build`
-writes `Awaiting human`, sets `Status: awaiting_human`, fires the `notify:` hook, and
-STOPs. The slice is not built until `$rite-resolve` lands.
+writes `Awaiting human`, sets `Status: awaiting_human`, fires the `notify:` hook (when
+`.devrites/AFK` defines one), and STOPs. The slice is not built until `$rite-resolve` lands.
 
 **Examples:**
 - Destructive migration (data loss risk).
@@ -95,7 +96,7 @@ decision tree per HITL slice:
 
 | Gate | SLA | Synchronous? |
 |---|---|---|
-| advisory | `none` |: (does not pause) |
+| advisory | `none` | n/a (does not pause) |
 | validating | `4h` | no (async; build continues, merge blocks) |
 | blocking | `15m` | yes |
 | escalating | `24h` | yes, but to a specialist |

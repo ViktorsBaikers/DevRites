@@ -16,8 +16,10 @@ import (
 const (
 	ClaudeSkillsTarget    = devritespaths.ClaudeSkillsTarget
 	CodexSkillsTarget     = devritespaths.CodexSkillsTarget
+	OmpSkillsTarget       = devritespaths.OmpSkillsTarget
 	ClaudeAgentsTarget    = devritespaths.ClaudeAgentsTarget
 	CodexAgentsTarget     = devritespaths.CodexAgentsTarget
+	OmpAgentsTarget       = devritespaths.OmpAgentsTarget
 	ClaudeWorkflowsTarget = devritespaths.ClaudeWorkflowsTarget
 )
 
@@ -123,7 +125,7 @@ var managedMerges = []ManagedMerge{
 	LegacyCodexHooksMerge,
 }
 
-func RequiredPayload(withCodex bool) []string {
+func RequiredPayload(withCodex, withOmp bool) []string {
 	required := []string{
 		"claude/skills",
 		"claude/agents",
@@ -138,11 +140,18 @@ func RequiredPayload(withCodex bool) []string {
 			"codex/config.toml",
 		)
 	}
+	if withOmp {
+		required = append(required,
+			"omp/skills",
+			"omp/agents",
+			"omp/.omp-plugin/plugin.json",
+		)
+	}
 	return required
 }
 
-func ValidatePayload(payload fs.FS, withCodex bool) error {
-	for _, rel := range RequiredPayload(withCodex) {
+func ValidatePayload(payload fs.FS, withCodex, withOmp bool) error {
+	for _, rel := range RequiredPayload(withCodex, withOmp) {
 		if _, err := fs.Stat(payload, rel); err != nil {
 			return fmt.Errorf("missing %s", rel)
 		}
@@ -150,18 +159,24 @@ func ValidatePayload(payload fs.FS, withCodex bool) error {
 	return nil
 }
 
-func InstallTrees(withSkills, withAgents, withCodex bool) []Tree {
+func InstallTrees(withSkills, withAgents, withCodex, withOmp bool) []Tree {
 	var trees []Tree
 	if withSkills {
 		trees = append(trees, Tree{PayloadPrefix: "claude/skills", TargetPrefix: ClaudeSkillsTarget})
 		if withCodex {
 			trees = append(trees, Tree{PayloadPrefix: "codex/skills", TargetPrefix: CodexSkillsTarget})
 		}
+		if withOmp {
+			trees = append(trees, Tree{PayloadPrefix: "omp/skills", TargetPrefix: OmpSkillsTarget})
+		}
 	}
 	if withAgents {
 		trees = append(trees, Tree{PayloadPrefix: "claude/agents", TargetPrefix: ClaudeAgentsTarget})
 		if withCodex {
 			trees = append(trees, Tree{PayloadPrefix: "codex/agents", TargetPrefix: CodexAgentsTarget})
+		}
+		if withOmp {
+			trees = append(trees, Tree{PayloadPrefix: "omp/agents", TargetPrefix: OmpAgentsTarget})
 		}
 	}
 	if withSkills && withAgents {
@@ -170,10 +185,13 @@ func InstallTrees(withSkills, withAgents, withCodex bool) []Tree {
 	return trees
 }
 
-func AliasTargets(alias Alias, withCodex bool) []string {
+func AliasTargets(alias Alias, withCodex, withOmp bool) []string {
 	targets := []string{filepath.ToSlash(filepath.Join(ClaudeSkillsTarget, alias.Name, "SKILL.md"))}
 	if withCodex {
 		targets = append(targets, filepath.ToSlash(filepath.Join(CodexSkillsTarget, alias.Name, "SKILL.md")))
+	}
+	if withOmp {
+		targets = append(targets, filepath.ToSlash(filepath.Join(OmpSkillsTarget, alias.Name, "SKILL.md")))
 	}
 	return targets
 }

@@ -25,6 +25,11 @@ If it does not, do not merge it.
    abstraction. Check how it fits the larger system as well as its local behavior.
 5. **Security:** trust boundaries, input validation, authz, secrets.
 6. **Risk:** migrations, destructive changes, rollback.
+7. **Read depth matches risk:** the review's `Basis` names **full reads of the largest
+   diff files** (top three by changed lines), and any config/dependency/SQL/auth/migration
+   file is read in full — never skimmed. A review that cannot name what it fully read is
+   unproven. **Failing case:** a 600-line diff gets hunk-by-hunk commentary on the first
+   screen and silence on the migration file at the bottom.
 
 ## Give actionable feedback
 - Read surrounding source before severity: call sites, existing guards, and the nearest consumer decide impact; a diff hunk alone is not enough.
@@ -68,6 +73,15 @@ An author who is factually right wins over a reviewer's taste.
 
 Root re-verifies each claimed consequence at the cited site, keeps the surviving evidence, sets final severity itself (reviewer severity advisory), records what decided ([agents.md § Independence](agents.md#independence)); unresolved conflicts stay open blockers.
 
+## Heuristic checks: FLAG vs NOTE
+
+A heuristic check that gates emits **FLAG** only when it can state the observed
+consequence and where to re-verify it; when context cannot disambiguate, it emits a
+**NOTE** that never gates. A check whose flag rate stays steady while every fix
+reads as progress is checking the wrong layer — retune it or retire it.
+**Failing case:** an ambiguous-identifier rule flags every pass, reviewers learn to
+skim the list, and a real defect hides inside the noise it created.
+
 ## Scope discipline
 Review the change, not the whole project. Out-of-scope problems become follow-ups, not
 drive-by edits that balloon the diff.
@@ -84,7 +98,11 @@ at `/rite-review` / `/rite-seal`:
    human-approved exception** is a **Critical** finding and a **NO-GO** at seal, the same standing
    as an unproven acceptance criterion. Check the diff against each principle's scope; an absent
    or empty file means none are declared (gate passes).
-2. **The anti-slop charter** (`coding-style.md` + `prose-style.md`): the AI-tells do-not list.
+2. **The anti-slop charter** ([`anti-ai-slop.md`](../../../rite-polish/reference/anti-ai-slop.md)
+   UI + code lists; [`prose-style.md`](prose-style.md) for prose). [`coding-style.md`](coding-style.md)
+   points at the code list — it is not a second catalog. **Failing case:** a backend-only
+   diff is charged UI anti-slop (Inter / lavender / gradient); those fire only when a
+   rendered UI surface is in the diff.
 
 A principle violation is Critical. A charter violation is classified by its real
 impact. Record each finding with `file:line`.

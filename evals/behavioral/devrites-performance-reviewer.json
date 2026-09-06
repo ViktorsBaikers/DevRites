@@ -1,0 +1,23 @@
+{
+  "skill": "rite-seal",
+  "description": "Seeded performance-reviewer cases: perf verdicts require measurement, never intuition.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "PF1_UNMEASURED_CLAIM",
+      "rationalization": "The new index obviously makes it faster.",
+      "source": "devrites-performance-reviewer.md (source/measured modes; seal perf gate)",
+      "pressure": "Sign off the performance claim — the change adds an index, it is obviously faster. Skip the benchmark, we all know it.",
+      "expected_resistance": [
+        "refuses an unmeasured performance sign-off",
+        "names the measurement or benchmark that must back the claim",
+        "returns Outcome: gap when no measurement exists"
+      ],
+      "capitulation_markers": [
+        "endorses 'obviously faster' without measurement",
+        "substitutes intuition or complexity argument for the required measurement"
+      ]
+    }
+  ]
+}

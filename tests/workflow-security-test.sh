@@ -238,6 +238,62 @@ finds "dispatch shell substitution in run" "$TMP/dispatch-shell-substitution.yml
 finds "dispatch input with spaced run key" "$TMP/dispatch-key-spacing.yml"
 clean "dispatch input transported through env" "$TMP/dispatch-input-via-env.yml"
 
+# Trusted publishing: the release job must not carry a long-lived npm write token.
+if grep -n 'NPM_TOKEN' "$HERE/../.github/workflows/ci.yml" >/dev/null; then
+  echo "FAIL [ci.yml still sets NPM_TOKEN]"; fail=1
+else
+  echo "ok   [ci.yml has no NPM_TOKEN]"
+fi
+if grep -n 'using `NPM_TOKEN`' "$HERE/../docs/release.md" >/dev/null; then
+  echo "FAIL [docs/release.md still documents NPM_TOKEN publish]"; fail=1
+else
+  echo "ok   [docs/release.md does not document NPM_TOKEN publish]"
+fi
+
+# Nightly fuzz is bounded and not a required PR check.
+FUZZ="$HERE/../.github/workflows/engine-fuzz.yml"
+if grep -q '^[[:space:]]*pull_request:' "$FUZZ"; then
+  echo "FAIL [engine-fuzz.yml must not run on pull_request]"; fail=1
+else
+  echo "ok   [engine-fuzz.yml is schedule/dispatch only]"
+fi
+if grep -q 'fuzztime=20s' "$FUZZ" && grep -q 'FuzzWithinResolved' "$FUZZ" && grep -q 'FuzzWorkspaceSchemaRow' "$FUZZ"; then
+  echo "ok   [engine-fuzz.yml names each fuzz target at 20s]"
+else
+  echo "FAIL [engine-fuzz.yml missing named 20s fuzz targets]"; fail=1
+fi
+if grep -q 'persist-credentials: false' "$FUZZ"; then
+  echo "ok   [engine-fuzz.yml persist-credentials false]"
+else
+  echo "FAIL [engine-fuzz.yml missing persist-credentials: false]"; fail=1
+fi
+
+# CodeQL covers installer/scripts JS without a compiled build.
+CODEQL="$HERE/../.github/workflows/codeql.yml"
+if grep -q 'javascript-typescript' "$CODEQL" && grep -q 'build-mode: none' "$CODEQL"; then
+  echo "ok   [codeql.yml analyzes javascript-typescript]"
+else
+  echo "FAIL [codeql.yml missing javascript-typescript / build-mode none]"; fail=1
+fi
+if grep -q '^[[:space:]]*- bin$' "$CODEQL" && grep -q '^[[:space:]]*- scripts$' "$CODEQL"; then
+  echo "ok   [codeql.yml JS scan is scoped to bin and scripts]"
+else
+  echo "FAIL [codeql.yml JS paths are not scoped to bin and scripts]"; fail=1
+fi
+
+# Windows -race is nightly/dispatch only, not a required PR check.
+WINRACE="$HERE/../.github/workflows/engine-windows-race.yml"
+if grep -q '^[[:space:]]*pull_request:' "$WINRACE"; then
+  echo "FAIL [engine-windows-race.yml must not run on pull_request]"; fail=1
+else
+  echo "ok   [engine-windows-race.yml is schedule/dispatch only]"
+fi
+if grep -q -- '-race' "$WINRACE" && grep -q 'windows-latest' "$WINRACE" && grep -q 'persist-credentials: false' "$WINRACE"; then
+  echo "ok   [engine-windows-race.yml runs go test -race on windows]"
+else
+  echo "FAIL [engine-windows-race.yml missing windows -race job]"; fail=1
+fi
+
 # The repository's workflows must pass too.
 clean "repo workflows pass"        "$HERE/../.github/workflows"
 

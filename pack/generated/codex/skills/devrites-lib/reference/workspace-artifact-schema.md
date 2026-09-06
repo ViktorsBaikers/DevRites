@@ -1,7 +1,7 @@
 # Workspace artifact schema
 
 Feature truth lives in `.devrites/work/<slug>/`; discovery requires `state.md`.
-`README.md` is an optional map. Operational remnants and archive entries are not
+`README.md` is an optional discovery map; the spec phase still writes it. Operational remnants and archive entries are not
 active workspaces. Current writers use canonical filenames. Both released cursor
 forms remain official; `$rite-upgrade` audits them in place and never performs
 path, alias, or format migration.
@@ -26,12 +26,12 @@ Readers continue to accept safe legacy basenames; no ordinary phase renames one.
 | frame | `state.md` |
 | spec | `README.md`, `brief.md`, `spec.md`, `state.md`, `decisions.md`, `assumptions.md`, `questions.md` |
 | clarify | spec artifacts plus `decision-coverage.md` |
-| temper | clarified spec artifacts |
+| temper | clarified spec artifacts plus `strategy.md` when temper runs |
 | define/plan | clarified spec artifacts plus `architecture.md`, `plan.md`, `tasks.md`, `traceability.md` |
 | vet/build/converge | plan artifacts plus `eng-review.md`, `test-plan.md`; Build creates and maintains `touched-files.md` after its first green slice |
 | prove/polish/review | vetted plan artifacts plus `evidence.md`, `touched-files.md` |
-| seal/ship/done | proof artifacts plus `review.md`, `seal.md` |
-| conditional | `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `drift.md` for drift; `handoff.md` only when requested; `references.md` + `references/` when references exist |
+| seal/ship/done | proof artifacts plus `review.md`, `seal.md`; Ship writes `ship.md` |
+| conditional | `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `drift.md` for drift; `polish-report.md` for polish; `handoff.md` only when requested; `references.md` + `references/` when references exist; `investigation-map.md` for pressure-test; `dogfood.md` for dogfood |
 
 ## What each file owns
 
@@ -62,6 +62,8 @@ Readers continue to accept safe legacy basenames; no ordinary phase renames one.
 | `touched-files.md` | sole candidate manifest plus a concern-ordered `## Review trail` of `path:line` stops for human review | 160 lines |
 | `design-brief.md` | UI design direction, states, interaction model | 160 lines |
 | `handoff.md` | cold-resume guide: objective, last slice, next action, blockers, read-next. Sections carry content or `Nothing yet`; unevidenced recollections go under `Not tried yet`, never as results | 120 lines |
+| `polish-report.md` | polish axis deltas, re-verification lines, residual subjective preferences | 200 lines |
+| `ship.md` | ship preflight, disclosed Git plan, commit/push/tag/PR record | 120 lines |
 
 When emitting `visual/` HTML+outline pairs, open matching playbooks via
 [`visual-playbooks/index.md`](visual-playbooks/index.md) (progressive load; do not
@@ -186,7 +188,7 @@ unless the stated reason makes the boundary irreducible.
 | clarify | `README.md`, `state.md`, `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, `questions.md` |
 | temper | `spec.md`, `decision-coverage.md`, `decisions.md`, `assumptions.md`, `design-brief.md` |
 | define | `README.md`, `state.md`, `spec.md`, `decision-coverage.md`, `architecture.md`, `decisions.md`, `assumptions.md` |
-| vet | `README.md`, `traceability.md`, `plan.md`, `tasks.md`, `architecture.md`, `decisions.md` |
+| vet | `state.md`, `spec.md`, `decision-coverage.md`, `README.md`, `traceability.md`, `plan.md`, `tasks.md`, `architecture.md`, `decisions.md` |
 | build | `state.md`, `decision-coverage.md`, `eng-review.md`, `test-plan.md`, `tasks.md`, `plan.md`, `architecture.md`, `traceability.md`, `questions.md`, and `touched-files.md` when present |
 | prove | `traceability.md`, `tasks.md`, `evidence.md`, `browser-evidence.md`, `touched-files.md` |
 | review/seal | `README.md`, `traceability.md`, `spec.md`, `evidence.md`, `decisions.md`, `drift.md`, `touched-files.md` |

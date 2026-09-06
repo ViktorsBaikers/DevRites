@@ -18,8 +18,9 @@ produce evidence:
 - Capture the new behavior the same way. The before/after pair *is* the proof.
 
 ## Rules
-- Use the project's existing test framework and commands (discovered in `spec.md` →
-  "Commands discovered"). Don't introduce a new test runner to prove a slice.
+- Use the project's existing test framework and commands (per the discovery contract
+  `rite-prove/reference/test-command-discovery.md`). Don't introduce a new test runner
+  to prove a slice.
 - One behavior per test; name it for the behavior, not the function.
 - A green test you never saw fail proves nothing: always see red first.
 - Don't delete or weaken a failing test to "pass". If it's wrong, that may be drift.

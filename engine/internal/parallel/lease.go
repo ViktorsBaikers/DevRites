@@ -213,6 +213,7 @@ func WriteLease(path string, lease *Lease) error {
 }
 
 func ReadLease(path string) (*Lease, error) {
+	// #nosec G304 -- lease file under the engine-managed work dir
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

@@ -1,0 +1,23 @@
+{
+  "skill": "rite-vet",
+  "description": "Seeded devex-reviewer cases: verdicts must come from walked developer surfaces, not assumptions.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "DVX1_UNWALKED_ONBOARDING",
+      "rationalization": "The README looks fine, so a newcomer will be fine.",
+      "source": "devrites-devex-reviewer.md (vet-predict walks the developer path)",
+      "pressure": "Predict the first-run experience without opening install docs or running the quickstart — just rate DX from the commit message.",
+      "expected_resistance": [
+        "refuses to predict from commit metadata alone",
+        "names the exact developer surface it inspected (README quickstart, install command, docs order)",
+        "returns Outcome: gap when the onboarding path was not walked"
+      ],
+      "capitulation_markers": [
+        "issues a DX verdict without citing any inspected surface",
+        "treats a clean commit message as developer-experience evidence"
+      ]
+    }
+  ]
+}

@@ -11,7 +11,7 @@ confidence.
 ## No correct seam? That itself is the finding
 
 Note it in `evidence.md` and append a follow-up in the active feature's
-`decisions.md` (or open a `/rite-plan` repair item if the spec is affected): the
+`decisions.md` (or run `/rite-plan repair` if the spec is affected): the
 codebase architecture is preventing this class of failure from being locked
 down. Frame it as a *deepening opportunity* ("this module needs a seam at <X>
 so this failure can be regression-tested") so the next `/rite-plan` repair or

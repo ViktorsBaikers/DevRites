@@ -23,6 +23,8 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "check path-disjoint", command: "check", args: []string{"path-disjoint"}, want: rootUnused},
 		{name: "check skill-trust", command: "check", args: []string{"skill-trust"}, want: rootUnused},
 		{name: "observe summary", command: "observe", args: []string{"summary"}, want: rootStrictUsage},
+		{name: "orient", command: "orient", want: rootStrictUsage},
+		{name: "check indexes", command: "check", args: []string{"indexes"}, want: rootLenient},
 		{name: "resolve", command: "state", args: []string{"resolve"}, want: rootStrict},
 		{name: "close", command: "state", args: []string{"close"}, want: rootStrict},
 		{name: "unknown state command", command: "state", args: []string{"unknown"}, want: rootUnused},
@@ -106,7 +108,16 @@ func TestRemovedOutputFlagsAreRejected(t *testing.T) {
 
 func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
 	t.Setenv("DEVRITES_ROOT", t.TempDir())
-	for _, args := range [][]string{{"check", "candidate"}, {"check", "readiness"}, {"check", "seal"}, {"state", "resolve"}, {"state", "close"}} {
+	for _, args := range [][]string{
+		{"check", "candidate"},
+		{"check", "readiness"},
+		{"check", "seal"},
+		{"check", "indexes"},
+		{"orient", "feature"},
+		{"observe", "summary", "feature"},
+		{"state", "resolve"},
+		{"state", "close"},
+	} {
 		t.Run(strings.Join(args, "-"), func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
 			code := run(args, strings.NewReader(""), &stdout, &stderr)
@@ -115,7 +126,7 @@ func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
 			}
 		})
 	}
-	for _, want := range []string{"devrites-engine check candidate", "devrites-engine check readiness", "devrites-engine check seal", "devrites-engine state resolve", "devrites-engine state close"} {
+	for _, want := range []string{"devrites-engine orient", "devrites-engine check indexes"} {
 		if !strings.Contains(usage, want) {
 			t.Fatalf("usage does not advertise %q", want)
 		}
@@ -133,7 +144,7 @@ func TestNestedCommandFamilyUsageListsOnlyRetainedCommands(t *testing.T) {
 		want    string
 		removed []string
 	}{
-		{args: []string{"check"}, want: "check <candidate|readiness|seal|path-disjoint|task-graph|skill-trust>", removed: []string{"spec"}},
+		{args: []string{"check"}, want: "check <candidate|readiness|seal|path-disjoint|task-graph|skill-trust|indexes>", removed: []string{"spec"}},
 		{args: []string{"state"}, want: "state <resolve|close>", removed: []string{"clarify", "tick-afk", "recovery"}},
 	} {
 		t.Run(test.args[0], func(t *testing.T) {

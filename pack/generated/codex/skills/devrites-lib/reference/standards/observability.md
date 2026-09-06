@@ -26,6 +26,11 @@ answers one of them. A signal that maps to no question is noise you pay to store
   external-call outcomes, validation rejections, and authz denials.
 - Structured (key/value or JSON), not string soup: a log you can't query is a log you won't
   read. Carry a correlation id (request / trace / job id) so one incident's lines join up.
+- When several entry points share a path, carry a bounded **origin** (scheduler,
+  CLI, replay, request) set at entry and propagated across async boundaries.
+  Correlation joins one execution; origin identifies what started it. Trigger failures
+  through two distinct entries and prove each is attributed correctly. **Failing case:**
+  a CLI replay has a trace ID but is reported as a scheduled run.
 - **Never log secrets, tokens, or PII** ([`security.md`](security.md),
   [`error-handling.md`](error-handling.md)). Levels mean something: `error` is a page-worthy
   claim, not routine flow.
@@ -64,7 +69,7 @@ hours). A third tier is the noise everyone learns to mute: collapse it into one 
 
 ## Verify the telemetry fires (evidence, not assumption)
 Instrumentation you added but never watched emit is unproven: the same standing as a test you
-never saw fail ([`testing.md`](testing.md) "See it fail first"). Trigger the path, confirm the
+never saw fail ([`testing.md`](testing.md) "Prove it can fail"). Trigger the path, confirm the
 log line / metric / span appears, and record the observation in `evidence.md`. "I
 added logging" with no observed emission is not done.
 

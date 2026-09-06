@@ -29,6 +29,8 @@ Usage:
   devrites-engine check task-graph <slug>  Validate tasks.md slice dependency graph
   devrites-engine check skill-trust <path> Scan one skill/agent Markdown for trust violations
   devrites-engine observe summary <slug>   Emit sanitized JSON workspace summary
+  devrites-engine orient <slug>            Alias for observe summary
+  devrites-engine check indexes [--root <dir>]  Report manifest and code-index presence as JSON
   devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/cleanup
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
@@ -85,6 +87,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return parallel.Run("parallel", args[1:], stdin, stdout, stderr)
 	case "observe":
 		return cmdObserve(root, args[1:], stdout, stderr)
+	case "orient":
+		return cmdOrient(root, args[1:], stdout, stderr)
 	case "state":
 		return cmdState(root, args[1:], stdout, stderr)
 	case "migrate":
@@ -107,7 +111,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine check <candidate|readiness|seal|path-disjoint|task-graph|skill-trust> ...")
+		fmt.Fprintln(stderr, "usage: devrites-engine check <candidate|readiness|seal|path-disjoint|task-graph|skill-trust|indexes> ...")
 		return exitUsage
 	}
 	sub, rest := args[0], args[1:]
@@ -122,6 +126,8 @@ func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 		return cmdTaskGraph(root, rest, stdout, stderr)
 	case "skill-trust":
 		return cmdSkillTrust(rest, stdout, stderr)
+	case "indexes":
+		return lib.RunEnvironmentCheck(root, rest, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "devrites: unknown check %q\n", sub)
 		return exitUsage
@@ -227,6 +233,18 @@ func cmdObserve(root string, args []string, stdout, stderr io.Writer) int {
 	slug, code, err := lib.ActiveSlug(root, args[1:])
 	if err != nil {
 		fmt.Fprintf(stderr, "observe: %v\n", err)
+		if code == 0 {
+			code = exitUsage
+		}
+		return code
+	}
+	return lib.RunObserveSummary(root, slug, stdout, stderr)
+}
+
+func cmdOrient(root string, args []string, stdout, stderr io.Writer) int {
+	slug, code, err := lib.ActiveSlug(root, args)
+	if err != nil {
+		fmt.Fprintf(stderr, "orient: %v\n", err)
 		if code == 0 {
 			code = exitUsage
 		}

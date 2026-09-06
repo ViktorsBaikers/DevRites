@@ -49,8 +49,9 @@ relative to the **Workspace root** named in the contract:
   plus interfaces and signatures to match. Your return cannot widen this set.
 - **Context to read yourself:** `spec.md`, `plan.md`, `decisions.md`, `assumptions.md`,
   `.devrites/principles.md` when present (the binding invariants), the canonical anti-slop list
-  `rite-polish/reference/anti-ai-slop.md`, and `design-brief.md` when the slice is UI.
-- **Rules in scope** (`.agents/skills/devrites-lib/reference/standards/`): `coding-style.md`, `error-handling.md`, `testing.md`,
+  `.agents/skills/rite-polish/reference/anti-ai-slop.md`, and `design-brief.md` when the slice is UI.
+- **Rules in scope** (`.agents/skills/devrites-lib/reference/standards/`;
+  `.agents/skills/devrites-lib/reference/standards/` mirror on Codex): `coding-style.md`, `error-handling.md`, `testing.md`,
   `patterns.md`; `security.md` when input/auth/data/integrations are touched; `performance.md`
   when the slice touches a hot path, a query, or a large payload; and only when named by
   the vetted applicability contract, `repository-topology.md`, `data-integrity.md`, or
@@ -67,7 +68,7 @@ an escalation and do not proceed.**
    local naming, casing, layers, error model, test style, and existing helpers. Use
    a code-intelligence index when available. Start with `codebase-memory-mcp`;
    use at most one cross-check only if it is incomplete, stale, unpinned, or
-   conflicting, then fall back to LSP or Read/Grep/Glob. Follow
+   conflicting, then fall back to Read/Grep/Glob. Follow
    `.agents/skills/devrites-lib/reference/standards/tooling.md` for placement,
    callers, and impact. **Reuse → extend → build new**: look for an existing
    utility, type, component, or helper before adding one.
@@ -75,9 +76,7 @@ an escalation and do not proceed.**
    invariants are mandatory and live-code evidence cannot override them. Honor every
    principle in scope. If that is impossible, return an **Escalation** rather than
    making the judgment yourself.
-   Only after rule 7 passes, make the smallest write that tests the contract,
-   normally the failing test.
-2. **(RED) Test first when behavior changes.** Write and run the failing test.
+2. **(RED) Test first when behavior changes.** Only after the rule-7 gate passes: write and run the failing test.
    Confirm that it fails for the expected reason. Use the project's existing test
    runner rather than adding one.
 3. **IMPLEMENT the smallest complete version**, in the project's style.
@@ -100,8 +99,8 @@ an escalation and do not proceed.**
      official documentation, or context7 for current upstream behavior, then include
      that source in the result. Never invent an API.
 4. **VERIFY (fail-on-red).** Run writer-safe tests/types/lint. Report required
-   build/browser/E2E as `not-run`: `root-owned artifact-producing gate` only when
-   the exact command, cwd, and prerequisites already appear in the unchanged
+   build/browser/E2E as `not-run` (root-owned, artifact-producing gates), and only
+   when the exact command, cwd, and prerequisites already appear in the unchanged
    vetted `test-plan.md`; never synthesize or rewrite a root command. Root runs
    those approved gates after inspecting the returned diff. Fix red gates in your code. **Never weaken a test
    to go green** by deleting it, skipping it with `skip`, `xfail`, or `.only`, or
@@ -121,9 +120,6 @@ an escalation and do not proceed.**
    path, return the failure and preserve the worktree; never bypass hooks or amend.
    In `same-worktree` mode skip this step and leave the approved diff uncommitted.
 6. **RETURN** the structured artifact (below) and stop. Do not start the next slice.
-
-## Code quality: consume the rules, don't reinvent them
-Apply the authoritative rule files and canonical anti-slop list named in the contract.
 
 ## Boundaries and escalation
 Stay inside the exact project-relative paths listed in the dispatch task.

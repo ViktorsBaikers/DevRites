@@ -48,6 +48,9 @@ Run during Polish before Review so ledger edits enter the proved candidate.
    be tracked; surface a needed ignore carve-out. Immediately re-read and refuse
    bytes changed since preview. Touch only `.devrites/specs/`, preserve unrelated
    bytes/order, and apply only previewed replacements or empty-file deletion.
+   **Failing case:** Polish rewrites feature `spec.md` acceptance criteria "to match
+   code." Capability fold is the non-trigger; feature `spec.md` stays sealed
+   (`core.md` rule 4).
 6. **Verify.** Re-read targets; require unrelated blocks byte-identical and the
    same preview empty. Apply the same Native grammar re-read checklist to each
    resulting capability spec.

@@ -74,8 +74,8 @@ armed AFK workspace whose exact scope, gates, and budgets permit it.
   narration are not.
 - Host timeout, unavailable agent, malformed result, missed event, or stale snapshot
   is `gap`/`cannot_verify`, never success.
-- Do not retry unchanged work merely because a timer fired. Apply the existing exact
-  causal-fingerprint recovery cap.
+- Do not retry unchanged work merely because a timer fired. Apply the exact
+  causal-fingerprint recovery cap ([`afk-hitl.md`](afk-hitl.md)).
 - A cold resume continues durable slice/recovery state and absolute expiry. Fresh
   native activation counters follow `afk-hitl.md`; no durable bound is reinitialized.
 - Native notifications fire only after evidence and stop state are written.

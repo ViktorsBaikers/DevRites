@@ -74,13 +74,26 @@ func CursorField(lines []string, key string) (string, bool) {
 }
 
 // SetCursorField replaces an existing state.md field without changing whether
-// the file uses the canonical table or legacy bullet form.
+// the file uses the canonical table or legacy bullet form. A value carrying a
+// raw pipe is declined (false) for table rows, and a value carrying a line
+// break is declined everywhere: neither is representable in a cell. A write
+// the reader cannot read back is declined too.
 func SetCursorField(lines []string, key, value string) ([]string, bool) {
+	if strings.ContainsAny(value, "\r\n") {
+		return append([]string(nil), lines...), false
+	}
 	structural, ok := structuralCursorLines(lines)
 	if !ok {
 		return append([]string(nil), lines...), false
 	}
-	return setCursorField(lines, structural, key, value)
+	out, ok := setCursorField(lines, structural, key, value)
+	if !ok {
+		return out, false
+	}
+	if !cursorReadable(out, key, value) {
+		return append([]string(nil), lines...), false
+	}
+	return out, true
 }
 
 func setCursorField(lines, structural []string, key, value string) ([]string, bool) {
@@ -94,6 +107,9 @@ func setCursorField(lines, structural []string, key, value string) ([]string, bo
 		original := out[i]
 		switch kind {
 		case cursorLineTable:
+			if strings.Contains(value, "|") {
+				return out, false
+			}
 			indent := original[:len(original)-len(strings.TrimLeft(original, " \t"))]
 			out[i] = indent + "| " + strings.TrimSpace(gotKey) + " | " + value + " |"
 		case cursorLineLegacy:
@@ -106,16 +122,41 @@ func setCursorField(lines, structural []string, key, value string) ([]string, bo
 }
 
 // UpsertCursorField replaces key when present or inserts it into the canonical
-// cursor table (falling back to a legacy bullet when no table exists).
+// cursor table (falling back to a legacy bullet when no table exists). A value
+// carrying a raw pipe keeps the legacy bullet form — a cell cannot represent
+// it — and a value carrying a line break is declined with the input returned
+// unchanged. Every write is verified readable before it is returned; an
+// unreadable write (for example, appending after an unclosed fence) leaves the
+// document unchanged.
 func UpsertCursorField(lines []string, key, value string) []string {
+	if strings.ContainsAny(value, "\r\n") {
+		return append([]string(nil), lines...)
+	}
 	structural, ok := structuralCursorLines(lines)
 	if !ok {
 		return append([]string(nil), lines...)
 	}
-	if out, ok := setCursorField(lines, structural, key, value); ok {
-		return out
+	var candidate []string
+	if strings.Contains(value, "|") {
+		candidate = append(DeleteCursorField(lines, key), "- "+key+": "+value)
+	} else if out, ok := setCursorField(lines, structural, key, value); ok {
+		candidate = out
+	} else if lastTable := lastCursorTableRow(structural); lastTable >= 0 {
+		candidate = append(append([]string(nil), lines...), "")
+		copy(candidate[lastTable+2:], candidate[lastTable+1:])
+		candidate[lastTable+1] = "| " + key + " | " + value + " |"
+	} else {
+		candidate = append(append([]string(nil), lines...), "- "+key+": "+value)
 	}
-	out := append([]string(nil), lines...)
+	if cursorReadable(candidate, key, value) {
+		return candidate
+	}
+	return append([]string(nil), lines...)
+}
+
+// lastCursorTableRow returns the index of the final table row inside the
+// Cursor section, or -1 when no table exists.
+func lastCursorTableRow(structural []string) int {
 	lastTable := -1
 	inCursor := false
 	for i, line := range structural {
@@ -140,14 +181,14 @@ func UpsertCursorField(lines []string, key, value string) []string {
 			}
 		}
 	}
-	if lastTable >= 0 {
-		insert := "| " + key + " | " + value + " |"
-		out = append(out, "")
-		copy(out[lastTable+2:], out[lastTable+1:])
-		out[lastTable+1] = insert
-		return out
-	}
-	return append(out, "- "+key+": "+value)
+	return lastTable
+}
+
+// cursorReadable reports whether key reads back as value from a candidate
+// document — the write side of parseCursorLine's cell normalization.
+func cursorReadable(lines []string, key, value string) bool {
+	got, ok := CursorField(lines, key)
+	return ok && got == strings.TrimSpace(value)
 }
 
 // DeleteCursorField removes every presentation of key from canonical or legacy

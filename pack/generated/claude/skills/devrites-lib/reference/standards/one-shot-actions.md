@@ -66,8 +66,8 @@ Keep two budgets separate:
 Cold resume does not make that fingerprint old or exhausted. Derive its offline
 no-progress count from `drift.md` and `evidence.md`; while the count is below the
 cap, resume recovery even if a prior writer stored `blocked` / `Next step: none`.
-That terminal cursor is valid only for missing retention, a human/safety gate, or
-an actually exhausted fingerprint.
+That terminal cursor is valid only for a human/safety gate, an actually exhausted
+fingerprint, or a proven absence of any safe retention/amplification design.
 
 A new real attempt is normally admissible only after the affected plan and fixtures
 are re-vetted, the failure condition is shown changed, and any required fresh

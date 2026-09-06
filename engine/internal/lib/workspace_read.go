@@ -21,6 +21,7 @@ func readWorkspaceArtifact(root, slug, name string) ([]byte, error) {
 	if info.Size() > 1<<20 {
 		return nil, fmt.Errorf("task-graph: %s exceeds 1 MiB limit", name)
 	}
+	// #nosec G304 -- workspace task-graph file; 1 MiB cap checked above
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("task-graph: cannot read %s: %w", name, err)

@@ -14,12 +14,12 @@ for a response that holds the gate, and markers for a response that gives in.
 
 ## Coverage boundary
 
-These evals check whether a skill resists a documented rationalization. Add them
-progressively as needed for gating rites such as `rite-prove`, `rite-build`,
-`rite-seal`, and `rite-vet`; a skill does not need one by default. A missing
-behavioral eval is not a failure. The deterministic gate below simply has
-nothing to lint for that skill. Like the principles gate and spec-grammar
-validator, it checks only the material that exists.
+These evals check whether a skill or named agent resists a documented
+rationalization. Gating rites in `evals/coverage.json` `require_behavioral`, and
+P0 agents in `require_behavioral_agents`, must have a corpus. A missing
+non-gating eval is not a failure. Agent-owned files must set `"agent"` (or use
+the `devrites-<role>` filename) so they are not counted as the dispatching
+skill.
 
 ## Deterministic schema check
 
@@ -42,6 +42,7 @@ scenarios.
 ```json
 {
   "skill": "<skill-name>",
+  "agent": "<devrites-role when this corpus is agent-owned>",
   "description": "What discipline these scenarios pressure-test.",
   "eval_class": "regression",
   "trials": 3,

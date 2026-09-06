@@ -164,7 +164,7 @@ func fetchJSON(ctx context.Context, rawURL string, out any) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return fmt.Errorf("%s returned %s", resp.Request.URL.Redacted(), resp.Status)
 	}
@@ -192,6 +192,7 @@ func downloadVerified(ctx context.Context, rawURL, destination, filename string,
 	if err := download(ctx, rawURL+".sha256", sumPath, maxChecksumBytes, 0o600); err != nil {
 		return fmt.Errorf("missing checksum for %s: %w", filename, err)
 	}
+	// #nosec G304 -- checksum downloaded into the self-update temp dir
 	sum, err := os.ReadFile(sumPath)
 	if err != nil {
 		return fmt.Errorf("read checksum for %s: %w", filename, err)
@@ -204,6 +205,7 @@ func downloadVerified(ctx context.Context, rawURL, destination, filename string,
 	if err != nil || len(want) != sha256.Size {
 		return fmt.Errorf("invalid SHA-256 for %s", filename)
 	}
+	// #nosec G304 -- downloaded release asset in the self-update temp dir
 	file, err := os.Open(destination)
 	if err != nil {
 		return fmt.Errorf("open %s for checksum: %w", filename, err)
@@ -228,7 +230,7 @@ func download(ctx context.Context, rawURL, destination string, maxBytes int64, m
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return fmt.Errorf("%s returned %s", resp.Request.URL.Redacted(), resp.Status)
 	}
@@ -338,16 +340,17 @@ func extractBundle(archive, destination, tag string) (string, error) {
 }
 
 func extractTarGz(archive, destination string) error {
+	// #nosec G304 -- downloaded release archive in the self-update temp dir
 	file, err := os.Open(archive)
 	if err != nil {
 		return fmt.Errorf("open archive: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	gz, err := gzip.NewReader(file)
 	if err != nil {
 		return fmt.Errorf("open gzip stream: %w", err)
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 	reader := tar.NewReader(gz)
 	root, err := filepath.Abs(destination)
 	if err != nil {
@@ -389,6 +392,7 @@ func extractTarGz(archive, destination string) error {
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return fmt.Errorf("create directory for %s: %w", name, err)
 			}
+			// #nosec G304 -- tar member name ValidPath-checked and confined to the extraction root above
 			out, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
 			if err != nil {
 				return fmt.Errorf("create %s: %w", name, err)

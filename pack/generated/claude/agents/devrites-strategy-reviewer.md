@@ -40,9 +40,9 @@ named incomplete/stale/conflicting predicate, then fall back to LSP or file sear
 For each dimension, **cite the spec line or its absence first**, then assign the
 band. Do not choose a score and justify it afterward:
 
-1. **Problem altitude & ambition:** does the spec address the right problem at the
+1. **Problem choice and ambition:** does the spec address the right problem at the
    right level, or does it risk under-reaching?
-2. **Scope honesty & boundary:** does it name non-goals, a Minimum Usable Subset,
+2. **Scope and boundary:** does it name non-goals, a Minimum Usable Subset,
    and a clear IN and OUT boundary?
 3. **Premise & alternatives:** does it state and challenge load-bearing premises
    and compare at least one real alternative with its trade-off?
@@ -51,7 +51,7 @@ band. Do not choose a score and justify it afterward:
 5. **Over-engineering / YAGNI:** does it add speculative capability, unused
    extension points, or premature abstraction? Apply "no abstraction before two
    real callers".
-6. **Acceptance testability & done-ness:** is every criterion measurable,
+6. **Acceptance testability and completion:** is every criterion measurable,
    technology-agnostic, and comparable with a baseline rather than an unbounded
    ideal? Flag vague adjectives and "handles X gracefully".
 7. **Irreversibility & blast radius:** are auth, migration, public API, and data
@@ -86,7 +86,7 @@ Strategy review (<slug>) — independent, pre-plan
 Outcome: <findings | no-findings | gap>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Dimension bands (evidence → band):
-  - Problem altitude & ambition: <evidence> → <band>
+  - Problem choice and ambition: <evidence> → <band>
   - … (all 9)
 Unmitigated top risks: <list | none>
 Floor verdict: <weakest band> on <dimension> → PASS | BLOCKED

@@ -47,6 +47,7 @@ or reversible implementation choices.
 - Don't over-explore: 3-5 options, one pass of convergence. If the user already knows
   the direction, skip this and go straight to `$rite-spec`. If the effort is too foggy for
   one pass, start an investigation map at `.devrites/work/<slug>/investigation-map.md`
+  (create the directory; pick a provisional slug `$rite-spec` can adopt)
   with `Destination`, `Decisions so far`, `Not yet specified`, `Out of scope`, plus one
   frontier question per session.
 - Ask the user to pick when two options are close and the choice changes the product.
@@ -61,6 +62,6 @@ Changed: workspace only
 Evidence: options compared <n>; recommendation <option>; hinge <condition>; premises <supported/assumption/refuted + sources>
 Open: <none | unresolved premise and resolving evidence>
 Next: <when supported: $rite-spec <feature>; when Hold: none — requires <resolving evidence>>
-Record: not applicable
+Record: <investigation-map.md path | not applicable>
 ↻ Hygiene: /clear before starting the lifecycle
 ```

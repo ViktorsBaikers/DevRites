@@ -1,7 +1,7 @@
-# Code-review axes
+# Five-axis review: tests first, then six axes
 
-The dispatched `devrites-code-reviewer` always checks tests first, then applies the remaining
-axes under one severity scale (Critical / Important / Suggestion / Nit / FYI).
+The dispatched `devrites-code-reviewer` checks tests first, then correctness, readability,
+architecture, maintainability, and standards under one severity scale (Critical / Important / Suggestion / Nit / FYI).
 The `/rite-review` inline lead **reconciles** the returned report against the Spec
 axis. It does not re-run these axes itself. This file is the shared definition of
 what "full code-review discipline" covers; use it to judge whether the agent's report

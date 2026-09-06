@@ -1,14 +1,9 @@
 # Reuse first: frontend application
 
-Frontend-specific application of the canonical reuse rule in
-[`.claude/skills/devrites-lib/reference/standards/coding-style.md`](../../devrites-lib/reference/standards/coding-style.md#reuse-before-you-write)
-(and the slightly longer treatment in `standards/patterns.md`). Same principle:
-**reuse → extend → build new**, with the AHA caveat. This file walks it through for
-components, styles, tokens, icons, hooks, utils, and helpers in a UI feature.
-
-Consistency comes from **one source of truth**. Before creating any new component, style,
-token, icon, hook, util, or helper for the feature, **search the project** for an
-existing one that fits. Reuse it. Don't duplicate.
+Frontend application of the canonical rule in
+[`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md#reuse-before-you-write):
+reuse → extend → build new, AHA caveat below. Before creating any new component, style,
+token, icon, hook, util, or helper, search the project first.
 
 This applies to UI **and** non-UI code: utilities, helpers, types, validators, schemas,
 formatters, hooks, query helpers: anything that might already exist.

@@ -53,8 +53,9 @@ files.
 - **Severity scale (intentional exception).** The canonical DevRites scale is
   Critical / Important / Suggestion / Nit / FYI, but this reviewer emits **only
   Suggestion / Nit / FYI** because its findings preserve behavior and do not block
-  release. Never raise Critical or Important. Send a blocking complexity issue to
-  `devrites-code-reviewer` as a correctness or architecture finding.
+  release. Never raise Critical or Important. Report a blocking complexity issue for
+  the root to route to `devrites-code-reviewer` as a correctness or architecture
+  finding.
 
 ## Techniques (name the one you used)
 

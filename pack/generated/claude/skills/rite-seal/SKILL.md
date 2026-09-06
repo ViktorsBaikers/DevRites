@@ -13,8 +13,9 @@ authorized irreversible actions and close-out.
 ## Authority
 
 Read [`core.md`](../devrites-lib/reference/standards/core.md) plus only
-final-diff-relevant standards: agents, review, proof,
-browser, security, principles, docs, observability, deprecation, and Done.
+final-diff-relevant standards: agents, code-review, testing, browser-proof-checklist,
+security, principles, documentation, observability, deprecation, and
+definition-of-done.
 Load [`final-evidence.md`](reference/final-evidence.md) and
 [`go-no-go.md`](reference/go-no-go.md) for proof and verdict safety.
 Follow the shared
@@ -44,7 +45,10 @@ and stops.
 
 ## Workflow
 
-Follow [`reference/phase-contract.md`](reference/phase-contract.md):
+Follow [`reference/phase-contract.md`](reference/phase-contract.md)
+([`risk-and-rollback.md`](reference/risk-and-rollback.md),
+[`seal-template.md`](reference/seal-template.md),
+[`anti-patterns.md`](reference/anti-patterns.md)):
 
 1. read workspace and final diff;
 2. recheck the canonical candidate/bindings and approved repository/CI proof;

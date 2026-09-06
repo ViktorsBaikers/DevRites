@@ -23,6 +23,7 @@ func (r *runner) install() error {
 	fmt.Fprintln(r.opts.Stdout, "  standards: ship inside the devrites-lib skill")
 	fmt.Fprintf(r.opts.Stdout, "  agents : %s\n", yesno(r.opts.WithAgents))
 	fmt.Fprintf(r.opts.Stdout, "  codex  : %s\n", yesno(r.opts.WithCodex))
+	fmt.Fprintf(r.opts.Stdout, "  omp    : %s\n", yesno(r.opts.WithOmp))
 	fmt.Fprintf(r.opts.Stdout, "  aliases: %s\n", r.opts.AliasMode)
 	if r.opts.DryRun {
 		fmt.Fprintln(r.opts.Stdout, "  (dry run - no changes will be made)")
@@ -37,7 +38,7 @@ func (r *runner) install() error {
 		return err
 	}
 
-	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex) {
+	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp) {
 		if err := r.installTree(tree.PayloadPrefix, tree.TargetPrefix); err != nil {
 			return fmt.Errorf("install tree %s: %w", tree.TargetPrefix, err)
 		}
@@ -48,7 +49,7 @@ func (r *runner) install() error {
 			if err != nil {
 				return fmt.Errorf("render alias skill %s: %w", alias.Name, err)
 			}
-			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex) {
+			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp) {
 				if err := r.installData(data, rel); err != nil {
 					return fmt.Errorf("install alias: %w", err)
 				}
@@ -91,9 +92,14 @@ func (r *runner) install() error {
 	}
 	fmt.Fprintf(r.opts.Stdout, "  installed: %d   overwritten: %d   skipped(conflict): %d   pruned: %d\n", r.stats.installed, r.stats.overwrote, r.stats.skipped, r.stats.pruned)
 	if !r.opts.DryRun && r.opts.WithSkills {
-		if r.opts.WithCodex {
+		switch {
+		case r.opts.WithCodex && r.opts.WithOmp:
+			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite (Claude) or $rite (Codex) or /skill:rite.")
+		case r.opts.WithCodex:
 			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite (Claude) or $rite (Codex).")
-		} else {
+		case r.opts.WithOmp:
+			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite or /skill:rite.")
+		default:
 			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite.")
 		}
 	}
@@ -201,6 +207,7 @@ func (r *runner) seedDevrites() error {
 	if err := os.MkdirAll(filepath.Dir(active), 0o755); err != nil {
 		return fmt.Errorf("create %s: %w", filepath.Dir(active), err)
 	}
+	// #nosec G304 -- active path is the operator-selected install dir (O_EXCL create)
 	f, err := os.OpenFile(active, os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		if os.IsExist(err) {
@@ -300,6 +307,9 @@ func (r *runner) flagsString() string {
 	}
 	if !r.opts.WithCodex {
 		flags = append(flags, "--no-codex")
+	}
+	if !r.opts.WithOmp {
+		flags = append(flags, "--no-omp")
 	}
 	if !r.opts.WithBinary {
 		flags = append(flags, "--no-binary")

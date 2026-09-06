@@ -47,7 +47,7 @@ The controlling root owns the cap:
 Use this stop message:
 
 ```text
-AFK cap reached. Raise `state.md` `AFK slices remaining` or remove the sentinel to continue.
+AFK cap reached. Raise `state.md` `afk_slices_remaining`/`AFK slices remaining` or remove the sentinel to continue.
 ```
 
 `max_slices` itself is read-only and never rewritten. No exit-code command
@@ -122,7 +122,7 @@ DevRites does not implement notifications; the configured hook does.
 Drop the sentinel before:
 
 - A new feature when `/rite-build` has not yet completed successfully on this codebase
-  in HITL. Ralph's progression is HITL first → refine prompt → AFK after validation.
+  in HITL.
 - A risky slice you marked `Mode: HITL` and want to walk through interactively even if
   the gate is technically `validating`.
 - Any time you'd rather review per-slice than batch-resolve afterwards.

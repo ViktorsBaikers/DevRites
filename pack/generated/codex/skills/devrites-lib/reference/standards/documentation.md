@@ -27,7 +27,10 @@ Promotion is maintenance of an existing authority, not a new memory system.
 2. **Ground:** verify each current claim against live authoritative repository sources.
    Report the source and currentness signal. Unverifiable means `unknown`, not false.
 3. **Scope:** state when the guidance applies and does not apply. Reject a candidate whose
-   observable trigger cannot be named.
+   observable trigger cannot be named. If final code/tests/docs already recover the
+   reasoning, reject or consolidate the lesson; promote only the missing durable constraint.
+   **Failing case:** a regression test already explains input rejection, yet a second
+   generic "validate input" rule is added with no lost reasoning identified.
 4. **Own and expose:** choose one existing canonical owner (`AGENTS.md`/`CLAUDE.md`, a scoped
    standard, or an ADR) and name the phases, agents, or contributors that discover it and
    how (direct read, index link, or existing on-demand route).

@@ -19,12 +19,12 @@ Pull these via `Read` when shaping the plan:
 - `documentation.md`: record plan-time decisions and rationale.
 - `repository-topology.md`, `data-integrity.md`, and `integration-reliability.md`:
   load only for matching `spec.md` applicability rows; each applicable owner is mandatory.
-- `../workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers.
+- `../devrites-lib/reference/workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers.
 
 ## Operating rules
 
-- **Requires a readied spec.** Missing workspace/spec/readiness or open CRITICAL checklist →
-  `/rite-spec`; missing/non-`CLEAR` decision coverage → `/rite-clarify`. Never plan it.
+- **Requires a readied spec.** Gate conditions and STOP routing are step 0;
+  never plan it.
 - Apply `afk-hitl.md` ownership. Prefer conventions; source-check new dependencies/design
   systems, asking only about licensing, cost, security, or policy.
 - Author one `architecture.md`/`plan.md` section at a time. Before slicing, use
@@ -91,10 +91,7 @@ Pull these via `Read` when shaping the plan:
    question, assumption, architecture/dependency/proof choice, and checkpoint. Resolve
    planning items from source; only necessary executable evidence warrants a risk spike with
    discriminating criteria/fallback branches. Human blockers route to `/rite-clarify`.
-   Implementation-local deferral needs owner slice, observable trigger, bounds/fallback,
-   and resolution proof; action checkpoints name their signal. Preserve entries until
-   evidence resolves/supersedes them. **Completion:** no blocker or unowned/unsupported
-   deferral; deferral is not “ask later.”
+   dispositions per `reference/plan-template.md` §Decision horizons.
 3. **Create vertical tasks:** each delivers one independently verifiable, observable
    capability end to end; first is the thinnest useful path, ordered by dependency then
    risk. Apply the slice-count and broad-refactor rules above plus

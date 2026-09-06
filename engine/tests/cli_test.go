@@ -44,11 +44,11 @@ func TestMain(m *testing.M) {
 	build.Dir = engineRoot
 	build.Env = append(os.Environ(), "CGO_ENABLED=0")
 	if out, err := build.CombinedOutput(); err != nil {
-		os.RemoveAll(dir)
+		_ = os.RemoveAll(dir)
 		panic("go build failed: " + err.Error() + "\n" + string(out))
 	}
 	code := m.Run()
-	os.RemoveAll(dir)
+	_ = os.RemoveAll(dir)
 	os.Exit(code)
 }
 

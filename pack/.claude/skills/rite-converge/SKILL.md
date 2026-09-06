@@ -77,21 +77,22 @@ Pull on demand:
    get built); from `tasks.md`: existing slices + their `Satisfies:`; from
    `.devrites/principles.md`: the invariants.
    **Completion:** every buildable criterion, touch-point, slice output, and principle is in the assessment inventory.
-3. **Reconcile the map, then read the code.** Compare `spec.md`, `tasks.md`, and
-   `traceability.md` directly: every buildable AC/REQ maps to an existing slice, every slice maps
-   back to real acceptance, and the mapped prose preserves the requirement's meaning. Record
-   orphaned, invented, duplicate, or contradictory mappings as gaps. Then read the live code
+3. **Reconcile the map, then read the code.** Compare `spec.md`, `tasks.md`,
+   `test-plan.md`, and `traceability.md` directly: every buildable AC/REQ maps to an
+   existing slice, every slice maps back to real acceptance, every slice's recorded
+   proof still agrees with its `test-plan.md` row, and the mapped prose preserves the
+   requirement's meaning. Record orphaned, invented, duplicate, or contradictory
+   mappings as gaps. Then read the live code
    (code-intelligence index per `tooling.md`); artifact mappings never prove implementation.
 4. **Assess each unit as built / partial / absent** against the live code (the rubric is in
    [`reference/convergence-assessment.md`](reference/convergence-assessment.md)): every
    acceptance criterion / scenario, every plan touch-point, and every existing slice's stated
    Produces. A principle violated in the current code is its own top-severity gap.
    Dispatch up to three independent inventory partitions to `devrites-evidence-scout` on the
-   same frozen candidate, await their dossiers, then reconcile the cited facts in the root
+   same live-code snapshot, await their dossiers, then reconcile the cited facts in the root
    context. **Completion:** every inventory unit is classified once with live-code evidence.
 5. **Enqueue the remainder as new slices.** For each *partial* or *absent* unit, append a
-   `## SLICE-###` (continue the numbering after the highest existing id) in the `rite-define`
-   slice grammar, each with a `Satisfies:` line tracing to the AC/REQ it closes and a
+   `## SLICE-###` (continue the numbering after the highest existing id), each with a `Satisfies:` line tracing to the AC/REQ it closes and a
    `Convergence: <iso>` marker line. Dependency-order them after the existing slices; a
    principle-remediation slice sorts first. **If every unit is built → append nothing.**
    **Completion:** every partial/absent unit has one traceable appended slice, or the file is byte-for-byte unchanged.

@@ -1,7 +1,7 @@
 ---
 name: rite-resolve
 description: User-invoked resume verb for answering, dropping, or batch-resolving open `questions.md` gates.
-argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <path-to-yaml>"
+argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <path-to-file>"
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -29,8 +29,9 @@ Pull these via `Read` when shaping the resolve:
 
 ## Operating rules
 
-- **Requires an active workspace.** Read `.devrites/ACTIVE` first; if empty or the slug
-  has no `questions.md`, **STOP** and tell the user to run `/rite-spec <feature>` first.
+- **Requires an active workspace.** Read `.devrites/ACTIVE` first; if empty, **STOP** and
+  tell the user to run `/rite-spec <feature>` first. If the slug has no `questions.md`,
+  report the missing required artifact and stop.
 - **One mutation per call.** A single qid (or `--batch` file) per invocation; never
   silently coalesce multiple human decisions into one log entry.
 - **Never overwrite an answered question.** If the qid's `status` is `answered` or
@@ -60,7 +61,7 @@ Pull these via `Read` when shaping the resolve:
    - `<qid> "<answer>"`: answer the single open question.
    - `--drop <qid>` (optional `"<reason>"`): mark the question `dropped`; record
      the reason inline.
-   - `--batch <path-to-yaml>`: bulk resolve, one entry per qid (see
+   - `--batch <path-to-file>`: bulk resolve, one entry per qid (see
      [`reference/answer-protocol.md`](reference/answer-protocol.md) for the batch
      format).
 2. **Load context.** Read `state.md`, `questions.md`, and the relevant slice from

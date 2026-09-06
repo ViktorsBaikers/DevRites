@@ -93,7 +93,7 @@ func (r *runner) preflightUninstall(entries []string) error {
 
 func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	out := map[string]bool{".devrites/README.md": true}
-	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex) {
+	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp) {
 		err := fs.WalkDir(r.payloadFS, tree.PayloadPrefix, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
@@ -114,7 +114,7 @@ func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	}
 	if r.opts.WithSkills && r.opts.AliasMode == "all" {
 		for _, alias := range hostpack.Aliases {
-			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex) {
+			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp) {
 				out[rel] = true
 			}
 		}
@@ -203,11 +203,12 @@ func inspectManagedPath(target, rel string) (pathSnapshot, error) {
 	if !info.Mode().IsRegular() {
 		return pathSnapshot{}, fmt.Errorf("refusing non-regular managed path: %s", rel)
 	}
+	// #nosec G304 -- managed path snapshot; regular-file check above
 	f, err := os.Open(dest)
 	if err != nil {
 		return pathSnapshot{}, fmt.Errorf("read managed path %s: %w", rel, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	sum := sha256.New()
 	if _, err := io.Copy(sum, f); err != nil {
 		return pathSnapshot{}, fmt.Errorf("hash managed path %s: %w", rel, err)

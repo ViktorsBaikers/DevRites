@@ -11,8 +11,7 @@ supplied reference*).
 2. **Compose from the system:** use existing shared components and tokens. If a needed
    component doesn't exist, build it in the project's style (don't import a new library
    without asking).
-3. **State coverage:** wire up every state you shaped (loading/empty/error/success/
-   disabled/long-content), not just the populated happy path.
+3. **State coverage:** wire up every state you shaped (full set per NEVER below).
 4. **Interaction:** feedback on every action; focus management; keyboard support;
    sensible defaults (Enter submits, Esc closes, etc.).
 5. **Responsive:** verify the reflow at the target viewports.
@@ -39,20 +38,13 @@ Build what *this* slice needs. Don't scaffold future screens, settings, or varia
 - The primary action is unmistakable.
 - Empty states teach the next step; error states offer recovery.
 - Spacing reads as deliberate; alignment holds at every breakpoint.
-- Copy is in the product's voice, specific, and short (and survives the copy self-audit
-  with realistic data (`rite-polish/reference/anti-ai-slop.md`) Copy & data realism).
+- Copy is in the product's voice, specific, and short (and passes the Copy & data realism
+  check in `rite-polish/reference/anti-ai-slop.md`).
 - No console noise; no layout shift.
 
-## Avoid the slop
-Don't reach for the banned defaults (`rite-polish/reference/anti-ai-slop.md`). If the
-project genuinely uses one, follow the project: consistency wins.
-
 ## Record
-Append slice build-time refinements → `design-brief.md` (the brief `devrites-ux-shape`
-produced at spec; refine it, don't recreate it). Then render the slice's proof targets,
-open each screenshot, compare with the brief + target R-ids, fix material deltas, and
-re-render until none remain (`devrites-browser-proof`). Record the comparison evidence
-before claiming the UI works.
+Record: append refinements to `design-brief.md` and run the render-compare-fix loop per
+SKILL.md §5 before claiming the UI works.
 
 ## NEVER (craft)
 

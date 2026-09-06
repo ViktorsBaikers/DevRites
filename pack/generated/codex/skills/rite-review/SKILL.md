@@ -36,9 +36,8 @@ Pull these via `Read` when the diff demands them:
 
 ## Operating rules
 
-- **Feature scope only.** Review touched files + the diff. **NO whole-project refactors,
-  NO drive-by cleanup.** DO NOT delete suspected dead code outside this feature without
-  asking. Spec Drift Guard applies.
+- **Feature scope only** — see
+  [feature-scoped-review](reference/feature-scoped-review.md). Spec Drift Guard applies.
 - **Silent-failure hunt:** when the suite is green, require proof that error paths and
   partial-success branches would fail tests if broken. **Failing case:** tests pass but
   handler returns success on internal error → Critical until an asserting test exists.
@@ -58,7 +57,6 @@ Pull these via `Read` when the diff demands them:
 
 0. Read `.agents/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
    on-demand rules above as the diff demands them.
-   Then read the explicit or active workspace's `state.md` directly.
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`, `evidence.md`,
    `touched-files.md`, `.devrites/principles.md` (if present: the binding invariants to score
    the diff against), and the `git diff`. For "what would this change break"
@@ -114,18 +112,18 @@ Pull these via `Read` when the diff demands them:
    Add only what the dispatched agents could not, then resolve overlaps and
    contradictions before labeling. ([five-axis-review.md](reference/five-axis-review.md)
    documents the axes the code-review agent applies.)
-   - **UI feature?** Apply the **UX rubric**
+   - **UI feature?** Dispatch `devrites-frontend-reviewer` and apply the **UX rubric**
      ([nielsen-heuristics](reference/nielsen-heuristics.md)) and the
-     **cognitive-load lens** ([cognitive-load](reference/cognitive-load.md)) on the
-     UX axis: surface heuristics scoring ≤ 2 and any cognitive-load findings
-     (extraneous noise, missing progressive disclosure, vocabulary drift) at the
-     appropriate severity.
-5. **Security:** apply `devrites-audit security`
-   ([security-review](reference/security-review.md)) when user input, auth, data
-   storage, external integrations, secrets, or permissions are involved.
-6. **Performance:** apply `devrites-audit perf`
-   ([performance-review](reference/performance-review.md)) only when performance is
-   relevant or a regression risk is visible (measure first).
+     **cognitive-load lens** ([cognitive-load](reference/cognitive-load.md),
+     [performance-checklist](reference/performance-checklist.md)). No UI/route/style
+     paths: record `Not-applicable: no relevant paths in diff`.
+5. **Security:** dispatch `devrites-security-auditor`
+   ([security-review](reference/security-review.md)) when input, auth, data,
+   secrets, or permissions are in the diff; else `Not-applicable: no relevant paths in diff`.
+6. **Performance:** dispatch `devrites-performance-reviewer`
+   ([performance-review](reference/performance-review.md),
+   [performance-checklist](reference/performance-checklist.md)) only on a budget or
+   hot path; else `Not-applicable: no relevant paths in diff`.
 7. Reconcile and accept only in-scope fixes. Consolidate them into one bounded
    wright correction; never edit source in the reviewing context. Any correction
    updates the candidate manifest, returns through affected Prove, and then starts
@@ -145,21 +143,14 @@ Pull these via `Read` when the diff demands them:
 
 **Action tag (separate from severity).** Tag each finding with how to act on it:
 `blocking` (fix before seal), `non-blocking` (fix when convenient), or `if-minor` (fix only if the
-change is already small: a pure noise-economics lever). Only a **`blocking` Critical** gates the
-seal; a `non-blocking` / `if-minor` finding is recorded, not a stop.
+change is already small: a pure noise-economics lever). Every Critical is `blocking` and gates the
+seal; `non-blocking` / `if-minor` findings are recorded, not a stop.
 
-## Confidence and signal-to-noise
+## Confidence and severity
 
 Apply [`agents.md` § Result admission](../devrites-lib/reference/standards/agents.md#result-admission).
-Suppress unverifiable ≤4 hypotheses, require 7+ plus exact proof for
-Critical/Important, and make every silent/unusable account a blocking gap. Roll
-trivia into one line; review finds defects, not a quota.
-
-## Severity orientation (labels, not score)
-
-After labeling, summarize findings as `Critical / Important / Suggestion / Nit /
-FYI` counts. There is no composite number. `$rite-seal` gates on
-`Critical == 0` and on acceptance plus drift. Do not invent a composite score.
+Roll trivia into one line. `$rite-seal` gates on `Critical == 0`,
+`Important == 0` (y/N override), acceptance, and drift. No composite score.
 
 > **Mid-flight discipline.** When tempted to demote a Critical, hide a finding, fix without re-verification, or wander out of scope: see [`anti-patterns`](reference/anti-patterns.md). Load it the moment you reach for the excuse.
 

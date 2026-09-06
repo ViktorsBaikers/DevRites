@@ -13,10 +13,9 @@ off the author's voice or weakening technical content.
 - A text-generating phase composes an artifact: `$rite-spec` (overview, rationale),
   `$rite-define` / `$rite-plan` (plan narrative), `$rite-temper` / `$rite-vet` (review prose),
   `$rite-review` / `$rite-seal` (findings + verdict prose), `$rite-ship` (commit/PR body),
-  `devrites-doubt` / `rite-handoff` (notes).
+  `devrites-doubt` / `$rite-handoff` (notes).
 - Any phase composes substantive **user-facing prose** beyond the shared reply
   labels.
-- `$rite-polish` Phase 1 as the **catch** pass on prose that slipped through at write time.
 
 ## Two modes
 - **Rewrite (default).** When DevRites writes the artifact/reply or polishes it, fix the prose
@@ -26,9 +25,12 @@ off the author's voice or weakening technical content.
   the text untouched. Mirrors `devrites-audit`'s read-only stance.
 
 Order findings by severity: **P0** credibility-killers (vague attribution, a marketing
-adjective standing in for evidence, a false/unsourced claim) → **P1** obvious tells (negative
-parallelism, filler openers, em-dash tics) → **P2** polish (rhythm, word choice). A quick pass
-fixes P0 + P1 and stops; a full pass takes P2 too.
+adjective standing in for evidence, a false/unsourced claim, cutoff disclaimers, unfilled
+placeholders, citation markup, AI-tool tracking URLs) → **P1** obvious tells (negative
+parallelism, filler openers, em-dash tics, reasoning-chain scaffolding, narrated candor)
+→ **P2** polish (rhythm, word choice, 1B clarity edits). A quick pass fixes P0 + P1 and
+stops; a full pass takes P2 too. Flags are writing-quality signals, not authorship proof.
+In detect-only, report Tier 1A (figurative filler) separately from Tier 1B (wordiness).
 
 ## Process
 
@@ -38,8 +40,10 @@ fixes P0 + P1 and stops; a full pass takes P2 too.
    register and one voice baseline.
 2. **Protect.** Apply the preservation contract in
    [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md) before changing words.
-   Scan for clusters of tells; one isolated marker is not a verdict. Done when every claim,
-   constraint, identifier, example, quotation, and deliberate uncertainty is accounted for.
+   Leave tables, YAML frontmatter, URLs, and file paths untouched unless the caller asked to
+   change them. Scan for clusters of tells; one isolated marker is not a verdict. Done when
+   every claim, constraint, identifier, example, quotation, and deliberate uncertainty is
+   accounted for.
 3. **Rewrite.** Remove P0/P1 tells and P2 when the caller asked for a full pass. Match the
    baseline's vocabulary and cadence without inventing facts, opinions, or quirks. Done when the
    same reader can make the same decisions from the rewrite as from the source.

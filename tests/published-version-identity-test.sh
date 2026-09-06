@@ -27,6 +27,9 @@ lock_pkg="$(printf '%s\n' "$lock" | sed -n '2p')"
 readme_ver="$(sed -n 's/^\*\*Status:\*\* \[`v\([0-9][0-9.]*\)`\].*/\1/p' README.md | head -n1)"
 [[ "$readme_ver" == "$pkg" ]] && ok "README status v$readme_ver" || no "README status v${readme_ver:-<missing>} != package.json $pkg"
 
+readme_tag="$(sed -n 's|^.*releases/tag/v\([0-9][0-9.]*\).*|\1|p' README.md | head -n1)"
+[[ "$readme_tag" == "$pkg" ]] && ok "README status URL tag v$readme_tag" || no "README status URL tag v${readme_tag:-<missing>} != package.json $pkg"
+
 changelog_ver="$(sed -n 's/^## \[\([0-9][0-9.]*\)\].*/\1/p' CHANGELOG.md | head -n1)"
 [[ "$changelog_ver" == "$pkg" ]] && ok "CHANGELOG latest heading $changelog_ver" || no "CHANGELOG latest heading ${changelog_ver:-<missing>} != package.json $pkg"
 

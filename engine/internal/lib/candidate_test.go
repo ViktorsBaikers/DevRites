@@ -435,7 +435,7 @@ func TestCandidateIdentityRejectsSpecialFile(t *testing.T) {
 	if err != nil {
 		t.Skipf("Unix-domain sockets unavailable: %v", err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	if _, _, err := CandidateIdentity(root, "feature"); err == nil || !strings.Contains(err.Error(), "regular file") {
 		t.Fatalf("error=%v, want special-file rejection", err)
 	}

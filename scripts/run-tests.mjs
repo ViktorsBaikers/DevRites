@@ -33,9 +33,18 @@ function testWeight(name) {
 
 function itemWeight(item) {
   if (typeof item === 'string') return testWeight(basename(item));
-  if (item.waiMode === 'core') return testWeights.get('workflow-artifact-identity-test.sh#core') || 80;
+  // Per-index weights first: the WAI internal case split is uneven (measured
+  // core shards ranged 7-49s), so a uniform per-mode weight lets one shard
+  // stack two heavy WAI items that then serialize behind protected fixtures.
+  if (item.waiMode === 'core') {
+    return testWeights.get(`workflow-artifact-identity-test.sh#core-${item.waiCoreShard}`)
+      || testWeights.get('workflow-artifact-identity-test.sh#core')
+      || 80;
+  }
   if (item.waiMode === 'matrix') return testWeights.get('workflow-artifact-identity-test.sh#matrix') || 60;
-  return testWeights.get('workflow-artifact-identity-test.sh#boundary') || 90;
+  return testWeights.get(`workflow-artifact-identity-test.sh#boundary-${item.waiBoundaryShard}`)
+    || testWeights.get('workflow-artifact-identity-test.sh#boundary')
+    || 90;
 }
 
 function itemLabel(item) {
@@ -53,11 +62,21 @@ function itemLabel(item) {
 }
 
 function assignWeightedShards(items, total) {
-  const shards = Array.from({ length: total }, () => ({ items: [], weight: 0 }));
+  const shards = Array.from({ length: total }, () => ({ items: [], weight: 0, wai: 0 }));
   for (const item of items) {
-    const target = shards.reduce((min, shard) => (shard.weight < min.weight ? shard : min));
+    const isWai = typeof item !== 'string';
+    let target = shards[0];
+    let targetCost = target.weight + (isWai ? target.wai * 2 : 0);
+    for (const shard of shards) {
+      const cost = shard.weight + (isWai ? shard.wai * 2 : 0);
+      if (cost < targetCost) {
+        target = shard;
+        targetCost = cost;
+      }
+    }
     target.items.push(item);
     target.weight += itemWeight(item);
+    if (isWai) target.wai += itemWeight(item);
   }
   return shards;
 }
@@ -119,36 +138,50 @@ const integrationTests = new Set([
 ]);
 
 // Weights from CI wall times (seconds, rounded) for balanced shard assignment.
+// Refreshed 2026-09-01 from per-test PASS durations on the 8-shard CI run.
 const testWeights = new Map([
-  ['workflow-artifact-identity-test.sh#core', 80],
-  ['workflow-artifact-identity-test.sh#matrix', 60],
-  ['workflow-artifact-identity-test.sh#boundary', 90],
+  ['workflow-artifact-identity-test.sh#core', 28],
+  ['workflow-artifact-identity-test.sh#core-1/4', 34],
+  ['workflow-artifact-identity-test.sh#core-2/4', 7],
+  ['workflow-artifact-identity-test.sh#core-3/4', 49],
+  ['workflow-artifact-identity-test.sh#core-4/4', 27],
+  ['workflow-artifact-identity-test.sh#matrix', 8],
+  ['workflow-artifact-identity-test.sh#boundary', 27],
+  ['workflow-artifact-identity-test.sh#boundary-1/6', 28],
+  ['workflow-artifact-identity-test.sh#boundary-2/6', 20],
+  ['workflow-artifact-identity-test.sh#boundary-3/6', 36],
+  ['workflow-artifact-identity-test.sh#boundary-4/6', 33],
+  ['workflow-artifact-identity-test.sh#boundary-5/6', 23],
+  ['workflow-artifact-identity-test.sh#boundary-6/6', 31],
   ['workflow-artifact-identity-test.sh', 333],
-  ['binary-lifecycle-test.sh', 200],
-  ['validate-pack.sh', 80],
-  ['uninstall-smoke.sh', 70],
-  ['outcome-evals-test.sh', 70],
-  ['release-tarball-test.sh', 50],
-  ['validate-path-spaces-test.sh', 40],
-  ['npx-pack-smoke.sh', 40],
-  ['install-smoke.sh', 18],
-  ['bootstrap-security-test.sh', 14],
-  ['acceptance-preserving-reslice-policy-test.sh', 40],
-  ['host-artifacts-test.sh', 9],
-  ['workspace-schema-test.sh', 6],
-  ['install-shared-file-merge-smoke.sh', 40],
-  ['cli-smoke.sh', 20],
-  ['update-smoke.sh', 20],
-  ['install-flag-parser-smoke.sh', 10],
-  ['install-flag-parser-legacy-smoke.sh', 10],
-  ['install-option-matrix-smoke.sh', 15],
-  ['fixture-install.sh', 20],
-  ['install-flag-parser-invalid-smoke.sh', 10],
-  ['codex-agent-generation-test.sh', 10],
-  ['claude-runtime-smoke.sh', 5],
-  ['codex-runtime-smoke.sh', 5],
-  ['hooks-parity-test.sh', 10],
-  ['install-pin-no-global-smoke.sh', 10],
+  ['binary-lifecycle-test.sh', 32],
+  ['validate-pack.sh', 34],
+  ['uninstall-smoke.sh', 21],
+  ['outcome-evals-test.sh', 31],
+  ['release-tarball-test.sh', 51],
+  ['validate-path-spaces-test.sh', 42],
+  ['npx-pack-smoke.sh', 19],
+  ['install-smoke.sh', 5],
+  ['bootstrap-security-test.sh', 12],
+  ['acceptance-preserving-reslice-policy-test.sh', 5],
+  ['host-artifacts-test.sh', 7],
+  ['workspace-schema-test.sh', 4],
+  ['install-shared-file-merge-smoke.sh', 3],
+  ['cli-smoke.sh', 2],
+  ['engine-observation-contract-test.sh', 3],
+  ['update-smoke.sh', 3],
+  ['install-flag-parser-smoke.sh', 1],
+  ['install-flag-parser-legacy-smoke.sh', 1],
+  ['install-option-matrix-smoke.sh', 1],
+  ['fixture-install.sh', 1],
+  ['install-flag-parser-invalid-smoke.sh', 1],
+  ['codex-agent-generation-test.sh', 2],
+  ['claude-runtime-smoke.sh', 1],
+  ['codex-runtime-smoke.sh', 1],
+  ['hooks-parity-test.sh', 3],
+  ['install-pin-no-global-smoke.sh', 1],
+  ['native-host-loop-evals-test.sh', 6],
+  ['scan-pack-security-test.sh', 4],
 ]);
 
 const engineIsolatedTests = new Set([
@@ -335,7 +368,7 @@ function runOne(test) {
       const displayName = typeof test === 'string' ? test : label;
       process.stdout.write(`== ${displayName} ==\n`);
       for (const chunk of chunks) process.stdout.write(chunk);
-      if (chunks.length && !String(chunks[chunks.length - 1]).endsWith('\n')) process.stdout.write('\n');
+      if (chunks.length && !String(chunks.at(-1)).endsWith('\n')) process.stdout.write('\n');
       process.stdout.write(`${status}: ${displayName} (${elapsed}s)\n`);
       if (signal) process.stdout.write(`signal: ${signal}\n`);
       resolve(code === 0);

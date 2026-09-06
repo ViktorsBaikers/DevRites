@@ -5,7 +5,9 @@ ladder (`devrites-browser-proof`) and record it in `browser-evidence.md` (and su
 in `polish-report.md`).
 
 ## Required when a browser can run
-- Screenshots of the polished UI at the target viewports (375 / 768 / 1280 as relevant).
+- Screenshots of the polished UI at the canonical viewport set
+  (`devrites-frontend-craft/reference/quality-standards.md` § Responsive — currently
+  320 / 768 / 1024 / 1440).
   **Open each screenshot and describe what's visible**: a path is not proof.
 - All key interaction states captured or exercised: hover, focus, active, disabled,
   loading, empty, error, success.

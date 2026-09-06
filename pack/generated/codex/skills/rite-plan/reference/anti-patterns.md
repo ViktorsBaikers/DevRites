@@ -16,7 +16,7 @@ Authority: `.agents/skills/devrites-lib/reference/standards/acceptance-preservin
 ## Phase-specific rationalizations
 
 | Excuse | Rebuttal |
-|---|---|
+| --- | --- |
 | "User didn't ask for a re-plan." | A Spec Drift Guard event *is* a re-plan trigger: ask is courtesy, the route is automatic. |
 | "I can fix the slice mid-build, no need to update tasks." | `tasks.md` is the contract `$rite-build` reads. A fix that isn't there isn't visible to the next phase. |
 | "Reordering slices is cosmetic." | Dependency order controls risk discovery; risk-first wins because it surfaces blockers early. |
@@ -29,6 +29,6 @@ Authority: `.agents/skills/devrites-lib/reference/standards/acceptance-preservin
 
 - About to change product behavior, acceptance, or scope without asking the user.
 - `drift.md` entry unresolved while planning the next slice.
-- A "mode" invented that isn't one of `decompose / reslice / repair / reorder / split / unblock`.
+- A "mode" invented that isn't one of `decompose / reslice / repair / reorder / split / unblock / course-correct / revise`.
 - Slices reordered without updating dependency notes: order changed, rationale didn't.
 - Repairing a drift event by silently widening the spec rather than narrowing the plan.

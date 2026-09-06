@@ -8,11 +8,9 @@ Every structured WHEN/THEN scenario needs a passing asserting test. When
 `test-plan.md` exists, every acceptance/gap requirement, interactive element, and
 user flow needs a passing result. Missing coverage blocks.
 
-Behavioral proof MUST be positive, discriminating, and observed under `testing.md`:
-assertion/output changes when behavior is absent or wrong. Skipped, focused,
-filtered, pending, zero-test, assertion-free, tautological, or unexecuted results
-do not count. Build/compile/typecheck/lint prove only their static criterion;
-discriminating shell assertions and golden/text comparisons may prove text/CLI.
+Apply [`testing.md`'s positive, discriminating proof](../../devrites-lib/reference/standards/testing.md#positive-discriminating-proof),
+including invalid-result exclusions and static/textual criterion boundaries.
+Unsupported behavioral claims are `cannot_verify` and block proof.
 
 ## Silent-failure probe
 
@@ -54,9 +52,10 @@ or a mock that cannot produce the risk.
 
 ## Critical-path assertion strength
 
-For regression-Critical, irreversible, and data-loss paths, inject a small break,
-confirm the covering test turns red, then revert; use the existing mutation tool.
-A green test on broken code is unproven. Pure transforms also get a round-trip or
+For regression-Critical, irreversible, and data-loss paths, require
+[`testing.md`'s safe perturbation](../../devrites-lib/reference/standards/testing.md#safe-perturbation).
+Missing evidence is `cannot_verify`; a green test on broken code is unproven.
+Pure transforms also get a round-trip or
 metamorphic property check when applicable.
 
 ## Runtime observability branch
@@ -77,7 +76,7 @@ Browser-capture docs/quickstarts when applicable. Write the scorecard to
 Exercise/follow every key `plan.md` link in the assembled feature; record each as
 `EVID-###`, or record none declared. An unwired link blocks.
 
-For every critical link, perturb or break the load-bearing input/link and observe the
+For every critical link, apply safe perturbation to the load-bearing input/link and observe the
 promised surface fail. Existence/registration/spy-call evidence is insufficient when a
 different path can coincidentally produce the expected result.
 

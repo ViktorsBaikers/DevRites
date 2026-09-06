@@ -1,7 +1,7 @@
 # Harden checklist: UI against real-world inputs
 
 Designs that only work on the happy path are not production-ready. `/rite-polish`
-Phase 2 (UI polish) uses this list to harden the feature against the inputs, errors,
+Phase 4 (UI polish) uses this list to harden the feature against the inputs, errors,
 languages, and network conditions real users will throw at it.
 
 Feature scope only: don't harden screens this feature doesn't touch.

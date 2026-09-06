@@ -17,8 +17,8 @@ the gate uses the **lowest band**, not an average.
    human prerequisites and action-time approvals instead of deferring generic uncertainty to
    build. **Unmitigated top risks are gating.**
 5. **Over-engineering / YAGNI:** speculative capability, unused extension points, premature
-   abstraction, second-system bloat. Apply the pack's standard (`patterns.md`) + the "imagine
-   the later refactor" test. Defer unless now-cost is trivial AND deferred-cost is large.
+   abstraction, second-system bloat. Apply the pack's standard (`patterns.md`) and the YAGNI
+   ledger test (scope-modes.md Pass 2).
 6. **Acceptance testability and completion:** every acceptance criterion measurable, technology-
    agnostic, and comparable **down to a baseline** ("better than the current workaround"), not
    up to an unbounded ideal. Vague adjectives ("fast/robust/intuitive") and "handles X

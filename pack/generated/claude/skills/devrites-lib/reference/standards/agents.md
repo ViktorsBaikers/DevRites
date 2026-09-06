@@ -38,6 +38,7 @@ Files own briefs; [`parallel-dispatch.md`](../parallel-dispatch.md) owns rosters
 Skills name exact fresh roles, omit native fields;
 hosts spawn/wait/deliver. Root MUST NOT advance/claim completion before admitting required results;
 running/orphaned/unavailable = `gap` — no root/generic substitute.
+Workflow-named skills (e.g. devrites-source-driven) are invoked inline in the root context, never dispatched as agents.
 
 ## Source-writing boundary
 
@@ -52,7 +53,7 @@ Each job gets objective/exclusions, exact paths/immutable candidate, rubric/resu
 - A fresh result sees scope/paths-diff/rubric only — never another result's or the root's conclusions, severities, expected verdicts, or edited context; seeding voids the packet.
 - A parent-context pass contributes attributed evidence but is not independent: exclude it from independent accounting and name the lost coverage.
 - Final severity is set at reconciliation after re-verifying the claimed consequence at the cited site (reviewer severity advisory); dismissals record a reason, and true facts about neighboring code route elsewhere instead of being dismissed.
-- Conflicting required results are arbitrated by re-verifying evidence at the site; the deciding evidence is recorded, truly unresolved conflicts stay open blockers.
+- Conflicting required results are arbitrated by re-verifying evidence at the site; the deciding evidence is recorded, truly unresolved conflicts stay open blockers. Two results describing the same defect merge only when both defect and fix path match; otherwise the more conservative classification stands, and severity never widens without new site evidence — an overridden or demoted finding stays visible with the reason, never silently merged away.
 
 ## Result admission
 
@@ -64,10 +65,12 @@ Each required reviewer/analyst/auditor starts with exactly one:
 ```text
 Outcome: <findings | no-findings | gap>
 Finding: <severity> | <file:line or artifact section> | <observed quote/result> | <impact> | <minimum fix>
+Basis: <files read · commands run to reach this finding>
 ```
 
 - **`findings`:** each row uses the shape above; confidence 1–10 on Critical/Important.
-  Critical/Important requires 7+, exact evidence, and concrete impact.
+  Critical/Important requires 7+, exact evidence, concrete impact, and a non-empty
+  `Basis` — a correct verdict reached by an unrecorded inspection path is unproven.
 - **`no-findings`:** `No-findings:` names checks and inspected evidence. Bare
   pass, empty list, or “looks good” is malformed.
 - **`gap`:** names missing/unreadable/stale input; skipped/failed required check;
@@ -78,13 +81,18 @@ against candidate. Missing fields become
 `Unverified: <claim> — missing <proof>` and stay `gap` until verified/rejected
 with evidence—never silently dropped/demoted. Null/timeout/failure/malformed
 output is `gap`, never `no-findings`. Conditional `Not-applicable` must name the
-inspected scope and why its trigger did not fire.
+inspected scope and why its trigger did not fire. **Failing case:** parent admits a
+wright "done" with no `git diff --name-only` ⊆ path-contract (allowlist) observation.
 
 ## Reconciliation
 
 Root rejects stale/out-of-scope work, dedupes by root cause, records
-accepted conclusions, and reruns only affected proof/review. Route defects before
-correction: product/acceptance → Spec Drift Guard/Clarify;
+accepted conclusions, and reruns only affected proof/review. Reconciliation runs
+only after every dispatch reaches a terminal classification
+([parallel-dispatch.md](../parallel-dispatch.md)); findings that do not survive stay
+visible as `withdrawn: <n> (<reason>)` in the account rather than being silently
+dropped, so a later reader can audit what was discarded and why.
+Route defects before correction: product/acceptance → Spec Drift Guard/Clarify;
 architecture/slicing/proof → Plan/Vet; source/test → wright;
 external/pre-existing → blocker/defer. Never patch downstream to hide an upstream
 defect.

@@ -385,6 +385,7 @@ func scanWorktreePaths(project string, paths []string, budget *secretScanBudget)
 		if info.Size() < 0 || info.Size() > budget.bytesRemaining {
 			return nil, errSecretScanLimit
 		}
+		// #nosec G304 -- workspace walk; size budget checked above
 		file, err := os.Open(fullPath)
 		if err != nil {
 			return nil, err

@@ -88,5 +88,3 @@ doesn't decide the rewrite strategy.
 - **Code quality:** covered by the simplification audit
   (`devrites-audit simplify`).
 - **Security:** covered by the security audit (`devrites-audit security`).
-
-Cognitive-load findings live on the **UX axis** of the multi-axis review.
