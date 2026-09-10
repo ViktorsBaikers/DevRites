@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.0.0...v5.1.0) (2026-09-10)
+
+### Added
+
+* **skills:** raise /rite-build --parallel cap from 3 to 10 ([#60](https://github.com/ViktorsBaikers/DevRites/issues/60)) ([d88afa0](https://github.com/ViktorsBaikers/DevRites/commit/d88afa0af31eed421a1a5fdbff8eaf3f61b02bff))
+
 ## [5.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.7.0...v5.0.0) (2026-09-06)
 
 ### ⚠ BREAKING CHANGES
