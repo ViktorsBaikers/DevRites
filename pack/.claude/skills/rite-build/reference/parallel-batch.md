@@ -7,12 +7,13 @@ Opt-in only. Default `/rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.
 | Input | Behavior |
 | --- | --- |
 | omitted / `--parallel 1` | Serial one-slice |
-| `--parallel N` (**2≤N≤3**) | Parallel when eligible + host pass |
-| non-integer / `N≤0` / `N>3` | Hard refuse (no silent clamp) |
+| `--parallel N` (**2≤N≤10**) | Parallel when eligible + host pass |
+| non-integer / `N≤0` / `N>10` | Hard refuse (no silent clamp) |
 
 AFK caps `N` by remaining budget. Charge **only after successful integrate**
-(once per integrated green sibling). Abort / integrate-failed → **0**. Running
-lease blocks another `/rite-build`.
+(once per integrated green sibling). Abort / integrate-failed → **0**. A
+`running` lease blocks another `/rite-build`. Any present lease blocks
+`parallel create` until cleanup.
 
 ## Path-disjoint
 
@@ -40,14 +41,19 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
 
 1. Orient/gate; parse N; select ≤N path-disjoint pending slices.
 2. Write lease; freeze `B=HEAD`; `parallel create` worktrees.
-3. Dispatch ≤3 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`).
-4. Inspect + fail-on-red → `green|red|gap`.
+3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`).
+4. Inspect + fail-on-red → `green|red|gap`. Independent-review Critical is `gap`
+   even when targeted tests are green.
 5. Any red/gap → **abort** (no partial integrate). All green → serial integrate.
 6. Integrate: `transfer_commit` descends from `B`; `` `<base>..<transfer>` ``
    path-exact; apply in plan order. Conflict → reset to `B`, `integrate-failed`.
 7. Success: FF control; union `touched-files.md`; update state/evidence; AFK +1
    per integrated sibling; optional `check candidate`.
-8. Cleanup: success removes worktrees/branches; abort keeps until acknowledged.
+8. Cleanup: success removes worktrees/branches. Abort keeps them as repair
+   inputs until the root consumes them: agent-owned plan gaps (AC unchanged)
+   follow [`spec-drift-guard.md`](spec-drift-guard.md) — `/rite-plan repair` then
+   `/rite-vet` inline, then cleanup and resume Build. Do not emit
+   `Fix: /rite-plan repair`. Product/policy/irreversible-risk still stops.
 
 ## Engine verbs
 

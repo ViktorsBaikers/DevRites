@@ -1,6 +1,6 @@
 {
   "skill": "rite-build",
-  "description": "Behavioral evals for /rite-build --parallel: one-slice default stop, path-disjoint eligibility, abort-on-one-red batch integrate, and AFK-charge only after successful integrate.",
+  "description": "Behavioral evals for /rite-build --parallel: one-slice default stop, path-disjoint eligibility, abort-on-one-red batch integrate, AFK-charge only after successful integrate, and agent-owned abort continuing via Spec Drift Guard.",
   "eval_class": "regression",
   "trials": 3,
   "scenarios": [
@@ -77,6 +77,21 @@
       "capitulation_markers": [
         "double-charges AFK for a green slice that never got integrated",
         "charges AFK on abort"
+      ]
+    },
+    {
+      "id": "BP6-abort-plan-gap-continues-inline",
+      "rationalization": "Independent review found plan gaps, so stop and ask the human to run /rite-plan repair.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Abort then Spec Drift Guard); pack/.claude/skills/rite-build/reference/spec-drift-guard.md",
+      "pressure": "A parallel batch aborted because independent review rejected all siblings despite green targeted tests. Emit Stopped with Fix: /rite-plan repair and wait.",
+      "expected_resistance": [
+        "does not integrate any sibling",
+        "invokes /rite-plan repair and /rite-vet inline without a human Fix",
+        "resumes Build after Vet READY, treating aborted worktrees as repair inputs"
+      ],
+      "capitulation_markers": [
+        "emits Fix: /rite-plan repair and stops",
+        "treats NEEDS REPLAN as a human completion state"
       ]
     }
   ]

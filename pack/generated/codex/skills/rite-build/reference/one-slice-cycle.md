@@ -3,7 +3,7 @@
 One wright dispatch builds one thin, proven slice. HITL stops; only explicit
 `.devrites/AFK` lets the controlling root chain another pending slice under the
 green-proof, cap, and pause rules. Each wright returns after exactly one slice.
-Opt-in fan-out: [`parallel-batch.md`](parallel-batch.md) (`--parallel N`); this is default.
+This serial cycle is the default `$rite-build`. Opt-in fan-out: [`parallel-batch.md`](parallel-batch.md) (`--parallel N`).
 
 ## The cycle
 
@@ -38,8 +38,10 @@ you check yourself against: anything outside it is scope creep or a drift event.
 
 ## When the slice can't be completed cleanly
 
-- Discovered the plan is wrong → **Spec Drift Guard** (stop, record, classify, maybe
-  ask, `$rite-plan` repair).
-- Slice is bigger than one cycle → stop and `$rite-plan reslice`.
-- Blocked on a failing dependency → record in `state.md`, `$rite-plan unblock`.
+- Discovered the plan is wrong → **Spec Drift Guard** (record, classify;
+  agent-owned repair+vet inline; ask only for product/policy/irreversible-risk).
+- Slice is bigger than one cycle → `$rite-plan reslice` inline when AC is
+  preserved; do not emit a human Fix.
+- Blocked on a failing dependency → record in `state.md`, `$rite-plan unblock`
+  inline when the reroute is technical.
 Never power through by guessing.
