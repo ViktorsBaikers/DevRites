@@ -178,7 +178,8 @@ for exception in exceptions:
 PY
 if [ $? -eq 0 ]; then ok "osv-scanner.toml ignoreUntil matches npm-audit exceptions"; else no "osv-scanner.toml ignoreUntil mismatch"; fi
 
-# Patched ancestors that retired the 2026-09 bundled-npm and fast-uri exceptions.
+# Patched ancestors that retired the 2026-09 bundled-npm, fast-uri, and
+# js-yaml exceptions.
 python3 - "$ROOT" <<'PY'
 import json, sys
 from pathlib import Path
@@ -187,20 +188,26 @@ pkg = json.loads((root / "package.json").read_text())
 overrides = pkg.get("overrides") or {}
 npm = ((overrides.get("@semantic-release/npm") or {}).get("npm"))
 fast_uri = overrides.get("fast-uri")
+js_yaml = overrides.get("js-yaml")
 if npm != "11.19.1":
     raise SystemExit(f"package.json must pin @semantic-release/npm.npm to 11.19.1, got {npm!r}")
 if fast_uri != "3.1.6":
     raise SystemExit(f"package.json must pin fast-uri to 3.1.6, got {fast_uri!r}")
+if js_yaml != "4.3.2":
+    raise SystemExit(f"package.json must pin js-yaml to 4.3.2, got {js_yaml!r}")
 lock = json.loads((root / "package-lock.json").read_text())
 packages = lock.get("packages") or {}
 got_npm = (packages.get("node_modules/npm") or {}).get("version")
 got_fast = (packages.get("node_modules/fast-uri") or {}).get("version")
+got_yaml = (packages.get("node_modules/js-yaml") or {}).get("version")
 if got_npm != "11.19.1":
     raise SystemExit(f"package-lock.json npm is {got_npm!r}, expected 11.19.1")
 if got_fast != "3.1.6":
     raise SystemExit(f"package-lock.json fast-uri is {got_fast!r}, expected 3.1.6")
+if got_yaml != "4.3.2":
+    raise SystemExit(f"package-lock.json js-yaml is {got_yaml!r}, expected 4.3.2")
 PY
-if [ $? -eq 0 ]; then ok "release toolchain pins patched npm 11.19.1 and fast-uri 3.1.6"; else no "release toolchain pin missing"; fi
+if [ $? -eq 0 ]; then ok "release toolchain pins patched npm 11.19.1, fast-uri 3.1.6, and js-yaml 4.3.2"; else no "release toolchain pin missing"; fi
 
 # The advertised local quality gate must be self-contained and pin the same
 # three external analyzers used by CI.
