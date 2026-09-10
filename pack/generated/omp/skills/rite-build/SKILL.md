@@ -1,6 +1,6 @@
 ---
 name: rite-build
-description: Build the next approved vertical slice with evidence. HITL one-slice default; AFK may chain serially; opt-in `--parallel N` (2≤N≤3) for path-disjoint worktrees.
+description: Build the next approved vertical slice with evidence. HITL one-slice default; AFK may chain serially; opt-in `--parallel N` (2≤N≤10) for path-disjoint worktrees.
 argument-hint: "[--parallel N] [slice number or name]"
 user-invocable: true
 ---
@@ -10,7 +10,7 @@ user-invocable: true
 Build and prove one slice. HITL stops; a later user invocation starts the next.
 Explicit `.devrites/AFK` alone lets the controlling root chain pending slices
 serially under green proof, caps, and pause rules. Every wright returns after one slice.
-**Opt-in:** `/rite-build --parallel N` (2≤N≤3; N=1≡serial) follows
+**Opt-in:** `/rite-build --parallel N` (2≤N≤10; N=1≡serial) follows
 [`reference/parallel-batch.md`](reference/parallel-batch.md)
 ([`one-slice-cycle.md`](reference/one-slice-cycle.md)).
 
@@ -55,9 +55,11 @@ Wright applies anti-slop; root verifies returns and never patches source.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Vet-ready admitted bytes require root authorship outside product wright","action":"ROOT_TRANSACTION; root writes only admitted .devrites/** targets","return":"saved Build slice cursor; wright product allowlist unchanged"} -->
 ## `--parallel N` (opt-in)
 
-Omitted/`1` ≡ serial; `2`/`3` → path-disjoint fan-out when eligible; else hard refuse.
-All-green serial integrate; one red/gap aborts. AFK charges after integrate only.
-Running lease blocks another `/rite-build`. Details: `parallel-batch.md`.
+Omitted/`1` ≡ serial; `2`–`10` → path-disjoint fan-out when eligible; else hard refuse.
+All-green serial integrate; one red/gap aborts. Abort with agent-owned plan
+gaps continues via Spec Drift Guard (plan repair + vet inline); do not emit a
+human `Fix`. AFK charges after integrate only. Running lease blocks another
+`/rite-build`. Details: `parallel-batch.md`.
 
 ## Execute and reply
 

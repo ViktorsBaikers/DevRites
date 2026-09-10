@@ -36,7 +36,7 @@ Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
 preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
 Parallel isolated-writer worktrees remain forbidden until this serial pilot measures
 transfer, conflict, proof, and review outcomes on both hosts; opt-in `/rite-build --parallel N`
-(2≤N≤3) path-disjoint fan-out is the only sanctioned parallel mode. Same-worktree multi-writer / root-emulated
+(2≤N≤10) path-disjoint fan-out is the only sanctioned parallel mode. Same-worktree multi-writer / root-emulated
 worktrees stay forbidden.
 
 ## Prepare

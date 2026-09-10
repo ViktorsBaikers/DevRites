@@ -20,6 +20,9 @@ const (
 	WrightGreen   = "green"
 	WrightRed     = "red"
 	WrightGap     = "gap"
+
+	MinParallelSlices = 2
+	MaxParallelSlices = 10
 )
 
 var (
@@ -95,6 +98,13 @@ func validateSliceID(id string) error {
 	return nil
 }
 
+func checkParallelSliceCount(n int) error {
+	if n < MinParallelSlices || n > MaxParallelSlices {
+		return fmt.Errorf("parallel requires %d-%d slices (got %d)", MinParallelSlices, MaxParallelSlices, n)
+	}
+	return nil
+}
+
 func ValidateLease(lease *Lease) error {
 	if lease == nil {
 		return fmt.Errorf("lease is nil")
@@ -113,8 +123,8 @@ func ValidateLease(lease *Lease) error {
 	default:
 		return fmt.Errorf("invalid lease status %q", lease.Status)
 	}
-	if len(lease.Slices) < 2 || len(lease.Slices) > 3 {
-		return fmt.Errorf("lease must have 2 or 3 slices (got %d)", len(lease.Slices))
+	if err := checkParallelSliceCount(len(lease.Slices)); err != nil {
+		return err
 	}
 	if lease.N != len(lease.Slices) {
 		return fmt.Errorf("lease n=%d does not match slices=%d", lease.N, len(lease.Slices))

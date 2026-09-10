@@ -1,6 +1,7 @@
 package parallel
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -143,6 +144,109 @@ func TestCreateAbortCleanup(t *testing.T) {
 	}
 	if _, err := os.Stat(leasePath); !os.IsNotExist(err) {
 		t.Fatalf("cleanup should clear lease")
+	}
+}
+
+func TestCreateAcceptsFourSlices(t *testing.T) {
+	t.Parallel()
+	repo, _ := setupRepo(t)
+	for _, name := range []string{"c.go", "d.go"} {
+		if err := os.WriteFile(filepath.Join(repo, "src", name), []byte("package main\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	gitOk(t, repo, "add", ".")
+	gitOk(t, repo, "commit", "-m", "more files")
+	base := gitOk(t, repo, "rev-parse", "HEAD")
+	lease, err := Create(CreateOpts{
+		Root:    repo,
+		Slug:    "demo-four",
+		BatchID: "batch4",
+		BaseSHA: base,
+		Slices: []SlicePaths{
+			{ID: "slice-a", Paths: []string{"src/a.go"}},
+			{ID: "slice-b", Paths: []string{"src/b.go"}},
+			{ID: "slice-c", Paths: []string{"src/c.go"}},
+			{ID: "slice-d", Paths: []string{"src/d.go"}},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lease.N != 4 || len(lease.Slices) != 4 {
+		t.Fatalf("want 4 slices, got n=%d slices=%d", lease.N, len(lease.Slices))
+	}
+}
+
+func TestCreateRefusesCountOutsideBounds(t *testing.T) {
+	t.Parallel()
+	repo, base := setupRepo(t)
+	_, err := Create(CreateOpts{
+		Root:    repo,
+		Slug:    "demo-one",
+		BatchID: "batch1",
+		BaseSHA: base,
+		Slices:  []SlicePaths{{ID: "slice-a", Paths: []string{"src/a.go"}}},
+	})
+	if err == nil || !strings.Contains(err.Error(), "2-10 slices") {
+		t.Fatalf("expected 2-10 bound for N=1, got %v", err)
+	}
+
+	slices := make([]SlicePaths, MaxParallelSlices+1)
+	for i := range slices {
+		name := fmt.Sprintf("src/x%d.go", i)
+		if err := os.WriteFile(filepath.Join(repo, name), []byte("package main\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		slices[i] = SlicePaths{ID: fmt.Sprintf("s%d", i), Paths: []string{name}}
+	}
+	gitOk(t, repo, "add", ".")
+	gitOk(t, repo, "commit", "-m", "eleven")
+	base = gitOk(t, repo, "rev-parse", "HEAD")
+	_, err = Create(CreateOpts{
+		Root:    repo,
+		Slug:    "demo-eleven",
+		BatchID: "batch11",
+		BaseSHA: base,
+		Slices:  slices,
+	})
+	if err == nil || !strings.Contains(err.Error(), "2-10 slices") {
+		t.Fatalf("expected 2-10 bound for N=11, got %v", err)
+	}
+}
+
+func TestValidateLeaseBounds(t *testing.T) {
+	t.Parallel()
+	ok := validTestLease(MaxParallelSlices)
+	if err := ValidateLease(ok); err != nil {
+		t.Fatalf("N=%d should validate: %v", MaxParallelSlices, err)
+	}
+	tooMany := validTestLease(MaxParallelSlices + 1)
+	if err := ValidateLease(tooMany); err == nil || !strings.Contains(err.Error(), "2-10 slices") {
+		t.Fatalf("N=%d should refuse, got %v", MaxParallelSlices+1, err)
+	}
+}
+
+func validTestLease(n int) *Lease {
+	slices := make([]LeaseSlice, n)
+	for i := range slices {
+		id := fmt.Sprintf("s%d", i)
+		slices[i] = LeaseSlice{
+			ID:           id,
+			Paths:        []string{fmt.Sprintf("src/%s.go", id)},
+			WorktreePath: "/tmp/" + id,
+			Branch:       "devrites/parallel/x/batch/" + id,
+			WrightStatus: WrightPending,
+		}
+	}
+	return &Lease{
+		BatchID:             "batch1",
+		CreatedAt:           "2026-08-23T00:00:00Z",
+		BaseSHA:             "abcdef1",
+		N:                   n,
+		Status:              StatusRunning,
+		ControlPIDOrSession: "test",
+		Slices:              slices,
 	}
 }
 

@@ -29,7 +29,7 @@ type CreateOpts struct {
 	Slices  []SlicePaths
 }
 
-// Create path-disjoint-gates, creates <=3 worktrees from base, and writes a running lease.
+// Create path-disjoint-gates, creates 2-10 worktrees from base, and writes a running lease.
 func Create(opts CreateOpts) (*Lease, error) {
 	if err := validateSlug(opts.Slug); err != nil {
 		return nil, err
@@ -37,8 +37,8 @@ func Create(opts CreateOpts) (*Lease, error) {
 	if err := validateBatchID(opts.BatchID); err != nil {
 		return nil, err
 	}
-	if len(opts.Slices) < 2 || len(opts.Slices) > 3 {
-		return nil, fmt.Errorf("create requires 2 or 3 slices (got %d)", len(opts.Slices))
+	if err := checkParallelSliceCount(len(opts.Slices)); err != nil {
+		return nil, err
 	}
 	if _, err := CheckPathDisjoint(opts.Slices, opts.Root); err != nil {
 		return nil, err
