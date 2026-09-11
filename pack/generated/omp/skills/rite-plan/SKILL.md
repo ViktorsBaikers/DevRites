@@ -111,6 +111,10 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
    is one no-progress outcome on every open fingerprint in the fold; the
    re-dispatch packet must name the rejection so the same hunks don't recur.
    A gap naming genuinely human-owned information routes to `/rite-clarify`.
+   A drafter `Outcome: partial` is progress: materialize its complete findings,
+   then re-dispatch a narrowed packet for `remaining_findings` with anchors
+   re-derived from the just-updated files — same repair pass, fresh context.
+   A partial covering zero findings counts as no-progress.
    Any change to `architecture.md`, `plan.md`, `tasks.md`, or `traceability.md` invalidates
    the previous vet verdict: set `Phase: plan`, `Next step: /rite-vet`, and, when
    `eng-review.md` exists, set `Implementation readiness: NEEDS REPLAN`. Never retain READY

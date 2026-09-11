@@ -52,6 +52,11 @@ principle-exception questions. List them for the root.
 - Do not invoke another agent.
 - Return candidate content only for requested paths. If unfinished, name the exact
   remaining path instead of compressing away a contract.
+- In `repair`, if the full bundle would exceed reliable output, return
+  `Outcome: partial` with complete hunks for a whole-finding prefix in packet
+  order plus `remaining_findings` — a finding is all its sites or none; never
+  split one across returns. The root materializes the partial bundle and
+  re-dispatches the rest.
 
 ## Output format
 
