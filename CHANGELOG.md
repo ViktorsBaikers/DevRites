@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.1.0...v5.2.0) (2026-09-11)
+
+### Added
+
+* **skills:** batch build-time gap repair and auto-chain plan/vet ([#61](https://github.com/ViktorsBaikers/DevRites/issues/61)) ([a668270](https://github.com/ViktorsBaikers/DevRites/commit/a668270b4a278ffb81a1b73bf962d13da2097e5a))
+
 ## [5.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.0.0...v5.1.0) (2026-09-10)
 
 ### Added
