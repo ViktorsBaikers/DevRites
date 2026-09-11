@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.2.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.0...v5.2.1) (2026-09-11)
+
+### Fixed
+
+* **skills:** scope drafter self-check to patched invariants ([#62](https://github.com/ViktorsBaikers/DevRites/issues/62)) ([d32bbf9](https://github.com/ViktorsBaikers/DevRites/commit/d32bbf9f81e255dae6e66622ab8b0e1fd1017a2c))
+
 ## [5.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.1.0...v5.2.0) (2026-09-11)
 
 ### Added
