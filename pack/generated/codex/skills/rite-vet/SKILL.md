@@ -53,8 +53,10 @@ plan declares a root-authored executable workflow file, read
   asking and resolve reversible technical choices. Ask only human-owned choices.
 - Preserve a valid technical return cursor. Agent-owned `NEEDS REPLAN` returns
   internally to its caller, not to the human; on a direct invocation there is
-  no caller, so Vet becomes it — record the cursor and invoke `$rite-plan`
-  repair inline under the same fingerprint caps.
+  no caller, so Vet becomes it — save a return cursor
+  (`return_phase`/`return_next_action`) naming this Vet pass as the caller and
+  invoke `$rite-plan` repair inline under the same fingerprint caps. An
+  agent-owned verdict with budget remaining is never a user-facing command.
 - **Recovery recheck is bounded and batched.** A valid cursor plus open
   fingerprints enters Recovery recheck; it does not start another Full Vet or
   repeat unaffected axes/reviewers. One dispatch covers every open fingerprint
