@@ -106,7 +106,11 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    [task-breakdown](reference/task-breakdown.md). Prefer thin, shippable, verifiable.
    **Completion:** every slice is independently shippable/provable or carries an irreducibility reason.
 5. Reconcile the candidate against steps 3 and 4, then the root updates `plan.md`, `tasks.md`,
-   `state.md`, and appends rationale to `decisions.md`.
+   `state.md`, and appends rationale to `decisions.md`. A rejected candidate
+   (malformed bundle, stale or non-unique anchor) or a drafter `Outcome: gap`
+   is one no-progress outcome on every open fingerprint in the fold; the
+   re-dispatch packet must name the rejection so the same hunks don't recur.
+   A gap naming genuinely human-owned information routes to `/rite-clarify`.
    Any change to `architecture.md`, `plan.md`, `tasks.md`, or `traceability.md` invalidates
    the previous vet verdict: set `Phase: plan`, `Next step: /rite-vet`, and, when
    `eng-review.md` exists, set `Implementation readiness: NEEDS REPLAN`. Never retain READY
