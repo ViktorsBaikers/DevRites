@@ -79,9 +79,11 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
    require the drafter to apply `one-shot-actions.md` and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
    collision mutant. Past evidence loss is not terminal. The drafter supplies no bodies.
-   A repair candidate carries a delta self-check: touched invariants re-verified
-   (acyclic deps, bidirectional traceability, shared contract proof, sizing), no
-   correction-created regression.
+   A repair candidate carries a delta self-check scoped to what the patch
+   touches: which intersected invariants it re-verified, with evidence of no
+   correction-created regression. Global re-derivation (ID/edge/HZN counts,
+   acyclicity) runs on materialized artifacts at the step-7 gate — the drafter
+   never re-derives them by exhaustive search.
    Bind exact active `.devrites/work/<slug>/` targets and executable contract; after Vet READY, root
    materializes the exact vetted workflow-artifact paths under
    [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
