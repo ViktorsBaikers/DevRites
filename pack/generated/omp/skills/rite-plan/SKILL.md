@@ -144,12 +144,15 @@ user-facing stop unless a genuine HITL, safety/access, or exhausted-recovery
 condition was recorded.
 
 When invoked directly with no controlling caller and a planning artifact
-changed, become the caller for the mandated next step: record the return
-cursor, invoke `/rite-vet` inline, and consume its results — `NEEDS REPLAN`
-re-enters repair internally under the fingerprint caps; `NEEDS CLARIFICATION`
-and human-owned gates still reach the user. Stop only at Vet's boundary (READY
-readback; next step `/rite-build`). An unchanged plan keeps its recorded next
-step.
+changed, become the caller for the mandated next step: save a return cursor
+(`return_phase`/`return_next_action`) naming this Plan pass as the caller —
+a direct Plan has no caller above it, so without the saved cursor Vet reads
+itself as top-level and its verdict becomes a user-facing command. Invoke
+`/rite-vet` inline and consume its results — `NEEDS REPLAN` re-enters repair
+internally under the fingerprint caps and is never emitted as a user-facing
+command; `NEEDS CLARIFICATION` and human-owned gates still reach the user.
+Stop only at Vet's boundary (READY readback; next step `/rite-build`). An
+unchanged plan keeps its recorded next step.
 
 > **Mid-flight discipline.** Do not change product behavior without confirmation or
 > absorb drift silently. See [`anti-patterns`](reference/anti-patterns.md).
