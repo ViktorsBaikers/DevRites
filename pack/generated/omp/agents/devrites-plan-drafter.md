@@ -56,7 +56,9 @@ principle-exception questions. List them for the root.
   `Outcome: partial` with complete hunks for a whole-finding prefix in packet
   order plus `remaining_findings` — a finding is all its sites or none; never
   split one across returns. The root materializes the partial bundle and
-  re-dispatches the rest.
+  re-dispatches the rest. A finding blocked on human-owned information goes in
+  `blocked_findings` with the needed input named — never `remaining_findings`,
+  which is reserved for what another dispatch can complete.
 
 ## Output format
 

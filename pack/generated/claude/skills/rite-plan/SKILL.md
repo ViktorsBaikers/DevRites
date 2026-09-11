@@ -114,7 +114,8 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    A drafter `Outcome: partial` is progress: materialize its complete findings,
    then re-dispatch a narrowed packet for `remaining_findings` with anchors
    re-derived from the just-updated files — same repair pass, fresh context.
-   A partial covering zero findings counts as no-progress.
+   A partial covering zero findings counts as no-progress. Findings in
+   `blocked_findings` route to `/rite-clarify`, never the re-dispatch.
    Any change to `architecture.md`, `plan.md`, `tasks.md`, or `traceability.md` invalidates
    the previous vet verdict: set `Phase: plan`, `Next step: /rite-vet`, and, when
    `eng-review.md` exists, set `Implementation readiness: NEEDS REPLAN`. Never retain READY
