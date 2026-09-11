@@ -79,9 +79,11 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    require the drafter to apply `one-shot-actions.md` and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
    collision mutant. Past evidence loss is not terminal. The drafter supplies no bodies.
-   A repair candidate carries a delta self-check: touched invariants re-verified
-   (acyclic deps, bidirectional traceability, shared contract proof, sizing), no
-   correction-created regression.
+   A repair candidate carries a delta self-check scoped to what the patch
+   touches: which intersected invariants it re-verified, with evidence of no
+   correction-created regression. Global re-derivation (ID/edge/HZN counts,
+   acyclicity) runs on materialized artifacts at the step-7 gate — the drafter
+   never re-derives them by exhaustive search.
    Bind exact active `.devrites/work/<slug>/` targets and executable contract; after Vet READY, root
    materializes the exact vetted workflow-artifact paths under
    [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
@@ -104,7 +106,16 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    [task-breakdown](reference/task-breakdown.md). Prefer thin, shippable, verifiable.
    **Completion:** every slice is independently shippable/provable or carries an irreducibility reason.
 5. Reconcile the candidate against steps 3 and 4, then the root updates `plan.md`, `tasks.md`,
-   `state.md`, and appends rationale to `decisions.md`.
+   `state.md`, and appends rationale to `decisions.md`. A rejected candidate
+   (malformed bundle, stale or non-unique anchor) or a drafter `Outcome: gap`
+   is one no-progress outcome on every open fingerprint in the fold; the
+   re-dispatch packet must name the rejection so the same hunks don't recur.
+   A gap naming genuinely human-owned information routes to `/rite-clarify`.
+   A drafter `Outcome: partial` is progress: materialize its complete findings,
+   then re-dispatch a narrowed packet for `remaining_findings` with anchors
+   re-derived from the just-updated files — same repair pass, fresh context.
+   A partial covering zero findings counts as no-progress. Findings in
+   `blocked_findings` route to `/rite-clarify`, never the re-dispatch.
    Any change to `architecture.md`, `plan.md`, `tasks.md`, or `traceability.md` invalidates
    the previous vet verdict: set `Phase: plan`, `Next step: /rite-vet`, and, when
    `eng-review.md` exists, set `Implementation readiness: NEEDS REPLAN`. Never retain READY
