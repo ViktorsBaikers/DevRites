@@ -26,12 +26,19 @@ dependency edges.
 
 A drift event stopped the build. Steps:
 
-1. Read the `drift.md` entry and its classification.
+1. Read the `drift.md` entries and their classifications. Fold EVERY open entry
+   and accepted finding for the affected artifacts in ONE pass, never serially.
 2. If the user answered a drift question, encode that decision in `decisions.md`.
 3. Update `spec.md` (only the affected sections) and `plan.md`/`tasks.md` to match
    reality. Adjust acceptance criteria if they were wrong.
-4. Mark the `drift.md` entry **resolved** with the resolution + date.
-5. Resume at the corrected slice.
+4. Mark each `drift.md` entry **resolved** with the resolution + date.
+5. **Self-check the repaired candidate on the delta before handoff** — re-verify
+   every invariant the correction touched (acyclic dependency graph,
+   bidirectional traceability, Shared contract proof vs boundary set, sizing,
+   no correction-created regression) and record the evidence in the Plan
+   checkpoint; Vet's recheck verifies it rather than rediscovering the defect a
+   loop later.
+6. Resume at the corrected slice.
 Never quietly delete a requirement; use the marked action before contract edits.
 
 ## reorder

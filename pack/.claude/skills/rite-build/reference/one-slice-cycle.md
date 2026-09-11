@@ -39,7 +39,8 @@ you check yourself against: anything outside it is scope creep or a drift event.
 ## When the slice can't be completed cleanly
 
 - Discovered the plan is wrong → **Spec Drift Guard** (record, classify;
-  agent-owned repair+vet inline; ask only for product/policy/irreversible-risk).
+  sweep every remaining contract assumption, then one folded repair+vet inline;
+  ask only for product/policy/irreversible-risk).
 - Slice is bigger than one cycle → `/rite-plan reslice` inline when AC is
   preserved; do not emit a human Fix.
 - Blocked on a failing dependency → record in `state.md`, `/rite-plan unblock`

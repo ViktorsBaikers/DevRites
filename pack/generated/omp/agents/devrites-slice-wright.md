@@ -138,6 +138,10 @@ return an `Escalation`** when:
   scoped exception or the approach must change. Report the principle and conflict
   in `Escalation`.
 
+A plan-gap or underspecification escalation populates `assumptions` with every
+contract assumption already checked (verified|falsified); the orchestrator's
+batch sweep covers only the unchecked remainder. Never a bare "plan is wrong".
+
 If an answer would change scope or acceptance, do **not** fold it into the slice.
 Return it in `Escalation` so the orchestrator can route it through the Spec Drift
 Guard (`/rite-plan repair`). Respect any AFK budget in the contract.
@@ -172,7 +176,7 @@ reuse: []
 conventions: []
 principles: []
 sources: []
-assumptions: []
+assumptions: [] # plan-gap escalation: every checked contract assumption, verified|falsified
 decisions_stood: [] # irreversible-risk items go to escalation
 dead_ends: []
 escalation: <none | gate + crisp question + proposed answer>
