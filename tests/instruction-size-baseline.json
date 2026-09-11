@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 962571,
+  "total_bytes": 963013,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 7865,
     "pack/.claude/agents/devrites-devex-reviewer.md": 6438,
@@ -132,7 +132,7 @@
     "pack/.claude/skills/rite-clarify/SKILL.md": 5481,
     "pack/.claude/skills/rite-converge/reference/anti-patterns.md": 2322,
     "pack/.claude/skills/rite-converge/reference/convergence-assessment.md": 3595,
-    "pack/.claude/skills/rite-converge/SKILL.md": 8869,
+    "pack/.claude/skills/rite-converge/SKILL.md": 9311,
     "pack/.claude/skills/rite-customize/SKILL.md": 2802,
     "pack/.claude/skills/rite-define/reference/anti-patterns.md": 1664,
     "pack/.claude/skills/rite-define/reference/gates.md": 6582,
