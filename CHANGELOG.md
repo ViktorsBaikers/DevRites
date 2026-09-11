@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.2.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.1...v5.2.2) (2026-09-11)
+
+### Fixed
+
+* **skills:** make self-chaining save the caller return cursor ([#63](https://github.com/ViktorsBaikers/DevRites/issues/63)) ([4038577](https://github.com/ViktorsBaikers/DevRites/commit/4038577d5d8d1bbd7fe6e05fb9a0375a3bc07f5e))
+
 ## [5.2.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.0...v5.2.1) (2026-09-11)
 
 ### Fixed
