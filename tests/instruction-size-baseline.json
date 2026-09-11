@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 961201,
+  "total_bytes": 961450,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 7865,
     "pack/.claude/agents/devrites-devex-reviewer.md": 6438,
@@ -227,7 +227,7 @@
     "pack/.claude/skills/rite-vet/reference/depth.md": 4032,
     "pack/.claude/skills/rite-vet/reference/eng-lenses.md": 3590,
     "pack/.claude/skills/rite-vet/reference/review-axes.md": 9708,
-    "pack/.claude/skills/rite-vet/SKILL.md": 10843,
+    "pack/.claude/skills/rite-vet/SKILL.md": 11092,
     "pack/.claude/skills/rite-watch-pr/SKILL.md": 4145,
     "pack/.claude/skills/rite-zoom-out/SKILL.md": 3012,
     "pack/.claude/skills/rite/reference/menu.md": 3820,

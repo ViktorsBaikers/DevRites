@@ -83,7 +83,9 @@ plan declares a root-authored executable workflow file, read
    Do not rerun broad inventory or unaffected reviewers. Close the prior
    fingerprint only with discriminating evidence plus an explicit
    correction-created regression verdict on the touched invariants (acyclic
-   deps, traceability, contract proof, sizing). Otherwise record one no-progress outcome. A
+   deps, traceability, contract proof, sizing) and every region depending on a
+   changed clause — enumerate dependents via the dep graph and traceability
+   refs, not only patched sites. Otherwise record one no-progress outcome. A
    different Critical/Important invariant needs exact evidence and a new
    fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. Reconcile
    shared artifact/readiness gates and return to caller or next repair.
@@ -131,7 +133,8 @@ plan declares a root-authored executable workflow file, read
    per correction/fingerprint accounting (each checked individually with its
    accepted findings, changed paths/criteria, new identity, and recorded delta
    self-check); it must return an explicit correction-created regression
-   verdict, not only fingerprint closure. Within one correction, no broad
+   verdict over touched invariants plus every dependent of each changed clause
+   (dep-graph and traceability lookup), not only fingerprint closure. Within one correction, no broad
    third loop. If it changes plan, fold again. A closed input plus a distinct Critical/Important invariant returns
    that new fingerprint as progress. Then close matrix and rerun ID/meaning audit.
 8. **Build readback and readiness.** Add a cited five-line readback to
