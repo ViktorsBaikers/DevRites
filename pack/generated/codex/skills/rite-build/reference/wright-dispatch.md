@@ -83,4 +83,7 @@ Opt-in `$rite-build --parallel N` fans out only under [`parallel-batch.md`](para
    attempts is the limit; persist each and never dispatch a fourth related try.
 5. Reconcile returned reuse, conventions, principles, sources, assumptions,
    decisions, dead ends, follow-ups, gates, and touched files. Persist the
-   relevant facts in canonical artifacts, not the wholesale report.
+   relevant facts in canonical artifacts, not the wholesale report. A plan-gap
+   escalation without the checked-assumption list (verified|falsified) is
+   malformed; root sweeps the unchecked remainder per
+   [`spec-drift-guard.md`](spec-drift-guard.md) before repair.

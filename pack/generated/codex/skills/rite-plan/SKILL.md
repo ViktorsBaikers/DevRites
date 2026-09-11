@@ -79,6 +79,11 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
    require the drafter to apply `one-shot-actions.md` and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
    collision mutant. Past evidence loss is not terminal. The drafter supplies no bodies.
+   A repair candidate carries a delta self-check scoped to what the patch
+   touches: which intersected invariants it re-verified, with evidence of no
+   correction-created regression. Global re-derivation (ID/edge/HZN counts,
+   acyclicity) runs on materialized artifacts at the step-7 gate — the drafter
+   never re-derives them by exhaustive search.
    Bind exact active `.devrites/work/<slug>/` targets and executable contract; after Vet READY, root
    materializes the exact vetted workflow-artifact paths under
    [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
@@ -115,8 +120,9 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
    material assumption, or open blocking/escalating question routes `$rite-clarify`/HITL.
    Restore `CLEAR` only from current evidence.
 7. **Done when:** every slice is sized (builds + proves in one cycle; no slice scoring >3
-   left unjustified), the dependency order is acyclic, every `drift.md` entry you stopped for
-   is marked resolved, revised artifacts agree with each other, no source files changed in
+   left unjustified), the dependency order is acyclic, every open `drift.md` entry
+   was folded in one pass and marked resolved, the delta self-check is recorded,
+   revised artifacts agree with each other, no source files changed in
    `revise` mode, the marked action is complete, and every changed
    plan ends at `$rite-vet` rather than returning directly to build; horizon IDs stay stable,
    reclassifications cite evidence, and no unresolved item vanished. The `Shared contract proof`
@@ -127,6 +133,14 @@ When invoked inline by a controlling rite, return the completed Plan checkpoint
 to that caller so it can invoke Vet immediately. The phase boundary is not a
 user-facing stop unless a genuine HITL, safety/access, or exhausted-recovery
 condition was recorded.
+
+When invoked directly with no controlling caller and a planning artifact
+changed, become the caller for the mandated next step: record the return
+cursor, invoke `$rite-vet` inline, and consume its results — `NEEDS REPLAN`
+re-enters repair internally under the fingerprint caps; `NEEDS CLARIFICATION`
+and human-owned gates still reach the user. Stop only at Vet's boundary (READY
+readback; next step `$rite-build`). An unchanged plan keeps its recorded next
+step.
 
 > **Mid-flight discipline.** Do not change product behavior without confirmation or
 > absorb drift silently. See [`anti-patterns`](reference/anti-patterns.md).

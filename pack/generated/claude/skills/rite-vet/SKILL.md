@@ -52,10 +52,14 @@ plan declares a root-authored executable workflow file, read
 - Use the lowest axis band; never average or round thin to ready. Search before
   asking and resolve reversible technical choices. Ask only human-owned choices.
 - Preserve a valid technical return cursor. Agent-owned `NEEDS REPLAN` returns
-  internally to its caller, not to the human.
-- **Recovery recheck is bounded.** A valid cursor plus open fingerprint enters
-  Recovery recheck; it does not start another Full Vet or repeat unaffected
-  axes/reviewers.
+  internally to its caller, not to the human; on a direct invocation there is
+  no caller, so Vet becomes it — record the cursor and invoke `/rite-plan`
+  repair inline under the same fingerprint caps.
+- **Recovery recheck is bounded and batched.** A valid cursor plus open
+  fingerprints enters Recovery recheck; it does not start another Full Vet or
+  repeat unaffected axes/reviewers. One dispatch covers every open fingerprint
+  of the fold — each checked individually — with a mandatory correction-created
+  regression audit.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"plan declares root-authored executable workflow file","action":"emit exact admission; stale/missing authority uses PLAN_VET_REPAIR","return":"Vet READY cursor or exact technical replan"} -->
 ## Workflow
 
@@ -73,10 +77,13 @@ plan declares a root-authored executable workflow file, read
    required account blocks.
 1b. **Recovery recheck.** Require valid return cursor, accepted prior finding,
    exact fingerprint/reproduction, repaired candidate identity, changed
-   paths/criteria, and affected drift/evidence. Freeze that packet and dispatch
-   each exact owning reviewer once, fresh/read-only, limited to it. Do not rerun
-   broad inventory or unaffected reviewers. Close the prior fingerprint only
-   with discriminating evidence. Otherwise record one no-progress outcome. A
+   paths/criteria, affected drift/evidence, and the recorded delta self-check.
+   Freeze that packet and dispatch each exact owning reviewer once,
+   fresh/read-only, limited to it — all its open fingerprints in that dispatch.
+   Do not rerun broad inventory or unaffected reviewers. Close the prior
+   fingerprint only with discriminating evidence plus an explicit
+   correction-created regression verdict on the touched invariants (acyclic
+   deps, traceability, contract proof, sizing). Otherwise record one no-progress outcome. A
    different Critical/Important invariant needs exact evidence and a new
    fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. Reconcile
    shared artifact/readiness gates and return to caller or next repair.
@@ -119,11 +126,13 @@ plan declares a root-authored executable workflow file, read
    criterion needs positive, discriminating proof; every slice must be one-pass
    implementable; developer plans need a predicted scorecard. Durable commands
    are portable repository commands, not host wrappers.
-7. **Narrow recheck after edits.** Dispatch exact plan reviewer once per
-   correction/fingerprint (`per correction/fingerprint`) with accepted findings,
-   changed paths/criteria, and new
-   identity. Within one correction, no broad third loop. If it changes plan,
-   fold again. A closed input plus a distinct Critical/Important invariant returns
+7. **Narrow recheck after edits.** Dispatch the exact plan reviewer once per
+   fold — one dispatch covering every open fingerprint, preserving
+   per correction/fingerprint accounting (each checked individually with its
+   accepted findings, changed paths/criteria, new identity, and recorded delta
+   self-check); it must return an explicit correction-created regression
+   verdict, not only fingerprint closure. Within one correction, no broad
+   third loop. If it changes plan, fold again. A closed input plus a distinct Critical/Important invariant returns
    that new fingerprint as progress. Then close matrix and rerun ID/meaning audit.
 8. **Build readback and readiness.** Add a cited five-line readback to
    `eng-review.md` (artifacts.md §7 rows 1–5): outcome/ACs; IN/OUT/must-NOT; UI direction and architecture/
