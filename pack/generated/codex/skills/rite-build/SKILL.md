@@ -38,8 +38,10 @@ Wright applies anti-slop; root verifies returns and never patches source.
   single-slice isolation when `wright-dispatch.md` preflight + reconcile hold.
 - Exact feature scope only; reject out-of-allowlist diffs; record adjacent issues.
 - Never rerun an unchanged check; re-prove after edits.
-- Unplanned dependency/design-system/gap/repair → Vet/Spec Drift Guard. Ask only
-  for licensing/cost/security/product or explicit architecture-policy decisions.
+- Unplanned dependency/design-system/gap/repair → Vet/Spec Drift Guard batch
+  sweep: every contract-assumption violation recorded before one folded
+  repair+vet. Ask only for licensing/cost/security/product or explicit
+  architecture-policy decisions.
 - Root never edits product source/tests (`.devrites/` + Workflow Artifact only).
   Wright is sole product writer; extras in returned paths/`git diff --name-only` hard-stop.
 - Principles bind; irreversible conflict needs human exception or stop.
@@ -57,8 +59,8 @@ Wright applies anti-slop; root verifies returns and never patches source.
 
 Omitted/`1` ≡ serial; `2`–`10` → path-disjoint fan-out when eligible; else hard refuse.
 All-green serial integrate; one red/gap aborts. Abort with agent-owned plan
-gaps continues via Spec Drift Guard (plan repair + vet inline); do not emit a
-human `Fix`. AFK charges after integrate only. Running lease blocks another
+gaps continues via Spec Drift Guard (batch sweep, one folded plan repair + one
+vet recheck inline); do not emit a human `Fix`. AFK charges after integrate only. Running lease blocks another
 `$rite-build`. Details: `parallel-batch.md`.
 
 ## Execute and reply

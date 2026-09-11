@@ -24,12 +24,30 @@ other phases reference it here.
      YES, active-slice technical/tool failure → log it and use Build's bounded debug
        recovery. Do not ask for retry authorization and do not re-plan unless the
        durable remaining-work instructions are wrong.
-     YES, durable plan is wrong → log it, save the caller's return cursor, then
-       invoke `/rite-plan repair` and `/rite-vet` inline without a question and resume.
+     YES, durable plan is wrong → run the batch sweep below, log every
+       violation, save the caller's return cursor, then invoke `/rite-plan repair` and `/rite-vet` inline
+       without a question — ONE folded repair for all open entries, ONE
+       recheck for every open fingerprint — and resume.
      NO, product/policy/irreversible-risk decision → ask the user (format below).
 5. Never continue on a known-wrong durable plan. A repaired active-slice implementation
    may continue only after bounded recovery, returned-diff review, and proof gates pass.
 ```
+
+## Batch sweep (before repair)
+
+A durable-plan drift abort never repairs the first gap alone:
+
+1. Verify every remaining statically-checkable contract assumption against the
+   live repo — named paths, symbols/APIs/signatures, routes, commands, dependency
+   versions, contract artifacts. The wright's return names what it falsified;
+   check the rest yourself — existence checks are deterministic, no dispatch.
+2. Record each violation as its own `drift.md` entry/fingerprint; one folded
+   repair + one batched recheck resolves the set.
+3. A recheck-surfaced gap is a new fingerprint with its own budget — loop
+   internally, never hand an intermediate command to the human.
+4. Nothing skips or defers silently: every entry ends resolved, human-escalated,
+   or fingerprint-exhausted. Execution-only gaps (tests, UX, evidence) get the
+   identical path when they surface.
 
 ## User question format
 ```
@@ -50,7 +68,8 @@ human permission question. Re-plan only when the durable plan changed.
 
 ## Inline return contract
 
-The phase that detected agent-owned drift owns the whole backtrack. Preserve it
+The phase that detected agent-owned drift owns the whole backtrack, batch sweep
+included. Preserve it
 as `return_phase`/`return_next_action`; consume Plan and Vet's nested `STOP`
 boundaries internally; follow any vetted remediation required by the settled
 acceptance; then restore the cursor and resume the failed step. Do not hand an

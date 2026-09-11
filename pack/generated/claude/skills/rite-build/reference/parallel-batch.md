@@ -51,8 +51,9 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    per integrated sibling; optional `check candidate`.
 8. Cleanup: success removes worktrees/branches. Abort keeps them as repair
    inputs until the root consumes them: agent-owned plan gaps (AC unchanged)
-   follow [`spec-drift-guard.md`](spec-drift-guard.md) — `/rite-plan repair` then
-   `/rite-vet` inline, then cleanup and resume Build. Do not emit
+   follow [`spec-drift-guard.md`](spec-drift-guard.md) — batch-sweep all
+   siblings' contract assumptions, one folded `/rite-plan repair` + one
+   `/rite-vet` recheck inline, then cleanup and resume Build. Do not emit
    `Fix: /rite-plan repair`. Product/policy/irreversible-risk still stops.
 
 ## Engine verbs
