@@ -73,9 +73,11 @@ plan declares a root-authored executable workflow file, read
 1. **Select depth.** Apply `reference/depth.md` exactly; never skip. Every initial
    pass records an engineering verdict and test-plan coverage. A valid Recovery
    recheck retains prior depth and enters 1b.
-1a. **Independent initial pass.** Freeze candidate and dispatch exact fresh
-   read-only plan reviewer. Add developer-experience reviewer for developer
-   surfaces and current strategy reviewer after significant Temper. Missing
+1a. **Independent initial pass.** Freeze candidate and dispatch the exact fresh
+   read-only plan reviewer — plus developer-experience reviewer for developer
+   surfaces and the current strategy reviewer after significant Temper — in
+   parallel under `../devrites-lib/reference/parallel-dispatch.md`; they are
+   independent read-only passes on one frozen candidate. Missing
    required account blocks.
 1b. **Recovery recheck.** Require valid return cursor, accepted prior finding,
    exact fingerprint/reproduction, repaired candidate identity, changed
@@ -89,7 +91,16 @@ plan declares a root-authored executable workflow file, read
    changed clause — enumerate dependents via the dep graph and traceability
    refs, not only patched sites. Otherwise record one no-progress outcome. A
    different Critical/Important invariant needs exact evidence and a new
-   fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. Reconcile
+   fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. A packet
+   marked `convergence_pressure` accepts an explicit, bounded declared
+   residual/limitation folded into the contract text as closure for a finding
+   marked as a refinement of an already-pinned clause; the recheck may re-raise
+   it only by naming a concrete failure path the declaration omits. A
+   `new_failure_mode` finding is never residual-eligible. A fold whose
+   findings are all Suggestion-or-lower rechecks mechanically at the
+   materialization gate — anchors applied, mirrors consistent, invariants
+   pass — without a dispatched reviewer; sub-Important findings already
+   cannot keep recovery open. Reconcile
    shared artifact/readiness gates and return to caller or next repair.
 2. **Challenge scope.** Apply review-axes §0 and search accepted decisions.
    Harden to the smallest contract-complete plan, using marked topology action.
@@ -119,7 +130,10 @@ plan declares a root-authored executable workflow file, read
    consumer seam, or an explicit no-impact statement. Missing, one-sided,
    duplicated-contract, vague, or non-consuming proof fails closed.
 
-   Technical gaps are `NEEDS REPLAN` and Plan repair. Product/risk gaps are
+   Technical gaps are `NEEDS REPLAN` and Plan repair — each finding marks
+   itself `new_failure_mode` or names the already-pinned clause/fingerprint
+   it refines, making alias-detection and `convergence_pressure` eligibility
+   mechanical. Product/risk gaps are
    `NEEDS CLARIFICATION` and Clarify. Neither becomes a Build qid.
 5. **Review axes.** Apply `review-axes.md` through `eng-lenses.md`. Fold verified
    behavior-preserving technical findings; walk only human-owned decisions.

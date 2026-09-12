@@ -52,7 +52,9 @@ Follow [`reference/phase-contract.md`](reference/phase-contract.md)
 
 1. read workspace and final diff;
 2. recheck the canonical candidate/bindings and approved repository/CI proof;
-3. dispatch exact proof, spec, test, doubt, and applicable review agents;
+3. dispatch exact proof, spec, test, doubt, and applicable review agents in
+   parallel under `../devrites-lib/reference/parallel-dispatch.md` — independent
+   read-only verdicts on one frozen candidate;
 4. reconcile their read-only verdicts against source and immutable evidence;
 5. draft GO/NO-GO `seal.md` with acceptance, tests, decisions, and seven accounts;
 6. write exactly one candidate binding, then run

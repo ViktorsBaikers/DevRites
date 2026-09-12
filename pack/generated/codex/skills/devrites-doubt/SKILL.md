@@ -27,7 +27,7 @@ code · claiming "this is safe", "this scales", or "this matches the spec".
   issues but classify **zero** as actionable, the review is too agreeable. Sharpen the
   prompt or use a fresh reviewer. Accept a clean pass only after a genuine attempt to
   disprove the claim.
-- [ ] **5. STOP**: met a stop condition (only trivial findings, 3 cycles done, or user override). Emit a **binary gate verdict** the orchestrator must clear: **accept** (no valid-&-actionable findings remain) or **reject + the specific required changes**. On reject, the orchestrator loops the wright on those changes before the slice is accepted. Still reject after the 3-cycle cap → classify by decision ownership: human-owned product/risk uncertainty escalates; objective required changes become a technical blocker, never a retry-authorization question.
+- [ ] **5. STOP**: met a stop condition (only trivial findings, no open fingerprint has budget left, the distinct-findings ceiling, or user override). Emit a **binary gate verdict** the orchestrator must clear: **accept** (no valid-&-actionable findings remain) or **reject + the specific required changes**. On reject, the orchestrator loops the wright on those changes before the slice is accepted. Account per finding, not per round: a reject citing a genuinely new defect is progress and the loop continues; a reject re-citing a fingerprint the wright already failed on is no-progress and burns that fingerprint's budget. A finding that only refines a clause a prior cycle already pinned may close as an explicit bounded declared residual. Ceiling: three distinct actionable findings on one decision mean the decision resists repair — classify by decision ownership: human-owned product/risk uncertainty escalates; objective required changes become a technical blocker, never a retry-authorization question.
 
 ## Deletion-test lens (for "is this abstraction load-bearing?" doubts)
 
@@ -72,7 +72,8 @@ real time. Map the verdict to a `questions.md` entry instead of a synchronous pr
   `questions.md` entry with `gate: blocking`, set `state.md` `Status: awaiting_human`,
   fire the `notify:` hook, and STOP. AFK never silently accepts irreversible risk.
 
-The 3-loop limit still applies. After 3 cycles, human-owned uncertainty becomes a blocking
+The same bounds apply in AFK. Once no open fingerprint has budget left or the
+distinct-findings ceiling trips, human-owned uncertainty becomes a blocking
 question; an unresolved objective technical finding becomes `Status: blocked` with its exact
 required changes and `$rite-plan unblock`, regardless of AFK config.
 

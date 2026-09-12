@@ -77,7 +77,9 @@ Pull these via `Read` when the diff demands them:
    Separate contexts prevent one axis from masking the other:
    - Freeze that closed digest and give the same digest to **two** read-only reviewers in
      parallel, each with its own narrow brief and no
-     cross-pollination:
+     cross-pollination — and evaluate the frontend (step 4), security (step 5),
+     and performance (step 6) dispatch conditions from this same diff now,
+     joining the cohort when applicable rather than dispatching later waves:
      - **Spec axis** → `devrites-spec-reviewer`: "Apply your documented discipline on
        the active feature workspace + diff. Report (a) criteria the spec asked for that
        are missing or partial, (b) behaviour in the diff the spec did not ask for
@@ -112,17 +114,19 @@ Pull these via `Read` when the diff demands them:
    Add only what the dispatched agents could not, then resolve overlaps and
    contradictions before labeling. ([five-axis-review.md](reference/five-axis-review.md)
    documents the axes the code-review agent applies.)
-   - **UI feature?** Dispatch `devrites-frontend-reviewer` and apply the **UX rubric**
+   - **UI feature?** `devrites-frontend-reviewer` joins the step-3 cohort; apply the **UX rubric**
      ([nielsen-heuristics](reference/nielsen-heuristics.md)) and the
      **cognitive-load lens** ([cognitive-load](reference/cognitive-load.md),
      [performance-checklist](reference/performance-checklist.md)). No UI/route/style
      paths: record `Not-applicable: no relevant paths in diff`.
-5. **Security:** dispatch `devrites-security-auditor`
-   ([security-review](reference/security-review.md)) when input, auth, data,
+5. **Security:** `devrites-security-auditor`
+   ([security-review](reference/security-review.md)) joins the step-3 cohort when
+   input, auth, data,
    secrets, or permissions are in the diff; else `Not-applicable: no relevant paths in diff`.
-6. **Performance:** dispatch `devrites-performance-reviewer`
+6. **Performance:** `devrites-performance-reviewer`
    ([performance-review](reference/performance-review.md),
-   [performance-checklist](reference/performance-checklist.md)) only on a budget or
+   [performance-checklist](reference/performance-checklist.md)) joins the step-3 cohort
+   only on a budget or
    hot path; else `Not-applicable: no relevant paths in diff`.
 7. Reconcile and accept only in-scope fixes. Consolidate them into one bounded
    wright correction; never edit source in the reviewing context. Any correction

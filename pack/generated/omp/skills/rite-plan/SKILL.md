@@ -83,7 +83,32 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
    touches: which intersected invariants it re-verified, with evidence of no
    correction-created regression. Global re-derivation (ID/edge/HZN counts,
    acyclicity) runs on materialized artifacts at the step-7 gate — the drafter
-   never re-derives them by exhaustive search.
+   never re-derives them by exhaustive search. It also carries a bounded
+   self-attack over the delta (`self_attack_exposures`), catching the shallow
+   next-round findings before Vet's dispatch rather than after a full loop.
+   Root dispositions every exposure — fold as a finding, accept as a declared
+   residual, or reject with reason; none silently drops.
+   Packet mechanics: dedupe at assembly — findings with an identical
+   required-fix and site set merge into one entry that closes all their
+   fingerprints. The packet may carry digest-pinned site excerpts so the
+   drafter spot-verifies anchors instead of re-scanning whole files, and root
+   may partition findings into anchor-disjoint clusters with one drafter per
+   cluster in parallel — findings sharing any anchor or mirrored clause stay
+   in one cluster, and each bundle applies independently. A `partial`-
+   continuation re-dispatch continues the same packet; it does not advance the
+   same-seam counter. Count consecutive repair packets whose findings' cited clause sets overlap
+   the immediately previous packet's — the overlap is the seam. At the third
+   same-seam packet, mark it `convergence_pressure: true` with the seam named.
+   Under pressure the drafter may close a finding marked as a refinement of an
+   already-pinned clause by folding an explicit, bounded declared
+   residual/limitation into the contract text instead of another precision
+   pin — never for a `new_failure_mode` finding. Every finding still gets one
+   disposition; none is skipped. A fourth same-seam packet that still carries
+   `new_failure_mode` findings means the seam is under-specified, not
+   under-repaired: route a declare-limitation-or-continue choice to
+   `/rite-clarify`. AFK records the suspect seam in `state.md` and continues
+   within budgets — a coverage limitation is a product decision and is never
+   auto-declared.
    Bind exact active `.devrites/work/<slug>/` targets and executable contract; after Vet READY, root
    materializes the exact vetted workflow-artifact paths under
    [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)

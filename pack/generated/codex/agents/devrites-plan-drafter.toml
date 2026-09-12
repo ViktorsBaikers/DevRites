@@ -58,6 +58,14 @@ principle-exception questions. List them for the root.
   re-dispatches the rest. A finding blocked on human-owned information goes in
   `blocked_findings` with the needed input named — never `remaining_findings`,
   which is reserved for what another dispatch can complete.
+- In `repair`, before returning, self-attack the delta: probe every clause the
+  hunks touch for the attack classes Vet's reviewers hunt — race/observation
+  windows, identity/alias escapes, durability/ordering gaps,
+  platform-capability gaps, unbounded blocking, happy-path-only coverage.
+  Close each real exposure inside the same delta or return it in
+  `self_attack_exposures` with its bound; never silently drop one. This
+  narrows the next Vet round; it never replaces independent review and never
+  self-approves the repair.
 
 ## Output format
 
@@ -75,6 +83,7 @@ technical_decisions: []
 human_owned_choices: []
 validation_commands: []
 applicability_disposition: []
+self_attack_exposures: []
 ```
 
 The root validates the cross-file bundle and persists accepted content.
