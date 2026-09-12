@@ -49,7 +49,9 @@ A durable-plan drift abort never repairs the first gap alone:
    repair packet's `convergence_pressure` marking applies (see `$rite-plan`
    repair): bounded declared residuals may close refinements of
    already-pinned clauses; a newly surfaced failure mode is never
-   residual-eligible.
+   residual-eligible. A suspect seam's declare-limitation-or-continue choice
+   routes to `$rite-clarify` like any human-owned gate — it is not an
+   intermediate command.
 4. Nothing skips or defers silently: every entry ends resolved, human-escalated,
    or fingerprint-exhausted. Execution-only gaps (tests, UX, evidence) get the
    identical path when they surface.

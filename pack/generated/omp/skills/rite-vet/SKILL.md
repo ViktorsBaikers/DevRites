@@ -92,9 +92,9 @@ plan declares a root-authored executable workflow file, read
    fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. A packet
    marked `convergence_pressure` accepts an explicit, bounded declared
    residual/limitation folded into the contract text as closure for a finding
-   that refines an already-pinned clause; the recheck may re-raise it only by
-   naming a concrete failure path the declaration omits. A newly surfaced
-   failure mode is never residual-eligible. Reconcile
+   marked as a refinement of an already-pinned clause; the recheck may re-raise
+   it only by naming a concrete failure path the declaration omits. A
+   `new_failure_mode` finding is never residual-eligible. Reconcile
    shared artifact/readiness gates and return to caller or next repair.
 2. **Challenge scope.** Apply review-axes §0 and search accepted decisions.
    Harden to the smallest contract-complete plan, using marked topology action.
@@ -124,7 +124,10 @@ plan declares a root-authored executable workflow file, read
    consumer seam, or an explicit no-impact statement. Missing, one-sided,
    duplicated-contract, vague, or non-consuming proof fails closed.
 
-   Technical gaps are `NEEDS REPLAN` and Plan repair. Product/risk gaps are
+   Technical gaps are `NEEDS REPLAN` and Plan repair — each finding marks
+   itself `new_failure_mode` or names the already-pinned clause/fingerprint
+   it refines, making alias-detection and `convergence_pressure` eligibility
+   mechanical. Product/risk gaps are
    `NEEDS CLARIFICATION` and Clarify. Neither becomes a Build qid.
 5. **Review axes.** Apply `review-axes.md` through `eng-lenses.md`. Fold verified
    behavior-preserving technical findings; walk only human-owned decisions.
