@@ -19,6 +19,8 @@ DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). 
    IMPLEMENT → smallest complete version; match conventions; devrites-frontend-craft for UI
    VERIFY    → writer-safe tests/types/lint; return code + tests
 (DOUBT)   → orchestrator, on return: devrites-doubt each non-trivial decision the wright stood up
+            — dispatch the initial read-only reviews of distinct decisions in parallel
+            (independent claims, fresh contexts); wright fixes stay serial — writers share files
 PROVE     → root: required build/browser/E2E, then returned-diff/path review; fail-on-red
 RECORD    → orchestrator: after green verification, update state.md/evidence.md and
             upsert the authoritative candidate manifest from the actual scoped diff

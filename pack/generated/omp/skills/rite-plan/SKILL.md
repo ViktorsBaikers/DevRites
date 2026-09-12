@@ -88,7 +88,9 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
    next-round findings before Vet's dispatch rather than after a full loop.
    Root dispositions every exposure — fold as a finding, accept as a declared
    residual, or reject with reason; none silently drops.
-   Packet mechanics: the packet may carry digest-pinned site excerpts so the
+   Packet mechanics: dedupe at assembly — findings with an identical
+   required-fix and site set merge into one entry that closes all their
+   fingerprints. The packet may carry digest-pinned site excerpts so the
    drafter spot-verifies anchors instead of re-scanning whole files, and root
    may partition findings into anchor-disjoint clusters with one drafter per
    cluster in parallel — findings sharing any anchor or mirrored clause stay

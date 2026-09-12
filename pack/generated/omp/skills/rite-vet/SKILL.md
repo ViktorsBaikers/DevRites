@@ -73,9 +73,11 @@ plan declares a root-authored executable workflow file, read
 1. **Select depth.** Apply `reference/depth.md` exactly; never skip. Every initial
    pass records an engineering verdict and test-plan coverage. A valid Recovery
    recheck retains prior depth and enters 1b.
-1a. **Independent initial pass.** Freeze candidate and dispatch exact fresh
-   read-only plan reviewer. Add developer-experience reviewer for developer
-   surfaces and current strategy reviewer after significant Temper. Missing
+1a. **Independent initial pass.** Freeze candidate and dispatch the exact fresh
+   read-only plan reviewer — plus developer-experience reviewer for developer
+   surfaces and the current strategy reviewer after significant Temper — in
+   parallel under `../devrites-lib/reference/parallel-dispatch.md`; they are
+   independent read-only passes on one frozen candidate. Missing
    required account blocks.
 1b. **Recovery recheck.** Require valid return cursor, accepted prior finding,
    exact fingerprint/reproduction, repaired candidate identity, changed
