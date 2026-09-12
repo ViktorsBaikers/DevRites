@@ -104,9 +104,14 @@ Pull on demand:
    leave the plan/vet verdict untouched and set `Next step: /rite-prove`. Append
    `decisions.md` for any material call.
 7. **STOP.** Report units assessed, built / partial / absent counts, slices appended, and any
-   principle violation found; recommend `/rite-vet` when slices were appended (or
-   `/rite-prove` if the code already
-   converged).
+   principle violation found. A direct invocation that appended slices becomes
+   the caller for the mandated next step: save a return cursor
+   (`return_phase`/`return_next_action`) naming this Converge pass as the
+   caller, invoke `/rite-vet` inline, and consume its results — an agent-owned
+   `NEEDS REPLAN` routes to `/rite-plan` repair internally under the
+   fingerprint caps; its return lands here, never on the user. Stop only at
+   Vet's boundary (READY readback; next step `/rite-build` for the appended
+   slices). Nothing appended → recommend `/rite-prove`.
 
 ## Completion evidence (fail-closed)
 
