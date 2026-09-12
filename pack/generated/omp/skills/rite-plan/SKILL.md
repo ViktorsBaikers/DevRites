@@ -156,6 +156,10 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
 7. **Done when:** every slice is sized (builds + proves in one cycle; no slice scoring >3
    left unjustified), the dependency order is acyclic, every open `drift.md` entry
    was folded in one pass and marked resolved, the delta self-check is recorded,
+   packet-declared mechanical predicates are verified deterministically on the
+   materialized files (anchor occurrence counts, mirror-verbatim equality across
+   normative sites, byte caps, token-set preservation) — a dispatched reviewer
+   verifies semantics and dependent regressions, never string-equality,
    revised artifacts agree with each other, no source files changed in
    `revise` mode, the marked action is complete, and every changed
    plan ends at `/rite-vet` rather than returning directly to build; horizon IDs stay stable,

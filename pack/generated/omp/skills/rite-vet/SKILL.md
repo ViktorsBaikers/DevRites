@@ -100,7 +100,10 @@ plan declares a root-authored executable workflow file, read
    findings are all Suggestion-or-lower rechecks mechanically at the
    materialization gate — anchors applied, mirrors consistent, invariants
    pass — without a dispatched reviewer; sub-Important findings already
-   cannot keep recovery open. Reconcile
+   cannot keep recovery open. Mechanical predicates (anchor occurrence counts,
+   mirror-verbatim equality, byte caps, token-set preservation) are already
+   verified deterministically at Plan's materialization gate — the reviewer
+   verifies semantics and dependent regressions, never string-equality. Reconcile
    shared artifact/readiness gates and return to caller or next repair.
 2. **Challenge scope.** Apply review-axes §0 and search accepted decisions.
    Harden to the smallest contract-complete plan, using marked topology action.
