@@ -51,7 +51,9 @@ Before standing the interface, run `devrites-doubt`.
 ## Done when
 The contract is complete only when **every** field carries a type + optionality + unit,
 **every** success and error status code is enumerated with its error-body shape, the
-`devrites-doubt` verdict is accept (on reject: revise the contract and re-doubt), and the
+`devrites-doubt` verdict is accept (on reject: revise the contract and re-doubt under
+`devrites-doubt`'s per-fingerprint bounds and distinct-findings ceiling — a contract
+that resists repair becomes a blocker or human gate, not an endless revise loop), and the
 contract + rationale are recorded in `decisions.md`. A contract that pins only the
 happy-path shape is not done.
 
