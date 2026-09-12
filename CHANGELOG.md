@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.2.3](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.2...v5.2.3) (2026-09-12)
+
+### Fixed
+
+* **skills:** chain converge to vet instead of recommending it ([#64](https://github.com/ViktorsBaikers/DevRites/issues/64)) ([9c65e49](https://github.com/ViktorsBaikers/DevRites/commit/9c65e49ebfed3fb297ccef76da314a8728b0d0ba))
+
 ## [5.2.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.1...v5.2.2) (2026-09-11)
 
 ### Fixed
