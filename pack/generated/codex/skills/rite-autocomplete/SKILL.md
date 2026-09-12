@@ -83,9 +83,8 @@ executable controller/harness/bundle bytes or a missing writer, read
 3. **Arm AFK once.** Apply the loop's
    [one-write AFK contract](reference/loop.md#arm-afk-once): preserve valid
    existing bytes or create the bounded advisory-only sentinel once; never
-   rewrite it after Vet. Preserve an existing sentinel byte-for-byte. Touch
-   `.devrites/CHECKPOINT` so proven slices get local crash-survivable WIP
-   checkpoints for Ship to collapse. **Completion:** valid read-only AFK and checkpoint sentinels exist.
+   rewrite it after Vet. Preserve an existing sentinel byte-for-byte.
+   **Completion:** a valid read-only AFK sentinel exists.
 4. **Drive phases.** Follow [the loop](reference/loop.md): `$rite-spec` →
    `$rite-clarify` → `$rite-temper` → `$rite-define` → `$rite-vet` →
    `$rite-build` × pending slices → `$rite-prove` → `$rite-polish` →

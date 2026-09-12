@@ -115,5 +115,8 @@ func (r *runner) uninstall() error {
 	if exists(filepath.Join(r.target, ".devrites", "ACTIVE")) {
 		fmt.Fprintln(r.opts.Stdout, "  kept .devrites/ACTIVE (active-feature cursor)")
 	}
+	if exists(filepath.Join(r.target, ".scratch", "parallel-wt")) {
+		fmt.Fprintln(r.opts.Stdout, "  kept .scratch/parallel-wt/ (live parallel worktrees — inspect before removing)")
+	}
 	return nil
 }

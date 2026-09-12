@@ -140,6 +140,12 @@ func fail(stderr io.Writer, msg string, code int) int {
 	return code
 }
 
+// oneLine flattens an operator-supplied answer to a single line so it cannot
+// corrupt the questions.md field structure (answer: is a one-line field).
+func oneLine(s string) string {
+	return strings.Join(strings.Fields(s), " ")
+}
+
 func isDir(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
@@ -195,6 +201,7 @@ func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
 		return fail(stderr, "questions.md missing at "+qfile, 2)
 	}
 	ts := nowUTC()
+	answer = oneLine(answer)
 	target := regexp.MustCompile(`^## ` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)
 
 	updated, found, notOpen := rewriteQuestionFields(splitLinesNoTrailing(data), target, status, answer, ts)

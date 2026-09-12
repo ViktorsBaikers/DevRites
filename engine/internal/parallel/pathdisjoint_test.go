@@ -87,6 +87,27 @@ func TestCheckPathDisjointSymlinkRoot(t *testing.T) {
 	}
 }
 
+// A symlinked directory inside a claimed path must also be rejected: the
+// leaf Lstat alone misses it, and a worktree would then write outside itself.
+func TestCheckPathDisjointSymlinkedDir(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	target := filepath.Join(dir, "outside")
+	if err := os.MkdirAll(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(dir, "linkdir")); err != nil {
+		t.Skip("symlinks unavailable")
+	}
+	_, err := CheckPathDisjoint([]SlicePaths{
+		{ID: "a", Paths: []string{"linkdir/x.go"}},
+		{ID: "b", Paths: []string{"other.go"}},
+	}, dir)
+	if err == nil || !strings.Contains(err.Error(), "symlink") {
+		t.Fatalf("expected symlink error for symlinked dir, got %v", err)
+	}
+}
+
 func TestParseSlicesJSONShapes(t *testing.T) {
 	t.Parallel()
 	a, err := ParseSlicesJSON([]byte(`{"slices":[{"id":"a","paths":["x.go"]},{"id":"b","paths":["y.go"]}]}`))

@@ -113,8 +113,8 @@ func parallelUsage() string {
 Subcommands:
   create          --root --slug --batch --base --json
   record-green    --root --slug --slice --commit
-  abort           --root --slug [--force]
-  integrate       --root --slug [--apply-to-control] [--force]
+  abort           --root --slug
+  integrate       --root --slug [--apply-to-control]
   cleanup         --root --slug [--force]
   status          --root --slug
   lease-write     --root --slug --json
@@ -203,7 +203,11 @@ func parseFlags(args []string, stderr io.Writer) (flagSet, []string, int) {
 		case "--force":
 			f.Force = true
 		default:
-			return f, args[i:], ExitOK
+			// No parallel subcommand takes positional args; anything
+			// unrecognized (typo'd flag, stray word) is a usage error, not
+			// something to silently drop.
+			fmt.Fprintf(stderr, "parallel: unknown argument %q\n", a)
+			return f, nil, ExitUsage
 		}
 		i++
 	}
@@ -237,6 +241,9 @@ func cmdCreate(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if code := requireRootSlug(f, stderr); code != ExitOK {
 		return code
 	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
 	if f.Batch == "" || f.Base == "" || f.JSON == "" {
 		fmt.Fprintln(stderr, "usage: parallel create --root --slug --batch --base --json")
 		return ExitUsage
@@ -267,12 +274,30 @@ func cmdCreate(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	return ExitOK
 }
 
+// rejectUnsupportedFlags reports flags a subcommand parses but must not
+// silently ignore: --force only exists for cleanup, --apply-to-control only
+// for integrate.
+func rejectUnsupportedFlags(f flagSet, stderr io.Writer, force, applyToControl bool) int {
+	if f.Force && !force {
+		fmt.Fprintln(stderr, "parallel: --force is only supported by cleanup")
+		return ExitUsage
+	}
+	if f.ApplyToControl && !applyToControl {
+		fmt.Fprintln(stderr, "parallel: --apply-to-control is only supported by integrate")
+		return ExitUsage
+	}
+	return ExitOK
+}
+
 func cmdRecordGreen(args []string, stdout, stderr io.Writer) int {
 	f, _, code := parseFlags(args, stderr)
 	if code != ExitOK {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
 		return code
 	}
 	if f.Slice == "" || f.Commit == "" {
@@ -296,7 +321,10 @@ func cmdAbort(args []string, stdout, stderr io.Writer) int {
 	if code := requireRootSlug(f, stderr); code != ExitOK {
 		return code
 	}
-	lease, err := Abort(f.Root, f.Slug, f.Force)
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	lease, err := Abort(f.Root, f.Slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel abort: %v\n", err)
 		return ExitBlocked
@@ -313,11 +341,13 @@ func cmdIntegrate(args []string, stdout, stderr io.Writer) int {
 	if code := requireRootSlug(f, stderr); code != ExitOK {
 		return code
 	}
+	if code := rejectUnsupportedFlags(f, stderr, false, true); code != ExitOK {
+		return code
+	}
 	tip, lease, err := Integrate(IntegrateOpts{
 		Root:           f.Root,
 		Slug:           f.Slug,
 		ApplyToControl: f.ApplyToControl,
-		Force:          f.Force,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel integrate: %v\n", err)
@@ -335,9 +365,20 @@ func cmdCleanup(args []string, stdout, stderr io.Writer) int {
 	if code := requireRootSlug(f, stderr); code != ExitOK {
 		return code
 	}
-	if err := Cleanup(f.Root, f.Slug, f.Force); err != nil {
+	if code := rejectUnsupportedFlags(f, stderr, true, false); code != ExitOK {
+		return code
+	}
+	salvaged, err := Cleanup(f.Root, f.Slug, f.Force)
+	if err != nil {
 		fmt.Fprintf(stderr, "parallel cleanup: %v\n", err)
 		return ExitBlocked
+	}
+	for _, s := range salvaged {
+		fmt.Fprintf(stdout, "salvaged: slice=%s branch=%s commit=%s", s.SliceID, s.Branch, s.Commit)
+		if s.Worktree != "" {
+			fmt.Fprintf(stdout, " worktree=%s(kept)", s.Worktree)
+		}
+		fmt.Fprintln(stdout)
 	}
 	fmt.Fprintln(stdout, "cleanup: done")
 	return ExitOK
@@ -349,6 +390,9 @@ func cmdStatus(args []string, stdout, stderr io.Writer) int {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
 		return code
 	}
 	text, err := StatusReport(f.Root, f.Slug)
@@ -385,12 +429,16 @@ func cmdLeaseWrite(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 	if lease.CreatedAt == "" {
 		lease.CreatedAt = NowUTC()
 	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
 	path, err := LeasePath(f.Root, f.Slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel lease-write: %v\n", err)
 		return ExitUsage
 	}
-	if err := WriteLease(path, &lease); err != nil {
+	err = withLeaseLock(f.Root, f.Slug, func() error { return WriteLease(path, &lease) })
+	if err != nil {
 		fmt.Fprintf(stderr, "parallel lease-write: %v\n", err)
 		return ExitBlocked
 	}
@@ -404,6 +452,9 @@ func cmdLeaseRead(args []string, stdout, stderr io.Writer) int {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
 		return code
 	}
 	path, err := LeasePath(f.Root, f.Slug)
@@ -454,12 +505,15 @@ func cmdLeaseClear(args []string, stdout, stderr io.Writer) int {
 	if code := requireRootSlug(f, stderr); code != ExitOK {
 		return code
 	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
 	path, err := LeasePath(f.Root, f.Slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel lease-clear: %v\n", err)
 		return ExitUsage
 	}
-	if err := ClearLease(path); err != nil {
+	if err := withLeaseLock(f.Root, f.Slug, func() error { return ClearLease(path) }); err != nil {
 		fmt.Fprintf(stderr, "parallel lease-clear: %v\n", err)
 		return ExitBlocked
 	}
