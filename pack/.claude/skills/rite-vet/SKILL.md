@@ -94,7 +94,11 @@ plan declares a root-authored executable workflow file, read
    residual/limitation folded into the contract text as closure for a finding
    marked as a refinement of an already-pinned clause; the recheck may re-raise
    it only by naming a concrete failure path the declaration omits. A
-   `new_failure_mode` finding is never residual-eligible. Reconcile
+   `new_failure_mode` finding is never residual-eligible. A fold whose
+   findings are all Suggestion-or-lower rechecks mechanically at the
+   materialization gate — anchors applied, mirrors consistent, invariants
+   pass — without a dispatched reviewer; sub-Important findings already
+   cannot keep recovery open. Reconcile
    shared artifact/readiness gates and return to caller or next repair.
 2. **Challenge scope.** Apply review-axes §0 and search accepted decisions.
    Harden to the smallest contract-complete plan, using marked topology action.

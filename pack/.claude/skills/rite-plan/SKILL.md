@@ -86,7 +86,15 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    never re-derives them by exhaustive search. It also carries a bounded
    self-attack over the delta (`self_attack_exposures`), catching the shallow
    next-round findings before Vet's dispatch rather than after a full loop.
-   Count consecutive repair packets whose findings' cited clause sets overlap
+   Root dispositions every exposure — fold as a finding, accept as a declared
+   residual, or reject with reason; none silently drops.
+   Packet mechanics: the packet may carry digest-pinned site excerpts so the
+   drafter spot-verifies anchors instead of re-scanning whole files, and root
+   may partition findings into anchor-disjoint clusters with one drafter per
+   cluster in parallel — findings sharing any anchor or mirrored clause stay
+   in one cluster, and each bundle applies independently. A `partial`-
+   continuation re-dispatch continues the same packet; it does not advance the
+   same-seam counter. Count consecutive repair packets whose findings' cited clause sets overlap
    the immediately previous packet's — the overlap is the seam. At the third
    same-seam packet, mark it `convergence_pressure: true` with the seam named.
    Under pressure the drafter may close a finding marked as a refinement of an

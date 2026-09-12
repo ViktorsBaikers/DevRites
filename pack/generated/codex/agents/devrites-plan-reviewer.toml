@@ -102,7 +102,10 @@ criterion, slice, or proof.
 - `$rite-vet` may request one initial pass and one narrow recheck per correction/fingerprint.
 - Label each finding **Critical / Important / Suggestion / Nit / FYI** and include
   the relevant plan or task section, confidence score, and a concrete fix. Do not
-  pad the report with praise.
+  pad the report with praise. In a recheck, also mark each finding
+  `new_failure_mode` or name the already-pinned clause/fingerprint it refines —
+  the packet lists prior repairs; the mark makes alias-detection and
+  `convergence_pressure` eligibility mechanical.
 - When a dimension has no issue, say "strong: <why>" instead of inventing a
   finding.
 - If a claim cannot be verified, such as blast radius without an index, say so and
