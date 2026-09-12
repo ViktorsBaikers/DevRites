@@ -89,7 +89,12 @@ plan declares a root-authored executable workflow file, read
    changed clause — enumerate dependents via the dep graph and traceability
    refs, not only patched sites. Otherwise record one no-progress outcome. A
    different Critical/Important invariant needs exact evidence and a new
-   fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. Reconcile
+   fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. A packet
+   marked `convergence_pressure` accepts an explicit, bounded declared
+   residual/limitation folded into the contract text as closure for a finding
+   that refines an already-pinned clause; the recheck may re-raise it only by
+   naming a concrete failure path the declaration omits. A newly surfaced
+   failure mode is never residual-eligible. Reconcile
    shared artifact/readiness gates and return to caller or next repair.
 2. **Challenge scope.** Apply review-axes §0 and search accepted decisions.
    Harden to the smallest contract-complete plan, using marked topology action.

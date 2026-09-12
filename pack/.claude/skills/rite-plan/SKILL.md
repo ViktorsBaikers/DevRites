@@ -83,7 +83,17 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    touches: which intersected invariants it re-verified, with evidence of no
    correction-created regression. Global re-derivation (ID/edge/HZN counts,
    acyclicity) runs on materialized artifacts at the step-7 gate — the drafter
-   never re-derives them by exhaustive search.
+   never re-derives them by exhaustive search. It also carries a bounded
+   self-attack over the delta (`self_attack_exposures`), catching the shallow
+   next-round findings before Vet's dispatch rather than after a full loop.
+   Count consecutive repair packets whose findings cite the same clause
+   set/seam as the immediately previous packet; at the third same-seam
+   packet, mark it `convergence_pressure: true` with the seam named. Under
+   pressure the drafter may close a finding by folding an explicit, bounded
+   declared residual/limitation into the contract text instead of another
+   precision pin — only when the finding refines a clause already pinned by
+   a prior repair, never for a newly surfaced failure mode. Every finding
+   still gets one disposition; none is skipped.
    Bind exact active `.devrites/work/<slug>/` targets and executable contract; after Vet READY, root
    materializes the exact vetted workflow-artifact paths under
    [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)

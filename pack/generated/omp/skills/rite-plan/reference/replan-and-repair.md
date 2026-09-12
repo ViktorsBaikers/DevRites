@@ -32,10 +32,14 @@ A drift event stopped the build. Steps:
 3. Update `spec.md` (only the affected sections) and `plan.md`/`tasks.md` to match
    reality. Adjust acceptance criteria if they were wrong.
 4. Mark each `drift.md` entry **resolved** with the resolution + date.
-5. **Self-check the repaired candidate on the delta before handoff** — re-verify
-   every invariant the correction touched (acyclic dependency graph,
-   bidirectional traceability, Shared contract proof vs boundary set, sizing,
-   no correction-created regression) and record the evidence in the Plan
+5. **Self-check and self-attack the repaired candidate on the delta before
+   handoff** — re-verify every invariant the correction touched (acyclic
+   dependency graph, bidirectional traceability, Shared contract proof vs
+   boundary set, sizing, no correction-created regression), then probe the
+   delta against the reviewers' attack classes (race/observation windows,
+   alias escapes, ordering gaps, capability gaps, unbounded blocking,
+   happy-path-only coverage); fold a fix or a named bounded residual into
+   the same pass. Record both in the Plan
    checkpoint; Vet's recheck verifies it rather than rediscovering the defect a
    loop later.
 6. Resume at the corrected slice.

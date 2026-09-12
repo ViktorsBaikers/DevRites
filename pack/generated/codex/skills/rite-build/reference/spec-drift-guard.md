@@ -44,7 +44,12 @@ A durable-plan drift abort never repairs the first gap alone:
 2. Record each violation as its own `drift.md` entry/fingerprint; one folded
    repair + one batched recheck resolves the set.
 3. A recheck-surfaced gap is a new fingerprint with its own budget — loop
-   internally, never hand an intermediate command to the human.
+   internally, never hand an intermediate command to the human. When
+   consecutive folded repairs keep landing on the same clause set, the
+   repair packet's `convergence_pressure` marking applies (see `$rite-plan`
+   repair): bounded declared residuals may close refinements of
+   already-pinned clauses; a newly surfaced failure mode is never
+   residual-eligible.
 4. Nothing skips or defers silently: every entry ends resolved, human-escalated,
    or fingerprint-exhausted. Execution-only gaps (tests, UX, evidence) get the
    identical path when they surface.
