@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.2.4](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.3...v5.2.4) (2026-09-12)
+
+### Fixed
+
+* **skills:** bound repair-vet rounds via self-attack + convergence pressure ([#65](https://github.com/ViktorsBaikers/DevRites/issues/65)) ([a6e7410](https://github.com/ViktorsBaikers/DevRites/commit/a6e74104b94f91fbb67e0bf4e8d8b1a2242740f0))
+
 ## [5.2.3](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.2...v5.2.3) (2026-09-12)
 
 ### Fixed
