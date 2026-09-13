@@ -145,9 +145,9 @@ jobs:
   # self-provisions the host artifacts + engine CLI. The setup-go cache
   # (keyed on engine/go.mod + ci.yml) keeps those builds warm across runs;
   # the engine job primes the version-stamp patterns into the same snapshot.
-  # 12 shards keeps the long-pole shard under ~70s wall without dropping cases.
+  # 14 shards keeps the long-pole shard under ~70s wall without dropping cases.
   tests:
-    name: shell test suite (shard ${{ matrix.shard }}/12)
+    name: shell test suite (shard ${{ matrix.shard }}/14)
     needs: detect-changes
     # Docs-only skip via run_full; engine-only PRs skip shards via run_tests
     # (validate still runs). Job-level skip reports success for required checks.
@@ -162,7 +162,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -203,7 +203,7 @@ jobs:
           DEVRITES_WAI_PARALLEL_WORKERS: '4'
           DEVRITES_WAI_BOUNDARY_SHARDS: '6'
           DEVRITES_WAI_CORE_SHARDS: '4'
-        run: node scripts/run-tests.mjs --shard ${{ matrix.shard }}/12
+        run: node scripts/run-tests.mjs --shard ${{ matrix.shard }}/14
 
   engine:
     name: engine (go test + cross-compile)
