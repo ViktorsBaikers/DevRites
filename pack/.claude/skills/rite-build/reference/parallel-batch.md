@@ -59,12 +59,13 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    landed in control, so `parallel cleanup` removes worktrees/branches.
    Blocked/human-stopped batches keep lease, worktrees, branches — nothing is
    removed while the batch may resume. `parallel abort` + `cleanup --force`
-   is the explicit human discard path, never orchestrator-emitted; it
-   salvages each sibling first (uncommitted allowlisted changes → slice-branch
-   commit; branches past `B` kept; a failed salvage keeps the worktree) and
-   prints retained refs for the abort record. `abort` marks the lease only —
-   never rewinds control: a moved HEAD is external work, reported not reset.
-   Never integrate a rejected transfer commit.
+   abandons the batch — the explicit human discard path; the single
+   orchestrator-emitted use is the automatic re-batch under Repair rounds,
+   where it acts as the salvage step only (uncommitted allowlisted changes →
+   slice-branch commit; branches past `B` kept; a failed salvage keeps the
+   worktree) and prints retained refs for the record. `abort` marks the lease
+   only — never rewinds control: a moved HEAD is external work, reported not
+   reset. Never integrate a rejected transfer commit.
 
 ## Repair rounds
 
@@ -79,9 +80,19 @@ while budget remains.
   [`spec-drift-guard.md`](spec-drift-guard.md): batch-sweep contract
   assumptions, one folded `/rite-plan repair` + one `/rite-vet` recheck
   inline, resume repair in the same worktrees under the amended contract;
-  never emit `Fix:`. **Reviewer stall/cancel or missing verdict** →
-  re-dispatch the reviewer, not the wright. **Product/policy/irreversible**
-  → stops for the human.
+  never emit `Fix:`. **Frozen-lease scope defect** — the amended contract or
+  a review requirement needs paths outside a slice's allowlist, or re-slices
+  the plan (a lease is immutable once written: its allowlists are the
+  disjointness guarantee) → **automatic re-batch, no human gate**:
+  `parallel cleanup --force` as the salvage step, record the retained refs in
+  the repair-round artifact, `parallel create` a fresh batch from control
+  `HEAD` under the corrected decomposition. Prior attempts stay reachable —
+  hand each new wright the salvaged branch ref
+  (`devrites/parallel/<slug>/<old-batch>/<slice>`) so it builds on what worked
+  instead of starting blind. If no corrected decomposition exists, that is
+  exhaustion → blocked, preserve, STOP. **Reviewer stall/cancel or missing
+  verdict** → re-dispatch the reviewer, not the wright. **Product/policy/
+  irreversible** → stops for the human.
 - Dispatch a fresh `devrites-slice-wright` (cwd = the sibling's worktree, same
   allowlist and host rules as step 3 — siblings may repair in parallel) with
   the original contract + verbatim findings + "preserve what works; fix the
@@ -107,7 +118,8 @@ devrites-engine parallel record-green --root <repo> --slug <slug> --slice <id> -
 devrites-engine parallel integrate --root <repo> --slug <slug> --apply-to-control
 devrites-engine parallel status --root <repo> --slug <slug>
 devrites-engine parallel lease-write|lease-read|lease-clear --root <repo> --slug <slug>
-# human discard only, never orchestrator-emitted:
+# abandoning the batch is human discard only; a frozen-lease re-batch may emit
+# cleanup --force as its salvage step (see Repair rounds):
 #   parallel abort --root <repo> --slug <slug>
 #   parallel cleanup --root <repo> --slug <slug> --force   (salvages, prints retained refs)
 ```
