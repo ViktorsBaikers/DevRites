@@ -28,8 +28,8 @@ normalize_release_tag() {
   printf '%s\n' "$version" | LC_ALL=C grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$' || return 1
   prerelease="${version%%+*}"
   case "$prerelease" in
-    *-*) prerelease="${prerelease#*-}" ;;
-    *) prerelease="" ;;
+  *-*) prerelease="${prerelease#*-}" ;;
+  *) prerelease="" ;;
   esac
   if [ -n "$prerelease" ]; then
     printf '%s\n' "$prerelease" | awk -F. '{ for (i = 1; i <= NF; i++) if ($i ~ /^[0-9]+$/ && length($i) > 1 && substr($i, 1, 1) == "0") exit 1 }' || return 1
@@ -45,11 +45,11 @@ bounded_curl() {
   DOWNLOAD_FAILURE=""
   rm -f "$out" "$out.part"
   curl -fL --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 10 --max-time "$seconds" \
-    "$url" 2>/dev/null | head -c "$((limit + 1))" > "$out.part"
+    "$url" 2>/dev/null | head -c "$((limit + 1))" >"$out.part"
   pipeline_status=("${PIPESTATUS[@]}")
   curl_status="${pipeline_status[0]}"
   head_status="${pipeline_status[1]}"
-  bytes="$(wc -c < "$out.part" 2>/dev/null)" || {
+  bytes="$(wc -c <"$out.part" 2>/dev/null)" || {
     DOWNLOAD_FAILURE="local write"
     rm -f "$out.part"
     return 1
@@ -66,15 +66,19 @@ bounded_curl() {
   fi
   if [ "$curl_status" -ne 0 ]; then
     case "$curl_status" in
-      22) DOWNLOAD_FAILURE="HTTP status" ;;
-      28) DOWNLOAD_FAILURE="timeout" ;;
-      47) DOWNLOAD_FAILURE="redirect" ;;
-      *) DOWNLOAD_FAILURE="download" ;;
+    22) DOWNLOAD_FAILURE="HTTP status" ;;
+    28) DOWNLOAD_FAILURE="timeout" ;;
+    47) DOWNLOAD_FAILURE="redirect" ;;
+    *) DOWNLOAD_FAILURE="download" ;;
     esac
     rm -f "$out.part"
     return 1
   fi
-  mv "$out.part" "$out" || { DOWNLOAD_FAILURE="local write"; rm -f "$out.part"; return 1; }
+  mv "$out.part" "$out" || {
+    DOWNLOAD_FAILURE="local write"
+    rm -f "$out.part"
+    return 1
+  }
 }
 
 bounded_decompress() {
@@ -83,11 +87,11 @@ bounded_decompress() {
   limit="$3"
   DECOMPRESS_FAILURE=""
   rm -f "$out" "$out.part"
-  gzip -dc "$archive" 2>/dev/null | head -c "$((limit + 1))" > "$out.part"
+  gzip -dc "$archive" 2>/dev/null | head -c "$((limit + 1))" >"$out.part"
   pipeline_status=("${PIPESTATUS[@]}")
   gzip_status="${pipeline_status[0]}"
   head_status="${pipeline_status[1]}"
-  bytes="$(wc -c < "$out.part" 2>/dev/null)" || {
+  bytes="$(wc -c <"$out.part" 2>/dev/null)" || {
     DECOMPRESS_FAILURE="could not write bounded archive"
     rm -f "$out.part"
     return 1
@@ -107,7 +111,11 @@ bounded_decompress() {
     rm -f "$out.part"
     return 1
   fi
-  mv "$out.part" "$out" || { DECOMPRESS_FAILURE="could not write bounded archive"; rm -f "$out.part"; return 1; }
+  mv "$out.part" "$out" || {
+    DECOMPRESS_FAILURE="could not write bounded archive"
+    rm -f "$out.part"
+    return 1
+  }
 }
 
 verify_sha256() {
@@ -173,19 +181,31 @@ preflight_archive() {
 bootstrap_bundle() {
   script="install"
   case "${1:-}" in
-    install|update|uninstall)
-      script="$1"
-      shift
-      ;;
+  install | update | uninstall)
+    script="$1"
+    shift
+    ;;
   esac
   if [ "${DEVRITES_BOOTSTRAPPED:-0}" = "1" ]; then
     echo "error: bootstrap re-exec did not find pack/ - aborting to avoid a loop." >&2
     exit 1
   fi
-  command -v curl >/dev/null 2>&1 || { echo "error: curl is required for the network installer." >&2; exit 1; }
-  command -v gzip >/dev/null 2>&1 || { echo "error: gzip is required for the network installer." >&2; exit 1; }
-  command -v tar >/dev/null 2>&1 || { echo "error: tar is required for the network installer." >&2; exit 1; }
-  valid_repo "$DEVRITES_REPO" || { echo "error: DEVRITES_REPO must be an owner/repository name." >&2; exit 1; }
+  command -v curl >/dev/null 2>&1 || {
+    echo "error: curl is required for the network installer." >&2
+    exit 1
+  }
+  command -v gzip >/dev/null 2>&1 || {
+    echo "error: gzip is required for the network installer." >&2
+    exit 1
+  }
+  command -v tar >/dev/null 2>&1 || {
+    echo "error: tar is required for the network installer." >&2
+    exit 1
+  }
+  valid_repo "$DEVRITES_REPO" || {
+    echo "error: DEVRITES_REPO must be an owner/repository name." >&2
+    exit 1
+  }
   old_umask="$(umask)"
   umask 077
   BOOTSTRAP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/devrites-bootstrap.XXXXXX" 2>/dev/null)" || {
@@ -197,7 +217,10 @@ bootstrap_bundle() {
   trap 'exit 1' HUP INT TERM
   trap 'rm -rf "$BOOTSTRAP_DIR"' EXIT
   if [ -n "$DEVRITES_REF" ]; then
-    tag="$(normalize_release_tag "$DEVRITES_REF")" || { echo "error: DEVRITES_REF must be an exact semantic version." >&2; exit 1; }
+    tag="$(normalize_release_tag "$DEVRITES_REF")" || {
+      echo "error: DEVRITES_REF must be an exact semantic version." >&2
+      exit 1
+    }
   else
     metadata="$BOOTSTRAP_DIR/latest.json"
     bounded_curl "https://api.github.com/repos/$DEVRITES_REPO/releases/latest" "$metadata" "$BOOTSTRAP_MAX_METADATA" 30 || {
@@ -205,23 +228,53 @@ bootstrap_bundle() {
       exit 1
     }
     metadata_tag="$(sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$metadata" | head -n1)"
-    tag="$(normalize_release_tag "$metadata_tag")" || { echo "error: latest release did not provide an exact semantic version." >&2; exit 1; }
+    tag="$(normalize_release_tag "$metadata_tag")" || {
+      echo "error: latest release did not provide an exact semantic version." >&2
+      exit 1
+    }
   fi
   asset="devrites-$tag.tar.gz"
   archive="$BOOTSTRAP_DIR/$asset"
   sidecar="$archive.sha256"
   url="https://github.com/$DEVRITES_REPO/releases/download/$tag/$asset"
-  bounded_curl "$url" "$archive" "$BOOTSTRAP_MAX_ARCHIVE" 120 || { echo "error: release $tag asset $asset: ${DOWNLOAD_FAILURE:-download} failed." >&2; exit 1; }
-  bounded_curl "$url.sha256" "$sidecar" "$BOOTSTRAP_MAX_SIDECAR" 30 || { rm -f "$archive"; echo "error: release $tag asset $asset.sha256: ${DOWNLOAD_FAILURE:-download} failed." >&2; exit 1; }
-  verify_sha256 "$archive" "$sidecar" "$asset" || { rm -f "$archive" "$sidecar"; echo "error: release $tag asset $asset: checksum failed." >&2; exit 1; }
+  bounded_curl "$url" "$archive" "$BOOTSTRAP_MAX_ARCHIVE" 120 || {
+    echo "error: release $tag asset $asset: ${DOWNLOAD_FAILURE:-download} failed." >&2
+    exit 1
+  }
+  bounded_curl "$url.sha256" "$sidecar" "$BOOTSTRAP_MAX_SIDECAR" 30 || {
+    rm -f "$archive"
+    echo "error: release $tag asset $asset.sha256: ${DOWNLOAD_FAILURE:-download} failed." >&2
+    exit 1
+  }
+  verify_sha256 "$archive" "$sidecar" "$asset" || {
+    rm -f "$archive" "$sidecar"
+    echo "error: release $tag asset $asset: checksum failed." >&2
+    exit 1
+  }
   uncompressed="$BOOTSTRAP_DIR/devrites-$tag.tar"
-  bounded_decompress "$archive" "$uncompressed" "$BOOTSTRAP_MAX_UNCOMPRESSED" || { rm -f "$archive" "$sidecar"; echo "error: release $tag asset $asset: ${DECOMPRESS_FAILURE:-decompression failed}." >&2; exit 1; }
-  preflight_archive "$uncompressed" "$tag" || { rm -f "$archive" "$sidecar" "$uncompressed"; echo "error: release $tag asset $asset: archive preflight failed." >&2; exit 1; }
+  bounded_decompress "$archive" "$uncompressed" "$BOOTSTRAP_MAX_UNCOMPRESSED" || {
+    rm -f "$archive" "$sidecar"
+    echo "error: release $tag asset $asset: ${DECOMPRESS_FAILURE:-decompression failed}." >&2
+    exit 1
+  }
+  preflight_archive "$uncompressed" "$tag" || {
+    rm -f "$archive" "$sidecar" "$uncompressed"
+    echo "error: release $tag asset $asset: archive preflight failed." >&2
+    exit 1
+  }
   extract="$BOOTSTRAP_DIR/extract"
   mkdir "$extract" || exit 1
-  tar -C "$extract" -xf "$uncompressed" || { rm -rf "$extract"; echo "error: could not extract bounded DevRites tarball" >&2; exit 1; }
+  tar -C "$extract" -xf "$uncompressed" || {
+    rm -rf "$extract"
+    echo "error: could not extract bounded DevRites tarball" >&2
+    exit 1
+  }
   bundle="$extract/devrites-$tag"
-  [ -f "$bundle/$script.sh" ] || { rm -rf "$extract"; echo "error: extracted bundle is missing $script.sh" >&2; exit 1; }
+  [ -f "$bundle/$script.sh" ] || {
+    rm -rf "$extract"
+    echo "error: extracted bundle is missing $script.sh" >&2
+    exit 1
+  }
   chmod +x "$bundle/install.sh" "$bundle/uninstall.sh" "$bundle/update.sh" 2>/dev/null || true
   echo "DevRites: bootstrapped from $tag"
   export DEVRITES_BOOTSTRAPPED=1
@@ -235,25 +288,38 @@ if [ -z "$SELF_DIR" ] || [ ! -d "$SELF_DIR/pack" ]; then
 fi
 
 INSTALL_LIB="$SELF_DIR/scripts/install-lib.sh"
-[ -f "$INSTALL_LIB" ] || { echo "error: extracted bundle is missing scripts/install-lib.sh" >&2; exit 1; }
+[ -f "$INSTALL_LIB" ] || {
+  echo "error: extracted bundle is missing scripts/install-lib.sh" >&2
+  exit 1
+}
 . "$INSTALL_LIB"
 
-DR_ENGINE_PATH=""; DR_ENGINE_TMP=""
+DR_ENGINE_PATH=""
+DR_ENGINE_TMP=""
 trap dr_cleanup_engine EXIT
 trap 'exit 1' HUP INT TERM
-dr_acquire_engine "$SELF_DIR" install "$DEVRITES_REPO" || { echo "error: could not acquire devrites-engine (no usable installed binary and no matching verified release binary${DR_ACQUIRE_FAILURE:+; $DR_ACQUIRE_FAILURE})." >&2; exit 1; }
+dr_acquire_engine "$SELF_DIR" install "$DEVRITES_REPO" || {
+  echo "error: could not acquire devrites-engine (no usable installed binary and no matching verified release binary${DR_ACQUIRE_FAILURE:+; $DR_ACQUIRE_FAILURE})." >&2
+  exit 1
+}
 ENGINE="$DR_ENGINE_PATH"
 PAYLOAD="${DEVRITES_HOST_ARTIFACT_DIR:-$SELF_DIR/pack/generated}"
-if [ ! -d "$PAYLOAD/claude/skills" ] || [ ! -d "$PAYLOAD/codex/skills" ] \
-  || [ ! -d "$PAYLOAD/pi/skills" ] || [ ! -d "$PAYLOAD/pi/agents" ] \
-  || [ ! -d "$PAYLOAD/pi/prompts" ] \
-  || [ ! -f "$PAYLOAD/claude/skills/devrites-lib/reference/standards/agents.md" ] \
-  || [ ! -f "$PAYLOAD/codex/skills/devrites-lib/reference/standards/agents.md" ] \
-  || [ ! -f "$PAYLOAD/pi/skills/devrites-lib/reference/standards/agents.md" ] \
-  || [ ! -f "$PAYLOAD/codex/config.toml" ] || [ ! -f "$PAYLOAD/pi/AGENTS.md" ]; then
+if [ ! -d "$PAYLOAD/claude/skills" ] || [ ! -d "$PAYLOAD/codex/skills" ] ||
+  [ ! -d "$PAYLOAD/pi/skills" ] || [ ! -d "$PAYLOAD/pi/agents" ] ||
+  [ ! -d "$PAYLOAD/pi/prompts" ] ||
+  [ ! -f "$PAYLOAD/claude/skills/devrites-lib/reference/standards/agents.md" ] ||
+  [ ! -f "$PAYLOAD/codex/skills/devrites-lib/reference/standards/agents.md" ] ||
+  [ ! -f "$PAYLOAD/pi/skills/devrites-lib/reference/standards/agents.md" ] ||
+  [ ! -f "$PAYLOAD/codex/config.toml" ] || [ ! -f "$PAYLOAD/pi/AGENTS.md" ]; then
   BUILDER="$SELF_DIR/scripts/build-host-artifacts.sh"
-  [ -f "$BUILDER" ] || { echo "error: generated install payload missing at $PAYLOAD and builder missing at $BUILDER" >&2; exit 1; }
-  DEVRITES_HOST_ARTIFACT_DIR="$PAYLOAD" bash "$BUILDER" >/dev/null || { echo "error: could not generate install payload at $PAYLOAD" >&2; exit 1; }
+  [ -f "$BUILDER" ] || {
+    echo "error: generated install payload missing at $PAYLOAD and builder missing at $BUILDER" >&2
+    exit 1
+  }
+  DEVRITES_HOST_ARTIFACT_DIR="$PAYLOAD" bash "$BUILDER" >/dev/null || {
+    echo "error: could not generate install payload at $PAYLOAD" >&2
+    exit 1
+  }
 fi
 export DEVRITES_ENGINE_CLI="$ENGINE"
 "$ENGINE" install --source-dir "$SELF_DIR" --payload-dir "$PAYLOAD" "$@"

@@ -1,6 +1,6 @@
 ---
 name: rite-quick
-description: Express lane for a small reversible change: typo/copy/config, rate-limit constant, error message, local variable rename, feature flag, README link, one-file/function fix.
+description: "Express lane for a small reversible change: typo/copy/config, rate-limit constant, error message, local variable rename, feature flag, README link, one-file/function fix."
 argument-hint: "<what to change>"
 user-invocable: true
 ---

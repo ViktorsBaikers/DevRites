@@ -1,6 +1,6 @@
 ---
 name: rite-define
-description: Define the first build plan from an approved spec: architecture, task slices, traceability, and state. Use when turning approved intent into its initial plan.
+description: "Define the first build plan from an approved spec: architecture, task slices, traceability, and state. Use when turning approved intent into its initial plan."
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---

@@ -1,6 +1,6 @@
 ---
 name: rite-handoff
-description: User-invoked handoff writer: sync chat-only context into `.devrites/` and write a fresh-agent handoff.
+description: "User-invoked handoff writer: sync chat-only context into `.devrites/` and write a fresh-agent handoff."
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[what the next session will focus on]"

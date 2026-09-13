@@ -1,6 +1,6 @@
 ---
 name: rite-status
-description: User-invoked read-only active-feature report: phase, active slice, next action, evidence, open questions, drift, risks, and handoff readiness.
+description: "User-invoked read-only active-feature report: phase, active slice, next action, evidence, open questions, drift, risks, and handoff readiness."
 argument-hint: "[feature-slug]"
 user-invocable: true
 disable-model-invocation: true
