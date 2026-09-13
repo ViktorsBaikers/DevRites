@@ -4750,6 +4750,7 @@ def create_actual_delivery_repo(root: Path, full_generator: bool = False) -> dic
             "scripts/build-host-artifacts.sh",
             "scripts/codex-generate.sh",
             "scripts/omp-generate.sh",
+            "scripts/pi-generate.sh",
         ):
             destination = root / relative
             shutil.copy2(project / relative, destination)
