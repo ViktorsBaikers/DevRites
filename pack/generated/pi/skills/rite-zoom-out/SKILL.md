@@ -1,6 +1,6 @@
 ---
 name: rite-zoom-out
-description: User-invoked read-only structural map of unfamiliar code: modules, callers, callees, and relevant decisions.
+description: "User-invoked read-only structural map of unfamiliar code: modules, callers, callees, and relevant decisions."
 argument-hint: "[symbol | file | area to map]"
 user-invocable: true
 disable-model-invocation: true

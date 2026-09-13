@@ -56,7 +56,7 @@ gen_pi_markdown_file() {
     -e 's#verb dispatches to the matching `rite-<verb>` skill#verb invokes the matching `rite-<verb>` skill#g' \
     -e 's#the dispatch map only#the invocation map only#g' \
     -e 's#→ dispatch per the table above#→ invoke the matching skill per the table above#g' \
-    "$_src" > "$_out"
+    "$_src" >"$_out"
 }
 
 gen_pi_skill_file() {
@@ -88,15 +88,15 @@ _pi_map_tools() {
     _tok="${_tok%"${_tok##*[![:space:]]}"}"
     [ -z "$_tok" ] && continue
     case "$_tok" in
-      Read|read) _mapped="read" ;;
-      Edit|edit) _mapped="edit" ;;
-      Write|write) _mapped="write" ;;
-      Bash|bash) _mapped="bash" ;;
-      Grep|grep) _mapped="grep" ;;
-      Glob|glob) _mapped="find" ;;
-      LS|ls) _mapped="ls" ;;
-      Skill|skill) continue ;;
-      *) continue ;;
+    Read | read) _mapped="read" ;;
+    Edit | edit) _mapped="edit" ;;
+    Write | write) _mapped="write" ;;
+    Bash | bash) _mapped="bash" ;;
+    Grep | grep) _mapped="grep" ;;
+    Glob | glob) _mapped="find" ;;
+    LS | ls) _mapped="ls" ;;
+    Skill | skill) continue ;;
+    *) continue ;;
     esac
     _out="${_out}${_sep}${_mapped}"
     _sep=", "
@@ -129,7 +129,7 @@ gen_pi_agent() {
   _tools="$(_pi_map_tools "$_tools_raw" "$_name")"
   _desc_tmp="$TMP_GEN_DIR/pi-agent-desc-$(basename "$_src").txt"
   _desc_pi="$TMP_GEN_DIR/pi-agent-desc-$(basename "$_src").pi.txt"
-  printf '%s' "$_desc" > "$_desc_tmp"
+  printf '%s' "$_desc" >"$_desc_tmp"
   gen_pi_markdown_file "$_desc_tmp" "$_desc_pi"
   _desc="$(cat "$_desc_pi")"
   [ -n "$_desc" ] || _desc="DevRites custom agent."
@@ -144,10 +144,10 @@ gen_pi_agent() {
     printf '%s\n' "---"
     _body_tmp="$TMP_GEN_DIR/pi-agent-body-$(basename "$_src").md"
     _body_pi="$TMP_GEN_DIR/pi-agent-body-$(basename "$_src").pi.md"
-    awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; body=1; next} body{print}' "$_src" > "$_body_tmp"
+    awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; body=1; next} body{print}' "$_src" >"$_body_tmp"
     gen_pi_markdown_file "$_body_tmp" "$_body_pi"
     cat "$_body_pi"
-  } > "$_out"
+  } >"$_out"
 }
 
 # Write a pi prompt template that preserves the public /<name> command form.
@@ -166,12 +166,12 @@ gen_pi_prompt_stub() {
     [ -n "$_hint" ] && printf 'argument-hint: "%s"\n' "$(pi_yaml_escape "$_hint")"
     printf '%s\n' "---"
     printf 'Read and follow the DevRites skill at `.pi/skills/%s/SKILL.md`, applying it to: ${ARGUMENTS:-the current request}.\n' "$_name"
-  } > "$_out"
+  } >"$_out"
 }
 
 gen_pi_agents_bridge() {
   _out="$1"
-  cat > "$_out" <<'EOF'
+  cat >"$_out" <<'EOF'
 <!-- BEGIN DEVRITES PI -->
 ## DevRites For pi
 
