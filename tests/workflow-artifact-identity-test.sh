@@ -9010,13 +9010,14 @@ def _prepare_held_generator_view(repo_fd: int, stage_fd: int, stage_relative: st
                     "build-host-artifacts.sh",
                     "codex-generate.sh",
                     "omp-generate.sh",
+                    "pi-generate.sh",
                 ):
                     _copy_named_regular_file(src_scripts, dst_scripts, name)
             finally:
                 os.close(dst_scripts)
         finally:
             os.close(src_scripts)
-        for name in ("claude", "codex", "omp"):
+        for name in ("claude", "codex", "omp", "pi"):
             os.mkdir(name, 0o700, dir_fd=output_fd)
             host_fd = os.open(name, DIRECTORY_FLAGS, dir_fd=output_fd)
             try:
