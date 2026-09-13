@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.7.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.7.0...v5.7.1) (2026-09-13)
+
+### Fixed
+
+* **skills:** resolvable standard paths + faster CI ([#71](https://github.com/ViktorsBaikers/DevRites/issues/71)) ([426c3cd](https://github.com/ViktorsBaikers/DevRites/commit/426c3cd4776fcd84d3b061986874078bc572b625))
+
 ## [5.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.6.0...v5.7.0) (2026-09-13)
 
 ### Added
