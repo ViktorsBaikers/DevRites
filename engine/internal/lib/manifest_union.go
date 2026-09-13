@@ -55,13 +55,13 @@ func RunMergeManifest(root string, args []string, stdout, stderr io.Writer) int 
 		return 3
 	}
 
-	var predecessors []string
 	var manifests [][]candidateRow
 	if len(args) > 1 {
-		predecessors = args[1:]
-		manifests, err = explicitManifests(root, slug, predecessors)
+		manifests, err = explicitManifests(root, slug, args[1:])
 	} else {
-		predecessors, manifests, err = walkSequenceChain(root, slug, workspace)
+		// The walked chain is validated inside walkSequenceChain; only its
+		// manifests feed the union.
+		_, manifests, err = walkSequenceChain(root, slug, workspace)
 	}
 	if err != nil {
 		fmt.Fprintf(stderr, "merge-manifest: BLOCKED: %v\n", err)

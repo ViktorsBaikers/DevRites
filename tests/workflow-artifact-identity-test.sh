@@ -117,7 +117,7 @@ OUTSIDE_MANIFEST_CONTRACT_CELLS = (
     "stage, backups, proof-cache,\nmutation artifacts clean exactly",
 )
 LIVE_PROTECTED_SHA256 = {
-    ".gitignore": "659fcab79eda5931a2cf6f19a76a1178064bd26aa1271ff05e3de24ceefdb021",
+    ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
     ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
     ".devrites/work/workspace-observation/touched-files.md":
         "742b66d07324711ed6f0217e7ec32a654c831bc345ae9bed369aa69b420312ad",
