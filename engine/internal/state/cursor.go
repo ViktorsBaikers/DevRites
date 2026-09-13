@@ -12,15 +12,19 @@ import (
 // remain local to the cursor package; normalizeCursorKey still accepts legacy
 // presentation aliases at the text boundary.
 const (
-	CursorPhase              = "phase"
-	CursorStatus             = "status"
-	CursorNextAction         = "next_action"
-	CursorQuestionID         = "question_id"
-	CursorActiveSlice        = "active_slice"
-	CursorAFKSlicesRemaining = "afk_slices_remaining"
-	CursorReturnPhase        = "return_phase"
-	CursorReturnNextAction   = "return_next_action"
-	CursorSchema             = "schema"
+	CursorPhase                    = "phase"
+	CursorStatus                   = "status"
+	CursorNextAction               = "next_action"
+	CursorQuestionID               = "question_id"
+	CursorActiveSlice              = "active_slice"
+	CursorAFKSlicesRemaining       = "afk_slices_remaining"
+	CursorSequenceParent           = "sequence_parent"
+	CursorSequencePosition         = "sequence_position"
+	CursorSequenceWorkspacesRemain = "sequence_workspaces_remaining"
+	CursorSequenceRole             = "sequence_role"
+	CursorReturnPhase              = "return_phase"
+	CursorReturnNextAction         = "return_next_action"
+	CursorSchema                   = "schema"
 )
 
 var cursorKeyAliases = map[string]string{
@@ -273,7 +277,9 @@ func isMigratableCursorKey(key string) bool {
 func canonicalCursorSpelling(key string) (string, bool) {
 	normalized := normalizeCursorKey(key)
 	canonicals := []string{CursorPhase, CursorStatus, CursorNextAction, CursorQuestionID,
-		CursorActiveSlice, CursorAFKSlicesRemaining, CursorReturnPhase,
+		CursorActiveSlice, CursorAFKSlicesRemaining, CursorSequenceParent,
+		CursorSequencePosition, CursorSequenceWorkspacesRemain, CursorSequenceRole,
+		CursorReturnPhase,
 		CursorReturnNextAction, CursorSchema}
 	for _, canonical := range canonicals {
 		if normalized == normalizeCursorKey(canonical) {

@@ -1,6 +1,6 @@
 # Final evidence check
 
-Map every `spec.md` promise to fresh observed proof.
+Map spec promises to valid observed proof.
 
 ## Acceptance
 
@@ -11,7 +11,7 @@ inspection alone, and generic "tests pass" do not count.
 
 Apply [`testing.md`'s positive, discriminating proof](../../devrites-lib/reference/standards/testing.md#positive-discriminating-proof),
 including invalid-result exclusions and static/textual criterion boundaries.
-Unsupported behavioral claims remain unproven: NO-GO.
+Unproven behavior: NO-GO.
 
 ## Cross-check
 
@@ -25,11 +25,12 @@ recovery evidence or an evidence-backed dismissal; a generic green suite cannot 
 
 Run `devrites-engine check candidate <slug>` and require its digest to match the
 single evidence/review bindings and browser binding when present. Diff tests,
-dispatch exact `devrites-test-analyst`, run approved repository commands, then
-require the same candidate digest and no source mutation. Deleted/skipped/focused/
+dispatch exact `devrites-test-analyst`; apply
+[evidence validity](../../devrites-lib/reference/candidate-integrity.md#evidence-validity)
+to approved proof, then require unchanged digest/sources. Deleted/skipped/focused/
 weakened/tautological tests are Critical.
 
-After the native semantic verdicts are recorded in `seal.md`, run:
+After recording verdicts in `seal.md`, run:
 
 ```bash
 devrites-engine check seal "<slug>"

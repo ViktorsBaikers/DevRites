@@ -51,7 +51,36 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gate %s: %w", kind, err)
 	}
+	for _, problem := range unsanctionedRootFiles(observation) {
+		result.StateProblems = append(result.StateProblems, "placement: "+problem)
+		// Keep a more specific reason (readiness-stale) when the observation
+		// already blocked; only an otherwise-passing gate takes the generic one.
+		if !result.Blocked {
+			result.Blocked = true
+			result.ReasonID = ResultReasonID(kind, true)
+		}
+	}
 	return result, nil
+}
+
+// unsanctionedRootFiles blocks a workspace-root file the schema does not place
+// there and is over the packet ceiling. `packets/` owns by-reference dispatch
+// packets and admitted accounts (<= 64 KiB each) and `history/` owns relocated
+// narrative, so a large stray file in the root is misplaced payload — the shape
+// that let a real workspace reach 71 MB, 83% of it reviewer packets and traces
+// (see context-hygiene.md dispatch packets and its failing case).
+func unsanctionedRootFiles(observation *state.WorkspaceObservation) []string {
+	var problems []string
+	for _, file := range observation.RootFiles() {
+		if state.SanctionedRootFile(file.Name) || file.Bytes <= state.PacketMaxBytes {
+			continue
+		}
+		problems = append(problems, fmt.Sprintf(
+			"%s is %d bytes in the workspace root; move dispatch packets and accounts to packets/ (<= %d bytes each), closed narrative to history/ via /rite-plan revise, and never persist transcripts anywhere in .devrites/",
+			file.Name, file.Bytes, state.PacketMaxBytes,
+		))
+	}
+	return problems
 }
 
 func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Result, error) {
@@ -109,6 +138,28 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 			blocked = true
 		}
 	}
+	if len(missingFiles) == 0 {
+		for _, problem := range artifactBudgetProblems(observation, policy) {
+			stateProblems = append(stateProblems, "budget: "+problem)
+			blocked = true
+		}
+	}
+	// Deliberately not gated on missingFiles: a file over the read cap IS missing,
+	// so the budget comparison below can never reach it. Missing already blocks it;
+	// name the size remedies too so the signal is actionable rather than a bare cap.
+	for _, artifact := range policy.RequiredArtifacts {
+		fact, ok := observation.Fact(artifact)
+		if !ok {
+			continue
+		}
+		if diagnostic, has := fact.Diagnostic(); has && diagnostic.Code == state.DiagnosticFileTooLarge {
+			stateProblems = append(stateProblems, fmt.Sprintf(
+				"budget: %s exceeds the %d-byte artifact cap; relocate history (history/<file>-<YYYYMMDD>.md) or split the feature via /rite-plan revise|course-correct",
+				artifact, state.MaxArtifactBytes,
+			))
+			blocked = true
+		}
+	}
 	if len(missingFiles) == 0 && phaseRequiresReadinessBinding(policy) {
 		expected, bindingErr := verifyReadinessBinding(observation)
 		if bindingErr != nil {
@@ -140,6 +191,33 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 		result.ReasonID = reason.GateReadinessStale
 	}
 	return result, nil
+}
+
+// artifactBudgetProblems blocks a required artifact only on a material overshoot
+// (>= state.BudgetBlockFactor of a line or byte budget) with no structural
+// `Budget override:` line. Smaller overshoots stay advisory and are reported by
+// `orient`.
+func artifactBudgetProblems(observation *state.WorkspaceObservation, policy state.PhasePolicy) []string {
+	var problems []string
+	for _, artifact := range policy.RequiredArtifacts {
+		fact, ok := observation.Fact(artifact)
+		if !ok || fact.State() != state.ArtifactPresent {
+			continue
+		}
+		if !state.ArtifactBudgetGateApplies(string(artifact)) {
+			continue
+		}
+		status, ok := state.ArtifactBudget(string(artifact), fact.Bytes())
+		if !ok || !status.Material || status.Override {
+			continue
+		}
+		problems = append(problems, fmt.Sprintf(
+			"%s is %d lines/%d bytes, at or above %gx its %d-line/%d-byte budget; relocate history (history/<file>-<YYYYMMDD>.md) or split the feature via /rite-plan revise|course-correct, or record a structural `Budget override: <reason>` line",
+			status.File, status.Lines, status.Bytes, state.BudgetBlockFactor,
+			status.LineBudget, status.ByteBudget,
+		))
+	}
+	return problems
 }
 
 func acceptanceMapProblems(observation *state.WorkspaceObservation, policy state.PhasePolicy) []string {

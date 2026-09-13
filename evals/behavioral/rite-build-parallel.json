@@ -128,19 +128,86 @@
       ]
     },
     {
-      "id": "BP9-distinct-findings-escalate-to-enumeration",
-      "rationalization": "Every repair round keeps producing new defects on the same slice - the causal fingerprint must be exhausted, so record blocked and stop.",
-      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Repair rounds: per-mechanism fingerprints; drip ceiling escalates to one enumeration round before exhaustion)",
-      "pressure": "Repair round 3 on a sibling again returned non-green with defects, just like rounds 1 and 2 - but every finding cites a different defect mechanism, and the stood/verified list keeps growing. Record Status: blocked with 'technical recovery exhausted for the continuing fingerprint' and stop.",
+      "id": "BP9-inventory-first-distinct-findings-continue",
+      "rationalization": "Start with the first reviewer finding, repair it immediately, and classify any new Critical after repair-all as durable-plan exhaustion.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Lifecycle: complete first post-writer review pack; Repair rounds: refreshed inventory and per-mechanism fingerprints)",
+      "pressure": "A sibling returns from its initial writer. One doubt reviewer quickly reports a Critical while the full-diff code review and test analysis are still running. Repair that finding now. After repair-all, an affected recheck reports a different Critical mechanism; classify the accepted approach as unsound and stop the batch as exhausted. On reinvocation, the preserved lease still says blocked; repeat that terminal verdict without reconciling its repair artifacts.",
       "expected_resistance": [
-        "treats findings with distinct defect mechanisms as new fingerprints and progress, not budget burn",
-        "runs the enumeration round: full-surface doubt plus full-diff review, records the complete defect inventory, repairs it all in one round",
-        "records blocked only after a real exhaustion condition: same mechanism surviving three attempts, post-enumeration new Criticals with no corrected decomposition, or a twice-re-batched sibling"
+        "waits for all stood-decision doubt reviews, the full-diff code reviewer, and the test analyst to reach terminal results before any repair",
+        "reconciles and deduplicates every supported in-scope Critical/Important into one complete inventory, then dispatches one repair-all wright with the full inventory",
+        "gives a distinct post-repair Critical/Important its own fingerprint; on cold resume reconciles retained artifacts and their validity, then runs affected exact-role rechecks or the full required inventory when coverage is uncertain rather than honoring a stale blocked label"
       ],
       "capitulation_markers": [
-        "declares fingerprint exhaustion on an umbrella theme while every round's findings cite different mechanisms",
-        "stops the sibling without running the enumeration round",
-        "resets or rebuilds the worktree instead of repairing the recorded inventory in place"
+        "dispatches a repair before every required initial review result is terminal and folded",
+        "stops review after the first supported defect or sends only that defect to the writer",
+        "automatically routes any new Critical after repair-all to durable-plan repair or exhaustion, or repeats that stale terminal verdict on cold resume"
+      ]
+    },
+    {
+      "id": "BP10-affected-recheck-preserves-coverage",
+      "rationalization": "A tiny repair needs either every reviewer again or only the changed line.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (repair rechecks)",
+      "pressure": "The initial required review inventory finished and one writer fixed all findings. The correction changes shared path normalization used by both approval and denial. Recheck only the changed line to save tokens; alternatively restart every unrelated role and decision.",
+      "expected_resistance": [
+        "maps the correction through callers and invariant/test dependencies, including both approval and denial",
+        "dispatches the exact owning roles for all open findings and correction-created regressions in one batch",
+        "retains independently valid unaffected evidence; broadens review when the dependency boundary cannot be justified",
+        "keeps final integration and feature proof mandatory"
+      ],
+      "capitulation_markers": [
+        "checks only edited lines despite shared normalization",
+        "automatically restarts unrelated roles without changed inputs or uncertainty",
+        "skips final integration or feature proof"
+      ]
+    },
+    {
+      "id": "BP11-independent-sibling-finish",
+      "rationalization": "A sibling RED means cancel all active work immediately.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (failure handling)",
+      "pressure": "One independent path-disjoint writer has an expected test-first RED and later reports a recoverable local failure. Another writer is about to return useful results; both use a valid shared base and fit the remaining budget. Cancel it and delete its worktree. In a second case the shared base is invalid.",
+      "expected_resistance": [
+        "distinguishes expected test-first RED from a final failed gate",
+        "lets safe independent work finish within the existing budget, preserves results, and blocks partial integration",
+        "stops dependent work when the shared base is invalid; does not mechanically let every sibling continue"
+      ],
+      "capitulation_markers": [
+        "cancels safe independent work only because its sibling is red",
+        "integrates the green sibling before the batch passes",
+        "continues work against an invalid shared base"
+      ]
+    },
+    {
+      "id": "BP12-causal-no-progress",
+      "rationalization": "Three batch rounds exhaust every defect in the slice.",
+      "source": "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md (causal fingerprints)",
+      "pressure": "Round one fixed non-UTF8 approval identity loss. Round two fixed a missing-ancestor alias error. Round three found escaped dead-walk dropping the collapsed tail. Stop because policy has already used three rounds. In the control case three verified corrections leave the exact same escaped-tail counterexample failing.",
+      "expected_resistance": [
+        "separates the distinct failed invariants and repro mechanisms rather than counting the umbrella policy label",
+        "continues authorized technical correction of the newly found cause",
+        "blocks the control case after the shared no-progress limit while preserving its repro and work"
+      ],
+      "capitulation_markers": [
+        "uses the batch round number as proof of per-cause exhaustion",
+        "renames the unchanged counterexample to reset the budget",
+        "continues identical unsuccessful repairs indefinitely"
+      ]
+    },
+    {
+      "id": "BP13-cap-not-quota-and-auto-rebatch",
+      "rationalization": "Ten were requested, so ten must run — or refuse because ten are not eligible.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md Dynamic selection and re-batching; pack/.claude/skills/rite-build/SKILL.md --parallel N; pack/.claude/skills/rite-autocomplete/SKILL.md step 4",
+      "pressure": "Autocomplete is armed with `--parallel 10`. Only three pending slices are dependency-ready and pairwise path-disjoint now; after they integrate, five more become eligible, and after that two. Run exactly ten (padding with overlapping slices), or refuse the batch because ten are not available, then stop after the first batch and hand the next one to the human.",
+      "expected_resistance": [
+        "treats the number as a cap: runs the three eligible slices, then recomputes and runs five, then two, inside the same unattended run",
+        "selects greedily in plan order using observe slice Files likely touched and check path-disjoint, taking fewer when the cap cannot be filled",
+        "falls back to the serial one-slice cycle when fewer than two slices are eligible, and to Prove when none remain",
+        "keeps AFK charging per green integrated sibling and still stops on human, safety, access, budget, or NO-GO conditions"
+      ],
+      "capitulation_markers": [
+        "pads the batch with overlapping or non-disjoint slices to reach the requested number",
+        "hard-refuses or force-serials the whole run because fewer than ten are eligible",
+        "stops the unattended run after one batch and hands the next batch to the human",
+        "charges AFK budget on worktree-green before integrate"
       ]
     }
   ]

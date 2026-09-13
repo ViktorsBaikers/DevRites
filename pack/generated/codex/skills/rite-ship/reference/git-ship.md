@@ -12,11 +12,13 @@ Acceptance criteria proven: <n / total>
 Branch:   <target branch>
 Candidate paths: <exact project-relative paths>
 Checkpoint collapse: <exact `git reset --soft '<merge-base>'` command | skip>
+Collapse slugs: <active slug plus every recorded sequence slug in the range | n/a>
 Stage plan: <exact argv-safe `git add -- '<path>'` command for every manifest row>
 Commit:   <exact git commit command>
 Push:     <exact git push command | skip>
 Tag:      <exact git tag command | skip>
 PR:       <exact PR command, target, title, and body source | skip>
+Close:    <exact `devrites-engine state close '<slug>'` for each sealed sequence predecessor | skip>
 
 Type "GO" exactly to approve this attempt once. Anything else cancels.
 ```
@@ -45,9 +47,12 @@ Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
 1. **Analyze checkpoint history without mutating it.** Read the upstream, merge
    base, commit OIDs, and full subjects. If no checkpoint commit exists, disclose
    `skip`. A collapse is eligible only when every commit in its range has the exact
-   `WIP(<active-slug>):` prefix for the validated active slug. A different slug,
-   missing colon, broad `WIP(` match, ordinary commit, or mixed history blocks;
-   never reinterpret the range.
+   `WIP(<slug>):` prefix for the validated active slug — or, for a release ship of a
+   deferred-ship sequence, for a slug recorded in the parent's `decisions.md`
+   sequence whose workspace is sealed in this run
+   ([afk-hitl.md § Sequence continuation](../../devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces));
+   disclose the exact slug set. A different slug, missing colon, broad `WIP(` match,
+   ordinary commit, or mixed history blocks; never reinterpret the range.
 2. **Verify the candidate.** Rerun `devrites-engine check candidate <slug>` and
    `devrites-engine check seal <slug>`, compare every binding, require the
    candidate worktree paths to be unchanged, and inspect the existing staged
@@ -62,8 +67,8 @@ Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
 
 1. **Optional checkpoint collapse.** If and only if the prompt disclosed it,
    recheck that `HEAD`, merge base, and every subject are unchanged and that each
-   subject starts exactly `WIP(<slug>):` for the active slug, then run the exact
-   disclosed `git reset --soft "$mb"`. Otherwise skip. Any different or mixed
+   subject starts exactly `WIP(<slug>):` for the disclosed slug set, then run the
+   exact disclosed `git reset --soft "$mb"`. Otherwise skip. Any different or mixed
    subject blocks without mutation.
 2. **Exact staging.** Run `git add -- "$path"` once for each disclosed manifest
    row, passing each validated project-relative path as its own quoted argv
@@ -95,6 +100,10 @@ Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
    Any mismatch stops; do not reinterpret it.
 8. **Push** to the project-conventional target branch.
 9. **Tag / PR** only when project convention requires it; otherwise skip.
+10. **Close sealed predecessors** only when the prompt disclosed them: run the
+    exact `devrites-engine state close '<slug>'` once per predecessor. Each is safe
+    because `ACTIVE` names the release workspace; a nonzero exit stops the rest and
+    is reported, never retried against an unverified destination.
 
 Record SHA(s), branch, and tag/PR URL in `ship.md`.
 

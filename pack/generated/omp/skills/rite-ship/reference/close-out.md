@@ -5,8 +5,13 @@ deleted. DevRites keeps the audit trail; it just moves out of the live path.
 
 ## What close-out does
 
-1. **Mark done.** Set `state.md` → `Phase: done`, `Status: done`, and a `Next step`
-   of `/rite-spec <next feature>`.
+1. **Mark done.** Set `state.md` → `Phase: done`, `Status: done`, and a `Next step`.
+   When this workspace's `decisions.md` records an unfinished
+   [continuation sequence](../../rite-plan/reference/slicing.md#continuation-workspaces),
+   that step is the **exact** next command — `/rite-spec <parent>-<n> "<objective>"` —
+   and the ship reply prints the same line. Otherwise it stays
+   `/rite-spec <next feature>`. Nothing spawns the continuation automatically:
+   the recorded command is the handoff, so the human starts each increment knowingly.
 2. **Archive.** Run the deterministic script:
    ```bash
    devrites-engine state close <slug>
@@ -24,6 +29,15 @@ If clearing ACTIVE fails, the engine attempts to move the archive back; that rol
 can also fail. Inspect the actual live path, archive and cursor before reporting or
 retrying. Record the command/error and observed locations; never claim restored state
 from an attempted rollback or repeat a move against an unverified destination.
+
+## Sequence predecessors
+
+A deferred-ship sequence leaves earlier milestones sealed and unarchived in
+`.devrites/work/`. The release ship's disclosed plan may close them
+(`devrites-engine state close '<slug>'` per predecessor) after the release commit
+lands; each close is safe because `ACTIVE` names the release workspace. Closing is
+bookkeeping only: the release commit already carries their bytes, and their audit
+records move intact.
 
 ## Why archive, not delete
 

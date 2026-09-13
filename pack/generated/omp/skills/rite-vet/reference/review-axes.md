@@ -1,7 +1,7 @@
 # Vet review: scope, four axes, and outputs
 
-Run blocking §0, then the four axes and required outputs. Apply
-[`eng-lenses.md`](eng-lenses.md) throughout; calibrate every finding before presenting it.
+Run blocking §0, four axes, and outputs with [`eng-lenses.md`](eng-lenses.md);
+calibrate findings before presentation.
 
 Authority: `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
@@ -15,25 +15,28 @@ Authority: `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-r
 
 ## §0. Scope challenge (blocking gate)
 
-Before reviewing implementation details, check whether the plan includes more work than
-the settled spec requires.
+Before implementation review, check for work beyond the settled spec.
 
-1. **What exists?** Find existing code/flows for each sub-problem (use the index per
-   [`tooling.md`](../../devrites-lib/reference/standards/tooling.md)). Can the plan capture their outputs instead of building parallel work?
-   Reuse → extend → build new; list missed reuse.
+1. **What exists?** Find reusable code/flows via
+   [`tooling.md`](../../devrites-lib/reference/standards/tooling.md). Reuse → extend →
+   build new; list missed reuse instead of planning parallel work.
 2. **Minimum diff.** Find the smallest contract-complete change. Flag non-blocking work;
    use the marked action for topology cuts.
 3. **Complexity smell.** **>8 files** or **>2 new services/modules/classes** needs a justified
    complexity gate; otherwise harden to the smallest contract-complete plan. Use the
    marked action for topology reduction.
-4. **Built-in check.** For each new pattern/infra/concurrency approach, dispatch
-   `devrites-source-driven` to verify current framework/runtime support and cite it. Custom
+   **Feature ceiling.** A plan over the
+   [feature ceiling](../../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
+   (over-budget `tasks.md`/`plan.md` from slice or AC count) is a scope finding, not a
+   `Budget override`: route to `/rite-plan course-correct` (`MVP cut`) with the
+   continuation sequence named; do not vet the whole epic.
+4. **Built-in check.** For each new pattern/infra/concurrency approach, invoke
+   `devrites-source-driven` inline to verify current framework/runtime support and cite it. Custom
    work where a built-in suffices is a scope-reduction finding.
 5. **Completeness.** Find edge/error/test shortcuts; prefer the complete option when the
    extra work is small, and flag small savings that leave known gaps.
-6. **Distribution check.** If the plan introduces a new artifact (CLI binary, package, container,
-   deployable), does it include how it gets built / published / installed? If distribution is
-   deferred, say so explicitly in "NOT in scope": don't let it silently drop.
+6. **Distribution check.** New artifacts (binary/package/container/deployable) need
+   build/publish/install plans or explicit deferral in "NOT in scope".
 7. **Applicability check.** Compare `spec.md`'s topology/data/integration/security/delivery
    decisions with live seams. A false `not applicable` or an `applies` row without the
    focused standard's owner, failure/recovery, deployment order, and proof output is `broken`.
@@ -49,15 +52,18 @@ the settled spec requires.
 > **STOP discipline.** Fold technical reduction into the plan; ask and stop only for a
 > human-owned choice.
 
-If the smell does not trip, present the §0 findings and proceed to Axis 1.
+After justifying complexity or folding the contract-preserving reduction, present
+the §0 findings and proceed to Axis 1. A human-owned unresolved choice still pauses.
 
 ---
 
-## Four axes (one at a time, at most 8 findings each)
+## Four axes (complete inventory, bounded presentation)
 
 Fold verified technical findings into the plan; present each human-owned decision in one
 `AskUserQuestion` packet. Combine support only for one owner/trade-off. HITL pauses; AFK
 uses `depth.md`. Never invent findings.
+Report every supported Critical/Important before repair. Group duplicates; compact
+presentation never caps the inventory or hides the ninth substantive defect.
 
 ### 1. Architecture
 
@@ -137,6 +143,25 @@ Tag each finding `[severity] (confidence: N/10) <plan/task/spec ref> — finding
 
 Quote supporting lines. Without them confidence is ≤4 and suppressed; never inflate it.
 `devrites-plan-reviewer` follows this rule.
+
+## Finding kind: contract or mechanism
+
+Tag every Critical/Important `kind: contract` or `kind: mechanism`; root confirms the tag
+at reconciliation.
+
+- **contract** — a *guarantee* (acceptance, interface, boundary, ownership, data shape,
+  ordering/durability, failure outcome, dependency choice) an implementer could build
+  differently and still pass the planned tests → plan text → `NEEDS REPLAN` + Plan repair.
+- **mechanism** — *how* a pinned clause is achieved (syscall order, fsync/rename shape,
+  lock scope, retry shape, parser detail): a test discriminates the wrong implementation
+  → root adds one named case row to `test-plan.md` (input → observable outcome + the
+  mutant that must fail) plus its `traceability.md` ref, re-emits the readiness binding,
+  rechecks mechanically (anchor, ID parity). No Plan repair, no reviewer redispatch;
+  Build's RED test proves it. Prove in code, not in prose.
+
+Mechanism becomes `contract` only when the plan asserts the opposite mechanism or the
+clause is a public/shared seam. **Failing case:** round after round of prose pins on
+already-pinned clauses.
 
 ---
 

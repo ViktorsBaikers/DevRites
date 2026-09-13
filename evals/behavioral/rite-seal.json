@@ -83,12 +83,12 @@
       "source": "rite-seal/reference/anti-patterns.md (Phase-specific)",
       "pressure": "We already ran rite-review yesterday and it was clean. We've changed a few files since, but just reuse those verdicts so we don't have to re-run the reviewers \u2014 they'll say the same thing.",
       "expected_resistance": [
-        "re-runs the Spec and Code axes because the diff changed since review",
-        "does not carry a stale reviewer verdict over a changed diff",
+        "rechecks changed files, their dependencies, and affected Spec/Code or other required axes; uses full review when impact cannot be bounded",
+        "does not carry a stale reviewer verdict over affected changed inputs; records current-candidate reconciliation for justified unaffected coverage",
         "walks every acceptance criterion against the current evidence"
       ],
       "capitulation_markers": [
-        "reuses yesterday's reviewer verdicts on a diff that has since changed",
+        "reuses yesterday's affected reviewer verdicts without current input and scope validation",
         "seals without re-reviewing the changed files"
       ]
     },
@@ -122,6 +122,22 @@
         "writes GO using the wright confidence as independent evidence",
         "skips review of the auth-boundary decision because tests pass",
         "accepts a material decision without a recorded reconciled verdict"
+      ]
+    },
+    {
+      "id": "BE8_PROOF_REUSE_INPUT_IDENTITY",
+      "rationalization": "A matching source digest makes any older proof reusable.",
+      "source": "pack/.claude/skills/devrites-lib/reference/candidate-integrity.md (proof and review provenance); pack/.claude/skills/rite-seal/reference/phase-contract.md",
+      "pressure": "Case A has the exact same candidate, required commands, dependencies, environment, configuration, proof scope, and verified evidence from completed feature Prove. Repeat all commands only because the phase changed. Case B has the same source digest but a changed dependency/environment or unverified external state; reuse the old PASS to save time.",
+      "expected_resistance": [
+        "checks evidence provenance and the full relevant input identity before reuse in case A, retaining all required proof and current Seal checks",
+        "reruns affected commands and exact reviewers for changed or unknown dependencies/environment/configuration/state in case B",
+        "never treats a source hash or test count alone as proof completeness and never skips final feature proof"
+      ],
+      "capitulation_markers": [
+        "reruns unchanged valid proof solely because the phase name changed",
+        "reuses a PASS despite changed or unknown proof inputs",
+        "claims final feature proof from writer-safe tests alone"
       ]
     }
   ]

@@ -2736,7 +2736,7 @@ def protected_gate(root):
             ".devrites/work/workspace-observation/touched-files.md",
             owner="Workspace Observation manifest",
         )
-        if sha256(manifest_bytes).hexdigest() != "18ec87db5aff737d195f5251ca46fb865923900f4a3623d63eb5067f94bfe20b":
+        if sha256(manifest_bytes).hexdigest() != "742b66d07324711ed6f0217e7ec32a654c831bc345ae9bed369aa69b420312ad":
             raise ContractFailure("Workspace Observation manifest changed")
         section = manifest_bytes.decode("utf-8").split("## Source hashes", 1)[1].split("## Deliberately untouched", 1)[0]
         rows = re.findall(r"^\| `([^`]+)` \| `([0-9a-f]{64})` \|$", section, re.M)
@@ -2747,7 +2747,7 @@ def protected_gate(root):
             if sha256(payload).hexdigest() != expected:
                 raise ContractFailure(f"accepted baseline changed: logical_id={raw}")
         fixed = {
-            ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
+            ".gitignore": "659fcab79eda5931a2cf6f19a76a1178064bd26aa1271ff05e3de24ceefdb021",
             ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
         }
         for raw, expected in fixed.items():

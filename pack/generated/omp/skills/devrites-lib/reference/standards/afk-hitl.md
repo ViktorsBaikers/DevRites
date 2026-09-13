@@ -59,6 +59,9 @@ expires_at: "<ISO-8601 UTC timestamp>" # absolute unattended-authority expiry
 # max_cost_usd: 10                   # optional stricter host-observed cost cap
 notify: "ntfy.sh/my-topic"           # shell command; examples: rite-build/reference/afk-discipline.md
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
+continue_sequence: true              # after Seal GO, open the next recorded continuation
+max_workspaces: 5                    # workspaces one armed sequence may open
+max_parallel: 10                     # cap on eligible path-disjoint Build batches (1 = serial)
 ```
 
 The file is **read-only config**: never rewritten in place. `max_slices` is the initial
@@ -78,6 +81,49 @@ sentinel. It uses the minimum of pending work and every configured/explicit cap.
 existing counter may be lowered but never increased or reinitialized. Once present, that state
 counter is the effective remaining budget even when the read-only sentinel omits
 `max_slices`.
+
+### Sequence continuation (`continue_sequence`, `max_workspaces`)
+
+`continue_sequence: true` lets one armed run open the next **recorded** continuation
+after a `Seal GO` instead of stopping. Absent means `1` — the current workspace only;
+an existing sentinel never receives the default implicitly. `max_workspaces` is the
+sequence budget (nonnegative decimal, fail closed): spend one when a new workspace is
+opened, never when resuming the current one. `max_slices` stays **per workspace** —
+each new workspace's `state.md` seeds its own `afk_slices_remaining`.
+
+The chain lives in root-owned `state.md` cursor fields, not in chat:
+`sequence_parent` (the immediately preceding workspace slug), `sequence_position`
+(1-based ordinal), `sequence_workspaces_remaining` (slots the chain may still
+open after this workspace), and — on the release milestone only —
+`sequence_role: release`. Seeding is exactly-once because the values are
+derived, not remembered: a continuation's fields are computed from its recorded
+parent and the parent's counter at creation, and a resumed run that finds a
+continuation workspace missing the fields re-derives the same values from its
+`brief.md` parent/position plus the parent's counter — never a second charge. A
+workspace without a recorded parent/position is not a sequence member; the
+counter only decreases, malformed values fail closed, and `0` opens nothing.
+`sequence_role: release` makes `check candidate` and `check seal` require the
+candidate manifest to cover the whole recorded chain — run
+`devrites-engine state merge-manifest <slug>` before Prove.
+
+- Only continuations recorded in the parent's `decisions.md` sequence
+  ([slicing.md § Continuation workspaces](../../../rite-plan/reference/slicing.md#continuation-workspaces))
+  qualify; no recorded next entry, or the cap/expiry/review-queue bound reached, stops
+  with the winning reason.
+- Milestones are **not** shipped: they stay sealed and unarchived in `.devrites/work/`
+  with `Next step: /rite-ship` preserved. Per-slice `WIP(<slug>)` checkpoints still
+  land locally ([checkpoint.md](../../../rite-build/reference/checkpoint.md)), so the tree
+  stays clean and crash-safe.
+- Git stays human-gated. The release ship is one disclosed plan, one literal `GO`, and
+  one native approval; it collapses the sequence's `WIP` commits into the single
+  release commit and may archive the sealed predecessors.
+- Every human-owned, safety, access, exhaustion, and `NO-GO` condition still stops the
+  run exactly as without this field.
+
+`max_parallel` caps a Build batch for unattended runs; `1` forces the serial cycle.
+Unattended runs take the largest eligible set ≤ cap and recompute after every integrate
+([parallel-batch.md § Dynamic selection and re-batching](../../../rite-build/reference/parallel-batch.md#dynamic-selection-and-re-batching));
+an explicit `/rite-build --parallel N` cap wins for that invocation.
 
 ## Unattended resource envelope
 
@@ -258,65 +304,72 @@ When `/rite-resolve` does resume a stopped session, the skill does **not** auto-
 
 ## AFK exception for discretionary pauses
 
-`devrites-doubt` and similar skills that "ask the user" follow this rule when
-`.devrites/AFK` exists:
+With `.devrites/AFK`, apply decision ownership first. Accepted in-scope technical
+corrections return to the caller for repair/verification; severity blocks acceptance,
+not authorized repair. Never silently accept a defect or broaden existing approval.
 
-Ceiling comparison order: Suggestion/Nit/FYI < Important < Critical; gates advisory <
-validating < blocking < escalating; a finding is ≤ the ceiling when its severity's gate
-class (Suggestion/Nit/FYI→advisory, Important→validating, Critical→blocking) is at or
-below the slice's gate.
+Discretionary ceilings apply only to
+human-owned trade-off/risk decisions; accepted technical corrections do not enter
+these branches. Compare Suggestion/Nit/FYI→advisory, Important→validating,
+Critical→blocking against advisory < validating < blocking < escalating:
 
-- Finding severity ≤ slice's gate ceiling (slice's `Gate:` plus `.devrites/AFK`
-  `allow_gates`) → log to `questions.md` as `gate: advisory`, record the trade-off in
-  `decisions.md`, proceed.
-- Finding severity > gate ceiling, OR finding touches the irreversible-risk list →
-  log to `questions.md` as `gate: blocking`, set `state.md` `Status: awaiting_human`,
-  fire `notify:`, STOP.
+- Within the slice's `Gate:` and `.devrites/AFK` `allow_gates`: record advisory in
+  `questions.md`, trade-off in `decisions.md`, proceed.
+- Above ceiling, missing authority, or unapproved irreversible risk: record blocking
+  question, `Status: awaiting_human`, fire `notify:`, STOP.
 
-The loop limits of the calling skill still apply. At the limit, classify the unresolved
-finding by the decision-ownership rule above: human-owned uncertainty becomes a blocking
-question; an objective technical finding becomes a recorded blocker with its required
-changes, not a request for permission to retry.
+Recovery uses only the [retry contract](#retry-cap-no-progress-loops-and-self-resolve).
 
 ## Retry cap, no-progress loops, and self-resolve
 
-- **Fingerprint the failed invariant, not the review round.** An exact causal
-  fingerprint is the owning gate/invariant plus its minimal reproduction and
-  decisive failure signal. A new DEC/DRIFT number, changed line number, reviewer
-  wording, or splitting one finding does not create a new fingerprint.
+Owns all phase recovery, including Doubt/Vet/serial/parallel Build. Resource,
+access, safety and irreversible-action boundaries independently stop work.
+
+- **Fingerprint the failed invariant, not the review round.** Identify owning
+  invariant + defect mechanism + minimal reproduction/decisive failure signal.
+  DEC/DRIFT IDs, line numbers, wording and splitting one cause create no new budget.
 - **Cap no-progress retries:** three no-progress attempts per exact causal fingerprint
-  across wright and recovery is a hard cap. Only a repair whose narrow recheck
-  leaves that fingerprint open or reproduces the same decisive failure consumes
-  an attempt. Closing a prior finding with discriminating evidence is progress:
-  mark that fingerprint resolved and do not charge it as no-progress. A genuinely
-  new Critical or Important finding with a different failed invariant and exact
-  evidence gets its own fingerprint and budget; Suggestion, Nit, FYI, or renamed
-  evidence cannot open, reset, or extend recovery.
-- **Separate consumptive authority from recovery.** Spending a one-shot action's
-  authorization forbids another real execution but does not consume the offline
-  recovery budget for a newly evidenced fingerprint. The retained artifact starts
-  caller-owned diagnosis and correction immediately; only the next consumptive
-  execution waits for fresh authorization.
-- **Persist accounting in existing records.** Record each fingerprint,
-  reproduction, attempted correction, `progress: resolved|no-progress`, and
-  decisive result in `drift.md` and `evidence.md`. Cold resume derives the count
-  from those records. There is no recovery counter file or command.
-- **Reconcile before honoring a terminal cursor.** A persisted distinct
-  Critical/Important fingerprint with retained evidence and fewer than three
-  recorded no-progress corrections still has recovery budget, even when an older
-  `state.md` says `Next step: none`. Resume it; do not treat session age or the
-  prior action's spent authorization as exhaustion.
+  across wright/recovery. Only a correction whose narrow recheck leaves that cause
+  open or reproduces its failure consumes an attempt.
+  Closing a prior finding with discriminating evidence is progress: resolve it,
+  do not charge. A new Critical or Important finding gets its own budget only for
+  a distinct evidenced cause. The same invariant with a different evidenced mechanism qualifies;
+  renaming/splitting an unchanged cause does not. Suggestion/Nit/FYI cannot extend
+  recovery. Initial discovery and expected test-first RED are not corrections;
+  total rounds, re-batches and distinct-finding counts never exhaust recovery.
+- **Rechecks are scoped; late findings never reopen the round.** *Late* applies only
+  from a phase's **second** review pass (Vet 1b, Build's recheck after the first repair,
+  Review step 7); an initial pass has no late findings and every supported finding is
+  folded normally. A recheck packet
+  names the open fingerprints, the correction diff, and the dependents of each
+  changed clause/hunk; the owning reviewer's verdict covers exactly that. A finding
+  on text/code unchanged since that role's previous pass is *late*: Critical with a
+  concrete failure path → new fingerprint under this budget; otherwise recorded
+  (Plan/Vet: `eng-review.md` `## Deferred findings`; Build: `touched-files.md`
+  `## Review trail`) with severity · site · role · kind · round, and consumed by the
+  next full-inventory gate (Vet `mechanism` → one `test-plan.md` proof row; Build →
+  the `/rite-review` roster) — never by another repair round in this phase. Review
+  closes every deferred row with a labeled verdict; Seal blocks on any without one.
+  **Failing case:** round 4 finds three Important items on clauses untouched since
+  round 1 and dispatches another repair.
+- **Separate consumptive authority from recovery.** Spent one-shot authorization
+  blocks another execution, not offline recovery. Retained evidence starts caller-owned
+  diagnosis/correction immediately; the next consumptive execution needs fresh authority.
+- **Persist existing records.** Put fingerprint, reproduction, correction,
+  `progress: resolved|no-progress` and decisive result in `drift.md` and `evidence.md`.
+  Cold resume derives counts there; no new counter file/command.
+- **Reconcile terminal cursors.** Retained distinct Critical/Important evidence below
+  cap resumes despite stale `Next step: none`; age/spent action authority is not exhaustion.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"unattended root reaches current admitted Workflow Artifact work","action":"invoke classifier; execute returned route without wright/slice charge","return":"saved lifecycle phase/action; no intermediate reply"} -->
-- **Classify exhaustion:** human-owned contract/risk/access gaps open their gate. Otherwise
-  preserve reproduction/dead ends, set `Status: blocked` and `Next step: none — technical recovery exhausted; requires new evidence or changed failure conditions`.
-  Do not emit `/rite-plan unblock`, another phase command, a question, or
-  `/rite-resolve`. Reinvocation with the unchanged fingerprint remains blocked
-  and never resets the retry cap.
-- **Resolve agent-owned questions first.** Before raising a question, try to answer it from the code, the docs,
-  or `decisions.md`. Communicate only for a blocked environment, a deliverable to hand over,
-  critical info you genuinely can't access, or a credential / permission you lack — never for
-  writing code, writing tests, or reviewing; the agent's own work is not a valid human gate.
-  This narrows needless pauses and never weakens the blocking / escalating / irreversible gates.
+- **Classify exhaustion:** human-owned contract/risk/access gaps open their gate.
+  Otherwise preserve reproduction/dead ends, set `Status: blocked` and
+  `Next step: none — technical recovery exhausted; requires new evidence or changed failure conditions`.
+  Emit no phase command, retry-permission question or `/rite-resolve`.
+  Reinvocation with unchanged cause stays blocked; it never resets the cap.
+- **Resolve agent-owned questions first** from code/docs/decisions. Human communication
+  is for blocked environment, handover, inaccessible critical information or missing
+  credentials/permission—not writing, testing or review. Blocking/escalating/
+  irreversible gates remain.
 
 ## What the rule does NOT cover
 

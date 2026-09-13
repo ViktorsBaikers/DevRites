@@ -147,6 +147,18 @@ There is no recovery-counter artifact. The caller and recovery loop count at
 most three failed attempts per causal fingerprint from current context and the
 recorded `## Dead ends` / `evidence.md`, then stop before a fourth.
 
+For a deferred-ship continuation chain (`.devrites/AFK` `continue_sequence`),
+three optional cursor fields carry the chain: `sequence_parent` (the immediately
+preceding workspace slug), `sequence_position` (1-based ordinal), and
+`sequence_workspaces_remaining` (slots the chain may still open). The controlling
+root seeds them once per continuation workspace from the recorded parent and the
+parent's counter; values only decrease, malformed values fail closed, and a
+workspace without a recorded parent/position is not a sequence member. The
+release milestone additionally carries `sequence_role: release`, which makes
+`check candidate` and `check seal` require its manifest to cover the whole
+recorded chain (built by `state merge-manifest`).
+`observe summary`/`orient` surface them under `sequence`.
+
 <!-- authority:state-tracking:start -->
 Git-tracked shared state: `.devrites/specs/`. Per-clone runtime state: `.devrites/work/`, `.devrites/archive/`, `.devrites/ACTIVE`.
 <!-- authority:state-tracking:end -->

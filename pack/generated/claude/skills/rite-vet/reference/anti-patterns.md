@@ -1,8 +1,6 @@
 # /rite-vet: anti-patterns
 
-Universal rationalizations + red flags live in
-[`../../devrites-lib/reference/standards/anti-patterns.md`](../../devrites-lib/reference/standards/anti-patterns.md): read it when the
-reluctance is broader than this phase. Below are the vet-specific ones.
+Read [universal anti-patterns](../../devrites-lib/reference/standards/anti-patterns.md).
 
 Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
@@ -16,15 +14,15 @@ Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preservin
 
 | Excuse | Rebuttal |
 |---|---|
-| "I'll write all the findings into `eng-review.md` and let the user read it." | The artifact is the *output* of an interactive review, not a substitute for it. A material finding's path to "done" goes **through `AskUserQuestion`**, one at a time, with a recommendation + why. Dumping findings into one write and moving on is the exact failure this skill exists to prevent. |
+| "I'll write all the findings into `eng-review.md` and let the user read it." | Fold verified behavior-preserving findings together and recheck affected closure. Ask human-owned choices with recommendations and await answers. Recording alone resolves nothing; never silently change acceptance or mark unresolved choices READY. |
 | "The plan doesn't handle X: flag it." (without checking) | Quote the line first. If you can't quote where the plan handles X, you also can't be sure it doesn't: force confidence ≤4 and suppress. The "field/case doesn't exist" finding is the most common false positive; the verification gate exists to kill it. |
-| "It's an obvious fix. I'll just edit the plan." | Verified plan hardening is Vet's job; topology uses the marked action. |
+| "It's an obvious fix. I'll just edit the plan." | Vet hardens verified plans; topology uses the marked action. |
 | "This dimension is thin but the others are strong: net it's fine." | The gate is the **floor**, not the average. A plan `broken` on test-coverage does not pass because it's `strong` on architecture. |
-| "I can see it's adequate. I'll note the band, the evidence is obvious." | Cite the quoted evidence **before** the band. Score-first-justify-later is how a reviewer waves through a plan it already likes. |
-| "8+ files but it all needs to change: proceed." | The complexity smell is a **STOP-and-ask**, not a note. Name the overbuilt part, propose the smaller version that still meets acceptance, and let the human decide before any axis runs. Maybe it's justified (record *why*) but the gate fires first. |
+| "I can see it's adequate. I'll note the band, the evidence is obvious." | Cite quoted evidence **before** the band; never score first and rationalize later. |
+| "8+ files but it all needs to change: proceed." | Apply `review-axes.md` §0: justify complexity against the smallest contract-complete alternative; fold technical reductions through the marked action. File count does not justify design or require a pause. Ask only for changed scope, behavior, or risk policy. |
 | "There's no test for this, but the user can add one later." | Coverage is designed **now**, before the code, so the build writes tests alongside it. A deferred test is a test that misses the boundary cases writing-it-now would expose. Regressions are non-negotiable. Critical, no question. |
 | "Performance looks fine." | "Looks fine" is not a measurement. A perf finding is "measure X against budget Y" or it's nothing: don't recommend speculative tuning, and don't wave past an N+1 you can quote. |
-| "Cross-model agrees, so apply it." | Cross-model consensus is a strong *signal*, not an approval. Every cross-model finding is informational until the human approves it (or, in AFK, until the gate ceiling clears a hardening-only change). |
+| "Cross-model agrees, so apply it." | Consensus is a signal, not proof or approval. Verify the finding against source, then use the same technical-hardening or human-owned decision route; model agreement never authorizes a scope, acceptance, or policy change. |
 
 ## Reslice classifier rationalizations
 
@@ -36,6 +34,10 @@ Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preservin
 - A finding raised with confidence ≥7 but **no quoted source line**, that defeats the verification gate.
 - Acceptance/product-behavior growth auto-applied in AFK, or an orthogonal human-owned gate that did not pause.
 - A failure-mode table with rows but no verdict column filled: a "no test + no handling + silent" row not marked Critical.
-- The reviewer loop running past 3 iterations, or the reviewer / cross-model being handed the author's reasoning (defeats the fresh-context point).
+- Repeating an exhausted causal failure under the shared no-progress rule in
+  [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md), or stopping a
+  distinct cause solely because the total review round exceeds three.
+- The reviewer / cross-model being handed the author's reasoning as independent
+  evidence (defeats the fresh-context point).
 - The skill writing code, implementing a slice, or running the build. That's `/rite-build`. Vet reviews and hardens the plan; it never implements.
 - Re-litigating the **spec's** scope/ambition, that was `/rite-temper`. Vet challenges *implementation* scope only.

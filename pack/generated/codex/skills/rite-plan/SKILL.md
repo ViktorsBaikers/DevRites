@@ -97,7 +97,10 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
    in one cluster, and each bundle applies independently. A `partial`-
    continuation re-dispatch continues the same packet; it does not advance the
    same-seam counter. Count consecutive repair packets whose findings' cited clause sets overlap
-   the immediately previous packet's — the overlap is the seam. At the third
+   the immediately previous packet's — the overlap is the seam. Carry it as an explicit
+   integer `same_seam_count` in every packet (previous value + 1 when the seam repeats,
+   else 1) so the threshold is counted rather than judged; a packet that reports the same
+   seam without the counter is malformed. At the third
    same-seam packet, mark it `convergence_pressure: true` with the seam named.
    Under pressure the drafter may close a finding marked as a refinement of an
    already-pinned clause by folding an explicit, bounded declared

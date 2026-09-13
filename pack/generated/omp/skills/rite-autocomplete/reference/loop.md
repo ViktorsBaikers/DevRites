@@ -19,6 +19,9 @@ max_agents: 32
 max_minutes: 120
 max_review_queue: 8
 expires_at: "<now + 4 hours>"
+# continue_sequence: true          # opt-in: chain recorded continuations after Seal GO
+# max_workspaces: 5                # sequence budget when chaining
+# max_parallel: 10                 # Build batch cap; 1 = serial (default: eligible, cap 10)
 # max_tokens: <N>
 # max_cost_usd: <amount>
 # notify: "<cmd>"
@@ -63,7 +66,7 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 | 3 | `/rite-temper` | harden or reduce; expansion and irreversible risk pause |
 | 4 | `/rite-define` | approved plan/tasks/traceability |
 | 5 | `/rite-vet` | every plan; derive mutable budget after READY |
-| 6 | `/rite-build` ×N | one pending slice per wright; charge once only after green built state |
+| 6 | `/rite-build` batch loop | largest eligible path-disjoint set (cap 10; serial when <2 eligible); recompute after each integrate; charge once per green built slice |
 | 7 | `/rite-prove` | all slices built; approved proof; recovery on red |
 | 8 | `/rite-polish` | re-prove after code edits |
 | 9 | `/rite-review` | in-scope correction then fresh proof |
@@ -73,6 +76,35 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 Before advancing, check resource admission and
 [stop-conditions.md](stop-conditions.md). After source edits, discard stale pass
 evidence. Re-read the active workspace before each phase.
+
+## Sequence continuation
+
+With `continue_sequence: true` and sequence budget remaining
+([sentinel](../../devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces)),
+step 10 does not end the run: leave the sealed workspace unshipped with its
+`Next step: /rite-ship`, then invoke the next recorded continuation
+(`/rite-spec <parent>-<n> "<objective>"` from the parent's `decisions.md` sequence)
+and re-enter step 1. Spend one workspace per opened continuation.
+
+Spend accounting is durable in `state.md` cursors, not chat. Before invoking the
+continuation, ensure the current workspace's `sequence_workspaces_remaining` is
+set — absent, write `max_workspaces - 1` and `sequence_position: 1` first — and
+`> 0`. `/rite-spec` seeds the child's sequence cursor at creation per the
+[continuation contract](../../rite-plan/reference/slicing.md#continuation-workspaces);
+after the child's `state.md` exists, verify it — `sequence_parent` = the current
+slug, `sequence_position` = parent position + 1,
+`sequence_workspaces_remaining` = parent remaining − 1, and — when the recorded
+entry is the sequence's release milestone — `sequence_role: release` (gates then
+require the union manifest). On resume, a child whose
+fields are missing is re-seeded from its `brief.md` parent/position and the
+parent's counter (same values, never a second charge); a child with no recorded
+parent/position is not a sequence member and the chain stops.
+
+Stop instead when: no recorded next entry; the cap, expiry, or review-queue bound is
+reached; a human-owned, safety, access, or exhaustion condition fires; or Seal returns
+`NO-GO`. On stop, report the sequence position, the sealed-but-unshipped workspaces, and
+the single release command (`/rite-autocomplete <release milestone> --ship`, or
+`/rite-ship` for the current sealed workspace when the sequence is complete).
 
 ## Backtrack without handing off
 

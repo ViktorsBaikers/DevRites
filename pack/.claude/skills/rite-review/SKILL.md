@@ -57,7 +57,7 @@ Pull these via `Read` when the diff demands them:
 
 0. Read `.claude/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
    on-demand rules above as the diff demands them.
-1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`, `evidence.md`,
+1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`,
    `touched-files.md`, `.devrites/principles.md` (if present: the binding invariants to score
    the diff against), and the `git diff`. For "what would this change break"
    questions, apply `.claude/skills/devrites-lib/reference/standards/tooling.md`: use
@@ -66,7 +66,14 @@ Pull these via `Read` when the diff demands them:
    current API, context7 if available can confirm the signature. Run
    `devrites-engine check candidate <slug>` and require its digest to match the
    single `evidence.md` binding and the `browser-evidence.md` binding when that
-   file exists. A missing, malformed, or open candidate returns to Polish/Prove.
+   file exists. Read those ledgers via the bounded advisory read
+   (`workspace-artifact-schema.md` § Read next by phase): binding line, `EVID-###`
+   index, then bodies for this candidate's AC/slice IDs only. A missing,
+   malformed, or open candidate returns to Polish/Prove.
+   Read `touched-files.md` `## Review trail` and `eng-review.md` `## Deferred findings`:
+   every deferred row is an input finding for the step-3 cohort (quoted in the owning
+   reviewer's brief without severity) and ends in `review.md` with its own label and
+   action tag — never silently dropped.
 2. **Review tests first:** do they prove the acceptance criteria? Missing,
    weak, or wrong tests are the first findings.
    **Completion:** every acceptance criterion maps to a proven test or a labeled finding.
@@ -74,7 +81,8 @@ Pull these via `Read` when the diff demands them:
    one axis and fail the other: code that follows every project standard but
    implements the wrong thing (Code-review pass, Spec fail), or code that does exactly
    what the spec asked but breaks project conventions (Spec pass, Code-review fail).
-   Separate contexts prevent one axis from masking the other:
+   Separate contexts prevent one axis from masking the other. This is the initial
+   full pass; a correction uses step 7's bounded recheck:
    - Freeze that closed digest and give the same digest to **two** read-only reviewers in
      parallel, each with its own narrow brief and no
      cross-pollination — and evaluate the frontend (step 4), security (step 5),
@@ -88,17 +96,10 @@ Pull these via `Read` when the diff demands them:
        missing spec` and do not infer requirements from the diff."
      - **Code-review axis** → `devrites-code-reviewer`: "Apply your full documented
        discipline (tests-first, correctness, readability, architecture, maintainability,
-       standards) on the active feature workspace + diff. Cite file:line per finding;
-       skip what tooling already enforces. Also flag the AI-codegen smells (silent/empty
-       catch, defensive try-catch bloat + redundant logging, single-use factory / needless
-       indirection, dependency creep where an in-repo option exists, a 100-line function
-       where 20 would do) and the silent-failure bugs (a missing value coerced to 0/''/[],
-       a dropped Result/err return, off-by-one / boundary, logic that contradicts the
-       comment/docstring/name). Per hunk, check whether working code was deleted that the
-       task did not ask to remove. Score the diff against `.devrites/principles.md`: a change
-       that breaks a declared invariant with no recorded, human-approved exception is a Critical.
-       Distinguish hard documented-standard violations from baseline smells; smells are judgment
-       calls unless a DevRites or project standard makes them binding."
+       standards) on the feature workspace + diff. Cite file:line; skip tooling-enforced
+       checks. Apply canonical anti-slop and silent-failure lenses; inspect each hunk
+       for unrequested deletion. Unexcepted `.devrites/principles.md` violations are
+       Critical. Distinguish binding standards from judgment-only baseline smells."
    - **Do NOT merge or re-rank** their findings. Present them under separate
      `## Spec` and `## Code review` sub-sections in `review.md`. Surface contradictions
      between the axes explicitly (e.g. "Spec axis says complete, Code-review axis says
@@ -131,9 +132,15 @@ Pull these via `Read` when the diff demands them:
 7. Reconcile and accept only in-scope fixes. Consolidate them into one bounded
    wright correction; never edit source in the reviewing context. Any correction
    updates the candidate manifest, returns through affected Prove, and then starts
-   a fresh Review on the new digest. Do not carry a prior reviewer account across it.
+   a fresh Review binding on the new digest. Dispatch affected exact reviewers on
+   all their open findings and the dependency/regression closure under
+   [evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).
+   Cite unchanged sub-scope coverage only with its original identity and explicit
+   justification; never relabel old accounts. Changed contracts or uncertain impact
+   require the full applicable pass.
 8. The root updates `review.md` and `state.md`, writing exactly one candidate
-   binding in `review.md` for the digest given to every reviewer.
+   binding in `review.md` for the current digest, distinguishing fresh accounts from
+   cited unchanged sub-scope evidence and reconciling complete coverage.
    **Completion:** the records name the reviewed candidate identity and every accepted
    correction has affected proof plus a fresh Review.
 

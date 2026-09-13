@@ -31,7 +31,7 @@ func rootModeFor(command string, args []string) rootMode {
 		return rootLenient
 	case "state":
 		switch subcommand {
-		case "resolve", "close":
+		case "resolve", "merge-manifest", "close":
 			return rootStrict
 		}
 		return rootUnused
@@ -49,7 +49,7 @@ func rootModeFor(command string, args []string) rootMode {
 		return rootStrictUsage
 	case "observe":
 		switch subcommand {
-		case "summary":
+		case "summary", "slice":
 			return rootStrictUsage
 		}
 		return rootUnused

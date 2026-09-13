@@ -65,9 +65,8 @@ validates them when present.
 
 Guidelines:
 
-- **Use a documented anti-pattern.** If the rationalization is not in an
-  anti-patterns row, document it there before adding a scenario. The table
-  defines the behavior and the eval checks it.
+- **Use a documented rule or anti-pattern.** Cite its canonical owner in `source`;
+  do not duplicate the rule into another table solely to add a regression scenario.
 - **Combine realistic pressures.** A polite request to skip tests is weak by
   itself. Use the pressures that accompany the real failure, such as a deadline,
   authority, sunk cost, or a claim that this is a one-time exception.
@@ -86,3 +85,32 @@ Scenarios may include optional agent-skills / Anthropic skill-creator fields:
 The deterministic validator checks their shape without invoking a model. The
 original DevRites pressure fields remain required so existing gates keep their
 rationalization/resistance vocabulary.
+
+## Workflow efficiency regressions
+
+The Build, Vet, writer, Review, and Seal corpora include paired controls for
+batched findings, bounded rechecks, compact packets, independent sibling work,
+and evidence reuse. They retain denial-path, lossless-edit, strict-validation,
+changed-environment, and uncertain-dependency cases so a shorter run cannot pass
+by omitting the protection that made the original run expensive.
+
+Schema validation and textual routing checks prove artifact structure only.
+These pressure prompts do not execute a parser or reproduce a filesystem bypass;
+job-success evaluation needs an isolated fixture with real assertions for those
+behaviors. Do not report a schema PASS as measured model quality or speed.
+
+For optional native-host comparisons, follow the existing
+[`native-host behavior report contract`](../README.md#native-host-behavior-report-contract):
+pin the same cases, candidate/corpus revisions, host/model builds, environment,
+budgets, and grading rubric; run repeated control/treatment trials and A/A checks.
+Include failed, blocked, timed-out, and invalid trials, not just successful runs.
+Report missed Critical/Important defects, introduced regressions, assertion strength,
+unnecessary escalation, role/tool calls, observed input/output tokens, and elapsed
+time with spread (p50/p95 only when the sample supports them). Mark unavailable
+telemetry as unavailable; document bytes are not billed tokens.
+
+Score retained safety/correctness separately from process adherence and efficiency.
+A cost reduction cannot compensate for a missed blocking defect. A small passing
+sample supports only its pinned cases/models, not first-pass completeness or
+model-independent quality. This corpus adds no paid-session runner; live trials
+remain opt-in under the existing evaluation contract.

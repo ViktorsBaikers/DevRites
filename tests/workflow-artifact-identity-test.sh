@@ -8,7 +8,9 @@ from concurrent.futures import ThreadPoolExecutor
 import contextlib
 import errno
 import fcntl
+import gzip
 import hashlib
+import io
 import json
 import os
 import re
@@ -19,6 +21,7 @@ import socket
 import stat
 import subprocess
 import sys
+import tarfile
 import tempfile
 import time
 from pathlib import Path
@@ -114,10 +117,10 @@ OUTSIDE_MANIFEST_CONTRACT_CELLS = (
     "stage, backups, proof-cache,\nmutation artifacts clean exactly",
 )
 LIVE_PROTECTED_SHA256 = {
-    ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
+    ".gitignore": "659fcab79eda5931a2cf6f19a76a1178064bd26aa1271ff05e3de24ceefdb021",
     ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
     ".devrites/work/workspace-observation/touched-files.md":
-        "18ec87db5aff737d195f5251ca46fb865923900f4a3623d63eb5067f94bfe20b",
+        "742b66d07324711ed6f0217e7ec32a654c831bc345ae9bed369aa69b420312ad",
 }
 EXPECTED_NORMAL_GENERATED_DELTA = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md",
@@ -759,11 +762,104 @@ def require_fixed_reslice_records(root_fd: int) -> None:
                 f"historical Reslice record identity: {relative}")
 
 
+def read_historical_reslice_snapshot(root_fd: int) -> tuple[bytes, dict[str, bytes]]:
+    # Freeze the 30 original regression inputs, not the identity of evolving live guidance.
+    snapshot = read_file_at(root_fd, "tests/fixtures/historical-reslice-source.tar.gz",
+                            limit=1024 * 1024)
+    return snapshot, validate_historical_reslice_snapshot(snapshot)
+
+
+def validate_historical_reslice_snapshot(snapshot: bytes) -> dict[str, bytes]:
+    require(len(snapshot) <= 1024 * 1024, "bounded historical Reslice archive")
+    with gzip.GzipFile(fileobj=io.BytesIO(snapshot)) as compressed:
+        raw = compressed.read(1024 * 1024 + 1)
+    require(len(raw) <= 1024 * 1024, "bounded historical Reslice expansion")
+    records = {}
+    total = 0
+    end = 0
+    with tarfile.open(fileobj=io.BytesIO(raw), mode="r:") as archive:
+        for member in archive:
+            require(member.offset == end and member.offset_data == end + 512,
+                    "historical Reslice archive plain regular headers")
+            relative_components(member.name)
+            require(member.name in RESLICE_PRIOR_RECORDS and member.name not in records,
+                    "historical Reslice archive exact member set")
+            mode, digest = RESLICE_PRIOR_RECORDS[member.name]
+            require(member.type == tarfile.REGTYPE and not member.linkname
+                    and not member.pax_headers and member.mode == mode,
+                    "historical Reslice archive member type/mode")
+            total += member.size
+            require(0 <= member.size <= 458994 and total <= 458994,
+                    "bounded historical Reslice members")
+            stream = archive.extractfile(member)
+            require(stream is not None, "historical Reslice regular member data")
+            with stream:
+                data = stream.read(member.size + 1)
+            require(len(data) == member.size and sha(data) == digest,
+                    f"historical Reslice archive record identity: {member.name}")
+            records[member.name] = data
+            end = member.offset_data + ((member.size + 511) // 512) * 512
+    require(set(records) == set(RESLICE_PRIOR_RECORDS),
+            "historical Reslice archive exact member set")
+    require(len(raw) >= end + 1024 and not any(raw[end:]),
+            "historical Reslice archive trailing data")
+    return records
+
+
+def check_historical_reslice_archive_rejections(snapshot: bytes) -> None:
+    for mutation in ("missing", "unexpected", "duplicate", "unsafe", "symlink",
+                     "mode", "bytes", "oversize"):
+        output = io.BytesIO()
+        with tarfile.open(fileobj=io.BytesIO(snapshot), mode="r:gz") as original, \
+                tarfile.open(fileobj=output, mode="w", format=tarfile.USTAR_FORMAT) as changed:
+            for index, member in enumerate(original):
+                with original.extractfile(member) as stream:
+                    data = stream.read()
+                if index == 0:
+                    if mutation == "missing":
+                        continue
+                    if mutation == "unexpected":
+                        member.name = "unexpected.md"
+                    elif mutation == "unsafe":
+                        member.name = "../outside.md"
+                    elif mutation == "symlink":
+                        member.type = tarfile.SYMTYPE
+                        member.linkname = "outside.md"
+                        member.size = 0
+                    elif mutation == "mode":
+                        member.mode = 0o777
+                    elif mutation == "bytes":
+                        data += b"\n"
+                        member.size = len(data)
+                    elif mutation == "oversize":
+                        data = b"x" * 458995
+                        member.size = len(data)
+                    elif mutation == "duplicate":
+                        changed.addfile(member, io.BytesIO(data))
+                changed.addfile(member, io.BytesIO(data))
+        try:
+            validate_historical_reslice_snapshot(gzip.compress(output.getvalue(), mtime=0))
+        except AssertionError:
+            pass
+        else:
+            fail(f"historical Reslice archive mutation survived: {mutation}")
+    for payload in (b"x" * (1024 * 1024 + 1),
+                    gzip.compress(b"x" * (1024 * 1024 + 1), mtime=0),
+                    gzip.compress(gzip.decompress(snapshot) + b"unexpected", mtime=0)):
+        try:
+            validate_historical_reslice_snapshot(payload)
+        except AssertionError:
+            pass
+        else:
+            fail("historical Reslice archive size/trailing-data mutation survived")
+
+
 def check_historical_reslice_identity() -> None:
     project = project_root_for_tests(canonical_root())
     root_fd = open_absolute_directory(project)
     try:
-        require_fixed_reslice_records(root_fd)
+        snapshot, records = read_historical_reslice_snapshot(root_fd)
+        check_historical_reslice_archive_rejections(snapshot)
         workspace_relative = ".devrites/work/acceptance-preserving-reslice-policy"
         workspace_info = entry_info_at(root_fd, workspace_relative)
         if workspace_info is None:
@@ -792,12 +888,13 @@ def check_historical_reslice_identity() -> None:
             fixture = Path(tmp).resolve() / "prior-reslice"
             fixture.mkdir()
             for relative, (mode, _digest) in RESLICE_PRIOR_RECORDS.items():
-                data = read_file_at(
-                    root_fd, relative, modes=compatible_tracked_modes(mode),
-                )
+                data = records[relative]
                 destination = fixture / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 atomic_write(destination, data, mode)
+            archived = fixture / "tests/fixtures/historical-reslice-source.tar.gz"
+            archived.parent.mkdir(parents=True, exist_ok=True)
+            atomic_write(archived, snapshot, 0o600)
             fixture_fd = open_absolute_directory(fixture)
             try:
                 require_fixed_reslice_records(fixture_fd)
@@ -814,6 +911,8 @@ def check_historical_reslice_identity() -> None:
                             "historical Reslice newline mutation rejection")
                 else:
                     fail("historical Reslice newline mutation survived")
+                require(read_historical_reslice_snapshot(fixture_fd)[1] == records,
+                        "live prose evolution cannot change archived historical identity")
             finally:
                 os.close(fixture_fd)
     finally:
@@ -4562,11 +4661,15 @@ def check_actual_engine_separation(root: Path) -> None:
             engine = Path(engine_override).resolve()
             require(engine.is_file(), "configured engine CLI")
         else:
-            version = command_output(["go", "-C", str(project / "engine"), "env", "GOVERSION"])
+            # The module pins `toolchain go1.26.7`; a newer local Go satisfies it and
+            # would report its own version, so select the pin explicitly and build the
+            # private engine with it. Deterministic on any machine, unchanged on CI.
+            pinned = {**os.environ, "GOTOOLCHAIN": "go1.26.7"}
+            version = command_output(["go", "-C", str(project / "engine"), "env", "GOVERSION"], env=pinned)
             require(version.returncode == 0 and "go1.26.7" in version.stdout, "module-selected Go 1.26.7")
             engine = private / "bin/devrites-engine"
             engine.parent.mkdir()
-            build = command_output(["go", "-C", str(project / "engine"), "build", "-o", str(engine), "."])
+            build = command_output(["go", "-C", str(project / "engine"), "build", "-o", str(engine), "."], env=pinned)
             require(build.returncode == 0 and engine.is_file(), "actual engine private build")
         fixture = private / "project"
         workspace = fixture / ".devrites/work/demo"
@@ -7328,7 +7431,7 @@ DELIVERY_STATE_PATTERN = re.compile(
     r"|INSTALLING\([1-9][0-9]*\)|ROLLING_BACK\([1-9][0-9]*\))"
 )
 DELIVERY_GATES = [
-    (["bash", "-c", "bash --version && python3 --version && node --version && go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.7"),
+    (["bash", "-c", "bash --version && python3 --version && node --version && GOTOOLCHAIN=go1.26.7 go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.7"),
     (["python3", "scripts/validate-workspace-schema.py", ".devrites/work/workflow-artifact-identity"], "workspace-schema: OK: 1 workspace(s) validated"),
     (["bash", "tests/workflow-artifact-identity-test.sh"], "workflow-artifact-identity: PASS"),
     (["bash", "tests/workflow-artifact-identity-test.sh", "--prove-walkthrough"], "WORKFLOW_ARTIFACT_WALKTHROUGH PASS"),
@@ -7343,13 +7446,13 @@ DELIVERY_GATES = [
     (["python3", "scripts/scan-pack-security.py", "pack/.claude", "pack/generated"], None),
     (["go", "-C", "engine", "test", "./...", "-race", "-count=1"], None),
     (["node", "scripts/run-tests.mjs"], None),
-    (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484  .gitignore"),
+    (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "659fcab79eda5931a2cf6f19a76a1178064bd26aa1271ff05e3de24ceefdb021  .gitignore"),
 ]
 
 
 def check_delivery_gate_signals() -> None:
     expected = [
-        (["bash", "-c", "bash --version && python3 --version && node --version && go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.7"),
+        (["bash", "-c", "bash --version && python3 --version && node --version && GOTOOLCHAIN=go1.26.7 go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.7"),
         (["python3", "scripts/validate-workspace-schema.py", ".devrites/work/workflow-artifact-identity"], "workspace-schema: OK: 1 workspace(s) validated"),
         (["bash", "tests/workflow-artifact-identity-test.sh"], "workflow-artifact-identity: PASS"),
         (["bash", "tests/workflow-artifact-identity-test.sh", "--prove-walkthrough"], "WORKFLOW_ARTIFACT_WALKTHROUGH PASS"),
@@ -7358,7 +7461,7 @@ def check_delivery_gate_signals() -> None:
         (["bash", "tests/acceptance-preserving-reslice-policy-test.sh"], "acceptance-preserving-reslice-policy-test: PASS"),
         (["bash", "tests/host-artifacts-test.sh"], "host-artifacts-test: PASS"),
         (["bash", "scripts/validate.sh"], "VALIDATION PASSED"),
-        (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484  .gitignore"),
+        (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "659fcab79eda5931a2cf6f19a76a1178064bd26aa1271ff05e3de24ceefdb021  .gitignore"),
     ]
     declared = [(command, signal) for command, signal in DELIVERY_GATES if signal is not None]
     require(declared == expected, "delivery gate exact expected-line registry")

@@ -33,6 +33,8 @@ const (
 type candidateRow struct {
 	state      string
 	path       string
+	slice      string
+	reason     string
 	executable bool
 	size       int64
 	info       os.FileInfo
@@ -203,10 +205,12 @@ func parseCandidateManifest(raw []byte) ([]candidateRow, error) {
 		if err != nil {
 			return nil, fmt.Errorf("row %d File: %w", i+1, err)
 		}
-		if strings.TrimSpace(cells[3]) == "" {
+		sliceCell := strings.TrimSpace(cells[3])
+		if sliceCell == "" {
 			return nil, fmt.Errorf("row %d Slice must be nonempty", i+1)
 		}
-		if strings.TrimSpace(cells[4]) == "" {
+		reasonCell := strings.TrimSpace(cells[4])
+		if reasonCell == "" {
 			return nil, fmt.Errorf("row %d Reason must be nonempty", i+1)
 		}
 		if _, ok := seen[normalized]; ok {
@@ -221,7 +225,7 @@ func parseCandidateManifest(raw []byte) ([]candidateRow, error) {
 		}
 		seen[normalized] = struct{}{}
 		seenFolded[folded] = normalized
-		rows = append(rows, candidateRow{state: state, path: normalized})
+		rows = append(rows, candidateRow{state: state, path: normalized, slice: sliceCell, reason: reasonCell})
 		if len(rows) > maxCandidateRows {
 			return nil, errors.New("manifest exceeds 4096 rows")
 		}

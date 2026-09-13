@@ -7,10 +7,12 @@ user-invocable: true
 
 # $rite-prove: prove the completed feature
 
-Read the active workspace and prove the whole assembled feature once. With no
-active workspace, use `/verify` or `/run` instead; if any task is pending, stop for `$rite-build`.
-Never report an unobserved pass. After Polish/Review code edits, repeat affected
-criteria and bind evidence to the changed candidate digest.
+Prove the assembled feature once. No workspace: use `/verify` or `/run`;
+pending tasks: stop for `$rite-build`.
+Never assert unobserved passes. After Polish/Review edits, repeat affected
+criteria/dependencies and bind under
+[evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).
+Initial full feature proof and required mutable observations still run.
 
 ## Rules
 
@@ -21,21 +23,19 @@ Read the applicable standards: `testing.md`, `test-proof-checklist.md`,
 `workflow-artifacts.md`. Developer surfaces require an observed flow, measured
 TTHW, and exact signal-bearing errors; never assert DX.
 
-- Evidence over confidence. Apply positive, discriminating proof to every
-  behavioral claim; a green command without executing assertion and decisive
-  signal is unproven.
+- Each claim needs an executed positive, discriminating assertion and decisive
+  signal; green commands alone are unproven.
 - Follow [`candidate-integrity.md`](../devrites-lib/reference/candidate-integrity.md). Prove owns proof binding, not candidate
   grammar/hashing. Spec Drift Guard owns revealed contract drift.
-- Root executes vetted gates/browser and records evidence. A read-only proof
-  runner validates immutable evidence. The sole bounded wright fixes product
-  source/tests; root never does.
+- Root runs vetted gates/browser and records immutable evidence; proof runner
+  validates it. Only the bounded wright fixes product source/tests.
 - **Prove remains the controlling caller** during technical backtracking. Save
   its cursor; run Plan repair, Recovery Vet, remediation, and re-proof inline;
   consume nested boundaries; resume the failed rung. Recovery exhausts after
   three no-progress attempts on the exact same fingerprint. Closing one or exposing a distinct
   Critical/Important invariant is progress, not a reason to hand work off.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Prove consumes installed Workflow Artifact or CLEANED rerun","action":"VERIFY_EXISTING or admitted proof path ending PROVE_AND_RETURN","return":"saved Prove cursor; stop before real action"} -->
-## Released-workspace refresh entry
+## Released-workspace refresh
 
 Only an admitted `$rite-upgrade` assessment proving a released-format candidate
 defect enters. Require legacy touched-file scope, live diff, tasks, and traceability agree unambiguously
@@ -85,19 +85,17 @@ test changes.
    [browser proof](reference/browser-proof.md): routes, viewports, opened and
    described screenshots, console/network, interaction, target comparisons, and
    every required state. Material mismatch fails.
-7. **Independent validation.** Dispatch exact fresh read-only
-   `devrites-proof-runner` and `devrites-spec-reviewer` on the same candidate,
-   commands, immutable evidence, and acceptance map. Reject missing/stale,
-   invented-ID, label-only, or self-attested reports; neither executes commands.
-8. **Map proof.** Reconcile both verdicts and
-   [acceptance-proof.md](reference/acceptance-proof.md). Every criterion,
-   scenario, interaction, and planned key link gets positive discriminating
-   evidence or a blocker, including applicable critical-path, observability,
-   developer, and wiring branches.
+7. **Independent validation.** Fresh read-only `devrites-proof-runner` and
+   `devrites-spec-reviewer` judge the same candidate/commands/evidence/acceptance map.
+   Neither runs commands; reject missing/stale, invented-ID, label-only or self-attested reports.
+8. **Map proof.** Reconcile verdicts under [acceptance-proof.md](reference/acceptance-proof.md).
+   Every criterion/scenario/interaction/key link needs discriminating evidence or a
+   blocker, including critical-path, observability, developer and wiring branches.
 9. **Recover red.** Use [failure triage](reference/failure-triage.md) and Debug
    Recovery. Reconcile reproduction; send accepted in-scope source/test correction
    to the sole wright; update actual manifest; rerun affected proof, both candidate
-   checks, and fresh proof runner. Scope growth blocks.
+   checks, and fresh proof runner. Recheck affected acceptance with the exact spec
+   reviewer; reconcile both validators under evidence validity. Scope growth blocks.
 
    Agent-owned durable-plan errors run Spec Drift Guard, Plan, and Vet inline,
    preserving Prove as origin. Consumptive failures use retained fixtures, repair,
@@ -112,7 +110,7 @@ test changes.
 > Do not claim an unobserved pass, skip browser proof, or proceed with pending
 > slices. Load `reference/anti-patterns.md` when tempted to do so.
 
-## Phase exit (observable)
+## Phase exit
 
 **Complete when:** every criterion in `acceptance-proof.md` has discriminating
 evidence bound to the current candidate digest, both independent validators admit

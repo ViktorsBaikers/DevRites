@@ -50,6 +50,12 @@ load a routed standard to discover required behavior, not to prescribe implement
    problem in one sentence. **Completion:** it includes both.
 1a. **Dedupe.** Search local issues/PRDs, work, and archive. On a close match ask
    extend/adopt/new, then record the choice; otherwise continue silently.
+   A recorded [feature-sequence continuation](../rite-plan/reference/slicing.md#continuation-workspaces)
+   is a **new** workspace (`<parent>-2`): carry the parent slug and position into
+   `brief.md`, read the parent artifacts as design input, and do not route to
+   `/rite-plan revise` on the parent. When the ask is open and archived work records
+   an unfinished sequence, propose that next continuation (slug + objective) as the
+   recommended option instead of a fresh slug.
 2. **Investigate:** follow [investigation](reference/investigation.md) through its
    complete findings and done-when gate. Discover the project's **test /
    build/typecheck/lint** commands, frontend/backend systems, and declared project guidance

@@ -1,7 +1,7 @@
 ---
 name: rite-autocomplete
 description: Run the full DevRites lifecycle unattended; --ship continues to the final Git approval boundary. Use for one-shot autonomous work; not for a single phase.
-argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--full] [--cross-model]"
+argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] [--cross-model]"
 user-invocable: true
 ---
 
@@ -53,9 +53,11 @@ executable controller/harness/bundle bytes or a missing writer, read
   malformed, and unavailable leaf calls. At the review cap, permit only work
   that reduces the queue.
 - Parse flags only from this invocation. `--ship`, `--yolo`, `--max-slices`,
-  `--full`, and `--cross-model` activate only as exact standalone tokens in
-  `$ARGUMENTS`; examples or earlier messages can never arm them. `--max-slices`
-  must occur once and be followed by a positive base-10 integer; missing, repeated, malformed, or conflicting values stop before any write.
+  `--parallel`, `--full`, and `--cross-model` activate only as exact standalone
+  tokens in `$ARGUMENTS`; examples or earlier messages can never arm them.
+  `--max-slices` must occur once and be followed by a positive base-10 integer;
+  `--parallel` must occur once and be followed by a base-10 integer in `1`–`10`.
+  Missing, repeated, malformed, or conflicting values stop before any write.
 - Temper always runs after Clarify. Unattended mode auto-applies only
   `hold-rigor` and `reduce-to-MVP`; any `expand` or added acceptance pauses.
 - Vet every plan. Cross-model is off unless the current invocation arms it.
@@ -75,7 +77,8 @@ executable controller/harness/bundle bytes or a missing writer, read
    from chat. After compaction or a resumed session, read `.devrites/ACTIVE`, then
    the `state.md` cursor, `questions.md`, `decisions.md`, and `test-plan.md`/`evidence.md`.
    Normalize current arguments to idea, `ship_preflight: yes|no`,
-   `max_slices: N|default`, `profile: standard|full`, and `cross_model: yes|no`.
+   `max_slices: N|default`, `parallel: N|default`, `profile: standard|full`,
+   and `cross_model: yes|no`.
    **Completion:** normalized state is unambiguous and no sentinel or workspace file has been written.
 2. **Specify and clarify.** Run `devrites-interview`, `$rite-spec`, and
    `$rite-clarify` as one window. Partial/Missing material coverage never arms
@@ -87,9 +90,13 @@ executable controller/harness/bundle bytes or a missing writer, read
    **Completion:** a valid read-only AFK sentinel exists.
 4. **Drive phases.** Follow [the loop](reference/loop.md): `$rite-spec` →
    `$rite-clarify` → `$rite-temper` → `$rite-define` → `$rite-vet` →
-   `$rite-build` × pending slices → `$rite-prove` → `$rite-polish` →
+   `$rite-build` batch loop → `$rite-prove` → `$rite-polish` →
    `$rite-review` → `$rite-seal`. Read and execute each skill; durable files, not
    chat, carry state. Apply the mutable post-vet budget before first Build.
+   Build runs the largest eligible path-disjoint batch (cap: `--parallel N`, else
+   sentinel `max_parallel`, else 10) and recomputes after every integrate until no
+   pending slice remains; serial only when fewer than two slices are eligible or the
+   host cannot isolate concurrent worktree writers.
    **Completion:** loop reaches Seal GO or persists a valid stop before any later phase.
 5. **Apply stops.** At every gate use
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:
@@ -98,8 +105,12 @@ executable controller/harness/bundle bytes or a missing writer, read
    hard risk, human-owned blocking/escalating/NO-GO, resource exhaustion, or the
    exact fingerprint's proven exhaustion. Technical exhaustion records terminal
    `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
-6. **Seal boundary.** Without a ship flag, stop at Seal GO with `$rite-ship`.
-   With one, perform Ship preflight, disclose the exact Git plan, and stop for
+6. **Seal boundary.** Without a ship flag, stop at Seal GO with `$rite-ship` —
+   unless `continue_sequence` is armed and sequence budget remains, in which case
+   leave the sealed workspace unshipped and open the next recorded continuation
+   ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation));
+   report the sequence position on every stop.
+   With a ship flag, perform Ship preflight, disclose the exact Git plan, and stop for
    fresh literal `GO` plus native approval. **Completion:** performed no Git action before fresh literal `GO` plus native approval.
 
 ## Reply and resume

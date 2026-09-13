@@ -1,8 +1,7 @@
 # Spec Drift Guard (build phase)
 
-Active throughout `$rite-build`. The spec is living, not sacred, but you may not
-silently code against a plan you know is wrong. This is the canonical Spec Drift Guard;
-other phases reference it here.
+Canonical Spec Drift Guard, active in `$rite-build` and referenced by other
+phases. Never silently code against a known-wrong plan.
 
 ## Drift has occurred when
 - the spec says X but the code makes X impossible/wrong;
@@ -16,7 +15,7 @@ other phases reference it here.
 ## Workflow
 ```
 1. STOP coding.
-2. Record in drift.md (assumed vs observed, when).
+2. Record drift.md (assumed vs observed, when).
 3. Classify: requirement ambiguity | implementation-plan error | codebase reality
    mismatch | design-system mismatch | test/evidence mismatch | external-doc mismatch
    | user-decision required.
@@ -35,12 +34,14 @@ other phases reference it here.
 
 ## Batch sweep (before repair)
 
-A durable-plan drift abort never repairs the first gap alone:
+Repair durable-plan drift as a folded set:
 
-1. Verify every remaining statically-checkable contract assumption against the
-   live repo — named paths, symbols/APIs/signatures, routes, commands, dependency
-   versions, contract artifacts. The wright's return names what it falsified;
-   check the rest yourself — existence checks are deterministic, no dispatch.
+1. Trace the falsified assumption's full dependency/consumer closure and affected
+   frontier, including dependent future slices. Verify unchecked paths, symbols/APIs/
+   signatures, routes, commands, versions, and artifacts there against live source.
+   Reuse the wright inventory and unchanged evidence; deterministic existence checks
+   need no dispatch. Do not rescan unrelated slices. Broaden unknown closure or shared
+   contract changes until coverage is justified; retain every known gap.
 2. Record each violation as its own `drift.md` entry/fingerprint; one folded
    repair + one batched recheck resolves the set.
 3. A recheck-surfaced gap is a new fingerprint with its own budget — loop
@@ -75,11 +76,9 @@ human permission question. Re-plan only when the durable plan changed.
 
 ## Inline return contract
 
-The phase that detected agent-owned drift owns the whole backtrack, batch sweep
-included. Preserve it
-as `return_phase`/`return_next_action`; consume Plan and Vet's nested `STOP`
-boundaries internally; follow any vetted remediation required by the settled
-acceptance; then restore the cursor and resume the failed step. Do not hand an
-intermediate command to the human. The shared three-attempt causal-fingerprint
+The detecting phase owns backtracking and the batch sweep. Save
+`return_phase`/`return_next_action`; consume nested Plan/Vet `STOP` internally, complete
+vetted acceptance-preserving remediation, then restore the cursor and failed step.
+Never hand the human an intermediate command. The shared three-attempt causal-fingerprint
 cap still applies: exhaustion produces one technical blocker, while a genuinely
 human-owned decision uses the question format below.
