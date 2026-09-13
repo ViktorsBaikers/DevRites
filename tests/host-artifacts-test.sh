@@ -301,7 +301,7 @@ grep -q 'allow_implicit_invocation: false' "$OUT/codex/skills/rite-status/agents
 [ ! -e "$OUT/codex/skills/devrites-doubt/agents/openai.yaml" ] &&
   ok "Codex internal model-invoked skill has no explicit-only policy" ||
   no "Codex internal model-invoked skill got an explicit-only policy"
-grep -q '^description: User-invoked read-only active-feature report' "$OUT/codex/skills/rite-status/SKILL.md" &&
+grep -qE '^description: "?User-invoked read-only active-feature report' "$OUT/codex/skills/rite-status/SKILL.md" &&
   ok "Codex preserves public explicit-only description" ||
   no "Codex public explicit-only description was stubbed"
 
