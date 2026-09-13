@@ -18,7 +18,7 @@ Pull [`development-workflow.md`](../devrites-lib/reference/standards/development
 criteria.
 Load [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md)
 when the spec applicability map or observed drift triggers them.
-Before classifying any Reslice, read [`acceptance-preserving-reslice.md`](../devrites-lib/reference/standards/acceptance-preserving-reslice.md).
+Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
 - `FOLD` → reconcile `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` atomically; invalidate Vet/readiness; Vet.

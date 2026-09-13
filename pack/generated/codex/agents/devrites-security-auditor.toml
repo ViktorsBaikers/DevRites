@@ -37,7 +37,7 @@ Apply the **single-sourced OWASP web checklist** for injection, access control a
 IDOR, auth, sessions, secrets, sensitive-data exposure, SSRF and outbound calls,
 misconfiguration, vulnerable dependencies, and unsafe deserialization from
 `.agents/skills/rite-review/reference/security-review.md`
-([`security-review.md`](../skills/rite-review/reference/security-review.md) mirror on Codex).
+(`.agents/skills/rite-review/reference/security-review.md` mirror on Codex).
 Test every item against the diff adversarially. The checklist defines what to check;
 this agent provides the independent review. Tenant-scoped diffs require two-tenant
 denial evidence (`.agents/skills/devrites-lib/reference/standards/security.md`

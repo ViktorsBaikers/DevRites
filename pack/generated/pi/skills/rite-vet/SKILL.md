@@ -20,7 +20,7 @@ Read the active standard from: [`principles.md`](../devrites-lib/reference/stand
 [`development-workflow.md`](../devrites-lib/reference/standards/development-workflow.md), [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md), [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md),
 [`developer-experience.md`](../devrites-lib/reference/standards/developer-experience.md), [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md), and [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md). Load
 repository topology, data integrity, and integration reliability only when
-triggered. Before classifying any Reslice, read [`acceptance-preserving-reslice.md`](../devrites-lib/reference/standards/acceptance-preserving-reslice.md).
+triggered. Before classifying any Reslice, read `.pi/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 When a
 plan declares a root-authored executable workflow file, read
 [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md).

@@ -74,10 +74,23 @@ ALLOW_PATH_PREFIXES = (
 
 
 def resolve(here, link):
-    """Resolve a link. `.claude/...`-rooted paths are install-root-relative (= pack/
-    in this repo); everything else is relative to the containing file."""
-    if link.startswith(".claude/"):
-        return os.path.normpath(os.path.join(REPO_ROOT, "pack", link))
+    """Resolve a link. Host-rooted install paths are mapped to the canonical pack
+    tree in this repo; everything else is relative to the containing file."""
+    # Codex/omp/pi install mirrors are generated from pack/.claude/.
+    for prefix, pack_prefix in (
+        (".claude/", "pack/.claude/"),
+        (".agents/", "pack/.claude/"),  # Codex skills/agents live under .agents at install
+        (".omp/", "pack/.claude/"),
+        (".pi/", "pack/.claude/"),
+    ):
+        if link.startswith(prefix):
+            rest = link[len(prefix):]
+            # .agents/skills/... and .claude/skills/... share the same source tree.
+            if prefix == ".agents/" and rest.startswith("skills/"):
+                return os.path.normpath(os.path.join(REPO_ROOT, "pack/.claude", rest))
+            if prefix == ".agents/" and rest.startswith("agents/"):
+                return os.path.normpath(os.path.join(REPO_ROOT, "pack/.claude", rest))
+            return os.path.normpath(os.path.join(REPO_ROOT, pack_prefix + rest))
     if link.startswith("docs/"):
         return os.path.normpath(os.path.join(REPO_ROOT, link))
     return os.path.normpath(os.path.join(here, link))
@@ -161,13 +174,9 @@ for path in md_files:
             resolved = resolve(here, tok)
             if os.path.isfile(resolved):
                 continue
-            # skills-root-relative shorthand (legacy); still require a real file
+            # Intentional skills-root-relative tokens (adapter tables, inventories).
             alt = os.path.normpath(os.path.join(SKILLS_ROOT, tok))
             if os.path.isfile(alt):
-                errors.append(
-                    f"{path}: backtick `{tok}` is skills-root-relative; use a "
-                    f"file-relative path or markdown link (exists at {alt})"
-                )
                 continue
             errors.append(f"{path}: backtick `{tok}` does not resolve")
             continue

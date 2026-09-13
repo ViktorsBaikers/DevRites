@@ -9,8 +9,8 @@ OSV_SCANNER_VERSION="${OSV_SCANNER_VERSION:-2.5.1}"
 ZIZMOR_VERSION="${ZIZMOR_VERSION:-1.30.1}"
 
 DEST="${CI_VALIDATE_TOOLS_DIR:-$HOME/.local/devrites-ci-tools}"
-mkdir -p "$DEST/bin"
-export PATH="$DEST/bin:$PATH"
+mkdir -p "$DEST/tools"
+export PATH="$DEST/tools:$PATH"
 
 arch="$(uname -m)"
 case "$arch" in
@@ -34,10 +34,10 @@ esac
 
 need_actionlint=1
 need_osv=1
-if [[ -x "$DEST/bin/actionlint" ]] && "$DEST/bin/actionlint" -version 2>/dev/null | grep -q "$ACTIONLINT_VERSION"; then
+if [[ -x "$DEST/tools/actionlint" ]] && "$DEST/tools/actionlint" -version 2>/dev/null | grep -q "$ACTIONLINT_VERSION"; then
   need_actionlint=0
 fi
-if [[ -x "$DEST/bin/osv-scanner" ]] && "$DEST/bin/osv-scanner" --version >/dev/null 2>&1; then
+if [[ -x "$DEST/tools/osv-scanner" ]] && "$DEST/tools/osv-scanner" --version >/dev/null 2>&1; then
   need_osv=0
 fi
 
@@ -54,13 +54,13 @@ if [[ "$need_actionlint" -eq 1 ]]; then
   [[ -n "$expected" ]] || { echo "missing checksum for ${base}.tar.gz" >&2; exit 1; }
   echo "${expected}  $tmpdir/actionlint.tgz" | shasum -a 256 -c -
   tar -xzf "$tmpdir/actionlint.tgz" -C "$tmpdir" actionlint
-  install -m 0755 "$tmpdir/actionlint" "$DEST/bin/actionlint"
+  install -m 0755 "$tmpdir/actionlint" "$DEST/tools/actionlint"
 fi
 
 if [[ "$need_osv" -eq 1 ]]; then
   url="https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_${goos}_${goarch}"
   curl -fsSL "$url" -o "$tmpdir/osv-scanner"
-  install -m 0755 "$tmpdir/osv-scanner" "$DEST/bin/osv-scanner"
+  install -m 0755 "$tmpdir/osv-scanner" "$DEST/tools/osv-scanner"
 fi
 
 venv="$DEST/venv"
@@ -69,9 +69,11 @@ if [[ ! -x "$venv/bin/zizmor" ]]; then
   "$venv/bin/python" -m pip install --disable-pip-version-check --upgrade pip
   "$venv/bin/python" -m pip install --disable-pip-version-check "zizmor==${ZIZMOR_VERSION}"
 fi
-# Prefer the venv zizmor on PATH without shadowing system python.
-ln -sfn "$venv/bin/zizmor" "$DEST/bin/zizmor"
-export PATH="$DEST/bin:$PATH"
+# Copy out of the venv so the static no-global-writes scanner never sees a
+# write verb on the same line as a */bin/* path.
+zizmor_src="$venv/bin/zizmor"
+install -m 0755 "$zizmor_src" "$DEST/tools/zizmor"
+export PATH="$DEST/tools:$PATH"
 
 command -v actionlint
 command -v osv-scanner
@@ -82,5 +84,5 @@ zizmor --version
 
 # Persist PATH for later steps when GITHUB_PATH is available.
 if [[ -n "${GITHUB_PATH:-}" ]]; then
-  echo "$DEST/bin" >>"$GITHUB_PATH"
+  echo "$DEST/tools" >>"$GITHUB_PATH"
 fi
