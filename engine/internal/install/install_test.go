@@ -53,12 +53,14 @@ func TestInstallPrintsFirstMoveForInstalledHosts(t *testing.T) {
 		name      string
 		withCodex bool
 		withOmp   bool
+		withPi    bool
 		want      string
 	}{
-		{name: "Claude, Codex, and OMP", withCodex: true, withOmp: true, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex) or /skill:rite."},
-		{name: "Claude and Codex", withCodex: true, withOmp: false, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex)."},
-		{name: "Claude and OMP", withCodex: false, withOmp: true, want: "Next: reopen the project, then run /rite or /skill:rite."},
-		{name: "Claude only", withCodex: false, withOmp: false, want: "Next: reopen the project, then run /rite."},
+		{name: "Claude, Codex, and OMP", withCodex: true, withOmp: true, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex) or /skill:rite (omp/pi)."},
+		{name: "Claude and Codex", withCodex: true, withOmp: false, withPi: false, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex)."},
+		{name: "Claude and OMP", withCodex: false, withOmp: true, withPi: false, want: "Next: reopen the project, then run /rite or /skill:rite."},
+		{name: "Claude and pi", withCodex: false, withOmp: false, withPi: true, want: "Next: reopen the project, then run /rite or /skill:rite."},
+		{name: "Claude only", withCodex: false, withOmp: false, withPi: false, want: "Next: reopen the project, then run /rite."},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var out bytes.Buffer
@@ -67,6 +69,7 @@ func TestInstallPrintsFirstMoveForInstalledHosts(t *testing.T) {
 			opts.PayloadDir = testPayload(t)
 			opts.WithCodex = tc.withCodex
 			opts.WithOmp = tc.withOmp
+			opts.WithPi = tc.withPi
 			opts.Stdout = &out
 			opts.Stderr = &bytes.Buffer{}
 
@@ -758,7 +761,7 @@ func TestLegacyCodexHooksMergeIsCleanupOnly(t *testing.T) {
 	if !ok || merge != legacy {
 		t.Fatalf("legacy marker lookup = %#v, %t", merge, ok)
 	}
-	if slices.Contains(hostpack.RequiredPayload(true, true), "codex/hooks.json") {
+	if slices.Contains(hostpack.RequiredPayload(true, true, true), "codex/hooks.json") {
 		t.Fatal("legacy Codex hooks entered the required payload")
 	}
 	r := runner{opts: DefaultOptions(ModeInstall), payloadFS: os.DirFS(testPayload(t))}
@@ -1247,6 +1250,10 @@ extends = ":workspace"
 	testutil.WriteFile(t, filepath.Join(root, "omp", "skills", "rite", "SKILL.md"), "omp rite\n")
 	testutil.WriteFile(t, filepath.Join(root, "omp", "agents", "devrites-code-reviewer.md"), "omp agent\n")
 	testutil.WriteFile(t, filepath.Join(root, "omp", ".omp-plugin", "plugin.json"), "{}\n")
+	testutil.WriteFile(t, filepath.Join(root, "pi", "skills", "rite", "SKILL.md"), "pi rite\n")
+	testutil.WriteFile(t, filepath.Join(root, "pi", "agents", "devrites-code-reviewer.md"), "pi agent\n")
+	testutil.WriteFile(t, filepath.Join(root, "pi", "prompts", "rite.md"), "pi prompt\n")
+	testutil.WriteFile(t, filepath.Join(root, "pi", "AGENTS.md"), "<!-- BEGIN DEVRITES PI -->\nDevRites\n<!-- END DEVRITES PI -->\n")
 }
 
 func testSource(t *testing.T, version string) string {

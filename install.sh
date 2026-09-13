@@ -245,9 +245,12 @@ dr_acquire_engine "$SELF_DIR" install "$DEVRITES_REPO" || { echo "error: could n
 ENGINE="$DR_ENGINE_PATH"
 PAYLOAD="${DEVRITES_HOST_ARTIFACT_DIR:-$SELF_DIR/pack/generated}"
 if [ ! -d "$PAYLOAD/claude/skills" ] || [ ! -d "$PAYLOAD/codex/skills" ] \
+  || [ ! -d "$PAYLOAD/pi/skills" ] || [ ! -d "$PAYLOAD/pi/agents" ] \
+  || [ ! -d "$PAYLOAD/pi/prompts" ] \
   || [ ! -f "$PAYLOAD/claude/skills/devrites-lib/reference/standards/agents.md" ] \
   || [ ! -f "$PAYLOAD/codex/skills/devrites-lib/reference/standards/agents.md" ] \
-  || [ ! -f "$PAYLOAD/codex/config.toml" ]; then
+  || [ ! -f "$PAYLOAD/pi/skills/devrites-lib/reference/standards/agents.md" ] \
+  || [ ! -f "$PAYLOAD/codex/config.toml" ] || [ ! -f "$PAYLOAD/pi/AGENTS.md" ]; then
   BUILDER="$SELF_DIR/scripts/build-host-artifacts.sh"
   [ -f "$BUILDER" ] || { echo "error: generated install payload missing at $PAYLOAD and builder missing at $BUILDER" >&2; exit 1; }
   DEVRITES_HOST_ARTIFACT_DIR="$PAYLOAD" bash "$BUILDER" >/dev/null || { echo "error: could not generate install payload at $PAYLOAD" >&2; exit 1; }

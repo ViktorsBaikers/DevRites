@@ -47,8 +47,8 @@ Run this from the root of your project. Node.js 18 or later is required.
 npx devrites@latest
 ```
 
-The installer adds project-local support for Claude Code and Codex. It does not
-write skills, agents, or hooks to `~/.claude` or `~/.codex`.
+The installer adds project-local support for Claude Code, Codex, omp, and pi.
+It does not write skills, agents, or hooks to `~/.claude`, `~/.codex`, or `~/.pi`.
 
 ### 2. Choose the smallest route
 
@@ -78,8 +78,9 @@ proof and next action.
 ## How the lifecycle works
 
 Claude Code supports both `/rite <verb>` and `/rite-<verb>`. Codex uses the same
-forms with `$`: `$rite <verb>` and `$rite-<verb>`. The menu and direct forms run
-the same skill.
+forms with `$`: `$rite <verb>` and `$rite-<verb>`. omp and pi use the Claude
+slash forms (on pi they run as prompt templates under `.pi/prompts`, with
+`/skill:rite-<verb>` equivalent). The menu and direct forms run the same skill.
 
 | # | Stage | Direct command | What happens |
 | ---: | --- | --- | --- |
@@ -294,7 +295,8 @@ Useful install flags:
 | `--target DIR` | Use another project directory. |
 | `--dry-run` | Show planned file operations without changing anything. |
 | `--force` | Replace or remove foreign or customized managed files. The installer still rejects symlinks and path escapes. |
-| `--no-codex` | Skip `.agents`, `.codex`, and `AGENTS.md` integration. |
+| `--no-codex` | Skip `.agents`, `.codex`, and the Codex `AGENTS.md` block. |
+| `--no-pi` | Skip `.pi` skills, agents, prompt commands, and the pi `AGENTS.md` block. |
 | `--no-agents` | Skip hook-free native specialist profiles. |
 | `--no-skills` | Skip skills and their bundled standards. |
 | `--no-binary` | Do not keep the shared `devrites-engine` binary in a user or system bin directory. |

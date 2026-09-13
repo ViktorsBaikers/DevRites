@@ -24,6 +24,7 @@ func (r *runner) install() error {
 	fmt.Fprintf(r.opts.Stdout, "  agents : %s\n", yesno(r.opts.WithAgents))
 	fmt.Fprintf(r.opts.Stdout, "  codex  : %s\n", yesno(r.opts.WithCodex))
 	fmt.Fprintf(r.opts.Stdout, "  omp    : %s\n", yesno(r.opts.WithOmp))
+	fmt.Fprintf(r.opts.Stdout, "  pi     : %s\n", yesno(r.opts.WithPi))
 	fmt.Fprintf(r.opts.Stdout, "  aliases: %s\n", r.opts.AliasMode)
 	if r.opts.DryRun {
 		fmt.Fprintln(r.opts.Stdout, "  (dry run - no changes will be made)")
@@ -38,7 +39,7 @@ func (r *runner) install() error {
 		return err
 	}
 
-	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp) {
+	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi) {
 		if err := r.installTree(tree.PayloadPrefix, tree.TargetPrefix); err != nil {
 			return fmt.Errorf("install tree %s: %w", tree.TargetPrefix, err)
 		}
@@ -49,7 +50,7 @@ func (r *runner) install() error {
 			if err != nil {
 				return fmt.Errorf("render alias skill %s: %w", alias.Name, err)
 			}
-			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp) {
+			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi) {
 				if err := r.installData(data, rel); err != nil {
 					return fmt.Errorf("install alias: %w", err)
 				}
@@ -62,6 +63,11 @@ func (r *runner) install() error {
 		}
 		if err := r.mergeCodexConfig(); err != nil {
 			return fmt.Errorf("merge %s: %w", hostpack.CodexConfigMerge.TargetRel, err)
+		}
+	}
+	if r.opts.WithSkills && r.opts.WithPi {
+		if err := r.mergeMarkerFile(hostpack.PiAgentsMerge); err != nil {
+			return fmt.Errorf("merge %s: %w", hostpack.PiAgentsMerge.TargetRel, err)
 		}
 	}
 	if r.opts.WithSkills {
@@ -93,11 +99,11 @@ func (r *runner) install() error {
 	fmt.Fprintf(r.opts.Stdout, "  installed: %d   overwritten: %d   skipped(conflict): %d   pruned: %d\n", r.stats.installed, r.stats.overwrote, r.stats.skipped, r.stats.pruned)
 	if !r.opts.DryRun && r.opts.WithSkills {
 		switch {
-		case r.opts.WithCodex && r.opts.WithOmp:
-			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite (Claude) or $rite (Codex) or /skill:rite.")
+		case r.opts.WithCodex && (r.opts.WithOmp || r.opts.WithPi):
+			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite (Claude) or $rite (Codex) or /skill:rite (omp/pi).")
 		case r.opts.WithCodex:
 			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite (Claude) or $rite (Codex).")
-		case r.opts.WithOmp:
+		case r.opts.WithOmp || r.opts.WithPi:
 			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite or /skill:rite.")
 		default:
 			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite.")
@@ -310,6 +316,9 @@ func (r *runner) flagsString() string {
 	}
 	if !r.opts.WithOmp {
 		flags = append(flags, "--no-omp")
+	}
+	if !r.opts.WithPi {
+		flags = append(flags, "--no-pi")
 	}
 	if !r.opts.WithBinary {
 		flags = append(flags, "--no-binary")

@@ -63,6 +63,11 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 		if err := fsutil.WriteFileAtomic(dest, next, 0o644); err != nil {
 			return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 		}
+		// Multiple marker blocks can share one target (AGENTS.md carries both
+		// the Codex and pi blocks).
+		if err := r.refreshPreflight(merge.TargetRel); err != nil {
+			return err
+		}
 	}
 	return r.installMarker(merge.MarkerRel, merge.MarkerText)
 }

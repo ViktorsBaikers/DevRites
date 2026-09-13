@@ -75,6 +75,7 @@ for need in \
   package/scripts/ \
   package/scripts/codex-generate.sh \
   package/scripts/omp-generate.sh \
+  package/scripts/pi-generate.sh \
   package/scripts/build-host-artifacts.sh \
   package/pack/generated/claude/skills/rite-build/SKILL.md \
   package/pack/generated/codex/skills/rite-build/SKILL.md \
@@ -82,6 +83,10 @@ for need in \
   package/pack/generated/codex/config.toml \
   package/pack/generated/omp/skills/rite-build/SKILL.md \
   package/pack/generated/omp/.omp-plugin/plugin.json \
+  package/pack/generated/pi/skills/rite-build/SKILL.md \
+  package/pack/generated/pi/agents/devrites-code-reviewer.md \
+  package/pack/generated/pi/prompts/rite-build.md \
+  package/pack/generated/pi/AGENTS.md \
   package/pack/.claude/ ; do
   echo "$contents" | grep -q "^$need" && ok "tarball ships $need" || no "tarball MISSING $need (files allowlist?)"
 done
@@ -90,7 +95,8 @@ runtime_scripts="$(printf '%s\n' \
   package/scripts/build-host-artifacts.sh \
   package/scripts/codex-generate.sh \
   package/scripts/install-lib.sh \
-  package/scripts/omp-generate.sh | sort)"
+  package/scripts/omp-generate.sh \
+  package/scripts/pi-generate.sh | sort)"
 [ "$shipped_scripts" = "$runtime_scripts" ] \
   && ok "tarball scripts are limited to the closed runtime set" \
   || { no "tarball ships repository-only or misses runtime scripts"; printf '    shipped:\n%s\n' "$shipped_scripts"; }
@@ -263,6 +269,9 @@ for f in \
   ".claude/agents/devrites-code-reviewer.md" \
   ".codex/agents/devrites-code-reviewer.toml" \
   ".codex/config.toml" \
+  ".pi/skills/rite/SKILL.md" \
+  ".pi/agents/devrites-code-reviewer.md" \
+  ".pi/prompts/rite-build.md" \
   ".claude/skills/devrites-lib/reference/standards/security.md" \
   "AGENTS.md" \
   ".devrites/ACTIVE" ; do
@@ -309,6 +318,7 @@ printf '  evidence: candidate_head=%s package_sha256=%s observed_elapsed=%ss\n' 
 # 9) project-local guarantee holds through the packaged path
 [ -e "$HOME/.claude/skills/rite" ] && no "wrote to ~/.claude !!" || ok "~/.claude untouched"
 [ -e "$HOME/.codex/agents/devrites-code-reviewer.toml" ] && no "wrote to ~/.codex !!" || ok "~/.codex untouched"
+[ -e "$HOME/.pi/agents/devrites-code-reviewer.md" ] && no "wrote to ~/.pi !!" || ok "~/.pi untouched"
 
 echo ""
 [ "$fail" -eq 0 ] && echo "npx-pack-smoke: PASS" || echo "npx-pack-smoke: FAIL"

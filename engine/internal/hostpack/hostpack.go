@@ -17,9 +17,12 @@ const (
 	ClaudeSkillsTarget    = devritespaths.ClaudeSkillsTarget
 	CodexSkillsTarget     = devritespaths.CodexSkillsTarget
 	OmpSkillsTarget       = devritespaths.OmpSkillsTarget
+	PiSkillsTarget        = devritespaths.PiSkillsTarget
 	ClaudeAgentsTarget    = devritespaths.ClaudeAgentsTarget
 	CodexAgentsTarget     = devritespaths.CodexAgentsTarget
 	OmpAgentsTarget       = devritespaths.OmpAgentsTarget
+	PiAgentsTarget        = devritespaths.PiAgentsTarget
+	PiPromptsTarget       = devritespaths.PiPromptsTarget
 	ClaudeWorkflowsTarget = devritespaths.ClaudeWorkflowsTarget
 )
 
@@ -87,6 +90,15 @@ var ClaudeSettingsMerge = JSONMerge{
 	DryRunText: ".claude/settings.json (DevRites permissions)",
 }
 
+var PiAgentsMerge = MarkerMerge{
+	TargetRel:  "AGENTS.md",
+	PayloadRel: "pi/AGENTS.md",
+	Begin:      "<!-- BEGIN DEVRITES PI -->",
+	End:        "<!-- END DEVRITES PI -->",
+	MarkerRel:  ".claude/devrites.pi-agents-merge",
+	MarkerText: "AGENTS.md contains a DevRites managed block between BEGIN/END DEVRITES PI markers.",
+}
+
 var CodexConfigMerge = MarkerMerge{
 	TargetRel:  ".codex/config.toml",
 	PayloadRel: "codex/config.toml",
@@ -108,7 +120,14 @@ var managedMerges = []ManagedMerge{
 		TargetRel: CodexAgentsMerge.TargetRel,
 		Begin:     CodexAgentsMerge.Begin,
 		End:       CodexAgentsMerge.End,
-		DryRun:    "AGENTS.md DevRites block",
+		DryRun:    "AGENTS.md DevRites Codex block",
+	},
+	{
+		MarkerRel: PiAgentsMerge.MarkerRel,
+		TargetRel: PiAgentsMerge.TargetRel,
+		Begin:     PiAgentsMerge.Begin,
+		End:       PiAgentsMerge.End,
+		DryRun:    "AGENTS.md DevRites pi block",
 	},
 	{
 		MarkerRel: CodexConfigMerge.MarkerRel,
@@ -125,7 +144,7 @@ var managedMerges = []ManagedMerge{
 	LegacyCodexHooksMerge,
 }
 
-func RequiredPayload(withCodex, withOmp bool) []string {
+func RequiredPayload(withCodex, withOmp, withPi bool) []string {
 	required := []string{
 		"claude/skills",
 		"claude/agents",
@@ -147,11 +166,19 @@ func RequiredPayload(withCodex, withOmp bool) []string {
 			"omp/.omp-plugin/plugin.json",
 		)
 	}
+	if withPi {
+		required = append(required,
+			"pi/skills",
+			"pi/agents",
+			"pi/prompts",
+			"pi/AGENTS.md",
+		)
+	}
 	return required
 }
 
-func ValidatePayload(payload fs.FS, withCodex, withOmp bool) error {
-	for _, rel := range RequiredPayload(withCodex, withOmp) {
+func ValidatePayload(payload fs.FS, withCodex, withOmp, withPi bool) error {
+	for _, rel := range RequiredPayload(withCodex, withOmp, withPi) {
 		if _, err := fs.Stat(payload, rel); err != nil {
 			return fmt.Errorf("missing %s", rel)
 		}
@@ -159,7 +186,7 @@ func ValidatePayload(payload fs.FS, withCodex, withOmp bool) error {
 	return nil
 }
 
-func InstallTrees(withSkills, withAgents, withCodex, withOmp bool) []Tree {
+func InstallTrees(withSkills, withAgents, withCodex, withOmp, withPi bool) []Tree {
 	var trees []Tree
 	if withSkills {
 		trees = append(trees, Tree{PayloadPrefix: "claude/skills", TargetPrefix: ClaudeSkillsTarget})
@@ -168,6 +195,12 @@ func InstallTrees(withSkills, withAgents, withCodex, withOmp bool) []Tree {
 		}
 		if withOmp {
 			trees = append(trees, Tree{PayloadPrefix: "omp/skills", TargetPrefix: OmpSkillsTarget})
+		}
+		if withPi {
+			trees = append(trees,
+				Tree{PayloadPrefix: "pi/skills", TargetPrefix: PiSkillsTarget},
+				Tree{PayloadPrefix: "pi/prompts", TargetPrefix: PiPromptsTarget},
+			)
 		}
 	}
 	if withAgents {
@@ -178,6 +211,9 @@ func InstallTrees(withSkills, withAgents, withCodex, withOmp bool) []Tree {
 		if withOmp {
 			trees = append(trees, Tree{PayloadPrefix: "omp/agents", TargetPrefix: OmpAgentsTarget})
 		}
+		if withPi {
+			trees = append(trees, Tree{PayloadPrefix: "pi/agents", TargetPrefix: PiAgentsTarget})
+		}
 	}
 	if withSkills && withAgents {
 		trees = append(trees, Tree{PayloadPrefix: "claude/workflows", TargetPrefix: ClaudeWorkflowsTarget})
@@ -185,13 +221,16 @@ func InstallTrees(withSkills, withAgents, withCodex, withOmp bool) []Tree {
 	return trees
 }
 
-func AliasTargets(alias Alias, withCodex, withOmp bool) []string {
+func AliasTargets(alias Alias, withCodex, withOmp, withPi bool) []string {
 	targets := []string{filepath.ToSlash(filepath.Join(ClaudeSkillsTarget, alias.Name, "SKILL.md"))}
 	if withCodex {
 		targets = append(targets, filepath.ToSlash(filepath.Join(CodexSkillsTarget, alias.Name, "SKILL.md")))
 	}
 	if withOmp {
 		targets = append(targets, filepath.ToSlash(filepath.Join(OmpSkillsTarget, alias.Name, "SKILL.md")))
+	}
+	if withPi {
+		targets = append(targets, filepath.ToSlash(filepath.Join(PiSkillsTarget, alias.Name, "SKILL.md")))
 	}
 	return targets
 }

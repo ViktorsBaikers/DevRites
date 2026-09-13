@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# host-artifacts-test.sh: validate prebuilt Claude/Codex/omp host artifacts.
+# host-artifacts-test.sh: validate prebuilt Claude/Codex/omp/pi host artifacts.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
@@ -61,6 +61,14 @@ for f in \
   "omp/agents/devrites-slice-wright.md" \
   "omp/agents/devrites-code-reviewer.md" \
   "omp/.omp-plugin/plugin.json" \
+  "pi/skills/rite-build/SKILL.md" \
+  "pi/skills/devrites-lib/reference/standards/core.md" \
+  "pi/skills/rite-build/reference/wright-dispatch.md" \
+  "pi/agents/devrites-slice-wright.md" \
+  "pi/agents/devrites-code-reviewer.md" \
+  "pi/prompts/rite.md" \
+  "pi/prompts/rite-build.md" \
+  "pi/AGENTS.md" \
   "README.md" ; do
   [ -f "$OUT/$f" ] && ok "artifact present: $f" || no "artifact missing: $f"
 done
@@ -80,9 +88,11 @@ src_skills="$(find "$ROOT/pack/.claude/skills" -mindepth 1 -maxdepth 1 -type d !
 claude_skills="$(find "$OUT/claude/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
 codex_skills="$(find "$OUT/codex/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
 omp_skills="$(find "$OUT/omp/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+pi_skills="$(find "$OUT/pi/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
 [ "$claude_skills" = "$src_skills" ] && ok "Claude artifact skill count matches source" || no "Claude artifact skill count mismatch"
 [ "$codex_skills" = "$src_skills" ] && ok "Codex artifact skill count matches source" || no "Codex artifact skill count mismatch"
 [ "$omp_skills" = "$src_skills" ] && ok "omp artifact skill count matches source" || no "omp artifact skill count mismatch"
+[ "$pi_skills" = "$src_skills" ] && ok "pi artifact skill count matches source" || no "pi artifact skill count mismatch"
 
 grep -q '## Codex compatibility' "$OUT/codex/skills/rite-build/SKILL.md" \
   && no "Codex skill artifact duplicates project-wide guidance" \
@@ -145,6 +155,45 @@ grep -q '"name": "devrites"' "$OUT/omp/.omp-plugin/plugin.json" \
   && ok "omp plugin.json names the pack and lists skills and agents" \
   || no "omp plugin.json missing name, skills, or agents"
 
+grep -q '.pi/skills/devrites-lib/reference/standards/core.md' "$OUT/pi/skills/rite-build/SKILL.md" \
+  && ok "pi skill artifact uses mirrored rules path" \
+  || no "pi skill artifact missing mirrored rules path"
+grep -q '.pi/agents/devrites-slice-wright.md' "$OUT/pi/skills/rite-build/SKILL.md" \
+  && ok "pi skill artifact references pi agent markdown" \
+  || no "pi skill artifact missing pi agent markdown"
+if grep -qE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/' \
+  "$OUT/pi/skills/rite-build/SKILL.md" \
+  "$OUT/pi/agents/devrites-slice-wright.md" \
+  "$OUT/pi/agents/devrites-code-reviewer.md" \
+  "$OUT/pi/prompts/rite-build.md"; then
+  no "pi artifacts retain foreign host paths"
+else
+  ok "pi artifacts rewrite to .pi paths"
+fi
+grep -q 'BEGIN DEVRITES PI' "$OUT/pi/AGENTS.md" \
+  && grep -q 'END DEVRITES PI' "$OUT/pi/AGENTS.md" \
+  && grep -q 'subagent({ agent, task })' "$OUT/pi/AGENTS.md" \
+  && ok "pi AGENTS.md bridge is marked and uses subagent dispatch" \
+  || no "pi AGENTS.md bridge missing markers or subagent dispatch"
+grep -q '^name: devrites-slice-wright' "$OUT/pi/agents/devrites-slice-wright.md" \
+  && grep -q '^inheritProjectContext: true' "$OUT/pi/agents/devrites-slice-wright.md" \
+  && grep -q '^tools: .*\bwrite\b' "$OUT/pi/agents/devrites-slice-wright.md" \
+  && ok "pi wright keeps write tools and project context" \
+  || no "pi wright lost write tools or project context"
+if grep -q '^tools: .*\b\(write\|edit\)\b' "$OUT/pi/agents/devrites-code-reviewer.md"; then
+  no "pi reviewer agent gained write tools"
+else
+  ok "pi reviewer agent stays read-only"
+fi
+grep -q '.pi/skills/rite-build/SKILL.md' "$OUT/pi/prompts/rite-build.md" \
+  && ok "pi prompt stub hands off to the installed skill" \
+  || no "pi prompt stub does not reach the installed skill"
+for d in "$ROOT"/pack/.claude/skills/rite "$ROOT"/pack/.claude/skills/rite-*; do
+  [ -d "$d" ] || continue
+  s="$(basename "$d")"
+  [ -f "$OUT/pi/prompts/$s.md" ] && ok "pi prompt preserves /$s" || no "pi prompt missing for /$s"
+done
+
 grep -q 'Immediately before its final response' "$OUT/codex/skills/devrites-lib/reference/standards/core.md" \
   && ok "Codex core preserves the universal reply boundary" \
   || no "Codex core lost the universal reply boundary"
@@ -152,14 +201,14 @@ grep -q 'devrites-engine check readiness <slug>' "$OUT/codex/skills/devrites-lib
   && ok "Codex core preserves lifecycle rest points" \
   || no "Codex core lost lifecycle rest points"
 if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out|migrate)([[:space:]`]|$)' \
-  "$OUT/claude" "$OUT/codex" "$OUT/omp" >/tmp/dr_host_artifacts_retired 2>/dev/null; then
+  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" >/tmp/dr_host_artifacts_retired 2>/dev/null; then
   no "generated host artifacts retain retired engine commands"
   sed -n '1,20p' /tmp/dr_host_artifacts_retired
 else
   ok "generated host artifacts use only nested thin-engine commands"
 fi
 if grep -R -nE 'devrites-engine[[:space:]]+(check[[:space:]]+spec|state[[:space:]]+(clarify|tick-afk|recovery)([[:space:]`]|$)|state[[:space:]]+resolve[[:space:]]+next-qid|doctor([[:space:]`]|$))' \
-  "$OUT/claude" "$OUT/codex" "$OUT/omp" >"$T/removed-policy-commands.log" 2>/dev/null; then
+  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" >"$T/removed-policy-commands.log" 2>/dev/null; then
   no "generated host artifacts retain removed engine policy commands"
   sed -n '1,20p' "$T/removed-policy-commands.log"
 else
@@ -169,13 +218,14 @@ if grep -R -nE 'ADR-[0-9]{4}' \
   "$OUT/claude/skills" "$OUT/claude/agents" \
   "$OUT/codex/skills" "$OUT/codex/agents" "$OUT/codex/AGENTS.md" \
   "$OUT/omp/skills" "$OUT/omp/agents" \
+  "$OUT/pi/skills" "$OUT/pi/agents" "$OUT/pi/prompts" "$OUT/pi/AGENTS.md" \
   >"$T/source-adr.log" 2>/dev/null; then
   no "generated model-visible artifacts contain source ADR identifiers"
   sed -n '1,20p' "$T/source-adr.log"
 else
   ok "generated model-visible artifacts contain no source ADR identifiers"
 fi
-for host in claude codex omp; do
+for host in claude codex omp pi; do
   authoring="$OUT/$host/skills/devrites-lib/reference/standards/skill-authoring.md"
   if grep -q 'Source-checkout only' "$authoring" \
     && grep -q 'where `pack/\.claude/` exists' "$authoring" \
@@ -231,7 +281,7 @@ grep -q -- '--import-legacy' "$OUT/codex/skills/rite-customize/SKILL.md" \
 grep -q 'earlier context cannot activate it' "$OUT/codex/skills/rite-customize/SKILL.md" \
   && ok "Codex customize preserves literal-only legacy mode" \
   || no "Codex customize can infer legacy mode from context"
-for host in claude codex omp; do
+for host in claude codex omp pi; do
   grep -q 'Older provenance, cursor form, or pack version alone is never a defect' \
     "$OUT/$host/skills/rite-upgrade/SKILL.md" \
     && ok "$host upgrade requires an observed current-contract defect" \
@@ -266,6 +316,14 @@ if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills
   sed -n '1,40p' /tmp/dr_host_artifacts_omp_paths
 else
   ok "omp artifacts contain no leftover Claude/Codex paths"
+fi
+
+if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/' "$OUT/pi/skills" "$OUT/pi/agents" "$OUT/pi/prompts" \
+  || grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/pi/skills" "$OUT/pi/agents"; } >/tmp/dr_host_artifacts_pi_paths 2>/dev/null; then
+  no "pi artifacts contain leftover Claude/Codex/omp paths"
+  sed -n '1,40p' /tmp/dr_host_artifacts_pi_paths
+else
+  ok "pi artifacts contain no leftover Claude/Codex/omp paths"
 fi
 
 if command -v python3 >/dev/null 2>&1; then

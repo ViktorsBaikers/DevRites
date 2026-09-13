@@ -54,7 +54,28 @@ case_no_codex() {
   [ -f "$t/.claude/skills/rite-build/SKILL.md" ] && ok "--no-codex still installs Claude skills" || no "--no-codex broke Claude skills"
   [ -d "$t/.agents" ] && no "--no-codex installed .agents" || ok "--no-codex skipped .agents"
   [ -d "$t/.codex" ] && no "--no-codex installed .codex" || ok "--no-codex skipped .codex"
-  [ -f "$t/AGENTS.md" ] && no "--no-codex installed AGENTS.md" || ok "--no-codex skipped AGENTS.md"
+  # AGENTS.md is shared: --no-codex still gets the pi bridge block.
+  if [ -f "$t/AGENTS.md" ] && ! grep -q 'BEGIN DEVRITES CODEX' "$t/AGENTS.md" \
+    && grep -q 'BEGIN DEVRITES PI' "$t/AGENTS.md"; then
+    ok "--no-codex kept only the pi AGENTS.md block"
+  else
+    no "--no-codex left a Codex block or dropped the pi block in AGENTS.md"
+  fi
+  exit "$fail"
+}
+
+case_no_pi() {
+  local t="$T/no-pi"; mkdir -p "$t"; fail=0
+  bash "$ROOT/install.sh" --target "$t" --no-pi >/dev/null 2>&1 || no "--no-pi install failed"
+  [ -f "$t/.claude/skills/rite-build/SKILL.md" ] && ok "--no-pi still installs Claude skills" || no "--no-pi broke Claude skills"
+  [ -d "$t/.pi" ] && no "--no-pi installed .pi" || ok "--no-pi skipped .pi"
+  [ -f "$t/.codex/config.toml" ] && ok "--no-pi still installs Codex" || no "--no-pi broke Codex"
+  if [ -f "$t/AGENTS.md" ] && grep -q 'BEGIN DEVRITES CODEX' "$t/AGENTS.md" \
+    && ! grep -q 'BEGIN DEVRITES PI' "$t/AGENTS.md"; then
+    ok "--no-pi kept only the Codex AGENTS.md block"
+  else
+    no "--no-pi left a pi block or dropped the Codex block in AGENTS.md"
+  fi
   exit "$fail"
 }
 
@@ -63,6 +84,7 @@ case_no_agents & pids+=("$!")
 case_short_aliases & pids+=("$!")
 case_no_rules & pids+=("$!")
 case_no_codex & pids+=("$!")
+case_no_pi & pids+=("$!")
 for pid in "${pids[@]}"; do
   wait "$pid" || fail=1
 done

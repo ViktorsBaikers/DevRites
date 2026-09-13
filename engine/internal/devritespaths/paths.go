@@ -16,9 +16,12 @@ const (
 	ClaudeSkillsTarget    = ".claude/skills"
 	CodexSkillsTarget     = ".agents/skills"
 	OmpSkillsTarget       = ".omp/skills"
+	PiSkillsTarget        = ".pi/skills"
 	ClaudeAgentsTarget    = ".claude/agents"
 	CodexAgentsTarget     = ".codex/agents"
 	OmpAgentsTarget       = ".omp/agents"
+	PiAgentsTarget        = ".pi/agents"
+	PiPromptsTarget       = ".pi/prompts"
 	ClaudeWorkflowsTarget = ".claude/workflows"
 
 	ManifestName = ".claude/devrites.manifest"
