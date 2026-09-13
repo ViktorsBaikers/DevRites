@@ -67,19 +67,19 @@ map + worked examples: [`reference/failure-modes.md`](reference/failure-modes.md
 
 - [ ] **1 · Silent assumption**: did I pick one reading of an ambiguous ask and run with it?
       Any value, contract, or behavior I *guessed*? → surface it; route material ones through
-      the Spec Drift Guard (`core.md` #4; surface per #2/#3).
+      the Spec Drift Guard ([`core.md`](../devrites-lib/reference/standards/core.md) #4; surface per #2/#3).
 - [ ] **2 · Overcomplication**: an abstraction / flag / indirection nobody asked for? 200 lines
       where 50 would do? A defensive check inside trusted code? → apply the **deletion test**;
-      simplify (`coding-style.md`, `patterns.md`, `devrites-audit simplify`).
+      simplify ([`coding-style.md`](../devrites-lib/reference/standards/coding-style.md), [`patterns.md`](../devrites-lib/reference/standards/patterns.md), `devrites-audit simplify`).
 - [ ] **3 · Out-of-scope edit**: did I touch code, comments, or formatting outside the ask?
       "While I'm here" refactors? → revert to the boundary; record the rest as an FYI follow-up
-      (`core.md` #7, `touched-files.md`).
+      ([`core.md`](../devrites-lib/reference/standards/core.md) #7, `touched-files.md`).
 - [ ] **4 · Unverifiable goal**: is there a command that proves this, run, with output? Or am
       I asserting "it works"? Tautological test that can't fail? → run the FRAME verify command;
-      record command + output (`testing.md`, evidence-over-confidence).
+      record command + output ([`testing.md`](../devrites-lib/reference/standards/testing.md), evidence-over-confidence).
 - [ ] **Principle check**, if `.devrites/principles.md` exists, does the change break a declared
       invariant? A violation with no recorded, human-approved exception is a **Critical**: the
-      express lane is not a way around a project gate; escalate it, don't ship it (`principles.md`).
+      express lane is not a way around a project gate; escalate it, don't ship it ([`principles.md`](../devrites-lib/reference/standards/principles.md)).
 
 The test for each changed line: **it traces directly to the criterion, and the criterion can
 be proven false.** A line that fails either is a finding.

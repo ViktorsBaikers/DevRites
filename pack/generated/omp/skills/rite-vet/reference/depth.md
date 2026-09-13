@@ -17,7 +17,7 @@ Authority: `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-r
 <!-- END RESLICE ROUTE-TO-ACTION -->
 
 ## Full pass when ANY trips
-- **Irreversible-risk contact:** the plan touches anything on the `afk-hitl.md` irreversible-risk
+- **Irreversible-risk contact:** the plan touches anything on the [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) irreversible-risk
   list: destructive data migration, auth/authz boundary, public-API break, external-service
   contract, filesystem destruction outside the workspace.
 - **Data model:** new/changed entities, relationships, or persistence shape.

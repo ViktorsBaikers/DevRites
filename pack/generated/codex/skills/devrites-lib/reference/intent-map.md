@@ -37,7 +37,7 @@ One binary test per pair; both true ⇒ ask once.
 | `rite-polish` vs `rite-review` | Candidate still being changed/hardened vs verdict-only findings pass; polish edits, review judges. |
 | `devrites-frontend-craft` vs `rite-polish` | Building new UI vs finishing built UI; craft sets standards at build, polish runs the catch pass. |
 | `devrites-ux-shape` vs `rite-spec` | Interaction/state/flow design question vs behavior-contract gap; shaped UX feeds the spec. |
-| `devrites-prose-craft` vs `devrites-frontend-craft` | Long-form prose (docs/README/replies) vs visible product copy; boundary lives in `browser-proof-checklist.md`. |
+| `devrites-prose-craft` vs `devrites-frontend-craft` | Long-form prose (docs/README/replies) vs visible product copy; boundary lives in [`browser-proof-checklist.md`](standards/browser-proof-checklist.md). |
 | `rite-frame` vs `rite-quick` | Ask underspecified/vague vs small, reversible, unambiguous; frame first when the ask cannot name its outcome. |
 | `devrites-interview` vs `rite-pressure-test` | No stated idea yet (extract intent) vs idea exists (stress-test it). |
 | `rite-handoff` vs `rite-status` | Syncing chat-only context into the workspace for a fresh agent vs read-only current-state report. |

@@ -44,7 +44,7 @@ or reinitialize it. AFK configuration itself stays unchanged.
 ### Admit each unattended cycle
 
 Before every phase, review fan-out, recovery, or writer dispatch, apply
-`afk-hitl.md#unattended-resource-envelope`: cheapest current-state/readiness
+[`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#unattended-resource-envelope): cheapest current-state/readiness
 check first; reject overlap; count unresolved review; check expiry and native
 agent/token/cost/time headroom. Count every leaf result. At the review cap, only
 reconciliation that reduces the queue may run. Any reached or unobservable

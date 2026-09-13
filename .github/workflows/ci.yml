@@ -34,7 +34,9 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
-          fetch-depth: 0
+          # Shallow tip is enough; ci-change-scope.sh fetches origin/<base>
+          # with --depth=1 when it needs the merge-base file list.
+          fetch-depth: 1
           persist-credentials: false
       - id: scope
         run: bash scripts/ci-change-scope.sh
@@ -70,21 +72,25 @@ jobs:
       - name: Install npm deps
         run: npm ci
 
+      # Needed for validate.sh workflow-manifest freshness (`go run`); not used
+      # to compile actionlint/osv-scanner anymore.
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: engine/go.mod
-          # Tool installs only; engine job owns the shared build cache snapshot.
-          cache: false
+          cache-dependency-path: engine/go.mod
+
+      # Release binaries + venv (not `go install`) so cold CI skips compiling
+      # actionlint/osv-scanner. Cache keeps warm PR pushes near-instant.
+      - name: Cache validate tools
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.local/devrites-ci-tools
+          key: validate-tools-${{ runner.os }}-${{ runner.arch }}-al1.7.10-osv2.5.1-ziz1.30.1-${{ hashFiles('scripts/ci-install-validate-tools.sh') }}
 
       - name: Install workflow linters + osv-scanner
-        run: |
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.10
-          go install github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.5.1
-          python3 -m pip install --disable-pip-version-check zizmor
-          command -v actionlint
-          command -v osv-scanner
-          command -v zizmor
+        run: bash scripts/ci-install-validate-tools.sh
+
 
       - name: Validate pack structure
         run: bash scripts/validate.sh
@@ -139,8 +145,9 @@ jobs:
   # self-provisions the host artifacts + engine CLI. The setup-go cache
   # (keyed on engine/go.mod + ci.yml) keeps those builds warm across runs;
   # the engine job primes the version-stamp patterns into the same snapshot.
+  # 14 shards keeps the long-pole shard under ~70s wall without dropping cases.
   tests:
-    name: shell test suite (shard ${{ matrix.shard }}/8)
+    name: shell test suite (shard ${{ matrix.shard }}/14)
     needs: detect-changes
     # Docs-only skip via run_full; engine-only PRs skip shards via run_tests
     # (validate still runs). Job-level skip reports success for required checks.
@@ -155,7 +162,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -196,7 +203,7 @@ jobs:
           DEVRITES_WAI_PARALLEL_WORKERS: '4'
           DEVRITES_WAI_BOUNDARY_SHARDS: '6'
           DEVRITES_WAI_CORE_SHARDS: '4'
-        run: node scripts/run-tests.mjs --shard ${{ matrix.shard }}/8
+        run: node scripts/run-tests.mjs --shard ${{ matrix.shard }}/14
 
   engine:
     name: engine (go test + cross-compile)

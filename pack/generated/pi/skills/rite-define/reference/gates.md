@@ -78,7 +78,7 @@ it's `blocking`.
 
 ## Picking the gate
 
-First apply `afk-hitl.md` decision ownership: an objective implementation/tooling failure
+First apply [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) decision ownership: an objective implementation/tooling failure
 or reversible technical choice is agent work and gets no human gate. Then apply this
 decision tree per HITL slice:
 

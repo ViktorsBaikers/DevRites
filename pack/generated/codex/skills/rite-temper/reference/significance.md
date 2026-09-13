@@ -6,7 +6,7 @@ optional `$rite-temper` path and the always-run (significance-gated) `$rite-auto
 so they agree on when it fires.
 
 ## Fire the FULL review when ANY trips
-- **Irreversible-risk contact:** the slice/spec touches anything on the `afk-hitl.md`
+- **Irreversible-risk contact:** the slice/spec touches anything on the [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)
   irreversible-risk list: destructive data migration, auth/authz boundary, public-API break,
   external-service contract, filesystem destruction outside the workspace.
 - **Data model:** new/changed entities, relationships, or persistence shape.

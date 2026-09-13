@@ -39,7 +39,7 @@ Run during Polish before Review so ledger edits enter the proved candidate.
 2. **Preview, do not write.** Show exact target paths; every delta with before/after
    header; full requirement order; and changed files. Apply the table to current
    bytes and the preservation rule to MODIFIED and REMOVED. Conflicts stop.
-3. **Check feature grammar.** Apply `spec-grammar.md`'s Native grammar re-read
+3. **Check feature grammar.** Apply [`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md)'s Native grammar re-read
    checklist to the saved feature spec. Any miss stops. Step 2's native comparison owns delta reconciliation; an
    already-applied empty preview remains a no-op.
 4. **Confirm.** Name exact paths and deltas. A later Seal or Ship approval does
@@ -50,7 +50,7 @@ Run during Polish before Review so ledger edits enter the proved candidate.
    bytes/order, and apply only previewed replacements or empty-file deletion.
    **Failing case:** Polish rewrites feature `spec.md` acceptance criteria "to match
    code." Capability fold is the non-trigger; feature `spec.md` stays sealed
-   (`core.md` rule 4).
+   ([`core.md`](../../devrites-lib/reference/standards/core.md) rule 4).
 6. **Verify.** Re-read targets; require unrelated blocks byte-identical and the
    same preview empty. Apply the same Native grammar re-read checklist to each
    resulting capability spec.

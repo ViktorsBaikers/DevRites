@@ -126,7 +126,7 @@ prove only their named static criterion.
 
 ## Interaction inventory (UI slices — every element + flow gets an asserting test)
 Enumerate every interactive element and user flow the feature exposes; one row each, none
-skipped. Level per `testing.md` "Completeness": elements/fields → unit/component, critical
+skipped. Level per [`testing.md`](../../devrites-lib/reference/standards/testing.md) "Completeness": elements/fields → unit/component, critical
 journeys → one E2E (never one-per-field). `$rite-build` must cover every row; `$rite-prove`
 fails any row with no passing result — an unverified element is a NO-GO, like an unproven criterion.
 ```markdown

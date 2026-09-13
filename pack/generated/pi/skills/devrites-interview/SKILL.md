@@ -25,7 +25,7 @@ spec, plan, or code.
   is explicitly selected or explicitly deferred by the user. A cap MUST NOT move a blocker to
   `assumptions.md`. Own and log reversible, low-impact technical details instead of asking.
 - **Structured options** when the space is enumerable: present them as the standard ranked
-  **option set** ([`afk-hitl.md` → "Option set"](../devrites-lib/reference/standards/afk-hitl.md#option-set-how-every-gap-is-presented)): recommended **first**, labelled
+  **option set** ([[`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) → "Option set"](../devrites-lib/reference/standards/afk-hitl.md#option-set-how-every-gap-is-presented)): recommended **first**, labelled
   `(Recommended)`, each with a dimension-tagged rationale (`logic · infra · business ·
   architecture`, + `security`/`UX`/`risk` when in scope), plus the escape hatch. Render via
   `AskUserQuestion` when the harness has it:

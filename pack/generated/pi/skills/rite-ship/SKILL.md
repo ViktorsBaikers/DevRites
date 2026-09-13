@@ -11,10 +11,10 @@ user-invocable: true
 if absent, route to `/rite-spec <feature>`. Ship only with current **GO** in `seal.md`.
 
 ## Rules consulted (read on demand from `.pi/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `core.md`, then pull as needed:
-- `git-workflow.md`: Conventional Commits, atomicity, never-commit list.
-- `afk-hitl.md`: AFK pause rules for irreversible actions (the type-GO gate itself: [`git-ship.md`](reference/git-ship.md), [`rollout.md`](reference/rollout.md)).
-- `definition-of-done.md`: acceptance, evidence, drift, rollback, docs.
+**Step 0:** Read [`core.md`](../devrites-lib/reference/standards/core.md), then pull as needed:
+- [`git-workflow.md`](../devrites-lib/reference/standards/git-workflow.md): Conventional Commits, atomicity, never-commit list.
+- [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md): AFK pause rules for irreversible actions (the type-GO gate itself: [`git-ship.md`](reference/git-ship.md), [`rollout.md`](reference/rollout.md)).
+- [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md): acceptance, evidence, drift, rollback, docs.
 - [`release/ship-checklist.md`](../devrites-lib/reference/standards/release/ship-checklist.md): final pass/fail sweep.
 
 ## Operating rules

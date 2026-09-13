@@ -14,7 +14,7 @@ structural migration, or generic cleanup.
 
 ## Rules consulted
 
-Read `devrites-lib/reference/standards/core.md`, its agent and workspace-schema
+Read [`core.md`](../devrites-lib/reference/standards/core.md), its agent and workspace-schema
 references, and only current phase contracts needed for the observed gap.
 
 ## Invariants

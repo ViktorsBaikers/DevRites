@@ -24,7 +24,7 @@ of one authority; it cannot promote a rule alone.
 3. Keep corrections repeated in two features, a judgement call made twice, or a defect class seen twice; drop one-off preferences, task-specific detail, generic advice.
 4. Verify claims against live authoritative sources; state currentness signal, applies/does-not-apply scope, `unknown` where unverifiable.
    **Research promotion requires:** each external claim carries a dated citation per
-   [`tooling.md` § Research provenance](../devrites-lib/reference/standards/tooling.md#research-provenance-staleness-and-cost).
+   [[`tooling.md`](../devrites-lib/reference/standards/tooling.md) § Research provenance](../devrites-lib/reference/standards/tooling.md#research-provenance-staleness-and-cost).
    **Failing case:** "best practice is X" with no source → reject promotion.
 5. Apply durable promotion's recoverability test; search same/contrary rules, choose one existing owner (nearest instruction/standard, ADR, or feature `decisions.md`), and name discovery.
 6. Show the exact edit + duplicate/conflict/supersession disposition; update/narrow/replace/retire contradictions; apply only after user approval of exact edits.

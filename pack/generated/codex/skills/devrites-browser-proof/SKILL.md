@@ -10,7 +10,7 @@ Screenshots and runtime observations beat "it should render fine." Use the highe
 available rung; record which one.
 
 The same ladder captures a **developer-facing docs / getting-started page** for the DX measure step
-(`$rite-prove` 5c, `developer-experience.md`): screenshot the quickstart, confirm documented
+(`$rite-prove` 5c, [`developer-experience.md`](../devrites-lib/reference/standards/developer-experience.md)): screenshot the quickstart, confirm documented
 commands match what runs, and note the result in `browser-evidence.md` / `devex.md`.
 
 ## Ladder (top-down)

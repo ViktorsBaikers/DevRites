@@ -14,9 +14,9 @@ Investigate and resolve material gaps into a placed, covered `spec.md`.
 > here for auth, data, migration, public API, or multi-slice work.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-Pull `documentation.md` for significant decisions and `principles.md` for
+Pull [`documentation.md`](../devrites-lib/reference/standards/documentation.md) for significant decisions and [`principles.md`](../devrites-lib/reference/standards/principles.md) for
 declared invariants; an unavoidable principle violation is blocking.
-For behavioral/high-risk acceptance, use `spec-grammar.md` plus workspace schema;
+For behavioral/high-risk acceptance, use [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) plus workspace schema;
 simple criteria stay flat `AC-###`. Apply
 [`acceptance-criteria.md`](reference/acceptance-criteria.md) so each is binary and observable.
 Use [`edge-case-trace.md`](../devrites-lib/reference/standards/edge-case-trace.md)
@@ -68,7 +68,7 @@ load a routed standard to discover required behavior, not to prescribe implement
    relevant `.devrites/**/decisions.md` files directly before asking the human to revisit a
    settled architecture, API, or auth choice. Compare exact requirement headers and meanings
    with the current ledger to choose ADDED/MODIFIED/REMOVED; never classify from memory. Use
-   `spec-grammar.md`'s singular `Capability impact:` declaration to name the affected
+   [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md)'s singular `Capability impact:` declaration to name the affected
    capabilities and change, or give its specific `none` justification.
    Inventory affected observable behavior from current test/contract/runtime/source
    evidence; map each outcome to preserving REQ/AC. Greenfield `none` needs the
@@ -98,7 +98,7 @@ load a routed standard to discover required behavior, not to prescribe implement
    backend/data/CLI features skip this.
 4. **Resolve human-owned gaps.** Recommend an option and let the human decide. Apply
    [question-protocol](reference/question-protocol.md), the shared
-   [`afk-hitl.md` option-set and decision-ownership rules](../devrites-lib/reference/standards/afk-hitl.md#decision-ownership-search-before-asking),
+   [[`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) option-set and decision-ownership rules](../devrites-lib/reference/standards/afk-hitl.md#decision-ownership-search-before-asking),
    and [`interview-patterns.md`](reference/interview-patterns.md) for a vague ask. Every
    material dimension is resolved by a human pick or explicitly deferred as non-blocking;
    only genuinely reversible, low-impact details go to `assumptions.md`. A paper-only
@@ -124,7 +124,7 @@ load a routed standard to discover required behavior, not to prescribe implement
    never by softening the question.
 6. **Run the complete readiness gate** at the bottom of
    [spec-template](reference/spec-template.md), then apply the
-   **Native grammar re-read checklist** in `spec-grammar.md` to the complete
+   **Native grammar re-read checklist** in [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) to the complete
    saved `spec.md`. Re-open the file after corrections and verify every
    applicable item; there is no parser or replacement script. Natively compare
    deltas with the current ledger using exact header semantics and the ledger's

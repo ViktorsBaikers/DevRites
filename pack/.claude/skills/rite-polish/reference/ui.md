@@ -93,7 +93,7 @@ path isn't polish.
 ### Measurable bar (2026)
 
 Polish verifies against the frontend quality standards
-(`devrites-frontend-craft/reference/quality-standards.md`), measured not assumed:
+([`quality-standards.md`](../../devrites-frontend-craft/reference/quality-standards.md)), measured not assumed:
 - Core Web Vitals (p75): **LCP ≤ 2.5 s · INP ≤ 200 ms · CLS ≤ 0.1**.
 - WCAG 2.2 AA: semantic HTML, keyboard-operable, visible focus ≥ 3:1, no drag-only.
 - Responsive at the canonical viewport set (quality-standards § Responsive — currently

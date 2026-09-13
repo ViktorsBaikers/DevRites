@@ -39,7 +39,7 @@ Build what *this* slice needs. Don't scaffold future screens, settings, or varia
 - Empty states teach the next step; error states offer recovery.
 - Spacing reads as deliberate; alignment holds at every breakpoint.
 - Copy is in the product's voice, specific, and short (and passes the Copy & data realism
-  check in `rite-polish/reference/anti-ai-slop.md`).
+  check in [`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md)).
 - No console noise; no layout shift.
 
 ## Record

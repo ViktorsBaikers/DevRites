@@ -34,16 +34,16 @@ express lane on a risky one is the failure mode the lifecycle exists to prevent.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 Load this lane's conditional standards when needed:
-- `coding-style.md`: naming, guard clauses, reuse-first.
-- `testing.md`: TDD, **completeness** (every touched behavior/element asserted) +
+- [`coding-style.md`](../devrites-lib/reference/standards/coding-style.md): naming, guard clauses, reuse-first.
+- [`testing.md`](../devrites-lib/reference/standards/testing.md): TDD, **completeness** (every touched behavior/element asserted) +
   **assertion strength** (no tautological tests; see it fail first), scaled to the change.
-- `error-handling.md` / `security.md`: only if the change touches input/errors.
-- `principles.md`: when `.devrites/principles.md` exists; a change that breaks an invariant is a gate, not a quick fix.
-- `definition-of-done.md`: standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+- [`error-handling.md`](../devrites-lib/reference/standards/error-handling.md) / [`security.md`](../devrites-lib/reference/standards/security.md): only if the change touches input/errors.
+- [`principles.md`](../devrites-lib/reference/standards/principles.md): when `.devrites/principles.md` exists; a change that breaks an invariant is a gate, not a quick fix.
+- [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md): standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
 
 
 ## Workflow
-0. **Orient.** Read `core.md`. If a `.devrites/` workspace is active, read its
+0. **Orient.** Read [`core.md`](../devrites-lib/reference/standards/core.md). If a `.devrites/` workspace is active, read its
    `state.md` directly; `/rite-quick` does **not** require
    a workspace and does **not** create the full tree.
 1. **Significance gate** (above). Fail → STOP, tell the user to run `/rite-spec <feature>`.

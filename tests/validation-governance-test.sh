@@ -31,6 +31,19 @@ run_ok "cross refs accept repo docs and runtime artifacts" python3 "$ROOT/script
 printf 'Read `definitely-dead.md`.\n' >> "$T/cross/pack/.claude/skills/demo/SKILL.md"
 run_fail_contains "cross refs still reject unknown documents" "definitely-dead.md" python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/cross"
 
+# Bare shared-standard basenames must not pass merely because the file exists
+# under another skill (hosts open <skill>/reference/<name>.md for bare names).
+mkdir -p "$T/bare/pack/.claude/skills/demo" \
+  "$T/bare/pack/.claude/skills/devrites-lib/reference/standards"
+printf '# afk\n' > "$T/bare/pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md"
+printf 'Read `afk-hitl.md` first.\n' > "$T/bare/pack/.claude/skills/demo/SKILL.md"
+run_fail_contains "cross refs reject bare shared-standard basename" "not local" \
+  python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/bare"
+printf 'Read [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) first.\n' \
+  > "$T/bare/pack/.claude/skills/demo/SKILL.md"
+run_ok "cross refs accept relative link to shared standard" \
+  python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/bare"
+
 # Permission profile names are not skill invocations; undeclared devrites-* names remain errors.
 printf 'Use the devrites-orchestrator permission profile.\n' > "$T/non-skill-profile.md"
 printf 'Invoke devrites-definitely-missing.\n' > "$T/missing-invocation.md"

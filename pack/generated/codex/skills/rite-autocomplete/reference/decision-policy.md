@@ -30,7 +30,7 @@ not pick the option that's merely easiest to implement.
 
 - Follow the project's existing conventions, components, and test commands: always.
 - Prefer the smallest vertical slice that proves the acceptance criterion.
-- Reuse → extend → build new, in that order (`coding-style.md`).
+- Reuse → extend → build new, in that order ([`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md)).
 - When two options are equivalent on the evidence, choose the lower-risk / more
   reversible one.
 

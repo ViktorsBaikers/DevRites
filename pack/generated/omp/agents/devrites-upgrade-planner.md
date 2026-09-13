@@ -17,7 +17,7 @@ Cite current rule plus workspace evidence for each applicable axis: cursor/topol
 phase artifacts, decisions, planning/traceability/proof, built-code/intent, protected
 history, artifact budgets/feature ceiling (the supplied `devrites-engine orient`
 `artifact_budgets`/`bulk_files` and `task_graph.slice_count` against
-`workspace-artifact-schema.md` and `rite-plan/reference/slicing.md` § Feature ceiling),
+[`workspace-artifact-schema.md`](../skills/devrites-lib/reference/workspace-artifact-schema.md) and [`slicing.md`](../skills/rite-plan/reference/slicing.md) § Feature ceiling),
 and candidate integrity after Build. Candidate integrity uses the cited current
 contracts, workspace artifacts, and supplied current candidate/seal check results.
 Older provenance is not evidence; age, style, missing version metadata, and irrelevant

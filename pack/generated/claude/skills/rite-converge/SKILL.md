@@ -24,15 +24,15 @@ prerequisite skill to run.
 
 Pull on demand:
 
-- `principles.md`: the project invariants (`.devrites/principles.md`); code that violates a
+- [`principles.md`](../devrites-lib/reference/standards/principles.md): the project invariants (`.devrites/principles.md`); code that violates a
   MUST principle is the highest-severity gap and produces a remediation slice.
-- `spec-grammar.md`: buildable acceptance criteria vs `## Success metrics` (outcome KPIs the
+- [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md): buildable acceptance criteria vs `## Success metrics` (outcome KPIs the
   code can't make true and this pass never enqueues); structured `### Requirement:` /
   `#### Scenario:` blocks, each scenario one behavior to check as built / partial / absent.
-- `tooling.md`: use the primary available code index; cross-check only a named unresolved
+- [`tooling.md`](../devrites-lib/reference/standards/tooling.md): use the primary available code index; cross-check only a named unresolved
   predicate, then fall back to LSP/file search. Read live code, not artifact claims.
-- `testing.md`: a criterion with code but no covering test is *partial*, not done.
-- `repository-topology.md`, `data-integrity.md`, `integration-reliability.md`: only for
+- [`testing.md`](../devrites-lib/reference/standards/testing.md): a criterion with code but no covering test is *partial*, not done.
+- [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md): only for
   triggered applicability rows; missing failure/recovery behavior is partial or absent.
 
 ## Operating rules
@@ -48,7 +48,7 @@ Pull on demand:
 - **Use artifacts as intent.** The spec, plan, tasks, and principles are the
   contract. If assessing reveals the *spec* is wrong (the code is right and the requirement is
   stale), that's **Spec Drift**: stop and route it through the Spec Drift Guard
-  (`rite-build/reference/spec-drift-guard.md`) + a recorded decision; never paper over a spec
+  ([`spec-drift-guard.md`](../rite-build/reference/spec-drift-guard.md)) + a recorded decision; never paper over a spec
   bug by appending a task that changes correct code to match a wrong requirement.
 - **Partial is not done.** Code that exists but is untested, half-wired, or covers only the
   happy path is an unmet gap: enqueue the remainder, don't round it up.
@@ -83,7 +83,7 @@ Pull on demand:
    proof still agrees with its `test-plan.md` row, and the mapped prose preserves the
    requirement's meaning. Record orphaned, invented, duplicate, or contradictory
    mappings as gaps. Then read the live code
-   (code-intelligence index per `tooling.md`); artifact mappings never prove implementation.
+   (code-intelligence index per [`tooling.md`](../devrites-lib/reference/standards/tooling.md)); artifact mappings never prove implementation.
 4. **Assess each unit as built / partial / absent** against the live code (the rubric is in
    [`reference/convergence-assessment.md`](reference/convergence-assessment.md)): every
    acceptance criterion / scenario, every plan touch-point, and every existing slice's stated

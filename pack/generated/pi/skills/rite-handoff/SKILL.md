@@ -91,7 +91,7 @@ Print the absolute path in `Record:` so the user or next agent can open it witho
 
 ## Session hygiene
 Close with the one-line hygiene advisory + the single resume command. This skill *is* the
-pre-`/clear` bridge, so it's where the advisory matters most (`context-hygiene.md`):
+pre-`/clear` bridge, so it's where the advisory matters most ([`context-hygiene.md`](../devrites-lib/reference/standards/context-hygiene.md)):
 ```
 ↻ Hygiene: /clear
 ```

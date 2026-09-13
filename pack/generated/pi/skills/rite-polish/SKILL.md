@@ -53,7 +53,7 @@ Incomplete comparison is **not** agreement. Record axis deltas in `polish-report
 ## Orchestration
 
 0. **Read** `.pi/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules). The
-   per-phase rule files (`coding-style.md`, `error-handling.md`, …) load on demand
+   per-phase rule files ([`coding-style.md`](../devrites-lib/reference/standards/coding-style.md), [`error-handling.md`](../devrites-lib/reference/standards/error-handling.md), …) load on demand
    from `reference/code.md` / `reference/ui.md` when their phase runs; for UI scope also read
    `.pi/skills/devrites-lib/reference/standards/browser-proof-checklist.md`.
    Then read the explicit or active workspace's `state.md` directly.

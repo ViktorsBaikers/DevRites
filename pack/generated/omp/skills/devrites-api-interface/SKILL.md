@@ -35,7 +35,7 @@ stays stable.
   typed functions, on your own database's data, or in a utility already called by validated code.
   A check inside the trusted core hides the bug in the boundary that should have caught it. A
   third-party API response is external input: always untrusted. (Three-tier boundary:
-  [`security.md`](../devrites-lib/reference/standards/security.md); see `rite-review/reference/security-review.md`.)
+  [`security.md`](../devrites-lib/reference/standards/security.md); see [`security-review.md`](../rite-review/reference/security-review.md).)
 
 ## Type craft: make the wrong call unrepresentable
 - **Brand your ids.** A bare `string`/`number` id is assignable to any other id, so the compiler

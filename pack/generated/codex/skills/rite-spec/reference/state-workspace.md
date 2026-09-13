@@ -223,5 +223,5 @@ command.
 ## Compactness
 
 High-traffic files should stay within the budgets in
-`workspace-artifact-schema.md`. If a file truly must exceed its budget, add
+[`workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md). If a file truly must exceed its budget, add
 `Budget override: <reason>` near the top.

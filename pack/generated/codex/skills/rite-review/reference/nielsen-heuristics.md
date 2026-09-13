@@ -119,7 +119,7 @@ Users can find what they need without leaving the surface.
 
 In `$rite-review` output, surface heuristics scoring **≤2**, plus any 3 with a specific
 noted gap, as findings; every score feeds the UX axis. Each surfaced finding gets a
-severity label per `rite-review/SKILL.md`.
+severity label per [`SKILL.md`](../SKILL.md).
 
 The rubric is descriptive, not gating. A score of 2 on aesthetic-minimalist isn't
 an automatic NO-GO; the `rite-seal` gate is `Critical == 0`, not "every heuristic

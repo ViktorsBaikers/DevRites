@@ -17,7 +17,7 @@ the gate uses the **lowest band**, not an average.
    human prerequisites and action-time approvals instead of deferring generic uncertainty to
    build. **Unmitigated top risks are gating.**
 5. **Over-engineering / YAGNI:** speculative capability, unused extension points, premature
-   abstraction, second-system bloat. Apply the pack's standard (`patterns.md`) and the YAGNI
+   abstraction, second-system bloat. Apply the pack's standard ([`patterns.md`](../../devrites-lib/reference/standards/patterns.md)) and the YAGNI
    ledger test (scope-modes.md Pass 2).
 6. **Acceptance testability and completion:** every acceptance criterion measurable, technology-
    agnostic, and comparable **down to a baseline** ("better than the current workaround"), not
@@ -32,7 +32,7 @@ the gate uses the **lowest band**, not an average.
    and patterns, or assume greenfield freedom a constrained space doesn't have? Prefer existing
    conventions; flag a new dependency / second design system for explicit decision.
 
-UI specs also inherit `rite-polish/reference/anti-ai-slop.md` at the cross-cutting
+UI specs also inherit [`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md) at the cross-cutting
 dimension (design-system fit, anti-AI-slop), but `/rite-temper` reviews the *spec/design-brief*,
 not pixels; the built UI is judged later by `devrites-frontend-reviewer`.
 

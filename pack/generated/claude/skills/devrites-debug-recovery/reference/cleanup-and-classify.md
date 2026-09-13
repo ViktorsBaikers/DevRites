@@ -21,7 +21,7 @@ blind retry.
 
 Record class/routing in `decisions.md` and each failed attempt in `evidence.md`
 or `## Dead ends`. Apply the causal-fingerprint and three-attempt rules in
-`devrites-debug-recovery/SKILL.md` Hard rules; record baseline, exact failure,
+[`SKILL.md`](../SKILL.md) Hard rules; record baseline, exact failure,
 hypothesis/probe, attempt number, and any human predicate.
 
 ## Cleanup checklist: required before declaring done

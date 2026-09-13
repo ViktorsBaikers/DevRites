@@ -1,14 +1,14 @@
 # Acceptance proof
 
 Map each `spec.md` criterion to `test | command | browser | judgment` evidence
-and one-line reason. Run `spec-grammar.md`'s Native grammar re-read on the saved
+and one-line reason. Run [`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md)'s Native grammar re-read on the saved
 spec before mapping; reopen after corrections. No parser/script may replace it.
 
 Every structured WHEN/THEN scenario needs a passing asserting test. When
 `test-plan.md` exists, every acceptance/gap requirement, interactive element, and
 user flow needs a passing result. Missing coverage blocks.
 
-Apply [`testing.md`'s positive, discriminating proof](../../devrites-lib/reference/standards/testing.md#positive-discriminating-proof),
+Apply [[`testing.md`](../../devrites-lib/reference/standards/testing.md)'s positive, discriminating proof](../../devrites-lib/reference/standards/testing.md#positive-discriminating-proof),
 including invalid-result exclusions and static/textual criterion boundaries.
 Unsupported behavioral claims are `cannot_verify` and block proof.
 
@@ -37,12 +37,12 @@ judgment or pass.
 
 Reconcile `spec.md`'s applicability map with the final diff. For each triggered owner:
 
-- `repository-topology.md`: prove commands ran at every affected root and both provider
+- [`repository-topology.md`](../../devrites-lib/reference/standards/repository-topology.md): prove commands ran at every affected root and both provider
   and consumer used the same canonical contract; identify generated/vendor sources.
-- `data-integrity.md`: prove declared invariants plus relevant duplicate/retry,
+- [`data-integrity.md`](../../devrites-lib/reference/standards/data-integrity.md): prove declared invariants plus relevant duplicate/retry,
   concurrency, interruption/resume, old/new coexistence, tenant isolation, and
   rollback/forward-recovery cases with recorded scale/counts.
-- `integration-reliability.md`: prove relevant invalid/partial response, auth failure,
+- [`integration-reliability.md`](../../devrites-lib/reference/standards/integration-reliability.md): prove relevant invalid/partial response, auth failure,
   timeout/unknown outcome, rate limit/outage, duplicate/order, poison/backlog, cache/partition,
   degradation, and recovery behavior.
 
@@ -53,7 +53,7 @@ or a mock that cannot produce the risk.
 ## Critical-path assertion strength
 
 For regression-Critical, irreversible, and data-loss paths, require
-[`testing.md`'s safe perturbation](../../devrites-lib/reference/standards/testing.md#safe-perturbation).
+[[`testing.md`](../../devrites-lib/reference/standards/testing.md)'s safe perturbation](../../devrites-lib/reference/standards/testing.md#safe-perturbation).
 Missing evidence is `cannot_verify`; a green test on broken code is unproven.
 Pure transforms also get a round-trip or
 metamorphic property check when applicable.
@@ -61,7 +61,7 @@ metamorphic property check when applicable.
 ## Runtime observability branch
 
 For endpoints, jobs, consumers, integrations, user flows, or new error paths,
-trigger failure and observe the required log/metric/trace per `observability.md`;
+trigger failure and observe the required log/metric/trace per [`observability.md`](../../devrites-lib/reference/standards/observability.md);
 record it. Skip pure internal, docs, config, and type-only changes.
 
 ## Developer-facing branch

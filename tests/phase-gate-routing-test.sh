@@ -224,7 +224,7 @@ require "$FAILURE_TRIAGE" 'does not stop offline recovery' 'prove triage continu
 require "$DEBUG_RECOVERY" 'MUST NOT be rerun during diagnosis' 'debug recovery does not reproduce consumptive actions'
 require "$DEBUG_RECOVERY" 'not a spent recovery budget' 'debug recovery separates execution authority from repair budget'
 require "$AUTOCOMPLETE" 'Do not confuse an action budget with recovery exhaustion' 'autocomplete continues offline after a one-shot failure'
-require "$AUTOCOMPLETE" 'one-shot-actions.md` before any' 'autocomplete loads the consumptive-action contract before routing'
+require "$AUTOCOMPLETE" 'one-shot-actions.md' 'autocomplete loads the consumptive-action contract before routing'
 require "$AUTOCOMPLETE_LOOP" 'spent authorization blocks only another' 'autocomplete loop uses retained evidence before requesting a new GO'
 require "$AUTOCOMPLETE_STOPS" 'is not technical-recovery' 'autocomplete stop contract separates one-shot authority from recovery'
 require "$ONE_SHOT" 'Cold resume does not make that fingerprint old' 'one-shot recovery survives a session boundary'

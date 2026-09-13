@@ -83,7 +83,7 @@ presentation never caps the inventory or hides the ninth substantive defect.
 - Implied modules and planned cross-slice repetition.
 - Error-handling + edge cases the plan names, and the ones it doesn't (call those out explicitly).
 - Over-engineering (premature abstraction, an extension point with no second caller) vs
-  under-engineering (fragile / hacky) relative to `patterns.md` + `coding-style.md`.
+  under-engineering (fragile / hacky) relative to [`patterns.md`](../../devrites-lib/reference/standards/patterns.md) + [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md).
 - Tech-debt hotspots and diagrams the change makes stale.
 
 ### 3. Test-coverage design
@@ -128,7 +128,7 @@ acceptance criteria covered ✓" and continue.
 
 - N+1 / unbounded queries and DB access patterns; memory concerns; caching opportunities;
   high-complexity hot paths.
-- Per `performance.md`: name a number to measure or a budget: don't recommend speculative
+- Per [`performance.md`](../../devrites-lib/reference/standards/performance.md): name a number to measure or a budget: don't recommend speculative
   micro-tuning. A perf finding is "measure X against budget Y", not "this feels slow".
 
 ---
