@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.4.0...v5.5.0) (2026-09-13)
+
+### Added
+
+* **rite:** cap parallel batch width and chain deferred ship ([#68](https://github.com/ViktorsBaikers/DevRites/issues/68)) ([d023dfa](https://github.com/ViktorsBaikers/DevRites/commit/d023dfa742d5b6f5a9775c21308cd4731d6858f9))
+
 ## [5.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.3.0...v5.4.0) (2026-09-13)
 
 ### Added
