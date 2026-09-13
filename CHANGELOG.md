@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.4...v5.3.0) (2026-09-13)
+
+### Added
+
+* **rite:** preserve parallel batch work, harden lease lifecycle ([#66](https://github.com/ViktorsBaikers/DevRites/issues/66)) ([f8d3e2e](https://github.com/ViktorsBaikers/DevRites/commit/f8d3e2e9870b2adaa11da0384f2b0ff23ee8785b))
+
 ## [5.2.4](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.3...v5.2.4) (2026-09-12)
 
 ### Fixed
