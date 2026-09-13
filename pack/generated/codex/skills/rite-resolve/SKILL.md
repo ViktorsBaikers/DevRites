@@ -24,8 +24,8 @@ full AFK / HITL contract lives in
 
 Pull these via `Read` when shaping the resolve:
 
-- `afk-hitl.md`: gate taxonomy, `questions.md` schema, AFK exception rules.
-- `documentation.md`: record decisions and rationale where the answer changes scope.
+- [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md): gate taxonomy, `questions.md` schema, AFK exception rules.
+- [`documentation.md`](../devrites-lib/reference/standards/documentation.md): record decisions and rationale where the answer changes scope.
 
 ## Operating rules
 

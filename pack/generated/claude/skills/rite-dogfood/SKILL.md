@@ -11,7 +11,7 @@ disable-model-invocation: true
 Dogfood what changed as a user journey. This complements `/rite-prove`: prove checks acceptance; dogfood finds journey breaks and paper cuts.
 
 ## Rules consulted
-Step 0: Read `.claude/skills/devrites-lib/reference/standards/core.md`, then `tooling.md`, `testing.md`, and `afk-hitl.md` when relevant.
+Step 0: Read `.claude/skills/devrites-lib/reference/standards/core.md`, then [`tooling.md`](../devrites-lib/reference/standards/tooling.md), [`testing.md`](../devrites-lib/reference/standards/testing.md), and [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) when relevant.
 
 ## Operating rules
 - Diff-scoped, not whole-app exploration.

@@ -22,7 +22,7 @@ schemas. Polishes the **server side** to ship-quality before review, the way UI 
       errors; not 200 with `{ error: ... }`).
 - [ ] **Custom error classes** (or equivalent) so callers can distinguish error kinds.
 - [ ] **Fail closed** on auth/permission/transaction errors: deny + roll back; never
-      default to allow or partial commit (`error-handling.md`, `security.md`).
+      default to allow or partial commit ([`error-handling.md`](../../devrites-lib/reference/standards/error-handling.md), [`security.md`](../../devrites-lib/reference/standards/security.md)).
 - [ ] **Narrow `catch`**: no blanket `catch (e) {}` swallows. If you catch, recover or
       rethrow with context.
 
@@ -52,7 +52,7 @@ schemas. Polishes the **server side** to ship-quality before review, the way UI 
       keys).
 - [ ] **Pagination, sorting, filtering** consistent with neighboring endpoints.
 - [ ] **Validation at the boundary**: type/length/format/range on untrusted input;
-      reject what doesn't match (see `security.md` three-tier).
+      reject what doesn't match (see [`security.md`](../../devrites-lib/reference/standards/security.md) three-tier).
 
 ### Performance (measure first)
 - [ ] Hot-path work measured; obvious wins (cache, batch, hoist) applied; perf claims

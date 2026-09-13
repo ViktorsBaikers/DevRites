@@ -64,7 +64,7 @@ before coding. **Ask before coding if the visual direction or UX flow is still a
   checkbox, radio, select, toggle, button, and actionable link gets a unit/component test for
   what it *does* (validation, toggle, options, enabled/disabled, handler); critical journeys
   get one E2E. Browser proof shows it renders; the asserting test proves it works. No element
-  ships unverified: `standards/testing.md` "Completeness"; inventory in `test-plan.md`.
+  ships unverified: [`testing.md`](../devrites-lib/reference/standards/testing.md) "Completeness"; inventory in `test-plan.md`.
 - **Append build-time refinements** to `design-brief.md` (§3); `/rite-polish` Phase 4 and
   `/rite-seal`'s frontend reviewer read it. Record runtime evidence in `browser-evidence.md`.
 
@@ -77,7 +77,7 @@ to a real UI state, and **prove both layers** (contract tests + browser proof).
 
 ## Anti-AI-slop
 The banned-defaults list and the countable mechanical pre-flight live in
-`rite-polish/reference/anti-ai-slop.md` (canonical owner): run both at build and polish
+[`anti-ai-slop.md`](../rite-polish/reference/anti-ai-slop.md) (canonical owner): run both at build and polish
 time — a slop pattern in the slice is a polish finding.
 
 ## Default vs departure

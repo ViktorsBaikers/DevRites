@@ -17,7 +17,7 @@ Reuse [`devrites-interview`](../devrites-interview/SKILL.md) in `/clarify mode`.
 
 ## Rules consulted
 
-Read [`core.md`](../devrites-lib/reference/standards/core.md), its `afk-hitl.md`, and
+Read [`core.md`](../devrites-lib/reference/standards/core.md), its [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md), and
 [`reference/decision-coverage.md`](reference/decision-coverage.md). Fresh evidence
 dispatch uses
 [`agents.md`](../devrites-lib/reference/standards/agents.md).

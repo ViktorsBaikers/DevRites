@@ -42,7 +42,7 @@ If the candidate diff has no matching surfaces, record
    marker in `review.md`/`seal.md` — an omitted sub-step reads as a clean run.
    Findings later withdrawn at reconciliation stay visible: the account records
    `withdrawn: <n> (<reason>)` rather than silently dropping them.
-4. Apply [`agents.md` § Result admission](standards/agents.md#result-admission)
+4. Apply [[`agents.md`](standards/agents.md) § Result admission](standards/agents.md#result-admission)
    and dedupe by evidence/root cause. Account for all seven in
    `review.md`/`seal.md`: `Outcome:` plus admitted account, or
    `Not-applicable: <inspected-scope reason>`. Spec/Code may cite valid unchanged

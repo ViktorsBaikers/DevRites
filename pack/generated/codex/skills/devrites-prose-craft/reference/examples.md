@@ -77,7 +77,7 @@ Dropped the pleasantries and the "not just X" inflation. Led with what's done an
 > Buffering the whole CSV OOM-ed on >100k rows. Stream rows to the response so memory stays
 > flat. Rules out an upfront total-count header; tracked in #123.
 
-Followed `git-workflow.md`: the *why*, wrapped, in plain language.
+Followed [`git-workflow.md`](../../devrites-lib/reference/standards/git-workflow.md): the *why*, wrapped, in plain language.
 
 ## 7. Fidelity when evidence is incomplete
 

@@ -33,7 +33,7 @@ Rules:
 
 ## The candidate-safe Git ladder
 
-Follow `standards/git-workflow.md` and project convention; invent no release flow.
+Follow [`git-workflow.md`](../../devrites-lib/reference/standards/git-workflow.md) and project convention; invent no release flow.
 Candidate identity always comes from `devrites-engine check candidate`; do not
 implement a Git-side hash.
 

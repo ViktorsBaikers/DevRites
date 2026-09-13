@@ -15,11 +15,11 @@ profile by default and Full for high-risk scope or explicit `--full`; see
 
 ## Required rules
 
-Read `devrites-lib/reference/standards/core.md` and `afk-hitl.md` first. Read
-`one-shot-actions.md` before any stop/continue or execution decision involving a
+Read [`core.md`](../devrites-lib/reference/standards/core.md) and [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) first. Read
+[`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md) before any stop/continue or execution decision involving a
 consumptive action. Before honoring a terminal cursor that names missing
 executable controller/harness/bundle bytes or a missing writer, read
-`workflow-artifacts.md`. Before classifying any Reslice, read `.pi/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md). Before classifying any Reslice, read [`acceptance-preserving-reslice.md`](../devrites-lib/reference/standards/acceptance-preserving-reslice.md).
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
 - `FOLD` → keep Plan repair/affected Vet internal; no stop solely for topology/count.

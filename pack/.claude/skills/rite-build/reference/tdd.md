@@ -19,7 +19,7 @@ produce evidence:
 
 ## Rules
 - Use the project's existing test framework and commands (per the discovery contract
-  `rite-prove/reference/test-command-discovery.md`). Don't introduce a new test runner
+  [`test-command-discovery.md`](../../rite-prove/reference/test-command-discovery.md)). Don't introduce a new test runner
   to prove a slice.
 - One behavior per test; name it for the behavior, not the function.
 - A green test you never saw fail proves nothing: always see red first.

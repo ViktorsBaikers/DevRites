@@ -4,7 +4,7 @@ Contract WHAT users get, WHY, success, and scope. HOW belongs in `plan.md`,
 topology in `architecture.md`/`flows.md`, coverage in `traceability.md`.
 
 Use `[NEEDS CLARIFICATION: <question>]` (blocking stops `/rite-clarify`); before readiness
-every surviving marker converts to a gated `Q-###` open question (`spec-grammar.md` §
+every surviving marker converts to a gated `Q-###` open question ([`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md) §
 Unresolved-question markers — fail closed). Stable `REQ-001`/`AC-001` IDs; link, never
 duplicate, source artifacts; over-budget requires `Budget override: <reason>`.
 
@@ -128,7 +128,7 @@ status routes Define/Vet/Build/Prove to the named standard without copying it he
 - `brief.md`: request/outcome/scope; `architecture.md`: placement/integration;
   `flows.md`: Mermaid-first diagrams (optional `visual/<flow>.html`+`.outline.md` companion
   + link when richer presentation earns it — load playbooks via
-  `devrites-lib/reference/visual-playbooks/index.md`); `decisions.md`: decisions;
+  [`index.md`](../../devrites-lib/reference/visual-playbooks/index.md)); `decisions.md`: decisions;
   `decision-coverage.md`: Clarify topology/verdict; `traceability.md`: Define coverage;
   `design-brief.md`: UI direction.
 

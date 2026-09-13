@@ -80,7 +80,7 @@ Optional flags obey `core.md` rule 10.
 - A reference file over ~300 lines opens with a table of contents so a partial
   read still sees the file's full scope.
 - A SKILL.md must link every supporting `.md` it may need in one hop.
-  `core.md`, `agents.md`, `README.md`, and `index.md` are indexes and may
+  `core.md`, `agents.md`, `README.md`, and [`index.md`](../visual-playbooks/index.md) are indexes and may
   point onward. Shared `standards/` and `visual-playbooks/` catalogs use
   those indexes. A skill-local reference must not be the only path to
   another non-catalog file in that skill.

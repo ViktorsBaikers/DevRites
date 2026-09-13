@@ -15,15 +15,15 @@ Vet owns implementation; current `$ARGUMENTS` (`--full`) feeds the depth trigger
 
 ## Rules
 
-Read the active standard from: `principles.md`, `patterns.md`, `coding-style.md`,
-`testing.md`, `spec-grammar.md`, `performance.md`, `error-handling.md`,
-`development-workflow.md`, `afk-hitl.md`, `one-shot-actions.md`,
-`developer-experience.md`, `elicitation.md`, and `definition-of-done.md`. Load
+Read the active standard from: [`principles.md`](../devrites-lib/reference/standards/principles.md), [`patterns.md`](../devrites-lib/reference/standards/patterns.md), [`coding-style.md`](../devrites-lib/reference/standards/coding-style.md),
+[`testing.md`](../devrites-lib/reference/standards/testing.md), [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md), [`performance.md`](../devrites-lib/reference/standards/performance.md), [`error-handling.md`](../devrites-lib/reference/standards/error-handling.md),
+[`development-workflow.md`](../devrites-lib/reference/standards/development-workflow.md), [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md), [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md),
+[`developer-experience.md`](../devrites-lib/reference/standards/developer-experience.md), [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md), and [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md). Load
 repository topology, data integrity, and integration reliability only when
-triggered. Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+triggered. Before classifying any Reslice, read [`acceptance-preserving-reslice.md`](../devrites-lib/reference/standards/acceptance-preserving-reslice.md).
 When a
 plan declares a root-authored executable workflow file, read
-`workflow-artifacts.md`.
+[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md).
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
 - `FOLD` → fold technical topology; invalidate Vet/readiness; affected Vet before Build.

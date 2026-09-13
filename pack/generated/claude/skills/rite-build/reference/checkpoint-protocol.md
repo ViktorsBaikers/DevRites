@@ -14,7 +14,7 @@ observer.
 
 ### User-facing render: the option set
 
-Present as `AskUserQuestion` ranked **option set** (`afk-hitl.md`): 2–4 options,
+Present as `AskUserQuestion` ranked **option set** ([`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)): 2–4 options,
 recommended first + `(Recommended)`, dimension-tagged trade-offs, plus escape hatch.
 Header names slice + gate:
 

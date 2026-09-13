@@ -5,11 +5,11 @@ code polish (Phase 1) and, when backend is touched, backend polish (Phase 2).
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
 
-- `coding-style.md`: Phase 1 (simplify, dead code, naming, comments).
-- `patterns.md`: Phase 1 simplification: avoid over-engineering.
-- `error-handling.md`: Phase 2 backend (no silent catches, consistent errors).
-- `performance.md`: Phase 2 backend (N+1s, query bounds).
-- `documentation.md`: keep touched docs current; record polish-time decisions.
+- [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md): Phase 1 (simplify, dead code, naming, comments).
+- [`patterns.md`](../../devrites-lib/reference/standards/patterns.md): Phase 1 simplification: avoid over-engineering.
+- [`error-handling.md`](../../devrites-lib/reference/standards/error-handling.md): Phase 2 backend (no silent catches, consistent errors).
+- [`performance.md`](../../devrites-lib/reference/standards/performance.md): Phase 2 backend (N+1s, query bounds).
+- [`documentation.md`](../../devrites-lib/reference/standards/documentation.md): keep touched docs current; record polish-time decisions.
 
 ## Operating rules
 
@@ -65,7 +65,7 @@ feature only.
   beat a cryptic one.
 - **Done when:** every touched change passes the comprehension test, every anti-slop charter
   item in the touched code is cleared (the AI-tells do-not list: [anti-ai-slop.md](anti-ai-slop.md)
-  Code section, `coding-style.md`) **and** the feature's targeted tests + build re-run green.
+  Code section, [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md)) **and** the feature's targeted tests + build re-run green.
   An open charter item or a red check means Phase 1 isn't done.
 
 ## Phase 2: Backend polish *(if BE touched)*

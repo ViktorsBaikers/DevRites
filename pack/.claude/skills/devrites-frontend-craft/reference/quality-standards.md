@@ -32,8 +32,8 @@ these are the floor, not the ceiling.
 ## Responsive
 - Fluid layouts; no fixed widths that break. Verify at **320 / 768 / 1024 / 1440** px;
   preserve content and controls at **200% text zoom** and **400% browser zoom from
-  1280 px** (320 CSS px). This is the canonical viewport set for UI evidence: `rite-polish/reference/ui.md`, `browser-proof-checklist.md`, and
-  `browser-polish-evidence.md` cite it rather than restating it.
+  1280 px** (320 CSS px). This is the canonical viewport set for UI evidence: [`ui.md`](../../rite-polish/reference/ui.md), [`browser-proof-checklist.md`](../../devrites-lib/reference/standards/browser-proof-checklist.md), and
+  [`browser-polish-evidence.md`](../../rite-polish/reference/browser-polish-evidence.md) cite it rather than restating it.
 - **No page-level horizontal scroll anywhere in 320–1920.** Sweep between checkpoints:
   a `1fr` track given a 1024 px image can overflow at 900 px. Fix intrinsic sizing
   (for example `minmax(0, 1fr)`), wrapping and media constraints; root clipping is
@@ -251,7 +251,7 @@ rung that carries the structure.
   token.
 - **No decorative glass.** `backdrop-filter: blur(...)` is for a fixed/sticky surface over
   moving content (a sticky header, a sheet over scroll), never a default panel look
-  (`rite-polish/reference/anti-ai-slop.md`).
+  ([`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md)).
 
 ### NEVER (UI numerical bar)
 - Never reintroduce anything [`rite-polish` anti-ai-slop](../../rite-polish/reference/anti-ai-slop.md) bans.
@@ -280,7 +280,7 @@ rung that carries the structure.
 - [ ] Clickables show `cursor: pointer` + a hover state; icons are SVG from the one set
       (no emoji); nothing trapped under fixed/sticky bars
 - [ ] **Consistency locks hold** (declared color strategy/roles / one radius scale / one theme) and the
-      mechanical pre-flight passes (`rite-polish/reference/anti-ai-slop.md`)
+      mechanical pre-flight passes ([`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md))
 
 ## Craft convergence bar
 

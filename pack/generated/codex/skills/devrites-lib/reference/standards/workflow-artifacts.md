@@ -415,13 +415,13 @@ pairs remain injective for actionable seams.
 
 |Canonical adapter|Entry trigger|Canonical action|Return cursor|
 | ---|---|---|---|
-| `devrites-lib/reference/standards/afk-hitl.md`|unattended root reaches current admitted Workflow Artifact work|invoke classifier; execute returned route without wright/slice charge|saved lifecycle phase/action; no intermediate reply|
-| `devrites-lib/reference/standards/one-shot-actions.md`|workflow proof completes before any consumptive one-shot action|`PROVE_AND_RETURN`; require fresh real-action authorization|saved one-shot action boundary|
-| `devrites-debug-recovery/SKILL.md`|durable active failure or ambiguous admitted state|`OFFLINE_RECOVERY`; correct offline, re-preflight, narrow Vet, retry only under cap|saved caller or exact Plan/Vet route|
-| `rite-autocomplete/SKILL.md`|lifecycle cursor encounters admitted set or resumable journal|invoke classifier; execute returned route internally|saved phase/action; zero intermediate reply|
-| `rite-autocomplete/reference/loop.md`|loop tick sees Workflow Artifact trigger/state|invoke classifier once under owner lock; no actor-history migration|same loop cursor; no budget charge for verify/rerun|
-| `rite-autocomplete/reference/stop-conditions.md`|classifier returns owner-busy, exhausted, or existing hard gate|stop on exact `WAIT_ACTIVE_OWNER`, `BLOCKED_EXHAUSTED`, or `BLOCKED_GATE` result|unchanged cursor plus fixed route-owned output|
-| `rite-build/SKILL.md`|Vet-ready admitted bytes require root authorship outside product wright|`ROOT_TRANSACTION`; root writes only admitted `.devrites/**` targets|saved Build slice cursor; wright product allowlist unchanged|
-| `rite-build/reference/phase-contract.md`|Build gate enters or resumes transaction|invoke canonical operation table; reconcile exact result|same slice/checkpoint cursor or Plan/Vet route|
-| `rite-prove/SKILL.md`|Prove consumes installed Workflow Artifact or `CLEANED` rerun|`VERIFY_EXISTING` or admitted proof path ending `PROVE_AND_RETURN`|saved Prove cursor; stop before real action|
-| `rite-vet/SKILL.md`|plan declares root-authored executable workflow file|emit exact admission; stale/missing authority uses `PLAN_VET_REPAIR`|Vet READY cursor or exact technical replan|
+| [`afk-hitl.md`](afk-hitl.md)|unattended root reaches current admitted Workflow Artifact work|invoke classifier; execute returned route without wright/slice charge|saved lifecycle phase/action; no intermediate reply|
+| [`one-shot-actions.md`](one-shot-actions.md)|workflow proof completes before any consumptive one-shot action|`PROVE_AND_RETURN`; require fresh real-action authorization|saved one-shot action boundary|
+| [`SKILL.md`](../../../devrites-debug-recovery/SKILL.md)|durable active failure or ambiguous admitted state|`OFFLINE_RECOVERY`; correct offline, re-preflight, narrow Vet, retry only under cap|saved caller or exact Plan/Vet route|
+| [`SKILL.md`](../../../rite-autocomplete/SKILL.md)|lifecycle cursor encounters admitted set or resumable journal|invoke classifier; execute returned route internally|saved phase/action; zero intermediate reply|
+| [`loop.md`](../../../rite-autocomplete/reference/loop.md)|loop tick sees Workflow Artifact trigger/state|invoke classifier once under owner lock; no actor-history migration|same loop cursor; no budget charge for verify/rerun|
+| [`stop-conditions.md`](../../../rite-autocomplete/reference/stop-conditions.md)|classifier returns owner-busy, exhausted, or existing hard gate|stop on exact `WAIT_ACTIVE_OWNER`, `BLOCKED_EXHAUSTED`, or `BLOCKED_GATE` result|unchanged cursor plus fixed route-owned output|
+| [`SKILL.md`](../../../rite-build/SKILL.md)|Vet-ready admitted bytes require root authorship outside product wright|`ROOT_TRANSACTION`; root writes only admitted `.devrites/**` targets|saved Build slice cursor; wright product allowlist unchanged|
+| [`phase-contract.md`](../../../rite-build/reference/phase-contract.md)|Build gate enters or resumes transaction|invoke canonical operation table; reconcile exact result|same slice/checkpoint cursor or Plan/Vet route|
+| [`SKILL.md`](../../../rite-prove/SKILL.md)|Prove consumes installed Workflow Artifact or `CLEANED` rerun|`VERIFY_EXISTING` or admitted proof path ending `PROVE_AND_RETURN`|saved Prove cursor; stop before real action|
+| [`SKILL.md`](../../../rite-vet/SKILL.md)|plan declares root-authored executable workflow file|emit exact admission; stale/missing authority uses `PLAN_VET_REPAIR`|Vet READY cursor or exact technical replan|

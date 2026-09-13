@@ -154,7 +154,7 @@ and history in `state.md` (checkpoint narrative moves verbatim to
 pointer left behind). A legacy workspace may carry a temporary `Budget override:` line
 as a bridge; `$rite-upgrade` routes it to relocation or the split, and new writers never
 create one for those two reasons.
-Apply [`context-hygiene.md` dispatch packets](standards/context-hygiene.md#dispatch-packets)
+Apply [[`context-hygiene.md`](standards/context-hygiene.md) dispatch packets](standards/context-hygiene.md#dispatch-packets)
 for byte-size checks and lossless retrieval; budget overrides neither rewrite protected
 history nor require loading it all.
 

@@ -31,7 +31,7 @@ Look for Core Web Vitals evidence in `evidence.md`, a saved Lighthouse,
 PageSpeed Insights, or CrUX JSON artifact, and `browser-evidence.md`.
 
 Read the baseline checklist: `.agents/skills/rite-review/reference/performance-checklist.md`
-(`.agents/skills/rite-review/reference/performance-checklist.md` mirror on Codex).
+([`performance-checklist.md`](../skills/rite-review/reference/performance-checklist.md) mirror on Codex).
 
 ## Two modes (the inputs set the mode, not a flag)
 - **Source mode:** use this default when there are no performance artifacts. Scan

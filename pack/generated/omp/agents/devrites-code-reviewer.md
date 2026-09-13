@@ -28,10 +28,10 @@ test at `file:line`.
 
 **Load the governing rules before reviewing.** Read
 `.omp/skills/devrites-lib/reference/standards/code-review.md`,
-`coding-style.md`, `patterns.md`, and `edge-case-trace.md`. Apply the current
+[`coding-style.md`](../skills/devrites-lib/reference/standards/coding-style.md), [`patterns.md`](../skills/devrites-lib/reference/standards/patterns.md), and [`edge-case-trace.md`](../skills/devrites-lib/reference/standards/edge-case-trace.md). Apply the current
 files, not a summary you remember.
-From `spec.md`'s applicability map, load only triggered `repository-topology.md`,
-`data-integrity.md`, or `integration-reliability.md`; their cases remain feature-scoped.
+From `spec.md`'s applicability map, load only triggered [`repository-topology.md`](../skills/devrites-lib/reference/standards/repository-topology.md),
+[`data-integrity.md`](../skills/devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../skills/devrites-lib/reference/standards/integration-reliability.md); their cases remain feature-scoped.
 
 ## Inputs
 
@@ -51,7 +51,7 @@ for the feature scope and read the touched files.
     behavioral change to its consumer and confirm that an asserting test drives the
     **new** behavior. Merely running the path or asserting the old expectation is
     insufficient. If no test would catch the regression, cite the changed
-    `file:line` and the test that misses it. See `testing.md` § The verification gap.
+    `file:line` and the test that misses it. See [`testing.md`](../skills/devrites-lib/reference/standards/testing.md) § The verification gap.
 - **Correctness:** check logic, null, empty, and boundary values, error paths, races,
   and assumptions. For branching or boundary changes, run the edge-case trace over
   relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion

@@ -6,7 +6,7 @@
 2. **Recheck identity and real proof.** Run
    `devrites-engine check candidate <slug>` and require its exact digest to match
    the single evidence/review bindings and the browser binding when present.
-   Apply `spec-grammar.md`'s Native grammar re-read checklist and
+   Apply [`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md)'s Native grammar re-read checklist and
    [evidence validity](../../devrites-lib/reference/candidate-integrity.md#evidence-validity).
    Run required `test-plan.md` commands unless valid observed proof already satisfies
    them under that contract. Rerun the

@@ -39,7 +39,7 @@ Wait for a second real caller before keeping a pass-through that fails this test
 
 ## Rules
 - For "where does this claim reach / what would change with it" questions, prefer a
-  code-intelligence index under `standards/tooling.md`: use the primary available index,
+  code-intelligence index under [`tooling.md`](../devrites-lib/reference/standards/tooling.md): use the primary available index,
   add at most one cross-check for a named incomplete/stale/conflicting predicate, then fall
   back to LSP or file search. Do not query several indexes for reassurance.
 - The reviewer prompt must be adversarial: its job is to break the claim, not to agree.

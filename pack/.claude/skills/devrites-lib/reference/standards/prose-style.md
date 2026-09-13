@@ -49,12 +49,12 @@ the same decisions from it.
 | False binary contrast. "It's not X, it's Y", "The question isn't X. It's Y", "not just X but Y" | State Y directly. Drop the negation. |
 | Fake profundity. "Let that sink in", "This is the deepest problem", "make no mistake" | Show the thing; trust the reader to weigh it. |
 | Vague declaratives. "The implications are significant", "the reasons are structural" | Name the specific implication or reason. |
-| Marketing adjectives *selling* the work: "a robust, scalable, seamless, production-ready solution" | Say what it does and what proves it. (Calibrated: "robust"/"scalable"/"comprehensive" are legitimate in a precise technical claim ("robust to a dropped connection, see `evidence.md`"); slop only when they sell. Canonical tiering: `devrites-prose-craft/reference/banned-phrases.md` § AI vocabulary.) |
+| Marketing adjectives *selling* the work: "a robust, scalable, seamless, production-ready solution" | Say what it does and what proves it. (Calibrated: "robust"/"scalable"/"comprehensive" are legitimate in a precise technical claim ("robust to a dropped connection, see `evidence.md`"); slop only when they sell. Canonical tiering: [`banned-phrases.md`](../../../devrites-prose-craft/reference/banned-phrases.md) § AI vocabulary.) |
 | Hedging stacks. "It's important to note that, generally, in most cases" | Make the claim, or cut it. |
 | False agency: "the data tells us", "the complaint becomes a fix", "the decision emerges" | Name who did it. "The grader reads X and returns Y." |
 | Meta-narration, "In this section we'll…", "Let me walk you through…", "as we'll see" | Let the text move; delete the announcement. |
 | Reasoning-chain scaffolding. "Let me think step by step", "Breaking this down", "First, let's consider" | State the conclusion, then the evidence. |
-| Assistant leaks. Cutoff disclaimers, unfilled placeholders, chatbot citation markup, `utm_source=chatgpt.com` | Delete the leak; keep the fact. See `devrites-prose-craft/reference/banned-phrases.md`. |
+| Assistant leaks. Cutoff disclaimers, unfilled placeholders, chatbot citation markup, `utm_source=chatgpt.com` | Delete the leak; keep the fact. See [`banned-phrases.md`](../../../devrites-prose-craft/reference/banned-phrases.md). |
 
 ## Voice (prose register)
 

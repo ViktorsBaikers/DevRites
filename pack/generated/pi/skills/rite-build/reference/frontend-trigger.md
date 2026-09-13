@@ -28,7 +28,7 @@ If the slice spans both layers, it's both a frontend **and** a backend slice. De
 (DB → service → API → UI), apply the engineering rules to the backend and
 `devrites-frontend-craft` to the UI, map each contract error to a real UI state, and
 **prove both layers** (contract tests + browser proof). See
-`devrites-frontend-craft/reference/fullstack.md`.
+[`fullstack.md`](../../devrites-frontend-craft/reference/fullstack.md).
 
 ## When NOT triggered
 Pure backend/data/CLI/infra slices skip craft and browser proof, but still get tests

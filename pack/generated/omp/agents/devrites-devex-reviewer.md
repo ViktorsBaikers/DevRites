@@ -67,7 +67,7 @@ consistently:
   prerequisite, wrong command, missing step, or stale/mismatched transcript is a
   finding. Never execute the quickstart yourself.
 - **Error-message quality:** a failure must say what failed, why, and how to
-  recover, include the relevant IDs, and expose **no secrets** under `security.md`.
+  recover, include the relevant IDs, and expose **no secrets** under [`security.md`](../skills/devrites-lib/reference/standards/security.md).
   A bare trace, silent exit, or "an error occurred" on a developer-facing path is a
   defect.
 - **Ergonomics & consistency:** compare naming, argument order, pagination, and

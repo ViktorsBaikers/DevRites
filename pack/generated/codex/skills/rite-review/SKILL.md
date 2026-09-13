@@ -23,16 +23,16 @@ all workflow-named roles remain mandatory at every depth.
 
 Pull these via `Read` when the diff demands them:
 
-- `code-review.md`: small PRs, severity labels, tests-first review focus.
-- `review-checklist.md`: compact pass/fail sweep before reporting the verdict.
-- `principles.md`: declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
-- `testing.md`: confirm that passing tests actually prove the spec.
-- `agents.md`: when to fan out to which review subagent.
-- `security.md`: when input / auth / data / integrations / secrets are in scope.
-- `security-checklist.md`: for the same security-sensitive scope, the compact trust-boundary sweep.
-- `repository-topology.md`, `data-integrity.md`, `integration-reliability.md`: only
+- [`code-review.md`](../devrites-lib/reference/standards/code-review.md): small PRs, severity labels, tests-first review focus.
+- [`review-checklist.md`](../devrites-lib/reference/standards/review-checklist.md): compact pass/fail sweep before reporting the verdict.
+- [`principles.md`](../devrites-lib/reference/standards/principles.md): declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
+- [`testing.md`](../devrites-lib/reference/standards/testing.md): confirm that passing tests actually prove the spec.
+- [`agents.md`](../devrites-lib/reference/standards/agents.md): when to fan out to which review subagent.
+- [`security.md`](../devrites-lib/reference/standards/security.md): when input / auth / data / integrations / secrets are in scope.
+- [`security-checklist.md`](../devrites-lib/reference/standards/security-checklist.md): for the same security-sensitive scope, the compact trust-boundary sweep.
+- [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md): only
   when the spec applicability map or final diff triggers their ownership/failure/proof checks.
-- `performance.md`: only when perf is relevant or a regression risk is visible.
+- [`performance.md`](../devrites-lib/reference/standards/performance.md): only when perf is relevant or a regression risk is visible.
 
 ## Operating rules
 
@@ -67,7 +67,7 @@ Pull these via `Read` when the diff demands them:
    `devrites-engine check candidate <slug>` and require its digest to match the
    single `evidence.md` binding and the `browser-evidence.md` binding when that
    file exists. Read those ledgers via the bounded advisory read
-   (`workspace-artifact-schema.md` § Read next by phase): binding line, `EVID-###`
+   ([`workspace-artifact-schema.md`](../devrites-lib/reference/workspace-artifact-schema.md) § Read next by phase): binding line, `EVID-###`
    index, then bodies for this candidate's AC/slice IDs only. A missing,
    malformed, or open candidate returns to Polish/Prove.
    Read `touched-files.md` `## Review trail` and `eng-review.md` `## Deferred findings`:
@@ -105,7 +105,7 @@ Pull these via `Read` when the diff demands them:
      between the axes explicitly (e.g. "Spec axis says complete, Code-review axis says
      untestable"): `$rite-seal` decides what blocks. Preserve each reviewer's
      `Outcome:` and admit its account through
-     [`agents.md` § Result admission](../devrites-lib/reference/standards/agents.md#result-admission).
+     [[`agents.md`](../devrites-lib/reference/standards/agents.md) § Result admission](../devrites-lib/reference/standards/agents.md#result-admission).
      Either `Outcome: gap` stops Review; silence, failure, or malformed output never
      becomes an empty findings list.
 4. **Reconcile, don't re-review.** With the two parallel reports in hand, the inline
@@ -159,7 +159,7 @@ seal; `non-blocking` / `if-minor` findings are recorded, not a stop.
 
 ## Confidence and severity
 
-Apply [`agents.md` § Result admission](../devrites-lib/reference/standards/agents.md#result-admission).
+Apply [[`agents.md`](../devrites-lib/reference/standards/agents.md) § Result admission](../devrites-lib/reference/standards/agents.md#result-admission).
 Roll trivia into one line. `$rite-seal` gates on `Critical == 0`,
 `Important == 0` (y/N override), acceptance, and drift. No composite score.
 

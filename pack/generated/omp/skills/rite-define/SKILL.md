@@ -14,10 +14,10 @@ what/why; Define owns how. **Do not write code.**
 
 Pull these via `Read` when shaping the plan:
 
-- `development-workflow.md`: small batches, trunk-always-green, definition of done.
-- `principles.md`: the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
-- `documentation.md`: record plan-time decisions and rationale.
-- `repository-topology.md`, `data-integrity.md`, and `integration-reliability.md`:
+- [`development-workflow.md`](../devrites-lib/reference/standards/development-workflow.md): small batches, trunk-always-green, definition of done.
+- [`principles.md`](../devrites-lib/reference/standards/principles.md): the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
+- [`documentation.md`](../devrites-lib/reference/standards/documentation.md): record plan-time decisions and rationale.
+- [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), and [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md):
   load only for matching `spec.md` applicability rows; each applicable owner is mandatory.
 - `../devrites-lib/reference/workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers.
 
@@ -25,13 +25,13 @@ Pull these via `Read` when shaping the plan:
 
 - **Requires a readied spec.** Gate conditions and STOP routing are step 0;
   never plan it.
-- Apply `afk-hitl.md` ownership. Prefer conventions; source-check new dependencies/design
+- Apply [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) ownership. Prefer conventions; source-check new dependencies/design
   systems, asking only about licensing, cost, security, or policy.
 - Author one `architecture.md`/`plan.md` section at a time. Before slicing, use
   [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) Tournament for open
   designs and Delphi for uncertain estimates.
 - **Derive the slice count from the work.**
-  One per independently-shippable increment, sized by `slicing.md`; map every acceptance
+  One per independently-shippable increment, sized by [`slicing.md`](../rite-plan/reference/slicing.md); map every acceptance
   criterion. User counts are hints: explain honest differences, never pad/compress.
   `.devrites/AFK` `max_slices` is an iteration budget, not decomposition. A derivation
   over the [feature ceiling](../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
@@ -49,7 +49,7 @@ Pull these via `Read` when shaping the plan:
 
 0. **Read `.omp/skills/devrites-lib/reference/standards/core.md`:** the always-on operating rules and anti-rationalizations.
    Resolve the active slug from `.devrites/ACTIVE`, require its `state.md`, and
-   re-open `spec.md` and apply `spec-grammar.md`'s Native grammar re-read
+   re-open `spec.md` and apply [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md)'s Native grammar re-read
    checklist. If there is no active workspace, no `spec.md`, the checklist
    fails, or its readiness gate hasn't passed →
    **STOP** and tell the user to run `/rite-spec <feature>` first.
@@ -80,9 +80,9 @@ Pull these via `Read` when shaping the plan:
    dependencies by drivers, trade-offs, and consequences. Specify cross-boundary interfaces for independent work:
    invariants, I/O, ordering/idempotency, errors, versioning, config, and relevant budgets.
    Establish repository/deployable roots, state and contract ownership, shared mutable
-   resources, and deployment order under `repository-topology.md`. For applicable durable
-   data or integration rows, include the exact required plan table from `data-integrity.md`
-   or `integration-reliability.md`; do not replace it with "handle retries/migration" prose.
+   resources, and deployment order under [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md). For applicable durable
+   data or integration rows, include the exact required plan table from [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md)
+   or [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md); do not replace it with "handle retries/migration" prose.
    For any changed provider/consumer boundary, complete `plan.md`'s canonical
    `Shared contract proof` table with one reused contract artifact and provider- and
    consumer-side asserting tests that both consume it. Otherwise record the exact justified
@@ -98,10 +98,10 @@ Pull these via `Read` when shaping the plan:
 3. **Create vertical tasks:** each delivers one independently verifiable, observable
    capability end to end; first is the thinnest useful path, ordered by dependency then
    risk. Apply the slice-count and broad-refactor rules above plus
-   `rite-plan/reference/slicing.md` and `rite-plan/reference/task-breakdown.md`.
+   [`slicing.md`](../rite-plan/reference/slicing.md) and [`task-breakdown.md`](../rite-plan/reference/task-breakdown.md).
    Mark per slice: **Frontend craft required**
    and **Browser proof required** (UI), and whether it's **fullstack** (FE+BE → contract
-   first, see `devrites-frontend-craft/reference/fullstack.md`). **For UI slices, name which
+   first, see [`fullstack.md`](../devrites-frontend-craft/reference/fullstack.md)). **For UI slices, name which
    of `design-brief.md`'s key states + interaction the slice delivers, and give it a binary
    **Visual acceptance** target (state × viewport × input + target R-id/brief rule)**, so
    the design contract maps to slices as well as acceptance criteria.
@@ -114,7 +114,7 @@ Pull these via `Read` when shaping the plan:
    unchanged baseline green, perturb realistic behavior red, restore green, then modify. Never
    expand this into repository-wide coverage.
 4. **Map coverage and wiring:** every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
-   (`rite-spec/reference/acceptance-criteria.md`); no orphaned criteria, no slice without a
+   ([`acceptance-criteria.md`](../rite-spec/reference/acceptance-criteria.md)); no orphaned criteria, no slice without a
    criterion. Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`
    rows into `traceability.md` and `test-plan.md`; unresolved rows get a gate/owner. Each
    cross-slice boundary names producer, consumer, invariant, integration step, and proof.

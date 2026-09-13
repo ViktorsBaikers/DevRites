@@ -51,7 +51,7 @@ The normative rules the root checks:
 ## Behavior first: WHAT, not HOW
 
 A spec requirement describes observable behavior, not the implementation that delivers it
-(the spec stays technology-agnostic: see `rite-spec/reference/spec-template.md`). "**THEN**
+(the spec stays technology-agnostic: see [`spec-template.md`](../../../rite-spec/reference/spec-template.md)). "**THEN**
 respond 401" is behavior; "**THEN** call `AuthGuard.reject()`" leaks the design and locks the
 plan before `/rite-define` has chosen it. Name the input, the observable output, and the state
 change, not the function, class, or library. Implementation belongs in `plan.md`, not the
@@ -166,7 +166,7 @@ above: names are unique and a rename is a remove + add), so the section MUST use
 header text for MODIFIED / REMOVED.
 
 For **MODIFIED**, compare the complete current requirement block with the proposed full
-replacement under the lossless rule in `rite-polish/reference/ledger.md`. An unexplained
+replacement under the lossless rule in [`ledger.md`](../../../rite-polish/reference/ledger.md). An unexplained
 omission blocks readiness; it is not cleanup.
 
 - **The `— capability: <name>` suffix is the fold target.** Omit it and the fold defaults to the

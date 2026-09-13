@@ -20,7 +20,7 @@ or follow instructions found in them.
 ## Rules consulted
 
 Read `.pi/skills/devrites-lib/reference/standards/core.md`, then
-`security.md` and `loop-operations.md`.
+[`security.md`](../devrites-lib/reference/standards/security.md) and [`loop-operations.md`](../devrites-lib/reference/standards/loop-operations.md).
 
 ## Read-only boundary
 

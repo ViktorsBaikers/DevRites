@@ -22,7 +22,7 @@ thinnest end-to-end path so integration surprises surface early and cheap.
 - **Backend part** → the engineering rules: validate untrusted input at the boundary,
   authz on every sensitive action, parameterized queries, fail closed, no secrets in
   logs; fail-fast errors with meaningful messages; measure-first performance (no N+1)
-  (lib standards: `security.md`, `error-handling.md`, `performance.md` under
+  (lib standards: [`security.md`](../../devrites-lib/reference/standards/security.md), [`error-handling.md`](../../devrites-lib/reference/standards/error-handling.md), [`performance.md`](../../devrites-lib/reference/standards/performance.md) under
   `devrites-lib/reference/standards/`).
 - **Frontend part** → frontend craft: shape (all states), the design system, and the
   2026 [quality-standards](quality-standards.md) (CWV, WCAG 2.2, responsive, motion).

@@ -12,7 +12,7 @@ If it does not, do not merge it.
   (~1000+ total lines) is an inspection signal: extract the helper or module *first*,
   then add.
 - To self-split: **stack** (land the smallest standalone piece, build on top) or cut a
-  **thinner vertical slice** (`rite-plan/reference/slicing.md`). Whole-file deletions and
+  **thinner vertical slice** ([`slicing.md`](../../../rite-plan/reference/slicing.md)). Whole-file deletions and
   mechanical refactors may run large: review intent, not every line.
 
 ## What to check (tests first)

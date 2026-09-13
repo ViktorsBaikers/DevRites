@@ -50,7 +50,7 @@ self-admitted 2.
   components with one-offs, and the information architecture and flow with
   neighboring screens. Name the root cause of any drift.
 - **States:** check the canonical 8 + 3 state lattice
-  (`devrites-frontend-craft/reference/quality-standards.md` § Focus & states),
+  ([`quality-standards.md`](../skills/devrites-frontend-craft/reference/quality-standards.md) § Focus & states),
   not a shorter local list. The empty state needs a welcoming next action, and the
   error state must support recovery. Flag every missing state.
 - **Accessibility:** check focus order, visible focus, labels, WCAG AA contrast,

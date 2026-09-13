@@ -14,11 +14,11 @@ artifact-only**: reconcile
 editing source code.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-Pull `development-workflow.md` via `Read` when reshaping slice cadence or DoD
+Pull [`development-workflow.md`](../devrites-lib/reference/standards/development-workflow.md) via `Read` when reshaping slice cadence or DoD
 criteria.
-Load `repository-topology.md`, `data-integrity.md`, or `integration-reliability.md`
+Load [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md)
 when the spec applicability map or observed drift triggers them.
-Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+Before classifying any Reslice, read [`acceptance-preserving-reslice.md`](../devrites-lib/reference/standards/acceptance-preserving-reslice.md).
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
 - `FOLD` → reconcile `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` atomically; invalidate Vet/readiness; Vet.
@@ -76,7 +76,7 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    affected artifacts, settled contract, and failure/drift. Await one atomic, read-only
    the drafter's `candidate_files` bundle; human choices return separately.
    When the observed failure is missing or ambiguous consumptive-action evidence,
-   require the drafter to apply `one-shot-actions.md` and return the bounded
+   require the drafter to apply [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md) and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
    collision mutant. Past evidence loss is not terminal. The drafter supplies no bodies.
    A repair candidate carries a delta self-check scoped to what the patch

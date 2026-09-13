@@ -89,7 +89,7 @@ or `traceability.md` — never source. Propose/confirm the file set first. Only 
 
 Unchanged acceptance/behavior with non-equivalent `proposed_coverage` is a
 contradictory input: the canonical classifier blocks it — there is no fourth
-route (see `acceptance-preserving-reslice.md`).
+route (see [`acceptance-preserving-reslice.md`](../../devrites-lib/reference/standards/acceptance-preserving-reslice.md)).
 
 **Budget relocation** (admitted by `$rite-upgrade`, or by the phase owner when
 `orient` reports `over: true`): move checkpoint narrative, historical fold text and

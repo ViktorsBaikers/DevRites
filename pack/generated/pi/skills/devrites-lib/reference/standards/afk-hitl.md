@@ -390,7 +390,7 @@ AFK changes which decisions are automatic. It changes nothing else.
 - Workflow integration: `/rite-build` (`.pi/skills/rite-build/SKILL.md`),
   the readiness / HITL pre-flight stages before dispatch, and the DOUBT → PROVE
   (fail-on-red) → RECORD stages on the wright's return
-  (`reference/one-slice-cycle.md`).
+  ([`one-slice-cycle.md`](../../../rite-build/reference/one-slice-cycle.md)).
 - Render contract: `.pi/skills/rite-build/reference/checkpoint-protocol.md`.
 - Loop discipline: `.pi/skills/rite-build/reference/afk-discipline.md`.
 - Gate taxonomy: `.pi/skills/rite-define/reference/gates.md`.

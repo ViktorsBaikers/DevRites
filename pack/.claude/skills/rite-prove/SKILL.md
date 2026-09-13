@@ -16,11 +16,11 @@ Initial full feature proof and required mutable observations still run.
 
 ## Rules
 
-Read the applicable standards: `testing.md`, `test-proof-checklist.md`,
-`browser-proof-checklist.md` for UI, `spec-grammar.md`, `performance.md`,
-`observability.md`, topology/data/integration rules named by the plan,
-`developer-experience.md`, `definition-of-done.md`, `one-shot-actions.md`, and
-`workflow-artifacts.md`. Developer surfaces require an observed flow, measured
+Read the applicable standards: [`testing.md`](../devrites-lib/reference/standards/testing.md), [`test-proof-checklist.md`](../devrites-lib/reference/standards/test-proof-checklist.md),
+[`browser-proof-checklist.md`](../devrites-lib/reference/standards/browser-proof-checklist.md) for UI, [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md), [`performance.md`](../devrites-lib/reference/standards/performance.md),
+[`observability.md`](../devrites-lib/reference/standards/observability.md), topology/data/integration rules named by the plan,
+[`developer-experience.md`](../devrites-lib/reference/standards/developer-experience.md), [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md), [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md), and
+[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md). Developer surfaces require an observed flow, measured
 TTHW, and exact signal-bearing errors; never assert DX.
 
 - Each claim needs an executed positive, discriminating assertion and decisive
@@ -72,7 +72,7 @@ test changes.
    exit-status-only claims, and source drift. Static gates prove only their named
    static criterion.
 5. **Gate consumptive actions.** Immediately before execution, apply
-   `one-shot-actions.md`: current retained identity, bounds/sanitization,
+   [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md): current retained identity, bounds/sanitization,
    injective boundary map, per-seam fault fixtures, collision mutant, terminal
    fixtures, and cleanup-survival proof must be green. Missing/stale/disposable-
    only evidence returns to Vet without spending an attempt. Record the admitted artifact identity before execution.

@@ -106,7 +106,7 @@ Then implement to match, in the project's system:
   palette.
 - Never pick a tone (playful / serious / corporate / hand-drawn) that
   contradicts the surface's **register**: brand vs product
-  (`devrites-frontend-craft/SKILL.md` §2).
+  ([`SKILL.md`](../SKILL.md) §2).
 - Never add a second design system to "modernize" without explicit user
   approval. One design system per project; consistency beats local taste.
 - Never invent a token. If a needed color/spacing/type slot doesn't exist,

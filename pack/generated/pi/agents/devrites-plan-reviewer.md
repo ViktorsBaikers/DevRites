@@ -69,7 +69,7 @@ line, and then assign the band. Do not choose a score and justify it afterward:
 7. **Failure-mode coverage:** for each new codepath, find a realistic failure such
    as a timeout, nil value, race, or stale state. A silent failure with **no test AND
    no error handling** is a critical gap. For every consumptive action under
-   `one-shot-actions.md`, require durable bounded trust-safe evidence for every
+   [`one-shot-actions.md`](../skills/devrites-lib/reference/standards/one-shot-actions.md), require durable bounded trust-safe evidence for every
    terminal path plus unknown-well-formed, malformed/hostile, and cleanup-survival
    fixtures. Require a finite injective map from every failure emit site to one
    stable non-secret boundary ID and one actionable failure seam, per-seam fault

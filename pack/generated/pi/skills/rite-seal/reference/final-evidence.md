@@ -9,7 +9,7 @@ results and exact `devrites-spec-reviewer` checks implementation and proof
 against its meaning. Bug fixes require original-symptom proof; self-report,
 inspection alone, and generic "tests pass" do not count.
 
-Apply [`testing.md`'s positive, discriminating proof](../../devrites-lib/reference/standards/testing.md#positive-discriminating-proof),
+Apply [[`testing.md`](../../devrites-lib/reference/standards/testing.md)'s positive, discriminating proof](../../devrites-lib/reference/standards/testing.md#positive-discriminating-proof),
 including invalid-result exclusions and static/textual criterion boundaries.
 Unproven behavior: NO-GO.
 
@@ -37,5 +37,5 @@ devrites-engine check seal "<slug>"
 ```
 
 This checks structure and exact candidate bindings, never acceptance, test
-quality, doubt, or review. Apply [`testing.md`'s safe perturbation](../../devrites-lib/reference/standards/testing.md#safe-perturbation)
+quality, doubt, or review. Apply [[`testing.md`](../../devrites-lib/reference/standards/testing.md)'s safe perturbation](../../devrites-lib/reference/standards/testing.md#safe-perturbation)
 for its mandatory critical/regression cases and any additional project/test-plan requirement.

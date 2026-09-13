@@ -60,7 +60,7 @@ free: prefer it over re-deriving:
 - A **diff** or **recap** → the workspace and archive: `seal.md`, `evidence.md`, `decisions.md`,
   `traceability.md`, the shipped `.devrites/archive/<slug>/`, and `git log` / `git diff`.
 - A **concept** with footprint in this repo → live code through the primary index selected by
-  `standards/tooling.md` (one named-predicate cross-check only when needed), plus any
+  [`tooling.md`](../devrites-lib/reference/standards/tooling.md) (one named-predicate cross-check only when needed), plus any
   `.devrites/principles.md` or ADRs that already take a position on it.
 - An **idea** or a concept with no repo footprint → the user's framing plus, only if it sharpens
   the teaching, current external sources (weight by date; the year is 2026).
@@ -136,7 +136,7 @@ not force it; offer once.
   Wikipedia paragraph. If it has footprint in this repo, quote the repo.
 - **Not a review.** `$rite-explain` never judges the code or files findings, that is `$rite-review`.
   It explains what *is*, adversarially neutral.
-- **Not `$rite-learn`.** It writes to `.devrites/explainers/`, never to `principles.md`
+- **Not `$rite-learn`.** It writes to `.devrites/explainers/`, never to [`principles.md`](../devrites-lib/reference/standards/principles.md)
   or any rule file. Teaching the human is not promoting a repo rule.
 
 ## Output

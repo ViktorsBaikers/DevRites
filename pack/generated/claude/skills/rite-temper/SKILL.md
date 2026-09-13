@@ -15,12 +15,12 @@ is no readied `spec.md`, tell the user to run `/rite-spec`. Review depth follows
 the required exact strategy reviewer never changes with profile.
 
 ## Rules consulted (read on demand from `.claude/skills/devrites-lib/reference/standards/`)
-Pull on demand: `patterns.md` +
-`coding-style.md` (the over-engineering / YAGNI rubric (reuse the pack's standard, don't
-invent one), `documentation.md` (ADR-style `decisions.md` entries), `afk-hitl.md`
-(irreversible-risk list + gate ceiling), `elicitation.md` (the move-set to deepen a section
+Pull on demand: [`patterns.md`](../devrites-lib/reference/standards/patterns.md) +
+[`coding-style.md`](../devrites-lib/reference/standards/coding-style.md) (the over-engineering / YAGNI rubric (reuse the pack's standard, don't
+invent one), [`documentation.md`](../devrites-lib/reference/standards/documentation.md) (ADR-style `decisions.md` entries), [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md)
+(irreversible-risk list + gate ceiling), [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) (the move-set to deepen a section
 that needs more than the default pre-mortem) selected by the section's risk). Load
-`repository-topology.md`, `data-integrity.md`, or `integration-reliability.md` only when
+[`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md) only when
 the spec applicability map triggers that risk family.
 
 ## Operating rules
@@ -32,12 +32,12 @@ the spec applicability map triggers that risk family.
 - **Apply maximum caution to hard-to-reverse changes.** Auth, migration, public API, and
   data-model changes always pause under the irreversible-risk list.
 - **Honest verdict.** Never round "needs work" up to "ready"; record every scope call's *why*.
-- **Search before asking.** Apply `afk-hitl.md` decision ownership; only human-owned calls
+- **Search before asking.** Apply [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) decision ownership; only human-owned calls
   enter the interactive walk.
 - **You write; the reviewer judges.** You are the single canonical writer (`strategy.md` +
   the spec edits); the reviewer agent is read-only.
 - **Require spec-quality checklists for significant features.** Before hardening,
-  confirm `checklists/<domain>.md` exist and pass (`rite-spec/reference/spec-checklists.md`); a
+  confirm `checklists/<domain>.md` exist and pass ([`spec-checklists.md`](../rite-spec/reference/spec-checklists.md)); a
   scope expansion you fold in **adds its own** rows (new Success/Acceptance criteria get
   checklist rows too). A folded expansion with an unquantified criterion is a CRITICAL
   failure that reopens the readiness gate.

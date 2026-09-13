@@ -25,10 +25,10 @@ name rollback and failure paths; keep acceptance-changing proposals separate. Du
 proof commands must be portable repository commands, never host-local wrappers,
 user-specific absolute paths, or temporary proof trees.
 Reconcile `spec.md`'s applicability map against live evidence. When triggered, apply
-`repository-topology.md`, `data-integrity.md`, or `integration-reliability.md` and include
+[`repository-topology.md`](../skills/devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../skills/devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../skills/devrites-lib/reference/standards/integration-reliability.md) and include
 its required plan output with owner, partial-failure/recovery path, deployment order, slice,
 and proof. Do not copy a standard or turn a false `not applicable` into a planning shortcut.
-For every consumptive action, apply `one-shot-actions.md`: draft a durable bounded
+For every consumptive action, apply [`one-shot-actions.md`](../skills/devrites-lib/reference/standards/one-shot-actions.md): draft a durable bounded
 artifact, a finite injective map from every failure emit seam to a stable non-secret
 boundary ID and offline decision, per-seam fault fixtures, cleanup-survival proof,
 and a collision mutant. If prior retained evidence is missing or ambiguous, draft a
@@ -47,7 +47,7 @@ principle-exception questions. List them for the root.
 
 - Read-only. Do not edit source, tests, `.devrites/**`, Git state, or dependencies.
 - Design executable workflow artifacts completely, but never return implementation bodies
-  or materialize them; the later Vet-ready step follows `workflow-artifacts.md`.
+  or materialize them; the later Vet-ready step follows [`workflow-artifacts.md`](../skills/devrites-lib/reference/standards/workflow-artifacts.md).
 - Do not ask the user, approve the plan, set readiness, or advance a phase.
 - Do not invoke another agent.
 - Return candidate content only for requested paths. If unfinished, name the exact
