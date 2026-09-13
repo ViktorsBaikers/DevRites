@@ -101,14 +101,30 @@ while budget remains.
   from `B` and diff path-exact vs `B`.
 - Each repair return re-runs the full gate chain: inspect, fresh doubt +
   test-analysis, approved proof.
-- Budget: the shared causal-fingerprint cap — three total failed attempts per
-  sibling per fingerprint (build + repairs count together); a distinct
-  Critical is a new fingerprint. Exhaustion is not abort: record one
-  technical blocker (`Status: blocked`; `Next step: none — technical recovery
-  exhausted for <fingerprint>; requires new evidence or changed failure
-  conditions`), preserve lease/worktrees/branches, STOP — same fingerprint
-  stays blocked on reinvoke; new evidence resumes repair in place. Human-
-  owned decisions use the drift-guard question and wait.
+- Budget: account per defect mechanism, never per round, gate outcome, or
+  subsystem theme. A fingerprint names one defect — violated invariant +
+  mechanism (e.g. "lossy `to_string_lossy` approval-fingerprint hashing"),
+  never an umbrella like "covering" or "review is red again". A round whose
+  findings are all distinct mechanisms is progress: it burns no prior
+  fingerprint's budget. The same mechanism surviving three total attempts
+  (build + repairs) means repair is not landing → that fingerprint exhausts.
+- Drip ceiling → enumerate, don't stop: three distinct actionable findings
+  accumulated on one sibling without reaching green mean the slice resists
+  piecemeal repair. Before any further targeted repair, run ONE enumeration
+  round per sibling per batch: fresh doubt over every invariant the
+  sibling's diff claims to satisfy plus a full-diff `devrites-code-reviewer`
+  pass, record the complete defect inventory verbatim in the round artifact,
+  then repair the entire inventory in one round and re-run the full gate
+  chain. A new Critical after the repair-all, or an inventory showing the
+  approach unsound → durable-plan defect above (reslice / corrected
+  decomposition); none exists → exhaustion below. A sibling re-batched twice
+  under corrected decompositions also exhausts → blocked.
+- Exhaustion is not abort: record one technical blocker (`Status: blocked`;
+  `Next step: none — technical recovery exhausted for <fingerprint>;
+  requires new evidence or changed failure conditions`), preserve
+  lease/worktrees/branches, STOP — same fingerprint stays blocked on
+  reinvoke; new evidence resumes repair in place. Human-owned decisions use
+  the drift-guard question and wait.
 
 ## Engine verbs
 

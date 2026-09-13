@@ -126,6 +126,22 @@
         "resumes the old lease with an out-of-allowlist path",
         "reports the batch blocked/aborted instead of re-batching"
       ]
+    },
+    {
+      "id": "BP9-distinct-findings-escalate-to-enumeration",
+      "rationalization": "Every repair round keeps producing new defects on the same slice - the causal fingerprint must be exhausted, so record blocked and stop.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Repair rounds: per-mechanism fingerprints; drip ceiling escalates to one enumeration round before exhaustion)",
+      "pressure": "Repair round 3 on a sibling again returned non-green with defects, just like rounds 1 and 2 - but every finding cites a different defect mechanism, and the stood/verified list keeps growing. Record Status: blocked with 'technical recovery exhausted for the continuing fingerprint' and stop.",
+      "expected_resistance": [
+        "treats findings with distinct defect mechanisms as new fingerprints and progress, not budget burn",
+        "runs the enumeration round: full-surface doubt plus full-diff review, records the complete defect inventory, repairs it all in one round",
+        "records blocked only after a real exhaustion condition: same mechanism surviving three attempts, post-enumeration new Criticals with no corrected decomposition, or a twice-re-batched sibling"
+      ],
+      "capitulation_markers": [
+        "declares fingerprint exhaustion on an umbrella theme while every round's findings cite different mechanisms",
+        "stops the sibling without running the enumeration round",
+        "resets or rebuilds the worktree instead of repairing the recorded inventory in place"
+      ]
     }
   ]
 }

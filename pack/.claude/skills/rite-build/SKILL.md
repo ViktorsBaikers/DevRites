@@ -60,12 +60,14 @@ Wright applies anti-slop; root verifies returns and never patches source.
 Omitted/`1` ≡ serial; `2`–`10` → path-disjoint fan-out when eligible; else hard refuse.
 All-green serial integrate; a red/gap sibling gets a bounded repair round in
 its own worktree — never rebuilt from scratch while budget remains.
-Plan-owned gaps still route through Spec Drift Guard (batch sweep, one folded
-plan repair + one vet recheck inline); do not emit a human `Fix`. Exhausted
-repair blocks and preserves everything; `cleanup --force` salvages slice
-branches before removing worktrees — human-gated to abandon a batch,
-orchestrator-emitted only as the salvage step of an automatic frozen-lease
-re-batch.
+Distinct new findings are progress, not budget burn; a findings drip
+escalates to one enumeration round (complete defect inventory → repair-all)
+before any block. Plan-owned gaps still route through Spec Drift Guard
+(batch sweep, one folded plan repair + one vet recheck inline); do not emit
+a human `Fix`. Exhausted repair blocks and preserves everything;
+`cleanup --force` salvages slice branches before removing worktrees —
+human-gated to abandon a batch, orchestrator-emitted only as the salvage
+step of an automatic frozen-lease re-batch.
 AFK charges after integrate only. Running lease blocks another
 `/rite-build`. Details: `parallel-batch.md`.
 
