@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.6.0...v5.7.0) (2026-09-13)
+
+### Added
+
+* **installer:** pi as fourth host target + skill frontmatter YAML fix ([#70](https://github.com/ViktorsBaikers/DevRites/issues/70)) ([9275755](https://github.com/ViktorsBaikers/DevRites/commit/92757555f4c6cf74f8cdec5f8e8688ec28360508))
+
 ## [5.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.5.0...v5.6.0) (2026-09-13)
 
 ### Added
