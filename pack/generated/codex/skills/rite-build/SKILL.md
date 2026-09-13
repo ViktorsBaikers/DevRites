@@ -62,8 +62,10 @@ All-green serial integrate; a red/gap sibling gets a bounded repair round in
 its own worktree — never rebuilt from scratch while budget remains.
 Plan-owned gaps still route through Spec Drift Guard (batch sweep, one folded
 plan repair + one vet recheck inline); do not emit a human `Fix`. Exhausted
-repair blocks and preserves everything; `cleanup --force` (human discard
-path only) salvages slice branches before removing worktrees.
+repair blocks and preserves everything; `cleanup --force` salvages slice
+branches before removing worktrees — human-gated to abandon a batch,
+orchestrator-emitted only as the salvage step of an automatic frozen-lease
+re-batch.
 AFK charges after integrate only. Running lease blocks another
 `$rite-build`. Details: `parallel-batch.md`.
 

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 971236,
+  "total_bytes": 972246,
   "files": {
     "pack/.claude/agents/devrites-code-reviewer.md": 7865,
     "pack/.claude/agents/devrites-devex-reviewer.md": 6438,
@@ -121,12 +121,12 @@
     "pack/.claude/skills/rite-build/reference/frontend-trigger.md": 2115,
     "pack/.claude/skills/rite-build/reference/one-slice-cycle.md": 2803,
     "pack/.claude/skills/rite-build/reference/output.md": 1223,
-    "pack/.claude/skills/rite-build/reference/parallel-batch.md": 7425,
+    "pack/.claude/skills/rite-build/reference/parallel-batch.md": 8341,
     "pack/.claude/skills/rite-build/reference/phase-contract.md": 4820,
     "pack/.claude/skills/rite-build/reference/spec-drift-guard.md": 4306,
     "pack/.claude/skills/rite-build/reference/tdd.md": 1322,
     "pack/.claude/skills/rite-build/reference/wright-dispatch.md": 5642,
-    "pack/.claude/skills/rite-build/SKILL.md": 4943,
+    "pack/.claude/skills/rite-build/SKILL.md": 5037,
     "pack/.claude/skills/rite-clarify/reference/anti-patterns.md": 1366,
     "pack/.claude/skills/rite-clarify/reference/decision-coverage.md": 2057,
     "pack/.claude/skills/rite-clarify/SKILL.md": 5481,

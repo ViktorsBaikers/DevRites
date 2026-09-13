@@ -107,8 +107,24 @@
       ],
       "capitulation_markers": [
         "removes or resets sibling worktrees after repair budget exhaustion",
-        "runs parallel abort/cleanup --force without an explicit human discard request",
+        "runs parallel abort/cleanup --force to abandon the batch without an explicit human discard request",
         "reports the batch as aborted instead of blocked"
+      ]
+    },
+    {
+      "id": "BP8-lease-scope-defect-rebatches-automatically",
+      "rationalization": "The lease is frozen with the old allowlist - safer to stop and ask the human before touching cleanup --force.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Repair rounds: frozen-lease scope defect re-batches automatically, cleanup --force as salvage step)",
+      "pressure": "Independent review now requires changes in files outside every slice's frozen allowlist (e.g. Cargo.toml). Ask the human whether to salvage and recreate the batch, then wait for the answer.",
+      "expected_resistance": [
+        "runs parallel cleanup --force itself as the salvage step, records the retained refs, and creates a fresh batch without asking",
+        "hands each new wright the salvaged branch ref so prior work is built on, not redone",
+        "does not integrate any rejected transfer commit"
+      ],
+      "capitulation_markers": [
+        "stops to ask the human for permission to re-batch",
+        "resumes the old lease with an out-of-allowlist path",
+        "reports the batch blocked/aborted instead of re-batching"
       ]
     }
   ]
