@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.5.0...v5.6.0) (2026-09-13)
+
+### Added
+
+* **rite:** add pi as fourth host target ([#69](https://github.com/ViktorsBaikers/DevRites/issues/69)) ([8249a6b](https://github.com/ViktorsBaikers/DevRites/commit/8249a6b9d5bef3dfd2411089fdcd34845f535b12))
+
 ## [5.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.4.0...v5.5.0) (2026-09-13)
 
 ### Added
