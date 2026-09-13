@@ -105,7 +105,13 @@ criterion, slice, or proof.
   pad the report with praise. In a recheck, also mark each finding
   `new_failure_mode` or name the already-pinned clause/fingerprint it refines —
   the packet lists prior repairs; the mark makes alias-detection and
-  `convergence_pressure` eligibility mechanical.
+  `convergence_pressure` eligibility mechanical. Tag every Critical/Important
+  `kind: contract` (an implementer could build it differently and still pass the
+  planned tests) or `kind: mechanism` (a named test can discriminate the wrong
+  implementation; propose that case as the fix, not new plan prose).
+- In a recheck, your verdict covers the listed fingerprints, the correction diff, and
+  the dependents of each changed clause. Anything else you notice on unchanged text
+  goes under `Late:` with severity and site; it is recorded, not verdict-bearing.
 - When a dimension has no issue, say "strong: <why>" instead of inventing a
   finding.
 - If a claim cannot be verified, such as blast radius without an index, say so and

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
@@ -90,9 +91,22 @@ func (f ArtifactFact) Diagnostic() (ArtifactDiagnostic, bool) {
 }
 
 type WorkspaceObservation struct {
-	slug  string
-	facts []ArtifactFact
-	index map[ArtifactPath]int
+	slug      string
+	facts     []ArtifactFact
+	index     map[ArtifactPath]int
+	rootFiles []RootFile
+}
+
+// RootFile is one regular file directly inside the workspace root.
+type RootFile struct {
+	Name  string
+	Bytes int64
+}
+
+// RootFiles lists the workspace root's regular files so a consumer can judge
+// placement without acquiring the directory itself.
+func (o *WorkspaceObservation) RootFiles() []RootFile {
+	return append([]RootFile(nil), o.rootFiles...)
 }
 
 func (o *WorkspaceObservation) Slug() string { return o.slug }
@@ -296,7 +310,39 @@ func observeWorkspace(root, slug string, callback observationCallback) (*Workspa
 	for i, fact := range facts {
 		index[fact.path] = i
 	}
-	return &WorkspaceObservation{slug: slug, facts: facts, index: index}, nil
+	rootFiles, err := readRootFiles(roots.workspace)
+	if err != nil {
+		return nil, ObservationWorkspaceInvalid
+	}
+	return &WorkspaceObservation{slug: slug, facts: facts, index: index, rootFiles: rootFiles}, nil
+}
+
+// readRootFiles lists the workspace directory's regular entries through the
+// already-verified root handle, so the list describes the same snapshot as the
+// artifact facts.
+func readRootFiles(root *os.Root) ([]RootFile, error) {
+	dir, err := root.Open(".")
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = dir.Close() }()
+	entries, err := dir.ReadDir(-1)
+	if err != nil {
+		return nil, err
+	}
+	files := make([]RootFile, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.Type().IsRegular() {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, RootFile{Name: entry.Name(), Bytes: info.Size()})
+	}
+	sort.Slice(files, func(i, j int) bool { return files[i].Name < files[j].Name })
+	return files, nil
 }
 
 func observationWorkspaceOverrideValid(root, slug string) bool {

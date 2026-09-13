@@ -728,9 +728,16 @@ def validate_workspace(workspace: Path) -> list[str]:
             errors.append(f"{workspace / 'traceability.md'}: missing {ac}")
 
     if tasks:
-        for slice_id in sorted(slice_ids):
-            if not re.search(rf"{slice_id}.*AC-\d{{3}}|AC-\d{{3}}.*{slice_id}", tasks, re.S):
+        for slice_id in sorted(set(defined_ids(tasks, "SLICE"))):
+            section_match = re.search(
+                rf"(?m)^#{{2,6}}[ \t]+{slice_id}\b[^\n]*\n(.*?)(?=^#{{1,6}}[ \t]|\Z)",
+                tasks,
+                re.S,
+            )
+            section_text = section_match.group(1) if section_match else ""
+            if not ID_PATTERNS["AC"].search(section_text):
                 errors.append(f"{workspace / 'tasks.md'}: {slice_id} has no AC-### reference")
+        for slice_id in sorted(slice_ids):
             if trace and slice_id not in trace:
                 errors.append(f"{workspace / 'traceability.md'}: missing {slice_id}")
 

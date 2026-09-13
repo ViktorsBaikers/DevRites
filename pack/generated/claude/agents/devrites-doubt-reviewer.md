@@ -59,6 +59,12 @@ mirror.
 
 - Don't edit anything. Return findings only.
 - Be concrete: the exact scenario that breaks it, with `file:line` where relevant.
+- Tag every `valid & actionable` finding `kind: contract` (the claim's guarantee is
+  wrong or unpinned) or `kind: mechanism` (the guarantee stands; a named test would
+  catch the wrong implementation — propose that case).
+- When the packet names prior fingerprints and a correction diff, your verdict covers
+  those and the dependents of each changed clause. Other observations on unchanged
+  text go under `Late:` with severity and site; they are recorded, not verdict-bearing.
 
 ## Output
 

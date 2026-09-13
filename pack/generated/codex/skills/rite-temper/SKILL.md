@@ -7,8 +7,7 @@ user-invocable: true
 
 # $rite-temper: review scope and risk before planning
 
-Review a readied spec for outcome ambition, scope, pre-mortem risks, and unnecessary
-solution surface. Fold accepted decisions into the canonical contract before
+Review the readied spec for ambition, scope, pre-mortem risk and unnecessary surface. Fold accepted decisions into the canonical contract before
 `$rite-define`. This step is optional for small work and skips low-stakes specs, but
 `$rite-autocomplete` always invokes it. **Read the active workspace first**; if there
 is no readied `spec.md`, tell the user to run `$rite-spec`. Review depth follows
@@ -58,6 +57,10 @@ the spec applicability map triggers that risk family.
    First, the **one-sentence-intent test**: state the whole change's intent in a single sentence.
    If you can't without an "and" that joins two unrelated outcomes, it is **two features**: the
    scope-creep signal; recommend splitting or narrowing the spec before continuing.
+   Apply the same test to size: a spec whose honest decomposition would exceed the
+   [feature ceiling](../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
+   (roughly ten slices or more than ~20 acceptance criteria) is a feature sequence;
+   recommend the thinnest shippable subset now and name the continuations as Non-goals.
    Then consider the 10-star outcome for the underlying problem and choose **exactly one**
    scope mode (`expand` opt-in · `selective` · `hold-rigor` · `reduce-to-MVP`) with its
    rationale and the condition that would change the choice. `$ARGUMENTS` `--mode` is a
@@ -106,19 +109,19 @@ the spec applicability map triggers that risk family.
    and closed gates. Partial/Missing, an unowned material assumption, or an open
    blocking/escalating question routes `$rite-clarify`/HITL. Only after the
    matrix is re-closed may the phase advance.
-   Update `state.md`: `Phase: temper`,
-   `Next step: $rite-define`; on a blocking pause (expand / irreversible / a dimension still below
-   bar) write the `Awaiting human` block + `Status: awaiting_human` before stopping.
+   Set `Phase: temper`; `Next step: $rite-define` only after verification.
+   Human-owned expansion/unapproved irreversible choices set `Awaiting human` +
+   `Status: awaiting_human`; objective below-bar findings continue correction.
 7. **Adversarial verification loop:** ask the exact
    [`devrites-strategy-reviewer`](.codex/agents/devrites-strategy-reviewer.toml)
    through the native fresh-context contract in
    [`agents.md`](../devrites-lib/reference/standards/agents.md), with **only** the hardened
-   spec + rubric: no authoring reasoning. Resolve
-   actionable findings by editing `spec.md`/`strategy.md`, re-dispatch; **cap ≤3 iterations**. A
-   dimension still below bar after 3 is classified by decision ownership: a product/scope/risk
-   choice becomes a blocking question; an objective spec defect stays blocked with the exact
-   required edit and routes to `$rite-spec`, not `$rite-resolve`. Irreversible-risk findings
-   always pause. If the named agent is unavailable, stop for HITL. After an accepted edit to a
+   spec + rubric, no authoring reasoning. Fold technical findings into one correction;
+   exact strategy reviewer rechecks open findings and affected coverage/regressions under
+   [the canonical retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
+   Product/scope choices and unapproved irreversible risk remain human gates;
+   technical exhaustion preserves blocker/reproduction.
+   If the named agent is unavailable, stop for HITL. After an accepted edit to a
    coverage-bound input, repeat step 6's native coverage revalidation before handoff.
 8. **STOP.** Report the mode, the scope deltas, and the floor verdict; recommend `$rite-define`.
 

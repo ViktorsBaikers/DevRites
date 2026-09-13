@@ -30,9 +30,11 @@ Usage:
   devrites-engine check skill-trust <path> Scan one skill/agent Markdown for trust violations
   devrites-engine observe summary <slug>   Emit sanitized JSON workspace summary
   devrites-engine orient <slug>            Alias for observe summary
+  devrites-engine observe slice <slug> <SLICE-ID>  Print one SLICE-### section of tasks.md
   devrites-engine check indexes [--root <dir>]  Report manifest and code-index presence as JSON
   devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/cleanup
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
+  devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
   devrites-engine migrate <slug> [--dry-run]  Normalize a pre-v5 workspace to the current schema
   devrites-engine secret-scan [--staged] [--stdin] [slug]  Scan exact staged blobs, stdin, or touched files; HIGH blocks
@@ -144,18 +146,24 @@ func cmdCandidate(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "candidate: BLOCKED: %v\n", err)
 		return exitBlocked
 	}
+	if err := lib.VerifyReleaseUnion(root, args[0]); err != nil {
+		fmt.Fprintf(stderr, "candidate: BLOCKED: %v\n", err)
+		return exitBlocked
+	}
 	fmt.Fprintf(stdout, "candidate-sha256: %s\ncandidate-files: %d\n", digest, files)
 	return exitOK
 }
 
 func cmdState(root string, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine state <resolve|close> ...")
+		fmt.Fprintln(stderr, "usage: devrites-engine state <resolve|merge-manifest|close> ...")
 		return exitUsage
 	}
 	switch args[0] {
 	case "resolve":
 		return lib.Resolve(root, args[1:], stdout, stderr)
+	case "merge-manifest":
+		return lib.RunMergeManifest(root, args[1:], stdout, stderr)
 	case "close":
 		return lib.CloseOut(root, args[1:], stdout, stderr)
 	default:
@@ -192,6 +200,10 @@ func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Write
 		return exitBlocked
 	}
 	if kind == gate.Seal {
+		if err := lib.VerifyReleaseUnion(root, args[0]); err != nil {
+			fmt.Fprintf(stdout, "release-union: BLOCKED: %v\nreason: %s\n", err, gate.ResultReasonID(kind, true))
+			return exitBlocked
+		}
 		code := lib.EvidenceFresh(root, []string{args[0]}, stdout, stderr)
 		if code == exitUsage {
 			return exitUsage
@@ -223,22 +235,29 @@ func cmdSkillTrust(args []string, stdout, stderr io.Writer) int {
 
 func cmdObserve(root string, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine observe summary <slug>")
+		fmt.Fprintln(stderr, "usage: devrites-engine observe summary <slug> | observe slice <slug> <SLICE-ID>")
 		return exitUsage
 	}
-	if args[0] != "summary" {
-		fmt.Fprintf(stderr, "devrites: unknown observe command %q\n", args[0])
-		return exitUsage
-	}
-	slug, code, err := lib.ActiveSlug(root, args[1:])
-	if err != nil {
-		fmt.Fprintf(stderr, "observe: %v\n", err)
-		if code == 0 {
-			code = exitUsage
+	switch args[0] {
+	case "summary":
+		slug, code, err := lib.ActiveSlug(root, args[1:])
+		if err != nil {
+			fmt.Fprintf(stderr, "observe: %v\n", err)
+			if code == 0 {
+				code = exitUsage
+			}
+			return code
 		}
-		return code
+		return lib.RunObserveSummary(root, slug, stdout, stderr)
+	case "slice":
+		if len(args) != 3 {
+			fmt.Fprintln(stderr, "usage: devrites-engine observe slice <slug> <SLICE-ID>")
+			return exitUsage
+		}
+		return lib.RunObserveSlice(root, args[1], args[2], stdout, stderr)
 	}
-	return lib.RunObserveSummary(root, slug, stdout, stderr)
+	fmt.Fprintf(stderr, "devrites: unknown observe command %q\n", args[0])
+	return exitUsage
 }
 
 func cmdOrient(root string, args []string, stdout, stderr io.Writer) int {

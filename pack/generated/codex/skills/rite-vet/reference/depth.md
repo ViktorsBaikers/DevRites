@@ -1,10 +1,8 @@
 # Depth calibration: always vet, scale the rigor (never skip)
 
-`$rite-vet` runs on **every** plan: every feature deserves a correct engineering plan, not
-just the big ones. What changes with stakes is the *depth*, never *whether* it runs: a simple,
-reversible plan gets a fast **light pass**; a big or risky one gets the **full pass**. There is
-no skip. This shared definition is used by both the standalone `$rite-vet` and the always-run
-`$rite-autocomplete` step, so they agree on how deep to go.
+`$rite-vet` runs on **every** plan. Simple reversible work gets a **light pass**;
+big/risky work gets a **full pass**, never a skip. Standalone Vet and Autocomplete
+use these same depth rules.
 
 A four-section deep-dive on a one-file reversible plan is wasteful; rubber-stamping a
 migration-touching plan is dangerous. Match the effort to the stakes, but **always** leave a
@@ -55,6 +53,7 @@ triggers above, **never skipped**. Under the AFK gate ceiling:
   failure-mode coverage, tightened scope, reuse-over-rebuild, dependency-order fixes
   (these never grow acceptance). Record the rationale in `decisions.md`.
 - **Topology findings:** marked action; slice count alone never pauses.
-- **Always pause:** irreversible-risk findings, and any axis still below bar after the
-  ≤3-iteration reviewer loop.
+- **Stops:** human-owned irreversible-risk findings pause. Technical recovery follows
+  [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve),
+  with no depth-specific round limit; no-progress exhaustion blocks, never grants readiness.
 - **Cross-model** is off by default; it runs only if `--cross-model` was explicitly armed.

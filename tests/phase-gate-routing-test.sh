@@ -34,6 +34,8 @@ PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
 PLAN_GRAPH="$ROOT/pack/.claude/skills/rite-plan/reference/dependency-graph.md"
 VET="$ROOT/pack/.claude/skills/rite-vet/SKILL.md"
 BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
+BUILD_PARALLEL="$ROOT/pack/.claude/skills/rite-build/reference/parallel-batch.md"
+CODE_REVIEWER="$ROOT/pack/.claude/agents/devrites-code-reviewer.md"
 WRIGHT="$ROOT/pack/.claude/agents/devrites-slice-wright.md"
 WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
 CORE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/core.md"
@@ -64,6 +66,13 @@ UPGRADE_PLANNER="$ROOT/pack/.claude/agents/devrites-upgrade-planner.md"
 RESOLVE="$ROOT/pack/.claude/skills/rite-resolve/SKILL.md"
 SEAL="$ROOT/pack/.claude/skills/rite-seal/SKILL.md"
 SEAL_CONTRACT="$ROOT/pack/.claude/skills/rite-seal/reference/phase-contract.md"
+DOUBT="$ROOT/pack/.claude/skills/devrites-doubt/SKILL.md"
+VET_DEPTH="$ROOT/pack/.claude/skills/rite-vet/reference/depth.md"
+REVIEW="$ROOT/pack/.claude/skills/rite-review/SKILL.md"
+DISPATCH="$ROOT/pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md"
+TEMPER="$ROOT/pack/.claude/skills/rite-temper/SKILL.md"
+TEMPER_DIMENSIONS="$ROOT/pack/.claude/skills/rite-temper/reference/review-dimensions.md"
+API_INTERFACE="$ROOT/pack/.claude/skills/devrites-api-interface/SKILL.md"
 
 require "$CORE" 'Immediately before its final response' 'core loads the shared reply contract at the response boundary'
 require "$CORE" 'reply-contract.md' 'core names the universal reply contract'
@@ -112,6 +121,40 @@ forbid "$BUILD" 'devrites-engine state tick-afk' 'build has no removed AFK count
 forbid "$BUILD" 'devrites-engine preamble' 'build has no orientation renderer'
 forbid "$BUILD" 'devrites-engine progress' 'build has no decorative progress renderer'
 forbid "$BUILD" 'devrites-engine footprint' 'build has no dispatch telemetry'
+require "$BUILD_PARALLEL" 'phase-contract.md#independent-build-review' 'parallel build shares serial inventory and bounded recheck rules'
+require "$BUILD" 'one full-diff `devrites-code-reviewer`' 'build initial inventory includes independent full code review'
+require_order "$BUILD" 'build folds terminal inventory before one repair' 'Wait for every required account' 'Fold supported in-scope Critical/Important findings' 'one repair-all wright'
+require "$BUILD" 'all open findings owned by that role' 'build batches each responsible reviewer recheck'
+require "$BUILD" 'affected dependency/regression closure' 'build rechecks dependencies beyond patched lines'
+require "$BUILD" 'uncertain impact requires the full inventory' 'build cannot narrow an unproven impact boundary'
+forbid "$BUILD_PARALLEL" 'Run step 4 before the first repair and after every repair' 'parallel repair does not repeat the full roster blindly'
+require "$BUILD_PARALLEL" 'does not cancel independent safe running siblings' 'recoverable red preserves useful sibling work'
+require "$BUILD_PARALLEL" 'Expected test-first RED' 'parallel distinguishes TDD red from a terminal gate'
+require "$BUILD_PARALLEL" 'A distinct post-repair Critical/Important gets a new fingerprint' 'parallel build continues on distinct post-repair findings'
+require "$BUILD_PARALLEL" 'Reconcile retained repair-round artifacts by exact causal fingerprint before honoring a stored blocked status/verdict.' 'parallel build reconciles stale blocked cold resumes'
+forbid "$BUILD_PARALLEL" 'A new Critical after the repair-all, or an inventory showing the' 'parallel build does not misroute every new post-repair Critical to plan repair'
+require "$CODE_REVIEWER" 'Return every supported in-scope finding from the full inspected diff in this one pass' 'code reviewer enumerates the full inspected diff'
+require "$CODE_REVIEWER" 'Repeat canonical `Finding:`/`Basis:` rows' 'code reviewer emits one canonical row pair per finding'
+
+for file in "$DOUBT" "$VET_DEPTH" "$WRIGHT_DISPATCH" "$BUILD_PARALLEL" "$TEMPER" "$TEMPER_DIMENSIONS" "$API_INTERFACE"; do
+  require "$file" 'afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve' 'recovery consumer links the canonical retry owner'
+  forbid "$file" 'distinct-findings ceiling' 'recovery consumer cannot cap distinct evidenced findings'
+  forbid "$file" '≤3-iteration' 'recovery consumer cannot impose a total-round cap'
+done
+forbid "$DOUBT" 'distinct-findings ceiling' 'distinct valid findings cannot exhaust doubt'
+forbid "$DOUBT" 'Any `valid & actionable` finding, OR' 'technical doubt findings do not unconditionally require a human'
+forbid "$VET_DEPTH" '≤3-iteration reviewer loop' 'vet depth cannot impose a total-round cap'
+forbid "$WRIGHT_DISPATCH" 'Three total failed' 'wright dispatch cannot count all failures as no-progress'
+forbid "$BUILD_PARALLEL" 'two corrected re-batches fail' 'batch count cannot replace causal recovery accounting'
+require "$VET" 'Do not fall through to steps 2–7' 'bounded recovery does not accidentally repeat initial Vet'
+require "$DISPATCH" 'fresh-context preflight' 'dispatch checks host context before roster fanout'
+require "$DISPATCH" 'Do not launch a probe agent' 'context preflight does not add a per-task agent'
+require "$CANDIDATE_INTEGRITY" 'source, dependencies, configuration, environment, toolchain, command/cwd' 'evidence references verify applicable provenance'
+require "$CANDIDATE_INTEGRITY" 'External or time-sensitive observations rerun' 'evidence references cannot freeze mutable observations'
+require "$CANDIDATE_INTEGRITY" 'Never relabel an old candidate-bound account' 'new candidate requires new evidence reconciliation'
+require "$REVIEW" 'affected exact reviewers' 'corrected Review uses responsible reviewers with fresh binding'
+require "$SEAL_CONTRACT" 'evidence validity' 'Seal checks evidence through shared provenance contract'
+forbid "$SEAL_CONTRACT" 'then run only' 'Seal does not unconditionally repeat unchanged approved proof'
 
 for key in reuse conventions principles sources assumptions follow_ups; do
   require "$WRIGHT" "$key: []" "wright result requires $key bookkeeping"
@@ -140,7 +183,7 @@ require "$AFK_HITL" 'Next step: none — technical recovery exhausted' 'technica
 forbid "$AFK_HITL" 'Next step: /rite-plan unblock' 'technical exhaustion cannot hand plan unblock to the user'
 require "$BUILD_AFK" 'Next step: none — technical recovery exhausted' 'build exhaustion is terminal without a phase command'
 forbid "$BUILD_AFK" 'Next step: /rite-plan unblock' 'build exhaustion cannot hand plan unblock to the user'
-require "$BUILD" 'no-progress attempts' 'build counts only unchanged fingerprint failures'
+require "$BUILD" 'afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve' 'build delegates no-progress accounting to its canonical owner'
 require "$BUILD_AFK" 'no-progress attempts' 'afk build recovery uses progress-aware accounting'
 require "$DEBUG_RECOVERY" 'no-progress attempts' 'debug recovery shares progress-aware accounting'
 require "$DEBUG_RECOVERY" 'Next: none' 'debug exhaustion has no runnable recovery command'
@@ -154,6 +197,9 @@ require "$REPLY" 'No runnable recovery command' 'reply contract does not turn ex
 require "$AFK_HITL" 'three no-progress attempts per exact causal fingerprint' 'recovery budget attaches to the exact unresolved cause'
 require "$AFK_HITL" 'Closing a prior finding with discriminating evidence is progress' 'closed findings do not consume no-progress budget'
 require "$AFK_HITL" 'new Critical or Important finding' 'new high-severity blockers receive an independent fingerprint'
+require "$AFK_HITL" 'human-owned trade-off/risk decisions; accepted technical corrections do not enter' 'discretionary ceilings exclude accepted technical corrections'
+require "$AFK_HITL" 'The same invariant with a different evidenced mechanism qualifies' 'distinct mechanisms sharing an invariant receive separate fingerprints'
+forbid "$AFK_HITL" 'Finding severity > gate ceiling, OR finding touches' 'generic severity cannot force technical recovery into a human gate'
 require "$AFK_HITL" '`drift.md` and `evidence.md`' 'recovery progress uses existing durable artifacts'
 require "$AUTOCOMPLETE_LOOP" 'narrow Vet recheck' 'autocomplete rechecks repaired findings without restarting Full Vet'
 require "$VET" 'Recovery recheck' 'vet has an explicit bounded recovery mode'

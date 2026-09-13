@@ -29,10 +29,11 @@ Read `spec.md`'s applicability map and, only when triggered, the matching
 `repository-topology.md`, `data-integrity.md`, or `integration-reliability.md` proof cases.
 
 ## Inputs
-In workspace `.devrites/work/<slug>/`, read `spec.md` for the acceptance criteria,
-then `evidence.md` and `tasks.md`. Run `git diff` limited to `touched-files.md` paths to
-inspect the code and tests,
-then read the test files.
+In workspace `.devrites/work/<slug>/`, read `spec.md` for the acceptance criteria. Read
+`evidence.md`, `tasks.md`, and `touched-files.md` by the schema's bounded rule: when
+`devrites-engine orient <slug>` reports one over budget, index it (`grep -n`) and load only
+entries naming this candidate's AC/slice IDs. Run `git diff` limited to `touched-files.md`
+paths to inspect the code and tests, then read the test files.
 
 ## Assess
 - **Coverage of acceptance criteria:** map each criterion to the tests that prove it.
@@ -65,6 +66,10 @@ then read the test files.
 - Do not edit anything. Return analysis only.
 - Be specific: name the criterion, the missing/weak test, and what to add.
 - Label findings Critical / Important / Suggestion / Nit / FYI.
+- In a recheck (the packet names open findings and a correction diff), your verdict
+  covers those findings and the changed test hunks. Other observations on tests
+  unchanged since your previous pass go under `Late:` with severity and `file:line`;
+  they are recorded for `/rite-review`, not verdict-bearing.
 
 ## Output
 

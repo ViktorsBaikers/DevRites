@@ -200,7 +200,7 @@ for host in claude codex omp; do
   else
     no "$host workspace schema lost boundary-safe slug identity"
   fi
-  if grep -q 'base-10 integer; missing, repeated, malformed, or conflicting values stop' \
+  if grep -q 'Missing, repeated, malformed, or conflicting values stop before any write' \
       "$OUT/$host/skills/rite-autocomplete/SKILL.md" \
     && grep -q 'one-write AFK contract' \
       "$OUT/$host/skills/rite-autocomplete/SKILL.md" \

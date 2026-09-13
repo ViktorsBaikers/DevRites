@@ -7,10 +7,9 @@ user-invocable: true
 
 # /rite-vet: review the plan before build
 
-Vet every plan before code for scope, architecture, quality, proof, performance,
-failure modes, and writer safety. Cite findings; fold accepted technical
-hardening into planning artifacts; design Build tests. Temper owns product
-scope, Vet owns implementation; current `$ARGUMENTS` (`--full`) feeds the depth triggers in
+Vet every plan's scope, architecture, quality, proof, performance, failures and writer
+safety. Fold cited technical findings; design Build tests. Temper owns product;
+Vet owns implementation; current `$ARGUMENTS` (`--full`) feeds the depth triggers in
 `reference/depth.md`; profiles never remove the exact plan-reviewer gate
 ([orchestration-profiles.md](../devrites-lib/reference/orchestration-profiles.md)).
 
@@ -36,8 +35,8 @@ plan declares a root-authored executable workflow file, read
 
 - Review implementation, not ambition. Challenge creep, complexity, proof, and
   risk without changing accepted product scope.
-- Root alone asks, decides, folds, writes, and sets readiness. Reviewers judge;
-  they add no route policy. Cite every finding and confidence; suppress
+- Root owns decisions/writes/readiness; reviewers judge without route policy.
+  Cite findings/confidence; suppress
   unverified or confidence ≤4 findings under `review-axes.md`.
   Lens arrows in `eng-lenses.md` are heuristics; band findings only under the
   four `review-axes.md` names.
@@ -47,8 +46,6 @@ plan declares a root-authored executable workflow file, read
   `NOTICE.md` generator regions, CI/hook config named in repo docs) require explicit
   human approval before plan slices may edit them. A slice touching a protected path
   without approval → Vet **NEEDS CLARIFICATION**.
-  **Failing case:** plan edits another feature's `state.md` without recorded approval →
-  fail closed.
 - Use the lowest axis band; never average or round thin to ready. Search before
   asking and resolve reversible technical choices. Ask only human-owned choices.
 - Preserve a valid technical return cursor. Agent-owned `NEEDS REPLAN` returns
@@ -91,7 +88,11 @@ plan declares a root-authored executable workflow file, read
    changed clause — enumerate dependents via the dep graph and traceability
    refs, not only patched sites. Otherwise record one no-progress outcome. A
    different Critical/Important invariant needs exact evidence and a new
-   fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. A packet
+   fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. Reviewer
+   `Late:` rows on unchanged clauses follow the canonical
+   [late-finding rule](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
+   Critical with a failure path → new fingerprint; otherwise `eng-review.md`
+   `## Deferred findings` (mechanism rows become one proof row at step 6). A packet
    marked `convergence_pressure` accepts an explicit, bounded declared
    residual/limitation folded into the contract text as closure for a finding
    marked as a refinement of an already-pinned clause; the recheck may re-raise
@@ -101,7 +102,10 @@ plan declares a root-authored executable workflow file, read
    materialization gate — anchors applied, mirrors consistent, invariants
    pass — without a dispatched reviewer; sub-Important findings already
    cannot keep recovery open. Reconcile
-   shared artifact/readiness gates and return to caller or next repair.
+   shared artifact/readiness gates, then enter step 8 or the next repair.
+   Do not fall through to steps 2–7. Retain evidenced unchanged coverage; changed
+   global contract/uncertain impact requires full applicable review. Reopen historical
+   findings only for affected invariants/dependencies.
 2. **Challenge scope.** Apply review-axes §0 and search accepted decisions.
    Harden to the smallest contract-complete plan, using marked topology action.
    Then verify bidirectional ID-and-meaning traceability across spec/plan/
@@ -133,7 +137,11 @@ plan declares a root-authored executable workflow file, read
    Technical gaps are `NEEDS REPLAN` and Plan repair — each finding marks
    itself `new_failure_mode` or names the already-pinned clause/fingerprint
    it refines, making alias-detection and `convergence_pressure` eligibility
-   mechanical. Product/risk gaps are
+   mechanical — and carries `kind: contract | mechanism`
+   (`review-axes.md` § Finding kind). Only `contract` findings open a Plan
+   repair; a `mechanism` finding is closed by one `test-plan.md` proof row
+   at step 6 and leaves readiness intact when nothing else is open.
+   Product/risk gaps are
    `NEEDS CLARIFICATION` and Clarify. Neither becomes a Build qid.
 5. **Review axes.** Apply `review-axes.md` through `eng-lenses.md`. Fold verified
    behavior-preserving technical findings; walk only human-owned decisions.
@@ -155,12 +163,11 @@ plan declares a root-authored executable workflow file, read
    that new fingerprint as progress. Then close matrix and rerun ID/meaning audit.
 8. **Build readback and readiness.** Add a cited five-line readback to
    `eng-review.md` (artifacts.md §7 rows 1–5): outcome/ACs; IN/OUT/must-NOT; UI direction and architecture/
-   critical flow; slice order/first slice; decisive proof/action-time gates. A
-   fresh implementer must need no product, architecture, or proof invention.
+   critical flow; slice order/first slice; decisive proof/action-time gates. No implementer should need to invent product, architecture, or proof.
    Contradiction, ownerlessness, or material ambiguity blocks via Clarify or Plan.
 
    Write exactly one `Implementation readiness: READY`, `NEEDS CLARIFICATION`,
-   or `NEEDS REPLAN`. Root alone sets READY after every account, checklist,
+   or `NEEDS REPLAN`. Root sets READY after every account, checklist,
    preflight, and sweep is green. Write phase/next step and emit one
    `Readiness inputs SHA-256` with
    `devrites-engine check readiness --emit-binding <slug>`; normal readiness check
@@ -177,7 +184,7 @@ plan declares a root-authored executable workflow file, read
 > Do not replace interactive review with artifacts, change acceptance through
 > hardening, score without source evidence, or ignore unexplained complexity.
 
-## Phase exit (observable)
+## Phase exit
 
 **Complete when:** `eng-review.md` records exactly one readiness verdict, readiness
 binding SHA-256 passes, and every required reviewer account is admitted.

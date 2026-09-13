@@ -29,7 +29,7 @@ references, and only current phase contracts needed for the observed gap.
   a current rule, exact workspace evidence, affected gate, owning rite, exact paths, and
   the smallest behavior-neutral delta.
 - Existing rites own semantic changes. Upgrade may sequence `$rite-clarify`,
-  `$rite-plan repair`, `$rite-converge`, `$rite-vet`, `$rite-prove`, `$rite-polish`,
+  `$rite-plan repair|revise|course-correct`, `$rite-converge`, `$rite-vet`, `$rite-prove`, `$rite-polish`,
   `$rite-review`, and `$rite-seal`; it never reimplements them or starts Build or Ship.
   `$rite-doctor` owns install/config diagnosis.
 - An admitted candidate route may name only the exact current gate artifacts its owner
@@ -50,7 +50,9 @@ references, and only current phase contracts needed for the observed gap.
    Archive-only is `current`; otherwise require contained regular `state.md` and read its
    cursor. A damaged/mismatched install stops at Doctor; missing live work routes
    `$rite-spec`; `done` is `current`. An unknown cursor is `unsupported`.
-1. **Freeze preservation evidence.** Record `git status --short`, cursor form/fields, and
+1. **Freeze preservation evidence.** Record `git status --short`, cursor form/fields,
+   `devrites-engine orient <slug>` (cursor, `task_graph`, `artifact_budgets`,
+   `bulk_files`), and
    hashes of completed-slice fields, candidate gate artifacts, existing answers/decisions,
    and protected history. Inventory every path that could change; absence is evidence,
    never permission to synthesize history. For a post-Build workspace, also retain the
@@ -69,6 +71,13 @@ references, and only current phase contracts needed for the observed gap.
    one at a time:
    - decision coverage or a material assumption → `$rite-clarify`;
    - stale/inconsistent planning or traceability with settled intent → `$rite-plan repair`;
+   - over-budget `state.md` or planning artifacts carrying checkpoint narrative, or
+     packets/traces in the workspace root → `$rite-plan revise` (verbatim relocation to
+     `history/` / `packets/`, current view only; IDs, meaning, answers and decisions
+     unchanged; nothing deleted);
+   - unbuilt slices beyond the [feature ceiling](../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
+     → `$rite-plan course-correct` (`MVP cut` plus the named continuation sequence;
+     built slices and their evidence stay);
    - live code and recorded intent disagreement → `$rite-converge`;
    - any changed planning input or readiness defect → `$rite-vet`;
    - a missing/malformed strict manifest, missing/malformed/mismatched evidence binding,

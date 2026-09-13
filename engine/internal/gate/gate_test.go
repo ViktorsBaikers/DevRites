@@ -636,3 +636,121 @@ func writeWorkFeature(t *testing.T, root, slug string, files map[string]string) 
 		testutil.WriteFile(t, filepath.Join(root, "work", slug, name), content)
 	}
 }
+
+func TestCheckBlocksMaterialBudgetOvershootWithoutOverride(t *testing.T) {
+	root := t.TempDir()
+	writeCompleteGateFeature(t, root, "oversized", state.PhaseBuild, state.PhaseBuild, "none\n")
+	workspace := filepath.Join(root, "work", "oversized")
+	oversized := "# Tasks\n\n## SLICE-001 A\nDependencies: none\n\n" + strings.Repeat("long line of planning prose\n", 500)
+	testutil.WriteFile(t, filepath.Join(workspace, "tasks.md"), oversized)
+	binding := mustReadinessBinding(t, root, "oversized")
+	testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+
+	res, err := Check(Readiness, root, "oversized")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Blocked {
+		t.Fatalf("blocked=false, want true")
+	}
+	joined := strings.Join(res.StateProblems, "\n")
+	if !strings.Contains(joined, "budget: tasks.md is") || !strings.Contains(joined, "Budget override") {
+		t.Fatalf("StateProblems=%q", joined)
+	}
+
+	testutil.AppendFile(t, filepath.Join(workspace, "tasks.md"), "\nBudget override: vendored requirement matrix, relocation pending\n")
+	res, err = Check(Readiness, root, "oversized")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.Join(res.StateProblems, "\n"), "budget: tasks.md") {
+		t.Fatalf("override did not clear the budget problem: %v", res.StateProblems)
+	}
+}
+
+func TestCheckKeepsNonMaterialOvershootAdvisory(t *testing.T) {
+	root := t.TempDir()
+	writeCompleteGateFeature(t, root, "slightly-over", state.PhaseBuild, state.PhaseBuild, "none\n")
+	workspace := filepath.Join(root, "work", "slightly-over")
+	// 300 lines against a 280-line budget: over, but below the material factor.
+	testutil.WriteFile(t, filepath.Join(workspace, "tasks.md"), testutil.CanonicalTasksMarkdown+"\n"+strings.Repeat("note\n", 200))
+	binding := mustReadinessBinding(t, root, "slightly-over")
+	testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+
+	res, err := Check(Readiness, root, "slightly-over")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.Join(res.StateProblems, "\n"), "budget:") {
+		t.Fatalf("non-material overshoot must stay advisory: %v", res.StateProblems)
+	}
+}
+
+func TestCheckBlocksOversizedPacketInWorkspaceRoot(t *testing.T) {
+	root := t.TempDir()
+	writeCompleteGateFeature(t, root, "stray", state.PhaseBuild, state.PhaseBuild, "none\n")
+	workspace := filepath.Join(root, "work", "stray")
+	binding := mustReadinessBinding(t, root, "stray")
+	testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+
+	// Sanctioned conditional artifact over the ceiling: placement stays legal.
+	testutil.WriteFile(t, filepath.Join(workspace, "references.md"),
+		"# refs\n\n"+strings.Repeat("reference line\n", 6000))
+	// Unsanctioned root payload over the ceiling: blocked.
+	testutil.WriteFile(t, filepath.Join(workspace, "vet-review-input-031.json"),
+		strings.Repeat("x", state.PacketMaxBytes+1))
+
+	res, err := Check(Readiness, root, "stray")
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(res.StateProblems, "\n")
+	if !res.Blocked || !strings.Contains(joined, "placement: vet-review-input-031.json") {
+		t.Fatalf("blocked=%v StateProblems=%q", res.Blocked, joined)
+	}
+	if !strings.Contains(joined, "packets/") {
+		t.Fatalf("remediation must name packets/: %q", joined)
+	}
+	if strings.Contains(joined, "references.md") {
+		t.Fatalf("sanctioned root artifact must not be treated as misplaced: %q", joined)
+	}
+}
+
+func TestCheckNamesSizeRemediesForArtifactOverReadCap(t *testing.T) {
+	root := t.TempDir()
+	writeCompleteGateFeature(t, root, "huge", state.PhaseBuild, state.PhaseBuild, "none\n")
+	workspace := filepath.Join(root, "work", "huge")
+	// Over the read cap, so the artifact cannot be measured against its line budget.
+	// No binding: an over-cap file cannot be hashed into one, and this asserts the
+	// size signal alone rather than a passing gate.
+	testutil.WriteFile(t, filepath.Join(workspace, "tasks.md"),
+		"# Tasks\n\n"+strings.Repeat("n\n", state.MaxArtifactBytes/2+1))
+
+	res, err := Check(Readiness, root, "huge")
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(res.StateProblems, "\n")
+	if !res.Blocked || !strings.Contains(joined, "budget: tasks.md exceeds the") {
+		t.Fatalf("blocked=%v StateProblems=%q", res.Blocked, joined)
+	}
+	if !strings.Contains(joined, "history/") || !strings.Contains(joined, "/rite-plan") {
+		t.Fatalf("size remedies must be named: %q", joined)
+	}
+}
+
+func TestCheckLeavesProofLedgerOvershootAdvisory(t *testing.T) {
+	root := t.TempDir()
+	writeCompleteGateFeature(t, root, "big-ledger", state.PhaseProve, state.PhaseProve, "none\n")
+	workspace := filepath.Join(root, "work", "big-ledger")
+	testutil.WriteFile(t, filepath.Join(workspace, "evidence.md"), strings.Repeat("EVID-001 proof line\n", 800))
+	testutil.WriteFile(t, filepath.Join(workspace, "touched-files.md"), strings.Repeat("trail line\n", 600))
+
+	res, err := Check(Readiness, root, "big-ledger")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if joined := strings.Join(res.StateProblems, "\n"); strings.Contains(joined, "budget:") {
+		t.Fatalf("proof ledgers must stay advisory: %v", res.StateProblems)
+	}
+}

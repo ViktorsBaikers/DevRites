@@ -80,6 +80,9 @@ if absent, route to `/rite-spec <feature>`. Ship only with current **GO** in `se
    to move `.devrites/work/<slug>` → `.devrites/archive/<slug>` and clear `ACTIVE`
    only if it names this slug; preserve another active feature's cursor.
    Preserve every `.md`; stable hierarchical instructions need no active-workspace sync.
+   Report the recorded `Next step` verbatim — the exact `/rite-spec <parent>-<n> "<objective>"`
+   when a continuation sequence remains — so the next increment starts from one line,
+   never from chat memory.
 
 > **Mid-flight discipline.** No seal GO, skipped type-GO, out-of-manifest stage, or
 > deleted workspace. Stop and use [`anti-patterns`](reference/anti-patterns.md).

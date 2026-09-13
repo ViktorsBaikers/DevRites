@@ -41,8 +41,8 @@ The Go surface is intentionally closed and deterministic:
 | Lane | Commands | Owner |
 |---|---|---|
 | Candidate and deterministic checks | `check candidate`, `check readiness [--emit-binding]`, `check seal`, `check task-graph`, `check path-disjoint`, `check skill-trust`, `check indexes` | Candidate validates/hashes the strict project manifest; readiness checks phase files, the required `tasks.md` slice graph, or emits the vetted Build-input binding; seal checks final files/open gates, that graph and binding, then exact candidate bindings. `check indexes` reports install manifest and optional code-index directory presence as JSON. |
-| Workspace observation | `observe summary`, `orient` | JSON workspace snapshot for agents; `orient` is an alias for `observe summary`. |
-| Atomic workspace state | `state resolve`, `state close`, `migrate [--dry-run] [--answer id=choice]` | Go owns answer/drop/batch resolution, transactional close, and fail-closed v5 schema normalization. |
+| Workspace observation | `observe summary`, `orient`, `observe slice <slug> <SLICE-ID>` | JSON workspace snapshot for agents (cursor, task graph, `artifact_budgets`, `bulk_files`); `orient` is an alias for `observe summary`. `observe slice` prints one `SLICE-###` section of `tasks.md` so Build reads a slice, not the file. |
+| Atomic workspace state | `state resolve`, `state merge-manifest`, `state close`, `migrate [--dry-run] [--answer id=choice]` | Go owns answer/drop/batch resolution, the recorded predecessor-chain manifest union for a release milestone, transactional close, and fail-closed v5 schema normalization. |
 | Security | `secret-scan` | `/rite-ship`, safe hooks, or an operator scans staged blobs, stdin, or touched files. |
 | Install/operator | `install`, `update`, `uninstall`, `version` | Direct update acquires latest; npm/bootstrap may supply local candidates; the engine performs manifest-owned local changes. |
 | Native policy | no engine command | Skills/root own spec grammar re-read, qid allocation, Clarify cursor edits, AFK/recovery accounting, and read-only `/rite-doctor`. |

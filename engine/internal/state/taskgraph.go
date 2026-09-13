@@ -23,10 +23,33 @@ type TaskGraphResult struct {
 
 var (
 	sliceHeaderRE  = regexp.MustCompile(`(?m)^##\s+(SLICE-\d+)\b`)
+	anyH2HeaderRE  = regexp.MustCompile(`(?m)^##\s`)
 	dependenciesRE = regexp.MustCompile(`(?m)^Dependencies:\s*(.+)\s*$`)
 	dependsOnRE    = regexp.MustCompile(`(?m)^depends_on:\s*(.+)\s*$`)
 	sliceIDValidRE = regexp.MustCompile(`^SLICE-\d+$`)
 )
+
+// ValidSliceID reports whether id has the canonical SLICE-### shape.
+func ValidSliceID(id string) bool { return sliceIDValidRE.MatchString(id) }
+
+// ExtractTaskSlice returns the first `## SLICE-###` section of tasks.md whose ID
+// equals id, from its heading up to the next level-2 heading. It lets a phase read
+// one slice instead of the whole file.
+func ExtractTaskSlice(tasksMarkdown []byte, id string) (string, bool) {
+	text := string(tasksMarkdown)
+	for _, match := range sliceHeaderRE.FindAllStringSubmatchIndex(text, -1) {
+		if text[match[2]:match[3]] != id {
+			continue
+		}
+		rest := text[match[1]:]
+		end := len(text)
+		if next := anyH2HeaderRE.FindStringIndex(rest); next != nil {
+			end = match[1] + next[0]
+		}
+		return strings.TrimRight(text[match[0]:end], "\n") + "\n", true
+	}
+	return "", false
+}
 
 // ParseTaskGraph reads tasks.md content and validates the slice dependency DAG.
 func ParseTaskGraph(tasksMarkdown []byte) TaskGraphResult {

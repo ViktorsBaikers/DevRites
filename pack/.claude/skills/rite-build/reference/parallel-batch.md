@@ -7,13 +7,39 @@ Opt-in only. Default `/rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.
 | Input | Behavior |
 | --- | --- |
 | omitted / `--parallel 1` | Serial one-slice |
-| `--parallel N` (**2≤N≤10**) | Parallel when eligible + host pass |
+| `--parallel N` (**2≤N≤10**) | N is a **cap**, not a quota: run the largest eligible set ≤ N |
 | non-integer / `N≤0` / `N>10` | Hard refuse (no silent clamp) |
+| Autocomplete, no flag | Same path, cap from sentinel `max_parallel` else 10; serial only when ineligible |
 
-AFK caps `N` by remaining budget. Charge **only after successful integrate**
-(once per integrated green sibling). Abort / integrate-failed → **0**. A
-present lease is resumable: `/rite-build` continues it (repair rounds or the
-blocked verdict); `parallel create` refuses until cleanup.
+AFK caps `N`. Charge green siblings once after integrate; abort /
+integrate-failed → **0**. `parallel create` refuses while a lease exists.
+Reconcile retained repair-round artifacts by exact causal fingerprint before honoring a stored blocked status/verdict. Blocked status, round count, or distinct finding alone cannot stop cold resume: establish missing or stale review coverage under step 4; repair unless a stop condition remains evidenced.
+
+## Dynamic selection and re-batching
+
+Size each batch by what is runnable **now**, never by the requested number:
+
+```text
+N_eff = min(
+  cap                  -- --parallel N | sentinel max_parallel | 10 (autocomplete default)
+  eligible set         -- dependency-satisfied pending slices, pairwise path-disjoint
+  AFK headroom         -- remaining max_slices, max_agents, max_minutes, review queue
+  host capacity        -- concurrent worktree writers + the runtime isolation table
+)
+```
+
+Select **greedily in plan order**: walk pending slices whose `depends_on` are built and
+add each one while it stays pairwise disjoint with the selected set and the cap is not
+reached. Then `N_eff ≥ 2` → parallel batch; `N_eff = 1` → the serial one-slice cycle;
+nothing pending → Prove. A cap that cannot be filled is normal: take fewer.
+
+**Re-batch automatically.** After integrate + cleanup are green, re-read `state.md`,
+the pending slices (`observe slice`), and the updated tree, then recompute: integrated
+siblings leave the pending set and free their paths, and satisfied dependencies unlock
+new slices. Repeat until no pending slice remains. Under `.devrites/AFK` and
+`/rite-autocomplete` the repeat is part of the same run — a new batch is another
+`/rite-build --parallel` round inside it, not a new user invocation; HITL stops after
+each batch. A batch of three followed by one of four and then two is the expected shape.
 
 ## Path-disjoint
 
@@ -21,7 +47,9 @@ Exact project-relative source/test paths only. Normalize `\`→`/`. Reject `..`,
 duplicates, absolutes, `.devrites/**`. Empty pairwise intersection required.
 
 **SSOT:** `devrites-engine check path-disjoint [--root <dir>] [<json-file>|-]`
-(N≥2 only; pass `--root`). Exit `0` → fan-out; else force serial. Inspect-time
+(N≥2 only; pass `--root`). Input is `{"slices":[{"id":"SLICE-002","paths":["src/policy.rs","src/policy/mod.rs"]}]}`
+(or a top-level array) built from each candidate's `Files likely touched`.
+Exit `0` → fan-out; else force serial. Inspect-time
 overlap → sibling **gap** (a shared path is a contract defect). **Failing
 case:** two parallel wrights share a path and fan-out proceeds without that
 check.
@@ -40,14 +68,29 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
 
 ## Lifecycle
 
-1. Orient/gate; parse N; select ≤N path-disjoint pending slices.
+1. Orient/gate; parse the cap; compute `N_eff` and select the eligible set
+   ([Dynamic selection and re-batching](#dynamic-selection-and-re-batching)) —
+   candidates from `orient` `task_graph.slices` + built list, each candidate's
+   `Files likely touched` via `observe slice`, disjointness via `check path-disjoint`.
 2. Write lease; freeze `B=HEAD`; `parallel create` worktrees.
 3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`).
-4. Inspect + fail-on-red → `green|red|gap`. Independent-review Critical is `gap`
-   even when targeted tests are green.
+4. Inspect each returned path list, cumulative diff from `B`, transfer identity,
+   and required result fields against the immutable contract. Reject malformed,
+   stale, or out-of-scope work. Apply
+   [independent Build review](phase-contract.md#independent-build-review): first
+   full inventory, then bounded owning-role rechecks after repairs. Gap or
+   Critical/Important → `gap`; else approved proof → `green|red|gap`.
+   Reviewer fan-out for a batch is itself batched under
+   [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#scale-limits)
+   (≈4 concurrent read-only reviewers, 8 only with disjoint paths), and `max_agents`
+   headroom bounds the batch size — one batch never assumes unbounded reviewers.
 5. Non-green siblings → **repair round** (below) in the same worktrees; lease
    stays `running` — no abort while repair budget remains. A green sibling →
    `parallel record-green`. No partial integrate. All green → integrate.
+   A recoverable RED blocks integration but does not cancel independent safe running siblings.
+   Expected test-first RED is not a terminal gate failure. Cancel only for a shared
+   invalid foundation, safety/access failure, resource boundary, or explicit stop;
+   preserve completed and in-progress recoverable work and classify each result.
 6. Integrate: each `transfer_commit` descends from `B` and diffs path-exact vs
    `B`; squash-apply all in plan order into one `WIP(<slug>):` commit on the
    staging branch (Ship collapses it). Conflict → reset to `B`,
@@ -69,46 +112,53 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
 
 ## Repair rounds
 
-Rejected work is repaired in place — never discarded and rebuilt from scratch
-while budget remains.
+Repair rejected work in place; never discard/rebuild while budget remains.
 
-- Record each round as `build-parallel-<batch>-repair-<round>.json`: per
-  non-green sibling — status, verbatim findings, transfer_commit or null.
-- Classify first: **implementation defect** (review Critical on the diff, red
-  wright/proof) → repair wright in the same worktree. **Durable-plan defect**
+- Record each round as `build-parallel-<batch>-repair-<round>.json`: each
+  non-green sibling's status, verbatim findings, transfer_commit/null.
+- Use step 4's initial inventory or affected recheck as appropriate; never start
+  a correction from an early reviewer result while required accounts are pending.
+- Classify the complete inventory: **implementation defect** (review
+  Critical/Important on the diff, red wright/proof) → one repair-all wright in
+  the same worktree with the full inventory. **Durable-plan defect**
   (falsified contract assumption, AC unchanged) →
   [`spec-drift-guard.md`](spec-drift-guard.md): batch-sweep contract
   assumptions, one folded `/rite-plan repair` + one `/rite-vet` recheck
   inline, resume repair in the same worktrees under the amended contract;
-  never emit `Fix:`. **Frozen-lease scope defect** — the amended contract or
-  a review requirement needs paths outside a slice's allowlist, or re-slices
-  the plan (a lease is immutable once written: its allowlists are the
-  disjointness guarantee) → **automatic re-batch, no human gate**:
-  `parallel cleanup --force` as the salvage step, record the retained refs in
-  the repair-round artifact, `parallel create` a fresh batch from control
-  `HEAD` under the corrected decomposition. Prior attempts stay reachable —
-  hand each new wright the salvaged branch ref
-  (`devrites/parallel/<slug>/<old-batch>/<slice>`) so it builds on what worked
-  instead of starting blind. If no corrected decomposition exists, that is
-  exhaustion → blocked, preserve, STOP. **Reviewer stall/cancel or missing
+  never emit `Fix:`. **Frozen-lease scope defect** (correction needs
+  out-of-allowlist paths or re-slicing; lease allowlists are immutable) →
+  **automatic re-batch, no human gate**: `parallel cleanup --force` salvages
+  and records refs; `parallel create` starts from control `HEAD` under the
+  corrected decomposition. Give each new wright its salvaged
+  `devrites/parallel/<slug>/<old-batch>/<slice>` ref. If the inventory proves the accepted
+  approach unsound and no corrected decomposition exists, that is exhaustion
+  → blocked, preserve, STOP. **Reviewer stall/cancel or missing
   verdict** → re-dispatch the reviewer, not the wright. **Product/policy/
   irreversible** → stops for the human.
-- Dispatch a fresh `devrites-slice-wright` (cwd = the sibling's worktree, same
-  allowlist and host rules as step 3 — siblings may repair in parallel) with
-  the original contract + verbatim findings + "preserve what works; fix the
-  named findings; return a new `transfer_commit`". Never reset the worktree
+- Dispatch one fresh repair-all `devrites-slice-wright` (cwd=worktree; step 3
+  rules) with the original contract + complete inventory +
+  "preserve what works; fix every finding; **then attack your own correction** —
+  probe the changed hunks for defects the fix itself introduced (adjacent cases of
+  the same rule, new observation/ordering windows, alias or boundary escapes) and
+  fold them in before returning; return a new `transfer_commit`". A correction whose
+  own diff is unexamined is not ready: a green writer gate plus an unexamined fix is
+  how the same defect family reappears one case deeper each round. Never reset
   to `B` — that destroys the work under repair. The commit must still descend
   from `B` and diff path-exact vs `B`.
-- Each repair return re-runs the full gate chain: inspect, fresh doubt +
-  test-analysis, approved proof.
-- Budget: the shared causal-fingerprint cap — three total failed attempts per
-  sibling per fingerprint (build + repairs count together); a distinct
-  Critical is a new fingerprint. Exhaustion is not abort: record one
-  technical blocker (`Status: blocked`; `Next step: none — technical recovery
-  exhausted for <fingerprint>; requires new evidence or changed failure
-  conditions`), preserve lease/worktrees/branches, STOP — same fingerprint
-  stays blocked on reinvoke; new evidence resumes repair in place. Human-
-  owned decisions use the drift-guard question and wait.
+- Budget and exhaustion follow only
+  [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+  Record one failed invariant, mechanism, reproduction, correction, and decisive
+  recheck per fingerprint; never use an umbrella like "covering" or "review is red again".
+- A distinct post-repair Critical/Important gets a new fingerprint: refresh the
+  inventory and affected owning-role rechecks. It proves neither plan defect nor
+  exhaustion. Use plan path only if inventory proves the approach unsound.
+- Stop under the canonical retry/authority/resource conditions, or when evidence
+  proves the approach unsound and no in-scope corrected decomposition exists.
+- Exhaustion is not abort: record one technical blocker (`Status: blocked`;
+  `Next step: none — technical recovery exhausted; requires new evidence or changed failure conditions`), preserve
+  lease/worktrees/branches, STOP — same fingerprint stays blocked on
+  reinvoke; new evidence resumes repair in place. Human-owned decisions use
+  the drift-guard question and wait.
 
 ## Engine verbs
 

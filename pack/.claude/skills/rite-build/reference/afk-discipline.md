@@ -87,7 +87,7 @@ any of:
 - External-service contract change (webhook payload, partner-facing schema).
 - Filesystem destructive operation outside the workspace (`rm -rf` of project paths,
   rewriting `.gitignore`-listed paths, deleting fixtures).
-- Anything the slice's `Gate: blocking` plus `tasks.md` `Why HITL:` flags as irreversible.
+- Anything the slice's `Gate: blocking` plus its `Checkpoint:` line in `tasks.md` flags as irreversible.
 
 This is the Claude Code auto-mode transcript classifier list adapted to the DevRites
 workspace.

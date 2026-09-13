@@ -1,25 +1,52 @@
 # Context hygiene
 
-Long conversations degrade an agent's reasoning. End phases cleanly, persist important
-state to disk, and start the next phase in a fresh context.
-
-The feature workspace stores the next session's authority; chat memory does not.
+Persist phase results before starting fresh. The feature workspace, not chat memory,
+stores continuity.
 
 ## Working-set rule
 
-Long tool histories can displace important facts and retain failed attempts. Act at 50%
-to 70% context use, keep one task's working set small, and load only what the current
-step needs. The workspace, not a summary, is the source of truth.
+Act at 50% to 70% context use; load only the current task's working set. The
+workspace, not a summary, is the source of truth.
 
 - **Count before viewing:** on a search hit list, read match counts first (`grep -c`,
-  match summaries) and open only the files a one-line answer needs; dumping whole
-  files for a one-line question is common waste.
+  match summaries), then open relevant files.
 - **Cut before load, not after.** Drop low-signal files, prior-turn dumps, and
-  duplicate index queries before they enter context. Truncating a bloated window
-  after the fact is not an efficiency strategy — the cost is already paid.
+  duplicate index queries before loading; later truncation cannot undo that cost.
   **Failing case:** five whole-file reads, then `/compact`, treated as cost control.
 
-**Compaction-preservation directive.** If the harness compacts mid-feature, read `.devrites/ACTIVE`, then reload the `state.md` cursor, open `questions.md` gates, durable `decisions.md`, and `test-plan.md`/`evidence.md` proof pointers. Session hooks normally restore these; this is the fallback when no hook fires.
+## Dispatch packets
+
+Give each role the exact candidate identity, scope, applicable contract/decision IDs,
+all open findings, relevant tests/evidence, and anchored/hashed read-next paths. Read
+owning text and dependencies: IDs/digests are not semantic evidence. Exclude whole
+histories, duplicates, and raw transcripts from initial packets. Inspect serialized byte size
+and long lines; line counts alone are insufficient. Within the host budget
+and working-set rule, split retrieval rather than truncate active obligations.
+Broaden retrieval when dependency boundaries are unknown.
+
+Packets are **by reference**: project-relative path + SHA-256 + line anchors
+(`path:start-end`) for every input; the reviewer reads the live file. Inline only the
+excerpt a finding or claim needs, ≤ 4 KiB each. Never inline whole workspace artifacts,
+standards/skill files (name the path; the role reads it), foreign documents, prior
+packets, or another role's account. A serialized packet stays ≤ 64 KiB; larger means
+the scope is wrong — split by anchor-disjoint cluster, never truncate. Persist packets
+and admitted accounts under `.devrites/work/<slug>/packets/`; once a round's account
+is recorded in its owning artifact, packets older than the last closed round may be
+deleted. Never persist agent transcripts, traces, or
+`session_init` dumps anywhere in `.devrites/`. Bulk raw proof output stays outside
+`.devrites/work/`; `evidence.md` records the command, decisive lines, and that path.
+**Failing case:** a 4 MiB `vet-review-input.json` embedding `tasks.md`, the spec, six
+standards files, and a 2 MiB source document as `entries`, plus a 10 MiB
+`vet-review-audit.json` of agent traces beside it.
+
+Keep closed findings in immutable history/regressions; recheck those affected by
+changed contracts, implementation, proof, or dependencies, not every prior generation.
+Required review rosters and final proof remain. Preserve protected history unchanged;
+a compact current view references originals without omitting active requirements.
+
+**Compaction fallback:** when hooks do not restore context, read `.devrites/ACTIVE`,
+then the `state.md` cursor, open `questions.md` gates, `decisions.md`, and
+`test-plan.md`/`evidence.md` proof pointers.
 
 ## Authority and trust
 
@@ -39,15 +66,11 @@ Apply [`core.md` § Precedence](core.md#precedence); authority and evidence diff
 
 | Use `/clear` (default) when | Use `/compact` when |
 |---|---|
-| The current phase is done and its outputs are on disk (the common DevRites case). | You need to keep mid-flight reasoning that hasn't yet been written to the workspace. |
-| Next phase reads workspace files anyway (every `rite-*` does). | The remaining work is small and continuation beats restart. |
-| The chat is dominated by tool outputs (file reads, diffs, test logs, browser snapshots). | A drift or doubt loop is mid-flight and the trade-off discussion isn't yet recorded. |
-| You hit a wrong path that needs unwinding: fresh start beats arguing with stale context. | A user clarification just landed that materially changes the next phase. |
+| Phase results are persisted; the next phase reads them. | Important mid-flight reasoning is not yet persisted. |
+| Tool output or a wrong path dominates context. | Small remaining work, unrecorded drift/doubt discussion, or fresh clarification favors continuity. |
 
-**Default to `/clear`.** Use `/compact` only when the workspace does not capture
-important continuity. When in doubt, write the missing decision /
-assumption / question to the canonical file (`$rite-handoff` does this in one step),
-then `/clear`.
+**Default to `/clear`.** First persist missing decisions, assumptions, or questions
+to their owners (`$rite-handoff`); `/compact` preserves unrecorded continuity.
 
 ## The "Session hygiene" footer (every rite-* output)
 
@@ -82,8 +105,5 @@ handoff.
 
 ## The handoff bridge
 
-When the user is leaving for a long break rather than moving directly between phases, `$rite-handoff`
-is safer than `/clear` alone because it syncs chat-only context into the canonical
-workspace files **before** the reset, then the user can `/clear` (or even close the
-session) without losing anything. The session-hygiene footer points at `$rite-handoff`
-when the gap to the next session is likely > a few hours.
+For a break longer than a few hours, point the footer at `$rite-handoff`: persist
+chat-only context to canonical files before clearing or closing the session.

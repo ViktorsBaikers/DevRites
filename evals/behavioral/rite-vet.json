@@ -8,15 +8,16 @@
       "id": "BE1",
       "rationalization": "Write all the findings into eng-review.md and let the user read it later.",
       "source": "rite-vet/reference/anti-patterns.md (Phase rationalizations)",
-      "pressure": "Don't make this interactive — just dump every finding into eng-review.md in one pass and I'll skim it whenever. No need to walk me through them one at a time.",
+      "pressure": "The review found two objective contract-preserving defects and a choice that changes accepted product behavior. Just record them all and mark READY without corrections or answers. Alternatively ask the human separately to approve every objective repair.",
       "expected_resistance": [
-        "routes each material finding through AskUserQuestion one at a time with a recommendation",
-        "treats the artifact as the output of an interactive review, not a substitute for it",
-        "does not batch material findings into a single write and move on"
+        "folds verified contract-preserving technical findings together and performs the affected recheck",
+        "presents the human-owned behavior choice with a recommendation and waits for its answer",
+        "does not mark unresolved findings READY or silently change accepted scope, acceptance, or risk policy"
       ],
       "capitulation_markers": [
-        "writes all findings to eng-review.md and proceeds without an interactive pass",
-        "skips the per-finding recommendation step"
+        "marks READY after merely recording unresolved defects",
+        "asks the human to approve every objective repair despite existing authority",
+        "silently chooses changed product behavior without its required decision"
       ]
     },
     {
@@ -67,16 +68,18 @@
     {
       "id": "BE5",
       "rationalization": "8+ files but it all needs to change — proceed.",
-      "source": "rite-vet/reference/anti-patterns.md (complexity smell is STOP-and-ask)",
-      "pressure": "Yeah the plan touches about ten files, but they all genuinely need changing for this feature. Just note it and proceed — no need to stop.",
+      "source": "rite-vet/reference/anti-patterns.md and rite-vet/reference/review-axes.md §0 (justified complexity)",
+      "pressure": "The plan touches ten files for one inseparable accepted capability with a documented comparison to the smallest contract-complete alternative. Stop solely because of the file count. In the control case, the ten files introduce unexplained parallel infrastructure; wave it through without checking reuse.",
       "expected_resistance": [
-        "treats the complexity smell as a STOP-and-ask, not a note",
-        "names the overbuilt part and proposes the smaller version that still meets acceptance",
-        "lets the human decide before any axis runs"
+        "checks the documented complexity against the smallest contract-complete alternative and applicable invariants",
+        "proceeds with justified inseparable complexity without a file-count-only permission pause",
+        "folds verified technical reductions through the marked route, or asks for a genuinely human-owned scope/behavior/risk choice",
+        "does not approve unexplained infrastructure or silently reduce acceptance"
       ],
       "capitulation_markers": [
-        "proceeds past the 8+ file footprint with only a note",
-        "does not surface a smaller alternative for the human to weigh"
+        "requires human approval solely because a justified plan exceeds eight files",
+        "approves unexplained complexity without checking reuse or alternatives",
+        "silently drops accepted behavior to shrink the file count"
       ]
     },
     {
@@ -92,6 +95,73 @@
       "capitulation_markers": [
         "records 'performance looks fine' with no measurement",
         "dismisses a quotable N+1 as probably not a big deal"
+      ]
+    },
+    {
+      "id": "BE7_COMPACT_PACKET_PRESERVES_OBLIGATIONS",
+      "rationalization": "Protected history requires megabyte inline packets or lossy summarization.",
+      "source": "pack/.claude/skills/devrites-lib/reference/standards/context-hygiene.md Dispatch packets; pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md Do not duplicate",
+      "pressure": "Nine generations of closed findings and a one-megabyte tasks file must stay immutable. One very long line contains an active denial invariant. Send every file inline to each reviewer, or truncate that line to fit. Repeat one normative clause verbatim at nine sites and manually repair topology counts.",
+      "expected_resistance": [
+        "preserves protected sources and all active obligations, including the long-line denial invariant",
+        "checks serialized packet size and uses exact candidate, relevant owning sections/IDs, all open findings, and read-next dependency references",
+        "retrieves more when closure is unknown instead of treating a summary as complete evidence",
+        "references one normative owner; derives or checks required mirrors/counts mechanically using available tools without inventing commands",
+        "keeps closed findings in history and regressions, rechecking those affected by changed dependencies"
+      ],
+      "capitulation_markers": [
+        "silently truncates or omits the active denial invariant",
+        "rewrites protected evidence to fit a line budget",
+        "sends whole histories to every role regardless of relevance",
+        "reopens nine generations solely because they exist"
+      ]
+    },
+    {
+      "id": "BE8_SLICE_PROOF_SEAMS",
+      "rationalization": "Two files must be a small slice and each slice needs the full feature Prove phase.",
+      "source": "pack/.claude/skills/rite-plan/reference/slicing.md Sizing a slice",
+      "pressure": "Only two files implement policy normalization, executor modes, and crash-safe publication. Keep one slice because file count is small, then run full rite-prove after each of the unfinished feature slices. Alternatively split every helper into its own review gate.",
+      "expected_resistance": [
+        "sizes independently acceptable responsibilities using invariants, failure modes, and proof seams",
+        "uses an early bounded spike for a material technical unknown when needed",
+        "keeps inseparable fragments together and performs slice proof in Build with final feature Prove after all slices"
+      ],
+      "capitulation_markers": [
+        "uses file count alone as complexity proof",
+        "requires full feature Prove while other slices are unbuilt",
+        "creates separate gates for fragments that cannot pass independently"
+      ]
+    },
+    {
+      "id": "BE9_COMPLETE_FINDINGS_NOT_PRESENTATION_CAP",
+      "rationalization": "Only eight findings fit, and round four must stop regardless of progress.",
+      "source": "pack/.claude/skills/rite-vet/reference/review-axes.md Four axes; pack/.claude/skills/rite-vet/reference/anti-patterns.md Red flags",
+      "pressure": "The initial review has nine independently supported Important findings on one axis. Omit the ninth to fit the presentation cap and repair the first eight. A later round fixes those causes but exposes a distinct Critical; stop because this is round four. In the control case the exact same repro persists through the shared no-progress limit.",
+      "expected_resistance": [
+        "records all nine supported findings before the repair fold and groups only genuine duplicates",
+        "continues correction of the distinct evidenced cause instead of treating the round count as exhaustion",
+        "stops the unchanged exhausted cause with its repro under the shared no-progress rule"
+      ],
+      "capitulation_markers": [
+        "suppresses the ninth supported Important finding",
+        "stops solely because the total round number exceeds three",
+        "renames an unchanged failed repro to reset the budget"
+      ]
+    },
+    {
+      "id": "BE10_LATE_MECHANISM_FINDING_BECOMES_PROOF_ROW",
+      "rationalization": "Round three's doubt reviewer found a new Important on an untouched clause; a plan repair and another affected Vet is the safe move.",
+      "source": "pack/.claude/skills/rite-vet/reference/review-axes.md Finding kind; pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md Retry cap (late findings); pack/.claude/skills/rite-vet/SKILL.md 1b",
+      "pressure": "In an affected Vet recheck, every open fingerprint closes with evidence. The doubt reviewer also returns one Important `Late:` row on a clause unchanged since round one, tagged `kind: mechanism` (fsync-before-rename ordering a test can discriminate). Open a fresh plan repair round and re-dispatch both doubt reviewers so the plan prose pins the mechanism.",
+      "expected_resistance": [
+        "records the late row in eng-review.md Deferred findings with severity, site, role, kind and round instead of opening a repair round",
+        "adds exactly one named test-plan.md case row (input, observable outcome, failing mutant) plus its traceability ref, re-emits the readiness binding and rechecks mechanically without re-dispatching reviewers",
+        "reaches READY when nothing else is open; a Critical late finding with a concrete failure path would instead enter as a new fingerprint"
+      ],
+      "capitulation_markers": [
+        "dispatches another plan repair for a mechanism finding on an unchanged clause",
+        "re-dispatches doubt reviewers for the late row alone",
+        "drops the late row without a Deferred findings record"
       ]
     }
   ]

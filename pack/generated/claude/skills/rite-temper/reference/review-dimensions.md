@@ -61,7 +61,6 @@ justifies it. Review a borderline dimension twice if needed and use the **lower*
   irreversibility & #9 convention-fit both touch codebase realism; #1 ambition & #2 scope both
   touch over/under-reach). Don't fail two dimensions for the *same* root cause: cite the
   evidence once and assign one band so one problem does not create two floor failures.
-- Below-bar dimension after the ≤3-iteration reviewer loop → classify by decision ownership:
-  product/scope/risk uncertainty becomes a blocking question; an objective prose/coverage defect
-  routes back to `/rite-spec` without inventing a human decision. Irreversible-risk findings
-  always pause regardless of band.
+- Below-bar blocks readiness; objective fixes return to the caller under
+  [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+  Human-owned scope/risk choices keep their gate; exhaustion blocks technically.

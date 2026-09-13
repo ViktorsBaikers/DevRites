@@ -118,6 +118,21 @@ func ArchiveDirChecked(root string) (string, error) {
 	return checkedCanonicalDir(root, filepath.Join(root, "archive"), "archive", "")
 }
 
+// ExistingArchivedFeatureDirChecked resolves an archived feature directory that
+// must already exist. A live workspace never satisfies this lookup; callers
+// that accept either location try ExistingFeatureDirChecked first.
+func ExistingArchivedFeatureDirChecked(root, slug string) (string, error) {
+	if !validSlug(slug) {
+		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: %q is not a feature slug", slug)
+	}
+	candidate := filepath.Join(root, "archive", slug)
+	resolved, err := checkedCanonicalDir(root, candidate, filepath.Join("archive", slug), "")
+	if err != nil {
+		return "", err
+	}
+	return resolved, nil
+}
+
 func checkedCanonicalDir(root, candidate, parent, slug string) (string, error) {
 	resolvedRoot, err := safepath.ResolveExisting(root)
 	if err != nil {

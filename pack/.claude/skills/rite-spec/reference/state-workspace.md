@@ -172,6 +172,12 @@ Ordinary workspace creation preserves the field without initializing,
 increasing, renaming, or deleting it. Released bullet workspaces spell it `AFK
 slices remaining`; preserve that presentation rather than migrating it.
 
+When the brief records a [sequence continuation](../../rite-plan/reference/slicing.md#continuation-workspaces),
+seed the `sequence_parent`, `sequence_position`, `sequence_workspaces_remaining`,
+and — for the release entry — `sequence_role` rows at creation per that contract.
+Without them `state merge-manifest` cannot walk the chain and the release-union
+gate never engages.
+
 ## questions.md entry format
 
 ```markdown

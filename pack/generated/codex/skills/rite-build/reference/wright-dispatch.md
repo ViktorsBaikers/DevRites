@@ -1,12 +1,12 @@
 # Slice-wright dispatch
 
 `$rite-build` gives one bounded task to exact `devrites-slice-wright`.
-Root owns scope, artifacts, inspection, and routing but never writes source/tests; only
-the wright writes them and invokes no agent.
+Root owns scope/artifacts/inspection; never writes source/tests.
+Wright alone writes; no agents.
 
 ## Host gate
 
-Follow the canonical [source-writing boundary](../../devrites-lib/reference/standards/agents.md#source-writing-boundary):
+Apply [source-writing boundary](../../devrites-lib/reference/standards/agents.md#source-writing-boundary):
 Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root,
 the exact `:workspace` wright, and read-only specialists. Never bypass/substitute
 the wright or recreate an engine bridge.
@@ -47,7 +47,7 @@ worktrees stay forbidden.
    controlling root under
    [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md);
    its rejection here is not a blocker.
-2. Put it in the task with goal, verbatim acceptance, exclusions, context,
+2. Include goal, verbatim acceptance, exclusions, context,
    `test-plan.md` proof commands, and applicable standards. For each triggered
    topology/data/integration standard, include only the feature-specific owner/invariant,
    failure or partial-state case, recovery rule, and required proof from the vetted plan.
@@ -77,10 +77,10 @@ Opt-in `$rite-build --parallel N` fans out only under [`parallel-batch.md`](para
    mocks that erase it and one-root proof offered for another root are unproven.
 3. Run only repository proof already approved by `test-plan.md`, then inspect
    `git diff --name-only` again in case a proof tool changed source.
-4. Challenge decisions. Human choices return; native diagnosis routes failures.
-   The root counts the wright plus recovery failures by causal fingerprint from
-   the current context and recorded Dead ends/evidence. Three total failed
-   attempts is the limit; persist each and never dispatch a fourth related try.
+4. Apply [independent Build review](phase-contract.md#independent-build-review) before
+   proof acceptance. Human choices return; technical failures follow
+   [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+   Derive accounting from recorded reproductions, corrections, and decisive rechecks.
 5. Reconcile returned reuse, conventions, principles, sources, assumptions,
    decisions, dead ends, follow-ups, gates, and touched files. Persist the
    relevant facts in canonical artifacts, not the wholesale report. A plan-gap

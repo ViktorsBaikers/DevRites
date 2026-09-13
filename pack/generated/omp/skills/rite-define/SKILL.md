@@ -33,7 +33,10 @@ Pull these via `Read` when shaping the plan:
 - **Derive the slice count from the work.**
   One per independently-shippable increment, sized by `slicing.md`; map every acceptance
   criterion. User counts are hints: explain honest differences, never pad/compress.
-  `.devrites/AFK` `max_slices` is an iteration budget, not decomposition.
+  `.devrites/AFK` `max_slices` is an iteration budget, not decomposition. A derivation
+  over the [feature ceiling](../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
+  is a split signal, never a `Budget override`: keep the thinnest shippable subset
+  here and route the rest to Non-goals + continuation workspaces via the Drift Guard.
 - **Complexity does not shrink scope.** Split/reorder; never drop/defer approved REQ/AC.
   Reduction needs Drift Guard + human decision; hard/large means decompose.
 - **Wide refactors use expand → migrate → contract.** Add compatibility, migrate green

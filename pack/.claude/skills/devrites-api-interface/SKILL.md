@@ -52,8 +52,8 @@ Before standing the interface, run `devrites-doubt`.
 The contract is complete only when **every** field carries a type + optionality + unit,
 **every** success and error status code is enumerated with its error-body shape, the
 `devrites-doubt` verdict is accept (on reject: revise the contract and re-doubt under
-`devrites-doubt`'s per-fingerprint bounds and distinct-findings ceiling — a contract
-that resists repair becomes a blocker or human gate, not an endless revise loop), and the
+[the canonical retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)
+with caller repair and human-risk gates), and the
 contract + rationale are recorded in `decisions.md`. A contract that pins only the
 happy-path shape is not done.
 

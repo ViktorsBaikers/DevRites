@@ -15,7 +15,10 @@ Read named paths only. Accept released v1/v2 bullet or v3 table `state.md` under
 
 Cite current rule plus workspace evidence for each applicable axis: cursor/topology,
 phase artifacts, decisions, planning/traceability/proof, built-code/intent, protected
-history, and candidate integrity after Build. Candidate integrity uses the cited current
+history, artifact budgets/feature ceiling (the supplied `devrites-engine orient`
+`artifact_budgets`/`bulk_files` and `task_graph.slice_count` against
+`workspace-artifact-schema.md` and `rite-plan/reference/slicing.md` § Feature ceiling),
+and candidate integrity after Build. Candidate integrity uses the cited current
 contracts, workspace artifacts, and supplied current candidate/seal check results.
 Older provenance is not evidence; age, style, missing version metadata, and irrelevant
 rules cannot fail.
@@ -34,6 +37,11 @@ rules cannot fail.
 - Never invent history, migrate cursors, or rewrite archived/done work.
 - Each finding needs exact evidence, owner, exact paths, and minimum delta.
   Product/acceptance changes are human gates. Preserve history unless a cited gate fails it.
+- Route an over-budget `state.md`/planning artifact carrying checkpoint narrative, or
+  packets/traces in the workspace root, to Plan revise (verbatim relocation to
+  `history/`/`packets/`, current view only; IDs and meaning unchanged). Route unbuilt
+  slices beyond the feature ceiling to Plan course-correct (`MVP cut` + named
+  continuation sequence); built slices and their evidence stay.
 - For released post-Build work, route a strict-manifest, evidence/browser-binding, or
   candidate-check defect to Prove; an old Ship-era candidate rollup to Polish; a
   review-binding defect to Review; and a seal-binding or Seal-gate defect to Seal.

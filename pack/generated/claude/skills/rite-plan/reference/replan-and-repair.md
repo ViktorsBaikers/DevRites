@@ -31,6 +31,11 @@ A drift event stopped the build. Steps:
 2. If the user answered a drift question, encode that decision in `decisions.md`.
 3. Update `spec.md` (only the affected sections) and `plan.md`/`tasks.md` to match
    reality. Adjust acceptance criteria if they were wrong.
+   **Write the pointer, not the history.** Name the findings a fold closes by ID, one line
+   of meaning each; never restate prior folds, prior DEC lists, or closed-round narrative in
+   `architecture.md`/`plan.md`/`tasks.md`/`traceability.md`. That text belongs in
+   `decisions.md`, or in `history/` via [Budget relocation](#revise) once closed, so each
+   fold appends a bounded line. A banner that grows with the round count is the defect.
 4. Mark each `drift.md` entry **resolved** with the resolution + date.
 5. **Self-check and self-attack the repaired candidate on the delta before
    handoff** — re-verify every invariant the correction touched (acyclic
@@ -68,6 +73,14 @@ Mid-build user pivot. Apply the marked action, choose rollback or forward-fix, a
 update permitted artifacts atomically (`MVP cut` is the named retreat). Invalidate
 Vet/readiness when contract or topology changes.
 
+**Feature-ceiling cut.** When unbuilt slices exceed the
+[feature ceiling](slicing.md#feature-ceiling-split-an-epic-never-override-the-budget),
+`MVP cut` keeps the built slices plus the thinnest shippable unbuilt subset here; the
+remaining slices, their REQ/AC IDs and proof rows move verbatim into a named
+continuation list (spec `Non-goals` → future `/rite-spec <slug>-2`, `-3`, …) through
+the Spec Drift Guard. IDs never renumber; each ID is owned by exactly one workspace.
+Record the sequence once in `decisions.md`.
+
 ## revise
 
 Artifact-only reconciliation of `spec.md`, `architecture.md`, `plan.md`, `tasks.md`,
@@ -77,6 +90,14 @@ or `traceability.md` — never source. Propose/confirm the file set first. Only 
 Unchanged acceptance/behavior with non-equivalent `proposed_coverage` is a
 contradictory input: the canonical classifier blocks it — there is no fourth
 route (see `acceptance-preserving-reslice.md`).
+
+**Budget relocation** (admitted by `/rite-upgrade`, or by the phase owner when
+`orient` reports `over: true`): move checkpoint narrative, historical fold text and
+closed-round accounts verbatim from `state.md`/`tasks.md`/`plan.md`/`architecture.md`/
+`eng-review.md` into `history/<file>-<YYYYMMDD>.md`, packets/accounts from the root
+into `packets/`, leaving a one-line pointer. Cursor, live slices, open findings, IDs,
+answers, decisions and bindings stay unchanged; nothing is deleted or reworded.
+Re-emit the readiness binding when a readiness input moved.
 
 ## Always
 

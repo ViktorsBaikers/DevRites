@@ -27,7 +27,7 @@ code · claiming "this is safe", "this scales", or "this matches the spec".
   issues but classify **zero** as actionable, the review is too agreeable. Sharpen the
   prompt or use a fresh reviewer. Accept a clean pass only after a genuine attempt to
   disprove the claim.
-- [ ] **5. STOP**: met a stop condition (only trivial findings, no open fingerprint has budget left, the distinct-findings ceiling, or user override). Emit a **binary gate verdict** the orchestrator must clear: **accept** (no valid-&-actionable findings remain) or **reject + the specific required changes**. On reject, the orchestrator loops the wright on those changes before the slice is accepted. Account per finding, not per round: a reject citing a genuinely new defect is progress and the loop continues; a reject re-citing a fingerprint the wright already failed on is no-progress and burns that fingerprint's budget. A finding that only refines a clause a prior cycle already pinned may close as an explicit bounded declared residual. Ceiling: three distinct actionable findings on one decision mean the decision resists repair — classify by decision ownership: human-owned product/risk uncertainty escalates; objective required changes become a technical blocker, never a retry-authorization question.
+- [ ] **5. RETURN**: emit a binary gate verdict: **accept** only when no valid-&-actionable findings remain, otherwise **reject + every supported required change**. The caller folds the complete inventory before one bounded correction and owning-reviewer recheck, including affected dependencies and correction-created regressions. Recovery and stops follow only [the canonical retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve). A distinct evidenced Critical/Important is progress; refining or renaming the same failed mechanism is not. An explicit bounded residual may close a refinement only when the accepted contract permits it and no actionable failure remains; never waive a new failure mode.
 
 ## Deletion-test lens (for "is this abstraction load-bearing?" doubts)
 
@@ -60,22 +60,14 @@ Wait for a second real caller before keeping a pass-through that fails this test
 
 ## AFK exception
 
-When `.devrites/AFK` exists and the user is away, `escalated to user` is unavailable in
-real time. Map the verdict to a `questions.md` entry instead of a synchronous prompt:
-
-- **Findings classified `valid trade-off`, `noise`, or `contract misread`**: append a
-  `questions.md` entry with `gate: advisory`, record the trade-off in `decisions.md`, and
-  proceed with the best inference. The advisory is surfaced by `$rite-status` so the user
-  sees it on return.
-- **Any `valid & actionable` finding, OR the claim touches destructive migration,
-  auth/authz boundaries, public APIs, irreversible data writes**: append a
-  `questions.md` entry with `gate: blocking`, set `state.md` `Status: awaiting_human`,
-  fire the `notify:` hook, and STOP. AFK never silently accepts irreversible risk.
-
-The same bounds apply in AFK. Once no open fingerprint has budget left or the
-distinct-findings ceiling trips, human-owned uncertainty becomes a blocking
-question; an unresolved objective technical finding becomes `Status: blocked` with its exact
-required changes and `$rite-plan unblock`, regardless of AFK config.
+Apply [decision ownership and AFK gates](../devrites-lib/reference/standards/afk-hitl.md#afk-exception-for-discretionary-pauses).
+Accepted in-scope technical findings return to the caller for authorized repair;
+they block acceptance until verified, not continuation by themselves. Record
+trade-offs and rejected findings with reasons in the existing decision record.
+Human-owned uncertainty, missing authority/access, and irreversible-risk choices
+retain their blocking question and pause. Exhausted technical recovery preserves
+the reproduction and blocked cursor prescribed by the canonical retry contract;
+it never becomes a request for permission to retry.
 
 ## Output
 ```

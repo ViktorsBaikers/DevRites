@@ -71,6 +71,12 @@ gen_codex_agent() {
     _body_codex="$TMP_GEN_DIR/codex-agent-body-$(basename "$_src").codex.md"
     awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; body=1; next} body{print}' "$_src" > "$_body_tmp"
     gen_codex_markdown_file "$_body_tmp" "$_body_codex"
+    # The body is embedded in a TOML literal string; a literal ''' would
+    # terminate it early and silently corrupt the generated agent. Refuse.
+    if grep -q "'''" "$_body_codex"; then
+      echo "gen_codex_agent: $(basename "$_src") body contains ''' (unrepresentable in a TOML literal string)" >&2
+      return 1
+    fi
     cat "$_body_codex"
     printf "\n%s\n" "'''"
   } > "$_out"

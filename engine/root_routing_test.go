@@ -23,6 +23,7 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "check path-disjoint", command: "check", args: []string{"path-disjoint"}, want: rootUnused},
 		{name: "check skill-trust", command: "check", args: []string{"skill-trust"}, want: rootUnused},
 		{name: "observe summary", command: "observe", args: []string{"summary"}, want: rootStrictUsage},
+		{name: "observe slice", command: "observe", args: []string{"slice"}, want: rootStrictUsage},
 		{name: "orient", command: "orient", want: rootStrictUsage},
 		{name: "check indexes", command: "check", args: []string{"indexes"}, want: rootLenient},
 		{name: "resolve", command: "state", args: []string{"resolve"}, want: rootStrict},
@@ -115,6 +116,7 @@ func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
 		{"check", "indexes"},
 		{"orient", "feature"},
 		{"observe", "summary", "feature"},
+		{"observe", "slice", "feature", "SLICE-001"},
 		{"state", "resolve"},
 		{"state", "close"},
 	} {
@@ -145,7 +147,7 @@ func TestNestedCommandFamilyUsageListsOnlyRetainedCommands(t *testing.T) {
 		removed []string
 	}{
 		{args: []string{"check"}, want: "check <candidate|readiness|seal|path-disjoint|task-graph|skill-trust|indexes>", removed: []string{"spec"}},
-		{args: []string{"state"}, want: "state <resolve|close>", removed: []string{"clarify", "tick-afk", "recovery"}},
+		{args: []string{"state"}, want: "state <resolve|merge-manifest|close>", removed: []string{"clarify", "tick-afk", "recovery"}},
 	} {
 		t.Run(test.args[0], func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
