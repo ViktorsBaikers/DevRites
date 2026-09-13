@@ -58,7 +58,8 @@ def main():
         if needle not in docs_map:
             errors.append(f'docs/command-map Claude direct: missing Claude command {needle} for {name}')
         if args.generated_root.exists():
-            for rel in [f'claude/skills/{name}/SKILL.md', f'codex/skills/{name}/SKILL.md']:
+            for rel in [f'claude/skills/{name}/SKILL.md', f'codex/skills/{name}/SKILL.md',
+                        f'pi/skills/{name}/SKILL.md', f'pi/prompts/{name}.md']:
                 if not (args.generated_root/rel).exists():
                     errors.append(f'generated artifact missing {rel}')
     if errors:

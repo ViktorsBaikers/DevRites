@@ -58,6 +58,11 @@ func (r *runner) uninstall() error {
 		if err := stripMarkerPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End); err != nil {
 			return fmt.Errorf("strip marker block from %s: %w", merge.TargetRel, err)
 		}
+		// The Codex and pi AGENTS.md blocks share one target; record the strip
+		// so the next merge's recheckPath sees our own write, not a race.
+		if err := r.refreshPreflight(merge.TargetRel); err != nil {
+			return err
+		}
 	}
 
 	var dirs []string

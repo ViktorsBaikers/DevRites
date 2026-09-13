@@ -93,7 +93,7 @@ func (r *runner) preflightUninstall(entries []string) error {
 
 func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	out := map[string]bool{".devrites/README.md": true}
-	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp) {
+	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi) {
 		err := fs.WalkDir(r.payloadFS, tree.PayloadPrefix, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
@@ -114,7 +114,7 @@ func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	}
 	if r.opts.WithSkills && r.opts.AliasMode == "all" {
 		for _, alias := range hostpack.Aliases {
-			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp) {
+			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi) {
 				out[rel] = true
 			}
 		}
@@ -122,6 +122,9 @@ func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	if r.opts.WithSkills && r.opts.WithCodex {
 		out[hostpack.CodexAgentsMerge.MarkerRel] = true
 		out[hostpack.CodexConfigMerge.MarkerRel] = true
+	}
+	if r.opts.WithSkills && r.opts.WithPi {
+		out[hostpack.PiAgentsMerge.MarkerRel] = true
 	}
 	if r.opts.WithSkills {
 		out[hostpack.ClaudeSettingsMerge.MarkerRel] = true
@@ -135,6 +138,9 @@ func (r *runner) installMergeTargets() []string {
 		out = append(out, hostpack.ClaudeSettingsMerge.TargetRel)
 		if r.opts.WithCodex {
 			out = append(out, hostpack.CodexAgentsMerge.TargetRel, hostpack.CodexConfigMerge.TargetRel)
+		}
+		if r.opts.WithPi {
+			out = append(out, hostpack.PiAgentsMerge.TargetRel)
 		}
 	}
 	return out
@@ -151,6 +157,18 @@ func (r *runner) rememberPath(rel string) (pathSnapshot, error) {
 	}
 	r.preflight[rel] = snapshot
 	return snapshot, nil
+}
+
+// refreshPreflight replaces a recorded snapshot after the runner's own
+// verified write (marker merge, strip). Needed when several managed merges
+// share one target such as AGENTS.md.
+func (r *runner) refreshPreflight(rel string) error {
+	snap, err := inspectManagedPath(r.target, rel)
+	if err != nil {
+		return err
+	}
+	r.preflight[filepath.ToSlash(rel)] = snap
+	return nil
 }
 
 func (r *runner) recheckPath(rel string) error {

@@ -29,7 +29,8 @@ pids=()
 for flags in \
   "--no-skills --no-agents --no-short-aliases" \
   "--no-agents" \
-  "--no-codex" ; do
+  "--no-codex" \
+  "--no-pi" ; do
   run_flags "$flags" & pids+=("$!")
 done
 

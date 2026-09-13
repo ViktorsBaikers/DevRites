@@ -1,7 +1,7 @@
 {
   "name": "devrites",
   "version": "5.5.0",
-  "description": "DevRites: a disciplined senior-engineer workflow pack for Claude Code and Codex",
+  "description": "DevRites: a disciplined senior-engineer workflow pack for Claude Code, Codex, omp, and pi",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://github.com/ViktorsBaikers/DevRites#readme",
   "repository": {
@@ -36,6 +36,7 @@
     "scripts/build-host-artifacts.sh",
     "scripts/codex-generate.sh",
     "scripts/omp-generate.sh",
+    "scripts/pi-generate.sh",
     "scripts/install-lib.sh",
     "install.sh",
     "uninstall.sh",
