@@ -58,9 +58,13 @@ Wright applies anti-slop; root verifies returns and never patches source.
 ## `--parallel N` (opt-in)
 
 Omitted/`1` ≡ serial; `2`–`10` → path-disjoint fan-out when eligible; else hard refuse.
-All-green serial integrate; one red/gap aborts. Abort with agent-owned plan
-gaps continues via Spec Drift Guard (batch sweep, one folded plan repair + one
-vet recheck inline); do not emit a human `Fix`. AFK charges after integrate only. Running lease blocks another
+All-green serial integrate; a red/gap sibling gets a bounded repair round in
+its own worktree — never rebuilt from scratch while budget remains.
+Plan-owned gaps still route through Spec Drift Guard (batch sweep, one folded
+plan repair + one vet recheck inline); do not emit a human `Fix`. Exhausted
+repair blocks and preserves everything; `cleanup --force` (human discard
+path only) salvages slice branches before removing worktrees.
+AFK charges after integrate only. Running lease blocks another
 `/rite-build`. Details: `parallel-batch.md`.
 
 ## Execute and reply

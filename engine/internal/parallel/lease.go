@@ -73,6 +73,13 @@ func IntegrateBranchName(slug, batchID string) string {
 	return fmt.Sprintf("devrites/parallel/%s/%s/integrate", slug, batchID)
 }
 
+// ownedBranchName reports whether branch is inside this batch's namespace —
+// devrites/parallel/<slug>/<batch>/…. Cleanup deletes only owned branches;
+// a lease naming anything else (e.g. a forged "main") is left alone.
+func ownedBranchName(slug, batchID, branch string) bool {
+	return strings.HasPrefix(branch, fmt.Sprintf("devrites/parallel/%s/%s/", slug, batchID))
+}
+
 func WorkerWorktreePath(repoRoot, batchID, sliceID string) string {
 	return filepath.Join(ScratchRoot(repoRoot), batchID, sliceID)
 }

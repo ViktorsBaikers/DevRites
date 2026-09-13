@@ -112,17 +112,19 @@ func TestCreateAbortCleanup(t *testing.T) {
 		t.Fatalf("control moved after create: %s", head)
 	}
 
-	// Drift control tip, then abort should restore base.
+	// Drift control tip; abort must never rewind external commits — the drift
+	// commit survives and the lease still marks aborted.
 	if err := os.WriteFile(filepath.Join(repo, "README.md"), []byte("drift\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	gitOk(t, repo, "add", "README.md")
 	gitOk(t, repo, "commit", "-m", "drift")
-	if _, err := Abort(repo, slug, true); err != nil {
+	drift := gitOk(t, repo, "rev-parse", "HEAD")
+	if _, err := Abort(repo, slug); err != nil {
 		t.Fatal(err)
 	}
-	if head := gitOk(t, repo, "rev-parse", "HEAD"); head != base {
-		t.Fatalf("abort left control at %s want %s", head, base)
+	if head := gitOk(t, repo, "rev-parse", "HEAD"); head != drift {
+		t.Fatalf("abort rewound control: head %s want drift tip %s", head, drift)
 	}
 	leasePath, _ := LeasePath(repo, slug)
 	lease, err = ReadLease(leasePath)
@@ -136,7 +138,7 @@ func TestCreateAbortCleanup(t *testing.T) {
 		t.Fatalf("abort should preserve worktree: %v", err)
 	}
 
-	if err := Cleanup(repo, slug, true); err != nil {
+	if _, err := Cleanup(repo, slug, true); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(wtA); !os.IsNotExist(err) {
@@ -145,6 +147,88 @@ func TestCreateAbortCleanup(t *testing.T) {
 	if _, err := os.Stat(leasePath); !os.IsNotExist(err) {
 		t.Fatalf("cleanup should clear lease")
 	}
+}
+
+// TestCleanupSalvagesAbortedWork proves a forced cleanup of an aborted batch
+// never destroys wright work: committed transfers keep their branches and
+// uncommitted allowlisted changes are committed onto the slice branch before
+// the worktree is removed.
+func TestCleanupSalvagesAbortedWork(t *testing.T) {
+	repo, base := setupRepo(t)
+	slug, batch := "demo-feature", "batch1"
+	lease, err := Create(CreateOpts{
+		Root:    repo,
+		Slug:    slug,
+		BatchID: batch,
+		BaseSHA: base,
+		Slices: []SlicePaths{
+			{ID: "slice-a", Paths: []string{"src/a.go"}},
+			{ID: "slice-b", Paths: []string{"src/b.go", "src/b_new.go"}},
+			{ID: "slice-c", Paths: []string{"src/c.go"}},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wtA := lease.Slices[0].WorktreePath
+	wtB := lease.Slices[1].WorktreePath
+	wtC := lease.Slices[2].WorktreePath
+
+	// slice-a: committed transfer (red at review — work must survive).
+	tcA := commitIn(t, wtA, "src/a.go", "A")
+	// slice-b: uncommitted WIP — modified tracked file plus a new untracked
+	// file inside the allowlist.
+	if err := os.WriteFile(filepath.Join(wtB, "src", "b.go"), []byte("package main\n\nfunc Bwip() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(wtB, "src", "b_new.go"), []byte("package main\n\nfunc Bnew() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// slice-c: untouched — nothing to salvage, branch should be deleted.
+
+	if _, err := Abort(repo, slug); err != nil {
+		t.Fatal(err)
+	}
+	salvaged, err := Cleanup(repo, slug, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bySlice := map[string]Salvage{}
+	for _, s := range salvaged {
+		bySlice[s.SliceID] = s
+	}
+	if got := bySlice["slice-a"].Commit; got != tcA {
+		t.Fatalf("slice-a salvage commit %s want transfer %s", got, tcA)
+	}
+	sb := bySlice["slice-b"]
+	if sb.Branch == "" || sb.Commit == "" || sb.Commit == base {
+		t.Fatalf("slice-b should salvage WIP onto its branch, got %+v", sb)
+	}
+	if _, ok := bySlice["slice-c"]; ok {
+		t.Fatalf("slice-c carried no work; its branch should be deleted, got %+v", bySlice["slice-c"])
+	}
+
+	// The salvaged WIP commit actually contains the uncommitted changes.
+	if names := gitOk(t, repo, "diff", "--name-only", base, sb.Commit); !strings.Contains(names, "src/b.go") || !strings.Contains(names, "src/b_new.go") {
+		t.Fatalf("salvage commit missing WIP paths: %s", names)
+	}
+	if body := gitOk(t, repo, "show", sb.Commit+":src/b_new.go"); !strings.Contains(body, "Bnew") {
+		t.Fatalf("salvaged file content missing: %q", body)
+	}
+
+	// Worktrees removed, lease cleared, kept branches still resolve.
+	for _, wt := range []string{wtA, wtB, wtC} {
+		if _, err := os.Stat(wt); !os.IsNotExist(err) {
+			t.Fatalf("cleanup should remove worktree %s", wt)
+		}
+	}
+	leasePath, _ := LeasePath(repo, slug)
+	if _, err := os.Stat(leasePath); !os.IsNotExist(err) {
+		t.Fatalf("cleanup should clear lease")
+	}
+	gitOk(t, repo, "rev-parse", "--verify", "refs/heads/"+bySlice["slice-a"].Branch)
+	gitOk(t, repo, "rev-parse", "--verify", "refs/heads/"+sb.Branch)
 }
 
 func TestCreateAcceptsFourSlices(t *testing.T) {
@@ -322,17 +406,156 @@ func TestIntegrateDivergentSiblings(t *testing.T) {
 	if head != tip {
 		t.Fatalf("control head %s want tip %s", head, tip)
 	}
+	if n := gitOk(t, repo, "rev-list", "--count", base+"..HEAD"); n != "1" {
+		t.Fatalf("control should gain exactly one squash commit, got %s", n)
+	}
+	subj := gitOk(t, repo, "log", "-1", "--format=%s")
+	if !strings.HasPrefix(subj, "WIP(demo-feature):") {
+		t.Fatalf("squash subject %q missing WIP(demo-feature): prefix", subj)
+	}
 	a := mustRead(t, filepath.Join(repo, "src", "a.go"))
 	b := mustRead(t, filepath.Join(repo, "src", "b.go"))
 	if !strings.Contains(a, "func A") || !strings.Contains(b, "func B") {
 		t.Fatalf("integrated contents missing: a=%q b=%q", a, b)
 	}
 
-	if err := Cleanup(repo, slug, false); err != nil {
+	if _, err := Cleanup(repo, slug, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(wtA); !os.IsNotExist(err) {
 		t.Fatalf("cleanup should remove workers")
+	}
+}
+
+// TestIntegrateWithoutApplyKeepsLeaseRunning proves a flag-less integrate
+// stages the squash commit on the integrate branch but leaves the lease
+// running and control at base, so a later non-forced cleanup cannot discard
+// the only refs holding the integrated tree.
+func TestIntegrateWithoutApplyKeepsLeaseRunning(t *testing.T) {
+	repo, base := setupRepo(t)
+	slug, batch := "demo-feature", "batch1"
+	greenBatch(t, repo, base, slug, batch)
+
+	tip, lease, err := Integrate(IntegrateOpts{Root: repo, Slug: slug})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tip == "" || tip == base {
+		t.Fatalf("expected staged squash tip, got %s", tip)
+	}
+	if lease.Status != StatusRunning {
+		t.Fatalf("status=%s want running without --apply-to-control", lease.Status)
+	}
+	if head := gitOk(t, repo, "rev-parse", "HEAD"); head != base {
+		t.Fatalf("control moved without apply: %s", head)
+	}
+	ibranch := IntegrateBranchName(slug, batch)
+	if got := gitOk(t, repo, "rev-parse", ibranch); got != tip {
+		t.Fatalf("integrate branch %s want squash tip %s", got, tip)
+	}
+	if _, err := Cleanup(repo, slug, false); err == nil {
+		t.Fatal("cleanup on running lease must refuse without --force")
+	}
+	// Forced cleanup salvages then removes; the integrate branch holds the
+	// squash tip, so it is kept and reported rather than deleted.
+	if _, err := Cleanup(repo, slug, true); err != nil {
+		t.Fatal(err)
+	}
+	if got := gitOk(t, repo, "rev-parse", ibranch); got != tip {
+		t.Fatalf("forced cleanup dropped integrate branch: %s want %s", got, tip)
+	}
+}
+
+// TestIntegrateFailedLeaseRepairsAndRetries proves integrate-failed is not a
+// dead end: a repaired transfer re-records on the failed lease and a retried
+// integrate completes into one squash commit on control.
+func TestIntegrateFailedLeaseRepairsAndRetries(t *testing.T) {
+	repo, base := setupRepo(t)
+	slug, batch := "demo-feature", "batch1"
+	greenBatch(t, repo, base, slug, batch)
+	realTC := gitOk(t, repo, "rev-parse", WorkerBranch(slug, batch, "slice-a"))
+
+	leasePath, err := LeasePath(repo, slug)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad, err := ReadLease(leasePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad.Slices[0].TransferCommit = strings.Repeat("deadbeef", 5)
+	if err := WriteLease(leasePath, bad); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := Integrate(IntegrateOpts{Root: repo, Slug: slug, ApplyToControl: true}); err == nil {
+		t.Fatal("expected integrate failure")
+	}
+	onDisk, err := ReadLease(leasePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if onDisk.Status != StatusIntegrateFailed {
+		t.Fatalf("status=%s want integrate-failed", onDisk.Status)
+	}
+
+	if _, err := RecordGreen(repo, slug, "slice-a", realTC); err != nil {
+		t.Fatalf("record-green on integrate-failed lease: %v", err)
+	}
+	if _, lease, err := Integrate(IntegrateOpts{Root: repo, Slug: slug, ApplyToControl: true}); err != nil {
+		t.Fatalf("integrate retry: %v", err)
+	} else if lease.Status != StatusComplete {
+		t.Fatalf("status=%s want complete", lease.Status)
+	}
+	if n := gitOk(t, repo, "rev-list", "--count", base+"..HEAD"); n != "1" {
+		t.Fatalf("expected one squash commit on control, got %s", n)
+	}
+}
+
+// TestIntegrateRefusesDirtyControlOnSlicePaths proves --apply-to-control
+// neither absorbs nor clobbers uncommitted user work on slice paths: overlap
+// refuses with the lease still running, while unrelated dirty files are left
+// alone and the FF proceeds.
+func TestIntegrateRefusesDirtyControlOnSlicePaths(t *testing.T) {
+	repo, base := setupRepo(t)
+	slug, batch := "demo-feature", "batch1"
+	greenBatch(t, repo, base, slug, batch)
+
+	if err := os.MkdirAll(filepath.Join(repo, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	userWIP := filepath.Join(repo, "src", "a.go")
+	if err := os.WriteFile(userWIP, []byte("user wip\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := Integrate(IntegrateOpts{Root: repo, Slug: slug, ApplyToControl: true}); err == nil {
+		t.Fatal("expected dirty-control refusal")
+	}
+	leasePath, err := LeasePath(repo, slug)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lease, err := ReadLease(leasePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lease.Status != StatusRunning {
+		t.Fatalf("lease status=%s want running after precondition refusal", lease.Status)
+	}
+	if head := gitOk(t, repo, "rev-parse", "HEAD"); head != base {
+		t.Fatalf("control moved despite refusal: %s", head)
+	}
+
+	// Unrelated uncommitted work is not part of the batch and must survive.
+	gitOk(t, repo, "checkout", "--", "src/a.go")
+	keep := filepath.Join(repo, "unrelated.txt")
+	if err := os.WriteFile(keep, []byte("keep me\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := Integrate(IntegrateOpts{Root: repo, Slug: slug, ApplyToControl: true}); err != nil {
+		t.Fatalf("integrate with non-overlapping dirty file: %v", err)
+	}
+	if b, err := os.ReadFile(keep); err != nil || string(b) != "keep me\n" {
+		t.Fatalf("unrelated dirty file lost: err=%v body=%q", err, b)
 	}
 }
 

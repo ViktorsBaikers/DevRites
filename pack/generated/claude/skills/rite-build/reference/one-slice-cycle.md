@@ -24,8 +24,8 @@ DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). 
 PROVE     → root: required build/browser/E2E, then returned-diff/path review; fail-on-red
 RECORD    → orchestrator: after green verification, update state.md/evidence.md and
             upsert the authoritative candidate manifest from the actual scoped diff
-(CHECKPOINT) → orchestrator: if .devrites/CHECKPOINT is set, commit the proven slice
-            local-only as WIP(<slug>) with a [devrites-context] body → survives a crash (checkpoint.md)
+(CHECKPOINT) → orchestrator: commit the proven slice local-only as WIP(<slug>)
+            with a [devrites-context] body → clean tree, survives a crash (checkpoint.md)
 NEXT      → HITL root reports and stops; AFK root may repeat only under afk-discipline.md
 ```
 

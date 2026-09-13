@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -120,17 +121,55 @@ func headSHA(repo string) (string, error) {
 	return revParse(repo, "HEAD")
 }
 
-func resetHard(repo, sha string) error {
-	_, err := git(repo, "reset", "--hard", sha)
-	return err
+// ensureScratchExcluded lists the parallel worktree root in .git/info/exclude
+// so control `git status`/`git add -A` never sees nested worker worktrees.
+// Best-effort: an unwritable exclude file must not fail create.
+func ensureScratchExcluded(repo string) {
+	gitDir, err := git(repo, "rev-parse", "--git-common-dir")
+	if err != nil {
+		return
+	}
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(repo, gitDir)
+	}
+	excludePath := filepath.Join(gitDir, "info", "exclude")
+	const line = ".scratch/parallel-wt/"
+	// #nosec G304 -- exclude file inside the repo's own resolved git dir
+	if data, err := os.ReadFile(excludePath); err == nil && strings.Contains(string(data), line) {
+		return
+	}
+	if err := os.MkdirAll(filepath.Dir(excludePath), 0o755); err != nil {
+		return
+	}
+	// #nosec G304 -- exclude file inside the repo's own resolved git dir
+	f, err := os.OpenFile(excludePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer func() { _ = f.Close() }()
+	_, _ = fmt.Fprintln(f, line)
 }
 
-func porcelainDirty(repo string) (bool, error) {
-	out, err := git(repo, "status", "--porcelain", "--untracked-files=no")
+func porcelainDirtyPaths(repo string, paths []string) (bool, error) {
+	args := append([]string{"status", "--porcelain", "--untracked-files=all", "--"}, paths...)
+	out, err := git(repo, args...)
 	if err != nil {
 		return false, err
 	}
 	return out != "", nil
+}
+
+// stagePathsAndCommit commits every change under paths (modifications,
+// deletions, and untracked files) and returns the new HEAD sha.
+func stagePathsAndCommit(repo, msg string, paths []string) (string, error) {
+	addArgs := append([]string{"add", "-A", "--ignore-errors", "--"}, paths...)
+	if _, err := git(repo, addArgs...); err != nil {
+		return "", err
+	}
+	if _, err := git(repo, "commit", "-m", msg); err != nil {
+		return "", err
+	}
+	return headSHA(repo)
 }
 
 func branchExists(repo, branch string) (bool, error) {
@@ -172,8 +211,8 @@ func mergeFFOnly(repo, commit string) error {
 	return err
 }
 
-func cherryPickRange(repo, fromExclusive, toInclusive string) error {
-	_, err := git(repo, "cherry-pick", "-x", fromExclusive+".."+toInclusive)
+func cherryPickNoCommit(repo, fromExclusive, toInclusive string) error {
+	_, err := git(repo, "cherry-pick", "-n", fromExclusive+".."+toInclusive)
 	return err
 }
 

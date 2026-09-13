@@ -117,7 +117,7 @@ LIVE_PROTECTED_SHA256 = {
     ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
     ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
     ".devrites/work/workspace-observation/touched-files.md":
-        "b24e32c4d44f7cc266312e0ed532936948614ef5f893c412cde893bad78354bb",
+        "18ec87db5aff737d195f5251ca46fb865923900f4a3623d63eb5067f94bfe20b",
 }
 EXPECTED_NORMAL_GENERATED_DELTA = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md",
@@ -165,7 +165,7 @@ RESLICE_PRIOR_RECORDS = {
     'pack/generated/codex/skills/rite-vet/reference/artifacts.md': (0o644, '5456afb94301aff9763424a76561ddf775cd0f5d59e15ed00f314d068d3f0657'),
     'pack/generated/codex/skills/rite-vet/reference/depth.md': (0o644, '9269a6671618b845f0690d3450c08496daaad9727a49f40b3388b0f9e1edc4c6'),
     'pack/generated/codex/skills/rite-vet/reference/review-axes.md': (0o644, '2fbe4deeb59b2a485776f6b0f3770ab5fbfead78f1a9ab6acb88e192dedeb4bf'),
-    'tests/acceptance-preserving-reslice-policy-test.sh': (0o600, '4e0dcc106f6f9d6d1e6df842be9a4b9b32d1ef564c4baed5ec043eddd0b72e67'),
+    'tests/acceptance-preserving-reslice-policy-test.sh': (0o600, '09af4c15f46671a97bcccb5597c429b171bb507d456fef98d46c317c6d23aa32'),
 }
 
 RESLICE_WORKSPACE_RECORDS = {

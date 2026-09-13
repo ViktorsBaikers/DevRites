@@ -28,16 +28,16 @@ Completed two-slice candidate contains one concrete Workspace Observation module
 
 ## Source hashes
 
-Ordered source aggregate SHA-256: `9ab6e686078d6e4612a15146d9daf1bb9c3050838964bf36dde24ca0e6881567`.
+Ordered source aggregate SHA-256: `234697a68e6fa774e13ffcb793b4a906fd8e22649be83cefcbcfae0afcaca544`.
 
 | File | SHA-256 |
 | --- | --- |
-| `CONTEXT.md` | `49536ca1334fcbb428760bbb0298d242b3bd1b6053845a151c961181a772d547` |
-| `docs/engine/commands.md` | `9a76ac77ff37e35502223e19a66015ceb989aef90fff8dbd3652154ce5e11d80` |
-| `engine/internal/gate/gate.go` | `df1e546893699ef2a1a66370e0ca67d9b3f376fb54867402b800b2bd355e8823` |
+| `CONTEXT.md` | `7b777910168e250763c38a5a6a43d43df75ef5122584c53f5ccfc4a2b9bcf7f5` |
+| `docs/engine/commands.md` | `2533b28c013dbd2bed4d84860c9e454ee4151ac0f625840f1fe5eb27df51c12d` |
+| `engine/internal/gate/gate.go` | `27e6fd1fd06f478fcce185da59813901693df6254e635a73943405acf51869cc` |
 | `engine/internal/gate/gate_test.go` | `31418952c6bb6189cf0a643603b2176ae9a53ba820c552b5c5deb334d2890611` |
-| `engine/internal/gate/readiness_binding.go` | `53aadadbe176a73c3987745fcdbf900c4bcaf831a5cd2721c43dd2157efb0fa3` |
-| `engine/internal/gate/readiness_binding_test.go` | `d364232b94c11875cb28e9007bb58ceb198469fde9a5142ce82c01e4a49e9de1` |
+| `engine/internal/gate/readiness_binding.go` | `24f3b7c2c915a015aadc047ff7002e097241e7d0529cfd16681bfad68128d719` |
+| `engine/internal/gate/readiness_binding_test.go` | `2242b5dadc21a98bad3bfb5afcb517841d143f03e8765b44897d99108bf6811b` |
 | `engine/internal/state/feature.go` | `c0aacd856df6499c305eb34234ca7e080c77f3a571f170950cfe759e9a537e10` |
 | `engine/internal/state/observation.go` | `2a52f991415ee1d53bf50e58d0cc0890bde40e93e7d8ac4e13c049405db82c89` |
 | `engine/internal/state/observation_open_other.go` | `5054756800578cff65f9f0f7aa0bd1e36c101e92aadccdc05f7d68b11ba8543a` |
@@ -47,7 +47,7 @@ Ordered source aggregate SHA-256: `9ab6e686078d6e4612a15146d9daf1bb9c3050838964b
 | `engine/internal/state/schema.go` | `8bc7e8575ae94beeaa0ebd8676525a0970cb03ab9582e3bbb8e5fcaa24fced32` |
 | `engine/internal/state/state_test.go` | `4275340b10bfeba2b726f8c16e06cc6240df9d2d84c01e84c5b7c2e6f2d72be6` |
 | `engine/internal/state/status.go` | `dfb601037d73228ed574a584f55e9aae364bfa329c3b47a100682a25dbad81f5` |
-| `engine/tests/gate_test.go` | `844aadde4a817ac9064434ba2ea21563ce5cb2e209756fdca3fc56d69830ca42` |
+| `engine/tests/gate_test.go` | `f9bd9ba7acab7b7dd46f45f9b33828ba31bf0e0da0e389b4e50caae204bebdaf` |
 | `engine/tests/workspace_observation_migration_test.go` | `7ae184db9c3d395f2b48a5bd915fa96b72f0a44c5d319d88114fa397c99882a4` |
 
 ## Deliberately untouched

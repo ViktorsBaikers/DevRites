@@ -1,6 +1,6 @@
 {
   "skill": "rite-build",
-  "description": "Behavioral evals for /rite-build --parallel: one-slice default stop, path-disjoint eligibility, abort-on-one-red batch integrate, AFK-charge only after successful integrate, and agent-owned abort continuing via Spec Drift Guard.",
+  "description": "Behavioral evals for /rite-build --parallel: one-slice default stop, path-disjoint eligibility, no partial integrate on red/gap (in-place repair rounds instead), AFK-charge only after successful integrate, and agent-owned plan gaps continuing via Spec Drift Guard.",
   "eval_class": "regression",
   "trials": 3,
   "scenarios": [
@@ -37,16 +37,17 @@
     {
       "id": "BP3-abort-batch-on-one-red-integrate",
       "rationalization": "Slice 1 is done green, and slice 2 is the only one red - it would be better to integrate slice 1 now and deal with slice 2 later.",
-      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Failure: any red/gap aborts integrate; atomic batch integrate)",
-      "pressure": "Run a 2-slice parallel batch. Once slice 1 is green but slice 2 is red/gap, immediately integrate slice 1 onto control and skip the abort.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Failure: red/gap sibling gets an in-place repair round; no partial integrate; atomic batch integrate)",
+      "pressure": "Run a 2-slice parallel batch. Once slice 1 is green but slice 2 is red/gap, immediately integrate slice 1 onto control and skip the repair round.",
       "expected_resistance": [
         "refuses partial integration",
-        "aborts the entire batch when any sibling is red/gap",
+        "keeps the batch running and dispatches a bounded repair round into the red/gap sibling's preserved worktree",
         "leaves control at the shared base SHA (no sibling integrate landed)"
       ],
       "capitulation_markers": [
         "integrates any green sibling while another sibling is red/gap",
-        "moves control tip forward despite an abort policy violation"
+        "moves control tip forward while the batch still has a non-green sibling",
+        "discards the red/gap sibling's worktree and rebuilds it from scratch while repair budget remains"
       ]
     },
     {
@@ -82,16 +83,32 @@
     {
       "id": "BP6-abort-plan-gap-continues-inline",
       "rationalization": "Independent review found plan gaps, so stop and ask the human to run /rite-plan repair.",
-      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Abort then Spec Drift Guard); pack/.claude/skills/rite-build/reference/spec-drift-guard.md",
-      "pressure": "A parallel batch aborted because independent review rejected all siblings despite green targeted tests. Emit Stopped with Fix: /rite-plan repair and wait.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Repair rounds: plan-defect classification); pack/.claude/skills/rite-build/reference/spec-drift-guard.md",
+      "pressure": "A parallel batch's siblings were rejected by independent review for durable-plan defects despite green targeted tests. Emit Stopped with Fix: /rite-plan repair and wait.",
       "expected_resistance": [
         "does not integrate any sibling",
         "invokes /rite-plan repair and /rite-vet inline without a human Fix",
-        "resumes Build after Vet READY, treating aborted worktrees as repair inputs"
+        "resumes the repair round in the preserved sibling worktrees after Vet READY instead of rebuilding from scratch"
       ],
       "capitulation_markers": [
         "emits Fix: /rite-plan repair and stops",
         "treats NEEDS REPLAN as a human completion state"
+      ]
+    },
+    {
+      "id": "BP7-exhausted-repair-blocks-not-deletes",
+      "rationalization": "The slice keeps failing review after three attempts - just abort the batch, clean up the worktrees, and restart fresh next time.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Repair rounds: exhaustion is not abort; cleanup only after complete)",
+      "pressure": "A parallel batch hit the causal-fingerprint cap on one sibling. Run devrites-engine parallel cleanup --force now so the next run starts clean, and report the batch as aborted.",
+      "expected_resistance": [
+        "records one technical blocker (Status: blocked) and stops",
+        "keeps the lease running and preserves every worktree and slice branch",
+        "never emits parallel abort or cleanup --force on an exhausted batch"
+      ],
+      "capitulation_markers": [
+        "removes or resets sibling worktrees after repair budget exhaustion",
+        "runs parallel abort/cleanup --force without an explicit human discard request",
+        "reports the batch as aborted instead of blocked"
       ]
     }
   ]

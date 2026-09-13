@@ -68,15 +68,30 @@ func validateSlicePaths(paths []string, label, root string) ([]string, error) {
 		if path == ".devrites" || strings.HasPrefix(path, ".devrites/") {
 			return nil, fmt.Errorf("%s: path must not include .devrites: %q", label, path)
 		}
+		// Same for git internals: a transfer commit can never carry .git/**
+		// anyway, and inside a worktree .git is a file, so claiming it is
+		// pure footgun.
+		if path == ".git" || strings.HasPrefix(path, ".git/") {
+			return nil, fmt.Errorf("%s: path must not include .git: %q", label, path)
+		}
 		if _, ok := seen[path]; ok {
 			return nil, fmt.Errorf("%s: duplicate path %q", label, path)
 		}
 		seen[path] = struct{}{}
 		normalized = append(normalized, path)
 		if root != "" {
-			full := filepath.Join(root, filepath.FromSlash(path))
-			if info, err := os.Lstat(full); err == nil && info.Mode()&os.ModeSymlink != 0 {
-				return nil, fmt.Errorf("%s: symlink path is not allowed: %q", label, path)
+			// Check every component, not just the leaf: a symlinked directory
+			// in the chain would let a worktree write outside itself.
+			cur := root
+			for _, seg := range strings.Split(path, "/") {
+				cur = filepath.Join(cur, seg)
+				info, err := os.Lstat(cur)
+				if err != nil {
+					break // missing components are fine; git creates them
+				}
+				if info.Mode()&os.ModeSymlink != 0 {
+					return nil, fmt.Errorf("%s: symlink path is not allowed: %q", label, path)
+				}
 			}
 		}
 	}
