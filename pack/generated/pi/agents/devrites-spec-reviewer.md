@@ -1,7 +1,7 @@
 ---
 name: devrites-spec-reviewer
 description: "Independently checks one feature candidate against its spec for /rite-review and /rite-seal. Finds missing or wrong acceptance coverage, preservation regressions, scope creep, placement drift, and design-reference mismatches. Never edits."
-tools: read, grep, find, bash
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
 inheritProjectContext: true
 ---
 

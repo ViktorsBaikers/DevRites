@@ -1,7 +1,7 @@
 ---
 name: devrites-devex-reviewer
 description: "Reviews developer experience for one DevRites feature in fresh context. Predicts at /rite-vet and measures at /rite-seal for public APIs, CLIs, SDKs, libraries, webhooks, configuration, errors, and onboarding; reports where the next developer gets stuck."
-tools: read, grep, find
+tools: read, grep, find, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics
 inheritProjectContext: true
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: devrites-frontend-reviewer
 description: "Reviews one DevRites UI feature for /rite-seal from a fresh context. Checks UX flow, accessibility, responsive behavior, design-system alignment, and AI slop independently and adversarially."
-tools: read, grep, find, bash
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
 inheritProjectContext: true
 skills: devrites-frontend-craft
 ---

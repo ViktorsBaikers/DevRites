@@ -1,7 +1,7 @@
 ---
 name: devrites-upgrade-planner
 description: "Read-only /rite-upgrade assessor returning a cited current, repairable, unsupported, or gap outcome; never writes/delegates."
-tools: read, grep, find
+tools: read, grep, find, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics
 inheritProjectContext: true
 ---
 

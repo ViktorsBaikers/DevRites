@@ -1,7 +1,7 @@
 ---
 name: devrites-security-auditor
 description: "Audits one DevRites feature for /rite-seal from a fresh context. Checks the diff independently for OWASP Top 10 issues, trust-boundary violations, secrets, and dependency risk. For model calls, agents, RAG, or tool use, also checks the OWASP LLM Top 10. Assumes all input is hostile."
-tools: read, grep, find, bash
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
 inheritProjectContext: true
 ---
 
