@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.7.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.7.1...v5.7.2) (2026-09-14)
+
+### Fixed
+
+* **skills:** drop absolute AFK sentinel expiry so unattended runs finish ([#72](https://github.com/ViktorsBaikers/DevRites/issues/72)) ([3f880cb](https://github.com/ViktorsBaikers/DevRites/commit/3f880cb0c0e3072a1512c87229c9c1c38ef12417))
+
 ## [5.7.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.7.0...v5.7.1) (2026-09-13)
 
 ### Fixed
