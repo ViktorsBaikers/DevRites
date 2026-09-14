@@ -26,7 +26,7 @@ RECORD    → orchestrator: after green verification, update state.md/evidence.m
             upsert the authoritative candidate manifest from the actual scoped diff
 (CHECKPOINT) → orchestrator: commit the proven slice local-only as WIP(<slug>)
             with a [devrites-context] body → clean tree, survives a crash (checkpoint.md)
-NEXT      → HITL root reports and stops; AFK root may repeat only under afk-discipline.md
+NEXT      → HITL root reports and stops. AFK with parallel cap>1: return to parallel-batch selection and run the new N_eff; otherwise repeat under afk-discipline.md
 ```
 
 ## Why the boundary matters

@@ -35,6 +35,7 @@ PLAN_GRAPH="$ROOT/pack/.claude/skills/rite-plan/reference/dependency-graph.md"
 VET="$ROOT/pack/.claude/skills/rite-vet/SKILL.md"
 BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
 BUILD_PARALLEL="$ROOT/pack/.claude/skills/rite-build/reference/parallel-batch.md"
+BUILD_SLICE="$ROOT/pack/.claude/skills/rite-build/reference/one-slice-cycle.md"
 CODE_REVIEWER="$ROOT/pack/.claude/agents/devrites-code-reviewer.md"
 WRIGHT="$ROOT/pack/.claude/agents/devrites-slice-wright.md"
 WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
@@ -132,6 +133,11 @@ require "$BUILD_PARALLEL" 'does not cancel independent safe running siblings' 'r
 require "$BUILD_PARALLEL" 'Expected test-first RED' 'parallel distinguishes TDD red from a terminal gate'
 require "$BUILD_PARALLEL" 'A distinct post-repair Critical/Important gets a new fingerprint' 'parallel build continues on distinct post-repair findings'
 require "$BUILD_PARALLEL" 'Reconcile retained repair-round artifacts by exact causal fingerprint before honoring a stored blocked status/verdict.' 'parallel build reconciles stale blocked cold resumes'
+require "$BUILD_PARALLEL" 'Serial is this round' 'parallel serial fallback is per-round not a latched mode'
+require "$BUILD_PARALLEL" 'parallel select --cap' 'parallel width is engine-selected each round'
+require "$BUILD_SLICE" 'return to parallel-batch selection' 'AFK serial round re-enters parallel selection when a cap is armed'
+require "$AUTOCOMPLETE" 'one-slice round is serial for that round only' 'autocomplete does not latch serial after a one-slice round'
+require "$BUILD_AFK" 'one-slice round does not keep the run serial' 'AFK recomputes parallel width after a serial round'
 forbid "$BUILD_PARALLEL" 'A new Critical after the repair-all, or an inventory showing the' 'parallel build does not misroute every new post-repair Critical to plan repair'
 require "$CODE_REVIEWER" 'Return every supported in-scope finding from the full inspected diff in this one pass' 'code reviewer enumerates the full inspected diff'
 require "$CODE_REVIEWER" 'Repeat canonical `Finding:`/`Basis:` rows' 'code reviewer emits one canonical row pair per finding'

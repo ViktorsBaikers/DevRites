@@ -28,18 +28,20 @@ N_eff = min(
 )
 ```
 
-Select **greedily in plan order**: walk pending slices whose `depends_on` are built and
-add each one while it stays pairwise disjoint with the selected set and the cap is not
-reached. Then `N_eff ≥ 2` → parallel batch; `N_eff = 1` → the serial one-slice cycle;
-nothing pending → Prove. A cap that cannot be filled is normal: take fewer.
+Select **greedily in plan order**: pass every currently dependency-ready pending slice
+(plan order, `Files likely touched`) to
+`devrites-engine parallel select --cap N [--root <dir>]`. `N_eff ≥ 2` → parallel batch;
+`N_eff = 1` → one serial round; nothing pending → Prove. A cap that cannot be filled
+is normal: take fewer. Serial is this round's size, not the rest of the run.
 
-**Re-batch automatically.** After integrate + cleanup are green, re-read `state.md`,
-the pending slices (`observe slice`), and the updated tree, then recompute: integrated
-siblings leave the pending set and free their paths, and satisfied dependencies unlock
-new slices. Repeat until no pending slice remains. Under `.devrites/AFK` and
-`$rite-autocomplete` the repeat is part of the same run — a new batch is another
-`$rite-build --parallel` round inside it, not a new user invocation; HITL stops after
-each batch. A batch of three followed by one of four and then two is the expected shape.
+**Re-batch automatically after every completed round** (parallel integrate+cleanup or
+a serial slice). Re-read `state.md`, pending slices, and the tree, then run
+`parallel select` again: finished work leaves the pending set, and satisfied
+dependencies unlock new slices. Under `.devrites/AFK` and `$rite-autocomplete` the
+repeat is the same run — HITL stops after each batch. `--parallel 5` with one eligible
+slice runs that one; when two to five then become eligible, the next round takes that
+many. **Failing case:** the run stays one-by-one after a serial round even though more
+slices are now eligible under the same cap.
 
 ## Path-disjoint
 
@@ -71,7 +73,8 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
 1. Orient/gate; parse the cap; compute `N_eff` and select the eligible set
    ([Dynamic selection and re-batching](#dynamic-selection-and-re-batching)) —
    candidates from `orient` `task_graph.slices` + built list, each candidate's
-   `Files likely touched` via `observe slice`, disjointness via `check path-disjoint`.
+   `Files likely touched` via `observe slice`, then
+   `parallel select --cap N` (pairwise disjointness is inside that verb).
 2. Write lease; freeze `B=HEAD`; `parallel create` worktrees.
 3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`).
 4. Inspect each returned path list, cumulative diff from `B`, transfer identity,
@@ -163,6 +166,7 @@ Repair rejected work in place; never discard/rebuild while budget remains.
 ## Engine verbs
 
 ```text
+devrites-engine parallel select --cap <1-10> [--root <dir>] [<json-file>|-]
 devrites-engine parallel create --root <repo> --slug <slug> --batch <id> --base <B> --json <file>|-
 devrites-engine parallel record-green --root <repo> --slug <slug> --slice <id> --commit <sha>
 devrites-engine parallel integrate --root <repo> --slug <slug> --apply-to-control

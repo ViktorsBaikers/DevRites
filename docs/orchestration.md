@@ -130,8 +130,8 @@ Isolation does not authorize same-worktree throughput. Parallel writers are allo
 **only** under the `/rite-build` batch path when path-disjoint eligibility, abort-batch,
 and a control `parallel-lease.md` apply. `--parallel N` (or the AFK sentinel
 `max_parallel`, default cap 10 under `/rite-autocomplete`) is a **cap**: each round runs
-the largest eligible set, recomputes after every integrate, and repeats until no pending
-slice remains; fewer than two eligible slices fall back to the serial cycle (see
+the largest eligible set, recomputes after every completed round, and repeats until no
+pending slice remains; a one-slice round is serial for that round only (see
 [`parallel-batch.md`](../pack/.claude/skills/rite-build/reference/parallel-batch.md)).
 Same-worktree multi-writer and root-emulated worktrees remain forbidden; default
 `/rite-build` stays one writer across linked worktrees.
