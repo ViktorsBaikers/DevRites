@@ -48,7 +48,7 @@ executable controller/harness/bundle bytes or a missing writer, read
 - Every exact causal fingerprint gets at most three no-progress corrections.
   Closing one is progress; a distinct Critical/Important invariant has its own
   budget. Lower severity cannot prolong recovery.
-- Enforce `--max-slices`, the AFK sentinel, expiry, review queue, and native
+- Enforce `--max-slices`, the AFK sentinel, review queue, and native
   agent/token/cost/time limits before every phase or dispatch. Count failed,
   malformed, and unavailable leaf calls. At the review cap, permit only work
   that reduces the queue.

@@ -71,11 +71,10 @@ exhausted.
   when slices remain; malformed state also stops. Report whether the winning
   bound was the pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count.
   Zero with no pending slices is normal completion and proceeds to Prove.
-- **Resource envelope:** missing/malformed/expired AFK, overlapping run,
+- **Resource envelope:** missing/malformed AFK, overlapping run,
   exhausted/unobservable declared agent/token/cost/time headroom, or review queue
   above cap. At cap, only queue-reducing reconciliation may run. Persist winning
-  bound and observed usage; a new activation does not reset durable budgets or
-  expiry.
+  bound and observed usage; a new activation does not reset durable budgets.
 - **Confidence:** intent still cannot become testable acceptance after interview.
 - **Repeated failure:** the exact fingerprint's bounded recovery is exhausted.
 

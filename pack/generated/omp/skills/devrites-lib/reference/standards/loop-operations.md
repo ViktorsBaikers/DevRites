@@ -38,13 +38,13 @@ Every unattended loop must name:
 4. **Evaluator:** the skill's existing readiness, proof, review, or watcher verdict.
 5. **Budget:** every applicable `.devrites/AFK` resource cap.
 6. **Checkpoint:** durable workspace/evidence update before the turn ends.
-7. **Stop:** success, human/safety/access gate, expiry, budget exhaustion, unchanged
+7. **Stop:** success, human/safety/access gate, budget exhaustion, unchanged
    no-progress fingerprint, host failure, or terminal external state.
 8. **Notification:** optional native-host notification after state is durable; never a
    substitute for recording the stop.
 
 A read-only scheduled/event loop that has no active AFK workspace must still configure
-native maximum activations/iterations, wall time, and absolute expiry. Add token/cost
+native maximum activations/iterations and wall time. Add token/cost
 caps when the host exposes them. One observation cycle per wake is the work unit; the
 skill never starts its own timer or background poller.
 
@@ -76,7 +76,7 @@ armed AFK workspace whose exact scope, gates, and budgets permit it.
   is `gap`/`cannot_verify`, never success.
 - Do not retry unchanged work merely because a timer fired. Apply the exact
   causal-fingerprint recovery cap ([`afk-hitl.md`](afk-hitl.md)).
-- A cold resume continues durable slice/recovery state and absolute expiry. Fresh
+- A cold resume continues durable slice/recovery state. Fresh
   native activation counters follow `afk-hitl.md`; no durable bound is reinitialized.
 - Native notifications fire only after evidence and stop state are written.
 

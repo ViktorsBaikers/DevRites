@@ -239,7 +239,6 @@ max_slices: 10
 max_agents: 32
 max_minutes: 120
 max_review_queue: 8
-expires_at: "<ISO-8601 UTC timestamp>"
 allow_gates: [advisory]
 ```
 
@@ -247,8 +246,9 @@ The workflow treats this file as configuration and never rewrites it.
 `max_slices` seeds the remaining budget in the active feature's `state.md`; the
 root charges that state exactly once after each green built slice and stops
 before another dispatch at zero. Unattended slice work additionally requires a
-valid `max_agents`, `max_minutes`, `max_review_queue`, and `expires_at`;
-sentinels that miss or malform these fail closed. Delete `.devrites/AFK` to
+valid `max_agents`, `max_minutes`, and `max_review_queue`;
+sentinels that miss or malform these fail closed. Leftover `expires_at` is
+ignored and never rewritten. Delete `.devrites/AFK` to
 return to HITL.
 
 AFK still pauses for product, scope, or policy choices, irreversible risk,
