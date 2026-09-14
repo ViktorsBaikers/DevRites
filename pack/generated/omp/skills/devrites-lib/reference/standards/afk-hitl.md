@@ -54,7 +54,6 @@ max_slices: 10                       # whole-workspace writer budget; seeds stat
 max_agents: 32                       # native agent dispatches in one host activation
 max_minutes: 120                     # wall-clock minutes in one host activation
 max_review_queue: 8                  # unresolved review/gate items admitted before fan-out stops
-expires_at: "<ISO-8601 UTC timestamp>" # absolute unattended-authority expiry
 # max_tokens: 200000                 # optional stricter host-observed token cap
 # max_cost_usd: 10                   # optional stricter host-observed cost cap
 notify: "ntfy.sh/my-topic"           # shell command; examples: rite-build/reference/afk-discipline.md
@@ -108,7 +107,7 @@ candidate manifest to cover the whole recorded chain — run
 
 - Only continuations recorded in the parent's `decisions.md` sequence
   ([slicing.md § Continuation workspaces](../../../rite-plan/reference/slicing.md#continuation-workspaces))
-  qualify; no recorded next entry, or the cap/expiry/review-queue bound reached, stops
+  qualify; no recorded next entry, or the cap/review-queue bound reached, stops
   with the winning reason.
 - Milestones are **not** shipped: they stay sealed and unarchived in `.devrites/work/`
   with `Next step: /rite-ship` preserved. Per-slice `WIP(<slug>)` checkpoints still
@@ -128,27 +127,26 @@ an explicit `/rite-build --parallel N` cap wins for that invocation.
 ## Unattended resource envelope
 
 AFK writer admission needs a bounded input queue, effective slice cap, and valid
-`max_agents`, `max_minutes`, `max_review_queue`, and `expires_at`. Existing sentinels
+`max_agents`, `max_minutes`, and `max_review_queue`. Existing sentinels
 that declare writer admission but miss/malform these fail closed; cold resume keeps the
-state-owned slice counter.
+state-owned slice counter. A leftover `expires_at` is ignored and never rewritten.
 Read-only watchers use equivalent native caps from [`loop-operations.md`](loop-operations.md).
 
 `max_agents` counts every leaf in the native activation, including failures and
 parallel branches; do not add dispatch telemetry to `.devrites/`. `max_review_queue`
 counts open validating questions plus unresolved admitted Critical/Important findings.
-Above it stop; at it run only reconciliation that reduces the queue. `expires_at` is
-absolute ISO-8601 authority. Optional `max_tokens`/`max_cost_usd` lower enforceable
-native caps; if declared but unobservable, stop.
+Above it stop; at it run only reconciliation that reduces the queue. Optional
+`max_tokens`/`max_cost_usd` lower enforceable native caps; if declared but unobservable, stop.
 
 Numeric limits are nonnegative decimals. Before costly checks, fan-out, or writing,
 run cheap readiness, reject overlap, count queue, and confirm agent/time/token/cost
 headroom; re-check after every result. Never start one call that can exceed remaining
 headroom. Agent/time/token/cost counters are per native activation and start fresh only
-for a genuinely new activation. Slices, recovery attempts, absolute expiry, and current
+for a genuinely new activation. Slices, recovery attempts, and current
 review queue remain durable/recomputed across wakes. Persist each activation stop and
 checkpoint before notification.
 
-New sentinels default `expires_at` to arming + 4h with no notification/token/cost cap.
+New sentinels write no `expires_at` and no notification/token/cost cap.
 Post-Vet pending count may lower slices. Existing files
 never receive missing defaults implicitly.
 

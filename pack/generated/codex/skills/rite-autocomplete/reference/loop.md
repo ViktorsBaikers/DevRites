@@ -18,7 +18,6 @@ max_slices: 10
 max_agents: 32
 max_minutes: 120
 max_review_queue: 8
-expires_at: "<now + 4 hours>"
 # continue_sequence: true          # opt-in: chain recorded continuations after Seal GO
 # max_workspaces: 5                # sequence budget when chaining
 # max_parallel: 10                 # Build batch cap; 1 = serial (default: eligible, cap 10)
@@ -28,11 +27,11 @@ expires_at: "<now + 4 hours>"
 ```
 
 Read an existing sentinel first. Preserve it byte-for-byte when valid; stop if
-its gate ceiling exceeds advisory, required envelope is malformed/expired, or
+its gate ceiling exceeds advisory, required envelope is malformed, or
 `max_slices` conflicts with the invocation. If absent, write it once after
-clarity, replacing the safe slice default only for explicit `--max-slices N`
-and resolving one absolute UTC expiry. It is read-only: never rewrite it after
-Vet or reset it on resume.
+clarity, replacing the safe slice default only for explicit `--max-slices N`.
+It is read-only: never rewrite it after Vet or reset it on resume. Leftover
+`expires_at` is ignored and never rewritten.
 
 ### Derive the mutable post-vet budget
 
@@ -45,12 +44,12 @@ or reinitialize it. AFK configuration itself stays unchanged.
 
 Before every phase, review fan-out, recovery, or writer dispatch, apply
 [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#unattended-resource-envelope): cheapest current-state/readiness
-check first; reject overlap; count unresolved review; check expiry and native
+check first; reject overlap; count unresolved review; check native
 agent/token/cost/time headroom. Count every leaf result. At the review cap, only
 reconciliation that reduces the queue may run. Any reached or unobservable
 bound stops before more work and persists the winning reason. A new activation
-gets fresh activation-local counters but retains durable slice/recovery state,
-expiry, and recomputed queue.
+gets fresh activation-local counters but retains durable slice/recovery state
+and recomputed queue.
 
 `allow_gates: [advisory]` means validating gates pause now rather than becoming
 Seal NO-GO. Only explicit human configuration outside Autocomplete may widen it.
@@ -100,7 +99,7 @@ fields are missing is re-seeded from its `brief.md` parent/position and the
 parent's counter (same values, never a second charge); a child with no recorded
 parent/position is not a sequence member and the chain stops.
 
-Stop instead when: no recorded next entry; the cap, expiry, or review-queue bound is
+Stop instead when: no recorded next entry; the cap or review-queue bound is
 reached; a human-owned, safety, access, or exhaustion condition fires; or Seal returns
 `NO-GO`. On stop, report the sequence position, the sealed-but-unshipped workspaces, and
 the single release command (`$rite-autocomplete <release milestone> --ship`, or

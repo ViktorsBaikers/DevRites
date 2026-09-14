@@ -506,7 +506,7 @@ for text, required in (
     (afk_contract, (
         "read-only config", "afk_slices_remaining", "released bullet", "pre-seed",
         "never increased or reinitialized", "max_agents", "max_minutes",
-        "max_review_queue", "expires_at", "do not add dispatch telemetry to `.devrites/`",
+        "max_review_queue", "leftover `expires_at` is ignored", "do not add dispatch telemetry to `.devrites/`",
         "Above it stop; at it run only reconciliation", "if declared but unobservable, stop",
         "per native activation and start fresh only", "remain durable/recomputed across wakes",
     )),

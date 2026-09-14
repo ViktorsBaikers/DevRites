@@ -21,7 +21,6 @@
     "stop_before_git",
     "resume_internal_phase",
     "do_not_report_complete",
-    "stop_expired",
     "stop_agent_budget",
     "reconcile_review_queue",
     "stop_review_queue",
@@ -121,17 +120,17 @@
     },
     {
       "id": "expired-resource-envelope",
-      "title": "Expired AFK authority stops before work",
-      "state": "The AFK sentinel is otherwise valid, but expires_at is earlier than the current native activation time. A pending slice is ready.",
+      "title": "Leftover expires_at is ignored",
+      "state": "The AFK sentinel is otherwise valid and includes an expires_at earlier than the current native activation time. A pending slice is ready.",
       "request": "Continue unattended.",
-      "expected_process": ["stop_expired"],
-      "expected_job": "blocked",
-      "forbidden": ["build_slice", "continue_dispatch"]
+      "expected_process": ["continue_dispatch"],
+      "expected_job": "resumed",
+      "forbidden": ["stop_expired", "await_user_permission"]
     },
     {
       "id": "agent-budget-exhausted",
       "title": "Agent budget stops another dispatch",
-      "state": "This native activation has already admitted max_agents leaf dispatches. Expiry, slice budget, and review queue remain valid.",
+      "state": "This native activation has already admitted max_agents leaf dispatches. Slice budget and review queue remain valid.",
       "request": "Dispatch the next required reviewer.",
       "expected_process": ["stop_agent_budget"],
       "expected_job": "blocked",
@@ -167,11 +166,11 @@
     {
       "id": "new-activation-budget",
       "title": "New activation gets fresh activation-local counters",
-      "state": "A prior native activation ended at max_minutes. A genuinely new activation begins; durable expiry, slice budget, recovery state, and review queue remain valid with pending work.",
+      "state": "A prior native activation ended at max_minutes. A genuinely new activation begins; durable slice budget, recovery state, and review queue remain valid with pending work.",
       "request": "Resume once from durable state.",
       "expected_process": ["read_durable_state", "continue_dispatch"],
       "expected_job": "resumed",
-      "forbidden": ["reset_slice_budget", "reset_expiry"]
+      "forbidden": ["reset_slice_budget", "stop_expired"]
     }
   ]
 }
