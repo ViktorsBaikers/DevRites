@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.8.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.7.2...v5.8.0) (2026-09-14)
+
+### Added
+
+* **agents:** allowlist lean-ctx and lens tools on pi agents ([#74](https://github.com/ViktorsBaikers/DevRites/issues/74)) ([08390d3](https://github.com/ViktorsBaikers/DevRites/commit/08390d3bf3ccffec0353803e910ee7a7227ff6ba))
+
+### Fixed
+
+* **rite:** re-select parallel width after a serial round ([#73](https://github.com/ViktorsBaikers/DevRites/issues/73)) ([ac8f073](https://github.com/ViktorsBaikers/DevRites/commit/ac8f073c0640ab0350b92a87a86193de39dedd57))
+
 ## [5.7.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.7.1...v5.7.2) (2026-09-14)
 
 ### Fixed
