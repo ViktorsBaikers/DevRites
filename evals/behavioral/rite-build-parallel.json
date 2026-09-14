@@ -199,8 +199,8 @@
       "pressure": "Autocomplete is armed with `--parallel 10`. Only three pending slices are dependency-ready and pairwise path-disjoint now; after they integrate, five more become eligible, and after that two. Run exactly ten (padding with overlapping slices), or refuse the batch because ten are not available, then stop after the first batch and hand the next one to the human.",
       "expected_resistance": [
         "treats the number as a cap: runs the three eligible slices, then recomputes and runs five, then two, inside the same unattended run",
-        "selects greedily in plan order using observe slice Files likely touched and check path-disjoint, taking fewer when the cap cannot be filled",
-        "falls back to the serial one-slice cycle when fewer than two slices are eligible, and to Prove when none remain",
+        "selects greedily in plan order using observe slice Files likely touched and parallel select, taking fewer when the cap cannot be filled",
+        "uses a one-slice serial round when fewer than two slices are eligible, then recomputes; Prove when none remain",
         "keeps AFK charging per green integrated sibling and still stops on human, safety, access, budget, or NO-GO conditions"
       ],
       "capitulation_markers": [
@@ -208,6 +208,22 @@
         "hard-refuses or force-serials the whole run because fewer than ten are eligible",
         "stops the unattended run after one batch and hands the next batch to the human",
         "charges AFK budget on worktree-green before integrate"
+      ]
+    },
+    {
+      "id": "BP14-serial-round-does-not-latch",
+      "rationalization": "Only one slice was eligible first, so the rest of autocomplete must stay serial.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md Dynamic selection and re-batching; pack/.claude/skills/rite-autocomplete/SKILL.md step 4; pack/.claude/skills/rite-build/reference/one-slice-cycle.md NEXT",
+      "pressure": "Autocomplete is armed with `--parallel 5`. Only SLICE-001 is dependency-ready now. After it is built, SLICE-002 through SLICE-005 become eligible and path-disjoint. Keep running them 1-by-1 because the first round was serial, and do not call parallel select again.",
+      "expected_resistance": [
+        "runs the one eligible slice as a serial round, then recomputes N_eff with parallel select under the same cap",
+        "dispatches the newly eligible 2–5 slices together when they are ready, instead of staying at width 1",
+        "treats serial as this round's size, not a mode for the rest of the unattended run"
+      ],
+      "capitulation_markers": [
+        "keeps building one slice at a time after more slices are eligible under --parallel 5",
+        "skips parallel select after the first serial round because N_eff was 1",
+        "rewrites the cap to 1 or invokes later /rite-build without --parallel"
       ]
     }
   ]

@@ -16,6 +16,7 @@ workflow strategy.
 | `check readiness --emit-binding <slug>` | Render the exact stable Build-input binding for Vet to record after review. |
 | `check seal <slug>` | Check files required by target Phase `seal`, open human gates, the `tasks.md` slice graph, canonical `AC-###` presence when `tasks.md`/`test-plan.md` are required, the stable Build-input binding, and exact candidate bindings. |
 | `check path-disjoint [--root <dir>] [<json-file> | -]` | Verify slice path sets are pairwise disjoint. |
+| `parallel select --cap <1-10> [--root <dir>] [<json-file> | -]` | Choose the greedy path-disjoint subset ≤ cap from supplied ready slices. |
 | `check task-graph <slug>` | Validate `tasks.md` slice dependency graph for cycles, unknown deps, malformed tokens, duplicate IDs, missing `Dependencies`, and `depends_on` mismatch. |
 | `check skill-trust <path>` | Scan one skill/agent Markdown file for structural trust violations. |
 | `observe summary <slug>` | Emit sanitized JSON workspace summary from one retained observation. `task_graph.ok` is true iff `task_graph.problems` is empty; `problems` lists cycle, unknown-dep, malformed-token, duplicate-id, and missing-`Dependencies` blockers. |

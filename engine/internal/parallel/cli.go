@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -71,6 +72,71 @@ func runPathDisjoint(args []string, stdin io.Reader, stdout, stderr io.Writer) i
 	return ExitOK
 }
 
+func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	const usage = "usage: parallel select --cap <1-10> [--root <dir>] [<json-file>|-]"
+	root := ""
+	jsonPath := "-"
+	capN := 0
+	sawCap := false
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--root":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, usage)
+				return ExitUsage
+			}
+			i++
+			root = args[i]
+		case "--cap":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, usage)
+				return ExitUsage
+			}
+			i++
+			n, err := strconv.Atoi(args[i])
+			if err != nil {
+				fmt.Fprintf(stderr, "parallel select: --cap must be an integer\n")
+				return ExitUsage
+			}
+			capN = n
+			sawCap = true
+		case "-h", "--help":
+			fmt.Fprintln(stdout, usage)
+			return ExitOK
+		default:
+			if args[i] != "-" && strings.HasPrefix(args[i], "-") {
+				fmt.Fprintf(stderr, "parallel select: unknown flag %s\n", args[i])
+				return ExitUsage
+			}
+			jsonPath = args[i]
+		}
+	}
+	if !sawCap {
+		fmt.Fprintln(stderr, usage)
+		return ExitUsage
+	}
+	data, err := readJSONInput(jsonPath, stdin)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel select: %v\n", err)
+		return ExitBlocked
+	}
+	slices, err := ParseSlicesJSON(data)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel select: %v\n", err)
+		return ExitBlocked
+	}
+	selected, err := SelectGreedy(capN, slices, root)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel select: %v\n", err)
+		if strings.Contains(err.Error(), "cap must be") {
+			return ExitUsage
+		}
+		return ExitBlocked
+	}
+	fmt.Fprintln(stdout, formatSelect(selected))
+	return ExitOK
+}
+
 func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		fmt.Fprintln(stderr, parallelUsage())
@@ -98,6 +164,8 @@ func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdLeaseClear(rest, stdout, stderr)
 	case "check-disjoint", "path-disjoint":
 		return runPathDisjoint(rest, stdin, stdout, stderr)
+	case "select":
+		return cmdSelect(rest, stdin, stdout, stderr)
 	case "-h", "--help", "help":
 		fmt.Fprintln(stdout, parallelUsage())
 		return ExitOK
@@ -121,6 +189,7 @@ Subcommands:
   lease-read      --root --slug [--field name]
   lease-clear     --root --slug
   check-disjoint  [--root] [<json-file>|-]
+  select          --cap <1-10> [--root] [<json-file>|-]
 
 Exit codes: 0 ok, 2 usage, 3 blocked`)
 }

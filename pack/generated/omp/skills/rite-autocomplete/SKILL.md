@@ -94,9 +94,10 @@ executable controller/harness/bundle bytes or a missing writer, read
    `/rite-review` → `/rite-seal`. Read and execute each skill; durable files, not
    chat, carry state. Apply the mutable post-vet budget before first Build.
    Build runs the largest eligible path-disjoint batch (cap: `--parallel N`, else
-   sentinel `max_parallel`, else 10) and recomputes after every integrate until no
-   pending slice remains; serial only when fewer than two slices are eligible or the
-   host cannot isolate concurrent worktree writers.
+   sentinel `max_parallel`, else 10) and recomputes after every completed round until no
+   pending slice remains; a one-slice round is serial for that round only, then
+   selection runs again (host isolation still forces serial when concurrent writers
+   cannot be separated).
    **Completion:** loop reaches Seal GO or persists a valid stop before any later phase.
 5. **Apply stops.** At every gate use
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:

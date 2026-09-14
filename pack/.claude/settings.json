@@ -13,6 +13,7 @@
       "Bash(devrites-engine orient *)",
       "Bash(devrites-engine observe *)",
       "Bash(devrites-engine parallel status *)",
+      "Bash(devrites-engine parallel select *)",
       "Bash(devrites-engine parallel create *)",
       "Bash(devrites-engine parallel record-green *)",
       "Bash(devrites-engine parallel integrate *)",

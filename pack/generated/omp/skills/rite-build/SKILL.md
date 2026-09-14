@@ -60,7 +60,8 @@ Wright applies anti-slop; root verifies returns and never patches source.
 
 Omitted/`1` ≡ serial; `2`–`10` is a **cap** — the root runs the largest eligible
 path-disjoint set it can start now (`N_eff`), takes fewer when the cap cannot be
-filled, and recomputes after every integrate until no pending slice remains
+filled, and recomputes after every completed round (serial slice or parallel
+integrate) until no pending slice remains
 ([`parallel-batch.md` § Dynamic selection](reference/parallel-batch.md#dynamic-selection-and-re-batching)).
 Unattended runs (`/rite-autocomplete`, `.devrites/AFK` `max_parallel`) repeat batches
 inside the same run; HITL stops after each batch. Non-integer/`N≤0`/`N>10` hard refuse.

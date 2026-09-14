@@ -120,7 +120,8 @@ candidate manifest to cover the whole recorded chain — run
   run exactly as without this field.
 
 `max_parallel` caps a Build batch for unattended runs; `1` forces the serial cycle.
-Unattended runs take the largest eligible set ≤ cap and recompute after every integrate
+Unattended runs take the largest eligible set ≤ cap and recompute after every completed
+round (serial slice or parallel integrate)
 ([parallel-batch.md § Dynamic selection and re-batching](../../../rite-build/reference/parallel-batch.md#dynamic-selection-and-re-batching));
 an explicit `$rite-build --parallel N` cap wins for that invocation.
 

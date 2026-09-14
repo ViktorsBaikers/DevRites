@@ -16,7 +16,9 @@ control; irreversible work (destructive/auth/public API) always pauses.
 The controlling root owns the cap:
 
 1. **Before every dispatch**, re-read `.devrites/AFK`, `state.md`, and the
-   selected slice. A configured `max_slices` and any existing
+   selected slice. When `--parallel N` or sentinel `max_parallel` is greater than
+   1, recompute `N_eff` via `parallel select` before the next dispatch — a prior
+   one-slice round does not keep the run serial. A configured `max_slices` and any existing
    `afk_slices_remaining` value, including its released bullet form, must each
    be a decimal nonnegative integer. A missing
    `state.md` or malformed configured value fails closed; an omitted cap is the
