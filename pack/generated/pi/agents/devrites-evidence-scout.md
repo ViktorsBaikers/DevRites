@@ -1,7 +1,7 @@
 ---
 name: devrites-evidence-scout
 description: "Answers one bounded evidence question for spec, clarify, converge, or external-fact work from a fresh, read-only context. Returns a cited dossier from live code, project records, installed source, or authoritative versioned documentation. Never asks the user, chooses scope, edits artifacts, or advances a phase."
-tools: read, grep, find, bash
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
 inheritProjectContext: true
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: devrites-slice-wright
 description: "Sole source/test writer for one /rite-build slice or accepted prove, polish, or review correction. Executes a fresh path-bounded contract, proves the smallest complete change, returns evidence, and never plans, reviews, or writes workspace bookkeeping."
-tools: read, edit, write, bash, find, grep
+tools: read, edit, write, bash, find, grep, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_edit, ctx_patch, ctx_shell
 inheritProjectContext: true
 ---
 

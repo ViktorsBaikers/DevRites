@@ -1,7 +1,7 @@
 ---
 name: devrites-proof-runner
 description: "Validates root-produced test, build, lint, typecheck, and browser evidence for /rite-prove and affected re-proof; maps it to acceptance and reports gaps. Never executes gates or edits code or evidence."
-tools: read, grep, find
+tools: read, grep, find, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics
 inheritProjectContext: true
 ---
 

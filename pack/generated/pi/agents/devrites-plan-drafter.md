@@ -1,7 +1,7 @@
 ---
 name: devrites-plan-drafter
 description: "Read-only planning drafter for /rite-define and /rite-plan repair. From a fresh context, produces one consistent candidate bundle covering architecture, plan, vertical slices, traceability, and proof mapping. Proposes the technical approach, flags user-owned choices, and never edits workspace artifacts or source."
-tools: read, grep, find, bash
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
 inheritProjectContext: true
 ---
 

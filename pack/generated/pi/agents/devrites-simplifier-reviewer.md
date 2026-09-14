@@ -1,7 +1,7 @@
 ---
 name: devrites-simplifier-reviewer
 description: "Read-only simplification reviewer for /rite-polish Phase 1. From a fresh context, finds measured, behavior-preserving ways to reduce complexity in one DevRites feature diff, using guard clauses, Extract Method, simpler conditionals, and Chesterton's Fence. Returns findings only for the caller to apply in feature scope."
-tools: read, grep, find, bash
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
 inheritProjectContext: true
 ---
 

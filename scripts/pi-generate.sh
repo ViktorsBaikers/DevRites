@@ -111,6 +111,57 @@ _pi_map_tools() {
   printf '%s' "$_out"
 }
 
+# pi-subagents treats frontmatter tools: as a strict allowlist, so ambient
+# pi-lean-ctx / pi-lens tools are dropped unless named. Append those names
+# after the mapped builtins (preserve base order). Unknown names are pruned
+# non-fatally by pi-subagents. Read-only agents stay read-only: ctx_edit /
+# ctx_patch only when the base already has edit or write; ctx_shell only
+# when the base already has bash.
+_PI_EXTENSION_NAV_TOOLS="ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics"
+
+_pi_csv_has() {
+  case ", ${1}, " in
+  *", ${2}, "*) return 0 ;;
+  *) return 1 ;;
+  esac
+}
+
+_pi_csv_append() {
+  local _list="$1" _name="$2"
+  if [ -z "$_name" ]; then
+    printf '%s' "$_list"
+    return
+  fi
+  if [ -z "$_list" ]; then
+    printf '%s' "$_name"
+    return
+  fi
+  if _pi_csv_has "$_list" "$_name"; then
+    printf '%s' "$_list"
+    return
+  fi
+  printf '%s, %s' "$_list" "$_name"
+}
+
+_pi_append_extension_tools() {
+  local _base="$1"
+  local _out="$_base" _tok
+  while IFS= read -r _tok; do
+    _tok="${_tok#"${_tok%%[![:space:]]*}"}"
+    _tok="${_tok%"${_tok##*[![:space:]]}"}"
+    [ -z "$_tok" ] && continue
+    _out="$(_pi_csv_append "$_out" "$_tok")"
+  done < <(printf '%s\n' "$_PI_EXTENSION_NAV_TOOLS" | tr ',' '\n')
+  if _pi_csv_has "$_base" "edit" || _pi_csv_has "$_base" "write"; then
+    _out="$(_pi_csv_append "$_out" "ctx_edit")"
+    _out="$(_pi_csv_append "$_out" "ctx_patch")"
+  fi
+  if _pi_csv_has "$_base" "bash"; then
+    _out="$(_pi_csv_append "$_out" "ctx_shell")"
+  fi
+  printf '%s' "$_out"
+}
+
 # Generate a pi-subagents Markdown agent from a Claude Code markdown agent.
 # pi-subagents loads project agents from .pi/agents/**/*.md (YAML frontmatter +
 # body). The tools allowlist carries the Claude permission boundary: only
@@ -126,7 +177,7 @@ gen_pi_agent() {
   _skills="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^skills:[[:space:]]*$/{list=1; next} list && /^[[:space:]]*-[[:space:]]*/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print; next} list{exit}' "$_src" | tr '\n' ' ' | sed 's/ $//; s/ /, /g')"
   [ -n "$_name" ] || _name="$(basename "$_src" .md)"
   [ -n "$_desc" ] || _desc="DevRites custom agent."
-  _tools="$(_pi_map_tools "$_tools_raw" "$_name")"
+  _tools="$(_pi_append_extension_tools "$(_pi_map_tools "$_tools_raw" "$_name")")"
   _desc_tmp="$TMP_GEN_DIR/pi-agent-desc-$(basename "$_src").txt"
   _desc_pi="$TMP_GEN_DIR/pi-agent-desc-$(basename "$_src").pi.txt"
   printf '%s' "$_desc" >"$_desc_tmp"

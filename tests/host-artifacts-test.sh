@@ -188,6 +188,51 @@ if grep -q '^tools: .*\b\(write\|edit\)\b' "$OUT/pi/agents/devrites-code-reviewe
 else
   ok "pi reviewer agent stays read-only"
 fi
+
+_pi_tools_has() {
+  local _line="$1" _name="$2"
+  case ", ${_line#tools: }, " in
+  *", ${_name}, "*) return 0 ;;
+  *) return 1 ;;
+  esac
+}
+_pi_nav_tools="ctx_read ctx_ls ctx_find ctx_grep ctx_glob ctx_search ctx_compose ctx_callgraph ctx_tree symbol_search project_report module_report read_symbol read_enclosing lens_diagnostics"
+_pi_nav_fail=0
+_pi_cap_fail=0
+for _pi_agent in "$OUT"/pi/agents/devrites-*.md; do
+  _pi_tools="$(grep '^tools:' "$_pi_agent")"
+  _pi_base="$(basename "$_pi_agent")"
+  for _tok in $_pi_nav_tools; do
+    _pi_tools_has "$_pi_tools" "$_tok" || {
+      no "pi $_pi_base missing $_tok"
+      _pi_nav_fail=1
+    }
+  done
+  if _pi_tools_has "$_pi_tools" "edit" || _pi_tools_has "$_pi_tools" "write"; then
+    _pi_tools_has "$_pi_tools" "ctx_edit" && _pi_tools_has "$_pi_tools" "ctx_patch" || {
+      no "pi $_pi_base missing ctx_edit/ctx_patch"
+      _pi_cap_fail=1
+    }
+  else
+    if _pi_tools_has "$_pi_tools" "ctx_edit" || _pi_tools_has "$_pi_tools" "ctx_patch"; then
+      no "pi $_pi_base gained ctx_edit/ctx_patch"
+      _pi_cap_fail=1
+    fi
+  fi
+  if _pi_tools_has "$_pi_tools" "bash"; then
+    _pi_tools_has "$_pi_tools" "ctx_shell" || {
+      no "pi $_pi_base missing ctx_shell"
+      _pi_cap_fail=1
+    }
+  else
+    if _pi_tools_has "$_pi_tools" "ctx_shell"; then
+      no "pi $_pi_base gained ctx_shell without bash"
+      _pi_cap_fail=1
+    fi
+  fi
+done
+[ "$_pi_nav_fail" -eq 0 ] && ok "every pi agent allowlists lean-ctx/lens nav tools"
+[ "$_pi_cap_fail" -eq 0 ] && ok "pi ctx_edit/ctx_patch/ctx_shell follow base write/bash"
 grep -q '.pi/skills/rite-build/SKILL.md' "$OUT/pi/prompts/rite-build.md" &&
   ok "pi prompt stub hands off to the installed skill" ||
   no "pi prompt stub does not reach the installed skill"

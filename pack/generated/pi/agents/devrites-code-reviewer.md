@@ -1,7 +1,7 @@
 ---
 name: devrites-code-reviewer
 description: "Reviews a full DevRites feature diff once for /rite-review and /rite-seal. Checks tests, correctness, readability, architecture, maintainability, and standards; returns every supported finding."
-tools: read, grep, find, bash
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
 inheritProjectContext: true
 ---
 
