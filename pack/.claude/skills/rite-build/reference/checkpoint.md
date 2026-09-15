@@ -1,28 +1,46 @@
-# Checkpoint: proven slices land as local WIP commits
+# Checkpoint: land local WIP only after the check loop is green
 
-A slice's source never stays uncommitted after its gates are green: at RECORD
-the orchestrator commits the proven slice as a local `WIP`, so the working
-tree stays clean and the work survives a crash or compaction.
+The wright does not commit onto the control/primary branch. Independent review
+and fail-on-red proof run first; a red or gap finding dispatches another wright.
+Only when that loop is green does the orchestrator land the local unpushed
+`WIP(<slug>):` commit. Same rule for `/rite-build`, `/rite-prove`, `/rite-polish`,
+`/rite-review`, and `/rite-autocomplete`. Never push. `.devrites/CHECKPOINT` is
+not a gate.
 
-## The checkpoint commit: orchestrator, at RECORD, after gates are green
-A checkpoint records a **proven** slice only after its gates are green. Stage the exact
-slice-owned candidate paths from the manifest, passing each literal path separately.
+## When (and when not)
+
+- **Do:** after Independent Build review (or the phase's independent validators)
+  and fail-on-red proof are green, with no open Critical/Important and no repair
+  wright still in flight. Serial: git recipe below (skip empty index) or isolated
+  FF of a matching `transfer_commit`. Parallel: `devrites-engine parallel
+  integrate --apply-to-control` (no second control `git commit`).
+- **Do not:** when a wright returns; before review/proof; with red/gap findings;
+  fast-forward an isolated transfer onto control before those checks.
+
+A native-worktree `transfer_commit` is transport on the worker branch only.
+
+## The commit
+Stage the exact candidate paths from the manifest, each as its own argv.
 Never stage `touched-files.md`, a directory, glob, unrelated path, or user change.
-Verify the staged set, then commit locally with a `[devrites-context]` body:
+Verify the staged set, then commit locally.
+
+Subject: `WIP(<slug>):` plus an imperative summary of the change (from the
+goal). Never a slice id, `SLICE-###`, a slice number, or "this slice"
+(`WIP(admin-report): add CSV export for usage rows`, not `SLICE-003` or
+`complete slice 3`). Product source, tests, comments, and filenames omit the
+same marks; they stay in `.devrites/` only.
 
 ```bash
-git commit -m "WIP(<slug>): <slice>" -m "$(cat <<'BODY'
+git commit -m "WIP(<slug>): <imperative summary>" -m "$(cat <<'BODY'
 [devrites-context]
-decisions: <one-line delta this slice added to decisions.md>
-remaining: <pending slices — count or names>
-dead-ends: <approaches ruled out this slice, if any>
+decisions: <one-line delta this work added to decisions.md>
+remaining: <pending count>
+dead-ends: <approaches ruled out, if any>
 BODY
 )"
 ```
 
-When host reconciliation already landed the isolated transfer commit, nothing
-is staged and the step no-ops. **Local-only:** never push a checkpoint or let
-scratch work trigger CI.
+**Local-only:** never push or let scratch work trigger CI.
 
 ## Restore
 After a crash, a fresh session may read the last `WIP(<slug>)` body as crash context.
@@ -36,9 +54,3 @@ WIP commits are scratch and never reach shared history. `/rite-ship` folds them 
 one atomic feature commit before the Conventional-Commit ladder: see the collapse step in
 [git-ship.md](../../rite-ship/reference/git-ship.md). Result: one clean commit, bisect
 stays green.
-
-## Autocomplete
-Checkpoints are unconditional; `/rite-autocomplete` needs no sentinel arming.
-Each wright returns after one slice; HITL stops, while explicit `.devrites/AFK`
-lets the controlling Build root chain another green slice only under its cap
-and pause rules.

@@ -91,7 +91,9 @@ Incomplete comparison is **not** agreement. Record axis deltas in `polish-report
    affected real re-proof using the approved commands, fresh proof-runner
    validation, refreshed evidence/browser bindings, and an updated candidate
    manifest. Record a **`Re-verification:`** line in `polish-report.md`. Close
-   the candidate for Review only after these checks are green.
+   the candidate for Review only after these checks are green. Then checkpoint
+   remaining candidate diffs per
+   [`checkpoint.md`](../rite-build/reference/checkpoint.md).
 7. **Aggregate output:** each phase appends to the single `polish-report.md`.
 
 ## Refinement modes

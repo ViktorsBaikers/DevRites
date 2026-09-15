@@ -152,7 +152,7 @@ the original decisions and proof.
 .devrites/
   ACTIVE                 # active feature slug
   AFK                    # optional unattended-mode configuration
-  CHECKPOINT             # optional local WIP checkpoint mode
+  CHECKPOINT             # reserved path; not a commit gate
   principles.md          # project rules that gate the workflow
   specs/                 # living structured capabilities
   work/<slug>/

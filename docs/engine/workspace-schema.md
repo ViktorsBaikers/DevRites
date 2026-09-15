@@ -21,7 +21,7 @@ budgets, IDs, and read order live in
 .devrites/
   ACTIVE
   AFK                         # optional run-mode sentinel
-  CHECKPOINT                  # optional local WIP checkpoint sentinel
+  CHECKPOINT                  # reserved path; not a commit gate
   principles.md               # ratified project invariants
   specs/                      # living capability Markdown, maintained by skills
   work/

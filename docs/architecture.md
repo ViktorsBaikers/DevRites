@@ -336,10 +336,10 @@ workflow. It carries state through workspace files rather than chat. A vague
 prompt starts `devrites-interview`; `/rite-spec` and `/rite-clarify` then
 finish the only interactive window. After decision coverage is CLEAR it runs unattended,
 choosing the recommended option at each soft gate and recording the rationale
-in `decisions.md`. It does **not** weaken the safety gates: genuine
-product/scope/policy decisions, irreversible risk, human-only access/actions,
-an open human-owned gate, a NO-GO, exhausted `max_slices`, or low confidence
-still pause. Agents use bounded recovery for red tests, runtime failures, and
+in `decisions.md`. It does **not** weaken blocking/escalating or irreversible-risk
+gates: human-only access/actions, those gates, a NO-GO, or low confidence still
+pause. Temper expand, validating gates, and default slice/agent/time/review-queue
+caps do not. `--max-slices` is ignored the same way. Agents use bounded recovery for red tests, runtime failures, and
 missing technical coverage. By default the workflow stops at Seal GO with `/rite-ship` as the next step.
 The `--ship` flag (alias `--yolo`) continues through Ship preflight, discloses
 the exact Git plan, and still stops for a fresh literal `GO` plus native host

@@ -69,7 +69,7 @@ Project-root sentinel (outside the workspace):
 | File | Created by | Holds |
 |---|---|---|
 | `.devrites/AFK` | you (presence = AFK mode active) | optional YAML: `max_slices`, `notify`, `allow_gates`. Empty file = AFK with defaults. See [`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md). |
-| `.devrites/CHECKPOINT` | you or `/rite-autocomplete` (presence = checkpoint mode) | empty sentinel. When set, `/rite-build` commits each proven slice local-only as `WIP(<slug>)` so a crash mid-build loses neither source nor reasoning; after literal `GO`, `/rite-ship` collapses an eligible disclosed WIP run into the feature commit. See [`pack/.claude/skills/rite-build/reference/checkpoint.md`](../pack/.claude/skills/rite-build/reference/checkpoint.md). |
+| `.devrites/CHECKPOINT` | unused as a gate | reserved path (not a candidate). After Independent Build review and fail-on-red proof are green (not when a wright returns), `/rite-build` / `/rite-prove` / `/rite-polish` / `/rite-review` land a local `WIP(<slug>): <imperative summary>` commit (serial: checkpoint git recipe or no-op if nothing staged; parallel: `devrites-engine parallel integrate`); `/rite-ship` later collapses an eligible WIP run. See [`pack/.claude/skills/rite-build/reference/checkpoint.md`](../pack/.claude/skills/rite-build/reference/checkpoint.md). |
 
 The shape of this directory is also documented in
 [`flow.md` § Workspace state model](flow.md#7-workspace-state-model).
@@ -368,7 +368,7 @@ full list.
 ## 11) Full unattended lifecycle: `/rite-autocomplete`
 
 ```text
-/rite-autocomplete "add CSV export for admins" --max-slices 8
+/rite-autocomplete "add CSV export for admins"
   → vague idea → runs devrites-interview, then /rite-spec + /rite-clarify in
     the only interactive window
   → Decision coverage: CLEAR → arms AFK, then drives: /rite-temper →
@@ -384,17 +384,18 @@ You: GO                        # → commit, optional approved push/tag/PR, then
 
 Add `--ship` (alias `--yolo`) to continue through `/rite-ship` preflight.
 Autocomplete discloses the exact Git plan, then still stops for a fresh literal
-`GO` and native host approval. It also pauses for genuine product/scope/policy
-decisions, irreversible risk, human-only access/actions, a NO-GO, exhausted
-`max_slices`, or low confidence. Objective red checks use bounded recovery
-instead. Args:
+`GO` and native host approval. It also pauses for irreversible risk, human-only access/actions, blocking or
+escalating gates, a NO-GO, or low confidence — not for temper expand, validating
+gates, `--max-slices`, or default slice/agent/time/review-queue caps.
+Objective red checks use bounded recovery instead. Args:
 `[idea] [--ship|--yolo] [--max-slices N] [--full] [--cross-model]`.
 Optional flags are inactive unless their exact token occurs in the invocation;
-`--max-slices` requires one positive base-10 integer. `--full` selects the Full
+`--max-slices` requires one positive base-10 integer and does not cap this run.
+`--full` selects the Full
 execution profile, and `--cross-model` arms Vet's second opinion.
-Autocomplete never rewrites an existing `.devrites/AFK`. After Vet fixes the
-pending-slice count, it stores the lower effective budget in `state.md`; an
-existing remaining counter can only stay the same or decrease.
+Autocomplete never rewrites an existing `.devrites/AFK`. After Vet it seeds
+remaining from the pending-slice count and ignores leftover remaining and
+`--max-slices`.
 
 ## Checking in
 

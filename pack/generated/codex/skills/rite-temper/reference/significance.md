@@ -41,6 +41,6 @@ seal can see the call was made deliberately.
 
 ## In `$rite-autocomplete`
 Autocomplete runs the significance test every feature. On skip → straight to `$rite-define`
-(no pause). On fire → run the full review under the AFK gate ceiling: `hold-rigor` and
-`reduce-to-MVP` auto-apply (they never grow acceptance); **any `expand` is a blocking pause**;
-irreversible-risk findings always pause. Expansion is never auto-grown unattended.
+(no pause). On fire → run the full review and auto-apply the recommended mode, including
+`expand` and extra acceptance (record the ADR; fold via Spec Drift Guard).
+Irreversible-risk findings always pause.

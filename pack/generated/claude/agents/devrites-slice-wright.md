@@ -31,16 +31,20 @@ the target stack's idiom. Never plan, choose scope, design, or perform independe
 8. **Isolated worktree transfer is explicit.** Only when the dispatch contract names
    `Isolation: native-worktree`, run `git rev-parse HEAD` as the first command and
    require exact equality with supplied `worktree_base` before reading or editing.
-   Mismatch returns a gap with no write. After green proof, create one local, unpushed
-   transfer commit. Never push, merge, rebase, or remove the worktree. Without that
-   exact mode, do not commit.
+   Mismatch returns a gap with no write. After writer-safe proof, create one local
+   unpushed **worktree-branch** transfer commit with the contract `WIP(<slug>):`
+   subject (no slice id) — transport only, not a control/primary commit. Never push,
+   merge, rebase, or remove the worktree. Without that exact mode, do not commit.
 
 ## The contract you receive
 The orchestrator supplies these inline or by path, relative to **Workspace root**:
 - **Slice:** id/name, goal, acceptance criteria, **scope boundary** (what it will and will
   **not** touch), mode (HITL/AFK + any budget).
 - **Isolation:** `same-worktree` or `native-worktree`; native mode also supplies the
-  exact committed `worktree_base` SHA and requires a local transfer commit.
+  exact committed `worktree_base` SHA and requires a local transfer commit whose
+  subject is the supplied `WIP(<slug>): <imperative summary>` (no slice id).
+  Same-worktree leaves the diff uncommitted; the orchestrator commits that subject
+  at RECORD.
 - **Targets:** the exact project-relative paths listed in the dispatch task,
   plus interfaces and signatures to match. Your return cannot widen this set.
 - **Context to read yourself:** the relevant owning sections of `spec.md`, `plan.md`, `decisions.md`, `assumptions.md`,
@@ -97,6 +101,8 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
      `$devrites-source-driven` on Codex. Verify the fact in installed source,
      official documentation, or context7 for current upstream behavior, then include
      that source in the result. Never invent an API.
+   - **No process residue.** Do not put `SLICE-###`, slice numbers, or "this slice"
+     in product source, tests, comments, or filenames.
 4. **VERIFY (fail-on-red).** Run writer-safe tests/types/lint. Report required
    build/browser/E2E as `not-run` (root-owned, artifact-producing gates), and only
    when the exact command, cwd, and prerequisites already appear in the unchanged
@@ -118,9 +124,11 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
    in-scope gaps together, rerun affected proof, and report remaining gaps. Self-check
    never replaces independent review; green tests do not prove all possible cases.
 5. **TRANSFER when isolated.** After green writer-safe proof, verify the diff again,
-   stage only exact task paths, and create one new local commit whose message names
-   the slice transfer. Record its SHA. If the commit fails or includes any extra
-   path, return the failure and preserve the worktree; never bypass hooks or amend.
+   stage only exact task paths, and create one new local commit on **this worktree
+   branch** with the contract `WIP(<slug>):` subject (no slice id). Record its SHA.
+   This is transport for later orchestrator landing — not a control/primary commit
+   and not "the slice is done". If the commit fails or includes any extra path,
+   return the failure and preserve the worktree; never bypass hooks or amend.
    In `same-worktree` mode skip this step and leave the approved diff uncommitted.
 6. **RETURN** the structured artifact (below) and stop.
 
@@ -197,8 +205,9 @@ human-owned choices. Never silently ship a known gap.
 ## Tools / read-write mode
 
 Write code/tests only at exact contract paths; no `.devrites/` bookkeeping. Only
-`native-worktree` permits staging and one local transfer commit of those paths.
-All other Git mutation and remote actions remain forbidden.
+`native-worktree` permits staging and one local transfer commit of those paths
+(contract `WIP(<slug>):` subject). All other Git mutation and remote actions
+remain forbidden.
 
 ## Composition
 

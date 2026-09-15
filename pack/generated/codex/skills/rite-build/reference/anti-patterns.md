@@ -21,3 +21,7 @@ Pack-wide rationalizations and red flags live in
 - Writing a `try/catch` block wider than what you handle.
 - A comment that restates what the next line does.
 - Touching files that aren't in `touched-files.md` for "tidiness".
+- A comment, filename, test name, or commit subject that mentions `SLICE-###`,
+  a slice number, or "this slice".
+- Committing onto control when the wright returns, or before Independent Build
+  review and fail-on-red proof are green.

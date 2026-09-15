@@ -27,8 +27,8 @@ the spec applicability map triggers that risk family.
 - **Raise outcome ambition without expanding the solution unnecessarily.** Solve the
   underlying problem without adding speculative capability or abstraction.
 - **Route every scope change through the Spec Drift Guard.** A scope change takes effect
-  only when `spec.md` records the confirmed decision. Expansion is **opt-in** (HITL
-  confirm; AFK pauses: see autocomplete policy). Nothing auto-grows into the build.
+  only when `spec.md` records the confirmed decision. HITL confirms expand;
+  autocomplete auto-applies it. Irreversible-risk still pauses.
 - **Apply maximum caution to hard-to-reverse changes.** Auth, migration, public API, and
   data-model changes always pause under the irreversible-risk list.
 - **Honest verdict.** Never round "needs work" up to "ready"; record every scope call's *why*.
@@ -89,8 +89,8 @@ the spec applicability map triggers that risk family.
    `AskUserQuestion`, one at a time, best-guess + **why**. Each material scope call ends as a
    **recorded decision**: a resolved `questions.md` qid (HITL) or a `decisions.md` ADR (AFK):
    so the review leaves an auditable record outside chat. (AFK gate policy —
-   [`reference/significance.md`](reference/significance.md) — `hold-rigor` + `reduce-to-MVP`
-   auto-apply, **any `expand` is a blocking pause**, irreversible-risk always pauses.)
+   [`reference/significance.md`](reference/significance.md) — autocomplete applies
+   the recommended mode including `expand`; irreversible-risk always pauses.)
    Apply objective clarity, mitigation, and assumption fixes directly.
 6. **Write `strategy.md` + fold back:** [`reference/strategy-template.md`](reference/strategy-template.md).
    **Choose the drift path based on whether a plan exists:** *no `plan.md` yet* (the normal pre-define
@@ -110,8 +110,8 @@ the spec applicability map triggers that risk family.
    blocking/escalating question routes `/rite-clarify`/HITL. Only after the
    matrix is re-closed may the phase advance.
    Set `Phase: temper`; `Next step: /rite-define` only after verification.
-   Human-owned expansion/unapproved irreversible choices set `Awaiting human` +
-   `Status: awaiting_human`; objective below-bar findings continue correction.
+   Unapproved irreversible choices set `Awaiting human`. Autocomplete expand does
+   not. Objective below-bar findings continue correction.
 7. **Adversarial verification loop:** ask the exact
    [`devrites-strategy-reviewer`](.omp/agents/devrites-strategy-reviewer.md)
    through the native fresh-context contract in

@@ -65,8 +65,10 @@ integrate) until no pending slice remains
 ([`parallel-batch.md` § Dynamic selection](reference/parallel-batch.md#dynamic-selection-and-re-batching)).
 Unattended runs (`/rite-autocomplete`, `.devrites/AFK` `max_parallel`) repeat batches
 inside the same run; HITL stops after each batch. Non-integer/`N≤0`/`N>10` hard refuse.
-All-green serial integrate; a red/gap sibling gets a bounded repair round in
-its own worktree — never rebuilt from scratch while budget remains.
+All-green (independent review + proof) then integrate as one local `WIP(<slug>):`
+commit per sibling onto the current control branch (never pushed). Do not
+integrate a sibling because the wright returned. A red/gap sibling gets a bounded repair
+round in its own worktree — never rebuilt from scratch while budget remains.
 Post-writer inventory and affected rechecks follow `phase-contract.md` § Independent
 Build review; fold accounts before one repair-all wright.
 Plan-owned gaps still route through Spec Drift Guard
@@ -89,9 +91,11 @@ the next slice automatically; AFK obeys remaining budget; Prove requires all sli
 
 ## Phase exit
 
-**Complete when:** the dispatched wright returns green proof for the slice,
-`git diff --name-only` ⊆ allowlist, independent test analysis admits no Critical
-gap, and `state.md` cursor advances with recorded evidence paths.
+**Complete when:** Independent Build review and fail-on-red proof are green,
+`git diff --name-only` ⊆ allowlist, no open Critical/Important, `state.md` cursor
+advances with recorded evidence, and the control-branch checkpoint has landed
+per [`checkpoint.md`](reference/checkpoint.md).
 
-**Failing case:** wright reports "done" but proof command was not executed or
-failed → slice incomplete; do not advance cursor.
+**Failing case:** wright reports "done" but independent review or proof was
+skipped, red, or followed by an uncommitted repair → slice incomplete; do not
+advance cursor or commit on control.

@@ -106,8 +106,8 @@ Make each continuation cheap and drift-free:
 - Phases chain automatically only **inside** one workspace (`$rite-autocomplete`
   drives spec → clarify → temper → define → vet → build × slices → prove → polish →
   review → seal; plain HITL chains plan↔vet inline and stops at each other boundary).
-  Crossing into the next continuation is a new invocation by design, so the human sees
-  each delivered increment before the next one starts.
+  Next continuation is a new invocation by default. Same-run chaining is
+  `continue_sequence: true` (Deferred-ship).
 
 ### Release milestone (full-picture gate)
 
@@ -138,7 +138,8 @@ product:
   product picture across milestones; Polish folds each milestone's deltas.
 - **Deferred-ship sequence** (`.devrites/AFK` `continue_sequence: true`, `max_workspaces: N`):
   milestones are sealed but not shipped, and the armed run opens the next recorded
-  continuation automatically; per-slice `WIP(<slug>)` checkpoints still land locally,
+  continuation automatically; local `WIP(<slug>):` checkpoints still land with
+  human summaries (never a slice id),
   so the tree stays clean. One release ship at the end collapses the sequence's
   checkpoints into the single release commit, pushes/tags it, and may archive the
   sealed predecessors. Because no milestone boundary was shipped, later work can touch

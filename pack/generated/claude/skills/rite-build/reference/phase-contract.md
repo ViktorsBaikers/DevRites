@@ -44,8 +44,10 @@ Spec Drift Guard still applies.
    Reapply host admission before correction; affected proof/evidence follows candidate
    integrity. Human gates remain product/irreversible/access decisions.
 7. **Record green.** Upsert actual scoped `present`/`deleted` rows in `touched-files.md`;
-   update state, evidence and applicable UI/browser proof. Manifest stays mutable
-   until Polish. For a release milestone, after the last slice's rows run
+   update state, evidence and applicable UI/browser proof. Checkpoint per
+   [`checkpoint.md`](checkpoint.md) only after steps 5–6 are green and every
+   repair wright has been re-reviewed and re-proved; never on wright return.
+   Manifest stays mutable until Polish. For a release milestone, after the last slice's rows run
    `devrites-engine state merge-manifest <slug>` to fold the recorded
    predecessor chain into the union manifest before Prove. Record stood
    decisions/dead ends; refresh verified/falsified

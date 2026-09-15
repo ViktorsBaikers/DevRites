@@ -25,12 +25,13 @@ discard user work to qualify. Ask host for an explicit current-`HEAD` base when
 supported. Regardless of host defaults, the wright's first command must prove actual `git rev-parse HEAD` equals supplied
 `worktree_base`. Mismatch returns a gap with no write before project reads or baseline proof.
 
-The isolated wright returns one local unpushed `transfer_commit`, its `worktree_base`,
-and exact files. Root proves descendant base, exact `git diff --name-only`
+The isolated wright returns one local unpushed `transfer_commit` (contract
+`WIP(<slug>):` subject, no slice id), its `worktree_base`, and exact files.
+That commit is worker-branch transport, not the control-branch checkpoint. Root proves descendant base, exact `git diff --name-only`
 `` `<base>..<transfer>` ``, no `.devrites/**`/submodule/symlink/unrelated delta, unchanged
 source base, and no user-work overwrite. Use only host-native explicit reconciliation;
-never ad hoc copy, cherry-pick, or merge from read-only root. Compare transferred bytes,
-run approved proof, record evidence, then let host remove worktree.
+never ad hoc copy, cherry-pick, or merge from read-only root. Land on control
+only per [`checkpoint.md`](checkpoint.md).
 
 Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
 preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
@@ -48,7 +49,8 @@ worktrees stay forbidden.
    [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md);
    its rejection here is not a blocker.
 2. Include goal, verbatim acceptance, exclusions, context,
-   `test-plan.md` proof commands, and applicable standards. For each triggered
+   `test-plan.md` proof commands, applicable standards, and the exact
+   `WIP(<slug>):` subject (no slice id). For each triggered
    topology/data/integration standard, include only the feature-specific owner/invariant,
    failure or partial-state case, recovery rule, and required proof from the vetted plan.
    Do not paste the whole standard or silently omit an applicable risk.
@@ -75,12 +77,17 @@ Opt-in `/rite-build --parallel N` fans out only under [`parallel-batch.md`](para
    assertions. Dedicated test analysis treats weakening as Critical.
    Confirm a test for a data/integration/topology risk can actually exhibit that risk;
    mocks that erase it and one-root proof offered for another root are unproven.
-3. Run only repository proof already approved by `test-plan.md`, then inspect
-   `git diff --name-only` again in case a proof tool changed source.
-4. Apply [independent Build review](phase-contract.md#independent-build-review) before
-   proof acceptance. Human choices return; technical failures follow
+3. Apply [independent Build review](phase-contract.md#independent-build-review)
+   before proof. Human choices return; technical failures follow
    [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
    Derive accounting from recorded reproductions, corrections, and decisive rechecks.
+4. Run only repository proof already approved by `test-plan.md`, then inspect
+   `git diff --name-only` again in case a proof tool changed source.
+   **Do not land on control until review and proof are green.** Isolated
+   `transfer_commit` stays on the worker branch; same-worktree diffs stay
+   uncommitted. Serial: [`checkpoint.md`](checkpoint.md), then host may remove the
+   worktree. Parallel: `record-green` only; land with `parallel integrate
+   --apply-to-control` after the batch; `parallel cleanup` removes worktrees.
 5. Reconcile returned reuse, conventions, principles, sources, assumptions,
    decisions, dead ends, follow-ups, gates, and touched files. Persist the
    relevant facts in canonical artifacts, not the wholesale report. A plan-gap
