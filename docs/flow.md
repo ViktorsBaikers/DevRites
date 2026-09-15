@@ -304,8 +304,10 @@ Each workspace-operating lifecycle skill reads durable state from
 `.devrites/work/<feature-slug>/` before acting and reports the owning create or
 selection command when no workspace is active. Utility and on-ramp skills use
 their own stated preconditions. The optional `.devrites/AFK` sentinel sits
-beside `ACTIVE` and toggles the session-level run mode; `.devrites/CHECKPOINT`
-separately enables eligible local WIP checkpoint commits.
+beside `ACTIVE` and toggles the session-level run mode. Local `WIP(<slug>):`
+checkpoints land after independent review and fail-on-red proof are green, not
+when a wright returns; `.devrites/CHECKPOINT` is a reserved
+path, not a gate.
 
 ```mermaid
 erDiagram

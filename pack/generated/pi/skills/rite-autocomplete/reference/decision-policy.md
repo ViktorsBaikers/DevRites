@@ -36,6 +36,5 @@ not pick the option that's merely easiest to implement.
 
 ## When a choice is NOT autocomplete's to make
 
-Human-owned contract, data-model, security, and product choices are not discretionary.
-Use owning elicitation/safety gates and the topology marked action. Autocomplete
-answers *how*, never *what to build* beyond the settled interview.
+Human-owned blocking/escalating, irreversible-risk, and access stay human.
+Recommended temper `expand` auto-applies; do not invent product intent.

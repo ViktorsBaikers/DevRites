@@ -94,13 +94,16 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    Expected test-first RED is not a terminal gate failure. Cancel only for a shared
    invalid foundation, safety/access failure, resource boundary, or explicit stop;
    preserve completed and in-progress recoverable work and classify each result.
-6. Integrate: each `transfer_commit` descends from `B` and diffs path-exact vs
-   `B`; squash-apply all in plan order into one `WIP(<slug>):` commit on the
-   staging branch (Ship collapses it). Conflict → reset to `B`,
-   `integrate-failed`; classify under repair rounds (siblings stay in place).
-7. Success: FF control to the squash commit — the batch lands as one local
-   commit, never pushed; union `touched-files.md`; update state/evidence;
-   AFK +1 per integrated sibling; optional `check candidate`.
+6. `parallel integrate --apply-to-control` **only after steps 4–5 are green**:
+   each `transfer_commit` descends from `B` and diffs path-exact vs
+   `B`; apply each in plan order as its own local `WIP(<slug>):` commit
+   (imperative summary, never a slice id). Staging branch, then FF. Conflict →
+   reset to `B`, `integrate-failed`; classify under repair rounds (siblings stay
+   in place). Never integrate because a wright returned.
+7. Success: FF control (the branch that held `HEAD` when the batch started —
+   often `main`/`master`, otherwise whatever the user was on) to the integrate
+   tip: N local commits, never pushed; union `touched-files.md`; update
+   state/evidence; AFK +1 per integrated sibling; optional `check candidate`.
 8. Cleanup runs only after `integrate` marks the lease `complete` — work
    landed in control, so `parallel cleanup` removes worktrees/branches.
    Blocked/human-stopped batches keep lease, worktrees, branches — nothing is
@@ -178,9 +181,9 @@ devrites-engine parallel lease-write|lease-read|lease-clear --root <repo> --slug
 #   parallel cleanup --root <repo> --slug <slug> --force   (salvages, prints retained refs)
 ```
 
-`integrate` without `--apply-to-control` stages the squash commit, leaves the
-lease `running` and control at `B`; cleanup still refuses — the commit cannot
-be lost. `record-green` and `integrate` also accept an `integrate-failed`
+`integrate` without `--apply-to-control` stages the per-sibling commits, leaves
+the lease `running` and control at `B`; cleanup still refuses — the commits
+cannot be lost. `record-green` and `integrate` also accept an `integrate-failed`
 lease, so a failed integrate retries after repair. `--apply-to-control`
 refuses when control moved past `B` or holds uncommitted changes on slice
 paths — commit/stash and retry; the batch is untouched. Go is SSOT; never

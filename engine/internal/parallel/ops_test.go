@@ -19,7 +19,7 @@ func commitIn(t *testing.T, wt, file, marker string) string {
 		t.Fatal(err)
 	}
 	gitOk(t, wt, "add", file)
-	gitOk(t, wt, "commit", "-m", "slice "+marker)
+	gitOk(t, wt, "commit", "-m", "WIP(demo-feature): add "+marker+" helper")
 	return gitOk(t, wt, "rev-parse", "HEAD")
 }
 
@@ -424,5 +424,33 @@ func TestCleanupWarnsOnFailedBranchCleanup(t *testing.T) {
 	}
 	if _, err := os.Stat(leasePath); !os.IsNotExist(err) {
 		t.Fatalf("cleanup should still clear the lease, got %v", err)
+	}
+}
+
+func TestControlCommitMessage(t *testing.T) {
+	t.Parallel()
+	got := controlCommitMessage("admin-report", "WIP(admin-report): SLICE-003 add CSV export")
+	wantPrefix := "WIP(admin-report): add CSV export\n"
+	if !strings.HasPrefix(got, wantPrefix) {
+		t.Fatalf("subject %q want prefix %q", got, wantPrefix)
+	}
+	if strings.Contains(got, "SLICE-") || strings.Contains(strings.ToLower(got), "slice-003") {
+		t.Fatalf("message still names a slice id: %q", got)
+	}
+	got = controlCommitMessage("admin-report", "WIP(other): complete slice 3")
+	if !strings.HasPrefix(got, "WIP(admin-report): complete\n") {
+		t.Fatalf("foreign WIP prefix / slice N: %q", got)
+	}
+	got = controlCommitMessage("admin-report", "add this slice CSV")
+	if !strings.HasPrefix(got, "WIP(admin-report): add CSV\n") {
+		t.Fatalf("this slice: %q", got)
+	}
+	got = controlCommitMessage("admin-report", "keep array slice helper")
+	if !strings.HasPrefix(got, "WIP(admin-report): keep array slice helper\n") {
+		t.Fatalf("ordinary English stripped: %q", got)
+	}
+	got = controlCommitMessage("admin-report", "SLICE-001")
+	if !strings.HasPrefix(got, "WIP(admin-report): land proven work\n") {
+		t.Fatalf("empty summary after strip: %q", got)
 	}
 }

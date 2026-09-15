@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -285,10 +286,8 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 	}
 
 	union := make([]string, 0, len(lease.Slices))
-	ids := make([]string, 0, len(lease.Slices))
 	for _, sl := range lease.Slices {
 		union = append(union, sl.Paths...)
-		ids = append(ids, sl.ID)
 	}
 	if opts.ApplyToControl {
 		// FF into control must not silently absorb or clobber the user's
@@ -381,14 +380,19 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 
 		if err := cherryPickNoCommit(stageWT, base, tc); err != nil {
 			cherryPickAbort(stageWT)
-			return fail(fmt.Errorf("squash apply failed for slice %s: %w", sl.ID, err))
+			return fail(fmt.Errorf("apply failed for slice %s: %w", sl.ID, err))
 		}
+		subj, err := commitSubject(opts.Root, tc)
+		if err != nil {
+			return fail(fmt.Errorf("transfer subject for %s: %w", sl.ID, err))
+		}
+		if _, err = stagePathsAndCommit(stageWT, controlCommitMessage(opts.Slug, subj), sl.Paths); err != nil {
+			return fail(fmt.Errorf("control commit for %s: %w", sl.ID, err))
+		}
+		cherryPickQuit(stageWT)
 	}
-
-	msg := fmt.Sprintf("WIP(%s): parallel batch %s (%s)\n\n[devrites-context]\nslices: %s\nbase: %s",
-		opts.Slug, lease.BatchID, strings.Join(ids, ", "), strings.Join(ids, ", "), base)
-	if tip, err = stagePathsAndCommit(stageWT, msg, union); err != nil {
-		return fail(fmt.Errorf("squash commit: %w", err))
+	if tip, err = headSHA(stageWT); err != nil {
+		return fail(fmt.Errorf("integrate tip: %w", err))
 	}
 	if err := removeWorktree(opts.Root, stageWT); err != nil {
 		if _, statErr := os.Stat(stageWT); statErr == nil {
@@ -414,10 +418,34 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 	} else if err := ensureControlAtBase(opts.Root, base); err != nil {
 		return fail(err)
 	}
-	// Without --apply-to-control the lease stays running: the squash commit
-	// lives only on the integrate branch, and a running lease keeps a
-	// non-forced cleanup from discarding the refs that hold it.
+	// Without --apply-to-control the lease stays running: the integrate
+	// commits live only on the integrate branch, and a running lease keeps a
+	// non-forced cleanup from discarding the refs that hold them.
 	return tip, lease, nil
+}
+
+var (
+	sliceTaskID       = regexp.MustCompile(`(?i)\bSLICE-\d+\b`)
+	sliceProcessMark  = regexp.MustCompile(`(?i)\bthis slice\b|\bslice\s+\d+\b`)
+	existingWIPPrefix = regexp.MustCompile(`(?i)^WIP\([^)]+\):\s*`)
+)
+
+// controlCommitMessage is the local unpushed subject/body landed on control.
+// Ship collapse still keys off the WIP(<slug>): prefix; the rest is a human
+// summary with DevRites process marks stripped (SLICE-###, "this slice",
+// "slice N"). Ordinary English such as "array slice" is left intact.
+func controlCommitMessage(slug, transferSubject string) string {
+	prefix := fmt.Sprintf("WIP(%s): ", slug)
+	line := strings.TrimSpace(strings.SplitN(transferSubject, "\n", 2)[0])
+	line = existingWIPPrefix.ReplaceAllString(line, "")
+	line = sliceTaskID.ReplaceAllString(line, "")
+	line = sliceProcessMark.ReplaceAllString(line, "")
+	line = strings.TrimSpace(strings.Trim(line, ":-"))
+	line = strings.Join(strings.Fields(line), " ")
+	if line == "" {
+		line = "land proven work"
+	}
+	return prefix + line + "\n\n[devrites-context]\n"
 }
 
 func pathListsEqual(a, b []string) bool {
@@ -470,7 +498,7 @@ func salvageSlice(sl LeaseSlice, batchID string) (string, error) {
 		return "", nil
 	}
 	return stagePathsAndCommit(sl.WorktreePath,
-		fmt.Sprintf("devrites: salvage %s WIP (%s)", sl.ID, batchID), sl.Paths)
+		fmt.Sprintf("devrites: salvage WIP (%s)", batchID), sl.Paths)
 }
 
 // Cleanup removes worker worktrees and clears the lease. A complete batch

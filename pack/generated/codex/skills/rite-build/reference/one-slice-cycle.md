@@ -17,15 +17,16 @@ DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). 
    ORIENT    → load only the files this slice touches; learn the project's idiom; reuse-first
    (RED)     → if behavior change: write the failing test first
    IMPLEMENT → smallest complete version; match conventions; devrites-frontend-craft for UI
-   VERIFY    → writer-safe tests/types/lint; return code + tests
+   VERIFY    → writer-safe tests/types/lint; return code + tests (no control-branch commit)
 (DOUBT)   → orchestrator, on return: devrites-doubt each non-trivial decision the wright stood up
             — dispatch the initial read-only reviews of distinct decisions in parallel
             (independent claims, fresh contexts); wright fixes stay serial — writers share files
 PROVE     → root: required build/browser/E2E, then returned-diff/path review; fail-on-red
+            (red/gap → repair wright, then re-review/re-prove; do not commit yet)
 RECORD    → orchestrator: after green verification, update state.md/evidence.md and
             upsert the authoritative candidate manifest from the actual scoped diff
-(CHECKPOINT) → orchestrator: commit the proven slice local-only as WIP(<slug>)
-            with a [devrites-context] body → clean tree, survives a crash (checkpoint.md)
+(CHECKPOINT) → only now, with review+proof green: local WIP(<slug>): <imperative summary>
+            on the control branch (no slice id) → checkpoint.md
 NEXT      → HITL root reports and stops. AFK with parallel cap>1: return to parallel-batch selection and run the new N_eff; otherwise repeat under afk-discipline.md
 ```
 

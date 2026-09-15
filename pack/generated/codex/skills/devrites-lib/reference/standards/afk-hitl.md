@@ -110,8 +110,8 @@ candidate manifest to cover the whole recorded chain — run
   qualify; no recorded next entry, or the cap/review-queue bound reached, stops
   with the winning reason.
 - Milestones are **not** shipped: they stay sealed and unarchived in `.devrites/work/`
-  with `Next step: $rite-ship` preserved. Per-slice `WIP(<slug>)` checkpoints still
-  land locally ([checkpoint.md](../../../rite-build/reference/checkpoint.md)), so the tree
+  with `Next step: $rite-ship` preserved. Local `WIP(<slug>):` checkpoints still
+  land ([checkpoint.md](../../../rite-build/reference/checkpoint.md)), so the tree
   stays clean and crash-safe.
 - Git stays human-gated. The release ship is one disclosed plan, one literal `GO`, and
   one native approval; it collapses the sequence's `WIP` commits into the single

@@ -106,6 +106,9 @@ test changes.
    attempt. Never guess the runtime fix or reuse old GO.
 10. **Record.** Root updates `evidence.md`, optional `browser-evidence.md`,
     traceability, and state, with exactly one observed candidate binding.
+    After independent validators are green, checkpoint remaining candidate
+    diffs per [`checkpoint.md`](../rite-build/reference/checkpoint.md). A wright
+    correction during Recover red does not commit on control until this step.
 
 > Do not claim an unobserved pass, skip browser proof, or proceed with pending
 > slices. Load `reference/anti-patterns.md` when tempted to do so.

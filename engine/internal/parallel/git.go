@@ -211,6 +211,10 @@ func mergeFFOnly(repo, commit string) error {
 	return err
 }
 
+func commitSubject(repo, rev string) (string, error) {
+	return git(repo, "log", "-1", "--format=%s", rev)
+}
+
 func cherryPickNoCommit(repo, fromExclusive, toInclusive string) error {
 	_, err := git(repo, "cherry-pick", "-n", fromExclusive+".."+toInclusive)
 	return err
@@ -218,4 +222,8 @@ func cherryPickNoCommit(repo, fromExclusive, toInclusive string) error {
 
 func cherryPickAbort(repo string) {
 	_, _ = git(repo, "cherry-pick", "--abort")
+}
+
+func cherryPickQuit(repo string) {
+	_, _ = git(repo, "cherry-pick", "--quit")
 }

@@ -142,7 +142,9 @@ Pull these via `Read` when the diff demands them:
    binding in `review.md` for the current digest, distinguishing fresh accounts from
    cited unchanged sub-scope evidence and reconciling complete coverage.
    **Completion:** the records name the reviewed candidate identity and every accepted
-   correction has affected proof plus a fresh Review.
+   correction has affected proof plus a fresh Review. Then checkpoint remaining
+   candidate diffs per [`checkpoint.md`](../rite-build/reference/checkpoint.md);
+   a wright correction does not commit on control until that Review is green.
 
 ## Finding labels
 

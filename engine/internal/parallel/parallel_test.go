@@ -216,6 +216,13 @@ func TestCleanupSalvagesAbortedWork(t *testing.T) {
 	if body := gitOk(t, repo, "show", sb.Commit+":src/b_new.go"); !strings.Contains(body, "Bnew") {
 		t.Fatalf("salvaged file content missing: %q", body)
 	}
+	subj := gitOk(t, repo, "log", "-1", "--format=%s", sb.Commit)
+	if strings.Contains(subj, "slice-b") || strings.Contains(subj, "SLICE-") {
+		t.Fatalf("salvage subject names a slice id: %q", subj)
+	}
+	if !strings.HasPrefix(subj, "devrites: salvage WIP (") {
+		t.Fatalf("salvage subject %q", subj)
+	}
 
 	// Worktrees removed, lease cleared, kept branches still resolve.
 	for _, wt := range []string{wtA, wtB, wtC} {
@@ -375,14 +382,14 @@ func TestIntegrateDivergentSiblings(t *testing.T) {
 		t.Fatal(err)
 	}
 	gitOk(t, wtA, "add", "src/a.go")
-	gitOk(t, wtA, "commit", "-m", "slice-a green")
+	gitOk(t, wtA, "commit", "-m", "WIP(demo-feature): add A helper")
 	tcA := gitOk(t, wtA, "rev-parse", "HEAD")
 
 	if err := os.WriteFile(filepath.Join(wtB, "src", "b.go"), []byte("package main\n\nfunc B() {}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	gitOk(t, wtB, "add", "src/b.go")
-	gitOk(t, wtB, "commit", "-m", "slice-b green")
+	gitOk(t, wtB, "commit", "-m", "WIP(demo-feature): add B helper")
 	tcB := gitOk(t, wtB, "rev-parse", "HEAD")
 
 	if _, err := RecordGreen(repo, slug, "slice-a", tcA); err != nil {
@@ -406,12 +413,17 @@ func TestIntegrateDivergentSiblings(t *testing.T) {
 	if head != tip {
 		t.Fatalf("control head %s want tip %s", head, tip)
 	}
-	if n := gitOk(t, repo, "rev-list", "--count", base+"..HEAD"); n != "1" {
-		t.Fatalf("control should gain exactly one squash commit, got %s", n)
+	if n := gitOk(t, repo, "rev-list", "--count", base+"..HEAD"); n != "2" {
+		t.Fatalf("control should gain one commit per sibling, got %s", n)
 	}
-	subj := gitOk(t, repo, "log", "-1", "--format=%s")
-	if !strings.HasPrefix(subj, "WIP(demo-feature):") {
-		t.Fatalf("squash subject %q missing WIP(demo-feature): prefix", subj)
+	log := gitOk(t, repo, "log", "--format=%s", base+"..HEAD")
+	for _, subj := range strings.Split(log, "\n") {
+		if !strings.HasPrefix(subj, "WIP(demo-feature):") {
+			t.Fatalf("control subject %q missing WIP(demo-feature): prefix", subj)
+		}
+		if strings.Contains(strings.ToUpper(subj), "SLICE-") {
+			t.Fatalf("control subject %q still names a slice id", subj)
+		}
 	}
 	a := mustRead(t, filepath.Join(repo, "src", "a.go"))
 	b := mustRead(t, filepath.Join(repo, "src", "b.go"))
@@ -428,7 +440,7 @@ func TestIntegrateDivergentSiblings(t *testing.T) {
 }
 
 // TestIntegrateWithoutApplyKeepsLeaseRunning proves a flag-less integrate
-// stages the squash commit on the integrate branch but leaves the lease
+// stages the per-sibling commits on the integrate branch but leaves the lease
 // running and control at base, so a later non-forced cleanup cannot discard
 // the only refs holding the integrated tree.
 func TestIntegrateWithoutApplyKeepsLeaseRunning(t *testing.T) {
@@ -441,7 +453,7 @@ func TestIntegrateWithoutApplyKeepsLeaseRunning(t *testing.T) {
 		t.Fatal(err)
 	}
 	if tip == "" || tip == base {
-		t.Fatalf("expected staged squash tip, got %s", tip)
+		t.Fatalf("expected staged integrate tip, got %s", tip)
 	}
 	if lease.Status != StatusRunning {
 		t.Fatalf("status=%s want running without --apply-to-control", lease.Status)
@@ -451,13 +463,13 @@ func TestIntegrateWithoutApplyKeepsLeaseRunning(t *testing.T) {
 	}
 	ibranch := IntegrateBranchName(slug, batch)
 	if got := gitOk(t, repo, "rev-parse", ibranch); got != tip {
-		t.Fatalf("integrate branch %s want squash tip %s", got, tip)
+		t.Fatalf("integrate branch %s want integrate tip %s", got, tip)
 	}
 	if _, err := Cleanup(repo, slug, false); err == nil {
 		t.Fatal("cleanup on running lease must refuse without --force")
 	}
 	// Forced cleanup salvages then removes; the integrate branch holds the
-	// squash tip, so it is kept and reported rather than deleted.
+	// integrate tip, so it is kept and reported rather than deleted.
 	if _, err := Cleanup(repo, slug, true); err != nil {
 		t.Fatal(err)
 	}
@@ -468,7 +480,7 @@ func TestIntegrateWithoutApplyKeepsLeaseRunning(t *testing.T) {
 
 // TestIntegrateFailedLeaseRepairsAndRetries proves integrate-failed is not a
 // dead end: a repaired transfer re-records on the failed lease and a retried
-// integrate completes into one squash commit on control.
+// integrate completes into one control commit per sibling.
 func TestIntegrateFailedLeaseRepairsAndRetries(t *testing.T) {
 	repo, base := setupRepo(t)
 	slug, batch := "demo-feature", "batch1"
@@ -506,8 +518,8 @@ func TestIntegrateFailedLeaseRepairsAndRetries(t *testing.T) {
 	} else if lease.Status != StatusComplete {
 		t.Fatalf("status=%s want complete", lease.Status)
 	}
-	if n := gitOk(t, repo, "rev-list", "--count", base+"..HEAD"); n != "1" {
-		t.Fatalf("expected one squash commit on control, got %s", n)
+	if n := gitOk(t, repo, "rev-list", "--count", base+"..HEAD"); n != "2" {
+		t.Fatalf("expected one control commit per sibling, got %s", n)
 	}
 }
 

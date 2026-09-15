@@ -59,22 +59,21 @@ exhausted.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"classifier returns owner-busy, exhausted, or existing hard gate","action":"stop on exact WAIT_ACTIVE_OWNER, BLOCKED_EXHAUSTED, or BLOCKED_GATE result","return":"unchanged cursor plus fixed route-owned output"} -->
 ## Other stop classes
 
-- **Gate severity:** blocking or escalating gate; any open validating question.
-- **Temper:** any `expand` or added acceptance criterion. `hold-rigor`,
-  `reduce-to-MVP`, and a justified skip do not pause.
+- **Gate severity:** blocking or escalating gate. Validating: auto-pick the
+  recommended option, close the question, continue.
+- **Temper:** `expand` and extra acceptance auto-apply (record + Drift Guard).
+  Irreversible-risk still pauses. `hold-rigor`, `reduce-to-MVP`, and a skip do not pause.
 - **Clarify:** material Partial/Missing/unowned decision coverage or a
   low-confidence high-consequence assumption. Continue the initial interview;
   never arm AFK early.
 - **Seal:** NO-GO, with every blocker and fix direction. Never round up to GO.
 - **Reslice:** execute its marked action before deciding continue/stop.
-- **Slice budget:** any validated root-owned remaining value of zero stops before the next dispatch
-  when slices remain; malformed state also stops. Report whether the winning
-  bound was the pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count.
-  Zero with no pending slices is normal completion and proceeds to Prove.
-- **Resource envelope:** missing/malformed AFK, overlapping run,
-  exhausted/unobservable declared agent/token/cost/time headroom, or review queue
-  above cap. At cap, only queue-reducing reconciliation may run. Persist winning
-  bound and observed usage; a new activation does not reset durable budgets.
+- **Slice budget:** only this invocation's `--max-slices N` caps dispatch.
+  Sentinel `max_slices` does not stop the run. Zero remaining with no pending
+  slices is normal completion and proceeds to Prove. Malformed explicit flag
+  stops before any write.
+- **Resource envelope:** overlapping run or missing AFK after arm still stops.
+  Do not stop on `max_agents`, `max_minutes`, or `max_review_queue`.
 - **Confidence:** intent still cannot become testable acceptance after interview.
 - **Repeated failure:** the exact fingerprint's bounded recovery is exhausted.
 

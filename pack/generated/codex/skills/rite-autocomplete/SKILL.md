@@ -9,7 +9,7 @@ user-invocable: true
 
 Run every phase after one clarification window. Irreversible-risk,
 blocking/escalating,<!-- pack-scan-ignore: negated statement: gates are NOT disabled -->
-NO-GO, resource, and human-owned gates still pause. Use the Standard native
+and NO-GO still pause. Use the Standard native
 profile by default and Full for high-risk scope or explicit `--full`; see
 [`orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md).
 
@@ -48,20 +48,19 @@ executable controller/harness/bundle bytes or a missing writer, read
 - Every exact causal fingerprint gets at most three no-progress corrections.
   Closing one is progress; a distinct Critical/Important invariant has its own
   budget. Lower severity cannot prolong recovery.
-- Enforce `--max-slices`, the AFK sentinel, review queue, and native
-  agent/token/cost/time limits before every phase or dispatch. Count failed,
-  malformed, and unavailable leaf calls. At the review cap, permit only work
-  that reduces the queue.
+- Enforce `--max-slices` only when this invocation includes it. Do not stop on
+  sentinel `max_slices`, `max_agents`, `max_minutes`, or `max_review_queue`.
+  Count failed, malformed, and unavailable leaf calls.
 - Parse flags only from this invocation. `--ship`, `--yolo`, `--max-slices`,
   `--parallel`, `--full`, and `--cross-model` activate only as exact standalone
   tokens in `$ARGUMENTS`; examples or earlier messages can never arm them.
   `--max-slices` must occur once and be followed by a positive base-10 integer;
   `--parallel` must occur once and be followed by a base-10 integer in `1`–`10`.
   Missing, repeated, malformed, or conflicting values stop before any write.
-- Temper always runs after Clarify. Unattended mode auto-applies only
-  `hold-rigor` and `reduce-to-MVP`; any `expand` or added acceptance pauses.
+- Temper always runs after Clarify. Auto-apply the recommended mode, including
+  `expand` and extra acceptance; record the ADR and fold via Spec Drift Guard.
+  Irreversible-risk still pauses.
 - Vet every plan. Cross-model is off unless the current invocation arms it.
-  Never auto-grow accepted scope.
 
 ## Workflow
 
@@ -77,7 +76,7 @@ executable controller/harness/bundle bytes or a missing writer, read
    from chat. After compaction or a resumed session, read `.devrites/ACTIVE`, then
    the `state.md` cursor, `questions.md`, `decisions.md`, and `test-plan.md`/`evidence.md`.
    Normalize current arguments to idea, `ship_preflight: yes|no`,
-   `max_slices: N|default`, `parallel: N|default`, `profile: standard|full`,
+   `max_slices: N|unlimited`, `parallel: N|default`, `profile: standard|full`,
    and `cross_model: yes|no`.
    **Completion:** normalized state is unambiguous and no sentinel or workspace file has been written.
 2. **Specify and clarify.** Run `devrites-interview`, `$rite-spec`, and
@@ -85,7 +84,7 @@ executable controller/harness/bundle bytes or a missing writer, read
    AFK. **Completion:** `Decision coverage: CLEAR` is durable.
 3. **Arm AFK once.** Apply the loop's
    [one-write AFK contract](reference/loop.md#arm-afk-once): preserve valid
-   existing bytes or create the bounded advisory-only sentinel once; never
+   existing bytes or create the sentinel once (`allow_gates: [advisory, validating]`); never
    rewrite it after Vet. Preserve an existing sentinel byte-for-byte.
    **Completion:** a valid read-only AFK sentinel exists.
 4. **Drive phases.** Follow [the loop](reference/loop.md): `$rite-spec` →
@@ -103,7 +102,7 @@ executable controller/harness/bundle bytes or a missing writer, read
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:
    route agent-owned red results through bounded recovery.
    Red gates block forward advancement and enter caller-owned recovery. Stop on
-   hard risk, human-owned blocking/escalating/NO-GO, resource exhaustion, or the
+   hard risk, human-owned blocking/escalating/NO-GO, or the
    exact fingerprint's proven exhaustion. Technical exhaustion records terminal
    `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
 6. **Seal boundary.** Without a ship flag, stop at Seal GO with `$rite-ship` —
@@ -129,5 +128,5 @@ spec <done|stopped> · clarify <clear|stopped> · temper <done|stopped> · defin
 ```
 
 Final state is `Shipped`, `Stopped`, `Awaiting human`, `NO-GO`, or `GO`; do not
-write a narrative recap. Require a clean or accepted baseline, arm checkpoint
-mode, and never auto-pass a red gate.
+write a narrative recap. Require a clean or accepted baseline, land a local
+unpushed checkpoint after each green check, and never auto-pass a red gate.

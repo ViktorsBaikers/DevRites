@@ -13,11 +13,8 @@ routine phases. Acceptance-preserving Reslice authority is
 ## Arm AFK once
 
 ```yaml
-allow_gates: [advisory]
-max_slices: 10
-max_agents: 32
-max_minutes: 120
-max_review_queue: 8
+allow_gates: [advisory, validating]
+# max_slices / max_agents / max_minutes / max_review_queue omitted: unlimited
 # continue_sequence: true          # opt-in: chain recorded continuations after Seal GO
 # max_workspaces: 5                # sequence budget when chaining
 # max_parallel: 10                 # Build batch cap; 1 = serial (default: eligible, cap 10)
@@ -27,32 +24,29 @@ max_review_queue: 8
 ```
 
 Read an existing sentinel first. Preserve it byte-for-byte when valid; stop if
-its gate ceiling exceeds advisory, required envelope is malformed, or
-`max_slices` conflicts with the invocation. If absent, write it once after
-clarity, replacing the safe slice default only for explicit `--max-slices N`.
+malformed. Do not stop because it names `max_slices` / `max_agents` /
+`max_minutes` / `max_review_queue` or only `[advisory]`. If absent, write it
+once after clarity; add `max_slices: N` only for explicit `--max-slices N`.
 It is read-only: never rewrite it after Vet or reset it on resume. Leftover
 `expires_at` is ignored and never rewritten.
 
 ### Derive the mutable post-vet budget
 
-After Vet, count pending slices and take the minimum of that count, explicit
-flag, and sentinel cap. Before first Build, seed absent state-owned
-`afk_slices_remaining`; retain the lower valid existing value and never increase
-or reinitialize it. AFK configuration itself stays unchanged.
+After Vet, seed `afk_slices_remaining` from the pending count so every pending
+slice can run, or `min(pending, N)` when this invocation passed `--max-slices N`.
+Ignore sentinel `max_slices` and any lower leftover remaining as a cap unless
+`--max-slices` is set. AFK configuration itself stays unchanged.
 
 ### Admit each unattended cycle
 
-Before every phase, review fan-out, recovery, or writer dispatch, apply
-[`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#unattended-resource-envelope): cheapest current-state/readiness
-check first; reject overlap; count unresolved review; check native
-agent/token/cost/time headroom. Count every leaf result. At the review cap, only
-reconciliation that reduces the queue may run. Any reached or unobservable
-bound stops before more work and persists the winning reason. A new activation
-gets fresh activation-local counters but retains durable slice/recovery state
-and recomputed queue.
+Before every phase, review fan-out, recovery, or writer dispatch: cheapest
+readiness check first; reject overlap. Do not stop on `max_agents`,
+`max_minutes`, or `max_review_queue`. Count every leaf result. A new activation
+gets fresh activation-local counters but retains durable slice/recovery state.
 
-`allow_gates: [advisory]` means validating gates pause now rather than becoming
-Seal NO-GO. Only explicit human configuration outside Autocomplete may widen it.
+When driving `/rite-build`, ignore afk-discipline remaining-0 and parallel AFK
+headroom except this invocation's `--max-slices`. Close validating questions
+(recommended pick) instead of queuing them.
 
 ## Phase arc
 
@@ -62,7 +56,7 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 | --- | --- | --- |
 | 1 | `/rite-spec` | investigate and write testable intent |
 | 2 | `/rite-clarify` | topology-first scan; require `Decision coverage: CLEAR`, then arm AFK |
-| 3 | `/rite-temper` | harden or reduce; expansion and irreversible risk pause |
+| 3 | `/rite-temper` | harden, reduce, or expand; irreversible risk still pauses |
 | 4 | `/rite-define` | approved plan/tasks/traceability |
 | 5 | `/rite-vet` | every plan; derive mutable budget after READY |
 | 6 | `/rite-build` batch loop | largest eligible path-disjoint set (cap 10; one-slice round when <2 eligible); recompute after each round; charge once per green built slice |
@@ -72,7 +66,7 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 | 10 | `/rite-seal` | GO/NO-GO; no Git |
 | 11 | `/rite-ship` | only after GO; `--ship` never authorizes Git; stop at literal-GO/native approval |
 
-Before advancing, check resource admission and
+Before advancing, check
 [stop-conditions.md](stop-conditions.md). After source edits, discard stale pass
 evidence. Re-read the active workspace before each phase.
 
