@@ -39,7 +39,9 @@ cursor readers, traceability rules, and phase-relative completeness model, see
    through Seal GO and stops. Explicit `--ship` enters Ship preflight but still
    waits for a fresh literal `GO` and native approval before mutation. It
    chooses the recommended option at each soft gate and pauses for hard
-   irreversible-risk, blocking, or escalating gates, or a NO-GO. The
+   irreversible-risk, escalating, unanswered blocking with no recommended
+   option, or a remaining NO-GO. Open blocking questions that already name a
+   ranked recommended option auto-resolve; they are not a user handoff. The
    `devrites-` prefix prevents collisions with bundled Claude Code skill names
    such as `prototype`, `handoff`, `triage`, and `diagnose`; it does not mark
    visibility. `rite-pressure-test` needs no prefix because it does not collide.
@@ -336,9 +338,11 @@ workflow. It carries state through workspace files rather than chat. A vague
 prompt starts `devrites-interview`; `/rite-spec` and `/rite-clarify` then
 finish the only interactive window. After decision coverage is CLEAR it runs unattended,
 choosing the recommended option at each soft gate and recording the rationale
-in `decisions.md`. It does **not** weaken blocking/escalating or irreversible-risk
-gates: human-only access/actions, those gates, a NO-GO, or low confidence still
-pause. Temper expand, validating gates, and default slice/agent/time/review-queue
+in `decisions.md`. It does **not** weaken escalating or irreversible-risk
+gates: human-only access/actions, those gates, unanswered blocking with no
+recommended option, a remaining NO-GO, or low confidence still pause. Open
+blocking questions that already name a ranked recommended option auto-resolve
+through `devrites-engine state resolve`. Temper expand, validating gates, and default slice/agent/time/review-queue
 caps do not. `--max-slices` is ignored the same way. Agents use bounded recovery for red tests, runtime failures, and
 missing technical coverage. By default the workflow stops at Seal GO with `/rite-ship` as the next step.
 The `--ship` flag (alias `--yolo`) continues through Ship preflight, discloses

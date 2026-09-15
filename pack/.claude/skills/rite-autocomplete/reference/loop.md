@@ -44,8 +44,11 @@ readiness check first; reject overlap. Do not stop on `max_agents`,
 gets fresh activation-local counters but retains durable slice/recovery state.
 
 When driving `/rite-build`, ignore afk-discipline remaining-0, `--max-slices`,
-and parallel AFK headroom. Close validating questions
-(recommended pick) instead of queuing them.
+and parallel AFK headroom. Close validating questions and blocking questions
+that already name a ranked recommended option (recommended pick via
+`devrites-engine state resolve`) instead of queuing them or handing
+`/rite-resolve` to the user. Escalating, irreversible-risk, access, and
+blocking with no recommended option still pause.
 
 ## Phase arc
 
@@ -122,16 +125,19 @@ agent-owned earlier-phase gap:
 6. Restore and consume the original cursor when prerequisites are green.
 
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"loop tick sees Workflow Artifact trigger/state","action":"invoke classifier once under owner lock; no actor-history migration","return":"same loop cursor; no budget charge for verify/rerun"} -->
-Ask only for a human-owned decision or mandatory safety/access action. Three
-no-progress corrections of one exact fingerprint exhaust; preserve its
-reproduction and dead ends without another Plan/Vet command.
+Ask only for a human-owned decision or mandatory safety/access action. An open
+blocking question with `proposed` or option 1 labelled Recommended is not that
+decision: resolve it and continue. Three no-progress corrections of one exact
+fingerprint exhaust; preserve its reproduction and dead ends without another
+Plan/Vet command.
 
 ## Continuous caller obligation
 
 No user-facing reply is permitted while durable state contains agent-owned
-`NEEDS_REPLAN`, an intermediate Plan/Vet action, or a distinct retained
-Critical/Important fingerprint below its cap. Invoke the next internal repair
-immediately. A narrow reviewer closing one finding and exposing another
+`NEEDS_REPLAN`, an intermediate Plan/Vet action, a distinct retained
+Critical/Important fingerprint below its cap, or an open blocking question that
+already names a ranked recommended option. Invoke the next internal repair or
+`devrites-engine state resolve` immediately. A narrow reviewer closing one finding and exposing another
 Critical/Important invariant is progress, not exhaustion.
 
 The number of completed repair/Vet cycles is not a stop condition. Context

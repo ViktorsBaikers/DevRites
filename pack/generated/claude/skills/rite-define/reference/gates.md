@@ -127,6 +127,11 @@ list.
 `escalating` is never in `allow_gates`: specialist routing is not something AFK can
 shortcut.
 
+`/rite-autocomplete` does not add `blocking` to `allow_gates`. It auto-resolves
+open blocking questions that already name a recommended option via
+`devrites-engine state resolve`, then continues. That is an orchestrator
+exception, not an AFK ceiling change.
+
 ## Anti-patterns
 
 - **One gate for everything.** This puts all work behind one reviewer. Pick gates per slice.

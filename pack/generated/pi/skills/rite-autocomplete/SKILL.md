@@ -8,8 +8,10 @@ user-invocable: true
 # /rite-autocomplete: full lifecycle, unattended
 
 Run every phase after one clarification window. Irreversible-risk,
-blocking/escalating,<!-- pack-scan-ignore: negated statement: gates are NOT disabled -->
-and NO-GO still pause. Use the Standard native
+escalating,<!-- pack-scan-ignore: negated statement: gates are NOT disabled -->
+access, unanswered blocking with no recommended option, and remaining NO-GO
+still pause. Open blocking questions that already name a ranked recommended
+option auto-resolve; they are not a user handoff. Use the Standard native
 profile by default and Full for high-risk scope or explicit `--full`; see
 [`orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md).
 
@@ -102,8 +104,12 @@ executable controller/harness/bundle bytes or a missing writer, read
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:
    route agent-owned red results through bounded recovery.
    Red gates block forward advancement and enter caller-owned recovery. Stop on
-   hard risk, human-owned blocking/escalating/NO-GO, or the
-   exact fingerprint's proven exhaustion. Technical exhaustion records terminal
+   hard risk, escalating, irreversible-risk, access, blocking with no
+   recommended option, remaining NO-GO, or the exact fingerprint's proven
+   exhaustion. An open blocking question that already names a ranked recommended
+   option (`proposed` or option 1 labelled Recommended) auto-resolves through
+   `devrites-engine state resolve` and continues; do not emit `/rite-resolve` as
+   a user handoff. Technical exhaustion records terminal
    `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
 6. **Seal boundary.** Without a ship flag, stop at Seal GO with `/rite-ship` —
    unless `continue_sequence` is armed and sequence budget remains, in which case

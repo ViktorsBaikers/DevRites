@@ -348,8 +348,10 @@ for host in claude codex omp pi; do
     grep -q 'one-write AFK contract' \
       "$OUT/$host/skills/rite-autocomplete/SKILL.md" &&
     grep -q 'never rewrite it after' \
-      "$OUT/$host/skills/rite-autocomplete/reference/loop.md"; then
-    ok "$host autocomplete preserves flag and AFK-state hardening"
+      "$OUT/$host/skills/rite-autocomplete/reference/loop.md" &&
+    grep -q 'Blocking with a ranked recommended' \
+      "$OUT/$host/skills/rite-autocomplete/reference/stop-conditions.md"; then
+    ok "$host autocomplete preserves flag, AFK-state, and recommended-option blocking resolve"
   else
     no "$host autocomplete lost flag or AFK-state hardening"
   fi

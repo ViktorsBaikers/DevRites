@@ -384,8 +384,8 @@ You: GO                        # → commit, optional approved push/tag/PR, then
 
 Add `--ship` (alias `--yolo`) to continue through `/rite-ship` preflight.
 Autocomplete discloses the exact Git plan, then still stops for a fresh literal
-`GO` and native host approval. It also pauses for irreversible risk, human-only access/actions, blocking or
-escalating gates, a NO-GO, or low confidence — not for temper expand, validating
+`GO` and native host approval. It also pauses for irreversible risk, human-only access/actions, escalating
+gates, unanswered blocking with no recommended option, a remaining NO-GO, or low confidence — not for recommended-option blocking questions, temper expand, validating
 gates, `--max-slices`, or default slice/agent/time/review-queue caps.
 Objective red checks use bounded recovery instead. Args:
 `[idea] [--ship|--yolo] [--max-slices N] [--full] [--cross-model]`.
