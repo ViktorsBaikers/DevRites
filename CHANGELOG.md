@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.10.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.9.0...v5.10.0) (2026-09-15)
+
+### Added
+
+* **agents:** allowlist lean-ctx and lens tools on omp agents ([#76](https://github.com/ViktorsBaikers/DevRites/issues/76)) ([6b1855f](https://github.com/ViktorsBaikers/DevRites/commit/6b1855f5d3dce4f693af6e4876849e6ef9723233))
+
 ## [5.9.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.8.0...v5.9.0) (2026-09-15)
 
 ### Added
