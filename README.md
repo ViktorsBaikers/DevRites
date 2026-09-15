@@ -252,7 +252,10 @@ ignored and never rewritten. Delete `.devrites/AFK` to
 return to HITL.
 
 AFK still pauses for product, scope, or policy choices, irreversible risk,
-and access or actions available only to a human. Agents use bounded recovery
+and access or actions available only to a human. `/rite-autocomplete` is the
+exception that auto-resolves blocking questions already naming a ranked
+recommended option; escalating, irreversible-risk, access, and blocking with
+no recommended option still pause. Agents use bounded recovery
 for red tests, type or lint errors, runtime failures, and missing technical
 coverage. If that recovery budget runs out, they record a technical blocker
 instead of asking a question. The full pause and gate contract is in

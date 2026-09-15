@@ -86,8 +86,11 @@ Pull these via `Read` when shaping the resolve:
    recommend `$rite-plan repair`. Otherwise → recommend the slice's natural next action
    (typically `$rite-build` for the slice that was awaiting).
    **Completion:** the resolved state contains exactly one next command.
-6. **STOP.** This skill does not run `$rite-build` itself: the user re-enters the
-   workflow explicitly.
+6. **STOP.** User-invoked `$rite-resolve` does not run `$rite-build` itself: the
+   user re-enters the workflow explicitly. A controlling `$rite-autocomplete`
+   caller invokes the same `devrites-engine state resolve` writer internally and
+   continues; it must not emit this skill as a user handoff for a question that
+   already names a ranked recommended option.
 
 > **Mid-flight discipline.** Don't edit `spec.md` / `plan.md` to "incorporate" the
 > answer. That's `$rite-plan repair`. Don't silently retry a build after the answer

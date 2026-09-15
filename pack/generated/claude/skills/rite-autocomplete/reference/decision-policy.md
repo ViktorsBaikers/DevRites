@@ -36,5 +36,8 @@ not pick the option that's merely easiest to implement.
 
 ## When a choice is NOT autocomplete's to make
 
-Human-owned blocking/escalating, irreversible-risk, and access stay human.
-Recommended temper `expand` auto-applies; do not invent product intent.
+Irreversible-risk, escalating, access, and blocking questions with no ranked
+recommended option stay human. A blocking question that already names option 1
+`(Recommended)` or `proposed:` is autocomplete's to resolve: pick that option
+via `devrites-engine state resolve` and continue. Recommended temper `expand`
+auto-applies; do not invent product intent.

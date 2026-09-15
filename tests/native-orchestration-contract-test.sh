@@ -90,6 +90,8 @@ for text, required in (
         "do not stop on `--max-slices`",
         "pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count",
         "Zero with no pending slices is normal completion",
+        "Blocking with a ranked recommended",
+        "escalating always stops",
     )),
     (schema.read_text(), (
         "IDs are append-only identities",

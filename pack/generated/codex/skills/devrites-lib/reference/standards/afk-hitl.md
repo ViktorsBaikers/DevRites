@@ -166,7 +166,18 @@ for the full taxonomy. Summary:
 | blocking | high | sync | 15m | **no** (always pauses) |
 | escalating | novel pattern | sync to specialist | 24h | **no** (always pauses) |
 
-`blocking` and `escalating` always pause regardless of `allow_gates`.
+`blocking` and `escalating` always pause for HITL and for AFK `$rite-build`,
+regardless of `allow_gates`.
+
+**Autocomplete exception.** While `$rite-autocomplete` is the controlling
+caller, an open `gate: blocking` question that already carries a ranked
+recommended option (`proposed:` or option 1 labelled `(Recommended)`) is not a
+user handoff: the orchestrator auto-picks that option through
+`devrites-engine state resolve` and continues, including internal Spec Drift
+Guard when the answer changes ownership or acceptance. Escalating,
+irreversible-risk, access, and blocking questions with no recommended option
+still pause. Putting `blocking` in `allow_gates` does not replace this resolve
+step: an unanswered blocking question still fails Seal.
 
 An open `gate: validating` entry is **merge-blocking by definition**: at `$rite-seal` any
 `questions.md` entry with `gate: validating` and `status: open` is a NO-GO, regardless of

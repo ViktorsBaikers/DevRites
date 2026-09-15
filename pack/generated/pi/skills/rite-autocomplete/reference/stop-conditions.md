@@ -59,14 +59,21 @@ exhausted.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"classifier returns owner-busy, exhausted, or existing hard gate","action":"stop on exact WAIT_ACTIVE_OWNER, BLOCKED_EXHAUSTED, or BLOCKED_GATE result","return":"unchanged cursor plus fixed route-owned output"} -->
 ## Other stop classes
 
-- **Gate severity:** blocking or escalating gate. Validating: auto-pick the
-  recommended option, close the question, continue.
+- **Gate severity:** escalating always stops. Blocking with a ranked recommended
+  option (`proposed` or option 1 labelled Recommended): auto-pick via
+  `devrites-engine state resolve`, then continue internally (including Spec Drift
+  Guard when the answer changes ownership or acceptance). Blocking with no
+  recommended option still stops. Validating: auto-pick the recommended option,
+  close the question, continue.
 - **Temper:** `expand` and extra acceptance auto-apply (record + Drift Guard).
   Irreversible-risk still pauses. `hold-rigor`, `reduce-to-MVP`, and a skip do not pause.
 - **Clarify:** material Partial/Missing/unowned decision coverage or a
   low-confidence high-consequence assumption. Continue the initial interview;
   never arm AFK early.
-- **Seal:** NO-GO, with every blocker and fix direction. Never round up to GO.
+- **Seal:** remaining NO-GO after recommended-option questions are closed, with
+  every remaining blocker and fix direction. Never round up to GO. An open
+  recommended-option blocking question is not a Seal stop: resolve it, recover
+  agent-owned findings, then re-enter Seal.
 - **Reslice:** execute its marked action before deciding continue/stop.
 - **Slice budget:** do not stop on `--max-slices`. Leftover
   pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count
