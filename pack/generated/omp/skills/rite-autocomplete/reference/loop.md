@@ -17,18 +17,22 @@ allow_gates: [advisory, validating]
 # max_slices / max_agents / max_minutes / max_review_queue omitted: unlimited
 # continue_sequence: true          # opt-in: chain recorded continuations after Seal GO
 # max_workspaces: 5                # sequence budget when chaining
-# max_parallel: 10                 # Build batch cap; 1 = serial (default: eligible, cap 10)
+# max_parallel: 10                 # default cap when this invocation omits `--parallel N`; `--parallel N` wins and rewrites only this field
 # max_tokens: <N>
 # max_cost_usd: <amount>
 # notify: "<cmd>"
 ```
 
-Read an existing sentinel first. Preserve it byte-for-byte when valid; stop if
+Read an existing sentinel first. Preserve it byte-for-byte when valid, except
+when this invocation contains `--parallel N`: then write or replace only
+`max_parallel: N` and leave every other key unchanged. Stop if the sentinel is
 malformed. Do not stop because it names `max_slices` / `max_agents` /
 `max_minutes` / `max_review_queue` or only `[advisory]`. If absent, write it
-once after clarity. Never write `max_slices` from `--max-slices`.
-It is read-only: never rewrite it after Vet or reset it on resume. Leftover
-`expires_at` is ignored and never rewritten.
+once after clarity, and include `max_parallel: N` when that flag is present.
+Never write `max_slices` from `--max-slices`. It is otherwise read-only: never
+rewrite it after Vet or reset it on resume. Leftover `expires_at` is ignored
+and never rewritten. **Failing case:** leftover `max_parallel: 1` keeps the run
+serial after `--parallel 5`.
 
 ### Derive the mutable post-vet budget
 
@@ -44,7 +48,9 @@ readiness check first; reject overlap. Do not stop on `max_agents`,
 gets fresh activation-local counters but retains durable slice/recovery state.
 
 When driving `/rite-build`, ignore afk-discipline remaining-0, `--max-slices`,
-and parallel AFK headroom. Close validating questions and blocking questions
+and parallel AFK headroom as stop conditions. Pass this invocation's
+`--parallel N` into `/rite-build` when present; leftover sentinel
+`max_parallel` is then not the cap. Close validating questions and blocking questions
 that already name a ranked recommended option (recommended pick via
 `devrites-engine state resolve`) instead of queuing them or handing
 `/rite-resolve` to the user. Escalating, irreversible-risk, access, and
@@ -61,7 +67,7 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 | 3 | `/rite-temper` | harden, reduce, or expand; irreversible risk still pauses |
 | 4 | `/rite-define` | approved plan/tasks/traceability |
 | 5 | `/rite-vet` | every plan; derive mutable budget after READY |
-| 6 | `/rite-build` batch loop | largest eligible path-disjoint set (cap 10; one-slice round when <2 eligible); recompute after each round; charge once per green built slice |
+| 6 | `/rite-build` batch loop | largest eligible path-disjoint set (cap: this invocation's `--parallel N`, else sentinel `max_parallel`, else 10; one-slice round when <2 eligible); recompute after each round; charge once per green built slice |
 | 7 | `/rite-prove` | all slices built; approved proof; recovery on red |
 | 8 | `/rite-polish` | re-prove after code edits |
 | 9 | `/rite-review` | in-scope correction then fresh proof |

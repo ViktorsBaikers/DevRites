@@ -14,7 +14,7 @@ Spec: ./spec.md   Decision coverage: ./decision-coverage.md   Date: <date>
 - Language/runtime/version: <...>
 - Frameworks/libraries: <...>
 - Storage/data: <...>
-- Test commands: <discovered runner commands; discovery contract: rite-prove/reference/test-command-discovery.md>
+- Test commands: <discovered runner commands; discovery contract: .omp/skills/rite-prove/reference/test-command-discovery.md>
 - Target/platform/constraints: <...>
 - Approach-affecting product/constraint unknowns route to `/rite-clarify`;
   `[NEEDS CLARIFICATION]` blocks approval.

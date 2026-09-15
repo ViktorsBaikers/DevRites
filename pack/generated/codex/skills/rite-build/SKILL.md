@@ -64,7 +64,9 @@ filled, and recomputes after every completed round (serial slice or parallel
 integrate) until no pending slice remains
 ([`parallel-batch.md` § Dynamic selection](reference/parallel-batch.md#dynamic-selection-and-re-batching)).
 Unattended runs (`$rite-autocomplete`, `.devrites/AFK` `max_parallel`) repeat batches
-inside the same run; HITL stops after each batch. Non-integer/`N≤0`/`N>10` hard refuse.
+inside the same run; HITL stops after each batch. This invocation's `--parallel N`
+is the cap: leftover sentinel `max_parallel` is not consulted. Autocomplete with
+that flag also writes or replaces only `max_parallel: N`. Non-integer/`N≤0`/`N>10` hard refuse.
 All-green (independent review + proof) then integrate as one local `WIP(<slug>):`
 commit per sibling onto the current control branch (never pushed). Do not
 integrate a sibling because the wright returned. A red/gap sibling gets a bounded repair

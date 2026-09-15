@@ -37,13 +37,13 @@ func runPathDisjoint(args []string, stdin io.Reader, stdout, stderr io.Writer) i
 		switch args[i] {
 		case "--root":
 			if i+1 >= len(args) {
-				fmt.Fprintln(stderr, "usage: check path-disjoint [--root <dir>] [<json-file>|-]")
+				fmt.Fprintln(stderr, usagePathDisjoint)
 				return ExitUsage
 			}
 			i++
 			root = args[i]
-		case "-h", "--help":
-			fmt.Fprintln(stdout, "usage: check path-disjoint [--root <dir>] [<json-file>|-]")
+		case "-h", "-help", "--help":
+			fmt.Fprintln(stdout, usagePathDisjoint)
 			return ExitOK
 		default:
 			if args[i] != "-" && strings.HasPrefix(args[i], "-") {
@@ -73,7 +73,6 @@ func runPathDisjoint(args []string, stdin io.Reader, stdout, stderr io.Writer) i
 }
 
 func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	const usage = "usage: parallel select --cap <1-10> [--root <dir>] [<json-file>|-]"
 	root := ""
 	jsonPath := "-"
 	capN := 0
@@ -82,14 +81,14 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		switch args[i] {
 		case "--root":
 			if i+1 >= len(args) {
-				fmt.Fprintln(stderr, usage)
+				fmt.Fprintln(stderr, usageSelect)
 				return ExitUsage
 			}
 			i++
 			root = args[i]
 		case "--cap":
 			if i+1 >= len(args) {
-				fmt.Fprintln(stderr, usage)
+				fmt.Fprintln(stderr, usageSelect)
 				return ExitUsage
 			}
 			i++
@@ -100,8 +99,8 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 			}
 			capN = n
 			sawCap = true
-		case "-h", "--help":
-			fmt.Fprintln(stdout, usage)
+		case "-h", "-help", "--help":
+			fmt.Fprintln(stdout, usageSelect)
 			return ExitOK
 		default:
 			if args[i] != "-" && strings.HasPrefix(args[i], "-") {
@@ -112,7 +111,7 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		}
 	}
 	if !sawCap {
-		fmt.Fprintln(stderr, usage)
+		fmt.Fprintln(stderr, usageSelect)
 		return ExitUsage
 	}
 	data, err := readJSONInput(jsonPath, stdin)
@@ -166,7 +165,7 @@ func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runPathDisjoint(rest, stdin, stdout, stderr)
 	case "select":
 		return cmdSelect(rest, stdin, stdout, stderr)
-	case "-h", "--help", "help":
+	case "-h", "-help", "--help", "help":
 		fmt.Fprintln(stdout, parallelUsage())
 		return ExitOK
 	default:
@@ -174,6 +173,20 @@ func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return ExitUsage
 	}
 }
+
+const (
+	usageCreate       = "usage: parallel create --root --slug --batch --base --json"
+	usageRecordGreen  = "usage: parallel record-green --root --slug --slice --commit"
+	usageAbort        = "usage: parallel abort --root --slug"
+	usageIntegrate    = "usage: parallel integrate --root --slug [--apply-to-control]"
+	usageCleanup      = "usage: parallel cleanup --root --slug [--force]"
+	usageStatus       = "usage: parallel status --root --slug"
+	usageLeaseWrite   = "usage: parallel lease-write --root --slug --json"
+	usageLeaseRead    = "usage: parallel lease-read --root --slug [--field name]"
+	usageLeaseClear   = "usage: parallel lease-clear --root --slug"
+	usagePathDisjoint = "usage: check path-disjoint [--root <dir>] [<json-file>|-]"
+	usageSelect       = "usage: parallel select --cap <1-10> [--root <dir>] [<json-file>|-]"
+)
 
 func parallelUsage() string {
 	return strings.TrimSpace(`usage: parallel <subcommand> [options]
@@ -194,9 +207,40 @@ Subcommands:
 Exit codes: 0 ok, 2 usage, 3 blocked`)
 }
 
+// CommandUsage is the usage text for `parallel <name>`. An empty or unknown
+// name returns the family usage.
+func CommandUsage(name string) string {
+	switch name {
+	case "create":
+		return usageCreate
+	case "record-green":
+		return usageRecordGreen
+	case "abort":
+		return usageAbort
+	case "integrate":
+		return usageIntegrate
+	case "cleanup":
+		return usageCleanup
+	case "status":
+		return usageStatus
+	case "lease-write", "write-lease":
+		return usageLeaseWrite
+	case "lease-read", "read-lease":
+		return usageLeaseRead
+	case "lease-clear", "clear-lease":
+		return usageLeaseClear
+	case "check-disjoint", "path-disjoint":
+		return usagePathDisjoint
+	case "select":
+		return usageSelect
+	default:
+		return parallelUsage()
+	}
+}
+
 type flagSet struct {
 	Root, Slug, Batch, Base, Slice, Commit, JSON, Field, Session string
-	ApplyToControl, Force                                        bool
+	ApplyToControl, Force, Help                                  bool
 }
 
 func parseFlags(args []string, stderr io.Writer) (flagSet, []string, int) {
@@ -271,6 +315,8 @@ func parseFlags(args []string, stderr io.Writer) (flagSet, []string, int) {
 			f.ApplyToControl = true
 		case "--force":
 			f.Force = true
+		case "-h", "-help", "--help":
+			f.Help = true
 		default:
 			// No parallel subcommand takes positional args; anything
 			// unrecognized (typo'd flag, stray word) is a usage error, not
@@ -281,6 +327,18 @@ func parseFlags(args []string, stderr io.Writer) (flagSet, []string, int) {
 		i++
 	}
 	return f, nil, ExitOK
+}
+
+func parseFlagsOrHelp(args []string, stdout, stderr io.Writer, usage string) (flagSet, int, bool) {
+	f, _, code := parseFlags(args, stderr)
+	if code != ExitOK {
+		return f, code, true
+	}
+	if f.Help {
+		fmt.Fprintln(stdout, usage)
+		return f, ExitOK, true
+	}
+	return f, ExitOK, false
 }
 
 func requireRootSlug(f flagSet, stderr io.Writer) int {
@@ -303,8 +361,8 @@ func readJSONInput(path string, stdin io.Reader) ([]byte, error) {
 }
 
 func cmdCreate(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	f, _, code := parseFlags(args, stderr)
-	if code != ExitOK {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageCreate)
+	if done {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
@@ -314,7 +372,7 @@ func cmdCreate(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return code
 	}
 	if f.Batch == "" || f.Base == "" || f.JSON == "" {
-		fmt.Fprintln(stderr, "usage: parallel create --root --slug --batch --base --json")
+		fmt.Fprintln(stderr, usageCreate)
 		return ExitUsage
 	}
 	data, err := readJSONInput(f.JSON, stdin)
@@ -359,8 +417,8 @@ func rejectUnsupportedFlags(f flagSet, stderr io.Writer, force, applyToControl b
 }
 
 func cmdRecordGreen(args []string, stdout, stderr io.Writer) int {
-	f, _, code := parseFlags(args, stderr)
-	if code != ExitOK {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageRecordGreen)
+	if done {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
@@ -370,7 +428,7 @@ func cmdRecordGreen(args []string, stdout, stderr io.Writer) int {
 		return code
 	}
 	if f.Slice == "" || f.Commit == "" {
-		fmt.Fprintln(stderr, "usage: parallel record-green --root --slug --slice --commit")
+		fmt.Fprintln(stderr, usageRecordGreen)
 		return ExitUsage
 	}
 	lease, err := RecordGreen(f.Root, f.Slug, f.Slice, f.Commit)
@@ -383,8 +441,8 @@ func cmdRecordGreen(args []string, stdout, stderr io.Writer) int {
 }
 
 func cmdAbort(args []string, stdout, stderr io.Writer) int {
-	f, _, code := parseFlags(args, stderr)
-	if code != ExitOK {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageAbort)
+	if done {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
@@ -403,8 +461,8 @@ func cmdAbort(args []string, stdout, stderr io.Writer) int {
 }
 
 func cmdIntegrate(args []string, stdout, stderr io.Writer) int {
-	f, _, code := parseFlags(args, stderr)
-	if code != ExitOK {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageIntegrate)
+	if done {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
@@ -427,8 +485,8 @@ func cmdIntegrate(args []string, stdout, stderr io.Writer) int {
 }
 
 func cmdCleanup(args []string, stdout, stderr io.Writer) int {
-	f, _, code := parseFlags(args, stderr)
-	if code != ExitOK {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageCleanup)
+	if done {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
@@ -454,8 +512,8 @@ func cmdCleanup(args []string, stdout, stderr io.Writer) int {
 }
 
 func cmdStatus(args []string, stdout, stderr io.Writer) int {
-	f, _, code := parseFlags(args, stderr)
-	if code != ExitOK {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageStatus)
+	if done {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
@@ -474,15 +532,15 @@ func cmdStatus(args []string, stdout, stderr io.Writer) int {
 }
 
 func cmdLeaseWrite(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	f, _, code := parseFlags(args, stderr)
-	if code != ExitOK {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageLeaseWrite)
+	if done {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
 		return code
 	}
 	if f.JSON == "" {
-		fmt.Fprintln(stderr, "usage: parallel lease-write --root --slug --json")
+		fmt.Fprintln(stderr, usageLeaseWrite)
 		return ExitUsage
 	}
 	data, err := readJSONInput(f.JSON, stdin)
@@ -516,8 +574,8 @@ func cmdLeaseWrite(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 }
 
 func cmdLeaseRead(args []string, stdout, stderr io.Writer) int {
-	f, _, code := parseFlags(args, stderr)
-	if code != ExitOK {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageLeaseRead)
+	if done {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {
@@ -567,8 +625,8 @@ func cmdLeaseRead(args []string, stdout, stderr io.Writer) int {
 }
 
 func cmdLeaseClear(args []string, stdout, stderr io.Writer) int {
-	f, _, code := parseFlags(args, stderr)
-	if code != ExitOK {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageLeaseClear)
+	if done {
 		return code
 	}
 	if code := requireRootSlug(f, stderr); code != ExitOK {

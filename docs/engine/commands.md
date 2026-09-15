@@ -27,11 +27,13 @@ workflow strategy.
 | `open-visual <path-or-name> [--slug <slug>] [--no-open]` | Resolve a local visual HTML file, optionally open it in the OS browser, warn if the sibling outline is missing or inventory ids are absent from HTML, and print agent path tips. No network. |
 | `version` | Print the engine version. |
 
-`help`, `-h`, and `--help` print this operational inventory. `version` and
-`--version` print the binary version. Other unlisted command forms are rejected
-as unknown; the engine has no compatibility aliases or tombstones. The
-`add`/`upgrade`/`remove` conveniences belong only to the `npx devrites` adapter,
-not to the engine command namespace.
+`help`, `-h`, and `--help` print this operational inventory. Each operational
+command and subcommand also accepts `-h` / `--help` and prints that command's
+usage to stdout without requiring a workspace. `version` and `--version` print
+the binary version. Other unlisted command forms are rejected as unknown; the
+engine has no compatibility aliases or tombstones. The `add`/`upgrade`/`remove`
+conveniences belong only to the `npx devrites` adapter, not to the engine
+command namespace.
 
 ## Check boundary
 

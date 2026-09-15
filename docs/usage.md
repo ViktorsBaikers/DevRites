@@ -413,7 +413,9 @@ remaining from the pending-slice count and ignores leftover remaining and
 - **`.devrites/AFK` is per-developer, not per-repo**: gitignore it (or commit
   it deliberately if the team agrees on AFK defaults). The sentinel is
   read-only config: it toggles your local session mode and sets the initial
-  `max_slices` budget; nothing else. The mutable remaining-slice count lives
+  `max_slices` budget. `/rite-autocomplete --parallel N` is the one exception:
+  it writes or replaces only `max_parallel: N` so a leftover `1` cannot keep
+  later ticks serial. The mutable remaining-slice count lives
   in `state.md` (`AFK slices remaining`), never in the sentinel. The root
   charges it once with each green pending → built transition and stops before
   another dispatch at zero; malformed values fail closed.

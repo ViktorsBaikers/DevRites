@@ -56,14 +56,14 @@ max_minutes: 120                     # wall-clock minutes in one host activation
 max_review_queue: 8                  # unresolved review/gate items admitted before fan-out stops
 # max_tokens: 200000                 # optional stricter host-observed token cap
 # max_cost_usd: 10                   # optional stricter host-observed cost cap
-notify: "ntfy.sh/my-topic"           # shell command; examples: rite-build/reference/afk-discipline.md
+notify: "ntfy.sh/my-topic"           # shell command; examples: .agents/skills/rite-build/reference/afk-discipline.md
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
 continue_sequence: true              # after Seal GO, open the next recorded continuation
 max_workspaces: 5                    # workspaces one armed sequence may open
-max_parallel: 10                     # cap on eligible path-disjoint Build batches (1 = serial)
+max_parallel: 10                     # unattended default cap; `--parallel N` on this invocation wins and may rewrite only this field
 ```
 
-The file is **read-only config**: never rewritten in place. `max_slices` is the initial
+The file is **read-only config**: never rewritten in place, except `$rite-autocomplete --parallel N` writes or replaces only `max_parallel: N`. `max_slices` is the initial
 budget; the mutable remaining count is the `state.md` cursor
 `afk_slices_remaining` (`AFK slices remaining: <n>` in the released bullet
 form), owned by the controlling root. Recognize either spelling and preserve
@@ -119,11 +119,18 @@ candidate manifest to cover the whole recorded chain — run
 - Every human-owned, safety, access, exhaustion, and `NO-GO` condition still stops the
   run exactly as without this field.
 
-`max_parallel` caps a Build batch for unattended runs; `1` forces the serial cycle.
-Unattended runs take the largest eligible set ≤ cap and recompute after every completed
-round (serial slice or parallel integrate)
-([parallel-batch.md § Dynamic selection and re-batching](../../../rite-build/reference/parallel-batch.md#dynamic-selection-and-re-batching));
-an explicit `$rite-build --parallel N` cap wins for that invocation.
+`max_parallel` is the unattended default batch cap only when this invocation does
+not contain `--parallel N`; `1` forces the serial cycle only in that default
+case. An exact `--parallel N` on `$rite-autocomplete` or `$rite-build` is the
+batch cap for this run: do not consult leftover sentinel `max_parallel`, and do
+not treat `max_parallel: 1` as serial. `$rite-autocomplete --parallel N` writes
+or replaces only that field so later ticks keep the cap; `$rite-build --parallel N`
+wins for that invocation without rewriting the sentinel. Never write `max_slices`
+from `--max-slices`. **Failing case:** `$rite-autocomplete --parallel 5` honors a
+leftover `max_parallel: 1` and stays serial.
+Unattended runs take the largest eligible set ≤ that cap and recompute after
+every completed round (serial slice or parallel integrate)
+([parallel-batch.md § Dynamic selection and re-batching](../../../rite-build/reference/parallel-batch.md#dynamic-selection-and-re-batching)).
 
 ## Unattended resource envelope
 

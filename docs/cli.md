@@ -8,7 +8,10 @@ cross-host primitives; it never dispatches an agent or grades reviewer prose.
 ## Command surface
 
 `devrites-engine help` lists the exhaustive operational surface. Standard
-`help`, `-h`, `--help`, `version`, and `--version` forms also remain supported:
+`help`, `-h`, `--help`, `version`, and `--version` forms also remain supported.
+Each operational command and subcommand accepts `-h` / `--help` and prints that
+command's usage to stdout (exit 0) without requiring a workspace. Missing
+required arguments still print usage to stderr and exit 2.
 
 ```text
 devrites-engine install [flags]

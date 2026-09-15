@@ -3,7 +3,7 @@
 
 Catches the maintenance-drift class the skills audit surfaced: a SKILL.md or
 reference file pointing at another file that has moved, been renamed, or never
-existed. Three checks, tuned for near-zero false positives:
+existed. Four checks, tuned for near-zero false positives:
 
   1. Markdown links to local .md targets : `](path.md)` resolved relative to the
      containing file; the target must exist.
@@ -14,6 +14,10 @@ existed. Three checks, tuned for near-zero false positives:
      not enough (PI/hosts otherwise open ``<skill>/reference/<name>.md``).
   3. "canonical version: `path`" claims   : the named path (relative to the skills
      root) must exist. Catches a file disclaiming itself secondary to a missing one.
+  4. Unquoted ``skill/reference/*.md`` tokens : hosts join those onto the current
+     skill (``devrites-lib/reference/afk-discipline.md``). Require
+     ``.claude/skills/<skill>/...`` or a relative markdown link. Skip HTML
+     comments, backticks, markdown link targets, and paths after ``/``.
 
 Scans pack/.claude/. Exit 1 on any dead reference. Read-only.
 """
@@ -75,22 +79,16 @@ ALLOW_PATH_PREFIXES = (
 
 def resolve(here, link):
     """Resolve a link. Host-rooted install paths are mapped to the canonical pack
-    tree in this repo; everything else is relative to the containing file."""
-    # Codex/omp/pi install mirrors are generated from pack/.claude/.
-    for prefix, pack_prefix in (
-        (".claude/", "pack/.claude/"),
-        (".agents/", "pack/.claude/"),  # Codex skills/agents live under .agents at install
-        (".omp/", "pack/.claude/"),
-        (".pi/", "pack/.claude/"),
-    ):
+    tree in this repo; everything else is relative to the containing file.
+
+    Never join ``pack/`` + ``.agents/...`` (that resolves to a missing
+    ``pack/.agents`` tree). Codex's ``.agents/skills`` and ``.agents/agents``
+    mirrors are generated from ``pack/.claude/``.
+    """
+    for prefix in (".claude/", ".agents/", ".omp/", ".pi/"):
         if link.startswith(prefix):
             rest = link[len(prefix):]
-            # .agents/skills/... and .claude/skills/... share the same source tree.
-            if prefix == ".agents/" and rest.startswith("skills/"):
-                return os.path.normpath(os.path.join(REPO_ROOT, "pack/.claude", rest))
-            if prefix == ".agents/" and rest.startswith("agents/"):
-                return os.path.normpath(os.path.join(REPO_ROOT, "pack/.claude", rest))
-            return os.path.normpath(os.path.join(REPO_ROOT, pack_prefix + rest))
+            return os.path.normpath(os.path.join(REPO_ROOT, "pack", ".claude", rest))
     if link.startswith("docs/"):
         return os.path.normpath(os.path.join(REPO_ROOT, link))
     return os.path.normpath(os.path.join(here, link))
@@ -121,9 +119,15 @@ def naive_local_candidates(path, base):
     return cands
 
 
+if not os.path.isdir(ROOT):
+    print(f"check-cross-refs: missing {ROOT} (pass --root <repository>)")
+    sys.exit(1)
+
+SKIP_WALK_DIRS = {".git", ".worktrees", "node_modules", ".impeccable"}
 md_files = []
 all_basenames = set()
-for base, _dirs, files in os.walk(ROOT):
+for base, dirs, files in os.walk(ROOT):
+    dirs[:] = [d for d in dirs if d not in SKIP_WALK_DIRS]
     for f in files:
         if f.endswith(".md"):
             p = os.path.join(base, f)
@@ -134,6 +138,16 @@ LINK_RE = re.compile(r"\]\(([^)]+)\)")
 BACKTICK_MD_RE = re.compile(r"`([A-Za-z0-9._/\-]+\.md)(?:#[^`]*)?`")
 SEE_RE = re.compile(r"\(see\s+`?([A-Za-z0-9._/\-]+\.md)`?[^)]*\)")
 CANONICAL_RE = re.compile(r"[Cc]anonical version:\s*`?\s*`?([A-Za-z0-9._/\-]+\.md)`")
+UNQUOTED_SKILL_PATH_RE = re.compile(
+    r"(?:rite|devrites)-[a-z0-9-]+/(?:reference|standards)/[A-Za-z0-9_./-]+\.md"
+)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+HOST_SKILL_PREFIXES = (
+    ".claude/skills/",
+    ".agents/skills/",
+    ".pi/skills/",
+    ".omp/skills/",
+)
 
 errors = []
 
@@ -217,6 +231,40 @@ for path in md_files:
         resolved = os.path.normpath(os.path.join(SKILLS_ROOT, claim))
         if not os.path.isfile(resolved):
             errors.append(f"{path}: 'canonical version' -> {claim} (resolved {resolved}) does not exist")
+
+    # 4. Unquoted skill/reference paths are join-hazards: hosts attach the token
+    #    to the current skill instead of the named skill tree.
+    comment_spans = [(m.start(), m.end()) for m in HTML_COMMENT_RE.finditer(text)]
+    link_spans = [(m.start(), m.end()) for m in LINK_RE.finditer(text)]
+    for m in UNQUOTED_SKILL_PATH_RE.finditer(text):
+        start, end = m.start(), m.end()
+        if any(a <= start < b for a, b in comment_spans):
+            continue
+        if any(a <= start < b for a, b in link_spans):
+            continue
+        if start >= 2 and text[start - 2:start] == "](":
+            continue
+        if start > 0 and text[start - 1] in "`/<":
+            continue
+        if end < len(text) and text[end] == "`":
+            continue
+        if any(text[:start].endswith(prefix) for prefix in HOST_SKILL_PREFIXES):
+            continue
+        tok = m.group(0)
+        local = os.path.normpath(os.path.join(here, tok))
+        if os.path.isfile(local):
+            continue
+        skills = os.path.normpath(os.path.join(SKILLS_ROOT, tok))
+        if os.path.isfile(skills):
+            errors.append(
+                f"{path}: unquoted `{tok}` is a join-hazard; hosts attach it to "
+                f"the current skill. Use `.claude/skills/{tok}` or a relative "
+                f"markdown link"
+            )
+        else:
+            errors.append(
+                f"{path}: unquoted `{tok}` does not exist at the skills root"
+            )
 
 if errors:
     print(f"check-cross-refs: {len(errors)} dead reference(s):\n")

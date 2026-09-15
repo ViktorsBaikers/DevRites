@@ -49,7 +49,8 @@ The Go surface is intentionally closed and deterministic:
 
 `devrites-engine help` exhaustively lists the operational engine commands.
 Standard `help`, `-h`, `--help`, `version`, and `--version` forms remain
-available; there are no legacy operational aliases. `check candidate <slug>`
+available; each operational command and subcommand also accepts `-h` / `--help`.
+There are no legacy operational aliases. `check candidate <slug>`
 prints exactly
 `candidate-sha256: <64 lowercase hex>` and `candidate-files: <row count>` on a
 pass; usage/root errors exit `2` and candidate blocks exit `3`. There are no
