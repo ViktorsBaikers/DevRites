@@ -34,9 +34,9 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
-          # Shallow tip is enough; ci-change-scope.sh fetches origin/<base>
-          # with --depth=1 when it needs the merge-base file list.
-          fetch-depth: 1
+          # Full history: origin/<base>...HEAD needs a merge-base. Depth 1
+          # drops it on multi-commit PRs and then skips engine jobs.
+          fetch-depth: 0
           persist-credentials: false
       - id: scope
         run: bash scripts/ci-change-scope.sh

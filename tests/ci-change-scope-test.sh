@@ -49,6 +49,21 @@ expect $'pack/.claude/skills/rite-build/SKILL.md' run_engine false
 expect $'.github/workflows/ci.yml' run_tests true
 expect $'engine/main.go\n.github/workflows/ci.yml' run_tests true
 
+# Uncomputable PR file list keeps the full matrix. Missing merge-base used
+# to look like "no engine files" and skip gosec until after merge to main.
+: >"$OUTPUT"
+GITHUB_OUTPUT="$OUTPUT" GITHUB_EVENT_NAME=pull_request GITHUB_BASE_REF=no-such-base \
+  env -u DEVRITES_CI_CHANGED_PATHS bash "$SH" || no "script failed when the PR file list is unknown"
+out="$(cat "$OUTPUT")"
+printf '%s\n' "$out" | grep -qx 'run_engine=true' && ok "unknown PR file list keeps run_engine=true" || {
+  no "unknown PR file list should keep run_engine=true; got:"
+  printf '%s\n' "$out"
+}
+printf '%s\n' "$out" | grep -qx 'run_full=true' && ok "unknown PR file list keeps run_full=true" || {
+  no "unknown PR file list should keep run_full=true; got:"
+  printf '%s\n' "$out"
+}
+
 echo ""
 [ "$fail" -eq 0 ] && echo "ci-change-scope-test: PASS" || echo "ci-change-scope-test: FAIL"
 exit "$fail"

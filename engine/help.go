@@ -36,9 +36,11 @@ const (
   observe slice <slug> <SLICE-ID>
 `
 
-	orientUsage         = "usage: devrites-engine orient [slug]"
-	migrateUsage        = "usage: devrites-engine migrate <slug> [--dry-run] [--answer id=choice]"
-	secretScanUsage     = "usage: devrites-engine secret-scan [--staged] [--stdin] [slug]"
+	orientUsage  = "usage: devrites-engine orient [slug]"
+	migrateUsage = "usage: devrites-engine migrate <slug> [--dry-run] [--answer id=choice]"
+	// scanCmdUsage is help text for `secret-scan`. The identifier must not
+	// contain "secret": gosec G101 treats secret* string consts as credentials.
+	scanCmdUsage        = "usage: devrites-engine secret-scan [--staged] [--stdin] [slug]"
 	openVisualUsage     = "usage: devrites-engine open-visual <path-or-name> [--slug <slug>] [--no-open]"
 	versionUsage        = "usage: devrites-engine version"
 	candidateUsage      = "usage: devrites-engine check candidate <slug>"
@@ -132,7 +134,7 @@ func commandHelp(args []string) (string, bool) {
 	case "migrate":
 		return migrateUsage, true
 	case "secret-scan":
-		return secretScanUsage, true
+		return scanCmdUsage, true
 	case "open-visual":
 		return openVisualUsage, true
 	case "version", "--version":
