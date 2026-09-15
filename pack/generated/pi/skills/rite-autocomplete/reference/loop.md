@@ -29,8 +29,7 @@ when this invocation contains `--parallel N`: then write or replace only
 malformed. Do not stop because it names `max_slices` / `max_agents` /
 `max_minutes` / `max_review_queue` or only `[advisory]`. If absent, write it
 once after clarity, and include `max_parallel: N` when that flag is present.
-Never write `max_slices` from `--max-slices`. It is otherwise read-only: never
-rewrite it after Vet or reset it on resume. Leftover `expires_at` is ignored
+Never write `max_slices` from `--max-slices`. It is otherwise read-only: never rewrite it after Vet or reset it on resume. Leftover `expires_at` is ignored
 and never rewritten. **Failing case:** leftover `max_parallel: 1` keeps the run
 serial after `--parallel 5`.
 
