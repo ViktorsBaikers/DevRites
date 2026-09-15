@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.10.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.10.0...v5.10.1) (2026-09-15)
+
+### Fixed
+
+* **rite:** auto-resolve recommended blocking questions in autocomplete ([#77](https://github.com/ViktorsBaikers/DevRites/issues/77)) ([cd11a59](https://github.com/ViktorsBaikers/DevRites/commit/cd11a59c01b9b1cd48df5a19a7b8ad3c4f1fb2d4))
+
 ## [5.10.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.9.0...v5.10.0) (2026-09-15)
 
 ### Added
