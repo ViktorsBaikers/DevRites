@@ -44,6 +44,34 @@ printf 'Read [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) fi
 run_ok "cross refs accept relative link to shared standard" \
   python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/bare"
 
+# Unquoted skill/reference paths are join-hazards: hosts attach the token to
+# the current skill (devrites-lib/reference/afk-discipline.md) even when the
+# file exists under the named skill.
+mkdir -p "$T/join/pack/.claude/skills/devrites-lib/reference/standards" \
+  "$T/join/pack/.claude/skills/rite-build/reference"
+printf '# disc\n' > "$T/join/pack/.claude/skills/rite-build/reference/afk-discipline.md"
+printf 'examples: rite-build/reference/afk-discipline.md\n' \
+  > "$T/join/pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md"
+run_fail_contains "cross refs reject unquoted cross-skill join-hazard" "join-hazard" \
+  python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/join"
+printf 'examples: .claude/skills/rite-build/reference/afk-discipline.md\n' \
+  > "$T/join/pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md"
+run_ok "cross refs accept host-prefixed cross-skill path" \
+  python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/join"
+printf 'See [loop](../../../rite-build/reference/afk-discipline.md).\n' \
+  > "$T/join/pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md"
+run_ok "cross refs accept relative markdown link to another skill" \
+  python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/join"
+
+# Codex install paths must map onto pack/.claude, never a missing pack/.agents tree.
+mkdir -p "$T/agents/pack/.claude/agents" \
+  "$T/agents/pack/.claude/skills/rite-review/reference"
+printf '# checklist\n' > "$T/agents/pack/.claude/skills/rite-review/reference/performance-checklist.md"
+printf 'Read `.agents/skills/rite-review/reference/performance-checklist.md`.\n' \
+  > "$T/agents/pack/.claude/agents/devrites-performance-reviewer.md"
+run_ok "cross refs resolve Codex .agents/skills install paths" \
+  python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/agents"
+
 # Permission profile names are not skill invocations; undeclared devrites-* names remain errors.
 printf 'Use the devrites-orchestrator permission profile.\n' > "$T/non-skill-profile.md"
 printf 'Invoke devrites-definitely-missing.\n' > "$T/missing-invocation.md"

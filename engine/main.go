@@ -71,6 +71,9 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprint(stderr, usage)
 		return exitUsage
 	}
+	if text, ok := commandHelp(args); ok {
+		return writeHelp(stdout, text)
+	}
 	root, rootExit, err := resolveRootFor(args[0], args[1:])
 	if err != nil {
 		fmt.Fprintf(stderr, "devrites: root selection: %v\n", err)
@@ -113,7 +116,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine check <candidate|readiness|seal|path-disjoint|task-graph|skill-trust|indexes> ...")
+		fmt.Fprint(stderr, checkUsage)
 		return exitUsage
 	}
 	sub, rest := args[0], args[1:]
@@ -138,7 +141,7 @@ func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 
 func cmdCandidate(root string, args []string, stdout, stderr io.Writer) int {
 	if len(args) != 1 {
-		fmt.Fprintln(stderr, "usage: devrites-engine check candidate <slug>")
+		fmt.Fprintln(stderr, candidateUsage)
 		return exitUsage
 	}
 	digest, files, err := lib.CandidateIdentity(root, args[0])
@@ -156,7 +159,7 @@ func cmdCandidate(root string, args []string, stdout, stderr io.Writer) int {
 
 func cmdState(root string, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine state <resolve|merge-manifest|close> ...")
+		fmt.Fprint(stderr, stateUsage)
 		return exitUsage
 	}
 	switch args[0] {
@@ -178,7 +181,11 @@ func cmdState(root string, args []string, stdout, stderr io.Writer) int {
 func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Writer) int {
 	emitBinding := kind == gate.Readiness && len(args) == 2 && args[0] == "--emit-binding"
 	if !emitBinding && len(args) != 1 {
-		fmt.Fprintf(stderr, "usage: devrites-engine check %s <slug>\n", kind)
+		if kind == gate.Readiness {
+			fmt.Fprintln(stderr, readinessUsage)
+		} else {
+			fmt.Fprintln(stderr, sealUsage)
+		}
 		return exitUsage
 	}
 	if emitBinding {
@@ -219,7 +226,7 @@ func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Write
 
 func cmdTaskGraph(root string, args []string, stdout, stderr io.Writer) int {
 	if len(args) != 1 {
-		fmt.Fprintln(stderr, "usage: devrites-engine check task-graph <slug>")
+		fmt.Fprintln(stderr, taskGraphUsage)
 		return exitUsage
 	}
 	return lib.RunTaskGraphCheck(root, args[0], stdout, stderr)
@@ -227,7 +234,7 @@ func cmdTaskGraph(root string, args []string, stdout, stderr io.Writer) int {
 
 func cmdSkillTrust(args []string, stdout, stderr io.Writer) int {
 	if len(args) != 1 {
-		fmt.Fprintln(stderr, "usage: devrites-engine check skill-trust <path>")
+		fmt.Fprintln(stderr, skillTrustUsage)
 		return exitUsage
 	}
 	return lib.RunSkillTrustCheck(args[0], stdout, stderr)
@@ -235,7 +242,7 @@ func cmdSkillTrust(args []string, stdout, stderr io.Writer) int {
 
 func cmdObserve(root string, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine observe summary <slug> | observe slice <slug> <SLICE-ID>")
+		fmt.Fprint(stderr, observeUsage)
 		return exitUsage
 	}
 	switch args[0] {
@@ -251,7 +258,7 @@ func cmdObserve(root string, args []string, stdout, stderr io.Writer) int {
 		return lib.RunObserveSummary(root, slug, stdout, stderr)
 	case "slice":
 		if len(args) != 3 {
-			fmt.Fprintln(stderr, "usage: devrites-engine observe slice <slug> <SLICE-ID>")
+			fmt.Fprintln(stderr, observeSliceUsage)
 			return exitUsage
 		}
 		return lib.RunObserveSlice(root, args[1], args[2], stdout, stderr)

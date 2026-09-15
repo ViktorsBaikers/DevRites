@@ -87,18 +87,23 @@ executable controller/harness/bundle bytes or a missing writer, read
 3. **Arm AFK once.** Apply the loop's
    [one-write AFK contract](reference/loop.md#arm-afk-once): preserve valid
    existing bytes or create the sentinel once (`allow_gates: [advisory, validating]`); never
-   rewrite it after Vet. Preserve an existing sentinel byte-for-byte.
+   rewrite it after Vet except to write or replace only `max_parallel: N` when
+   this invocation contains `--parallel N`. Preserve an existing sentinel
+   byte-for-byte otherwise. **Failing case:** leftover `max_parallel: 1` keeps
+   the run serial after `--parallel 5`.
    **Completion:** a valid read-only AFK sentinel exists.
 4. **Drive phases.** Follow [the loop](reference/loop.md): `$rite-spec` →
    `$rite-clarify` → `$rite-temper` → `$rite-define` → `$rite-vet` →
    `$rite-build` batch loop → `$rite-prove` → `$rite-polish` →
    `$rite-review` → `$rite-seal`. Read and execute each skill; durable files, not
    chat, carry state. Apply the mutable post-vet budget before first Build.
-   Build runs the largest eligible path-disjoint batch (cap: `--parallel N`, else
-   sentinel `max_parallel`, else 10) and recomputes after every completed round until no
-   pending slice remains; a one-slice round is serial for that round only, then
+   Build runs the largest eligible path-disjoint batch (cap: this invocation's
+   `--parallel N`, else sentinel `max_parallel`, else 10) and recomputes after
+   every completed round until no pending slice remains; a one-slice round is serial for that round only, then
    selection runs again (host isolation still forces serial when concurrent writers
-   cannot be separated).
+   cannot be separated). When `--parallel N`
+   is present, pass it into `$rite-build` and do not consult leftover sentinel
+   `max_parallel`.
    **Completion:** loop reaches Seal GO or persists a valid stop before any later phase.
 5. **Apply stops.** At every gate use
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:

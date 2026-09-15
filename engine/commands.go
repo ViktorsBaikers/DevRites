@@ -25,6 +25,9 @@ const (
 // workspace or Git state, which must never fall back after an unsafe root
 // selection.
 func rootModeFor(command string, args []string) rootMode {
+	if hasHelpFlag(args) || (len(args) > 0 && isHelpToken(args[0])) {
+		return rootUnused
+	}
 	subcommand := firstRootOperand(args)
 	switch command {
 	case "secret-scan", "open-visual":

@@ -9,6 +9,7 @@ Opt-in only. Default `$rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.
 | omitted / `--parallel 1` | Serial one-slice |
 | `--parallel N` (**2≤N≤10**) | N is a **cap**, not a quota: run the largest eligible set ≤ N |
 | non-integer / `N≤0` / `N>10` | Hard refuse (no silent clamp) |
+| Autocomplete `--parallel N` | N is the cap for this run; leftover sentinel `max_parallel` is ignored, then `$rite-autocomplete` writes or replaces only `max_parallel: N` |
 | Autocomplete, no flag | Same path, cap from sentinel `max_parallel` else 10; serial only when ineligible |
 
 AFK caps `N`. Charge green siblings once after integrate; abort /
@@ -21,7 +22,8 @@ Size each batch by what is runnable **now**, never by the requested number:
 
 ```text
 N_eff = min(
-  cap                  -- --parallel N | sentinel max_parallel | 10 (autocomplete default)
+  cap                  -- this invocation's --parallel N (wins over leftover sentinel max_parallel)
+                       | else sentinel max_parallel | else 10 (autocomplete default)
   eligible set         -- dependency-satisfied pending slices, pairwise path-disjoint
   AFK headroom         -- remaining max_slices, max_agents, max_minutes, review queue
   host capacity        -- concurrent worktree writers + the runtime isolation table
