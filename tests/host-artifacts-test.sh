@@ -158,6 +158,51 @@ grep -q '"name": "devrites"' "$OUT/omp/.omp-plugin/plugin.json" &&
   ok "omp plugin.json names the pack and lists skills and agents" ||
   no "omp plugin.json missing name, skills, or agents"
 
+_omp_tools_has() {
+  local _line="$1" _name="$2"
+  case ", ${_line#tools: }, " in
+  *", ${_name}, "*) return 0 ;;
+  *) return 1 ;;
+  esac
+}
+_omp_nav_tools="ctx_read ctx_ls ctx_find ctx_grep ctx_glob ctx_search ctx_compose ctx_callgraph ctx_tree symbol_search project_report module_report read_symbol read_enclosing lens_diagnostics"
+_omp_nav_fail=0
+_omp_cap_fail=0
+for _omp_agent in "$OUT"/omp/agents/devrites-*.md; do
+  _omp_tools="$(grep '^tools:' "$_omp_agent")"
+  _omp_base="$(basename "$_omp_agent")"
+  for _tok in $_omp_nav_tools; do
+    _omp_tools_has "$_omp_tools" "$_tok" || {
+      no "omp $_omp_base missing $_tok"
+      _omp_nav_fail=1
+    }
+  done
+  if _omp_tools_has "$_omp_tools" "edit" || _omp_tools_has "$_omp_tools" "write"; then
+    _omp_tools_has "$_omp_tools" "ctx_edit" && _omp_tools_has "$_omp_tools" "ctx_patch" || {
+      no "omp $_omp_base missing ctx_edit/ctx_patch"
+      _omp_cap_fail=1
+    }
+  else
+    if _omp_tools_has "$_omp_tools" "ctx_edit" || _omp_tools_has "$_omp_tools" "ctx_patch"; then
+      no "omp $_omp_base gained ctx_edit/ctx_patch"
+      _omp_cap_fail=1
+    fi
+  fi
+  if _omp_tools_has "$_omp_tools" "bash"; then
+    _omp_tools_has "$_omp_tools" "ctx_shell" || {
+      no "omp $_omp_base missing ctx_shell"
+      _omp_cap_fail=1
+    }
+  else
+    if _omp_tools_has "$_omp_tools" "ctx_shell"; then
+      no "omp $_omp_base gained ctx_shell without bash"
+      _omp_cap_fail=1
+    fi
+  fi
+done
+[ "$_omp_nav_fail" -eq 0 ] && ok "every omp agent allowlists lean-ctx/lens nav tools"
+[ "$_omp_cap_fail" -eq 0 ] && ok "omp ctx_edit/ctx_patch/ctx_shell follow base write/bash"
+
 grep -q '.pi/skills/devrites-lib/reference/standards/core.md' "$OUT/pi/skills/rite-build/SKILL.md" &&
   ok "pi skill artifact uses mirrored rules path" ||
   no "pi skill artifact missing mirrored rules path"
