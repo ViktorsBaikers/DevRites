@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.10.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.10.1...v5.10.2) (2026-09-15)
+
+### Fixed
+
+* **ci:** stop gosec false positive on secret-scan help ([ac8ef15](https://github.com/ViktorsBaikers/DevRites/commit/ac8ef1530f5121cf192fb9e60acef781b0e3fbb8))
+* **rite:** honor --parallel over leftover AFK cap ([#78](https://github.com/ViktorsBaikers/DevRites/issues/78)) ([db6c299](https://github.com/ViktorsBaikers/DevRites/commit/db6c299e24be5e1b8c5739e45542f2ef8b572e3b))
+
 ## [5.10.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.10.0...v5.10.1) (2026-09-15)
 
 ### Fixed
