@@ -103,8 +103,61 @@ _omp_map_tools() {
   printf '%s' "$_out"
 }
 
+# omp treats frontmatter tools: as a hard allowlist for extension/MCP tools,
+# so ambient lean-ctx / lens tools are dropped unless named. Append those
+# names after the mapped builtins (preserve base order). Unknown names are
+# dropped non-fatally. Read-only agents stay read-only: ctx_edit / ctx_patch
+# only when the base already has edit or write; ctx_shell only when the
+# base already has bash.
+_OMP_EXTENSION_NAV_TOOLS="ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics"
+
+_omp_csv_has() {
+  case ", ${1}, " in
+  *", ${2}, "*) return 0 ;;
+  *) return 1 ;;
+  esac
+}
+
+_omp_csv_append() {
+  local _list="$1" _name="$2"
+  if [ -z "$_name" ]; then
+    printf '%s' "$_list"
+    return
+  fi
+  if [ -z "$_list" ]; then
+    printf '%s' "$_name"
+    return
+  fi
+  if _omp_csv_has "$_list" "$_name"; then
+    printf '%s' "$_list"
+    return
+  fi
+  printf '%s, %s' "$_list" "$_name"
+}
+
+_omp_append_extension_tools() {
+  local _base="$1"
+  local _out="$_base" _tok
+  while IFS= read -r _tok; do
+    _tok="${_tok#"${_tok%%[![:space:]]*}"}"
+    _tok="${_tok%"${_tok##*[![:space:]]}"}"
+    [ -z "$_tok" ] && continue
+    _out="$(_omp_csv_append "$_out" "$_tok")"
+  done < <(printf '%s\n' "$_OMP_EXTENSION_NAV_TOOLS" | tr ',' '\n')
+  if _omp_csv_has "$_base" "edit" || _omp_csv_has "$_base" "write"; then
+    _out="$(_omp_csv_append "$_out" "ctx_edit")"
+    _out="$(_omp_csv_append "$_out" "ctx_patch")"
+  fi
+  if _omp_csv_has "$_base" "bash"; then
+    _out="$(_omp_csv_append "$_out" "ctx_shell")"
+  fi
+  printf '%s' "$_out"
+}
+
 # Generate an omp Markdown agent from a Claude Code markdown agent.
 # omp loads project/plugin agents from agents/*.md (YAML frontmatter + body).
+# The tools allowlist carries the Claude permission boundary: only
+# devrites-slice-wright gets write/edit; reviewers stay read-only.
 gen_omp_agent() {
   local _src="$1" _out="$2"
   local _name _desc _tools_raw _tools _desc_tmp _desc_omp _body_tmp _body_omp
@@ -113,7 +166,7 @@ gen_omp_agent() {
   _tools_raw="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^tools:[[:space:]]*/{sub(/^tools:[[:space:]]*/, ""); print; exit}' "$_src")"
   [ -n "$_name" ] || _name="$(basename "$_src" .md)"
   [ -n "$_desc" ] || _desc="DevRites custom agent."
-  _tools="$(_omp_map_tools "$_tools_raw" "$_name")"
+  _tools="$(_omp_append_extension_tools "$(_omp_map_tools "$_tools_raw" "$_name")")"
   _desc_tmp="$TMP_GEN_DIR/omp-agent-desc-$(basename "$_src").txt"
   _desc_omp="$TMP_GEN_DIR/omp-agent-desc-$(basename "$_src").omp.txt"
   printf '%s' "$_desc" > "$_desc_tmp"
