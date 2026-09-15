@@ -368,7 +368,7 @@ full list.
 ## 11) Full unattended lifecycle: `/rite-autocomplete`
 
 ```text
-/rite-autocomplete "add CSV export for admins" --max-slices 8
+/rite-autocomplete "add CSV export for admins"
   → vague idea → runs devrites-interview, then /rite-spec + /rite-clarify in
     the only interactive window
   → Decision coverage: CLEAR → arms AFK, then drives: /rite-temper →
@@ -386,16 +386,16 @@ Add `--ship` (alias `--yolo`) to continue through `/rite-ship` preflight.
 Autocomplete discloses the exact Git plan, then still stops for a fresh literal
 `GO` and native host approval. It also pauses for irreversible risk, human-only access/actions, blocking or
 escalating gates, a NO-GO, or low confidence — not for temper expand, validating
-gates, or default slice/agent/time/review-queue caps. `--max-slices N` on this
-invocation is the only slice cap. Objective red checks use bounded recovery
-instead. Args:
+gates, `--max-slices`, or default slice/agent/time/review-queue caps.
+Objective red checks use bounded recovery instead. Args:
 `[idea] [--ship|--yolo] [--max-slices N] [--full] [--cross-model]`.
 Optional flags are inactive unless their exact token occurs in the invocation;
-`--max-slices` requires one positive base-10 integer. `--full` selects the Full
+`--max-slices` requires one positive base-10 integer and does not cap this run.
+`--full` selects the Full
 execution profile, and `--cross-model` arms Vet's second opinion.
-Autocomplete never rewrites an existing `.devrites/AFK`. After Vet fixes the
-pending-slice count, it stores the lower effective budget in `state.md`; an
-existing remaining counter can only stay the same or decrease.
+Autocomplete never rewrites an existing `.devrites/AFK`. After Vet it seeds
+remaining from the pending-slice count and ignores leftover remaining and
+`--max-slices`.
 
 ## Checking in
 

@@ -339,7 +339,7 @@ choosing the recommended option at each soft gate and recording the rationale
 in `decisions.md`. It does **not** weaken blocking/escalating or irreversible-risk
 gates: human-only access/actions, those gates, a NO-GO, or low confidence still
 pause. Temper expand, validating gates, and default slice/agent/time/review-queue
-caps do not. `--max-slices N` on this invocation is the only slice cap. Agents use bounded recovery for red tests, runtime failures, and
+caps do not. `--max-slices` is ignored the same way. Agents use bounded recovery for red tests, runtime failures, and
 missing technical coverage. By default the workflow stops at Seal GO with `/rite-ship` as the next step.
 The `--ship` flag (alias `--yolo`) continues through Ship preflight, discloses
 the exact Git plan, and still stops for a fresh literal `GO` plus native host

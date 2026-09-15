@@ -87,8 +87,7 @@ for text, required in (
         "earlier context cannot activate it",
     )),
     ((canonical / "skills/rite-autocomplete/reference/stop-conditions.md").read_text(), (
-        "only this invocation's `--max-slices N` caps dispatch",
-        "any validated root-owned remaining value of zero stops before the next dispatch",
+        "do not stop on `--max-slices`",
         "pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count",
         "Zero with no pending slices is normal completion",
     )),

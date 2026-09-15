@@ -48,9 +48,9 @@ executable controller/harness/bundle bytes or a missing writer, read
 - Every exact causal fingerprint gets at most three no-progress corrections.
   Closing one is progress; a distinct Critical/Important invariant has its own
   budget. Lower severity cannot prolong recovery.
-- Enforce `--max-slices` only when this invocation includes it. Do not stop on
-  sentinel `max_slices`, `max_agents`, `max_minutes`, or `max_review_queue`.
-  Count failed, malformed, and unavailable leaf calls.
+- Do not stop on `--max-slices`, sentinel `max_slices`, `max_agents`,
+  `max_minutes`, or `max_review_queue`. Count failed, malformed, and
+  unavailable leaf calls.
 - Parse flags only from this invocation. `--ship`, `--yolo`, `--max-slices`,
   `--parallel`, `--full`, and `--cross-model` activate only as exact standalone
   tokens in `$ARGUMENTS`; examples or earlier messages can never arm them.
@@ -76,7 +76,7 @@ executable controller/harness/bundle bytes or a missing writer, read
    from chat. After compaction or a resumed session, read `.devrites/ACTIVE`, then
    the `state.md` cursor, `questions.md`, `decisions.md`, and `test-plan.md`/`evidence.md`.
    Normalize current arguments to idea, `ship_preflight: yes|no`,
-   `max_slices: N|unlimited`, `parallel: N|default`, `profile: standard|full`,
+   `max_slices: unlimited`, `parallel: N|default`, `profile: standard|full`,
    and `cross_model: yes|no`.
    **Completion:** normalized state is unambiguous and no sentinel or workspace file has been written.
 2. **Specify and clarify.** Run `devrites-interview`, `$rite-spec`, and
@@ -115,8 +115,8 @@ executable controller/harness/bundle bytes or a missing writer, read
 
 ## Reply and resume
 
-HITL Build returns after one slice; explicit valid AFK may chain only green
-slices within every cap. One Autocomplete invocation owns all internal
+HITL Build returns after one slice; Autocomplete ignores `--max-slices` and
+keeps chaining pending slices. One Autocomplete invocation owns all internal
 backtracking. Context pressure, compaction, or a nested completion footer does
 not create a stop; persist and resume the cursor.
 

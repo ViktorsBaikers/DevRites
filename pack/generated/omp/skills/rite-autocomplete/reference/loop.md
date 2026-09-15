@@ -26,16 +26,15 @@ allow_gates: [advisory, validating]
 Read an existing sentinel first. Preserve it byte-for-byte when valid; stop if
 malformed. Do not stop because it names `max_slices` / `max_agents` /
 `max_minutes` / `max_review_queue` or only `[advisory]`. If absent, write it
-once after clarity; add `max_slices: N` only for explicit `--max-slices N`.
+once after clarity. Never write `max_slices` from `--max-slices`.
 It is read-only: never rewrite it after Vet or reset it on resume. Leftover
 `expires_at` is ignored and never rewritten.
 
 ### Derive the mutable post-vet budget
 
 After Vet, seed `afk_slices_remaining` from the pending count so every pending
-slice can run, or `min(pending, N)` when this invocation passed `--max-slices N`.
-Ignore sentinel `max_slices` and any lower leftover remaining as a cap unless
-`--max-slices` is set. AFK configuration itself stays unchanged.
+slice can run. Ignore `--max-slices`, sentinel `max_slices`, and leftover
+remaining. AFK configuration itself stays unchanged.
 
 ### Admit each unattended cycle
 
@@ -44,8 +43,8 @@ readiness check first; reject overlap. Do not stop on `max_agents`,
 `max_minutes`, or `max_review_queue`. Count every leaf result. A new activation
 gets fresh activation-local counters but retains durable slice/recovery state.
 
-When driving `/rite-build`, ignore afk-discipline remaining-0 and parallel AFK
-headroom except this invocation's `--max-slices`. Close validating questions
+When driving `/rite-build`, ignore afk-discipline remaining-0, `--max-slices`,
+and parallel AFK headroom. Close validating questions
 (recommended pick) instead of queuing them.
 
 ## Phase arc

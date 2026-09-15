@@ -68,13 +68,12 @@ exhausted.
   never arm AFK early.
 - **Seal:** NO-GO, with every blocker and fix direction. Never round up to GO.
 - **Reslice:** execute its marked action before deciding continue/stop.
-- **Slice budget:** only this invocation's `--max-slices N` caps dispatch.
-  Leftover pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count
-  does not stop unless `--max-slices` is set; then any validated root-owned remaining value of zero stops before the next dispatch
-  when slices remain. Zero with no pending slices is normal completion.
+- **Slice budget:** do not stop on `--max-slices`. Leftover
+  pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count
+  does not stop. Zero with no pending slices is normal completion.
   Malformed flag stops before any write.
 - **Resource envelope:** overlapping run or missing AFK after arm still stops.
-  Do not stop on `max_agents`, `max_minutes`, or `max_review_queue`.
+  Do not stop on `--max-slices`, `max_agents`, `max_minutes`, or `max_review_queue`.
 - **Confidence:** intent still cannot become testable acceptance after interview.
 - **Repeated failure:** the exact fingerprint's bounded recovery is exhausted.
 
