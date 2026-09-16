@@ -4746,14 +4746,12 @@ def create_actual_delivery_repo(root: Path, full_generator: bool = False) -> dic
     if full_generator:
         shutil.copytree(project / "pack", root / "pack")
         (root / "scripts").mkdir()
-        for relative in (
-            "scripts/build-host-artifacts.sh",
-            "scripts/codex-generate.sh",
-            "scripts/omp-generate.sh",
-            "scripts/pi-generate.sh",
-        ):
-            destination = root / relative
-            shutil.copy2(project / relative, destination)
+        generator_scripts = ["build-host-artifacts.sh"] + sorted(
+            path.name for path in (project / "scripts").glob("*-generate.sh")
+        )
+        for name in generator_scripts:
+            destination = root / "scripts" / name
+            shutil.copy2(project / "scripts" / name, destination)
         for relative in AUTHORED:
             source = project / relative
             destination = root / relative
@@ -9006,18 +9004,17 @@ def _prepare_held_generator_view(repo_fd: int, stage_fd: int, stage_relative: st
         try:
             dst_scripts = os.open("scripts", DIRECTORY_FLAGS, dir_fd=output_fd)
             try:
-                for name in (
-                    "build-host-artifacts.sh",
-                    "codex-generate.sh",
-                    "omp-generate.sh",
-                    "pi-generate.sh",
-                ):
+                script_names = ["build-host-artifacts.sh"] + sorted(
+                    name for name in os.listdir(src_scripts)
+                    if name.endswith("-generate.sh")
+                )
+                for name in script_names:
                     _copy_named_regular_file(src_scripts, dst_scripts, name)
             finally:
                 os.close(dst_scripts)
         finally:
             os.close(src_scripts)
-        for name in ("claude", "codex", "omp", "pi"):
+        for name in ("claude", "codex", "devin", "omp", "pi"):
             os.mkdir(name, 0o700, dir_fd=output_fd)
             host_fd = os.open(name, DIRECTORY_FLAGS, dir_fd=output_fd)
             try:
