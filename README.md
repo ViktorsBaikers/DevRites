@@ -4,9 +4,10 @@
 
 # DevRites
 
-DevRites is a repository-local workflow for building software with Claude Code
-or Codex. It turns a feature request into a spec, a sliced plan, working code,
-recorded proof, a release decision, and an explicit ship step.
+DevRites is a repository-local workflow for building software with Claude Code,
+Codex, omp, pi, or Devin CLI. It turns a feature request into a spec, a sliced
+plan, working code, recorded proof, a release decision, and an explicit ship
+step.
 
 The work lives under `.devrites/`, not in chat history. A later session or a
 different agent can read the same plan, decisions, state, and evidence before it
@@ -47,8 +48,9 @@ Run this from the root of your project. Node.js 18 or later is required.
 npx devrites@latest
 ```
 
-The installer adds project-local support for Claude Code, Codex, omp, and pi.
-It does not write skills, agents, or hooks to `~/.claude`, `~/.codex`, or `~/.pi`.
+The installer adds project-local support for Claude Code, Codex, omp, pi, and
+Devin CLI. It does not write skills, agents, or hooks to `~/.claude`, `~/.codex`,
+`~/.pi`, or `~/.config/devin`.
 
 ### 2. Choose the smallest route
 
@@ -78,8 +80,8 @@ proof and next action.
 ## How the lifecycle works
 
 Claude Code supports both `/rite <verb>` and `/rite-<verb>`. Codex uses the same
-forms with `$`: `$rite <verb>` and `$rite-<verb>`. omp and pi use the Claude
-slash forms (on pi they run as prompt templates under `.pi/prompts`, with
+forms with `$`: `$rite <verb>` and `$rite-<verb>`. omp, pi, and Devin CLI use the
+Claude slash forms (on pi they run as prompt templates under `.pi/prompts`, with
 `/skill:rite-<verb>` equivalent). The menu and direct forms run the same skill.
 
 | # | Stage | Direct command | What happens |
@@ -299,7 +301,9 @@ Useful install flags:
 | `--dry-run` | Show planned file operations without changing anything. |
 | `--force` | Replace or remove foreign or customized managed files. The installer still rejects symlinks and path escapes. |
 | `--no-codex` | Skip `.agents`, `.codex`, and the Codex `AGENTS.md` block. |
+| `--no-omp` | Skip `.omp` skills and agents. |
 | `--no-pi` | Skip `.pi` skills, agents, prompt commands, and the pi `AGENTS.md` block. |
+| `--no-devin` | Skip `.devin` skills, agents, and the Devin `AGENTS.md` block. |
 | `--no-agents` | Skip hook-free native specialist profiles. |
 | `--no-skills` | Skip skills and their bundled standards. |
 | `--no-binary` | Do not keep the shared `devrites-engine` binary in a user or system bin directory. |
@@ -391,7 +395,7 @@ paths pass bounded streaming preflight before extraction. There is no unchecked
 raw, source-archive, tag, or default-branch fallback. See
 [`SECURITY.md`](SECURITY.md) for the representative bounds.
 
-## Claude Code and Codex integration
+## Host integration
 
 Claude Code receives skills under `.claude/skills/`, agents under
 `.claude/agents/`, and native root permissions merged into
@@ -405,6 +409,15 @@ only `devrites-slice-wright` is writable; every other specialist is read-only.
 Existing user content remains in place. Codex users invoke skills with `$rite`,
 `$rite-spec`, or `/skills`.
 
+Devin CLI receives the same skills under `.devin/skills/`, custom subagent
+profiles under `.devin/agents/`, and a marked guidance block in `AGENTS.md`.
+Profiles use `allowed-tools` with Devin tool names: only
+`devrites-slice-wright` keeps `edit`, `write`, and `exec`; every other
+specialist is read-only. Dispatch goes through `run_subagent` with the exact
+`devrites-<role>` profile; a missing profile stops for HITL instead of
+substituting `subagent_general`. Profiles load when a session starts, so reopen
+the project after installing.
+
 DevRites is installed through npm or the Bash bootstrap. It is not distributed
 through Claude Code or Codex plugin stores.
 
@@ -417,7 +430,8 @@ shared contracts and engineering standards.
 
 Seventeen fresh-context agent profiles ship with the pack. Claude has sixteen
 read-only roles plus the sole source/test writer role,
-`devrites-slice-wright`; Codex generates the same one-writer/sixteen-reader split.
+`devrites-slice-wright`; Codex, omp, pi, and Devin generate the same
+one-writer/sixteen-reader split.
 
 The authoritative [skills catalogue](docs/skills.md) lists every skill and
 agent. The [flow diagrams](docs/flow.md) show routing, reviewer fan-out, and

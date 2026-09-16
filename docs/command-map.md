@@ -3,9 +3,9 @@
 This page lists every shipped skill and agent, including its triggers, inputs,
 outputs, and interactions.
 
-DevRites ships through npm (`npx devrites ...`). Claude Code and Codex support
-comes from generated host artifacts copied by the npm installer; DevRites is not
-distributed as a Claude or Codex plugin.
+DevRites ships through npm (`npx devrites ...`). Claude Code, Codex, omp, pi,
+and Devin CLI support comes from generated host artifacts copied by the npm
+installer; DevRites is not distributed as a Claude or Codex plugin.
 
 - **Workflow diagram** (top-level flow) → [`flow.md`](flow.md).
 - **Architecture rationale** → [`architecture.md`](architecture.md).
@@ -57,7 +57,8 @@ pass; usage/root errors exit `2` and candidate blocks exit `3`. There are no
 semantic readiness commands, reviewer-prose parsers, capability-ledger engine,
 or compatibility telemetry.
 
-Claude Code and Codex own native dispatch. Installed skills and exact agents
+Claude Code, Codex, omp, pi, and Devin own native dispatch. Installed skills
+and exact agents
 own semantic readiness, traceability, acceptance/evidence quality, doubt,
 review reconciliation, test-quality assessment, capability interpretation,
 workspace compatibility, and

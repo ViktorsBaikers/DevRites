@@ -17,10 +17,12 @@ const (
 	CodexSkillsTarget     = ".agents/skills"
 	OmpSkillsTarget       = ".omp/skills"
 	PiSkillsTarget        = ".pi/skills"
+	DevinSkillsTarget     = ".devin/skills"
 	ClaudeAgentsTarget    = ".claude/agents"
 	CodexAgentsTarget     = ".codex/agents"
 	OmpAgentsTarget       = ".omp/agents"
 	PiAgentsTarget        = ".pi/agents"
+	DevinAgentsTarget     = ".devin/agents"
 	PiPromptsTarget       = ".pi/prompts"
 	ClaudeWorkflowsTarget = ".claude/workflows"
 

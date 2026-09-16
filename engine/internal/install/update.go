@@ -65,7 +65,7 @@ func runUpdate(opts Options) error {
 	if err != nil {
 		return fmt.Errorf("resolve payload %s: %w", opts.PayloadDir, err)
 	}
-	if err := hostpack.ValidatePayload(os.DirFS(payload), true, true, true); err != nil {
+	if err := hostpack.ValidatePayload(os.DirFS(payload), true, true, true, true); err != nil {
 		return fmt.Errorf("local update payload under %s is invalid: %w", payload, err)
 	}
 	installFlags := manifestHeader(mf, "devrites-flags")

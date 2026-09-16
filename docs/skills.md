@@ -12,11 +12,16 @@ regenerate missing payload components before installation; the engine validates
 and copies them but never generates them. The installer copies Codex skill
 mirrors to `.agents/skills`, mirrors the rules under
 `.agents/skills/devrites-lib/reference/standards`, installs `.codex/agents`, and
-merges native Codex configuration and guidance.
+merges native Codex configuration and guidance. Devin CLI receives skills under
+`.devin/skills`, custom subagent profiles under `.devin/agents`, and a marked
+guidance block in `AGENTS.md`.
 
 The root and reviewers never write source. Claude enforces the root boundary in
 plan mode. Codex uses a workspace-capable root so its sole write-capable
-slice-wright can execute, while all other specialists remain read-only. The
+slice-wright can execute, while all other specialists remain read-only. On
+Devin, `allowed-tools` gives only `devrites-slice-wright` `edit`, `write`, and
+`exec`; a missing required profile stops for HITL instead of substituting a
+generic profile. The
 installed `devrites-engine` owns strict candidate identity, deterministic checks,
 exact proof/review/seal bindings,
 atomic state, secret scanning, and installation diagnostics. Native/root policy
@@ -28,8 +33,9 @@ bootstraps or proxies the engine directly (see [`cli.md`](cli.md)).
 
 Each phase skill names the specialist the host should run when one is needed.
 Codex loads those project agents from `.codex/agents`, then waits for and
-reconciles their normal results. The engine has no dispatch protocol; native
-hosts follow the shared, host-neutral
+reconciles their normal results. Devin loads the same profiles from
+`.devin/agents` as `run_subagent` profiles. The engine has no dispatch protocol;
+native hosts follow the shared, host-neutral
 [`parallel-dispatch.md`](../pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md)
 contract when a rite names parallel reviewers.
 

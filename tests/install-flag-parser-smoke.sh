@@ -33,7 +33,8 @@ for flags in \
   "--no-skills --no-agents --no-short-aliases" \
   "--no-agents" \
   "--no-codex" \
-  "--no-pi"; do
+  "--no-pi" \
+  "--no-devin"; do
   run_flags "$flags" &
   pids+=("$!")
 done

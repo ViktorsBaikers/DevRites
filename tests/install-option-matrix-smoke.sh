@@ -98,6 +98,23 @@ case_no_pi() {
   exit "$fail"
 }
 
+case_no_devin() {
+  local t="$T/no-devin"
+  mkdir -p "$t"
+  fail=0
+  bash "$ROOT/install.sh" --target "$t" --no-devin >/dev/null 2>&1 || no "--no-devin install failed"
+  [ -f "$t/.claude/skills/rite-build/SKILL.md" ] && ok "--no-devin still installs Claude skills" || no "--no-devin broke Claude skills"
+  [ -d "$t/.devin" ] && no "--no-devin installed .devin" || ok "--no-devin skipped .devin"
+  [ -d "$t/.pi" ] && ok "--no-devin still installs pi" || no "--no-devin broke pi"
+  if [ -f "$t/AGENTS.md" ] && ! grep -q 'BEGIN DEVRITES DEVIN' "$t/AGENTS.md" &&
+    grep -q 'BEGIN DEVRITES CODEX' "$t/AGENTS.md"; then
+    ok "--no-devin kept only the sibling AGENTS.md blocks"
+  else
+    no "--no-devin left a Devin block or dropped the Codex block in AGENTS.md"
+  fi
+  exit "$fail"
+}
+
 pids=()
 case_no_agents &
 pids+=("$!")
@@ -108,6 +125,8 @@ pids+=("$!")
 case_no_codex &
 pids+=("$!")
 case_no_pi &
+pids+=("$!")
+case_no_devin &
 pids+=("$!")
 for pid in "${pids[@]}"; do
   wait "$pid" || fail=1

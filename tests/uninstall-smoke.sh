@@ -60,6 +60,12 @@ main_uninstall_case() {
   else
     ok ".codex fully pruned"
   fi
+  if [ -d "$T/.devin" ]; then
+    leftover="$(find "$T/.devin" -mindepth 1)"
+    [ -z "$leftover" ] && ok ".devin pruned" || no ".devin has leftover DevRites content: $leftover"
+  else
+    ok ".devin fully pruned"
+  fi
   [ -f "$T/.devrites/ACTIVE" ] && ok "ACTIVE preserved" || no "ACTIVE wrongly removed"
   [ -f "$T/.devrites/work/demo/state.md" ] && ok "work/ feature data preserved" || no "work/ wrongly removed"
   [ -f "$T/.devrites/README.md" ] && no ".devrites/README not removed" || ok ".devrites/README removed"
@@ -120,6 +126,7 @@ preexisting_merge_case() {
   [ -f "$T/AGENTS.md" ] && ok "pre-existing AGENTS.md preserved" || no "pre-existing AGENTS.md removed"
   grep -q 'Keep this guidance' "$T/AGENTS.md" && ok "pre-existing AGENTS.md content preserved" || no "pre-existing AGENTS.md content lost"
   grep -q '<!-- BEGIN DEVRITES CODEX -->' "$T/AGENTS.md" && no "DevRites block survived uninstall" || ok "DevRites block removed from pre-existing AGENTS.md"
+  grep -q '<!-- BEGIN DEVRITES DEVIN -->' "$T/AGENTS.md" && no "Devin block survived uninstall" || ok "Devin block removed from pre-existing AGENTS.md"
   [ -f "$T/.codex/config.toml" ] && ok "pre-existing .codex/config.toml preserved" || no "pre-existing .codex/config.toml removed"
   grep -q 'model = "gpt-5-codex"' "$T/.codex/config.toml" && ok "pre-existing .codex/config.toml content preserved" || no "pre-existing .codex/config.toml content lost"
   grep -q '# BEGIN DEVRITES CODEX PERMISSIONS' "$T/.codex/config.toml" && no "DevRites permission block survived uninstall" || ok "pre-existing .codex/config.toml has no DevRites permission block"

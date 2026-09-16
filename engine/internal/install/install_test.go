@@ -54,12 +54,15 @@ func TestInstallPrintsFirstMoveForInstalledHosts(t *testing.T) {
 		withCodex bool
 		withOmp   bool
 		withPi    bool
+		withDevin bool
 		want      string
 	}{
 		{name: "Claude, Codex, and OMP", withCodex: true, withOmp: true, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex) or /skill:rite (omp/pi)."},
 		{name: "Claude and Codex", withCodex: true, withOmp: false, withPi: false, want: "Next: reopen the project, then run /rite (Claude) or $rite (Codex)."},
+		{name: "Claude, Codex, and Devin", withCodex: true, withDevin: true, want: "Next: reopen the project, then run /rite (Claude/Devin) or $rite (Codex)."},
 		{name: "Claude and OMP", withCodex: false, withOmp: true, withPi: false, want: "Next: reopen the project, then run /rite or /skill:rite."},
 		{name: "Claude and pi", withCodex: false, withOmp: false, withPi: true, want: "Next: reopen the project, then run /rite or /skill:rite."},
+		{name: "Claude and Devin", withCodex: false, withDevin: true, want: "Next: reopen the project, then run /rite."},
 		{name: "Claude only", withCodex: false, withOmp: false, withPi: false, want: "Next: reopen the project, then run /rite."},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -70,6 +73,7 @@ func TestInstallPrintsFirstMoveForInstalledHosts(t *testing.T) {
 			opts.WithCodex = tc.withCodex
 			opts.WithOmp = tc.withOmp
 			opts.WithPi = tc.withPi
+			opts.WithDevin = tc.withDevin
 			opts.Stdout = &out
 			opts.Stderr = &bytes.Buffer{}
 
@@ -125,6 +129,9 @@ func TestMarkerMergeAndUninstallPreserveUserContent(t *testing.T) {
 	if strings.Count(agents, "<!-- BEGIN DEVRITES CODEX -->") != 1 {
 		t.Fatalf("AGENTS marker duplicated:\n%s", agents)
 	}
+	if strings.Count(agents, "<!-- BEGIN DEVRITES DEVIN -->") != 1 {
+		t.Fatalf("AGENTS Devin marker missing or duplicated:\n%s", agents)
+	}
 	if !strings.Contains(agents, "user guidance") {
 		t.Fatal("AGENTS user content lost")
 	}
@@ -139,8 +146,11 @@ func TestMarkerMergeAndUninstallPreserveUserContent(t *testing.T) {
 	}
 
 	runUninstall(t, target)
-	if got := testutil.ReadFile(t, filepath.Join(target, "AGENTS.md")); !strings.Contains(got, "user guidance") || strings.Contains(got, "DEVRITES CODEX") {
+	if got := testutil.ReadFile(t, filepath.Join(target, "AGENTS.md")); !strings.Contains(got, "user guidance") || strings.Contains(got, "DEVRITES CODEX") || strings.Contains(got, "DEVRITES DEVIN") {
 		t.Fatalf("AGENTS uninstall preservation wrong:\n%s", got)
+	}
+	if exists(filepath.Join(target, ".devin")) {
+		t.Fatal("uninstall left .devin behind")
 	}
 	if got := testutil.ReadFile(t, filepath.Join(target, ".codex", "config.toml")); !strings.Contains(got, `model = "x"`) || strings.Contains(got, "DEVRITES CODEX") {
 		t.Fatalf("config uninstall preservation wrong:\n%s", got)
@@ -761,7 +771,7 @@ func TestLegacyCodexHooksMergeIsCleanupOnly(t *testing.T) {
 	if !ok || merge != legacy {
 		t.Fatalf("legacy marker lookup = %#v, %t", merge, ok)
 	}
-	if slices.Contains(hostpack.RequiredPayload(true, true, true), "codex/hooks.json") {
+	if slices.Contains(hostpack.RequiredPayload(true, true, true, true), "codex/hooks.json") {
 		t.Fatal("legacy Codex hooks entered the required payload")
 	}
 	r := runner{opts: DefaultOptions(ModeInstall), payloadFS: os.DirFS(testPayload(t))}
@@ -1254,6 +1264,9 @@ extends = ":workspace"
 	testutil.WriteFile(t, filepath.Join(root, "pi", "agents", "devrites-code-reviewer.md"), "pi agent\n")
 	testutil.WriteFile(t, filepath.Join(root, "pi", "prompts", "rite.md"), "pi prompt\n")
 	testutil.WriteFile(t, filepath.Join(root, "pi", "AGENTS.md"), "<!-- BEGIN DEVRITES PI -->\nDevRites\n<!-- END DEVRITES PI -->\n")
+	testutil.WriteFile(t, filepath.Join(root, "devin", "skills", "rite", "SKILL.md"), "devin rite\n")
+	testutil.WriteFile(t, filepath.Join(root, "devin", "agents", "devrites-code-reviewer.md"), "devin agent\n")
+	testutil.WriteFile(t, filepath.Join(root, "devin", "AGENTS.md"), "<!-- BEGIN DEVRITES DEVIN -->\nDevRites\n<!-- END DEVRITES DEVIN -->\n")
 }
 
 func testSource(t *testing.T, version string) string {

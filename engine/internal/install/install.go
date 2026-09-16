@@ -36,6 +36,7 @@ type Options struct {
 	WithCodex   bool
 	WithOmp     bool
 	WithPi      bool
+	WithDevin   bool
 	WithBinary  bool
 	KeepBinary  bool
 	AliasMode   string
@@ -86,6 +87,7 @@ func DefaultOptions(mode Mode) Options {
 		WithCodex:  true,
 		WithOmp:    true,
 		WithPi:     true,
+		WithDevin:  true,
 		WithBinary: true,
 		AliasMode:  "safe",
 		Stdout:     io.Discard,
@@ -138,6 +140,7 @@ func parseArgs(args []string, opts *Options) error {
 	noCodex := flags.Bool("no-codex", !opts.WithCodex, "")
 	noOmp := flags.Bool("no-omp", !opts.WithOmp, "")
 	noPi := flags.Bool("no-pi", !opts.WithPi, "")
+	noDevin := flags.Bool("no-devin", !opts.WithDevin, "")
 	noAgents := flags.Bool("no-agents", !opts.WithAgents, "")
 	noSkills := flags.Bool("no-skills", !opts.WithSkills, "")
 	noBinary := flags.Bool("no-binary", !opts.WithBinary, "")
@@ -166,6 +169,7 @@ func parseArgs(args []string, opts *Options) error {
 	opts.WithCodex = !*noCodex
 	opts.WithOmp = !*noOmp
 	opts.WithPi = !*noPi
+	opts.WithDevin = !*noDevin
 	opts.WithAgents = !*noAgents
 	opts.WithSkills = !*noSkills
 	opts.WithBinary = !*noBinary
@@ -212,7 +216,7 @@ func usage(mode Mode) string {
 	case ModeUpdate:
 		return "usage: devrites-engine update [--target DIR] [--dry-run] [--force] [--check] [install flags] [--source-dir DIR --payload-dir DIR]\n"
 	default:
-		return "usage: devrites-engine install [--target DIR] [--dry-run] [--force] [--no-codex] [--no-omp] [--no-pi] [--no-agents] [--no-skills] [--no-binary] [--short-aliases=all]\n"
+		return "usage: devrites-engine install [--target DIR] [--dry-run] [--force] [--no-codex] [--no-omp] [--no-pi] [--no-devin] [--no-agents] [--no-skills] [--no-binary] [--short-aliases=all]\n"
 	}
 }
 
@@ -337,7 +341,7 @@ func (r *runner) validatePayload() error {
 	if r.payload == "" {
 		return fmt.Errorf("generated install payload not found; pass --payload-dir or run scripts/build-host-artifacts.sh")
 	}
-	if err := hostpack.ValidatePayload(r.payloadFS, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi); err != nil {
+	if err := hostpack.ValidatePayload(r.payloadFS, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin); err != nil {
 		return fmt.Errorf("generated install payload under %s: %w", r.payload, err)
 	}
 	return nil
@@ -355,6 +359,9 @@ func isGlobalTarget(target string) bool {
 		filepath.Join(home, ".omp", "agent"),
 		filepath.Join(home, ".pi"),
 		filepath.Join(home, ".pi", "agent"),
+		filepath.Join(home, ".devin"),
+		filepath.Join(home, ".config", "devin"),
+		filepath.Join(home, ".agents"),
 	} {
 		if target == global || strings.HasPrefix(target, global+string(os.PathSeparator)) {
 			return true

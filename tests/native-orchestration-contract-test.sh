@@ -23,6 +23,7 @@ command_map = root / "docs/command-map.md"
 documented = set(re.findall(r"^\| `(devrites-[a-z-]+)` \|", agents_doc.read_text(), re.M))
 claude = {p.stem for p in (canonical / "agents").glob("devrites-*.md")}
 codex = {p.stem for p in (root / "pack/generated/codex/agents").glob("devrites-*.toml")}
+devin = {p.stem for p in (root / "pack/generated/devin/agents").glob("devrites-*.md")}
 
 if len(documented) != 17:
     raise SystemExit(f"agent catalog contains {len(documented)} roles, want 17")
@@ -30,16 +31,30 @@ if claude != documented:
     raise SystemExit(f"Claude profiles differ from catalog: missing={documented-claude}, extra={claude-documented}")
 if codex != documented:
     raise SystemExit(f"Codex profiles differ from catalog: missing={documented-codex}, extra={codex-documented}")
+if devin != documented:
+    raise SystemExit(f"Devin profiles differ from catalog: missing={documented-devin}, extra={devin-documented}")
 
 for role in sorted(documented):
     claude_text = (canonical / "agents" / f"{role}.md").read_text()
     codex_text = (root / "pack/generated/codex/agents" / f"{role}.toml").read_text()
+    devin_text = (root / "pack/generated/devin/agents" / f"{role}.md").read_text()
     claude_mode = "acceptEdits" if role == "devrites-slice-wright" else "plan"
     codex_mode = ":workspace" if role == "devrites-slice-wright" else ":read-only"
     if f"name: {role}" not in claude_text or f"permissionMode: {claude_mode}" not in claude_text:
         raise SystemExit(f"Claude role {role} has the wrong identity or permission mode")
     if f'name = "{role}"' not in codex_text or f'default_permissions = "{codex_mode}"' not in codex_text:
         raise SystemExit(f"Codex role {role} has the wrong identity or permission mode")
+    devin_frontmatter = devin_text.split("---", 2)[1]
+    if f"name: {role}" not in devin_frontmatter or "allowed-tools:" not in devin_frontmatter:
+        raise SystemExit(f"Devin role {role} has the wrong identity or missing allowed-tools")
+    if "permissionMode" in devin_frontmatter or re.search(r"(?m)^tools:", devin_frontmatter):
+        raise SystemExit(f"Devin role {role} leaks Claude frontmatter fields")
+    devin_tools = set(re.findall(r"(?m)^  - ([a-z_]+)$", devin_frontmatter))
+    if role == "devrites-slice-wright":
+        if not {"edit", "write", "exec"} <= devin_tools:
+            raise SystemExit(f"Devin wright lost write tools: {sorted(devin_tools)}")
+    elif devin_tools & {"edit", "write", "notebook_edit"}:
+        raise SystemExit(f"Devin read-only role {role} gained write tools: {sorted(devin_tools)}")
 
 profile_text = " ".join(profiles.read_text().split())
 for required in (

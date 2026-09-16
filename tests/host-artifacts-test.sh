@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# host-artifacts-test.sh: validate prebuilt Claude/Codex/omp/pi host artifacts.
+# host-artifacts-test.sh: validate prebuilt Claude/Codex/omp/pi/Devin host artifacts.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
@@ -72,6 +72,12 @@ for f in \
   "pi/prompts/rite.md" \
   "pi/prompts/rite-build.md" \
   "pi/AGENTS.md" \
+  "devin/skills/rite-build/SKILL.md" \
+  "devin/skills/devrites-lib/reference/standards/core.md" \
+  "devin/skills/rite-build/reference/wright-dispatch.md" \
+  "devin/agents/devrites-slice-wright.md" \
+  "devin/agents/devrites-code-reviewer.md" \
+  "devin/AGENTS.md" \
   "README.md"; do
   [ -f "$OUT/$f" ] && ok "artifact present: $f" || no "artifact missing: $f"
 done
@@ -92,10 +98,12 @@ claude_skills="$(find "$OUT/claude/skills" -mindepth 1 -maxdepth 1 -type d ! -na
 codex_skills="$(find "$OUT/codex/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
 omp_skills="$(find "$OUT/omp/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
 pi_skills="$(find "$OUT/pi/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+devin_skills="$(find "$OUT/devin/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
 [ "$claude_skills" = "$src_skills" ] && ok "Claude artifact skill count matches source" || no "Claude artifact skill count mismatch"
 [ "$codex_skills" = "$src_skills" ] && ok "Codex artifact skill count matches source" || no "Codex artifact skill count mismatch"
 [ "$omp_skills" = "$src_skills" ] && ok "omp artifact skill count matches source" || no "omp artifact skill count mismatch"
 [ "$pi_skills" = "$src_skills" ] && ok "pi artifact skill count matches source" || no "pi artifact skill count mismatch"
+[ "$devin_skills" = "$src_skills" ] && ok "Devin artifact skill count matches source" || no "Devin artifact skill count mismatch"
 
 grep -q '## Codex compatibility' "$OUT/codex/skills/rite-build/SKILL.md" &&
   no "Codex skill artifact duplicates project-wide guidance" ||
@@ -287,6 +295,66 @@ for d in "$ROOT"/pack/.claude/skills/rite "$ROOT"/pack/.claude/skills/rite-*; do
   [ -f "$OUT/pi/prompts/$s.md" ] && ok "pi prompt preserves /$s" || no "pi prompt missing for /$s"
 done
 
+grep -q '.devin/skills/devrites-lib/reference/standards/core.md' "$OUT/devin/skills/rite-build/SKILL.md" &&
+  ok "Devin skill artifact uses mirrored rules path" ||
+  no "Devin skill artifact missing mirrored rules path"
+grep -q '.devin/agents/devrites-slice-wright.md' "$OUT/devin/skills/rite-build/SKILL.md" &&
+  ok "Devin skill artifact references Devin agent markdown" ||
+  no "Devin skill artifact missing Devin agent markdown"
+if grep -qE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/|\.pi/' \
+  "$OUT/devin/skills/rite-build/SKILL.md" \
+  "$OUT/devin/agents/devrites-slice-wright.md" \
+  "$OUT/devin/agents/devrites-code-reviewer.md" \
+  "$OUT/devin/AGENTS.md"; then
+  no "Devin artifacts retain foreign host paths"
+else
+  ok "Devin artifacts rewrite to .devin paths"
+fi
+grep -q 'BEGIN DEVRITES DEVIN' "$OUT/devin/AGENTS.md" &&
+  grep -q 'END DEVRITES DEVIN' "$OUT/devin/AGENTS.md" &&
+  grep -q 'run_subagent' "$OUT/devin/AGENTS.md" &&
+  grep -q 'never substitute `subagent_general`' "$OUT/devin/AGENTS.md" &&
+  ok "Devin AGENTS.md bridge is marked and uses run_subagent dispatch" ||
+  no "Devin AGENTS.md bridge missing markers or run_subagent dispatch"
+grep -q '^name: devrites-slice-wright' "$OUT/devin/agents/devrites-slice-wright.md" &&
+  grep -q '^allowed-tools:' "$OUT/devin/agents/devrites-slice-wright.md" &&
+  grep -q '^  - write' "$OUT/devin/agents/devrites-slice-wright.md" &&
+  grep -q '^  - edit' "$OUT/devin/agents/devrites-slice-wright.md" &&
+  ok "Devin wright keeps write tools under allowed-tools" ||
+  no "Devin wright lost write tools or allowed-tools"
+if grep -q '^  - \(write\|edit\)' "$OUT/devin/agents/devrites-code-reviewer.md"; then
+  no "Devin reviewer agent gained write tools"
+else
+  ok "Devin reviewer agent stays read-only"
+fi
+if grep -qE 'permissionMode|^tools:|^  - (Read|Edit|Write|Bash|Glob|Grep|Skill|WebFetch|WebSearch)$' \
+  "$OUT"/devin/agents/devrites-*.md; then
+  no "Devin agents retain Claude tool names or permissionMode"
+else
+  ok "Devin agents use Devin tool names under allowed-tools"
+fi
+grep -qx '  - user' "$OUT/devin/skills/rite/SKILL.md" &&
+  ! grep -qx '  - model' "$OUT/devin/skills/rite/SKILL.md" &&
+  ok "Devin explicit-only menu skill becomes triggers: [user]" ||
+  no "Devin menu skill triggers wrong"
+grep -qx 'triggers: \[\]' "$OUT/devin/skills/devrites-lib/SKILL.md" &&
+  ok "Devin library skill becomes triggers: []" ||
+  no "Devin library skill triggers wrong"
+grep -qx '  - model' "$OUT/devin/skills/devrites-doubt/SKILL.md" &&
+  ! grep -qx '  - user' "$OUT/devin/skills/devrites-doubt/SKILL.md" &&
+  ok "Devin model-invoked skill becomes triggers: [model]" ||
+  no "Devin model-invoked skill triggers wrong"
+if grep -q '^triggers:' "$OUT/devin/skills/rite-build/SKILL.md"; then
+  no "Devin default skill gained a triggers restriction"
+else
+  ok "Devin default skill keeps default triggers"
+fi
+if grep -R -qE 'user-invocable:|disable-model-invocation:' "$OUT"/devin/skills/*/SKILL.md; then
+  no "Devin skills retain Claude invocation fields"
+else
+  ok "Devin skills drop Claude invocation fields"
+fi
+
 grep -q 'Immediately before its final response' "$OUT/codex/skills/devrites-lib/reference/standards/core.md" &&
   ok "Codex core preserves the universal reply boundary" ||
   no "Codex core lost the universal reply boundary"
@@ -294,14 +362,14 @@ grep -q 'devrites-engine check readiness <slug>' "$OUT/codex/skills/devrites-lib
   ok "Codex core preserves lifecycle rest points" ||
   no "Codex core lost lifecycle rest points"
 if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out|migrate)([[:space:]`]|$)' \
-  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" >/tmp/dr_host_artifacts_retired 2>/dev/null; then
+  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" "$OUT/devin" >/tmp/dr_host_artifacts_retired 2>/dev/null; then
   no "generated host artifacts retain retired engine commands"
   sed -n '1,20p' /tmp/dr_host_artifacts_retired
 else
   ok "generated host artifacts use only nested thin-engine commands"
 fi
 if grep -R -nE 'devrites-engine[[:space:]]+(check[[:space:]]+spec|state[[:space:]]+(clarify|tick-afk|recovery)([[:space:]`]|$)|state[[:space:]]+resolve[[:space:]]+next-qid|doctor([[:space:]`]|$))' \
-  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" >"$T/removed-policy-commands.log" 2>/dev/null; then
+  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" "$OUT/devin" >"$T/removed-policy-commands.log" 2>/dev/null; then
   no "generated host artifacts retain removed engine policy commands"
   sed -n '1,20p' "$T/removed-policy-commands.log"
 else
@@ -312,13 +380,14 @@ if grep -R -nE 'ADR-[0-9]{4}' \
   "$OUT/codex/skills" "$OUT/codex/agents" "$OUT/codex/AGENTS.md" \
   "$OUT/omp/skills" "$OUT/omp/agents" \
   "$OUT/pi/skills" "$OUT/pi/agents" "$OUT/pi/prompts" "$OUT/pi/AGENTS.md" \
+  "$OUT/devin/skills" "$OUT/devin/agents" "$OUT/devin/AGENTS.md" \
   >"$T/source-adr.log" 2>/dev/null; then
   no "generated model-visible artifacts contain source ADR identifiers"
   sed -n '1,20p' "$T/source-adr.log"
 else
   ok "generated model-visible artifacts contain no source ADR identifiers"
 fi
-for host in claude codex omp pi; do
+for host in claude codex omp pi devin; do
   authoring="$OUT/$host/skills/devrites-lib/reference/standards/skill-authoring.md"
   if grep -q 'Source-checkout only' "$authoring" &&
     grep -q 'where `pack/\.claude/` exists' "$authoring" &&
@@ -376,7 +445,7 @@ grep -q -- '--import-legacy' "$OUT/codex/skills/rite-customize/SKILL.md" &&
 grep -q 'earlier context cannot activate it' "$OUT/codex/skills/rite-customize/SKILL.md" &&
   ok "Codex customize preserves literal-only legacy mode" ||
   no "Codex customize can infer legacy mode from context"
-for host in claude codex omp pi; do
+for host in claude codex omp pi devin; do
   grep -q 'Older provenance, cursor form, or pack version alone is never a defect' \
     "$OUT/$host/skills/rite-upgrade/SKILL.md" &&
     ok "$host upgrade requires an observed current-contract defect" ||
@@ -419,6 +488,14 @@ if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills
   sed -n '1,40p' /tmp/dr_host_artifacts_pi_paths
 else
   ok "pi artifacts contain no leftover Claude/Codex/omp paths"
+fi
+
+if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/|\.pi/' "$OUT/devin/skills" "$OUT/devin/agents" "$OUT/devin/AGENTS.md" ||
+  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/devin/skills" "$OUT/devin/agents"; } >/tmp/dr_host_artifacts_devin_paths 2>/dev/null; then
+  no "Devin artifacts contain leftover foreign host paths"
+  sed -n '1,40p' /tmp/dr_host_artifacts_devin_paths
+else
+  ok "Devin artifacts contain no leftover foreign host paths"
 fi
 
 if command -v python3 >/dev/null 2>&1; then

@@ -94,6 +94,7 @@ def main():
                 f"codex/skills/{name}/SKILL.md",
                 f"pi/skills/{name}/SKILL.md",
                 f"pi/prompts/{name}.md",
+                f"devin/skills/{name}/SKILL.md",
             ]:
                 if not (args.generated_root / rel).exists():
                     errors.append(f"generated artifact missing {rel}")
