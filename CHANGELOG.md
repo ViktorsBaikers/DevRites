@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.11.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.10.2...v5.11.0) (2026-09-16)
+
+### Added
+
+* **installer:** add Devin CLI host generation and install support ([#79](https://github.com/ViktorsBaikers/DevRites/issues/79)) ([a94056b](https://github.com/ViktorsBaikers/DevRites/commit/a94056bc20f520537395cf5c7c075e700d5a0b26))
+
 ## [5.10.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.10.1...v5.10.2) (2026-09-15)
 
 ### Fixed
