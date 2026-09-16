@@ -1,7 +1,7 @@
 {
   "name": "devrites",
   "version": "5.10.2",
-  "description": "DevRites: a disciplined senior-engineer workflow pack for Claude Code, Codex, omp, and pi",
+  "description": "DevRites: a disciplined senior-engineer workflow pack for Claude Code, Codex, omp, pi, and Devin CLI",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://github.com/ViktorsBaikers/DevRites#readme",
   "repository": {
@@ -14,6 +14,7 @@
   "keywords": [
     "claude-code",
     "codex",
+    "devin-cli",
     "skills",
     "agent-skills",
     "workflow",
@@ -37,6 +38,7 @@
     "scripts/codex-generate.sh",
     "scripts/omp-generate.sh",
     "scripts/pi-generate.sh",
+    "scripts/devin-generate.sh",
     "scripts/install-lib.sh",
     "install.sh",
     "uninstall.sh",

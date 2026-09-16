@@ -1,0 +1,96 @@
+# Slice-wright dispatch
+
+`/rite-build` gives one bounded task to exact `devrites-slice-wright`.
+Root owns scope/artifacts/inspection; never writes source/tests.
+Wright alone writes; no agents.
+
+## Host gate
+
+Apply [source-writing boundary](../../devrites-lib/reference/standards/agents.md#source-writing-boundary):
+Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root,
+the exact `:workspace` wright, and read-only specialists. Never bypass/substitute
+the wright or recreate an engine bridge.
+
+## Isolated writer-worktree pilot
+
+Use native isolation only when the current host exposes an explicit named-writer
+worktree plus result reconciliation; separate agent threads or inherited sandboxes do
+not qualify. Codex CLI custom subagents therefore use `same-worktree` unless a future
+supported interface passes this capability gate—never create a manual worktree from the
+read-only root to imitate it. Also require `git rev-parse
+--show-superproject-working-tree` to be empty; resolved git/common dirs; committed,
+clean candidate/index; all inputs at `HEAD`; no other writer; and green cheap isolated
+baseline proof. Otherwise use serial same-worktree dispatch—never stash, commit, or
+discard user work to qualify. Ask host for an explicit current-`HEAD` base when
+supported. Regardless of host defaults, the wright's first command must prove actual `git rev-parse HEAD` equals supplied
+`worktree_base`. Mismatch returns a gap with no write before project reads or baseline proof.
+
+The isolated wright returns one local unpushed `transfer_commit` (contract
+`WIP(<slug>):` subject, no slice id), its `worktree_base`, and exact files.
+That commit is worker-branch transport, not the control-branch checkpoint. Root proves descendant base, exact `git diff --name-only`
+`` `<base>..<transfer>` ``, no `.devrites/**`/submodule/symlink/unrelated delta, unchanged
+source base, and no user-work overwrite. Use only host-native explicit reconciliation;
+never ad hoc copy, cherry-pick, or merge from read-only root. Land on control
+only per [`checkpoint.md`](checkpoint.md).
+
+Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
+preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
+Parallel isolated-writer worktrees remain forbidden until this serial pilot measures
+transfer, conflict, proof, and review outcomes on both hosts; opt-in `/rite-build --parallel N`
+(2≤N≤10) path-disjoint fan-out is the only sanctioned parallel mode. Same-worktree multi-writer / root-emulated
+worktrees stay forbidden.
+
+## Prepare
+
+1. Derive the smallest exact project-relative source/test path list; reject
+   directories/globs, traversal, symlink escapes, duplicates, and `.devrites/**`.
+   A target composed only of vetted executable workflow artifacts routes to the
+   controlling root under
+   [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md);
+   its rejection here is not a blocker.
+2. Include goal, verbatim acceptance, exclusions, context,
+   `test-plan.md` proof commands, applicable standards, and the exact
+   `WIP(<slug>):` subject (no slice id). For each triggered
+   topology/data/integration standard, include only the feature-specific owner/invariant,
+   failure or partial-state case, recovery rule, and required proof from the vetted plan.
+   Do not paste the whole standard or silently omit an applicable risk.
+   A new path requires a new bounded contract; the wright cannot widen the task.
+3. Record `git diff --name-only` before dispatch so unrelated work remains
+   distinguishable. For an isolated pilot, also record committed base SHA and exact
+   baseline status before asking the host for isolation. **Failing case:** paths that
+   were dirty at that baseline are listed as slice-owned after dispatch.
+
+## Run
+
+Ask the host for the exact writer in fresh context and wait. Use at most one writer
+across all linked worktrees for this workspace. Never run two writers in one worktree,
+run isolated and same-worktree writers concurrently, or substitute a generic agent.
+Opt-in `/rite-build --parallel N` fans out only under [`parallel-batch.md`](parallel-batch.md).
+
+## Inspect and prove
+
+1. Compare the returned file list and `git diff --name-only` with task paths.
+   Reject a result that omits any required key — the bookkeeping arrays count
+   whether empty or filled — or adds a path. Restore only through the same bounded
+   wright; root never widens scope or edits source.
+2. Inspect the test diff for deletion, skipping, focus markers, or loosened
+   assertions. Dedicated test analysis treats weakening as Critical.
+   Confirm a test for a data/integration/topology risk can actually exhibit that risk;
+   mocks that erase it and one-root proof offered for another root are unproven.
+3. Apply [independent Build review](phase-contract.md#independent-build-review)
+   before proof. Human choices return; technical failures follow
+   [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+   Derive accounting from recorded reproductions, corrections, and decisive rechecks.
+4. Run only repository proof already approved by `test-plan.md`, then inspect
+   `git diff --name-only` again in case a proof tool changed source.
+   **Do not land on control until review and proof are green.** Isolated
+   `transfer_commit` stays on the worker branch; same-worktree diffs stay
+   uncommitted. Serial: [`checkpoint.md`](checkpoint.md), then host may remove the
+   worktree. Parallel: `record-green` only; land with `parallel integrate
+   --apply-to-control` after the batch; `parallel cleanup` removes worktrees.
+5. Reconcile returned reuse, conventions, principles, sources, assumptions,
+   decisions, dead ends, follow-ups, gates, and touched files. Persist the
+   relevant facts in canonical artifacts, not the wholesale report. A plan-gap
+   escalation without the checked-assumption list (verified|falsified) is
+   malformed; root sweeps the unchecked remainder per
+   [`spec-drift-guard.md`](spec-drift-guard.md) before repair.

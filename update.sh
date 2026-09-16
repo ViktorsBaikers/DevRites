@@ -37,7 +37,8 @@ trap 'exit 1' HUP INT TERM
 dr_acquire_engine "$SELF_DIR" update "$DEVRITES_REPO" || { echo "error: could not acquire a version-compatible devrites-engine${DR_ACQUIRE_FAILURE:+ ($DR_ACQUIRE_FAILURE)}." >&2; exit 1; }
 ENGINE="$DR_ENGINE_PATH"
 PAYLOAD="${DEVRITES_HOST_ARTIFACT_DIR:-$SELF_DIR/pack/generated}"
-if [ ! -d "$PAYLOAD/claude/skills" ] || [ ! -d "$PAYLOAD/codex/skills" ] || [ ! -f "$PAYLOAD/codex/config.toml" ]; then
+if [ ! -d "$PAYLOAD/claude/skills" ] || [ ! -d "$PAYLOAD/codex/skills" ] || [ ! -f "$PAYLOAD/codex/config.toml" ] ||
+  [ ! -d "$PAYLOAD/devin/skills" ] || [ ! -d "$PAYLOAD/devin/agents" ] || [ ! -f "$PAYLOAD/devin/AGENTS.md" ]; then
   BUILDER="$SELF_DIR/scripts/build-host-artifacts.sh"
   [ -f "$BUILDER" ] || { echo "error: generated update payload missing at $PAYLOAD and builder missing at $BUILDER" >&2; exit 1; }
   DEVRITES_HOST_ARTIFACT_DIR="$PAYLOAD" bash "$BUILDER" >/dev/null || { echo "error: could not generate update payload at $PAYLOAD" >&2; exit 1; }

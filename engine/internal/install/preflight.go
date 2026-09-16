@@ -93,7 +93,7 @@ func (r *runner) preflightUninstall(entries []string) error {
 
 func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	out := map[string]bool{".devrites/README.md": true}
-	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi) {
+	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin) {
 		err := fs.WalkDir(r.payloadFS, tree.PayloadPrefix, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
@@ -114,7 +114,7 @@ func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	}
 	if r.opts.WithSkills && r.opts.AliasMode == "all" {
 		for _, alias := range hostpack.Aliases {
-			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi) {
+			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin) {
 				out[rel] = true
 			}
 		}
@@ -125,6 +125,9 @@ func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	}
 	if r.opts.WithSkills && r.opts.WithPi {
 		out[hostpack.PiAgentsMerge.MarkerRel] = true
+	}
+	if r.opts.WithSkills && r.opts.WithDevin {
+		out[hostpack.DevinAgentsMerge.MarkerRel] = true
 	}
 	if r.opts.WithSkills {
 		out[hostpack.ClaudeSettingsMerge.MarkerRel] = true
@@ -141,6 +144,9 @@ func (r *runner) installMergeTargets() []string {
 		}
 		if r.opts.WithPi {
 			out = append(out, hostpack.PiAgentsMerge.TargetRel)
+		}
+		if r.opts.WithDevin {
+			out = append(out, hostpack.DevinAgentsMerge.TargetRel)
 		}
 	}
 	return out

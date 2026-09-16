@@ -63,6 +63,8 @@ Common flags:
   --force               Overwrite existing non-DevRites files
   --no-codex            Skip Codex support files (.agents, .codex, AGENTS.md)
   --no-omp              Skip OMP support files (.omp/skills, .omp/agents)
+  --no-pi               Skip pi support files (.pi/skills, .pi/agents, .pi/prompts)
+  --no-devin            Skip Devin CLI support files (.devin/skills, .devin/agents)
   --short-aliases=all   Also install /define /build /prove /seal
   --no-agents           Skip hook-free native specialist profiles
   --no-skills           Skip skills and bundled engineering standards

@@ -307,10 +307,13 @@ PAYLOAD="${DEVRITES_HOST_ARTIFACT_DIR:-$SELF_DIR/pack/generated}"
 if [ ! -d "$PAYLOAD/claude/skills" ] || [ ! -d "$PAYLOAD/codex/skills" ] ||
   [ ! -d "$PAYLOAD/pi/skills" ] || [ ! -d "$PAYLOAD/pi/agents" ] ||
   [ ! -d "$PAYLOAD/pi/prompts" ] ||
+  [ ! -d "$PAYLOAD/devin/skills" ] || [ ! -d "$PAYLOAD/devin/agents" ] ||
   [ ! -f "$PAYLOAD/claude/skills/devrites-lib/reference/standards/agents.md" ] ||
   [ ! -f "$PAYLOAD/codex/skills/devrites-lib/reference/standards/agents.md" ] ||
   [ ! -f "$PAYLOAD/pi/skills/devrites-lib/reference/standards/agents.md" ] ||
-  [ ! -f "$PAYLOAD/codex/config.toml" ] || [ ! -f "$PAYLOAD/pi/AGENTS.md" ]; then
+  [ ! -f "$PAYLOAD/devin/skills/devrites-lib/reference/standards/agents.md" ] ||
+  [ ! -f "$PAYLOAD/codex/config.toml" ] || [ ! -f "$PAYLOAD/pi/AGENTS.md" ] ||
+  [ ! -f "$PAYLOAD/devin/AGENTS.md" ]; then
   BUILDER="$SELF_DIR/scripts/build-host-artifacts.sh"
   [ -f "$BUILDER" ] || {
     echo "error: generated install payload missing at $PAYLOAD and builder missing at $BUILDER" >&2

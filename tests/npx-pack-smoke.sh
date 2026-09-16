@@ -104,6 +104,7 @@ for need in \
   package/update.sh \
   package/scripts/ \
   package/scripts/codex-generate.sh \
+  package/scripts/devin-generate.sh \
   package/scripts/omp-generate.sh \
   package/scripts/pi-generate.sh \
   package/scripts/build-host-artifacts.sh \
@@ -117,6 +118,9 @@ for need in \
   package/pack/generated/pi/agents/devrites-code-reviewer.md \
   package/pack/generated/pi/prompts/rite-build.md \
   package/pack/generated/pi/AGENTS.md \
+  package/pack/generated/devin/skills/rite-build/SKILL.md \
+  package/pack/generated/devin/agents/devrites-code-reviewer.md \
+  package/pack/generated/devin/AGENTS.md \
   package/pack/.claude/; do
   echo "$contents" | grep -q "^$need" && ok "tarball ships $need" || no "tarball MISSING $need (files allowlist?)"
 done
@@ -124,6 +128,7 @@ shipped_scripts="$(printf '%s\n' "$contents" | grep '^package/scripts/.' | grep 
 runtime_scripts="$(printf '%s\n' \
   package/scripts/build-host-artifacts.sh \
   package/scripts/codex-generate.sh \
+  package/scripts/devin-generate.sh \
   package/scripts/install-lib.sh \
   package/scripts/omp-generate.sh \
   package/scripts/pi-generate.sh | sort)"

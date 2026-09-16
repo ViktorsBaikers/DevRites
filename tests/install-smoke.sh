@@ -66,6 +66,10 @@ for f in \
   ".claude/agents/devrites-code-reviewer.md" \
   ".codex/agents/devrites-code-reviewer.toml" \
   ".codex/config.toml" \
+  ".devin/skills/rite/SKILL.md" \
+  ".devin/skills/rite-build/SKILL.md" \
+  ".devin/agents/devrites-slice-wright.md" \
+  ".devin/agents/devrites-code-reviewer.md" \
   ".claude/agents/devrites-spec-reviewer.md" \
   ".claude/skills/devrites-lib/reference/standards/security.md" \
   ".claude/skills/devrites-lib/reference/standards/agents.md" \
@@ -109,6 +113,9 @@ grep -q '^\.agents/skills/devrites-lib/reference/standards/core.md$' "$T/.claude
 grep -q '^\.codex/agents/devrites-code-reviewer.toml$' "$T/.claude/devrites.manifest" && ok "manifest tracks Codex custom agent" || no "manifest missing Codex custom agent"
 grep -q '^AGENTS.md$' "$T/.claude/devrites.manifest" && no "AGENTS.md should be marker-managed, not file-managed" || ok "AGENTS.md not file-managed"
 grep -q '^\.claude/devrites\.agents-merge$' "$T/.claude/devrites.manifest" && ok "AGENTS merge marker managed" || no "AGENTS merge marker missing"
+grep -q '^\.devin/skills/rite/SKILL.md$' "$T/.claude/devrites.manifest" && ok "manifest tracks Devin skill" || no "manifest missing Devin skill"
+grep -q '^\.devin/agents/devrites-code-reviewer.md$' "$T/.claude/devrites.manifest" && ok "manifest tracks Devin agent profile" || no "manifest missing Devin agent profile"
+grep -q '^\.claude/devrites\.devin-agents-merge$' "$T/.claude/devrites.manifest" && ok "Devin AGENTS merge marker managed" || no "Devin AGENTS merge marker missing"
 grep -q '^\.codex/config.toml$' "$T/.claude/devrites.manifest" && no ".codex/config.toml should be marker-managed, not file-managed" || ok ".codex/config.toml not file-managed"
 grep -q '^\.claude/devrites\.codex-config-merge$' "$T/.claude/devrites.manifest" && ok "Codex permission config merge marker managed" || no "Codex permission config merge marker missing"
 grep -q '^\.codex/hooks.json$\\|^\.claude/devrites\.codex-hooks-merge$' "$T/.claude/devrites.manifest" && no "obsolete Codex hooks are manifest-managed" || ok "obsolete Codex hooks are absent from manifest"
@@ -159,6 +166,39 @@ grep -q 'exact project-relative source/test path list' "$T/.agents/skills/rite-b
 grep -q '\.claude/skills/devrites-lib/reference/standards' "$T/.codex/agents/devrites-code-reviewer.toml" && no "Codex agent still points at .claude/skills/devrites-lib/reference/standards" || ok "Codex agent uses mirrored rules paths"
 grep -q '\$rite-build' "$T/.agents/skills/rite-define/reference/gates.md" && ok "Codex skill mirror rewrites slash rite invocations" || no "Codex skill mirror missing dollar rite invocation rewrite"
 grep -q '\$rite-build' "$T/.codex/agents/devrites-slice-wright.toml" && ok "Codex agent descriptions rewrite slash rite invocations" || no "Codex agent descriptions missing dollar rite invocation rewrite"
+grep -q 'BEGIN DEVRITES DEVIN' "$T/AGENTS.md" \
+  && grep -q 'run_subagent' "$T/AGENTS.md" \
+  && grep -q 'never substitute `subagent_general`' "$T/AGENTS.md" \
+  && grep -q 'stop for HITL' "$T/AGENTS.md" \
+  && ok "installed AGENTS bridge carries the Devin fail-closed dispatch block" \
+  || no "installed AGENTS bridge missing the Devin block"
+grep -q '\.devin/skills/devrites-lib/reference/standards/core.md' "$T/.devin/skills/rite-build/SKILL.md" \
+  && ok "Devin skill mirror loads DevRites rules mirror" \
+  || no "Devin skill mirror missing rules instruction"
+grep -q '\.devin/agents/devrites-slice-wright.md' "$T/.devin/skills/rite-build/SKILL.md" \
+  && ok "Devin skill root points at Devin agent markdown" \
+  || no "Devin skill root missing Devin agent path"
+if grep -R -nE '\.claude/skills|\.claude/agents|\.codex/|\.agents/skills|\.omp/|\.pi/' \
+  "$T/.devin/skills" "$T/.devin/agents" >/tmp/dr_install_devin_paths 2>/dev/null; then
+  no "Devin installed tree retains foreign host paths"
+  sed -n '1,20p' /tmp/dr_install_devin_paths
+elif grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' \
+  "$T/.devin/skills" "$T/.devin/agents" >/tmp/dr_install_devin_paths 2>/dev/null; then
+  no "Devin installed tree retains pack/.claude paths"
+  sed -n '1,20p' /tmp/dr_install_devin_paths
+else
+  ok "Devin installed tree has no foreign host paths"
+fi
+grep -q '^allowed-tools:' "$T/.devin/agents/devrites-slice-wright.md" \
+  && grep -q '^  - write' "$T/.devin/agents/devrites-slice-wright.md" \
+  && grep -q '^  - edit' "$T/.devin/agents/devrites-slice-wright.md" \
+  && ok "installed Devin wright keeps write tools" \
+  || no "installed Devin wright lost write tools"
+if grep -q '^  - \(write\|edit\)' "$T/.devin/agents/devrites-code-reviewer.md"; then
+  no "installed Devin reviewer gained write tools"
+else
+  ok "installed Devin reviewer stays read-only"
+fi
 grep -q 'exact project-relative source/test path list directly in the task' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
   && grep -q 'git diff --name-only' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
   && grep -Fq 'test hunks for deletion, skipping/focus, tautology, or weaker expectations' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
@@ -168,7 +208,7 @@ grep -q 'exact project-relative source/test path list directly in the task' "$T/
   && ok "Codex build contract keeps native boundary review with root" \
   || no "Codex build contract assigns deterministic gates inconsistently"
 if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out|migrate)([[:space:]`]|$)' \
-  "$T/.claude/skills" "$T/.claude/agents" "$T/.agents/skills" "$T/.codex/agents" \
+  "$T/.claude/skills" "$T/.claude/agents" "$T/.agents/skills" "$T/.codex/agents" "$T/.devin/skills" "$T/.devin/agents" \
   >/tmp/dr_install_retired_engine 2>/dev/null; then
   no "installed guidance retains retired engine commands"
   sed -n '1,20p' /tmp/dr_install_retired_engine
@@ -176,7 +216,7 @@ else
   ok "installed guidance uses only nested thin-engine commands"
 fi
 if grep -R -nE 'devrites-engine[[:space:]]+(check[[:space:]]+spec|state[[:space:]]+(clarify|tick-afk|recovery)([[:space:]`]|$)|state[[:space:]]+resolve[[:space:]]+next-qid|doctor([[:space:]`]|$))' \
-  "$T/.claude/skills" "$T/.claude/agents" "$T/.agents/skills" "$T/.codex/agents" \
+  "$T/.claude/skills" "$T/.claude/agents" "$T/.agents/skills" "$T/.codex/agents" "$T/.devin/skills" "$T/.devin/agents" \
   >"$T/removed-policy-commands.log" 2>/dev/null; then
   no "installed guidance retains removed engine policy commands"
   sed -n '1,20p' "$T/removed-policy-commands.log"

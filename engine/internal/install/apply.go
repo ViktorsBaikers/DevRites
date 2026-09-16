@@ -25,6 +25,7 @@ func (r *runner) install() error {
 	fmt.Fprintf(r.opts.Stdout, "  codex  : %s\n", yesno(r.opts.WithCodex))
 	fmt.Fprintf(r.opts.Stdout, "  omp    : %s\n", yesno(r.opts.WithOmp))
 	fmt.Fprintf(r.opts.Stdout, "  pi     : %s\n", yesno(r.opts.WithPi))
+	fmt.Fprintf(r.opts.Stdout, "  devin  : %s\n", yesno(r.opts.WithDevin))
 	fmt.Fprintf(r.opts.Stdout, "  aliases: %s\n", r.opts.AliasMode)
 	if r.opts.DryRun {
 		fmt.Fprintln(r.opts.Stdout, "  (dry run - no changes will be made)")
@@ -39,7 +40,7 @@ func (r *runner) install() error {
 		return err
 	}
 
-	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi) {
+	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin) {
 		if err := r.installTree(tree.PayloadPrefix, tree.TargetPrefix); err != nil {
 			return fmt.Errorf("install tree %s: %w", tree.TargetPrefix, err)
 		}
@@ -50,7 +51,7 @@ func (r *runner) install() error {
 			if err != nil {
 				return fmt.Errorf("render alias skill %s: %w", alias.Name, err)
 			}
-			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi) {
+			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin) {
 				if err := r.installData(data, rel); err != nil {
 					return fmt.Errorf("install alias: %w", err)
 				}
@@ -68,6 +69,11 @@ func (r *runner) install() error {
 	if r.opts.WithSkills && r.opts.WithPi {
 		if err := r.mergeMarkerFile(hostpack.PiAgentsMerge); err != nil {
 			return fmt.Errorf("merge %s: %w", hostpack.PiAgentsMerge.TargetRel, err)
+		}
+	}
+	if r.opts.WithSkills && r.opts.WithDevin {
+		if err := r.mergeMarkerFile(hostpack.DevinAgentsMerge); err != nil {
+			return fmt.Errorf("merge %s: %w", hostpack.DevinAgentsMerge.TargetRel, err)
 		}
 	}
 	if r.opts.WithSkills {
@@ -98,11 +104,15 @@ func (r *runner) install() error {
 	}
 	fmt.Fprintf(r.opts.Stdout, "  installed: %d   overwritten: %d   skipped(conflict): %d   pruned: %d\n", r.stats.installed, r.stats.overwrote, r.stats.skipped, r.stats.pruned)
 	if !r.opts.DryRun && r.opts.WithSkills {
+		claudeHosts := "Claude"
+		if r.opts.WithDevin {
+			claudeHosts = "Claude/Devin"
+		}
 		switch {
 		case r.opts.WithCodex && (r.opts.WithOmp || r.opts.WithPi):
-			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite (Claude) or $rite (Codex) or /skill:rite (omp/pi).")
+			fmt.Fprintf(r.opts.Stdout, "Next: reopen the project, then run /rite (%s) or $rite (Codex) or /skill:rite (omp/pi).\n", claudeHosts)
 		case r.opts.WithCodex:
-			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite (Claude) or $rite (Codex).")
+			fmt.Fprintf(r.opts.Stdout, "Next: reopen the project, then run /rite (%s) or $rite (Codex).\n", claudeHosts)
 		case r.opts.WithOmp || r.opts.WithPi:
 			fmt.Fprintln(r.opts.Stdout, "Next: reopen the project, then run /rite or /skill:rite.")
 		default:
@@ -319,6 +329,9 @@ func (r *runner) flagsString() string {
 	}
 	if !r.opts.WithPi {
 		flags = append(flags, "--no-pi")
+	}
+	if !r.opts.WithDevin {
+		flags = append(flags, "--no-devin")
 	}
 	if !r.opts.WithBinary {
 		flags = append(flags, "--no-binary")
