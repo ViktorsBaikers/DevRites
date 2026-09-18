@@ -54,6 +54,16 @@ const (
 	closeUsage          = "usage: devrites-engine state close <slug>"
 	observeSliceUsage   = "usage: devrites-engine observe slice <slug> <SLICE-ID>"
 	observeSummaryUsage = "usage: devrites-engine observe summary [slug]"
+	gatesFamilyUsage    = `usage: devrites-engine gates <scaffold|status|run|reverify|lint|attest|abandon> <slug> ...
+
+  gates scaffold <slug>            Create gates.md from spec.md AC ids (only when absent)
+  gates status <slug>              Reduce the ledger without executing; exit 3 unless ALL MET
+  gates run <slug> [--timeout N]   Execute unmet runnable gates and record evidence
+  gates reverify <slug> [--timeout N]  Re-execute every runnable gate, demoting stale passes
+  gates lint <slug> [--strict]     Audit oracle quality without executing
+  gates attest <slug> <id> <note>  Record human evidence on a manual gate
+  gates abandon <slug> <id> <why>  Record a terminal ABANDON handoff on a gate
+`
 )
 
 func isHelpFlag(arg string) bool {
@@ -89,7 +99,7 @@ func shouldPrintHelp(args []string) bool {
 		return true
 	}
 	switch args[0] {
-	case "check", "state", "observe", "parallel":
+	case "check", "state", "observe", "parallel", "gates":
 		return len(args) >= 2 && args[1] == "help"
 	default:
 		return false
@@ -131,6 +141,8 @@ func commandHelp(args []string) (string, bool) {
 		return orientUsage, true
 	case "parallel":
 		return parallel.CommandUsage(firstNonHelp(args[1:])), true
+	case "gates":
+		return gatesFamilyUsage, true
 	case "migrate":
 		return migrateUsage, true
 	case "secret-scan":

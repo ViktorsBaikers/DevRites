@@ -27,7 +27,7 @@ func expectedPhasePolicies() []PhasePolicy {
 	artifactsSpec := []ArtifactPath{"brief.md", "spec.md", "state.md", "decisions.md", "assumptions.md", "questions.md"}
 	artifactsClarify := append(append([]ArtifactPath(nil), artifactsSpec...), "decision-coverage.md")
 	artifactsPlan := append(append([]ArtifactPath(nil), artifactsClarify...), "architecture.md", "plan.md", "tasks.md", "traceability.md")
-	artifactsVetted := append(append([]ArtifactPath(nil), artifactsPlan...), "eng-review.md", "test-plan.md")
+	artifactsVetted := append(append([]ArtifactPath(nil), artifactsPlan...), "eng-review.md", "test-plan.md", "gates.md")
 	artifactsProof := append(append([]ArtifactPath(nil), artifactsVetted...), "evidence.md", "touched-files.md")
 	artifactsFinal := append(append([]ArtifactPath(nil), artifactsProof...), "review.md", "seal.md")
 
@@ -703,7 +703,7 @@ func TestStatusRejectsCorruptStateMarkdownWithoutContentDisclosure(t *testing.T)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "state.md"), []byte("| phase | build |\x00\n| schema | 3 |\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "state.md"), []byte("| phase | build |\x00\n| schema | 4 |\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	want := `compute status: feature "corrupt": state.md is malformed (malformed_markdown); repair state.md and retry`
@@ -720,7 +720,7 @@ func TestOnlyCanonicalWorkLayoutIsDiscovered(t *testing.T) {
 	if err := os.MkdirAll(legacy, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(legacy, "state.md"), []byte("- Phase: spec\n- Schema: 3\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(legacy, "state.md"), []byte("- Phase: spec\n- Schema: 4\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Status(root, "alias"); err == nil {

@@ -38,7 +38,7 @@ func rootModeFor(command string, args []string) rootMode {
 			return rootStrict
 		}
 		return rootUnused
-	case "migrate":
+	case "migrate", "gates":
 		return rootStrictUsage
 	case "check":
 		switch subcommand {

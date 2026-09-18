@@ -29,6 +29,7 @@ when the task needs it.
 | Workspace snapshot for agents | `devrites-engine orient <slug>` (alias: `observe summary`) |
 | Index / manifest presence | `devrites-engine check indexes [--root <dir>]` |
 | Readiness / seal gates | `devrites-engine check readiness <slug>` or `check seal <slug>` |
+| Acceptance ledger | `devrites-engine gates <sub> <slug>`; grammar in `devrites-lib/reference/standards/gates.md` |
 | Engine working rules | [`engine/AGENTS.md`](engine/AGENTS.md) |
 | Install health (pack + host) | `/rite-doctor` (skill; not an engine command) |
 

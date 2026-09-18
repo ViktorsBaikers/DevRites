@@ -34,6 +34,7 @@ The host runs/reconciles named read-only reviewers; engine checks invariants.
 | Same, but `Important > 0` | Ask `Important findings remain. Proceed to seal? [y/N]`; default **N** |
 | `Critical > 0` | **NO-GO** |
 | Any acceptance criterion, resolved prohibition, or declared key link lacks proof | **NO-GO** |
+| `gates status` is not `all-met` — an unmet, stale, unapproved, or abandoned ledger gate remains | **NO-GO** |
 | Evidence is stale, or native diff review plus the exact test analyst finds weakened tests | **NO-GO: Critical** |
 | Any exact required reviewer account is missing or silent | **NO-GO** |
 | Any deferred finding (`touched-files.md` `## Review trail`, `eng-review.md` `## Deferred findings`) lacks a `review.md` verdict | **NO-GO** |
@@ -59,6 +60,10 @@ Follow [`reference/phase-contract.md`](reference/phase-contract.md)
 5. draft GO/NO-GO `seal.md` with acceptance, tests, decisions, and seven accounts;
 6. write exactly one candidate binding, then run
    `devrites-engine check seal <slug>` for structure and identity, never semantics.
+   The engine already refuses a `gates.md` ledger that is malformed, unmet,
+   stale, unapproved, or abandoned — a seal-side `gates status` reading anything
+   but `all-met` means Prove's evidence is not current; return there, never
+   attest past it.
 
 Corrections return through affected Prove/Review before restarting Seal under
 [evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).

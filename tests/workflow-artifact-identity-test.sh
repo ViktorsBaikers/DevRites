@@ -120,7 +120,7 @@ LIVE_PROTECTED_SHA256 = {
     ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
     ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
     ".devrites/work/workspace-observation/touched-files.md":
-        "742b66d07324711ed6f0217e7ec32a654c831bc345ae9bed369aa69b420312ad",
+        "cf5ef8aec435896c6844a47ef8a50ae5cacc44e23ab19be7c069f58fa44c871a",
 }
 EXPECTED_NORMAL_GENERATED_DELTA = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md",
@@ -7302,7 +7302,7 @@ def default_tests(root: Path) -> None:
         ("complete_stage_gate_failure_rollback", check_complete_stage_gate_failure_rollback),
         ("instruction_size_baseline", lambda: (
             (lambda measured: require(
-                measured[0] == 230 and measured[1] <= 1100000 and 1100000 - measured[1] > 14,
+                measured[0] == 231 and measured[1] <= 1100000 and 1100000 - measured[1] > 14,
                 "instruction size count/cap/headroom",
             ))(check_instruction_size_baseline(root))
         )),

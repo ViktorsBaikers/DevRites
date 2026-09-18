@@ -88,7 +88,7 @@ func TestRunObserveSlicePrintsOneSection(t *testing.T) {
 func TestObserveSummaryReportsBudgetsAndBulkFiles(t *testing.T) {
 	longLine := strings.Repeat("x", 60_000) + "\n"
 	root, _ := writeBudgetWorkspace(t, map[string]string{
-		"state.md":                "| phase | build |\n| schema | 3 |\n" + longLine,
+		"state.md":                "| phase | build |\n| schema | 4 |\n" + longLine,
 		"tasks.md":                budgetTasks,
 		"vet-review-input-1.json": strings.Repeat("{}", 40_000),
 		"small-note.json":         "{}",
@@ -119,7 +119,7 @@ func TestObserveSummaryReportsBudgetsAndBulkFiles(t *testing.T) {
 
 func TestObserveSummaryReportsSequenceCursor(t *testing.T) {
 	root, _ := writeBudgetWorkspace(t, map[string]string{
-		"state.md": "| phase | build |\n| schema | 3 |\n| sequence_parent | feat-1 |\n| sequence_position | 2 |\n| sequence_workspaces_remaining | 3 |\n",
+		"state.md": "| phase | build |\n| schema | 4 |\n| sequence_parent | feat-1 |\n| sequence_position | 2 |\n| sequence_workspaces_remaining | 3 |\n",
 	})
 	summary, err := ObserveSummaryFor(root, "feature")
 	if err != nil {
@@ -130,7 +130,7 @@ func TestObserveSummaryReportsSequenceCursor(t *testing.T) {
 		t.Fatalf("sequence=%+v", seq)
 	}
 	root, _ = writeBudgetWorkspace(t, map[string]string{
-		"state.md": "| phase | build |\n| schema | 3 |\n",
+		"state.md": "| phase | build |\n| schema | 4 |\n",
 	})
 	summary, err = ObserveSummaryFor(root, "feature")
 	if err != nil {

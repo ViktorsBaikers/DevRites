@@ -855,6 +855,7 @@ func consumerReachabilityProblems(program *migrationProgram, roots []migrationEn
 		"github.com/devrites/devrites/internal/devritespaths": true,
 	}
 	allowedInternalImports := map[string]bool{
+		"github.com/devrites/devrites/internal/acceptance":   true,
 		"github.com/devrites/devrites/internal/markdowntext": true,
 		"github.com/devrites/devrites/internal/reason":       true,
 		migrationStateImport:                                 true,

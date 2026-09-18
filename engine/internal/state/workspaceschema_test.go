@@ -37,12 +37,12 @@ func TestWorkspaceSchemaDefaultsToPreV5WhenRowIsAbsent(t *testing.T) {
 }
 
 func TestWorkspaceSchemaAcceptsCurrentAndRefusesNewer(t *testing.T) {
-	root, slug := writeSchemaWorkspace(t, "| phase | build |\n| schema | 3 |\n")
+	root, slug := writeSchemaWorkspace(t, "| phase | build |\n| schema | 4 |\n")
 	if err := RequireWorkspaceSchema(root, slug); err != nil {
 		t.Fatalf("current schema must pass, got %v", err)
 	}
 
-	root, slug = writeSchemaWorkspace(t, "| phase | build |\n| schema | 4 |\n")
+	root, slug = writeSchemaWorkspace(t, "| phase | build |\n| schema | 9 |\n")
 	err := RequireWorkspaceSchema(root, slug)
 	if err == nil {
 		t.Fatal("newer schema must be refused")

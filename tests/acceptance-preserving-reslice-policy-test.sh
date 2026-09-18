@@ -2736,7 +2736,7 @@ def protected_gate(root):
             ".devrites/work/workspace-observation/touched-files.md",
             owner="Workspace Observation manifest",
         )
-        if sha256(manifest_bytes).hexdigest() != "742b66d07324711ed6f0217e7ec32a654c831bc345ae9bed369aa69b420312ad":
+        if sha256(manifest_bytes).hexdigest() != "cf5ef8aec435896c6844a47ef8a50ae5cacc44e23ab19be7c069f58fa44c871a":
             raise ContractFailure("Workspace Observation manifest changed")
         section = manifest_bytes.decode("utf-8").split("## Source hashes", 1)[1].split("## Deliberately untouched", 1)[0]
         rows = re.findall(r"^\| `([^`]+)` \| `([0-9a-f]{64})` \|$", section, re.M)
