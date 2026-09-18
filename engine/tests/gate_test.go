@@ -567,6 +567,8 @@ func writeCompleteGateCLIWorkspace(t *testing.T, root, slug string, current, req
 			content = questions
 		case "tasks.md":
 			content = testutil.CanonicalTasksMarkdown
+		case "gates.md":
+			content = testutil.CanonicalGatesMarkdown
 		}
 		testutil.WriteFile(t, filepath.Join(root, "work", slug, name), content)
 	}
@@ -596,6 +598,7 @@ func newFinalSealRepo(t *testing.T) (string, string) {
 		"traceability.md":      "# Traceability\n\nAC-001 -> final seal.\n",
 		"eng-review.md":        "# Engineering review\n\nPASS\n",
 		"test-plan.md":         "# Test plan\n\nRun focused Go tests for AC-001.\n",
+		"gates.md":             testutil.CanonicalGatesMarkdown,
 		"evidence.md":          "# Evidence\n\nFocused Go tests passed.\n",
 		"touched-files.md":     "# Touched files\n\n## Touched files\nCandidate paths are declared only in the manifest below.\n\n## Candidate manifest\n| State | File | Slice | Reason |\n| --- | --- | --- | --- |\n| present | `source.go` | S-1 | Final Seal fixture. |\n",
 		"review.md": `# Review

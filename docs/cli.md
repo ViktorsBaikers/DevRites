@@ -27,6 +27,8 @@ devrites-engine state resolve <qid> "<answer>"
 devrites-engine state close <slug>
 devrites-engine migrate <slug> [--dry-run] [--answer id=choice]
 
+devrites-engine gates <subcommand> <slug>
+
 devrites-engine secret-scan [--staged] [--stdin] [slug]
 devrites-engine open-visual <path-or-name> [--slug <slug>] [--no-open]
 devrites-engine version
@@ -96,6 +98,22 @@ belong to the active skill and exact native agents. Normative spec grammar is
 checked by the root's explicit native re-read checklist. Repository build,
 test, lint, typecheck, schema, and release commands belong to that repository
 or CI.
+
+## Acceptance ledger
+
+`gates` operates the `gates.md` ledger inside a feature workspace: one gate per
+required outcome, runnable (`CHECK`+`EXPECT`, optional `CWD`) or manual
+(`EVIDENCE` only). Subcommands: `scaffold`, `status`, `run`, `reverify`,
+`lint`, `attest <id> <note>`, `abandon <id> <why>`.
+
+A runnable gate executes only when its `(CHECK, CWD)` pair exactly matches a
+`test-plan.md` `## Build-entry preflight` row. Passing writes
+`automatic-evidence` bound to the gate definition digest; editing the gate
+marks prior evidence stale. `status` prints a stable reduction ending in
+`result: all-met|not-met|handoff|malformed`; exit `3` unless every gate is met
+and none is abandoned. `check readiness`/`check seal` enforce the same
+reduction whenever `gates.md` is a required artifact, so a partially compliant
+ledger blocks the phase exit.
 
 ## Atomic state operations
 

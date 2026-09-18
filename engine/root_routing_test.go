@@ -180,7 +180,7 @@ func TestCheckCandidateRoutesAndPrintsIdentity(t *testing.T) {
 	writeBasenameFile(t, project, "source.go", "package source\n")
 	manifest := "# Touched files\n\n## Touched files\nCandidate paths are declared below.\n\n## Candidate manifest\n| State | File | Slice | Reason |\n| --- | --- | --- | --- |\n| present | `source.go` | S-1 | Implementation. |\n"
 	writeBasenameFile(t, workspace, "touched-files.md", manifest)
-	writeBasenameFile(t, workspace, "state.md", "| schema | 3 |\n")
+	writeBasenameFile(t, workspace, "state.md", "| schema | 4 |\n")
 	t.Setenv("DEVRITES_ROOT", root)
 	var stdout, stderr bytes.Buffer
 	if code := run([]string{"check", "candidate", "feature"}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
@@ -196,7 +196,7 @@ func TestCheckReadinessEmitBindingRoutesOnlyExactShape(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	workspace := filepath.Join(root, "work", "feature")
 	for name, body := range map[string]string{
-		"state.md":             "| schema | 3 |\n",
+		"state.md":             "| schema | 4 |\n",
 		"spec.md":              "# Spec\n\nReady.\n",
 		"decision-coverage.md": "# Decision coverage\n\nCLEAR\n",
 		"architecture.md":      "# Architecture\n\nReady.\n",
@@ -204,6 +204,7 @@ func TestCheckReadinessEmitBindingRoutesOnlyExactShape(t *testing.T) {
 		"tasks.md":             "# Tasks\n\nReady.\n",
 		"traceability.md":      "# Traceability\n\nReady.\n",
 		"test-plan.md":         "# Test plan\n\nReady.\n",
+		"gates.md":             "# Gates\n\n- [x] G1: fixture outcome\n  EVIDENCE: fixture attestation\n",
 	} {
 		if err := os.MkdirAll(workspace, 0o755); err != nil {
 			t.Fatal(err)

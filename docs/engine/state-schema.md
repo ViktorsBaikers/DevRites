@@ -5,7 +5,7 @@ human-editable files remain authoritative; the engine has no database or
 semantic cache.
 
 <!-- authority:schema-version:start -->
-`schemaVersion: 3`.
+`schemaVersion: 4`.
 <!-- authority:schema-version:end -->
 
 For root selection, supported legacy cursors, and the full artifact layout, see

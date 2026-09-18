@@ -16,6 +16,7 @@ topic's owner.
 | `prose-style.md` | Writing prose artifacts or user replies. |
 | `error-handling.md` | Adding or reviewing failure paths. |
 | `testing.md` | Designing tests or judging proof quality. |
+| `gates.md` | Authoring, executing, or judging the `gates.md` acceptance ledger — runnable oracles, evidence binding, ABANDON handoffs. |
 | `spec-grammar.md` | Structuring high-risk behavioral requirements or capability deltas. |
 | `code-review.md` | Reviewing a change or sealing review findings. |
 | `edge-case-trace.md` | Resolving relevant edge/prohibition classes and their evidence disposition. |

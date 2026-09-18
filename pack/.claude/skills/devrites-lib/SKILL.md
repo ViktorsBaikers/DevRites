@@ -47,6 +47,10 @@ The engine is limited to:
 - `check readiness` for structure, `check candidate` for content-bound identity,
   and `check seal` for structure plus exact artifact bindings; `secret-scan` and
   `version` remain read-only helpers.
+- `gates` owns the machine-checked acceptance ledger (`gates.md`): `scaffold`,
+  `status`, `run`, `reverify`, `lint`, `attest`, `abandon` — grammar and
+  authoring rules in
+  [`reference/standards/gates.md`](reference/standards/gates.md).
 - Atomic state: `state resolve` for answer/drop/batch and transactional
   `state close`.
 - Offline, local `install`, `update`, and `uninstall`; their shell/npm callers

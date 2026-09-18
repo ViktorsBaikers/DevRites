@@ -71,6 +71,13 @@ test changes.
    commands, malformed manifests, zero-test/skipped/filtered behavioral claims,
    exit-status-only claims, and source drift. Static gates prove only their named
    static criterion.
+   Run the acceptance ledger: `devrites-engine gates run <slug>` executes every
+   unmet runnable gate against the same approved preflight rows and records
+   definition-bound evidence; `gates reverify <slug>` re-executes all of them
+   when any prior pass is in doubt. Attest manual gates with `gates attest
+   <slug> <id> <note>` only against observed judgment; an impossible outcome
+   is `gates abandon` plus a handoff, never a deleted row or a false pass.
+   `gates status <slug>` must reduce to `all-met` before Prove records green.
 5. **Gate consumptive actions.** Immediately before execution, apply
    [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md): current retained identity, bounds/sanitization,
    injective boundary map, per-seam fault fixtures, collision mutant, terminal
@@ -116,7 +123,8 @@ test changes.
 ## Phase exit
 
 **Complete when:** every criterion in `acceptance-proof.md` has discriminating
-evidence bound to the current candidate digest, both independent validators admit
+evidence bound to the current candidate digest, `gates status` reduces to
+`all-met` with no handoffs, both independent validators admit
 accounts, and `state.md` records Prove complete with no open `cannot_verify` rows.
 
 **Failing case:** narrative "all tests passed" without `evidence.md` binding and

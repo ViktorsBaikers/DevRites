@@ -139,6 +139,12 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 		}
 	}
 	if len(missingFiles) == 0 {
+		for _, problem := range gateLedgerProblems(observation, policy) {
+			stateProblems = append(stateProblems, "gates: "+problem)
+			blocked = true
+		}
+	}
+	if len(missingFiles) == 0 {
 		for _, problem := range artifactBudgetProblems(observation, policy) {
 			stateProblems = append(stateProblems, "budget: "+problem)
 			blocked = true

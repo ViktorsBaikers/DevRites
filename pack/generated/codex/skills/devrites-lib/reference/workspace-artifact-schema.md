@@ -24,7 +24,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | clarify | spec artifacts plus `decision-coverage.md` |
 | temper | clarified spec artifacts plus `strategy.md` when temper runs |
 | define/plan | clarified spec artifacts plus `architecture.md`, `plan.md`, `tasks.md`, `traceability.md` |
-| vet/build/converge | plan artifacts plus `eng-review.md`, `test-plan.md`; Build creates and maintains `touched-files.md` after its first green slice |
+| vet/build/converge | plan artifacts plus `eng-review.md`, `test-plan.md`, `gates.md`; Build creates and maintains `touched-files.md` after its first green slice |
 | prove/polish/review | vetted plan artifacts plus `evidence.md`, `touched-files.md` |
 | seal/ship/done | proof artifacts plus `review.md`, `seal.md`; Ship writes `ship.md` |
 | conditional | `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `drift.md` for drift; `polish-report.md` for polish; `handoff.md` only when requested; `references.md` + `references/` when references exist; `investigation-map.md` for pressure-test; `dogfood.md` for dogfood; `packets/` for by-reference dispatch packets and admitted accounts (≤ 64 KiB each; older closed rounds may be deleted; never transcripts); `history/` for verbatim relocated checkpoint narrative (append-only, never a read-next) |
@@ -51,6 +51,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `traceability.md` | matrix: AC/REQ ID, slice IDs, test/proof, evidence ID, touched files, status | 220 lines |
 | `eng-review.md` | vetted scope/architecture/quality/performance, failure modes, preflight, stable-input binding, `## Deferred findings` (late rows: severity · site · role · kind · round) for Review | 240 lines |
 | `test-plan.md` | executable proof commands, preflight/provenance contract, acceptance and interaction coverage | 260 lines |
+| `gates.md` | machine-checked acceptance ledger: one gate per required outcome — runnable `CHECK`/`EXPECT`/`CWD` or manual `EVIDENCE`; engine-bound evidence, `ABANDON:` handoffs | 200 lines |
 | `state.md` | compact cursor table/key-values; no narrative log | 120 lines |
 | `evidence.md` | `EVID-###` command/action, result, timestamp if available, related AC/slice IDs, limitation | 280 lines |
 | `browser-evidence.md` | UI route/viewports/screenshots/console/network/interactions and Visual Verdict | 220 lines |

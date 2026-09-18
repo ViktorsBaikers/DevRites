@@ -41,6 +41,7 @@ var artifactLineBudgets = map[string]int{
 	"traceability.md":      220,
 	"eng-review.md":        240,
 	"test-plan.md":         260,
+	"gates.md":             200,
 	"state.md":             120,
 	"evidence.md":          280,
 	"browser-evidence.md":  220,

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/devrites/devrites/internal/acceptance"
 	"github.com/devrites/devrites/internal/gate"
 	"github.com/devrites/devrites/internal/install"
 	"github.com/devrites/devrites/internal/lib"
@@ -33,6 +34,7 @@ Usage:
   devrites-engine observe slice <slug> <SLICE-ID>  Print one SLICE-### section of tasks.md
   devrites-engine check indexes [--root <dir>]  Report manifest and code-index presence as JSON
   devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/cleanup
+  devrites-engine gates <subcommand> <slug>  Machine-checked gates.md ledger: scaffold/status/run/reverify/lint/attest/abandon
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
@@ -90,6 +92,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdCheck(root, args[1:], stdin, stdout, stderr)
 	case "parallel":
 		return parallel.Run("parallel", args[1:], stdin, stdout, stderr)
+	case "gates":
+		return acceptance.Run(root, args[1:], stdout, stderr)
 	case "observe":
 		return cmdObserve(root, args[1:], stdout, stderr)
 	case "orient":

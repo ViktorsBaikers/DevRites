@@ -3,8 +3,9 @@ package state
 //go:generate go run ./cmd/workflowmanifest -out workflow_manifest.json
 
 // SchemaVersion versions the persisted workflow/state manifest and the
-// workspace contract the engine accepts.
-const SchemaVersion = 3
+// workspace contract the engine accepts. Schema 4 adds the gates.md
+// acceptance ledger to the vetted artifact set.
+const SchemaVersion = 4
 
 const EvidenceFile = "evidence.md"
 
@@ -93,7 +94,7 @@ var (
 	artifactsSpec    = []ArtifactPath{"brief.md", "spec.md", "state.md", "decisions.md", "assumptions.md", "questions.md"}
 	artifactsClarify = append(append([]ArtifactPath(nil), artifactsSpec...), "decision-coverage.md")
 	artifactsPlan    = append(append([]ArtifactPath(nil), artifactsClarify...), "architecture.md", "plan.md", "tasks.md", "traceability.md")
-	artifactsVetted  = append(append([]ArtifactPath(nil), artifactsPlan...), "eng-review.md", "test-plan.md")
+	artifactsVetted  = append(append([]ArtifactPath(nil), artifactsPlan...), "eng-review.md", "test-plan.md", "gates.md")
 	artifactsProof   = append(append([]ArtifactPath(nil), artifactsVetted...), "evidence.md", "touched-files.md")
 	artifactsFinal   = append(append([]ArtifactPath(nil), artifactsProof...), "review.md", "seal.md")
 )

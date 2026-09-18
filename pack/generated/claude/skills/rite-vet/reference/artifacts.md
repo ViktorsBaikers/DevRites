@@ -146,6 +146,25 @@ For every row in `plan.md`'s `Shared contract proof`, the per-gap requirements n
 provider- and consumer-side asserting tests and state how each consumes the same canonical
 artifact. Reference the plan row; do not reproduce its contract table here.
 
+## `gates.md`: the acceptance ledger
+
+Write `.devrites/work/<slug>/gates.md` once the preflight table is final —
+`devrites-engine gates scaffold <slug>` seeds one pending gate per `AC-###` in
+`spec.md`; never clobber a ledger that already carries evidence. Grammar,
+evidence binding, and oracle rules live in
+[`gates.md`](../../devrites-lib/reference/standards/gates.md); the engine
+enforces them, so author to the contract, not around it:
+
+- One gate per required outcome; reuse `AC-###` ids so readiness coverage and
+  the ledger name the same set.
+- A runnable gate's `CHECK` must be a `## Build-entry preflight` `Command`
+  verbatim with a matching `Cwd` — a gate whose command is absent from the
+  preflight table can never execute, so add the row first.
+- `EXPECT` names a line only success can print; `gates lint <slug>` flags
+  tautological commands and weak expectations before build.
+- Manual gates (`EVIDENCE` only) are for judgment-bound outcomes; Prove
+  attests them, Seal still requires them checked.
+
 ## Parallelization table (in `eng-review.md` §5 when there's an opportunity)
 
 ```markdown
