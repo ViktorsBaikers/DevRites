@@ -152,6 +152,12 @@ plan declares a root-authored executable workflow file, read
    criterion needs positive, discriminating proof; every slice must be one-pass
    implementable; developer plans need a predicted scorecard. Durable commands
    are portable repository commands, not host wrappers.
+   Once the `## Build-entry preflight` table is final, run
+   `devrites-engine gates scaffold <slug>` to seed `gates.md` (one pending gate
+   per `AC-###`; never clobber an existing ledger), then author each gate's
+   `CHECK`/`EXPECT`/`CWD` per artifacts.md §`gates.md` so every runnable oracle
+   is an approved preflight row. `gates lint <slug>` audits the oracles before
+   build; the readiness check refuses a missing or malformed ledger.
 7. **Narrow recheck after edits.** Dispatch the exact plan reviewer once per
    fold — one dispatch covering every open fingerprint, preserving
    per correction/fingerprint accounting (each checked individually with its
