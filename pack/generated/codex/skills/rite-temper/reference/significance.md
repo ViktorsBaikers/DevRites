@@ -5,11 +5,8 @@ enough to earn it, a one-line skip otherwise. This is the shared definition used
 optional `$rite-temper` path and the always-run (significance-gated) `$rite-autocomplete` step,
 so they agree on when it fires.
 
-A strategic review of a five-line, reversible change is theatre; a strategic review of an
-auth rewrite is the cheapest insurance you'll buy. Gate on stakes and shape, not uniformly.
-
 ## Fire the FULL review when ANY trips
-- **Irreversible-risk contact:** the slice/spec touches anything on the `afk-hitl.md`
+- **Irreversible-risk contact:** the slice/spec touches anything on the [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)
   irreversible-risk list: destructive data migration, auth/authz boundary, public-API break,
   external-service contract, filesystem destruction outside the workspace.
 - **Data model:** new/changed entities, relationships, or persistence shape.
@@ -32,7 +29,10 @@ On skip, **don't run the passes**. Write only the one-line verdict to `strategy.
 
 ```markdown
 # Strategy: <slug>
-Significance: skipped — low stakes (<the trigger that was NOT met, e.g. "single-module, reversible, scope unambiguous">)
+Tempered: <iso>
+
+## 1. Significance
+skipped — low stakes (<trigger>)
 Next: $rite-define
 ```
 
@@ -41,6 +41,6 @@ seal can see the call was made deliberately.
 
 ## In `$rite-autocomplete`
 Autocomplete runs the significance test every feature. On skip → straight to `$rite-define`
-(no pause). On fire → run the full review under the AFK gate ceiling: `hold-rigor` and
-`reduce-to-MVP` auto-apply (they never grow acceptance); **any `expand` is a blocking pause**;
-irreversible-risk findings always pause. Expansion is never auto-grown unattended.
+(no pause). On fire → run the full review and auto-apply the recommended mode, including
+`expand` and extra acceptance (record the ADR; fold via Spec Drift Guard).
+Irreversible-risk findings always pause.

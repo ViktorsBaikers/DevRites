@@ -1,96 +1,117 @@
 ---
 name: rite-build
-description: Build one approved vertical slice, then stop with evidence. Use when the next planned slice should be implemented. Not for multiple slices.
-argument-hint: "[slice number or name]"
+description: Build the next approved vertical slice with evidence. HITL one-slice default; AFK/autocomplete chain serially or in eligible path-disjoint batches (dynamic size, cap 10); `--parallel N` caps a batch.
+argument-hint: "[--parallel N] [slice number or name]"
 user-invocable: true
 ---
 
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/agents.md","rite-build/reference/phase-contract.md","rite-build/reference/one-slice-cycle.md","rite-build/reference/wright-dispatch.md","rite-build/reference/checkpoint.md","rite-build/reference/spec-drift-guard.md","rite-build/reference/output.md","rite-build/reference/anti-patterns.md"],"triggers":{"afk":["rite-build/reference/afk-discipline.md","devrites-lib/reference/standards/afk-hitl.md","rite-build/reference/checkpoint-protocol.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"coding":["devrites-lib/reference/standards/coding-style.md"],"debug-recovery":["devrites-lib/reference/standards/debug-recovery.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"frontend":["rite-build/reference/frontend-trigger.md"],"parallel":["rite-build/reference/parallel-batch.md"],"patterns":["devrites-lib/reference/standards/patterns.md"],"principles":["devrites-lib/reference/standards/principles.md"],"security":["devrites-lib/reference/standards/security.md"],"tdd":["rite-build/reference/tdd.md","devrites-lib/reference/standards/testing.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","strategy.md"],"workspaceByRole":{"code-reviewer":["spec.md","plan.md","tasks.md","test-plan.md","architecture.md","decisions.md","state.md"],"doubt-reviewer":["spec.md","plan.md","tasks.md","state.md","decisions.md"],"slice-wright":["brief.md","spec.md","architecture.md","plan.md","tasks.md","test-plan.md","state.md","decisions.md","assumptions.md","questions.md"],"test-analyst":["spec.md","tasks.md","test-plan.md","state.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase build` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # $rite-build: one verified slice
 
-Build the next single slice, leave it working and proven, then **stop**. **Read the
-active workspace first**; if none, tell the user to run `$rite-spec <feature>`.
+HITL stops; a later user invocation starts the next slice.
+Explicit `.devrites/AFK` alone lets the controlling root chain under green proof,
+caps and pause rules. Every wright returns after one slice.
+**Opt-in:** `$rite-build --parallel N` (2≤N≤10; N=1≡serial) follows
+[`reference/parallel-batch.md`](reference/parallel-batch.md)
+([`one-slice-cycle.md`](reference/one-slice-cycle.md)).
 
-This skill is the **orchestrator**: it owns the gates and the workspace; a fresh-context
-[`devrites-slice-wright`](.codex/agents/devrites-slice-wright.toml) owns the **writing**. You run
-pre-flight (readiness, slice select, HITL pause), dispatch the wright for the build core, then
-run the post-return gates (doubt, fail-on-red, record, stop). See
+Root owns gates/bookkeeping; fresh
+[`devrites-slice-wright`](.codex/agents/devrites-slice-wright.toml) writes source/tests.
+Workflow Artifacts use
+[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
+(trigger `workflow-artifacts` — only when the plan declares them).
+Execute [`reference/phase-contract.md`](reference/phase-contract.md)
+([`one-slice-cycle.md`](reference/one-slice-cycle.md),
+[`afk-discipline.md`](reference/afk-discipline.md)); dispatch uses
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 
-## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-Read `.agents/skills/devrites-lib/reference/standards/core.md` first (workflow step 0). The
-following load on demand: **the wright reads them** (they are named in its contract) while it
-writes; read them yourself for the doubt/record gates or in the inline fallback:
-- `coding-style.md`: naming, function shape, guard clauses, comments, reuse-first.
-- `error-handling.md`: fail fast, no silent catches, fail closed.
-- `testing.md`: pyramid, behaviour over implementation, see-it-fail-first.
-- `patterns.md`: composition over inheritance, avoid premature abstraction.
-- `principles.md`: the project invariants (`.devrites/principles.md`) the slice must honor; the wright reads them as **binding**, not priors.
-- `security.md`: when the slice touches user input, auth, data, or external integrations.
-- `definition-of-done.md`: standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+## Required rules
 
+Read `.agents/skills/devrites-lib/reference/standards/core.md` first. Load only triggered rules:
+coding/error/testing/[`tdd.md`](reference/tdd.md)/patterns/DoD; binding
+`.devrites/principles.md`; security; topology; data integrity; integration reliability.
+Wright applies anti-slop; root verifies returns and never patches source.
 
-## Operating rules
-- **One slice at a time. DO NOT** start the next slice without the user asking.
-- Evidence over confidence. Prefer existing conventions. Feature scope only: no
-  drive-by refactors.
-- **Noticed, not touched.** An adjacent smell the wright sees outside `touched-files.md` is
-  recorded as an FYI follow-up in `decisions.md`, never fixed inline: the slice's change summary
-  states what it *deliberately left alone* ([`git-workflow.md`](../devrites-lib/reference/standards/git-workflow.md) "Things
-  I didn't touch"), so the reviewer reads a feature-scoped diff, not a renovation. The `devrites-engine reconcile`
-  gate (step 6) enforces this by exit code.
-- **Don't re-run an unchanged check.** Re-running the same build/test command on code that hasn't
-  changed since proves nothing new. It's motion, not evidence. Re-verify after an edit, not before.
-- Surface material assumptions; ask before adding dependencies or a second design
-  system. The [Spec Drift Guard](reference/spec-drift-guard.md) is active throughout.
-- **Avoid AI slop while writing.** `devrites-slice-wright` enforces the anti-slop charter **at
-  the source**: the canonical do-not list is `rite-polish/reference/anti-ai-slop.md` (the
-  wright reads it; don't restate it here). It writes the code the *project* would write, in its
-  idiom, reusing before building; **you verify the charter held on return**. You do not re-list
-  it and you do not fix slop by editing source. Polish catches what slips; build prevents.
-  The **prose you write yourself** (`evidence.md`, `decisions.md`, the slice report) follows
-  the human-voice charter (`.agents/skills/devrites-lib/reference/standards/prose-style.md`; depth in `devrites-prose-craft`): no
-  filler openers, no marketing adjectives, exact commands and identifiers kept verbatim.
-- **Honor declared project principles.** The wright reads `.devrites/principles.md` and treats
-  each invariant as **binding** (not a prior to weigh like a convention): a slice it cannot build
-  without breaking one is an **Escalation**, not a silent violation. On return **you verify no
-  principle was broken**; a fresh violation is handled like any irreversible-risk item: a
-  human-approved, scoped exception in the register or a stop, never folded into the slice. No
-  `.devrites/principles.md` → none declared → nothing to honor.
-- **You never edit source: the wright is the only writer of code + tests.** You write only
-  `.devrites/` bookkeeping. On any red gate, doubt finding, or coverage gap your only remedies
-  are **continue the same wright once** (it fixes in its own context) or **stop + escalate**:
-  never patch the code yourself. The `devrites-engine reconcile` gate (step 6) enforces this by exit code:
-  any source file changed outside the wright's claimed set is a hard STOP.
-- **A `Forge: yes` slice competes candidates: one author still lands.** When `$rite-vet`
-  flagged the slice a genuine architecture fork, step 3 runs K=2-3 candidate wrights in
-  **isolated worktrees** and lands exactly one winner's diff; the single-writer invariant holds
-  because no tree ever has two authors and only the winner reaches the working tree. You still
-  never edit source, and reconcile runs against the winner's claimed set. The default slice is
-  single-path: forge is the rare exception ([`reference/forge.md`](reference/forge.md)).
+## Invariants
 
-## Workflow
+- Default: one slice; writers serial on control (core.md #5). Parallel only via
+  `--parallel N` under [`reference/parallel-batch.md`](reference/parallel-batch.md).
+  Same-worktree multi-writer / root-emulated concurrency forbidden.
+  Native-worktree pilot = single-slice isolation when `wright-dispatch.md`
+  preflight + reconcile hold.
+- Exact feature scope only (core.md #7); reject out-of-allowlist diffs
+  (`devrites-engine check diff-scope <slug> --allow <contract-paths>`); record
+  adjacent issues. An adjacent issue or non-obvious rationale bound to specific
+  code anchors as a note — `devrites-engine note add <slug> <file> "<verbatim
+  quote>" <title>` — so refactors regrade it instead of losing it
+  ([`notes.md`](../devrites-lib/reference/workspace-artifact-schema.md#anchored-notes)).
+- Re-prove affected behavior after edits (core.md #6); reuse observations only
+  under [evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).
+- Unplanned dependency/design-system/gap/repair → Vet/Spec Drift Guard batch
+  sweep: every contract-assumption violation recorded before one folded
+  repair+vet. Ask only for licensing/cost/security/product or explicit
+  architecture-policy decisions (core.md #8).
+- Root never edits product source/tests (`.devrites/` + Workflow Artifact only;
+  [agents.md](../devrites-lib/reference/standards/agents.md) source-writing
+  boundary). Wright is sole product writer; extras in returned paths/`git diff
+  --name-only` hard-stop via `check diff-scope`.
+- Principles bind; irreversible conflict needs human exception or stop.
+- Evidence beats confidence (core.md #6). Never weaken tests, skip TDD, widen
+  writers, or self-approve. Drift →
+  [`spec-drift-guard.md`](reference/spec-drift-guard.md); checkpoint →
+  [`checkpoint.md`](reference/checkpoint.md).
+- Async readiness waits during slice work follow
+  [`debug-recovery.md`](../devrites-lib/reference/standards/debug-recovery.md)
+  (bounded poll + last-signal artifact; no blind sleep as primary strategy).
 
-Run the full execution contract in
-[`reference/phase-contract.md`](reference/phase-contract.md). It is not optional:
-it contains the gated one-slice workflow, including readiness, HITL/AFK handling,
-wright dispatch, forge, doubt, fail-on-red, record gates, and stop behavior.
+## Workflow Artifact branch
 
-## Output
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Vet-ready admitted bytes require root authorship outside product wright","action":"ROOT_TRANSACTION; root writes only admitted .devrites/** targets","return":"saved Build slice cursor; wright product allowlist unchanged"} -->
+## `--parallel N` (opt-in)
 
-Use the full output contract in [`reference/output.md`](reference/output.md).
-It preserves the progress-footer-first response shape, uses the shared completion
-reply contract
-([`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md)),
-and keeps the explicit stop after one slice.
+Omitted/`1` ≡ serial; `2`–`10` is a **cap** — the root runs the largest eligible
+path-disjoint set it can start now (`N_eff`), takes fewer when the cap cannot be
+filled, and recomputes after every completed round (serial slice or parallel
+integrate) until no pending slice remains
+([`parallel-batch.md` § Dynamic selection](reference/parallel-batch.md#dynamic-selection-and-re-batching)).
+Unattended runs (`$rite-autocomplete`, `.devrites/AFK` `max_parallel`) repeat batches
+inside the same run; HITL stops after each batch. This invocation's `--parallel N`
+is the cap: leftover sentinel `max_parallel` is not consulted. Autocomplete with
+that flag also writes or replaces only `max_parallel: N`. Non-integer/`N≤0`/`N>10` hard refuse.
+All-green (independent review + proof) then integrate as one local `WIP(<slug>):`
+commit per sibling onto the current control branch (never pushed). Do not
+integrate a sibling because the wright returned. A red/gap sibling gets a bounded repair
+round in its own worktree — never rebuilt from scratch while budget remains.
+Post-writer inventory and affected rechecks follow `phase-contract.md` § Independent
+Build review; fold accounts before one repair-all wright.
+Plan-owned gaps still route through Spec Drift Guard
+(batch sweep, one folded plan repair + one vet recheck inline); do not emit
+a human `Fix`. Exhausted repair blocks and preserves everything;
+`cleanup --force` salvages slice branches before removing worktrees —
+human-gated to abandon a batch, orchestrator-emitted only as the salvage
+step of an automatic frozen-lease re-batch.
+AFK charges after integrate only. Running lease blocks another
+`$rite-build`. Details: `parallel-batch.md`.
+
+## Execute and reply
+
+Run every step in `reference/phase-contract.md`: readiness, one target, dispatch
+or canonical transaction, return inspection, independent code/doubt/test analysis,
+approved fail-on-red proof, record, AFK accounting, and stop. Use
+[`reference/output.md`](reference/output.md) plus the shared
+[`reply contract`](../devrites-lib/reference/reply-contract.md). HITL never starts
+the next slice automatically; AFK obeys remaining budget; Prove requires all slices built.
+
+## Phase exit
+
+**Complete when:** Independent Build review and fail-on-red proof are green,
+`git diff --name-only` ⊆ allowlist, no open Critical/Important, `state.md` cursor
+advances with recorded evidence, and the control-branch checkpoint has landed
+per [`checkpoint.md`](reference/checkpoint.md).
+
+**Failing case:** wright reports "done" but independent review or proof was
+skipped, red, or followed by an uncommitted repair → slice incomplete; do not
+advance cursor or commit on control.

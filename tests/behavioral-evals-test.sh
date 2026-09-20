@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# behavioral-evals-test.sh: unit-test the behavioral-eval shape validator
-# (scripts/run-behavioral-evals.sh) in isolation. Asserts it PASSES the shipped
-# seed evals and a hand-built well-formed file, and FAILS (exit 1) on each shape
-# violation: invalid JSON, missing scenarios key, empty scenarios, a scenario
-# missing a required field, an empty resistance/capitulation list, and duplicate ids.
+# Test the behavioral-eval shape validator in isolation. It accepts the shipped
+# seed evals and a well-formed local fixture. Each invalid fixture below targets
+# one schema rule and must exit with status 1.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 SH="$ROOT/scripts/run-behavioral-evals.sh"

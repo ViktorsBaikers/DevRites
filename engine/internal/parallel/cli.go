@@ -1,0 +1,649 @@
+package parallel
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"strconv"
+	"strings"
+)
+
+// Exit codes match the engine CLI conventions.
+const (
+	ExitOK      = 0
+	ExitUsage   = 2
+	ExitBlocked = 3
+)
+
+// Run is the engine entrypoint for `parallel …` and `check path-disjoint`.
+// command is either "parallel" or "path-disjoint".
+func Run(command string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	switch command {
+	case "path-disjoint":
+		return runPathDisjoint(args, stdin, stdout, stderr)
+	case "parallel":
+		return runParallel(args, stdin, stdout, stderr)
+	default:
+		fmt.Fprintf(stderr, "parallel: unknown command %q\n", command)
+		return ExitUsage
+	}
+}
+
+func runPathDisjoint(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	root := ""
+	jsonPath := "-"
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--root":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, usagePathDisjoint)
+				return ExitUsage
+			}
+			i++
+			root = args[i]
+		case "-h", "-help", "--help":
+			fmt.Fprintln(stdout, usagePathDisjoint)
+			return ExitOK
+		default:
+			if args[i] != "-" && strings.HasPrefix(args[i], "-") {
+				fmt.Fprintf(stderr, "path-disjoint: unknown flag %s\n", args[i])
+				return ExitUsage
+			}
+			jsonPath = args[i]
+		}
+	}
+	data, err := readJSONInput(jsonPath, stdin)
+	if err != nil {
+		fmt.Fprintf(stderr, "path-disjoint: %v\n", err)
+		return ExitBlocked
+	}
+	slices, err := ParseSlicesJSON(data)
+	if err != nil {
+		fmt.Fprintf(stderr, "path-disjoint: %v\n", err)
+		return ExitBlocked
+	}
+	ids, err := CheckPathDisjoint(slices, root)
+	if err != nil {
+		fmt.Fprintf(stderr, "path-disjoint: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprintf(stdout, "path-disjoint: ok (%d slices)\n", len(ids))
+	return ExitOK
+}
+
+func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	root := ""
+	jsonPath := "-"
+	capN := 0
+	sawCap := false
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--root":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, usageSelect)
+				return ExitUsage
+			}
+			i++
+			root = args[i]
+		case "--cap":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, usageSelect)
+				return ExitUsage
+			}
+			i++
+			n, err := strconv.Atoi(args[i])
+			if err != nil {
+				fmt.Fprintf(stderr, "parallel select: --cap must be an integer\n")
+				return ExitUsage
+			}
+			capN = n
+			sawCap = true
+		case "-h", "-help", "--help":
+			fmt.Fprintln(stdout, usageSelect)
+			return ExitOK
+		default:
+			if args[i] != "-" && strings.HasPrefix(args[i], "-") {
+				fmt.Fprintf(stderr, "parallel select: unknown flag %s\n", args[i])
+				return ExitUsage
+			}
+			jsonPath = args[i]
+		}
+	}
+	if !sawCap {
+		fmt.Fprintln(stderr, usageSelect)
+		return ExitUsage
+	}
+	data, err := readJSONInput(jsonPath, stdin)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel select: %v\n", err)
+		return ExitBlocked
+	}
+	slices, err := ParseSlicesJSON(data)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel select: %v\n", err)
+		return ExitBlocked
+	}
+	selected, err := SelectGreedy(capN, slices, root)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel select: %v\n", err)
+		if strings.Contains(err.Error(), "cap must be") {
+			return ExitUsage
+		}
+		return ExitBlocked
+	}
+	fmt.Fprintln(stdout, formatSelect(selected))
+	return ExitOK
+}
+
+func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if len(args) == 0 {
+		fmt.Fprintln(stderr, parallelUsage())
+		return ExitUsage
+	}
+	sub, rest := args[0], args[1:]
+	switch sub {
+	case "create":
+		return cmdCreate(rest, stdin, stdout, stderr)
+	case "record-green":
+		return cmdRecordGreen(rest, stdout, stderr)
+	case "abort":
+		return cmdAbort(rest, stdout, stderr)
+	case "integrate":
+		return cmdIntegrate(rest, stdout, stderr)
+	case "cleanup":
+		return cmdCleanup(rest, stdout, stderr)
+	case "status":
+		return cmdStatus(rest, stdout, stderr)
+	case "lease-write", "write-lease":
+		return cmdLeaseWrite(rest, stdin, stdout, stderr)
+	case "lease-read", "read-lease":
+		return cmdLeaseRead(rest, stdout, stderr)
+	case "lease-clear", "clear-lease":
+		return cmdLeaseClear(rest, stdout, stderr)
+	case "check-disjoint", "path-disjoint":
+		return runPathDisjoint(rest, stdin, stdout, stderr)
+	case "select":
+		return cmdSelect(rest, stdin, stdout, stderr)
+	case "-h", "-help", "--help", "help":
+		fmt.Fprintln(stdout, parallelUsage())
+		return ExitOK
+	default:
+		fmt.Fprintf(stderr, "parallel: unknown subcommand %q\n\n%s\n", sub, parallelUsage())
+		return ExitUsage
+	}
+}
+
+const (
+	usageCreate       = "usage: parallel create --root --slug --batch --base --json"
+	usageRecordGreen  = "usage: parallel record-green --root --slug --slice --commit"
+	usageAbort        = "usage: parallel abort --root --slug"
+	usageIntegrate    = "usage: parallel integrate --root --slug [--apply-to-control]"
+	usageCleanup      = "usage: parallel cleanup --root --slug [--force]"
+	usageStatus       = "usage: parallel status --root --slug"
+	usageLeaseWrite   = "usage: parallel lease-write --root --slug --json"
+	usageLeaseRead    = "usage: parallel lease-read --root --slug [--field name]"
+	usageLeaseClear   = "usage: parallel lease-clear --root --slug"
+	usagePathDisjoint = "usage: check path-disjoint [--root <dir>] [<json-file>|-]"
+	usageSelect       = "usage: parallel select --cap <1-10> [--root <dir>] [<json-file>|-]"
+)
+
+func parallelUsage() string {
+	return strings.TrimSpace(`usage: parallel <subcommand> [options]
+
+Subcommands:
+  create          --root --slug --batch --base --json
+  record-green    --root --slug --slice --commit
+  abort           --root --slug
+  integrate       --root --slug [--apply-to-control]
+  cleanup         --root --slug [--force]
+  status          --root --slug
+  lease-write     --root --slug --json
+  lease-read      --root --slug [--field name]
+  lease-clear     --root --slug
+  check-disjoint  [--root] [<json-file>|-]
+  select          --cap <1-10> [--root] [<json-file>|-]
+
+Exit codes: 0 ok, 2 usage, 3 blocked`)
+}
+
+// CommandUsage is the usage text for `parallel <name>`. An empty or unknown
+// name returns the family usage.
+func CommandUsage(name string) string {
+	switch name {
+	case "create":
+		return usageCreate
+	case "record-green":
+		return usageRecordGreen
+	case "abort":
+		return usageAbort
+	case "integrate":
+		return usageIntegrate
+	case "cleanup":
+		return usageCleanup
+	case "status":
+		return usageStatus
+	case "lease-write", "write-lease":
+		return usageLeaseWrite
+	case "lease-read", "read-lease":
+		return usageLeaseRead
+	case "lease-clear", "clear-lease":
+		return usageLeaseClear
+	case "check-disjoint", "path-disjoint":
+		return usagePathDisjoint
+	case "select":
+		return usageSelect
+	default:
+		return parallelUsage()
+	}
+}
+
+type flagSet struct {
+	Root, Slug, Batch, Base, Slice, Commit, JSON, Field, Session string
+	ApplyToControl, Force, Help                                  bool
+}
+
+func parseFlags(args []string, stderr io.Writer) (flagSet, []string, int) {
+	var f flagSet
+	i := 0
+	for i < len(args) {
+		a := args[i]
+		need := func(name string) (string, bool) {
+			if i+1 >= len(args) {
+				fmt.Fprintf(stderr, "parallel: %s requires a value\n", name)
+				return "", false
+			}
+			i++
+			return args[i], true
+		}
+		switch a {
+		case "--root":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			f.Root = v
+		case "--slug":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			f.Slug = v
+		case "--batch":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			f.Batch = v
+		case "--base":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			f.Base = v
+		case "--slice":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			f.Slice = v
+		case "--commit":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			f.Commit = v
+		case "--json":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			f.JSON = v
+		case "--field":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			f.Field = v
+		case "--session":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			f.Session = v
+		case "--apply-to-control":
+			f.ApplyToControl = true
+		case "--force":
+			f.Force = true
+		case "-h", "-help", "--help":
+			f.Help = true
+		default:
+			// No parallel subcommand takes positional args; anything
+			// unrecognized (typo'd flag, stray word) is a usage error, not
+			// something to silently drop.
+			fmt.Fprintf(stderr, "parallel: unknown argument %q\n", a)
+			return f, nil, ExitUsage
+		}
+		i++
+	}
+	return f, nil, ExitOK
+}
+
+func parseFlagsOrHelp(args []string, stdout, stderr io.Writer, usage string) (flagSet, int, bool) {
+	f, _, code := parseFlags(args, stderr)
+	if code != ExitOK {
+		return f, code, true
+	}
+	if f.Help {
+		fmt.Fprintln(stdout, usage)
+		return f, ExitOK, true
+	}
+	return f, ExitOK, false
+}
+
+func requireRootSlug(f flagSet, stderr io.Writer) int {
+	if f.Root == "" || f.Slug == "" {
+		fmt.Fprintln(stderr, "parallel: --root and --slug are required")
+		return ExitUsage
+	}
+	return ExitOK
+}
+
+func readJSONInput(path string, stdin io.Reader) ([]byte, error) {
+	if path == "" || path == "-" {
+		return io.ReadAll(stdin)
+	}
+	if strings.Contains(path, "..") {
+		return nil, fmt.Errorf("json path must not contain '..'")
+	}
+	// #nosec G304 -- path traversal refused just above
+	return os.ReadFile(path)
+}
+
+func cmdCreate(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageCreate)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	if f.Batch == "" || f.Base == "" || f.JSON == "" {
+		fmt.Fprintln(stderr, usageCreate)
+		return ExitUsage
+	}
+	data, err := readJSONInput(f.JSON, stdin)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel create: %v\n", err)
+		return ExitBlocked
+	}
+	slices, err := ParseSlicesJSON(data)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel create: %v\n", err)
+		return ExitBlocked
+	}
+	lease, err := Create(CreateOpts{
+		Root:    f.Root,
+		Slug:    f.Slug,
+		BatchID: f.Batch,
+		BaseSHA: f.Base,
+		Session: f.Session,
+		Slices:  slices,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel create: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprintf(stdout, "created: %d worktrees; batch=%s status=%s\n", lease.N, lease.BatchID, lease.Status)
+	return ExitOK
+}
+
+// rejectUnsupportedFlags reports flags a subcommand parses but must not
+// silently ignore: --force only exists for cleanup, --apply-to-control only
+// for integrate.
+func rejectUnsupportedFlags(f flagSet, stderr io.Writer, force, applyToControl bool) int {
+	if f.Force && !force {
+		fmt.Fprintln(stderr, "parallel: --force is only supported by cleanup")
+		return ExitUsage
+	}
+	if f.ApplyToControl && !applyToControl {
+		fmt.Fprintln(stderr, "parallel: --apply-to-control is only supported by integrate")
+		return ExitUsage
+	}
+	return ExitOK
+}
+
+func cmdRecordGreen(args []string, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageRecordGreen)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	if f.Slice == "" || f.Commit == "" {
+		fmt.Fprintln(stderr, usageRecordGreen)
+		return ExitUsage
+	}
+	lease, err := RecordGreen(f.Root, f.Slug, f.Slice, f.Commit)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel record-green: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprintf(stdout, "record-green: slice=%s status=%s\n", f.Slice, lease.Status)
+	return ExitOK
+}
+
+func cmdAbort(args []string, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageAbort)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	lease, err := Abort(f.Root, f.Slug)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel abort: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprintf(stdout, "aborted: status=%s base=%s\n", lease.Status, lease.BaseSHA)
+	return ExitOK
+}
+
+func cmdIntegrate(args []string, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageIntegrate)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, true); code != ExitOK {
+		return code
+	}
+	tip, lease, err := Integrate(IntegrateOpts{
+		Root:           f.Root,
+		Slug:           f.Slug,
+		ApplyToControl: f.ApplyToControl,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel integrate: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprintf(stdout, "integrate-ok: tip=%s status=%s apply_to_control=%v\n", tip, lease.Status, f.ApplyToControl)
+	return ExitOK
+}
+
+func cmdCleanup(args []string, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageCleanup)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, true, false); code != ExitOK {
+		return code
+	}
+	salvaged, err := Cleanup(f.Root, f.Slug, f.Force)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel cleanup: %v\n", err)
+		return ExitBlocked
+	}
+	for _, s := range salvaged {
+		fmt.Fprintf(stdout, "salvaged: slice=%s branch=%s commit=%s", s.SliceID, s.Branch, s.Commit)
+		if s.Worktree != "" {
+			fmt.Fprintf(stdout, " worktree=%s(kept)", s.Worktree)
+		}
+		fmt.Fprintln(stdout)
+	}
+	fmt.Fprintln(stdout, "cleanup: done")
+	return ExitOK
+}
+
+func cmdStatus(args []string, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageStatus)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	text, err := StatusReport(f.Root, f.Slug)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel status: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprint(stdout, text)
+	return ExitOK
+}
+
+func cmdLeaseWrite(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageLeaseWrite)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if f.JSON == "" {
+		fmt.Fprintln(stderr, usageLeaseWrite)
+		return ExitUsage
+	}
+	data, err := readJSONInput(f.JSON, stdin)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel lease-write: %v\n", err)
+		return ExitBlocked
+	}
+	var lease Lease
+	if err := json.Unmarshal(data, &lease); err != nil {
+		fmt.Fprintf(stderr, "parallel lease-write: %v\n", err)
+		return ExitBlocked
+	}
+	if lease.CreatedAt == "" {
+		lease.CreatedAt = NowUTC()
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	path, err := LeasePath(f.Root, f.Slug)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel lease-write: %v\n", err)
+		return ExitUsage
+	}
+	err = withLeaseLock(f.Root, f.Slug, func() error { return WriteLease(path, &lease) })
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel lease-write: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprintln(stdout, path)
+	return ExitOK
+}
+
+func cmdLeaseRead(args []string, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageLeaseRead)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	path, err := LeasePath(f.Root, f.Slug)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel lease-read: %v\n", err)
+		return ExitUsage
+	}
+	lease, err := ReadLease(path)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel lease-read: %v\n", err)
+		return ExitBlocked
+	}
+	switch f.Field {
+	case "", "yaml", "md":
+		text, err := EmitLeaseMarkdown(lease)
+		if err != nil {
+			fmt.Fprintf(stderr, "parallel lease-read: %v\n", err)
+			return ExitBlocked
+		}
+		fmt.Fprint(stdout, text)
+	case "json":
+		text, err := LeaseJSON(lease)
+		if err != nil {
+			fmt.Fprintf(stderr, "parallel lease-read: %v\n", err)
+			return ExitBlocked
+		}
+		fmt.Fprintln(stdout, text)
+	case "status":
+		fmt.Fprintln(stdout, lease.Status)
+	case "base_sha":
+		fmt.Fprintln(stdout, lease.BaseSHA)
+	case "batch_id":
+		fmt.Fprintln(stdout, lease.BatchID)
+	case "n":
+		fmt.Fprintln(stdout, lease.N)
+	default:
+		fmt.Fprintf(stderr, "parallel lease-read: unknown field %q\n", f.Field)
+		return ExitUsage
+	}
+	return ExitOK
+}
+
+func cmdLeaseClear(args []string, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageLeaseClear)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	path, err := LeasePath(f.Root, f.Slug)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel lease-clear: %v\n", err)
+		return ExitUsage
+	}
+	if err := withLeaseLock(f.Root, f.Slug, func() error { return ClearLease(path) }); err != nil {
+		fmt.Fprintf(stderr, "parallel lease-clear: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprintf(stdout, "cleared: %s\n", path)
+	return ExitOK
+}

@@ -5,12 +5,17 @@ Usage: validate-frontmatter.py FILE [FILE ...]
 Exits non-zero if any file fails. Uses PyYAML if present, else a minimal parser
 (frontmatter here is simple key: value, no nested structures needed).
 """
+import re
 import sys
 
 KNOWN_SKILL_FIELDS = {
     "name", "description", "argument-hint", "user-invocable",
     "disable-model-invocation",
 }
+# agentskills.io open standard: kebab-case name, no leading/trailing/
+# consecutive hyphens; Anthropic additionally reserves these substrings.
+NAME_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+RESERVED_NAME_SUBSTRINGS = ("anthropic", "claude")
 KNOWN_AGENT_FIELDS = {
     "name", "description", "tools", "disallowedTools", "model", "permissionMode",
     "mcpServers", "hooks", "maxTurns", "skills", "initialPrompt", "memory",
@@ -22,6 +27,7 @@ DESCRIPTION_WORD_LIMITS = {
     "library": 60,
     "explicit": 30,
 }
+AGENT_DESCRIPTION_WORD_LIMIT = 45
 
 
 def extract_frontmatter(text):
@@ -73,6 +79,22 @@ def parse_simple(fm):
     return data
 
 
+def duplicate_top_level_keys(fm):
+    """Return repeated top-level frontmatter keys in first-repeat order."""
+    seen = set()
+    duplicates = []
+    for raw in fm.splitlines():
+        if not raw or raw[0].isspace() or raw.lstrip().startswith("#") or ":" not in raw:
+            continue
+        key = raw.split(":", 1)[0].strip()
+        if len(key) >= 2 and key[0] == key[-1] and key[0] in ("'", '"'):
+            key = key[1:-1]
+        if key in seen and key not in duplicates:
+            duplicates.append(key)
+        seen.add(key)
+    return duplicates
+
+
 def load_fm(fm):
     try:
         import yaml  # type: ignore
@@ -107,6 +129,12 @@ def main(argv):
             print("ERROR %s: %s" % (path, err))
             errors += 1
             continue
+        duplicates = duplicate_top_level_keys(fm)
+        if duplicates:
+            print("ERROR %s: duplicate frontmatter field(s): %s"
+                  % (path, ", ".join(duplicates)))
+            errors += 1
+            continue
         data = load_fm(fm)
         if not isinstance(data, dict) or not data:
             print("ERROR %s: frontmatter did not parse to key/value fields" % path)
@@ -116,7 +144,33 @@ def main(argv):
             print("ERROR %s: missing/empty 'description'" % path)
             errors += 1
             continue
-        known = KNOWN_AGENT_FIELDS if is_agent(path) else KNOWN_SKILL_FIELDS
+        skill_name = str(data.get("name", "")).strip()
+        if not skill_name:
+            print("ERROR %s: missing/empty 'name'" % path)
+            errors += 1
+            continue
+        lowered = skill_name.lower()
+        if any(res in lowered for res in RESERVED_NAME_SUBSTRINGS):
+            print("ERROR %s: name %r uses a reserved substring %s" % (path, skill_name, "/".join(RESERVED_NAME_SUBSTRINGS)))
+            errors += 1
+            continue
+        if not NAME_PATTERN.fullmatch(skill_name):
+            print("ERROR %s: name %r must be lower-case a-z/0-9 joined by single hyphens" % (path, skill_name))
+            errors += 1
+            continue
+        # Real skills are <dir>/SKILL.md and the directory owns routing/id;
+        # scratch validation fixtures may use any file name, so only enforce
+        # the name-to-directory match in that canonical layout.
+        normalized = path.replace("\\", "/")
+        parts = normalized.rsplit("/", 2)
+        if parts[-1] == "SKILL.md" and len(parts) >= 2:
+            parent_dir = parts[-2] if len(parts) == 3 else "."
+            if parent_dir != skill_name:
+                print("ERROR %s: name %r does not match parent directory %r" % (path, skill_name, parent_dir))
+                errors += 1
+                continue
+        agent = is_agent(path)
+        known = KNOWN_AGENT_FIELDS if agent else KNOWN_SKILL_FIELDS
         unknown = [k for k in data if k not in known]
         if unknown:
             print("ERROR %s: unknown field(s) not in canonical SKILL.md spec: %s"
@@ -137,8 +191,13 @@ def main(argv):
             errors += 1
             continue
         desc_words = len(desc.strip().split())
+        if agent and desc_words > AGENT_DESCRIPTION_WORD_LIMIT:
+            print("ERROR %s: description %d words > %d agent budget (keep role-selection cues; move workflow into the body)"
+                  % (path, desc_words, AGENT_DESCRIPTION_WORD_LIMIT))
+            errors += 1
+            continue
         explicit_only = str(data.get("disable-model-invocation", "")).lower() == "true"
-        if not is_agent(path):
+        if not agent:
             if str(data.get("name", "")) == "devrites-lib":
                 budget = DESCRIPTION_WORD_LIMITS["library"]
             elif explicit_only:

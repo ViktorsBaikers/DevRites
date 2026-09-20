@@ -1,22 +1,12 @@
 ---
 name: rite-handoff
-description: User-invoked handoff writer: sync chat-only context into `.devrites/` and write a fresh-agent handoff.
+description: "User-invoked handoff writer: sync chat-only context into `.devrites/` and write a fresh-agent handoff."
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[what the next session will focus on]"
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-handoff/reference/handoff-template.md","devrites-lib/reference/reply-contract.md"],"triggers":{"hygiene":["devrites-lib/reference/standards/context-hygiene.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-handoff` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # $rite-handoff: chat-only context, into a fresh-agent doc
 
@@ -25,10 +15,15 @@ persist (spec, plan, tasks, decisions, evidence, drift, review). This skill capt
 what the **chat** is holding that is **not** in the workspace, so a fresh agent (or
 the same user after `/clear`) can pick the work up without re-reading the transcript.
 
-Read `.agents/skills/devrites-lib/reference/standards/core.md` first: its "Persistence before stopping" discipline is
+Read [`core.md`](../devrites-lib/reference/standards/core.md) first: its "Persistence before stopping" discipline is
 exactly what this skill executes. The other rule files load on demand.
 
-Then run `devrites-engine preamble` for deterministic workspace orientation.
+Then read the explicit or active workspace's `state.md` directly, and run
+`devrites-engine handoff [slug]` — its resume record (cursor, `awaiting_human`,
+blocking question gates, the `gates.md` reduction, `decisions.md` dead ends,
+read-next order) is the deterministic spine of the handoff doc's **Resume**,
+**Read next**, and **Next action** sections. The chat adds what the workspace
+cannot hold; the engine supplies what the workspace already knows.
 
 ## Where to write
 
@@ -103,7 +98,7 @@ Print the absolute path in `Record:` so the user or next agent can open it witho
 
 ## Session hygiene
 Close with the one-line hygiene advisory + the single resume command. This skill *is* the
-pre-`/clear` bridge, so it's where the advisory matters most (`context-hygiene.md`):
+pre-`/clear` bridge, so it's where the advisory matters most ([`context-hygiene.md`](../devrites-lib/reference/standards/context-hygiene.md)):
 ```
 ↻ Hygiene: /clear
 ```

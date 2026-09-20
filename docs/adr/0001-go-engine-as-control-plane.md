@@ -30,7 +30,7 @@ framework.
 | Option | Why not |
 |--------|---------|
 | Bookkeeping inside the agent prompt | Non-deterministic, context-hungry, unauditable — the exact failure this system exists to remove. |
-| Node/TS engine (like the reference system GSD Core) | Drags a package tree + supply-chain surface; the pure-Go single binary has none and cross-compiles to every target from one runner. |
+| Node/TS engine | Drags a package tree + supply-chain surface; the pure-Go single binary has none and cross-compiles to every target from one runner. |
 | Cobra / urfave CLI framework | A dependency and a config surface for a switch statement the stdlib already handles. |
 
 ## Consequences

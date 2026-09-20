@@ -19,9 +19,15 @@ What real problem did you hit? Link the local issue/PRD under `.scratch/<slug>/`
 
 ## Validation
 
+- Commands run and observed results:
+- Skipped / not applicable checks and reasons:
+
+- [ ] `git diff --check`
 - [ ] `npm run validate`
-- [ ] `npm test`
-- [ ] Relevant evals:
+- [ ] `npm test` (or reason above)
+- [ ] Changed Markdown links, paths, commands, and examples checked
+- [ ] Canonical pack changes regenerated; generated diff reviewed
+- [ ] Relevant routing / behavioral evals:
 
 Skill or agent wording changed?
 
@@ -30,3 +36,4 @@ Skill or agent wording changed?
 ## Human review
 
 - [ ] A human reviewed the complete diff instead of relying on the agent summary
+- [ ] Final changed-file list matches the declared scope; unrelated user work is excluded

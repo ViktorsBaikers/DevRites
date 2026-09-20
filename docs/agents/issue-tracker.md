@@ -9,6 +9,9 @@ Issues and PRDs for this repo live as markdown files in `.scratch/`. For the end
 - Implementation issues are `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
+- An issue discovered while working another records `Found during: NN` (the parent issue number) near the `Status:` line; the discovery trail survives so a later audit can see where it came from
+- Ordering is recorded as optional lines near `Status:`: `Blocked by: NN, NN` (cannot start until those resolve), `Blocks: NN` (this issue gates those), `Relates: NN` (context link, no ordering). A dependency that would create a cycle is flagged and resolved by a human, never silently recorded.
+- An issue is **ready** when its `Status:` is open, every `Blocked by:` target is `resolved`, and nothing has claimed it. Pick work by lowest ready number; a blocked issue is skipped, not partially started. `scripts/issue-ready.sh` computes the ready frontier deterministically (optionally scoped to one feature slug) — use it instead of re-reading every file.
 
 ## When a skill says "publish to the issue tracker"
 

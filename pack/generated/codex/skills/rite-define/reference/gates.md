@@ -1,12 +1,10 @@
 # Gate taxonomy: advisory · validating · blocking · escalating
 
-DevRites uses a four-gate model for HITL pauses, adapted from the regulated-agentic-workflow
-governance pattern. Picking the right gate for each `Mode: HITL` slice is the difference
-between a workflow that catches real risk and one that becomes a review queue.
+DevRites uses four HITL gates, adapted from the regulated-agentic-workflow governance
+pattern. Choose the gate for each `Mode: HITL` slice by its risk and review needs.
 
-> **Default failure mode:** marking every HITL slice as `blocking`. The same reviewer ends
-> up approving low-stakes and high-stakes items at the same priority and the gate becomes
-> a queue. Mix gate types per slice; most plans use 2-3 of the 4.
+> **Do not mark every HITL slice as `blocking`.** That gives low-stakes and high-stakes
+> items the same priority. Most plans use 2 or 3 gate types.
 
 ## The four gates
 
@@ -29,8 +27,9 @@ Recording the choice for posterity."
 **Stakes:** medium. The slice can be built but should not merge before a human signs off.
 Async: the human reviews when they get to it, but the loop does not stall.
 
-**Behavior:** in HITL mode, `$rite-build` pauses on this gate and writes
-`Awaiting human` to `state.md`. In AFK mode with `allow_gates: [advisory, validating]`,
+**Behavior:** in HITL mode, `$rite-build` builds the slice, writes the
+validating question + `Awaiting human`, and stops at the normal one-slice boundary; the open
+answer does not block the next dispatch. In AFK mode with `allow_gates: [advisory, validating]`,
 `$rite-build` builds the slice but marks it `built (pending review)` and writes the
 validating question; the feature does not seal until the entry is resolved. An open
 `gate: validating` entry is **merge-blocking by definition**: a slice marked
@@ -39,7 +38,7 @@ validating question; the feature does not seal until the entry is resolved. An o
 **Example:** "Schema migration adds a non-null column with a default. Backfill plan is
 recorded; reviewer should confirm the default is the right one for archived rows."
 
-**SLA:** `4h`: the work continues but the validating queue should drain within hours,
+**SLA:** `4h`: the work continues, but the validating queue should clear within hours,
 not days.
 
 ### blocking
@@ -48,16 +47,16 @@ not days.
 the loop stops.
 
 **Behavior:** **always pauses regardless of `.devrites/AFK` config.** `$rite-build`
-writes `Awaiting human`, sets `Status: awaiting_human`, fires the `notify:` hook, and
-STOPs. The slice is not built until `$rite-resolve` lands.
+writes `Awaiting human`, sets `Status: awaiting_human`, fires the `notify:` hook (when
+`.devrites/AFK` defines one), and STOPs. The slice is not built until `$rite-resolve` lands.
 
 **Examples:**
 - Destructive migration (data loss risk).
 - Auth/authz boundary change.
 - Public API break.
 - Spec drift that changes acceptance criteria.
-- Tests / types / lint are red and the agent cannot tell whether the slice's contract is
-  wrong or the failing code is.
+- Bounded debug recovery proved the remaining red test/type/lint failure is a genuine
+  product-contract ambiguity the human must decide.
 
 **SLA:** `15m`: synchronous gates demand fast turnaround; otherwise treat the work as
 genuinely blocked and re-plan around it.
@@ -79,7 +78,9 @@ it's `blocking`.
 
 ## Picking the gate
 
-Apply this decision tree per HITL slice:
+First apply [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) decision ownership: an objective implementation/tooling failure
+or reversible technical choice is agent work and gets no human gate. Then apply this
+decision tree per HITL slice:
 
 1. **Can the slice ship safely without the answer?**
    - Yes → `advisory`.
@@ -95,7 +96,7 @@ Apply this decision tree per HITL slice:
 
 | Gate | SLA | Synchronous? |
 |---|---|---|
-| advisory | `none` |: (does not pause) |
+| advisory | `none` | n/a (does not pause) |
 | validating | `4h` | no (async; build continues, merge blocks) |
 | blocking | `15m` | yes |
 | escalating | `24h` | yes, but to a specialist |
@@ -117,18 +118,23 @@ defaults and the always-pause rules:
 | `[advisory, validating]` | log + proceed | build + queue | pause | pause |
 | `[advisory, validating, blocking]` | log + proceed | build + queue | log + proceed* | pause |
 
-\* but **never** for destructive migrations, auth/authz boundary changes, public API
-breaks, or red tests/types/lint. Those always pause. See
+\* but **never** for destructive migrations, auth/authz boundary changes, or public API
+breaks. Red tests/types/lint remain hard build gates and must clear bounded recovery before
+the next slice; only a resulting human-owned ambiguity becomes a pause. See
 [`.agents/skills/devrites-lib/reference/standards/afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) for the irreversible-risk
 list.
 
 `escalating` is never in `allow_gates`: specialist routing is not something AFK can
 shortcut.
 
+`$rite-autocomplete` does not add `blocking` to `allow_gates`. It auto-resolves
+open blocking questions that already name a recommended option via
+`devrites-engine state resolve`, then continues. That is an orchestrator
+exception, not an AFK ceiling change.
+
 ## Anti-patterns
 
-- **One gate for everything.** Validates becomes a queue, blocks all work behind one
-  reviewer. Pick gates per slice.
+- **One gate for everything.** This puts all work behind one reviewer. Pick gates per slice.
 - **Marking a destructive migration `validating` to "keep the loop moving".** Destructive
   work is `blocking` regardless of the urge to ship.
 - **`advisory` as a synonym for "I'm not sure but I don't want to ask".** If the slice
@@ -143,7 +149,8 @@ shortcut.
 Mode: HITL
 Gate: blocking
 SLA: 15m
-Checkpoint: Confirm (user_id, created_at) composite index choice vs two single-col indexes.
+Checkpoint: Approve irreversible deletion of legacy records after the dry-run count exists;
+that evidence cannot exist before the migration rehearsal.
 Blocked by: SLICE-002
 ...
 ```

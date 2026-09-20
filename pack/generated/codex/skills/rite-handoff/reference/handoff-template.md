@@ -9,7 +9,7 @@ Loaded on demand by `$rite-handoff`. Write the filled-in template to
 ## Resume
 Current objective: <one sentence>
 Last completed slice: <SLICE-### | none>
-Blockers: <none | Q-### / DRIFT-###>
+Blockers: <none | q-YYYY-MM-DD-NNN / released Q-### / DRIFT-###>
 
 ## Read next
 1. `.devrites/work/<slug>/README.md` — workspace map.

@@ -75,7 +75,7 @@ Treat each as a finding when present; classify by load type so the fix is obviou
 ## The cheap-fix test
 
 If a finding would take more than 30 minutes to fix, classify it (token gap /
-component miss / flow misalignment per `rite-polish/reference/ui.md`) and
+component miss / flow misalignment per [`ui.md`](../../rite-polish/reference/ui.md)) and
 route to the appropriate bucket. Cognitive-load review surfaces problems; it
 doesn't decide the rewrite strategy.
 
@@ -88,5 +88,3 @@ doesn't decide the rewrite strategy.
 - **Code quality:** covered by the simplification audit
   (`devrites-audit simplify`).
 - **Security:** covered by the security audit (`devrites-audit security`).
-
-Cognitive-load findings live on the **UX axis** of the multi-axis review.

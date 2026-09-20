@@ -4,7 +4,10 @@ set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
 ok() { printf '  ok: %s\n' "$*"; }
-no() { printf '  FAIL: %s\n' "$*"; fail=1; }
+no() {
+  printf '  FAIL: %s\n' "$*"
+  fail=1
+}
 
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
@@ -29,8 +32,11 @@ pids=()
 for flags in \
   "--no-skills --no-agents --no-short-aliases" \
   "--no-agents" \
-  "--no-codex" ; do
-  run_flags "$flags" & pids+=("$!")
+  "--no-codex" \
+  "--no-pi" \
+  "--no-devin"; do
+  run_flags "$flags" &
+  pids+=("$!")
 done
 
 for pid in "${pids[@]}"; do

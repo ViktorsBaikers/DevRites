@@ -36,6 +36,8 @@ got="$(node "$CLI" --version 2>/dev/null)"
 # 2) --help shows usage + subcommands
 help="$(node "$CLI" --help 2>/dev/null)"
 echo "$help" | grep -q 'Usage:' && ok "--help shows usage" || no "--help missing usage"
+echo "$help" | grep -q 'hook-free native agents' && ok "--help describes native agents" || no "--help misses native-agent wording"
+echo "$help" | grep -Eqi 'active hooks|and hooks' && no "--help claims hooks are installed" || ok "--help makes no active-hook claim"
 echo "$help" | grep -q 'uninstall' && ok "--help lists uninstall" || no "--help missing uninstall"
 echo "$help" | grep -q -- '--no-binary.*devrites-engine' && ok "--help lists --no-binary engine skip" || no "--help missing --no-binary"
 echo "$help" | grep -q -- '--no-rules.*Deprecated no-op' && ok "--help marks --no-rules deprecated" || no "--help does not mark --no-rules deprecated"
@@ -49,10 +51,8 @@ cat > "$FAKE_ENGINE" <<'SH'
 printf 'engine:%s\n' "$*"
 SH
 chmod +x "$FAKE_ENGINE"
-proxy_out="$(DEVRITES_ENGINE_CLI="$FAKE_ENGINE" node "$CLI" preamble alpha 2>/dev/null)"
-[ "$proxy_out" = "engine:preamble alpha" ] && ok "engine subcommands proxy to devrites-engine" || no "engine proxy failed: $proxy_out"
-archive_out="$(DEVRITES_ENGINE_CLI="$FAKE_ENGINE" node "$CLI" archive-search alpha 2>/dev/null)"
-[ "$archive_out" = "engine:archive-search alpha" ] && ok "archive-search proxies to devrites-engine" || no "archive-search proxy failed: $archive_out"
+proxy_out="$(DEVRITES_ENGINE_CLI="$FAKE_ENGINE" node "$CLI" check readiness alpha 2>/dev/null)"
+[ "$proxy_out" = "engine:check readiness alpha" ] && ok "engine subcommands proxy to devrites-engine" || no "engine proxy failed: $proxy_out"
 
 grep -q 'ENGINE_COMMANDS' "$CLI" && no "npm shim still carries command list" || ok "npm shim forwards arbitrary engine commands"
 
@@ -80,13 +80,14 @@ for f in \
   ".agents/skills/devrites-lib/reference/standards/security.md" \
   ".claude/agents/devrites-code-reviewer.md" \
   ".codex/agents/devrites-code-reviewer.toml" \
-  ".codex/hooks.json" \
+  ".codex/config.toml" \
   ".claude/skills/devrites-lib/reference/standards/security.md" \
   "AGENTS.md" \
   ".devrites/README.md" \
   ".devrites/ACTIVE" ; do
   [ -f "$T/$f" ] && ok "present: $f" || no "missing: $f"
 done
+[ ! -e "$T/.codex/hooks.json" ] && ok "clean CLI install creates no Codex root hooks" || no "clean CLI install created Codex root hooks"
 grep -q 'cli-smoke-generated-sentinel' "$T/.agents/skills/rite/SKILL.md" && ok "CLI install consumes generated Codex skill payload" || no "CLI install did not use generated Codex skill payload"
 
 # 6) no global write
@@ -99,7 +100,7 @@ node "$CLI" uninstall --target "$T" >/dev/null 2>&1 || no "uninstall exited non-
 [ -f "$T/.claude/skills/rite/SKILL.md" ] && no "skill survived uninstall" || ok "skills removed"
 [ -f "$T/.agents/skills/rite/SKILL.md" ] && no "Codex skill survived uninstall" || ok "Codex skills removed"
 [ -f "$T/.codex/agents/devrites-code-reviewer.toml" ] && no "Codex agent survived uninstall" || ok "Codex agents removed"
-[ -f "$T/.codex/hooks.json" ] && no "Codex hooks survived uninstall" || ok "Codex hooks removed"
+[ -f "$T/.codex/config.toml" ] && no "Codex permission config survived uninstall" || ok "Codex permission config removed"
 [ -f "$T/AGENTS.md" ] && no "AGENTS bridge survived uninstall" || ok "AGENTS bridge removed"
 [ -f "$T/.devrites/ACTIVE" ] && ok "uninstall preserved .devrites/ACTIVE" || no "uninstall dropped runtime state"
 

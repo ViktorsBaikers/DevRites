@@ -14,6 +14,7 @@ import (
 type fileLock struct{ f *os.File }
 
 func acquireLock(path string) (*fileLock, error) {
+	// #nosec G304 -- feature lock file inside the workspace .devrites tree
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
 		return nil, fmt.Errorf("acquire lock: %w", err)

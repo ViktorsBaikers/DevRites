@@ -53,6 +53,11 @@
       "rationale": "Natural user-facing reply prose is a named trigger branch."
     },
     {
+      "text": "Strip the step-by-step scaffolding from this review reply without changing the finding.",
+      "expected": "should_trigger",
+      "rationale": "Reasoning-chain leaks in review prose belong to prose craft."
+    },
+    {
       "text": "Rename the generic variables and remove tutorial comments from this TypeScript file.",
       "expected": "should_not_trigger",
       "rationale": "Code anti-slop belongs to build/polish, not prose craft.",
@@ -121,6 +126,13 @@
       "rationale": "A factual changelog update does not require prose craft unless style editing is requested.",
       "owner": null,
       "owner_rationale": "A factual changelog update does not require prose craft unless style editing is requested."
+    },
+    {
+      "text": "Does this AI-writing score prove the intern used ChatGPT?",
+      "expected": "should_not_trigger",
+      "rationale": "Authorship or integrity verdicts are not a prose rewrite; flags are writing-quality signals.",
+      "owner": null,
+      "owner_rationale": "Prose craft rewrites language. It does not classify who wrote the text."
     }
   ]
 }

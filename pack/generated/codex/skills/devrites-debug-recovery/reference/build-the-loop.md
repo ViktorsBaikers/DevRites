@@ -1,17 +1,14 @@
 # Build the feedback loop
 
-**This is the skill.** Everything else is mechanical. If you have a fast,
-deterministic, agent-runnable pass/fail signal for the failure, you will find
-the cause: bisection, hypothesis-testing, and instrumentation all just consume
-that signal. If you don't have one, no amount of staring at code will save you.
-
-**Spend disproportionate effort here. Be aggressive. Refuse to give up.**
+Start with a fast, deterministic, agent-runnable pass/fail signal. Bisection,
+hypothesis testing, and instrumentation depend on it, so spend most debugging
+effort on a reliable reproduction loop.
 
 ## Build the loop: try these in roughly this order
 
 1. **Failing test** at whatever seam reaches the failure (unit / integration / e2e).
 2. **Direct CLI / curl invocation** against the running dev server or process.
-3. **Replay a captured trace:** save the offending request/payload/event to disk, replay it through the code path in isolation.
+3. **Replay:** build a non-sensitive behaviorally equivalent fixture with safe credentials/data; verify the decisive signal matches. Never replay redaction markers. Unknown equivalence is `cannot_verify` plus safe manual steps.
 4. **Throwaway harness:** spin up a minimal subset (one service, mocked deps) that triggers the failure with a single function call.
 5. **Headless browser script** (Chrome DevTools MCP / Playwright): drives the UI, asserts on DOM/console/network.
 6. **Bisection harness:** if the failure appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so `git bisect run` can find it.
@@ -21,38 +18,41 @@ that signal. If you don't have one, no amount of staring at code will save you.
 
 ## Iterate on the loop itself
 
-The loop is a product. Once you have *a* loop, ask:
+Once it works, improve it:
 
-- Can I make it faster? (cache setup, skip unrelated init, narrow scope.)
-- Can I make the signal sharper? (assert on the specific symptom, not "didn't crash".)
-- Can I make it more deterministic? (pin time, seed RNG, isolate filesystem, freeze network.)
+- Make it faster: cache setup, skip unrelated initialization, and narrow scope.
+- Sharpen its signal: assert on the specific symptom, not only that the process did
+  not crash.
+- Make it deterministic: pin time, seed the RNG, isolate the filesystem, and freeze
+  the network.
 
-A 30-second flaky loop is barely better than no loop. A 2-second deterministic
-loop is a debugging superpower.
+Prefer the shortest deterministic loop. A slow or flaky one makes each later
+diagnostic step less reliable.
+
+## Wait on a condition
+
+Poll one named observable from fresh state with a bound; timeout reports predicate, bound, and
+last value. Fixed delay is only for timing behavior or race reproduction—never readiness proof.
 
 ## Non-deterministic failures
 
-Goal is **higher reproduction rate**, not a clean repro. Loop the trigger 100×,
-parallelise, add stress, narrow timing windows, inject sleeps. A 50%-flake bug
-is debuggable; 1% is not: raise the rate until it's debuggable.
+Increase reproduction rate instead of waiting for perfection: repeat/parallelize, add stress,
+or widen timing until the failure is practical to investigate.
 
-**Classify the non-determinism first. The class picks the tactic:**
+Classify the non-determinism before choosing a tactic:
 - **Timing** (race, ordering, async interleave): widen the window. Inject artificial delays at
-  the suspect `await`, run under load/parallelism, pin the scheduler. Making it *more* flaky on
-  purpose is progress.
+  the suspect `await`, run under load/parallelism, and pin the scheduler. Use deliberate delays
+  when they increase the reproduction rate.
 - **Environment** (green here, red in CI/prod): diff the environments: dependency versions, env
   vars, locale, timezone, filesystem case-sensitivity, resource limits.
 - **State** (fails only after certain prior runs): hunt a leaked global, singleton, cache, or DB
   row; run the trigger in isolation, then again after the suspect predecessor, and compare.
 - **Truly random** (no pattern survives): add defensive logging keyed on the failure signature
-  and alert on it in the wild. You're gathering repros, not fixing yet: don't guess a fix blind.
+  and alert on it in the wild. Gather reproductions before attempting a fix; do not guess
+  without evidence.
 
 ## When you genuinely cannot build a loop
 
-**STOP and say so explicitly.** List what you tried. Ask the user for:
-
-- access to whatever environment reproduces it,
-- a captured artifact (HAR file, log dump, core dump, screen recording with timestamps), or
-- permission to add temporary production instrumentation.
-
-**Do NOT proceed without a loop you believe in.**
+If no reliable loop exists, stop, list attempts, and ask for reproducing-environment access,
+a sanitized HAR/log/dump/timestamped recording, or temporary instrumentation permission. Do
+not proceed without a trusted reproduction.

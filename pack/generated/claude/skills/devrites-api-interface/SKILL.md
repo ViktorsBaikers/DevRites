@@ -1,8 +1,10 @@
 ---
 name: devrites-api-interface
-description: Design stable API/interface contracts before implementation: REST/GraphQL endpoints, module boundaries, type contracts, FE/BE splits. Use when the user says "design the API" or a slice crosses a boundary. Not for helpers.
+description: Shape stable API, type, module, or frontend/backend contracts before implementation. Use when a slice crosses a boundary; not for internal helpers.
 user-invocable: false
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"deprecation":["devrites-lib/reference/standards/deprecation.md"],"security":["devrites-lib/reference/standards/security.md","rite-review/reference/security-review.md"]},"workspace":["spec.md","plan.md","tasks.md","state.md","decisions.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-api-interface` bundles every file named below into one deduplicated read.
 
 # devrites-api-interface: contract before implementation
 
@@ -35,7 +37,7 @@ stays stable.
   typed functions, on your own database's data, or in a utility already called by validated code.
   A check inside the trusted core hides the bug in the boundary that should have caught it. A
   third-party API response is external input: always untrusted. (Three-tier boundary:
-  [`security.md`](../devrites-lib/reference/standards/security.md); see `rite-review/reference/security-review.md`.)
+  [`security.md`](../devrites-lib/reference/standards/security.md); see [`security-review.md`](../rite-review/reference/security-review.md).)
 
 ## Type craft: make the wrong call unrepresentable
 - **Brand your ids.** A bare `string`/`number` id is assignable to any other id, so the compiler
@@ -45,17 +47,19 @@ stays stable.
 - **Model variants as discriminated unions**, each state carrying only its own fields, so an
   impossible combination can't be constructed in the first place.
 
-## Enables the split
-A clear contract lets `/rite-plan split` proceed: the backend slice can land against the
-contract with a stub consumer; the frontend slice can build against a mock or the real
-contract. Neither side blocks on the other.
-
 ## Doubt the contract
-Before standing the interface, run `devrites-doubt`: boundary decisions are exactly the
-non-trivial kind worth an adversarial check.
+Before standing the interface, run `devrites-doubt`.
 
 ## Done when
 The contract is complete only when **every** field carries a type + optionality + unit,
 **every** success and error status code is enumerated with its error-body shape, the
-`devrites-doubt` verdict is accept, and the contract + rationale are recorded in
-`decisions.md`. A contract that pins only the happy-path shape is not done.
+`devrites-doubt` verdict is accept (on reject: revise the contract and re-doubt under
+[the canonical retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)
+with caller repair and human-risk gates), and the
+contract + rationale are recorded in `decisions.md`. A contract that pins only the
+happy-path shape is not done.
+
+## Enables the split
+A clear contract lets `/rite-plan split` proceed: the backend slice can land against the
+contract with a stub consumer; the frontend slice can build against a mock or the real
+contract. Neither side blocks on the other.

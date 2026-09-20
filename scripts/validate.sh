@@ -4,10 +4,15 @@
 
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+. "$ROOT/scripts/git-env.sh"
 PACK="$ROOT/pack/.claude"
 SKILLS="$PACK/skills"
 AGENTS="$PACK/agents"
 fail=0
+# Per-run scratch dir: two concurrent validate runs must not corrupt each
+# other's logs the way fixed /tmp/dr_* paths did.
+DR_SCRATCH="$(mktemp -d 2>/dev/null || echo /tmp/dr-validate-$$)"
+trap 'rm -rf "${DR_SCRATCH}"' EXIT
 section() { printf '\n=== %s ===\n' "$1"; }
 bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
 good() { printf 'ok: %s\n' "$*"; }
@@ -15,10 +20,12 @@ good() { printf 'ok: %s\n' "$*"; }
 
 # ---- 1. bash -n on every shell script ------------------------------------
 section "bash syntax (bash -n)"
-SH_LIST="$ROOT/install.sh $ROOT/uninstall.sh $ROOT/update.sh"
-for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/hooks/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do [ -f "$f" ] && SH_LIST="$SH_LIST $f"; done
-for f in $SH_LIST; do
-  if bash -n "$f" 2>/tmp/dr_synerr; then good "syntax ${f#$ROOT/}"; else bad "syntax ${f#$ROOT/}: $(cat /tmp/dr_synerr)"; fi
+SH_LIST=("$ROOT/install.sh" "$ROOT/uninstall.sh" "$ROOT/update.sh")
+for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/hooks/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do
+  [ -f "$f" ] && SH_LIST+=("$f")
+done
+for f in "${SH_LIST[@]}"; do
+  if bash -n "$f" 2>${DR_SCRATCH}/dr_synerr; then good "syntax ${f#$ROOT/}"; else bad "syntax ${f#$ROOT/}: $(cat ${DR_SCRATCH}/dr_synerr)"; fi
 done
 
 # ---- 2. python syntax ----------------------------------------------------
@@ -26,12 +33,54 @@ section "python syntax"
 if command -v python3 >/dev/null 2>&1; then
   for f in "$ROOT"/scripts/*.py; do
     [ -f "$f" ] || continue
-    if python3 -c "import py_compile,sys; py_compile.compile('$f', doraise=True)" 2>/tmp/dr_pyerr; then
-      good "compiles ${f#$ROOT/}"; else bad "py ${f#$ROOT/}: $(cat /tmp/dr_pyerr)"; fi
+    if python3 -c "import py_compile,sys; py_compile.compile('$f', doraise=True)" 2>${DR_SCRATCH}/dr_pyerr; then
+      good "compiles ${f#$ROOT/}"; else bad "py ${f#$ROOT/}: $(cat ${DR_SCRATCH}/dr_pyerr)"; fi
   done
 else
   echo "skip: python3 not found"
 fi
+
+
+section "strict pack JSON"
+if command -v python3 >/dev/null 2>&1; then
+  PACK_JSON_INPUTS=("$PACK" "$ROOT/pack/generated")
+  PACK_JSON_READY=1
+  if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    PACK_JSON_INPUTS=()
+    PACK_JSON_LIST="$(mktemp)"
+    if git -C "$ROOT" ls-files -z -- pack/.claude pack/generated > "$PACK_JSON_LIST"; then
+      while IFS= read -r -d '' rel; do
+        [[ "$rel" == *.json ]] && PACK_JSON_INPUTS+=("$ROOT/$rel")
+      done < "$PACK_JSON_LIST"
+    else
+      PACK_JSON_READY=0
+    fi
+    rm -f "$PACK_JSON_LIST"
+  fi
+  if [ "$PACK_JSON_READY" -eq 1 ] && [ "${#PACK_JSON_INPUTS[@]}" -gt 0 ] &&
+    python3 "$ROOT/scripts/validate-pack-json.py" "${PACK_JSON_INPUTS[@]}"; then
+    good "all canonical and generated pack JSON parses strictly"
+  else
+    bad "canonical or generated pack JSON is malformed"
+  fi
+else
+  bad "python3 is required for strict pack JSON validation"
+fi
+
+section "generated host artifact tree parity"
+HOST_ARTIFACT_TMP="$(mktemp -d)"
+if DEVRITES_HOST_ARTIFACT_DIR="$HOST_ARTIFACT_TMP" bash "$ROOT/scripts/build-host-artifacts.sh" >${DR_SCRATCH}/dr_host_artifacts 2>&1; then
+  if diff -qr "$ROOT/pack/generated" "$HOST_ARTIFACT_TMP" >${DR_SCRATCH}/dr_host_artifacts 2>&1; then
+    good "generated host artifact tree matches canonical sources"
+  else
+    sed -n '1,40p' ${DR_SCRATCH}/dr_host_artifacts
+    bad "pack/generated tree drifted from canonical sources"
+  fi
+else
+  cat ${DR_SCRATCH}/dr_host_artifacts
+  bad "host artifact generation failed"
+fi
+rm -rf "$HOST_ARTIFACT_TMP"
 
 
 # ---- 2d. shell install helper ownership ----------------------------------
@@ -67,10 +116,10 @@ done
 # ---- 5. frontmatter validation ------------------------------------------
 section "frontmatter"
 if command -v python3 >/dev/null 2>&1; then
-  FM_FILES=""
-  for d in "$SKILLS"/*/; do FM_FILES="$FM_FILES ${d}SKILL.md"; done
-  for a in "$AGENTS"/*.md; do FM_FILES="$FM_FILES $a"; done
-  if python3 "$ROOT/scripts/validate-frontmatter.py" $FM_FILES; then good "frontmatter parses"; else bad "frontmatter validation failed"; fi
+  FM_FILES=()
+  for d in "$SKILLS"/*/; do [ -f "${d}SKILL.md" ] && FM_FILES+=("${d}SKILL.md"); done
+  for a in "$AGENTS"/*.md; do [ -f "$a" ] && FM_FILES+=("$a"); done
+  if python3 "$ROOT/scripts/validate-frontmatter.py" "${FM_FILES[@]}"; then good "frontmatter parses"; else bad "frontmatter validation failed"; fi
 else
   echo "skip: python3 not found"
 fi
@@ -106,42 +155,40 @@ done
 # ---- 6b. skill inventory / documentation counts --------------------------
 section "skills inventory"
 if command -v node >/dev/null 2>&1; then
-  if node "$ROOT/scripts/skills-inventory.mjs" >/tmp/dr_skills_inventory 2>&1; then
-    cat /tmp/dr_skills_inventory
+  if node "$ROOT/scripts/skills-inventory.mjs" >${DR_SCRATCH}/dr_skills_inventory 2>&1; then
+    cat ${DR_SCRATCH}/dr_skills_inventory
     good "skills inventory matches docs"
   else
-    cat /tmp/dr_skills_inventory
+    cat ${DR_SCRATCH}/dr_skills_inventory
     bad "skills inventory drifted"
   fi
 else
   echo "skip: node not found"
 fi
 
-# ---- 6c. skill anatomy + routing + host parity ----------------------------
-section "skill anatomy"
-if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/validate-skill-anatomy.py" >/tmp/dr_skill_anatomy 2>&1; then cat /tmp/dr_skill_anatomy; good "skill anatomy contracts passed"; else cat /tmp/dr_skill_anatomy; bad "skill anatomy validation failed"; fi
-else
-  echo "skip: python3 not found"
-fi
-
-section "deterministic routing/collision evals"
-if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/run-routing-evals.py" >/tmp/dr_routing_evals 2>&1; then cat /tmp/dr_routing_evals; good "routing/collision evals passed"; else cat /tmp/dr_routing_evals; bad "routing/collision evals failed"; fi
-else
-  echo "skip: python3 not found"
-fi
-
+# ---- 6c. host parity -----------------------------------------------------
 section "command host parity"
 if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/validate-command-parity.py" >/tmp/dr_command_parity 2>&1; then cat /tmp/dr_command_parity; good "command host parity passed"; else cat /tmp/dr_command_parity; bad "command host parity failed"; fi
+  if python3 "$ROOT/scripts/validate-command-parity.py" >${DR_SCRATCH}/dr_command_parity 2>&1; then cat ${DR_SCRATCH}/dr_command_parity; good "command host parity passed"; else cat ${DR_SCRATCH}/dr_command_parity; bad "command host parity failed"; fi
 else
   echo "skip: python3 not found"
 fi
 
 section "agent composition"
 if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/validate-agent-composition.py" >/tmp/dr_agent_composition 2>&1; then cat /tmp/dr_agent_composition; good "agent composition contracts passed"; else cat /tmp/dr_agent_composition; bad "agent composition validation failed"; fi
+  if python3 "$ROOT/scripts/validate-agent-composition.py" >${DR_SCRATCH}/dr_agent_composition 2>&1; then cat ${DR_SCRATCH}/dr_agent_composition; good "agent composition contracts passed"; else cat ${DR_SCRATCH}/dr_agent_composition; bad "agent composition validation failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
+# ---- 6d. loads: manifests ------------------------------------------------
+# Every declared file must exist, every trigger must have an activation path
+# (engine signal, `(trigger `name`)` annotation, prose mention, or reserved
+# `agents`), and every role/agent/artifact name must resolve. This turns the
+# dead-trigger and stale-role audit into a permanent gate.
+section "loads: manifest integrity"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/check-loads-manifest.py" >${DR_SCRATCH}/dr_loads_manifest 2>&1; then cat ${DR_SCRATCH}/dr_loads_manifest; good "loads: manifests valid"; else cat ${DR_SCRATCH}/dr_loads_manifest; bad "loads: manifest validation failed"; fi
 else
   echo "skip: python3 not found"
 fi
@@ -179,14 +226,6 @@ else
   echo "skip: python3 not found"
 fi
 
-# ---- 8. skill pruning + step contracts ----------------------------------
-section "skill pruning + step contracts"
-if command -v node >/dev/null 2>&1 && [ -f "$ROOT/scripts/skill-pruning-audit.mjs" ]; then
-  if node "$ROOT/scripts/skill-pruning-audit.mjs"; then good "skill pruning and step contracts passed"; else bad "skill pruning step contracts failed"; fi
-else
-  echo "skip: node or skill-pruning-audit.mjs not found"
-fi
-
 # ---- 9. DevRites engineering rules present -------------------------------
 section "DevRites rules present"
 if [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/README.md" ] && [ -f "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/security.md" ]; then
@@ -198,67 +237,64 @@ fi
 # ---- 10. no global writes ------------------------------------------------
 section "no personal paths in shipped artifacts"
 if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/check-no-personal-paths.py" >/tmp/dr_personal_paths 2>&1; then cat /tmp/dr_personal_paths; good "no personal paths check passed"; else cat /tmp/dr_personal_paths; bad "personal path check failed"; fi
+  if python3 "$ROOT/scripts/check-no-personal-paths.py" >${DR_SCRATCH}/dr_personal_paths 2>&1; then cat ${DR_SCRATCH}/dr_personal_paths; good "no personal paths check passed"; else cat ${DR_SCRATCH}/dr_personal_paths; bad "personal path check failed"; fi
 else
   echo "skip: python3 not found"
 fi
 
 # ---- 10b. no global writes ------------------------------------------------
 section "no global ~/.claude writes"
-if bash "$ROOT/scripts/check-no-global-writes.sh" >/tmp/dr_glob 2>&1; then good "no-global-writes check passed"; else bad "no-global-writes check failed"; cat /tmp/dr_glob; fi
+if bash "$ROOT/scripts/check-no-global-writes.sh" >${DR_SCRATCH}/dr_glob 2>&1; then good "no-global-writes check passed"; else bad "no-global-writes check failed"; cat ${DR_SCRATCH}/dr_glob; fi
 
 # ---- 11. principle uniqueness: each canonical heading appears exactly once
 section "principle uniqueness"
-if bash "$ROOT/scripts/check-rule-uniqueness.sh" >/tmp/dr_uniq 2>&1; then
-  cat /tmp/dr_uniq
+if bash "$ROOT/scripts/check-rule-uniqueness.sh" >${DR_SCRATCH}/dr_uniq 2>&1; then
+  cat ${DR_SCRATCH}/dr_uniq
   good "rule-uniqueness check passed"
 else
-  cat /tmp/dr_uniq
+  cat ${DR_SCRATCH}/dr_uniq
   bad "rule-uniqueness check failed (see scripts/check-rule-uniqueness.sh)"
 fi
 
 # ---- 11b. generated workspace schema fixtures ----------------------------
 section "workspace artifact schema"
 if command -v go >/dev/null 2>&1; then
-  if (cd "$ROOT/engine" && go run ./internal/state/cmd/workflowmanifest -check -out internal/state/workflow_manifest.json) >/tmp/dr_workflow_manifest 2>&1; then
+  if (cd "$ROOT/engine" && go run ./internal/state/cmd/workflowmanifest -check -out internal/state/workflow_manifest.json) >${DR_SCRATCH}/dr_workflow_manifest 2>&1; then
     good "workflow manifest is fresh"
   else
-    cat /tmp/dr_workflow_manifest
+    cat ${DR_SCRATCH}/dr_workflow_manifest
     bad "workflow manifest drifted from the typed state registry"
   fi
 else
   echo "skip: go not found; workflow manifest freshness not checked"
 fi
 if command -v python3 >/dev/null 2>&1; then
-  if python3 "$ROOT/scripts/validate-workspace-schema.py" "$ROOT/tests/fixtures/workspace-schema" >/tmp/dr_workspace_schema 2>&1; then
-    cat /tmp/dr_workspace_schema
+  if python3 "$ROOT/scripts/check-authority-drift.py" >${DR_SCRATCH}/dr_authority_drift 2>&1; then
+    cat ${DR_SCRATCH}/dr_authority_drift
+    good "authority-derived docs are current"
+  else
+    cat ${DR_SCRATCH}/dr_authority_drift
+    bad "authority-derived docs drifted"
+  fi
+  if python3 "$ROOT/scripts/validate-workspace-schema.py" "$ROOT/tests/fixtures/workspace-schema" >${DR_SCRATCH}/dr_workspace_schema 2>&1; then
+    cat ${DR_SCRATCH}/dr_workspace_schema
     good "workspace artifact schema fixtures valid"
   else
-    cat /tmp/dr_workspace_schema
+    cat ${DR_SCRATCH}/dr_workspace_schema
     bad "workspace artifact schema fixtures failed"
   fi
 else
   echo "skip: python3 not found"
 fi
 
-# ---- 11c. user-facing completion reply contract --------------------------
-section "rite completion reply contract"
-if bash "$ROOT/scripts/check-reply-contract.sh" >/tmp/dr_reply_contract 2>&1; then
-  cat /tmp/dr_reply_contract
-  good "reply-contract check passed"
-else
-  cat /tmp/dr_reply_contract
-  bad "reply-contract check failed (see scripts/check-reply-contract.sh)"
-fi
-
 # ---- 12. no runtime-broken pack/.claude/ path in installed prose ---------
-# After install the leading pack/ is stripped, so any literal pack/.claude/skills/devrites-lib/reference/standards/
-# or pack/.claude/skills/ in shipped SKILL.md / reference prose is a dead path
-# at runtime. (Repo README/docs links are out of scope: they're GitHub links.)
+# Installed paths omit the leading pack/. A literal pack/.claude/skills/ path
+# in shipped skill or reference prose will not resolve. Repository README and
+# documentation links are GitHub links, so this check ignores them.
 section "no literal pack/.claude/ paths in shipped skill prose"
-# Exclude the intentional resolution-snippet fallback (`... || P=pack/.claude/...`): the
-# preamble snippet tries the installed `.claude/` path first, then `${CLAUDE_SKILL_DIR}`
-# (plugin, best-effort), then the repo `pack/.claude/...` for DevRites self-development.
+# Keep the resolution-snippet fallback (`... || P=pack/.claude/...`). It checks
+# the installed `.claude/` path first, then `${CLAUDE_SKILL_DIR}` as a
+# best-effort plugin path, and finally the repository path during development.
 PACKPATH_HITS="$(grep -rnI -e 'pack/\.claude/skills/devrites-lib/reference/standards/' -e 'pack/\.claude/skills/' "$SKILLS" 2>/dev/null | grep -vE '\|\| [A-Z]+=pack/\.claude/skills/' || true)"
 if [ -n "$PACKPATH_HITS" ]; then
   bad "literal pack/.claude/ path in shipped skill prose (strips to .claude/ on install):"
@@ -268,8 +304,9 @@ else
 fi
 
 # ---- 14. no false session-start autoload claim ---------------------------
-# DevRites ships no autoload wiring; skills Read .claude/skills/devrites-lib/reference/standards/core.md at step 0.
-# Fail if any shipped skill or doc asserts native/session-start autoload.
+# DevRites has no autoload wiring. Skills read
+# .claude/skills/devrites-lib/reference/standards/core.md at step 0. Reject any
+# shipped skill or document that claims native session-start autoloading.
 section "no false session-start autoload claim"
 AUTOLOAD_HITS="$(grep -rl 'autoloaded by Claude Code' "$ROOT/pack" "$ROOT/docs" "$ROOT/README.md" 2>/dev/null || true)"
 if [ -n "$AUTOLOAD_HITS" ]; then
@@ -280,9 +317,8 @@ else
 fi
 
 # ---- 14b. no deleted shell-helper guidance -------------------------------
-# The workflow control plane moved from devrites-lib/*.sh helpers to the
-# installed `devrites-engine` binary. Public docs and generated installer
-# guidance must not direct users or agents back to deleted helper files.
+# Public docs and generated installer guidance must use the installed
+# `devrites-engine` binary, not the retired devrites-lib/*.sh helpers.
 section "no deleted shell-helper guidance"
 DELETED_HELPER_HITS="$(grep -rnI \
   -e 'analyze\.sh' \
@@ -295,7 +331,6 @@ DELETED_HELPER_HITS="$(grep -rnI \
   -e 'footprint\.sh' \
   -e 'learnings\.sh' \
   -e 'mutation-gate\.sh' \
-  -e 'package-existence\.sh' \
   -e 'progress\.sh' \
   -e 'reconcile\.sh' \
   -e 'tick-afk\.sh' \
@@ -324,22 +359,85 @@ else
   good "public/generated guidance points at the devrites-engine binary, not deleted shell helpers"
 fi
 
+# ---- 14c. published version identity -------------------------------------
+# Keep package.json, README, CHANGELOG, and package-lock at or above the
+# highest git tag so a squash merge cannot silently revert a release bump.
+section "published version identity"
+if bash "$ROOT/tests/published-version-identity-test.sh" >${DR_SCRATCH}/dr_published_version 2>&1; then
+  cat ${DR_SCRATCH}/dr_published_version
+  good "published version identity matches package.json, changelog, README, and git tags"
+else
+  cat ${DR_SCRATCH}/dr_published_version
+  bad "published version identity drifted behind the latest git tag or across manifests"
+fi
+
 # ---- 15. shellcheck (error = blocking, warning = advisory) ---------------
-# CI runners ship shellcheck, so the error-level gate is enforced on every PR.
-# Locally it self-skips when shellcheck is absent (the gate is non-blocking only
-# where the tool isn't installed: never silently downgraded where it is).
+# CI runners include shellcheck and enforce the error-level gate on every PR.
+# Local validation skips this gate only when shellcheck is not installed.
 section "shellcheck (-S error blocking · -S warning advisory)"
 if command -v shellcheck >/dev/null 2>&1; then
-  for f in $SH_LIST; do
+  for f in "${SH_LIST[@]}"; do
     if shellcheck -S error "$f"; then good "shellcheck ${f#"$ROOT"/}"; else bad "shellcheck (error) ${f#"$ROOT"/}"; fi
   done
-  # warning-level is informational: surfaced per file, never fails the build.
-  for f in $SH_LIST; do
+  # Warnings are advisory. Print them per file without failing the build.
+  for f in "${SH_LIST[@]}"; do
     shellcheck -S warning "$f" >/dev/null 2>&1 || echo "  advisory (warning-level): ${f#"$ROOT"/}"
   done
 else
   echo "skip: shellcheck not installed locally (optional: CI enforces the error-level gate)"
 fi
+# ---- 16. eval coverage ledger (blocking gating skills + P0 agents) ------
+section "eval coverage ledger (blocking)"
+if bash "$ROOT/scripts/check-gating-eval-ledger.sh" >${DR_SCRATCH}/dr_eval_scoreboard 2>&1; then
+  cat ${DR_SCRATCH}/dr_eval_scoreboard
+  good "eval coverage ledger (gating skills + P0 agents)"
+else
+  cat ${DR_SCRATCH}/dr_eval_scoreboard
+  bad "eval coverage ledger (gating skill or P0 agent corpus missing)"
+fi
+
+# ---- 16b. osv.dev dependency scan ----------------------------------------
+# OSV.dev data source (broader than the npm advisory DB npm audit uses) over
+# the npm lockfile and the engine module. Allowlist: osv-scanner.toml, which
+# mirrors scripts/npm-audit-exceptions.json policy.
+section "osv dependency scan (lockfile + engine module)"
+if command -v osv-scanner >/dev/null 2>&1; then
+  if osv-scanner scan --config "$ROOT/osv-scanner.toml" \
+      --lockfile "$ROOT/package-lock.json" \
+      --lockfile "$ROOT/engine/go.mod" >${DR_SCRATCH}/dr_osv 2>&1; then
+    good "osv dependency scan passed"
+  else
+    sed -n '1,40p' ${DR_SCRATCH}/dr_osv
+    bad "osv dependency scan failed"
+  fi
+else
+  echo "skip: osv-scanner not installed locally (CI installs and enforces)"
+fi
+
+# ---- 17. workflow lint (actionlint · zizmor) ------------------------------
+section "workflow lint (actionlint · zizmor)"
+if command -v actionlint >/dev/null 2>&1; then
+  # No -color flag: it is boolean in actionlint, so `-color never` made
+  # actionlint treat "never" as a workflow filename and exit 3. Color is off
+  # anyway outside a TTY.
+  if actionlint .github/workflows/*.yml; then
+    good "actionlint"
+  else
+    bad "actionlint reported workflow issues"
+  fi
+else
+  echo "skip: actionlint not installed locally (CI installs and enforces)"
+fi
+if command -v zizmor >/dev/null 2>&1; then
+  if zizmor --offline .github/workflows/; then
+    good "zizmor"
+  else
+    bad "zizmor reported workflow security issues"
+  fi
+else
+  echo "skip: zizmor not installed locally (CI installs and enforces)"
+fi
+
 
 # ---- summary -------------------------------------------------------------
 printf '\n========================================\n'

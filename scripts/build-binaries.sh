@@ -3,7 +3,7 @@
 # sidecar per binary: the artifacts attached to the GitHub Release alongside the
 # pack tarball. Pure-Go (CGO_ENABLED=0) so every target builds
 # from one Linux runner with no cross-toolchain. The version is stamped into the
-# binary via -ldflags so `devrites-engine doctor` reports the release it came from.
+# binary via -ldflags so `devrites-engine version` reports the release it came from.
 #
 # Usage: build-binaries.sh <version>          # version WITHOUT a leading "v"
 #

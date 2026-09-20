@@ -2,9 +2,12 @@
 
 `/rite-resolve` is the single canonical writer for `questions.md` `status` flips and
 `state.md` `Awaiting human` clearance. This file is the reference for the three input
-shapes, the batch file format, and the rules the underlying `devrites-engine resolve` obeys.
+shapes, the batch file format, and the `devrites-engine state resolve` rules.
 
 ## Three input shapes
+
+Each form is an explicit local mutation command. Supplying it is the confirmation; the
+skill applies it once after validation and reports the result instead of asking for `y` again.
 
 ### 1. Single answer
 
@@ -27,7 +30,7 @@ shapes, the batch file format, and the rules the underlying `devrites-engine res
   by a re-plan.
 - The reason is an optional single trailing string, **strongly recommended** for the
   audit trail. "obsolete" / "duplicate" / "absorbed by Slice N" are sufficient; if omitted,
-  `devrites-engine resolve` records the reason as `dropped`.
+  `devrites-engine state resolve` records it as `dropped`.
 
 ### 3. Batch
 
@@ -81,7 +84,7 @@ writes one block at a time and pauses. When `/rite-resolve` matches the block's 
 
 - the entire `Awaiting human` block is removed (header + fields);
 - `- Status: running` is set;
-- a `Log` line is appended: `- <iso> build: resolved <qid>`.
+- a `Log` line is appended: `- <iso> <resuming phase>: resolved <qid>`.
 
 If `state.md`'s `Status` is `awaiting_human` but no `Awaiting human` block matches the
 qid (drift between the two files), `/rite-resolve` flags the inconsistency and refuses

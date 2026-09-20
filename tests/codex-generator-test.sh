@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# codex-generator-test.sh: focused tests for the shared Claude-to-Codex
-# generation helper used by host-artifact packaging.
+# Focused checks for the Claude-to-Codex generator used by host packaging.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
@@ -20,93 +19,142 @@ rewritten="$TMP_GEN_DIR/sample.codex.md"
 cat > "$sample" <<'EOF'
 See pack/.claude/skills/rite-build/SKILL.md and .claude/skills/devrites-lib/reference/standards/core.md.
 Dispatch ../../agents/devrites-code-reviewer.md or ../../../agents/devrites-slice-wright.md.
+Use one `Task` call, then wait for the result.
 Run /rite-build, then /rite-seal.
 EOF
 
 gen_codex_markdown_file "$sample" "$rewritten"
 grep -q '.agents/skills/rite-build/SKILL.md' "$rewritten" && ok "rewrites pack skill paths" || no "did not rewrite pack skill paths"
 grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$rewritten" && ok "rewrites installed skill paths" || no "did not rewrite installed skill paths"
-grep -q '.codex/agents/devrites-code-reviewer.toml' "$rewritten" && ok "rewrites relative agent links" || no "did not rewrite relative agent links"
+grep -q '.codex/agents/devrites-code-reviewer.toml' "$rewritten" && ok "rewrites agent links" || no "did not rewrite agent links"
+grep -Eq '(^|[^[:alnum:]_])Task([^[:alnum:]_]|$)' "$rewritten" && no "kept legacy Task wording" || ok "legacy Task wording removed"
+grep -q '`spawn_agent` call' "$rewritten" && ok "rewrites the dispatch primitive" || no "did not rewrite the dispatch primitive"
 grep -q '\$rite-build' "$rewritten" && grep -q '\$rite-seal' "$rewritten" && ok "rewrites slash invocations" || no "did not rewrite slash invocations"
-grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$rewritten" && no "rewritten markdown kept Claude runtime paths" || ok "rewritten markdown has no Claude runtime paths"
+grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$rewritten" && no "rewritten markdown kept Claude paths" || ok "rewritten markdown has no Claude paths"
+
+# Preserve-and-verify the pre-install fallback contract: the Claude skill
+# keeps it; the Codex transform must resolve the installed path and drop the
+# fallback line instead of checking the same file twice.
+fallback_sample="$TMP_GEN_DIR/fallback.md"
+cat > "$fallback_sample" <<'EOF'
+Try post-install path first, fall back to pre-install:
+
+```bash
+F=.claude/skills/rite-$V/SKILL.md
+[ -f "$F" ] || F=pack/.claude/skills/rite-$V/SKILL.md
+[ -f "$OTHER" ] || echo keep
+```
+EOF
+gen_codex_markdown_file "$fallback_sample" "$TMP_GEN_DIR/fallback.codex.md"
+grep -q 'Resolve the installed skill path:' "$TMP_GEN_DIR/fallback.codex.md" \
+  && ! grep -q 'fall back to pre-install' "$TMP_GEN_DIR/fallback.codex.md" \
+  && ok "rewrites the resolver prose" \
+  || no "kept the stale pre-install prose"
+if grep -q '^\[ -f "\$F" \] || F=' "$TMP_GEN_DIR/fallback.codex.md"; then
+  no "dropped the dead duplicate-path fallback line"
+else
+  ok "drops the dead duplicate-path fallback line"
+fi
+grep -q '^\[ -f "\$OTHER" \] || echo keep' "$TMP_GEN_DIR/fallback.codex.md" \
+  && ok "keeps unrelated continuation guards" \
+  || no "deleted an unrelated guard line"
+
 
 skill_dir="$TMP_GEN_DIR/devrites-sample"
 mkdir -p "$skill_dir"
 cat > "$skill_dir/SKILL.md" <<'EOF'
 ---
 name: devrites-sample
-description: Expensive internal description that should be stubbed.
+description: Internal description that Codex can shorten natively when needed.
 user-invocable: false
 ---
 
-Read .claude/skills/devrites-lib/reference/standards/core.md and ask /rite-review.
-Spawn ../../agents/devrites-code-reviewer.md.
+Read .claude/skills/devrites-lib/reference/standards/core.md.
+Dispatch ../../agents/devrites-code-reviewer.md and wait for its result.
 EOF
 
 skill_out="$TMP_GEN_DIR/devrites-sample.codex.md"
-gen_codex_skill_file "$skill_dir/SKILL.md" "$skill_out" 1
-grep -q 'description: Internal DevRites skill; DevRites agents invoke it explicitly' "$skill_out" && ok "internal skill description stubbed" || no "internal skill description not stubbed"
-grep -q '## Codex compatibility' "$skill_out" && ok "skill compatibility block injected" || no "skill compatibility block missing"
-grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$skill_out" && ok "skill body uses mirrored rules path" || no "skill body did not use mirrored rules path"
-grep -q '.codex/agents/devrites-code-reviewer.toml' "$skill_out" && ok "skill body rewrites agent reference" || no "skill body did not rewrite agent reference"
-grep -q '\$rite-review' "$skill_out" && ok "skill body rewrites slash invocation" || no "skill body did not rewrite slash invocation"
-grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$skill_out" && no "generated skill kept Claude runtime paths" || ok "generated skill has no Claude runtime paths"
+gen_codex_skill_file "$skill_dir/SKILL.md" "$skill_out"
+grep -q 'description: Internal description that Codex can shorten natively when needed.' "$skill_out" \
+  && ok "native skill description preserved" \
+  || no "native skill description was rewritten"
+grep -q '## Codex compatibility' "$skill_out" \
+  && no "skill duplicated project-wide Codex guidance" \
+  || ok "skill relies on the AGENTS bridge for project-wide guidance"
+if grep -Eq 'MultiAgent V1|MultiAgent V2|required-agent-roles|agent-dispatch|generic `explorer`|generic `worker`' "$skill_out"; then
+  no "skill kept versioned receipt compatibility"
+else
+  ok "skill has no versioned receipt compatibility"
+fi
 
-agent="$TMP_GEN_DIR/devrites-sample-reviewer.md"
-agent_out="$TMP_GEN_DIR/devrites-sample-reviewer.toml"
-cat > "$agent" <<'EOF'
+bridge="$TMP_GEN_DIR/AGENTS.md"
+gen_codex_agents_bridge "$bridge"
+grep -q 'invoke.*run a skill inline.*dispatch.*fresh agent' "$bridge" && ok "AGENTS bridge defines invoke and dispatch" || no "AGENTS bridge does not define invoke and dispatch"
+grep -q 'never substitute a generic/default child' "$bridge" \
+  && grep -q 'Dispatch every exact named `devrites-<role>`' "$bridge" \
+  && ok "AGENTS bridge delegates agent lifecycle to Codex" \
+  || no "AGENTS bridge keeps a custom agent lifecycle"
+grep -q 'devrites-slice-wright.*default_permissions = ":workspace"' "$bridge" \
+  && grep -q 'every other specialist.*default_permissions = ":read-only"' "$bridge" \
+  && grep -q 'root must never edit product source or tests itself' "$bridge" \
+  && grep -q 'exact path-bounded executable workflow artifacts' "$bridge" \
+  && grep -q '`git diff --name-only`' "$bridge" \
+  && grep -q 'reject any extra path' "$bridge" \
+  && grep -q 'never recreate an engine dispatch bridge' "$bridge" \
+  && ok "AGENTS bridge routes Codex source writing through the exact wright" \
+  || no "AGENTS bridge has the wrong Codex writer boundary"
+grep -Eq 'MultiAgent V1|MultiAgent V2|required-agent-roles|agent-dispatch' "$bridge" && no "AGENTS bridge kept receipt machinery" || ok "AGENTS bridge has no receipt machinery"
+
+reviewer="$TMP_GEN_DIR/devrites-sample-reviewer.md"
+reviewer_out="$TMP_GEN_DIR/devrites-sample-reviewer.toml"
+cat > "$reviewer" <<'EOF'
 ---
 name: devrites-sample-reviewer
-description: Review .claude/skills/devrites-lib/reference/standards/core.md before /rite-seal.
+description: Review one bounded change.
 tools: Read, Grep
 ---
 
-Read .claude/skills/devrites-lib/reference/standards/core.md.
-Do not run /rite-build.
+Read .claude/skills/devrites-lib/reference/standards/core.md and return findings.
 EOF
+gen_codex_agent "$reviewer" "$reviewer_out"
 
-gen_codex_agent "$agent" "$agent_out"
-grep -q 'name = "devrites-sample-reviewer"' "$agent_out" && ok "agent name preserved" || no "agent name missing"
-grep -q 'sandbox_mode = "read-only"' "$agent_out" && ok "read-only agent sandbox emitted" || no "read-only agent sandbox missing"
-grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$agent_out" && ok "agent paths rewritten" || no "agent paths not rewritten"
-grep -q '\$rite-seal' "$agent_out" && grep -q '\$rite-build' "$agent_out" && ok "agent invocations rewritten" || no "agent invocations not rewritten"
-grep -q 'pack/\.claude\|\.claude/skills\|\.claude/agents' "$agent_out" && no "generated agent kept Claude runtime paths" || ok "generated agent has no Claude runtime paths"
+wright="$TMP_GEN_DIR/devrites-slice-wright.md"
+wright_out="$TMP_GEN_DIR/devrites-slice-wright.toml"
+cat > "$wright" <<'EOF'
+---
+name: devrites-slice-wright
+description: Implement one path-bounded slice.
+tools: Read, Grep, Edit, Write
+---
+
+Write only the task's exact paths.
+EOF
+gen_codex_agent "$wright" "$wright_out"
 
 if command -v python3 >/dev/null 2>&1; then
-  python3 - "$agent_out" <<'PY'
+  python3 - "$reviewer_out" "$wright_out" <<'PY'
 import pathlib, sys, tomllib
-tomllib.loads(pathlib.Path(sys.argv[1]).read_text())
+
+reviewer = tomllib.loads(pathlib.Path(sys.argv[1]).read_text())
+wright = tomllib.loads(pathlib.Path(sys.argv[2]).read_text())
+
+assert reviewer["name"] == "devrites-sample-reviewer"
+assert reviewer["default_permissions"] == ":read-only"
+assert "sandbox_mode" not in reviewer
+assert "hooks" not in reviewer
+assert ".agents/skills/devrites-lib/reference/standards/core.md" in reviewer["developer_instructions"]
+assert "Codex custom-agent version" not in reviewer["developer_instructions"]
+
+assert wright["name"] == "devrites-slice-wright"
+assert wright["default_permissions"] == ":workspace"
+assert "sandbox_mode" not in wright
+assert "hooks" not in wright
+assert "Codex custom-agent version" not in wright["developer_instructions"]
 PY
-  rc="$?"
-  if [ "$rc" -eq 0 ]; then
-    ok "generated agent TOML parses"
-  else
-    if python3 - <<'PY' >/dev/null 2>&1
-try:
-    import tomllib  # noqa: F401
-except ModuleNotFoundError:
-    raise SystemExit(1)
-PY
-    then
-      no "generated agent TOML does not parse"
-    else
-      ok "generated agent TOML parse skipped (python has no tomllib)"
-    fi
-  fi
+  [ "$?" -eq 0 ] && ok "generated wright is workspace-capable; reviewer is read-only; both are hook-free" || no "generated agent TOML contract is wrong"
 else
   ok "generated agent TOML parse skipped (python3 not found)"
 fi
-
-hooks="$TMP_GEN_DIR/codex-hooks.json"
-gen_codex_hooks_json "$hooks"
-if command -v node >/dev/null 2>&1; then
-  node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))" "$hooks" \
-    && ok "generated hooks JSON parses" || no "generated hooks JSON invalid"
-else
-  ok "generated hooks JSON parse skipped (node not found)"
-fi
-grep -q 'devrites-engine hook stop-gate --harness=codex' "$hooks" && ok "hooks call engine hook subcommands" || no "hooks do not call engine hook subcommands"
-grep -q 'pack/\.claude/hooks\|\.sh' "$hooks" && no "hooks reference shell hook scripts" || ok "hooks do not reference shell hook scripts"
 
 echo ""
 [ "$fail" -eq 0 ] && echo "codex-generator-test: PASS" || echo "codex-generator-test: FAIL"

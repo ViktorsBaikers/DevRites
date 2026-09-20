@@ -1,50 +1,43 @@
 ---
 name: rite
-description: User-invoked DevRites menu and router; no args renders the menu, a verb dispatches to the matching `rite-<verb>` skill.
+description: User-invoked DevRites menu and router; no args renders the menu, a verb invokes the matching `rite-<verb>` skill.
 argument-hint: "[verb [args...]]"
 user-invocable: true
 disable-model-invocation: true
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"triggers":{"intent":["devrites-lib/reference/intent-map.md"],"menu":["rite/reference/menu.md"],"dispatch":["devrites-lib/reference/parallel-dispatch.md"],"reply":["devrites-lib/reference/reply-contract.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # $rite: DevRites menu + router
 
-You are the DevRites entry point. Two modes:
+Two modes:
 
-- **No args** → run `devrites-engine first-task`, render one recommended-start line above the menu, then stop. Do not execute a phase or read `state.md`: status is `$rite-status`.
-- **Verb arg** → pass-through dispatch to the matching `rite-<verb>` skill (`$rite spec foo` ≡ `$rite-spec foo`); the called skill owns the output.
+- **No args** → render the menu and stop. Do not execute a phase or infer
+  workspace status; `$rite-status` owns that.
+- **Verb arg** → pass-through invocation of the matching `rite-<verb>` skill (`$rite spec foo` ≡ `$rite-spec foo`); the called skill owns the output.
 
 When the user asks which rite fits, load [`devrites-lib/reference/intent-map.md`](../devrites-lib/reference/intent-map.md).
 When they ask how phases connect, load [`reference/menu.md`](reference/menu.md).
 
 ## Dispatch
 
-If `$ARGUMENTS` starts with a verb in this table, **load the matching skill and execute its workflow** with the remainder of `$ARGUMENTS` as that skill's argument. Try post-install path first, fall back to pre-install:
+If `$ARGUMENTS` starts with a verb in this table, **load the matching skill and execute its workflow** with the remainder of `$ARGUMENTS` as that skill's argument. Resolve the installed skill path:
 
 ```bash
 V=<verb>; ARGS="<remaining args>"
 F=.agents/skills/rite-$V/SKILL.md
-[ -f "$F" ] || F=.agents/skills/rite-$V/SKILL.md
 # Then Read "$F" and follow its workflow with $ARGS as that skill's $ARGUMENTS.
 ```
 
-What each verb does lives once, in the Menu below; this table is the dispatch map only.
+`use` and `guide` are handled inline per the sections below, not via a skill file.
+
+What each verb does lives once, in the Menu below; this table is the invocation map only.
 
 | Verb | Skill |
 |---|---|
 | `spec [feature]` | `$rite-spec` |
 | `adopt [area]` | `$rite-adopt` |
+| `clarify [feature]` | `$rite-clarify` |
 | `temper [--mode]` | `$rite-temper` |
 | `define` | `$rite-define` |
 | `vet [--cross-model]` | `$rite-vet` |
@@ -57,13 +50,15 @@ What each verb does lives once, in the Menu below; this table is the dispatch ma
 | `seal` | `$rite-seal` |
 | `ship` | `$rite-ship` |
 | `status [slug]` | `$rite-status` |
-| `doctor [--code | --reindex]` | `$rite-doctor` |
-| `learn [--mine \| "<lesson>"]` | `$rite-learn` |
+| `doctor` | `$rite-doctor` |
+| `upgrade [slug]` | `$rite-upgrade` |
+| `learn ["<lesson>"]` | `$rite-learn` |
 | `explain [concept \| diff \| idea \| recap]` | `$rite-explain` |
 | `pov [candidate]` | `$rite-pov` |
 | `dogfood [--port N]` | `$rite-dogfood` |
 | `pr-feedback [PR\|thread]` | `$rite-pr-feedback` |
-| `customize [override <agent> \| extension <name>]` | `$rite-customize` |
+| `watch-pr [PR\|URL]` | `$rite-watch-pr` |
+| `customize [instruction \| skill \| agent \| plugin]` | `$rite-customize` |
 | `use <slug>` | (inline) |
 | `guide` | (inline) |
 | `resolve <qid> "<answer>"` | `$rite-resolve` |
@@ -75,17 +70,17 @@ What each verb does lives once, in the Menu below; this table is the dispatch ma
 | `quick [change]` | `$rite-quick` |
 | `frame [task]` | `$rite-frame` |
 
-Both forms hit the same skill: the menu form for discovery, the `/rite-<verb>` shortcut for muscle memory.
+Both forms call the same skill. The menu supports discovery; `/rite-<verb>` is the direct form.
 
 `use <slug>` is handled **inline**. There is no `rite-use` skill. Confirm
 `.devrites/work/<slug>/` exists, then re-point `.devrites/ACTIVE` to `<slug>` and report
 the now-active feature. It is cheap context-switching only: no re-spec, no phase run. If
 the workspace is missing, list the slugs under `.devrites/work/` and stop.
 
-`guide` is an inline first-feature walkthrough. Agree on one **real, genuinely small**
-change, then run spec → temper → define → vet → build → prove → polish → review → seal →
+`guide` is an inline walkthrough for the first feature. Agree on one **real, small**
+change, then run spec → clarify → temper → define → vet → build → prove → polish → review → seal →
 ship. Before each phase, say what it decides; after, name what it wrote and why. Pause at
-every boundary. Teach without lecturing.
+every boundary and explain only what the user needs for the next decision.
 
 Specialist triggers (model-invoked inside the above):
 `devrites-frontend-craft` (UI) · `devrites-browser-proof` (UI verify) ·
@@ -101,50 +96,52 @@ Reply-contract exception: `$rite` is the menu/router, not a workspace completion
 Called phase skills own the shared completion reply contract
 ([`reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
 
-1. **Verb in `$ARGUMENTS`** → dispatch per the table above.
+1. **Verb in `$ARGUMENTS`** → invoke the matching skill per the table above.
 2. **No args** → menu mode, as above.
 3. **Unrecognized first token** → tell the user the known verbs and stop. Don't guess.
-4. **No active feature** and the user asked "where am I" or named no verb → point at `$rite spec <feature>` (or `$rite-spec`). Don't summarize state yourself: `$rite status` (or `$rite-status`) owns that.
+4. **No active feature** and the user asked "where am I" → point at `$rite spec <feature>` (or `$rite-spec`). Don't summarize state yourself: `$rite status` (or `$rite-status`) owns that.
 
 ## Menu
 
 ```
 DevRites — disciplined senior-engineer workflow
-Recommended start: <greenfield: $rite spec <feature> | brownfield-unadopted: $rite adopt | active-feature: $rite status | dirty-worktree: $rite frame or $rite quick | branch-ahead: $rite ship/status | clean-default: $rite spec <feature>>
                               menu form           direct shortcut
 SPEC          $rite spec               ≡    $rite-spec        investigate deeply → write spec.md
-ADOPT         $rite adopt              ≡    $rite-adopt       onboard existing code → reverse-derive spec.md + seed conventions
+ADOPT         $rite adopt              ≡    $rite-adopt       onboard existing code → reverse-derive spec.md
+CLARIFY       $rite clarify            ≡    $rite-clarify     close the complete decision surface before planning
 TEMPER        $rite temper             ≡    $rite-temper      optional — strategic review: scope mode + pre-mortem, harden the spec
 PLAN          $rite define             ≡    $rite-define      turn the spec into plan + task slices + state
 VET           $rite vet                ≡    $rite-vet         mandatory every plan — light/full engineering review by stakes
 REPLAN        $rite plan               ≡    $rite-plan        decompose / reslice / repair an active plan
-BUILD         $rite build              ≡    $rite-build       implement exactly one verified vertical slice, then stop
+BUILD         $rite build              ≡    $rite-build       one slice/wright; HITL stops, `.devrites/AFK` may chain
 CONVERGE      $rite converge           ≡    $rite-converge    recovery — append work needed to meet intent
 PROVE         $rite prove              ≡    $rite-prove       tests + build + runtime + browser evidence
 POLISH        $rite polish             ≡    $rite-polish      code polish always; UI normalize + polish if UI
 REVIEW        $rite review             ≡    $rite-review      feature-scoped multi-axis review
 SEAL          $rite seal               ≡    $rite-seal        final GO / NO-GO decision (no git)
-SHIP          $rite ship               ≡    $rite-ship        type-GO + commit/push/tag, then archive + clear ACTIVE
+SHIP          $rite ship               ≡    $rite-ship        pre-GO read-only; fresh GO → commit; optional approved push/tag/PR → archive
 STATUS        $rite status             ≡    $rite-status      active feature, next action, evidence, risks
-DOCTOR        $rite doctor ...         ≡    $rite-doctor      health check; --reindex refreshes structural indexes
+DOCTOR        $rite doctor             ≡    $rite-doctor      installation and native host diagnostics
+UPGRADE       $rite upgrade ...        ≡    $rite-upgrade     audit an older workspace; route only proven gaps
 LEARN         $rite learn ...          ≡    $rite-learn       review captured lessons → promote to project rules / principles
 EXPLAIN       $rite explain ...        ≡    $rite-explain     grounded concept/diff/idea/recap explainer
 POV           $rite pov ...            ≡    $rite-pov         decide adopt / trial / hold / reject for an external option
 DOGFOOD       $rite dogfood ...        ≡    $rite-dogfood     browser QA by changed user journey
 PR FEEDBACK   $rite pr-feedback ...    ≡    $rite-pr-feedback fix and resolve PR review threads
+WATCH PR      $rite watch-pr ...       ≡    $rite-watch-pr    observe PR/CI once without mutation
 CUSTOMIZE     $rite customize ...      ≡    $rite-customize   author overrides/extensions without forking the pack
 SWITCH        $rite use <slug>                                re-point .devrites/ACTIVE to another feature (inline)
 GUIDE         $rite guide                                     first feature, guided — full lifecycle on one small real change (inline)
 RESUME        $rite resolve ...        ≡    $rite-resolve     answer a HITL checkpoint
-AUTO          $rite autocomplete ...   ≡    $rite-autocomplete  run the whole lifecycle unattended (--ship to push)
+AUTO          $rite autocomplete ...   ≡    $rite-autocomplete  unattended lifecycle; `--ship` stops at Ship preflight
 QUICK         $rite quick <change>     ≡    $rite-quick       express lane — one small reversible change (escalates if it grows)
 UTILITY       $rite frame | prototype | handoff | zoom-out | pressure-test  (or direct shortcuts)
 ```
 
 > **Small one-off change?** A typo, copy tweak, config bump, or one-function fix → **`$rite-quick`**
 > (express lane: one contract → build → prove → ship, no full workspace). It escalates to
-> `$rite-spec` the instant the change grows past small / reversible / unambiguous. The full
-> lifecycle above is for real features: don't pay its ceremony for a one-off.
+> `$rite-spec` when the change is no longer small, reversible, and unambiguous. Use the
+> full lifecycle above for features.
 
 ## Core operating rules (every DevRites skill enforces)
 

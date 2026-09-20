@@ -5,23 +5,34 @@ export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
 ok() { printf '  ok: %s\n' "$*"; }
-no() { printf '  FAIL: %s\n' "$*"; fail=1; }
+no() {
+  printf '  FAIL: %s\n' "$*"
+  fail=1
+}
 
 GEN=""
 T="$(mktemp -d)"
-cleanup() { rm -rf "$T"; [ -n "$GEN" ] && rm -rf "$GEN"; }
+cleanup() {
+  rm -rf "$T"
+  [ -n "$GEN" ] && rm -rf "$GEN"
+}
 trap cleanup EXIT
 if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
   GEN="$(mktemp -d)"
-  DEVRITES_HOST_ARTIFACT_DIR="$GEN" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
-    || { echo "  FAIL: could not build host artifacts"; exit 1; }
+  DEVRITES_HOST_ARTIFACT_DIR="$GEN" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 ||
+    {
+      echo "  FAIL: could not build host artifacts"
+      exit 1
+    }
   export DEVRITES_HOST_ARTIFACT_DIR="$GEN"
 fi
 
 echo "== install-option-matrix-smoke =="
 
 case_no_agents() {
-  local t="$T/no-agents"; mkdir -p "$t"; fail=0
+  local t="$T/no-agents"
+  mkdir -p "$t"
+  fail=0
   bash "$ROOT/install.sh" --target "$t" --no-agents >/dev/null 2>&1 || no "--no-agents install failed"
   [ -d "$t/.claude/agents" ] && no "--no-agents still installed agents" || ok "--no-agents skipped agents"
   [ -d "$t/.codex/agents" ] && no "--no-agents still installed Codex agents" || ok "--no-agents skipped Codex agents"
@@ -31,7 +42,9 @@ case_no_agents() {
 }
 
 case_short_aliases() {
-  local t="$T/short-aliases"; mkdir -p "$t"; fail=0
+  local t="$T/short-aliases"
+  mkdir -p "$t"
+  fail=0
   bash "$ROOT/install.sh" --target "$t" --short-aliases=all >/dev/null 2>&1 || no "--short-aliases=all install failed"
   [ -f "$t/.claude/skills/define/SKILL.md" ] && ok "--short-aliases=all installs /define" || no "--short-aliases=all missing /define"
   [ -f "$t/.claude/skills/build/SKILL.md" ] && ok "--short-aliases=all installs /build" || no "--short-aliases=all missing /build"
@@ -41,7 +54,9 @@ case_short_aliases() {
 }
 
 case_no_rules() {
-  local t="$T/no-rules"; mkdir -p "$t"; fail=0
+  local t="$T/no-rules"
+  mkdir -p "$t"
+  fail=0
   bash "$ROOT/install.sh" --target "$t" --no-rules >/dev/null 2>&1 || no "--no-rules install failed"
   [ -d "$t/.claude/skills/devrites-lib/reference/standards" ] && ok "--no-rules is a no-op; standards ship with the devrites-lib skill" || no "--no-rules dropped the standards (should be a no-op now)"
   [ -f "$t/.claude/skills/rite-build/SKILL.md" ] && ok "--no-rules still installs skills" || no "--no-rules broke skills"
@@ -49,20 +64,70 @@ case_no_rules() {
 }
 
 case_no_codex() {
-  local t="$T/no-codex"; mkdir -p "$t"; fail=0
+  local t="$T/no-codex"
+  mkdir -p "$t"
+  fail=0
   bash "$ROOT/install.sh" --target "$t" --no-codex >/dev/null 2>&1 || no "--no-codex install failed"
   [ -f "$t/.claude/skills/rite-build/SKILL.md" ] && ok "--no-codex still installs Claude skills" || no "--no-codex broke Claude skills"
   [ -d "$t/.agents" ] && no "--no-codex installed .agents" || ok "--no-codex skipped .agents"
   [ -d "$t/.codex" ] && no "--no-codex installed .codex" || ok "--no-codex skipped .codex"
-  [ -f "$t/AGENTS.md" ] && no "--no-codex installed AGENTS.md" || ok "--no-codex skipped AGENTS.md"
+  # AGENTS.md is shared: --no-codex still gets the pi bridge block.
+  if [ -f "$t/AGENTS.md" ] && ! grep -q 'BEGIN DEVRITES CODEX' "$t/AGENTS.md" &&
+    grep -q 'BEGIN DEVRITES PI' "$t/AGENTS.md"; then
+    ok "--no-codex kept only the pi AGENTS.md block"
+  else
+    no "--no-codex left a Codex block or dropped the pi block in AGENTS.md"
+  fi
+  exit "$fail"
+}
+
+case_no_pi() {
+  local t="$T/no-pi"
+  mkdir -p "$t"
+  fail=0
+  bash "$ROOT/install.sh" --target "$t" --no-pi >/dev/null 2>&1 || no "--no-pi install failed"
+  [ -f "$t/.claude/skills/rite-build/SKILL.md" ] && ok "--no-pi still installs Claude skills" || no "--no-pi broke Claude skills"
+  [ -d "$t/.pi" ] && no "--no-pi installed .pi" || ok "--no-pi skipped .pi"
+  [ -f "$t/.codex/config.toml" ] && ok "--no-pi still installs Codex" || no "--no-pi broke Codex"
+  if [ -f "$t/AGENTS.md" ] && grep -q 'BEGIN DEVRITES CODEX' "$t/AGENTS.md" &&
+    ! grep -q 'BEGIN DEVRITES PI' "$t/AGENTS.md"; then
+    ok "--no-pi kept only the Codex AGENTS.md block"
+  else
+    no "--no-pi left a pi block or dropped the Codex block in AGENTS.md"
+  fi
+  exit "$fail"
+}
+
+case_no_devin() {
+  local t="$T/no-devin"
+  mkdir -p "$t"
+  fail=0
+  bash "$ROOT/install.sh" --target "$t" --no-devin >/dev/null 2>&1 || no "--no-devin install failed"
+  [ -f "$t/.claude/skills/rite-build/SKILL.md" ] && ok "--no-devin still installs Claude skills" || no "--no-devin broke Claude skills"
+  [ -d "$t/.devin" ] && no "--no-devin installed .devin" || ok "--no-devin skipped .devin"
+  [ -d "$t/.pi" ] && ok "--no-devin still installs pi" || no "--no-devin broke pi"
+  if [ -f "$t/AGENTS.md" ] && ! grep -q 'BEGIN DEVRITES DEVIN' "$t/AGENTS.md" &&
+    grep -q 'BEGIN DEVRITES CODEX' "$t/AGENTS.md"; then
+    ok "--no-devin kept only the sibling AGENTS.md blocks"
+  else
+    no "--no-devin left a Devin block or dropped the Codex block in AGENTS.md"
+  fi
   exit "$fail"
 }
 
 pids=()
-case_no_agents & pids+=("$!")
-case_short_aliases & pids+=("$!")
-case_no_rules & pids+=("$!")
-case_no_codex & pids+=("$!")
+case_no_agents &
+pids+=("$!")
+case_short_aliases &
+pids+=("$!")
+case_no_rules &
+pids+=("$!")
+case_no_codex &
+pids+=("$!")
+case_no_pi &
+pids+=("$!")
+case_no_devin &
+pids+=("$!")
 for pid in "${pids[@]}"; do
   wait "$pid" || fail=1
 done

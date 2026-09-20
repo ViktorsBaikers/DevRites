@@ -1,236 +1,445 @@
 package lib
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
+	"sort"
 	"strings"
 
-	"github.com/devrites/devrites/internal/state"
+	"github.com/devrites/devrites/internal/devritespaths"
 )
 
-const (
-	contextStart = "<!-- DEVRITES START -->"
-	contextEnd   = "<!-- DEVRITES END -->"
-)
-
-// Context owns only a small delimited block in project context files. It never
-// rewrites the surrounding AGENTS.md / CLAUDE.md content.
-func Context(root string, args []string, stdout, stderr io.Writer) int {
-	switch argAt(args, 0) {
-	case "sync":
-		return contextSync(root, args[1:], stdout, stderr)
-	case "show":
-		return contextShow(root, args[1:], stdout, stderr)
-	default:
-		fmt.Fprintln(stderr, "usage: devrites-engine context sync [file ...] | context show [--json]")
-		return 2
-	}
+// loadsManifest is the machine-readable read-set a skill declares in an HTML
+// comment: <!-- loads: {...} -->. Paths under "always"/"triggers" are relative
+// to the skills root (the directory holding rite-*/ and devrites-lib/); paths
+// under "workspace" are relative to the feature workspace. "workspaceByRole"
+// optionally narrows the workspace read-set for a named dispatch role: when the
+// role key is present its list replaces "workspace" entirely (an empty list
+// means the role needs no workspace artifacts). "agents" maps a --role name to
+// an agents-root-relative path when it deviates from the devrites-<role>
+// convention.
+type loadsManifest struct {
+	Always          []string            `json:"always"`
+	Triggers        map[string][]string `json:"triggers"`
+	Workspace       []string            `json:"workspace"`
+	WorkspaceByRole map[string][]string `json:"workspaceByRole"`
+	Agents          map[string]string   `json:"agents"`
 }
 
-func contextSync(root string, args []string, stdout, stderr io.Writer) int {
-	targets, err := contextTargets(root, args)
+const loadsMarker = "<!-- loads:"
+
+const contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
+
+Emits one deduplicated context bundle for a phase or standalone skill
+(+ optional dispatch role) into .devrites/work/<slug>/ctx/ so an agent
+reads a single file. With --skill, slug may be omitted; then --out is
+required and no workspace section is included.
+`
+
+// RunContext emits one deduplicated context bundle for a phase (+ optional
+// dispatch role) so an agent reads a single file instead of selecting files.
+//
+//	context <slug> --phase <p> [--role <r>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
+func RunContext(root string, args []string, stdout, stderr io.Writer) int {
+	opts, code := parseContextArgs(args, stderr)
+	if code != 0 {
+		return code
+	}
+	var featureDir string
+	if opts.slug != "" {
+		var err error
+		featureDir, err = devritespaths.ExistingFeatureDirChecked(root, opts.slug)
+		if err != nil {
+			fmt.Fprintf(stderr, "context: %v\n", err)
+			return 2
+		}
+	}
+	skillsRoot, err := resolveSkillsRoot(root, opts.skillsRoot)
 	if err != nil {
 		fmt.Fprintf(stderr, "context: %v\n", err)
 		return 2
 	}
-	block := managedContextBlock(root)
-	project := filepath.Dir(root)
-	for _, rel := range targets {
-		path := filepath.Join(project, rel)
-		if err := upsertContextBlock(path, block); err != nil {
-			fmt.Fprintf(stderr, "context: %v\n", err)
-			return 1
-		}
-		fmt.Fprintf(stdout, "context: synced %s\n", rel)
+	skillDir := "rite-" + opts.phase
+	if opts.skill != "" {
+		skillDir = opts.skill
 	}
-	return 0
-}
-
-type contextShowDocument struct {
-	Root            string          `json:"root"`
-	Project         string          `json:"project"`
-	ActiveWorkspace string          `json:"activeWorkspace,omitempty"`
-	Source          string          `json:"source"`
-	HostCommands    contextCommands `json:"hostCommands"`
-	Status          []Diagnostic    `json:"status"`
-}
-
-type contextCommands struct {
-	Claude string `json:"claude"`
-	Codex  string `json:"codex"`
-}
-
-func contextShow(root string, args []string, stdout, stderr io.Writer) int {
-	jsonMode := false
-	for _, a := range args {
-		if a == "--json" {
-			jsonMode = true
-			continue
-		}
-		fmt.Fprintln(stderr, "usage: devrites-engine context show [--json]")
+	skillPath := filepath.Join(skillsRoot, skillDir, "SKILL.md")
+	raw, err := os.ReadFile(skillPath) // #nosec G304 -- skillPath is resolved under the validated skills root
+	if err != nil {
+		fmt.Fprintf(stderr, "context: BLOCKED: no skill %q at %s\n", skillDir, skillPath)
+		return 3
+	}
+	manifest, hasManifest, err := parseLoadsManifest(string(raw))
+	if err != nil {
+		fmt.Fprintf(stderr, "context: %v\n", err)
 		return 2
 	}
-	doc := contextDocument(root)
-	if jsonMode {
-		b, err := json.MarshalIndent(doc, "", "  ")
-		if err != nil {
-			fmt.Fprintf(stderr, "context: %v\n", err)
-			return 1
+
+	var files []string
+	var missingRequired []string
+	var autoTriggers []string
+	if hasManifest {
+		for _, name := range opts.triggers {
+			if _, ok := manifest.Triggers[name]; !ok {
+				fmt.Fprintf(stderr, "context: unknown trigger %q for %s (declared: %s)\n",
+					name, skillDir, strings.Join(sortedKeys(manifest.Triggers), ","))
+				return 2
+			}
 		}
-		_, _ = stdout.Write(append(b, '\n'))
-		return 0
-	}
-	fmt.Fprintln(stdout, "DevRites context")
-	fmt.Fprintf(stdout, "Project: %s\n", doc.Project)
-	fmt.Fprintf(stdout, "Root: %s\n", doc.Root)
-	if doc.ActiveWorkspace != "" {
-		fmt.Fprintf(stdout, "Active workspace: %s (source: %s)\n", doc.ActiveWorkspace, doc.Source)
+		files = append(files, manifest.Always...)
+		for _, name := range opts.triggers {
+			files = append(files, manifest.Triggers[name]...)
+		}
+		// A --role call means a dispatch is happening now: the conventional
+		// "agents" trigger (the dispatch contract) auto-fires so a role
+		// packet can never omit it.
+		if opts.role != "" && !slices.Contains(opts.triggers, "agents") {
+			if extra, ok := manifest.Triggers["agents"]; ok {
+				files = append(files, extra...)
+				autoTriggers = append(autoTriggers, "agents")
+			}
+		}
 	} else {
-		fmt.Fprintf(stdout, "Active workspace: none (source: %s)\n", doc.Source)
+		// No manifest: bundle the universal floor only. Agents still get a
+		// correct (if incomplete) packet and a loud marker.
+		files = []string{filepath.Join("devrites-lib", "reference", "standards", "core.md")}
+		fmt.Fprintf(stderr, "context: WARNING: %s declares no loads: manifest; bundle is core-only\n", skillDir)
 	}
-	fmt.Fprintf(stdout, "Commands: Claude %s · Codex %s\n", doc.HostCommands.Claude, doc.HostCommands.Codex)
+	if !hasManifest {
+		files = append(files, filepath.Join(skillDir, "SKILL.md"))
+	}
+
+	var bundle strings.Builder
+	fmt.Fprintf(&bundle, "<!-- devrites context bundle: slug=%s phase=%s role=%s triggers=%s auto=%s -->\n",
+		opts.slug, opts.phase, orDash(opts.role), orDash(strings.Join(opts.triggers, ",")),
+		orDash(strings.Join(autoTriggers, ",")))
+	fmt.Fprintf(&bundle, "<!-- generated by devrites-engine context; do not edit. Read this file instead of the listed sources. -->\n\n")
+
+	seen := map[string]bool{}
+	loaded := 0
+	for _, rel := range files {
+		abs := filepath.Join(skillsRoot, filepath.FromSlash(rel))
+		if seen[abs] {
+			continue
+		}
+		seen[abs] = true
+		data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated skills root
+		fmt.Fprintf(&bundle, "===== %s =====\n", rel)
+		if err != nil {
+			fmt.Fprintf(&bundle, "MISSING: %s\n\n", rel)
+			missingRequired = append(missingRequired, rel)
+			continue
+		}
+		bundle.Write(expandIncludes(abs, data))
+		if len(data) > 0 && data[len(data)-1] != '\n' {
+			bundle.WriteByte('\n')
+		}
+		bundle.WriteByte('\n')
+		loaded++
+	}
+
+	workspaceList, workspaceScoped := workspaceReadSet(manifest, opts.role)
+	if hasManifest && featureDir != "" {
+		if workspaceScoped && len(workspaceList) == 0 {
+			bundle.WriteString("===== workspace =====\nskipped: role-scoped read-set declares no workspace artifacts\n\n")
+		}
+		for _, rel := range workspaceList {
+			if writeContextEntry(&bundle, filepath.Join(featureDir, filepath.FromSlash(rel)),
+				"workspace/"+rel, seen) {
+				loaded++
+			}
+		}
+	} else if hasManifest && len(workspaceList) > 0 {
+		bundle.WriteString("===== workspace =====\nskipped: no feature workspace (slug omitted)\n\n")
+	}
+	if opts.role != "" {
+		rel := roleAgentPath(manifest, opts.role)
+		if writeContextEntry(&bundle, filepath.Join(skillsRoot, "..", "agents", filepath.FromSlash(rel)),
+			"agents/"+rel, seen) {
+			loaded++
+		} else {
+			// The agent contract is a pack file, not a workspace artifact: a
+			// miss means a typo'd role or a pack bug, and a dispatch without
+			// its contract must fail loudly.
+			missingRequired = append(missingRequired, "agents/"+rel)
+		}
+	}
+
+	out := opts.out
+	if out == "" {
+		out = filepath.Join(featureDir, "ctx", bundleName(opts))
+	} else if !filepath.IsAbs(out) && featureDir != "" {
+		out = filepath.Join(featureDir, filepath.FromSlash(out))
+	}
+	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+		fmt.Fprintf(stderr, "context: %v\n", err)
+		return 2
+	}
+	digestPath := out + ".sha256"
+	digest := fmt.Sprintf("%x", sha256.Sum256([]byte(bundle.String())))
+	unchanged := false
+	if prev, err := os.ReadFile(digestPath); err == nil && strings.TrimSpace(string(prev)) == digest { // #nosec G304 -- digestPath is generated under the feature workspace
+		if _, err := os.Stat(out); err == nil {
+			unchanged = true
+		}
+	}
+	if !unchanged {
+		if err := os.WriteFile(out, []byte(bundle.String()), 0o600); err != nil {
+			fmt.Fprintf(stderr, "context: %v\n", err)
+			return 2
+		}
+		if err := os.WriteFile(digestPath, []byte(digest+"\n"), 0o600); err != nil {
+			fmt.Fprintf(stderr, "context: %v\n", err)
+			return 2
+		}
+	}
+	if opts.slug != "" {
+		phaseLabel := opts.phase
+		if phaseLabel == "" {
+			phaseLabel = opts.skill
+		}
+		recordMetric(root, opts.slug, phaseLabel, "context", opts.role, int64(bundle.Len()))
+	}
+	if unchanged {
+		fmt.Fprintf(stdout, "context: %s (unchanged — reuse previous read; %d sources, %d bytes", out, loaded, bundle.Len())
+	} else {
+		fmt.Fprintf(stdout, "context: %s (%d sources, %d bytes", out, loaded, bundle.Len())
+	}
+	if len(missingRequired) > 0 {
+		fmt.Fprintf(stdout, ", MISSING: %s", strings.Join(missingRequired, ","))
+	}
+	fmt.Fprintln(stdout, ")")
+	if workspaceScoped {
+		fmt.Fprintf(stdout, "workspace: role-scoped for %s (%d of %d declared artifacts)\n",
+			opts.role, len(workspaceList), len(manifest.Workspace))
+	}
+	// Trigger omissions are legal (semantic judgment) but must be visible.
+	if hasManifest && len(manifest.Triggers) > 0 {
+		var unselected []string
+		for _, name := range sortedKeys(manifest.Triggers) {
+			if !slices.Contains(opts.triggers, name) && !slices.Contains(autoTriggers, name) {
+				unselected = append(unselected, name)
+			}
+		}
+		fmt.Fprintf(stdout, "triggers: applied=[%s] unselected=[%s]\n",
+			strings.Join(opts.triggers, ","), strings.Join(unselected, ","))
+		if len(autoTriggers) > 0 {
+			fmt.Fprintf(stdout, "triggers: auto=[%s] (fired by --role dispatch)\n",
+				strings.Join(autoTriggers, ","))
+		}
+		if suggested := suggestTriggers(manifest, root, featureDir, opts); len(suggested) > 0 {
+			fmt.Fprintf(stdout, "triggers: suggested=[%s] (advisory — confirm each before use)\n",
+				strings.Join(suggested, ","))
+		}
+	}
+	if len(missingRequired) > 0 {
+		return 3
+	}
 	return 0
 }
 
-func contextDocument(root string) contextShowDocument {
-	project := filepath.Dir(root)
-	slug := activeSlug(root)
-	source := "none"
-	active := ""
-	if strings.TrimSpace(os.Getenv("DEVRITES_WORKSPACE")) != "" {
-		source = "DEVRITES_WORKSPACE"
-	} else if slug != "" {
-		source = "ACTIVE"
-	} else if strings.TrimSpace(os.Getenv("DEVRITES_ROOT")) != "" {
-		source = "DEVRITES_ROOT"
+// workspaceReadSet returns the workspace artifact list for this call. A role
+// key present in workspaceByRole fully replaces the flat workspace list for
+// that dispatch (empty list = the role reads no workspace artifacts). A role
+// absent from the map keeps the phase default.
+func workspaceReadSet(manifest loadsManifest, role string) ([]string, bool) {
+	if role == "" {
+		return manifest.Workspace, false
 	}
-	if slug != "" {
-		active = filepath.Join(".devrites", "work", slug)
-		if rel, err := filepath.Rel(project, featureDir(root, slug)); err == nil {
-			active = rel
-		}
+	if list, ok := manifest.WorkspaceByRole[role]; ok {
+		return list, true
 	}
-	return contextShowDocument{
-		Root:            root,
-		Project:         project,
-		ActiveWorkspace: active,
-		Source:          source,
-		HostCommands:    contextCommands{Claude: "/rite", Codex: "$rite"},
-		Status:          []Diagnostic{},
-	}
+	return manifest.Workspace, false
 }
 
-func contextTargets(root string, args []string) ([]string, error) {
-	if len(args) > 0 {
-		return cleanContextTargets(args)
+var includeMarkerRe = regexp.MustCompile(`<!--\s*include:([^\s>]+)\s*-->`)
+
+// expandIncludes resolves <!-- include:REL --> markers in canonical source
+// (paths are relative to the including file's directory), matching
+// scripts/expand-includes.py. Unresolvable markers pass through literally so
+// the bundle shows the gap instead of dropping it.
+func expandIncludes(abs string, data []byte) []byte {
+	if !bytes.Contains(data, []byte("include:")) {
+		return data
 	}
-	if configured := parseContextConfig(filepath.Join(root, "context.yaml")); len(configured) > 0 {
-		return cleanContextTargets(configured)
-	}
-	project := filepath.Dir(root)
-	var existing []string
-	for _, rel := range []string{"AGENTS.md", "CLAUDE.md"} {
-		if isFile(filepath.Join(project, rel)) {
-			existing = append(existing, rel)
+	dir := filepath.Dir(abs)
+	return includeMarkerRe.ReplaceAllFunc(data, func(m []byte) []byte {
+		target := filepath.Join(dir, filepath.FromSlash(string(includeMarkerRe.FindSubmatch(m)[1])))
+		inc, err := os.ReadFile(target) // #nosec G304 -- target is resolved from the validated skill file directory
+		if err != nil {
+			return m
 		}
-	}
-	if len(existing) > 0 {
-		return existing, nil
-	}
-	return []string{"AGENTS.md"}, nil
+		return bytes.TrimRight(inc, "\n")
+	})
 }
 
-func parseContextConfig(path string) []string {
-	data, err := os.ReadFile(path)
+func writeContextEntry(bundle *strings.Builder, abs, label string, seen map[string]bool) bool {
+	if seen[abs] {
+		return false
+	}
+	seen[abs] = true
+	fmt.Fprintf(bundle, "===== %s =====\n", label)
+	data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated context source set
 	if err != nil {
-		return nil
+		fmt.Fprintf(bundle, "MISSING: %s\n\n", label)
+		return false
 	}
-	var out []string
-	inList := false
-	for _, line := range splitLinesNoTrailing(data) {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
-			continue
-		}
-		if strings.HasPrefix(trimmed, "context_files:") {
-			inList = true
-			continue
-		}
-		if inList && strings.HasPrefix(trimmed, "-") {
-			out = append(out, strings.Trim(strings.TrimSpace(strings.TrimPrefix(trimmed, "-")), `"'`))
-			continue
-		}
-		inList = false
-		if k, v, ok := strings.Cut(trimmed, ":"); ok && strings.TrimSpace(k) == "context_file" {
-			out = append(out, strings.Trim(strings.TrimSpace(v), `"'`))
-		}
+	bundle.Write(expandIncludes(abs, data))
+	if len(data) > 0 && data[len(data)-1] != '\n' {
+		bundle.WriteByte('\n')
 	}
-	return out
+	bundle.WriteByte('\n')
+	return true
 }
 
-func cleanContextTargets(raw []string) ([]string, error) {
-	seen := map[string]bool{}
-	var out []string
-	for _, rel := range raw {
-		rel = filepath.Clean(strings.TrimSpace(rel))
-		if rel == "." || rel == "" {
+type contextOpts struct {
+	slug       string
+	phase      string
+	skill      string
+	role       string
+	triggers   []string
+	skillsRoot string
+	out        string
+}
+
+func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
+	var opts contextOpts
+	var positional []string
+	for i := 0; i < len(args); i++ {
+		value := argAt(args, i+1)
+		switch args[i] {
+		case "--phase":
+			opts.phase = value
+		case "--skill":
+			opts.skill = value
+		case "--role":
+			opts.role = value
+		case "--trigger", "--triggers":
+			for _, name := range strings.Split(value, ",") {
+				if name = strings.TrimSpace(name); name != "" {
+					opts.triggers = append(opts.triggers, name)
+				}
+			}
+		case "--skills-root":
+			opts.skillsRoot = value
+		case "--out":
+			opts.out = value
+		default:
+			if strings.HasPrefix(args[i], "-") {
+				fmt.Fprintf(stderr, "context: unknown flag %q\n", args[i])
+				return opts, 2
+			}
+			positional = append(positional, args[i])
 			continue
 		}
-		if filepath.IsAbs(rel) || strings.Contains(rel, "..") || strings.Contains(rel, `\`) {
-			return nil, fmt.Errorf("unsafe context path %q", rel)
-		}
-		if !seen[rel] {
-			seen[rel] = true
-			out = append(out, rel)
-		}
+		i++
 	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("no context files configured")
+	if len(positional) > 1 || (opts.phase == "") == (opts.skill == "") {
+		fmt.Fprint(stderr, contextUsage)
+		return opts, 2
 	}
-	return out, nil
+	if opts.skill != "" && (strings.Contains(opts.skill, "/") || strings.Contains(opts.skill, "..")) {
+		fmt.Fprintf(stderr, "context: --skill must be a directory name, not a path\n")
+		return opts, 2
+	}
+	if len(positional) == 1 {
+		opts.slug = positional[0]
+	} else if opts.out == "" {
+		// No feature workspace: --out is required so the bundle has an
+		// explicit destination instead of an implicit cwd write.
+		fmt.Fprintf(stderr, "context: slug omitted — --out <path> is required\n")
+		return opts, 2
+	}
+	return opts, 0
 }
 
-func managedContextBlock(root string) string {
-	slug := activeSlug(root)
-	lines := []string{
-		contextStart,
-		"DevRites project guidance:",
-		"- Run `devrites-engine preamble` before DevRites workflow work.",
-		"- Use `/rite` (Claude) / `$rite` (Codex) for the DevRites menu.",
-	}
-	if slug != "" {
-		shown := filepath.Join(".devrites", "work", slug)
-		if rel, err := filepath.Rel(filepath.Dir(root), featureDir(root, slug)); err == nil {
-			shown = filepath.ToSlash(rel)
+// resolveSkillsRoot finds the installed skill tree. Order: explicit flag, the
+// canonical pack (this repo), a project-level install, then the user-global
+// install.
+func resolveSkillsRoot(root, explicit string) (string, error) {
+	if explicit != "" {
+		if info, err := os.Stat(explicit); err == nil && info.IsDir() {
+			return explicit, nil
 		}
-		lines = append(lines, "- Active workspace: `"+shown+"/` (selected by `.devrites/ACTIVE` or `DEVRITES_WORKSPACE`).")
+		return "", fmt.Errorf("skills root %q is not a directory", explicit)
 	}
-	if isFile(filepath.Join(root, "principles.md")) {
-		lines = append(lines, "- Project principles: `.devrites/principles.md` are binding gates.")
+	// root is the .devrites directory; its parent is the project root that
+	// holds pack/ and host skill installs.
+	project := filepath.Dir(root)
+	candidates := []string{
+		filepath.Join(project, "pack", ".claude", "skills"),
+		filepath.Join(root, "pack", ".claude", "skills"),
+		filepath.Join(project, ".claude", "skills"),
+		filepath.Join(root, ".claude", "skills"),
 	}
-	lines = append(lines, contextEnd, "")
-	return strings.Join(lines, "\n")
+	if home, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates, filepath.Join(home, ".claude", "skills"))
+	}
+	for _, candidate := range candidates {
+		if info, err := os.Stat(filepath.Join(candidate, "devrites-lib")); err == nil && info.IsDir() {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("no DevRites skills root found (looked in pack/.claude/skills, .claude/skills, ~/.claude/skills)")
 }
 
-func upsertContextBlock(path, block string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("create context dir: %w", err)
+// parseLoadsManifest extracts the <!-- loads: {...} --> block from a SKILL.md.
+func parseLoadsManifest(text string) (loadsManifest, bool, error) {
+	idx := strings.Index(text, loadsMarker)
+	if idx < 0 {
+		return loadsManifest{}, false, nil
 	}
-	existingBytes, _ := os.ReadFile(path)
-	existing := string(existingBytes)
-	var next string
-	start := strings.Index(existing, contextStart)
-	end := strings.Index(existing, contextEnd)
-	if start >= 0 && end > start {
-		end += len(contextEnd)
-		next = strings.TrimRight(existing[:start], "\n") + "\n\n" + strings.TrimRight(block, "\n") + "\n" + strings.TrimLeft(existing[end:], "\n")
-	} else if strings.TrimSpace(existing) == "" {
-		next = block
-	} else {
-		next = strings.TrimRight(existing, "\n") + "\n\n" + block
+	end := strings.Index(text[idx:], "-->")
+	if end < 0 {
+		return loadsManifest{}, false, fmt.Errorf("loads: manifest comment is not closed")
 	}
-	return state.AtomicWrite(path, []byte(next), 0o644)
+	payload := strings.TrimSpace(text[idx+len(loadsMarker) : idx+end])
+	var manifest loadsManifest
+	if err := json.Unmarshal([]byte(payload), &manifest); err != nil {
+		return loadsManifest{}, false, fmt.Errorf("loads: manifest is not valid JSON: %w", err)
+	}
+	return manifest, true, nil
+}
+
+func roleAgentPath(manifest loadsManifest, role string) string {
+	if manifest.Agents != nil {
+		if rel, ok := manifest.Agents[role]; ok {
+			return rel
+		}
+	}
+	return "devrites-" + role + ".md"
+}
+
+func bundleName(opts contextOpts) string {
+	name := opts.phase
+	if name == "" {
+		name = opts.skill
+	}
+	if opts.role != "" {
+		name += "-" + opts.role
+	}
+	return name + ".bundle.md"
+}
+
+func sortedKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
 }

@@ -33,6 +33,6 @@ completion with empty proof, or with `.red` set, cannot end the turn.
 ## Consequences
 
 - Exit 3 is a reserved, load-bearing contract — the harness and hooks branch on
-  it. Its guard test (`tests/adr_0003_gate_exit_code_test.go`) locks it.
+  it. Its guard test (`engine/tests/adr_0003_gate_exit_code_test.go`) locks it.
 - Blocks are legible: the agent (and human) see exactly which section is missing.
 - Gate authors must classify a stop as "incomplete" (exit 3) vs a true error.

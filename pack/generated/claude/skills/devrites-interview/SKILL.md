@@ -3,30 +3,34 @@ name: devrites-interview
 description: Interview the user one question at a time to extract intent. Use when the user says "interview me", "I am not sure what I want", or the ask is underspecified. Not for casual clarification.
 user-invocable: false
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-spec/reference/interview-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["spec.md","questions.md","decisions.md","assumptions.md","decision-coverage.md","state.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-interview` bundles every file named below into one deduplicated read.
 
 # devrites-interview: extract intent
 
-Close the gap between what the user said and what they want, at the cheapest moment:
-before a plan, spec, or code exists.
+Resolve the difference between the request and the user's intent before writing a
+spec, plan, or code.
 
 ## Protocol
-- **State a confidence number.** Open with your one-line hypothesis of what the user wants and an
-  explicit **0-100%** confidence in it. The number forces honesty, if you wrote 85% but can't
-  predict how the user reacts to your next three questions, the number is wrong. Below **~70%**,
-  append the single thing still unresolved so the user can close the gap directly.
+- **Open with a working hypothesis.** State in one line what the user wants, then ask about the
+  highest-value unresolved human-owned material decision.
 - **One question per turn.** Multiple questions get one answered and the rest ignored.
-- **Attach your best guess** to every question, with the reason:
-  > "I'm assuming export is CSV only (covers the stated use case). Right, or also XLSX?"
-  This turns an open question into a cheap correction and exposes your model so the user
-  can fix the premise.
+- **Attach an explicit recommendation** and its reason to every question:
+  > "I recommend CSV only because it covers the use case. Choose CSV, CSV + XLSX,
+  > or something else?"
+  This is a concrete candidate for the user's decision, not an assumption or confirmation.
+- **Ask in a full sentence that names the decision and why it changes the
+  build** — "Which export formats must v1 ship? Each adds a writer and a proof."
+  — never a bare label ("Formats?") or a context-free "any preference?"
 - **Highest-value question first:** order by how much the answer changes the build. A
   question that moves the data model or acceptance criteria beats a cosmetic one.
-- **Impact-priority + bounded blocking.** Order unknowns **scope > security/privacy > UX >
-  technical**, and cap **blocking** questions at **≤3** per pass: ask the few that gate
-  the spec; **default-and-record** the rest in `assumptions.md` (best-guess + why). A reversible
-  detail never earns a blocking question.
+- **Prioritize impact and bound each pass.** Order unknowns **scope > security/privacy > UX >
+  technical**. A pass MAY contain at most **3 questions** for cognitive load. After each pass,
+  rescan the decision tree and continue in later turns until every human-owned material decision
+  is explicitly selected or explicitly deferred by the user. A cap MUST NOT move a blocker to
+  `assumptions.md`. Own and log reversible, low-impact technical details instead of asking.
 - **Structured options** when the space is enumerable: present them as the standard ranked
-  **option set** (`standards/afk-hitl.md` → "Option set"): recommended **first**, labelled
+  **option set** ([[`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) → "Option set"](../devrites-lib/reference/standards/afk-hitl.md#option-set-how-every-gap-is-presented)): recommended **first**, labelled
   `(Recommended)`, each with a dimension-tagged rationale (`logic · infra · business ·
   architecture`, + `security`/`UX`/`risk` when in scope), plus the escape hatch. Render via
   `AskUserQuestion` when the harness has it:
@@ -36,69 +40,68 @@ before a plan, spec, or code exists.
   3. Something else — I'll describe it
   ```
 
-## Stop condition
-Stop **opening new questions** when **any** holds: don't interrogate past the point of value.
-(Stopping the interview ≠ deciding for the user: a material call still goes back as a ranked
-option set: confidence lowers the question's *cost* to a one-pick confirm, not its *owner*.)
-- **Confidence: the predict-three test.** The 95% bar is checkable, not a feeling: *can you
-  predict the user's reaction to the next three questions you would ask?* If yes, you're done
-  extracting. If several rounds pass and you still can't predict, something foundational is
-  missing: step back and name it, don't grind out more questions.
-- **Convergence:** the last 2-3 answers only rubber-stamped your guesses and didn't
-  move the spec.
-- **Soft cap:** after ~8 material questions, proceed with your best-guess answers logged
-  in `assumptions.md` rather than asking more (hard-stop sooner if the ask is small).
+## Completion condition
+Complete only when a topology and decision-tree rescan finds no unresolved human-owned
+material decision. Such a decision closes only through the user's option selection,
+free-form answer, or explicit deferral. A recommendation is not confirmation. If the user
+stops early, persist every visible blocker and MUST NOT claim readiness or advance.
 
-Depth on the few that matter, not breadth for its own sake. If answers stop converging:
-you keep circling one area without progress: **reframe once** (below) instead of asking
-another question.
+Ask fewer, deeper questions. If answers stop converging around one area, **reframe once**
+instead of asking another version of the same question.
 
 ## Want vs. should-want
-People answer with what they think they *should* want (the buzzword, the best practice, the
-convention) not what they want. Watch for tells: abstract virtues ("scalable", "clean",
-"modern"), deferral to what's conventional, an answer that could be pasted into any project. When
-you hear one, ask the unlock question, *"if you didn't have to justify this to anyone, what would
-you want?"*. It often does more than the previous five questions. Extract the real want,
-then record it; don't design to the performed one.
+Users sometimes name the convention or best practice they think they should want instead
+of their actual preference. Signals include abstract virtues ("scalable", "clean",
+"modern"), deference to convention, or an answer that fits any project. Ask: *"if you
+didn't have to justify this to anyone, what would you want?"* Record that answer rather
+than designing to the generic one.
 
 ## What counts as a yes
-Approval is an **explicit** yes, and several common replies aren't one:
-- *"Whatever you think is best"* / *"you decide"*: **delegation, not approval.** Re-ask with two
-  concrete options so the user chooses on the substance, not the deferral.
-- *"Sounds good"* / *"sure, let's go"*: a polite exit; probe once that it's real agreement, not
-  fatigue, on anything material.
-- **Silence:** not consent. Half of misalignment is silent disagreement about what *won't* be
-  built. Make the "out of scope" line explicit and get a yes on it too.
+Approval requires an **explicit** yes. Treat these replies differently:
+- *"Whatever you think is best"* / *"you decide"*: **delegation, not approval.** Offer two
+  concrete options so the user chooses the substance or explicitly defers it.
+- *"Sounds good"* / *"sure, let's go"*: confirm once for a material decision rather than
+  treating a polite exit as approval.
+- **Silence:** not consent. State what is out of scope and get explicit approval for it.
 
 ## Don't ask
 - Things the codebase answers (read it first).
-- Reversible implementation details (decide, log as an assumption).
+- Reversible, low-impact technical details (decide and log as agent-owned assumptions).
 - Everything at once "to be thorough."
 
 ## When the ask is vague: map the decision tree first
-For a one-line or fuzzy ask (`"design a contact page"`), don't fire isolated questions.
-First sketch the **decision tree** (the branches the answer splits into) and resolve
-each branch **depth-first** with the protocol above. Domain branches per area:
-`rite-spec/reference/interview-patterns.md`.
+For a short or vague request (`"design a contact page"`), do not ask isolated questions.
+Sketch the **decision tree** first, then resolve each branch **depth-first** with the
+protocol above. Domain branches per area:
+[`../rite-spec/reference/interview-patterns.md`](../rite-spec/reference/interview-patterns.md).
 
 ## Reframe (once, when stuck)
-If the interview isn't converging, spend **one** turn challenging the premise rather than
-refining it: *"is a form even the right answer here, or a mailto / booking link?"* A good
-reframe collapses several open branches. Use it sparingly, then resume the protocol.
+If the interview is not converging, use **one** turn to challenge the premise:
+*"is a form even the right answer here, or a mailto / booking link?"* Then resume the
+protocol with the revised premise.
 
 ## /clarify mode: coverage scan of an existing spec
-When invoked to clarify a written spec (not extract intent from scratch), scan it against the fixed
-taxonomy and mark each **Clear / Partial / Missing**: Functional scope · Data model · Interaction
-(API / UI states) · Non-functional (auth / latency / scale / compliance) · Edge cases (empty /
-boundary / invalid / concurrent / failure). Then ask **≤5 prioritized questions** (impact order
-above), targeting Missing before Partial, one per turn with a best-guess attached. **Integrate each
-answer into the right spec section** as it lands (not just a Q&A log) and append a dated
-**`## Clarifications`** block to `spec.md` (Q + resolution) for durable provenance. Re-run the scan
-after answers; stop when every area is Clear or explicitly deferred, then re-score the affected
+When clarifying a written spec rather than extracting intent from scratch, first enumerate
+its actors, journeys/components, states, data boundaries, interfaces/integrations, and
+operational/proof surfaces. Scan every material surface against that taxonomy and mark
+**Clear / Partial / Missing** with evidence. Ask at most **3 prioritized decision packets per
+pass**, targeting Missing before Partial, one per turn with an explicit recommendation and reason.
+A packet may close
+several cells only when they share one owner and trade-off.
+
+**Integrate each answer into the relevant spec section** immediately. A Q&A log alone is
+insufficient.
+Record each question and resolution in `decision-coverage.md` as scan evidence, not a
+transcript block in `spec.md`.
+Re-run the scan after each pass. Packet limits control cognitive load, never readiness. Continue
+later passes while human-owned blockers remain, and stop only when every row is clear, agent-owned,
+not applicable, or explicitly deferred by the user with a nonblocking reason, owner, and validation
+gate. Then re-score the affected
 `checklists/<domain>.md`.
 
 ## Output
-A short summary the caller can use: objective in one sentence, confirmed decisions,
-still-open (non-blocking) items, recommended next step. If a workspace is active, write
-Q&A to `questions.md`, confirmed calls to `decisions.md`, standing guesses to
-`assumptions.md`. If not, just return the summary: don't create a workspace.
+A short summary for the caller: objective in one sentence, confirmed decisions,
+open non-blocking items, and the recommended next step. If a workspace is active, write
+Q&A to `questions.md`, confirmed calls to `decisions.md`, and only agent-owned reversible,
+low-impact technical details to `assumptions.md`. If not, return the summary without creating
+a workspace.

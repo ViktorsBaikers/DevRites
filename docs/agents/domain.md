@@ -48,7 +48,8 @@ If the concept you need isn't in the glossary yet, that's a signal: either you'r
 
 - New durable term → add it to `CONTEXT.md` with any avoided synonyms.
 - Two terms collide → add a flagged ambiguity and the resolved canonical term.
-- Decision constrains future work → add or update an ADR.
+- Decision constrains future work → update a Proposed/unaccepted ADR, or add a
+  new superseding ADR plus index entry when an accepted decision changes.
 - One-off implementation detail → leave it out.
 
 ## Flag ADR conflicts

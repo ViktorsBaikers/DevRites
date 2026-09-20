@@ -1,11 +1,14 @@
 # Using DevRites
 
-These examples show the common DevRites workflows. A greenfield feature starts
-with `/rite-spec`; an existing codebase may enter through `/rite-adopt`.
-`/rite-quick` and `/rite-frame` handle bounded work outside the full feature arc.
-Workspace-operating phases read the active workspace (`.devrites/ACTIVE` →
-`.devrites/work/<slug>/`) first and report the appropriate on-ramp when none exists.
+These examples cover the common DevRites workflows. Start a new feature with
+`/rite-spec` and bring an existing codebase in with `/rite-adopt`.
+`/rite-quick` and `/rite-frame` handle bounded work outside the full feature
+lifecycle. Workspace phases first read the active workspace from
+`.devrites/ACTIVE` and `.devrites/work/<slug>/`. If none exists, they report the
+command that can create or select one. `/rite-upgrade [slug]` is the
+compatibility audit for an older active workspace that cannot resume.
 
+- **First install** → [README Quick start](../README.md#quick-start) (`npx devrites@latest`)
 - **Full command reference** → [`command-map.md`](command-map.md)
 - **Flow diagrams** → [`flow.md`](flow.md)
 - **Architecture rationale** → [`architecture.md`](architecture.md)
@@ -14,56 +17,61 @@ Workspace-operating phases read the active workspace (`.devrites/ACTIVE` →
 ## The workspace
 
 `/rite-spec` creates `.devrites/work/<slug>/` and writes the spec.
-`/rite-define` adds the architecture, plan, tasks, and traceability. Together,
-these human-readable Markdown files carry the work across compaction and new
-sessions:
+`/rite-clarify` adds decision coverage, `/rite-define` adds the plan, and
+`/rite-vet` adds implementation readiness. These human-readable files preserve
+the work across compaction and new sessions:
 
 | File | Created by | Holds |
 |---|---|---|
-| `README.md` / `index.md` / `feature.md` | `/rite-spec` | compact workspace map: phase, status, next action, artifact map, read-next table, gates |
+| `README.md` | `/rite-spec` | canonical compact workspace map: phase, status, next action, artifact map, read-next table, gates |
 | `brief.md` | `/rite-spec` | one-line objective + definition of done |
-| `spec.md` | `/rite-spec` | product WHAT/WHY, requirements, acceptance, boundaries, measurable success |
+| `spec.md` | `/rite-spec` | product WHAT/WHY, requirements, acceptance, boundaries, measurable success, and one capability-impact declaration for new/materially revised specs |
+| `decision-coverage.md` | `/rite-clarify` | topology-first coverage and a native semantic `CLEAR` verdict reconciled against the spec, decisions, and assumptions |
 | `architecture.md` | `/rite-define` | owning module/layer, integration points, data/API/events, dependencies, risks |
 | `flows.md` | `/rite-spec` or `/rite-define` | optional Mermaid diagrams when sequence/state/data flow clarifies behavior |
 | `references/` + `references.md` | `/rite-spec` | saved design refs: screenshots, Figma, video, links |
 | `strategy.md` | `/rite-temper` | strategic spec review (optional): scope mode, pre-mortem, dimension scores |
-| `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback |
+| `plan.md` | `/rite-define` | approach, dependency graph, checkpoints, rollback, and conditional shared-contract provider/consumer proof |
 | `tasks.md` | `/rite-define` | ordered `SLICE-###` vertical slices, each mapped to `AC-###` and tagged `Mode: AFK \| HITL` + gate fields |
 | `traceability.md` | `/rite-define` | AC/REQ → slices → tests/proofs → evidence → touched files matrix |
-| `eng-review.md` | `/rite-vet` | mandatory engineering plan review, light or full by stakes: scope challenge, axis findings, failure modes, parallelization |
-| `test-plan.md` | `/rite-vet` | build-readable coverage target: coverage diagram, per-gap test requirements, acceptance→test map (read by `/rite-build` + `/rite-prove`) |
-| `state.md` | every phase | working ledger: phase, active slice + slice mode, risk, next step; plus `Awaiting human` block when paused (run mode is derived from `.devrites/AFK`, not stored here) |
-| `status.md` | every phase | compatibility alias for the canonical `state.md` cursor |
+| `eng-review.md` | `/rite-vet` | mandatory native engineering review, reconciled `READY` verdict, and stable Build-input binding |
+| `test-plan.md` | `/rite-vet` | build-readable coverage target, per-gap test requirements, and acceptance-to-test map reviewed by native agents |
+| `state.md` | every phase | working cursor: phase, status, next action, slice, AFK budget, durable clarification return fields, and `Awaiting human` only when paused |
 | `questions.md` | every phase | append-only Q&A: qid, slice, gate, status (`open` / `answered` / `dropped`), proposed answer, raised/answered timestamps |
 | `decisions.md` / `assumptions.md` | every phase | running logs |
 | `drift.md` | Spec Drift Guard | drift events + resolutions |
-| `touched-files.md` | `/rite-build` | what files this feature touched |
-| `evidence.md` | `/rite-build`, `/rite-prove` | canonical `EVID-###` command/action proof |
-| `proof.md` | `/rite-build`, `/rite-prove` | transition alias for `evidence.md` |
-| `browser-evidence.md` | `/rite-prove`, `/rite-polish` (UI) | screenshots, console, network, viewport runs |
-| `design-brief.md` | `devrites-frontend-craft` | shape, states, design references match |
+| `touched-files.md` | `/rite-build`, `/rite-polish` | strict manifest of the exact project candidate; Review trail is navigation only |
+| `evidence.md` | `/rite-build`, `/rite-prove` | canonical `EVID-###` command/action proof plus the exact candidate binding |
+| `browser-evidence.md` | `/rite-prove`, `/rite-polish` (UI) | screenshots, console, network, viewport runs, Visual Verdict, and exact candidate binding |
+| `design-brief.md` | `devrites-ux-shape` during `/rite-spec` | vetted shape, states, interaction model, and design-reference direction; a material later change returns through `/rite-vet` |
 | `polish-report.md` | `/rite-polish` | Phase 1-4 findings + fixes |
-| `review.md` | `/rite-review` | Spec + Standards axes, severity-labelled findings |
-| `seal.md` | `/rite-seal` | GO/NO-GO verdict + acceptance walk + blockers |
+| `review.md` | `/rite-review` | candidate-bound Spec + Standards axes and severity-labelled findings |
+| `seal.md` | `/rite-seal` | candidate-bound GO/NO-GO verdict + acceptance walk + blockers |
 | `ship.md` | `/rite-ship` | what shipped: commit SHA(s), branch, tag/PR, acceptance summary, follow-ups |
 
 When `/rite-ship` closes the task, it archives the whole workspace from
 `.devrites/work/<slug>/` to `.devrites/archive/<slug>/` and clears
-`.devrites/ACTIVE`. It preserves every Markdown file, so the audit trail remains
-under `.devrites/archive/<slug>/`.
+`.devrites/ACTIVE`. Every Markdown file remains in
+`.devrites/archive/<slug>/` as an audit trail.
 
-Backward compatibility: older `.devrites/features/<slug>/` workspaces remain
-readable; migration should add the canonical `.devrites/work` shape without
-deleting the old files. `feature.md`/`index.md` can still act as the workspace
-map, `status.md` as the cursor alias for `state.md`, and `proof.md` as the proof
-alias for `evidence.md`.
+Compatibility is limited to official released cursors in
+`.devrites/work/<slug>/state.md`: v1/v2 bullet fields (`Phase`, `Next step`,
+`qid`) and v3 table fields (`phase`, `next_action`, `question_id`). Reads do not
+rewrite the workspace or emit telemetry. `/rite-upgrade` is the native,
+preservation-first audit: age/cursor encoding alone is not a defect, and only a
+cited current-contract failure routes repair through its phase owner. Completed
+work and evidence stay intact. Candidate defects may route current Prove,
+Polish, Review, and Seal in that order; old passes are never synthesized. The
+engine owns deterministic v5 schema normalization.
 
 Project-root sentinel (outside the workspace):
 
 | File | Created by | Holds |
 |---|---|---|
 | `.devrites/AFK` | you (presence = AFK mode active) | optional YAML: `max_slices`, `notify`, `allow_gates`. Empty file = AFK with defaults. See [`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md). |
-| `.devrites/CHECKPOINT` | you or `/rite-autocomplete` (presence = checkpoint mode) | empty sentinel. When set, `/rite-build` commits each proven slice local-only as `WIP(<slug>)` so a crash mid-build loses neither source nor reasoning; `/rite-ship` collapses the WIP run into the one feature commit. See [`pack/.claude/skills/rite-build/reference/checkpoint.md`](../pack/.claude/skills/rite-build/reference/checkpoint.md). |
+| `.devrites/CHECKPOINT` | unused as a gate | reserved path (not a candidate). After Independent Build review and fail-on-red proof are green (not when a wright returns), `/rite-build` / `/rite-prove` / `/rite-polish` / `/rite-review` land a local `WIP(<slug>): <imperative summary>` commit (serial: checkpoint git recipe or no-op if nothing staged; parallel: `devrites-engine parallel integrate`); `/rite-ship` later collapses an eligible WIP run. See [`pack/.claude/skills/rite-build/reference/checkpoint.md`](../pack/.claude/skills/rite-build/reference/checkpoint.md). |
+| `.devrites/dup-ignore` | you (optional) | One `check dup` cluster hash per line with a `#` reason — the dismissal ledger. Content-derived hashes survive line moves but resurface on structural edits. See [`pack/.claude/skills/devrites-lib/reference/standards/duplicate-code.md`](../pack/.claude/skills/devrites-lib/reference/standards/duplicate-code.md). |
+| `.devrites/claims.jsonl` | `devrites-engine claim add` | Append-only advisory file claims: `{id, session, paths, reason, claimed_at, expires_at}` plus release events. Session-scoped and TTL-bounded — per-checkout state, so gitignore it (a committed ledger exports stale claims to every clone). See [`standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md). |
 
 The shape of this directory is also documented in
 [`flow.md` § Workspace state model](flow.md#7-workspace-state-model).
@@ -79,23 +87,38 @@ You: I want some kind of reporting thing for admins.
   → asks you one question at a time, each with options + a best guess,
     until gaps are closed
   → gathers any design references you give
-  → writes spec.md (creates the workspace)
+  → writes spec.md with one Capability impact declaration (creates the workspace)
+
+/rite-clarify
+  → scans the full topology; asks zero questions when the contract is complete
+  → writes fresh Decision coverage: CLEAR
 
 /rite-define
   → reads the approved spec
-  → writes plan.md + vertical task slices + state
+  → writes plan.md + vertical task slices + state; a changed API/event/schema
+    boundary names one canonical Shared contract proof artifact and consuming
+    provider/consumer tests (otherwise a justified no-impact statement)
   → stops for confirmation
 
 /rite-vet
   → reviews every defined plan; uses a light or full pass based on stakes
-  → writes eng-review.md + test-plan.md before build
+  → writes eng-review.md + test-plan.md and binds their stable Build inputs
 ```
+
+For an existing capability, a MODIFIED requirement contains its full next
+version and preserves every prior scenario and normative/source-grounded claim
+unless an accepted `DEC-###` explicitly authorizes removal. During proof,
+behavior needs a positive, discriminating assertion and decisive observed
+signal. Skipped/filtered/pending or zero-test runs, assertion-free or
+tautological tests, unexecuted commands, and exit status alone do not prove
+behavior; compile, typecheck, lint, and build prove only their static criterion.
 
 ## 2) Normal feature: the build loop
 
 ```text
 /rite-spec add-csv-export    # investigate → spec.md
-/rite-define                 # spec → plan + vertical slices + state
+/rite-clarify                # topology scan → Decision coverage: CLEAR
+/rite-define                 # clarified spec → plan + vertical slices + state
 /rite-vet                    # mandatory plan review; light or full based on stakes
 /rite-build                  # slice 1 ("export endpoint returns CSV"); stops with evidence
 /rite-build                  # slice 2 ("download button + states"); repeat for each slice
@@ -103,12 +126,45 @@ You: I want some kind of reporting thing for admins.
 /rite-polish                 # code polish (always) + UI normalize+polish (if UI)
 /rite-review                 # feature-scoped multi-axis review (Spec + Standards in parallel)
 /rite-seal                   # GO / NO-GO decision (no git) → on GO, points at /rite-ship
-/rite-ship                   # type-GO + irreversible git ladder + close the task (archive + clear ACTIVE)
+/rite-ship                   # read-only preflight → type-GO → commit + optional approved remote actions → close
 ```
 
-`/rite-build` never auto-advances: you decide when the next slice runs.
+In default HITL, `/rite-build` never starts the next slice automatically; you
+decide when it runs. The explicit `.devrites/AFK` sentinel is the bounded
+low-risk chaining exception described in §10. For each slice, the root states
+exact project-relative paths in the writer task, waits, rejects any extra path
+in `git diff --name-only`, reviews test integrity, runs repository proof, and
+maintains the strict candidate manifest.
+Prove binds real evidence to its content digest; Polish completes durable
+capability/design/ADR rollups and affected re-proof before Review. Ship never
+changes candidate paths. Its pre-GO work is read-only and discloses the exact
+attempt; literal `GO` then authorizes eligible checkpoint collapse, exact
+staging, staged scope/byte/binding/secret validation, commit and reverification,
+optional approved push/tag/PR actions, and archive. See
+[candidate integrity](candidate-integrity.md).
 `/rite-seal` **decides**; `/rite-ship` **executes + closes**. To run the whole
 sequence unattended, see `/rite-autocomplete` (§11).
+
+## 2a) Audit an older workspace that cannot resume
+
+Invoke the native compatibility route for an older active unfinished workspace:
+
+```text
+/rite-upgrade ark-panda-redesign
+  → exact read-only devrites-upgrade-planner cites each applicable current rule
+    and its workspace evidence
+  → returns current, repairable, unsupported, or gap; age is never enough
+  → only admitted defects route through Clarify, Plan repair, Converge, Vet,
+    Prove, Polish, Review, or Seal
+  → ambiguous legacy candidate scope is a gap; current owners run fresh proof
+    and never synthesize an old pass
+  → protected source, completed work, decisions, and evidence are rechecked
+  → current/completed work is a no-op; unsupported or unverifiable input stops
+```
+
+This is separate from the npm/shell update flow, which acquires a local
+candidate and asks the engine to refresh the installed binary and pack. Upgrade
+does not update the pack or migrate workspace structure.
 
 ## 3) Spec drift mid-build
 
@@ -133,8 +189,12 @@ sequence unattended, see `/rite-autocomplete` (§11).
 You: 2
 
 /rite-plan repair    # updates spec/plan/tasks to per-session, marks drift resolved
-/rite-build          # resumes on the corrected plan
+/rite-vet            # rechecks the repaired plan before build
 ```
+
+Settled technical objective failures stay with bounded recovery in the active
+slice. Plan repair runs only when the durable plan is wrong; product, policy,
+or irreversible-risk choices pause for the human.
 
 ## 4) UI feature with Playwright MCP
 
@@ -142,7 +202,11 @@ You: 2
 /rite-spec settings-theme-toggle
   → you give a Figma link + a screenshot of the target toggle; rite-spec
     views them, saves the screenshot to references/, indexes references.md
-  → writes spec.md
+  → devrites-ux-shape writes design-brief.md; rite-spec writes spec.md
+
+/rite-clarify
+  → scans the full topology; asks zero questions when the contract is complete
+  → writes fresh Decision coverage: CLEAR
 
 /rite-define
   → spec → slices; UI slice marked frontend-craft + browser-proof
@@ -170,21 +234,23 @@ You: 2
 /rite-ship
 ```
 
-If no browser tooling is available, proof is recorded as **pending (manual)**
-with exact steps: the seal then weighs the UI risk.
+If browser tooling is unavailable, the proof records exact manual steps and a
+status of **pending (manual)**. Pending work does not prove the affected
+criterion; Seal blocks when that criterion is required for acceptance.
 
 ## 5) Backend-only feature
 
 ```text
 /rite-spec rate-limit-api    # investigate → spec.md (no UI)
-/rite-define                 # spec → plan + slices
+/rite-clarify                # topology scan; zero questions when already complete
+/rite-define                 # clarified spec → plan + slices
 /rite-vet                    # mandatory plan review; checks architecture, tests, perf
 /rite-build                  # no UI → no frontend craft / browser proof
 /rite-prove                  # targeted tests + build/typecheck; runtime check of the limiter
 /rite-polish                 # reference/code.md only (no UI scope detected)
 /rite-review                 # devrites-audit security fires (auth/abuse surface), measure-first perf
 /rite-seal                   # checks rollback for any config/migration change → GO/NO-GO
-/rite-ship                   # type-GO + commit/push/tag + close the task
+/rite-ship                   # read-only preflight → type-GO → commit + optional approved remote actions → close
 ```
 
 ## 6) UI-direction prompt: refinement modes
@@ -225,7 +291,7 @@ Other modes: `quieter` · `distill` · `harden`.
   → the next session (or a fresh agent) reads the workspace alone
 ```
 
-Run before `/clear` if leaving for > a few hours.
+Run this before `/clear` or a break of more than a few hours.
 
 ## 9) HITL gate: pre-code pause and resume
 
@@ -234,17 +300,17 @@ Run before `/clear` if leaving for > a few hours.
   → reads tasks.md slice 03; Mode: HITL, Gate: blocking
   → STOPS before writing any code:
 
-    SLICE-003: list endpoint is HITL (blocking, SLA 15m).
-    Checkpoint: Composite (user_id, created_at) index, or two single-col indexes?
-    Proposed approach: composite: single read path, both columns used together
-    in the most common filter; downside is rebuild cost on bulk updates.
-    Decision needed before this slice can build.
+    SLICE-003: export policy is HITL (blocking, SLA 15m).
+    Checkpoint: Should deactivated users appear in the admin export?
+    Proposed approach: exclude them by default and expose an explicit
+    include-deactivated filter; this changes visible product behavior.
+    Product decision needed before this slice can build.
     Resume: /rite-resolve q-2026-05-28-001 "<answer>"
 
   → appends q-...-001 to questions.md (status: open, gate: blocking)
   → writes `Awaiting human` block to state.md, sets Status: awaiting_human
 
-You: /rite-resolve q-2026-05-28-001 "composite: single-col is fine for now"
+You: /rite-resolve q-2026-05-28-001 "exclude by default; add the filter"
 
 /rite-resolve
   → flips q-...-001 status → answered (with answered_at + answer)
@@ -259,6 +325,10 @@ If the answer changes acceptance criteria or scope, `/rite-resolve` recommends
 `/rite-plan repair` first instead of an immediate `/rite-build`.
 
 ## 10) AFK overnight run
+
+This is the explicit exception to the one-slice HITL return: the sentinel
+authorizes the same `/rite-build` invocation to chain only the slices admitted
+by its cap and pause rules.
 
 ```text
 # Drop the sentinel before bed. Keys are optional: empty file works.
@@ -288,19 +358,22 @@ EOF
 /rite-build                    # continue
 ```
 
-The loop refuses to mark a slice `built` if tests / types / lint go red: it
-writes a blocking question and stops regardless of `allow_gates`. AFK never
-silently accepts irreversible risk; see
+The loop does not mark a slice `built` while tests, type checks, or lint are
+red. The caller and recovery loop count at most three failed attempts for each
+causal fingerprint from current context plus recorded Dead ends/evidence. If the budget runs out, it records a blocker with the
+reproduction and unsuccessful approaches instead of asking for retry approval.
+AFK never silently accepts
+genuine product, risk, or access decisions; see
 [`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md) for the
 full list.
 
 ## 11) Full unattended lifecycle: `/rite-autocomplete`
 
 ```text
-/rite-autocomplete "add CSV export for admins" --max-slices 8
-  → vague idea → runs devrites-interview once, up front (the only interactive
-    window), to ~95% confidence
-  → arms AFK, then drives every phase in order: /rite-spec → /rite-temper →
+/rite-autocomplete "add CSV export for admins"
+  → vague idea → runs devrites-interview, then /rite-spec + /rite-clarify in
+    the only interactive window
+  → Decision coverage: CLEAR → arms AFK, then drives: /rite-temper →
     /rite-define → /rite-vet → /rite-build ×N → /rite-prove → /rite-polish →
     /rite-review → /rite-seal (→ /rite-ship too when --ship is set)
   → at each soft gate, picks the option the relevant specialist/reviewer
@@ -308,15 +381,23 @@ full list.
   → seal returns GO → autocomplete STOPS (default) and hands off to /rite-ship
 
 /rite-ship                     # human runs it → renders the type-GO prompt
-You: GO                        # → commit · push · tag, then archive + clear ACTIVE
+You: GO                        # → commit, optional approved push/tag/PR, then archive + clear ACTIVE
 ```
 
-Add `--ship` (alias `--yolo`) to auto-confirm the final type-`GO` for a
-zero-touch push: autocomplete then proceeds straight to `/rite-ship`. It still
-pauses on hard irreversible-risk (auth / migration / public-API / red tests),
-blocking / escalating gates, an open `gate: validating`, a NO-GO, exhausted
-`max_slices`, or low confidence: writing `state.md` and surfacing *why* before
-it stops. Args: `[idea] [--ship|--yolo] [--max-slices N]`.
+Add `--ship` (alias `--yolo`) to continue through `/rite-ship` preflight.
+Autocomplete discloses the exact Git plan, then still stops for a fresh literal
+`GO` and native host approval. It also pauses for irreversible risk, human-only access/actions, escalating
+gates, unanswered blocking with no recommended option, a remaining NO-GO, or low confidence — not for recommended-option blocking questions, temper expand, validating
+gates, `--max-slices`, or default slice/agent/time/review-queue caps.
+Objective red checks use bounded recovery instead. Args:
+`[idea] [--ship|--yolo] [--max-slices N] [--full] [--cross-model]`.
+Optional flags are inactive unless their exact token occurs in the invocation;
+`--max-slices` requires one positive base-10 integer and does not cap this run.
+`--full` selects the Full
+execution profile, and `--cross-model` arms Vet's second opinion.
+Autocomplete never rewrites an existing `.devrites/AFK`. After Vet it seeds
+remaining from the pending-slice count and ignores leftover remaining and
+`--max-slices`.
 
 ## Checking in
 
@@ -334,8 +415,12 @@ it stops. Args: `[idea] [--ship|--yolo] [--max-slices N]`.
 - **`.devrites/AFK` is per-developer, not per-repo**: gitignore it (or commit
   it deliberately if the team agrees on AFK defaults). The sentinel is
   read-only config: it toggles your local session mode and sets the initial
-  `max_slices` budget; nothing else. The mutable remaining-slice count lives
-  in `state.md` (`AFK slices remaining`), never in the sentinel.
+  `max_slices` budget. `/rite-autocomplete --parallel N` is the one exception:
+  it writes or replaces only `max_parallel: N` so a leftover `1` cannot keep
+  later ticks serial. The mutable remaining-slice count lives
+  in `state.md` (`AFK slices remaining`), never in the sentinel. The root
+  charges it once with each green pending → built transition and stops before
+  another dispatch at zero; malformed values fail closed.
 - One feature active at a time (`ACTIVE`). Start a new workspace with
   `/rite-spec <feature>`; switch to an existing one with `/rite use <slug>`.
 - **Recommended AFK progression**: HITL first to refine the prompt and plan,

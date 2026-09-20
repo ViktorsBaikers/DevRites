@@ -1,5 +1,7 @@
 # Observability
 
+> Applies when: production proof, logging, metrics, runtime evidence.
+
 Observability is proof the feature works in **production**: the evidence ladder extended
 past your machine. `/rite-prove` shows it works on localhost; observability is how you know
 it still works, and why it broke, once real traffic hits it. Un-instrumented code is a claim
@@ -26,6 +28,11 @@ answers one of them. A signal that maps to no question is noise you pay to store
   external-call outcomes, validation rejections, and authz denials.
 - Structured (key/value or JSON), not string soup: a log you can't query is a log you won't
   read. Carry a correlation id (request / trace / job id) so one incident's lines join up.
+- When several entry points share a path, carry a bounded **origin** (scheduler,
+  CLI, replay, request) set at entry and propagated across async boundaries.
+  Correlation joins one execution; origin identifies what started it. Trigger failures
+  through two distinct entries and prove each is attributed correctly. **Failing case:**
+  a CLI replay has a trace ID but is reported as a scheduled run.
 - **Never log secrets, tokens, or PII** ([`security.md`](security.md),
   [`error-handling.md`](error-handling.md)). Levels mean something: `error` is a page-worthy
   claim, not routine flow.
@@ -44,6 +51,11 @@ answers one of them. A signal that maps to no question is noise you pay to store
 - **Percentiles always, averages never.** Read latency as a histogram at p50 / p95 / p99. An
   average hides the tail, and the tail is where the pain (and the SLO breach) lives.
 
+For integrations and asynchronous work, include outcome class and recovery state: timeout,
+rate limit, invalid response, retry exhausted, duplicate suppressed, oldest-message age,
+backlog depth, poison/quarantine count, and reconciliation lag as applicable. Keep labels
+bounded; put provider/request/job identifiers in protected logs or traces.
+
 ## Traces (across a boundary)
 When a request crosses a service, queue, or async boundary, propagate a trace/correlation id
 so the end-to-end path is reconstructable, and span the external call and the slow operation.
@@ -59,9 +71,14 @@ hours). A third tier is the noise everyone learns to mute: collapse it into one 
 
 ## Verify the telemetry fires (evidence, not assumption)
 Instrumentation you added but never watched emit is unproven: the same standing as a test you
-never saw fail ([`testing.md`](testing.md) "See it fail first"). Trigger the path, confirm the
+never saw fail ([`testing.md`](testing.md) "Prove it can fail"). Trigger the path, confirm the
 log line / metric / span appears, and record the observation in `evidence.md`. "I
 added logging" with no observed emission is not done.
+
+Also prove the **monitoring gap is closed**: the signal reaches the dashboard/query or alert
+the declared owner actually watches, its threshold is tied to a project baseline or SLO, and
+the first recovery action is executable. An emitted metric with no consumer is orphaned
+telemetry, not rollout evidence.
 
 ## Confirm-before-remove
 Telemetry is also how you prove a removal is safe: query real usage before deleting code or a

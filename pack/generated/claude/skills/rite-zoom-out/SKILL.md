@@ -1,10 +1,12 @@
 ---
 name: rite-zoom-out
-description: User-invoked read-only structural map of unfamiliar code: modules, callers, callees, and relevant decisions.
+description: "User-invoked read-only structural map of unfamiliar code: modules, callers, callees, and relevant decisions."
 argument-hint: "[symbol | file | area to map]"
 user-invocable: true
 disable-model-invocation: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/tooling.md"],"workspace":["spec.md","plan.md","decisions.md","state.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-zoom-out` bundles every file named below into one deduplicated read.
 
 # /rite-zoom-out: step up one abstraction layer
 
@@ -12,8 +14,8 @@ When the agent (or the user) is staring at unfamiliar code without a working men
 model of how it fits the larger system. Stops the "open more files" reflex by returning
 a single, structured map instead.
 
-Read `.claude/skills/devrites-lib/reference/standards/core.md` first: chiefly its vocabulary / existing-conventions
-disciplines, which keep the map in the project's own language. The other rule files load
+Read `.claude/skills/devrites-lib/reference/standards/core.md` first: chiefly its existing-conventions
+discipline, which keeps the map in the project's own language. The other rule files load
 on demand.
 
 ## What this skill returns
@@ -34,11 +36,10 @@ A **structural map**: terse. One pass should answer:
 
 ## Prefer a code-intelligence index (if available)
 
-If the project has them, start with `codebase-memory-mcp` (`get_architecture` / `search_graph`),
-then cross-check with `codegraph` (`.codegraph/`) and `graphify` (`graphify-out/`). For
-codegraph, `codegraph_context` + one `codegraph_explore` return the map in two calls: vastly
-cheaper than a file-walk and more accurate for callers/callees. Fall back to standard methods
-(LSP, then `Grep` + `Read`) when no index is available. See `.claude/skills/devrites-lib/reference/standards/tooling.md`.
+Apply `.claude/skills/devrites-lib/reference/standards/tooling.md`: use the primary
+available architecture/code index, add at most one cross-check for a named incomplete,
+stale, or conflicting predicate, then fall back to LSP and file search. Do not query
+multiple indexes merely to confirm the same map.
 
 ## Vocabulary discipline
 
@@ -57,18 +58,13 @@ end; don't try to fix it here.
 - You want a project-wide architecture audit: use the project's normal architecture
   review process; this skill is a read-only feature-area map.
 
-## Output shape
-Reply-contract exception: read-only mapping utility. It skips `devrites-engine progress` when
-there is no active workspace, but follows
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
-
 ```
 Done: mapped <area> in the project's vocabulary.
-Changed: workspace only
+Changed: none (read-only)
 Evidence: modules <n>; callers <n>; callees <n>; decisions <n>
 Open: <none | fuzzy term | suspected drift | open question>
 Next: <single recommended command>
-Record: <decision/ADR path | not applicable>
+Record: not applicable (paths printed only)
 ↻ Hygiene: /clear if this was only orientation; /rite-handoff if it informs active work
 ```
 

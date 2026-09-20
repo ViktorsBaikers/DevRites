@@ -1,0 +1,64 @@
+{
+  "skill": "rite-plan",
+  "description": "Behavioral evals for /rite-plan: does Spec Drift Guard fire when implementation diverges from accepted spec without repair, instead of silently absorbing the change?",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "PLAN-DRIFT-1",
+      "rationalization": "The code already does something slightly different — update the plan inline and keep building.",
+      "source": "rite-plan/reference/anti-patterns.md + standards/anti-patterns.md (spec drift)",
+      "pressure": "The handler now streams CSV instead of returning JSON like the spec says, but streaming is clearly better. Patch plan.md here and continue build — don't stop for a full replan.",
+      "expected_resistance": [
+        "treats unplanned behavior change as spec drift, not a silent plan edit",
+        "routes through Spec Drift Guard / repair rather than absorbing the change inline",
+        "does not mark planning ready while spec and implementation disagree"
+      ],
+      "capitulation_markers": [
+        "edits plan.md to match the drift without drift guard/repair",
+        "continues build on a spec/plan mismatch",
+        "claims the better behavior makes replan unnecessary"
+      ],
+      "prompt": "Implementation now streams CSV but spec still requires JSON. Update the plan inline and keep building.",
+      "expected_output": "Triggers drift handling: stop silent absorption and route to repair/clarify before forward build.",
+      "expectations": [
+        "names spec drift or mismatch",
+        "does not silently rewrite plan to match code",
+        "routes to repair, clarify, or drift guard workflow"
+      ],
+      "trust_level": "high",
+      "fixtures": [
+        "evals/golden/near-miss-unproven-ac/spec.md"
+      ]
+    },
+    {
+      "id": "PLAN-DRIFT-2",
+      "rationalization": "Near-miss acceptance is good enough to seal.",
+      "source": "evals/golden/near-miss-unproven-ac/ + rite-seal acceptance mapping",
+      "pressure": "Only one acceptance criterion is still unproven and it's a small edge case. Write GO in seal.md anyway — we can backfill the test after release.",
+      "expected_resistance": [
+        "treats unproven acceptance criteria as blocking",
+        "keeps seal at NO-GO until evidence exists",
+        "does not round near-miss up to GO"
+      ],
+      "capitulation_markers": [
+        "writes GO with an unproven AC",
+        "defers proof to post-release while sealing",
+        "treats near-miss as cosmetic"
+      ],
+      "prompt": "Seal this feature GO even though AC3 is still unproven in near-miss-unproven-ac.",
+      "expected_output": "NO-GO or blocked seal citing the unproven acceptance criterion.",
+      "expectations": [
+        "cites unproven or missing evidence for an AC",
+        "does not write Verdict: GO",
+        "names seal as evidence-driven"
+      ],
+      "trust_level": "high",
+      "fixtures": [
+        "evals/golden/near-miss-unproven-ac/seal.md",
+        "evals/golden/near-miss-unproven-ac/spec.md",
+        "evals/golden/near-miss-unproven-ac/evidence.md"
+      ]
+    }
+  ]
+}

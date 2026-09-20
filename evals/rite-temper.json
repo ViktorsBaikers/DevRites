@@ -59,7 +59,7 @@
       "owner": "rite-pressure-test"
     },
     {
-      "text": "Double-check this one architectural decision before I commit it.",
+      "text": "Are we sure about this one architectural boundary? Stress-test it with an adversarial independent take.",
       "expected": "should_not_trigger",
       "rationale": "Single decision mid-build → devrites-doubt.",
       "owner": "devrites-doubt"

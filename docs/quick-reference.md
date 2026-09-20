@@ -1,12 +1,38 @@
 # DevRites quick reference
 
-DevRites installs via `npx devrites ...`; Claude Code and Codex support are generated project-local artifacts, not plugin-store installs.
+Executive fast path: **Spec → Build → Prove**. `/rite-spec` writes the
+contract, `/rite-build` implements one slice, `/rite-prove` binds evidence.
+Adaptive Clarify/Vet still run; they ask nothing when the contract is already
+complete. Use `/rite-quick` for a small reversible change.
+
+Install DevRites with `npx devrites ...`. Normal installs from package and
+release candidates consume pre-generated project-local Claude Code and Codex
+artifacts; plugin stores do not distribute them. Source-checkout shell shims may
+regenerate missing payload components before the engine validates and copies
+them.
 
 ## Lifecycle
 
-`SPEC -> DEFINE -> VET -> BUILD -> PROVE -> POLISH -> REVIEW -> SEAL -> SHIP`
+<!-- authority:lifecycle:start -->
+`FRAME → SPEC → CLARIFY → TEMPER → DEFINE → PLAN → VET → BUILD → CONVERGE → PROVE → POLISH → REVIEW → SEAL → SHIP → DONE`
+<!-- authority:lifecycle:end -->
 
-Seal decides. Ship mutates git. Build one slice. Autocomplete is opt-in.
+Frame is the optional non-gating preflight lens represented in the machine state
+vocabulary; Spec begins the required feature-definition path. Seal makes the
+release decision and Ship mutates git. A direct Build handles one slice per run
+in HITL; an explicit `.devrites/AFK` sentinel may chain bounded low-risk slices,
+while Autocomplete owns full-lifecycle repetition. Build maintains the strict
+candidate manifest. Prove, Review, and Seal bind to its content digest; Polish
+completes durable rollups before Review; Ship is candidate-read-only.
+
+Conditional compatibility: `/rite-upgrade [slug]` audits an older active
+workspace against current contracts. It repairs only a cited defect through
+Clarify, Plan repair, Converge, Vet, Prove, Polish, Review, or Seal; it is not a
+phase or migration and never synthesizes old proof.
+
+Candidate check: `devrites-engine check candidate <slug>` prints
+`candidate-sha256: <64 lowercase hex>` and `candidate-files: <row count>` on a
+pass. See [`candidate-integrity.md`](candidate-integrity.md).
 
 ## Standing checklists
 

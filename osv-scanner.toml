@@ -1,0 +1,11 @@
+# Allowlist for the OSV.dev dependency scan (ci.yml validate job +
+# scripts/validate.sh). Mirrors scripts/npm-audit-exceptions.json: same
+# advisory IDs, same owner, same expiry via ignoreUntil. Keep the two files
+# in sync the same day. An unused ignore here is a warning; a missing ignore
+# for a live finding is a failure. Prefer pinning a patched ancestor in
+# package.json overrides over adding an ignore.
+
+# 2026-09-04: npm@11.19.1 (via @semantic-release/npm override) and
+# fast-uri@3.1.6 cleared the previous bundled-npm and fast-uri advisories.
+# Leave this file without ignore entries until a new exact, owned,
+# expiring exception is required.

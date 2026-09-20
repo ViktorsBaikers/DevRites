@@ -1,337 +1,238 @@
-# `devrites-engine` commands (engine core)
+# `devrites-engine` commands
 
-The `devrites-engine` binary is the deterministic control plane over a project's
-`.devrites/` state. Workspace state, gate, and derivation commands make no model
-calls and are network-free; explicit install/update/source-cache I/O is isolated under
-`engine/internal/iohooks` (ADR-0008). The in-session LLM remains the judgment
-data plane.
+The engine is a deterministic, stdlib-only control plane. It has no model or
+provider dependency and does not dispatch agents, interpret reviews, or choose
+workflow strategy.
 
-This page expands selected contracts. Run `devrites-engine help` for the
-exhaustive current command and hook inventory; see
-[state-schema.md](state-schema.md) for `status` and the underlying state model.
+## Complete operational command inventory
 
-## Exit codes
+| Command | Deterministic responsibility |
+| --- | --- |
+| `install [flags]` | Install manifest-owned host artifacts and the optional shared binary. |
+| `update [flags]` | Refresh an existing managed installation. |
+| `uninstall [flags]` | Remove managed artifacts while preserving runtime workspace state. |
+| `check candidate <slug>` | Validate the strict manifest and compute the content-bound project-candidate identity. |
+| `check readiness <slug>` | Check target-Phase files, open human gates from Clarify onward, the `tasks.md` slice graph when that artifact is required, canonical `AC-###` presence in `tasks.md`/`test-plan.md` when those artifacts are required, and the current stable Build-input binding when applicable. |
+| `check readiness --emit-binding <slug>` | Render the exact stable Build-input binding for Vet to record after review. |
+| `check seal <slug>` | Check files required by target Phase `seal`, open human gates, the `tasks.md` slice graph, canonical `AC-###` presence when `tasks.md`/`test-plan.md` are required, the stable Build-input binding, and exact candidate bindings. |
+| `check path-disjoint [--root <dir>] [<json-file> | -]` | Verify slice path sets are pairwise disjoint. |
+| `parallel select --cap <1-10> [--root <dir>] [<json-file> | -]` | Choose the greedy path-disjoint subset ≤ cap from supplied ready slices. |
+| `parallel <create\|integrate\|cleanup\|status\|abort\|lease-read\|lease-write\|lease-clear\|record-green>` | Deterministic parallel worktree leases, integration, and cleanup for parallel writer batches. |
+| `check task-graph <slug>` | Validate `tasks.md` slice dependency graph for cycles, unknown deps, malformed tokens, duplicate IDs, missing `Dependencies`, and `depends_on` mismatch. |
+| `check regression <slug> [--update]` | Compare the workspace's structural progress facts (phase ordinal, checked ACs, met/abandoned gates, done slices, resolved questions, present artifacts) against the recorded `regression-baseline.json` high-water mark; `--update` ratchets the baseline forward under the feature lock and prints each blessed regression. |
+| `check drift <slug> [--record]` | Attribute readiness-input changes to the exact artifact. `--record` writes the per-input `readiness-inputs.json` digest baseline under the feature lock; without it the workspace diffs current inputs against that baseline (or falls back to the aggregate binding recorded in `eng-review.md`). Advisory: exit `0` on drift; a corrupt baseline exits `3`. |
+| `check windows <slug> [--worktree\|--staged\|--base <ref>]` | Fail on deferral markers (TODO/FIXME/XXX/HACK, skipped-test and stub idioms) the change's added lines introduce without a waiver row in the workspace's `windows.md`. |
+| `check dup [slug] [--all\|--worktree\|--staged\|--base <ref>] [--min-lines n] [--threshold f] [--ignore-file <path>] [--limit n] [--exclude <csv>]` | Report near-duplicate code clusters that survive comment stripping, literal collapsing, and identifier renaming — token-shingle matches chained into segments, clustered transitively, ranked with bounded path/line-distance boosts. Diff modes mark units overlapping changed hunks with `*`; stable content-derived cluster hashes let `.devrites/dup-ignore` dismissals survive line moves but resurface on structural edits. Staged mode reads index blobs and excludes untracked files. Bounded heuristic: successful scans/leads exit `0`; usage, unavailable input, and partial scans exit `2`. |
+| `check slice <slug> <SLICE-ID>` | Pre-dispatch lint of one slice's wright contract: contract present, exact Writer allowlist paths, resolvable `Satisfies` AC ids, bounded scope. |
+| `check diff-scope <slug> --allow <csv>\|--allow-file <path> [--worktree\|--staged\|--base <ref>]` | Verify the changed-path set stays inside the declared allowlist; the mechanical gate run before reviewer dispatch. |
+| `check skill-trust <path>` | Scan one skill/agent Markdown file for structural trust violations. |
+| `check indexes [--root <dir>]` | Report install manifest and code-index presence as JSON. |
+| `observe summary <slug>` | Emit sanitized JSON workspace summary from one retained observation. `task_graph.ok` is true iff `task_graph.problems` is empty; `problems` lists cycle, unknown-dep, malformed-token, duplicate-id, and missing-`Dependencies` blockers. |
+| `orient <slug>` | Alias for `observe summary`. |
+| `observe slice <slug> <SLICE-ID>` | Print one `SLICE-###` section of `tasks.md` so Build reads a slice, not the file. |
+| `next [slug]` | Print the minimal remaining lifecycle path plus advisory skips. |
+| `handoff [slug]` | Emit the deterministic resume record: cursor fields, `awaiting_human`, open `questions.md` gate kinds, the `gates.md` reduction with unmet/stale/abandoned ids, `decisions.md` dead ends, missing required files, and the canonical read-next order. Read-only; the `/rite-handoff` spine and the compaction-fallback entry point. |
+| `context [slug] (--phase <p>\|--skill <name>) [--role <r>] [--trigger a,b]` | Emit one deduplicated read-set bundle per phase/role/skill from each skill's `loads:` manifest; `--skill` works without a workspace when `--out` is given. |
+| `dispatch <slug> <open\|start\|seal\|return\|status\|abandon>` | Launch-wave barrier for parallel dispatch: seal needs a handle per role, return needs seal; start/return auto-record metrics. |
+| `metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]` | Append an event to the workspace's `metrics.jsonl` ledger. |
+| `metrics summary [slug]` | Reduce `metrics.jsonl` into a per-phase roll-up. |
+| `claim <add\|release\|list\|check>` | Advisory session-scoped file claims in `.devrites/claims.jsonl` (append-only). `add` records intent to write a path set with a TTL (1–240 min, default 30); a live claim by another session exits `3` and names the holder. `release` appends a release event owned by the claiming session. `list` shows live claims (`--all` includes expired/released). `check` is the read-only preflight for a path set. Coordination aid only — never a substitute for one-writer-per-worktree. |
+| `note <add\|list\|check\|rm> <slug> ...` | Anchored workspace notes in `notes.md`: `add <slug> <subject> <quote> <title> [body]` binds a note to a verbatim quote in one repository file and assigns `NOTE-###`; `list` and `check` regrade each anchor `exact`/`moved`/`stale`/`ambiguous`/`lost` by searching the repo for the quote (dependency and workspace trees excluded); `check --repair` rewrites a `moved` subject to its new file; `rm` deletes by ID. `check seal` refuses a malformed `notes.md` and any non-`exact` anchor. |
+| `gates <scaffold\|status\|run\|reverify\|lint\|attest\|abandon> <slug>` | Operate the `gates.md` acceptance ledger: seed per-AC gates, execute runnable gates bound to `test-plan.md` preflight rows, attest manual gates, and reduce to `all-met`/`not-met`/`handoff`/`malformed`. |
+| `state resolve <qid> "<answer>"` | Resolve an open question and update `questions.md` plus `state.md` atomically. |
+| `state merge-manifest <slug> [pred...]` | Fold the recorded predecessor chain's manifests into the release candidate manifest. |
+| `state close <slug>` | Archive a shipped workspace and clear matching `ACTIVE`. |
+| `migrate <slug> [--dry-run] [--answer id=choice]` | Normalize a pre-v5 workspace to the current schema; fail-closed, one-shot. |
+| `secret-scan [--staged] [--stdin] [slug]` | Scan exact staged blobs, stdin, or touched regular files for credential material. |
+| `open-visual <path-or-name> [--slug <slug>] [--no-open]` | Resolve a local visual HTML file, optionally open it in the OS browser, warn if the sibling outline is missing or inventory ids are absent from HTML, and print agent path tips. No network. |
+| `detect commands [--root <dir>] [--json]` | Resolve the repository's own test/lint/vet/build commands: explicit Makefile targets first, then `package.json` scripts, then language-manifest fallbacks, plus the lockfile-derived package manager. Read-only, no installs, no execution. |
+| `version` | Print the engine version. |
 
-| code | meaning                                                       |
-| ---- | ------------------------------------------------------------- |
-| `0`  | ok / gate passed                                              |
-| `2`  | usage error (bad args, unknown command, unknown `--harness`)  |
-| `3`  | blocked: a gate pause or a version-skew refuse (`doctor`)    |
+`help`, `-h`, and `--help` print this operational inventory. Each operational
+command and subcommand also accepts `-h` / `--help` and prints that command's
+usage to stdout without requiring a workspace. `version` and `--version` print
+the binary version. Other unlisted command forms are rejected as unknown; the
+engine has no compatibility aliases or tombstones. The `add`/`upgrade`/`remove`
+conveniences belong only to the `npx devrites` adapter, not to the engine
+command namespace.
 
-Exit `3` is always a **pause, not a crash**: a structured, actionable message
-naming exactly what to resolve, then retry. This keeps enforcement safe under
-AFK. A run pauses rather than hard-failing. Both a completeness gate
-(`readiness`/`seal`) and a `doctor` refuse (state schema newer than the binary
-supports) use it.
+## Check boundary
 
-## Gates: `readiness` / `seal`
+The candidate gate validates and hashes path/state/type/mode/content identity;
+it does not infer scope from Git. The readiness gate checks target-Phase
+structure and applies open-question blocking only when that target is Clarify
+or later, plus the exact `tasks.md` slice graph when `tasks.md` is required,
+plus canonical `AC-###` ID presence in `tasks.md` and `test-plan.md` when those
+artifacts are required, plus the exact stable Build-input binding after Vet. The
+seal gate always targets Phase `seal`, repeats that graph, ID map, and binding,
+and checks exact candidate bindings in evidence, optional browser evidence,
+review, and seal. None judges the meaning of `CLEAR`/`READY` prose,
+parses reviewer narratives, infers semantic acceptance coverage, counts
+assertions, interprets capability deltas, or decides whether a technical plan is
+sound.
 
-Deterministic completeness gates. Enforcement is **phase-relative** and
-**gate-scoped**: a gate checks only the sections it needs, only when run.
+Those judgments are made by the current skill and exact native roles, including
+`devrites-plan-reviewer`, `devrites-proof-runner`, `devrites-spec-reviewer`,
+`devrites-test-analyst`, and `devrites-doubt-reviewer`. The root reconciles their
+reports against live artifacts and observed repository proof.
 
-- `devrites-engine readiness <slug>` asks whether the sections required to **leave the
-  feature's current phase** are complete. A section that is not yet required (e.g.
-  `proof` during the `spec` phase) never blocks.
-- `devrites-engine seal <slug>` asks whether the feature is complete against the **full seal-phase
-  requirement set**, regardless of its current phase.
+## State
 
-```
-$ devrites-engine readiness auth-tokens
-gate: readiness
-feature: auth-tokens
-phase: build
-result: blocked (missing to leave "build": tasks)
-next: add real content to tasks.md, then re-run: devrites-engine readiness auth-tokens
-$ echo $?
-3
-```
+State mutations use the shared physical-root checks, feature lock, and atomic
+write path. `state resolve` additionally supports `--drop` and `--batch`;
+`state close` owns transactional archive plus `ACTIVE` clearing.
 
-## `doctor`: version triangle
+`migrate` normalizes a pre-v5 workspace: legacy bullet cursor fields become
+canonical table rows, the `schema` row is recorded, and missing required
+artifacts are created as empty stubs (content is never synthesized, and bound
+proof files stay byte-exact). It is one-shot and fail-closed: on ambiguity it
+writes nothing, prints its questions, and exits `3`; answers arrive on rerun
+via `--answer id=choice`. `--dry-run` prints the plan and always writes
+nothing. See [ADR-0029](../adr/0029-v5-workspace-schema-and-native-migration.md).
 
-`devrites-engine doctor` reports the three versions that can drift out of alignment and
-one legible verdict:
+Normative spec grammar checks, qid allocation, Clarify cursor transitions, AFK
+slice accounting, recovery attempt accounting, and installation diagnostics are
+explicit root-owned native procedures. The workflow owns reproduction,
+hypothesis ranking, tool selection, and routing. No replacement scripts or
+counter artifacts are introduced.
 
-```
-binary: X.Y.Z
-pack: X.Y.Z
-state-schema: v1 (binary supports v1)
-verdict: ok: binary, pack, and state schema are compatible
-```
+## Install and update boundary
 
-- **Binary older than the pack** → a `WARN` (exit `0`): an older binary still
-  runs; update it when convenient.
-- **State schema a newer major than the binary supports** → a `REFUSE` (exit
-  `3`): the binary won't silently mis-parse newer state.
-- Additive schema changes (older state read by a newer binary) are always fine.
+Install application and uninstall accept local source, pre-generated host
+payload, and optional staged binary inputs. Direct `devrites-engine update`
+selects the latest stable release, downloads its bundle and platform engine,
+then invokes that downloaded engine with local candidate paths. Shell and npm
+may instead acquire and pass the same local inputs. `update --check` compares
+installed and latest release metadata without downloading assets. `--to` and
+`--pre` are not supported engine flags.
 
-The pack version is discovered from `.claude/devrites.version` or the project
-`package.json`; when neither exists the pack is reported `unknown` and no skew is
-asserted. Doctor also warns when project extensions have artifacts but no optional
-`provenance.json`.
+Remote acquisition is isolated to the release boundary, exact-SemVer,
+HTTPS-only at every redirect, bounded, and requires exact-filename SHA-256
+sidecars. Archive validation completes during bounded extraction and unchecked
+raw/source/default-branch fallbacks are absent.
 
-## `snapshot`: workspace status JSON
+## Secret scanning
 
-`devrites-engine snapshot [slug]` emits the `devrites.workspace.v1` JSON contract.
+`secret-scan --staged` enumerates changed index entries and reads their exact
+blob object IDs with replacement objects disabled. It does not substitute
+working-tree bytes or follow a worktree symlink. `--stdin` reads supplied text
+from process stdin; callers must not put that text in argv, environment, command
+logs, here-documents, or temporary files.
 
-## `profile`: stable repo facts cache
+Each invocation accepts at most 4,096 entries, 64 MiB total captured input, and
+4,096 findings. Findings never include matched bytes, excerpts, or value hashes.
+Input, limit, and output errors exit `2`; HIGH findings exit `3`.
 
-`devrites-engine profile get|refresh` caches question-agnostic repo facts for grounding skills: top-level layout, manifests, and digests for root docs, ADRs, CI/deploy files, and `.devrites` principles/conventions. It never calls a model or the network.
+## Open visual
 
-- `profile get` prints `HIT` + JSON, `MISS` + cache path, or `NO-CACHE` outside a git repo.
-- `profile refresh` derives the profile from disk and writes the cache.
+`open-visual` resolves `<path-or-name>` to a local `.html` file under the
+active/`DEVRITES_WORKSPACE`/`--slug` workspace `visual/` directory, or via an
+absolute/relative path. Missing sibling `.outline.md` warns on stderr but does
+not hard-fail. When the outline exists, the engine compares `## ID inventory`
+ids to HTML `id="..."` attributes and warns (non-fatal) for inventory ids
+missing from HTML; HTML-only decorative ids are ignored. Unless `--no-open`,
+the engine starts the OS opener (`open`, `xdg-open`, or Windows `start`) for
+the local file only — never a network fetch. Stdout prints the absolute HTML
+path, outline path tip, playbook index hint, and an `ids=ok` / `ids=mismatch`
+summary when an inventory is present.
 
-The cache lives under `/tmp/compound-engineering/devrites/repo-profile` by default and is invalidated when profile-input files are dirty or newly added. Skills still re-scan candidate-specific code fresh.
+## Output and exit contracts
 
-## `migrate`: legacy aliases and old layouts
+`check candidate` passes with exactly:
 
-`devrites-engine migrate` preserves old workspaces while the canonical live location is
-`.devrites/work/<slug>/`. Older `.devrites/features/<slug>/` workspaces remain
-readable, and the migration path is:
-
-- **idempotent**: a second run is a no-op (`already up to date`);
-- **backed up**: the pre-migration `work/` and `ACTIVE` are snapshotted to a
-  timestamped `.migrate-backup-*` directory before anything changes;
-- **lossless**: canonical files are added without deleting aliases. `README.md`
-  is the preferred workspace map while `feature.md` / `index.md` remain readable;
-  `state.md` is preferred while `status.md` remains a cursor alias; `evidence.md`
-  is preferred while `proof.md` remains a proof alias.
-
-The phase is derived from the legacy `state.md`, defaulting to `build` when it
-can't be read.
-
-## Hooks: `hook <name> --harness=claude|codex`
-
-One binary serves both Claude Code and Codex through thin per-harness adapters.
-Every hook is **fail-open and read-only unless it explicitly gates**.
-
-- `devrites-engine hook orient --harness=H` emits the SessionStart orientation for the
-  active feature (named by `.devrites/ACTIVE`) as the harness's
-  `hookSpecificOutput.additionalContext` envelope. With no active feature (or a
-  stale pointer), the first-ever such session instead gets a one-time starting
-  nudge derived from the `first-task` token (greenfield → `/rite-spec`,
-  brownfield → `/rite-adopt`, …); the `.devrites/.first-run-shown` marker keeps
-  it from repeating. Silent (exit `0`, no output) outside a workspace or once
-  the marker exists.
-- `devrites-engine hook auq` captures an `AskUserQuestion` exchange after tool use.
-  It appends each question + chosen answer to `.devrites/timeline.jsonl`
-  and the feature's `events.jsonl`, so HITL decisions are recorded at the
-  substrate instead of trusting the model's bookkeeping. It only captures data and never
-  tunes, blocks, or replies; silent outside an active workspace. Claude-only by
-  design. Codex has an equivalent tool (`request_user_input`) but emits no hook
-  event for it. Codex PostToolUse matches only Bash/`apply_patch`/MCP calls, and
-  the user-input-requested event was declined upstream (openai/codex#12524).
-- `devrites-engine hook stop-gate --harness=H` refuses to end a turn at a provably
-  inconsistent **rest point**, such as a feature in phase `seal` or `ship` with
-  empty `evidence.md` or `proof.md`. It does not check whole-feature completeness,
-  so normal in-progress work is never blocked. It observes by default: a would-be block is
-  appended to the feature's `.stop-gate.log` (mirroring `devrites-engine hook stop-gate`)
-rather than gating; set `DEVRITES_STOP_GATE=enforce` to block.
-  Loop-guarded by the harness's `stop_hook_active` so it can never wedge a
-  session.
-
-### Fail-open guard
-
-Hooks are wired behind an inline POSIX guard so a **missing binary is a no-op**
-that never wedges a session (a teammate without `devrites-engine` installed is never
-blocked):
-
-```sh
-command -v devrites-engine >/dev/null 2>&1 && devrites-engine hook orient --harness=claude || exit 0
-```
-
-## `ledger`: the living capability store
-
-`devrites-engine ledger <sub>` maintains `.devrites/specs/<capability>/spec.md`, the cumulative
-record of proven behavior (see [state-schema.md § Capability ledger](state-schema.md#capability-ledger-specs)).
-Feature specs carry deltas under an `ADDED`, `MODIFIED`, or `REMOVED`
-Requirements heading tagged with `capability: <c>`. The fold uses header identity
-for upserts and deletes, so re-syncing a feature is a no-op.
-
-- `ledger sync <workspace-dir>`: fold a feature's deltas into every capability they touch (ADDED
-  append, MODIFIED replace, REMOVED delete). Called from `/rite-ship` on GO. Exit `0`.
-- `ledger diff <workspace-dir>`: dry-run the fold (the change preview shown before sync). Exit `0`.
-- `ledger validate`: grammar-lint every ledger spec. Exit `0` clean · `1` on a violation.
-- `ledger list` / `ledger show <capability>`: read the ledger (used by `/rite-spec` and
-  `/rite-adopt` to write deltas against the current contract). Exit `0` · `1` unknown capability.
-
-`spec-validate <dir> --against .devrites/specs` cross-checks a spec's delta classification against
-the ledger (ADDED must be new; MODIFIED/REMOVED must already exist) and validates Edge Coverage /
-Prohibitions tables as a blocking spec-gate check.
-
-## `analyze`: cross-artifact coverage & consistency
-
-`devrites-engine analyze [slug]` cross-checks a feature's `spec.md` against its `tasks.md` before
-any code is written, so a coverage gap surfaces as a one-line plan edit instead of a reslice
-mid-build. It emits a markdown report with four passes:
-
-- **Coverage**: a spec `AC-###` that no slice `Satisfies:` (**CRITICAL**; legacy `[ACn]` remains supported).
-- **Consistency**: a slice that `Satisfies:` an AC the spec never defines (**CRITICAL**).
-- **Orphan slice**: a slice satisfying no acceptance criterion (warn).
-- **Ambiguity**: an unquantified vague adjective (`fast`, `robust`, `intuitive`, …) or an
-  unresolved placeholder (`TODO`, `TKTK`, `???`) in the spec (warn).
-
-It closes with a **Metrics** line (criteria count, coverage %, orphan + ambiguity counts) so the
-vet gate reports a number instead of only pass or fail. Exit `0` clear · `1` at least one CRITICAL ·
-`2` no workspace (no active slug, or `spec.md`/`tasks.md` missing). `/rite-vet` runs it in its
-cross-artifact gate (step 2a) and adds semantic checks for terminology drift and
-duplicated or conflicting requirements on top of this deterministic floor.
-
-## `review-integrity`: the silent-reviewer gate
-
-`devrites-engine review-integrity [slug]` guards the failure opposite to noise: a reviewer that
-returns "looks good, nothing found". It parses `review.md`'s `## Spec` / `## Code review` axis
-sections and flags any that carry neither a bold-labeled finding nor a `No-findings:` justification.
-A zero-count summary line does **not** count as a finding. An all-zero tally is the rubber-stamp
-this catches. Exit `0` every axis accounted for (or no/freeform `review.md`) · `1` an axis is silent
-and unjustified. `/rite-review` runs it after writing `review.md`; `/rite-seal` treats `rc=1` as an
-Important on the review's completeness. The honesty contract mirrors `doubt-coverage` and the
-footprint roster: it checks the *account* is present, not its quality.
-
-## `timeline`: append-only session trace
-
-`devrites-engine timeline log|list` records compact session events in `.devrites/timeline.jsonl`.
-It is for reconstructing what happened across long agent runs: which rite or skill acted, what
-feature it touched, what decision it made, and whether a state transition happened. It does not
-gate anything; it is durable context for audits, handoffs, and later learning.
-
-```bash
-devrites-engine timeline log completed --skill rite-review --slug auth-tokens --outcome ok --decision "ship"
-devrites-engine timeline log state-change --slug auth-tokens --from build --to review --note "tests green"
-devrites-engine timeline list --limit 20
+```text
+candidate-sha256: <64 lowercase hex>
+candidate-files: <manifest row count>
 ```
 
-Records are JSONL, append-only, and safe for concurrent short-lived engine calls. Install and
-update DevRites through the npm flow (`npx devrites ...`); this command is part of the installed
-engine, not a Claude/Codex plugin distribution path.
+Invalid usage/root selection exits `2`; a candidate validation block prints
+`candidate: BLOCKED: <reason>` and exits `3`.
 
-## `health`: code-health dashboard and history
+`check readiness --emit-binding <slug>` passes with exactly:
 
-`devrites-engine health`, `health run`, and `health check` run the known project
-checks (available npm test/lint/typecheck/build scripts, `go test`, `pytest`, and
-DevRites scans where present), print a PASS/WARN/FAIL dashboard, and append the
-result to `.devrites/health.jsonl`. These commands execute project checks; they
-are not a substitute for reviewing those scripts before use.
-
-The legacy `health record|list` surface remains available for manual scores.
-`record` appends `.devrites/health-history.jsonl`; `list` tails
-`.devrites/health.jsonl` when dashboard history exists, otherwise the legacy file.
-Manual scores are intentionally caller-owned: name the observed evidence rather
-than asking the engine to infer a universal metric.
-
-```bash
-devrites-engine health run
-devrites-engine health record 8.5 "tests green; one follow-up" --note "review-fingerprints stable"
-devrites-engine health list --limit 10
+```text
+Readiness inputs SHA-256: <64 lowercase hex>
 ```
 
-Scores must be `0..10`. The label should name the evidence, not a vibe. Skill health stays static
-until DevRites records per-skill run outcomes; use `scripts/skill-pruning-audit.mjs` for pruning
-signals instead of inventing telemetry.
+It binds the fixed records documented in the
+[workspace schema](workspace-schema.md#build-readiness-binding), not mtimes or
+ambient Git state. Ordinary readiness and Seal require that exact standalone
+line in `eng-review.md`; stale input returns
+`reason: DRV-GATE-READINESS-STALE` and routes through `/rite-vet`.
 
-## `review-fingerprints`: stable IDs for findings
+### Workspace observation diagnostics
 
-`devrites-engine review-fingerprints [--write] [slug]` scans `.devrites/work/<slug>/review.md` for
-bold severity labels (`Critical`, `Important`, `Suggestion`, `Nit`, `FYI`) and emits stable
-12-character IDs derived from severity + normalized finding text. With `--write`, it saves
-`.devrites/work/<slug>/review-fingerprints.jsonl`.
+Lifecycle checks acquire the fixed workspace Markdown inventory once. Each
+artifact is classified as `absent`, `empty`, `malformed`, `unsafe`,
+`unreadable`, or `present`. Retained content is limited to 1 MiB per file and
+8 MiB aggregate. Diagnostic lines use this exact shape:
+`artifact: <logical-path>: <state> (<code>)`.
 
-```bash
-devrites-engine review-fingerprints --write auth-tokens
-```
+The closed diagnostic codes and recoveries are:
 
-The IDs make recurring findings, dismissals, and later learning easier to correlate without
-copying full review text into every downstream surface. `review-integrity` remains the gate; this
-command only records stable references.
+| Code | Exact Gate recovery | Exact standalone readiness-binding payload |
+| --- | --- | --- |
+| `malformed_markdown` | `next: repair <logical-path>: replace invalid Markdown with valid Markdown; required artifacts need substantive content` | `readiness input <logical-path> is malformed (malformed_markdown); replace invalid Markdown with valid Markdown` |
+| `parent_symlink` | `next: repair <logical-path>: replace the symlinked parent with a real directory` | `readiness input <logical-path> is unsafe (parent_symlink); replace the symlinked parent with a real directory` |
+| `final_symlink` | `next: repair <logical-path>: replace the symlink with a regular file` | `readiness input <logical-path> is unsafe (final_symlink); replace the symlink with a regular file` |
+| `non_regular` | `next: repair <logical-path>: replace the non-regular entry with a regular file` | `readiness input <logical-path> is unsafe (non_regular); replace the non-regular entry with a regular file` |
+| `file_too_large` | `next: repair <logical-path>: reduce the file to at most 1 MiB` | `readiness input <logical-path> is unsafe (file_too_large); reduce the file to at most 1 MiB` |
+| `permission_denied` | `next: repair <logical-path>: grant read permission` | `readiness input <logical-path> is unreadable (permission_denied); grant read permission` |
+| `read_failure` | `next: repair <logical-path>: restore a readable regular file` | `readiness input <logical-path> is unreadable (read_failure); restore a readable regular file` |
 
-## `reviewer-stats`: dispatch outcomes that gate the fan-out
+The Gate recovery column remains exact for target-policy-required artifacts. For
+a selected optional readiness input, the same code-specific repair appends
+`; optional readiness input may instead be removed` and does not call the input
+required.
 
-`devrites-engine reviewer-stats record <agent> <surviving-findings> [slug]` appends one dispatch
-outcome to `.devrites/reviewer-stats.jsonl` (cross-feature, append-only).
-`devrites-engine reviewer-stats report [--json]` grades each reviewer deterministically:
+These seven codes are the closed Workspace Observation classification and
+recovery mapping outcomes. A selected public consumer emits only a code
+reachable for its consumed fixed logical path. Invalid workspace ancestry is
+`workspace_invalid`, not an artifact `parent_symlink` diagnostic.
 
-- `run (always-on)`: the unconditional axes (`spec-reviewer`, `code-reviewer`, `test-analyst`).
-- `run (insurance; never gated)`: `security-auditor` and `doubt-reviewer`. A dry streak is
-  success, never a reason to skip.
-- `gate-candidate`: a conditional reviewer with zero surviving findings in its last 10+
-  dispatches; the fan-out may skip it as a *recorded* skip (see the shared
-  `pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md` contract,
-  § Hit-rate gating).
-- `run`: everything else.
+Status emits diagnostics without recovery or `next:` lines, after section rows
+and before `result`. Gate emits diagnostics after `reason` and before recovery,
+`invariant`, and `retry` lines. Generic add-content recovery applies only to
+absent or empty target-required artifacts. Standalone readiness-binding
+failures use the existing `readiness-binding: BLOCKED:` prefix and the logical
+readiness-input state/code plus recovery; they never disclose physical paths or
+content.
 
-```bash
-devrites-engine reviewer-stats record devrites-performance-reviewer 0 auth-tokens
-devrites-engine reviewer-stats report
-```
+Whole observation failures are `workspace_invalid`, `aggregate_too_large`, and
+`concurrent_change`. Their disclosure-safe payloads are exact:
 
-Thresholds live in the engine, not the prompt: the caller reads the verdict, it never re-derives
-or overrides the streak math (a user-requested full panel dispatches everything regardless).
+- `workspace observation: workspace_invalid: workspace is unavailable; verify the selected logical workspace and canonical workspace override, then retry`
+- `workspace observation: aggregate_too_large: retained content exceeds the 8 MiB aggregate limit; reduce retained Markdown below 8 MiB, then retry`
+- `workspace observation: concurrent_change: workspace changed during acquisition; retry`
 
-## `reviewers list`: bounded reviewer aliases
+An absent or empty `state.md` appends `add real content to state.md and retry` to
+the existing logical error. A malformed, unsafe, or unreadable `state.md`
+appends `repair state.md and retry`. A ledger without a phase appends `record
+phase in state.md and retry`; an unknown phase appends `record a known phase in
+state.md and retry`.
 
-`devrites-engine reviewers list` validates same-adapter reviewer aliases from `.devrites/config.json`
-or flat `.devrites/config*` keys. It never executes a reviewer; it only checks the bounded config
-surface (`cli` must be `claude` or `codex`; `model` and `agent` are opaque strings).
+Whole observation failures use stderr, exit `2`, and no lifecycle result or
+reason on stdout. Standalone readiness-binding failures use one stderr line,
+exit `3`, and empty stdout. Per-artifact lifecycle blocks keep existing reason
+IDs and stdout exit `3`; successful checks keep stdout exit `0`. Seal evidence
+freshness still runs separately after a successful Seal gate.
 
-```json
-{
-  "review": {
-    "reviewer_instances": {
-      "codex-deep": { "cli": "codex", "model": "o3" }
-    }
-  }
-}
-```
+- `0`: passed or completed.
+- `2`: common invalid request or unreadable-state result.
+- `3`: common deterministic lifecycle or safety block.
+- Atomic state operations retain their documented operation-specific nonzero
+  results.
 
-## `extensions` / `overrides`: project extensibility
+Lifecycle checks emit stable line-oriented fields, including a `reason: DRV-...`
+identifier for the deterministic outcome. The native `/rite-doctor` workflow
+emits its own human-readable OK/WARN/FAIL report. Neither surface introduces an
+agent API or versioned wrapper.
 
-Two project-local surfaces let a team extend the pack without forking it. The
-full contract is in [extensions.md](../extensions.md).
+Strict mutators resolve the physical root once and refuse unsafe symlinks,
+nested-repository inheritance, ambiguity, or escapes. Repository source
+validation belongs to `scripts/validate.sh` and CI, not an installed engine.
 
-- `extensions list|validate|sync`: user rites/reviewers under `.devrites/extensions/<name>/`, held
-  to the pack's schema (`validate`, exit `1` on a malformed extension) and mirrored into `.claude/`
-  (`sync`, validates first, refuses a broken set).
-- `overrides list|validate`: reviewer overrides under `.devrites/overrides/<agent>.md`, advisory
-  house rules a shipped reviewer reads after its standards. `validate` exits `1` when an override
-  reads like it waives a gate. An override may add checks but never relax one.
-
-## `context sync|show`: agent context
-
-`devrites-engine context sync [file ...]` upserts only the block delimited by
-`<!-- DEVRITES START -->` / `<!-- DEVRITES END -->` in project context files. With no file args it
-reads `.devrites/context.yaml` (`context_file:` or `context_files:`), then falls back to existing
-`AGENTS.md` / `CLAUDE.md`, then `AGENTS.md`. Paths must be project-relative.
-
-`devrites-engine context show [--json]` is read-only. It reports the project root, `.devrites` root,
-active workspace, the source of that selection (`ACTIVE`, `DEVRITES_WORKSPACE`, `DEVRITES_ROOT`, or
-`none`), and the Claude/Codex menu forms. `--json` emits one direct JSON document for wrappers that
-need to know where a command will act.
-
-## `runbook`: tiny local automation
-
-`devrites-engine runbook list|validate|run|resume` executes flat YAML runbooks from
-`.devrites/runbooks/*.yaml`. Supported step forms are deliberately small:
-
-```yaml
-steps:
-  - engine: doctor
-  - rite: status
-  - shell: npm test
-  - gate: review before release
-```
-
-`engine` runs a local `devrites-engine` subcommand, `rite` prints the Claude/Codex dispatch form,
-`shell` runs in the project root, and `gate` writes `.devrites/runs/<id>/state.json` then exits `3`.
-Resume with `devrites-engine runbook resume <id>`. This is for repeatable local runbooks, not a
-replacement lifecycle.
-
-## Concurrency
-
-DevRites fans out reviewer subagents that each spawn the binary, so the real
-contention is between short-lived **processes**. State writes are hardened for it:
-
-- **append-only logs** use `O_APPEND` with small records, so parallel writers never
-  interleave or lose records;
-- **structured files** use a temporary file and atomic rename, so a reader (or a
-  writer killed mid-write) never sees a half-written file;
-- **read-modify-write** takes a per-feature advisory `flock` on Unix to avoid
-  lost updates.
+Production Go and shell Git callers remove environment variables that can
+retarget the repository, worktree, index, objects, refs, config, or pathspec,
+while retaining unrelated Git variables. This isolation is shared caller
+policy, not another public command.

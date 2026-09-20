@@ -1,7 +1,7 @@
 {
   "name": "devrites",
-  "version": "3.0.7",
-  "description": "DevRites: a disciplined senior-engineer workflow pack for Claude Code and Codex",
+  "version": "5.12.0",
+  "description": "DevRites: a disciplined senior-engineer workflow pack for Claude Code, Codex, omp, pi, and Devin CLI",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://github.com/ViktorsBaikers/DevRites#readme",
   "repository": {
@@ -14,6 +14,7 @@
   "keywords": [
     "claude-code",
     "codex",
+    "devin-cli",
     "skills",
     "agent-skills",
     "workflow",
@@ -30,12 +31,20 @@
   "files": [
     "bin/",
     "engine/",
+    "!engine/devrites-engine",
+    "!engine/devrites-engine.exe",
     "pack/",
-    "scripts/",
+    "scripts/build-host-artifacts.sh",
+    "scripts/codex-generate.sh",
+    "scripts/omp-generate.sh",
+    "scripts/pi-generate.sh",
+    "scripts/devin-generate.sh",
+    "scripts/install-lib.sh",
     "install.sh",
     "uninstall.sh",
     "update.sh",
     "docs/",
+    "!docs/internal/",
     "README.md",
     "LICENSE",
     "SECURITY.md",
@@ -45,16 +54,20 @@
   "engines": {
     "node": ">=18"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "prepare": "husky || true",
-    "prepack": "bash scripts/build-host-artifacts.sh && rm -rf scripts/__pycache__ scripts/.cache docs/internal",
+    "prepack": "bash scripts/build-host-artifacts.sh",
     "commitlint": "commitlint --edit",
     "validate": "bash scripts/validate.sh",
     "test": "node scripts/run-tests.mjs",
     "test:fast": "node scripts/run-tests.mjs --fast",
     "test:parallel": "node scripts/run-tests.mjs",
     "test:serial": "node scripts/run-tests.mjs --serial",
-    "audit": "npm audit --audit-level=moderate",
+    "audit": "node scripts/check-npm-audit.mjs",
     "size:baseline": "node scripts/check-instruction-size-baseline.mjs --write",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run --no-ci"
@@ -70,9 +83,11 @@
     "husky": "^9.1.7",
     "semantic-release": "^25.0.5"
   },
-  "dependencies": {
-    "framer-motion": "^12.41.0",
-    "gsap": "^3.15.0",
-    "motion": "^12.41.0"
+  "overrides": {
+    "@semantic-release/npm": {
+      "npm": "11.19.1"
+    },
+    "fast-uri": "3.1.6",
+    "js-yaml": "4.3.2"
   }
 }

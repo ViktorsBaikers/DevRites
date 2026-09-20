@@ -12,7 +12,7 @@ Pack-wide rationalizations + red flags: see [standards/anti-patterns.md](../../d
 |---|---|
 | "Spec is good enough; just start coding." | Plan separates HOW from WHAT for a reason: missed HOW shows up as drift at slice 3. |
 | "One big slice is fine, the work is all related." | If slice 1 isn't shippable on its own, you're not slicing vertically. You're staging waterfall in disguise. |
-| "Tests can come at build time, not in tasks." | Every slice's `Tests to write/run` line is the contract that proves its acceptance: leave it blank, lose the contract. |
+| "Tests can come at build time, not in tasks." | Every slice's `Tests/proof` line is the contract that proves its acceptance: leave it blank, lose the contract. |
 | "Backend + frontend belong in one slice." | Fullstack goes contract-first: split the contract, then build a thin vertical slice that crosses both layers. |
 | "I can skip mapping every spec criterion." | An unmapped criterion is one nobody will build. Coverage isn't bureaucracy. |
 

@@ -1,5 +1,7 @@
 # Elicitation: a move-set for the thinking phases
 
+> Applies when: a thinking phase needs more than the default review shape for a section.
+
 The thinking phases (`$rite-temper` on the spec, `$rite-vet` on the plan) default to one shape each.
 A pre-mortem, a plan review. That's a floor, not a ceiling. When a section needs deeper thought,
 this is the menu you reach into: named reasoning techniques, each with the shape it produces, so
@@ -10,6 +12,11 @@ this is the menu you reach into: named reasoning techniques, each with the shape
 2. Read its **risk**, then pull the 3-5 techniques below whose *When to reach for it* matches.
 3. Present them as a short numbered menu; the human picks one (or `skip`).
 4. Run that technique on that section, apply the result, move on.
+5. **No-yield exit:** when the technique surfaces nothing that changes the section — no
+   new requirement, mitigation, estimate change, or blocking question — record
+   `elicitation: <technique> — no yield` in the phase artifact and stop offering menus
+   for that section. **Failing case:** repeated technique menus on a settled section are
+   ceremony, not diligence; a second menu without new section input is a process defect.
 
 Selection is by the section's risk, not taste. Reach for the row that fits:
 
@@ -19,6 +26,7 @@ Selection is by the section's risk, not taste. Reach for the row that fits:
 | a vague or contested requirement | Steelman-then-Attack · Devil's Advocate · Five Whys |
 | an estimate, sizing, or a "how long / how risky" | Delphi · Reference-Class Forecast |
 | a design with more than one plausible shape | Tournament (A vs B) · Inversion · Analogy Mapping |
+| a plan or patch that may be solving the wrong problem | Backward Chain |
 | a spec that feels *too* big or *too* small | Scope Extremes (MVP vs Gold-plate) · YAGNI Pass |
 | a risk surface you suspect is under-explored | Chaos Scenarios · Edge-Case Hunt · Second-Order Effects |
 
@@ -47,6 +55,10 @@ Each entry is **name (when to reach for it) the shape it produces** (`→` reads
   → invert each failure into a requirement.
 - **Second-Order Effects:** a change that touches shared surface. For each first-order effect ask
   "and then what?" twice → surface the downstream consequence the diff hides.
+- **Backward Chain:** a plan or patch that may be solving the wrong problem. Write the desired end
+  state as one checkable sentence → ask "what must be true immediately before it?" → recurse to the
+  current state → any planned step that does not land on the chain is wrong-direction work; name the
+  tempting one explicitly.
 
 ### Sizing and estimating
 - **Delphi:** an estimate one person is anchoring. Gather independent estimates *without* seeing
@@ -77,4 +89,26 @@ Run the technique on the **section in front of you**, not the whole document: a 
 everything is a move applied to nothing. Record what it changed in the phase artifact (a new
 requirement, a mitigation, a blocking question), not just that you ran it.
 
-A project can append its own house techniques to this file: same three-column shape.
+## Asking mechanics
+
+- **Batch 2–4 independent questions;** ask serially when one answer determines the next
+  question or the question is an approval gate.
+- **Never ask for the discoverable** — repo, docs, prior artifacts, and conversation
+  first; a question whose answer sits in a file is a stall dressed as diligence.
+- **One decision per question** with enough context to answer without reopening files;
+  recommend a path and name its trade-off — never raw unevaluated options.
+- **At an approval gate, state the defaults you chose** so a wrong assumption gets
+  corrected before it ships.
+- **Never continue past a question by inventing the answer** — headless sessions report
+  the unresolved decision instead of assuming it.
+- **A skipped, declined, or timed-out answer is `unanswered`, not approval.** A
+  proposal, silence, or timeout never becomes a decision. Continue only work the
+  open decision cannot affect; when the unanswered question blocks scope,
+  spending, publication, or anything irreversible, stop and name the specific
+  unresolved choice — do not reissue the same question as if nonresponse were an
+  error.
+- **No question tool → numbered text fallback.** Two to four concrete options,
+  each with its trade-off, one marked as the recommendation, and a free-text
+  escape. A recommendation is labeled, never pre-selected.
+
+A project can append its own house techniques to this file: same entry shape — **name (when to reach for it)** → the shape it produces.

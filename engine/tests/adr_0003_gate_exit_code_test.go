@@ -16,7 +16,7 @@ func TestADR0003BlockedGateExitsThreeNotCrash(t *testing.T) {
 	root := newWorkspace(t)
 
 	// auth-tokens is in the build phase with tasks empty -> readiness blocks.
-	out, _, code := runDevrites(t, root, "readiness", "auth-tokens")
+	out, _, code := runDevrites(t, root, "check", "readiness", "auth-tokens")
 	if code != 3 {
 		t.Fatalf("blocked readiness exit = %d, want the reserved 3 (HITL pause)", code)
 	}
@@ -25,7 +25,7 @@ func TestADR0003BlockedGateExitsThreeNotCrash(t *testing.T) {
 	}
 
 	// A satisfied gate is a clean pass, never a spurious non-zero.
-	_, _, ok := runDevrites(t, root, "readiness", "search-ranking") // spec phase, spec present
+	_, _, ok := runDevrites(t, root, "check", "readiness", "search-ranking") // spec phase, spec present
 	if ok != 0 {
 		t.Fatalf("satisfied readiness exit = %d, want 0", ok)
 	}

@@ -1,44 +1,62 @@
-# Checkpoint: crash-survivable WIP commits (opt-in)
+# Checkpoint: land local WIP only after the check loop is green
 
-`.devrites/` markdown survives compaction, but a slice's *source* stays uncommitted until
-`$rite-ship`. A crash or killed session mid-build: the AFK / `$rite-autocomplete` case:
-loses that source **and** the reasoning behind it. Checkpoint mode commits each proven
-slice as a local `WIP`, so the work and its context outlive the session.
+The wright does not commit onto the control/primary branch. Independent review
+and fail-on-red proof run first; a red or gap finding dispatches another wright.
+Only when that loop is green does the orchestrator land the local unpushed
+`WIP(<slug>):` commit. Same rule for `$rite-build`, `$rite-prove`, `$rite-polish`,
+`$rite-review`, and `$rite-autocomplete`. Never push. `.devrites/CHECKPOINT` is
+not a gate.
 
-## When it's on
-Opt-in via the `.devrites/CHECKPOINT` sentinel: the mirror of `.devrites/AFK`. Absent →
-no checkpoints; `$rite-build` behaves exactly as before. A long unattended run
-(`$rite-autocomplete`) is the case it earns its keep, so that path sets the sentinel for
-the run. **Local-only by rule:** a checkpoint is never pushed: scratch work must not
-trigger CI.
+## When (and when not)
 
-## The checkpoint commit: orchestrator, at RECORD, after gates are green
-A checkpoint records a **proven** slice; it fires only after PROVE is green, never on a red
-gate. Stage only the slice's `touched-files.md`, then commit locally with a
-`[devrites-context]` body a cold reader can restore from:
+- **Do:** after Independent Build review (or the phase's independent validators)
+  and fail-on-red proof are green, with no open Critical/Important and no repair
+  wright still in flight. Serial: git recipe below (skip empty index) or isolated
+  FF of a matching `transfer_commit`. Parallel: `devrites-engine parallel
+  integrate --apply-to-control` (no second control `git commit`).
+- **Do not:** when a wright returns; before review/proof; with red/gap findings;
+  fast-forward an isolated transfer onto control before those checks.
+
+A native-worktree `transfer_commit` is transport on the worker branch only.
+
+## The commit
+Stage the exact candidate paths from the manifest, each as its own argv.
+Never stage `touched-files.md`, a directory, glob, unrelated path, or user change.
+Verify the staged set, then commit locally.
+
+Subject: `WIP(<slug>):` plus an imperative summary of the change (from the
+goal). Never a slice id, `SLICE-###`, a slice number, or "this slice"
+(`WIP(admin-report): add CSV export for usage rows`, not `SLICE-003` or
+`complete slice 3`). Product source, tests, comments, and filenames omit the
+same marks; they stay in `.devrites/` only.
 
 ```bash
-[ -f .devrites/CHECKPOINT ] || exit 0   # sentinel absent → no-op, silent
-git commit -m "WIP(<slug>): <slice>" -m "$(cat <<'BODY'
+git commit -m "WIP(<slug>): <imperative summary>" -m "$(cat <<'BODY'
 [devrites-context]
-decisions: <one-line delta this slice added to decisions.md>
-remaining: <pending slices — count or names>
-dead-ends: <approaches ruled out this slice, if any>
+decisions: <one-line delta this work added to decisions.md>
+remaining: <pending count>
+dead-ends: <approaches ruled out, if any>
 BODY
 )"
 ```
 
+**Local-only:** never push or let scratch work trigger CI.
+
+After the commit lands, run `devrites-engine check regression <slug> --update`
+to ratchet the workspace progress baseline — the landed slice, newly checked
+acceptance criteria, and resolved questions become the new floor that later
+checks compare against. A `BLOCKED` compare before that ratchet means durable
+facts were lost this cycle; restore or route them before landing the commit.
+
 ## Restore
-The commit body is a durable record, not just a marker. After a crash, a fresh session:
-or `$rite-status`: reads the last `WIP(<slug>)` body to reconstruct the decisions,
-remaining slices, and dead-ends that in-session `.devrites/` state would have held. No
-special tooling: it's a git log entry any agent can read.
+After a crash, a fresh session may read the last `WIP(<slug>)` body as crash context.
+Authoritative state remains in `.devrites/`: validate the body against that workspace;
+never reconstruct or advance state from the commit body. Reload per
+[`context-hygiene.md`](../../devrites-lib/reference/standards/context-hygiene.md)
+(`.devrites/ACTIVE`, `state.md`, `questions.md`, `decisions.md`, `test-plan.md`/`evidence.md`).
 
 ## Collapse at ship
 WIP commits are scratch and never reach shared history. `$rite-ship` folds them into the
 one atomic feature commit before the Conventional-Commit ladder: see the collapse step in
 [git-ship.md](../../rite-ship/reference/git-ship.md). Result: one clean commit, bisect
 stays green.
-
-## Autocomplete clean-baseline use
-`$rite-autocomplete` may arm checkpoint mode after it verifies a clean or explicitly accepted baseline. Checkpoints are local-only crash recovery, not authorization to continue across red gates or to ship. `$rite-build` remains one-slice-at-a-time; autocomplete is the only opt-in loop that may invoke multiple builds.

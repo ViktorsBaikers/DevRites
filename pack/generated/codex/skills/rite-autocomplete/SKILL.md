@@ -1,110 +1,148 @@
 ---
 name: rite-autocomplete
-description: Run the DevRites lifecycle end-to-end unattended; --ship confirms the final gate. Use when the user says "autocomplete", "one-shot this feature", or "ship it autonomously". Not for a single phase.
-argument-hint: "[idea] [--ship|--yolo] [--max-slices N]"
+description: Run the full DevRites lifecycle unattended; --ship continues to the final Git approval boundary. Use for one-shot autonomous work; not for a single phase.
+argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] [--cross-model]"
 user-invocable: true
 ---
 
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"]} -->
+> Read-set manifest: `devrites-engine context <slug> --phase autocomplete` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # $rite-autocomplete: full lifecycle, unattended
 
-Drives every DevRites phase in order without stopping for discretionary input. The
-prompt may be vague: autocomplete asks its clarifying questions **up front**, then
-runs to completion. It does **not** disable the safety gates: hard irreversible-risk,<!-- pack-scan-ignore: negated statement: gates are NOT disabled -->
-blocking / escalating gates, and any NO-GO still pause.
+Run every phase after one clarification window. Irreversible-risk,
+escalating,<!-- pack-scan-ignore: negated statement: gates are NOT disabled -->
+access, unanswered blocking with no recommended option, and remaining NO-GO
+still pause. Open blocking questions that already name a ranked recommended
+option auto-resolve; they are not a user handoff. Use the Standard native
+profile by default and Full for high-risk scope or explicit `--full`; see
+[`orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md).
 
-## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
-**Step 0:** Read `.agents/skills/devrites-lib/reference/standards/core.md` and `.agents/skills/devrites-lib/reference/standards/afk-hitl.md` first.
+## Required rules
 
-## Operating rules
-- **One human window.** Clarifying questions are batched up front via
-  `devrites-interview`. After that, discretionary decisions are made automatically and
-  recorded in `decisions.md`, not asked. See [reference/decision-policy.md](reference/decision-policy.md).
-- **Safety gates are not bypassable.** AFK never auto-passes destructive migration /
-  auth-authz change / public-API break / external-contract change / red tests; blocking
-  and escalating gates and any open `gate: validating` always pause. `--ship` auto-confirms
-  the **final** type-GO only: nothing else. A change that violates a declared project
-  principle (`.devrites/principles.md`) with no recorded exception pauses too: autocomplete
-  never grants a principle exception on its own (`principles.md`: that's a human decision).
-- **Loop budget = the plan's own slice count, not a fixed number.** After `$rite-vet`
-  (not `$rite-define`: vet may split or add slices, so the count isn't final until then),
-  set the AFK budget to however many slices the plan has, so the loop builds exactly the
-  task's slices and stops when they're done. `--max-slices N` is an OPTIONAL *lower* safety
-  cap (partial / babysat run); omit it to run the whole plan. The budget is finite
-  (= planned slices), so a runaway is still bounded.
-- **Best option, recorded.** For each discretionary choice, pick the option the relevant
-  specialist / reviewer favours and record the rationale. Never silently coin-flip.
-- **Strategic review runs, but never auto-grows scope.** After `$rite-spec`, run `$rite-temper`
-  (significance-gated; it skips low-stakes specs in one line). Unattended it auto-applies only
-  `hold-rigor` + `reduce-to-MVP` (these never grow acceptance); **any `expand` is a blocking
-  pause**, and irreversible-risk findings always pause. Autocomplete hardens and may *prune* the
-  spec on its own; it never *expands* the build's scope without the human.
-- **Engineering review runs on every plan, but never auto-grows scope.** After `$rite-define`,
-  run `$rite-vet` on **every** feature (depth scales: a light pass on simple plans, full rigor on
-  big/risky; never skipped). Unattended it auto-applies only *hardening* findings: added test
-  requirements, error-handling / failure-mode coverage, tightened scope, reuse-over-rebuild,
-  ordering / parallel-lane fixes (these never grow acceptance); **any finding that grows scope,
-  adds a slice, or changes acceptance is a blocking pause**, and irreversible-risk findings always
-  pause. Cross-model is off unless `--cross-model` was armed.
+Read [`core.md`](../devrites-lib/reference/standards/core.md) and [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) first. Read
+[`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md) before any stop/continue or execution decision involving a
+consumptive action. Before honoring a terminal cursor that names missing
+executable controller/harness/bundle bytes or a missing writer, read
+[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
+(trigger `workflow-artifacts` — only when a workspace declares them). Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → keep Plan repair/affected Vet internal; no stop solely for topology/count.
+- `GUARD_AND_REPAIR` → enter Spec Drift Guard/Clarify; pause only at an existing human-owned gate; resume Plan/Vet internally.
+- `BLOCKED_INPUT` → no planning writes; stop internal branch; exact diagnostic; recover authority; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
+
+## Invariants
+
+- Use one initial human window: Spec, topology-first Clarify, and
+  `Decision coverage: CLEAR`. Only then arm AFK. Record later reversible choices
+  under [decision policy](reference/decision-policy.md).
+- Safety is not bypassable. `--ship`/`--yolo` reaches only the exact-plan
+  literal-GO and native-approval boundary; it never authorizes Git.
+- **Treat technical readiness as routing, not completion.** `NEEDS REPLAN` is a backward edge
+  to Plan repair and narrow Vet. `NEEDS REPLAN` cold resume follows a valid
+  technical return cursor before forward work or any reply. Clarification is
+  likewise internal when current authority resolves it.
+- Always follow agent-owned backward edges through repair, affected Vet,
+  correction, and proof. A nested `STOP`/`Next step` is not a user handoff.
+  Pause only for a shared human/safety/access/exhaustion condition.
+- **Do not confuse an action budget with recovery exhaustion.** Spent action
+  authority blocks another real execution, not offline correction of retained
+  Critical/Important evidence. Stop for fresh GO only after changed conditions
+  and READY Vet.
+- Every exact causal fingerprint gets at most three no-progress corrections.
+  Closing one is progress; a distinct Critical/Important invariant has its own
+  budget. Lower severity cannot prolong recovery.
+- Do not stop on `--max-slices`, sentinel `max_slices`, `max_agents`,
+  `max_minutes`, or `max_review_queue`. Count failed, malformed, and
+  unavailable leaf calls.
+- Parse flags only from this invocation. `--ship`, `--yolo`, `--max-slices`,
+  `--parallel`, `--full`, and `--cross-model` activate only as exact standalone
+  tokens in `$ARGUMENTS`; examples or earlier messages can never arm them.
+  `--max-slices` must occur once and be followed by a positive base-10 integer;
+  `--parallel` must occur once and be followed by a base-10 integer in `1`–`10`.
+  Missing, repeated, malformed, or conflicting values stop before any write.
+- Temper always runs after Clarify. Auto-apply the recommended mode, including
+  `expand` and extra acceptance; record the ADR and fold via Spec Drift Guard.
+  Irreversible-risk still pauses.
+- Vet every plan. Cross-model is off unless the current invocation arms it.
 
 ## Workflow
-1. **Orient + parse args.** Run `devrites-engine preamble` for deterministic workspace orientation.
-   The idea + flags: `--ship` / `--yolo` (auto-confirm the final
-   type-GO), `--max-slices N` (OPTIONAL *lower* safety cap for a partial run; default =
-   the plan's slice count, i.e. run all planned slices).
-2. **Clarify up front.** If the idea is underspecified, run `devrites-interview` to
-   ~95% confidence: the only interactive window. If already clear, skip.
-3. **Arm AFK.** Write `.devrites/AFK` with `allow_gates: [advisory]`; set the slice budget
-   from the plan's count after `$rite-vet` (the slice count is only final post-vet), or from
-   an explicit `--max-slices` ([reference/loop.md](reference/loop.md)). validating / blocking / escalating +
-   irreversible-risk still pause. Also `touch .devrites/CHECKPOINT`: an unattended run is the
-   case checkpoint mode earns its keep, so each proven slice is committed local-only as
-   crash-survivable `WIP` ([rite-build/reference/checkpoint.md](../rite-build/reference/checkpoint.md));
-   `$rite-ship` collapses them into the one feature commit.
-4. **Drive the phases** ([reference/loop.md](reference/loop.md)): `$rite-spec` →
-   **`$rite-temper`** → `$rite-define` → **`$rite-vet`** → `$rite-build` (loop until all slices
-   built; `devrites-engine tick-afk` each) → `$rite-prove` → `$rite-polish` → `$rite-review` → `$rite-seal`.
-   Run each by Reading its `SKILL.md` and executing its workflow; state is carried by the
-   workspace files, not chat.
-5. **Apply stop conditions at every gate** ([reference/stop-conditions.md](reference/stop-conditions.md)):
-   on hard-risk / blocking / escalating / NO-GO / budget-exhausted / still-low-confidence
-   → write `state.md` (`Status`, `Next step`), surface *why*, and **STOP**.
-6. **Seal GO → ship.** With `--ship`, proceed to `$rite-ship` and auto-confirm the
-   type-GO. Without it, render the type-GO prompt and stop for the human.
 
-> **Mid-flight discipline.** When tempted to auto-pass a blocking gate "to keep moving",
-> answer a material question yourself instead of pausing, or run past red tests: stop.
-> Autonomy is for the routine path; the gates exist for everything else.
+1. **Orient and parse.** Resolve the explicit or active slug; when a workspace exists,
+   require its `state.md` and read its cursor; a fresh idea starts empty at step 2.
+   Before honoring `blocked` with terminal `next_action`,
+   reconcile retained consumptive evidence and fingerprint attempts from
+   `drift.md`/`evidence.md`; a retained fingerprint below its cap resumes offline
+   recovery.
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"lifecycle cursor encounters admitted set or resumable journal","action":"invoke classifier; execute returned route internally","return":"saved phase/action; zero intermediate reply"} -->
+   Reconstruct a missing return cursor only from
+   the current phase and exact approved action in `test-plan.md`/evidence, never
+   from chat. After compaction or a resumed session, read `.devrites/ACTIVE`, then
+   the `state.md` cursor, `questions.md`, `decisions.md`, and `test-plan.md`/`evidence.md`.
+   Normalize current arguments to idea, `ship_preflight: yes|no`,
+   `max_slices: unlimited`, `parallel: N|default`, `profile: standard|full`,
+   and `cross_model: yes|no`.
+   **Completion:** normalized state is unambiguous and no sentinel or workspace file has been written.
+2. **Specify and clarify.** Run `devrites-interview`, `$rite-spec`, and
+   `$rite-clarify` as one window. Partial/Missing material coverage never arms
+   AFK. **Completion:** `Decision coverage: CLEAR` is durable.
+3. **Arm AFK once.** Apply the loop's
+   [one-write AFK contract](reference/loop.md#arm-afk-once): preserve valid
+   existing bytes or create the sentinel once (`allow_gates: [advisory, validating]`); never
+   rewrite it after Vet except to write or replace only `max_parallel: N` when
+   this invocation contains `--parallel N`. Preserve an existing sentinel
+   byte-for-byte otherwise. **Failing case:** leftover `max_parallel: 1` keeps
+   the run serial after `--parallel 5`.
+   **Completion:** a valid read-only AFK sentinel exists.
+4. **Drive phases.** Follow [the loop](reference/loop.md): `$rite-spec` →
+   `$rite-clarify` → `$rite-temper` → `$rite-define` → `$rite-vet` →
+   `$rite-build` batch loop → `$rite-prove` → `$rite-polish` →
+   `$rite-review` → `$rite-seal`. Read and execute each skill; durable files, not
+   chat, carry state. Apply the mutable post-vet budget before first Build.
+   Build runs the largest eligible path-disjoint batch (cap: this invocation's
+   `--parallel N`, else sentinel `max_parallel`, else 10) and recomputes after
+   every completed round until no pending slice remains; a one-slice round is serial for that round only, then
+   selection runs again (host isolation still forces serial when concurrent writers
+   cannot be separated). When `--parallel N`
+   is present, pass it into `$rite-build` and do not consult leftover sentinel
+   `max_parallel`.
+   **Completion:** loop reaches Seal GO or persists a valid stop before any later phase.
+5. **Apply stops.** At every gate use
+   [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:
+   route agent-owned red results through bounded recovery.
+   Red gates block forward advancement and enter caller-owned recovery. Stop on
+   hard risk, escalating, irreversible-risk, access, blocking with no
+   recommended option, remaining NO-GO, or the exact fingerprint's proven
+   exhaustion. An open blocking question that already names a ranked recommended
+   option (`proposed` or option 1 labelled Recommended) auto-resolves through
+   `devrites-engine state resolve` and continues; do not emit `$rite-resolve` as
+   a user handoff. Technical exhaustion records terminal
+   `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
+6. **Seal boundary.** Without a ship flag, stop at Seal GO with `$rite-ship` —
+   unless `continue_sequence` is armed and sequence budget remains, in which case
+   leave the sealed workspace unshipped and open the next recorded continuation
+   ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation));
+   report the sequence position on every stop.
+   With a ship flag, perform Ship preflight, disclose the exact Git plan, and stop for
+   fresh literal `GO` plus native approval. **Completion:** performed no Git action before fresh literal `GO` plus native approval.
 
-## Output
-A compact phase-by-phase log, then the final status. **Progress first for the final
-status**: run `devrites-engine progress`, then use the shared typed states from
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md):
-`Shipped`, `Stopped`, `Awaiting human`, `NO-GO`, or `GO`.
+## Reply and resume
 
-Keep the log terse:
-```
+HITL Build returns after one slice; Autocomplete ignores `--max-slices` and
+keeps chaining pending slices. One Autocomplete invocation owns all internal
+backtracking. Context pressure, compaction, or a nested completion footer does
+not create a stop; persist and resume the cursor.
+
+Use one terse line:
+
+```text
 Autocomplete: <slug>
-spec <done|stopped> · temper <done|skipped|stopped> · define <done|stopped> · vet <done|stopped> · build <n/N|stopped> · prove <done|stopped> · polish <done|stopped> · review <done|stopped> · seal <GO|NO-GO|stopped>
+spec <done|stopped> · clarify <clear|stopped> · temper <done|stopped> · define <done|stopped> · vet <ready|stopped> · build <n/N|stopped> · prove <done|stopped> · polish <done|stopped> · review <done|stopped> · seal <GO|NO-GO|stopped>
 ```
 
-Final state examples: `Shipped: <feature>`, `Stopped: <reason>`, `Awaiting human:
-<qid> · <gate> · <slice/phase>`, `NO-GO: <verdict>`, or `GO: feature cleared to ship`.
-Do not write a narrative recap.
-
-## Clean baseline and checkpoint mode
-- Before an autonomous run, require a clean or explicitly accepted baseline: refuse unrelated dirty work and record expected planning artifacts.
-- Arm `.devrites/CHECKPOINT` for the run so each proven slice can be checkpointed local-only; `$rite-ship` owns collapsing those checkpoints.
-- Stop on risky steps, red gates, NO-GO, stale evidence, or budget exhaustion.
-- Autocomplete gets one approved pass through the lifecycle; `$rite-build` still builds exactly one slice per invocation.
+Final state is `Shipped`, `Stopped`, `Awaiting human`, `NO-GO`, or `GO`; do not
+write a narrative recap. Require a clean or accepted baseline, land a local
+unpushed checkpoint after each green check, and never auto-pass a red gate.

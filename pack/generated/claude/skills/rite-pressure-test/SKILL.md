@@ -1,74 +1,69 @@
 ---
 name: rite-pressure-test
-description: Pressure-test a rough/vague idea: ideate, explore 3-5 approaches, radically different shapes, diverge then converge on direction before spec. Not for writing spec.
+description: "Pressure-test a rough/vague idea: ideate, explore 3-5 approaches, radically different shapes, diverge then converge on direction before spec. Not for writing spec."
 argument-hint: "[rough idea or plan to stress-test]"
 user-invocable: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/intent-map.md"],"workspace":["decisions.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-pressure-test` bundles every file named below into one deduplicated read.
 
 # /rite-pressure-test: diverge then converge
 
-Use when the *idea* (not just the requirements) is rough. Generate options, then commit
-to one, so `/rite-spec` has a real direction to specify.
-
-A thinking stance, not a build phase: capturing thinking is not implementing. Write
-workspace/ticket artifacts freely; source edits wait for `/rite-build`, via `/rite-spec`.
-
-Read `.claude/skills/devrites-lib/reference/standards/core.md` first: its operating rules (no silent assumptions, prefer
-existing conventions) shape the divergence. The other rule files load on demand.
+Use when the idea—not only requirements—is rough. Compare directions before
+`/rite-spec`; never implement. Read [`core.md`](../devrites-lib/reference/standards/core.md)
+first and write only workspace/ticket artifacts.
 
 ## Diverge (widen)
-- Load the `rejected-direction` entries from `.devrites/learnings.md` first. A recorded
-  rejection re-enters the option set only with new evidence against its recorded *why*:
-  name that evidence when you bring one back.
-- Generate 3-5 genuinely different approaches to the underlying goal, not variations of
-  one. Cover at least: the obvious approach, a simpler/smaller approach, and a
-  different-shape approach (different data model, flow, or boundary).
-- Generate from **named lenses** so each option exists for a reason, not to pad the count:
-  *inversion* (do the opposite), *constraint-removal* (what if the hard limit vanished),
-  *audience-shift* (build it for a different user), *10×* (what if it had to handle ten times
-  the scale or scope), *expert-lens* (how a specialist in the domain would do it). Borrow the
-  *structure* of an analogous product, not its surface. "Uber for X" copies the veneer, not
-  the mechanism that made it work.
-- For each: one-line description, what it optimizes for, rough cost, main risk.
-- Stay concrete: name real entities, flows, and surfaces, not abstractions.
+
+- Search `decisions.md`, accepted ADRs, and relevant archives for rejected directions;
+  revive one only with evidence that answers its recorded reason, citing both.
+- Generate 3-5 different shapes, including obvious, smaller, and different-boundary/data/
+  flow options. Use named lenses— inversion, constraint removal, audience shift, 10×, or
+  expert practice—without padding. Borrow analogous mechanisms, not branding.
+- For each, name concrete entities/flows/surfaces, optimization, rough cost, and main risk.
 
 ## Converge (commit)
+
 - Weigh options against the goal, constraints, and existing codebase conventions.
-- **Painkiller or vitamin?** Score each on whether it removes a real, felt pain (a painkiller
-  users seek out) or is merely nice-to-have (a vitamin they forget). Prefer the painkiller: a
-  vitamin dressed as a painkiller is the most common ideation trap.
-- **Rank the differentiation**, strongest to weakest: a new capability > a 10× improvement > a
-  new audience > a new context > better UX > cheaper. The higher an option sits, the more
-  defensible the direction.
+- Prefer felt pain over nice-to-have. Rank differentiation: new capability > 10× gain >
+  new audience > new context > better UX > cheaper; do not dress a vitamin as a painkiller.
 - Recommend one, with the reason and the key trade-off accepted.
 - Note what would change the recommendation (the decision's hinge).
 
+## Premise evidence floor
+
+If the hinge is an uncertain material fact, freeze at most three questions for
+`devrites-evidence-scout`. Validate every citation; missing/malformed/unverifiable output is
+`unavailable`, never support. Record claim, support, strongest contrary evidence, and
+`supported | assumption | refuted`. Refutation changes the recommendation; an assumption
+advances only when non-decisive with bounded downside. Weak/conflicting decisive evidence
+returns **Hold** with the resolving evidence, never `/rite-spec`. Tie-breaker:
+see [`intent-map.md`](../devrites-lib/reference/intent-map.md) (`rite-pressure-test`
+vs `rite-spec`). Do not research preferences
+or reversible implementation choices.
+
 ## Boundaries
+
 - This is exploration, not specification. Output a **direction**, not a finished spec:
   `/rite-spec` writes the spec.
 - Don't over-explore: 3-5 options, one pass of convergence. If the user already knows
   the direction, skip this and go straight to `/rite-spec`. If the effort is too foggy for
   one pass, start an investigation map at `.devrites/work/<slug>/investigation-map.md`
+  (create the directory; pick a provisional slug `/rite-spec` can adopt)
   with `Destination`, `Decisions so far`, `Not yet specified`, `Out of scope`, plus one
   frontier question per session.
 - Ask the user to pick when two options are close and the choice changes the product.
 - Name a **"Not doing" list**: the good options you deliberately cut. It's the highest-value
-  output of convergence: it hands `/rite-spec` its scope boundary and stops the rejected ideas
-  from creeping back in later. When a cut is durable (rejected for a reason that outlives this
-  feature) offer to record it: `devrites-engine learnings add <slug> "<direction>: <why>"
-  rejected-direction`.
-
-## Output
-Reply-contract exception: pre-workspace ideation utility. It skips `devrites-engine progress`,
-but follows the compact labels and single-next-action rule from
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
+  output of convergence: it hands `/rite-spec` its scope boundary. When a cut is
+  durable, offer to record the reason in the active feature's `decisions.md` or
+  a durable ADR rather than a parallel rejection index.
 
 ```
 Done: pressure test complete for <goal>.
 Changed: workspace only
-Evidence: options compared <n>; recommendation <option>; hinge <condition>
-Open: <none | unresolved premise>
-Next: /rite-spec <feature>
-Record: not applicable
+Evidence: options compared <n>; recommendation <option>; hinge <condition>; premises <supported/assumption/refuted + sources>
+Open: <none | unresolved premise and resolving evidence>
+Next: <when supported: /rite-spec <feature>; when Hold: none — requires <resolving evidence>>
+Record: <investigation-map.md path | not applicable>
 ↻ Hygiene: /clear before starting the lifecycle
 ```

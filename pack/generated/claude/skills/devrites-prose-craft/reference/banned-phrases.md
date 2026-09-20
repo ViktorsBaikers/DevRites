@@ -21,6 +21,9 @@ start at the point.
 - "Let that sink in." / "Full stop." / "Period."
 - "This matters because" / "Here's why that matters"
 - "This is the deepest problem" / "the stakes are high" / "the consequences are real"
+- "Notably," / "Interestingly," / "Importantly," / "Surprisingly," stacked to tell the
+  reader how to feel. One "notably" in a long note is fine; three in a short paragraph
+  is emphasis stacking. Cut the cue; leave the fact.
 
 ## Hedging stacks (make the claim or cut it)
 
@@ -35,8 +38,26 @@ These leak the assistant register into artifacts and replies:
 
 - "Great question!" / "You're absolutely right!" / "Certainly!" / "Of course!"
 - "I hope this helps!" / "Let me know if you need anything else" / "Feel free to reach out"
+- "Let's explore" / "Let's break this down" / "Let's dive in" / "First, let's consider"
 
-A `decisions.md` entry or a `seal.md` verdict is a document, not a chat turn. No pleasantries.
+A `decisions.md` entry or a `seal.md` verdict is a document, not a chat turn. No
+pleasantries, no tour-guide openers. Start at the point.
+
+## Assistant leaks (P0 — delete on sight)
+
+These are paste fingerprints, not style. Strip the leak; keep any real fact it was
+wrapping. Presence is a publishing bug, not an authorship tribunal.
+
+- **Cutoff disclaimers.** "As of my last update", "based on my training data", "I don't
+  have access to…". Find the fact or drop the sentence.
+- **Unfilled placeholders.** `[Your Name]`, `[INSERT SOURCE]`, `2025-XX-XX`, HTML
+  comments that say `TODO` / `insert` / `fill in`. Fill or delete. Never ship the slot.
+- **Citation markup.** `citeturn`, `oaicite`, `oai_citation`, `grok_card`,
+  `[attached_file:N]`. Delete the token. If the cite mattered, replace it with a real
+  link.
+- **AI-tool tracking URLs.** Strip `utm_source=chatgpt.com` / `copilot.com` /
+  `openai` / `claude.ai` / `perplexity.ai` and `referrer=grok.com`. Keep the rest of
+  the query string (`?page=2` stays).
 
 ## Business jargon → plain language
 
@@ -55,16 +76,32 @@ A `decisions.md` entry or a `seal.md` verdict is a document, not a chat turn. No
 ## AI vocabulary — calibrated (this is the adaptation that matters)
 
 Word lists are blunt instruments. A coding agent must not "fix" a spec that legitimately says
-a system is *robust* under load or exposes a *comprehensive* API. Three tiers:
+a system is *robust* under load or exposes a *comprehensive* API. Tiers, with a 1A/1B split:
 
-**Tier 1 — always slop, replace on sight (figurative filler, never load-bearing in a spec):**
+**Tier 1A — always slop, replace on sight (figurative filler, never load-bearing in a spec).**
+A cluster is a writing-quality signal, not proof of who wrote the passage.
+
 delve / delve into, tapestry, beacon, embark, testament to, realm, landscape (figurative),
 pave the way, shed light on, game-changer, unlock the potential, ever-evolving, vibrant,
 multifaceted, holistic, paradigm (as praise), groundbreaking, transformative, cutting-edge.
 
+**Tier 1B — always replace for clarity; not authorship evidence.**
+Wordiness and inflated formality. Same edit as 1A, weaker claim: these also appear in
+careful human writing. In detect-only, report 1B separately from 1A. A 1B hit must not
+push a passage toward an "AI wrote this" conclusion.
+
+| Replace | With |
+|---|---|
+| utilize | use |
+| in order to | to |
+| due to the fact that | because |
+| commence | start, begin |
+| ascertain | find out, determine |
+| endeavor | try, attempt |
+
 **Tier 2 — slop in prose, legitimate in technical context (keep the meaning, judge by use):**
 robust, comprehensive, seamless, leverage, harness, facilitate, underpin, streamline,
-foster, utilize, ecosystem, scalable.
+foster, ecosystem, scalable.
 - In a sentence selling the work ("a robust, scalable, seamless solution") → cut; say what it
   does and what proves it.
 - In a precise technical claim ("the retry path is robust to a dropped connection — see

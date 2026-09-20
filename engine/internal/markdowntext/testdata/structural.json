@@ -1,0 +1,27 @@
+[
+  {
+    "name": "indentation boundary",
+    "input": "    ```\nnot fenced\n",
+    "output": "    ```\nnot fenced\n"
+  },
+  {
+    "name": "CRLF marker width and mismatched close",
+    "input": "before\r\n   ````go\r\n## hidden\r\n~~~\r\n```\r\n   ````\r\nafter\r\n",
+    "output": "before\r\n         \r\n         \r\n   \r\n   \r\n       \r\nafter\r\n"
+  },
+  {
+    "name": "backtick info restriction",
+    "input": "```go`bad\nnot fenced\n",
+    "output": "```go`bad\nnot fenced\n"
+  },
+  {
+    "name": "tilde fence through EOF",
+    "input": "~~~\n| hidden |\n",
+    "output": "   \n          \n"
+  },
+  {
+    "name": "Unicode byte length",
+    "input": "π before\n~~~md\n## hïdden π\n~~~\nπ after\n",
+    "output": "π before\n     \n             \n   \nπ after\n"
+  }
+]

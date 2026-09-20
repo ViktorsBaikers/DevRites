@@ -1,8 +1,10 @@
 ---
 name: devrites-prose-craft
-description: Humanize prose without losing technical content. Use when asked to remove AI-writing tells, match a writing sample or project voice, edit artifacts/replies/commit or PR prose, or run `/rite-polish`'s prose pass. Not for code comments or UI craft.
+description: Rewrite prose to remove AI tells while preserving meaning and voice. Use for artifacts, replies, commits, or PR copy; not code comments or UI craft.
 user-invocable: false
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/prose-style.md"],"triggers":{"word-choice":["devrites-prose-craft/reference/banned-phrases.md"],"structure":["devrites-prose-craft/reference/structures.md"],"examples":["devrites-prose-craft/reference/examples.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-prose-craft` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # devrites-prose-craft: prose that reads human
 
@@ -13,10 +15,9 @@ off the author's voice or weakening technical content.
 - A text-generating phase composes an artifact: `/rite-spec` (overview, rationale),
   `/rite-define` / `/rite-plan` (plan narrative), `/rite-temper` / `/rite-vet` (review prose),
   `/rite-review` / `/rite-seal` (findings + verdict prose), `/rite-ship` (commit/PR body),
-  `devrites-doubt` / `rite-handoff` (notes).
-- Any phase composes a substantive **user-facing reply**. Deterministic progress footers are
-  script-rendered and exact by design.
-- `/rite-polish` Phase 1 as the **catch** pass on prose that slipped through at write time.
+  `devrites-doubt` / `/rite-handoff` (notes).
+- Any phase composes substantive **user-facing prose** beyond the shared reply
+  labels.
 
 ## Two modes
 - **Rewrite (default).** When DevRites writes the artifact/reply or polishes it, fix the prose
@@ -26,9 +27,12 @@ off the author's voice or weakening technical content.
   the text untouched. Mirrors `devrites-audit`'s read-only stance.
 
 Order findings by severity: **P0** credibility-killers (vague attribution, a marketing
-adjective standing in for evidence, a false/unsourced claim) → **P1** obvious tells (negative
-parallelism, filler openers, em-dash tics) → **P2** polish (rhythm, word choice). A quick pass
-fixes P0 + P1 and stops; a full pass takes P2 too.
+adjective standing in for evidence, a false/unsourced claim, cutoff disclaimers, unfilled
+placeholders, citation markup, AI-tool tracking URLs) → **P1** obvious tells (negative
+parallelism, filler openers, em-dash tics, reasoning-chain scaffolding, narrated candor)
+→ **P2** polish (rhythm, word choice, 1B clarity edits). A quick pass fixes P0 + P1 and
+stops; a full pass takes P2 too. Flags are writing-quality signals, not authorship proof.
+In detect-only, report Tier 1A (figurative filler) separately from Tier 1B (wordiness).
 
 ## Process
 
@@ -38,8 +42,10 @@ fixes P0 + P1 and stops; a full pass takes P2 too.
    register and one voice baseline.
 2. **Protect.** Apply the preservation contract in
    [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md) before changing words.
-   Scan for clusters of tells; one isolated marker is not a verdict. Done when every claim,
-   constraint, identifier, example, quotation, and deliberate uncertainty is accounted for.
+   Leave tables, YAML frontmatter, URLs, and file paths untouched unless the caller asked to
+   change them. Scan for clusters of tells; one isolated marker is not a verdict. Done when
+   every claim, constraint, identifier, example, quotation, and deliberate uncertainty is
+   accounted for.
 3. **Rewrite.** Remove P0/P1 tells and P2 when the caller asked for a full pass. Match the
    baseline's vocabulary and cadence without inventing facts, opinions, or quirks. Done when the
    same reader can make the same decisions from the rewrite as from the source.
@@ -52,7 +58,7 @@ fixes P0 + P1 and stops; a full pass takes P2 too.
 - Always read [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md) for the two
   registers, preservation contract, and core checks.
 - Load [`reference/banned-phrases.md`](reference/banned-phrases.md) when word choice or tone is
-  the problem.
+  the problem (trigger `word-choice`).
 - Load [`reference/structures.md`](reference/structures.md) when sentence shape, rhythm, or
   formatting is the problem.
 - Load [`reference/examples.md`](reference/examples.md) when the target artifact's shape is

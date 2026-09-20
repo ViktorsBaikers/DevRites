@@ -40,7 +40,7 @@ match the neighbors.
 - **Modal-first thinking** — reaching for a modal as the answer to every interaction.
 - **Ghost-card** — a `1px` border *and* a soft (blur ≥16px) shadow on the same element.
   Borders separate; shadows lift — pick one
-  (`devrites-frontend-craft/reference/quality-standards.md` — Materiality).
+  ([`quality-standards.md`](../../devrites-frontend-craft/reference/quality-standards.md) — Materiality).
 - **Balloon radius** — `border-radius` above ~16px on cards, inputs, panels. Cards top
   out around 12–16px; full pills are for tags and buttons only.
 - **Uppercase tracked eyebrow above every section** — one named kicker is voice; one per
@@ -50,15 +50,32 @@ match the neighbors.
   sketchy SVG scenery. Ship a real capture/asset or nothing (quality-standards — Materiality).
 - **Hero prop badges** — version labels (`V0.6`, `BETA`) and decorative pulsing status
   dots as set dressing.
+- **Unstyled UA chrome** — shipping the browser's default blue selection, caret,
+  scrollbar, or focus outline as the look (quality-standards § Browser chrome).
+- **Invented metrics** — precise-looking numbers with no source (`+247% faster`,
+  `99.99% uptime`). **Off-token color** — a hex used inline that the token set doesn't
+  define. Both are realism failures, not styling choices.
+
+### Required remediations (fix the hit, don't just flag it)
+A slop finding names its remediation from this table; a ban without a stated fix is
+an incomplete finding.
+
+| Signature | Required remediation |
+| --- | --- |
+| Default purple/blue gradient; gradient text; glassmorphism default | Re-derive from the scene sentence and colour commitment, then re-run both category-reflex tests |
+| Invented metric | Replace with the state lattice's missing-data placeholder (quality-standards § Focus & states) plus a "metric to confirm" question, or delete the proof slot |
+| Off-token color | Lift into the token set as a named color; replace every inline use |
+| Wrapping CTA / nav overflow | Shorter label, `white-space: nowrap`, or a collapsed nav — never a shrunken tap target |
+| Horizontal scroll in 320–1920 | `minmax(0, 1fr)` on content tracks + `overflow-x: clip` on `html`/`body` (quality-standards § Responsive) |
+| Fake UI-in-a-div screenshot | Ship a real capture/asset or remove the block |
+| Sticky sub-nav hidden by a banner | Offset by the banner's token height; split z-index roles instead of one raised value |
+| Unstyled UA selection / focus ring / caret / scrollbar | Theme from tokens per quality-standards § Browser chrome, or decline in `design-brief.md` |
 
 ### Copy & data realism
-Placeholder content is a tell even when the layout is clean:
-- **Fake-perfect numbers** — `99.99%`, `10,000+`, `$1M`. Real data is ragged: `47.2%`, `1,283`.
-- **Placeholder people/brands** — "John Doe", "Acme", "Nexus". Invent specific, plausible ones.
-- **Filler verbs** — Elevate / Seamless / Unleash / Supercharge / Next-Gen. Say what it does.
-- **Copy self-audit** — re-read every visible string before shipping; anything grammatically
-  broken, referent-unclear, or "an LLM trying to sound thoughtful" gets rewritten. AI-cute
-  copy is worse than boring copy.
+Placeholder content is a tell even when the layout is clean: fake-perfect numbers
+(`99.99%`, `10,000+` — real data is ragged), placeholder people/brands ("John Doe",
+"Acme"), filler verbs (Elevate / Seamless / Unleash). Re-read every visible string before
+shipping; AI-cute copy is worse than boring copy.
 
 ### Category-reflex check — run at two altitudes
 
@@ -70,9 +87,9 @@ second one catches what the first one misses.
   teal", "fintech → navy + gold", "AI tool → black with a violet accent",
   "crypto → neon on black" — the styling is on the first training-data
   reflex. Rework the scene sentence
-  (`devrites-frontend-craft/reference/design-references.md`) and the
+  ([`design-references.md`](../../devrites-frontend-craft/reference/design-references.md)) and the
   colour-commitment strategy
-  (`devrites-frontend-craft/reference/quality-standards.md`) until the
+  ([`quality-standards.md`](../../devrites-frontend-craft/reference/quality-standards.md)) until the
   answer isn't obvious from the domain.
 - **Second-order:** if a stranger looked at the surface with *no copy
   visible* and confidently said "this is a CRM / fitness tracker / fintech
@@ -90,6 +107,8 @@ Each is pass/fail by counting or grep, not judgment:
 - **Layout families** (hero, image+text split, card grid, bento, table…): no family more
   than twice per page; never 3 consecutive image+text zigzags.
 - **Icons**: 0 emoji-as-icon; exactly one icon set imported.
+- **State presence in code**: default+hover+focus-visible+active+disabled for every interactive element; loading/error/empty where data delays or fails — an unreachable state's screenshot proves nothing.
+- **Form inputs**: no border-width shifts between states; focus ring from outline/ring (not border swap); consistent control height; reserved helper slot; disabled beyond opacity alone.
 
 ## Code anti-slop (UI **and** backend)
 - **Over-defensive checks** — `if (x && x.length > 0)` repeated, layered null guards,
@@ -102,10 +121,10 @@ Each is pass/fail by counting or grep, not judgment:
   hop with no value. Inline or remove.
 - **Over-engineered abstractions** for trivial problems — a factory + interface + plugin
   registry for a 10-line function. **Don't add abstraction before two real callers**
-  (see `coding-style.md`, `patterns.md`).
+  (see [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md), [`patterns.md`](../../devrites-lib/reference/standards/patterns.md)).
 - **Convention-blind** code — ignores the repo's naming, file layout, error patterns,
   validation style. "Generic good code" beats the project's idiom; reuse first (see
-  `coding-style.md`).
+  [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md)).
 - **Going beyond the spec** — features/options/configs/flags the spec didn't ask for.
   Implement exactly what was specified; flag extras as follow-ups.
 - **Comment noise — the most common code tell.** Default to **zero** comments; the code and
@@ -155,52 +174,14 @@ Each is pass/fail by counting or grep, not judgment:
   account/provider/test ID inline with no name or source. Give it a name (a const) or a home
   (config/env). The mirror image of premature config, and just as much a tell.
 - **Copy-paste duplication** — a near-identical block pasted and tweaked instead of reused.
-  Reuse → extend → build new (`coding-style.md`, `patterns.md`); duplication beats the *wrong*
+  Reuse → extend → build new ([`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md), [`patterns.md`](../../devrites-lib/reference/standards/patterns.md)); duplication beats the *wrong*
   abstraction, but pasted clones are slop, not a deliberate AHA call.
 
-### Comment density — before / after
-
-```js
-// Before (slop): a comment narrating almost every line
-function calculateTotal(items) {
-  // initialize the total to zero
-  let total = 0;
-  // loop through each item in the items array
-  for (const item of items) {
-    // add the item price to the total
-    total += item.price;
-  }
-  // return the final total
-  return total;
-}
-
-// After: the names carry it; no comment needed
-function sumPrices(items) {
-  return items.reduce((total, item) => total + item.price, 0);
-}
-
-// A comment that earns its place — it explains WHY, not what:
-// Prices are in minor units (cents); the gateway rejects fractional amounts.
-const total = sumPrices(items);
-```
-
-## Why these are banned
-They signal "a model generated this" rather than "this team designed/wrote this." They
-ignore the product's register and the project's idiom, add noise, hide bugs (defensive
-catches), bloat the diff (over-engineering, beyond-spec), and often fail accessibility
-or correctness review. They're cargo-cult, not craft.
-
-## What to do instead
-- **UI**: project tokens / shared components / consistent type & spacing
-  (`design-system-discovery.md`); content shapes layout; motion serves feedback;
-  reserve modals for focused interrupting tasks.
-- **Code**: validate at trust boundaries (don't sprinkle null checks); catch narrow,
-  recover or rethrow; one clear name per concept; one responsibility per function;
-  reuse before write (`coding-style.md`); implement exactly the spec; let inherent
-  complexity be — don't pad with ceremony.
-- If the project **does** use one of these intentionally, follow the project. Consistency
-  beats the rule.
-
-## When in doubt: ask
-A "robust" check or shiny abstraction you can't justify in one sentence is probably slop.
-Delete it; or ask the user if it should exist.
+## Why banned, what instead
+They signal model-generated rather than team-designed work: they ignore register and
+idiom, add noise, hide bugs (defensive catches), bloat diffs, and often fail a11y or
+correctness review. Instead: project tokens/components, validate at trust boundaries,
+catch narrow and rethrow, one clear name per concept, reuse first ([`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md)),
+implement exactly the spec. If the project intentionally uses one of these, follow the
+project — consistency beats the rule. A check or abstraction you can't justify in one
+sentence is slop: delete it or ask.

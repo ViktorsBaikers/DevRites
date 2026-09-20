@@ -65,14 +65,14 @@ already exists, record in `drift.md` and route via `/rite-plan repair` instead o
 
 - **`spec.md`:** these are the spec template's actual section headings. Edit each named one;
   don't collapse pairs.
-  - Add to *Success criteria* **and** *Acceptance criteria* (separate sections) for
+  - Add to *Success metrics* **and** *Acceptance criteria* (separate sections) for
     every opt-in **expansion**; remove (via the Guard) from both for every **reduction**. Each
     must stay measurable + technology-agnostic.
   - *Non-goals*: append every deferred item (from the YAGNI ledger + the Deferred register), so
     it is neither silently dropped nor silently re-injected mid-build.
-  - *Constraints* **and** *Risks* (separate sections): tighten *Constraints* where the pre-mortem
-    demands; add the top failure modes + mitigations to *Risks*.
-  - *Gaps, issues & decisions* table: one row per scope call (options offered → decision → owner).
+  - *Constraints and invariants*: tighten where the pre-mortem demands; top failure modes +
+    mitigations go to *Failure and recovery behavior* rows.
+  - *Open questions* table: one row per scope call (options offered → decision → owner).
   - **Re-run the Readiness gate** at the bottom of the spec after edits; it must still pass, and
     **every folded scope delta must trace to a recorded decision** (a `questions.md` qid or a
     `decisions.md` ADR): an untraceable change is the batch-dump failure.
@@ -86,5 +86,5 @@ already exists, record in `drift.md` and route via `/rite-plan repair` instead o
   `devrites-strategy-reviewer` agent is **read-only** and only returns findings + bands.
 - **No silent scope.** An expansion that the human didn't opt into, or a reduction that drops an
   acceptance criterion without a recorded decision, is a defect, not a convenience.
-- Add `strategy.md` to the workspace between `spec.md` and `plan.md`; `/rite-define`,
-  `/rite-review`, and `/rite-seal` read it.
+- Add `strategy.md` to the workspace between `spec.md` and `plan.md`; `/rite-define` and
+  `/rite-ship` read it.

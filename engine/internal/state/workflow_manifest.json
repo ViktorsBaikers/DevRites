@@ -1,10 +1,22 @@
 {
   "generatedBy": "go generate ./internal/state; DO NOT EDIT",
-  "schemaVersion": 1,
+  "schemaVersion": 4,
+  "authorityPolicy": {
+    "principlesTrust": "Project principles may become project policy only after explicit provenance and validation; arbitrary project-local Markdown is never inherently trusted executable instruction.",
+    "trackedState": [
+      ".devrites/specs/"
+    ],
+    "localState": [
+      ".devrites/work/",
+      ".devrites/archive/",
+      ".devrites/ACTIVE"
+    ]
+  },
   "phases": [
     {
       "id": "frame",
       "resumeVerb": "frame",
+      "transitionRight": "Frame an unstructured request before lifecycle work.",
       "workspaceRequired": [
         "state.md"
       ]
@@ -12,9 +24,9 @@
     {
       "id": "spec",
       "resumeVerb": "spec",
-      "aliases": [
-        "specced",
-        "specifying"
+      "transitionRight": "Author the product specification.",
+      "requiredSections": [
+        "spec"
       ],
       "workspaceRequired": [
         "brief.md",
@@ -24,13 +36,31 @@
         "assumptions.md",
         "questions.md"
       ]
+    },
+    {
+      "id": "clarify",
+      "resumeVerb": "clarify",
+      "transitionRight": "Close decision coverage in the written specification.",
+      "requiredSections": [
+        "spec"
+      ],
+      "workspaceRequired": [
+        "brief.md",
+        "spec.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "decision-coverage.md"
+      ],
+      "blocksOpenQuestions": true
     },
     {
       "id": "temper",
       "resumeVerb": "temper",
-      "aliases": [
-        "tempered",
-        "tempering"
+      "transitionRight": "Optionally challenge the clarified specification strategy.",
+      "requiredSections": [
+        "spec"
       ],
       "workspaceRequired": [
         "brief.md",
@@ -38,135 +68,167 @@
         "state.md",
         "decisions.md",
         "assumptions.md",
-        "questions.md"
-      ]
+        "questions.md",
+        "decision-coverage.md"
+      ],
+      "blocksOpenQuestions": true
     },
     {
       "id": "define",
       "resumeVerb": "define",
-      "aliases": [
-        "defined",
-        "defining"
+      "transitionRight": "Author and approve the initial implementation plan.",
+      "requiredSections": [
+        "spec",
+        "plan"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
         "state.md",
         "decisions.md",
         "assumptions.md",
-        "questions.md"
+        "questions.md",
+        "decision-coverage.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md"
       ],
       "blocksOpenQuestions": true
     },
     {
       "id": "plan",
-      "resumeVerb": "define",
-      "aliases": [
-        "planned",
-        "planning"
+      "resumeVerb": "vet",
+      "transitionRight": "Hold the approved or repaired plan checkpoint for engineering review.",
+      "requiredSections": [
+        "spec",
+        "plan"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
         "state.md",
         "decisions.md",
         "assumptions.md",
-        "questions.md"
+        "questions.md",
+        "decision-coverage.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md"
       ],
       "blocksOpenQuestions": true
     },
     {
       "id": "vet",
       "resumeVerb": "vet",
-      "aliases": [
-        "vetted",
-        "vetting"
+      "transitionRight": "Review implementation readiness before build.",
+      "requiredSections": [
+        "spec",
+        "plan",
+        "decisions",
+        "tasks"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "decision-coverage.md",
         "architecture.md",
         "plan.md",
         "tasks.md",
         "traceability.md",
-        "state.md",
-        "decisions.md",
-        "assumptions.md",
-        "questions.md"
+        "eng-review.md",
+        "test-plan.md",
+        "gates.md"
       ],
       "blocksOpenQuestions": true
     },
     {
       "id": "build",
       "resumeVerb": "build",
-      "aliases": [
-        "building",
-        "wip",
-        "in",
-        "in-progress"
+      "transitionRight": "Implement the next approved vertical slice.",
+      "requiredSections": [
+        "spec",
+        "plan",
+        "decisions",
+        "tasks"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "decision-coverage.md",
         "architecture.md",
         "plan.md",
         "tasks.md",
         "traceability.md",
-        "state.md",
-        "decisions.md",
-        "assumptions.md",
-        "questions.md"
+        "eng-review.md",
+        "test-plan.md",
+        "gates.md"
       ],
       "blocksOpenQuestions": true
     },
     {
       "id": "converge",
       "resumeVerb": "converge",
-      "aliases": [
-        "converged",
-        "converging"
+      "transitionRight": "Recover unmet clarified intent into new slices.",
+      "requiredSections": [
+        "spec",
+        "plan",
+        "decisions",
+        "tasks"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
+        "state.md",
+        "decisions.md",
+        "assumptions.md",
+        "questions.md",
+        "decision-coverage.md",
         "architecture.md",
         "plan.md",
         "tasks.md",
         "traceability.md",
-        "state.md",
-        "decisions.md",
-        "assumptions.md",
-        "questions.md"
+        "eng-review.md",
+        "test-plan.md",
+        "gates.md"
       ],
       "blocksOpenQuestions": true
     },
     {
       "id": "prove",
       "resumeVerb": "prove",
-      "aliases": [
-        "proving",
-        "proven",
-        "testing"
+      "transitionRight": "Produce acceptance evidence for the implementation.",
+      "requiredSections": [
+        "spec",
+        "plan",
+        "decisions",
+        "tasks",
+        "proof"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
         "state.md",
         "decisions.md",
         "assumptions.md",
         "questions.md",
+        "decision-coverage.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "eng-review.md",
+        "test-plan.md",
+        "gates.md",
         "evidence.md",
         "touched-files.md"
       ],
@@ -176,21 +238,29 @@
     {
       "id": "polish",
       "resumeVerb": "polish",
-      "aliases": [
-        "polished",
-        "polishing"
+      "transitionRight": "Apply the bounded quality pass.",
+      "requiredSections": [
+        "spec",
+        "plan",
+        "decisions",
+        "tasks",
+        "proof"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
         "state.md",
         "decisions.md",
         "assumptions.md",
         "questions.md",
+        "decision-coverage.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "eng-review.md",
+        "test-plan.md",
+        "gates.md",
         "evidence.md",
         "touched-files.md"
       ],
@@ -200,21 +270,29 @@
     {
       "id": "review",
       "resumeVerb": "review",
-      "aliases": [
-        "reviewed",
-        "reviewing"
+      "transitionRight": "Review the proven implementation.",
+      "requiredSections": [
+        "spec",
+        "plan",
+        "decisions",
+        "tasks",
+        "proof"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
         "state.md",
         "decisions.md",
         "assumptions.md",
         "questions.md",
+        "decision-coverage.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "eng-review.md",
+        "test-plan.md",
+        "gates.md",
         "evidence.md",
         "touched-files.md"
       ],
@@ -224,23 +302,34 @@
     {
       "id": "seal",
       "resumeVerb": "seal",
-      "aliases": [
-        "sealed",
-        "sealing"
+      "transitionRight": "Decide the final GO or NO-GO.",
+      "requiredSections": [
+        "spec",
+        "plan",
+        "decisions",
+        "tasks",
+        "proof",
+        "status"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
         "state.md",
         "decisions.md",
         "assumptions.md",
         "questions.md",
+        "decision-coverage.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "eng-review.md",
+        "test-plan.md",
+        "gates.md",
         "evidence.md",
-        "touched-files.md"
+        "touched-files.md",
+        "review.md",
+        "seal.md"
       ],
       "proofRequired": true,
       "blocksOpenQuestions": true,
@@ -249,23 +338,34 @@
     {
       "id": "ship",
       "resumeVerb": "ship",
-      "aliases": [
-        "shipped",
-        "shipping"
+      "transitionRight": "Perform authorized release and close-out mutations.",
+      "requiredSections": [
+        "spec",
+        "plan",
+        "decisions",
+        "tasks",
+        "proof",
+        "status"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
         "state.md",
         "decisions.md",
         "assumptions.md",
         "questions.md",
+        "decision-coverage.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "eng-review.md",
+        "test-plan.md",
+        "gates.md",
         "evidence.md",
-        "touched-files.md"
+        "touched-files.md",
+        "review.md",
+        "seal.md"
       ],
       "proofRequired": true,
       "blocksOpenQuestions": true,
@@ -273,24 +373,34 @@
     },
     {
       "id": "done",
-      "aliases": [
-        "closed",
-        "complete",
-        "completed"
+      "transitionRight": "Represent archived completion with no resume command.",
+      "requiredSections": [
+        "spec",
+        "plan",
+        "decisions",
+        "tasks",
+        "proof",
+        "status"
       ],
       "workspaceRequired": [
         "brief.md",
         "spec.md",
-        "architecture.md",
-        "plan.md",
-        "tasks.md",
-        "traceability.md",
         "state.md",
         "decisions.md",
         "assumptions.md",
         "questions.md",
+        "decision-coverage.md",
+        "architecture.md",
+        "plan.md",
+        "tasks.md",
+        "traceability.md",
+        "eng-review.md",
+        "test-plan.md",
+        "gates.md",
         "evidence.md",
-        "touched-files.md"
+        "touched-files.md",
+        "review.md",
+        "seal.md"
       ],
       "proofRequired": true,
       "blocksOpenQuestions": true,

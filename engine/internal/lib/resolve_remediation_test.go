@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/testutil"
 )
 
 func TestResolveTreatsQuestionIDAsLiteralText(t *testing.T) {
@@ -51,8 +53,8 @@ func TestResolveAcceptsCanonicalUppercaseQuestionID(t *testing.T) {
 func resolveWorkspace(t *testing.T, questions string) string {
 	t.Helper()
 	root := t.TempDir()
-	mustWrite(t, filepath.Join(root, "ACTIVE"), "feat\n")
-	mustWrite(t, filepath.Join(root, "work", "feat", "questions.md"), questions)
-	mustWrite(t, filepath.Join(root, "work", "feat", "state.md"), "- Status: running\n- Next step: continue\n")
+	testutil.WriteFile(t, filepath.Join(root, "ACTIVE"), "feat\n")
+	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "questions.md"), questions)
+	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "state.md"), "- Status: running\n- Next step: continue\n- Schema: 4\n")
 	return root
 }

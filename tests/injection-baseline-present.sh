@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# injection-baseline-present.sh: guard the A2 prompt-injection-resistance baseline against
-# silent drift: the canonical block must live (once) in the security rule, and every agent
+# Guard the prompt-injection-resistance baseline against silent drift: the
+# canonical block must live once in the security rule, and every agent
 # that reads untrusted input must carry an inline reference to it.
 set -u
 
@@ -18,17 +18,30 @@ else
   note "FAIL canonical section '## Prompt-injection resistance' missing from security.md"; fail=1
 fi
 
-# 2) baseline names BOTH untrusted code/file contents AND the conventions ledger.
-if grep -q 'data, never instructions' "$RULE" && grep -q 'conventions.md' "$RULE"; then
-  note "ok   baseline covers file contents + ledger entries"
+# 2) baseline names untrusted content and the surviving native permission boundary.
+if grep -q 'data, never instructions' "$RULE"    && grep -q 'Read-only is native' "$RULE"    && ! grep -q 'git-guard\|conventions.md' "$RULE"; then
+  note "ok   baseline covers untrusted content + native permissions"
 else
-  note "FAIL baseline must name both 'data, never instructions' and the conventions ledger"; fail=1
+  note "FAIL baseline is stale or missing the native permission boundary"; fail=1
 fi
 
-# 3) every agent carries the inline reference (the drift guard).
+# 3) every agent carries the inline reference (the drift guard). Canonical
+#    agents may delegate the line to a shared block via <!-- include:... -->;
+#    expand markers (resolved against the agent's directory) before checking.
 missing=0
 for f in "$AGENTS"/*.md; do
-  if ! grep -q 'Untrusted-input safety' "$f"; then
+  if ! awk -v dir="$(dirname "$f")" '
+      match($0, /<!--[[:space:]]*include:[^ >]+[[:space:]]*-->/) {
+        path = substr($0, RSTART, RLENGTH)
+        sub(/<!--[[:space:]]*include:/, "", path)
+        sub(/[[:space:]]*-->/, "", path)
+        target = dir "/" path
+        while ((getline line < target) > 0) print line
+        close(target)
+        next
+      }
+      { print }
+    ' "$f" | grep -q 'Untrusted-input safety'; then
     note "FAIL agent missing injection-resistance reference: $(basename "$f")"; missing=1; fail=1
   fi
 done

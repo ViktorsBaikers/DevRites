@@ -1,140 +1,122 @@
 # Slice-wright dispatch
 
-How `$rite-build` hands the **build core** of one slice to `devrites-slice-wright`: the
-fresh-context, **write-capable** executor under `.codex/agents/`. Loaded on demand by
-`$rite-build`; not a skill itself. Sibling of
-[`../../devrites-lib/reference/parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md)
-(the read-only reviewer fan-out): same isolation principle, opposite direction: this one
-**writes**.
+`$rite-build` gives one bounded task to exact `devrites-slice-wright`.
+Root owns scope/artifacts/inspection; never writes source/tests.
+Wright alone writes; no agents.
 
-Pattern: the orchestrator owns the **gates and the workspace**; the wright owns the **writing**.
-Brief it precisely, in a clean context, with only the slice contract, then doubt, record, and
-gate its return.
+## Host gate
 
-## Why a fresh context writes the slice
-The orchestrator's window is full of spec investigation, planning, prior slices, and tool
-output: the exact "lost-in-the-middle" load that degrades instruction-following and pulls the
-model toward generic code. The wright starts clean and sees only the contract, so it holds the
-slice boundary strictly and writes to the *project's* idiom instead of drifting. Single-threaded
-by design: **one** wright per slice, never a parallel fan-out of writers *sharing a tree*:
-concurrent writers on one working tree make conflicting implicit decisions and produce incoherent
-code. The one sanctioned exception is a **forge** slice, which competes K candidates in *isolated*
-worktrees and lands exactly one: no tree ever has two authors, so the invariant holds (see
-[Forge](#forge--competing-candidates-the-deliberate-exception)).
+Apply [source-writing boundary](../../devrites-lib/reference/standards/agents.md#source-writing-boundary):
+Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root,
+the exact `:workspace` wright, and read-only specialists. Never bypass/substitute
+the wright or recreate an engine bridge.
 
-## The contract `$rite-build` sends
-One `Task` call to `devrites-slice-wright` carrying everything the writer needs and nothing it
-doesn't:
+## Isolated writer-worktree pilot
 
-```
-Build one slice of the active DevRites feature. You have a clean context — this contract is
-the whole job.
+Use native isolation only when the current host exposes an explicit named-writer
+worktree plus result reconciliation; separate agent threads or inherited sandboxes do
+not qualify. Codex CLI custom subagents therefore use `same-worktree` unless a future
+supported interface passes this capability gate—never create a manual worktree from the
+read-only root to imitate it. Also require `git rev-parse
+--show-superproject-working-tree` to be empty; resolved git/common dirs; committed,
+clean candidate/index; all inputs at `HEAD`; no other writer; and green cheap isolated
+baseline proof. Otherwise use serial same-worktree dispatch—never stash, commit, or
+discard user work to qualify. Ask host for an explicit current-`HEAD` base when
+supported. Regardless of host defaults, the wright's first command must prove actual `git rev-parse HEAD` equals supplied
+`worktree_base`. Mismatch returns a gap with no write before project reads or baseline proof.
 
-Workspace: .devrites/work/<slug>/
-Slice: <id — name>
-Goal: <one or two sentences>
-Acceptance criteria: <the slice's criteria, verbatim>
-UI visual acceptance: <if UI — state × viewport × input + target R-id/brief rule, verbatim from tasks.md>
-Scope boundary: <what it WILL and will NOT touch>
-Mode: <HITL | AFK>   (+ AFK budget note if a cap is set)
+The isolated wright returns one local unpushed `transfer_commit` (contract
+`WIP(<slug>):` subject, no slice id), its `worktree_base`, and exact files.
+That commit is worker-branch transport, not the control-branch checkpoint. Root proves descendant base, exact `git diff --name-only`
+`` `<base>..<transfer>` ``, no `.devrites/**`/submodule/symlink/unrelated delta, unchanged
+source base, and no user-work overwrite. Use only host-native explicit reconciliation;
+never ad hoc copy, cherry-pick, or merge from read-only root. Land on control
+only per [`checkpoint.md`](checkpoint.md).
 
-Targets (stay inside these — from touched-files.md): <paths>
-Interfaces / signatures to match: <if any>
-Read yourself: spec.md, plan.md, decisions.md, assumptions.md, rite-polish/reference/anti-ai-slop.md<, design-brief.md if UI>
-Rules in scope (.agents/skills/devrites-lib/reference/standards/): coding-style, error-handling, testing, patterns<, security if input/auth/data><, performance if hot path / query / large payload>
-Test completeness: write ≥1 asserting test for EVERY interactive element + user flow in this
-  slice's test-plan.md interaction inventory, each at the right level (fields/elements →
-  unit/component; critical journeys → one E2E; never one-per-field). No element ships
-  unverified — testing.md "Completeness". If the slice has no test-plan inventory, derive the
-  element/flow list from the slice's own UI surface and cover it the same way.
+Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
+preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
+Parallel isolated-writer worktrees remain forbidden until this serial pilot measures
+transfer, conflict, proof, and review outcomes on both hosts; opt-in `$rite-build --parallel N`
+(2≤N≤10) path-disjoint fan-out is the only sanctioned parallel mode. Same-worktree multi-writer / root-emulated
+worktrees stay forbidden.
 
-Apply your documented discipline (orient → RED → implement smallest complete → verify →
-return). Frontend slice → build to design-brief.md with devrites-frontend-craft and close
-the slice's visual-acceptance deltas before returning. Uncertain
-framework fact → verify at the source. Code + tests only — do NOT write the workspace
-bookkeeping files; return that data. Return your structured artifact, not your transcript.
-```
+## Prepare
 
-Rules:
-- **One `Task` call, one wright.** Never dispatch two writers on the same slice.
-- **No author reasoning beyond the contract.** Give the slice spec, not your analysis of *how*
-  to code it: a clean, undirected read is the point.
-- **Name the boundary explicitly.** The scope boundary is the single most load-bearing field; an
-  underspecified one is the main cause of drift.
+1. Run `devrites-engine check slice <slug> <SLICE-ID>` first — it fails a
+   malformed contract (missing goal, empty/invalid Writer allowlist,
+   unresolvable `Satisfies` AC ids, empty proof field) before a wright
+   context is spent; a failure is a gap, not a dispatch. Then derive the
+   smallest exact project-relative source/test path list; reject
+   directories/globs, traversal, symlink escapes, duplicates, and `.devrites/**`.
+   A target composed only of vetted executable workflow artifacts routes to the
+   controlling root under
+   [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md);
+   its rejection here is not a blocker.
+2. Include goal, verbatim acceptance, exclusions, context,
+   `test-plan.md` proof commands, applicable standards, and the exact
+   `WIP(<slug>):` subject (no slice id). Build the wright's read-set with
+   `devrites-engine context <slug> --phase build --role slice-wright --trigger <set>`
+   and hand it the bundle path; evaluate each trigger condition and pass those
+   that fire (TDD slice → `tdd`, AFK run → `afk`, UI work → `frontend`, …).
+   The command prints `unselected=[...]`; an omitted applicable trigger is a gap.
+   For each triggered
+   topology/data/integration standard, include only the feature-specific owner/invariant,
+   failure or partial-state case, recovery rule, and required proof from the vetted plan.
+   Do not paste the whole standard or silently omit an applicable risk.
+   A new path requires a new bounded contract; the wright cannot widen the task.
+3. Record `git diff --name-only` before dispatch so unrelated work remains
+   distinguishable. For an isolated pilot, also record committed base SHA and exact
+   baseline status before asking the host for isolation. **Failing case:** paths that
+   were dirty at that baseline are listed as slice-owned after dispatch.
 
-## On return: the orchestrator's job (don't delegate these)
-**You never edit source here.** The wright is the only writer of code + tests; you write only
-`.devrites/` bookkeeping. Every remedy below is **continue the same wright once** or **stop +
-escalate**: never an inline patch. You snapshotted the tree before dispatch (`devrites-engine reconcile snapshot`); the reconcile check in step 4 proves no source changed outside the wright's claimed
-set.
+## Run
 
-1. **Doubt the surfaced decisions.** For each entry in the wright's `Decisions stood`, apply
-   `devrites-doubt` (→ `devrites-doubt-reviewer`) before accepting: the writer must not grade
-   its own decisions. The wright's return is the not-yet-load-bearing moment (slice not `built`,
-   not merged), so this post-return doubt is still pre-commit. Irreversible-risk items always
-   pause, and an irreversible item that the wright filed under `Decisions stood` instead of
-   `Escalation` is a protocol violation: pause and re-dispatch with it flagged out-of-bounds,
-   don't doubt-and-accept.
-2. **Honor escalations.** A non-empty `Escalation` → do **not** mark the slice built. Write the
-   `questions.md` entry + `state.md` `Awaiting human` (blocking gate), or route a scope change
-   through `$rite-plan repair` (Spec Drift Guard). You are the canonical writer of these files.
-3. **Fail-on-red.** If `Gates` show red (or the wright couldn't verify), the slice is **not
-   built**, and you do **not** fix the code. First remedy: **continue the same wright once**
-   (`SendMessage`, carrying the failing gate + real output) so it fixes in its own context:
-   objective failures only (red gate / type / lint / missing coverage / UI browser-proof fail),
-   never a contested decision. Still red after that one retry → blocking question (AFK) or
-   blocking gate (HITL); `Next: $rite-plan unblock`.
-   An interactive element or user flow in the slice's test-plan interaction inventory left with
-   **no asserting test** has the same standing as red: an unverified-element gap blocks the
-   slice (don't mark it built). Continue the same wright to cover it, or record a blocker.
-4. **Reconcile, then record.** First prove A1 held: write the wright's `Files changed` paths
-   (one per line) to `.devrites/work/<slug>/.reconcile-claimed` and run `devrites-engine reconcile check`.
-   **Exit 5 → STOP**: a source file changed outside the wright's claimed set (A1 breach); revert
-   it and re-dispatch, don't mark the slice built. Then persist the wright's artifact to
-   `state.md`, `evidence.md`, `touched-files.md` (and `browser-evidence.md` for UI) per
-   [`evidence-standard.md`](evidence-standard.md). Evidence is the wright's real command output,
-   not its say-so. Add a concern-ordered `## Review trail` to `touched-files.md` from the wright's changed paths and summary so a human can review by design intent instead of file order. **Persist every `Decisions stood` entry to a `## Decisions stood` section in
-   `decisions.md`, one line each ending `— doubt: <accept | reject-resolved | MISSING>`**:
-   independent of the doubt step (step 1 above), so a skipped decision still lands on record for
-   the seal's doubt-coverage cross-check (`- none` when the wright stood nothing). Then tick AFK if
-   `.devrites/AFK` is present (`devrites-engine tick-afk`; exit 3 → STOP).
+Same-worktree (non-isolated) dispatch claims before writing: `devrites-engine
+claim add --session <id> <task-paths>`; retain its returned `<claim-id>`, then run
+`devrites-engine claim check --session <id> <task-paths>` — a held claim from a
+live foreign session releases the retained claim and stops the dispatch, per
+[`agents.md`](../../devrites-lib/reference/standards/agents.md). Ask the host
+for the exact writer in fresh context and wait. Track it through the
+launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
+<slice-id> --role slice-wright`, then `start` with the host handle, `seal`, and
+`return` on completion (auto-records dispatch/return metrics). Use
+at most one writer across all linked worktrees for this workspace. Never run two
+writers in one worktree, run isolated and same-worktree writers concurrently, or
+substitute a generic agent. Opt-in `$rite-build --parallel N` fans out only under
+[`parallel-batch.md`](parallel-batch.md).
 
-## Forge: competing candidates (the deliberate exception)
+After `claim add`, every terminal path releases the claim with
+`devrites-engine claim release --session <id> --id <claim-id>`: successful
+return, rejected result, gap, stop, or launch failure. TTL is crash recovery,
+not normal cleanup.
 
-The single-writer rule forbids parallel writers **sharing one tree**. A `Forge: yes` slice
-(flagged by `$rite-vet` as a genuine architecture fork at Complexity ≥4) is the one sanctioned
-fan-out, and it keeps the rule intact by **isolation**: each candidate wright works in its own
-`git worktree`, sees the identical slice contract plus one **distinct strategy**, and never
-touches another candidate's tree. A read-only [`devrites-forge-judge`](.codex/agents/devrites-forge-judge.toml)
-then scores the finished candidates against acceptance + `test-plan.md` + `.devrites/principles.md`
-+ the anti-slop charter, and the orchestrator lands **exactly one** winner's diff in the working
-tree. No tree ever has two authors; exactly one author's work ships. Everything downstream (doubt,
-fail-on-red, reconcile against the winner's claimed set, record) runs on the winner as if a single
-wright had built it.
+## Inspect and prove
 
-Full mechanics (strategy derivation, worktree setup, the judge contract, landing + grafting the
-winner, `forge-report.md`, AFK budgeting, and the worktree-unavailable fallback) live in
-[`forge.md`](forge.md).
-
-## Fallback
-If the `Task` tool / sub-agent dispatch is unavailable, `$rite-build` runs the wright's
-discipline **inline** in its own context and flags it as a fallback (no clean-context benefit).
-The slice still gets the full one-slice cycle (orient → RED → implement → verify) under the
-same anti-slop charter; it just doesn't get the isolation. In this path the orchestrator is
-legitimately the writer, so write `.devrites/work/<slug>/.reconcile-inline` before editing: the
-reconcile gate (step 4) skips when that sentinel is present. Mirrors the reviewer-dispatch
-fallback in
-[`../../devrites-lib/reference/parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md).
-
-## Optional pre-block hook (defense in depth)
-`devrites-engine reconcile` is the **post-hoc** gate. It always runs and catches an A1 breach at record time.
-A companion **pre-block** hook, `devrites-engine hook a1-guard` (a `PreToolUse` matcher on
-`Edit|Write|MultiEdit`), stops the breach *before* the write lands. It is armed only inside the
-mid-build window (between `devrites-engine reconcile snapshot` and a clean `check`, keyed on `.reconcile-base`),
-allows the wright (subagent calls carry `agent_id`), the inline fallback (`.reconcile-inline`),
-and any `.devrites/` write, so it never touches `$rite-polish`, `$rite-quick`, or ordinary
-manual edits. It ships **observe-only** (logs would-be blocks to `.a1-guard.log`, never blocks);
-flip to enforce with `DEVRITES_A1_HOOK=enforce` or a `.devrites/work/<slug>/.a1-enforce` file once
-the log confirms it never flags the wright's own edits (older Claude Code builds may not populate
-`agent_id`: the log is the proof before you enforce). The post-hoc gate stands on its own; the
-hook is belt-and-suspenders.
+1. Compare the returned file list and `git diff --name-only` with task paths.
+   `devrites-engine check diff-scope <slug> --allow <task-paths>` is the
+   mechanical subset gate — run it before any reviewer dispatch; a violation
+   restores through the bounded wright without spending review.
+   Reject a result that omits any required key — the bookkeeping arrays count
+   whether empty or filled — or adds a path. Root never widens scope or edits
+   source.
+2. Inspect the test diff for deletion, skipping, focus markers, or loosened
+   assertions. Dedicated test analysis treats weakening as Critical.
+   Confirm a test for a data/integration/topology risk can actually exhibit that risk;
+   mocks that erase it and one-root proof offered for another root are unproven.
+3. Apply [independent Build review](phase-contract.md#independent-build-review)
+   before proof. Human choices return; technical failures follow
+   [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+   Derive accounting from recorded reproductions, corrections, and decisive rechecks.
+4. Run only repository proof already approved by `test-plan.md`, then inspect
+   `git diff --name-only` again in case a proof tool changed source.
+   **Do not land on control until review and proof are green.** Isolated
+   `transfer_commit` stays on the worker branch; same-worktree diffs stay
+   uncommitted. Serial: [`checkpoint.md`](checkpoint.md), then host may remove the
+   worktree. Parallel: `record-green` only; land with `parallel integrate
+   --apply-to-control` after the batch; `parallel cleanup` removes worktrees.
+5. Reconcile returned reuse, conventions, principles, sources, assumptions,
+   decisions, dead ends, follow-ups, gates, and touched files. Persist the
+   relevant facts in canonical artifacts, not the wholesale report. A plan-gap
+   escalation without the checked-assumption list (verified|falsified) is
+   malformed; root sweeps the unchecked remainder per
+   [`spec-drift-guard.md`](spec-drift-guard.md) before repair.

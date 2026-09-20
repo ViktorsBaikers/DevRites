@@ -5,11 +5,12 @@ code polish (Phase 1) and, when backend is touched, backend polish (Phase 2).
 
 ## Rules consulted (read on demand from `.agents/skills/devrites-lib/reference/standards/`)
 
-- `coding-style.md`: Phase 1 (simplify, dead code, naming, comments).
-- `patterns.md`: Phase 1 simplification: avoid over-engineering.
-- `error-handling.md`: Phase 2 backend (no silent catches, consistent errors).
-- `performance.md`: Phase 2 backend (N+1s, query bounds).
-- `documentation.md`: keep touched docs current; record polish-time decisions.
+- [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md): Phase 1 (simplify, dead code, naming, comments).
+- [`patterns.md`](../../devrites-lib/reference/standards/patterns.md): Phase 1 simplification: avoid over-engineering.
+- [`duplicate-code.md`](../../devrites-lib/reference/standards/duplicate-code.md): Phase 1 dedupe — `check dup` leads, triage verdicts, ignore ledger.
+- [`error-handling.md`](../../devrites-lib/reference/standards/error-handling.md): Phase 2 backend (no silent catches, consistent errors).
+- [`performance.md`](../../devrites-lib/reference/standards/performance.md): Phase 2 backend (N+1s, query bounds).
+- [`documentation.md`](../../devrites-lib/reference/standards/documentation.md): keep touched docs current; record polish-time decisions.
 
 ## Operating rules
 
@@ -34,7 +35,11 @@ feature only.
   conditionals (switch/lookup over a long if-else; decompose a complex boolean
   into well-named parts), dedupe, inline single-use indirection, replace
   hand-rolled utils with the stdlib/existing helper, delete dead code this
-  feature added.
+  feature added. Run `devrites-engine check dup <slug>` (mode matching the
+  candidate diff: `--base <ref>` when committed, `--worktree`/`--staged` when
+  not) for near-duplicate leads and give each reported cluster a verdict per
+  [`duplicate-code.md`](../../devrites-lib/reference/standards/duplicate-code.md)
+  (merge / keep-with-reason / watch).
 - **Chesterton's Fence:** understand *why* something exists before removing it.
   If you can't explain a check, branch, or wrapper, you may not remove it:
   many "useless" lines guard a real edge case. A `devrites:keep` / `simplify-ignore`
@@ -65,32 +70,14 @@ feature only.
   beat a cryptic one.
 - **Done when:** every touched change passes the comprehension test, every anti-slop charter
   item in the touched code is cleared (the AI-tells do-not list: [anti-ai-slop.md](anti-ai-slop.md)
-  Code section, `coding-style.md`) **and** the feature's targeted tests + build re-run green.
+  Code section, [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md)) **and** the feature's targeted tests + build re-run green.
   An open charter item or a red check means Phase 1 isn't done.
 
 ## Phase 2: Backend polish *(if BE touched)*
 
 See [backend-polish.md](backend-polish.md). For server-side scope (handlers,
 services, routes, models, migrations, queries, jobs, auth). Polish the server
-side to ship-quality:
-
-- **Error responses consistent** + correct status codes + custom error classes
-  + fail closed on auth/permission/transaction errors. No blanket `catch`es.
-- **Logging hygiene:** structured logs with context (request id, user, op);
-  log key events; **never** log secrets / tokens / PII. No leftover
-  `console.log` / debug prints.
-- **Data & queries:** no N+1, no unbounded result sets, parameterized
-  queries, right transaction boundaries, return only what the caller needs.
-- **API contract** matches the spec (and any saved `references/`); idempotency
-  where applicable; consistent pagination/sorting/filtering; validation at the
-  boundary.
-- **Performance:** measure-first; obvious wins applied; no quadratic loops on
-  growing collections (`devrites-audit perf`).
-- **Cleanup:** remove dead routes, unused endpoints + bad naming this feature
-  added.
-- **Code anti-slop:** kill over-defensive layered null/length checks, useless
-  wrappers, generic AI naming, "robust" catches that hide bugs, anything
-  outside the spec ([anti-ai-slop.md](anti-ai-slop.md). Code section).
+side to ship-quality.
 
 ## Output → appends to `polish-report.md`
 

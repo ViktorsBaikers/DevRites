@@ -1,29 +1,66 @@
 # Code review
 
-The reviewer's one question: **does this change make the codebase healthier**: clearer
-design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
+> Applies when: reviewing any diff for design clarity, logic, tests, risk.
+
+Ask whether the change improves or preserves design clarity, logic, tests, and risk.
+If it does not, do not merge it.
 
 ## Keep changes small
 - One concern per change (a fix, an endpoint, a refactor), not three at once. Refactoring
   that rides along with new behavior is two changes: split them.
 - Aim for small diffs: under ~200 lines reviews well and merges fast; treat ~400 as a
   soft ceiling and self-split beyond it. Large diffs hide defects and get rubber-stamped.
-- Watch **file size**, not just diff size: a small diff that grows an already-large file
+- Watch both **file size** and diff size: a small diff that grows an already-large file
   (~1000+ total lines) is an inspection signal: extract the helper or module *first*,
   then add.
 - To self-split: **stack** (land the smallest standalone piece, build on top) or cut a
-  **thinner vertical slice** (`rite-plan/reference/slicing.md`). Whole-file deletions and
+  **thinner vertical slice** ([`slicing.md`](../../../rite-plan/reference/slicing.md)). Whole-file deletions and
   mechanical refactors may run large: review intent, not every line.
 
 ## What to check (tests first)
 1. **Tests:** do they exist and prove the behavior + failure modes (empty, error,
-   boundary, concurrency)? Would they fail if the code were wrong?
-2. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the mechanical [`edge-case trace`](edge-case-trace.md): explicit paths, fixed-set siblings, and deletion contracts.
-3. **Readability:** names, function size, control flow, intent obvious without the author.
-4. **Architecture:** right seam, coupling/cohesion, fits existing patterns, no premature
-   abstraction. How does it fit the bigger system, not just what it does?
-5. **Security:** trust boundaries, input validation, authz, secrets.
-6. **Risk:** migrations, destructive changes, rollback.
+   boundary, concurrency)? Would they fail if the code were wrong? A `skip`/`only`/
+   `TODO` placeholder or assertion-free test is a finding, not coverage. Account
+   for coverage per changed function, not per file: name the test that drives each
+   changed function, or list the function under `Missing tests:` — a file-level
+   "tests exist" over a diff whose riskiest function is unexercised is a gap.
+2. **Bar integrity:** sweep the diff for a lowered bar masquerading as a change:
+   new suppression comments (`@ts-ignore`, `eslint-disable`, `noqa`, `nolint`),
+   loosened thresholds (coverage floors, budgets, lint levels, timeout bumps with
+   no justification), stripped assertions, deleted or skipped tests, and new
+   unimplemented stubs or `throw`-only placeholders. Each names what it lowers and
+   needs a recorded reason in the diff or `decisions.md`; unexplained is a finding.
+3. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
+4. **Readability:** names, function size, control flow, intent obvious without the author.
+5. **Architecture:** right seam, coupling/cohesion, fits existing patterns, no premature
+   abstraction. Check how it fits the larger system as well as its local behavior.
+   Search for a **reimplemented-elsewhere** twin: a new function/module that
+   semantically duplicates an existing one (renamed, reshaped, or vendored) is an
+   architecture finding; reuse the canonical implementation or justify the fork.
+   Run `devrites-engine check dup` in the mode matching the diff (`--base <ref>`
+   for committed work, `--staged`/`--worktree` for uncommitted) for leads and
+   triage each cluster per [`duplicate-code.md`](duplicate-code.md).
+6. **Security:** trust boundaries, input validation, authz, secrets.
+7. **Risk:** migrations, destructive changes, rollback.
+8. **Read depth matches risk:** the review's `Basis` names **full reads of the largest
+   diff files** (top three by changed lines), and any config/dependency/SQL/auth/migration
+   file is read in full — never skimmed. A review that cannot name what it fully read is
+   unproven. **Failing case:** a 600-line diff gets hunk-by-hunk commentary on the first
+   screen and silence on the migration file at the bottom.
+9. **Every file in the review set gets its own pass.** Reviewing an implementation
+   file does not cover its header, interface, test, or config counterpart — being the
+   smaller member of a group is no reason to skip it. Findings attach to files inside
+   the review set, never outside it. Report the accounting: a `Coverage:` line names
+   the files reviewed in full, reviewed at hunk level, and explicitly skipped with
+   reason (generated, vendored, lockfile). Files named nowhere count as not reviewed.
+10. **Per-language probes.** For each file, apply [`review/README.md`](review/README.md):
+    `review/default.md` always, plus the checklist for the file's language. These are
+    defect probes with explicit do-not-flag lists — a do-not-flag item raised as
+    Critical/Important is a review defect, not a finding.
+11. **Large diffs get a risk pass.** When the diff exceeds the soft ceiling (~400
+    lines) or touches a migration, auth, dependency, or config file, run a second
+    focused pass over just those surfaces after the general pass — first-pass
+    attention decays with diff size and the risk-bearing file is usually last.
 
 ## Give actionable feedback
 - Read surrounding source before severity: call sites, existing guards, and the nearest consumer decide impact; a diff hunk alone is not enough.
@@ -38,104 +75,94 @@ design, cleaner logic, better tests, fewer risks? If not, it doesn't merge yet.
   | **FYI** | No action: context only. |
 - Be specific: point at the line, name the problem, propose the fix. Frame non-blocking
   ideas as questions ("what about a map here for readability?").
-- **Uncertainty lowers the label.** A finding anchored to a quoted line or reproduced
-  behavior keeps its severity; one that isn't drops a notch (Important → Suggestion), and a
-  Critical always carries anchored evidence: the diff-review form of quote-or-suppress.
+- Apply [`agents.md` § Result admission](agents.md#result-admission). Before
+  reporting, an unverified hypothesis is a Suggestion at most. Once raised as
+  Critical/Important, missing proof is a blocking gap until verified or rejected—
+  never approval or silent demotion.
 - **Skipped checks are recorded.** A check you couldn't run gets a
   `Skipped: <check> — <why>` line.
+- **Unreviewed is not clean.** A report that never names an area does not prove that area
+  was inspected; the consolidated account names what was not covered or marks `gap`.
+  **Failing case:** a findings list silent on, say, migration safety is not a clean
+  migration review — name the inspection or the gap.
+- **Separate the verdict from its context.** A verdict flips only on evidence
+  scoped to the change under review — its diffs, its acceptance criteria, its
+  blast radius. Whole-repo signals gathered along the way (a global health
+  score, an unrelated security note, a pre-existing smell) are recorded under
+  an informational/deferred heading with that label, never folded silently into
+  the verdict — and never used to soften or harden it either direction.
+  **Failing case:** a clean change is failed because a repo-wide scan surfaced
+  a decade-old finding the diff did not introduce — or a broken change is
+  approved because "overall health" still looked fine.
 - Let automation (linters, formatters, CI) catch the trivial stuff so review focuses on
   design and correctness.
 
-## Lead with leverage
-If a change has one structural problem and ten nits, the structural problem **is** the review.
-Walk it first and spend the review's weight there; the nits are a footnote, and half of them
-dissolve once the structure moves. A review that opens with whitespace and buries the wrong seam
-on line 200 has optimized for the cheap finding over the load-bearing one.
+## Report structural problems first
+If a change has one structural problem and ten nits, lead with the structural problem.
+Many nits disappear after the structure changes. Do not bury a wrong boundary behind
+formatting comments.
 
-## Smell lexicon: advisory vocabulary
-Name these as judgment calls, not automatic violations. They block only when the smell creates a
-concrete risk or breaks a DevRites/project standard.
-
-- **Feature Envy:** code asks another object/module for too much data, so behavior likely lives
-  on the wrong side of the seam.
-- **Primitive Obsession:** strings/maps/booleans stand in for a real domain concept and scatter
-  validation.
-- **Shotgun Surgery:** one change forces many tiny edits across unrelated files.
-- **Divergent Change:** one module changes for multiple unrelated reasons.
-- **Speculative Generality:** abstraction/config/extension point exists for a future nobody needs
-  yet.
-- **Long Method / Large Class:** too many responsibilities for a reviewer to reason about safely.
-- **Data Clumps:** the same fields travel together without a named value object/type.
-- **Message Chains / Middle Man:** callers know too much about navigation, or wrappers only pass
-  calls through.
-- **Duplicate Code:** repeated logic likely hides inconsistent future fixes.
-
-## Structural Remedies: propose the move, not just the problem
-"This is hard to follow" names a smell; it doesn't discharge the review. When the problem is
-structural, name the **move** that fixes it so the author has a concrete next step, not a vibe:
-
-- **Replace a conditional chain with a typed dispatcher:** a map/table keyed by the variant,
-  each state carrying its own fields, instead of a growing `if/else` on a type tag.
-- **Delete a pass-through wrapper:** a function that only forwards its arguments earns removal;
-  call the inner thing directly.
-- **Collapse duplicate branches:** two arms doing the same work behind different conditions
-  become one.
-- **Hoist an invariant out of the loop:** computation that doesn't change per iteration moves
-  above it.
-
-A restructuring must *reduce* the concepts a reader holds, not relocate them
-([`patterns.md`](patterns.md)): prefer the move that makes a whole branch or mode disappear.
-
-## Disagreement hierarchy: what wins when you and the author differ
+## Resolve disagreements by evidence
 Resolve a review disagreement by the strongest ground available, in order: **facts** (a
 correctness bug, a failing case, a measured number) > **the project's stated style/convention** >
 **a general design principle** > **personal preference or consistency-for-its-own-sake**. If your
 objection bottoms out at the last tier, it's a Suggestion at most: say so, and don't block on it.
 An author who is factually right wins over a reviewer's taste.
 
-## Zero findings is suspicious
-An adversarial review that comes back empty is a claim, not a default, and the model's
-strongest pull in review is to agree. So a clean bill of health has to be *earned* the same way a
-finding is: by showing the work. When an axis (spec, code, security, a doubt) genuinely finds
-nothing, it records a **`No-findings:`** justification: the specific adversarial passes it ran
-(edge cases, error paths, the riskiest decision, the consumer whose test might not cover the
-change) and why each came back empty. "Looks good" is not a terminal state; a *justified* empty is.
-Treat a silent axis (no finding and no justification) as a re-run, not a pass.
+## Reviewer-vs-reviewer adjudication
 
-This is the mirror of confidence-banding: banding suppresses the noisy false positive; the
-no-findings justification catches the silent false negative. `devrites-engine review-integrity`
-checks the account is present (a `No-findings:` line on any axis section that raised nothing), not
-its quality: the same honesty contract as `doubt-coverage` and the footprint roster.
+Root re-verifies each claimed consequence at the cited site, keeps the surviving evidence, sets final severity itself (reviewer severity advisory), records what decided ([agents.md § Independence](agents.md#independence)); unresolved conflicts stay open blockers.
 
-After `review.md` is written, run `devrites-engine review-fingerprints --write <slug>` to record
-stable IDs for findings. Those IDs make recurring findings and later dismissals correlate cleanly
-without weakening the review-integrity gate.
+Adjudication is asymmetric: dropping a true finding destroys it silently, while
+keeping a false one costs only a re-check. A finding is removed only on two
+grounds, each citing evidence:
+
+1. **Refuted at the site** — the quoted code or a direct read shows the claim is
+   factually wrong (the guard exists, the value cannot be nil, the test asserts
+   it). "Looks unlikely" is not refutation.
+2. **Out of scope** — the file is not in the review set or the finding describes
+   pre-existing code the diff did not touch. Route it as a follow-up, never
+   delete the record.
+
+"Cannot verify", "suspicious", "would not have raised it", and "inconvenient to
+fix now" are not grounds for removal — the finding stays open.
+
+**Protected subjects** veto dismissal regardless of convenience: a claim of a
+correctness bug, a security exposure, a data-loss/migration risk, a silently
+dropped error, or a violated project principle survives unless ground 1 produces
+a direct counter-read at the cited site. Never drop a protected-subject finding
+because the fix is large or the release is close — escalate the decision instead.
+
+## Heuristic checks: FLAG vs NOTE
+
+A heuristic check that gates emits **FLAG** only when it can state the observed
+consequence and where to re-verify it; when context cannot disambiguate, it emits a
+**NOTE** that never gates. A check whose flag rate stays steady while every fix
+reads as progress is checking the wrong layer — retune it or retire it.
+**Failing case:** an ambiguous-identifier rule flags every pass, reviewers learn to
+skim the list, and a real defect hides inside the noise it created.
 
 ## Scope discipline
 Review the change, not the whole project. Out-of-scope problems become follow-ups, not
 drive-by edits that balloon the diff.
 
 ## Receiving review feedback
-Treat external review as claims to verify, not orders to obey. Clarify unclear feedback before a
-partial fix; check each claim against the live code; push back with evidence when it is wrong;
-then implement blocking → simple → complex items one at a time and test each fix. Technical
-replies state the evidence and next action: no performative agreement, no gratitude theater:
-"Fixed: <what> in <where>" beats "Great catch, thanks!". About to write "Thanks"? Delete it
-and state the fix.
+Treat external review as claims to verify, not orders. Clarify unclear feedback first; check claims against live code; push back with evidence when wrong; implement blocking → simple → complex items one at a time with tests. State evidence and next action — "Fixed: <what> in <where>" beats gratitude theater.
 
-## Principles, charter & conventions are pass/fail gates
-Three project layers are evaluated as explicit pass/fail at `/rite-vet`, re-checked after design
-lands, and re-checked against the diff at `/rite-review` / `/rite-seal`: none are advisory:
+## Principles and charter are pass/fail gates
+Two project layers are evaluated at `/rite-vet` and re-checked against the diff
+at `/rite-review` / `/rite-seal`:
 
 1. **Project principles** (`.devrites/principles.md`): the authored invariants the project will
    not break ([`principles.md`](principles.md)). A change that violates one with **no recorded,
    human-approved exception** is a **Critical** finding and a **NO-GO** at seal, the same standing
    as an unproven acceptance criterion. Check the diff against each principle's scope; an absent
    or empty file means none are declared (gate passes).
-2. **The anti-slop charter** (`coding-style.md` + `prose-style.md`): the AI-tells do-not list.
-3. **The conventions ledger** (`.devrites/conventions.md`): proven project idioms (an untrusted
-   prior; a fresh read of the live code overrides it).
+2. **The anti-slop charter** ([`anti-ai-slop.md`](../../../rite-polish/reference/anti-ai-slop.md)
+   UI + code lists; [`prose-style.md`](prose-style.md) for prose). [`coding-style.md`](coding-style.md)
+   points at the code list — it is not a second catalog. **Failing case:** a backend-only
+   diff is charged UI anti-slop (Inter / lavender / gradient); those fire only when a
+   rendered UI surface is in the diff.
 
-A change that violates a stated convention or trips the charter is a **Critical** finding, not a
-Nit. Record every gate failure with `file:line` and block on it the same as any correctness
-defect.
+A principle violation is Critical. A charter violation is classified by its real
+impact. Record each finding with `file:line`.

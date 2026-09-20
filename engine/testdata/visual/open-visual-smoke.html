@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>open-visual — dual-read smoke</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      /* Restrained tool surface: near-neutral off-white tinted toward teal (not cream/sand). */
+      --bg: oklch(0.985 0.006 195);
+      --surface: oklch(0.995 0.003 195);
+      --surface-2: oklch(0.965 0.01 195);
+      --ink: oklch(0.28 0.02 250);
+      --muted: oklch(0.45 0.02 250);
+      --accent: oklch(0.48 0.1 195);
+      --accent-soft: oklch(0.94 0.03 195);
+      --line: oklch(0.86 0.015 195);
+      --ok: oklch(0.52 0.12 155);
+      --warn: oklch(0.55 0.12 75);
+      --shadow: 0 1px 0 oklch(0.3 0.02 250 / 0.04), 0 8px 24px oklch(0.3 0.02 250 / 0.06);
+      --radius: 12px;
+      --space-1: 0.5rem;
+      --space-2: 0.75rem;
+      --space-3: 1rem;
+      --space-4: 1.5rem;
+      --space-5: 2rem;
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --z-sticky: 10;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: oklch(0.22 0.015 250);
+        --surface: oklch(0.27 0.015 250);
+        --surface-2: oklch(0.32 0.018 250);
+        --ink: oklch(0.93 0.01 195);
+        --muted: oklch(0.72 0.02 250);
+        --accent: oklch(0.78 0.1 185);
+        --accent-soft: oklch(0.35 0.04 195);
+        --line: oklch(0.42 0.02 250);
+        --ok: oklch(0.78 0.12 155);
+        --warn: oklch(0.82 0.12 85);
+        --shadow: 0 1px 0 oklch(0 0 0 / 0.35), 0 10px 28px oklch(0 0 0 / 0.35);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      font-size: 1rem;
+      line-height: 1.5;
+      background:
+        radial-gradient(1200px 480px at 10% -10%, oklch(from var(--accent) l c h / 0.08), transparent 60%),
+        var(--bg);
+      color: var(--ink);
+    }
+
+    a { color: var(--accent); }
+
+    code, kbd {
+      font-family: var(--mono);
+      font-size: 0.875em;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0.1em 0.35em;
+    }
+
+    kbd { font-size: 0.8em; }
+
+    .wrap {
+      width: min(52rem, calc(100% - 2rem));
+      margin-inline: auto;
+      padding-block: var(--space-4) var(--space-5);
+    }
+
+    header#viz-title {
+      display: grid;
+      gap: var(--space-2);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 2px);
+      box-shadow: var(--shadow);
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-1);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .badge[data-tone="accent"] {
+      background: var(--accent-soft);
+      border-color: color-mix(in oklch, var(--accent) 35%, var(--line));
+      color: var(--accent);
+    }
+
+    .badge[data-tone="ok"] {
+      color: var(--ok);
+      border-color: color-mix(in oklch, var(--ok) 35%, var(--line));
+    }
+
+    .badge[data-tone="warn"] {
+      color: var(--warn);
+      border-color: color-mix(in oklch, var(--warn) 35%, var(--line));
+    }
+
+    .badge[data-tone="low"] {
+      color: var(--muted);
+      border-color: var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+      line-height: 1.25;
+    }
+
+    .lede {
+      margin: 0;
+      max-width: 65ch;
+      color: var(--muted);
+      text-wrap: pretty;
+    }
+
+    .cmd {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-2);
+      margin: 0;
+      padding: var(--space-2) var(--space-3);
+      background: var(--surface-2);
+      border: 1px dashed color-mix(in oklch, var(--accent) 40%, var(--line));
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      overflow-x: auto;
+    }
+
+    .cmd span.label {
+      flex: 0 0 auto;
+      font-family: var(--font);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+    }
+
+    main {
+      display: grid;
+      gap: var(--space-4);
+    }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: var(--space-3) var(--space-4);
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-2);
+      margin-bottom: var(--space-3);
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.875rem;
+      max-width: 42ch;
+    }
+
+    #diagram-overview {
+      padding-bottom: var(--space-2);
+    }
+
+    .figure-frame {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, var(--accent-soft), transparent 42%),
+        var(--surface-2);
+      padding: var(--space-3);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      color: var(--ink);
+    }
+
+    .node rect {
+      fill: var(--surface);
+      stroke: var(--accent);
+      stroke-width: 2;
+      filter: drop-shadow(0 2px 6px oklch(0.3 0.02 250 / 0.08));
+    }
+
+    .node text.primary {
+      fill: var(--ink);
+      font-size: 15px;
+      font-weight: 700;
+      font-family: var(--font);
+    }
+
+    .node text.secondary {
+      fill: var(--muted);
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+
+    .edge {
+      stroke: color-mix(in oklch, var(--accent) 55%, var(--line));
+      stroke-width: 2.25;
+      fill: none;
+      marker-end: url(#arrow);
+    }
+
+    .edge-label {
+      fill: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font);
+      letter-spacing: 0.02em;
+    }
+
+    .step-dot {
+      fill: var(--accent);
+    }
+
+    .step-dot-text {
+      fill: oklch(0.99 0 0);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .step-dot-text { fill: oklch(0.2 0.02 250); }
+      .node rect {
+        filter: drop-shadow(0 2px 8px oklch(0 0 0 / 0.35));
+      }
+    }
+
+    #diagram-detail .steps {
+      display: grid;
+      gap: var(--space-3);
+      grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    #diagram-detail .steps li {
+      display: grid;
+      gap: 0.35rem;
+      padding: var(--space-3);
+      border-radius: calc(var(--radius) - 2px);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+    }
+
+    #diagram-detail .steps .n {
+      width: 1.5rem;
+      height: 1.5rem;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--accent);
+      color: oklch(0.99 0 0);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      #diagram-detail .steps .n { color: oklch(0.2 0.02 250); }
+    }
+
+    #diagram-detail .steps h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-wrap: balance;
+    }
+
+    #diagram-detail .steps p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.875rem;
+      text-wrap: pretty;
+    }
+
+    #diagram-legend dl {
+      display: grid;
+      gap: var(--space-2);
+      margin: 0;
+    }
+
+    #diagram-legend .row {
+      display: grid;
+      grid-template-columns: minmax(7rem, 10rem) 1fr;
+      gap: var(--space-2);
+      align-items: start;
+      padding-block: 0.35rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #diagram-legend .row:last-child { border-bottom: 0; }
+
+    #diagram-legend dt {
+      margin: 0;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    #diagram-legend dd {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.875rem;
+      text-wrap: pretty;
+    }
+
+    #diagram-citations table,
+    #viz-open-questions table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    #diagram-citations th,
+    #diagram-citations td,
+    #viz-open-questions th,
+    #viz-open-questions td {
+      text-align: left;
+      vertical-align: top;
+      padding: 0.55rem 0.35rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #diagram-citations th,
+    #viz-open-questions th {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    #diagram-citations td:first-child {
+      width: 38%;
+      font-weight: 600;
+    }
+
+    #viz-open-questions td:first-child {
+      width: 7.5rem;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    #viz-open-questions .q-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-1);
+      margin-top: 0.35rem;
+    }
+
+    footer.note {
+      margin-top: var(--space-2);
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(52rem, calc(100% - 1.25rem)); }
+      header#viz-title, section { padding: var(--space-3); }
+      #diagram-legend .row { grid-template-columns: 1fr; gap: 0.15rem; }
+      h1 { font-size: 1.25rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header id="viz-title">
+      <div class="badge-row">
+        <span class="badge" data-tone="accent">diagram playbook</span>
+        <span class="badge" data-tone="ok">local only · no network</span>
+        <span class="badge">smoke fixture</span>
+      </div>
+      <h1>How does <code>open-visual</code> resolve a dual-read visual?</h1>
+      <p class="lede">
+        Agents write a portable HTML figure plus a sibling Markdown outline.
+        Humans review the HTML; agents trust the outline as SSOT. The engine
+        opener resolves that pair locally and can print tips without launching a browser.
+      </p>
+      <p class="cmd" aria-label="Smoke command">
+        <span class="label">try</span>
+        <span>devrites-engine open-visual engine/testdata/visual/open-visual-smoke.html --no-open</span>
+      </p>
+    </header>
+
+    <main>
+      <section id="diagram-overview" aria-label="Overview diagram">
+        <div class="section-head">
+          <h2>Overview</h2>
+          <p>One concept: HTML + outline → opener tips.</p>
+        </div>
+        <div class="figure-frame">
+          <svg viewBox="0 0 420 420" role="img" aria-labelledby="diagram-title">
+            <title id="diagram-title">HTML fixture pairs with outline SSOT; open-visual prints tips locally</title>
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+              </marker>
+            </defs>
+
+            <g class="node" id="node-html">
+              <circle class="step-dot" cx="48" cy="54" r="12"></circle>
+              <text class="step-dot-text" x="48" y="58" text-anchor="middle">1</text>
+              <rect x="78" y="24" width="300" height="64" rx="12"></rect>
+              <text class="primary" x="228" y="50" text-anchor="middle">HTML visual</text>
+              <text class="secondary" x="228" y="70" text-anchor="middle">*.html · human review surface</text>
+            </g>
+
+            <path class="edge" id="edge-html-outline" d="M 228 88 V 118"></path>
+            <text class="edge-label" x="246" y="110">dual-read pair</text>
+
+            <g class="node" id="node-outline">
+              <circle class="step-dot" cx="48" cy="166" r="12"></circle>
+              <text class="step-dot-text" x="48" y="170" text-anchor="middle">2</text>
+              <rect x="78" y="136" width="300" height="64" rx="12"></rect>
+              <text class="primary" x="228" y="162" text-anchor="middle">Outline SSOT</text>
+              <text class="secondary" x="228" y="182" text-anchor="middle">*.outline.md · agent truth</text>
+            </g>
+
+            <path class="edge" id="edge-outline-opener" d="M 228 200 V 230"></path>
+            <text class="edge-label" x="246" y="222">tips + resolved path</text>
+
+            <g class="node" id="node-opener">
+              <circle class="step-dot" cx="48" cy="278" r="12"></circle>
+              <text class="step-dot-text" x="48" y="282" text-anchor="middle">3</text>
+              <rect x="78" y="248" width="300" height="64" rx="12"></rect>
+              <text class="primary" x="228" y="274" text-anchor="middle">open-visual</text>
+              <text class="secondary" x="228" y="294" text-anchor="middle">engine command · local only</text>
+            </g>
+
+            <text class="edge-label" x="210" y="350" text-anchor="middle">On conflict, outline wins until both regenerate</text>
+            <text class="edge-label" x="210" y="372" text-anchor="middle">--no-open prints tips · never launches the browser</text>
+          </svg>
+        </div>
+      </section>
+
+      <section id="diagram-detail" aria-label="How the opener behaves">
+        <div class="section-head">
+          <h2>What each step does</h2>
+          <p>Same story as the figure, in readable prose.</p>
+        </div>
+        <ol class="steps">
+          <li>
+            <span class="n" aria-hidden="true">1</span>
+            <h3>Ship a dual-read pair</h3>
+            <p>
+              Write <code>visual/&lt;name&gt;.html</code> for humans and
+              <code>visual/&lt;name&gt;.outline.md</code> for agents — same claim, two surfaces.
+            </p>
+          </li>
+          <li>
+            <span class="n" aria-hidden="true">2</span>
+            <h3>Treat outline as SSOT</h3>
+            <p>
+              Inventory, relationships, and citations live in the outline.
+              If HTML and outline disagree, the outline wins.
+            </p>
+          </li>
+          <li>
+            <span class="n" aria-hidden="true">3</span>
+            <h3>Resolve with <code>open-visual</code></h3>
+            <p>
+              The engine finds the HTML (path or workspace name), warns if the
+              sibling outline is missing, prints agent tips, and optionally opens the OS browser.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section id="diagram-legend" aria-label="Legend">
+        <div class="section-head">
+          <h2>Legend</h2>
+          <p>Symbols and guarantees for this fixture.</p>
+        </div>
+        <dl>
+          <div class="row">
+            <dt>Arrow</dt>
+            <dd>Local resolve / tip print only — no fetch, CDN, or remote I/O.</dd>
+          </div>
+          <div class="row">
+            <dt>Outline SSOT</dt>
+            <dd>Agent-facing source of truth for ids, relationships, and citations.</dd>
+          </div>
+          <div class="row">
+            <dt><kbd>--no-open</kbd></dt>
+            <dd>Smoke path: resolve + tips print; browser launch is skipped.</dd>
+          </div>
+          <div class="row">
+            <dt>Playbook</dt>
+            <dd>This page follows the <code>diagram</code> visual playbook landmarks.</dd>
+          </div>
+        </dl>
+      </section>
+
+
+      <section id="viz-open-questions" aria-label="Open questions">
+        <div class="section-head">
+          <h2>Open questions</h2>
+          <p>Uncertainty left for humans; mirrored in the outline + JSON embed.</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Id</th>
+              <th scope="col">Question</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>q-json-ssot</code></td>
+              <td>
+                Should agents ever prefer <code>#devrites-outline</code> JSON over
+                <code>.outline.md</code> when both exist?
+                <div class="q-meta">
+                  <span class="badge" data-tone="ok">confidence: high</span>
+                  <span class="badge">status: open</span>
+                  <span class="badge" data-tone="accent">outline.md wins</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><code>q-browser-ci</code></td>
+              <td>
+                Do all interactive review hosts have a usable OS opener, or is
+                <kbd>--no-open</kbd> the default smoke path?
+                <div class="q-meta">
+                  <span class="badge" data-tone="warn">confidence: medium</span>
+                  <span class="badge">status: open</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="diagram-citations" aria-label="Citations">
+        <div class="section-head">
+          <h2>Citations</h2>
+          <p>Claims on this page map to repo paths.</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Claim</th>
+              <th scope="col">Path</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Opener implementation</td>
+              <td><code>engine/internal/lib/open_visual.go</code></td>
+            </tr>
+            <tr>
+              <td>Playbook router</td>
+              <td><code>pack/.claude/skills/devrites-lib/reference/visual-playbooks/index.md</code></td>
+            </tr>
+            <tr>
+              <td>Outline template</td>
+              <td><code>pack/.claude/skills/devrites-lib/reference/visual-playbooks/outline-template.md</code></td>
+            </tr>
+            <tr>
+              <td>Explain tip hook</td>
+              <td><code>pack/.claude/skills/rite-explain/SKILL.md</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">Fixture path: <code>engine/testdata/visual/open-visual-smoke.html</code></p>
+      </section>
+    </main>
+  </div>
+
+  <script type="application/json" id="devrites-outline">
+{
+  "version": 1,
+  "title": "open-visual smoke fixture",
+  "purpose": "Prove that devrites-engine open-visual resolves a portable HTML+outline pair under engine/testdata/visual/, prints agent tips, runs a non-fatal inventory↔HTML id consistency check, and honors --no-open without launching a browser.",
+  "playbooks": ["diagram"],
+  "ids": [
+    {"id": "viz-title", "meaning": "Page header / question the fixture answers"},
+    {"id": "diagram-overview", "meaning": "Core relationship figure"},
+    {"id": "diagram-title", "meaning": "Accessible SVG title"},
+    {"id": "node-html", "meaning": "HTML fixture node"},
+    {"id": "node-outline", "meaning": "Outline companion node"},
+    {"id": "node-opener", "meaning": "open-visual command node"},
+    {"id": "edge-html-outline", "meaning": "Dual-read pairing"},
+    {"id": "edge-outline-opener", "meaning": "Opener tip path"},
+    {"id": "diagram-detail", "meaning": "Prose steps mirroring the overview"},
+    {"id": "diagram-legend", "meaning": "Symbol / behavior key"},
+    {"id": "viz-open-questions", "meaning": "Open questions with confidence"},
+    {"id": "diagram-citations", "meaning": "Repo path citations"}
+  ],
+  "relationships": [
+    {"from": "node-html", "to": "node-outline", "note": "Dual-read pair; outline is SSOT on conflict"},
+    {"from": "node-outline", "to": "node-opener", "note": "Opener prints outline path + playbook tip"},
+    {"from": "open-visual --no-open", "to": "browser", "note": "Must not launch; tips still print"},
+    {"from": "diagram-overview", "to": "diagram-detail", "note": "Same three-step story: pair → SSOT → opener"},
+    {"from": "#devrites-outline", "to": ".outline.md", "note": "JSON is a mirror; outline.md wins on conflict"}
+  ],
+  "citations": [
+    {"claim": "Opener implementation", "path": "engine/internal/lib/open_visual.go"},
+    {"claim": "Playbook router", "path": "pack/.claude/skills/devrites-lib/reference/visual-playbooks/index.md"},
+    {"claim": "Outline template", "path": "pack/.claude/skills/devrites-lib/reference/visual-playbooks/outline-template.md"},
+    {"claim": "rite-explain tip hook", "path": "pack/.claude/skills/rite-explain/SKILL.md"}
+  ],
+  "open_questions": [
+    {"id": "q-json-ssot", "text": "Should agents ever prefer #devrites-outline JSON over .outline.md when both exist?", "confidence": "high"},
+    {"id": "q-browser-ci", "text": "Do all interactive review hosts have a usable OS opener, or is --no-open the default smoke path?", "confidence": "medium"}
+  ],
+  "confidence": "high"
+}
+  </script>
+</body>
+</html>

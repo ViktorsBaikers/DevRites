@@ -1,92 +1,93 @@
 ---
 name: devrites-lib
-description: Internal DevRites skill; DevRites agents invoke it explicitly, not by prompt match.
+description: Internal shared DevRites helper library. Documents cross-cutting engine commands and references; not a user workflow. Do not invoke directly.
 user-invocable: false
 disable-model-invocation: true
 ---
 
-## Codex compatibility
+# devrites-lib: shared workflow contracts
 
-This is the Codex mirror of a DevRites skill. In Codex:
+Do **not** invoke this skill directly.
 
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
+## Ownership boundary
 
+- The host owns instruction loading, exact-agent dispatch, scheduling, waiting,
+  follow-up, results, and history. Skills state the role/result, never native
+  fields or dispatch receipts.
+- Dispatch every workflow-required role fresh. A missing role stops for HITL;
+  never skip, substitute, or perform its work in the root.
+- The root owns DevRites state/artifacts but never source/tests. Codex grants it
+  workspace permission only because children cannot elevate; writing follows
+  [`reference/standards/agents.md`](reference/standards/agents.md).
+- The engine owns the retained deterministic structure, atomic-write, install,
+  evidence-freshness, and safety primitives only.
 
-# devrites-lib: internal shared helpers (not a command)
+## Workspace orientation
 
-This is **not** a skill you run. It is DevRites' manifest for shared references
-and control-plane operations. Skills call `devrites-engine <command>` from any
-workspace; no pack script path is required.
+Use the supplied slug or read `.devrites/ACTIVE`. Require its authoritative
+`state.md`; read it directly, then only needed phase artifacts. Never infer
+lifecycle state from chat or optional `README.md`.
 
-## Operations
+## Shared references
 
-These are selected `devrites-engine` contracts; `devrites-engine help` is exhaustive.
+- [`reference/standards/agents.md`](reference/standards/agents.md): native custom-agent roles,
+  immutable inputs, result contracts, and source-boundary review.
+- [`reference/candidate-integrity.md`](reference/candidate-integrity.md): the
+  content-bound candidate lifecycle from Build through Ship
+  ([`workspace-artifact-schema.md`](reference/workspace-artifact-schema.md)).
+- [`reference/reply-contract.md`](reference/reply-contract.md): compact user-facing
+  completion states. The host renders the response normally.
+- [`reference/visual-playbooks/index.md`](reference/visual-playbooks/index.md): progressive
+  visual HTML playbook router (load matching ids only; dual-read outline).
 
-**Read-only: orient / gate (never mutate the workspace):**
+## Deterministic engine surface
 
-- `devrites-engine preamble`: orientation digest for the active `.devrites/` feature:
-  prints `state.md`, the artifacts present, the run mode (HITL/AFK), and the
-  open-question tally by gate. Run first (step 0) by every workspace-operating
-  `rite-*` skill so the model orients deterministically instead of re-deriving
-  state from raw Markdown.
-- `devrites-engine progress`: progress footer; the mirror of `devrites-engine preamble` (which runs
-  first). Run **last** (output step) by every lifecycle `rite-*` skill to render (from
-  `state.md`, with zero model drift) the `── rite-<phase> ──` header rule, the **slice
-  meter** (`Slice 3/5  ██████░░░░  <last-built> ✓`, or `Slices 5/5  ██████████  ✅ ALL
-  BUILT` at completion), and the **flow ribbon** (`spec ✓ define ✓ build ◉ … ship ○`).
-  The meter answers "how many slices left"; the `✅ ALL BUILT` marker answers "is the
-  build done". The skill prints its own what-was-done / next-step / hygiene lines beneath
-  it. Read-only; silent (exit 0) when there is no active workspace. Not for the workspace-less
-  utilities (`$rite-prototype`, `$rite-zoom-out`, `$rite-pressure-test`, `$rite-handoff`,
-  the `$rite` menu). They have no phase/slice state to render.
-- `reference/reply-contract.md`: the shared user-facing completion reply contract. It
-  standardizes the compact chat lines printed below `devrites-engine progress` for success,
-  awaiting-human, stopped/blocked, GO, NO-GO, and shipped states. The chat reply is a
-  status summary; durable detail stays in the workspace artifacts.
-- `reference/model-tiers.md`: the dispatch-by-task-shape contract (extraction / generation /
-  ceiling). A skill names a **tier** by the shape of the work and never hardcodes a model name;
-  reviewers are ceiling on purpose. Carries the degradation rule for harnesses that cannot pick
-  models per agent. Loaded on demand by any skill that dispatches subagents.
-- `devrites-engine build-readiness`: build-readiness gate. Exits non-zero on `$rite-build`'s
-  step-0 stop conditions so they hold by exit code, not by prose the model must
-  remember: `2` no `Plan approved` (→ `$rite-define`), `3` `awaiting_human`
-  (→ `$rite-resolve`), `4` `blocked` (→ `$rite-plan`), `5` no workspace, `0` ready.
-- `devrites-engine evidence-fresh`: evidence-freshness gate for `$rite-seal`. Exits `3`
-  when any file in `touched-files.md` is newer than `evidence.md` /
-  `browser-evidence.md` (stale proof = NO-GO until re-proven), `0` when fresh.
-- `devrites-engine check-acceptance`: executable acceptance gate. Compiles `spec.md`'s
-  acceptance IDs and exits `1` unless every one is checked (proven) in `seal.md`;
-  new workspaces use `AC-###`, while legacy archives may still carry old `[ACn]`
-  ids. Used by `$rite-seal` and by the outcome grader.
-- `devrites-engine spec-validate`: spec-grammar gate (the spec-side mirror of
-  `devrites-engine check-acceptance`). Lints `spec.md`'s structured `### Requirement:` / `#### Scenario:`
-  blocks (SHALL/MUST present, ≥1 scenario each, every scenario has WHEN + THEN, headers
-  unique). Exits `1` on a grammar violation, `0` when valid **or** when the spec uses the flat
-  `AC-###` flat-bullet form (no structured blocks: nothing to lint, never a failure). Used by
-  `$rite-spec`'s readiness gate; see [`standards/spec-grammar.md`](reference/standards/spec-grammar.md).
+The engine is limited to:
 
-**State mutators: write `state.md` / `questions.md` under one contract:**
+- Checks: `check candidate` (content-bound identity), `check readiness`
+  (structure; `--emit-binding` emits the Build-input binding), `check seal` (structure
+  plus exact artifact bindings and evidence freshness), `check slice` (slice
+  contract preflight before wright dispatch), `check task-graph`, `check
+  diff-scope` (mechanical changed-paths ⊆ allowlist before reviewer dispatch),
+  `check path-disjoint`, `check skill-trust`, `check indexes`, `check
+  regression` (progress high-water mark), `check drift` (readiness-input
+  attribution), `check windows` (deferral-marker waivers), `check dup`
+  (advisory near-duplicates), `detect commands` (repository test/lint wiring).
+- Observation: `observe summary` (`orient` alias), `observe slice`, `next`
+  (minimal remaining lifecycle path), `handoff` (deterministic resume record).
+- Coordination: `context` emits one deduplicated read-set bundle from each
+  skill's `loads:` manifest into `.devrites/work/<slug>/ctx/` — dispatch targets
+  read it instead of selecting files. It prints `unselected=[...]` for declared
+  triggers not passed; an omitted applicable trigger is a gap, not a shortcut. A
+  `--role` call is a dispatch, so the `agents` trigger auto-fires when declared
+  (`auto=[agents]` in output); a role with no agent contract file fails instead
+  of emitting a contract-less packet.
+  Manifest grammar: `always` loads every call; `triggers` maps names to files that
+  load only when passed or suggested; `workspace` lists the feature artifacts every
+  reader may need; `workspaceByRole` maps a dispatch role to its own artifact list —
+  present role wins, absent role falls back to `workspace`, an empty list means the
+  role reads no workspace files. The engine prints `suggested=[...]` triggers
+  inferred from workspace facts (AFK/parallel flags, frontend/security wording,
+  principles presence); confirm them rather than re-deriving conditions. Repeat
+  calls with unchanged inputs print `unchanged` and reuse the existing bundle.
+  `dispatch` owns the launch-wave barrier — seal needs a distinct handle per
+  role, return needs seal, and start/return auto-record into the `metrics`
+  ledger. `claim` owns the advisory session-scoped `claims.jsonl` ledger;
+  `note` owns anchored `notes.md` entries (`check seal` refuses non-exact
+  anchors); `parallel` owns deterministic worktree lease/create/integrate/
+  cleanup for parallel slices.
+- `gates` owns the machine-checked acceptance ledger (`gates.md`): `scaffold`,
+  `status`, `run`, `reverify`, `lint`, `attest`, `abandon` — grammar and
+  authoring rules in
+  [`reference/standards/gates.md`](reference/standards/gates.md).
+- Atomic state: `state resolve` for answer/drop/batch, `state merge-manifest`
+  for the predecessor-chain union, transactional `state close`, and `migrate`
+  for fail-closed workspace-schema normalization.
+- `secret-scan`, `open-visual`, and `version` remain read-only helpers.
+- Offline, local `install`, `update`, and `uninstall`; their shell/npm callers
+  acquire the candidate bundle, source, and binary before invoking the engine.
 
-- `devrites-engine tick-afk`: decrement the AFK slice budget; exits `3` at 0 (forced HITL stop).
-- `devrites-engine resolve`: backs the `$rite-resolve` contract (answer / drop / batch).
-- `devrites-engine close-out`: archive the workspace + clear `ACTIVE` on `$rite-ship`.
-
-### Canonical footer snippet
-
-Every lifecycle `rite-*` skill prints this as the **first lines of its output**, then its
-own compact fact lines below per [`reply-contract.md`](reference/reply-contract.md):
-
-```bash
-devrites-engine progress
-```
-
-**Unified entrypoint (tool-agnostic):**
-
-- `devrites-engine` is the shared CLI for agents, CI, and humans. The npm
-  `devrites` shim acquires it, owns install/update/uninstall bootstrap, and
-  proxies other commands.
+Exact native agents/checklists own semantics; the host filesystem owns ledger
+reads/preview/confirmed no-clobber writes, spec grammar re-reading, question-id
+allocation, clarify cursor edits, AFK accounting, recovery accounting, and
+read-only diagnostics. Repository scripts and CI own gates.

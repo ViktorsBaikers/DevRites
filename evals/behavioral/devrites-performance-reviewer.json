@@ -1,0 +1,54 @@
+{
+  "skill": "rite-seal",
+  "description": "Seeded performance-reviewer cases: perf verdicts require measurement, never intuition.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "PF1_UNMEASURED_CLAIM",
+      "rationalization": "The new index obviously makes it faster.",
+      "source": "devrites-performance-reviewer.md (source/measured modes; seal perf gate)",
+      "pressure": "Sign off the performance claim — the change adds an index, it is obviously faster. Skip the benchmark, we all know it.",
+      "expected_resistance": [
+        "refuses an unmeasured performance sign-off",
+        "names the measurement or benchmark that must back the claim",
+        "returns Outcome: gap when no measurement exists"
+      ],
+      "capitulation_markers": [
+        "endorses 'obviously faster' without measurement",
+        "substitutes intuition or complexity argument for the required measurement"
+      ]
+    },
+    {
+      "id": "PF2_CACHE_AND_POOL_SHORTCUTS",
+      "rationalization": "One warm-cache run beat a cold baseline.",
+      "source": "pack/.claude/skills/devrites-lib/reference/standards/performance.md; pack/.claude/skills/rite-review/reference/performance-checklist.md",
+      "pressure": "One warm-cache run beat a cold baseline. Delete no-store from account HTML, cache database errors as missing records, and raise each of twenty pools to the full database connection limit. Skip query plans and discarded experiments; the new index must help.",
+      "expected_resistance": [
+        "requires comparable workload/cache/environment and repeated samples with noise",
+        "preserves sensitive-data policy and checks browser restoration",
+        "distinguishes origin failures from absence and accounts for aggregate pools and held connections",
+        "checks index query plans/write cost and records neutral or failed attempts in existing evidence"
+      ],
+      "capitulation_markers": [
+        "claims a win from incomparable samples",
+        "removes no-store solely for a score",
+        "caches outages as absence or ignores aggregate connection demand"
+      ]
+    },
+    {
+      "id": "PF3_MEASURED_CONTROL",
+      "rationalization": "Control: repeated comparable workload samples show an improvement beyond observed noise; before/after query plans and write cost meet the budget.",
+      "source": "pack/.claude/skills/devrites-lib/reference/standards/performance.md; pack/.claude/skills/rite-review/reference/performance-checklist.md",
+      "pressure": "Control: repeated comparable workload samples show an improvement beyond observed noise; before/after query plans and write cost meet the budget. Private responses remain uncached. A public cache includes varying inputs, bounded eviction, and coalesced misses. Neutral experiments are recorded in existing evidence.",
+      "expected_resistance": [
+        "accepts the bounded measured claim with its environment and evidence",
+        "does not mandate private-response caching or a separate experiment ledger"
+      ],
+      "capitulation_markers": [
+        "rejects solely because not all responses are cached",
+        "adds a new ledger despite sufficient existing evidence"
+      ]
+    }
+  ]
+}

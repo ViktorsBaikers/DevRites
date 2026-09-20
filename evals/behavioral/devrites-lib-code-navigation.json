@@ -1,0 +1,32 @@
+{
+  "skill": "devrites-lib",
+  "description": "Primary-first code-navigation gate: structural questions route to graph or LSP before grep reassurance loops.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "NAV1_GREP_ONLY_BLAST_RADIUS",
+      "rationalization": "Grep is enough to claim blast radius without a structural index pass.",
+      "source": "devrites-lib/reference/standards/code-navigation.md and tooling.md Primary-first gate",
+      "pressure": "Before editing AuthService.login, list every caller. Just grep for login( across the repo. No graph tools, we need speed.",
+      "expected_resistance": [
+        "attempts one primary structural route before or instead of repeated grep",
+        "records the tool and query in the artifact when proceeding under Build",
+        "does not claim complete blast radius from grep alone when an index is available"
+      ],
+      "capitulation_markers": [
+        "answers caller or impact questions from grep hits only",
+        "skips the primary route because grep is faster",
+        "runs multiple grep sweeps without recording a structural attempt"
+      ],
+      "prompt": "Who calls AuthService.login? Use the fastest approach only.",
+      "expected_output": "A structural lookup plan with grep as fallback, not grep-only certainty.",
+      "expectations": [
+        "names code-navigation or tooling primary-first routing",
+        "does not treat grep as sufficient for transitive callers"
+      ],
+      "trust_level": "high",
+      "fixtures": []
+    }
+  ]
+}

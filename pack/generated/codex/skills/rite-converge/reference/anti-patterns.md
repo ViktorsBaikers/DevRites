@@ -20,7 +20,7 @@ Load the moment you reach for one of these excuses.
 - *"The spec has no `AC-###` ids, so there's nothing to converge."*. Assess plan touch-points
   and existing-slice Produces directly against the code; a coverage id is convenient, not
   required. (And flag the untagged spec so `$rite-spec` can add ids.)
-- *"I'll rewrite the whole tasks.md to be clean while I'm at it."*, That is a **reslice**, and
+- *"I'll rewrite the whole tasks.md to be clean while I'm at it." That is a **reslice**, and
   it belongs to `$rite-plan`, not here. Convergence only ever *appends*.
 
 ## Red flags in your own output

@@ -1,151 +1,193 @@
-# DevRites workspace artifact schema
+# DevRites workspace schema
 
-DevRites workspaces are durable source-of-truth folders for a feature. Chat is
-temporary; the workspace must be enough for a fresh human or AI to resume without
-guessing. The schema follows three rules:
+A feature workspace is the durable record under `.devrites/work/<slug>/`.
+Chat or session history is not authoritative. The canonical per-phase files,
+budgets, IDs, and read order live in
+[`workspace-artifact-schema.md`](../../pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md).
 
-- Keep each Markdown file single-purpose and compact.
-- Read the index first, then load only the files needed for the current phase.
-- Trace every acceptance criterion through slices, proof, evidence, and touched files.
+## Root selection
 
-Root selection has two axes:
+- `DEVRITES_ROOT` selects a project root or `.devrites/` directory.
+- Without it, the engine searches only inside the current physical Git
+  repository boundary.
+- `.devrites/ACTIVE` selects the default feature.
+- `DEVRITES_WORKSPACE` may select one explicit contained workspace.
+- Mutating commands refuse ambiguous, escaped, symlinked, or otherwise unsafe
+  roots.
 
-- `DEVRITES_ROOT` selects the project root or `.devrites/` directory. When unset, the engine walks up
-  from cwd to the nearest `.devrites/`.
-- `.devrites/ACTIVE` selects the active feature workspace.
-- `DEVRITES_WORKSPACE` optionally names an explicit workspace path for CI/agents and overrides
-  `.devrites/ACTIVE` for commands that default to the active feature.
-
-Canonical live workspace:
+## Layout
 
 ```text
 .devrites/
   ACTIVE
+  AFK                         # optional run-mode sentinel
+  CHECKPOINT                  # reserved path; not a commit gate
+  principles.md               # ratified project invariants
+  specs/                      # living capability Markdown, maintained by skills
   work/
     <slug>/
-      README.md                 # compact workspace map; feature.md/index.md aliases allowed
-      brief.md                  # request, objective, non-goals, success definition
-      spec.md                   # product WHAT/WHY and acceptance contract
-      architecture.md           # feature technical map
-      flows.md                  # optional Mermaid diagrams
-      decisions.md              # ADR-style decision log
-      assumptions.md            # assumptions and validation status
-      questions.md              # open/resolved human questions
-      plan.md                   # technical approach and slice strategy
-      tasks.md                  # vertical slices
-      traceability.md           # AC/REQ -> slices -> tests/evidence/files matrix
-      state.md                  # compact cursor; status.md alias allowed
-      evidence.md               # command/action proof; proof.md alias allowed
-      browser-evidence.md       # optional UI/runtime browser proof
-      drift.md                  # optional spec/plan drift register
-      touched-files.md          # implementation file list
-      design-brief.md           # optional UI design contract
-      handoff.md                # optional cold-resume summary
-      references.md
-      references/
+      README.md               # canonical workspace map
+      brief.md
+      spec.md
+      decisions.md
+      assumptions.md
+      questions.md
+      decision-coverage.md
+      architecture.md
+      plan.md
+      tasks.md
+      traceability.md
+      eng-review.md
+      test-plan.md
+      state.md                # authoritative mutable cursor
+      evidence.md             # canonical proof record
+      touched-files.md        # sole strict project-candidate manifest
+      review.md               # closed-candidate review + digest binding
+      seal.md                 # verdict + digest binding
+      ship.md                 # shipment record written before archive
+      <conditional artifacts>
   archive/
     <slug>/
 ```
 
-Backward compatibility: `.devrites/features/<slug>/` remains readable as an alias
-for `.devrites/work/<slug>/`; `feature.md` and `index.md` remain valid workspace
-maps; `status.md` remains a cursor alias for `state.md`; `proof.md` remains a
-proof alias for `evidence.md`. Migration should add the canonical files without
-deleting aliases.
+Conditional artifacts include strategy, design/browser evidence, drift,
+handoff, references, flows, `notes.md` anchored notes (written only via
+`devrites-engine note`; non-`exact` anchors block `check seal`), and other
+phase-specific Markdown named by the canonical schema.
 
-## Read order
+## Build-readiness binding
 
-| Phase / role | Read first | Then read | Usually skip |
-| --- | --- | --- | --- |
-| Spec | `README.md`, `brief.md` | `spec.md`, `references.md`, `questions.md` | `plan.md`, `evidence.md` |
-| Define / plan | `README.md`, `state.md` | `spec.md`, `architecture.md`, `decisions.md`, `assumptions.md` | `evidence.md` |
-| Vet | `README.md`, `traceability.md` | `plan.md`, `tasks.md`, `architecture.md`, `decisions.md` | browser proof unless UI |
-| Build | `state.md`, `tasks.md` | `plan.md`, `architecture.md`, `traceability.md`, `questions.md` | full evidence history |
-| Prove | `traceability.md`, `tasks.md` | `evidence.md`, `browser-evidence.md`, `touched-files.md` | long plan rationale |
-| Review / seal | `README.md`, `traceability.md` | `spec.md`, `evidence.md`, `decisions.md`, `drift.md`, `touched-files.md` | raw logs unless needed |
-| Handoff | `README.md`, `state.md` | `handoff.md`, then linked source files | duplicated summaries |
+After Vet's fold-back and semantic recheck, `eng-review.md` contains exactly one
+unindented standalone line:
 
-## Artifact contracts
+```text
+Readiness inputs SHA-256: <64 lowercase hex>
+```
 
-| Artifact | Required? | Owner phase | Read trigger | Budget | Required headings | Validation rules |
-| --- | --- | --- | --- | --- | --- | --- |
-| `README.md` / `index.md` / `feature.md` | required | `/rite-spec` | always first | 120 lines | current phase, status, next action, artifact map, read-next table, blocking gates, last updated | Must not duplicate full spec/plan/evidence. |
-| `brief.md` | required | `/rite-spec` | clarify objective | 80 lines | Objective, Non-goals, Success definition | One-screen request and scope summary. |
-| `spec.md` | required | `/rite-spec` | product contract | 260 lines | Problem, Goal, Non-goals, Users / actors, Requirements, Acceptance criteria, Edge Coverage, Prohibitions (must-NOT), Edge cases, Measurable success, Scope boundaries | Must use stable `REQ-###` and `AC-###`; no deep implementation details. |
-| `architecture.md` | required from plan | `/rite-define` | placement/integration work | 180 lines | Owning module / layer, Integration points, Data / API / events, Dependencies, Risks, Affected boundaries | Carries topology and boundaries, not product acceptance. |
-| `flows.md` | optional | `/rite-spec` or `/rite-define` | lifecycle/state/sequence/data flow is hard to infer | 160 lines | diagram-specific headings | Mermaid only when it clarifies behavior; each diagram states why it matters and related IDs. |
-| `decisions.md` | required | all phases | non-trivial product/technical choice | 200 lines | Decision log | Entries use `DEC-###`, status, context, options, decision, consequences, related IDs. |
-| `assumptions.md` | required | all phases | assumption is not yet verified | 160 lines | Assumption register | Confidence, owner, and validation status are explicit. |
-| `questions.md` | required | all phases | human input or gate | 180 lines | Question register | `Q-###`; no open blocking/escalating questions before plan/build/prove gates. |
-| `ai-spec.md` | conditional | `/rite-spec` or `/rite-define` | AI/LLM annex | 160 lines | AI surface, model/runtime choice, evals, guardrails, monitoring | Required only for model calls, RAG, agents, evals, or LLM output. |
-| `plan.md` | required from plan | `/rite-define` | implementation approach | 220 lines | Approach, Slice strategy, Validation strategy, Rollback | HOW lives here, not in `spec.md`. `Validation strategy` names the Key links: cross-slice wiring `/rite-prove` walks (or `none` for single-slice features). |
-| `tasks.md` | required from plan | `/rite-define` | build one slice | 280 lines | Slice index | Each `SLICE-###` has goal, AC IDs, likely files, tests/proof, mode, gate, dependencies, done condition. |
-| `traceability.md` | required from plan | `/rite-define` | coverage/review/seal | 220 lines | Coverage matrix | Matrix maps AC/REQ ID, slice IDs, test/proof, evidence ID, touched files, status. |
-| `state.md` / `status.md` | required | all phases | current cursor | 120 lines | Cursor | `state.md` is canonical; `status.md` is a compatibility alias. Compact table/key-value cursor; not an append-only narrative. |
-| `evidence.md` / `proof.md` | required from prove | `/rite-build`, `/rite-prove` | proof and seal | 280 lines | Evidence log | `EVID-###`, command/action, result, related AC/slice IDs, limitations. Each acceptance criterion carries a proof class: `test` / `command` / `browser` / `judgment` (untagged reads `judgment`; `judgment` needs its one-line why). |
-| `browser-evidence.md` | UI only | `/rite-prove`, `/rite-polish` | UI/browser proof | 220 lines | Browser evidence, Visual Verdict | Must reference real route/viewports/actions and related IDs. |
-| `drift.md` | drift only | Spec Drift Guard | spec/plan reality mismatch | 160 lines | Drift register | `DRIFT-###`, status, evidence found, resolution, related IDs. |
-| `touched-files.md` | required from build/prove | `/rite-build` | impact/evidence freshness | 160 lines | Touched files | File, slice ownership, and reason per row. |
-| `design-brief.md` | UI only | `devrites-ux-shape` | UI build/proof | 160 lines | Design direction, States, Interaction model | UI target only; no implementation task list. |
-| `handoff.md` | optional | `/rite-handoff` | cold resume | 120 lines | Resume, Read next, Next action | Links to source artifacts instead of copying them. |
-| `references.md` + `references/` | optional | `/rite-spec` | external/user-supplied material | 160 lines | Reference index | Links must resolve or be external URLs. |
+`devrites-engine check readiness --emit-binding <slug>` renders that line. The
+identity binds raw bytes for `spec.md`, `decision-coverage.md`,
+`architecture.md`, `plan.md`, `tasks.md`, `traceability.md`, and
+`test-plan.md`; it also binds presence or absence and bytes for optional
+`strategy.md`, `design-brief.md`, `ai-spec.md`, and project-root
+`.devrites/principles.md`. It excludes Build-mutable ledgers and evidence.
 
-Files may exceed budgets only with a visible `Budget override: <reason>` line.
+Each input is limited to 1 MiB and the aggregate to 8 MiB; symlinks and
+non-regular files fail closed. Ordinary readiness verifies the binding whenever
+its target phase requires `eng-review.md`, and Seal verifies it again. A missing,
+malformed, duplicate, or stale line routes through `/rite-vet`; replacing the
+line without rerunning Vet is not review.
 
-## Required vs optional
+`devrites-engine check drift <slug> --record` may additionally snapshot each
+readiness input's SHA-256 into `readiness-inputs.json` in the workspace. That
+baseline is advisory and never a gate input: a later `check drift` names each
+`changed`/`missing`/`added` input so a stale-binding repair starts at the right
+file. Without the baseline the check falls back to comparing the aggregate
+binding recorded in `eng-review.md`.
 
-Required at `/rite-spec`: workspace map, `brief.md`, `spec.md`, `state.md`,
-`decisions.md`, `assumptions.md`, `questions.md`.
+## Candidate manifest and bindings
 
-Required at `/rite-define` and later: all spec files plus `architecture.md`,
-`plan.md`, `tasks.md`, and `traceability.md`.
+`touched-files.md` contains exactly one `## Touched files` heading and exactly
+one authoritative `## Candidate manifest` heading. `## Touched files` describes
+the scope without repeating candidate paths; the manifest alone defines
+candidate scope. Its body is the exact `No project files.` marker or a table of
+unique project-relative UTF-8 `present`/`deleted` paths, owning slice, and
+reason. Rows must already be strictly sorted by normalized `File` and paths
+must also be unique under case folding. Portable components reject
+Windows-reserved characters and names, including names with extensions, plus a
+trailing dot or space. `## Review trail` is human navigation. The exact grammar
+remains in the
+[canonical artifact schema](../../pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md).
 
-Required at `/rite-prove` and later: all plan files plus `evidence.md` (or
-`proof.md`) and `touched-files.md`.
+The fixed public limits are a 1 MiB manifest, 4,096 rows, a 4,096-byte path,
+64 MiB per present file, and 256 MiB across present files. `.git/**` is never a
+candidate path. Under `.devrites`, only exact `.devrites/principles.md` and
+`.devrites/specs/**` may be candidates; `ACTIVE`, `AFK`, `CHECKPOINT`,
+`archive/**`, `work/**`, and every other sibling fail closed. Other durable
+project files such as `DESIGN.md` and `docs/adr/**` are candidates when changed.
 
-Optional/conditional files are generated only by their producing phase:
-`flows.md` when diagrams clarify behavior, `design-brief.md` and
-`browser-evidence.md` for UI, `drift.md` for drift, `handoff.md` for handoff,
-and `references.md` / `references/` when references exist.
+`evidence.md`, `review.md`, and `seal.md`, plus `browser-evidence.md` when it
+exists, each contain exactly one unindented standalone
+`Candidate SHA-256: <64 lowercase hex>` binding. Run:
 
-## Compactness rules
+```text
+devrites-engine check candidate <slug>
+candidate-sha256: <64 lowercase hex>
+candidate-files: <manifest row count>
+```
 
-- Put summaries first and deep details behind file links.
-- Use tables for matrices, gates, and checklists.
-- Do not repeat boilerplate across files.
-- Do not copy evidence output into `handoff.md`; link to `evidence.md`.
-- Do not copy architecture diagrams into `spec.md`; link to `architecture.md` or `flows.md`.
-- Do not copy full acceptance criteria into `plan.md`; reference `AC-###`.
-- Do not append long narrative logs to `state.md`; keep only the current cursor.
-- Prefer Mermaid only for useful boundary, sequence, state, lifecycle, or data-flow diagrams.
+The command exits `0` on those two output fields, `2` for usage/root selection,
+or `3` with `candidate: BLOCKED: <reason>` for an invalid workspace, manifest,
+path, file, or size limit. See [candidate integrity](../candidate-integrity.md).
+The worktree digest is not an atomic filesystem snapshot against a malicious
+concurrent same-size rewrite; Ship's Git-index checks own the final freeze.
 
-## Stable IDs
+## Supported cursor compatibility
 
-Use these forms in generated artifacts:
+The runtime reads only official released workspace formats:
 
-| Kind | Format | Home |
-| --- | --- | --- |
-| Requirement | `REQ-001` | `spec.md` |
-| Acceptance criterion | `AC-001` | `spec.md` |
-| Slice | `SLICE-001` | `tasks.md` |
-| Decision | `DEC-001` | `decisions.md` |
-| Question | `Q-001` | `questions.md` |
-| Drift event | `DRIFT-001` | `drift.md` |
-| Evidence | `EVID-001` | `evidence.md`, `browser-evidence.md` |
+- v1.0.0–v2.6.1 `.devrites/work/<slug>/state.md` bullet cursors, including
+  `Phase`, `Next step`, and `qid`;
+- v3 `.devrites/work/<slug>/state.md` table cursors, including `phase`,
+  `next_action`, and `question_id`.
 
-## Validation
+The canonical workspace location remains `.devrites/work/<slug>/`; canonical
+map, cursor, and proof files are `README.md`, `state.md`, and `evidence.md`.
+Compatibility reads do not rewrite a workspace and do not emit local telemetry.
+Since engine v5, workspaces declare their schema through a `schema` row in the
+`state.md` cursor; an absent row means the pre-v5 schema 2 contract. `state
+resolve` and `state close` refuse workspaces whose declared schema is not the
+current one: pre-v5 workspaces run `devrites-engine migrate <slug>`, and newer
+workspaces require upgrading devrites.
+`/rite-upgrade` first audits an older
+active workspace against named current contracts; only a cited defect may route
+an edit through its normal phase owner. For released unfinished post-Build
+workspaces, candidate defects route through current Prove, Polish, Review, and
+Seal as applicable. Ambiguous historical scope is a gap; no owner synthesizes
+an old pass.
 
-`scripts/validate-workspace-schema.py` validates generated workspaces. The
-project-wide validation path runs it against representative fixtures.
+Other pre-release layouts, filename substitutions, and phase encodings are
+not runtime authorities. See
+[ADR-0022](../adr/0022-native-orchestration-thin-engine.md),
+[ADR-0025](../adr/0025-evidence-gated-workspace-upgrades.md), and
+[ADR-0029](../adr/0029-v5-workspace-schema-and-native-migration.md).
 
-The validator checks:
+## Native policy state
 
-- required files and headings for the current phase;
-- stable IDs and old `AC1` / `Slice 1` style regressions;
-- acceptance criteria referenced by at least one slice;
-- completed slices referenced by evidence;
-- no unresolved blocking/escalating questions before plan/build/prove gates;
-- high-traffic file budgets unless explicitly justified;
-- plausible Mermaid fences;
-- local Markdown links that point to existing files;
-- evidence IDs mapped in `traceability.md` once proof exists.
+- New question IDs are `q-YYYY-MM-DD-NNN`. The root scans all same-day headers,
+  chooses the next unused suffix, re-reads immediately before append, and
+  recomputes on collision. `state resolve` remains the atomic answer/drop/batch
+  writer; it does not allocate IDs.
+- The root directly owns later-phase Clarify entry/restore cursor edits and AFK
+  slice accounting, preserving unrelated Markdown. See
+  [`state-schema.md`](state-schema.md).
+- Recovery has no counter artifact. Current context plus recorded Dead
+  ends/evidence account for at most three failed attempts per causal
+  fingerprint.
+
+Timeline events, compatibility telemetry, migration journals, reviewer
+statistics, dispatch receipts, model/provider data, and extension registries
+are not workspace state.
+
+## Readiness and proof ownership
+
+The active skill and exact native agents own semantic readiness, traceability,
+acceptance and evidence quality, doubt, review reconciliation, test-quality
+assessment, capability interpretation, compatibility audit, and recovery routing.
+They read the workspace and observed repository results directly.
+
+The engine provides only:
+
+- `check candidate`: strict candidate-manifest validation and content-bound
+  identity;
+- `check readiness`: phase-relative file completeness, open-human-gate check,
+  the `tasks.md` slice graph when that artifact is required, and the stable
+  vetted Build-input binding whenever `eng-review.md` is required;
+- `check seal`: final file completeness and open-human-gate checks, the
+  `tasks.md` slice graph, then the readiness-binding recheck, then exact
+  candidate bindings after that aggregate gate passes;
+- atomic `state resolve` answer/drop/batch and transactional `state close`;
+- secret scanning, version reporting, and local install lifecycle primitives.
+
+A marker or file can satisfy structural presence without proving semantic
+quality; native review, the normative spec grammar re-read, and repository proof
+must establish that separately.

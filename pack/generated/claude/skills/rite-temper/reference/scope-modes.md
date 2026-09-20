@@ -26,8 +26,8 @@ Invert. Two subtractive moves:
 - **YAGNI ledger.** Each candidate scope item gets the "imagine the later refactor" test: if
   adding it *later* isn't materially more expensive, **defer it** (with a revisit note).
   Bias hard toward defer: most presumed-needed features are never used. Reuse the
-  pack's existing `patterns.md` standards, including "no abstraction before two real callers"
-  and "speculative generality." Don't invent a new YAGNI rule.
+  pack's existing [`patterns.md`](../../devrites-lib/reference/standards/patterns.md) standard ('no speculative abstraction or pattern
+  without a current need'). Don't invent a new YAGNI rule.
 
 ## The four modes: commit exactly one
 Mode selection is the first convergence move. Record the chosen mode + rationale + the
@@ -43,7 +43,7 @@ Mode selection is the first convergence move. Record the chosen mode + rationale
 ## Bound ambition by reversibility
 The bigger the bet, the more it must be reversible. Irreversible-risk areas (auth, migrations,
 public API, data model) get the **opposite** of ambition: maximum conservatism, explicit
-rollback, and they **always pause** regardless of mode (the `afk-hitl.md` irreversible-risk
+rollback, and they **always pause** regardless of mode (the [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) irreversible-risk
 list is honored verbatim). Size big bets so that if the whole thing vanished tomorrow, you'd be
 fine.
 

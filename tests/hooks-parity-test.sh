@@ -1,67 +1,129 @@
 #!/usr/bin/env bash
-# hooks-parity-test.sh: DevRites hook coverage must stay in sync across Claude and Codex.
-#
-# Post-cutover every hook invokes the global `devrites-engine` binary (behind the inline fail-open
-# guard) as `devrites-engine hook <name> --harness=<h>`, so coverage is compared by hook NAME, not
-# by script filename. DevRites registers hooks in Claude settings and generated Codex hooks; drift
-# between them silently drops a guard.
-#
-# Codex has the same core enforcement, minus the hooks that are Claude-only by design:
-#   - source-cache-pre/-post : fire on Claude's WebFetch tool; Codex has no WebFetch (uses
-#                              web_search, which self-caches), so there is nothing to revalidate.
-#   - statusline            : Claude settings statusLine surface; Codex has no matching hook event.
-#   - auq                   : fires on Claude's AskUserQuestion tool. Codex HAS an equivalent
-#                             tool (request_user_input) but emits NO hook event for it: its
-#                             PostToolUse matches only Bash/apply_patch/MCP calls, and the
-#                             user-input-requested event was declined (openai/codex#12524,
-#                             closed not-planned). Re-check if Codex hooks gain that event.
-# subagent-orient IS shared. reviewer-readonly + wright-scope live in Claude SUBAGENT FRONTMATTER
-# but in the Codex hooks.json (Codex agent TOML can't carry frontmatter hooks): same enforcement.
+# Native host permissions own the writer/read-only split. Exact paths are
+# instruction-backed and no active agent profile retains an engine hook.
 set -u
-export DEVRITES_NO_BINARY=1   # only the pack config is under test; no engine binary needed
+export DEVRITES_NO_BINARY=1
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-target="$(mktemp -d)"; gen=""; trap 'rm -rf "$target"; [ -n "$gen" ] && rm -rf "$gen"' EXIT
+target="$(mktemp -d)"; gen=""
+trap 'rm -rf "$target"; [ -n "$gen" ] && rm -rf "$gen"' EXIT
+
 if [ -z "${DEVRITES_HOST_ARTIFACT_DIR:-}" ]; then
   gen="$(mktemp -d)"
   DEVRITES_HOST_ARTIFACT_DIR="$gen" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
     || { echo "FAIL: could not build host artifacts"; exit 1; }
   export DEVRITES_HOST_ARTIFACT_DIR="$gen"
 fi
-bash "$ROOT/install.sh" --target "$target" >/dev/null 2>&1 || { echo "FAIL: install failed"; exit 1; }
+bash "$ROOT/install.sh" --target "$target" >/dev/null 2>&1 \
+  || { echo "FAIL: install failed"; exit 1; }
 
 python3 - "$ROOT" "$target" <<'PY'
-import json, re, sys, glob
-root, target = sys.argv[1], sys.argv[2]
-# Capture the hook name from every `devrites-engine hook <name>` invocation.
-RE = r"devrites-engine hook ([a-z0-9-]+)"
+import json
+import re
+import sys
+import tomllib
+from pathlib import Path
 
-def names(path):
-    return set(re.findall(RE, json.dumps(json.load(open(path)))))
-
+root, target = map(Path, sys.argv[1:])
+hook_re = re.compile(r"devrites-engine hook ([a-z0-9-]+)")
 fail = []
 
-# Codex must carry every shared hook. Shared = all Claude hooks (settings.json + the two
-# subagent-frontmatter guards) minus the documented Claude-only set.
-CLAUDE_ONLY = {"source-cache-pre", "source-cache-post", "statusline", "auq"}
-claude_all = names(f"{root}/pack/.claude/settings.json")
-for f in glob.glob(f"{root}/pack/.claude/agents/*.md"):
-    claude_all |= set(re.findall(RE, open(f).read()))
-shared = claude_all - CLAUDE_ONLY
-if not shared:
-    fail.append("No shared hook names captured; parity regex or hook wiring is broken")
-codex = names(f"{target}/.codex/hooks.json")
-missing = shared - codex
-if missing:
-    fail.append(f"Codex hooks.json MISSING shared enforcement: {sorted(missing)}")
-leaked = CLAUDE_ONLY & codex
-if leaked:
-    fail.append(f"Claude-only hook leaked into Codex: {sorted(leaked)}")
+claude_settings = json.loads((root / "pack/.claude/settings.json").read_text())
+if claude_settings.get("permissions", {}).get("defaultMode") != "plan":
+    fail.append("Claude root does not use native plan mode")
+if claude_settings.get("hooks"):
+    fail.append("Claude root retained project hooks")
+
+codex_config = tomllib.loads((target / ".codex/config.toml").read_text())
+if codex_config.get("default_permissions") != "devrites-orchestrator":
+    fail.append('Codex root default_permissions is not "devrites-orchestrator"')
+orchestrator = codex_config.get("permissions", {}).get("devrites-orchestrator", {})
+if orchestrator.get("extends") != ":workspace":
+    fail.append("Codex root profile does not extend :workspace")
+if (target / ".codex/hooks.json").exists():
+    fail.append("clean Codex install created a project hooks file")
+
+claude_agents = sorted((root / "pack/.claude/agents").glob("devrites-*.md"))
+codex_agents = sorted((target / ".codex/agents").glob("devrites-*.toml"))
+if len(claude_agents) != 17 or len(codex_agents) != 17:
+    fail.append(f"agent count mismatch: Claude={len(claude_agents)} Codex={len(codex_agents)}")
+
+claude_hooks = set()
+for path in claude_agents:
+    body = path.read_text()
+    role = path.stem
+    names = set(hook_re.findall(body))
+    claude_hooks |= names
+    if role == "devrites-slice-wright":
+        if "permissionMode: acceptEdits" not in body:
+            fail.append(f"{path}: missing native writer permission")
+    else:
+        if "permissionMode: plan" not in body:
+            fail.append(f"{path}: missing native plan permission mode")
+    if "hooks:" in body or names:
+        fail.append(f"{path}: retained an engine hook")
+
+codex_hooks = set()
+for path in codex_agents:
+    body = path.read_text()
+    profile = tomllib.loads(body)
+    names = set(hook_re.findall(body))
+    codex_hooks |= names
+    expected = ":workspace" if path.stem == "devrites-slice-wright" else ":read-only"
+    if profile.get("default_permissions") != expected:
+        fail.append(f"{path}: missing exact {expected} permission profile")
+    if "[[hooks." in body or names:
+        fail.append(f"{path}: Codex profile retained an engine hook")
+    if "sandbox_mode" in profile:
+        fail.append(f"{path}: retained legacy sandbox_mode")
+
+if claude_hooks:
+    fail.append(f"Claude hook set differs: {sorted(claude_hooks)}")
+if codex_hooks:
+    fail.append(f"Codex hook set differs: {sorted(codex_hooks)}")
+
+all_text = json.dumps(claude_settings) + "\n" + "\n".join(
+    path.read_text() for path in claude_agents + codex_agents
+)
+for removed in ("git-guard", "a1-guard", "stop-gate", "wright-scope"):
+    if removed in all_text:
+        fail.append(f"removed hook survived: {removed}")
+
+core = (root / "pack/.claude/skills/devrites-lib/reference/standards/core.md").read_text()
+afk = (root / "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md").read_text()
+ship = (root / "pack/.claude/skills/rite-ship/SKILL.md").read_text()
+git_ship = (root / "pack/.claude/skills/rite-ship/reference/git-ship.md").read_text()
+autocomplete_paths = [
+    root / "pack/.claude/skills/rite-autocomplete/SKILL.md",
+    root / "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md",
+    root / "pack/.claude/skills/rite-autocomplete/reference/loop.md",
+]
+
+if "Before advancing a phase, run" not in core:
+    fail.append("core guidance lost the readiness rest point")
+if "devrites-engine check readiness <slug>" not in core:
+    fail.append("core guidance lost the nested structural readiness check")
+if "devrites-engine check seal <slug>" not in core:
+    fail.append("core guidance lost rite-seal's final aggregate rest point")
+if "three no-progress attempts per exact causal fingerprint" not in re.sub(r"\s+", " ", afk):
+    fail.append("AFK guidance lost the per-fingerprint no-progress cap")
+if "devrites-engine check seal <slug>" not in ship:
+    fail.append("rite-ship preflight does not reuse the final seal aggregate")
+if "A seal GO is never authorization for Git" not in git_ship:
+    fail.append("rite-ship lost fresh exact Git approval")
+for path in autocomplete_paths:
+    if "never authorizes Git" not in path.read_text():
+        fail.append(f"{path}: autocomplete flag still lacks the Git-approval boundary")
+
+agents_bridge = (target / "AGENTS.md").read_text()
+if "any changed or retried plan needs fresh approval" not in agents_bridge:
+    fail.append("generated Codex AGENTS bridge lost fresh exact irreversible-action approval")
+if list((target / ".codex").glob("*.rules")):
+    fail.append("clean Codex install created preview exec-policy rules")
 
 if fail:
     print("HOOKS-PARITY: FAIL")
-    for f in fail: print("  " + f)
-    sys.exit(1)
-print(f"HOOKS-PARITY: PASS: Claude settings has {len(names(f'{root}/pack/.claude/settings.json'))} hooks; "
-      f"Codex carries all {len(shared)} shared enforcement hooks (incl. subagent-orient); "
-      f"{len(CLAUDE_ONLY)} Claude-only by design (source-cache x2 + statusline + auq).")
+    for item in fail:
+        print("  " + item)
+    raise SystemExit(1)
+print("HOOKS-PARITY: PASS")
 PY

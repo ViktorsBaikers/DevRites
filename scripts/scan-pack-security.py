@@ -151,7 +151,7 @@ def _file_suppressions(text):
 
 # --- driver ---------------------------------------------------------------
 
-TEXT_EXTS = {".md", ".sh", ".json", ".txt", ".py", ".js", ".yaml", ".yml", ""}
+TEXT_EXTS = {".md", ".sh", ".json", ".toml", ".txt", ".py", ".js", ".yaml", ".yml", ""}
 
 
 def iter_files(paths):

@@ -18,7 +18,7 @@ What to read in the project before designing, and how register changes the rules
 ## Register-specific rules
 **Product surface** (dashboard/admin/app):
 - System fonts are legitimate (`-apple-system, BlinkMacSystemFont, "Segoe UI",
-  system-ui, sans-serif`); Inter is a fine default for a reason.
+  system-ui, sans-serif`); Inter is a reasonable fallback only when the project has no established family.
 - One family usually carries headings, body, labels, data.
 - Fixed rem scale (not fluid `clamp()` headings); tighter ratio (1.125-1.2).
 - Density is a feature; tables can run dense; prose still ~65-75ch.
@@ -31,7 +31,8 @@ What to read in the project before designing, and how register changes the rules
 Match what exists. A new token, font, or component library is a decision the user makes,
 not a default you reach for. When the system is ambiguous, ask: don't invent the
 project's intent. When a project `DESIGN.md` is present it is the **rolled-up design
-memory** earlier features sealed (`../../rite-ship/reference/design-memory.md`): the
+memory** earlier features proved and closed during Polish
+(`../../rite-polish/reference/design-memory.md`): the
 inherited system to build *to*, ahead of re-deriving direction from scratch.
 
 ## Scene-sentence: commit before choosing theme / direction
@@ -52,8 +53,7 @@ Examples:
   in afternoon light, on a 13-inch laptop" → forces a calm light theme with one
   committed accent for the running total.
 
-Run the sentence, not the category. When the user supplies the brief, paraphrase the
-sentence back to them as confirmation before designing.
+Run the sentence, not the category.
 
 ## Named anchor references: steer with specifics, not adjectives
 After the scene sentence, name **2-3 specific anchors** the surface should feel like:
@@ -86,6 +86,10 @@ the probe *chose* a lane; here you *match* the chosen target.
   focus, loading, empty, error: design those from the brief, the reference won't have them).
 
 Then implement to match, in the project's system:
+- **Match to measurable tolerance, not vibes.** Spacing and sizes land within ~10% of
+  the reference or on the nearest 4 pt step; radius within ±2 px; shadow blur/spread
+  within ~20%; color binds to the nearest existing token. Deviations are recorded in
+  the brief, not absorbed silently.
 - **Match the target, fill the gaps from the brief.** A static reference shows one state;
   ship the full state set (see `quality-standards.md`, "Focus & states").
 - **A reference that conflicts with the design system is a question for the user**, not a
@@ -106,7 +110,7 @@ Then implement to match, in the project's system:
   palette.
 - Never pick a tone (playful / serious / corporate / hand-drawn) that
   contradicts the surface's **register**: brand vs product
-  (`devrites-frontend-craft/SKILL.md` §2).
+  ([`SKILL.md`](../SKILL.md) §2).
 - Never add a second design system to "modernize" without explicit user
   approval. One design system per project; consistency beats local taste.
 - Never invent a token. If a needed color/spacing/type slot doesn't exist,

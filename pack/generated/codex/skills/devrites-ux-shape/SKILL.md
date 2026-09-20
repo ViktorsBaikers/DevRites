@@ -1,20 +1,10 @@
 ---
 name: devrites-ux-shape
-description: Internal DevRites skill; DevRites agents invoke it explicitly, not by prompt match.
+description: Shape UX/UI direction, states, and interactions before code. Use for screens, forms, dashboards, or settings; not for implementation or polish.
 user-invocable: false
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
+<!-- loads: {"always":["devrites-ux-shape/reference/brief-template.md","devrites-ux-shape/reference/visual-direction-probe.md","rite-build/reference/frontend-trigger.md","devrites-frontend-craft/reference/design-references.md","devrites-frontend-craft/reference/quality-standards.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-ux-shape` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # devrites-ux-shape: plan the UX/UI before code
 
@@ -39,17 +29,17 @@ gathered:
 - Design system + register (tokens, components, type, spacing, neighbors; brand-vs-product)
   → `../devrites-frontend-craft/reference/design-references.md`.
 - `PRODUCT.md` / `DESIGN.md` / `CLAUDE.md` if present: anchors that reduce questions.
-  `DESIGN.md` is the project's **rolled-up design memory** (tokens, calibration baseline,
-  proven component behaviors) earlier features sealed via `../rite-ship/reference/design-memory.md`;
-  treat it as the inherited system: read it before re-discovering, depart only on signal.
+  `DESIGN.md` is the rolled-up design memory (`../rite-polish/reference/design-memory.md`;
+  see `../devrites-frontend-craft/reference/design-references.md`) — read it before
+  re-discovering, depart only on signal.
 - `references.md` + `references/`: the screenshots / Figma / video / links the human
   supplied. Honor each recorded role: **target** = fidelity contract, **constraint** =
   required rule, **inspiration** = extract only the cited principle.
 
 ## 2. Discovery: one round, assert-then-confirm
 Understand the feature deeply enough to make excellent design calls: **no code, no
-markup**. Use the `devrites-interview` cadence: 2-3 questions per round, best-guess
-attached, stop when answers converge. One round is the default; add a second only for
+markup**. Use the `devrites-interview` cadence: one question per turn (≤3 per pass),
+best-guess attached, stop when answers converge. One round is the default; add a second only for
 material gaps. When `PRODUCT.md` + the spec already pin an answer, **assert it and ask to
 confirm** ("reads as Restrained: confirm?"), don't offer a four-option menu. Cover:
 - **Purpose & user:** who, in what state of mind (rushed / exploring / anxious / focused).

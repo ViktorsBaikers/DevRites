@@ -8,7 +8,7 @@ Assess three kinds of unit against the live code:
 
 1. **Acceptance criteria / scenarios:** each buildable `AC-###` and each `#### Scenario:`
    (WHEN/THEN) in `spec.md`. `## Success metrics` lines are **not** units. They carry no
-   `AC-###` id, no slice can satisfy them, and this pass never enqueues one (`spec-grammar.md`).
+   `AC-###` id, no slice can satisfy them, and this pass never enqueues one ([`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md)).
 2. **Plan touch-points:** the files/components/modules `plan.md` says get built or edited, and
    each existing slice's stated **Produces** (the interface it was meant to expose).
 3. **Principles:** each invariant in `.devrites/principles.md`, checked against the code as it
@@ -21,14 +21,18 @@ slice.
 
 | Verdict | Test | Action |
 |---|---|---|
-| **built** | The behavior exists in the code **and** a test covers it (a criterion with code but no covering test is not built: `testing.md`). | Nothing: do not append. |
+| **built** | The behavior exists in the code **and** a test covers it (a criterion with code but no covering test is not built: [`testing.md`](../../devrites-lib/reference/standards/testing.md)). | Nothing: do not append. |
 | **partial** | Some of it exists: happy path only, un-wired, untested, a TODO stub, or an edge case from the scenario's WHEN/THEN missing. | Append a slice for the **remainder**, its `Known-Gotchas` naming what's already there so `$rite-build` extends rather than rebuilds. |
 | **absent** | No code implements it. | Append a full slice. |
 
-Read the code to decide: do not infer from the plan. Use the code-intelligence index
-(codebase-memory-mcp → codegraph → graphify, else LSP / grep) so the verdict reflects live
-code, not the artifacts' claims. `devrites-engine analyze` / `devrites-engine coverage` tell you what's
-*mapped*; only reading the code tells you what's *built*.
+Read the code to decide: do not infer from the plan. Apply [`tooling.md`](../../devrites-lib/reference/standards/tooling.md): use the
+primary available code index, cross-check only a named unresolved predicate, then use LSP/file
+search so the verdict reflects live code. Read `traceability.md` to see what is mapped; only
+code and tests tell you what is built.
+
+Treat accepted invariants, failure/recovery rows, and triggered applicability obligations as
+buildable units alongside REQ/AC/scenarios. A happy path with missing applicable
+duplicate/retry/concurrency/tenant/timeout/order/interruption/rollback behavior is `partial`.
 
 ## Principle violations
 
@@ -45,7 +49,7 @@ Before appending a slice, separate the two failure directions:
 - **Code gap:** the spec is right, the code falls short. → append a slice. (This skill's job.)
 - **Spec drift:** the code is right, the requirement is stale or wrong. → **do not** append a
   slice that bends correct code to a wrong spec. Stop, route through the Spec Drift Guard
-  (`rite-build/reference/spec-drift-guard.md`) + a recorded decision, and let `$rite-plan
+  ([`spec-drift-guard.md`](../../rite-build/reference/spec-drift-guard.md)) + a recorded decision, and let `$rite-plan
   repair` reshape intent. Convergence enqueues work; it never launders a spec bug into a code
   task.
 

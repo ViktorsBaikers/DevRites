@@ -1,0 +1,52 @@
+{
+  "skill": "rite-watch-pr",
+  "description": "Trigger and boundary evals for read-only GitHub PR and CI observation.",
+  "queries": [
+    {
+      "text": "/rite-watch-pr 42",
+      "expected": "should_trigger",
+      "rationale": "Direct Claude invocation for one PR observation."
+    },
+    {
+      "text": "$rite-watch-pr https://github.com/example/project/pull/42",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation for one PR observation."
+    },
+    {
+      "text": "Watch this PR's checks and review state without changing anything.",
+      "expected": "should_trigger",
+      "rationale": "Natural-language request matches the read-only watcher."
+    },
+    {
+      "text": "Poll my current PR read-only and tell me the one next action.",
+      "expected": "should_trigger",
+      "rationale": "Scheduled observation is an intended model-invoked use."
+    },
+    {
+      "text": "Fix every review comment, push, reply, and resolve the threads.",
+      "expected": "should_not_trigger",
+      "owner": "rite-pr-feedback",
+      "rationale": "Mutating feedback resolution belongs to the explicit-only PR utility."
+    },
+    {
+      "text": "Review my local feature diff for correctness.",
+      "expected": "should_not_trigger",
+      "owner": "rite-review",
+      "rationale": "Creating fresh code-review findings belongs to rite-review."
+    },
+    {
+      "text": "Merge PR 42 now.",
+      "expected": "should_not_trigger",
+      "owner": null,
+      "owner_rationale": "Merging is a shared-state action outside the read-only watcher.",
+      "rationale": "Watcher never mutates a PR."
+    },
+    {
+      "text": "Rerun the failed CI workflow.",
+      "expected": "should_not_trigger",
+      "owner": null,
+      "owner_rationale": "Rerunning shared CI requires explicit user authorization outside this skill.",
+      "rationale": "Watcher only observes checks."
+    }
+  ]
+}

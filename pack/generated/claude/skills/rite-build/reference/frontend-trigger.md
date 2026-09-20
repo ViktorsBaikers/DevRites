@@ -14,9 +14,9 @@ A slice is **frontend/UI** if it touches or plans to touch any of:
 - `/rite-spec` applies **`devrites-ux-shape`** (spec step 3a) to write the feature-level
   **`design-brief.md`** before any code: design direction, key states, interaction model,
   optional Figma/image visual-direction probe.
-- `/rite-build` applies **`devrites-frontend-craft`**, building **to** that `design-brief.md`
-  (register detection, refine the brief per slice, existing design system, all states,
-  anti-AI-slop) before/while implementing.
+- `/rite-build` applies **`devrites-frontend-craft`** to the vetted `design-brief.md`
+  (register, system, states, anti-AI-slop). If missing or materially changed, shape it
+  and return through `/rite-vet` before code.
 - `/rite-prove` applies **`devrites-browser-proof`** (proof ladder + evidence schema).
 - `/rite-polish` runs the full **normalize + polish** workflow.
 - `/rite-review` and `/rite-seal` include frontend UX / a11y / responsive / design-
@@ -28,7 +28,7 @@ If the slice spans both layers, it's both a frontend **and** a backend slice. De
 (DB → service → API → UI), apply the engineering rules to the backend and
 `devrites-frontend-craft` to the UI, map each contract error to a real UI state, and
 **prove both layers** (contract tests + browser proof). See
-`devrites-frontend-craft/reference/fullstack.md`.
+[`fullstack.md`](../../devrites-frontend-craft/reference/fullstack.md).
 
 ## When NOT triggered
 Pure backend/data/CLI/infra slices skip craft and browser proof, but still get tests

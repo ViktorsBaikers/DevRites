@@ -1,38 +1,429 @@
 #!/usr/bin/env bash
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-SPEC="$ROOT/pack/.claude/skills/rite-spec/SKILL.md"
-DEFINE="$ROOT/pack/.claude/skills/rite-define/SKILL.md"
-VET="$ROOT/pack/.claude/skills/rite-vet/SKILL.md"
 fail=0
 
 ok() { printf '  ok: %s\n' "$*"; }
 no() { printf '  FAIL: %s\n' "$*"; fail=1; }
+require() {
+  if grep -Fq -- "$2" "$1"; then ok "$3"; else no "$3"; fi
+}
+forbid() {
+  if grep -Fq -- "$2" "$1"; then no "$3"; else ok "$3"; fi
+}
+require_order() {
+  local file="$1" label="$2" previous=0 line token
+  shift 2
+  for token in "$@"; do
+    line="$(grep -nF -- "$token" "$file" | head -1 | cut -d: -f1)"
+    if [ -z "$line" ] || [ "$line" -le "$previous" ]; then
+      no "$label"
+      return
+    fi
+    previous="$line"
+  done
+  ok "$label"
+}
 
 echo "== phase-gate-routing-test =="
 
-if grep -q 'Do not run `devrites-engine analyze`' "$SPEC"; then
-  ok "rite-spec defers analyze until tasks exist"
-else
-  no "rite-spec does not explicitly defer analyze"
-fi
+SPEC="$ROOT/pack/.claude/skills/rite-spec/SKILL.md"
+CLARIFY="$ROOT/pack/.claude/skills/rite-clarify/SKILL.md"
+DEFINE="$ROOT/pack/.claude/skills/rite-define/SKILL.md"
+PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
+PLAN_GRAPH="$ROOT/pack/.claude/skills/rite-plan/reference/dependency-graph.md"
+VET="$ROOT/pack/.claude/skills/rite-vet/SKILL.md"
+BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
+BUILD_PARALLEL="$ROOT/pack/.claude/skills/rite-build/reference/parallel-batch.md"
+BUILD_SLICE="$ROOT/pack/.claude/skills/rite-build/reference/one-slice-cycle.md"
+CODE_REVIEWER="$ROOT/pack/.claude/agents/devrites-code-reviewer.md"
+WRIGHT="$ROOT/pack/.claude/agents/devrites-slice-wright.md"
+WRIGHT_DISPATCH="$ROOT/pack/.claude/skills/rite-build/reference/wright-dispatch.md"
+CORE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/core.md"
+CONTEXT_HYGIENE="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/context-hygiene.md"
+AFK_HITL="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md"
+ONE_SHOT="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/one-shot-actions.md"
+WORKFLOW_ARTIFACTS="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md"
+STATE_WORKSPACE="$ROOT/pack/.claude/skills/rite-spec/reference/state-workspace.md"
+REPLY="$ROOT/pack/.claude/skills/devrites-lib/reference/reply-contract.md"
+PROVE="$ROOT/pack/.claude/skills/rite-prove/SKILL.md"
+POLISH="$ROOT/pack/.claude/skills/rite-polish/SKILL.md"
+CONVERGE="$ROOT/pack/.claude/skills/rite-converge/SKILL.md"
+DRIFT="$ROOT/pack/.claude/skills/rite-build/reference/spec-drift-guard.md"
+AUTOCOMPLETE="$ROOT/pack/.claude/skills/rite-autocomplete/SKILL.md"
+AUTOCOMPLETE_LOOP="$ROOT/pack/.claude/skills/rite-autocomplete/reference/loop.md"
+AUTOCOMPLETE_STOPS="$ROOT/pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md"
+BUILD_AFK="$ROOT/pack/.claude/skills/rite-build/reference/afk-discipline.md"
+DEBUG_RECOVERY="$ROOT/pack/.claude/skills/devrites-debug-recovery/SKILL.md"
+DEBUG_CLASSIFY="$ROOT/pack/.claude/skills/devrites-debug-recovery/reference/cleanup-and-classify.md"
+CANDIDATE_INTEGRITY="$ROOT/pack/.claude/skills/devrites-lib/reference/candidate-integrity.md"
+PROOF_RUNNER="$ROOT/pack/.claude/agents/devrites-proof-runner.md"
+DISCOVERY="$ROOT/pack/.claude/skills/rite-prove/reference/test-command-discovery.md"
+FAILURE_TRIAGE="$ROOT/pack/.claude/skills/rite-prove/reference/failure-triage.md"
+PLAN_REVIEWER="$ROOT/pack/.claude/agents/devrites-plan-reviewer.md"
+PLAN_DRAFTER="$ROOT/pack/.claude/agents/devrites-plan-drafter.md"
+VET_ARTIFACTS="$ROOT/pack/.claude/skills/rite-vet/reference/artifacts.md"
+CUSTOMIZE="$ROOT/pack/.claude/skills/rite-customize/SKILL.md"
+UPGRADE="$ROOT/pack/.claude/skills/rite-upgrade/SKILL.md"
+UPGRADE_PLANNER="$ROOT/pack/.claude/agents/devrites-upgrade-planner.md"
+RESOLVE="$ROOT/pack/.claude/skills/rite-resolve/SKILL.md"
+SEAL="$ROOT/pack/.claude/skills/rite-seal/SKILL.md"
+SEAL_CONTRACT="$ROOT/pack/.claude/skills/rite-seal/reference/phase-contract.md"
+DOUBT="$ROOT/pack/.claude/skills/devrites-doubt/SKILL.md"
+VET_DEPTH="$ROOT/pack/.claude/skills/rite-vet/reference/depth.md"
+REVIEW="$ROOT/pack/.claude/skills/rite-review/SKILL.md"
+DISPATCH="$ROOT/pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md"
+AGENTS="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/agents.md"
+TEMPER="$ROOT/pack/.claude/skills/rite-temper/SKILL.md"
+TEMPER_DIMENSIONS="$ROOT/pack/.claude/skills/rite-temper/reference/review-dimensions.md"
+API_INTERFACE="$ROOT/pack/.claude/skills/devrites-api-interface/SKILL.md"
 
-write_line="$(grep -n '^6\. \*\*Write\*\*' "$DEFINE" | cut -d: -f1)"
-analyze_line="$(grep -n '^[[:space:]]*devrites-engine analyze' "$DEFINE" | head -1 | cut -d: -f1)"
-readiness_line="$(grep -n '^7\. \*\*Readiness gate\*\*' "$DEFINE" | cut -d: -f1)"
-if [ -n "$write_line" ] && [ -n "$analyze_line" ] && [ -n "$readiness_line" ] \
-   && [ "$analyze_line" -gt "$write_line" ] && [ "$analyze_line" -lt "$readiness_line" ]; then
-  ok "rite-define runs analyze after writing tasks and before readiness"
-else
-  no "rite-define does not run analyze after tasks are written"
-fi
+require "$CORE" 'Immediately before its final response' 'core loads the shared reply contract at the response boundary'
+require "$CORE" 'reply-contract.md' 'core names the universal reply contract'
+require "$CORE" 'devrites-engine check readiness <slug>' 'core preserves the structural lifecycle rest point'
+require "$CORE" 'devrites-engine check seal <slug>' 'core preserves the structural seal rest point'
+require "$REPLY" 'Use exactly one recommended next action' 'reply contract keeps one next action'
+require "$CORE" 'Standalone rites persist and stop' 'core distinguishes standalone gates from caller-owned backtracking'
+require "$AUTOCOMPLETE" '`NEEDS REPLAN` is a backward edge' 'autocomplete treats technical readiness as internal recovery'
+require "$AUTOCOMPLETE" '`NEEDS REPLAN` cold resume' 'autocomplete resumes an interrupted internal Plan/Vet edge'
+require "$AUTOCOMPLETE_LOOP" 'No user-facing reply is permitted' 'autocomplete cannot hand off an internal repair checkpoint'
+require "$AUTOCOMPLETE_LOOP" 'number of completed repair/Vet cycles' 'autocomplete does not stop because many distinct findings were closed'
+require "$AUTOCOMPLETE_STOPS" '`NEEDS_REPLAN` is not a stop condition' 'technical readiness failure cannot end autocomplete'
+require "$VET" 'per correction/fingerprint' 'vet reviewer loop limit does not cap distinct recovery findings'
+require "$REPLY" 'Intermediate `NEEDS_REPLAN`' 'completion reply rejects internal recovery states'
+require "$CONTEXT_HYGIENE" 'Autocomplete exception' 'context hygiene cannot surface nested phases as user handoffs'
 
-vet_analyze_count="$(grep -c '^[[:space:]]*devrites-engine analyze' "$VET" || true)"
-if [ "$vet_analyze_count" -ge 2 ]; then
-  ok "rite-vet re-runs analyze after plan hardening"
-else
-  no "rite-vet can mutate tasks after its only analyze pass"
+require "$SPEC" '/rite-clarify' 'spec routes topology coverage to clarify'
+require "$SPEC" 'update the existing workspace rather than overwrite it' 'spec updates an existing workspace safely'
+require "$SPEC" 'Acceptance delta' 'spec shows acceptance changes'
+require "$SPEC" 'Open-question delta' 'spec shows question changes'
+require "$SPEC" 'same intent, >50% scope' 'spec preserves the ACTIVE overlap route'
+require "$SPEC" 'Native grammar re-read checklist' 'spec checks normative grammar without an engine parser'
+forbid "$SPEC" 'devrites-engine check spec' 'spec has no removed grammar command'
+require "$CLARIFY" 'devrites-interview' 'clarify owns the coverage scan'
+require "$CLARIFY" 'Decision coverage: CLEAR' 'clarify emits the readiness verdict'
+require "$CLARIFY" 'Next: /rite-temper' 'clarify names the next phase'
+require "$CLARIFY" 'return_phase' 'clarify preserves the later-phase return cursor natively'
+require "$CLARIFY" 'preserve unrelated Markdown' 'clarify edits only its cursor fields'
+forbid "$CLARIFY" 'devrites-engine state clarify' 'clarify has no removed state helper'
+require "$DEFINE" 'Decision coverage: CLEAR' 'define requires clarified intent'
+require "$DEFINE" '/rite-clarify' 'define returns missing coverage to clarify'
+require "$PLAN_GRAPH" 'check readiness' 'plan graph is enforced at readiness and seal'
+require "$DEFINE" 'devrites-engine check task-graph <slug>' 'define validates its written task graph before Vet'
+require "$CONVERGE" 'devrites-engine check task-graph <slug>' 'converge validates appended slices before Vet'
+
+require "$BUILD" 'devrites-engine check readiness <slug>' 'build uses the structural readiness gate'
+require "$BUILD" 'dispatch the exact `devrites-slice-wright`' 'build does not bypass the writer agent'
+require "$BUILD" 'exact project-relative source/test path list directly in the task' 'build states exact writer paths inline'
+require "$BUILD" 'git diff --name-only' 'build inspects the returned source delta'
+require "$BUILD" 'test hunks for deletion, skipping/focus, tautology, or weaker expectations' 'build reviews test integrity without snapshot machinery'
+require "$BUILD" 'devrites-test-analyst' 'build delegates semantic test analysis natively'
+forbid "$BUILD" 'devrites-engine test-integrity' 'build has no heuristic engine test parser'
+forbid "$BUILD" 'devrites-engine build-readiness' 'build has no semantic engine readiness parser'
+forbid "$BUILD" 'devrites-engine reconcile' 'build has no engine source-window gate'
+require "$BUILD" 'devrites-debug-recovery' 'build routes technical failures to bounded recovery'
+require "$BUILD" 'exactly once after each green built slice' 'build accounts for AFK slices natively'
+forbid "$BUILD" 'devrites-engine state tick-afk' 'build has no removed AFK counter command'
+forbid "$BUILD" 'devrites-engine preamble' 'build has no orientation renderer'
+forbid "$BUILD" 'devrites-engine progress' 'build has no decorative progress renderer'
+forbid "$BUILD" 'devrites-engine footprint' 'build has no dispatch telemetry'
+require "$BUILD_PARALLEL" 'phase-contract.md#independent-build-review' 'parallel build shares serial inventory and bounded recheck rules'
+require "$BUILD" 'one full-diff `devrites-code-reviewer`' 'build initial inventory includes independent full code review'
+require_order "$BUILD" 'build folds terminal inventory before one repair' 'Wait for every required account' 'Fold supported in-scope Critical/Important findings' 'one repair-all wright'
+require "$BUILD" 'all open findings owned by that role' 'build batches each responsible reviewer recheck'
+require "$BUILD" 'affected dependency/regression closure' 'build rechecks dependencies beyond patched lines'
+require "$BUILD" 'uncertain impact requires the full inventory' 'build cannot narrow an unproven impact boundary'
+forbid "$BUILD_PARALLEL" 'Run step 4 before the first repair and after every repair' 'parallel repair does not repeat the full roster blindly'
+require "$BUILD_PARALLEL" 'does not cancel independent safe running siblings' 'recoverable red preserves useful sibling work'
+require "$BUILD_PARALLEL" 'Expected test-first RED' 'parallel distinguishes TDD red from a terminal gate'
+require "$BUILD_PARALLEL" 'A distinct post-repair Critical/Important gets a new fingerprint' 'parallel build continues on distinct post-repair findings'
+require "$BUILD_PARALLEL" 'Reconcile retained repair-round artifacts by exact causal fingerprint before honoring a stored blocked status/verdict.' 'parallel build reconciles stale blocked cold resumes'
+require "$BUILD_PARALLEL" 'Serial is this round' 'parallel serial fallback is per-round not a latched mode'
+require "$BUILD_PARALLEL" 'parallel select --cap' 'parallel width is engine-selected each round'
+require "$BUILD_SLICE" 'return to parallel-batch selection' 'AFK serial round re-enters parallel selection when a cap is armed'
+require "$AUTOCOMPLETE" 'one-slice round is serial for that round only' 'autocomplete does not latch serial after a one-slice round'
+require "$AUTOCOMPLETE" 'leftover `max_parallel: 1`' 'autocomplete --parallel overrides leftover serial sentinel'
+require "$AUTOCOMPLETE" 'pass it into `/rite-build`' 'autocomplete forwards --parallel into rite-build'
+require "$BUILD_PARALLEL" 'leftover sentinel `max_parallel` is ignored' 'parallel-batch treats autocomplete --parallel as the cap'
+require "$BUILD_AFK" 'one-slice round does not keep the run serial' 'AFK recomputes parallel width after a serial round'
+forbid "$BUILD_PARALLEL" 'A new Critical after the repair-all, or an inventory showing the' 'parallel build does not misroute every new post-repair Critical to plan repair'
+require "$CODE_REVIEWER" 'Return every supported in-scope finding from the full inspected diff in this one pass' 'code reviewer enumerates the full inspected diff'
+require "$CODE_REVIEWER" 'Repeat canonical `Finding:`/`Basis:` rows' 'code reviewer emits one canonical row pair per finding'
+
+for file in "$DOUBT" "$VET_DEPTH" "$WRIGHT_DISPATCH" "$BUILD_PARALLEL" "$TEMPER" "$TEMPER_DIMENSIONS" "$API_INTERFACE"; do
+  require "$file" 'afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve' 'recovery consumer links the canonical retry owner'
+  forbid "$file" 'distinct-findings ceiling' 'recovery consumer cannot cap distinct evidenced findings'
+  forbid "$file" '≤3-iteration' 'recovery consumer cannot impose a total-round cap'
+done
+forbid "$DOUBT" 'distinct-findings ceiling' 'distinct valid findings cannot exhaust doubt'
+forbid "$DOUBT" 'Any `valid & actionable` finding, OR' 'technical doubt findings do not unconditionally require a human'
+forbid "$VET_DEPTH" '≤3-iteration reviewer loop' 'vet depth cannot impose a total-round cap'
+forbid "$WRIGHT_DISPATCH" 'Three total failed' 'wright dispatch cannot count all failures as no-progress'
+forbid "$BUILD_PARALLEL" 'two corrected re-batches fail' 'batch count cannot replace causal recovery accounting'
+require "$VET" 'Do not fall through to steps 2–7' 'bounded recovery does not accidentally repeat initial Vet'
+require "$DISPATCH" 'fresh-context preflight' 'dispatch checks host context before roster fanout'
+require "$DISPATCH" 'Do not launch a probe agent' 'context preflight does not add a per-task agent'
+require "$DISPATCH" 'dispatch <slug> abandon --wave <w> --reason <reason>' 'dispatch abandons an opened wave that cannot seal'
+require "$WRIGHT_DISPATCH" 'claim check --session <id> <task-paths>' 'same-tree claim preflight carries its session and paths'
+require "$WRIGHT_DISPATCH" 'claim release --session <id> --id <claim-id>' 'same-tree writer releases its retained claim id'
+require "$AGENTS" 'claim release --session <id> --id <claim-id>' 'shared writer contract releases claims on every terminal path'
+require "$CANDIDATE_INTEGRITY" 'source, dependencies, configuration, environment, toolchain, command/cwd' 'evidence references verify applicable provenance'
+require "$CANDIDATE_INTEGRITY" 'External or time-sensitive observations rerun' 'evidence references cannot freeze mutable observations'
+require "$CANDIDATE_INTEGRITY" 'Never relabel an old candidate-bound account' 'new candidate requires new evidence reconciliation'
+require "$REVIEW" 'affected exact reviewers' 'corrected Review uses responsible reviewers with fresh binding'
+require "$SEAL_CONTRACT" 'evidence validity' 'Seal checks evidence through shared provenance contract'
+forbid "$SEAL_CONTRACT" 'then run only' 'Seal does not unconditionally repeat unchanged approved proof'
+
+for key in reuse conventions principles sources assumptions follow_ups; do
+  require "$WRIGHT" "$key: []" "wright result requires $key bookkeeping"
+done
+require "$WRIGHT_DISPATCH" 'Reject a result that omits any required key' 'root rejects incomplete wright results'
+require "$WRIGHT_DISPATCH" 'Persist the' 'root persists returned wright facts'
+require "$WRIGHT" 'no-progress attempts' 'wright shares the per-fingerprint no-progress budget'
+forbid "$WRIGHT" 'devrites-engine state recovery' 'wright has no removed recovery counter command'
+
+require "$PROVE" 'sole approved runtime' 'prove treats test-plan as sole command authority'
+require "$CANDIDATE_INTEGRITY" 'devrites-engine gates reverify <slug>' 'candidate changes reverify the acceptance ledger before rebinding proof'
+require "$VET" 'devrites-engine gates lint <slug> --strict' 'vet blocks READY on weak acceptance oracles'
+require "$SEAL" 'devrites-engine check drift <slug>' 'seal attributes stale readiness input before re-vetting'
+require "$PROVE" 'return to the current Vet contract' 'prove routes newly discovered commands through Vet'
+require "$CORE" 'nested phase boundary, not a user-facing handoff' 'nested recovery returns to its controlling rite'
+require "$CORE" 'not from a stale `state.md` label' 'shared caller contract verifies recovery exhaustion from durable attempts'
+require "$STATE_WORKSPACE" 'agent-owned technical backtracking' 'state cursor preserves the recovery origin'
+require "$STATE_WORKSPACE" 'terminal `next_action` is a claim to verify' 'cold resume reconciles stale terminal cursors'
+require "$STATE_WORKSPACE" 'spent action authorization blocks another execution' 'state recovery separates action authority from offline repair'
+require "$DRIFT" 'invoke `/rite-plan repair` and `/rite-vet` inline' 'spec drift recovery stays inside the active caller'
+require "$PROVE" 'Prove remains the controlling caller' 'prove owns repair and re-vet continuation'
+require "$PLAN" 'preserve any valid return cursor' 'plan repair preserves its caller recovery target'
+require "$VET" 'restore and consume the return cursor' 'vet returns a repaired plan to the originating phase'
+require "$AUTOCOMPLETE" 'follow agent-owned backward edges' 'autocomplete follows technical backtracking internally'
+require "$AUTOCOMPLETE_LOOP" 'do not hand the intermediate command to the user' 'autocomplete loop retains phase orchestration ownership'
+require "$AUTOCOMPLETE_STOPS" 'Agent-owned backtracking is not a stop condition' 'autocomplete pauses only on a real stop condition'
+require "$FAILURE_TRIAGE" 'Ask only when the remaining decision is human-owned' 'prove exhaustion does not ask for mechanical recovery'
+require "$AFK_HITL" 'Next step: none — technical recovery exhausted' 'technical exhaustion is terminal without a phase command'
+forbid "$AFK_HITL" 'Next step: /rite-plan unblock' 'technical exhaustion cannot hand plan unblock to the user'
+require "$BUILD_AFK" 'Next step: none — technical recovery exhausted' 'build exhaustion is terminal without a phase command'
+forbid "$BUILD_AFK" 'Next step: /rite-plan unblock' 'build exhaustion cannot hand plan unblock to the user'
+require "$BUILD" 'afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve' 'build delegates no-progress accounting to its canonical owner'
+require "$BUILD_AFK" 'no-progress attempts' 'afk build recovery uses progress-aware accounting'
+require "$DEBUG_RECOVERY" 'no-progress attempts' 'debug recovery shares progress-aware accounting'
+require "$DEBUG_RECOVERY" 'Next: none' 'debug exhaustion has no runnable recovery command'
+forbid "$DEBUG_RECOVERY" 'Next: /rite-plan unblock' 'debug exhaustion cannot restart manual plan ping-pong'
+require "$DEBUG_CLASSIFY" 'Hard rules' 'debug classification defers to the single-sourced no-progress rules'
+require "$FAILURE_TRIAGE" 'no-progress attempts' 'prove triage consumes only no-progress budget'
+require "$AUTOCOMPLETE_STOPS" 'no runnable recovery command' 'autocomplete terminal blockers do not advertise a retry command'
+require "$STATE_WORKSPACE" 'terminal: none' 'state cursor represents terminal technical exhaustion explicitly'
+require "$REPLY" 'Technical recovery exhausted' 'reply contract has a terminal technical blocker shape'
+require "$REPLY" 'No runnable recovery command' 'reply contract does not turn exhaustion into another user command'
+require "$AFK_HITL" 'three no-progress attempts per exact causal fingerprint' 'recovery budget attaches to the exact unresolved cause'
+require "$AFK_HITL" 'Closing a prior finding with discriminating evidence is progress' 'closed findings do not consume no-progress budget'
+require "$AFK_HITL" 'new Critical or Important finding' 'new high-severity blockers receive an independent fingerprint'
+require "$AFK_HITL" 'human-owned trade-off/risk decisions; accepted technical corrections do not enter' 'discretionary ceilings exclude accepted technical corrections'
+require "$AFK_HITL" 'The same invariant with a different evidenced mechanism qualifies' 'distinct mechanisms sharing an invariant receive separate fingerprints'
+forbid "$AFK_HITL" 'Finding severity > gate ceiling, OR finding touches' 'generic severity cannot force technical recovery into a human gate'
+require "$AFK_HITL" '`drift.md` and `evidence.md`' 'recovery progress uses existing durable artifacts'
+require "$AUTOCOMPLETE_LOOP" 'narrow Vet recheck' 'autocomplete rechecks repaired findings without restarting Full Vet'
+require "$VET" 'Recovery recheck' 'vet has an explicit bounded recovery mode'
+require "$VET" 'does not start another Full Vet' 'recovery recheck cannot restart the full review cycle'
+require "$VET" 'Suggestion, Nit, or FYI' 'lower-severity novelty cannot perpetuate recovery'
+require "$PROVE" 'three no-progress attempts on the exact same fingerprint' 'standalone prove uses progress-aware recovery accounting'
+require "$ONE_SHOT" 'unknown but lexically well-formed non-secret values survive' 'one-shot evidence preserves safe unknown diagnostics'
+require "$ONE_SHOT" 'cleanup cannot delete or overwrite' 'one-shot gate proves failure evidence survives cleanup'
+require "$ONE_SHOT" 'Do not rerun the action during triage' 'one-shot failure handling forbids blind reproduction'
+require "$ONE_SHOT" 'consumes only the authorization' 'one-shot execution budget does not erase offline recovery'
+require "$ONE_SHOT" 'immediately runs' 'retained new evidence starts offline recovery in the caller'
+require "$ONE_SHOT" 'stable non-secret `boundary_id`' 'one-shot evidence identifies one actionable boundary'
+require "$ONE_SHOT" 'injective' 'one-shot gate rejects diagnostic collisions'
+require "$ONE_SHOT" 'diagnostic-amplification attempt' 'one-shot recovery can safely acquire a missing discriminator'
+require "$ONE_SHOT" 'past attempt is irretrievable' 'past evidence loss alone is not terminal when amplification is safe'
+require "$VET" 'For each consumptive action, bind every' 'vet binds READY to consumptive-action evidence retention'
+require "$VET" 'aliasing multiple' 'vet rejects aliased failure seams sharing one fingerprint'
+require "$PROVE" 'Record the admitted artifact identity before execution' 'prove checks one-shot evidence before execution'
+require "$PROVE" 'action budget is zero' 'prove does not misclassify spent execution authority as recovery exhaustion'
+require "$FAILURE_TRIAGE" 'never rerun it' 'prove triage uses retained evidence for consumptive actions'
+require "$FAILURE_TRIAGE" 'does not stop offline recovery' 'prove triage continues from retained new evidence'
+require "$DEBUG_RECOVERY" 'MUST NOT be rerun during diagnosis' 'debug recovery does not reproduce consumptive actions'
+require "$DEBUG_RECOVERY" 'not a spent recovery budget' 'debug recovery separates execution authority from repair budget'
+require "$AUTOCOMPLETE" 'Do not confuse an action budget with recovery exhaustion' 'autocomplete continues offline after a one-shot failure'
+require "$AUTOCOMPLETE" 'one-shot-actions.md' 'autocomplete loads the consumptive-action contract before routing'
+require "$AUTOCOMPLETE_LOOP" 'spent authorization blocks only another' 'autocomplete loop uses retained evidence before requesting a new GO'
+require "$AUTOCOMPLETE_STOPS" 'is not technical-recovery' 'autocomplete stop contract separates one-shot authority from recovery'
+require "$ONE_SHOT" 'Cold resume does not make that fingerprint old' 'one-shot recovery survives a session boundary'
+require "$AUTOCOMPLETE" 'Before honoring `blocked`' 'autocomplete reconciles retained evidence before accepting a stale terminal cursor'
+require "$AUTOCOMPLETE_LOOP" 'On cold resume, reconcile the terminal cursor' 'autocomplete reopens unfinished retained recovery after restart'
+require "$AUTOCOMPLETE_STOPS" 'three recorded' 'unchanged terminal state requires actual fingerprint exhaustion'
+require "$PROVE" 'blocked Prove cold' 'prove resumes retained offline recovery after restart'
+require "$DEBUG_RECOVERY" 'previous action wrote a terminal cursor' 'debug recovery ignores stale terminal state while budget remains'
+require "$REPLY" 'consumptive-action authorization plus' 'terminal reply cannot suppress retained offline recovery'
+require "$DEBUG_CLASSIFY" 'offline diagnosis or correction from retained evidence' 'fresh action authorization is not required for offline diagnosis'
+require "$FAILURE_TRIAGE" 'fix it when agent-owned' 'environment failures are repaired before they become blockers'
+require "$AUTOCOMPLETE" 'blocked` label alone is not a stop condition' 'autocomplete routes technical blockers before stopping'
+require "$AUTOCOMPLETE" 'Red gates block forward advancement and enter' 'autocomplete backtracks on red without advancing or stopping early'
+require "$AUTOCOMPLETE_STOPS" 'Past evidence being irretrievable is not by itself terminal' 'autocomplete prepares diagnostic amplification before terminal exhaustion'
+require "$PROVE" 'does not prove that no safe future acquisition design exists' 'prove distinguishes missing past evidence from impossible future evidence'
+require "$FAILURE_TRIAGE" 'diagnostic-amplification plan gap' 'prove triage routes ambiguous one-shot evidence to plan repair'
+require "$DEBUG_RECOVERY" 'diagnostic amplification' 'debug recovery can improve evidence without guessing a runtime fix'
+require "$PLAN_REVIEWER" 'Missing evidence completeness is `broken`' 'plan reviewer rejects unsafe one-shot plans'
+require "$PLAN_REVIEWER" 'one actionable failure seam' 'plan reviewer requires causal diagnostic uniqueness'
+require "$PLAN_DRAFTER" 'diagnostic-amplification' 'plan drafter designs bounded evidence acquisition when past evidence is ambiguous'
+require "$VET_ARTIFACTS" '## Consumptive action gates' 'test plan records one-shot evidence authority durably'
+require "$VET_ARTIFACTS" 'Boundary map + collision proof' 'test plan binds diagnostic actionability proof'
+require "$REPLY" 'no safe in-scope diagnostic-amplification seam' 'terminal reply requires proof that amplification is unavailable'
+require "$WORKFLOW_ARTIFACTS" 'devrites.workflow-artifact-admission.v1' 'workflow artifacts expose one Vet admission contract'
+require "$WORKFLOW_ARTIFACTS" 'devrites.workflow-artifact-journal.v1' 'workflow artifacts expose one marker-owned journal contract'
+require "$WORKFLOW_ARTIFACTS" 'devrites.workflow-source.v1\0' 'workflow source handles use the frozen domain separator'
+require "$WORKFLOW_ARTIFACTS" 'devrites.workflow-identity.v1\0' 'workflow identities use ordered domain-separated bytes'
+require "$WORKFLOW_ARTIFACTS" 'only Python' 'workflow ownership uses the canonical Python flock domain'
+require "$WORKFLOW_ARTIFACTS" 'source and destination directory handles' 'workflow replacement anchors both relative operands'
+require "$WORKFLOW_ARTIFACTS" 'PREPARING → PREPARED' 'workflow artifacts define the success state graph centrally'
+require "$WORKFLOW_ARTIFACTS" 'ROLLING_BACK(index)' 'workflow artifacts define pre-proof rollback centrally'
+require "$WORKFLOW_ARTIFACTS" 'At/after durable `PROVED`' 'workflow recovery preserves proved targets'
+require "$WORKFLOW_ARTIFACTS" 'same-fingerprint count=3' 'workflow retry forbids attempt four'
+require "$WORKFLOW_ARTIFACTS" 'product_candidate_digest' 'workflow evidence avoids a second standalone candidate binding'
+require "$WORKFLOW_ARTIFACTS" 'WA-OP-002A-STALE-SOURCE-GC' 'workflow operation table includes binding-rollover cleanup'
+require "$WORKFLOW_ARTIFACTS" 'WA-IDEMPOTENT-RERUN' 'workflow routes include source-free terminal verification'
+require "$WORKFLOW_ARTIFACTS" 'WA-R022-STALE-SOURCE-GC-FAILED' 'workflow diagnostics use finite stale-cleanup semantics'
+require "$WORKFLOW_ARTIFACTS" 'next_action=none — technical recovery exhausted; requires new evidence or changed failure conditions' 'workflow exhaustion uses the frozen public action'
+forbid "$WORKFLOW_ARTIFACTS" 'technical recovery exhausted for <causal fingerprint>' 'workflow exhaustion does not append fingerprint text'
+require "$AFK_HITL" 'Next step: none — technical recovery exhausted; requires new evidence or changed failure conditions' 'AFK exhaustion uses the frozen public action'
+forbid "$AFK_HITL" 'technical recovery exhausted for <causal fingerprint>' 'AFK exhaustion does not append fingerprint text'
+forbid "$WORKFLOW_ARTIFACTS" '## Cold-resume migration' 'workflow authority removes actor-history migration'
+forbid "$WORKFLOW_ARTIFACTS" 'sole materializer' 'workflow authority removes generic materializer ownership'
+require "$PLAN_DRAFTER" 'never return implementation bodies' 'plan drafter cannot be used as a proof-artifact writer'
+require "$PLAN" 'materializes the exact vetted workflow-artifact paths' 'plan repair gives executable workflow artifacts to the root'
+if ! python3 - "$WORKFLOW_ARTIFACTS" <<'PY'
+import sys
+from pathlib import Path
+
+lines = Path(sys.argv[1]).read_text().splitlines()
+start = lines.index("|Route|Owner|Exact action|Durable state/status/next action|Cursor/output|") + 2
+rows = []
+while start < len(lines) and lines[start].startswith("|"):
+    rows.append([cell.strip().replace("`", "") for cell in lines[start].strip("|").split("|")])
+    start += 1
+expected = {
+    "PLAN_VET_REPAIR": [
+        "controlling root",
+        "run /rite-plan repair <slug> then /rite-vet <slug> internally",
+        "phase=plan, status=running, next_action=/rite-plan repair <slug> until Vet READY",
+        "restore saved caller cursor; Autocomplete emits no intermediate reply",
+    ],
+    "OFFLINE_RECOVERY": [
+        "controlling root",
+        "run /devrites-debug-recovery <slug>, disposable re-preflight, then narrow /rite-vet <slug>",
+        "status=running, next_action=/devrites-debug-recovery <slug>; retry only from durable FAILED and remaining cap",
+        "preserve cursor and attempt history; no real action",
+    ],
+}
+routes = {row[0]: row[1:] for row in rows}
+for route, facts in expected.items():
+    if routes.get(route) != facts:
+        raise SystemExit(f"FAIL: exact recovery route: {route}")
+    if any("<slug>" in value.replace("<slug>", "demo") for value in routes[route]):
+        raise SystemExit(f"FAIL: recovery slug binding: {route}")
+    for field in range(4):
+        mutant = routes[route].copy()
+        mutant[field] += "-MUTANT"
+        if mutant == facts:
+            raise SystemExit(f"FAIL: recovery field mutant: {route}:{field}")
+    slug_mutant = [value.replace("<slug>", "<other>") for value in routes[route]]
+    if slug_mutant == facts:
+        raise SystemExit(f"FAIL: recovery slug mutant: {route}")
+print("workflow-recovery-routes: PASS")
+PY
+then
+  fail=1
 fi
+if ! python3 - "$ROOT" <<'PY'
+import json, re, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+module = (root / "pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md").read_text()
+lines = module.splitlines(); start = lines.index("|Canonical adapter|Entry trigger|Canonical action|Return cursor|") + 2
+rows = []
+while start < len(lines) and lines[start].startswith("|"):
+    rows.append([cell.strip().replace("`", "") for cell in lines[start].strip("|").split("|")]); start += 1
+if len(rows) != 10 or any(len(row) != 4 for row in rows): raise SystemExit("FAIL: canonical adapter map")
+pattern = re.compile(r"^<!-- workflow-artifact-adapter: (\{.*\}) -->$", re.MULTILINE)
+for canonical, entry, action, returned in rows:
+    path = root / "pack/.claude/skills" / canonical
+    declarations = pattern.findall(path.read_text())
+    if len(declarations) != 1: raise SystemExit(f"FAIL: adapter declaration cardinality: {canonical}")
+    value = json.loads(declarations[0])
+    expected = {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":entry,"action":action,"return":returned}
+    if list(value) != ["module","entry","action","return"] or value != expected:
+        raise SystemExit(f"FAIL: adapter declaration mismatch: {canonical}")
+print("workflow-adapters: PASS")
+PY
+then
+  fail=1
+fi
+require "$AUTOCOMPLETE_LOOP" '"action":"invoke classifier once under owner lock; no actor-history migration"' 'autocomplete loop binds actor-history policy in its exact declaration'
+forbid "$AUTOCOMPLETE_LOOP" 'There is no actor-history migration.' 'autocomplete loop does not restate actor-history policy'
+require "$WRIGHT_DISPATCH" 'reject' 'wright dispatch remains fail closed'
+require "$WRIGHT_DISPATCH" '`.devrites/**`' 'wright still rejects workflow artifact paths'
+require "$DISCOVERY" 'discovery evidence, not authorization' 'command discovery cannot authorize execution'
+require "$PROOF_RUNNER" 'reject missing, synthesized, or unapproved commands' 'proof runner rejects commands outside the approved plan'
+require "$SEAL_CONTRACT" 'devrites-proof-runner' 'seal delegates acceptance proof judgment natively'
+require "$SEAL_CONTRACT" 'devrites-spec-reviewer' 'seal delegates spec coverage judgment natively'
+require "$SEAL" 'devrites-engine check seal' 'seal retains only deterministic structure and freshness'
+
+require "$CUSTOMIZE" '--import-legacy' 'customize exposes legacy import mode'
+require "$CUSTOMIZE" '.devrites/extensions/' 'legacy import inventories extensions'
+require "$CUSTOMIZE" '.devrites/overrides/' 'legacy import inventories overrides'
+require "$CUSTOMIZE" '.devrites/runbooks/' 'legacy import inventories runbooks'
+require "$CUSTOMIZE" 'native skill with explicit gate,' 'runbooks map to native skills with control semantics'
+require "$CUSTOMIZE" 'Leave the legacy files intact until native' 'legacy data remains until native validation passes'
+
+require "$UPGRADE" '/rite-doctor' 'upgrade routes installed-contract diagnosis to the native doctor'
+require "$UPGRADE" 'Recognize only released workspace forms' 'upgrade limits compatibility to released cursors'
+require "$UPGRADE" 'Older provenance, cursor form, or pack version alone is never a defect' 'upgrade requires an observed current-contract failure'
+require "$UPGRADE" 'current rule, exact workspace evidence, affected gate, owning rite' 'upgrade admits only evidence-backed repair deltas'
+require "$UPGRADE" 'devrites-upgrade-planner' 'upgrade uses the native read-only planner'
+require "$UPGRADE" '/rite-clarify' 'upgrade delegates decision repair to clarify'
+require "$UPGRADE" '/rite-plan repair' 'upgrade delegates planning repair to plan'
+require "$UPGRADE" '/rite-converge' 'upgrade delegates code-intent repair to converge'
+require "$UPGRADE" '/rite-vet' 'upgrade delegates readiness to vet'
+require_order "$UPGRADE" 'upgrade sequences candidate repair owners in lifecycle order' \
+  '→ `/rite-prove`' '→ `/rite-polish`' '→ `/rite-review`' '→ `/rite-seal`'
+require "$UPGRADE" 'Upgrade writes no workspace artifact' 'upgrade remains a read-only assessor and orchestrator'
+require "$UPGRADE" 'Upgrade never restores it itself' 'upgrade does not mutate files during preservation failure'
+require "$UPGRADE" 'never synthesize or guess' 'upgrade never invents candidate scope or historical proof'
+require "$UPGRADE" 'v1/v2' 'upgrade preserves released v1 and v2 cursor support'
+require "$UPGRADE" 'v3' 'upgrade preserves released v3 cursor support'
+require "$UPGRADE" 'devrites-engine check candidate <slug>' 'upgrade rechecks a post-build candidate'
+require "$UPGRADE" 'devrites-engine check seal <slug>' 'upgrade rechecks a sealed candidate'
+require "$UPGRADE" 'devrites-engine check readiness <slug>' 'upgrade proves structural readiness'
+forbid "$UPGRADE" 'devrites-engine migrate' 'upgrade has no engine migrator'
+forbid "$UPGRADE" 'devrites-engine build-readiness' 'upgrade has no semantic engine readiness parser'
+forbid "$UPGRADE" 'doctor --verbose' 'upgrade uses no unsupported doctor flag'
+forbid "$UPGRADE" 'devrites-engine doctor' 'upgrade has no removed engine doctor command'
+require "$UPGRADE" 'Resolve the explicit or active slug' 'upgrade reads native workspace orientation directly'
+require "$UPGRADE" 'state.md' 'upgrade requires the authoritative workspace ledger'
+require "$UPGRADE_PLANNER" 'Outcome: <current | repairable | unsupported | gap>' 'upgrade planner returns a fail-closed typed outcome'
+require "$UPGRADE_PLANNER" 'current_rule:' 'upgrade planner cites the current contract'
+require "$UPGRADE_PLANNER" 'workspace_evidence:' 'upgrade planner cites the observed workspace defect'
+require "$UPGRADE_PLANNER" 'Older provenance is not evidence' 'upgrade planner cannot infer staleness from age'
+require "$UPGRADE_PLANNER" 'Missing input or unverifiable current rules produce `gap`' 'upgrade planner fails closed on incomplete evidence'
+require "$UPGRADE_PLANNER" 'candidate integrity' 'upgrade planner assesses the current candidate-integrity axis'
+require "$UPGRADE_PLANNER" 'Prove, Polish, Review, or Seal' 'upgrade planner may route candidate defects only to current owners'
+require "$UPGRADE_PLANNER" 'ambiguous candidate scope produces' 'upgrade planner fails closed before candidate reconstruction'
+require "$UPGRADE_PLANNER" '`unsupported`/`gap` return empty findings/route and no writable path or delta' 'unsupported and gap assessments remain pathless'
+require "$PROVE" 'admitted `/rite-upgrade` assessment' 'prove limits legacy refresh to an admitted upgrade assessment'
+require "$PROVE" 'legacy touched-file scope, live diff, tasks, and traceability agree unambiguously' 'prove refuses ambiguous legacy candidate scope'
+require "$PROVE" 'all current approved real proof from scratch' 'prove never reuses a legacy pass'
+require "$PROVE" 'pre-proof and post-proof engine digest' 'prove establishes both candidate digest observations'
+require "$PROVE" 'fresh exact binding' 'prove writes fresh exact candidate bindings after legacy proof'
+require "$CANDIDATE_INTEGRITY" 'Upgrade routes a released-workspace candidate defect to Prove' 'candidate integrity names the fail-closed legacy owner'
+require "$AUTOCOMPLETE_STOPS" 'Blocking with a ranked recommended' 'autocomplete auto-resolves recommended-option blocking questions'
+require "$AUTOCOMPLETE_STOPS" 'escalating always stops' 'autocomplete still pauses escalating gates'
+require "$AUTOCOMPLETE_LOOP" '`/rite-resolve` to the user' 'autocomplete does not hand recommended-option blocking questions to the user'
+require "$AUTOCOMPLETE" 'already names a ranked recommended' 'autocomplete treats recommended-option blocking as internal resolve'
+require "$AFK_HITL" 'Autocomplete exception' 'AFK contract names the autocomplete recommended-option exception'
+require "$RESOLVE" 'controlling `/rite-autocomplete`' 'resolve distinguishes user invocation from autocomplete continuation'
+require "$RESOLVE" 'explicit consent' 'resolve consumes the explicit answer'
+require "$RESOLVE" 'devrites-engine state resolve' 'resolve uses the nested state writer'
+forbid "$RESOLVE" 'confirm? (y/N)' 'resolve does not ask twice'
 
 echo ""
 [ "$fail" -eq 0 ] && echo "phase-gate-routing-test: PASS" || echo "phase-gate-routing-test: FAIL"

@@ -1,6 +1,6 @@
 {
   "skill": "rite-handoff",
-  "description": "Explicit-only evals for /rite-handoff: chat-only context sync and fresh-agent handoff writer.",
+  "description": "Explicit-only evals for /rite-handoff: turn current session context into a durable handoff document.",
   "queries": [
     {
       "text": "/rite-handoff",

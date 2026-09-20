@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Validate generated DevRites workspace artifacts.
+"""Validate generated DevRites workspace artifacts against the Markdown contract.
 
-The validator is intentionally dependency-free: it checks the Markdown contract
-well enough to catch drift without introducing a runtime parser dependency.
+The validator uses only the standard library, so it does not add a runtime
+parser dependency.
 """
 
 from __future__ import annotations
@@ -12,17 +12,43 @@ import re
 import sys
 from pathlib import Path
 
-from workflow_schema import PHASES, cursor_field
+from workflow_schema import (
+    PHASES,
+    cursor_field,
+    read_markdown,
+    structural_markdown,
+)
+
+
+PLACEHOLDER_RE = re.compile(
+    r"<[^>\n]+>|\b(?:TODO|TBD|FIXME|UNKNOWN)\b", re.IGNORECASE
+)
 
 
 ID_PATTERNS = {
     "AC": re.compile(r"\bAC-\d{3}\b"),
     "REQ": re.compile(r"\bREQ-\d{3}\b"),
+    "EDGE": re.compile(r"\bEDGE-\d{3}\b"),
+    "PROH": re.compile(r"\bPROH-\d{3}\b"),
     "SLICE": re.compile(r"\bSLICE-\d{3}\b"),
     "DEC": re.compile(r"\bDEC-\d{3}\b"),
+    "ASM": re.compile(r"\bASM-\d{3}\b"),
     "Q": re.compile(r"\bQ-\d{3}\b"),
     "DRIFT": re.compile(r"\bDRIFT-\d{3}\b"),
     "EVID": re.compile(r"\bEVID-\d{3}\b"),
+}
+QUESTION_ID_PATTERN = r"q-\d{4}-\d{2}-\d{2}-\d{3}"
+QUESTION_ID_RE = re.compile(rf"\b{QUESTION_ID_PATTERN}\b")
+
+ID_OWNERS = {
+    "spec.md": ("REQ", "AC", "EDGE", "PROH"),
+    "tasks.md": ("SLICE",),
+    "decisions.md": ("DEC",),
+    "assumptions.md": ("ASM",),
+    "questions.md": ("Q",),
+    "drift.md": ("DRIFT",),
+    "evidence.md": ("EVID",),
+    "browser-evidence.md": ("EVID",),
 }
 
 LEGACY_AC_RE = re.compile(r"\bAC\d+\b")
@@ -45,24 +71,23 @@ MERMAID_STARTS = (
 
 HIGH_TRAFFIC_BUDGETS = {
     "README.md": 120,
-    "index.md": 120,
-    "feature.md": 120,
     "brief.md": 80,
     "spec.md": 260,
+    "decision-coverage.md": 200,
     "ai-spec.md": 160,
     "plan.md": 220,
     "tasks.md": 280,
     "traceability.md": 220,
+    "eng-review.md": 240,
+    "test-plan.md": 260,
     "state.md": 120,
     "handoff.md": 120,
     "evidence.md": 280,
-    "proof.md": 280,
     "browser-evidence.md": 220,
 }
 
 REQUIRED_HEADINGS = {
     "README.md": ["Artifact map", "Read next", "Blocking gates"],
-    "index.md": ["Artifact map", "Read next", "Blocking gates"],
     "brief.md": ["Objective", "Non-goals", "Success definition"],
     "spec.md": [
         "Problem",
@@ -76,6 +101,13 @@ REQUIRED_HEADINGS = {
         "Edge cases",
         "Measurable success",
         "Scope boundaries",
+    ],
+    "decision-coverage.md": [
+        "Topology",
+        "Coverage matrix",
+        "Assumption audit",
+        "Residual uncertainty",
+        "Readiness verdict",
     ],
     "architecture.md": [
         "Owning module / layer",
@@ -93,7 +125,6 @@ REQUIRED_HEADINGS = {
     "assumptions.md": ["Assumption register"],
     "questions.md": ["Question register"],
     "evidence.md": ["Evidence log"],
-    "proof.md": ["Evidence log"],
     "drift.md": ["Drift register"],
     "touched-files.md": ["Touched files"],
     "design-brief.md": ["Design direction", "States", "Interaction model"],
@@ -114,8 +145,13 @@ SLICE_REQUIRED_FIELDS = (
     "Done condition",
 )
 
+
 def read(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+    return read_markdown(path)
+
+
+def read_structural(path: Path) -> str:
+    return structural_markdown(read(path), path)
 
 
 def headings(text: str) -> set[str]:
@@ -136,59 +172,38 @@ def has_budget_override(text: str) -> bool:
 
 
 def phase_for(workspace: Path) -> str:
-    for name in ("state.md", "status.md", "README.md", "index.md", "feature.md"):
-        p = workspace / name
-        value = cursor_field(p, "phase")
-        if value:
-            return value.split()[0].lower()
-    return "spec"
-
-
-def workspace_index_present(workspace: Path) -> bool:
-    return any((workspace / name).is_file() for name in ("README.md", "index.md", "feature.md"))
+    value = cursor_field(workspace / "state.md", "phase")
+    return value.split()[0].lower() if value else ""
 
 
 def evidence_file(workspace: Path) -> Path | None:
-    for name in ("evidence.md", "proof.md"):
-        p = workspace / name
-        if p.is_file():
-            return p
-    return None
+    path = workspace / "evidence.md"
+    return path if path.is_file() else None
 
 
-def existing_or_alias(workspace: Path, name: str) -> bool:
-    if (workspace / name).is_file():
-        return True
-    if name == "evidence.md" and (workspace / "proof.md").is_file():
-        return True
-    if name == "proof.md" and (workspace / "evidence.md").is_file():
-        return True
-    if name == "README.md" and workspace_index_present(workspace):
-        return True
-    return False
+def is_runtime_workspace(path: Path) -> bool:
+    state_path = path / "state.md"
+    return (
+        path.is_dir()
+        and not path.is_symlink()
+        and state_path.is_file()
+        and not state_path.is_symlink()
+    )
 
 
 def find_local_workspaces(root: Path) -> list[Path]:
-    # A devrites workspace is identified by its devrites-specific artifacts, NOT by
-    # README.md: every repo root has a README.md, and matching on it here both
-    # misclassifies the repo root as a workspace and short-circuits the .devrites/work
-    # scan below (return [root] before the loop ever runs).
-    if root.is_dir() and any((root / name).exists() for name in ("spec.md", "state.md", "feature.md")):
+    # Only the released `.devrites/work/<slug>/` layout is discovered. A caller
+    # may still validate one archive workspace by passing that directory itself.
+    if is_runtime_workspace(root):
         return [root]
     out: list[Path] = []
     for base in (
         root / ".devrites" / "work",
-        root / ".devrites" / "features",
-        root / ".devrites" / "archive",
         root / "work",
-        root / "features",
-        root / "archive",
     ):
-        if not base.is_dir():
+        if not base.is_dir() or base.is_symlink():
             continue
-        for child in sorted(base.iterdir()):
-            if child.is_dir() and any((child / n).exists() for n in ("spec.md", "state.md", "feature.md")):
-                out.append(child)
+        out.extend(child for child in sorted(base.iterdir()) if is_runtime_workspace(child))
     return out
 
 
@@ -238,9 +253,14 @@ def validate_workspace_map(path: Path, text: str, errors: list[str]) -> None:
             errors.append(f"{path}: missing workspace map field '{field}:'")
 
 
-def validate_flows(path: Path, text: str, errors: list[str]) -> None:
-    for line_no in mermaid_block_starts(text):
-        before = "\n".join(text.splitlines()[max(0, line_no - 6):line_no - 1])
+def validate_flows(
+    path: Path, raw_text: str, structural_text: str, errors: list[str]
+) -> None:
+    structural_lines = structural_text.splitlines()
+    for line_no in mermaid_block_starts(raw_text):
+        before = "\n".join(
+            structural_lines[max(0, line_no - 6) : line_no - 1]
+        )
         if not re.search(r"(?i)why this matters\s*:", before):
             errors.append(f"{path}: mermaid block at line {line_no} needs a preceding 'Why this matters:' sentence")
         if not re.search(r"\b(AC|REQ|SLICE|DEC|DRIFT)-\d{3}\b", before):
@@ -258,9 +278,53 @@ def validate_tasks(path: Path, text: str, errors: list[str]) -> None:
                 errors.append(f"{path}: {slice_id} missing field '{field}:'")
 
 
+
 def validate_id_register(path: Path, text: str, kind: str, errors: list[str]) -> None:
-    if text and not ID_PATTERNS[kind].search(text):
-        errors.append(f"{path}: no {kind}-### IDs found")
+    found = ID_PATTERNS[kind].search(text)
+    if kind == "Q":
+        found = found or QUESTION_ID_RE.search(text)
+    if text and not found:
+        expected = "Q-### or q-YYYY-MM-DD-NNN" if kind == "Q" else f"{kind}-###"
+        errors.append(f"{path}: no {expected} IDs found")
+
+
+def defined_ids(text: str, kind: str) -> list[str]:
+    token = rf"({kind}-\d{{3}})"
+    if kind == "SLICE":
+        pattern = rf"(?m)^#{{2,6}}[ \t]+{token}(?=[ \t]|$)"
+    elif kind in {"REQ", "AC"}:
+        pattern = rf"(?m)^[ \t]*-[ \t]*(?:\[[ xX]\][ \t]*)?{token}(?=[ \t]*:)"
+    elif kind == "Q":
+        legacy = re.findall(
+            rf"(?m)^(?:#{{2,6}}[ \t]+|[ \t]*\|[ \t]*){token}(?=[ \t]|\|)",
+            text,
+        )
+        current = re.findall(
+            rf"(?m)^#{{2,6}}[ \t]+({QUESTION_ID_PATTERN})(?=[ \t]|$)",
+            text,
+        )
+        return legacy + current
+    else:
+        pattern = rf"(?m)^(?:#{{2,6}}[ \t]+|[ \t]*\|[ \t]*){token}(?=[ \t]|\|)"
+    return re.findall(pattern, text)
+
+
+def validate_unique_owned_ids(workspace: Path, errors: list[str]) -> None:
+    seen: dict[tuple[str, str], Path] = {}
+    for filename, kinds in ID_OWNERS.items():
+        path = workspace / filename
+        if not path.exists():
+            continue
+        text = read_structural(path)
+        for kind in kinds:
+            for item_id in defined_ids(text, kind):
+                key = (kind, item_id)
+                if key in seen:
+                    errors.append(
+                        f"{path}: duplicate {item_id} definition; first defined in {seen[key]}"
+                    )
+                else:
+                    seen[key] = path
 
 
 def validate_evidence_entries(path: Path, text: str, errors: list[str]) -> None:
@@ -299,40 +363,296 @@ def blocking_questions(questions: str) -> list[str]:
         qid = (ID_PATTERNS["Q"].search(chunk) or re.search(r"\bq-\d{4}-\d{2}-\d{2}-\d{3}\b", chunk))
         status = re.search(r"(?im)^status:\s*(\w+)", chunk)
         gate = re.search(r"(?im)^gate:\s*(\w+)", chunk)
-        if status and status.group(1).lower() == "open" and gate and gate.group(1).lower() in {"blocking", "escalating"}:
+        if status and status.group(1).lower() == "open" and gate and gate.group(1).lower() in {"blocking", "validating", "escalating"}:
             out.append(qid.group(0) if qid else "<unknown>")
-    return out
+
+    status_index = gate_index = qid_index = -1
+    for raw in questions.splitlines():
+        line = raw.strip()
+        if not (line.startswith("|") and line.endswith("|")):
+            status_index = gate_index = qid_index = -1
+            continue
+        cells = [cell.strip() for cell in line[1:-1].split("|")]
+        lowered = [cell.lower() for cell in cells]
+        if status_index < 0:
+            status_index = lowered.index("status") if "status" in lowered else -1
+            gate_index = lowered.index("gate") if "gate" in lowered else -1
+            for label in ("question id", "question", "id"):
+                if label in lowered:
+                    qid_index = lowered.index(label)
+                    break
+            if status_index < 0 or gate_index < 0:
+                status_index = gate_index = qid_index = -1
+            continue
+        if status_index >= len(cells) or gate_index >= len(cells):
+            continue
+        if cells[status_index].lower() != "open" or cells[gate_index].lower() not in {
+            "blocking",
+            "validating",
+            "escalating",
+        }:
+            continue
+        qid = cells[qid_index] if 0 <= qid_index < len(cells) else "<unknown>"
+        out.append(qid or "<unknown>")
+    return list(dict.fromkeys(out))
+
+
+def cursor_values(text: str, key: str) -> list[str]:
+    want = key.strip().lower().replace("_", " ")
+    values: list[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("|") and line.endswith("|"):
+            cells = [cell.strip() for cell in line[1:-1].split("|")]
+            if len(cells) >= 2 and cells[0].lower().replace("_", " ") == want:
+                values.append(cells[1])
+            continue
+        line = line.lstrip("-*+ \t")
+        if ":" not in line:
+            continue
+        found, value = line.split(":", 1)
+        if found.strip().lower().replace("_", " ") == want:
+            values.append(value.strip())
+    return values
+
+
+def markdown_section(text: str, wanted: str) -> str | None:
+    lines = text.splitlines()
+    start = -1
+    level = 0
+    for index, line in enumerate(lines):
+        match = re.match(r"^(#{1,6})\s+(.+?)\s*#*\s*$", line.strip())
+        if not match:
+            continue
+        if start < 0:
+            if match.group(2).strip().lower() == wanted.lower():
+                start = index + 1
+                level = len(match.group(1))
+            continue
+        if len(match.group(1)) <= level:
+            return "\n".join(lines[start:index])
+    return "\n".join(lines[start:]) if start >= 0 else None
+
+
+def markdown_table(text: str, heading: str) -> list[list[str]]:
+    section = markdown_section(text, heading)
+    if section is None:
+        return []
+    rows: list[list[str]] = []
+    header_seen = False
+    for raw in section.splitlines():
+        line = raw.strip()
+        if not (line.startswith("|") and line.endswith("|")):
+            continue
+        cells = [cell.strip() for cell in line[1:-1].split("|")]
+        if all(not cell.strip(" :-") for cell in cells):
+            continue
+        if not header_seen:
+            header_seen = True
+            continue
+        rows.append(cells)
+    return rows
+
+
+def empty_or_na(value: str) -> bool:
+    return value.strip().lower() in {"", "-", "n/a", "none"}
+
+
+def substantive_cells(row: list[str], *indexes: int) -> bool:
+    return all(index < len(row) and not empty_or_na(row[index]) for index in indexes)
+
+
+def present_cells(row: list[str], *indexes: int) -> bool:
+    return all(index < len(row) and bool(row[index].strip()) for index in indexes)
+
+
+def none_row(value: str) -> bool:
+    return value.strip().lower() in {
+        "none",
+        "no material assumptions",
+        "no residual uncertainty",
+    }
+
+
+def validate_artifact_shape(
+    path: Path,
+    required_headings: tuple[str, ...],
+    required_tables: tuple[str, ...],
+    errors: list[str],
+) -> str | None:
+    if not path.exists():
+        return None
+    raw_text = read(path)
+    text = structural_markdown(raw_text, path)
+    if not raw_text.strip():
+        errors.append(f"{path}: empty artifact")
+        return None
+    if PLACEHOLDER_RE.search(text):
+        errors.append(f"{path}: contains an unresolved placeholder")
+    for heading in required_headings:
+        if markdown_section(text, heading) is None:
+            errors.append(f"{path}: missing heading '{heading}'")
+    for heading in required_tables:
+        if not markdown_table(text, heading):
+            errors.append(f"{path}: heading '{heading}' has no table data rows")
+    return text
+
+
+def validate_verdict(text: str, path: Path, field: str, errors: list[str]) -> None:
+    verdicts = cursor_values(text, field)
+    if (
+        len(verdicts) != 1
+        or not verdicts[0].strip()
+        or PLACEHOLDER_RE.search(verdicts[0])
+    ):
+        errors.append(f"{path}: must contain exactly one nonempty {field} verdict")
+
+
+def validate_decision_coverage(workspace: Path, errors: list[str]) -> None:
+    path = workspace / "decision-coverage.md"
+    text = validate_artifact_shape(
+        path,
+        (
+            "Topology",
+            "Coverage matrix",
+            "Assumption audit",
+            "Residual uncertainty",
+            "Readiness verdict",
+        ),
+        ("Topology", "Coverage matrix", "Assumption audit", "Residual uncertainty"),
+        errors,
+    )
+    if text is None:
+        return
+    validate_verdict(text, path, "Decision coverage", errors)
+    for index, row in enumerate(markdown_table(text, "Topology"), 1):
+        if len(row) < 4 or not present_cells(row, 0, 1, 2, 3):
+            errors.append(f"{path}: topology row {index} is not evidence-backed")
+    rows = markdown_table(text, "Coverage matrix")
+    for index, row in enumerate(rows, 1):
+        if len(row) < 6:
+            errors.append(f"{path}: coverage row {index} has fewer than 6 cells")
+            continue
+        if not present_cells(row, 0, 1, 2, 3, 4, 5):
+            errors.append(f"{path}: coverage row {index} is incomplete")
+    for index, row in enumerate(markdown_table(text, "Assumption audit"), 1):
+        if len(row) < 6:
+            errors.append(f"{path}: assumption row {index} has fewer than 6 cells")
+        elif not none_row(row[0]) and not substantive_cells(row, 0, 1, 2, 3, 4, 5):
+            errors.append(f"{path}: assumption row {index} is unowned or unverifiable")
+    for index, row in enumerate(markdown_table(text, "Residual uncertainty"), 1):
+        if len(row) < 4:
+            errors.append(f"{path}: residual row {index} has fewer than 4 cells")
+        elif not none_row(row[0]) and not substantive_cells(row, 0, 1, 2, 3):
+            errors.append(f"{path}: residual row {index} is unowned or unverifiable")
+    questions_path = workspace / "questions.md"
+    if questions_path.exists():
+        open_gates = blocking_questions(read_structural(questions_path))
+        if open_gates:
+            errors.append(
+                f"{questions_path}: open blocking/validating/escalating questions: "
+                + ", ".join(open_gates)
+            )
+
+
+def validate_engineering_readiness(workspace: Path, errors: list[str]) -> None:
+    review_path = workspace / "eng-review.md"
+    text = validate_artifact_shape(
+        review_path,
+        (
+            "2a. Build-entry preflight",
+            "2b. Implementation readiness",
+            "4. Failure modes",
+            "7. Completion summary",
+        ),
+        ("2a. Build-entry preflight", "2b. Implementation readiness", "4. Failure modes"),
+        errors,
+    )
+    if text is None:
+        return
+    validate_verdict(text, review_path, "Implementation readiness", errors)
+    for index, row in enumerate(markdown_table(text, "2a. Build-entry preflight"), 1):
+        if len(row) < 7 or not present_cells(row, 0, 1, 2, 3, 4, 5, 6):
+            errors.append(f"{review_path}: preflight row {index} is incomplete")
+    for index, row in enumerate(markdown_table(text, "2b. Implementation readiness"), 1):
+        if len(row) < 6 or not present_cells(row, 0, 1, 2, 3, 4, 5):
+            errors.append(f"{review_path}: readiness row {index} is incomplete")
+    for index, row in enumerate(markdown_table(text, "4. Failure modes"), 1):
+        if len(row) < 6 or not present_cells(row, 0, 1, 2, 3, 4, 5):
+            errors.append(f"{review_path}: failure-mode row {index} is incomplete")
+
+    test_path = workspace / "test-plan.md"
+    test_text = validate_artifact_shape(
+        test_path,
+        ("Build-entry preflight", "Per-gap test requirements", "Acceptance → test map"),
+        ("Build-entry preflight", "Per-gap test requirements"),
+        errors,
+    )
+    if test_text is None:
+        return
+    for heading in ("Build-entry preflight", "Per-gap test requirements"):
+        rows = markdown_table(test_text, heading)
+        required_cells = (0, 1, 2, 3, 5)
+        if heading == "Per-gap test requirements":
+            required_cells = (0, 1, 2, 3, 4, 5, 6)
+        for index, row in enumerate(rows, 1):
+            if not substantive_cells(row, *required_cells):
+                errors.append(f"{test_path}: heading '{heading}' row {index} is incomplete")
+    mapping = markdown_section(test_text, "Acceptance → test map") or ""
+    if "→" not in mapping and "->" not in mapping:
+        errors.append(f"{test_path}: acceptance map has no mappings")
+    spec_path = workspace / "spec.md"
+    if spec_path.exists():
+        for acceptance_id in sorted(set(ID_PATTERNS["AC"].findall(read_structural(spec_path)))):
+            if acceptance_id.upper() not in mapping.upper():
+                errors.append(f"{test_path}: acceptance map does not map {acceptance_id}")
 
 
 def validate_workspace(workspace: Path) -> list[str]:
     errors: list[str] = []
     phase = phase_for(workspace)
 
-    if not workspace_index_present(workspace):
-        errors.append(f"{workspace}: missing README.md/index.md/feature.md workspace map")
+    if not phase:
+        errors.append(f"{workspace}: no phase in state.md")
+        return errors
+    if phase not in PHASES:
+        errors.append(f"{workspace}: unknown phase {phase!r}")
+        return errors
 
-    metadata = PHASES.get(phase, PHASES["spec"])
+    metadata = PHASES[phase]
     required = list(metadata["workspaceRequired"])
     for name in required:
-        if not existing_or_alias(workspace, name):
+        if not (workspace / name).is_file():
             errors.append(f"{workspace}: phase {phase} requires {name}")
+    if "decision-coverage.md" in required:
+        validate_decision_coverage(workspace, errors)
+    if "eng-review.md" in required:
+        validate_engineering_readiness(workspace, errors)
 
     for path in sorted(workspace.glob("*.md")):
-        text = read(path)
+        raw_text = read(path)
+        text = structural_markdown(raw_text, path)
         rel = path.name
-        if rel in HIGH_TRAFFIC_BUDGETS and line_count(text) > HIGH_TRAFFIC_BUDGETS[rel] and not has_budget_override(text):
-            errors.append(f"{path}: {line_count(text)} lines exceeds budget {HIGH_TRAFFIC_BUDGETS[rel]} without Budget override")
-        validate_mermaid(path, text, errors)
+        if (
+            rel in HIGH_TRAFFIC_BUDGETS
+            and line_count(raw_text) > HIGH_TRAFFIC_BUDGETS[rel]
+            and not has_budget_override(text)
+        ):
+            errors.append(
+                f"{path}: {line_count(raw_text)} lines exceeds budget "
+                f"{HIGH_TRAFFIC_BUDGETS[rel]} without Budget override"
+            )
+        validate_mermaid(path, raw_text, errors)
 
         if rel in REQUIRED_HEADINGS:
             present = headings(text)
             for heading in REQUIRED_HEADINGS[rel]:
                 if heading not in present:
                     errors.append(f"{path}: missing heading '{heading}'")
-        if rel in {"README.md", "index.md"}:
+        if rel == "README.md":
             validate_workspace_map(path, text, errors)
         if rel == "flows.md":
-            validate_flows(path, text, errors)
+            validate_flows(path, raw_text, text, errors)
         if rel == "tasks.md":
             validate_tasks(path, text, errors)
         if rel == "decisions.md":
@@ -341,7 +661,7 @@ def validate_workspace(workspace: Path) -> list[str]:
             validate_id_register(path, text, "Q", errors)
         if rel == "drift.md":
             validate_id_register(path, text, "DRIFT", errors)
-        if rel in {"evidence.md", "proof.md", "browser-evidence.md"}:
+        if rel in {"evidence.md", "browser-evidence.md"}:
             validate_evidence_entries(path, text, errors)
 
         for link in MD_LINK_RE.findall(text):
@@ -355,16 +675,35 @@ def validate_workspace(workspace: Path) -> list[str]:
             if not target.exists():
                 errors.append(f"{path}: stale local link to {link}")
 
-    spec = read(workspace / "spec.md") if (workspace / "spec.md").exists() else ""
-    tasks = read(workspace / "tasks.md") if (workspace / "tasks.md").exists() else ""
-    trace = read(workspace / "traceability.md") if (workspace / "traceability.md").exists() else ""
+    validate_unique_owned_ids(workspace, errors)
+
+    spec = (
+        read_structural(workspace / "spec.md")
+        if (workspace / "spec.md").exists()
+        else ""
+    )
+    tasks = (
+        read_structural(workspace / "tasks.md")
+        if (workspace / "tasks.md").exists()
+        else ""
+    )
+    trace = (
+        read_structural(workspace / "traceability.md")
+        if (workspace / "traceability.md").exists()
+        else ""
+    )
     evidence_path = evidence_file(workspace)
-    evidence = read(evidence_path) if evidence_path else ""
-    browser_evidence = read(workspace / "browser-evidence.md") if (workspace / "browser-evidence.md").exists() else ""
+    evidence = read_structural(evidence_path) if evidence_path else ""
+    browser_evidence = (
+        read_structural(workspace / "browser-evidence.md")
+        if (workspace / "browser-evidence.md").exists()
+        else ""
+    )
 
     ac_ids = set(ID_PATTERNS["AC"].findall(spec))
     req_ids = set(ID_PATTERNS["REQ"].findall(spec))
     slice_ids = set(ID_PATTERNS["SLICE"].findall(tasks))
+    built_slice_ids = completed_slices(tasks)
     evid_ids = set(ID_PATTERNS["EVID"].findall(evidence + "\n" + browser_evidence))
 
     if spec and not ac_ids:
@@ -374,6 +713,14 @@ def validate_workspace(workspace: Path) -> list[str]:
     for old in sorted(set(LEGACY_SLICE_RE.findall(tasks))):
         errors.append(f"{workspace}: legacy slice label {old}; use SLICE-###")
 
+    if bool(metadata.get("proofRequired")):
+        incomplete_slice_ids = sorted(slice_ids - built_slice_ids)
+        if incomplete_slice_ids:
+            errors.append(
+                f"{workspace / 'tasks.md'}: phase {phase} requires every slice built; "
+                f"incomplete: {', '.join(incomplete_slice_ids)}"
+            )
+
     for ac in sorted(ac_ids):
         if tasks and ac not in tasks:
             errors.append(f"{workspace / 'tasks.md'}: {ac} is not referenced by any slice")
@@ -381,9 +728,16 @@ def validate_workspace(workspace: Path) -> list[str]:
             errors.append(f"{workspace / 'traceability.md'}: missing {ac}")
 
     if tasks:
-        for slice_id in sorted(slice_ids):
-            if not re.search(rf"{slice_id}.*AC-\d{{3}}|AC-\d{{3}}.*{slice_id}", tasks, re.S):
+        for slice_id in sorted(set(defined_ids(tasks, "SLICE"))):
+            section_match = re.search(
+                rf"(?m)^#{{2,6}}[ \t]+{slice_id}\b[^\n]*\n(.*?)(?=^#{{1,6}}[ \t]|\Z)",
+                tasks,
+                re.S,
+            )
+            section_text = section_match.group(1) if section_match else ""
+            if not ID_PATTERNS["AC"].search(section_text):
                 errors.append(f"{workspace / 'tasks.md'}: {slice_id} has no AC-### reference")
+        for slice_id in sorted(slice_ids):
             if trace and slice_id not in trace:
                 errors.append(f"{workspace / 'traceability.md'}: missing {slice_id}")
 
@@ -397,16 +751,16 @@ def validate_workspace(workspace: Path) -> list[str]:
                 if eid not in trace:
                     errors.append(f"{workspace / 'traceability.md'}: evidence ID {eid} from evidence/browser proof is not mapped")
 
-    for slice_id in sorted(completed_slices(tasks)):
+    for slice_id in sorted(built_slice_ids):
         if not evidence:
-            errors.append(f"{workspace}: completed {slice_id} has no evidence.md/proof.md")
+            errors.append(f"{workspace}: completed {slice_id} has no evidence.md")
         elif slice_id not in evidence:
             errors.append(f"{evidence_path}: completed {slice_id} is not referenced by evidence")
 
     if bool(metadata.get("blocksOpenQuestions")):
         qfile = workspace / "questions.md"
         if qfile.exists():
-            for qid in blocking_questions(read(qfile)):
+            for qid in blocking_questions(read_structural(qfile)):
                 errors.append(f"{qfile}: unresolved blocking/escalating question {qid} blocks phase {phase}")
 
     if req_ids and trace:
@@ -419,7 +773,12 @@ def validate_workspace(workspace: Path) -> list[str]:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("paths", nargs="*", default=["."], help="workspace dirs or roots containing .devrites/work|features|archive")
+    parser.add_argument(
+        "paths",
+        nargs="*",
+        default=["."],
+        help="workspace directories or roots containing .devrites/work",
+    )
     args = parser.parse_args(argv)
 
     workspaces: list[Path] = []
@@ -432,7 +791,10 @@ def main(argv: list[str]) -> int:
 
     errors: list[str] = []
     for workspace in sorted(set(p.resolve() for p in workspaces)):
-        errors.extend(validate_workspace(workspace))
+        try:
+            errors.extend(validate_workspace(workspace))
+        except (OSError, ValueError) as exc:
+            errors.append(str(exc))
 
     if errors:
         for err in errors:

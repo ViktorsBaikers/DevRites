@@ -1,11 +1,11 @@
 # DevRites command map
 
-Reference for every shipped skill and agent: what triggers it, what it reads,
-what it writes, and how the pieces interact.
+This page lists every shipped skill and agent, including its triggers, inputs,
+outputs, and interactions.
 
-DevRites ships through npm (`npx devrites ...`). Claude Code and Codex support
-comes from generated host artifacts copied by the npm installer; DevRites is not
-distributed as a Claude or Codex plugin.
+DevRites ships through npm (`npx devrites ...`). Claude Code, Codex, omp, pi,
+and Devin CLI support comes from generated host artifacts copied by the npm
+installer; DevRites is not distributed as a Claude or Codex plugin.
 
 - **Workflow diagram** (top-level flow) → [`flow.md`](flow.md).
 - **Architecture rationale** → [`architecture.md`](architecture.md).
@@ -13,15 +13,16 @@ distributed as a Claude or Codex plugin.
 
 ## Naming convention
 
-`devrites-` is a **namespace prefix** chosen for collision avoidance against
-bundled Claude Code skill names (`prototype`, `handoff`, `triage`, `diagnose`,
-…). It does **not** signal "internal": visibility is governed by the
-`user-invocable:` flag in each `SKILL.md`. All public utilities use the
-`rite-*` prefix (`rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`,
-`rite-doctor`, `rite-customize`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
-`rite-pressure-test`, `rite-autocomplete`, `rite-explain`, `rite-pov`, `rite-dogfood`,
-`rite-pr-feedback`). `devrites-*` specialists are model-invoked; `devrites-lib` is the
-explicit non-workflow library exception.
+The `devrites-` prefix avoids collisions with bundled Claude Code skill names
+such as `prototype`, `handoff`, `triage`, and `diagnose`. The prefix does not
+mean that a skill is internal; each `SKILL.md` uses `user-invocable:` to set
+visibility. Public utilities use the `rite-*` prefix: `rite-quick`,
+`rite-frame`, `rite-adopt`, `rite-learn`, `rite-doctor`, `rite-customize`,
+`rite-zoom-out`, `rite-prototype`, `rite-handoff`, `rite-pressure-test`,
+`rite-autocomplete`, `rite-explain`, `rite-pov`, `rite-dogfood`,
+`rite-pr-feedback`, and `rite-watch-pr`, plus the evidence-gated workspace compatibility command
+`rite-upgrade`. The host may invoke `devrites-*` specialists through the model.
+`devrites-lib` is the non-workflow library exception.
 
 ## Surface lifecycle
 
@@ -35,58 +36,98 @@ Only promoted surfaces are shipped by the npm package.
 
 ## Engine command ownership
 
-Engine commands are not all phase steps. Keep each new command in one of these
-lanes so it is either executed automatically or intentionally operator-owned:
+The Go surface is intentionally closed and deterministic:
 
 | Lane | Commands | Owner |
 |---|---|---|
-| Workflow gates | `preamble`, `build-readiness`, `spec-skeleton`, `spec-validate`, `check-acceptance`, `evidence-fresh`, `coverage`, `doubt-coverage`, `budget`, `test-integrity`, `mutation-gate`, `package-existence`, `review-integrity`, `footprint`, `reconcile`, `conventions`, `learnings`, `review-fingerprints`, `timeline`, `health`, `progress` | Called by the relevant `rite-*` workflow or shared reply contract. |
-| Workspace utilities | `status`, `snapshot`, `analyze`, `archive-search`, `resolve`, `close-out`, `stuck`, `tick-afk`, `ledger`, `profile` | Called by a specific utility/phase when its condition is met. |
-| Low-level completeness API | `readiness`, `seal` | Available for scripts/CI and documented engine use. Feature rites use stricter phase-specific gates (`build-readiness`, `/rite-seal` phase contract) instead of auto-running these weaker aggregate checks. |
-| Install / operator / CI | `install`, `update`, `uninstall`, `doctor`, `migrate`, `validate-pack`, `harness-matrix`, `extensions`, `overrides`, `reviewers`, `hook`, `version` | Called by `npx devrites ...`, `/rite-doctor`, hooks, CI, or a human operator; do not auto-run during feature work just because the command exists. |
+| Candidate and deterministic checks | `check candidate`, `check readiness [--emit-binding]`, `check seal`, `check slice <slug> <SLICE-ID>`, `check task-graph`, `check regression <slug> [--update]`, `check drift <slug> [--record]`, `check windows <slug>`, `check dup`, `check path-disjoint`, `parallel select`, `check skill-trust`, `check indexes`, `detect commands [--root <dir>] [--json]` | Candidate validates/hashes the strict project manifest; readiness checks phase files, the required `tasks.md` slice graph, or emits the vetted Build-input binding; seal checks final files/open gates, that graph and binding, then exact candidate bindings. `check slice` preflights one slice before wright dispatch — contract present, exact Writer allowlist paths, `Satisfies` AC ids resolvable, bounded scope — so a malformed slice fails before a writer context is spent. `check indexes` reports install manifest and optional code-index directory presence as JSON. `parallel select` returns the greedy path-disjoint subset ≤ cap from the supplied ready slices. `check regression` compares current workspace progress against the durable `regression-baseline.json` high-water mark and `--update` ratchets it at a checkpoint, so a lost slice, unchecked criterion, or reopened question fails closed instead of passing silently. `check windows` scans the feature diff for newly introduced deferral markers (TODO/FIXME/skipped test/stub idioms) and fails when any lacks a `windows.md` waiver row — silent deferrals block the seal. `check dup` reports advisory near-duplicate clusters that survive renaming (normalized token shingles, transitive clusters, distance-boosted rank, `*`-marked diff overlap, stable content hashes, `.devrites/dup-ignore` dismissal ledger) — leads for reviewer triage, never a gate. `check drift` attributes readiness-input drift to the exact artifact: `--record` snapshots per-input SHA-256 digests into `readiness-inputs.json` under the feature lock, and a later compare names each `changed`/`missing`/`added` input (falling back to the aggregate `eng-review.md` binding plus mtime candidates when no baseline exists) so a stale-binding repair starts at the right file — advisory, never a gate. `detect commands` resolves the repository's own test/lint/vet/build commands (Makefile targets, then `package.json` scripts, then language-manifest fallbacks, plus the lockfile-derived package manager) so `gates.md` `CHECK` lines and proof steps cite real wiring instead of invented commands — read-only, no installs, no execution. |
+| Workspace observation | `observe summary`, `orient`, `observe slice <slug> <SLICE-ID>`, `next`, `handoff` | JSON workspace snapshot for agents (cursor, task graph, `artifact_budgets`, `bulk_files`); `orient` is an alias for `observe summary`. `observe slice` prints one `SLICE-###` section of `tasks.md` so Build reads a slice, not the file. `next` prints the minimal remaining lifecycle path plus advisory skips (e.g. clarify at zero open questions). `handoff` emits the deterministic resume record (cursor, `awaiting_human`, blocking question gates, ledger reduction with unmet/stale ids, dead ends, read-next order) — the `/rite-handoff` spine and compaction-fallback entry. |
+| Context packets, dispatch waves, metrics, claims, notes | `context [slug] (--phase <p> \| --skill <name>) [--role <r>] [--trigger a,b]`, `dispatch <slug> <open\|start\|seal\|return\|status\|abandon>`, `metrics record`, `metrics summary`, `claim <add\|release\|list\|check>`, `note <add\|list\|check\|rm>` | `context` emits one deduplicated read-set bundle per phase/role/skill from each skill's `loads:` manifest — a dispatch target reads it instead of selecting files; `--skill` works without a workspace when `--out` is given. `dispatch` owns the launch-wave barrier (seal needs a handle per role; return needs seal) and auto-records dispatch/return metrics. `metrics` owns the append-only `metrics.jsonl` ledger. `claim` owns the append-only `.devrites/claims.jsonl` ledger — advisory, session-scoped file claims with TTL so concurrent same-tree sessions see each other's write intent before edits collide (conflict exits 3; never a substitute for one-writer-per-worktree). `note` owns the anchored `notes.md` ledger — notes bound to verbatim code quotes, regraded `exact`/`moved`/`stale`/`ambiguous`/`lost` as the code drifts; `check seal` refuses non-`exact` anchors. `check diff-scope` is the mechanical changed-paths ⊆ allowlist gate run before reviewer dispatch. |
+| Atomic workspace state | `state resolve`, `state merge-manifest`, `state close`, `migrate [--dry-run] [--answer id=choice]` | Go owns answer/drop/batch resolution, the recorded predecessor-chain manifest union for a release milestone, transactional close, and fail-closed v5 schema normalization. |
+| Acceptance ledger | `gates scaffold`, `gates status`, `gates run [--timeout N]`, `gates reverify [--timeout N]`, `gates lint [--strict]`, `gates attest <id> <note>`, `gates abandon <id> <why>` | Go owns the `gates.md` ledger: per-outcome gates whose runnable `CHECK`/`CWD` must exactly match a `test-plan.md` Build-entry preflight row, evidence bound to the gate definition digest (stale = unmet), `ABANDON:` handoffs, and oracle lint. Readiness/seal require a parse-clean, all-met ledger whenever `gates.md` is a required artifact. |
+| Security | `secret-scan` | `/rite-ship`, safe hooks, or an operator scans staged blobs, stdin, or touched files. |
+| Install/operator | `install`, `update`, `uninstall`, `version` | Direct update acquires latest; npm/bootstrap may supply local candidates; the engine performs manifest-owned local changes. |
+| Native policy | no engine command | Skills/root own spec grammar re-read, qid allocation, Clarify cursor edits, AFK/recovery accounting, and read-only `/rite-doctor`. |
 
-Workflow-owned commands should have a concrete call site in a `rite-*` skill,
-phase contract, shared reply contract, or installed hook. Operator-owned commands
-must say who runs them.
+`devrites-engine help` exhaustively lists the operational engine commands.
+Standard `help`, `-h`, `--help`, `version`, and `--version` forms remain
+available; each operational command and subcommand also accepts `-h` / `--help`.
+There are no legacy operational aliases. `check candidate <slug>`
+prints exactly
+`candidate-sha256: <64 lowercase hex>` and `candidate-files: <row count>` on a
+pass; usage/root errors exit `2` and candidate blocks exit `3`. There are no
+semantic readiness commands, reviewer-prose parsers, capability-ledger engine,
+or compatibility telemetry.
+
+Claude Code, Codex, omp, pi, and Devin own native dispatch. Installed skills
+and exact agents
+own semantic readiness, traceability, acceptance/evidence quality, doubt,
+review reconciliation, test-quality assessment, capability interpretation,
+workspace compatibility, and
+recovery routing. Repository tools and CI own test, build, lint, typecheck,
+schema, and release execution.
+
+`secret-scan --staged` reads exact NUL-enumerated Git index blobs with
+replacement objects disabled. `--stdin` accepts text through process stdin.
+Scans cap captured input at 64 MiB and entries/findings at 4,096; findings expose
+metadata only and source or limit errors fail closed.
+
+Direct `devrites-engine update` acquires the latest exact-release pack and
+platform binary, then hands local paths to the downloaded engine. Shell/npm may
+perform the same acquisition before invoking the local path. `--check` compares
+the installed version with latest release metadata without downloading assets;
+engine release selectors are unsupported.
+`/rite-upgrade` separately audits an older active workspace. Only a cited
+current-contract defect may route a repair through its existing Clarify, Plan
+repair, Converge, Vet, Prove, Polish, Review, or Seal owner.
+See [`cli.md`](cli.md).
 
 ## Public commands (`user-invocable: true`)
 
 | Command | Phase | Argument | What it does | Reads | Writes |
 |---|---|---|---|---|---|
-| [`/rite`](../pack/.claude/skills/rite/SKILL.md) | menu | `[subcommand]` | Compact menu + suggested next command. Pure router; does **not** read state because `/rite-status` owns that job. | none | none |
-| [`/rite-spec`](../pack/.claude/skills/rite-spec/SKILL.md) | spec | `<feature>` | **New feature.** Deep investigation → writes a product-focused `spec.md` (WHAT/WHY, requirements, ACs, boundaries, gaps closed with options, design references). Checks the shipped archive for prior art before speccing. Creates the workspace map. | codebase + codegraph/graphify + shipped archive (`devrites-engine archive-search`) | `README.md`/`feature.md`, `brief.md`, `spec.md`, `references/`, `references.md`, `questions.md`, `decisions.md`, `assumptions.md`, `state.md` |
+| [`/rite`](../pack/.claude/skills/rite/SKILL.md) | menu | `[verb [args...]]` | Compact menu + router. No-argument menu mode does **not** read state because `/rite-status` owns that job. | none | none |
+| [`/rite use <slug>`](../pack/.claude/skills/rite/SKILL.md) | menu | `<slug>` | Inline context switch: confirms the workspace exists and re-points the active feature without running a phase. | `.devrites/work/<slug>/` | `.devrites/ACTIVE` |
+| [`/rite guide`](../pack/.claude/skills/rite/SKILL.md) | guided lifecycle | none | Inline walkthrough of one real, small first feature; explains and pauses at every phase boundary. | chosen change + lifecycle context | lifecycle-owned artifacts |
+| [`/rite-spec`](../pack/.claude/skills/rite-spec/SKILL.md) | spec | `<feature>` | **New feature.** Deep investigation → writes a product-focused `spec.md` (WHAT/WHY, requirements, ACs, boundaries, gaps, design references, and one capability-impact declaration). MODIFIED deltas preserve prior scenarios/claims unless an accepted decision authorizes removal. | codebase + native file/code search + shipped archive Markdown | `README.md`, `brief.md`, `spec.md`, `references/`, `references.md`, `questions.md`, `decisions.md`, `assumptions.md`, `state.md` |
+| [`/rite-clarify`](../pack/.claude/skills/rite-clarify/SKILL.md) | clarify | `[slug]` | **Required, adaptive.** Topology-first coverage scan of the written spec; searches facts, closes human-owned decisions, audits assumptions, and takes a zero-question fast path when already clear. Writes a semantic `CLEAR` verdict reconciled against the spec, decisions, assumptions, and evidence; later-phase retrofits persist and restore their return cursor when the contract is unchanged. | spec workspace + code/docs/decisions | `decision-coverage.md`, `spec.md`, `decisions.md`, `assumptions.md`, `questions.md`, `state.md` |
 | [`/rite-temper`](../pack/.claude/skills/rite-temper/SKILL.md) | temper | `[slug] [--mode]` | **Optional, before define.** Strategic review of the readied spec: scope mode (expand / selective / hold-rigor / reduce-to-MVP) + pre-mortem + 9-dimension floor-gate; folds decisions into the spec via the Spec Drift Guard. Significance-gated; **mandatory in `/rite-autocomplete`**. Reviewer: `devrites-strategy-reviewer`. | `spec.md` + decisions/assumptions + design-brief | `strategy.md`, `spec.md`, `decisions.md`, `assumptions.md` |
-| [`/rite-define`](../pack/.claude/skills/rite-define/SKILL.md) | plan | `[slug]` | Turns the approved `spec.md` into architecture, plan, vertical `SLICE-###` task slices, traceability, and state. Reads `strategy.md` if present. | `spec.md` (+ `strategy.md`) + references | `architecture.md`, `plan.md`, `tasks.md`, `traceability.md`, `state.md`, `decisions.md` |
-| [`/rite-vet`](../pack/.claude/skills/rite-vet/SKILL.md) | vet | `[slug] [--cross-model] [--full]` | **Before build: every feature.** Engineering review of the defined plan: scope challenge (reuse / minimum-diff / complexity smell) + architecture / plan code-quality / test-coverage design / performance, confidence-banded with a quote-the-source verification gate; failure-mode + parallelization map. Hardens `plan.md` / `tasks.md` in place; writes the build-readable `test-plan.md`; acceptance-changing deltas route via the Spec Drift Guard. Runs on every plan: depth scales to stakes (light pass on simple plans, full on big/risky), never skipped; **always in `/rite-autocomplete`**. Reviewer: `devrites-plan-reviewer` (+ optional `--cross-model`). | `plan.md` + `tasks.md` + `spec.md` (+ `strategy.md`) | `eng-review.md`, `test-plan.md`, `plan.md`, `tasks.md`, `decisions.md`, `state.md` |
-| [`/rite-plan`](../pack/.claude/skills/rite-plan/SKILL.md) | plan | `[mode]` | Decompose / reslice / repair / re-order / split / unblock an active plan; `revise` is artifact-only. | spec/plan/tasks/state/drift + diff | `plan.md`, `tasks.md`, `state.md`, `decisions.md` |
-| [`/rite-build`](../pack/.claude/skills/rite-build/SKILL.md) | build | `[slice]` | Implement **exactly one** vertical slice, then stop. When `.devrites/CHECKPOINT` is set, commits the proven slice local-only as `WIP(<slug>)`. | workspace + diff + `.devrites/CHECKPOINT` | code + `state.md`, `evidence.md`, `traceability.md`, `touched-files.md` (+ local `WIP(<slug>)` commit in checkpoint mode) |
-| [`/rite-converge`](../pack/.claude/skills/rite-converge/SKILL.md) | converge | `[slug]` | **Recovery.** Compare the live codebase with `spec.md`, `plan.md`, `tasks.md`, and any principles as the sole source of intent. Use the present state rather than git history or a diff, then **append** each unmet piece as a new traceable `SLICE-###` for `/rite-build`. `tasks.md` stays byte-identical when the code has already converged. Use this for a resumed, adopted, or stalled feature. | `spec.md` + `plan.md` + `tasks.md` + `.devrites/principles.md` + live code | `tasks.md` (appended), `traceability.md`, `state.md`, `decisions.md` |
-| [`/rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | prove | `[scope]` | Tests + build + runtime + browser proof of the completed feature. | `traceability.md` + workspace + diff | `evidence.md`, `browser-evidence.md`, `traceability.md`, `state.md` |
-| [`/rite-polish`](../pack/.claude/skills/rite-polish/SKILL.md) | polish | `[target \| mode]` | Orchestrator. Reads `reference/code.md` always (Phase 1 + 2); reads `reference/ui.md` when UI is touched (Phase 3 + 4). Mode tokens: `bolder \| quieter \| distill \| harden \| normalize-only`. | workspace + design system + diff | `polish-report.md`, `browser-evidence.md` |
-| [`/rite-review`](../pack/.claude/skills/rite-review/SKILL.md) | review | `[scope]` | Feature-scoped multi-axis review. Parallel Spec + Standards sub-agents (`devrites-spec-reviewer`, `devrites-code-reviewer`). | workspace + diff | `review.md`, `evidence.md`, `state.md` |
-| [`/rite-seal`](../pack/.claude/skills/rite-seal/SKILL.md) | seal | none | GO / NO-GO **decision**, hands off to `/rite-ship`. Walks acceptance vs evidence, fans out reviewers, writes the verdict. Runs no git; on GO sets `state.md` `Next step: /rite-ship`. Triggers: "GO / NO-GO", "is it safe to merge", "decide if we can ship". | all artifacts + diff | `seal.md`, `state.md` |
-| [`/rite-ship`](../pack/.claude/skills/rite-ship/SKILL.md) | ship | `[slug]` | Final phase. Requires a GO in `seal.md` → collapses any `WIP(<slug>)` checkpoints → renders type-`GO` + runs the irreversible git ladder (commit → push → tag/PR) + closes the task (archive workspace → `.devrites/archive/<slug>/`, clear `ACTIVE`, phase `done`). Triggers: "ship it", "ship this", "push it out", "close the task". | `seal.md` + all artifacts + diff | `ship.md`, `state.md`, archive |
-| [`/rite-autocomplete`](../pack/.claude/skills/rite-autocomplete/SKILL.md) | (orchestrator) | `[idea] [--ship\|--yolo] [--max-slices N]` | Full unattended lifecycle (spec → … → seal → ship), best option at each soft gate, rationale to `decisions.md`. Arms AFK + checkpoint mode for the run. Vague prompt → up-front interview; pauses on hard-risk / blocking / escalating / open-validating / NO-GO / budget-exhausted. Default stops at the final type-`GO`; `--ship` flag (alias `--yolo`) auto-confirms it. Triggers: "autocomplete", "do the whole thing". | idea + workspace | whole workspace (drives every phase) |
+| [`/rite-define`](../pack/.claude/skills/rite-define/SKILL.md) | define → plan | `[slug]` | Authors architecture, plan, vertical `SLICE-###` tasks, and traceability. A changed provider/consumer boundary names one canonical shared contract plus consuming provider/consumer tests; no change uses a justified no-impact statement. | `spec.md` + `decision-coverage.md` (+ `strategy.md`) + references | `architecture.md`, `plan.md`, `tasks.md`, `traceability.md`, `state.md`, `decisions.md` |
+| [`/rite-vet`](../pack/.claude/skills/rite-vet/SKILL.md) | vet | `[slug] [--cross-model] [--full]` | **Before build: every feature.** Engineering review of the defined plan: scope challenge (reuse / minimum-diff / complexity smell) + architecture / plan code-quality / test-coverage design / performance, confidence-banded with a quote-the-source verification gate; failure-mode and dependency-safety review. Hardens `plan.md` / `tasks.md` in place; writes the build-readable `test-plan.md` and a semantic `READY` verdict reconciled by the exact native reviewer; acceptance-changing deltas route via the Spec Drift Guard. Runs on every plan: depth scales to stakes (light pass on simple plans, full on big/risky), never skipped; **always in `/rite-autocomplete`**. Reviewer: `devrites-plan-reviewer` (+ optional `--cross-model`). | `plan.md` + `tasks.md` + `spec.md` (+ `strategy.md`) | `eng-review.md`, `test-plan.md`, `plan.md`, `tasks.md`, `decisions.md`, `state.md` |
+| [`/rite-plan`](../pack/.claude/skills/rite-plan/SKILL.md) | repair → plan | `[mode]` | Reslice / repair / re-order / split / unblock an active plan and return to the `plan` checkpoint; `revise` is artifact-only and `/rite-vet` is the normal resume. | spec/plan/tasks/state/drift + diff | `plan.md`, `tasks.md`, `state.md`, `decisions.md` |
+| [`/rite-build`](../pack/.claude/skills/rite-build/SKILL.md) | build | `[slice]` | In HITL, orchestrates one vertical slice through the sole wright; an explicit `.devrites/AFK` sentinel may chain bounded low-risk slices. Every task states exact project-relative paths; after return, the root rejects extra paths or weakened tests, runs independent review and repository proof, and maintains the strict candidate manifest. Lands a local `WIP(<slug>):` commit only after that check loop is green (never on wright return). | workspace + diff | code + `state.md`, `evidence.md`, `traceability.md`, `touched-files.md` (+ local `WIP(<slug>):` after checks; never a slice id) |
+| [`/rite-converge`](../pack/.claude/skills/rite-converge/SKILL.md) | converge | `[slug]` | **Recovery.** Compare live code with clarified intent, append each unmet piece as a traceable `SLICE-###`, and invalidate the old vet verdict so changed work returns through `/rite-vet`. `tasks.md` stays byte-identical when already converged. | clarified spec + plan/tasks + principles + live code | `tasks.md` (appended), `traceability.md`, `state.md`, `eng-review.md` (invalidated), `decisions.md` |
+| [`/rite-upgrade`](../pack/.claude/skills/rite-upgrade/SKILL.md) | compatibility | `[slug]` | **Conditional recovery.** Audit an older released workspace against current contracts. Only cited defects route through Clarify, Plan repair, Converge, Vet, Prove, Polish, Review, or Seal. Ambiguous candidate scope is a gap; age/cursor form alone is never a defect, and old passes are never synthesized. | active workspace + named current contracts | admitted unfinished artifacts via their owning rite |
+| [`/rite-prove`](../pack/.claude/skills/rite-prove/SKILL.md) | prove | `[feature-slug]` | Positive, discriminating tests + build/runtime/browser proof; checks the same candidate before/after commands and binds evidence to its digest. | `traceability.md` + workspace + candidate | `evidence.md`, `browser-evidence.md`, `traceability.md`, `state.md` |
+| [`/rite-polish`](../pack/.claude/skills/rite-polish/SKILL.md) | polish | `[target \| mode]` | Runs code/UI polish, then applicable capability-ledger, design-memory, and ADR rollups; updates the manifest and affected proof before closing the candidate. | workspace + design system + candidate | `polish-report.md`, `browser-evidence.md`, `touched-files.md`, durable rollups |
+| [`/rite-review`](../pack/.claude/skills/rite-review/SKILL.md) | review | `[scope: slice N \| feature] [--full]` | Feature-scoped parallel Spec + Standards review of the closed candidate; binds `review.md` to its digest. | workspace + candidate | `review.md`, `evidence.md`, `state.md` |
+| [`/rite-seal`](../pack/.claude/skills/rite-seal/SKILL.md) | seal | `[feature-slug] [--full]` | Candidate-bound GO / NO-GO **decision**. Rechecks exact proof/review bindings and runs no git; on GO sets `Next step: /rite-ship`. | all artifacts + candidate | `seal.md`, `state.md` |
+| [`/rite-ship`](../pack/.claude/skills/rite-ship/SKILL.md) | ship | `[slug]` | Starts with a read-only Seal/candidate check and exact plan disclosure, then requires fresh literal `GO`. Only then may it collapse checkpoints, stage exact candidate paths, validate staged scope/bytes/bindings/secrets, commit and reverify, perform optional separately approved push/tag/PR actions, and archive/close. | `seal.md` + candidate + Git index | `ship.md`, `state.md`, archive |
+| [`/rite-autocomplete`](../pack/.claude/skills/rite-autocomplete/SKILL.md) | (orchestrator) | `[idea] [--ship\|--yolo] [--max-slices N] [--full] [--cross-model]` | Full lifecycle (spec → clarify → … → seal → ship). Spec + clarify form the one interactive window; AFK/checkpoint mode arms only after decision coverage is CLEAR. Pauses for irreversible risk, escalating, unanswered blocking with no recommended option, human-only access, or remaining NO-GO — not recommended-option blocking questions, temper expand, validating gates, `--max-slices`, or default resource caps. Objective red checks use bounded technical recovery. Default stops at Seal GO; `--ship` (`--yolo`) reaches Ship preflight but still requires fresh literal `GO` and native approval; `--full` selects the Full profile and `--cross-model` arms Vet's second opinion. | idea + workspace | whole workspace (drives every phase) |
 | [`/rite-quick`](../pack/.claude/skills/rite-quick/SKILL.md) | (express) | `<change>` | Express lane for a **small, reversible, unambiguous** change: one-line contract → TDD build → scoped prove → review-lite → ship, no full artifact tree. **Significance gate first**: auth / migration / public-API / destructive / multi-slice / ambiguous → escalates to `/rite-spec`. Triggers: "quick fix", "small change", "tiny tweak", "just do X". | the change + codebase | code + commit (optional `brief.md` / `evidence.md`) |
 | [`/rite-frame`](../pack/.claude/skills/rite-frame/SKILL.md) | lens | `[ask \| diff]` | Pre-flight + self-audit lens for ad-hoc work the lifecycle gates never see: **FRAME** turns an imperative ask into a falsifiable success criterion + verify command before code; **AUDIT** checks a raw diff against the four LLM coding failure modes (silent assumption / overcomplication / out-of-scope edit / unverifiable goal). Top of `/rite-quick` or before a plain "just do X". | the ask / a raw diff | success criterion + verify command (inline) |
-| [`/rite-adopt`](../pack/.claude/skills/rite-adopt/SKILL.md) | onboard | `[path]` | Bring an EXISTING codebase under DevRites: reverse-derive a `spec.md` of current behavior + placement + architecture, seed the conventions ledger from observed idioms, then hand off to the lifecycle. Triggers: "adopt this project", "onboard this codebase", "we already have code". | the codebase | `spec.md`, `.devrites/conventions.md`, `decisions.md`, `state.md` |
-| [`/rite-status`](../pack/.claude/skills/rite-status/SKILL.md) | status | `[slug]` | Active feature: phase, run mode (AFK/HITL), status, next action, evidence, open questions by gate, risks, handoff readiness. Reads via the shared `devrites-lib` preamble (portable). | workspace + `.devrites/AFK` | none |
-| [`/rite-resolve`](../pack/.claude/skills/rite-resolve/SKILL.md) | resume | `<qid> "<answer>"` \| `--drop <qid>` \| `--batch <file>` | Answer / drop / batch-resolve open `questions.md` entries; clears `state.md` `Awaiting human` and sets `Status: running`. Canonical writer for `status: open → answered`. | `questions.md` + `state.md` | `questions.md`, `state.md` |
-| [`/rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | utility | none | One-pass structural map of an unfamiliar area (modules, in-callers, out-calls, decisions) in project vocabulary. Prefers codegraph/graphify. | codebase + ADRs/CONTEXT.md | none |
+| [`/rite-adopt`](../pack/.claude/skills/rite-adopt/SKILL.md) | onboard | `[path or area to adopt] [+ what you want to build next]` | Reverse-derive the existing baseline and next objective; propose any durable project guidance in the nearest native instruction file. | codebase + project instructions | workspace spec/state artifacts + optional guidance proposal |
+| [`/rite-status`](../pack/.claude/skills/rite-status/SKILL.md) | status | `[slug]` | Active feature: phase, run mode, status, persisted next action, evidence, questions, drift, risks, and handoff readiness. | direct workspace ledger/artifacts | none |
+| [`/rite-resolve`](../pack/.claude/skills/rite-resolve/SKILL.md) | resume | `<qid> "<answer>" \| --drop <qid> ["<reason>"] \| --batch <path-to-yaml>` | Answer / drop / batch-resolve open `questions.md` entries; clears `state.md` `Awaiting human` and sets `Status: running`. Canonical writer for `status: open → answered`. | `questions.md` + `state.md` | `questions.md`, `state.md` |
+| [`/rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | utility | `[symbol \| file \| area to map]` | One-pass structural map of an unfamiliar area (modules, in-callers, out-calls, decisions) in project vocabulary. Prefers codegraph/graphify. | codebase + ADRs/CONTEXT.md | none |
 | [`/rite-prototype`](../pack/.claude/skills/rite-prototype/SKILL.md) | utility | `[question]` | Throwaway code answering ONE design question. Logic harness OR 2 to 4 UI variations on one route. Captures verdict to `decisions.md`. | spec / surrounding code | prototype scratch + `decisions.md` |
 | [`/rite-handoff`](../pack/.claude/skills/rite-handoff/SKILL.md) | utility | `[next-session-focus]` | Compacts the chat into a handoff doc. Syncs chat-only context into workspace canonical files. References existing artifacts by path. | chat + workspace | `handoff.md` + sync into canonical files |
-| [`/rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | utility | `[--mine \| "<lesson>"]` | Mine archived features for recurring mistakes / dismissed-finding classes; propose project-local lessons into `.devrites/learnings.md` (loaded by the review skills before a fan-out). | archive + workspace | `.devrites/learnings.md` |
-| [`/rite-customize`](../pack/.claude/skills/rite-customize/SKILL.md) | utility | `[override <agent> \| extension <name>]` | Guided authoring for project-local reviewer overrides and extensions; writes the smallest artifact, then runs the matching validator. Explicit-only. | `.devrites/overrides`, `.devrites/extensions`, pack agents | `.devrites/overrides/<agent>.md` or `.devrites/extensions/<name>/...` |
+| [`/rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | utility | `["<lesson>"]` | Review native memory plus verified archive/ADR evidence; propose one durable instruction or ADR update for human approval. | native memory + reviewed Markdown | approved existing instruction/ADR only |
+| [`/rite-customize`](../pack/.claude/skills/rite-customize/SKILL.md) | utility | `[instruction \| skill <name> \| agent <name> \| plugin \| --import-legacy]` | Guided authoring for a native project instruction, skill, agent, or explicitly connected plugin/MCP surface. | native host/project config | approved native artifact |
 | [`/rite-explain`](../pack/.claude/skills/rite-explain/SKILL.md) | utility | `[concept \| diff: \| walkthrough: \| since: \| idea]` | The **human** half of the learning loop (complement of `/rite-learn`, which teaches the repo). Turns a concept, diff, idea, or window of the user's own recent work into a dense personal explainer; diff inputs can produce a concern-ordered human review walkthrough. Grounds off `seal.md` / `evidence.md` / the diff / the archive. Read-only against source. | workspace + archive + diff + code | `.devrites/explainers/<date>-<slug>/explainer.md` or `walkthrough.md` |
-| [`/rite-pov`](../pack/.claude/skills/rite-pov/SKILL.md) | utility | `[candidate/link/question]` | Project-grounded verdict on adopting, switching, rejecting, or ignoring a named external technology/library/platform/pattern. Clears a project floor and external floor before grading. | repo profile + code/docs + external sources | `decisions.md` or ADR only on request |
+| [`/rite-pov`](../pack/.claude/skills/rite-pov/SKILL.md) | utility | `[candidate/link/question]` | Project-grounded verdict on one outside option after live repository and primary-source evidence. | live code/docs + external sources | `decisions.md` or ADR only on request |
 | [`/rite-dogfood`](../pack/.claude/skills/rite-dogfood/SKILL.md) | utility | `[feature-slug\|branch] [--port N]` | Diff-scoped browser QA: map changed user journeys, run scenario matrix, fix small obvious breakages, write dogfood report. Explicit-only. | diff + app routes + browser | `.devrites/work/<slug>/dogfood.md` + safe fixes |
-| [`/rite-pr-feedback`](../pack/.claude/skills/rite-pr-feedback/SKILL.md) | utility | `[PR number\|thread URL]` | Resolve GitHub PR review feedback: fetch unresolved threads, judge centrally, fix valid items, reply, resolve. Explicit-only. | PR threads + code | code/tests + PR replies/resolutions |
+| [`/rite-pr-feedback`](../pack/.claude/skills/rite-pr-feedback/SKILL.md) | utility | `[PR number\|thread URL\|blank for current branch]` | Resolve GitHub PR review feedback: fetch unresolved threads, judge centrally, fix valid items, reply, resolve. Explicit-only. | PR threads + code | code/tests + PR replies/resolutions |
+| [`/rite-watch-pr`](../pack/.claude/skills/rite-watch-pr/SKILL.md) | utility | `[PR number\|PR URL\|blank for current branch]` | Observe one GitHub PR/CI/review snapshot, classify one next action, and stop. Safe for capability-admitted native schedules/events; never mutates code, Git, checks, threads, or PR state. | PR/check/review metadata + bounded failed-log excerpts | none |
 | [`/rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | utility | `[idea]` | Pressure-test a rough idea: 3 to 5 genuinely different options → converge on one with trade-off + hinge. | spec / surrounding code | `decisions.md` (optional) |
-| [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | `[--code \| --reindex]` | Diagnose DevRites install, workspace, and optional index health. `--reindex` explicitly runs the internal synchronous refresh. Triggers: "rite doctor", "is DevRites healthy", "reindex". | install + workspace + optional indexes | none |
+| [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | none | Diagnose the DevRites binary, pack, schema, and native host permission/profile configuration. | install + host config | none |
+
+`/rite use <slug>` and `/rite guide` are inline router operations owned by
+`/rite`, not separate skills. There is no `/rite-use` or `/rite-guide` shortcut.
 
 ## Internal specialist skills (`user-invocable: false`, model-invoked)
 
-The 11 specialist skills below are model-invoked. `devrites-lib` is the twelfth
+The 10 specialist skills below are model-invoked. `devrites-lib` is the eleventh
 internal skill, but it sets `disable-model-invocation: true` and serves only as
 the shared reference library.
 
@@ -94,55 +135,68 @@ the shared reference library.
 |---|---|---|---|
 | [`devrites-interview`](../pack/.claude/skills/devrites-interview/SKILL.md) | `/rite-spec`, underspecified ask | One-Q-at-a-time protocol | best-guess + confidence stop |
 | [`devrites-source-driven`](../pack/.claude/skills/devrites-source-driven/SKILL.md) | uncertain framework/library fact | Consult docs/source, record citation | writes `evidence.md` / `decisions.md` |
-| [`devrites-doubt`](../pack/.claude/skills/devrites-doubt/SKILL.md) | non-trivial decision in build/review | CLAIM → EXTRACT → DOUBT → RECONCILE → STOP | adversarial; ask user if uncertain |
+| [`devrites-doubt`](../pack/.claude/skills/devrites-doubt/SKILL.md) | non-trivial decision in build/review | CLAIM → EXTRACT → DOUBT → RECONCILE → STOP | adversarial; the root gates genuine human-owned uncertainty |
 | [`devrites-ux-shape`](../pack/.claude/skills/devrites-ux-shape/SKILL.md) | UI detected in `/rite-spec` | Plan UX/UI before code → `design-brief.md` (direction, states, interaction, visual-direction probe) | the build target; refs: brief-template/visual-direction-probe |
 | [`devrites-frontend-craft`](../pack/.claude/skills/devrites-frontend-craft/SKILL.md) | UI detected in build/polish | Build **to** `design-brief.md`: register, refine-per-slice, states, anti-slop | refs: shape/craft/design-references |
-| [`devrites-prose-craft`](../pack/.claude/skills/devrites-prose-craft/SKILL.md) | a phase writes prose; `/rite-polish` Phase 1 catch | Human-voice writing: strip LLM tells, keep precise lists/terms | refs: banned-phrases, structures, examples |
+| [`devrites-prose-craft`](../pack/.claude/skills/devrites-prose-craft/SKILL.md) | a phase writes prose; `/rite-polish` Phase 1 catch | Human-voice writing: strip LLM tells (including assistant leaks), keep precise lists/terms | refs: banned-phrases, structures, examples |
 | [`devrites-browser-proof`](../pack/.claude/skills/devrites-browser-proof/SKILL.md) | UI in prove/polish | Browser proof ladder + evidence schema + the structured **Visual Verdict** table | harness preferred |
-| [`devrites-refresh-indexes`](../pack/.claude/skills/devrites-refresh-indexes/SKILL.md) | Stop hook or explicit `/rite-doctor --reindex` call | Keep codebase-memory-mcp / codegraph / graphify current after edits | internal synchronous force; no-ops when no index |
-| [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | failing tests/build/runtime | 7-step: loop → reproduce → hypotheses → trace → instrument → fix → cleanup | references split per step |
+| [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | failing tests/build/runtime | 7-step: loop → reproduce → hypotheses → trace → instrument → fix → cleanup | caller + recovery count three failed attempts per causal fingerprint from context and Dead ends/evidence |
 | [`devrites-api-interface`](../pack/.claude/skills/devrites-api-interface/SKILL.md) | cross-boundary slice | Stable API/contract design | FE/BE split |
 | [`devrites-audit simplify`](../pack/.claude/skills/devrites-audit/SKILL.md) | `/rite-polish` Phase 1 | Chesterton's Fence, behavior-preserving simplification | dispatches `devrites-simplifier-reviewer` |
 | [`devrites-audit security`](../pack/.claude/skills/devrites-audit/SKILL.md) | input/auth/data/integration in scope | OWASP Top 10, three-tier boundary | dispatches `devrites-security-auditor` |
 | [`devrites-audit perf`](../pack/.claude/skills/devrites-audit/SKILL.md) | perf relevant or regression risk | Measure-first, CWV targets | dispatches `devrites-performance-reviewer` |
-| [`devrites-lib/reference/parallel-dispatch.md`](../pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md) | loaded inline by `/rite-seal` and `/rite-review` | Reference doc: dispatch shape + reconciliation rules for the parallel reviewer fan-out via the `Task` tool | not a skill: a reference file |
+| [`devrites-lib/reference/parallel-dispatch.md`](../pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md) | loaded inline by `/rite-seal` and `/rite-review` | Reference doc: host-neutral fresh-context dispatch + reconciliation rules for parallel reviewer fan-out | not a skill: a reference file |
 
-## Agents (`.claude/agents/devrites-*`, fresh-context subagents)
+## Agents (`.claude/agents/devrites-*`, fresh-context leaves)
 
-**13 read-only** (12 reviewers + the cross-feature `devrites-retrospector`) plus one **write-capable** executor (`devrites-slice-wright`).
+**Seventeen role profiles:** both hosts have 16 read-only leaves plus the
+write-capable `devrites-slice-wright`.
 
 | Agent | Spawned by | Purpose |
 |---|---|---|
-| [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) | `/rite-build` (the build core) | **Write-capable**: turn one slice contract into clean, idiomatic, proven code (orient → TDD → verify, anti-slop); returns a structured artifact, writes no bookkeeping |
-| [`devrites-strategy-reviewer`](../pack/.claude/agents/devrites-strategy-reviewer.md) | `/rite-temper` (pre-plan) | Spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention); read-only; **not** part of the seal fan-out |
+| [`devrites-evidence-scout`](../pack/.claude/agents/devrites-evidence-scout.md) | `/rite-spec`, `/rite-clarify`, `/rite-converge` | Read-only bounded evidence dossier from live code, project records, or cited external facts |
+| [`devrites-plan-drafter`](../pack/.claude/agents/devrites-plan-drafter.md) | `/rite-define`, `/rite-plan repair` | Read-only planning candidate; the root makes decisions and writes planning artifacts |
+| [`devrites-proof-runner`](../pack/.claude/agents/devrites-proof-runner.md) | `/rite-prove`, affected re-proof, `/rite-seal` | Validates immutable artifacts produced by root-executed proof commands; returns a proof report, never executes a gate or decides the verdict |
+| [`devrites-upgrade-planner`](../pack/.claude/agents/devrites-upgrade-planner.md) | `/rite-upgrade` | Fresh read-only contract matrix with typed outcome, cited defects, protected identities, and canonical repair route |
+| [`devrites-slice-wright`](../pack/.claude/agents/devrites-slice-wright.md) | `/rite-build`; accepted `/rite-prove`, `/rite-polish`, `/rite-review` corrections | **Sole source/test writer role** on Claude and Codex: implement one exact path-bounded slice or accepted correction and return a typed artifact |
+| [`devrites-strategy-reviewer`](../pack/.claude/agents/devrites-strategy-reviewer.md) | `/rite-temper`; conditional `/rite-vet` recheck | Spec-vs-rubric strategic review (ambition / scope / premise / pre-mortem / YAGNI / testability / irreversibility / cross-cutting / convention); read-only; **not** part of the seal fan-out |
 | [`devrites-plan-reviewer`](../pack/.claude/agents/devrites-plan-reviewer.md) | `/rite-vet` (pre-build) | Plan-vs-rubric engineering review (architecture / scope-reuse / plan code-quality / test-coverage design / performance / reversibility / failure-mode coverage), confidence-banded with a quote-the-source verification gate; read-only; **not** part of the seal fan-out |
-| [`devrites-forge-judge`](../pack/.claude/agents/devrites-forge-judge.md) | `/rite-build` on a `Forge: yes` slice | Comparative judge of K=2 to 3 competing candidate builds (acceptance / test strength / principle fit / simplicity / reuse / anti-slop); picks the single winner to land, names grafts; read-only |
-| [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | `/rite-review` Spec axis; `/rite-seal` | Does the diff implement the spec? Missing/partial/wrong criteria; scope creep |
+| [`devrites-spec-reviewer`](../pack/.claude/agents/devrites-spec-reviewer.md) | `/rite-prove`; `/rite-review` Spec axis; `/rite-seal` | Does the diff implement the spec? Missing/partial/wrong criteria; scope creep |
 | [`devrites-code-reviewer`](../pack/.claude/agents/devrites-code-reviewer.md) | `/rite-review` Standards axis; `/rite-seal` | Correctness / readability / architecture / maintainability |
-| [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | `/rite-seal` | Do the tests prove the acceptance criteria? |
+| [`devrites-test-analyst`](../pack/.claude/agents/devrites-test-analyst.md) | `/rite-build`, `/rite-seal` | Do the tests prove the acceptance criteria? |
 | [`devrites-frontend-reviewer`](../pack/.claude/agents/devrites-frontend-reviewer.md) | `/rite-seal` on UI features | UX, a11y, responsive, design-system, anti-AI-slop; reads the **Visual Verdict** |
-| [`devrites-security-auditor`](../pack/.claude/agents/devrites-security-auditor.md) | `/rite-seal` when input/auth/data in scope | OWASP Top 10, trust boundary, secrets, deps |
-| [`devrites-performance-reviewer`](../pack/.claude/agents/devrites-performance-reviewer.md) | `/rite-seal` when perf relevant | N+1s, hot paths, payload size |
+| [`devrites-security-auditor`](../pack/.claude/agents/devrites-security-auditor.md) | `devrites-audit security`; conditional `/rite-seal` | OWASP Top 10, trust boundary, secrets, deps |
+| [`devrites-performance-reviewer`](../pack/.claude/agents/devrites-performance-reviewer.md) | `devrites-audit perf`; conditional `/rite-seal` | N+1s, hot paths, payload size |
 | [`devrites-devex-reviewer`](../pack/.claude/agents/devrites-devex-reviewer.md) | `/rite-vet` (predict) + `/rite-seal` (measure) when a developer-facing surface is in scope | Developer-experience scorecard + predict-vs-measure boomerang (TTHW, getting-started, error-message quality, ergonomics, docs) |
-| [`devrites-doubt-reviewer`](../pack/.claude/agents/devrites-doubt-reviewer.md) | `devrites-doubt` loop | Adversarial check of a single claim/decision |
+| [`devrites-doubt-reviewer`](../pack/.claude/agents/devrites-doubt-reviewer.md) | `devrites-doubt` loop; `/rite-build` and `/rite-seal` stood-decision checks | Adversarial check of a single claim/decision |
 | [`devrites-simplifier-reviewer`](../pack/.claude/agents/devrites-simplifier-reviewer.md) | `devrites-audit simplify` | Independent simplification judgment |
-| [`devrites-retrospector`](../pack/.claude/agents/devrites-retrospector.md) | `/rite-ship` close (cadence-gated) | Cross-feature retrospective: mines the shipped archive for recurring patterns + trends; **drafts** graduation candidates for `/rite-learn`; read-only |
+| [`devrites-retrospector`](../pack/.claude/agents/devrites-retrospector.md) | `/rite-learn` cross-feature review | Read-only native search over reviewed archive evidence; proposes specific instruction/ADR candidates |
+
+Only the root dispatches; leaves never dispatch other leaves. It dispatches the
+exact named project role; if that role is unavailable, the workflow stops for
+HITL. The root never executes a specialist role. Reviewer profiles are
+natively read-only. Claude keeps its root in plan mode; Codex uses a
+workspace-capable root so its child can write, while workflow policy forbids
+that root from editing source/tests. Both hosts expose only
+`devrites-slice-wright` as a writable specialist. See
+[`standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md#source-writing-boundary).
 
 ## Engineering rules (`pack/.claude/skills/devrites-lib/reference/standards/`)
 
-Progressive-disclosure rules. Workspace-operating lifecycle skills read `core.md`
-in step 0; compact utilities load their narrower contract. The rest are referenced on demand. Full index in
+Workspace-operating lifecycle skills read `core.md` in step 0, while compact
+utilities load their narrower contract. Other rules load on demand. The full
+index is in
 [`pack/.claude/skills/devrites-lib/reference/standards/README.md`](../pack/.claude/skills/devrites-lib/reference/standards/README.md).
 
 - `core.md` (always-on): operating rules + universal anti-rationalizations + 1-line craft disciplines + persistence-before-stopping summary.
-- On-demand rules and checklists (read by the phase that needs them): `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `edge-case-trace.md` · `principles.md` · `security.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `ci-cd.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `elicitation.md` · `agents.md` · `context-hygiene.md` · `anti-patterns.md` · `afk-hitl.md` · `tooling.md` · `skill-authoring.md` · `definition-of-done.md` · `review-checklist.md` · `test-proof-checklist.md` · `browser-proof-checklist.md` · `security-checklist.md`
+- On-demand rules and checklists (read by the phase that needs them): `coding-style.md` · `prose-style.md` · `error-handling.md` · `testing.md` · `spec-grammar.md` · `code-review.md` · `edge-case-trace.md` · `principles.md` · `security.md` · `repository-topology.md` · `data-integrity.md` · `integration-reliability.md` · `performance.md` · `observability.md` · `developer-experience.md` · `patterns.md` · `git-workflow.md` · `ci-cd.md` · `hooks.md` · `documentation.md` · `development-workflow.md` · `deprecation.md` · `elicitation.md` · `agents.md` · `context-hygiene.md` · `anti-patterns.md` · `afk-hitl.md` · `loop-operations.md` · `tooling.md` · `skill-authoring.md` · `definition-of-done.md` · `review-checklist.md` · `test-proof-checklist.md` · `browser-proof-checklist.md` · `security-checklist.md`
 - `anti-patterns.md`: pack-wide rationalizations + red flags. Loaded by each per-phase `rite-*/reference/anti-patterns.md`; can be loaded directly for cross-phase reluctance.
 
 ## Trigger conditions (auto-selection)
 
 | Trigger | Routes to |
 |---|---|
-| Frontend/UI detected (TSX/JSX/Vue/Svelte/Astro/Angular/ERB, CSS/Tailwind/tokens, components/forms/states) | `devrites-ux-shape` in spec (writes `design-brief.md`: direction, **calibration** density/motion, states), `devrites-frontend-craft` in build (builds to it; extracts to a supplied Figma/image target), `devrites-browser-proof` in prove, `rite-polish` Phase 3 + 4 (`reference/ui.md`) in polish, UX/a11y axes at review/seal, optional **design-memory** rollup → project `DESIGN.md` at ship |
+| Frontend/UI detected (TSX/JSX/Vue/Svelte/Astro/Angular/ERB, CSS/Tailwind/tokens, components/forms/states) | `devrites-ux-shape` in spec (writes `design-brief.md`: direction, **calibration** density/motion, states), `devrites-frontend-craft` in build (builds to it; extracts to a supplied Figma/image target), `devrites-browser-proof` in prove, `rite-polish` Phase 3 + 4 (`reference/ui.md`) in polish, UX/a11y axes at review/seal, optional **design-memory** rollup → project `DESIGN.md` in Polish before Review |
 | Uncertain library / framework behavior | `devrites-source-driven` |
 | Non-trivial decision (boundary, data model, auth, public API, migration, "this scales/safe") | `devrites-doubt` (+ `devrites-doubt-reviewer`) |
 | User input / auth / storage / external integration / secrets / permissions | `devrites-audit security` (+ `devrites-security-auditor`) |
@@ -154,10 +208,10 @@ in step 0; compact utilities load their narrower contract. The rest are referenc
 
 ## Code-graph integration
 
-Skills that prefer a code-intelligence index (`codegraph_*` / `graphify-out/`)
-when available, falling back to file reads otherwise:
+These skills prefer a code-intelligence index (`codegraph_*` or
+`graphify-out/`) when available and fall back to file reads:
 
-- `/rite-spec`, `/rite-define`, `/rite-plan`: placement / impact / callers during investigation
+- `/rite-spec`, `/rite-clarify`, `/rite-define`, `/rite-plan`: placement / impact / callers during investigation and decision coverage
 - `/rite-vet`: reuse-vs-rebuild, blast-radius, and placement-realism checks during the scope challenge + architecture axis
 - `/rite-build`: `touched-files.md` + impact when loading slice context
 - `/rite-review`: blast-radius checks on the diff
@@ -168,23 +222,25 @@ when available, falling back to file reads otherwise:
 
 ## Interactions (typical flow)
 
-See [`flow.md`](flow.md) for the Mermaid diagrams. The text path:
+See [`flow.md`](flow.md) for the Mermaid diagrams. The text form is:
 
 ```
-/rite-frame → /rite-spec → /rite-temper → /rite-define → /rite-vet → /rite-build ×N → /rite-converge → /rite-prove → /rite-polish → /rite-review → /rite-seal → /rite-ship
+/rite-frame → /rite-spec → /rite-clarify → /rite-temper → /rite-define → /rite-vet → /rite-build ×N → /rite-converge → /rite-prove → /rite-polish → /rite-review → /rite-seal → /rite-ship
    │            │                │  ▲              │                          │             (decide)   (execute+close)
    │            │                │  └ Spec Drift Guard → /rite-plan repair ────┘
    │            │                └ devrites-frontend-craft / source-driven / doubt
    └ (no workspace) → summary    devrites-* internal skills fire on triggers above
 
-/rite-autocomplete drives the entire sequence above unattended (best option per soft gate; --ship auto-confirms ship).
+/rite-autocomplete drives the reversible sequence unattended; --ship reaches
+only the exact-plan Ship approval boundary and never authorizes Git.
 ```
 
 - Every phase **reads the active workspace first**; if none, it stops and tells
   the user to run `/rite-spec <feature>`.
-- **Spec Drift Guard** lives in build/prove/polish/review/seal: on drift,
-  stop, record in `drift.md`, classify, ask the user if product behavior
-  changes, then `/rite-plan repair` before resuming.
+- **Spec Drift Guard** lives in build/prove/polish/review/seal: on drift, stop,
+  record in `drift.md`, and classify. Objective implementation and tool defects
+  use bounded recovery; a wrong durable plan uses `/rite-plan repair`; only a
+  product, policy, or irreversible-risk choice asks the user.
 - `/rite-seal` fans out to `.claude/agents/devrites-*` reviewers **in
   parallel** for independent, fresh-context judgment, then writes the GO /
   NO-GO verdict: it runs no git. On GO it hands off to `/rite-ship`, which

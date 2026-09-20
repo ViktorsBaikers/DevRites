@@ -15,11 +15,22 @@ This reference owns decomposition; the shared schema owns field names and meanin
    cheap to change).
 4. Mark which slices touch UI (→ frontend craft + browser proof), map each to the design
    brief states, and give each a binary visual acceptance target. Mark which slices cross
-   a module/service boundary (→ `devrites-api-interface`, `devrites-doubt`).
+   a module/service boundary (→ `devrites-api-interface`, `devrites-doubt`). For a changed
+   provider/consumer boundary, map the plan's `Shared contract proof` artifact before its
+   provider- and consumer-side asserting tests; both tests consume that same artifact and
+   their slice dependencies preserve the order. Do not duplicate the contract in each slice.
+   For each applicable topology/data/integration row, assign its owner, failure/recovery
+   case, and proof to a slice; preserve deployment/resource ordering from the plan.
 5. Write or update `traceability.md` so every `AC-###` maps to ≥1 `SLICE-###`, a
    planned proof, evidence status, and likely touched files.
 6. Sanity check: every acceptance criterion in `spec.md` maps to ≥1 slice; no slice has
    an unowned criterion.
+7. Resolve every foreseeable human-owned checkpoint now. Keep a build-time checkpoint only
+   when it needs evidence unavailable before code or mandatory action-time approval, and say why.
+8. Make every `Tests/proof` entry executable: exact command, working directory, prerequisites,
+   expected signal, and mutable inputs whose provenance evidence must bind. Source the command
+   from `devrites-engine detect commands` output where a slot resolves; an `unresolved` slot
+   means the plan names the concrete command explicitly, never an invented one.
 
 ## Keep it honest
 - **Interfaces prevent cross-slice drift.** A slice-wright sees only its own contract; the

@@ -22,7 +22,7 @@ enumerated in code, not open-ended. `harness-matrix --check` keeps
 
 | Option | Why not |
 |--------|---------|
-| A generic declarative capability/adapter registry now (the GSD Core model) | Real ceiling-raiser for N hosts, but a large refactor unjustified at N=2. Recorded as a Proposed follow-up, not built. See the adoption study in `docs/research/gsd-core-adoption.md` §3.1. |
+| A generic declarative capability/adapter registry now | Real ceiling-raiser for N hosts, but a large refactor unjustified at N=2. Recorded as a Proposed follow-up, not built. |
 | Claude-only | Codex users are already real; single-host would strand them. |
 | Per-host forks of the logic | Duplicates the lifecycle core across edges — the thing the adapter exists to prevent. |
 

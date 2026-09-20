@@ -1,20 +1,14 @@
-// Package gate implements DevRites' deterministic completeness gates.
-//
-// Enforcement is phase-relative, gate-scoped, and transition-fired: a gate
-// checks only the sections required to make its transition, and only when it is
-// run: never on every tool call. A block is a HITL pause (a structured
-// "missing X" the human resolves and retries), never a crash. Judgment gates
-// stay advisory; these deterministic gates are the ones allowed to block.
+// Package gate implements deterministic completeness checks. Each gate checks
+// only the files required for its transition when the command runs. Missing
+// content returns a human-resolvable block instead of an error. Judgment gates
+// remain advisory; only deterministic checks can block.
 package gate
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/devrites/devrites/internal/devritespaths"
-	"github.com/devrites/devrites/internal/orient"
+	"github.com/devrites/devrites/internal/reason"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -30,45 +24,270 @@ const (
 	Seal Kind = "seal"
 )
 
-// Result is a gate outcome. Blocked is true iff a required section is missing;
-// Missing lists them in canonical order for an actionable message.
+// Result is a gate outcome. Blocked is true iff a deterministic requirement
+// failed; missing files and diagnostics retain their canonical policy order.
 type Result struct {
-	Kind    Kind
-	Slug    string
-	Phase   state.Phase
-	Target  state.Phase // the phase whose requirements were checked
-	Missing []state.Section
-	Blocked bool
+	Kind            Kind
+	Slug            string
+	Phase           state.Phase
+	Target          state.Phase
+	Missing         []state.Section
+	MissingFiles    []string
+	Diagnostics     []state.ArtifactDiagnostic
+	AddContentFiles []string
+	StateProblems   []string
+	Blocked         bool
+	ReasonID        reason.ID
 }
 
-// Check runs a gate against feature <slug> under root, reading the files
-// directly (the files are always the source of truth, so a gate never trusts a
-// possibly-stale cache). It returns an error only for a genuinely broken request
-// (unknown slug, unreadable state): a legitimately incomplete feature is a
-// Result with Blocked set, not an error.
+// Check runs a gate against feature <slug> under root. One workspace observation
+// supplies every lifecycle, question, and readiness fact used by the result.
 func Check(kind Kind, root, slug string) (*Result, error) {
-	f, err := state.LoadFeature(root, slug)
+	observation, err := state.ObserveWorkspace(root, slug)
 	if err != nil {
 		return nil, fmt.Errorf("gate %s: %w", kind, err)
 	}
-	target := f.Phase
+	result, err := checkObservation(kind, observation)
+	if err != nil {
+		return nil, fmt.Errorf("gate %s: %w", kind, err)
+	}
+	for _, problem := range unsanctionedRootFiles(observation) {
+		result.StateProblems = append(result.StateProblems, "placement: "+problem)
+		// Keep a more specific reason (readiness-stale) when the observation
+		// already blocked; only an otherwise-passing gate takes the generic one.
+		if !result.Blocked {
+			result.Blocked = true
+			result.ReasonID = ResultReasonID(kind, true)
+		}
+	}
+	return result, nil
+}
+
+// unsanctionedRootFiles blocks a workspace-root file the schema does not place
+// there and is over the packet ceiling. `packets/` owns by-reference dispatch
+// packets and admitted accounts (<= 64 KiB each) and `history/` owns relocated
+// narrative, so a large stray file in the root is misplaced payload — the shape
+// that let a real workspace reach 71 MB, 83% of it reviewer packets and traces
+// (see context-hygiene.md dispatch packets and its failing case).
+func unsanctionedRootFiles(observation *state.WorkspaceObservation) []string {
+	var problems []string
+	for _, file := range observation.RootFiles() {
+		if state.SanctionedRootFile(file.Name) || file.Bytes <= state.PacketMaxBytes {
+			continue
+		}
+		problems = append(problems, fmt.Sprintf(
+			"%s is %d bytes in the workspace root; move dispatch packets and accounts to packets/ (<= %d bytes each), closed narrative to history/ via /rite-plan revise, and never persist transcripts anywhere in .devrites/",
+			file.Name, file.Bytes, state.PacketMaxBytes,
+		))
+	}
+	return problems
+}
+
+func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Result, error) {
+	phase, err := observation.DeclaredPhase()
+	if err != nil {
+		return nil, err
+	}
+	target := phase
 	if kind == Seal {
 		target = state.PhaseSeal
 	}
-	missing := state.MissingFor(f, target)
-	return &Result{
-		Kind:    kind,
-		Slug:    slug,
-		Phase:   f.Phase,
-		Target:  target,
-		Missing: missing,
-		Blocked: len(missing) > 0,
-	}, nil
+	policy, ok := state.PolicyFor(target)
+	if !ok {
+		return nil, fmt.Errorf("unknown target phase %q", target)
+	}
+	target = policy.Target
+
+	missing := missingSections(observation, policy.RequiredSections)
+	missingArtifacts, diagnostics := observation.Missing(policy.RequiredArtifacts)
+	missingFiles := make([]string, len(missingArtifacts))
+	var addContentFiles []string
+	for i, artifact := range missingArtifacts {
+		missingFiles[i] = string(artifact)
+		fact, ok := observation.Fact(artifact)
+		if ok && (fact.State() == state.ArtifactAbsent || fact.State() == state.ArtifactEmpty) {
+			addContentFiles = append(addContentFiles, string(artifact))
+		}
+	}
+	blocked := len(missingFiles) > 0
+	readinessStale := false
+	var stateProblems []string
+
+	if policy.BlocksOpenQuestions {
+		if gates, awaitingHuman := retainedHumanGates(observation); len(gates) > 0 {
+			problem := fmt.Sprintf("open %s human question(s) remain in questions.md", strings.Join(gates, "/"))
+			if !awaitingHuman {
+				problem += " but state.md is not awaiting_human"
+			}
+			stateProblems = append(stateProblems, problem)
+			blocked = true
+		}
+	}
+	if len(missingFiles) == 0 && phaseRequiresTasks(policy) {
+		if fact, ok := observation.Fact("tasks.md"); ok && fact.State() == state.ArtifactPresent {
+			graph := state.ParseTaskGraph(fact.Bytes())
+			for _, problem := range graph.Problems {
+				stateProblems = append(stateProblems, "task-graph: "+problem)
+				blocked = true
+			}
+		}
+	}
+	if len(missingFiles) == 0 {
+		for _, problem := range acceptanceMapProblems(observation, policy) {
+			stateProblems = append(stateProblems, "acceptance-map: "+problem)
+			blocked = true
+		}
+	}
+	if len(missingFiles) == 0 {
+		for _, problem := range gateLedgerProblems(observation, policy) {
+			stateProblems = append(stateProblems, "gates: "+problem)
+			blocked = true
+		}
+	}
+	if len(missingFiles) == 0 {
+		for _, problem := range artifactBudgetProblems(observation, policy) {
+			stateProblems = append(stateProblems, "budget: "+problem)
+			blocked = true
+		}
+	}
+	// Deliberately not gated on missingFiles: a file over the read cap IS missing,
+	// so the budget comparison below can never reach it. Missing already blocks it;
+	// name the size remedies too so the signal is actionable rather than a bare cap.
+	for _, artifact := range policy.RequiredArtifacts {
+		fact, ok := observation.Fact(artifact)
+		if !ok {
+			continue
+		}
+		if diagnostic, has := fact.Diagnostic(); has && diagnostic.Code == state.DiagnosticFileTooLarge {
+			stateProblems = append(stateProblems, fmt.Sprintf(
+				"budget: %s exceeds the %d-byte artifact cap; relocate history (history/<file>-<YYYYMMDD>.md) or split the feature via /rite-plan revise|course-correct",
+				artifact, state.MaxArtifactBytes,
+			))
+			blocked = true
+		}
+	}
+	if len(missingFiles) == 0 && phaseRequiresReadinessBinding(policy) {
+		expected, bindingErr := verifyReadinessBinding(observation)
+		if bindingErr != nil {
+			readinessStale = true
+			blocked = true
+			diagnostics = append(diagnostics, readinessDiagnostics(observation)...)
+			if expected == "" {
+				stateProblems = append(stateProblems, bindingErr.Error()+"; repair the input and rerun /rite-vet")
+			} else {
+				stateProblems = append(stateProblems, "readiness inputs are stale or the binding is invalid; rerun /rite-vet and record exactly one standalone line: "+expected)
+			}
+		}
+	}
+
+	result := &Result{
+		Kind:            kind,
+		Slug:            observation.Slug(),
+		Phase:           phase,
+		Target:          target,
+		Missing:         missing,
+		MissingFiles:    missingFiles,
+		Diagnostics:     diagnostics,
+		AddContentFiles: addContentFiles,
+		StateProblems:   stateProblems,
+		Blocked:         blocked,
+	}
+	result.ReasonID = ResultReasonID(kind, blocked)
+	if readinessStale {
+		result.ReasonID = reason.GateReadinessStale
+	}
+	return result, nil
 }
 
-// Render produces the deterministic, greppable gate output (with a trailing
-// newline). A block names exactly the missing sections and the resolve step, so
-// a human (or an AFK agent) knows precisely what to fix.
+// artifactBudgetProblems blocks a required artifact only on a material overshoot
+// (>= state.BudgetBlockFactor of a line or byte budget) with no structural
+// `Budget override:` line. Smaller overshoots stay advisory and are reported by
+// `orient`.
+func artifactBudgetProblems(observation *state.WorkspaceObservation, policy state.PhasePolicy) []string {
+	var problems []string
+	for _, artifact := range policy.RequiredArtifacts {
+		fact, ok := observation.Fact(artifact)
+		if !ok || fact.State() != state.ArtifactPresent {
+			continue
+		}
+		if !state.ArtifactBudgetGateApplies(string(artifact)) {
+			continue
+		}
+		status, ok := state.ArtifactBudget(string(artifact), fact.Bytes())
+		if !ok || !status.Material || status.Override {
+			continue
+		}
+		problems = append(problems, fmt.Sprintf(
+			"%s is %d lines/%d bytes, at or above %gx its %d-line/%d-byte budget; relocate history (history/<file>-<YYYYMMDD>.md) or split the feature via /rite-plan revise|course-correct, or record a structural `Budget override: <reason>` line",
+			status.File, status.Lines, status.Bytes, state.BudgetBlockFactor,
+			status.LineBudget, status.ByteBudget,
+		))
+	}
+	return problems
+}
+
+func acceptanceMapProblems(observation *state.WorkspaceObservation, policy state.PhasePolicy) []string {
+	requireTasks := phaseRequiresTasks(policy)
+	requireTestPlan := phaseRequiresTestPlan(policy)
+	if !requireTasks && !requireTestPlan {
+		return nil
+	}
+	spec, ok := observation.Fact("spec.md")
+	if !ok || spec.State() != state.ArtifactPresent {
+		return nil
+	}
+	var tasks, testPlan []byte
+	if requireTasks {
+		if fact, ok := observation.Fact("tasks.md"); ok && fact.State() == state.ArtifactPresent {
+			tasks = fact.Bytes()
+		}
+	}
+	if requireTestPlan {
+		if fact, ok := observation.Fact("test-plan.md"); ok && fact.State() == state.ArtifactPresent {
+			testPlan = fact.Bytes()
+		}
+	}
+	return state.ParseAcceptanceMap(spec.Bytes(), tasks, testPlan, requireTasks, requireTestPlan).Problems
+}
+
+func missingSections(observation *state.WorkspaceObservation, required []state.Section) []state.Section {
+	var missing []state.Section
+	for _, section := range required {
+		artifact := state.ArtifactPath(string(section) + ".md")
+		switch section {
+		case state.SectionProof:
+			artifact = state.EvidenceFile
+		case state.SectionStatus:
+			artifact = state.LedgerFile
+		}
+		fact, ok := observation.Fact(artifact)
+		if !ok || fact.State() != state.ArtifactPresent {
+			missing = append(missing, section)
+		}
+	}
+	return missing
+}
+
+// ResultReasonID returns the typed outcome owned by the lifecycle gate.
+func ResultReasonID(kind Kind, blocked bool) reason.ID {
+	switch kind {
+	case Readiness:
+		if blocked {
+			return reason.GateReadinessMissing
+		}
+		return reason.GateReadinessPassed
+	case Seal:
+		if blocked {
+			return reason.GateSealMissing
+		}
+		return reason.GateSealPassed
+	default:
+		return ""
+	}
+}
+
+// Render returns stable, greppable output with a trailing newline. A blocked
+// result names missing files, selected diagnostics, recovery, and the retry.
 func (r *Result) Render() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "gate: %s\n", r.Kind)
@@ -76,103 +295,141 @@ func (r *Result) Render() string {
 	fmt.Fprintf(&b, "phase: %s\n", r.Phase)
 	if !r.Blocked {
 		b.WriteString("result: pass\n")
+		fmt.Fprintf(&b, "reason: %s\n", r.ReasonID)
 		return b.String()
 	}
-	names := sectionNames(r.Missing)
-	if r.Kind == Seal {
-		fmt.Fprintf(&b, "result: blocked (missing to seal: %s)\n", strings.Join(names, ", "))
-	} else {
-		fmt.Fprintf(&b, "result: blocked (missing to leave %q: %s)\n", r.Phase, strings.Join(names, ", "))
+	missing := r.MissingFiles
+	switch {
+	case len(missing) == 0:
+		b.WriteString("result: blocked (state invariant)\n")
+	case r.Kind == Seal:
+		fmt.Fprintf(&b, "result: blocked (missing to seal: %s)\n", strings.Join(missing, ", "))
+	default:
+		fmt.Fprintf(&b, "result: blocked (missing to leave %q: %s)\n", r.Phase, strings.Join(missing, ", "))
 	}
-	fmt.Fprintf(&b, "next: add real content to %s, then re-run: devrites-engine %s %s\n",
-		strings.Join(fileNames(r.Missing), ", "), r.Kind, r.Slug)
+	fmt.Fprintf(&b, "reason: %s\n", r.ReasonID)
+	for _, diagnostic := range r.Diagnostics {
+		fmt.Fprintf(&b, "artifact: %s: %s (%s)\n", diagnostic.Path, diagnostic.State, diagnostic.Code)
+	}
+	if len(r.AddContentFiles) > 0 {
+		fmt.Fprintf(&b, "next: add real content to %s\n", strings.Join(r.AddContentFiles, ", "))
+	}
+	for _, diagnostic := range r.Diagnostics {
+		if recovery := diagnosticRecovery(diagnostic, targetRequiresArtifact(r.Target, diagnostic.Path)); recovery != "" {
+			b.WriteString(recovery)
+			b.WriteByte('\n')
+		}
+	}
+	for _, problem := range r.StateProblems {
+		fmt.Fprintf(&b, "invariant: %s\n", problem)
+	}
+	fmt.Fprintf(&b, "retry: devrites-engine check %s %s\n", r.Kind, r.Slug)
 	return b.String()
 }
 
-// StopGate evaluates the stop-hook rest-point invariant for the active feature:
-// a feature that CLAIMS completion (it has advanced to seal, ship, or done)
-// must not have an empty proof section. This is a rest-point check, NOT
-// whole-feature completeness: normal in-progress incompleteness never trips it,
-// so a mid-build turn is never blocked.
-//
-// It returns a zero StopResult (Blocked false) (silent, no block) when there
-// is no active feature or the workspace can't be read, keeping the stop hook
-// fail-open.
-func StopGate(root string) (StopResult, error) {
-	slug, err := orient.ActiveSlug(root)
-	if err != nil || slug == "" {
-		return StopResult{}, nil
+func diagnosticRecovery(diagnostic state.ArtifactDiagnostic, required bool) string {
+	prefix := fmt.Sprintf("next: repair %s: ", diagnostic.Path)
+	repair := diagnosticRepair(diagnostic.Code)
+	if repair == "" {
+		return ""
 	}
-	f, err := state.LoadFeature(root, slug)
-	if err != nil {
-		return StopResult{}, nil // fail-open: a broken workspace never wedges Stop
+	if required && diagnostic.Code == state.DiagnosticMalformedMarkdown {
+		repair += "; required artifacts need substantive content"
 	}
-	// Fail-on-red: the redwatch hook marks a known-red suite by writing .red. A turn
-	// must not rest while it is set: evidence over confidence. This is a rest-point
-	// invariant (a concrete, provable inconsistency), not whole-feature completeness.
-	featureDir := devritespaths.FeatureDir(root, slug)
-	if _, statErr := os.Stat(filepath.Join(featureDir, ".red")); statErr == nil {
-		return StopResult{
-			Slug:    slug,
-			Blocked: true,
-			Reason: fmt.Sprintf(
-				"feature %q has tests/build RED (.red is set): fix to green, or record the failure and next step, before stopping",
-				slug),
-		}, nil
+	if !required {
+		repair += "; optional readiness input may instead be removed"
 	}
-	if gates, blocked := unsurfacedHumanGates(featureDir); blocked {
-		return StopResult{
-			Slug:    slug,
-			Blocked: true,
-			Reason: fmt.Sprintf(
-				"feature %q has open %s human question(s) in questions.md but state.md is not awaiting_human: surface the gate before stopping",
-				slug, strings.Join(gates, "/")),
-		}, nil
+	return prefix + repair
+}
+
+func targetRequiresArtifact(target state.Phase, path state.ArtifactPath) bool {
+	policy, ok := state.PolicyFor(target)
+	if !ok {
+		return false
 	}
-	claimsDone := state.ShippablePhase(f.Phase)
-	if claimsDone && !f.Present[state.SectionProof] {
-		return StopResult{
-			Slug:    slug,
-			Blocked: true,
-			Reason: fmt.Sprintf(
-				"feature %q is at phase %q but proof.md is empty: record acceptance evidence, or move the phase back, before stopping",
-				slug, f.Phase),
-		}, nil
+	for _, required := range policy.RequiredArtifacts {
+		if required == path {
+			return true
+		}
 	}
-	return StopResult{Slug: slug}, nil
+	return false
+}
+
+func diagnosticRepair(code state.DiagnosticCode) string {
+	switch code {
+	case state.DiagnosticMalformedMarkdown:
+		return "replace invalid Markdown with valid Markdown"
+	case state.DiagnosticParentSymlink:
+		return "replace the symlinked parent with a real directory"
+	case state.DiagnosticFinalSymlink:
+		return "replace the symlink with a regular file"
+	case state.DiagnosticNonRegular:
+		return "replace the non-regular entry with a regular file"
+	case state.DiagnosticFileTooLarge:
+		return "reduce the file to at most 1 MiB"
+	case state.DiagnosticPermissionDenied:
+		return "grant read permission"
+	case state.DiagnosticReadFailure:
+		return "restore a readable regular file"
+	default:
+		return ""
+	}
 }
 
 const gateSpaceChars = " \t\n\v\f\r"
 
-func unsurfacedHumanGates(featureDir string) ([]string, bool) {
-	qdata, err := os.ReadFile(filepath.Join(featureDir, "questions.md"))
-	if err != nil {
+func retainedHumanGates(observation *state.WorkspaceObservation) ([]string, bool) {
+	questions, ok := observation.Fact("questions.md")
+	if !ok || (questions.State() != state.ArtifactPresent && questions.State() != state.ArtifactEmpty) {
 		return nil, false
 	}
-	gates := openBlockingQuestionGates(qdata)
+	gates := OpenBlockingQuestionGates(questions.Bytes())
 	if len(gates) == 0 {
 		return nil, false
 	}
-	sdata, err := os.ReadFile(filepath.Join(featureDir, "state.md"))
-	if err == nil && stateAwaitingHuman(sdata) {
-		return nil, false
-	}
-	return gates, true
+	ledger, ok := observation.Fact(state.LedgerFile)
+	return gates, ok && ledger.State() == state.ArtifactPresent && stateAwaitingHuman(ledger.Bytes())
 }
 
-func openBlockingQuestionGates(data []byte) []string {
+// OpenBlockingQuestionGates returns the deduplicated gate kinds (blocking,
+// validating, escalating) still open in questions.md, tolerating both the
+// per-question block form and the register table form. Exported so the
+// handoff resume record reports the same gates the lifecycle enforces.
+func OpenBlockingQuestionGates(data []byte) []string {
 	lines := splitLinesNoTrailing(data)
 	seen := map[string]bool{}
 	var gates []string
 	inQ := false
 	status, gate := "", ""
+	tableOpen := false
+	statusColumn, gateColumn := -1, -1
+	add := func(questionStatus, questionGate string) {
+		questionStatus = strings.ToLower(strings.TrimSpace(questionStatus))
+		questionGate = strings.ToLower(strings.TrimSpace(questionGate))
+		if questionStatus == "open" && (questionGate == "blocking" || questionGate == "validating" || questionGate == "escalating") && !seen[questionGate] {
+			seen[questionGate] = true
+			gates = append(gates, questionGate)
+		}
+	}
 	finalize := func() {
-		if inQ && status == "open" && (gate == "blocking" || gate == "validating" || gate == "escalating") && !seen[gate] {
-			seen[gate] = true
-			gates = append(gates, gate)
+		if inQ {
+			add(status, gate)
 		}
 	}
 	for _, line := range lines {
+		if cells, ok := questionTableCells(line); ok {
+			if !tableOpen {
+				tableOpen = true
+				statusColumn = tableColumn(cells, "status")
+				gateColumn = tableColumn(cells, "gate")
+			}
+			if statusColumn >= 0 && statusColumn < len(cells) && gateColumn >= 0 && gateColumn < len(cells) {
+				add(cells[statusColumn], cells[gateColumn])
+			}
+		} else {
+			tableOpen = false
+			statusColumn, gateColumn = -1, -1
+		}
 		switch {
 		case strings.HasPrefix(strings.ToLower(line), "## q-"):
 			finalize()
@@ -188,6 +445,27 @@ func openBlockingQuestionGates(data []byte) []string {
 	}
 	finalize()
 	return gates
+}
+
+func questionTableCells(line string) ([]string, bool) {
+	line = strings.TrimSpace(line)
+	if !strings.HasPrefix(line, "|") || !strings.HasSuffix(line, "|") {
+		return nil, false
+	}
+	parts := strings.Split(strings.Trim(line, "|"), "|")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+	return parts, true
+}
+
+func tableColumn(cells []string, name string) int {
+	for i, cell := range cells {
+		if strings.EqualFold(cell, name) {
+			return i
+		}
+	}
+	return -1
 }
 
 func stateAwaitingHuman(data []byte) bool {
@@ -210,29 +488,4 @@ func splitLinesNoTrailing(data []byte) []string {
 		return nil
 	}
 	return strings.Split(s, "\n")
-}
-
-// StopResult is a stop-gate evaluation. Slug names the active feature (empty when
-// none); Blocked is true iff the rest-point invariant is violated; Reason is the
-// actionable explanation when Blocked.
-type StopResult struct {
-	Slug    string
-	Reason  string
-	Blocked bool
-}
-
-func sectionNames(ss []state.Section) []string {
-	out := make([]string, len(ss))
-	for i, s := range ss {
-		out[i] = string(s)
-	}
-	return out
-}
-
-func fileNames(ss []state.Section) []string {
-	out := make([]string, len(ss))
-	for i, s := range ss {
-		out[i] = string(s) + ".md"
-	}
-	return out
 }

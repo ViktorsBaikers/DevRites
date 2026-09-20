@@ -1,119 +1,111 @@
 # DevRites completion reply contract
 
-Use this for every user-facing, workspace-operating `rite-*` skill. The chat reply is
-a compact status summary; durable detail belongs in the phase artifact
-(`spec.md`, `plan.md`, `eng-review.md`, `evidence.md`, `polish-report.md`,
-`review.md`, `seal.md`, `ship.md`, and related records).
+Use the host's normal response. Do not run a progress renderer, emit session
+telemetry, assign a health score, or repeat state already visible in the durable
+artifact.
 
-Before the final reply, persist the phase event, then render the deterministic
-progress chrome:
+Keep the reply compact and evidence-backed:
 
-```bash
-devrites-engine timeline log completed --skill <skill> --slug "$(cat .devrites/ACTIVE 2>/dev/null)" --outcome "<ok|blocked|no-go|go>" --decision "<one-line result>"
-devrites-engine budget
-devrites-engine progress
-```
-
-If the phase produced a quality verdict (review, prove, polish, seal, ship), also
-record the evidence-backed health signal before `progress`:
-
-```bash
-devrites-engine health record <0..10> "<evidence-backed label>" --note "<primary check or blocker>"
-```
-
-Skip `timeline` / `health` only when the skill is explicitly workspace-less or
-read-only and has no active `.devrites` workspace.
-
-Do not restate the slice meter or flow ribbon in prose. Keep the default reply to
-roughly 8-10 lines after the progress footer.
-
-## Default completion
+When an active rite is the controlling caller, Intermediate `NEEDS_REPLAN` (the reply
+token for the workspace's `NEEDS REPLAN` readiness value), a nested phase `STOP`, and a
+routine Plan/Vet `Next step` are not eligible completion states. Autocomplete may
+use the shapes below only after its requested rest point or a shared genuine
+human/safety/access/exhausted-recovery stop is reached.
 
 ```text
-Done: <phase result in one sentence>
-Changed: <artifact(s) written/updated, or "workspace only">
-Evidence: <checks/proof/artifact pointer, or "not applicable">
-Open: <none | non-blocking questions or follow-ups>
-Next: <exactly one recommended command>
+Done: <result in one sentence>
+Changed: <artifact or source paths>
+Evidence: <commands and observed outcomes, or not applicable>
+Open: <none | unresolved items>
+Next: <one recommended action>
 Record: <primary durable artifact path>
-↻ Hygiene: <clear/compact/handoff advice, one line>
 ```
 
-Rules:
-- Use this default form only for a green, non-blocking result. If proof, a verdict,
-  or a required decision is missing, use `Awaiting human`, `Stopped / blocked`, or
-  `NO-GO`; do not label the phase `Done` or advance it.
-- `Next:` contains exactly one recommended command. Put alternates in `Open:` or an
-  `Alternative:` line only when the phase needs one.
-- Use `Evidence: not applicable` only when the phase truly does not verify runtime
-  behavior, such as spec or plan creation.
-- Claims such as "proved", "reviewed", "sealed", "shipped", and "all slices built"
-  must point to evidence or an artifact.
-- Use stable labels: `Done`, `Changed`, `Evidence`, `Open`, `Next`, `Record`,
-  `↻ Hygiene`.
-- Status symbols are optional; never rely on color or emoji alone. Pair them with
-  explicit text labels such as `Done`, `Stopped`, `Awaiting human`, `NO-GO`, `GO`,
-  or `Shipped`.
+`Changed:` is the complete write set, not a highlight reel: every file written
+or edited this turn — workspace artifact and project source alike — appears
+there or inside one named grouped entry, so a reviewer can `git diff` exactly
+those paths. `Record:` then names the single durable artifact a later session
+reads first.
 
-## Awaiting human
+Mid-flight replies — the turns between completion states — obey the same economy:
+
+- **Restate position.** The reader cannot hold "step 3 of 5" between turns; name it
+  (`step N of M` / `state: <where things stand>`) rather than asking them to remember.
+- **One next action, doable now.** `Next:` names one concrete action completable in
+  under two minutes — a command, a file to open, a yes/no decision. "Want me to
+  continue?" is a stall, not an action.
+- **Numbered steps for multi-step work**, one bounded action each; fold trivial steps
+  into the one before. A short path finished beats a complete path abandoned.
+- **Name the win before the remainder.** A landed slice, a green gate, a merged
+  piece is stated first — visible progress beats an undifferentiated list.
+- **Cap enumerations.** Long lists collapse to a few grouped items with counts;
+  the full enumeration lives in the durable artifact, not the reply.
+- **Errors are matter-of-fact** — cause and fix, never alarm noise.
+
+Pre-send check: delete an opening sentence that only announces ("I'll now…") and a
+closing sentence that only recaps; then apply the two-line test — a reader seeing only
+the first and last lines must know what happened and what to do next.
+
+If a required decision, proof, or invariant is missing, use one of these states
+instead of `Done`:
 
 ```text
-Awaiting human: <qid> · <gate> · <slice/phase>
-
-Question
-  <question>
-
-Recommended
-  1. <option 1 + short reason>
-
-Other options
-  2. <option 2>
-  3. <option 3 if any>
-
+Awaiting human: <question id and gate>
+Question: <exact decision needed>
+Recommended: <one option and reason>
 Resume: $rite-resolve <qid> "<answer>"
 Record: .devrites/work/<slug>/questions.md
-↻ Hygiene: no /clear until the answer is persisted
 ```
-
-## Stopped / blocked
 
 ```text
 Stopped: <reason>
-Blocking: <specific blocker>
-Why: <one-line impact>
-Fix: <single command or action>
+Blocking: <specific invariant>
+Fix: <one action>
 Record: <artifact path>
-↻ Hygiene: /compact (<topic>) if fixing now; /clear if stopping
 ```
-
-## NO-GO
 
 ```text
-NO-GO: <short verdict>
-Blockers: <count + top 1-3 blockers>
-Fix: <single next command>
+NO-GO: <verdict>
+Blockers: <top blockers>
+Fix: <one action>
 Record: .devrites/work/<slug>/seal.md
-↻ Hygiene: /compact (seal blockers) if fixing now; /clear if stopping
 ```
-
-## GO
 
 ```text
 GO: feature cleared to ship
-Follow-ups: <none | non-blocking count>
+Follow-ups: <none | count>
 Next: $rite-ship
 Record: .devrites/work/<slug>/seal.md
-↻ Hygiene: /clear before $rite-ship
 ```
-
-## Shipped
 
 ```text
 Shipped: <feature>
-Commit: <sha> on <branch>
-Tag/PR: <value | none>
-Acceptance: <n>/<total> proven
-Archived: .devrites/archive/<slug>/ · ACTIVE cleared
+Commit: <sha and branch>
+Acceptance: <proven count>
+Archived: .devrites/archive/<slug>/
 Record: .devrites/archive/<slug>/ship.md
-↻ Hygiene: /clear
 ```
+
+Claims such as proved, reviewed, sealed, shipped, or complete must point to real
+output or an artifact. An expected verification that was skipped, unavailable, or
+could not start is named in `Evidence:` or `Open:` — omitting it reads as
+ran-and-green. Use exactly one recommended next action except for
+terminal agent-owned technical exhaustion, which has no runnable action.
+
+Use that terminal case only per [`one-shot-actions.md`](standards/one-shot-actions.md):
+three recorded no-progress corrections of the exact fingerprint, or required evidence
+irretrievably absent with **no safe in-scope diagnostic-amplification seam**. A spent
+consumptive-action authorization plus a retained new fingerprint is not terminal. For a
+true terminal case use:
+
+```text
+Stopped: Technical recovery exhausted
+Blocking: <causal fingerprint and invariant>
+Attempts: <three failed approaches and decisive reproduction>
+No runnable recovery command: unchanged reinvocation remains blocked
+Next: none — requires new evidence or changed failure conditions
+Record: <artifact path>
+```
+
+The terminal cursor marker is `Next: none` exactly as shown; a stored `Next step: none`
+names the same exhausted state.

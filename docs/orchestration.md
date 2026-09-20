@@ -1,84 +1,188 @@
-# Orchestration patterns
+# Orchestration
 
-How DevRites coordinates multiple agents: the patterns it uses, the ones it deliberately avoids,
-and where Claude Code's Agent Teams and worktree isolation fit. The rule that governs this lives in
-[`pack/.claude/skills/devrites-lib/reference/standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md); this doc is the map.
+DevRites defines workflow semantics; Codex and Claude provide native
+orchestration.
 
-## The model
+```text
+AGENTS.md / CLAUDE.md / skills
+              ↓
+host interprets the requested workflow
+              ↓
+host runs .codex/agents/<role>.toml or .claude/agents/<role>.md
+              ↓
+host waits, follows up, and delivers results
+              ↓
+root reconciles semantics; engine checks deterministic structure/state/safety
+```
 
-DevRites separates three roles and never blurs them:
+## Authority
 
-- **Orchestrator**: the active `rite-*` skill (chiefly `/rite-build` and `/rite-seal`). It owns
-  the gates and the `.devrites/` workspace, dispatches the other agents, and is the *single
-  canonical writer* of workspace state.
-- **Reviewers**: fresh-context, **read-only** subagents under `.claude/agents/`. Each gets the
-  workspace path + the diff and returns labelled findings. The generated host hooks observe this
-  boundary by default; set the documented strict-enforcement environment switch when a blocking
-  tool-layer boundary is required. Without strict mode, the agent contract and reconciliation gate
-  remain part of the control, rather than a fail-closed sandbox guarantee.
-- **Executor**: `devrites-slice-wright`, the one **write-capable** agent. It implements a single
-  fully-specified slice in a fresh context and returns code + tests; it never writes the `.devrites/`
-  bookkeeping (the orchestrator does).
+- The public `rite-*` skill is the root orchestrator. It owns scope, human
+  questions, decisions, result reconciliation, `.devrites/**` artifacts, phase
+  transitions, and explicit irreversible-action approval.
+- Build maintains the strict candidate manifest. Prove, Review, and Seal bind
+  their artifacts to the engine-computed digest; Polish owns final durable
+  rollups and affected re-proof; Ship is candidate-read-only.
+- The root never writes source or tests. Claude enforces that with plan mode;
+  Codex enforces it as workflow policy because the parent must be
+  workspace-capable for its writer child to execute.
+- The role catalog has one source/test writer, `devrites-slice-wright`. Claude
+  and Codex make only that exact specialist writable.
+- Leaves never invoke leaves, ask the human, change phase, push, deploy, migrate live
+  data, or write canonical workflow state. Only an eligible isolated-worktree wright
+  may create one local unpushed transfer commit; same-worktree leaves never commit.
 
-Fresh, undirected context is the point: an agent gets the contract, not the author's reasoning, so
-its judgment is independent.
+Skills name the exact role and bounded task in normal language. The host owns
+internal spawn fields, scheduling, waiting, follow-ups, and result delivery.
+DevRites does not parse rollout logs or maintain dispatch receipts.
 
-## Endorsed patterns
+Quick, Standard, and Full select evidence/review depth only; they are not agent
+API versions or execution tiers. The shared contract lives in
+[`orchestration-profiles.md`](../pack/.claude/skills/devrites-lib/reference/orchestration-profiles.md).
+Persisted state schemas remain explicitly versioned because readers need
+stable data contracts; no compatibility protocol is
+inserted between a skill and the host's native agent call.
 
-1. **Direct (no orchestration).** Most phases are one skill doing one job. Don't spawn an agent for
-   work the phase can do inline.
-2. **Parallel read-only fan-out.** At `/rite-seal` the relevant reviewers run *in parallel*, then
-   the orchestrator reconciles them by confidence band and reports genuine disagreement
-   rather than averaging it away.
-3. **Single writer.** Exactly one `devrites-slice-wright` works on each slice. DevRites never
-   fans out writers that share a tree because concurrent writers make conflicting implicit decisions
-   that corrupt a coherent design. The one sanctioned exception is a **forge** slice
-   (`Forge: yes`, flagged by `/rite-vet`). Two or three candidate wrights build it with distinct strategies
-   in **isolated** worktrees, `devrites-forge-judge` scores them, and exactly one winner's diff
-   lands. No tree ever has two authors, so the invariant holds
-   ([`rite-build/reference/forge.md`](../pack/.claude/skills/rite-build/reference/forge.md)).
-4. **Lifecycle as user-driven verbs.** Each verb performs one mutation and stops; chaining is
-   explicit (the user types the next command), so there are no hidden side effects between phases.
-   `/rite-autocomplete` is the one deliberate exception: an opt-in unattended driver.
-5. **Adversarial single-claim check.** `devrites-doubt` spawns a fresh reviewer to try to refute one
-   load-bearing decision, rather than asking the author to re-grade their own work.
+## Native permission boundary
 
-## Anti-patterns DevRites avoids
+Claude project settings use `permissions.defaultMode: plan`; its slice-wright
+profile uses `permissionMode: acceptEdits`. Codex uses a workspace-capable root
+because children cannot elevate above the parent permission ceiling. Its exact
+slice-wright uses `default_permissions = ":workspace"` and the other 16
+specialists use `default_permissions = ":read-only"`.
 
-- **A persona that paraphrases another.** Passing one agent's summary to the next is lossy telephone;
-  reviewers read the raw diff and contract, not a digest of the author's reasoning.
-- **Parallel writers.** See single-writer above: two agents editing the same feature concurrently
-  is a merge of conflicting decisions, not a speed-up. (Forge is *not* this: its candidates write in
-  **isolated** worktrees and exactly one lands, so no tree is ever co-authored.)
-- **A router that does the work.** `/rite` is a thin dispatcher. It renders the menu, resolves a
-  verb to a skill, and gets out of the way. It holds no phase logic and produces no artifact itself.
-  (This is the distinction that makes a router fine: the anti-pattern is a "meta-orchestrator"
-  persona that paraphrases and re-decides on every call, not a dispatch table.)
-- **Deep persona trees.** Agents do not call agents that call more agents. The
-  orchestrator dispatches reviewers and the wright one level deep, then
-  reconciles the results itself.
+If the exact role is unavailable, the root stops instead of substituting a
+generic agent or doing specialist/writer work inline.
 
-## Agent Teams and worktree isolation
+## Result closure
 
-Two Claude Code capabilities sit adjacent to DevRites' model; the stance on each is deliberate.
+Each leaf's final response is its complete admission packet. It repeats every
+finding, outcome, evidence citation, limitation, and gap that the root must
+reconcile; an earlier message followed by a bare `done` or a link is malformed.
+The root owns collection and accounts for every required or applicable role.
+Timeout, absence, failure, or malformed output remains a gap, and a successful
+sibling cannot erase it.
 
-- **Agent Teams.** DevRites does **not** use Agent Teams to run the lifecycle. The on-disk workspace
-  plus fresh-context read-only fan-out already give independent context per agent without the
-  coordination overhead, and the lifecycle is intentionally single-slice / single-writer. Reach for
-  Use Agent Teams outside that discipline for competing-hypothesis debugging or
-  several genuinely different approaches in parallel. Do not use it to parallelize a DevRites build. The one
-  in-lifecycle form of "compete several approaches" is **forge** (a `Forge: yes` slice), and it is
-  deliberately bounded: vet-gated, K≤3, isolated, winner-takes-all.
-- **Worktree isolation.** A single feature is single-writer on one branch by design, so DevRites
-  does not spawn worktrees for ordinary builds. You can still run DevRites inside a git worktree to
-  drive two features in parallel without them colliding (the `.devrites/ACTIVE` sentinel is
-  per-working-tree, so each carries its own active feature). The one place DevRites spawns worktrees
-  itself is a **forge** slice: each candidate build gets an ephemeral worktree, auto-removed after
-  the winner lands.
+An evidenced clean result is valid. Reviewers must account for their rubric and
+inspected scope, but they never manufacture a finding to fill a quota.
 
-## See also
+## Read-only Claude workflow pilot
 
-- [`pack/.claude/skills/devrites-lib/reference/standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md): the reviewer / executor roster
-  and the when-to-fan-out rules.
-- [`architecture.md`](architecture.md): the full layer model.
-- [`flow.md`](flow.md): phase-by-phase flow and the public/internal namespace.
+Claude installs `.claude/workflows/devrites-readonly-review.js` as an optional
+adapter for immutable-candidate discovery, four independent reviewer roles, one
+adversarial verification pass, and a completeness check. Its script owns only
+transient fan-out and intermediate results. It cannot write source, tests,
+`.devrites/**`, Git, proof, lifecycle state, or shared services; it never invokes
+`devrites-slice-wright`.
+
+The caller still admits every returned role result under the normal result-closure
+contract and performs final reconciliation. A workflow timeout, missing role,
+malformed result, unread input, or incomplete verification is a gap. The adapter does
+not replace `/rite-review`, alter required rosters, or create another durable state
+plane.
+
+Codex keeps the same portable skill/agent semantics through native agent dispatch and
+has no fake workflow mirror. Provider parity applies to review meaning and evidence,
+not to this optional Claude orchestration optimization. Use the pilot only when an
+immutable candidate already exists; lifecycle writes, proof execution, human gates,
+and final decisions remain with the rite root.
+
+Host capabilities are admitted independently. Codex CLI agent threads and inherited
+sandboxes establish context/permission separation, not filesystem worktree isolation;
+without an explicit named-agent worktree and reconciliation interface, Codex uses the
+serial same-worktree writer. Likewise, goals or hooks do not prove native time/event
+activation. Unsupported activation remains `unavailable` rather than being emulated by
+a DevRites scheduler or shell loop. The claim-bounded acceptance rows live in
+[`codex-acceptance.json`](../evals/native-host/codex-acceptance.json).
+
+## Slice-wright lifecycle
+
+For Claude or Codex, the root states the smallest exact project-relative source
+and test paths directly in the dispatch task. Directories, globs, traversal,
+symlink escapes, duplicates, and `.devrites/**` are invalid.
+
+1. The root records the pre-dispatch `git diff --name-only`.
+2. The host runs the exact `devrites-slice-wright` and waits for its result.
+3. The root compares the returned file list and `git diff --name-only` with the
+   task contract and rejects any extra path.
+4. The root inspects the test diff for deletion, skipping, focus markers, or
+   loosened assertions.
+5. Accepted changes receive repository/CI proof and applicable read-only review.
+6. The root records exact candidate rows and canonical evidence/state. Proof
+   must name a positive, discriminating assertion and decisive observed signal;
+   skipped/zero/assertion-free/tautological/unexecuted/exit-only results cannot
+   establish behavior.
+
+Exact-path scope is instruction-backed on both hosts; native sandboxes provide
+the broader writer/read-only split. An unauthorized delta is rejected and the
+same bounded writer must restore it before work continues. The root never
+widens the contract or rewrites source.
+
+A serial native-worktree pilot may isolate `devrites-slice-wright` when the candidate
+baseline is committed and clean, the repository is not a submodule child, baseline
+proof is green, and the host exposes explicit result reconciliation. The wright
+returns one local unpushed transfer commit; root proves its exact paths and unchanged
+base before native transfer, then re-proves the reconciled candidate. Missing transfer,
+conflict, extra paths, moved base, or cleanup failure stops with worktree evidence
+preserved. No ad hoc copy/cherry-pick/merge occurs from the read-only root.
+
+Isolation does not authorize same-worktree throughput. Parallel writers are allowed
+**only** under the `/rite-build` batch path when path-disjoint eligibility, abort-batch,
+and a control `parallel-lease.md` apply. `--parallel N` on `/rite-autocomplete`
+or `/rite-build` is the batch cap for that run and wins over leftover sentinel
+`max_parallel`; `/rite-autocomplete --parallel N` also writes or replaces only
+that field. Absent the flag, the sentinel (default cap 10 under
+`/rite-autocomplete`) is a **cap**: each round runs
+the largest eligible set, recomputes after every completed round, and repeats until no
+pending slice remains; a one-slice round is serial for that round only (see
+[`parallel-batch.md`](../pack/.claude/skills/rite-build/reference/parallel-batch.md)).
+Same-worktree multi-writer and root-emulated worktrees remain forbidden; default
+`/rite-build` stays one writer across linked worktrees.
+
+## Engine boundary
+
+The engine owns deterministic:
+
+- local managed install, update, and uninstall against caller-supplied
+  candidates;
+- strict project-candidate validation/digesting, content-bound readiness, and final
+  structural plus exact-binding checks;
+- atomic answer/drop/batch resolve and transactional close mutations;
+- secret scanning and version reporting.
+
+Native hosts, skills, exact agents, repository tools, or CI own:
+
+- agent discovery, dispatch, scheduling, waiting, follow-up, and results;
+- semantic readiness, traceability, acceptance/evidence quality, doubt, review
+  reconciliation, test-quality assessment, capability interpretation, semantic
+  upgrade, and recovery routing;
+- normative spec grammar re-read, qid allocation, Clarify cursor edits, AFK
+  budget accounting, recovery attempt accounting, and read-only install/host
+  diagnosis;
+- exact-release bundle/binary acquisition before invoking local engine install
+  operations;
+- repository inspection, search, and test/build/lint/release execution;
+- repository JSON/schema/generated-artifact validation;
+- session history, compaction, status prose, progress, plugins, and memory.
+
+The engine has no agent bridge, semantic readiness protocol/digests, heuristic
+prose parser, capability-ledger interpreter, compatibility telemetry, or old
+aliases. Its `migrate` command performs deterministic schema normalization;
+artifact stubs do not establish semantic readiness or historical proof
+([ADR-0029](adr/0029-v5-workspace-schema-and-native-migration.md)).
+
+Provider/consumer changes use the existing plan and traceability artifacts: one
+canonical contract plus provider- and consumer-side asserting tests that both
+consume it. Spec capability impact and lossless MODIFIED folding remain with
+Spec/Polish. These rules add no dispatch protocol, schema registry, or phase.
+
+Any harness adapter must expose the same read-only `check candidate` command,
+preserve exact binding lines and the Build/Prove/Polish/Review/Seal/Ship role
+boundaries, and stop rather than substitute another hash or inline specialist.
+
+See [ADR-0015](adr/0015-read-only-root-native-orchestration.md),
+[ADR-0017](adr/0017-native-codex-writer-agent.md),
+[ADR-0018](adr/0018-native-sandbox-instruction-writer-boundary.md),
+[ADR-0020](adr/0020-thin-engine-native-orchestration-boundary.md),
+[ADR-0022](adr/0022-native-orchestration-thin-engine.md), and
+[`standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md).

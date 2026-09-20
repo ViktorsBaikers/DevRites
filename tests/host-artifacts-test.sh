@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# host-artifacts-test.sh: validate prebuilt Claude/Codex host artifacts.
+# host-artifacts-test.sh: validate prebuilt Claude/Codex/omp/pi/Devin host artifacts.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
 ok() { printf '  ok: %s\n' "$*"; }
-no() { printf '  FAIL: %s\n' "$*"; fail=1; }
+no() {
+  printf '  FAIL: %s\n' "$*"
+  fail=1
+}
 
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
@@ -12,51 +15,487 @@ OUT="$T/generated"
 
 echo "== host-artifacts-test =="
 
-DEVRITES_HOST_ARTIFACT_DIR="$OUT" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 \
-  && ok "build-host-artifacts completed" \
-  || no "build-host-artifacts failed"
+DEVRITES_HOST_ARTIFACT_DIR="$OUT" bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>&1 &&
+  ok "build-host-artifacts completed" ||
+  no "build-host-artifacts failed"
+
+if diff -qr "$ROOT/pack/generated" "$OUT" >"$T/tree-parity.log" 2>&1; then
+  ok "generated host artifact tree matches repository"
+else
+  no "generated host artifact tree differs from repository"
+  sed -n '1,20p' "$T/tree-parity.log"
+fi
+
+touch "$T/not-a-directory"
+if DEVRITES_HOST_ARTIFACT_DIR="$T/not-a-directory/generated" \
+  bash "$ROOT/scripts/build-host-artifacts.sh" >"$T/failed-build.log" 2>&1; then
+  no "build-host-artifacts reported success after an output failure"
+else
+  ok "build-host-artifacts propagates output failures"
+fi
 
 for f in \
   "claude/skills/rite-build/SKILL.md" \
+  "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
+  "claude/skills/rite-upgrade/SKILL.md" \
   "claude/agents/devrites-code-reviewer.md" \
+  "claude/agents/devrites-upgrade-planner.md" \
+  "claude/workflows/devrites-readonly-review.js" \
   "claude/settings.json" \
   "codex/skills/rite-build/SKILL.md" \
   "codex/skills/rite-build/reference/wright-dispatch.md" \
+  "codex/skills/devrites-lib/reference/standards/core.md" \
+  "codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
+  "codex/skills/devrites-lib/reference/reply-contract.md" \
+  "codex/skills/rite-prove/SKILL.md" \
+  "codex/skills/rite-prove/reference/test-command-discovery.md" \
+  "codex/skills/rite-spec/SKILL.md" \
+  "codex/skills/rite-customize/SKILL.md" \
+  "codex/skills/rite-upgrade/SKILL.md" \
+  "codex/agents/devrites-slice-wright.toml" \
+  "codex/agents/devrites-proof-runner.toml" \
   "codex/agents/devrites-code-reviewer.toml" \
+  "codex/agents/devrites-upgrade-planner.toml" \
   "codex/AGENTS.md" \
-  "codex/hooks.json" \
-  "README.md" ; do
+  "codex/config.toml" \
+  "omp/skills/rite-build/SKILL.md" \
+  "omp/skills/devrites-lib/reference/standards/core.md" \
+  "omp/skills/rite-build/reference/wright-dispatch.md" \
+  "omp/agents/devrites-slice-wright.md" \
+  "omp/agents/devrites-code-reviewer.md" \
+  "omp/.omp-plugin/plugin.json" \
+  "pi/skills/rite-build/SKILL.md" \
+  "pi/skills/devrites-lib/reference/standards/core.md" \
+  "pi/skills/rite-build/reference/wright-dispatch.md" \
+  "pi/agents/devrites-slice-wright.md" \
+  "pi/agents/devrites-code-reviewer.md" \
+  "pi/prompts/rite.md" \
+  "pi/prompts/rite-build.md" \
+  "pi/AGENTS.md" \
+  "devin/skills/rite-build/SKILL.md" \
+  "devin/skills/devrites-lib/reference/standards/core.md" \
+  "devin/skills/rite-build/reference/wright-dispatch.md" \
+  "devin/agents/devrites-slice-wright.md" \
+  "devin/agents/devrites-code-reviewer.md" \
+  "devin/AGENTS.md" \
+  "README.md"; do
   [ -f "$OUT/$f" ] && ok "artifact present: $f" || no "artifact missing: $f"
 done
+[ ! -e "$OUT/codex/hooks.json" ] && ok "Codex root hooks artifact is absent" || no "Codex root hooks artifact survived"
+[ ! -e "$OUT/codex/workflows" ] && ok "Claude workflow pilot has no false Codex mirror" || no "Claude workflow pilot leaked into Codex artifacts"
+workflow="$OUT/claude/workflows/devrites-readonly-review.js"
+if grep -q "adapter: 'claude-dynamic-workflow-pilot-v1'" "$workflow" &&
+  grep -q "read_only: true" "$workflow" &&
+  grep -q "agentType: 'devrites-doubt-reviewer'" "$workflow" &&
+  ! grep -q "agentType: 'devrites-slice-wright'" "$workflow"; then
+  ok "Claude workflow pilot is read-only and adversarially verifies findings"
+else
+  no "Claude workflow pilot lost its read-only verification boundary"
+fi
 
-src_skills="$(find "$ROOT/pack/.claude/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
-claude_skills="$(find "$OUT/claude/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
-codex_skills="$(find "$OUT/codex/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
+src_skills="$(find "$ROOT/pack/.claude/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+claude_skills="$(find "$OUT/claude/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+codex_skills="$(find "$OUT/codex/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+omp_skills="$(find "$OUT/omp/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+pi_skills="$(find "$OUT/pi/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
+devin_skills="$(find "$OUT/devin/skills" -mindepth 1 -maxdepth 1 -type d ! -name '.impeccable' | wc -l | tr -d ' ')"
 [ "$claude_skills" = "$src_skills" ] && ok "Claude artifact skill count matches source" || no "Claude artifact skill count mismatch"
 [ "$codex_skills" = "$src_skills" ] && ok "Codex artifact skill count matches source" || no "Codex artifact skill count mismatch"
+[ "$omp_skills" = "$src_skills" ] && ok "omp artifact skill count matches source" || no "omp artifact skill count mismatch"
+[ "$pi_skills" = "$src_skills" ] && ok "pi artifact skill count matches source" || no "pi artifact skill count mismatch"
+[ "$devin_skills" = "$src_skills" ] && ok "Devin artifact skill count matches source" || no "Devin artifact skill count mismatch"
 
-grep -q '## Codex compatibility' "$OUT/codex/skills/rite-build/SKILL.md" \
-  && ok "Codex skill artifact has compatibility block" \
-  || no "Codex skill artifact missing compatibility block"
-grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$OUT/codex/skills/rite-build/SKILL.md" \
-  && ok "Codex skill artifact uses mirrored rules path" \
-  || no "Codex skill artifact missing mirrored rules path"
-grep -q '.codex/agents/devrites-slice-wright.toml' "$OUT/codex/skills/rite-build/SKILL.md" \
-  && ok "Codex skill artifact references Codex agent TOML" \
-  || no "Codex skill artifact missing Codex agent TOML"
+grep -q '## Codex compatibility' "$OUT/codex/skills/rite-build/SKILL.md" &&
+  no "Codex skill artifact duplicates project-wide guidance" ||
+  ok "Codex skill artifact relies on the AGENTS bridge"
+grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$OUT/codex/skills/rite-build/SKILL.md" &&
+  ok "Codex skill artifact uses mirrored rules path" ||
+  no "Codex skill artifact missing mirrored rules path"
+grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$OUT/codex/AGENTS.md" &&
+  ok "Codex AGENTS artifact recovers from ignored mirror refusals" ||
+  no "Codex AGENTS artifact can return an ignored mirror refusal"
+grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' "$OUT/codex/AGENTS.md" &&
+  ok "Codex AGENTS artifact preserves exact Engram identifiers" ||
+  no "Codex AGENTS artifact can invent Engram identifiers"
+grep -q 'exact path-bounded executable workflow artifacts under the active `.devrites/work/<slug>/`' "$OUT/codex/AGENTS.md" &&
+  ok "Codex root owns bounded executable workflow artifacts" ||
+  no "Codex root cannot materialize executable workflow artifacts"
+grep -q '"action":"invoke classifier once under owner lock; no actor-history migration"' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" &&
+  ! grep -q 'There is no actor-history migration\.' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" &&
+  grep -q '"action":"stop on exact WAIT_ACTIVE_OWNER, BLOCKED_EXHAUSTED, or BLOCKED_GATE result"' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" &&
+  ok "Codex autocomplete uses canonical Workflow Artifact routes" ||
+  no "Codex autocomplete duplicates stale actor-history routing"
+grep -q 'devrites.workflow-artifact-admission.v1' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" &&
+  grep -q 'WA-OP-002A-STALE-SOURCE-GC' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" &&
+  grep -q 'source and destination directory handles' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" &&
+  grep -q '"action":"OFFLINE_RECOVERY; correct offline, re-preflight, narrow Vet, retry only under cap"' "$OUT/codex/skills/devrites-debug-recovery/SKILL.md" &&
+  ok "Codex Workflow Artifact contract preserves identity and recovery" ||
+  no "Codex Workflow Artifact contract lost canonical identity or recovery"
+grep -q '`NEEDS REPLAN` is a backward edge' "$OUT/codex/skills/rite-autocomplete/SKILL.md" &&
+  grep -q '`NEEDS REPLAN` cold resume' "$OUT/codex/skills/rite-autocomplete/SKILL.md" &&
+  grep -q 'No user-facing reply is permitted' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" &&
+  grep -q 'Intermediate `NEEDS_REPLAN`' "$OUT/codex/skills/devrites-lib/reference/reply-contract.md" &&
+  ok "Codex autocomplete keeps technical Plan/Vet recovery internal" ||
+  no "Codex autocomplete can stop at an internal NEEDS_REPLAN checkpoint"
+grep -q 'Codex custom-agent version\|repository-aware file tool refuses an ignored path\|For automatic Engram calls' "$OUT/codex/agents/devrites-code-reviewer.toml" &&
+  no "Codex agent artifact duplicates project-wide guidance" ||
+  ok "Codex agent artifact contains only its converted role contract"
+grep -q '.codex/agents/devrites-slice-wright.toml' "$OUT/codex/skills/rite-build/SKILL.md" &&
+  ok "Codex skill artifact references Codex agent TOML" ||
+  no "Codex skill artifact missing Codex agent TOML"
 
-grep -q 'allow_implicit_invocation: false' "$OUT/codex/skills/rite-status/agents/openai.yaml" \
-  && ok "Codex preserves public explicit-only policy" \
-  || no "Codex public explicit-only skill missing native invocation policy"
-grep -q '^description: User-invoked read-only active-feature report' "$OUT/codex/skills/rite-status/SKILL.md" \
-  && ok "Codex preserves public explicit-only description" \
-  || no "Codex public explicit-only description was stubbed"
+grep -q '.omp/skills/devrites-lib/reference/standards/core.md' "$OUT/omp/skills/rite-build/SKILL.md" &&
+  ok "omp skill artifact uses mirrored rules path" ||
+  no "omp skill artifact missing mirrored rules path"
+grep -q '.omp/agents/devrites-slice-wright.md' "$OUT/omp/skills/rite-build/SKILL.md" &&
+  ok "omp skill artifact references omp agent markdown" ||
+  no "omp skill artifact missing omp agent markdown"
+grep -qE '\.claude/skills|\.codex/skills|\.agents/skills|\.codex/agents|\.claude/agents' "$OUT/omp/skills/rite-build/SKILL.md" &&
+  no "omp skill artifact retains foreign host paths" ||
+  ok "omp skill artifact has no foreign host paths"
+if grep -qE '\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.toml' \
+  "$OUT/omp/agents/devrites-slice-wright.md" \
+  "$OUT/omp/agents/devrites-code-reviewer.md"; then
+  no "omp sample agents retain foreign host or TOML agent paths"
+else
+  ok "omp sample agents rewrite to .omp/agents markdown"
+fi
+grep -q '"name": "devrites"' "$OUT/omp/.omp-plugin/plugin.json" &&
+  grep -q '"skills"' "$OUT/omp/.omp-plugin/plugin.json" &&
+  grep -q '"agents"' "$OUT/omp/.omp-plugin/plugin.json" &&
+  ok "omp plugin.json names the pack and lists skills and agents" ||
+  no "omp plugin.json missing name, skills, or agents"
 
-if grep -R -nE 'pack/\.claude|\.claude/skills|\.claude/agents|(^|[^A-Za-z0-9_./-])/rite(-[a-z0-9-]+)?([^A-Za-z0-9_-]|$)' "$OUT/codex/skills" "$OUT/codex/agents" >/tmp/dr_host_artifacts_paths 2>/dev/null; then
-  no "Codex artifacts contain stale Claude paths or slash invocations"
+_omp_tools_has() {
+  local _line="$1" _name="$2"
+  case ", ${_line#tools: }, " in
+  *", ${_name}, "*) return 0 ;;
+  *) return 1 ;;
+  esac
+}
+_omp_nav_tools="ctx_read ctx_ls ctx_find ctx_grep ctx_glob ctx_search ctx_compose ctx_callgraph ctx_tree symbol_search project_report module_report read_symbol read_enclosing lens_diagnostics"
+_omp_nav_fail=0
+_omp_cap_fail=0
+for _omp_agent in "$OUT"/omp/agents/devrites-*.md; do
+  _omp_tools="$(grep '^tools:' "$_omp_agent")"
+  _omp_base="$(basename "$_omp_agent")"
+  for _tok in $_omp_nav_tools; do
+    _omp_tools_has "$_omp_tools" "$_tok" || {
+      no "omp $_omp_base missing $_tok"
+      _omp_nav_fail=1
+    }
+  done
+  if _omp_tools_has "$_omp_tools" "edit" || _omp_tools_has "$_omp_tools" "write"; then
+    _omp_tools_has "$_omp_tools" "ctx_edit" && _omp_tools_has "$_omp_tools" "ctx_patch" || {
+      no "omp $_omp_base missing ctx_edit/ctx_patch"
+      _omp_cap_fail=1
+    }
+  else
+    if _omp_tools_has "$_omp_tools" "ctx_edit" || _omp_tools_has "$_omp_tools" "ctx_patch"; then
+      no "omp $_omp_base gained ctx_edit/ctx_patch"
+      _omp_cap_fail=1
+    fi
+  fi
+  if _omp_tools_has "$_omp_tools" "bash"; then
+    _omp_tools_has "$_omp_tools" "ctx_shell" || {
+      no "omp $_omp_base missing ctx_shell"
+      _omp_cap_fail=1
+    }
+  else
+    if _omp_tools_has "$_omp_tools" "ctx_shell"; then
+      no "omp $_omp_base gained ctx_shell without bash"
+      _omp_cap_fail=1
+    fi
+  fi
+done
+[ "$_omp_nav_fail" -eq 0 ] && ok "every omp agent allowlists lean-ctx/lens nav tools"
+[ "$_omp_cap_fail" -eq 0 ] && ok "omp ctx_edit/ctx_patch/ctx_shell follow base write/bash"
+
+grep -q '.pi/skills/devrites-lib/reference/standards/core.md' "$OUT/pi/skills/rite-build/SKILL.md" &&
+  ok "pi skill artifact uses mirrored rules path" ||
+  no "pi skill artifact missing mirrored rules path"
+grep -q '.pi/agents/devrites-slice-wright.md' "$OUT/pi/skills/rite-build/SKILL.md" &&
+  ok "pi skill artifact references pi agent markdown" ||
+  no "pi skill artifact missing pi agent markdown"
+if grep -qE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/' \
+  "$OUT/pi/skills/rite-build/SKILL.md" \
+  "$OUT/pi/agents/devrites-slice-wright.md" \
+  "$OUT/pi/agents/devrites-code-reviewer.md" \
+  "$OUT/pi/prompts/rite-build.md"; then
+  no "pi artifacts retain foreign host paths"
+else
+  ok "pi artifacts rewrite to .pi paths"
+fi
+grep -q 'BEGIN DEVRITES PI' "$OUT/pi/AGENTS.md" &&
+  grep -q 'END DEVRITES PI' "$OUT/pi/AGENTS.md" &&
+  grep -q 'subagent({ agent, task })' "$OUT/pi/AGENTS.md" &&
+  ok "pi AGENTS.md bridge is marked and uses subagent dispatch" ||
+  no "pi AGENTS.md bridge missing markers or subagent dispatch"
+grep -q '^name: devrites-slice-wright' "$OUT/pi/agents/devrites-slice-wright.md" &&
+  grep -q '^inheritProjectContext: true' "$OUT/pi/agents/devrites-slice-wright.md" &&
+  grep -q '^tools: .*\bwrite\b' "$OUT/pi/agents/devrites-slice-wright.md" &&
+  ok "pi wright keeps write tools and project context" ||
+  no "pi wright lost write tools or project context"
+if grep -q '^tools: .*\b\(write\|edit\)\b' "$OUT/pi/agents/devrites-code-reviewer.md"; then
+  no "pi reviewer agent gained write tools"
+else
+  ok "pi reviewer agent stays read-only"
+fi
+
+_pi_tools_has() {
+  local _line="$1" _name="$2"
+  case ", ${_line#tools: }, " in
+  *", ${_name}, "*) return 0 ;;
+  *) return 1 ;;
+  esac
+}
+_pi_nav_tools="ctx_read ctx_ls ctx_find ctx_grep ctx_glob ctx_search ctx_compose ctx_callgraph ctx_tree symbol_search project_report module_report read_symbol read_enclosing lens_diagnostics"
+_pi_nav_fail=0
+_pi_cap_fail=0
+for _pi_agent in "$OUT"/pi/agents/devrites-*.md; do
+  _pi_tools="$(grep '^tools:' "$_pi_agent")"
+  _pi_base="$(basename "$_pi_agent")"
+  for _tok in $_pi_nav_tools; do
+    _pi_tools_has "$_pi_tools" "$_tok" || {
+      no "pi $_pi_base missing $_tok"
+      _pi_nav_fail=1
+    }
+  done
+  if _pi_tools_has "$_pi_tools" "edit" || _pi_tools_has "$_pi_tools" "write"; then
+    _pi_tools_has "$_pi_tools" "ctx_edit" && _pi_tools_has "$_pi_tools" "ctx_patch" || {
+      no "pi $_pi_base missing ctx_edit/ctx_patch"
+      _pi_cap_fail=1
+    }
+  else
+    if _pi_tools_has "$_pi_tools" "ctx_edit" || _pi_tools_has "$_pi_tools" "ctx_patch"; then
+      no "pi $_pi_base gained ctx_edit/ctx_patch"
+      _pi_cap_fail=1
+    fi
+  fi
+  if _pi_tools_has "$_pi_tools" "bash"; then
+    _pi_tools_has "$_pi_tools" "ctx_shell" || {
+      no "pi $_pi_base missing ctx_shell"
+      _pi_cap_fail=1
+    }
+  else
+    if _pi_tools_has "$_pi_tools" "ctx_shell"; then
+      no "pi $_pi_base gained ctx_shell without bash"
+      _pi_cap_fail=1
+    fi
+  fi
+done
+[ "$_pi_nav_fail" -eq 0 ] && ok "every pi agent allowlists lean-ctx/lens nav tools"
+[ "$_pi_cap_fail" -eq 0 ] && ok "pi ctx_edit/ctx_patch/ctx_shell follow base write/bash"
+grep -q '.pi/skills/rite-build/SKILL.md' "$OUT/pi/prompts/rite-build.md" &&
+  ok "pi prompt stub hands off to the installed skill" ||
+  no "pi prompt stub does not reach the installed skill"
+for d in "$ROOT"/pack/.claude/skills/rite "$ROOT"/pack/.claude/skills/rite-*; do
+  [ -d "$d" ] || continue
+  s="$(basename "$d")"
+  [ -f "$OUT/pi/prompts/$s.md" ] && ok "pi prompt preserves /$s" || no "pi prompt missing for /$s"
+done
+
+grep -q '.devin/skills/devrites-lib/reference/standards/core.md' "$OUT/devin/skills/rite-build/SKILL.md" &&
+  ok "Devin skill artifact uses mirrored rules path" ||
+  no "Devin skill artifact missing mirrored rules path"
+grep -q '.devin/agents/devrites-slice-wright.md' "$OUT/devin/skills/rite-build/SKILL.md" &&
+  ok "Devin skill artifact references Devin agent markdown" ||
+  no "Devin skill artifact missing Devin agent markdown"
+if grep -qE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/|\.pi/' \
+  "$OUT/devin/skills/rite-build/SKILL.md" \
+  "$OUT/devin/agents/devrites-slice-wright.md" \
+  "$OUT/devin/agents/devrites-code-reviewer.md" \
+  "$OUT/devin/AGENTS.md"; then
+  no "Devin artifacts retain foreign host paths"
+else
+  ok "Devin artifacts rewrite to .devin paths"
+fi
+grep -q 'BEGIN DEVRITES DEVIN' "$OUT/devin/AGENTS.md" &&
+  grep -q 'END DEVRITES DEVIN' "$OUT/devin/AGENTS.md" &&
+  grep -q 'run_subagent' "$OUT/devin/AGENTS.md" &&
+  grep -q 'never substitute `subagent_general`' "$OUT/devin/AGENTS.md" &&
+  ok "Devin AGENTS.md bridge is marked and uses run_subagent dispatch" ||
+  no "Devin AGENTS.md bridge missing markers or run_subagent dispatch"
+grep -q '^name: devrites-slice-wright' "$OUT/devin/agents/devrites-slice-wright.md" &&
+  grep -q '^allowed-tools:' "$OUT/devin/agents/devrites-slice-wright.md" &&
+  grep -q '^  - write' "$OUT/devin/agents/devrites-slice-wright.md" &&
+  grep -q '^  - edit' "$OUT/devin/agents/devrites-slice-wright.md" &&
+  ok "Devin wright keeps write tools under allowed-tools" ||
+  no "Devin wright lost write tools or allowed-tools"
+if grep -q '^  - \(write\|edit\)' "$OUT/devin/agents/devrites-code-reviewer.md"; then
+  no "Devin reviewer agent gained write tools"
+else
+  ok "Devin reviewer agent stays read-only"
+fi
+if grep -qE 'permissionMode|^tools:|^  - (Read|Edit|Write|Bash|Glob|Grep|Skill|WebFetch|WebSearch)$' \
+  "$OUT"/devin/agents/devrites-*.md; then
+  no "Devin agents retain Claude tool names or permissionMode"
+else
+  ok "Devin agents use Devin tool names under allowed-tools"
+fi
+grep -qx '  - user' "$OUT/devin/skills/rite/SKILL.md" &&
+  ! grep -qx '  - model' "$OUT/devin/skills/rite/SKILL.md" &&
+  ok "Devin explicit-only menu skill becomes triggers: [user]" ||
+  no "Devin menu skill triggers wrong"
+grep -qx 'triggers: \[\]' "$OUT/devin/skills/devrites-lib/SKILL.md" &&
+  ok "Devin library skill becomes triggers: []" ||
+  no "Devin library skill triggers wrong"
+grep -qx '  - model' "$OUT/devin/skills/devrites-doubt/SKILL.md" &&
+  ! grep -qx '  - user' "$OUT/devin/skills/devrites-doubt/SKILL.md" &&
+  ok "Devin model-invoked skill becomes triggers: [model]" ||
+  no "Devin model-invoked skill triggers wrong"
+if grep -q '^triggers:' "$OUT/devin/skills/rite-build/SKILL.md"; then
+  no "Devin default skill gained a triggers restriction"
+else
+  ok "Devin default skill keeps default triggers"
+fi
+if grep -R -qE 'user-invocable:|disable-model-invocation:' "$OUT"/devin/skills/*/SKILL.md; then
+  no "Devin skills retain Claude invocation fields"
+else
+  ok "Devin skills drop Claude invocation fields"
+fi
+
+grep -q 'Immediately before its final response' "$OUT/codex/skills/devrites-lib/reference/standards/core.md" &&
+  ok "Codex core preserves the universal reply boundary" ||
+  no "Codex core lost the universal reply boundary"
+grep -q 'devrites-engine check readiness <slug>' "$OUT/codex/skills/devrites-lib/reference/standards/core.md" &&
+  ok "Codex core preserves lifecycle rest points" ||
+  no "Codex core lost lifecycle rest points"
+if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out)([[:space:]`]|$)' \
+  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" "$OUT/devin" >/tmp/dr_host_artifacts_retired 2>/dev/null; then
+  no "generated host artifacts retain retired engine commands"
+  sed -n '1,20p' /tmp/dr_host_artifacts_retired
+else
+  ok "generated host artifacts use only nested thin-engine commands"
+fi
+if grep -R -nE 'devrites-engine[[:space:]]+(check[[:space:]]+spec|state[[:space:]]+(clarify|tick-afk|recovery)([[:space:]`]|$)|state[[:space:]]+resolve[[:space:]]+next-qid|doctor([[:space:]`]|$))' \
+  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" "$OUT/devin" >"$T/removed-policy-commands.log" 2>/dev/null; then
+  no "generated host artifacts retain removed engine policy commands"
+  sed -n '1,20p' "$T/removed-policy-commands.log"
+else
+  ok "generated host artifacts keep spec, clarify, AFK, recovery, qid, and doctor policy native"
+fi
+if grep -R -nE 'ADR-[0-9]{4}' \
+  "$OUT/claude/skills" "$OUT/claude/agents" \
+  "$OUT/codex/skills" "$OUT/codex/agents" "$OUT/codex/AGENTS.md" \
+  "$OUT/omp/skills" "$OUT/omp/agents" \
+  "$OUT/pi/skills" "$OUT/pi/agents" "$OUT/pi/prompts" "$OUT/pi/AGENTS.md" \
+  "$OUT/devin/skills" "$OUT/devin/agents" "$OUT/devin/AGENTS.md" \
+  >"$T/source-adr.log" 2>/dev/null; then
+  no "generated model-visible artifacts contain source ADR identifiers"
+  sed -n '1,20p' "$T/source-adr.log"
+else
+  ok "generated model-visible artifacts contain no source ADR identifiers"
+fi
+for host in claude codex omp pi devin; do
+  authoring="$OUT/$host/skills/devrites-lib/reference/standards/skill-authoring.md"
+  if grep -q 'Source-checkout only' "$authoring" &&
+    grep -q 'where `pack/\.claude/` exists' "$authoring" &&
+    grep -q 'Installed generated mirrors are not authoring surfaces' "$authoring"; then
+    ok "$host skill-authoring guard survives generation"
+  else
+    no "$host skill-authoring guard missing after generation"
+  fi
+  grep -q 'exact standalone token in the current invocation arguments' \
+    "$OUT/$host/skills/devrites-lib/reference/standards/core.md" &&
+    ok "$host core preserves literal-only optional flags" ||
+    no "$host core can infer optional flags from context"
+  grep -q 'deleted or retired ID remains consumed' \
+    "$OUT/$host/skills/devrites-lib/reference/workspace-artifact-schema.md" &&
+    ok "$host workspace schema preserves append-only IDs" ||
+    no "$host workspace schema lost append-only ID lifecycle"
+  if grep -q 'at most 64 characters' \
+    "$OUT/$host/skills/devrites-lib/reference/workspace-artifact-schema.md" &&
+    grep -q 'After the final shortening or suffix step' \
+      "$OUT/$host/skills/devrites-lib/reference/workspace-artifact-schema.md"; then
+    ok "$host workspace schema preserves boundary-safe slug identity"
+  else
+    no "$host workspace schema lost boundary-safe slug identity"
+  fi
+  if grep -q 'Missing, repeated, malformed, or conflicting values stop before any write' \
+    "$OUT/$host/skills/rite-autocomplete/SKILL.md" &&
+    grep -q 'one-write AFK contract' \
+      "$OUT/$host/skills/rite-autocomplete/SKILL.md" &&
+    grep -q 'never rewrite it after' \
+      "$OUT/$host/skills/rite-autocomplete/reference/loop.md" &&
+    grep -q 'Blocking with a ranked recommended' \
+      "$OUT/$host/skills/rite-autocomplete/reference/stop-conditions.md"; then
+    ok "$host autocomplete preserves flag, AFK-state, and recommended-option blocking resolve"
+  else
+    no "$host autocomplete lost flag or AFK-state hardening"
+  fi
+done
+for key in reuse conventions principles sources assumptions follow_ups; do
+  grep -q "$key: \\[\\]" "$OUT/codex/agents/devrites-slice-wright.toml" &&
+    ok "Codex wright preserves $key bookkeeping" ||
+    no "Codex wright lost $key bookkeeping"
+done
+grep -q 'sole approved runtime' "$OUT/codex/skills/rite-prove/SKILL.md" &&
+  ok "Codex prove preserves test-plan authority" ||
+  no "Codex prove lost test-plan authority"
+grep -q 'reject missing, synthesized, or unapproved commands' "$OUT/codex/agents/devrites-proof-runner.toml" &&
+  ok "Codex proof runner rejects unapproved commands" ||
+  no "Codex proof runner accepts commands outside test-plan"
+grep -q 'Acceptance delta' "$OUT/codex/skills/rite-spec/SKILL.md" &&
+  ok "Codex spec preserves existing-workspace deltas" ||
+  no "Codex spec lost existing-workspace deltas"
+grep -q -- '--import-legacy' "$OUT/codex/skills/rite-customize/SKILL.md" &&
+  ok "Codex customize preserves legacy import mode" ||
+  no "Codex customize lost legacy import mode"
+grep -q 'earlier context cannot activate it' "$OUT/codex/skills/rite-customize/SKILL.md" &&
+  ok "Codex customize preserves literal-only legacy mode" ||
+  no "Codex customize can infer legacy mode from context"
+for host in claude codex omp pi devin; do
+  grep -q 'Older provenance, cursor form, or pack version alone is never a defect' \
+    "$OUT/$host/skills/rite-upgrade/SKILL.md" &&
+    ok "$host upgrade requires an observed current-contract defect" ||
+    no "$host upgrade can infer staleness from age"
+done
+grep -q 'Outcome: <current | repairable | unsupported | gap>' \
+  "$OUT/codex/agents/devrites-upgrade-planner.toml" &&
+  ok "Codex upgrade planner preserves typed fail-closed outcomes" ||
+  no "Codex upgrade planner lost its typed outcome contract"
+
+grep -q 'allow_implicit_invocation: false' "$OUT/codex/skills/rite-status/agents/openai.yaml" &&
+  ok "Codex preserves public explicit-only policy" ||
+  no "Codex public explicit-only skill missing native invocation policy"
+[ ! -e "$OUT/codex/skills/devrites-doubt/agents/openai.yaml" ] &&
+  ok "Codex internal model-invoked skill has no explicit-only policy" ||
+  no "Codex internal model-invoked skill got an explicit-only policy"
+grep -qE '^description: "?User-invoked read-only active-feature report' "$OUT/codex/skills/rite-status/SKILL.md" &&
+  ok "Codex preserves public explicit-only description" ||
+  no "Codex public explicit-only description was stubbed"
+
+if { grep -R -nE '\.claude/skills|\.claude/agents|(^|[^A-Za-z0-9_./-])/rite(-[a-z0-9-]+)?([^A-Za-z0-9_-]|$)' "$OUT/codex/skills" "$OUT/codex/agents" ||
+  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/codex/skills" "$OUT/codex/agents"; } >/tmp/dr_host_artifacts_paths 2>/dev/null; then
+  no "Codex artifacts contain stale runtime Claude paths or slash invocations"
   sed -n '1,40p' /tmp/dr_host_artifacts_paths
 else
-  ok "Codex artifacts contain no stale Claude paths or slash invocations"
+  ok "Codex artifacts contain no stale runtime Claude paths or slash invocations"
+fi
+
+if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills' "$OUT/omp/skills" "$OUT/omp/agents" ||
+  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/omp/skills" "$OUT/omp/agents"; } >/tmp/dr_host_artifacts_omp_paths 2>/dev/null; then
+  no "omp artifacts contain leftover Claude/Codex paths"
+  sed -n '1,40p' /tmp/dr_host_artifacts_omp_paths
+else
+  ok "omp artifacts contain no leftover Claude/Codex paths"
+fi
+
+if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/' "$OUT/pi/skills" "$OUT/pi/agents" "$OUT/pi/prompts" ||
+  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/pi/skills" "$OUT/pi/agents"; } >/tmp/dr_host_artifacts_pi_paths 2>/dev/null; then
+  no "pi artifacts contain leftover Claude/Codex/omp paths"
+  sed -n '1,40p' /tmp/dr_host_artifacts_pi_paths
+else
+  ok "pi artifacts contain no leftover Claude/Codex/omp paths"
+fi
+
+if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/|\.pi/' "$OUT/devin/skills" "$OUT/devin/agents" "$OUT/devin/AGENTS.md" ||
+  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/devin/skills" "$OUT/devin/agents"; } >/tmp/dr_host_artifacts_devin_paths 2>/dev/null; then
+  no "Devin artifacts contain leftover foreign host paths"
+  sed -n '1,40p' /tmp/dr_host_artifacts_devin_paths
+else
+  ok "Devin artifacts contain no leftover foreign host paths"
 fi
 
 if command -v python3 >/dev/null 2>&1; then
@@ -64,30 +503,26 @@ if command -v python3 >/dev/null 2>&1; then
 import json, pathlib, sys, tomllib
 root = pathlib.Path(sys.argv[1])
 tomllib.loads((root / "codex/agents/devrites-code-reviewer.toml").read_text())
-json.loads((root / "codex/hooks.json").read_text())
+tomllib.loads((root / "codex/config.toml").read_text())
 PY
   rc="$?"
   if [ "$rc" -eq 0 ]; then
-    ok "Codex agent TOML/hooks JSON artifacts parse"
+    ok "Codex agent and root config TOML artifacts parse"
   else
-    if python3 - <<'PY' >/dev/null 2>&1
-try:
-    import tomllib  # noqa: F401
-except ModuleNotFoundError:
-    raise SystemExit(1)
-PY
-    then
-      no "Codex agent TOML/hooks JSON artifacts invalid"
+    if python3 -c 'import tomllib' >/dev/null 2>&1; then
+      no "Codex agent/root config TOML artifacts invalid"
     else
-      node -e "JSON.parse(require('fs').readFileSync(process.argv[1] + '/codex/hooks.json', 'utf8'))" "$OUT" \
-        && ok "Codex hooks JSON parses; TOML parse skipped (python has no tomllib)" \
-        || no "Codex hooks JSON artifact invalid"
+      ok "Codex TOML parse skipped (python has no tomllib)"
     fi
   fi
 else
-  ok "Codex TOML/JSON parse skipped (python3 not found)"
+  ok "Codex TOML parse skipped (python3 not found)"
 fi
 
 echo ""
-[ "$fail" -eq 0 ] && echo "host-artifacts-test: PASS" || echo "host-artifacts-test: FAIL"
+if [ "$fail" -eq 0 ]; then
+  echo "host-artifacts-test: PASS"
+else
+  echo "host-artifacts-test: FAIL"
+fi
 exit "$fail"

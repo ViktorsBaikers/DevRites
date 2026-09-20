@@ -5,16 +5,8 @@ argument-hint: "[task to frame | diff to audit]"
 user-invocable: true
 ---
 
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-frame/reference/failure-modes.md"],"triggers":{"principles":["devrites-lib/reference/standards/principles.md"],"simplify":["devrites-lib/reference/standards/coding-style.md","devrites-lib/reference/standards/patterns.md"],"testing":["devrites-lib/reference/standards/testing.md"]},"workspace":[]} -->
+> Read-set manifest: `devrites-engine context <slug> --phase frame` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # $rite-frame: frame the goal, audit the diff
@@ -22,7 +14,7 @@ This is the Codex mirror of a DevRites skill. In Codex:
 LLMs reliably get four things wrong: they **assume** silently, **overcomplicate**, edit
 **out of scope**, and run on an **unverifiable** "make it work". The full DevRites
 lifecycle catches all four at its gates (spec readiness, the Spec Drift Guard,
-`touched-files.md` + `devrites-engine reconcile`, `$rite-seal`). But the express lane and plain
+`touched-files.md` + diff review, `$rite-seal`). But the express lane and plain
 "just do X" requests **skip those gates**, and a raw diff has no gate at all.
 
 `rite-frame` is the gate's reflex made portable. Two moves, no workspace required:
@@ -79,19 +71,19 @@ map + worked examples: [`reference/failure-modes.md`](reference/failure-modes.md
 
 - [ ] **1 · Silent assumption**: did I pick one reading of an ambiguous ask and run with it?
       Any value, contract, or behavior I *guessed*? → surface it; route material ones through
-      the Spec Drift Guard (`core.md` #2/#3).
+      the Spec Drift Guard ([`core.md`](../devrites-lib/reference/standards/core.md) #4; surface per #2/#3).
 - [ ] **2 · Overcomplication**: an abstraction / flag / indirection nobody asked for? 200 lines
       where 50 would do? A defensive check inside trusted code? → apply the **deletion test**;
-      simplify (`coding-style.md`, `patterns.md`, `devrites-audit simplify`).
+      simplify ([`coding-style.md`](../devrites-lib/reference/standards/coding-style.md), [`patterns.md`](../devrites-lib/reference/standards/patterns.md), `devrites-audit simplify`).
 - [ ] **3 · Out-of-scope edit**: did I touch code, comments, or formatting outside the ask?
       "While I'm here" refactors? → revert to the boundary; record the rest as an FYI follow-up
-      (`core.md` #7, `touched-files.md`).
+      ([`core.md`](../devrites-lib/reference/standards/core.md) #7, `touched-files.md`).
 - [ ] **4 · Unverifiable goal**: is there a command that proves this, run, with output? Or am
       I asserting "it works"? Tautological test that can't fail? → run the FRAME verify command;
-      record command + output (`testing.md`, evidence-over-confidence).
+      record command + output ([`testing.md`](../devrites-lib/reference/standards/testing.md), evidence-over-confidence).
 - [ ] **Principle check**, if `.devrites/principles.md` exists, does the change break a declared
       invariant? A violation with no recorded, human-approved exception is a **Critical**: the
-      express lane is not a way around a project gate; escalate it, don't ship it (`principles.md`).
+      express lane is not a way around a project gate; escalate it, don't ship it ([`principles.md`](../devrites-lib/reference/standards/principles.md)).
 
 The test for each changed line: **it traces directly to the criterion, and the criterion can
 be proven false.** A line that fails either is a finding.
@@ -113,11 +105,6 @@ ask into unreviewed work.
   mode 4 has nothing to check against.
 - A criterion that can't be false isn't a criterion. It's a wish. Rewrite it or ask.
 - Feature/ask scope only. Out-of-scope findings become FYI follow-ups, never silent fixes.
-
-## Output
-Reply-contract exception: ad-hoc utility. It may run outside a DevRites workspace, so
-it skips `devrites-engine progress`, but it follows the compact reply principles in
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
 
 ```
 Done: frame complete for <task>; criterion and boundary are explicit.

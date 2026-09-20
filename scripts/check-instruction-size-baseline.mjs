@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Per-file and aggregate byte ratchet for canonical prompt/instruction docs.
+// Track canonical instruction files individually and skills as a group.
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const defaultRoot = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const defaultRoot = fileURLToPath(new URL('..', import.meta.url));
 const argv = process.argv.slice(2);
 function option(name, fallback) {
   const i = argv.indexOf(name);
@@ -12,6 +13,7 @@ function option(name, fallback) {
 const root = resolve(option('--root', defaultRoot));
 const baselinePath = resolve(option('--baseline', join(root, 'tests', 'instruction-size-baseline.json')));
 const write = argv.includes('--write');
+const ratchetLimit = 1_600_000;
 
 function lfBytes(text) {
   return Buffer.byteLength(text.replace(/\r\n/g, '\n'));
@@ -28,12 +30,7 @@ function markdownFiles(dir) {
   return files;
 }
 
-function collect() {
-  const roots = [
-    join(root, 'pack', '.claude', 'skills'),
-    join(root, 'pack', '.claude', 'agents'),
-    join(root, 'pack', '.claude', 'rules'),
-  ];
+function collect(roots) {
   const out = {};
   for (const file of roots.flatMap(markdownFiles)) {
     out[relative(root, file)] = lfBytes(readFileSync(file, 'utf8'));
@@ -41,13 +38,25 @@ function collect() {
   return Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-const files = collect();
-const totalBytes = Object.values(files).reduce((sum, bytes) => sum + bytes, 0);
+const skillRoot = join(root, 'pack', '.claude', 'skills');
+const files = collect([
+  skillRoot,
+  join(root, 'pack', '.claude', 'agents'),
+  join(root, 'pack', '.claude', 'rules'),
+]);
+const skillFiles = collect([skillRoot]);
+const totalBytes = Object.values(skillFiles).reduce((sum, bytes) => sum + bytes, 0);
 const current = { version: 2, total_bytes: totalBytes, files };
+if (totalBytes > ratchetLimit) {
+  console.error(`FAIL: canonical skill Markdown is ${totalBytes} bytes (ratchet ${ratchetLimit})`);
+  process.exit(1);
+}
 if (write) {
   mkdirSync(dirname(baselinePath), { recursive: true });
   writeFileSync(baselinePath, JSON.stringify(current, null, 2) + '\n');
-  console.log(`instruction-size: wrote ${relative(root, baselinePath)} (${Object.keys(files).length} files, ${totalBytes} bytes)`);
+  console.log(
+    `instruction-size: wrote ${relative(root, baselinePath)} (${Object.keys(files).length} instruction files, ${totalBytes} skill bytes)`,
+  );
   process.exit(0);
 }
 
@@ -55,7 +64,13 @@ if (!existsSync(baselinePath)) {
   console.error(`FAIL: missing ${relative(root, baselinePath)}; run node scripts/check-instruction-size-baseline.mjs --write`);
   process.exit(1);
 }
-const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
+let baseline;
+try {
+  baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
+} catch (error) {
+  console.error(`FAIL: invalid ${relative(root, baselinePath)}: ${error.message}`);
+  process.exit(1);
+}
 if (baseline.version !== 2 || !baseline.files || !Number.isInteger(baseline.total_bytes)) {
   console.error(`FAIL: ${relative(root, baselinePath)} uses an obsolete schema; regenerate it with --write`);
   process.exit(1);
@@ -75,5 +90,5 @@ for (const file of Object.keys(baseline.files)) {
 if (totalBytes > baseline.total_bytes) {
   fail(`aggregate instruction payload grew by ${totalBytes - baseline.total_bytes} bytes (${baseline.total_bytes} -> ${totalBytes})`);
 }
-console.log(`instruction-size: ${Object.keys(files).length} files checked, ${totalBytes} bytes`);
+console.log(`instruction-size: ${Object.keys(files).length} instruction files checked, ${totalBytes} skill bytes`);
 process.exit(failures ? 1 : 0);

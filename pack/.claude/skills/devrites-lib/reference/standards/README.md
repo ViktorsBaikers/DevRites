@@ -1,61 +1,70 @@
 # DevRites rules
 
-Stack-agnostic engineering rules that DevRites installs to `.claude/skills/devrites-lib/reference/standards/`. They encode
-the standards the DevRites workflow holds code to: quality, safety, testing, and review
-discipline that apply in any language.
+Stack-agnostic rules: `.claude/skills/devrites-lib/reference/standards/`.
+[`core.md` § Precedence](core.md#precedence) governs: repository conventions
+select technical form only inside its safety, source-writing, and evidence gates.
 
-These are **common** by design: nothing here assumes a specific framework or language.
-Project-specific conventions always win where they exist (DevRites reads the codebase and
-prefers what's already there).
+## Loading model
 
-## Loading model: progressive disclosure
+Each workspace rite reads [`core.md`](core.md); then load only the current
+topic's owner.
 
-To keep context lean, the rules follow progressive disclosure: each DevRites `rite-*`
-skill Reads `.claude/skills/devrites-lib/reference/standards/core.md` as its first step;
-the remaining rule files load on demand by the phase that needs them.
-
-### Always-on (read by each `rite-*` skill as step 0)
-
-| Rule | Covers |
+| Rule | Load when |
 |---|---|
-| `core.md` | Operating rules, universal anti-rationalizations, one-line craft disciplines (fail-fast, reuse-first, test-behaviour-not-impl, trust boundary, measure-first), persistence + hygiene reminders. |
+| `core.md` | Every workflow phase: operating, persistence, evidence, and precedence rules. |
+| `coding-style.md` | Writing or simplifying code. |
+| `prose-style.md` | Writing prose artifacts or user replies. |
+| `error-handling.md` | Adding or reviewing failure paths. |
+| `testing.md` | Designing tests or judging proof quality. |
+| `gates.md` | Authoring, executing, or judging the `gates.md` acceptance ledger — runnable oracles, evidence binding, ABANDON handoffs. |
+| `verification-methods.md` | Choosing checks and counting coverage — method distinctness, the unit×check×environment denominator, status vs result, capability fallbacks, recipient-path execution. |
+| `spec-grammar.md` | Structuring high-risk behavioral requirements or capability deltas. |
+| `code-review.md` | Reviewing a change or sealing review findings. |
+| `review/README.md` | A diff touches source files — per-language defect-probe checklists (always with `code-review.md`). |
+| `duplicate-code.md` | Triage of near-duplicate clusters, the `check dup` scan, or the dup ignore ledger. |
+| `edge-case-trace.md` | Resolving relevant edge/prohibition classes and their evidence disposition. |
+| `security.md` | Handling input, auth, data, secrets, dependencies, or integrations. |
+| `repository-topology.md` | Work spans a monorepo member, nested root, multiple languages/services, or repositories. |
+| `data-integrity.md` | Durable writes, schemas, migrations/backfills, concurrency, retention, or tenant data are touched. |
+| `integration-reliability.md` | APIs, webhooks, queues/jobs, caches, or cross-service failure behavior is touched. |
+| `performance.md` | A measured performance concern is in scope. |
+| `observability.md` | A changed runtime path must be diagnosed in production. |
+| `developer-experience.md` | A public API, CLI, SDK, webhook, config, error, or getting-started surface changes. |
+| `patterns.md` | Choosing or simplifying architecture. |
+| `architecture-health.md` | An audit needs a structural read on the whole codebase — coupling/cohesion/cycle score from a dependency index. |
+| `git-workflow.md` | Preparing commits, branches, tags, or changelog entries. |
+| `hooks.md` | Creating or changing repository hooks. |
+| `ci-cd.md` | Creating or changing a build/deploy pipeline. |
+| `documentation.md` | Behavior, commands, contracts, or durable decisions change. |
+| `elicitation.md` | Temper or Vet needs a sharper reasoning move for one section. |
+| `development-workflow.md` | Planning batch size, integration, or the standing done bar. |
+| `principles.md` | Authoring or checking project invariants and approved exceptions. |
+| `deprecation.md` | Removing, replacing, or migrating behavior, code, APIs, or data. |
+| `agents.md` | Dispatching, awaiting, validating, or reconciling fresh-context agents. |
+| `loop-operations.md` | Running a goal-, time-, or event-activated loop through native host scheduling. |
+| `workflow-artifacts.md` | Materializing executable proof/controller/harness files under the active `.devrites/work/<slug>/`. |
+| `context-hygiene.md` | Choosing `/clear`, `/compact`, or a handoff. |
+| `anti-patterns.md` | A pack-wide rationalization or red flag appears. |
+| `afk-hitl.md` | A pause, question, resume, or AFK decision is possible. |
+| `one-shot-actions.md` | A proof/action may be attempted once, needs fresh retry authorization, consumes external state/quota, or can delete its own failure evidence. |
+| `tooling.md` | Structural lookup, current external facts, or architecture memory is needed. |
+| `code-navigation.md` | Choosing graph, LSP, grep, or read routes before cross-file edits. |
+| `skill-authoring.md` | Creating, editing, routing, evaluating, or pruning a DevRites skill. |
+| `definition-of-done.md` | Prove, Seal, Ship, or Quick must decide whether work is finished. |
+| `review-checklist.md` | A compact review pass/fail sweep is enough. |
+| `test-proof-checklist.md` | Test and evidence quality needs a compact sweep. |
+| `browser-proof-checklist.md` | UI behavior needs browser proof. |
+| `security-checklist.md` | Auth, input, data, or integration work needs a compact security sweep. |
+| `acceptance-preserving-reslice.md` | Classifying or reviewing a Reslice in Plan, Vet, or Autocomplete. |
+| `audit-coverage.md` | An audit covers a surface larger than one feature diff — ledger, hunter/critic waves, three-verdict findings. |
+| `architecture-health.md` | An audit needs a whole-codebase structural score from a code index — coupling, cohesion, cycles, god files, orphans, depth. |
+| `assumption-checkpoints.md` | Scope generalizes an existing boundary: a second case, a newly optional field, or a constant turned parameter. |
+| `debug-recovery.md` | Waiting on async readiness (server start, job completion, browser signal) needs a bounded condition-based poll. |
+| `windows.md` | A deferral marker (TODO/FIXME/skipped test/stub) is introduced or waived — the `check windows` ledger and grammar. |
+| `glossary.md` | A DevRites term is unclear; resolve it once here instead of inferring. |
 
-### On-demand (read by the phase / topic that needs it)
+The table is a load trigger, not an exemption. [`core.md` § Rule summary](core.md#rule-summary-load-the-full-file-when-in-scope)
+makes every *applicable* owner mandatory. **Failing case:** a security or data-integrity
+gate is skipped because the standard is "on-demand / modular."
 
-| Rule | Covers | Typical phase |
-|---|---|---|
-| `coding-style.md` | Naming, function shape, guard clauses, comments, simplicity, reuse-first. | `/rite-build`, `/rite-polish` Phase 1. |
-| `prose-style.md` | Human-voice writing for artifacts + replies; two registers (prose vs technical); the LLM-tell cut-list. Depth in the `devrites-prose-craft` skill. | Any phase that writes prose: `/rite-spec`, `/rite-define`, `/rite-review`, `/rite-seal`, `/rite-ship`; `/rite-polish` Phase 1 as the catch. |
-| `error-handling.md` | Fail fast, no silent catches, meaningful messages, fail closed. | `/rite-build`, `/rite-polish` (backend), `/rite-review`. |
-| `testing.md` | Pyramid, behavior over implementation, determinism. | `/rite-build`, `/rite-prove`, `/rite-review`. |
-| `spec-grammar.md` | Optional, recommended structure for behavioral acceptance: `### Requirement:` (SHALL/MUST) + `#### Scenario:` (WHEN/THEN), validated deterministically by `devrites-engine spec-validate`. Progressive rigor; flat `AC-###` bullets stay valid. | `/rite-spec` readiness gate; `/rite-prove`, `/rite-review` consume the scenario hooks. |
-| `code-review.md` | Small PRs, severity labels, what to check, actionable feedback. | `/rite-review`, `/rite-seal`. |
-| `edge-case-trace.md` | Mechanical branch/boundary sweep, fixed-set siblings, and deletion-contract checks. | `/rite-review`, `/rite-seal`, `devrites-doubt`. |
-| `security.md` | Untrusted input, least privilege, secrets, three-tier trust boundary, fail closed. | When input / auth / data / integrations are in scope. |
-| `performance.md` | Measure first, common pitfalls, prove the win. | When perf is in scope. |
-| `observability.md` | Structured logs, metrics/SLIs, traces, symptom-based alerts, verify-the-telemetry-fires: proof a feature works in prod. | When the change has a runtime surface (endpoint, job, integration, user flow); `/rite-prove`, `/rite-seal`. |
-| `developer-experience.md` | DX as a measured axis: the predict-at-vet / measure-at-prove / reconcile-at-seal boomerang; scorecard (TTHW, getting-started, error-message quality, ergonomics, docs); severity by who-pays. Conditional + greenfield no-op. | When a developer-facing surface is in scope (public API, CLI, SDK/library, webhook, config, error messages, getting-started); `/rite-vet`, `/rite-prove`, `/rite-seal`. |
-| `patterns.md` | SOLID, composition, loose coupling, avoid over-engineering. | `/rite-build`, simplification audit. |
-| `git-workflow.md` | Conventional Commits, atomic commits, small PRs. | `/rite-ship` commit / push / tag steps. |
-| `hooks.md` | Stage checks by cost, fast local hooks, secret scanning. | Reference-only: read when setting up the project's git hooks; not auto-loaded by any phase. |
-| `ci-cd.md` | Shift-left + faster-is-safer, the no-skip gate pipeline, the CI-failure loop, Build Cop, feature-flags decouple deploy from release, secret tiers, the pipeline-speed ladder. | Reference: read when setting up or changing a build/deploy pipeline; `/rite-ship` when CI/CD is in scope. |
-| `documentation.md` | Explain why, keep current, record decisions. | `/rite-spec`, `/rite-define`, `/rite-seal`. |
-| `elicitation.md` | A move-set of named reasoning techniques (Steelman, Delphi, Red-Team/Blue-Team, Assumption Audit, Pre-Mortem…) selected per section by risk, to deepen a spec or plan on demand. | `/rite-temper`, `/rite-vet`; any section that needs sharper thinking. |
-| `development-workflow.md` | Small batches, trunk-always-green, definition of done. | `/rite-define`, `/rite-plan`. |
-| `principles.md` | The four knowledge layers; project invariants (`.devrites/principles.md`) as a *trusted, gating* pass/fail (vs conventions' untrusted prior); justified-exception register; dated-amendment governance. | `/rite-define`, `/rite-vet`, `/rite-build`, `/rite-review`, `/rite-seal`; seeded by `/rite-adopt`, grown by `/rite-learn`. |
-| `deprecation.md` | Code-as-liability, Hyrum's law, prove-unused-before-remove, expand→contract, deprecate-before-delete. The safe path behind the irreversible-migration gate. | When removing / replacing / migrating code, a feature, an API, or data. |
-| `agents.md` | DevRites review subagents + specialist skills, when to fan out. | `/rite-review`, `/rite-seal`. |
-| `context-hygiene.md` | `/clear` vs `/compact`, lost-in-the-middle, phase-aware hygiene footer. | Phase-end hygiene footer; choosing `/clear` vs `/compact`. |
-| `anti-patterns.md` | Pack-wide rationalizations + red flags the agent reaches for. | Loaded by each `rite-*/reference/anti-patterns.md`; loaded directly when reluctance is broader than the active phase. |
-| `afk-hitl.md` | AFK vs HITL contract: `.devrites/AFK` sentinel format, `questions.md` schema, four-gate taxonomy (advisory / validating / blocking / escalating), AFK-never-silently-accepts boundaries. | `/rite-build`, `/rite-status`, `/rite-resolve`, `devrites-doubt`; anywhere a pause-or-proceed decision happens. |
-| `tooling.md` | Optional external tools: code intelligence (codebase-memory-mcp first → cross-verify with codegraph + graphify → standard methods LSP / `Read`/`Grep`/`Glob`), up-to-date library docs (context7), architecture/ADR memory. Recommended, not required. | Any phase doing structural lookups (callers / impact / placement) or relying on external library/framework facts. |
-| `skill-authoring.md` | Skill descriptions, progressive disclosure, completion criteria, and pruning rules for keeping DevRites skills predictable and cheap. | When creating or editing DevRites skills or reviewing skill pack quality. |
-| `definition-of-done.md` | Done means acceptance proven, evidence recorded, drift resolved, and handoff/ship state clean. | `/rite-prove`, `/rite-seal`, `/rite-ship`. |
-| `review-checklist.md` | Compact reviewer pass/fail checklist. | `/rite-review`, `/rite-seal`. |
-| `test-proof-checklist.md` | Proof-quality checklist for tests and evidence. | `/rite-prove`, `/rite-seal`. |
-| `browser-proof-checklist.md` | Browser/UI proof checklist. | UI features in `/rite-prove`, `/rite-polish`, `/rite-seal`. |
-| `security-checklist.md` | Security review checklist. | Auth/input/data/integration changes. |
-
-How they're used: DevRites skills follow these rules; you and Claude can reference them
-directly. They are guidance, not enforced gates: the enforced gates live in the
-workflow skills (Spec Drift Guard, readiness gates, the seal).
+These guide judgment; workflows and engine gates enforce.

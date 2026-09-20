@@ -4,6 +4,12 @@ Unattended ≠ careless. Every discretionary choice is made the way a senior eng
 would, then **recorded** so the seal can audit it. The difference from interactive mode
 is only *who answers* a discretionary question, not whether it's reasoned.
 
+Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+<!-- include:../../devrites-lib/reference/_shared/reslice-autocomplete.md -->
+<!-- END RESLICE ROUTE-TO-ACTION -->
+
 ## The rule
 
 For each non-trivial choice, pick the option the **relevant specialist favours**, and
@@ -22,14 +28,14 @@ not pick the option that's merely easiest to implement.
 
 - Follow the project's existing conventions, components, and test commands: always.
 - Prefer the smallest vertical slice that proves the acceptance criterion.
-- Reuse → extend → build new, in that order (`coding-style.md`).
+- Reuse → extend → build new, in that order ([`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md)).
 - When two options are equivalent on the evidence, choose the lower-risk / more
   reversible one.
 
 ## When a choice is NOT autocomplete's to make
 
-If a discretionary choice would change **product behaviour, scope, data model, security
-posture, or acceptance criteria**, it is no longer discretionary. It is a material
-question. Route it through the Spec Drift Guard / a `blocking` question and **stop**
-(see [stop-conditions.md](stop-conditions.md)). Autocomplete answers *how*, never
-*what to build* beyond what the up-front interview settled.
+Irreversible-risk, escalating, access, and blocking questions with no ranked
+recommended option stay human. A blocking question that already names option 1
+`(Recommended)` or `proposed:` is autocomplete's to resolve: pick that option
+via `devrites-engine state resolve` and continue. Recommended temper `expand`
+auto-applies; do not invent product intent.

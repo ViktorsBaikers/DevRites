@@ -1,0 +1,74 @@
+name: rubric-evals
+
+on:
+  workflow_dispatch:
+    inputs:
+      rubric_version:
+        description: Pinned rubric version label for the artifact name
+        required: true
+        default: v1
+  # Nightly advisory run. Grades CAPTURED transcripts only (evals/transcripts/);
+  # it never executes live model sessions, so a run without a configured judge
+  # or without transcripts is a clean advisory skip.
+  schedule:
+    - cron: '17 5 * * *'
+
+permissions:
+  contents: read
+
+# Offline semantic rubric grading — never a required merge check.
+jobs:
+  rubric:
+    name: offline rubric evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+
+      - name: Validate behavioral corpora (schema gate)
+        run: bash scripts/run-behavioral-evals.sh
+
+      - name: Run rubric grader over captured transcripts (advisory)
+        env:
+          RUBRIC_VERSION: ${{ github.event.inputs.rubric_version }}
+          DEVRITES_RUBRIC_JUDGE: ${{ vars.DEVRITES_RUBRIC_JUDGE }}
+          DEVRITES_RUBRIC_JUDGE_BASE_URL: ${{ vars.DEVRITES_RUBRIC_JUDGE_BASE_URL }}
+          DEVRITES_RUBRIC_JUDGE_API_KEY: ${{ secrets.DEVRITES_RUBRIC_JUDGE_API_KEY }}
+        run: |
+          node scripts/run-rubric-evals.mjs --samples 3
+          # --strict is deliberately omitted: advisory until judge variance is
+          # measured across several nightly runs.
+
+      - name: Record rubric run artifact
+        if: always()
+        run: |
+          mkdir -p dist/rubric
+          if [ -f evals/results/rubric-latest.json ]; then
+            cp evals/results/rubric-latest*.json dist/rubric/ 2>/dev/null || true
+            cp evals/results/rubric-2*.json dist/rubric/ 2>/dev/null || true
+          fi
+          {
+            echo "DevRites rubric tier (manual dispatch + nightly schedule)."
+            echo "Rubric label: ${RUBRIC_VERSION:-unset}"
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Corpora are schema-gated above; grading covers captured transcripts only."
+          } > dist/rubric/README.txt
+
+      - name: Upload rubric results artifact
+        if: always() && hashFiles('dist/rubric/**') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: rubric-evals-${{ github.run_id }}
+          path: dist/rubric/

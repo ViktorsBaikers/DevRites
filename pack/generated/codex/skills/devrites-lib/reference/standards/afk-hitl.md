@@ -1,22 +1,41 @@
 # AFK & HITL: the pause/resume contract
 
-The rule layer for DevRites's two run modes. Every `rite-*` and `devrites-*` skill that
-might pause for a human reads from this contract; `$rite-build`, `$rite-status`,
-`$rite-resolve`, and `devrites-doubt` are the primary callers.
+> Applies when: any rite/devrites skill that can pause for a human or run unattended; irreversible-risk list, budgets, recovery accounting.
 
-The contract is intentionally small: one sentinel, one queue, one verb.
+Defines two modes for `rite-*`/`devrites-*` skills that may pause; main
+callers are `$rite-build`, `$rite-status`, `$rite-resolve`, and
+`devrites-doubt`.
+
+The contract uses one sentinel, one queue, and one resume verb.
+
+## Contents
+
+- [Run modes](#run-modes)
+- [The sentinel: `.devrites/AFK`](#the-sentinel-devritesafk)
+- [Unattended resource envelope](#unattended-resource-envelope)
+- [The four gates](#the-four-gates)
+- [Option set: how every gap is presented](#option-set-how-every-gap-is-presented)
+- [Decision ownership: search before asking](#decision-ownership-search-before-asking)
+- [Irreversible-risk list (always pause)](#irreversible-risk-list-always-pause)
+- [`questions.md` schema](#questionsmd-schema)
+- [`state.md` `Awaiting human` block](#statemd-awaiting-human-block)
+- [The resume verb: `$rite-resolve`](#the-resume-verb-riteresolve)
+- [AFK exception for discretionary pauses](#afk-exception-for-discretionary-pauses)
+- [Retry cap, no-progress loops, and self-resolve](#retry-cap-no-progress-loops-and-self-resolve)
+- [What the rule does NOT cover](#what-the-rule-does-not-cover)
+- [Cross-reference](#cross-reference)
 
 ## Run modes
 
 - **HITL (default):** human is present. At a gap/checkpoint the skill **asks inline** via
   the harness `AskUserQuestion` tool: a ranked **option set** (recommended first, each with
-  dimension-tagged rationale; see [Option set](#option-set--how-every-gap-is-presented)). The
+  dimension-tagged rationale; see [Option set](#option-set-how-every-gap-is-presented)). The
   human picks; the skill records the pick to `questions.md` (`answered`) + `decisions.md` and
   **continues in place: no `$rite-resolve` round-trip**. `$rite-resolve` is only for answering
   **async** (a pause that already stopped the session) or in **batch**.
-  **No interactive question tool in the current surface?** (Codex outside Plan mode:
+  **If the current surface has no interactive question tool** (Codex outside Plan mode:
   `request_user_input` is Plan-mode-only.) Render the same option set as a plain numbered
-  list in chat and **end the turn**; the human's reply is the pick. Auto-picking an option
+  list in chat and **end the turn**. The human's reply is the selection. Auto-picking an option
   is **AFK's contract, gated by the `.devrites/AFK` sentinel**: a missing tool never
   converts a HITL gap into a self-answered one.
 - **AFK:** `.devrites/AFK` is present. For any gate AFK may auto-handle (severity in
@@ -25,32 +44,121 @@ The contract is intentionally small: one sentinel, one queue, one verb.
   ceiling (and every irreversible-risk item) pause and queue a `questions.md` entry for
   `$rite-resolve`.
 
-`.devrites/AFK` presence is authoritative for run mode; gate-deciding skills re-read the
-sentinel at decision time (the shared preamble derives the mode from it). There is no
-`state.md` run-mode field to drift out of sync.
+`.devrites/AFK` presence is authoritative for run mode; gate-deciding skills re-read
+it at decision time. There is no `state.md` run-mode field to drift out of sync.
 
 ## The sentinel: `.devrites/AFK`
 
 Presence = AFK active. The file body is optional YAML:
 
 ```yaml
-max_slices: 10                       # read-only INITIAL budget; seeds state.md `AFK slices remaining`
-notify: "ntfy.sh/my-topic"           # shell command run on awaiting_human transition
+max_slices: 10                       # whole-workspace writer budget; seeds state.md remaining count
+max_agents: 32                       # native agent dispatches in one host activation
+max_minutes: 120                     # wall-clock minutes in one host activation
+max_review_queue: 8                  # unresolved review/gate items admitted before fan-out stops
+# max_tokens: 200000                 # optional stricter host-observed token cap
+# max_cost_usd: 10                   # optional stricter host-observed cost cap
+notify: "ntfy.sh/my-topic"           # shell command; examples: .agents/skills/rite-build/reference/afk-discipline.md
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
+continue_sequence: true              # after Seal GO, open the next recorded continuation
+max_workspaces: 5                    # workspaces one armed sequence may open
+max_parallel: 10                     # unattended default cap; `--parallel N` on this invocation wins and may rewrite only this field
 ```
 
-The file is **read-only config**: never rewritten in place. `max_slices` is the initial
-budget; the mutable remaining count lives in `state.md` as `AFK slices remaining: <n>`,
-seeded from `max_slices` on the first AFK build and decremented by `devrites-engine tick-afk` (which
-exits non-zero at 0, forcing a HITL stop). The cap is enforced by the script, not prose.
+The file is **read-only config**: never rewritten in place, except `$rite-autocomplete --parallel N` writes or replaces only `max_parallel: N`. `max_slices` is the initial
+budget; the mutable remaining count is the `state.md` cursor
+`afk_slices_remaining` (`AFK slices remaining: <n>` in the released bullet
+form), owned by the controlling root. Recognize either spelling and preserve
+the existing table or bullet presentation. Before dispatch, a configured
+`max_slices` and any existing remaining value must be decimal nonnegative
+integers; malformed or negative values fail closed. The pending → built state transition spends
+exactly one slice: on the first green slice write `max_slices - 1`, otherwise
+write `remaining - 1`, never below zero. Re-reading an already built slice does
+not spend again. At zero, stop before the next dispatch.
 
-Missing keys fall back to defaults:
+An orchestrator that can derive a stricter budget only after planning may pre-seed
+`afk_slices_remaining` in `state.md` before the first dispatch instead of rewriting the
+sentinel. It uses the minimum of pending work and every configured/explicit cap. An
+existing counter may be lowered but never increased or reinitialized. Once present, that state
+counter is the effective remaining budget even when the read-only sentinel omits
+`max_slices`.
 
-| Key | Default | Meaning |
-|---|---|---|
-| `max_slices` | unlimited | a missing cap is unsafe; recommend setting one explicitly |
-| `notify` | none | no notification fires |
-| `allow_gates` | `[advisory]` | AFK auto-handles advisory only by default (auto-picks the recommended option) |
+### Sequence continuation (`continue_sequence`, `max_workspaces`)
+
+`continue_sequence: true` lets one armed run open the next **recorded** continuation
+after a `Seal GO` instead of stopping. Absent means `1` — the current workspace only;
+an existing sentinel never receives the default implicitly. `max_workspaces` is the
+sequence budget (nonnegative decimal, fail closed): spend one when a new workspace is
+opened, never when resuming the current one. `max_slices` stays **per workspace** —
+each new workspace's `state.md` seeds its own `afk_slices_remaining`.
+
+The chain lives in root-owned `state.md` cursor fields, not in chat:
+`sequence_parent` (the immediately preceding workspace slug), `sequence_position`
+(1-based ordinal), `sequence_workspaces_remaining` (slots the chain may still
+open after this workspace), and — on the release milestone only —
+`sequence_role: release`. Seeding is exactly-once because the values are
+derived, not remembered: a continuation's fields are computed from its recorded
+parent and the parent's counter at creation, and a resumed run that finds a
+continuation workspace missing the fields re-derives the same values from its
+`brief.md` parent/position plus the parent's counter — never a second charge. A
+workspace without a recorded parent/position is not a sequence member; the
+counter only decreases, malformed values fail closed, and `0` opens nothing.
+`sequence_role: release` makes `check candidate` and `check seal` require the
+candidate manifest to cover the whole recorded chain — run
+`devrites-engine state merge-manifest <slug>` before Prove.
+
+- Only continuations recorded in the parent's `decisions.md` sequence
+  ([slicing.md § Continuation workspaces](../../../rite-plan/reference/slicing.md#continuation-workspaces))
+  qualify; no recorded next entry, or the cap/review-queue bound reached, stops
+  with the winning reason.
+- Milestones are **not** shipped: they stay sealed and unarchived in `.devrites/work/`
+  with `Next step: $rite-ship` preserved. Local `WIP(<slug>):` checkpoints still
+  land ([checkpoint.md](../../../rite-build/reference/checkpoint.md)), so the tree
+  stays clean and crash-safe.
+- Git stays human-gated. The release ship is one disclosed plan, one literal `GO`, and
+  one native approval; it collapses the sequence's `WIP` commits into the single
+  release commit and may archive the sealed predecessors.
+- Every human-owned, safety, access, exhaustion, and `NO-GO` condition still stops the
+  run exactly as without this field.
+
+`max_parallel` is the unattended default batch cap only when this invocation does
+not contain `--parallel N`; `1` forces the serial cycle only in that default
+case. An exact `--parallel N` on `$rite-autocomplete` or `$rite-build` is the
+batch cap for this run: do not consult leftover sentinel `max_parallel`, and do
+not treat `max_parallel: 1` as serial. `$rite-autocomplete --parallel N` writes
+or replaces only that field so later ticks keep the cap; `$rite-build --parallel N`
+wins for that invocation without rewriting the sentinel. Never write `max_slices`
+from `--max-slices`. **Failing case:** `$rite-autocomplete --parallel 5` honors a
+leftover `max_parallel: 1` and stays serial.
+Unattended runs take the largest eligible set ≤ that cap and recompute after
+every completed round (serial slice or parallel integrate)
+([parallel-batch.md § Dynamic selection and re-batching](../../../rite-build/reference/parallel-batch.md#dynamic-selection-and-re-batching)).
+
+## Unattended resource envelope
+
+AFK writer admission needs a bounded input queue, effective slice cap, and valid
+`max_agents`, `max_minutes`, and `max_review_queue`. Existing sentinels
+that declare writer admission but miss/malform these fail closed; cold resume keeps the
+state-owned slice counter. A leftover `expires_at` is ignored and never rewritten.
+Read-only watchers use equivalent native caps from [`loop-operations.md`](loop-operations.md).
+
+`max_agents` counts every leaf in the native activation, including failures and
+parallel branches; do not add dispatch telemetry to `.devrites/`. `max_review_queue`
+counts open validating questions plus unresolved admitted Critical/Important findings.
+Above it stop; at it run only reconciliation that reduces the queue. Optional
+`max_tokens`/`max_cost_usd` lower enforceable native caps; if declared but unobservable, stop.
+
+Numeric limits are nonnegative decimals. Before costly checks, fan-out, or writing,
+run cheap readiness, reject overlap, count queue, and confirm agent/time/token/cost
+headroom; re-check after every result. Never start one call that can exceed remaining
+headroom. Agent/time/token/cost counters are per native activation and start fresh only
+for a genuinely new activation. Slices, recovery attempts, and current
+review queue remain durable/recomputed across wakes. Persist each activation stop and
+checkpoint before notification.
+
+New sentinels write no `expires_at` and no notification/token/cost cap.
+Post-Vet pending count may lower slices. Existing files
+never receive missing defaults implicitly.
 
 To leave AFK, delete the file. The next skill invocation reverts to HITL.
 
@@ -67,8 +175,18 @@ for the full taxonomy. Summary:
 | blocking | high | sync | 15m | **no** (always pauses) |
 | escalating | novel pattern | sync to specialist | 24h | **no** (always pauses) |
 
-`blocking` and `escalating` always pause regardless of `allow_gates`. They are the
-"AFK never silently accepts" guarantees in protocol form.
+`blocking` and `escalating` always pause for HITL and for AFK `$rite-build`,
+regardless of `allow_gates`.
+
+**Autocomplete exception.** While `$rite-autocomplete` is the controlling
+caller, an open `gate: blocking` question that already carries a ranked
+recommended option (`proposed:` or option 1 labelled `(Recommended)`) is not a
+user handoff: the orchestrator auto-picks that option through
+`devrites-engine state resolve` and continues, including internal Spec Drift
+Guard when the answer changes ownership or acceptance. Escalating,
+irreversible-risk, access, and blocking questions with no recommended option
+still pause. Putting `blocking` in `allow_gates` does not replace this resolve
+step: an unanswered blocking question still fails Seal.
 
 An open `gate: validating` entry is **merge-blocking by definition**: at `$rite-seal` any
 `questions.md` entry with `gate: validating` and `status: open` is a NO-GO, regardless of
@@ -77,23 +195,35 @@ validating gate resolves.
 
 ## Option set: how every gap is presented
 
-Wherever a gap, checkpoint, or non-trivial decision surfaces (`$rite-spec`, `$rite-define`,
+Wherever a gap, checkpoint, or non-trivial decision surfaces (`$rite-spec`, `$rite-clarify`, `$rite-define`,
 `$rite-build`, `$rite-temper`, `$rite-vet`, `devrites-doubt`, `devrites-interview`), present a
 **ranked option set**, never a single bare guess:
 
 - **2-4 concrete options**, the **recommended one first**, labelled `(Recommended)`.
-- Each option carries a **one-line rationale tagged by the dimensions that matter**:
-  `logic · infra · business · architecture` (add `security` / `UX` / `risk` when in scope).
-  Name the trade-off, not just the choice.
-- Always include an escape hatch (`Something else — I'll describe it`).
-- The recommendation reflects what's best for *this* project (its conventions, stack, scale,
-  domain), not a generic default.
+- Each option has a **one-line, dimension-tagged rationale**: `logic · infra · business ·
+  architecture` (add `security` / `UX` / `risk` in scope) and trade-off.
+- Always include an escape hatch (`Something else — describe it`).
+- With more than four materially distinct choices, first ask a discriminating question or use
+  sequential packets, then obtain final confirmation. Materially distinct options MUST NOT
+  be silently dropped, merged, or preselected to fit the UI.
+- Recommend for project conventions, stack, scale, and domain, not a generic default.
 
-**HITL** renders the set via `AskUserQuestion` (recommended option first; rationale in each
-option's description); the human's pick resolves the gate **in place**. **AFK** auto-picks
-option 1 (the recommendation) for gates it may auto-handle. Either way the chosen option is
-recorded verbatim and the **rejected options stay in `questions.md`** as the considered-alternatives
-trail: the audit shows what was weighed, not just what was decided.
+**HITL** renders the set via `AskUserQuestion`; the human's pick resolves the gate **in place**.
+**AFK** auto-picks option 1 for gates it may auto-handle. Record the chosen option verbatim and
+keep the **rejected options in `questions.md`**.
+
+## Decision ownership: search before asking
+
+A gate is human only when its remaining choice is human-owned. First search live code,
+project/decision docs, and authoritative dependency sources; make and record reversible
+implementation/test choices. Ask only about product, scope, acceptance, architecture policy,
+irreversible risk, or human-only access/action.
+
+Objective test/build/tool failure runs bounded `devrites-debug-recovery`; fix it or record a
+technical blocker. Never ask permission for another attempt, test, parser repair, or probe.
+Close decisions at the earliest informed phase: product in spec, coverage in clarify,
+scope/risk in temper, architecture/dependencies in define, and proof/toolchain in vet. Build
+keeps only unavailable-pre-code or mandatory action-time checkpoints.
 
 ## Irreversible-risk list (always pause)
 
@@ -105,15 +235,17 @@ The following always invoke the checkpoint protocol, regardless of `Mode`, `Gate
 - Public API break (response shape, removed endpoint, changed status code semantics).
 - External-service contract change.
 - Filesystem destruction outside the workspace.
-- Red tests / types / lint on slice completion (fail-on-red).
 
 When a pause clears and you proceed with a destructive migration, a removal, or a
 public-API break, take the **safe path** the gate stopped you for: expand→contract,
 prove the old path unused before removing it, and a rollback for every destructive step
-([`deprecation.md`](deprecation.md)). The gate exists to make you do it right, not to
-abandon the work.
+([`deprecation.md`](deprecation.md)). The gate requires the safe path; it does not
+cancel the work.
 
 By default, AFK widens what's *automatic*; it never widens what's *irreversible*.
+
+Red checks remain hard non-advance build gates, but are not inherently irreversible or
+human-owned; bounded recovery owns them.
 
 ## `questions.md` schema
 
@@ -141,6 +273,9 @@ Rules:
   are terminal.
 - The file is the audit trail. Don't edit answered/dropped entries: open a new qid that
   references the old one (`supersedes: q-...-OLD`) and resolve it.
+
+AFK never authorizes destructive Git. The native host permission/sandbox
+boundary owns any such request and requires explicit user approval.
 
 ## `state.md` `Awaiting human` block
 
@@ -176,9 +311,9 @@ stopped the session (an AFK blocking/escalating/irreversible queue, or a HITL pa
 walked away from), plus `--batch`. In an **interactive HITL** session the skill resolves the
 `AskUserQuestion` pick **in place** (the same `questions.md` `answered` write + `state.md`
 clear), so you don't type `$rite-resolve` for gaps you answer live. Both paths flip
-`status: open → answered` and clear `Awaiting human` through the **same `devrites-engine resolve` writer**:
-one source of truth, two entry points (live pick vs typed verb). Manual edits work but the
-script is the contract: use it.
+`status: open → answered` and clear `Awaiting human` through the **same `devrites-engine state resolve` writer**:
+one source of truth, two entry points (live pick vs typed verb). Use the writer;
+manual edits are never destructive-operation authority.
 
 When `$rite-resolve` does resume a stopped session, the skill does **not** auto-run the next
 `$rite-build`. The user types the next command explicitly so:
@@ -188,34 +323,72 @@ When `$rite-resolve` does resume a stopped session, the skill does **not** auto-
 
 ## AFK exception for discretionary pauses
 
-`devrites-doubt` and similar skills that "ask the user" follow this rule when
-`.devrites/AFK` exists:
+With `.devrites/AFK`, apply decision ownership first. Accepted in-scope technical
+corrections return to the caller for repair/verification; severity blocks acceptance,
+not authorized repair. Never silently accept a defect or broaden existing approval.
 
-- Finding severity ≤ slice's gate ceiling (slice's `Gate:` plus `.devrites/AFK`
-  `allow_gates`) → log to `questions.md` as `gate: advisory`, record the trade-off in
-  `decisions.md`, proceed.
-- Finding severity > gate ceiling, OR finding touches the irreversible-risk list →
-  log to `questions.md` as `gate: blocking`, set `state.md` `Status: awaiting_human`,
-  fire `notify:`, STOP.
+Discretionary ceilings apply only to
+human-owned trade-off/risk decisions; accepted technical corrections do not enter
+these branches. Compare Suggestion/Nit/FYI→advisory, Important→validating,
+Critical→blocking against advisory < validating < blocking < escalating:
 
-The loop limits of the calling skill still apply: after the limit, the unresolved
-doubt becomes a blocking question regardless of AFK config.
+- Within the slice's `Gate:` and `.devrites/AFK` `allow_gates`: record advisory in
+  `questions.md`, trade-off in `decisions.md`, proceed.
+- Above ceiling, missing authority, or unapproved irreversible risk: record blocking
+  question, `Status: awaiting_human`, fire `notify:`, STOP.
 
-## Retry cap, stuck loops, and self-resolve
+Recovery uses only the [retry contract](#retry-cap-no-progress-loops-and-self-resolve).
 
-- **Cap retries.** At most **3 attempts** on the same failing check (test, lint, type, build).
-  On the third failure, stop guessing and convert it to a `gate: blocking` question: a fourth
-  identical attempt is thrash, not progress.
-- **Stuck loops pause even in AFK.** A detected loop (the same action repeating, or an
-  action↔error ping-pong) pauses regardless of `allow_gates` (`devrites-engine stuck`), the same standing as
-  the irreversible-risk list. AFK widens what's automatic, never what's looping.
-- **Bias to self-resolve.** Before raising a question, try to answer it from the code, the docs,
-  or `decisions.md`. Communicate only for a blocked environment, a deliverable to hand over,
-  critical info you genuinely can't access, or a credential / permission you lack. This narrows
-  needless pauses and never weakens the blocking / escalating / irreversible gates.
-- **Human time is for human-only work.** A `human_intervention` pause is for what the agent
-  literally cannot do (create a cloud account, click a console button): never for writing code,
-  writing tests, or reviewing. Punting the agent's own job to the human is not a valid gate.
+## Retry cap, no-progress loops, and self-resolve
+
+Owns all phase recovery, including Doubt/Vet/serial/parallel Build. Resource,
+access, safety and irreversible-action boundaries independently stop work.
+
+- **Fingerprint the failed invariant, not the review round.** Identify owning
+  invariant + defect mechanism + minimal reproduction/decisive failure signal.
+  DEC/DRIFT IDs, line numbers, wording and splitting one cause create no new budget.
+- **Cap no-progress retries:** three no-progress attempts per exact causal fingerprint
+  across wright/recovery. Only a correction whose narrow recheck leaves that cause
+  open or reproduces its failure consumes an attempt.
+  Closing a prior finding with discriminating evidence is progress: resolve it,
+  do not charge. A new Critical or Important finding gets its own budget only for
+  a distinct evidenced cause. The same invariant with a different evidenced mechanism qualifies;
+  renaming/splitting an unchanged cause does not. Suggestion/Nit/FYI cannot extend
+  recovery. Initial discovery and expected test-first RED are not corrections;
+  total rounds, re-batches and distinct-finding counts never exhaust recovery.
+- **Rechecks are scoped; late findings never reopen the round.** *Late* applies only
+  from a phase's **second** review pass (Vet 1b, Build's recheck after the first repair,
+  Review step 7); an initial pass has no late findings and every supported finding is
+  folded normally. A recheck packet
+  names the open fingerprints, the correction diff, and the dependents of each
+  changed clause/hunk; the owning reviewer's verdict covers exactly that. A finding
+  on text/code unchanged since that role's previous pass is *late*: Critical with a
+  concrete failure path → new fingerprint under this budget; otherwise recorded
+  (Plan/Vet: `eng-review.md` `## Deferred findings`; Build: `touched-files.md`
+  `## Review trail`) with severity · site · role · kind · round, and consumed by the
+  next full-inventory gate (Vet `mechanism` → one `test-plan.md` proof row; Build →
+  the `$rite-review` roster) — never by another repair round in this phase. Review
+  closes every deferred row with a labeled verdict; Seal blocks on any without one.
+  **Failing case:** round 4 finds three Important items on clauses untouched since
+  round 1 and dispatches another repair.
+- **Separate consumptive authority from recovery.** Spent one-shot authorization
+  blocks another execution, not offline recovery. Retained evidence starts caller-owned
+  diagnosis/correction immediately; the next consumptive execution needs fresh authority.
+- **Persist existing records.** Put fingerprint, reproduction, correction,
+  `progress: resolved|no-progress` and decisive result in `drift.md` and `evidence.md`.
+  Cold resume derives counts there; no new counter file/command.
+- **Reconcile terminal cursors.** Retained distinct Critical/Important evidence below
+  cap resumes despite stale `Next step: none`; age/spent action authority is not exhaustion.
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"unattended root reaches current admitted Workflow Artifact work","action":"invoke classifier; execute returned route without wright/slice charge","return":"saved lifecycle phase/action; no intermediate reply"} -->
+- **Classify exhaustion:** human-owned contract/risk/access gaps open their gate.
+  Otherwise preserve reproduction/dead ends, set `Status: blocked` and
+  `Next step: none — technical recovery exhausted; requires new evidence or changed failure conditions`.
+  Emit no phase command, retry-permission question or `$rite-resolve`.
+  Reinvocation with unchanged cause stays blocked; it never resets the cap.
+- **Resolve agent-owned questions first** from code/docs/decisions. Human communication
+  is for blocked environment, handover, inaccessible critical information or missing
+  credentials/permission—not writing, testing or review. Blocking/escalating/
+  irreversible gates remain.
 
 ## What the rule does NOT cover
 
@@ -228,14 +401,15 @@ This contract is about **human pauses**. It does not weaken or replace:
   are unproven at `$rite-prove`.
 - `/clear` / `/compact` advice: context-hygiene rules are unchanged.
 
-AFK shifts the boundary between automatic and "ask"; nothing else.
+AFK changes which decisions are automatic. It changes nothing else.
 
 ## Cross-reference
 
 - Skill: `$rite-resolve` (`.agents/skills/rite-resolve/SKILL.md`).
 - Workflow integration: `$rite-build` (`.agents/skills/rite-build/SKILL.md`),
-  workflow steps 0 + 2a (readiness / HITL pre-flight) and steps 4-6 (doubt / fail-on-red /
-  record) on the wright's return.
+  the readiness / HITL pre-flight stages before dispatch, and the DOUBT → PROVE
+  (fail-on-red) → RECORD stages on the wright's return
+  ([`one-slice-cycle.md`](../../../rite-build/reference/one-slice-cycle.md)).
 - Render contract: `.agents/skills/rite-build/reference/checkpoint-protocol.md`.
 - Loop discipline: `.agents/skills/rite-build/reference/afk-discipline.md`.
 - Gate taxonomy: `.agents/skills/rite-define/reference/gates.md`.

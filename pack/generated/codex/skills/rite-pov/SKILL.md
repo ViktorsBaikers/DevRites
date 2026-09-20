@@ -1,58 +1,60 @@
 ---
 name: rite-pov
-description: Project-grounded verdict for adopting, switching, rejecting, or revisiting a named external technology, library, platform, CVE, or pattern. Use when deciding whether this project should commit to an outside option.
+description: Project-grounded verdict for adopting, switching, rejecting, or revisiting a named external technology, library, platform, CVE, or pattern.
 argument-hint: "[candidate/link/question]"
 user-invocable: true
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["decisions.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-pov` bundles every file named below into one deduplicated read.
 
 # $rite-pov: project-grounded external verdict
 
-Decide whether **this project** should adopt, trial, hold, reject, or ignore a named outside candidate. Chat verdict first; durable record only when the user asks or the decision changes an active feature.
-
-## Rules consulted
-Step 0: Read `.agents/skills/devrites-lib/reference/standards/core.md`. Pull `source-driven`, `security`, or `deprecation` standards only when the candidate touches those risks.
-
-## Operating rules
-- Verdict only after two floors clear: one verified project fact and one verified external source.
-- Named candidate only. If the user asks "what should we use?" over an open field, route to `$rite-pressure-test` or `$rite-spec` to surface criteria first.
-- Reversibility sizes rigor: two-way config/dependency < bounded internal migration < public/security/legal/data decision.
+Decide whether this project should adopt, trial, hold, reject, or ignore one
+named outside candidate.
 
 ## Workflow
-1. **Frame.** Parse `$ARGUMENTS` into candidate, intent (`adopt|switch|compare|CVE/deprecation impact|second opinion`), and reversibility tier. If intent is ambiguous, ask one blocking question before research.
-   **Completion:** candidate, decision intent, and reversibility tier are explicit.
-2. **Project floor.** Verify at least one concrete project fact: incumbent dependency/call site, current absence plus integration point, prior ADR/decision, or affected surface. Use `devrites-engine profile get`; on `MISS`, run `devrites-engine profile refresh` once, then inspect candidate-specific files fresh. Completion: at least one `file:line` or local doc pointer is in notes, or the verdict is `Hold: project floor missing`.
-3. **External floor.** Read primary docs/advisory/release notes/source for the candidate. Prefer official sources; web summaries are supporting only. Completion: at least one dated source URL/title is in notes, or the verdict is `Hold: external floor missing`.
-4. **Compare.** Weigh fit, migration cost, reversibility, project principles, security/licensing/deprecation risk, and simpler alternatives already present.
-   **Completion:** every comparison dimension has project evidence or an explicit unknown.
-5. **Verdict.** Return exactly one grade: `Adopt`, `Trial`, `Hold`, `Reject`, or `Not-our-problem`. Include next step: `$rite-spec`, `$rite-define`, spike, `$rite-learn` record, or done.
-6. **Optional record.** If the user asks to persist, append the decision to the active workspace `decisions.md`; if no active workspace, suggest an ADR. A persisted `Reject` also lands in the cross-feature ledger so ideation skills stop re-proposing it: `devrites-engine learnings add <slug> "<candidate> — <why rejected>" rejected-direction`.
+
+1. Frame the candidate, decision intent, and reversibility tier (two-way = locally
+   reversible; bounded-one-way = reversible via a recorded rollback; high-stakes =
+   irreversible or costly). Route an
+   open-ended market search to `$rite-pressure-test` or `$rite-spec`.
+2. Inspect the live repository for at least one concrete project fact: an
+   incumbent dependency/call site, integration seam, relevant ADR/decision, or
+   confirmed absence. No profile cache.
+3. Verify the external claim from current primary documentation, source,
+   advisory, or release notes.
+4. Compare fit, existing alternatives, migration cost, reversibility, project
+   principles, security, licensing, and deprecation risk.
+5. Return exactly one verdict: `Adopt`, `Trial`, `Hold`, `Reject`, or
+   `Not-our-problem`.
+6. Persist only when asked: use the active feature's `decisions.md` for a
+   feature-scoped choice or propose an ADR for a durable architecture decision.
+   Do not write a parallel rejection or learning index.
 
 ## Output
-Reply-contract exception: decision utility; may run outside a workspace.
 
-```
-Verdict: <Adopt|Trial|Hold|Reject|Not-our-problem> — <one sentence>
-Tier: <two-way|bounded-one-way|high-stakes>
-Project floor: <file:line/local doc>
-External floor: <source>
-Why: <3 bullets max>
-Next: <single command or done>
-Record: <path|not written>
+```text
+Verdict: <grade> — <one sentence>
+Tier: <two-way | bounded-one-way | high-stakes>
+Project evidence: <file:line or local doc>
+External evidence: <primary source>
+Why: <three bullets max>
+Next: <one action | done>
+Record: <path | not written>
 ```
 
-## Gotchas
-- No project floor, no verdict. A generic "X is good" answer is failure.
-- Do not let a strong blog post compensate for no local call site, incumbent, or integration point.
-- Do not enumerate a whole market here; bounded candidate decisions only.
+No project evidence or no primary external source means `Hold`, not a generic
+technology opinion.
+
+## Non-trigger
+
+Not a market survey or premise stress-test (`$rite-pressure-test` / `$rite-spec`),
+not implementation, not a patch plan. A CVE still needs a live advisory URL
+before any `Adopt`/`Trial`.
+
+## Failure and recovery
+
+- Missing project evidence or missing live primary source → `Hold`. **Failing
+  case:** "Adopt Redis" with no incumbent call site and no opened docs URL.
+- High-stakes / irreversible without a named rollback → cannot be `Adopt`.
+- Persist only when asked; a chat-only verdict is not a decision record.

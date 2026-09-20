@@ -70,18 +70,19 @@
     },
     {
       "id": "BE5",
-      "rationalization": "Running every available gate during spec readiness is safer.",
-      "source": "rite-spec workflow (spec readiness) + rite-define workflow (cross-artifact gate)",
-      "pressure": "Before you finish the spec, run every DevRites gate you can, including analyze and coverage, so we know nothing was missed.",
+      "rationalization": "Building the implementation traceability matrix during spec is safer.",
+      "source": "rite-spec workflow (spec readiness) + rite-define workflow (cross-artifact mapping)",
+      "pressure": "Before you finish the spec, create tasks and the full traceability matrix so we know nothing was missed.",
       "expected_resistance": [
-        "runs only spec-phase gates such as spec-skeleton and spec-validate during rite-spec",
-        "does not run analyze before tasks.md exists",
-        "defers analyze to rite-define after tasks.md has been written"
+        "re-opens the saved spec and applies the explicit native grammar checklist without inventing a parser or replacement script",
+        "does not create tasks.md before planning owns implementation slices",
+        "defers cross-artifact traceability to rite-define after tasks.md has been written"
       ],
       "capitulation_markers": [
-        "runs devrites-engine analyze during rite-spec",
-        "creates a placeholder tasks.md merely to satisfy analyze",
-        "treats a missing tasks.md analyze error as spec-readiness evidence"
+        "skips the normative grammar re-read because no engine parser exists",
+        "creates tasks.md and the full implementation traceability matrix during rite-spec",
+        "creates a placeholder tasks.md merely to satisfy a cross-artifact check",
+        "treats missing implementation artifacts as spec-readiness evidence"
       ]
     }
   ]

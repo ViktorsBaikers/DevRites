@@ -1,5 +1,7 @@
 # Coding style
 
+> Applies when: writing or editing code; naming, reuse, guard clauses, readability.
+
 Write code the next engineer can read without you in the room. Match the project's
 existing idiom first; these rules fill the gaps.
 
@@ -11,36 +13,32 @@ existing idiom first; these rules fill the gaps.
 
 ## Functions do one thing
 - One responsibility per function; if you need "and" to describe it, split it.
-- Keep functions short enough to hold in your head. Long functions hide bugs.
-- Limit parameters; a long parameter list usually wants a struct/object or a split.
 - Make edge cases explicit rather than implicit in clever control flow.
 
 ## Guard clauses over nested pyramids
-Handle the unwanted cases up front and return early; keep the success path flat.
-```
-# instead of nesting the whole body in if/else, exit early:
-if (!user) return Unauthorized
-if (!user.active) return Forbidden
-# ...happy path here, un-nested
-```
+
+Handle unwanted cases first and return early; keep the success path flat.
 
 ## Comments explain *why*, not *what*
-- Self-explanatory code beats a comment restating it. Rename before you comment.
-- Reserve comments for intent, trade-offs, non-obvious constraints, and "here be
-  dragons" warnings. Delete commented-out code. That's what version control is for.
+- Self-explanatory code beats a comment restating it; delete commented-out code. The
+  full comment do-not list (what-comments, tutorial noise, ownerless TODOs, edit-narration,
+  hedging) is owned by [`anti-ai-slop.md`](../../../rite-polish/reference/anti-ai-slop.md)
+  § Code anti-slop — one canonical list, consumed by build, polish, and review.
 
 ## Simplicity
 - Prefer the simplest thing that works. Don't add abstraction before you have two real
   callers; premature generalization is a cost, not a saving.
-- Don't be clever at the expense of clear. Shorter-but-cryptic is not simpler.
 - Delete dead code you created; don't leave TODOs or stray debug logs in shipped code.
 
 ## Reuse before you write
 Before adding a new util, helper, hook, type, component, or formatter, **search** for an
-existing one. **Reuse → extend → build new**, in that order. Don't re-implement what the
-project (or stdlib) already provides. If forcing reuse would distort the existing thing's
-shape, build a sibling and consolidate later: duplication is cheaper than the wrong
-abstraction (AHA).
+existing one. Search by *problem shape*, not just name — the same problem solved under
+different names is still an existing implementation, and the hardest duplicates to spot
+are the renamed and reshaped ones. **Reuse → extend → build new**, in that order. Don't
+re-implement what the project (or stdlib) already provides. If forcing reuse would
+distort the existing thing's shape, build a sibling and consolidate later: duplication
+is cheaper than the wrong abstraction (AHA). When a plan or slice adds a new
+implementation, name the nearest existing analog it considered — or record `none found`.
 
 ## Edit reliably, change only what's asked
 - **No elision.** Never write `// ... rest unchanged` / `# ... existing code` in place of an

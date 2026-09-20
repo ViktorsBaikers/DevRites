@@ -1,0 +1,47 @@
+# Native execution profiles
+
+Profiles scale **change depth**, not orchestration machinery. The host discovers
+the exact project specialist named by a workflow, dispatches it in fresh context,
+waits for the result, validates the result shape, and reconciles the evidence.
+DevRites does not provide an engine broker, agent API version, tier protocol,
+receipt, polling loop, or fallback agent.
+
+| Profile | Use when | Depth |
+|---|---|---|
+| **Quick** | One small, reversible, unambiguous change | One bounded implementation pass and focused proof; escape to Standard as soon as the significance gate fails. |
+| **Standard** | Default feature work | Full required lifecycle, named independent passes, focused then feature-level proof. |
+| **Full** | Security, migration, public contracts, high blast radius, or explicit `--full` | Same phases and exact roles as Standard, with every applicable conditional axis, broader failure-mode proof, and stricter final review. |
+
+A profile never skips a workflow-named specialist, changes source-write
+ownership, relaxes a gate, or authorizes an irreversible action. Missing or
+incompatible exact roles stop for HITL; the root never substitutes a generic
+agent or performs the specialist's work inline.
+
+## Recorded route
+
+The decision is durable, not re-derived each phase: `brief.md` carries a
+`## Route` block (`Size`, `Profile`, `Why`) written by whichever rite first
+classified the change — `$rite-quick`'s significance gate or `$rite-spec` step
+5. Later phases read the recorded profile instead of re-judging size.
+
+| Recorded | Mapping |
+|---|---|
+| `small` + reversible + unambiguous | **Quick** — `$rite-quick` lane; the significance gate still escalates to Standard on auth, migration, public API, destructive, multi-slice, or ambiguous signals. |
+| `standard` (default) | **Standard** — the full required lifecycle. |
+| `large` or any high-stakes signal (security, migration, public contracts, high blast radius, explicit `--full`) | **Full**. |
+
+Route changes are one-directional without a recorded reason: any phase may
+escalate a profile when a significance signal appears; a downgrade needs an
+explicit recorded `Why` revision through the Spec Drift Guard. A recorded
+profile compresses artifact depth and reviewer breadth per the profile table —
+it never removes a named specialist, a required artifact, a gate, or an
+evidence binding.
+
+A child result is a claim. Admit it only against observations (`git diff
+--name-only`, recorded commands, artifact existence) — never against the
+child's prose. **Failing case:** a wright reports "done" and the parent
+advances without comparing touched paths to the path contract.
+
+The complete 17-role catalog and source-writing boundary live in
+[`standards/agents.md`](standards/agents.md). Review-specific applicability
+lives in [`parallel-dispatch.md`](parallel-dispatch.md).

@@ -8,10 +8,16 @@ follows the user's goal. Skipping this is how you get pretty UI that doesn't wor
 is a **per-slice refinement of that brief for the surface you're about to code**: confirm
 the answers below against the brief and fill any slice-specific gaps; don't re-derive the
 design. **Only shape from scratch here** when a UI slice has no `design-brief.md` (a spec
-written before shaping), then run `devrites-ux-shape` first, or answer these and write the
-brief inline.
+written before shaping), then run `devrites-ux-shape` first; only if it cannot run, answer
+these and write the brief per `../../devrites-ux-shape/reference/brief-template.md`, and
+return through `/rite-vet` before code.
 
 ## Answer these before writing markup
+0. **Surface intent:** is this a communication surface (a *site*: persuasion,
+   information, one message per section) or a task surface (an *app*: flows,
+   state, density)? Never ship one dressed as the other — a task tool built like
+   a landing page fails its user, and a marketing page built like a dashboard
+   fails its message.
 1. **User goal:** what is the user here to accomplish? One sentence.
 2. **Primary action:** the single most important thing on this surface. It must be
    visually obvious. Everything else is secondary.
@@ -30,11 +36,6 @@ brief inline.
 6. **Accessibility:** focus order, labels, contrast, keyboard operability, semantics.
 7. **Interaction model:** what's inline vs. navigated vs. (rarely) a modal; optimistic
    vs. pending; how feedback is given.
-
-## Ask when ambiguous
-If the visual direction or the UX flow isn't determined by the existing system + the
-spec, ask the user (show 2-3 concrete options) before building. Guessing a flow is
-expensive to undo once coded.
 
 ## Output
 The answers live in the feature's `design-brief.md` (shaped at spec by `devrites-ux-shape`).

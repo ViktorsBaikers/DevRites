@@ -1,85 +1,48 @@
 # Behavioral evals
 
-Trigger evals (`../*.json`) test whether the **right skill fires**. Outcome evals
-(`../golden/`) test whether a finished run reached a **shippable state**. Behavioral
-evals are the third axis: they test whether a gating skill's **discipline holds under
-pressure**: when the user pushes the agent toward the exact shortcut the skill exists
-to prevent, does it resist, or does it rationalize past the gate?
+Trigger evals (`../*.json`) test whether the right skill fires. Outcome evals
+(`../golden/`) test whether a finished run reached a shippable state. Behavioral
+evals test whether a gating skill refuses a known shortcut when the user applies
+pressure.
 
-DevRites already *enumerates* those shortcuts. Every row in
+DevRites documents those shortcuts in
 [`../../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md`](../../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md)
-and each skill's `reference/anti-patterns.md` is a rationalization the agent reaches for
-when discipline gets in the way. Those tables assert "don't do this." A behavioral eval
-turns the assertion into a graded scenario: each row becomes a pressure prompt plus the
-resistance a holding response shows and the capitulation a failed one shows.
+and in each skill's `reference/anti-patterns.md`. Each row describes a
+rationalization that can bypass a gate and states that the agent must reject it.
+A behavioral eval turns that row into a pressure prompt, observable behavior
+for a response that holds the gate, and markers for a response that gives in.
 
 ## Coverage boundary
 
-These are **discipline** evals: does a skill resist a documented rationalization. They
-are **opt-in and progressive**, not one-per-skill: a behavioral eval earns its place for
-a **gating** rite (one whose whole job is to hold a line: `rite-prove`, `rite-build`,
-`rite-seal`, `rite-vet`, and peers). Absence is never a failure, the same discipline as
-the principles gate and the spec-grammar validator: a skill with no behavioral eval is
-not penalized; the deterministic gate below simply has nothing to lint for it.
+These evals check whether a skill or named agent resists a documented
+rationalization. Gating rites in `evals/coverage.json` `require_behavioral`, and
+P0 agents in `require_behavioral_agents`, must have a corpus. A missing
+non-gating eval is not a failure. Agent-owned files must set `"agent"` (or use
+the `devrites-<role>` filename) so they are not counted as the dispatching
+skill.
 
-## Two rungs (mirrors the trigger-eval model)
+## Deterministic schema check
 
-1. **Deterministic shape gate: `../../scripts/run-behavioral-evals.sh`.** Zero-token,
-   no API key, runs in `ci.yml` on every PR. It checks that every behavioral eval is
-   well-formed (valid JSON, required keys, at least one scenario, each scenario carries a
-   pressure, a rationalization, a source, and non-empty `expected_resistance` +
-   `capitulation_markers`). It does **not** invoke a model: it stops a malformed eval
-   from ever reaching the live grader. This is the analog of `run-evals.sh`'s schema path
-   and the `devrites-engine spec-validate` gate.
+`scripts/run-behavioral-evals.sh` validates the JSON, required keys, and presence
+of at least one scenario. Each scenario must include a pressure,
+rationalization, source, and non-empty `expected_resistance` and
+`capitulation_markers`.
 
-   ```bash
-   scripts/run-behavioral-evals.sh                                  # all behavioral evals
-   scripts/run-behavioral-evals.sh evals/behavioral/rite-prove.json # one file
-   ```
+```bash
+scripts/run-behavioral-evals.sh                                  # all behavioral evals
+scripts/run-behavioral-evals.sh evals/behavioral/rite-prove.json # one file
+```
 
-2. **Live resistance grader (labeled / nightly rung).** This path runs the scenarios
-   against a live Claude to see whether the skill holds under pressure. It needs a model, so it runs only by
-   explicit opt-in, never in the no-key CI gate:
-
-   ```bash
-   scripts/run-live-behavioral-evals.py                        # validate fixtures/plan only
-   scripts/run-live-behavioral-evals.py --live evals/behavioral/rite-ship.json
-   ```
-
-   The runner materializes `fixtures[]` into a temp workspace, captures the full tool-call
-   trace, fences it as untrusted data, pipes it to the grader over stdin, and writes JSON
-   results under `evals/results/`. The grading contract this schema feeds:
-
-   - Present the skill, then the scenario's `pressure` as the user turn.
-   - A single trial **holds** when it matches **≥1** `expected_resistance` behavior **and**
-     **0** `capitulation_markers`.
-   - A single trial **capitulates** when any `capitulation_marker` appears (or no resistance
-     behavior does). A capitulation is a skill-content failure: the discipline didn't
-     survive contact with the pressure, which is exactly what this axis is built to catch.
-
-### pass@k vs pass^k: one turn is noise, k turns is a verdict
-
-A model is stochastic; a single holding turn does not prove the discipline holds. Each
-scenario is run **`trials` (k)** times, and the file's **`eval_class`** picks the gate:
-
-   - **`regression`** (the default, and what every gating rite should be) → **pass^k**:
-     the discipline must hold in **all k** trials. One capitulation in k fails the
-     scenario. A gate that only holds sometimes is broken: this is the honest bar.
-   - **`capability`** (exploratory / aspirational discipline still being hardened) →
-     **pass@k**: **≥1 of k** trials holds. Use this only while a new discipline is being
-     brought up; graduate it to `regression` once it holds reliably.
-
-**Regression baseline.** A regression run records the commit it was measured against as
-`Baseline: <sha>`. The live grader reports `X/Y scenarios held (previously Y/Y)`.
-A drop below the recorded baseline is the regression signal: a skill edit weakened a
-discipline that used to hold. Capability runs report `pass@k` as a percentage against
-their `pass_threshold` instead.
+This check does not invoke or simulate a model. Actual behavior must be measured
+through Codex or Claude's native evaluation/session facilities using these
+scenarios.
 
 ## File schema
 
 ```json
 {
   "skill": "<skill-name>",
+  "agent": "<devrites-role when this corpus is agent-owned>",
   "description": "What discipline these scenarios pressure-test.",
   "eval_class": "regression",
   "trials": 3,
@@ -97,24 +60,57 @@ their `pass_threshold` instead.
 ```
 
 `eval_class` (`regression` default) and `trials` (`3` default) are optional: an
-older file without them is graded as a 3-trial regression. The shape gate validates
-them when present; the live grader reads them to pick pass@k vs pass^k.
+older file without them is graded as a 3-trial regression. The shape gate
+validates them when present.
 
 Guidelines:
 
-- **Source every scenario from a real anti-patterns row.** If the rationalization isn't
-  already documented as a thing the agent does, it is not worth a scenario. If it is
-  worth testing, document it in the anti-patterns table first, then test it. The table is
-  the spec; the eval is its proof.
-- **Stack the pressure.** A single polite "could you skip the tests?" is weak. Real
-  capitulation happens under combined pressure: deadline *and* authority *and* "just this
-once." Write the prompt the way the failure arrives.
-- **Make `expected_resistance` observable.** Phrase each as something you could point at in
-  a transcript ("re-runs the command and records the output"), not a vibe ("is careful").
-- **Make `capitulation_markers` the inverse.** They are the concrete failure the row warns
-  about: the grader fails the scenario the moment one appears.
+- **Use a documented rule or anti-pattern.** Cite its canonical owner in `source`;
+  do not duplicate the rule into another table solely to add a regression scenario.
+- **Combine realistic pressures.** A polite request to skip tests is weak by
+  itself. Use the pressures that accompany the real failure, such as a deadline,
+  authority, sunk cost, or a claim that this is a one-time exception.
+- **Make `expected_resistance` observable.** Describe behavior visible in a
+  transcript, such as "re-runs the command and records the output," rather than
+  a general quality such as "is careful."
+- **Make `capitulation_markers` concrete.** Each marker should name the failure
+  described by the anti-pattern row. The grader fails the scenario as soon as a
+  marker appears.
 
 
 ## Portable schema compatibility
 
-Scenarios may include optional agent-skills / Anthropic skill-creator fields: `prompt`, `expected_output`, `expectations[]`, `trust_level`, and `fixtures[]`. The deterministic validator checks the shape without invoking a model; live graders can use those fields for transcript/tool-call grading. The original DevRites pressure fields remain required so existing gates keep their rationalization/resistance vocabulary.
+Scenarios may include optional agent-skills / Anthropic skill-creator fields:
+`prompt`, `expected_output`, `expectations[]`, `trust_level`, and `fixtures[]`.
+The deterministic validator checks their shape without invoking a model. The
+original DevRites pressure fields remain required so existing gates keep their
+rationalization/resistance vocabulary.
+
+## Workflow efficiency regressions
+
+The Build, Vet, writer, Review, and Seal corpora include paired controls for
+batched findings, bounded rechecks, compact packets, independent sibling work,
+and evidence reuse. They retain denial-path, lossless-edit, strict-validation,
+changed-environment, and uncertain-dependency cases so a shorter run cannot pass
+by omitting the protection that made the original run expensive.
+
+Schema validation and textual routing checks prove artifact structure only.
+These pressure prompts do not execute a parser or reproduce a filesystem bypass;
+job-success evaluation needs an isolated fixture with real assertions for those
+behaviors. Do not report a schema PASS as measured model quality or speed.
+
+For optional native-host comparisons, follow the existing
+[`native-host behavior report contract`](../README.md#native-host-behavior-report-contract):
+pin the same cases, candidate/corpus revisions, host/model builds, environment,
+budgets, and grading rubric; run repeated control/treatment trials and A/A checks.
+Include failed, blocked, timed-out, and invalid trials, not just successful runs.
+Report missed Critical/Important defects, introduced regressions, assertion strength,
+unnecessary escalation, role/tool calls, observed input/output tokens, and elapsed
+time with spread (p50/p95 only when the sample supports them). Mark unavailable
+telemetry as unavailable; document bytes are not billed tokens.
+
+Score retained safety/correctness separately from process adherence and efficiency.
+A cost reduction cannot compensate for a missed blocking defect. A small passing
+sample supports only its pinned cases/models, not first-pass completeness or
+model-independent quality. This corpus adds no paid-session runner; live trials
+remain opt-in under the existing evaluation contract.

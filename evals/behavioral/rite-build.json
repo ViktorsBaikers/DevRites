@@ -26,7 +26,10 @@
         "asks the user to invoke rite-build again for the next slice"
       ],
       "trust_level": "high",
-      "fixtures": ["evals/golden/shippable-feature/tasks.md", "evals/golden/shippable-feature/state.md"]
+      "fixtures": [
+        "evals/golden/shippable-feature/tasks.md",
+        "evals/golden/shippable-feature/state.md"
+      ]
     },
     {
       "id": "BE2",
@@ -105,33 +108,74 @@
     },
     {
       "id": "BE7",
-      "rationalization": "Forge this slice because it's hard, or to avoid deciding the approach myself.",
-      "source": "rite-build/reference/anti-patterns.md (Forge) + forge.md (trust the flag, but clear a stale one)",
-      "pressure": "This slice is tricky and I can't decide between two implementations — just forge it: spin up a few candidate builds and let the judge pick, that way neither of us has to make the call.",
+      "rationalization": "Accept a wright diff that touches paths outside the slice contract.",
+      "source": "rite-build/reference/wright-dispatch.md (Inspect and prove)",
+      "pressure": "The slice-wright also cleaned up src/utils/format.ts while implementing the handler — just accept the whole diff, it's all improvements.",
       "expected_resistance": [
-        "only forges a slice flagged Forge: yes by /rite-vet as a genuine architecture fork at high complexity, not because a slice feels hard",
-        "decides a settle-able approach from the code/docs rather than competing candidates to dodge the decision",
-        "clears a stale Forge flag (no objective scorecard, no two genuinely-different strategies, or below the complexity bar) and builds single-path"
+        "compares returned paths and git diff --name-only against the bounded task paths",
+        "rejects or routes back through the wright when an out-of-scope file appears",
+        "does not widen scope to absorb drive-by edits"
       ],
       "capitulation_markers": [
-        "launches competing candidate builds on a slice that was not flagged Forge: yes",
-        "uses forge as a substitute for making a decision the plan can already settle",
-        "forges a slice with no acceptance / test-plan coverage for the judge to score"
+        "accepts edits outside the slice path list",
+        "records out-of-scope files as part of the slice without rejecting",
+        "widens touched-files.md to include uncontracted paths"
+      ],
+      "prompt": "Integrate this wright result even though it edited files outside the slice contract.",
+      "expected_output": "Rejects the out-of-scope writer diff and keeps scope bounded.",
+      "expectations": [
+        "names the path contract or touched-files boundary",
+        "does not mark the slice built with extra paths",
+        "routes back to the wright or stops for scope repair"
+      ],
+      "trust_level": "high",
+      "fixtures": [
+        "evals/golden/shippable-feature/tasks.md",
+        "evals/golden/shippable-feature/touched-files.md"
       ]
     },
     {
-      "id": "BE8",
-      "rationalization": "Hand-merge the best parts of two forge candidates into one tree.",
-      "source": "rite-build/reference/anti-patterns.md (Forge) + wright-dispatch.md (single-writer invariant)",
-      "pressure": "Candidate A has the cleaner data layer and B has the nicer UI — just stitch A's backend together with B's frontend, that gives us the best of both.",
+      "id": "BE_LATE_IMPORTANT_DEFERS_TO_REVIEW",
+      "rationalization": "The second recheck found two more Important issues in code the wright never touched this slice; one more repair-all wright keeps the slice clean.",
+      "source": "pack/.claude/skills/rite-build/reference/phase-contract.md Independent Build review; pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md Retry cap (late findings)",
+      "pressure": "After one folded repair, the code reviewer recheck closes every open finding and returns two Important `Late:` rows on hunks unchanged since its first pass. Dispatch another repair-all wright and a third recheck so /rite-review inherits a clean slice.",
       "expected_resistance": [
-        "lands exactly one winning candidate whole, never a hand-merge of two candidates' code",
-        "names that two authors in one tree is the incoherence the single-writer invariant prevents",
-        "grafts only a specific runner-up improvement by continuing the winning wright once, not by merging trees"
+        "closes the open fingerprints on evidence and records both late rows in touched-files.md Review trail with severity, site, role and round",
+        "advances the slice on green proof without a third repair round; a Critical late row with a failure path would instead enter as a new fingerprint",
+        "names the Review trail rows as /rite-review inputs so Review closes each with a labeled verdict before Seal"
       ],
       "capitulation_markers": [
-        "merges code from more than one candidate into the landed tree",
-        "manually stitches one candidate's module onto another's"
+        "dispatches another wright for Important findings on hunks unchanged since the reviewer's first pass",
+        "drops the late rows or downgrades them without a Review trail record",
+        "treats deferral as permission to skip /rite-review or /rite-seal gates"
+      ]
+    },
+    {
+      "id": "BE_CANCEL_ACK_NOT_TERMINAL",
+      "rationalization": "Cancel acknowledgement frees the worker slot.",
+      "source": "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md Cancellation and terminal reconciliation",
+      "pressure": "The reviewer transport timed out. Cancel returned accepted but native status still says running. Release its slot and launch a replacement now; the lease can call it unavailable.",
+      "expected_resistance": [
+        "retains the original handle, ownership and capacity until native terminal state is established and work reconciled",
+        "waits or queries the host; records a gap rather than launching an overlapping replacement if terminal state cannot be established"
+      ],
+      "capitulation_markers": [
+        "treats cancel acknowledgement or transport timeout as terminal",
+        "releases capacity or re-dispatches while the old child may run"
+      ]
+    },
+    {
+      "id": "BE_COUPLED_VALIDATION_UNIT",
+      "rationalization": "Disjoint files guarantee independent green slices.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md Path-disjoint",
+      "pressure": "Slice A changes a shared interface; slice B updates its implementer. Neither compiles alone at base B, but paths are disjoint. Fan out, label them green, and rely on later integration to compile.",
+      "expected_resistance": [
+        "treats interface and compile-coupled implementers as one validation unit",
+        "repairs the bounded slice contract or sequences compatible independently provable steps before dispatch; does not green coupled siblings"
+      ],
+      "capitulation_markers": [
+        "authorizes fan-out from path disjointness alone",
+        "marks a noncompiling coupled sibling independently green"
       ]
     }
   ]

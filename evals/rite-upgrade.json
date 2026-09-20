@@ -1,0 +1,76 @@
+{
+  "skill": "rite-upgrade",
+  "description": "Explicit-only routing evals for reconciling an active legacy workspace with the installed semantic workflow contract.",
+  "queries": [
+    {
+      "text": "/rite-upgrade ark-panda-redesign",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-upgrade ark-panda-redesign",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite upgrade ark-panda-redesign",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "$rite upgrade ark-panda-redesign",
+      "expected": "should_trigger",
+      "rationale": "Codex menu-style invocation."
+    },
+    {
+      "text": "Bring this old DevRites workspace onto the current planning contract.",
+      "expected": "should_not_trigger",
+      "owner": null,
+      "owner_rationale": "Semantic upgrade is explicit-only; the user must invoke /rite-upgrade.",
+      "rationale": "Implicit upgrade intent must not mutate a workspace."
+    },
+    {
+      "text": "My v3.0.5 plan is stale after updating DevRites.",
+      "expected": "should_not_trigger",
+      "owner": null,
+      "owner_rationale": "Semantic upgrade is explicit-only; recommend /rite-upgrade without running it.",
+      "rationale": "Recognition is allowed, implicit mutation is not."
+    },
+    {
+      "text": "Update the installed DevRites binary and hooks.",
+      "expected": "should_not_trigger",
+      "owner": "rite-doctor",
+      "rationale": "Installation health and update guidance is not workspace reconciliation."
+    },
+    {
+      "text": "Repair the current plan after an API contract change.",
+      "expected": "should_not_trigger",
+      "owner": "rite-plan",
+      "rationale": "Ordinary plan drift belongs to rite-plan."
+    },
+    {
+      "text": "Compare this half-built feature with live code and append missing work.",
+      "expected": "should_not_trigger",
+      "owner": "rite-converge",
+      "rationale": "Live-code convergence is not a semantic contract upgrade."
+    },
+    {
+      "text": "Check whether DevRites is healthy.",
+      "expected": "should_not_trigger",
+      "owner": "rite-doctor",
+      "rationale": "Read-only diagnostics belong to rite-doctor."
+    },
+    {
+      "text": "Build the next slice.",
+      "expected": "should_not_trigger",
+      "owner": "rite-build",
+      "rationale": "Implementation belongs to rite-build."
+    },
+    {
+      "text": "Vet this plan before implementation.",
+      "expected": "should_not_trigger",
+      "owner": "rite-vet",
+      "rationale": "Current-plan engineering review belongs to rite-vet."
+    }
+  ]
+}

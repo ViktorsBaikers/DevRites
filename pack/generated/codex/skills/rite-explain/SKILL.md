@@ -5,18 +5,8 @@ argument-hint: "[a concept | a diff ref | an idea | \"what did I do this week?\"
 user-invocable: true
 disable-model-invocation: true
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
+<!-- loads: {"always":["rite-explain/reference/intake.md"],"triggers":{"repo":["devrites-lib/reference/standards/tooling.md"],"style":["devrites-lib/reference/standards/prose-style.md"],"principles":["devrites-lib/reference/standards/principles.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-explain` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # $rite-explain: the human half of the learning loop
 
@@ -44,19 +34,6 @@ widgets: the check-in (below) happens live in the session, where an answer can b
 graded. If the user asked for prep for a meeting or a teammate, it preps **them** to explain the
 thing; it does not produce the deck.
 
-## Model tiers
-
-Dispatch by task shape, per [`devrites-lib/reference/model-tiers.md`](../devrites-lib/reference/model-tiers.md):
-
-- **extraction tier:** the work-recap scout and any repo-profiling: search-and-quote, run under a
-  read budget, write findings to the run's scratch dossier, return only a gist.
-- **ceiling tier:** the explainer composition and the check-in reasoning. These run inline in the
-  orchestrator's own model; nothing is dispatched down. Teaching quality is the whole product: do
-  not cheapen it.
-
-The degradation rule in that file applies: no per-agent model control → run the scout inline under
-the same budget.
-
 ## Workflow
 
 ### 1. Classify the input: load the intake reference
@@ -71,7 +48,9 @@ mechanics per shape. Do not improvise classification from this file; the detail 
 one stays legible, and skipping it means guessing the shape.
 
 **Bare invocation** (no input): ask **one** blocking question (`AskUserQuestion` when the harness
-has it, else the harness's blocking-question tool: `request_user_input` on Codex). "What should I
+has it, else the harness's blocking-question tool: `request_user_input` on Codex; no interactive
+question tool → render the ranked options as a plain numbered list and end the turn
+(afk-hitl.md)). "What should I
 explain?": offering "a recap of my recent work in this repo" as a shortcut option alongside free
 text. Never emit a default explainer unprompted.
 
@@ -82,12 +61,13 @@ free: prefer it over re-deriving:
 
 - A **diff** or **recap** → the workspace and archive: `seal.md`, `evidence.md`, `decisions.md`,
   `traceability.md`, the shipped `.devrites/archive/<slug>/`, and `git log` / `git diff`.
-- A **concept** with footprint in this repo → the live code (codegraph / graphify first), plus any
+- A **concept** with footprint in this repo → live code through the primary index selected by
+  [`tooling.md`](../devrites-lib/reference/standards/tooling.md) (one named-predicate cross-check only when needed), plus any
   `.devrites/principles.md` or ADRs that already take a position on it.
 - An **idea** or a concept with no repo footprint → the user's framing plus, only if it sharpens
   the teaching, current external sources (weight by date; the year is 2026).
 
-Create the run directory before composing so scout dossiers have a home:
+Create the run directory before composing so the durable artifact has a home:
 
 ```bash
 RUN_DIR=".devrites/explainers/$(date +%Y%m%d)-<slug>"; mkdir -p "$RUN_DIR"
@@ -110,9 +90,25 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
    **Completion:** the explanation connects a known project anchor to the new model without a fact dump.
 3. **Show the load-bearing detail.** Quote the actual diff hunk, the real function, the specific
    config, with `file:line` pointers so the developer can go read it.
-4. **Visual where it earns it.** A small diagram, a before/after, or a worked trace when the shape
-   is spatial or sequential. Not decoration: only when it carries the idea faster than prose.
-   **Completion:** the visual carries a named relationship faster than prose, or this branch is explicitly skipped.
+4. **Visual where it earns it.** When the idea is spatial or relational (flows, before/after,
+   architecture, comparable options) and a richer reviewable page would carry it faster than prose
+   or an inline Mermaid sketch, treat this as a soft-required dual-read branch — not decoration and
+   not a new lifecycle phase:
+   1. Open matching playbooks via
+      [`../devrites-lib/reference/visual-playbooks/index.md`](../devrites-lib/reference/visual-playbooks/index.md)
+      first (progressive load; open every matching id; **never** preload all seven).
+   2. Emit the pair under either the active workspace
+      `.devrites/work/<slug>/visual/<name>.{html,outline.md}` **or** the explainers run dir with the
+      same contract (`$RUN_DIR/visual/<name>.{html,outline.md}`). Copy required outline headings from
+      [`outline-template.md`](../devrites-lib/reference/visual-playbooks/outline-template.md).
+   3. Agents treat the outline as SSOT; if HTML and outline disagree, **outline wins** until both are
+      regenerated. No Lavish runtime (`window.lavish.*`, `data-lavish-*`, poll/queue/share/ht-ml.app).
+   4. In the reply, `Changed` / `Record` may cite the HTML+outline pair. Optionally tip the human to
+      run `devrites-engine open-visual <path-or-name>` (document the tip only).
+   Skip the branch when prose (or a tiny Mermaid/SVG sketch inside `explainer.md`) already carries
+   the named relationship.
+   **Completion:** matching playbooks loaded when taken; dual-read pair written with outline-wins /
+   no-Lavish / no-new-phase; or the branch is explicitly skipped because prose won.
 5. **Human voice.** Follow [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md):
    no throat-clearing, no false-binary contrast, no marketing adjectives. One senior engineer
    explaining to another.
@@ -120,7 +116,9 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
 ### 4. Offer the check-in (optional, active recall)
 
 Retention comes from *retrieving*, not re-reading. After the explainer, offer one check-in via the
-harness's blocking-question tool (`AskUserQuestion`, or `request_user_input` on Codex): the user
+harness's blocking-question tool (`AskUserQuestion`, or `request_user_input` on Codex; no
+interactive question tool → render the ranked options as a plain numbered list and end the turn
+(afk-hitl.md)): the user
 answers **first**, then you confirm or correct. The shape sets the
 form (mechanics in the intake reference):
 
@@ -140,21 +138,17 @@ not force it; offer once.
   Wikipedia paragraph. If it has footprint in this repo, quote the repo.
 - **Not a review.** `$rite-explain` never judges the code or files findings, that is `$rite-review`.
   It explains what *is*, adversarially neutral.
-- **Not `$rite-learn`.** It writes to `.devrites/explainers/`, never to `learnings.md`,
-  `principles.md`, or any rule file. Teaching the human is not promoting a repo rule.
+- **Not `$rite-learn`.** It writes to `.devrites/explainers/`, never to [`principles.md`](../devrites-lib/reference/standards/principles.md)
+  or any rule file. Teaching the human is not promoting a repo rule.
 
 ## Output
 
-Reply-contract exception: cross-feature learning utility; may run with no active feature, so it
-skips `devrites-engine progress` when no workspace exists. Otherwise follows
-[`devrites-lib/reference/reply-contract.md`](../devrites-lib/reference/reply-contract.md).
-
 ```
 Done: explained <the one thing> as a <concept|diff|idea|recap> explainer OR walked through <change> for human review.
-Changed: .devrites/explainers/<date>-<slug>/<explainer.md|walkthrough.md>
-Evidence: grounded in <artifacts/files quoted>; check-in <offered+result | skipped>; walkthrough stops <count>
+Changed: .devrites/explainers/<date>-<slug>/<explainer.md|walkthrough.md>[; visual/<name>.html + visual/<name>.outline.md]
+Evidence: grounded in <artifacts/files quoted>; check-in <offered+result | skipped>; walkthrough stops <count>; visual <pair|skipped>
 Open: <none | next-time topics deferred | check-in awaiting the user>
-Next: <single command — usually back to the calling phase, or $rite-learn if a repo rule surfaced>
-Record: .devrites/explainers/<date>-<slug>/explainer.md
+Next: <single command — usually back to the calling phase, or $rite-learn if a repo rule surfaced; optional tip: devrites-engine open-visual …>
+Record: .devrites/explainers/<date>-<slug>/explainer.md | walkthrough.md | visual/<name>.outline.md
 ↻ Hygiene: /clear after reading; the explainer is on disk
 ```

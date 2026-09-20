@@ -6,57 +6,138 @@ import (
 )
 
 // Report is the computed completeness status of a feature at its current phase.
-// It embeds the loaded Feature (Slug, Phase, Present) and adds the phase-relative
-// required set and the missing sections.
 type Report struct {
-	*Feature
-	Required map[Section]bool
-	Missing  []Section // required-but-empty sections, in Sections order
+	Slug                        string
+	Phase                       Phase
+	Status                      string
+	NextAction                  string
+	SequenceParent              string
+	SequencePosition            string
+	SequenceWorkspacesRemaining string
+	SequenceRole                string
+	PrinciplesPresent           bool
+	Required                    map[Section]bool
+	Missing                     []Section // required-but-empty sections, in policy order
+	RequiredFiles               map[string]bool
+	MissingFiles                []string // required-but-empty workspace files, in lifecycle order
+	present                     map[Section]bool
+	diagnostics                 []ArtifactDiagnostic
 }
 
-// Status computes the status report for feature <slug> under root by reading
-// the files directly. It reports completeness relative to the feature's current
-// phase only.
+// Status computes phase-relative completeness from one retained workspace observation.
 func Status(root, slug string) (*Report, error) {
-	f, err := LoadFeature(root, slug)
+	return statusWithCallback(root, slug, nil)
+}
+
+func statusWithCallback(root, slug string, callback observationCallback) (*Report, error) {
+	observation, err := observeWorkspace(root, slug, callback)
+	if err != nil {
+		return nil, err
+	}
+	phase, err := observation.DeclaredPhase()
 	if err != nil {
 		return nil, fmt.Errorf("compute status: %w", err)
 	}
-	return NewReport(f), nil
+	policy, _ := PolicyFor(phase)
+	return newObservationReport(observation, phase, policy), nil
 }
 
-// NewReport computes the phase-relative required set and missing sections for a
-// loaded Feature.
-func NewReport(f *Feature) *Report {
-	required := make(map[Section]bool)
-	for _, s := range RequiredSections(f.Phase) {
-		required[s] = true
+func observationCursorFields(observation *WorkspaceObservation) (status, nextAction, sequenceParent, sequencePosition, sequenceRemaining, sequenceRole string, principlesPresent bool) {
+	if fact, ok := observation.Fact(".devrites/principles.md"); ok && fact.State() == ArtifactPresent {
+		principlesPresent = true
 	}
-	return &Report{Feature: f, Required: required, Missing: MissingFor(f, f.Phase)}
+	fact, ok := observation.Fact(LedgerFile)
+	if !ok || fact.State() != ArtifactPresent {
+		return "", "", "", "", "", "", principlesPresent
+	}
+	lines := strings.Split(string(fact.Bytes()), "\n")
+	if value, ok := CursorField(lines, CursorStatus); ok {
+		status = value
+	}
+	if value, ok := CursorField(lines, CursorNextAction); ok {
+		nextAction = value
+	}
+	sequenceParent, _ = CursorField(lines, CursorSequenceParent)
+	sequencePosition, _ = CursorField(lines, CursorSequencePosition)
+	sequenceRemaining, _ = CursorField(lines, CursorSequenceWorkspacesRemain)
+	sequenceRole, _ = CursorField(lines, CursorSequenceRole)
+	return status, nextAction, sequenceParent, sequencePosition, sequenceRemaining, sequenceRole, principlesPresent
 }
 
-// MissingFor returns the sections required to complete phase p that the feature
-// does not yet have real content for, in canonical Sections order. Gates use it
-// to check completeness against a phase other than the feature's current one
-// (e.g. seal always checks the full seal-phase set), so its result is
-// independent of f.Phase.
-func MissingFor(f *Feature, p Phase) []Section {
-	required := make(map[Section]bool)
-	for _, s := range RequiredSections(p) {
-		required[s] = true
+func newObservationReport(observation *WorkspaceObservation, phase Phase, policy PhasePolicy) *Report {
+	present := observationSectionPresence(observation)
+	required := requiredSections(policy)
+	requiredFiles := requiredArtifactSet(policy)
+	missingArtifacts, diagnostics := observation.Missing(policy.RequiredArtifacts)
+	missingFiles := make([]string, len(missingArtifacts))
+	for i, artifact := range missingArtifacts {
+		missingFiles[i] = string(artifact)
 	}
+	status, nextAction, sequenceParent, sequencePosition, sequenceRemaining, sequenceRole, principlesPresent := observationCursorFields(observation)
+	return &Report{
+		Slug:                        observation.Slug(),
+		Phase:                       phase,
+		Status:                      status,
+		NextAction:                  nextAction,
+		SequenceParent:              sequenceParent,
+		SequencePosition:            sequencePosition,
+		SequenceWorkspacesRemaining: sequenceRemaining,
+		SequenceRole:                sequenceRole,
+		PrinciplesPresent:           principlesPresent,
+		Required:                    required,
+		Missing:                     missingObservationSections(present, policy.RequiredSections),
+		RequiredFiles:               requiredFiles,
+		MissingFiles:                missingFiles,
+		present:                     present,
+		diagnostics:                 diagnostics,
+	}
+}
+
+func observationSectionPresence(observation *WorkspaceObservation) map[Section]bool {
+	present := make(map[Section]bool, len(Sections))
+	for _, section := range Sections {
+		for _, name := range sectionFiles[section] {
+			fact, ok := observation.Fact(ArtifactPath(name))
+			if ok && fact.State() == ArtifactPresent {
+				present[section] = true
+				break
+			}
+		}
+	}
+	return present
+}
+
+func missingObservationSections(present map[Section]bool, required []Section) []Section {
 	var missing []Section
-	for _, s := range Sections {
-		if required[s] && !f.Present[s] {
-			missing = append(missing, s)
+	for _, section := range required {
+		if !present[section] {
+			missing = append(missing, section)
 		}
 	}
 	return missing
 }
 
-// Complete reports whether every section required by the current phase has
-// real content.
-func (r *Report) Complete() bool { return len(r.Missing) == 0 }
+func requiredSections(policy PhasePolicy) map[Section]bool {
+	required := make(map[Section]bool, len(policy.RequiredSections))
+	for _, section := range policy.RequiredSections {
+		required[section] = true
+	}
+	return required
+}
+
+func requiredArtifactSet(policy PhasePolicy) map[string]bool {
+	required := make(map[string]bool, len(policy.RequiredArtifacts))
+	for _, artifact := range policy.RequiredArtifacts {
+		required[string(artifact)] = true
+	}
+	return required
+}
+
+// Complete reports whether every concrete canonical-workspace file required by
+// the current phase has real content.
+func (r *Report) Complete() bool {
+	return len(r.MissingFiles) == 0
+}
 
 // Render produces the deterministic, greppable status text, including a
 // trailing newline. Each section line reads "<name> <present|empty> [required]".
@@ -64,27 +145,26 @@ func (r *Report) Render() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "feature: %s\n", r.Slug)
 	fmt.Fprintf(&b, "phase: %s\n", r.Phase)
-	for _, s := range Sections {
+	for _, section := range Sections {
 		state := "empty"
-		if r.Present[s] {
+		if r.present[section] {
 			state = "present"
 		}
 		mark := ""
-		if r.Required[s] {
+		if r.Required[section] {
 			mark = "required"
 		}
-		line := fmt.Sprintf("  %-10s %-8s %s", s, state, mark)
+		line := fmt.Sprintf("  %-10s %-8s %s", section, state, mark)
 		b.WriteString(strings.TrimRight(line, " "))
 		b.WriteByte('\n')
+	}
+	for _, diagnostic := range r.diagnostics {
+		fmt.Fprintf(&b, "artifact: %s: %s (%s)\n", diagnostic.Path, diagnostic.State, diagnostic.Code)
 	}
 	if r.Complete() {
 		b.WriteString("result: complete\n")
 	} else {
-		names := make([]string, len(r.Missing))
-		for i, s := range r.Missing {
-			names[i] = string(s)
-		}
-		fmt.Fprintf(&b, "result: incomplete (missing: %s)\n", strings.Join(names, ", "))
+		fmt.Fprintf(&b, "result: incomplete (missing files: %s)\n", strings.Join(r.MissingFiles, ", "))
 	}
 	return b.String()
 }

@@ -9,7 +9,7 @@ What `browser-evidence.md` must capture for a UI slice. Delegates to
 ## Browser evidence
 | Evidence ID | Route | State/input | Viewport | Compared with | Tooling | Result | Related IDs | Limitation |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| EVID-003 | <route> | empty/keyboard | 375 | brief Proof targets + R1 | playwright-mcp | <observed result> | AC-002, SLICE-002 | <none / exact gap> |
+| EVID-003 | <route> | empty/keyboard | 375 | brief Proof targets + target reference 1 | playwright-mcp | <observed result> | AC-002, SLICE-002 | <none / exact gap> |
 
 ## Visual Verdict
 | State | Result | Notes |
@@ -36,8 +36,10 @@ What `browser-evidence.md` must capture for a UI slice. Delegates to
 - Open every screenshot path and describe it: never assert from the filename.
 - Read `design-brief.md` + `references.md` first. Compare fidelity only with references
   classified **target**; check constraints as rules and never pixel-match inspiration.
-- Render every proof target named by the brief/slice. At minimum check a small (375) and a
-  large (1280) viewport for layout slices.
+- Render every proof target named by the brief/slice using the canonical viewport
+  set and state coverage in [quality-standards.md](../../devrites-frontend-craft/reference/quality-standards.md).
+  Apply [capture admissibility](../../devrites-lib/reference/standards/browser-proof-checklist.md)
+  before assigning a visual verdict; invalid captures leave proof `cannot_verify`.
 - Compare structure before decoration: hierarchy/layout → responsive/state behavior →
   type/spacing/color → polish. Record each material delta, fix it, and re-render. A visual
   PASS requires zero unresolved material deltas; an accepted departure needs its reason in

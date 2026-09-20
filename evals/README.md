@@ -1,110 +1,156 @@
-# Trigger evals
+# Evaluation corpora
 
-Every executable DevRites skill has a `<skill-name>.json` eval file in this directory;
-the non-workflow `devrites-lib` library is exempt. Model-invoked corpora exercise the
-description with implicit positive and negative queries. Explicit-only corpora use
-direct-command positives plus an implicit-invocation negative boundary. Corpus size
-follows distinct routing branches instead of a fixed quota. The `devrites-*` evals lean
-on adversarial `should_not_trigger` cases against the
-sibling skills and bundled globals (`diagnose`, `grill-me`, `code-review`, `tdd`,
-`prototype`, `handoff`) their trigger surfaces collide with.
+DevRites keeps provider-neutral evaluation inputs in this directory. CI checks
+their structure and deterministic workspace outcomes; it does not simulate
+Codex or Claude or claim to measure model behavior.
 
-**Coverage boundary.** These are *routing* evals (which skill fires) plus the
-outcome grader below, which checks whether a finished run reached a shippable
-state. They do not yet run the `.claude/agents/` subagents end to end. The wright
-and reviewers need a live model, so `evals.yml` exercises them through the API
-path, not in the no-key CI gate. Per-phase *contract* behavior (e.g. build's
-stop-after-one-slice) beyond the seal outcome remains a scoped follow-up.
+## Evaluation boundaries
 
-The methodology mirrors Anthropic's `skill-creator` 2.0:
+- `*.json` contains trigger examples for native provider evaluation. CI validates
+  JSON shape and corpus completeness with `scripts/run-evals.sh`.
+- `golden/` contains shippable and blocked workspaces graded by
+  `scripts/run-outcome-evals.sh`.
+- `behavioral/` contains pressure scenarios for gating skills. CI validates their
+  shape with `scripts/run-behavioral-evals.sh`.
+- `coverage.json` lists gating skills and P0 agents that must have behavioral
+  corpora. CI runs `scripts/check-gating-eval-ledger.sh` blocking for
+  `require_behavioral` and `require_behavioral_agents`. `--advisory` still
+  prints the full scoreboard with exit 0. Agent-owned files (filename prefix or
+  `"agent"`) count for that agent only; they do not satisfy a skill's ledger row.
 
-1. Read the queries.
-2. For each `should_trigger` query, the skill *should* fire when Claude
-   reads it. For each `should_not_trigger` query, the skill should *not*
-   fire (typically because another skill is a better fit, or no skill
-   should fire at all).
-3. Run with and without the skill enabled; the delta is the trigger rate.
+Use Codex or Claude's native evaluation/session facilities to measure routing or
+behavior. DevRites owns only the corpora and deterministic artifact invariants.
+No repository workflow accepts model credentials, starts paid sessions, or
+manufactures fake host traces.
 
-**Two CI paths:**
+## Native-host behavior report contract
 
-- **`ci.yml`** runs `scripts/run-evals.sh` (trigger-eval schema + shape) **and**
-  `scripts/run-outcome-evals.sh` (the deterministic outcome grader on the golden
-  fixtures) on every PR: no API key required. Catches broken JSON, wrong query
-  coverage, missing keys, and a golden workspace that no longer grades as expected.
-- **`evals.yml`** runs `scripts/eval-runner.py` against the live Anthropic
-  API on a nightly schedule (and on PRs that carry the `run-evals` label).
-  Requires the repo secret `ANTHROPIC_API_KEY`. For each query, the runner
-  asks Claude to predict which DevRites skill would fire and compares the
-  prediction to the expected verdict. Per-skill budget gate:
-  - accuracy ≥ **0.90** (small corpora therefore require every query correct)
-  - false-positives ≤ **2** (`should_not_trigger` queries that fired)
+When a human runs optional native-host evaluations outside repository CI, preserve a
+claim-bounded report:
 
-  Per-skill failures fail the job; the workflow renders a markdown summary
-  (skill / correct / accuracy / FP / FN / passed) and uploads
-  `eval-summary.jsonl` + `eval-output.txt` as artifacts.
+- pin host, model/build, candidate digest or commit+path, corpus revision, grader type/version,
+  and trial date;
+- distinguish a task from each repeated trial and name control/treatment arms;
+- before attributing a small wording difference, run same-build A/A repeats and report the
+  observed noise floor; record spread as `aa_noise_floor` in the report header;
+- retain sanitized per-trial arm verdicts/metrics, invalid/null results, and variance; never
+  capture raw transcripts, and record `cannot_verify` when sanitization loses grading signal;
+- score process adherence separately from job success—a compliant trace can still produce
+  the wrong result, and a lucky result does not prove the process;
+- grade explicit blockers: a dangerous instruction, a material factual error, a breach of an explicit output contract, or an agent-autonomy regression blocks regardless of weighted score;
+- state the narrow claim supported and what the evaluation did not demonstrate.
+- release a candidate only with zero blockers, correctness and safety at or above baseline, and a weighted score above baseline; comparative claims reuse the same cases, models, trials, and rubric.
 
-Local live execution is manual-only; schema validation never runs a model just because
-`CLAUDE_API_KEY` exists:
+`not run` or `unavailable` is an honest result. A lexical diagnostic, model narration,
+mutable checklist, or polished summary is never host-routing or job-success proof.
 
-```bash
-pip install anthropic
-CLAUDE_API_KEY=sk-... scripts/run-evals.sh --live evals/*.json
-```
+### Optional loop-control policy matrix
 
-Override the model with `DEVRITES_EVAL_MODEL=claude-...`. For custom thresholds or
-summary output, call `python3 scripts/eval-runner.py --summary-file out.jsonl ...`
-directly.
-
-## Routing ratchet
-
-`scripts/run-routing-evals.py` compares deterministic routing metrics with
-[`routing-baseline.json`](routing-baseline.json). The first gate is no regression:
-rank-1/top-3 cannot drop, and false-positive / public-internal / host-wording confusion cannot
-increase. Raise the baseline only after description tuning improves the run.
-
-## Outcome evals (deterministic grader)
-
-Trigger evals test whether the right skill *fires*. They do **not** test whether
-a finished run reached a *shippable* state: the product claim ("won't claim done
-without proof"). `scripts/grade-feature.sh` is a deterministic grader that reads
-only the committed Markdown artifacts of a workspace and checks the GO invariants
-from `rite-seal/reference/{seal-template,go-no-go,final-evidence}.md`: sealed GO,
-every acceptance criterion checked, no blockers, evidence present, review present,
-no open `gate: validating`, and a shippable `state.md` phase/status.
-
-Two golden fixtures pin it: `evals/golden/shippable-feature/` (must grade GO) and
-`evals/golden/blocked-feature/` (must grade NO-GO, see-it-fail-first):
+`native-host/loop-behavior.json` covers the ten lifecycle cases above plus leftover `expires_at` ignore,
+agent budget, review-queue, unobservable-cap, and fresh-activation semantics. CI
+validates this corpus but never starts a model session:
 
 ```bash
-scripts/run-outcome-evals.sh
+python3 scripts/live-hosts/run-loop-evals.py --validate-only
 ```
 
-No API key required; runs in CI. Live evidence-freshness by mtime is a separate
-runtime gate exposed as `devrites-engine evidence-fresh`.
-
-## Behavioral evals (discipline under pressure)
-
-Trigger evals test *which skill fires*; outcome evals test *did a run reach a shippable
-state*. Behavioral evals test the third thing: *does a gating skill's discipline hold when
-the user pushes it toward the exact shortcut the skill exists to prevent*: claim a pass it
-didn't observe, ship past a Critical, skip the doubt loop, defer a test. Each scenario turns
-a row from `../pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md` (asserted in prose) into a graded case:
-a pressure prompt plus the resistance a holding response shows and the capitulation a failed
-one shows.
-
-They live in [`behavioral/`](behavioral/) and are **opt-in**: earned by gating rites
-(`rite-prove`, `rite-build`, `rite-seal`, `rite-vet`, peers), never required of every skill.
-The deterministic shape gate runs in `ci.yml` with no API key:
+A release evaluator may run pinned, repeated native **policy-selection** sessions.
+The runner embeds the candidate policy in a temporary, tool-free session, sanitizes
+the process environment, copies only mode-0600 Codex auth into an ephemeral home,
+applies timeout and Claude cost bounds, deletes raw output, and writes enum choices
+and metrics only:
 
 ```bash
-scripts/run-behavioral-evals.sh
+python3 scripts/live-hosts/run-loop-evals.py \
+  --host claude --model '<pinned-model>' --arm candidate --trials 3 \
+  --max-seconds 180 --max-cost-usd 5 \
+  --claude-api-key-file '<0600-key-file>' --report '<report.json>'
+
+DEVRITES_CODEX_ACCEPTANCE_MODEL='<pinned-model>' \
+DEVRITES_CODEX_ACCEPTANCE_HOME='<authenticated-CODEX_HOME>' \
+DEVRITES_CODEX_ACCEPTANCE_REPORT='<report.json>' \
+DEVRITES_CODEX_ACCEPTANCE_TRIALS=3 \
+DEVRITES_CODEX_ACCEPTANCE_MAX_SECONDS=180 \
+DEVRITES_CODEX_ACCEPTANCE_MAX_CALLS=48 \
+  scripts/live-hosts/run-codex-loop-acceptance.sh
 ```
 
-Live execution (does the skill resist?) is the same API-gated rung as the live
-trigger evals. Full schema, methodology, and the grading contract:
-[`behavioral/README.md`](behavioral/README.md).
+Run named control/treatment arms separately. Run same-build A/A arms before
+attributing small differences. Reports contain no transcript and support only their
+`claim`: model policy selection. They do **not** prove process adherence, job success,
+tool routing, durable transitions, or forbidden-action resistance. Those claims need
+an externally isolated native fixture with observed tool/state traces; `not run` is
+the repository's current result.
 
-## File schema
+### Codex live acceptance matrix
+
+`native-host/codex-acceptance.json` separates portable support from unavailable Codex
+CLI capabilities. Every row has one bounded claim and non-claim:
+
+| Case | Evidence path | Repository result |
+| --- | --- | --- |
+| Installed pack visibility | strict deterministic runtime smoke | normal test suite |
+| Loop-policy selection | fail-closed `run-codex-loop-acceptance.sh` wrapper | live opt-in; not run |
+| Root skill loading | hidden-challenge model smoke | live opt-in; not run |
+| Named read-only role | structured child diagnostic + zero tree delta | `cannot_verify` exact role; not run |
+| Same-worktree writer | structured child diagnostic + exact tree delta | `cannot_verify` exact role; not run |
+| Native worktree transfer | explicit named-agent worktree + reconciliation | unavailable in Codex CLI; no claim |
+| Time/event activation | native Codex schedule/event facility | unavailable in Codex CLI; no emulation |
+
+Run live-opt-in and live-diagnostic rows only with explicit auth, isolated homes, pinned
+model/build, and an accepted token budget. Strict acceptance mode turns missing Codex,
+Python, auth, or required evidence into failure rather than `SKIP`:
+
+```bash
+DEVRITES_CODEX_ACCEPTANCE=1 bash tests/codex-runtime-smoke.sh
+
+DEVRITES_CODEX_ACCEPTANCE_MODEL='<pinned-model>' \
+DEVRITES_CODEX_ACCEPTANCE_HOME='<authenticated-CODEX_HOME>' \
+DEVRITES_CODEX_ACCEPTANCE_REPORT='<report.json>' \
+DEVRITES_CODEX_ACCEPTANCE_TRIALS=3 \
+DEVRITES_CODEX_ACCEPTANCE_MAX_SECONDS=180 \
+DEVRITES_CODEX_ACCEPTANCE_MAX_CALLS=48 \
+  scripts/live-hosts/run-codex-loop-acceptance.sh
+
+DEVRITES_CODEX_ACCEPTANCE=1 \
+DEVRITES_CODEX_MODEL_SMOKE=1 \
+DEVRITES_CODEX_MODEL_HOME='<empty-isolated-home>' \
+DEVRITES_CODEX_MODEL_CODEX_HOME='<authenticated-CODEX_HOME>' \
+  bash tests/codex-runtime-smoke.sh
+
+DEVRITES_CODEX_ACCEPTANCE=1 \
+DEVRITES_CODEX_SUBAGENT_SMOKE=1 \
+DEVRITES_CODEX_SUBAGENT_ROLE=devrites-security-auditor \
+DEVRITES_CODEX_SUBAGENT_MODEL='<pinned-model>' \
+DEVRITES_CODEX_MODEL_HOME='<empty-isolated-home>' \
+DEVRITES_CODEX_MODEL_CODEX_HOME='<authenticated-CODEX_HOME>' \
+  bash tests/codex-runtime-smoke.sh
+
+DEVRITES_CODEX_ACCEPTANCE=1 \
+DEVRITES_CODEX_SUBAGENT_SMOKE=1 \
+DEVRITES_CODEX_SUBAGENT_ROLE=devrites-slice-wright \
+DEVRITES_CODEX_SUBAGENT_MODEL='<pinned-model>' \
+DEVRITES_CODEX_MODEL_HOME='<empty-isolated-home>' \
+DEVRITES_CODEX_MODEL_CODEX_HOME='<authenticated-CODEX_HOME>' \
+  bash tests/codex-runtime-smoke.sh
+```
+
+Codex custom subagents provide separate threads and inherit sandbox policy. Current
+`codex exec --json` collaboration events prove child spawn/result but omit selected
+custom-role identity, so named-role and named-writer rows remain `cannot_verify` even
+when their diagnostics pass. This also does not establish filesystem worktree isolation.
+Codex-managed worktrees are documented
+for Desktop tasks, not as a CLI custom-subagent transfer contract. Until Codex exposes
+that exact interface, choose `same-worktree`. Likewise, absent native schedule/event
+support means interactive turns, supported bounded goals, or explicitly user-owned
+external automation—never a DevRites shell loop, cron entry, or daemon.
+
+## Trigger corpus schema
+
+Every executable DevRites skill has a `<skill-name>.json` file; the
+non-workflow `devrites-lib` library is exempt. Model-invoked skills include
+implicit positive and negative queries. Explicit-only skills include direct
+command positives and negative cases for implicit invocation.
 
 ```json
 {
@@ -122,12 +168,38 @@ trigger evals. Full schema, methodology, and the grading contract:
 }
 ```
 
-Every corpus must be non-empty and contain both verdicts. A `should_not_trigger` query
-must name its `owner`; when no DevRites skill owns it, use `owner: null` plus
-`owner_rationale`. The deterministic router asserts that a named owner outranks the
-target, so negatives are pairwise rather than vacuous. Include:
+Every corpus must be non-empty and contain both verdicts. A
+`should_not_trigger` query names the better owner; when no DevRites skill owns
+it, use `owner: null` plus `owner_rationale`.
 
-- Direct slash-command invocation (always should_trigger).
-- Natural-language paraphrases that match the description's intent.
-- Adversarial cases that look related but route to a different skill.
-- Common user intents that should *not* trigger anything DevRites.
+## Deterministic outcome evals
+
+`scripts/grade-feature.sh` reads committed workspace Markdown and checks the GO
+invariants from `rite-seal`: acceptance criteria, evidence, review, gate state,
+and shippable phase/status. Two fixtures pin the grader:
+
+```bash
+scripts/run-outcome-evals.sh
+```
+
+- `golden/shippable-feature/` must grade GO.
+- `golden/blocked-feature/` must grade NO-GO.
+
+The runner stages the manifest paths, obtains their content digest from
+`devrites-engine`, binds the final artifacts to it, and proves harmless touches
+pass while candidate byte drift blocks even when the original mtime is restored.
+Semantic proof and review verdicts remain native-agent responsibilities.
+
+## Behavioral scenario schema
+
+Behavioral files turn documented anti-patterns into pressure prompts,
+observable resistance, and capitulation markers. They are optional and useful
+for gating skills such as `rite-prove`, `rite-build`, `rite-seal`, and
+`rite-vet`.
+
+```bash
+scripts/run-behavioral-evals.sh
+```
+
+See [`behavioral/README.md`](behavioral/README.md) for the schema and authoring
+guidance.

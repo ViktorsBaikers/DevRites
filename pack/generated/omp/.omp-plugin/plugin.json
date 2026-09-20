@@ -1,0 +1,6 @@
+{
+  "name": "devrites",
+  "description": "DevRites: a disciplined senior-engineer workflow pack for omp",
+  "skills": "./skills",
+  "agents": "./agents"
+}

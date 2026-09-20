@@ -1,54 +1,157 @@
 # The autocomplete loop: arm AFK, drive every phase
 
-Autocomplete is an orchestrator: it runs the existing `/rite-*` skills in order,
-exactly as a human would, but without stopping between them. It owns no workflow of
-its own: the phases do the work; autocomplete sequences them and enforces stops.
+Autocomplete sequences existing `/rite-*` workflows without pausing between
+routine phases. Acceptance-preserving Reslice authority is
+`.agents/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
-## Arm AFK
+<!-- BEGIN RESLICE ROUTE-TO-ACTION -->
+- `FOLD` → keep Plan repair/affected Vet internal; no stop solely for topology/count.
+- `GUARD_AND_REPAIR` → enter Spec Drift Guard/Clarify; pause only at an existing human-owned gate; resume Plan/Vet internally.
+- `BLOCKED_INPUT` → no planning writes; stop internal branch; exact diagnostic; recover authority; reclassify.
+<!-- END RESLICE ROUTE-TO-ACTION -->
 
-Arm the gate policy up front; set the slice budget once the plan's count is known:
+## Arm AFK once
 
 ```yaml
-allow_gates: [advisory]        # only advisory auto-handles; validating+ pause
-# notify: "<cmd>"              # optional — fired on any awaiting_human pause
-# max_slices: <N>              # the slice BUDGET — set from the plan's count after
-# $rite-define (or an explicit --max-slices). NOT a target decomposition; it only
-# caps how many run unattended (default = all the plan's slices).
+allow_gates: [advisory, validating]
+# max_slices / max_agents / max_minutes / max_review_queue omitted: unlimited
+# continue_sequence: true          # opt-in: chain recorded continuations after Seal GO
+# max_workspaces: 5                # sequence budget when chaining
+# max_parallel: 10                 # default cap when this invocation omits `--parallel N`; `--parallel N` wins and rewrites only this field
+# max_tokens: <N>
+# max_cost_usd: <amount>
+# notify: "<cmd>"
 ```
 
-The budget is the plan's own slice count, not a fixed number, so the loop builds exactly
-the task's slices and stops when they're done; `--max-slices N` only *lowers* it for a
-partial run. Arm the gate policy at step 3; write `max_slices` / `AFK slices remaining`
-**after `$rite-vet`** (it runs before the build loop and may split or add a slice, so the
-count isn't final until then: vet runs on every plan here, so always set the budget after it).
+Read an existing sentinel first. Preserve it byte-for-byte when valid, except
+when this invocation contains `--parallel N`: then write or replace only
+`max_parallel: N` and leave every other key unchanged. Stop if the sentinel is
+malformed. Do not stop because it names `max_slices` / `max_agents` /
+`max_minutes` / `max_review_queue` or only `[advisory]`. If absent, write it
+once after clarity, and include `max_parallel: N` when that flag is present.
+Never write `max_slices` from `--max-slices`. It is otherwise read-only: never rewrite it after Vet or reset it on resume. Leftover `expires_at` is ignored
+and never rewritten. **Failing case:** leftover `max_parallel: 1` keeps the run
+serial after `--parallel 5`.
 
-`allow_gates: [advisory]` is deliberate: an open `gate: validating` is merge-blocking
-at seal (`afk-hitl.md`), so autocomplete must *pause* on it rather than queue it and
-then hit NO-GO. Widen `allow_gates` only if the caller explicitly asked.
+### Derive the mutable post-vet budget
 
-## Drive the phases
+After Vet, seed `afk_slices_remaining` from the pending count so every pending
+slice can run. Ignore `--max-slices`, sentinel `max_slices`, and leftover
+remaining. AFK configuration itself stays unchanged.
 
-Run each by Reading its `SKILL.md` and executing that workflow. State flows through the
-workspace files (`state.md`, `tasks.md`, `evidence.md`, …), so each phase picks up where
-the last left off. There is nothing to thread through chat.
+### Admit each unattended cycle
 
-| Step | Phase | Loop / gate |
-|---|---|---|
-| 1 | `$rite-spec` | feed the interview answers; write `spec.md` |
-| 2 | `$rite-temper` | significance-gated strategic review; harden spec + write `strategy.md`. Skip low-stakes specs in one line. AFK: `hold-rigor` / `reduce-to-MVP` auto-apply; **any `expand` pauses (blocking)**; irreversible-risk pauses |
-| 3 | `$rite-define` | reads `strategy.md`; `plan.md` + `tasks.md`; record `Plan approved` |
-| 4 | `$rite-vet` | engineering plan review on **every** plan (light pass on simple plans, full on big/risky; never skipped); harden `plan.md` / `tasks.md` + write `eng-review.md` + `test-plan.md`. AFK: hardening / coverage findings auto-apply; **any scope-growing / acceptance-changing finding pauses (blocking)**; irreversible-risk pauses. Set the slice budget after this (vet may split a slice) |
-| 5 | `$rite-build` ×N | **loop** while any slice is `pending`; build one (the slice-wright reads `test-plan.md` for coverage), then run `devrites-engine tick-afk state.md`: exit 3 (budget hit) ⇒ STOP |
-| 6 | `$rite-prove` | once all slices `built`; walks `test-plan.md`; on failure → `devrites-debug-recovery` within scope |
-| 7 | `$rite-polish` | re-verify after code edits (evidence must stay fresh) |
-| 8 | `$rite-review` | apply in-scope fixes; re-prove if code changed |
-| 9 | `$rite-seal` | GO/NO-GO decision (no git here) |
-| 10 | `$rite-ship` | only if seal GO; `--ship` auto-confirms type-GO, else stop for human |
+Before every phase, review fan-out, recovery, or writer dispatch: cheapest
+readiness check first; reject overlap. Do not stop on `max_agents`,
+`max_minutes`, or `max_review_queue`. Count every leaf result. A new activation
+gets fresh activation-local counters but retains durable slice/recovery state.
 
-## Between phases
+When driving `$rite-build`, ignore afk-discipline remaining-0, `--max-slices`,
+and parallel AFK headroom as stop conditions. Pass this invocation's
+`--parallel N` into `$rite-build` when present; leftover sentinel
+`max_parallel` is then not the cap. Close validating questions and blocking questions
+that already name a ranked recommended option (recommended pick via
+`devrites-engine state resolve`) instead of queuing them or handing
+`$rite-resolve` to the user. Escalating, irreversible-risk, access, and
+blocking with no recommended option still pause.
 
-- Re-read the active workspace before each phase (don't trust chat memory).
-- After a phase that edits code (build, polish, review), evidence may be stale: let
-  the next gate re-prove rather than carrying a stale pass (see
-  `.agents/skills/devrites-lib/reference/standards/development-workflow.md`).
-- Check [stop-conditions.md](stop-conditions.md) at every gate **before** advancing.
+## Phase arc
+
+Workspace files carry state; chat does not. Read and execute each phase skill:
+
+| Step | Phase | Completion / edge |
+| --- | --- | --- |
+| 1 | `$rite-spec` | investigate and write testable intent |
+| 2 | `$rite-clarify` | topology-first scan; require `Decision coverage: CLEAR`, then arm AFK |
+| 3 | `$rite-temper` | harden, reduce, or expand; irreversible risk still pauses |
+| 4 | `$rite-define` | approved plan/tasks/traceability |
+| 5 | `$rite-vet` | every plan; derive mutable budget after READY |
+| 6 | `$rite-build` batch loop | largest eligible path-disjoint set (cap: this invocation's `--parallel N`, else sentinel `max_parallel`, else 10; one-slice round when <2 eligible); recompute after each round; charge once per green built slice |
+| 7 | `$rite-prove` | all slices built; approved proof; recovery on red |
+| 8 | `$rite-polish` | re-prove after code edits |
+| 9 | `$rite-review` | in-scope correction then fresh proof |
+| 10 | `$rite-seal` | GO/NO-GO; no Git |
+| 11 | `$rite-ship` | only after GO; `--ship` never authorizes Git; stop at literal-GO/native approval |
+
+Before advancing, check
+[stop-conditions.md](stop-conditions.md). After source edits, discard stale pass
+evidence. Re-read the active workspace before each phase. On a cold resume or
+new activation, run `devrites-engine check regression <slug>`: `BLOCKED` names a
+durable fact lost since the last checkpoint — restore or route it through its
+owning phase before continuing; `unproven` does not block. After each phase's
+durable advance lands (green check loop, checkpoint commit), run
+`devrites-engine check regression <slug> --update` to ratchet the progress
+floor; `--update` never excuses an unreconciled regression.
+
+## Sequence continuation
+
+With `continue_sequence: true` and sequence budget remaining
+([sentinel](../../devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces)),
+step 10 does not end the run: leave the sealed workspace unshipped with its
+`Next step: $rite-ship`, then invoke the next recorded continuation
+(`$rite-spec <parent>-<n> "<objective>"` from the parent's `decisions.md` sequence)
+and re-enter step 1. Spend one workspace per opened continuation.
+
+Spend accounting is durable in `state.md` cursors, not chat. Before invoking the
+continuation, ensure the current workspace's `sequence_workspaces_remaining` is
+set — absent, write `max_workspaces - 1` and `sequence_position: 1` first — and
+`> 0`. `$rite-spec` seeds the child's sequence cursor at creation per the
+[continuation contract](../../rite-plan/reference/slicing.md#continuation-workspaces);
+after the child's `state.md` exists, verify it — `sequence_parent` = the current
+slug, `sequence_position` = parent position + 1,
+`sequence_workspaces_remaining` = parent remaining − 1, and — when the recorded
+entry is the sequence's release milestone — `sequence_role: release` (gates then
+require the union manifest). On resume, a child whose
+fields are missing is re-seeded from its `brief.md` parent/position and the
+parent's counter (same values, never a second charge); a child with no recorded
+parent/position is not a sequence member and the chain stops.
+
+Stop instead when: no recorded next entry; the cap or review-queue bound is
+reached; a human-owned, safety, access, or exhaustion condition fires; or Seal returns
+`NO-GO`. On stop, report the sequence position, the sealed-but-unshipped workspaces, and
+the single release command (`$rite-autocomplete <release milestone> --ship`, or
+`$rite-ship` for the current sealed workspace when the sequence is complete).
+
+## Backtrack without handing off
+
+The active Autocomplete root remains caller whenever a later phase exposes an
+agent-owned earlier-phase gap:
+
+1. Save the originating phase/action unless a valid native return cursor exists.
+2. On cold resume, reconcile the terminal cursor against durable fingerprint
+   accounting. Restore `return_next_action` only from the approved
+   `test-plan.md`/evidence action; ambiguity returns to Vet and never licenses
+   execution.
+3. Invoke required Plan repair, affected Vet, remediation, and proof inline.
+   Recovery Vet is a narrow Vet recheck of prior findings, changed paths/criteria,
+   and affected evidence; it never restarts unaffected axes. A nested `STOP`
+   ends that phase only; do not hand the intermediate command to the user.
+4. Re-read state after each nested phase. Reconcile exact causal fingerprints
+   from `drift.md`/`evidence.md`. A closed reproduction is progress. A different
+   Critical/Important invariant gets a separate budget; Suggestion/Nit/FYI does
+   not prolong the chain. Only a no-progress result charges the same fingerprint.
+5. For failed consumptive action, spent authorization blocks only another real
+   execution. Use retained evidence for offline diagnosis, repair, and narrow
+   Vet; after READY, pause for fresh authorization.
+6. Restore and consume the original cursor when prerequisites are green.
+
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"loop tick sees Workflow Artifact trigger/state","action":"invoke classifier once under owner lock; no actor-history migration","return":"same loop cursor; no budget charge for verify/rerun"} -->
+Ask only for a human-owned decision or mandatory safety/access action. An open
+blocking question with `proposed` or option 1 labelled Recommended is not that
+decision: resolve it and continue. Three no-progress corrections of one exact
+fingerprint exhaust; preserve its reproduction and dead ends without another
+Plan/Vet command.
+
+## Continuous caller obligation
+
+No user-facing reply is permitted while durable state contains agent-owned
+`NEEDS_REPLAN`, an intermediate Plan/Vet action, a distinct retained
+Critical/Important fingerprint below its cap, or an open blocking question that
+already names a ranked recommended option. Invoke the next internal repair or
+`devrites-engine state resolve` immediately. A narrow reviewer closing one finding and exposing another
+Critical/Important invariant is progress, not exhaustion.
+
+The number of completed repair/Vet cycles is not a stop condition. Context
+pressure, compaction, session duration, and nested completion do not convert an
+internal checkpoint into a handoff. Persist it and resume until the requested
+rest point or a shared human/safety/access/exhaustion condition.

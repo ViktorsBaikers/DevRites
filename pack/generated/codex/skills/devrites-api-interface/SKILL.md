@@ -1,20 +1,10 @@
 ---
 name: devrites-api-interface
-description: Internal DevRites skill; DevRites agents invoke it explicitly, not by prompt match.
+description: Shape stable API, type, module, or frontend/backend contracts before implementation. Use when a slice crosses a boundary; not for internal helpers.
 user-invocable: false
 ---
-
-## Codex compatibility
-
-This is the Codex mirror of a DevRites skill. In Codex:
-
-- Load DevRites engineering standards from `.agents/skills/devrites-lib/reference/standards/`. Read `.agents/skills/devrites-lib/reference/standards/core.md` before workflow work, then load the other `.agents/skills/devrites-lib/reference/standards/*.md` files exactly when this skill asks for them.
-- Use the installed `devrites-engine` binary as the canonical runtime helper surface for orientation, gates, and state mutation.
-- When this skill asks for a DevRites specialist or writer agent, **explicitly** spawn the matching Codex custom agent from `.codex/agents/devrites-*.toml` through Codex subagents (`spawn_agent`), then wait for its result and reconcile it as the skill instructs. Do not do the review inline just because the instruction to spawn is embedded here: Codex under-fires embedded spawn/skill instructions (openai/codex #23496), so treat the spawn as required, not optional.
-- The independence of a fresh-context subagent is the point. If Codex genuinely cannot spawn subagents in the current surface, run the documented inline fallback and **label the result an inline fallback, not an independent review**: an inline pass shares the calling context and is weaker evidence.
-- Codex project hooks are installed in `.codex/hooks.json`. Review and trust them with `/hooks` before relying on hook enforcement.
-- When this skill asks a HITL question via `AskUserQuestion`: Codex's equivalent (`request_user_input`) exists only in Plan mode. Outside Plan mode, render the option set as a plain numbered list in chat and **end the turn** so the human answers: NEVER silently pick an option yourself; auto-picking is AFK's contract, gated by the `.devrites/AFK` sentinel.
-
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"deprecation":["devrites-lib/reference/standards/deprecation.md"],"security":["devrites-lib/reference/standards/security.md","rite-review/reference/security-review.md"]},"workspace":["spec.md","plan.md","tasks.md","state.md","decisions.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-api-interface` bundles every file named below into one deduplicated read.
 
 # devrites-api-interface: contract before implementation
 
@@ -47,7 +37,7 @@ stays stable.
   typed functions, on your own database's data, or in a utility already called by validated code.
   A check inside the trusted core hides the bug in the boundary that should have caught it. A
   third-party API response is external input: always untrusted. (Three-tier boundary:
-  [`security.md`](../devrites-lib/reference/standards/security.md); see `rite-review/reference/security-review.md`.)
+  [`security.md`](../devrites-lib/reference/standards/security.md); see [`security-review.md`](../rite-review/reference/security-review.md).)
 
 ## Type craft: make the wrong call unrepresentable
 - **Brand your ids.** A bare `string`/`number` id is assignable to any other id, so the compiler
@@ -57,17 +47,19 @@ stays stable.
 - **Model variants as discriminated unions**, each state carrying only its own fields, so an
   impossible combination can't be constructed in the first place.
 
-## Enables the split
-A clear contract lets `$rite-plan split` proceed: the backend slice can land against the
-contract with a stub consumer; the frontend slice can build against a mock or the real
-contract. Neither side blocks on the other.
-
 ## Doubt the contract
-Before standing the interface, run `devrites-doubt`: boundary decisions are exactly the
-non-trivial kind worth an adversarial check.
+Before standing the interface, run `devrites-doubt`.
 
 ## Done when
 The contract is complete only when **every** field carries a type + optionality + unit,
 **every** success and error status code is enumerated with its error-body shape, the
-`devrites-doubt` verdict is accept, and the contract + rationale are recorded in
-`decisions.md`. A contract that pins only the happy-path shape is not done.
+`devrites-doubt` verdict is accept (on reject: revise the contract and re-doubt under
+[the canonical retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)
+with caller repair and human-risk gates), and the
+contract + rationale are recorded in `decisions.md`. A contract that pins only the
+happy-path shape is not done.
+
+## Enables the split
+A clear contract lets `$rite-plan split` proceed: the backend slice can land against the
+contract with a stub consumer; the frontend slice can build against a mock or the real
+contract. Neither side blocks on the other.

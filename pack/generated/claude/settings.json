@@ -1,103 +1,71 @@
 {
-  "$comment": "DevRites hooks: every event invokes the global `devrites-engine` engine binary behind an inline fail-open guard (command -v devrites-engine && exec devrites-engine hook <name> --harness=claude || exit 0), so a session on a machine without the binary is a clean no-op rather than a wedged hook. The engine auto-approves the read-only orientation/gate subcommands (no per-run prompts), injects the active feature's orientation at session start + a live cursor each turn, arms the A1 pre-block guard on Edit/Write, drops a fail-on-red sentinel on test/build Bash output (redwatch), and refuses to end a turn while the workspace is provably inconsistent (stop-gate). New gates are OBSERVE-only by default (they log but never block); enable enforcement per gate: DEVRITES_A1_HOOK=enforce (or a .a1-enforce file), DEVRITES_STOP_GATE=enforce. Enable each only after its log confirms no false positives, or enable every guard at once with DEVRITES_HOOK_PROFILE=strict. Two control-plane env vars tune which hooks run without editing this file: DEVRITES_HOOK_PROFILE=minimal|standard(default)|strict (minimal = orientation/approval only; standard = the full working set; strict = standard + every guard enforced) and DEVRITES_DISABLED_HOOKS=\"stop-gate,redwatch\" (a comma-separated hook-id kill list); a stripped hook is a clean fail-open no-op. The wright-scope and reviewer-readonly guards are wired from subagent frontmatter (project-local Claude install), not here. On Codex, they are wired globally with agent-type gating in .codex/hooks.json. The installer seeds this file when absent and otherwise merges DevRites event hooks without replacing user settings; an existing non-DevRites statusLine is preserved with a warning.",
-  "statusLine": {
-    "type": "command",
-    "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook statusline --harness=claude || exit 0"
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook allow --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook a1-guard --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "matcher": "WebFetch",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook source-cache-pre --harness=claude || exit 0" }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook redwatch --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "matcher": "WebFetch",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook source-cache-post --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "matcher": "AskUserQuestion",
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook auq || exit 0" }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook handoff-snapshot || exit 0" }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook stop-gate --harness=claude || exit 0" }
-        ]
-      },
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook refresh-indexes || exit 0" }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook cursor --harness=claude || exit 0" }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook orient --harness=claude || exit 0" }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook subagent-orient --harness=claude || exit 0" }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook event subagent-stop || exit 0" }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          { "type": "command", "command": "command -v devrites-engine >/dev/null 2>&1 && exec devrites-engine hook event session-end || exit 0" }
-        ]
-      }
+  "$comment": "DevRites keeps the root orchestration context source-read-only. Native subagents own specialist execution; only devrites-slice-wright may edit source. Its task lists exact project-relative paths, and the root rejects any returned diff outside that contract.",
+  "permissions": {
+    "defaultMode": "plan",
+    "allow": [
+      "Bash(devrites-engine check candidate *)",
+      "Bash(devrites-engine check readiness *)",
+      "Bash(devrites-engine check seal *)",
+      "Bash(devrites-engine check diff-scope *)",
+      "Bash(devrites-engine check task-graph *)",
+      "Bash(devrites-engine check path-disjoint *)",
+      "Bash(devrites-engine check indexes *)",
+      "Bash(devrites-engine check skill-trust *)",
+      "Bash(devrites-engine check slice *)",
+      "Bash(devrites-engine check regression *)",
+      "Bash(devrites-engine check windows *)",
+      "Bash(devrites-engine check dup *)",
+      "Bash(devrites-engine check drift *)",
+      "Bash(devrites-engine orient *)",
+      "Bash(devrites-engine next *)",
+      "Bash(devrites-engine handoff *)",
+      "Bash(devrites-engine context *)",
+      "Bash(devrites-engine metrics *)",
+      "Bash(devrites-engine dispatch *)",
+      "Bash(devrites-engine claim *)",
+      "Bash(devrites-engine note *)",
+      "Bash(devrites-engine observe *)",
+      "Bash(devrites-engine detect *)",
+      "Bash(devrites-engine migrate *)",
+      "Bash(devrites-engine parallel status *)",
+      "Bash(devrites-engine parallel select *)",
+      "Bash(devrites-engine parallel create *)",
+      "Bash(devrites-engine parallel record-green *)",
+      "Bash(devrites-engine parallel integrate *)",
+      "Bash(devrites-engine parallel abort *)",
+      "Bash(devrites-engine parallel cleanup *)",
+      "Bash(devrites-engine parallel lease-read *)",
+      "Bash(devrites-engine parallel lease-write *)",
+      "Bash(devrites-engine parallel lease-clear *)",
+      "Bash(devrites-engine state resolve *)",
+      "Bash(devrites-engine state merge-manifest *)",
+      "Bash(devrites-engine state close *)",
+      "Bash(devrites-engine gates scaffold *)",
+      "Bash(devrites-engine gates status *)",
+      "Bash(devrites-engine gates run *)",
+      "Bash(devrites-engine gates reverify *)",
+      "Bash(devrites-engine gates lint *)",
+      "Bash(devrites-engine gates attest *)",
+      "Bash(devrites-engine gates abandon *)",
+      "mcp__codegraph__*",
+      "mcp__codebase-memory-mcp__*",
+      "mcp__codebase-memory__*",
+      "mcp__code-review-graph__*",
+      "mcp__graphify__*",
+      "Bash(codegraph *)",
+      "Bash(graphify *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git rev-parse *)",
+      "Bash(git merge-base *)",
+      "Edit(.devrites/**)",
+      "Write(.devrites/**)",
+      "Bash(devrites-engine secret-scan)",
+      "Bash(devrites-engine secret-scan *)",
+      "Bash(devrites-engine open-visual *)",
+      "Bash(devrites-engine version)"
     ]
   }
 }

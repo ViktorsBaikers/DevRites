@@ -1,16 +1,94 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const root = fileURLToPath(new URL('..', import.meta.url));
 const testsDir = join(root, 'tests');
 const args = process.argv.slice(2);
-let jobs = Math.max(1, Math.min(5, Math.floor(Number(process.env.DEVRITES_TEST_JOBS || 4)) || 4));
+const maxJobs = Math.max(1, Math.floor(Number(process.env.DEVRITES_TEST_JOBS_MAX || 16)) || 16);
+let jobs = Math.max(1, Math.min(maxJobs, Math.floor(Number(process.env.DEVRITES_TEST_JOBS || 4)) || 4));
 let serial = false;
 let fast = false;
+let shardIndex = 0;
+let shardTotal = 0;
 const filters = [];
+
+function parseShard(value) {
+  const match = /^(\d+)\/(\d+)$/.exec(value);
+  if (!match) throw new Error(`invalid --shard value (want i/n): ${value}`);
+  const index = Number(match[1]);
+  const total = Number(match[2]);
+  if (!Number.isInteger(index) || !Number.isInteger(total) || index < 1 || index > total || total < 1) {
+    throw new Error(`invalid --shard value (want 1<=i<=n): ${value}`);
+  }
+  return { index, total };
+}
+
+function testWeight(name) {
+  return testWeights.get(name) || 1;
+}
+
+function itemWeight(item) {
+  if (typeof item === 'string') return testWeight(basename(item));
+  // Per-index weights first: the WAI internal case split is uneven (measured
+  // core shards ranged 7-49s), so a uniform per-mode weight lets one shard
+  // stack two heavy WAI items that then serialize behind protected fixtures.
+  if (item.waiMode === 'core') {
+    return testWeights.get(`workflow-artifact-identity-test.sh#core-${item.waiCoreShard}`)
+      || testWeights.get('workflow-artifact-identity-test.sh#core')
+      || 80;
+  }
+  if (item.waiMode === 'matrix') return testWeights.get('workflow-artifact-identity-test.sh#matrix') || 60;
+  return testWeights.get(`workflow-artifact-identity-test.sh#boundary-${item.waiBoundaryShard}`)
+    || testWeights.get('workflow-artifact-identity-test.sh#boundary')
+    || 90;
+}
+
+function itemLabel(item) {
+  if (typeof item === 'string') return item;
+  if (item.waiMode === 'boundary') {
+    return `${item.path}#boundary-${item.waiBoundaryShard}`;
+  }
+  if (item.waiMode === 'matrix') {
+    return `${item.path}#delivery-model-matrix`;
+  }
+  if (item.waiCoreShard) {
+    return `${item.path}#core-${item.waiCoreShard}`;
+  }
+  return `${item.path}#core`;
+}
+
+function assignWeightedShards(items, total) {
+  const shards = Array.from({ length: total }, () => ({ items: [], weight: 0, wai: 0 }));
+  for (const item of items) {
+    const isWai = typeof item !== 'string';
+    let target = shards[0];
+    let targetCost = target.weight + (isWai ? target.wai * 2 : 0);
+    for (const shard of shards) {
+      const cost = shard.weight + (isWai ? shard.wai * 2 : 0);
+      if (cost < targetCost) {
+        target = shard;
+        targetCost = cost;
+      }
+    }
+    target.items.push(item);
+    target.weight += itemWeight(item);
+    if (isWai) target.wai += itemWeight(item);
+  }
+  return shards;
+}
+
+function repositoryPackageVersion() {
+  const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+  const safeSemver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+  if (typeof version !== 'string' || version.length > 128 || !safeSemver.test(version)) {
+    throw new Error('package.json version must be a safe semantic version of at most 128 characters');
+  }
+  return version;
+}
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
@@ -18,7 +96,15 @@ for (let i = 0; i < args.length; i++) {
   else if (arg === '--fast') fast = true;
   else if (arg === '--jobs' || arg === '-j') jobs = Math.max(1, Number(args[++i] || 1) || 1);
   else if (arg.startsWith('--jobs=')) jobs = Math.max(1, Number(arg.slice('--jobs='.length)) || 1);
-  else filters.push(arg);
+  else if (arg === '--shard') {
+    const parsed = parseShard(String(args[++i] || ''));
+    shardIndex = parsed.index;
+    shardTotal = parsed.total;
+  } else if (arg.startsWith('--shard=')) {
+    const parsed = parseShard(arg.slice('--shard='.length));
+    shardIndex = parsed.index;
+    shardTotal = parsed.total;
+  } else filters.push(arg);
 }
 if (serial) jobs = 1;
 
@@ -35,6 +121,7 @@ const integrationTests = new Set([
   'cli-smoke.sh',
   'codex-agent-generation-test.sh',
   'codex-runtime-smoke.sh',
+  'claude-runtime-smoke.sh',
   'fixture-install.sh',
   'install-flag-parser-legacy-smoke.sh',
   'host-artifacts-test.sh',
@@ -50,42 +137,132 @@ const integrationTests = new Set([
   'validate-pack.sh',
 ]);
 
+// Weights from CI wall times (seconds, rounded) for balanced shard assignment.
+// Refreshed 2026-09-01 from per-test PASS durations on the 8-shard CI run.
 const testWeights = new Map([
-  ['binary-lifecycle-test.sh', 75],
-  ['install-shared-file-merge-smoke.sh', 55],
-  ['cli-smoke.sh', 55],
-  ['uninstall-smoke.sh', 50],
-  ['install-smoke.sh', 46],
-  ['npx-pack-smoke.sh', 45],
-  ['update-smoke.sh', 35],
-  ['install-flag-parser-smoke.sh', 35],
-  ['install-flag-parser-legacy-smoke.sh', 35],
-  ['install-option-matrix-smoke.sh', 30],
-  ['fixture-install.sh', 30],
-  ['validate-pack.sh', 25],
-  ['install-flag-parser-invalid-smoke.sh', 20],
-  ['codex-agent-generation-test.sh', 20],
-  ['codex-runtime-smoke.sh', 15],
-  ['hooks-parity-test.sh', 15],
-  ['host-artifacts-test.sh', 10],
-  ['install-pin-no-global-smoke.sh', 10],
+  ['workflow-artifact-identity-test.sh#core', 28],
+  ['workflow-artifact-identity-test.sh#core-1/4', 34],
+  ['workflow-artifact-identity-test.sh#core-2/4', 7],
+  ['workflow-artifact-identity-test.sh#core-3/4', 49],
+  ['workflow-artifact-identity-test.sh#core-4/4', 27],
+  ['workflow-artifact-identity-test.sh#matrix', 8],
+  ['workflow-artifact-identity-test.sh#boundary', 27],
+  ['workflow-artifact-identity-test.sh#boundary-1/6', 28],
+  ['workflow-artifact-identity-test.sh#boundary-2/6', 20],
+  ['workflow-artifact-identity-test.sh#boundary-3/6', 36],
+  ['workflow-artifact-identity-test.sh#boundary-4/6', 33],
+  ['workflow-artifact-identity-test.sh#boundary-5/6', 23],
+  ['workflow-artifact-identity-test.sh#boundary-6/6', 31],
+  ['workflow-artifact-identity-test.sh', 333],
+  ['binary-lifecycle-test.sh', 32],
+  ['validate-pack.sh', 34],
+  ['uninstall-smoke.sh', 21],
+  ['outcome-evals-test.sh', 31],
+  ['release-tarball-test.sh', 51],
+  ['validate-path-spaces-test.sh', 42],
+  ['npx-pack-smoke.sh', 19],
+  ['install-smoke.sh', 5],
+  ['bootstrap-security-test.sh', 12],
+  ['acceptance-preserving-reslice-policy-test.sh', 5],
+  ['host-artifacts-test.sh', 7],
+  ['workspace-schema-test.sh', 4],
+  ['install-shared-file-merge-smoke.sh', 3],
+  ['cli-smoke.sh', 2],
+  ['engine-observation-contract-test.sh', 3],
+  ['update-smoke.sh', 3],
+  ['install-flag-parser-smoke.sh', 1],
+  ['install-flag-parser-legacy-smoke.sh', 1],
+  ['install-option-matrix-smoke.sh', 1],
+  ['fixture-install.sh', 1],
+  ['install-flag-parser-invalid-smoke.sh', 1],
+  ['codex-agent-generation-test.sh', 2],
+  ['claude-runtime-smoke.sh', 1],
+  ['codex-runtime-smoke.sh', 1],
+  ['hooks-parity-test.sh', 3],
+  ['install-pin-no-global-smoke.sh', 1],
+  ['native-host-loop-evals-test.sh', 6],
+  ['scan-pack-security-test.sh', 4],
 ]);
 
 const engineIsolatedTests = new Set([
   'binary-lifecycle-test.sh',
-  'npx-pack-smoke.sh',
 ]);
 
+// Install smokes mutate shared host config (~/.codex, AGENTS bridges, etc.) and
+// must not overlap on the same runner even when other tests parallelize freely.
+const installExclusiveTests = new Set([
+  'cli-smoke.sh',
+  'fixture-install.sh',
+  'install-flag-parser-invalid-smoke.sh',
+  'install-flag-parser-legacy-smoke.sh',
+  'install-flag-parser-smoke.sh',
+  'install-option-matrix-smoke.sh',
+  'install-pin-no-global-smoke.sh',
+  'install-shared-file-merge-smoke.sh',
+  'install-smoke.sh',
+  'npx-pack-smoke.sh',
+  'uninstall-smoke.sh',
+  'update-smoke.sh',
+]);
+
+// WAI core installs live protected fixtures into the checkout; reslice policy
+// snapshots repository entry identities. Running them together races on disk.
+const repoMutatingExclusiveTests = new Set([
+  'acceptance-preserving-reslice-policy-test.sh',
+  'workflow-artifact-identity-test.sh',
+]);
+
+let installExclusiveChain = Promise.resolve();
+let repoMutatingExclusiveChain = Promise.resolve();
+
 tests.sort((a, b) => {
-  const aw = testWeights.get(basename(a)) || 0;
-  const bw = testWeights.get(basename(b)) || 0;
-  return aw === bw ? a.localeCompare(b) : bw - aw;
+  const aw = itemWeight(a);
+  const bw = itemWeight(b);
+  return aw === bw ? itemLabel(a).localeCompare(itemLabel(b)) : bw - aw;
 });
 
 if (fast) {
   for (let i = tests.length - 1; i >= 0; i--) {
     if (integrationTests.has(basename(tests[i]))) tests.splice(i, 1);
   }
+}
+
+const waiTest = 'tests/workflow-artifact-identity-test.sh';
+const waiBoundaryShards = Math.max(1, Math.floor(Number(process.env.DEVRITES_WAI_BOUNDARY_SHARDS || 4)) || 4);
+const waiCoreShards = Math.max(1, Math.floor(Number(process.env.DEVRITES_WAI_CORE_SHARDS || 2)) || 2);
+if (shardTotal > 0) {
+  // Expand WAI into core + boundary pieces BEFORE weighting so each piece can
+  // land on a different matrix runner (avoids packing ~5 heavy WAI jobs onto one VM).
+  const expandable = [];
+  for (const test of tests) {
+    if (test === waiTest) {
+      for (let coreShard = 1; coreShard <= waiCoreShards; coreShard++) {
+        expandable.push({
+          path: waiTest,
+          waiMode: 'core',
+          waiCoreShard: `${coreShard}/${waiCoreShards}`,
+        });
+      }
+      expandable.push({ path: waiTest, waiMode: 'matrix' });
+      for (let boundaryShard = 1; boundaryShard <= waiBoundaryShards; boundaryShard++) {
+        expandable.push({
+          path: waiTest,
+          waiMode: 'boundary',
+          waiBoundaryShard: `${boundaryShard}/${waiBoundaryShards}`,
+        });
+      }
+    } else {
+      expandable.push(test);
+    }
+  }
+  expandable.sort((a, b) => {
+    const aw = itemWeight(a);
+    const bw = itemWeight(b);
+    return aw === bw ? itemLabel(a).localeCompare(itemLabel(b)) : bw - aw;
+  });
+  const shards = assignWeightedShards(expandable, shardTotal);
+  tests.length = 0;
+  tests.push(...shards[shardIndex - 1].items);
 }
 
 if (tests.length === 0) {
@@ -122,9 +299,24 @@ process.on('exit', () => {
 });
 
 if (!sharedEngine && existsSync(join(root, 'engine', 'go.mod'))) {
+  let engineVersion;
+  try {
+    engineVersion = `v${repositoryPackageVersion()}`;
+  } catch (error) {
+    console.error(`cannot build shared test engine: ${error.message}`);
+    process.exit(1);
+  }
   sharedEngineDir = mkdtempSync(join(tmpdir(), 'devrites-test-engine-'));
   sharedEngine = join(sharedEngineDir, 'devrites-engine');
-  const build = spawn('go', ['build', '-trimpath', '-o', sharedEngine, '.'], {
+  const build = spawn('go', [
+    'build',
+    '-trimpath',
+    '-ldflags',
+    `-s -w -X github.com/devrites/devrites/internal/version.Version=${engineVersion}`,
+    '-o',
+    sharedEngine,
+    '.',
+  ], {
     cwd: join(root, 'engine'),
     env: { ...process.env, CGO_ENABLED: '0' },
     stdio: ['ignore', 'ignore', 'pipe'],
@@ -144,13 +336,26 @@ if (!sharedEngine && existsSync(join(root, 'engine', 'go.mod'))) {
 
 function runOne(test) {
   return new Promise((resolve) => {
-    const label = basename(test);
+    const path = typeof test === 'string' ? test : test.path;
+    const label = typeof test === 'string'
+      ? basename(path)
+      : itemLabel(test);
     const chunks = [];
     const start = Date.now();
     const env = { ...process.env, DEVRITES_HOST_ARTIFACT_DIR: sharedHostArtifacts, DEVRITES_TEST_WORKER: label };
-    if (engineIsolatedTests.has(label)) delete env.DEVRITES_ENGINE_CLI;
+    if (typeof test === 'object' && test.waiMode === 'core') {
+      env.DEVRITES_WAI_SKIP_DELIVERY_MODES = '1';
+      env.DEVRITES_WAI_SKIP_DELIVERY_MODEL_MATRIX = '1';
+      if (test.waiCoreShard) env.DEVRITES_WAI_CORE_SHARD = test.waiCoreShard;
+    } else if (typeof test === 'object' && test.waiMode === 'matrix') {
+      env.DEVRITES_WAI_DELIVERY_MODEL_ONLY = '1';
+    } else if (typeof test === 'object' && test.waiMode === 'boundary') {
+      env.DEVRITES_WAI_BOUNDARY_ONLY = '1';
+      env.DEVRITES_WAI_BOUNDARY_SHARD = test.waiBoundaryShard;
+    }
+    if (engineIsolatedTests.has(basename(path))) delete env.DEVRITES_ENGINE_CLI;
     else if (sharedEngine) env.DEVRITES_ENGINE_CLI = sharedEngine;
-    const child = spawn('bash', [test], {
+    const child = spawn('bash', [path], {
       cwd: root,
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -160,14 +365,29 @@ function runOne(test) {
     child.on('close', (code, signal) => {
       const elapsed = ((Date.now() - start) / 1000).toFixed(2);
       const status = code === 0 ? 'PASS' : 'FAIL';
-      process.stdout.write(`== ${test} ==\n`);
+      const displayName = typeof test === 'string' ? test : label;
+      process.stdout.write(`== ${displayName} ==\n`);
       for (const chunk of chunks) process.stdout.write(chunk);
-      if (chunks.length && !String(chunks[chunks.length - 1]).endsWith('\n')) process.stdout.write('\n');
-      process.stdout.write(`${status}: ${test} (${elapsed}s)\n`);
+      if (chunks.length && !String(chunks.at(-1)).endsWith('\n')) process.stdout.write('\n');
+      process.stdout.write(`${status}: ${displayName} (${elapsed}s)\n`);
       if (signal) process.stdout.write(`signal: ${signal}\n`);
       resolve(code === 0);
     });
   });
+}
+
+async function runExclusive(getChain, setChain, test) {
+  const previous = getChain();
+  let release;
+  setChain(new Promise((resolve) => {
+    release = resolve;
+  }));
+  await previous;
+  try {
+    return await runOne(test);
+  } finally {
+    release();
+  }
 }
 
 async function runBatch(batch, batchJobs) {
@@ -175,7 +395,24 @@ async function runBatch(batch, batchJobs) {
   async function worker() {
     while (cursor < batch.length) {
       const test = batch[cursor++];
-      const ok = await runOne(test);
+      const path = typeof test === 'string' ? test : test.path;
+      const label = basename(path);
+      let ok;
+      if (installExclusiveTests.has(label)) {
+        ok = await runExclusive(
+          () => installExclusiveChain,
+          (next) => { installExclusiveChain = next; },
+          test,
+        );
+      } else if (repoMutatingExclusiveTests.has(label)) {
+        ok = await runExclusive(
+          () => repoMutatingExclusiveChain,
+          (next) => { repoMutatingExclusiveChain = next; },
+          test,
+        );
+      } else {
+        ok = await runOne(test);
+      }
       if (!ok) failed = true;
     }
   }
@@ -193,6 +430,7 @@ async function runSerial(batch) {
 }
 
 process.stdout.write(`Running ${tests.length} shell test(s) with ${jobs} job(s)`);
+if (shardTotal > 0) process.stdout.write(`; shard ${shardIndex}/${shardTotal}`);
 if (fast) process.stdout.write('; fast isolated-test subset');
 if (!serial) process.stdout.write('; longest tests first');
 process.stdout.write('\n');

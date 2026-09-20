@@ -2,622 +2,485 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
-## [3.0.7](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.6...v3.0.7) (2026-07-22)
+## [5.12.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.11.0...v5.12.0) (2026-09-20)
+
+### Added
+
+* **rite:** add machine-checked acceptance and workflow controls ([#80](https://github.com/ViktorsBaikers/DevRites/issues/80)) ([4b72202](https://github.com/ViktorsBaikers/DevRites/commit/4b722020a22c884d044f8782f6e14c946b08c069))
+
+## [5.11.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.10.2...v5.11.0) (2026-09-16)
+
+### Added
+
+* **installer:** add Devin CLI host generation and install support ([#79](https://github.com/ViktorsBaikers/DevRites/issues/79)) ([a94056b](https://github.com/ViktorsBaikers/DevRites/commit/a94056bc20f520537395cf5c7c075e700d5a0b26))
+
+## [5.10.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.10.1...v5.10.2) (2026-09-15)
 
 ### Fixed
 
-* **installer:** harden binary acquisition ([7534198](https://github.com/ViktorsBaikers/DevRites/commit/7534198dd3f6a29f065fe715e763e02bdc8a71c0))
+* **ci:** stop gosec false positive on secret-scan help ([ac8ef15](https://github.com/ViktorsBaikers/DevRites/commit/ac8ef1530f5121cf192fb9e60acef781b0e3fbb8))
+* **rite:** honor --parallel over leftover AFK cap ([#78](https://github.com/ViktorsBaikers/DevRites/issues/78)) ([db6c299](https://github.com/ViktorsBaikers/DevRites/commit/db6c299e24be5e1b8c5739e45542f2ef8b572e3b))
 
-## [3.0.6](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.5...v3.0.6) (2026-07-22)
-
-### Fixed
-
-* **ci:** reject invalid workflow names ([8535414](https://github.com/ViktorsBaikers/DevRites/commit/853541455fcc79e28ca4d7044024da219683d700))
-* **devrites:** align compliance matrix wording ([0bb1f28](https://github.com/ViktorsBaikers/DevRites/commit/0bb1f287c1ae2874a73669c1c35b081083f389af))
-* **devrites:** isolate reconcile snapshot objects ([c02b1f1](https://github.com/ViktorsBaikers/DevRites/commit/c02b1f19a4717454f9e0194bf015fcc170dd37fc))
-* **docs:** repair rite-ship standard link ([49db43c](https://github.com/ViktorsBaikers/DevRites/commit/49db43cdd6b42f15c7a7aaec3c47bcf7e9ceaa8d))
-
-### Documentation
-
-* **repo:** humanize repository documentation ([a5de735](https://github.com/ViktorsBaikers/DevRites/commit/a5de735db9cd3958a544df9802c6d1c7981470e8))
-* **repo:** refresh README banner ([45b48c9](https://github.com/ViktorsBaikers/DevRites/commit/45b48c92f181e7c37b616993c2a98606b8984ee1))
-* **repo:** streamline README guide ([932588f](https://github.com/ViktorsBaikers/DevRites/commit/932588f3fd1749d81e358f2be96873e59bdac8c1))
-
-## [3.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.4...v3.0.5) (2026-07-21)
+## [5.10.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.10.0...v5.10.1) (2026-09-15)
 
 ### Fixed
 
-* **deps:** update fast-uri ([1e14101](https://github.com/ViktorsBaikers/DevRites/commit/1e14101284496277f56d4560d5a59d87297f7daf))
-* **devrites:** normalize Git root centrally ([a89ec40](https://github.com/ViktorsBaikers/DevRites/commit/a89ec408b6133629db3547dcb7960f29bec6a723))
-* **devrites:** normalize Git root path ([38dccf0](https://github.com/ViktorsBaikers/DevRites/commit/38dccf0bac0bdf58f5fdcf171cac231c296af171))
-* **devrites:** resolve packages by source ([ae21d9b](https://github.com/ViktorsBaikers/DevRites/commit/ae21d9b50b0b631fb4352e5820f1176213614b78))
-* **release:** reconnect v3.0.4 lineage ([7b6f853](https://github.com/ViktorsBaikers/DevRites/commit/7b6f853a73bcd3bc6ea72fd4b6b10c024c69a468))
-* **skills:** format human gate decisions clearly ([0781d99](https://github.com/ViktorsBaikers/DevRites/commit/0781d99ce081f76f5e69237396e99e78e1b027f9))
+* **rite:** auto-resolve recommended blocking questions in autocomplete ([#77](https://github.com/ViktorsBaikers/DevRites/issues/77)) ([cd11a59](https://github.com/ViktorsBaikers/DevRites/commit/cd11a59c01b9b1cd48df5a19a7b8ad3c4f1fb2d4))
 
-### Documentation
+## [5.10.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.9.0...v5.10.0) (2026-09-15)
 
-* **repo:** sync current behavior ([9555fbb](https://github.com/ViktorsBaikers/DevRites/commit/9555fbbe26ce896a5c99723e46a8c04b7fba06f4))
+### Added
 
-## [3.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.3...v3.0.4) (2026-07-21)
+* **agents:** allowlist lean-ctx and lens tools on omp agents ([#76](https://github.com/ViktorsBaikers/DevRites/issues/76)) ([6b1855f](https://github.com/ViktorsBaikers/DevRites/commit/6b1855f5d3dce4f693af6e4876849e6ef9723233))
 
-### Fixed
+## [5.9.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.8.0...v5.9.0) (2026-09-15)
 
-* **ci:** harden supply chain checks ([d902574](https://github.com/ViktorsBaikers/DevRites/commit/d902574a7d30168fcef94aa4a3dae7707191fe8d))
-* **deps:** update fast-uri ([1e14101](https://github.com/ViktorsBaikers/DevRites/commit/1e14101284496277f56d4560d5a59d87297f7daf))
-* **devrites:** normalize canonical workspace files ([e70221f](https://github.com/ViktorsBaikers/DevRites/commit/e70221f5dd9fbda0f3a73c500a493497bc023a91))
-* **devrites:** normalize Git root centrally ([a89ec40](https://github.com/ViktorsBaikers/DevRites/commit/a89ec408b6133629db3547dcb7960f29bec6a723))
-* **devrites:** normalize Git root path ([38dccf0](https://github.com/ViktorsBaikers/DevRites/commit/38dccf0bac0bdf58f5fdcf171cac231c296af171))
-* **devrites:** resolve packages by source ([ae21d9b](https://github.com/ViktorsBaikers/DevRites/commit/ae21d9b50b0b631fb4352e5820f1176213614b78))
-* **skills:** format human gate decisions clearly ([0781d99](https://github.com/ViktorsBaikers/DevRites/commit/0781d99ce081f76f5e69237396e99e78e1b027f9))
+### Added
 
-### Documentation
+* **rite:** land proven WIP commits and keep autocomplete running ([#75](https://github.com/ViktorsBaikers/DevRites/issues/75)) ([73bf932](https://github.com/ViktorsBaikers/DevRites/commit/73bf932568d7bae34ea20ce6476c33842b123467))
 
-* **repo:** sync current behavior ([9555fbb](https://github.com/ViktorsBaikers/DevRites/commit/9555fbbe26ce896a5c99723e46a8c04b7fba06f4))
+## [5.8.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.7.2...v5.8.0) (2026-09-14)
 
-## [3.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.2...v3.0.3) (2026-07-20)
+### Added
+
+* **agents:** allowlist lean-ctx and lens tools on pi agents ([#74](https://github.com/ViktorsBaikers/DevRites/issues/74)) ([08390d3](https://github.com/ViktorsBaikers/DevRites/commit/08390d3bf3ccffec0353803e910ee7a7227ff6ba))
 
 ### Fixed
 
-* **rite:** centralize workflow schema ([58bd55e](https://github.com/ViktorsBaikers/DevRites/commit/58bd55e8472a98be1073bcfa5fe7593e7bf0c5d1))
+* **rite:** re-select parallel width after a serial round ([#73](https://github.com/ViktorsBaikers/DevRites/issues/73)) ([ac8f073](https://github.com/ViktorsBaikers/DevRites/commit/ac8f073c0640ab0350b92a87a86193de39dedd57))
 
-## [3.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.1...v3.0.2) (2026-07-20)
-
-### Fixed
-
-* **rite:** read canonical workspace cursor state ([e2fd60c](https://github.com/ViktorsBaikers/DevRites/commit/e2fd60c13aa53637e1af02a792f36f3efe32e1c9))
-
-## [3.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v3.0.0...v3.0.1) (2026-07-20)
+## [5.7.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.7.1...v5.7.2) (2026-09-14)
 
 ### Fixed
 
-* **rite:** run analysis after task definition ([6373227](https://github.com/ViktorsBaikers/DevRites/commit/6373227521b5e1e6b22bfe48e98799e709f5dc7a))
+* **skills:** drop absolute AFK sentinel expiry so unattended runs finish ([#72](https://github.com/ViktorsBaikers/DevRites/issues/72)) ([3f880cb](https://github.com/ViktorsBaikers/DevRites/commit/3f880cb0c0e3072a1512c87229c9c1c38ef12417))
 
-## [3.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.6.1...v3.0.0) (2026-07-17)
+## [5.7.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.7.0...v5.7.1) (2026-09-13)
+
+### Fixed
+
+* **skills:** resolvable standard paths + faster CI ([#71](https://github.com/ViktorsBaikers/DevRites/issues/71)) ([426c3cd](https://github.com/ViktorsBaikers/DevRites/commit/426c3cd4776fcd84d3b061986874078bc572b625))
+
+## [5.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.6.0...v5.7.0) (2026-09-13)
+
+### Added
+
+* **installer:** pi as fourth host target + skill frontmatter YAML fix ([#70](https://github.com/ViktorsBaikers/DevRites/issues/70)) ([9275755](https://github.com/ViktorsBaikers/DevRites/commit/92757555f4c6cf74f8cdec5f8e8688ec28360508))
+
+## [5.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.5.0...v5.6.0) (2026-09-13)
+
+### Added
+
+* **rite:** add pi as fourth host target ([#69](https://github.com/ViktorsBaikers/DevRites/issues/69)) ([8249a6b](https://github.com/ViktorsBaikers/DevRites/commit/8249a6b9d5bef3dfd2411089fdcd34845f535b12))
+
+## [5.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.4.0...v5.5.0) (2026-09-13)
+
+### Added
+
+* **rite:** cap parallel batch width and chain deferred ship ([#68](https://github.com/ViktorsBaikers/DevRites/issues/68)) ([d023dfa](https://github.com/ViktorsBaikers/DevRites/commit/d023dfa742d5b6f5a9775c21308cd4731d6858f9))
+
+## [5.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.3.0...v5.4.0) (2026-09-13)
+
+### Added
+
+* **rite:** auto re-batch on frozen-lease scope defect ([#67](https://github.com/ViktorsBaikers/DevRites/issues/67)) ([6728385](https://github.com/ViktorsBaikers/DevRites/commit/6728385b522a5b34bebacb89a5855e81d54c0f68))
+
+## [5.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.4...v5.3.0) (2026-09-13)
+
+### Added
+
+* **rite:** preserve parallel batch work, harden lease lifecycle ([#66](https://github.com/ViktorsBaikers/DevRites/issues/66)) ([f8d3e2e](https://github.com/ViktorsBaikers/DevRites/commit/f8d3e2e9870b2adaa11da0384f2b0ff23ee8785b))
+
+## [5.2.4](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.3...v5.2.4) (2026-09-12)
+
+### Fixed
+
+* **skills:** bound repair-vet rounds via self-attack + convergence pressure ([#65](https://github.com/ViktorsBaikers/DevRites/issues/65)) ([a6e7410](https://github.com/ViktorsBaikers/DevRites/commit/a6e74104b94f91fbb67e0bf4e8d8b1a2242740f0))
+
+## [5.2.3](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.2...v5.2.3) (2026-09-12)
+
+### Fixed
+
+* **skills:** chain converge to vet instead of recommending it ([#64](https://github.com/ViktorsBaikers/DevRites/issues/64)) ([9c65e49](https://github.com/ViktorsBaikers/DevRites/commit/9c65e49ebfed3fb297ccef76da314a8728b0d0ba))
+
+## [5.2.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.1...v5.2.2) (2026-09-11)
+
+### Fixed
+
+* **skills:** make self-chaining save the caller return cursor ([#63](https://github.com/ViktorsBaikers/DevRites/issues/63)) ([4038577](https://github.com/ViktorsBaikers/DevRites/commit/4038577d5d8d1bbd7fe6e05fb9a0375a3bc07f5e))
+
+## [5.2.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.2.0...v5.2.1) (2026-09-11)
+
+### Fixed
+
+* **skills:** scope drafter self-check to patched invariants ([#62](https://github.com/ViktorsBaikers/DevRites/issues/62)) ([d32bbf9](https://github.com/ViktorsBaikers/DevRites/commit/d32bbf9f81e255dae6e66622ab8b0e1fd1017a2c))
+
+## [5.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.1.0...v5.2.0) (2026-09-11)
+
+### Added
+
+* **skills:** batch build-time gap repair and auto-chain plan/vet ([#61](https://github.com/ViktorsBaikers/DevRites/issues/61)) ([a668270](https://github.com/ViktorsBaikers/DevRites/commit/a668270b4a278ffb81a1b73bf962d13da2097e5a))
+
+## [5.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.0.0...v5.1.0) (2026-09-10)
+
+### Added
+
+* **skills:** raise /rite-build --parallel cap from 3 to 10 ([#60](https://github.com/ViktorsBaikers/DevRites/issues/60)) ([d88afa0](https://github.com/ViktorsBaikers/DevRites/commit/d88afa0af31eed421a1a5fdbff8eaf3f61b02bff))
+
+## [5.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.7.0...v5.0.0) (2026-09-06)
 
 ### ⚠ BREAKING CHANGES
 
-* **release:** DevRites v3 removes legacy shell helper runtime paths.
-
-Constraint: Release version must become v3.0.0.
-Rejected: Commit local agent instruction files | user excluded them.
-Rejected: Reintroduce shell helper wrappers | engine subcommands are canonical.
-Confidence: high
-Scope-risk: broad
-Directive: Keep runtime entry points routed through devrites-engine.
-Tested: bash tests/cli-smoke.sh; bash tests/npx-pack-smoke.sh
-Tested: bash tests/mcp-test.sh; bash tests/hooks-parity-test.sh
-Tested: bash scripts/validate.sh; go test ./...
-Not-tested: live model-backed Codex exec and custom-subagent smoke are opt-in.
+* **release:** restore secrets.NPM_TOKEN for semantic-release publish
+* **ci:** unblock semantic-release on setup-node v6 cache input
+* **repo:** land guidance audit, CI hardening, and omp host pack (#57)
 
 ### Added
 
-* **devrites:** add adoption workflow support ([cfb3f9e](https://github.com/ViktorsBaikers/DevRites/commit/cfb3f9e6fcbb9dd7834c3a125e192708ba9cb409))
-* **devrites:** add engine parity golden fixtures ([f120773](https://github.com/ViktorsBaikers/DevRites/commit/f120773ff8287348b42b2be05fd27bd4e6ea3aaf))
-* **devrites:** add profile and dogfood skills ([1f04ab7](https://github.com/ViktorsBaikers/DevRites/commit/1f04ab747c9d4c48c15d6f11b07032b7afd5c46b))
-* **devrites:** add reconcile and integrity checks ([b37b69a](https://github.com/ViktorsBaikers/DevRites/commit/b37b69a47025e5f7ace79bc18bc9a07ca8702e2b))
-* **devrites:** add reviewer surface validation ([14fd7db](https://github.com/ViktorsBaikers/DevRites/commit/14fd7dbc2edc9146e8daf8603f4414a7f229d6ee))
-* **devrites:** harden validation and migration tests ([d44b0c0](https://github.com/ViktorsBaikers/DevRites/commit/d44b0c0c1a55c6fd7ff767ce9aa6e112712f32aa))
-* **devrites:** improve hooks and doctor tooling ([77cf0fa](https://github.com/ViktorsBaikers/DevRites/commit/77cf0faf9bdbb56d1860a2056e66517d72063aa4))
-* **devrites:** persist workflow evidence signals ([cc269a1](https://github.com/ViktorsBaikers/DevRites/commit/cc269a102e534f275b870cf77f5d3b6d596c17b8))
-* **devrites:** port reviewer-readonly + subagent-orient hooks ([b388790](https://github.com/ViktorsBaikers/DevRites/commit/b388790e4f76cd96561dbcfbd0ced5946a7e9b18))
-* **devrites:** port spec-validate/check-acceptance to Go engine ([a1d2791](https://github.com/ViktorsBaikers/DevRites/commit/a1d2791b832d9dd42a47e3092a3d1e34fdb1c56c))
-* **devrites:** refine install and runtime helpers ([dba1e99](https://github.com/ViktorsBaikers/DevRites/commit/dba1e9988dbde6eaa5101026944e1c137c93a1d7))
-* **devrites:** refresh agents and skill references ([ba33d0b](https://github.com/ViktorsBaikers/DevRites/commit/ba33d0bf89384454530fe0f79a0ab21964379094))
-* **devrites:** refresh code review and plan guidance ([f4fb255](https://github.com/ViktorsBaikers/DevRites/commit/f4fb2553b8bfae8f6fbf629f14b70e3a439af282))
-* **devrites:** refresh evals and skill outputs ([ab9dc94](https://github.com/ViktorsBaikers/DevRites/commit/ab9dc9447b858bc9492ceffe4c4657ff79661b8e))
-* **devrites:** refresh explain and customize docs ([d57bdff](https://github.com/ViktorsBaikers/DevRites/commit/d57bdffd832eab3c76b83f031a853ac520e4de95))
-* **devrites:** refresh frontend guidance and proof docs ([d26bb09](https://github.com/ViktorsBaikers/DevRites/commit/d26bb09ed8ebd6a8f779738e32b3daff0da19bd7))
-* **devrites:** refresh plan and source-driven guidance ([63fce26](https://github.com/ViktorsBaikers/DevRites/commit/63fce26d1776010006c176ac9fe57bd359f3bacf))
-* **devrites:** refresh prose craft and detection ([e95b757](https://github.com/ViktorsBaikers/DevRites/commit/e95b757acbaa66db1ee7fc968d07eae779e7ada0))
-* **devrites:** refresh skill docs and validation tooling ([2ad1317](https://github.com/ViktorsBaikers/DevRites/commit/2ad1317a11f94bcae0a5911d48c8cd7f80911c41))
-* **devrites:** refresh ux shape and spec intake ([f547fe6](https://github.com/ViktorsBaikers/DevRites/commit/f547fe6b0a676d27b56022771ece324593e256a4))
-* **devrites:** refresh workflow and skill surfaces ([8b8d065](https://github.com/ViktorsBaikers/DevRites/commit/8b8d065a1f052ddf209fbaa1ddf375bc95932ffc))
-* **devrites:** refresh workflow docs and checks ([c6e481d](https://github.com/ViktorsBaikers/DevRites/commit/c6e481d9b24eda43039d66b908551e37eb15d9a4))
-* **devrites:** tighten engine reply contracts ([19ec4b0](https://github.com/ViktorsBaikers/DevRites/commit/19ec4b00411bf72428ce7b84f2f178fe9ff8f89d))
-* **devrites:** update CI workflow ([2e7214a](https://github.com/ViktorsBaikers/DevRites/commit/2e7214acd6f7a13e16352b0948608b3a0323c147))
-* **devrites:** update docs and engine behavior ([8a2dd35](https://github.com/ViktorsBaikers/DevRites/commit/8a2dd3573af3afe9c7bbc76aae8fa17aebed031e))
-* **devrites:** update docs and eval tooling ([e51f3b3](https://github.com/ViktorsBaikers/DevRites/commit/e51f3b34cad8efc9c2e0eda0dc57717eccea4d42))
-* **devrites:** update docs and release checks ([1d09f35](https://github.com/ViktorsBaikers/DevRites/commit/1d09f359faec7b65fdfa5ed9bed94311cf26e698))
-* **devrites:** update engine gating and commands ([878ed2c](https://github.com/ViktorsBaikers/DevRites/commit/878ed2c3666fcc7d87af4de4c1a7db03a4c78d07))
-* **devrites:** update engine internals and validation ([b4d6d92](https://github.com/ViktorsBaikers/DevRites/commit/b4d6d92bc0b29085fa123f433c57230b0610497f))
-* **devrites:** update engine state and skills ([732c97e](https://github.com/ViktorsBaikers/DevRites/commit/732c97e3b7b9e37443f3168e824a6d108b9085c4))
-* **devrites:** update hooks and guidance surfaces ([6e79143](https://github.com/ViktorsBaikers/DevRites/commit/6e7914339283ad557849e568eeffb213c0bfb342))
-* **devrites:** update rite workflow docs and engine ([c8ff41e](https://github.com/ViktorsBaikers/DevRites/commit/c8ff41eb67b0b94af0b7cea728092e534b1e812b))
-* **devrites:** update spec and workspace docs ([1f2888a](https://github.com/ViktorsBaikers/DevRites/commit/1f2888ace17e854c212cf58b4f62a1cc42bf741f))
-* **installer:** make host installs engine-owned ([c70491c](https://github.com/ViktorsBaikers/DevRites/commit/c70491cb8d856d3c3ef6b9d017766e6b710bb6fc))
-* **release:** ship v3.0.0 engine control plane ([da6ca62](https://github.com/ViktorsBaikers/DevRites/commit/da6ca6239d0321d0ab9bf3e36a7ffe46a80b6db3))
-
-### Changed
-
-* **repo:** reduce duplicate maintenance surfaces ([0e645d4](https://github.com/ViktorsBaikers/DevRites/commit/0e645d45fdf4f75cbb367016ace88ae79c40870c))
+* **repo:** land guidance audit, CI hardening, and omp host pack ([#57](https://github.com/ViktorsBaikers/DevRites/issues/57)) ([764ad9b](https://github.com/ViktorsBaikers/DevRites/commit/764ad9b0dd43f837d43f1556cf1b395eabdbd0c6))
 
 ### Fixed
 
-* **ci:** generate artifacts before validation ([0d3afa3](https://github.com/ViktorsBaikers/DevRites/commit/0d3afa3d4dd72e2b31b31467e759e42becfb0c8a))
-* **ci:** make engine tests cross-platform ([1631450](https://github.com/ViktorsBaikers/DevRites/commit/163145057575d9833b1c28d0d1f00516e025f363))
-* **ci:** normalize remaining Windows output ([8da9a61](https://github.com/ViktorsBaikers/DevRites/commit/8da9a6106188655f612cd3be7f32374a4a25435f))
-* **installer:** keep Claude hooks complete in existing settings ([d9f57af](https://github.com/ViktorsBaikers/DevRites/commit/d9f57afd2d7fc60a44e6141887b0b7c6a9a23a1d))
-* **tests:** normalize Windows golden files ([7d0a07c](https://github.com/ViktorsBaikers/DevRites/commit/7d0a07c5c4838237572d4807b17a475f1fd1ed71))
+* **ci:** unblock semantic-release on setup-node v6 cache input ([e357ad9](https://github.com/ViktorsBaikers/DevRites/commit/e357ad916d3b880c9d69239c798bf0f803ee335a))
+* **release:** restore secrets.NPM_TOKEN for semantic-release publish ([24ee2e4](https://github.com/ViktorsBaikers/DevRites/commit/24ee2e4f23eac04cc1f82efe0d2f4e88595f88c7))
+
+## [4.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.6.0...v4.7.0) (2026-08-30)
+
+### Added
+
+* **devrites:** markdown knowledge-layer round 5 and engine v5 slate ([#49](https://github.com/ViktorsBaikers/DevRites/issues/49)) ([2ef8e9a](https://github.com/ViktorsBaikers/DevRites/commit/2ef8e9a20c750d37f506d6ed0fbcd6bce74fce55))
+
+## [4.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.5.0...v4.6.0) (2026-08-28)
+
+### Added
+
+* **skills:** markdown knowledge-layer round 4 ([#48](https://github.com/ViktorsBaikers/DevRites/issues/48)) ([9dab7af](https://github.com/ViktorsBaikers/DevRites/commit/9dab7af644c219ab3f3411b4a701947b9da9108b))
+
+## [4.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.4.2...v4.5.0) (2026-08-27)
+
+### Added
+
+* **skills:** v3 methodology falsifiable gates T01-T27 ([bb0a816](https://github.com/ViktorsBaikers/DevRites/commit/bb0a816e6c9c9b598a24a0f1bd2f578c6f8592fd))
+
+### Fixed
+
+* **devrites:** align oversized-repo sampling with brief paste table ([5d9d9ae](https://github.com/ViktorsBaikers/DevRites/commit/5d9d9ae4dcd2e7c6f0d289e5ac8137b722344eaf)), closes [23/#25](https://github.com/23/DevRites/issues/25)
+* **devrites:** resolve QC F-001–F-005 on research guides ([861d60a](https://github.com/ViktorsBaikers/DevRites/commit/861d60a0dd15be509dea5868c8511330c3351ed9))
+* **scripts:** allow repo-root NOTICE in cross-ref checker ([f9a605a](https://github.com/ViktorsBaikers/DevRites/commit/f9a605a6cee90423f84655a3fb9ecfad8dbd52cd))
 
 ### Documentation
 
-* **skills:** keep skill guidance compact ([6afebfe](https://github.com/ViktorsBaikers/DevRites/commit/6afebfeccf152669c44e96a99cd6610200945dc6))
+* **devrites:** complete 003 research lock guides ([b96dce4](https://github.com/ViktorsBaikers/DevRites/commit/b96dce40dae397fb11c187e51a202057c76a696e))
+* **devrites:** lock iter-md-knowledge-v3 Phase 1 compass and plans ([31a4d6a](https://github.com/ViktorsBaikers/DevRites/commit/31a4d6ab2ebe225c54c572fa49c2b1b7a5b97328))
+* **devrites:** record QA blocker fixes B-001 and B-002 ([edeb6d9](https://github.com/ViktorsBaikers/DevRites/commit/edeb6d9b02e59d772f3783a01987d061dfcdde93)), closes [#46](https://github.com/ViktorsBaikers/DevRites/issues/46)
+* **skills:** apply external methodology round with attributions ([#44](https://github.com/ViktorsBaikers/DevRites/issues/44)) ([4cde1a2](https://github.com/ViktorsBaikers/DevRites/commit/4cde1a257f08d46fbb4512e7a65b2d00e7af4f50))
+* **skills:** complete SDD evidence bundle and upgrade doc closeout ([685038d](https://github.com/ViktorsBaikers/DevRites/commit/685038d1ab2f845546010e0b8bc1eb4be9dafd2b))
+* **skills:** record PR URL in upgrade doc ([dee03db](https://github.com/ViktorsBaikers/DevRites/commit/dee03db431c57a6dd283b41cbeb0c7d3cd09d255))
+* **skills:** supplement external methodology round with missed sources and web research ([#45](https://github.com/ViktorsBaikers/DevRites/issues/45)) ([1da70ce](https://github.com/ViktorsBaikers/DevRites/commit/1da70ceced71b7e6c27cc204a06ff3b2926f932a)), closes [#24](https://github.com/ViktorsBaikers/DevRites/issues/24) [#25](https://github.com/ViktorsBaikers/DevRites/issues/25)
 
-## [2.6.1](https://github.com/ViktorsBaikers/DevRites/compare/v2.6.0...v2.6.1) (2026-07-05)
-
-### Fixed
-
-* **installer:** emit valid Codex hooks config ([5a23d0a](https://github.com/ViktorsBaikers/DevRites/commit/5a23d0a0d4f1d990cf206f258a0b6866b46cf341))
-
-## [2.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.5.2...v2.6.0) (2026-07-05)
-
-### Added
-
-* **installer:** add Codex support ([cd19c70](https://github.com/ViktorsBaikers/DevRites/commit/cd19c70e6c6df5a38a3524c4cb3f8e9885ffedc3))
-
-## [2.5.2](https://github.com/ViktorsBaikers/DevRites/compare/v2.5.1...v2.5.2) (2026-06-28)
-
-### Changed
-
-* **skills:** swap browser-harness for Playwright MCP ([9c13e72](https://github.com/ViktorsBaikers/DevRites/commit/9c13e72c94e81f7df6dc7d07bf23acdfd4d18ddd))
-
-## [2.5.1](https://github.com/ViktorsBaikers/DevRites/compare/v2.5.0...v2.5.1) (2026-06-28)
+## [4.4.2](https://github.com/ViktorsBaikers/DevRites/compare/v4.4.1...v4.4.2) (2026-08-27)
 
 ### Fixed
 
-* **rite:** ask HITL build gaps inline instead of deferring to resolve ([33266f1](https://github.com/ViktorsBaikers/DevRites/commit/33266f19d9ad30f53fc8ef267f486a5562be61c7))
+* **scripts:** resolve codex skill path without dead fallback ([#43](https://github.com/ViktorsBaikers/DevRites/issues/43)) ([4d80520](https://github.com/ViktorsBaikers/DevRites/commit/4d805201a123ef123b3581a38fbb1c812297a024))
 
-## [2.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.4.0...v2.5.0) (2026-06-28)
-
-### Added
-
-* **installer:** prune files dropped from the pack on update ([830352a](https://github.com/ViktorsBaikers/DevRites/commit/830352ae19b2726cadd627ab7ca4f12b1b85c7fc))
+## [4.4.1](https://github.com/ViktorsBaikers/DevRites/compare/v4.4.0...v4.4.1) (2026-08-26)
 
 ### Fixed
 
-* **devrites:** close skill-pack SSOT drift + consolidate review dispatch ([649db40](https://github.com/ViktorsBaikers/DevRites/commit/649db4040a120d04c35e91b8f69d51f610df9a5f))
+* **rite:** enforce task-graph integrity and restore 4.3.0 identity ([#40](https://github.com/ViktorsBaikers/DevRites/issues/40)) ([54b0727](https://github.com/ViktorsBaikers/DevRites/commit/54b07277ffb249d92d09130379040b6191b480b6)), closes [#39](https://github.com/ViktorsBaikers/DevRites/issues/39)
 
-## [2.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.3.0...v2.4.0) (2026-06-28)
+## [4.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.3.0...v4.4.0) (2026-08-26)
 
 ### Added
 
-* **devrites:** enforce the doubt gate from invocation through seal ([6ff29d0](https://github.com/ViktorsBaikers/DevRites/commit/6ff29d0caa3384d6ba85f480369d0fb01d80fad1))
+* **devrites:** add local visual HTML artifacts and open-visual ([#42](https://github.com/ViktorsBaikers/DevRites/issues/42)) ([577389e](https://github.com/ViktorsBaikers/DevRites/commit/577389ec3016312e51bbdcad918179b161386aed))
+
+## [4.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.2.0...v4.3.0) (2026-08-25)
+
+### Added
+
+* **devrites:** add skill-trust, task-graph, and observe commands ([#38](https://github.com/ViktorsBaikers/DevRites/issues/38)) ([2562355](https://github.com/ViktorsBaikers/DevRites/commit/2562355a970726fb95e57e2f328961ca136c9f81))
+* **rite-build:** opt-in parallel worktree slices (N≤3) ([#37](https://github.com/ViktorsBaikers/DevRites/issues/37)) ([fe71d67](https://github.com/ViktorsBaikers/DevRites/commit/fe71d672408559af030e95f700b18ead798f18fc))
+
+## [4.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.1.0...v4.2.0) (2026-08-23)
+
+### Added
+
+* **rite:** ship workflow artifact, reslice, and observation ([#36](https://github.com/ViktorsBaikers/DevRites/issues/36)) ([456a00e](https://github.com/ViktorsBaikers/DevRites/commit/456a00e8280acdab9525a762a267be7084b26a9f))
+
+## [4.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.12...v4.1.0) (2026-08-12)
+
+### Added
+
+* **rite:** add bounded host-native loop operations ([af8f50e](https://github.com/ViktorsBaikers/DevRites/commit/af8f50e434160a7ab33d7e4c8b5b387c4097bfdc))
+* **rite:** deepen engineering risk guidance ([a109d35](https://github.com/ViktorsBaikers/DevRites/commit/a109d35788d831f037361cbc5c491d0b2cb2dd64))
+* **rite:** govern decision horizons and learnings ([af48088](https://github.com/ViktorsBaikers/DevRites/commit/af48088157107e08f60a82659d7e445180ed1e96))
+
+## [4.0.12](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.11...v4.0.12) (2026-08-09)
 
 ### Fixed
 
-* **devrites:** calibrate doubt-coverage and close per-slice skip ([5bc09eb](https://github.com/ViktorsBaikers/DevRites/commit/5bc09eb94062f728bd855a2a581784e4e1197522))
+* **rite:** keep internal replans in autocomplete ([9dbbd30](https://github.com/ViktorsBaikers/DevRites/commit/9dbbd30d6fbb088f2b175b6c4af06a9d7e5e9114))
 
-## [2.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.2.0...v2.3.0) (2026-06-23)
-
-### Added
-
-* **agents:** auto-firing devex-reviewer + retrospector ([425c582](https://github.com/ViktorsBaikers/DevRites/commit/425c582802b5efb18a463a31174420dfb96838fe))
-* **rules:** add project invariants as a trusted gating layer ([e569d7e](https://github.com/ViktorsBaikers/DevRites/commit/e569d7e065d1baf4e974c274d921431cc3c6e26e))
-* **skills:** add spec-grammar validator + scenario hooks ([765430c](https://github.com/ViktorsBaikers/DevRites/commit/765430c3f21bd9f139d9de9ecc4d73e292970505))
-* **skills:** competitive forge builds + structured visual verdict ([c509519](https://github.com/ViktorsBaikers/DevRites/commit/c50951957525a5cbf673ee52d3fa573838092959))
-* **tests:** behavioral evals for gating-skill discipline ([9cfde94](https://github.com/ViktorsBaikers/DevRites/commit/9cfde942cd6fa12d2f08d0cb4f8e3c11354b9355))
+## [4.0.11](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.10...v4.0.11) (2026-08-08)
 
 ### Fixed
 
-* **scripts:** allow forge-report.md as a runtime workspace artifact ([e01bd50](https://github.com/ViktorsBaikers/DevRites/commit/e01bd50dcc2d5767d8abd3a1f527ec762dc83583))
+* **rite:** recover workflow materializer failures ([4ab042b](https://github.com/ViktorsBaikers/DevRites/commit/4ab042b269c90ce7133bb425d3db15469035255e))
 
-### Documentation
-
-* **skills:** sync skill/agent/rule counts + catalogue with current pack ([57ea677](https://github.com/ViktorsBaikers/DevRites/commit/57ea6771b2040382b80848cd5c866952b46355c9))
-
-## [2.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.1.0...v2.2.0) (2026-06-23)
-
-### Added
-
-* **rules:** add observability + deprecation rules, OWASP LLM Top 10 ([0c29760](https://github.com/ViktorsBaikers/DevRites/commit/0c29760e504c22c18d7ca2c5e1986746ba95a07d))
+## [4.0.10](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.9...v4.0.10) (2026-08-08)
 
 ### Fixed
 
-* **release:** drop duplicate 2.1.0 changelog block ([0a7b510](https://github.com/ViktorsBaikers/DevRites/commit/0a7b5101ecd05e4c0b4d3812cefc68c0f92f1626))
+* **rite:** reopen stale writer stops ([aebb7fb](https://github.com/ViktorsBaikers/DevRites/commit/aebb7fb5b3510d068172aa1ec9f654063f39d545))
 
-## [2.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v2.0.0...v2.1.0) (2026-06-23)
+## [4.0.9](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.8...v4.0.9) (2026-08-08)
 
-### Added
+### Fixed
 
-* **agents:** code reviewer gets structural-depth lenses ([b37c9d2](https://github.com/ViktorsBaikers/DevRites/commit/b37c9d259b99613b971269fac2943977dedbea6d))
-* **agents:** perf reviewer gets Source/Measured CWV modes ([be82b20](https://github.com/ViktorsBaikers/DevRites/commit/be82b20b37252a9f55d77e0f71659ec58a213ca6))
+* **rite:** materialize workflow proof artifacts ([95ec9d7](https://github.com/ViktorsBaikers/DevRites/commit/95ec9d7dfa2b0708566a66723a289eaeb0607ddf))
 
-## [2.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.18.0...v2.0.0) (2026-06-23)
+## [4.0.8](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.7...v4.0.8) (2026-08-08)
+
+### Fixed
+
+* **rite:** require actionable one-shot evidence ([19d996c](https://github.com/ViktorsBaikers/DevRites/commit/19d996c9666febb33e44ecdd91d3254d3a562c8a))
+
+## [4.0.7](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.6...v4.0.7) (2026-08-08)
+
+### Fixed
+
+* **rite:** resume retained one-shot recovery ([4bd5897](https://github.com/ViktorsBaikers/DevRites/commit/4bd58971f1f3b2f6d8d9bfc7cb22b64066b604be))
+
+## [4.0.6](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.5...v4.0.6) (2026-08-07)
+
+### Fixed
+
+* **rite:** gate one-shot evidence retention ([621a549](https://github.com/ViktorsBaikers/DevRites/commit/621a549acdf9ec2a0d427b829b0df8852502380d))
+
+## [4.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.4...v4.0.5) (2026-08-07)
+
+### Fixed
+
+* **rite:** make recovery progress-aware ([87ecd07](https://github.com/ViktorsBaikers/DevRites/commit/87ecd07d406d8c9eed97f2d41ec3449b408e75bd))
+
+## [4.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.3...v4.0.4) (2026-08-07)
+
+### Fixed
+
+* **rite:** stop exhausted recovery loops ([6618c9e](https://github.com/ViktorsBaikers/DevRites/commit/6618c9e8a532d5d243576dbb4c338505c916376a))
+
+## [4.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.2...v4.0.3) (2026-08-07)
+
+### Fixed
+
+* **deps:** update js-yaml security patch ([d0b066a](https://github.com/ViktorsBaikers/DevRites/commit/d0b066aed4ff4544567fae14eb1fd90a08ef9e6d))
+* **rite:** keep technical backtracking autonomous ([45b17af](https://github.com/ViktorsBaikers/DevRites/commit/45b17af86e18930b983ec49ae399dd9f91f37a52))
+
+## [4.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.1...v4.0.2) (2026-08-05)
+
+### Fixed
+
+* **deps:** resolve blocking npm audit advisories ([5181daa](https://github.com/ViktorsBaikers/DevRites/commit/5181daa5e93e6edc4a862caa7db5bc11b40c978c))
+* **installer:** remove deprecated tar type check ([1ed3e0d](https://github.com/ViktorsBaikers/DevRites/commit/1ed3e0d600fc48ae020e958ea06d6cb945031994))
+* **installer:** restore self-contained engine updates ([3d851c6](https://github.com/ViktorsBaikers/DevRites/commit/3d851c67e4d740d793695e1f7caa30fddc8d832b))
+* **tests:** avoid flaky unknown-command pipe ([da584aa](https://github.com/ViktorsBaikers/DevRites/commit/da584aaf0d4195ed57ef6d1b21789f00ac81e390))
+
+## [4.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v4.0.0...v4.0.1) (2026-08-03)
+
+### Fixed
+
+* **installer:** clean legacy Codex hooks during v4 updates ([4908945](https://github.com/ViktorsBaikers/DevRites/commit/49089453ade730a9fede6c9fade180457d8ce2f9))
+
+## [4.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.28...v4.0.0) (2026-08-03)
 
 ### ⚠ BREAKING CHANGES
 
-* **installer:** drop the Claude Code plugin install path
-
-### Added
-
-* **installer:** add npx devrites full-pack installer + npm publishing ([316a0d3](https://github.com/ViktorsBaikers/DevRites/commit/316a0d372dad1afe2fade08f0045370fd5b3d801))
+* **repo:** use native host orchestration
 
 ### Changed
 
-* **release:** group changelog by Added/Changed/Removed ([ea5772a](https://github.com/ViktorsBaikers/DevRites/commit/ea5772abca3d44ee1da496f3d904bcbe3b9ccc21))
+* **repo:** use native host orchestration ([0f871b2](https://github.com/ViktorsBaikers/DevRites/commit/0f871b2e2680290ed707006c693a91453619e079))
 
-### Removed
+### Fixed
 
-* **installer:** drop the Claude Code plugin install path ([beb825f](https://github.com/ViktorsBaikers/DevRites/commit/beb825fcb0738d4b03b32dce056871c80616ab49))
+* **docs:** synchronize native orchestration contracts ([d80aaed](https://github.com/ViktorsBaikers/DevRites/commit/d80aaedf83d598b201060f51f0c58f570a7d676f))
+* **tests:** admit LF index fixture on Windows ([1d3cc3b](https://github.com/ViktorsBaikers/DevRites/commit/1d3cc3bc693f35ea0b1f4d2ce0eeb0f3ba3006a0))
+* **tests:** make Git fixtures portable on Windows ([287bcf6](https://github.com/ViktorsBaikers/DevRites/commit/287bcf65d15ef4a2a56913b358bee2ea22dff0b1))
 
-## [1.18.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.17.0...v1.18.0) (2026-06-22)
+## [3.2.28](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.27...v3.2.28) (2026-07-29)
 
-### Features
+### Fixed
 
-* **skills:** add rite-frame goal-reframe + failure-mode self-audit ([ca181ee](https://github.com/ViktorsBaikers/DevRites/commit/ca181eee47c4c47c19ea8069cb650e38a7a26c87))
+* **agents:** bind durable V2 agent starts ([1da2cef](https://github.com/ViktorsBaikers/DevRites/commit/1da2cefd2a1e6b2ecb6a626224cc94fa0fc3662e))
 
-## [1.17.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.16.0...v1.17.0) (2026-06-22)
+## [3.2.27](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.26...v3.2.27) (2026-07-29)
 
-### Features
+### Fixed
 
-* **skills:** auto-refresh code-intelligence indexes after edits ([6cdfa6c](https://github.com/ViktorsBaikers/DevRites/commit/6cdfa6cc5291955f5c6362970bcbda15589bc050))
+* **rite:** separate recovery causes from symptoms ([c01f516](https://github.com/ViktorsBaikers/DevRites/commit/c01f5164ce349e5caad6ce450cfa6d76c7ce522b))
 
-## [1.16.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.15.0...v1.16.0) (2026-06-21)
+## [3.2.26](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.25...v3.2.26) (2026-07-29)
 
-### Features
+### Fixed
 
-* **skills:** make code-intelligence tools optional and add context7 ([d8f95f7](https://github.com/ViktorsBaikers/DevRites/commit/d8f95f7333dd0c35fa75d4e190a05db86e82ba92))
+* **agents:** preserve hidden V2 agent types ([255591c](https://github.com/ViktorsBaikers/DevRites/commit/255591cff472193a4b87774912e6a6a8d9511968))
 
-## [1.15.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.14.0...v1.15.0) (2026-06-21)
+## [3.2.25](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.24...v3.2.25) (2026-07-28)
 
-### Features
+### Fixed
 
-* **skills:** make code-intelligence tools optional and add context7 ([d8f95f7](https://github.com/ViktorsBaikers/DevRites/commit/d8f95f7333dd0c35fa75d4e190a05db86e82ba92))
-* **skills:** test-integrity gates, enforcement hooks, learning loop ([32d5102](https://github.com/ViktorsBaikers/DevRites/commit/32d5102f1e82313d939632a416a5df3b00a2a675))
+* **devrites:** close review safety gaps ([178a43e](https://github.com/ViktorsBaikers/DevRites/commit/178a43e5a25a7b0825c0e16aa76c402e6b48a3aa))
 
-### Bug Fixes
+## [3.2.24](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.23...v3.2.24) (2026-07-28)
 
-* **ci:** allowlist new runtime artifacts; mark defensive deny-list ([eec1440](https://github.com/ViktorsBaikers/DevRites/commit/eec14403a827d98283c0641ae1c71087b24fe311))
+### Fixed
 
-## [1.15.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.14.0...v1.15.0) (2026-06-21)
+* **devrites:** close review safety gaps ([33e736a](https://github.com/ViktorsBaikers/DevRites/commit/33e736a3d9d69fd166827235ed1ce2310aeca75a))
 
-### Features
+## [3.2.23](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.22...v3.2.23) (2026-07-28)
 
-* **skills:** test-integrity gates, enforcement hooks, learning loop ([32d5102](https://github.com/ViktorsBaikers/DevRites/commit/32d5102f1e82313d939632a416a5df3b00a2a675))
+### Fixed
 
-### Bug Fixes
+* **devrites:** add retained-window abort recovery ([e47957c](https://github.com/ViktorsBaikers/DevRites/commit/e47957cd759f83e0166985b4b691d84068cc1d93))
 
-* **ci:** allowlist new runtime artifacts; mark defensive deny-list ([eec1440](https://github.com/ViktorsBaikers/DevRites/commit/eec14403a827d98283c0641ae1c71087b24fe311))
+## [3.2.22](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.21...v3.2.22) (2026-07-28)
 
-## [1.15.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.14.0...v1.15.0) (2026-06-21)
+### Fixed
 
-### Features
+* **devrites:** prevent receipt-only agent spawns ([4cf4c19](https://github.com/ViktorsBaikers/DevRites/commit/4cf4c19cf8671b8fdd497b8875c50bd50faf85d9))
 
-* **skills:** test-integrity gates, enforcement hooks, learning loop ([32d5102](https://github.com/ViktorsBaikers/DevRites/commit/32d5102f1e82313d939632a416a5df3b00a2a675))
+## [3.2.21](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.20...v3.2.21) (2026-07-28)
 
-## [1.14.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.13.0...v1.14.0) (2026-06-21)
+### Fixed
 
-### Features
+* **devrites:** bound Codex dispatch stop retries ([4ef9d5b](https://github.com/ViktorsBaikers/DevRites/commit/4ef9d5baf3ca74b1d494f535e8820447e9c37129))
 
-* **skills:** add prose-craft skill and sharpen anti-slop code charter ([8a9e7e1](https://github.com/ViktorsBaikers/DevRites/commit/8a9e7e159487a53c89b46975a54f84ed875e409d))
+## [3.2.20](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.19...v3.2.20) (2026-07-28)
 
-## [1.13.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.12.0...v1.13.0) (2026-06-21)
+### Fixed
 
-### Features
+* **devrites:** preserve Engram identifiers ([ad68eff](https://github.com/ViktorsBaikers/DevRites/commit/ad68eff3a5925ebc7204ed250d5609ed5e41c515))
 
-* **skills:** add ui-taste enrichments + optional design-memory rollup ([316e7aa](https://github.com/ViktorsBaikers/DevRites/commit/316e7aa042d86ae173b7fa061437ced5af931b1f))
+## [3.2.19](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.18...v3.2.19) (2026-07-28)
 
-## [1.12.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.11.0...v1.12.0) (2026-06-21)
+### Fixed
 
-### Features
+* **devrites:** recover ignored Codex reads ([9b0db60](https://github.com/ViktorsBaikers/DevRites/commit/9b0db603b298a8c8d7e36aafa61b909d11c00361))
 
-* **agents:** add prompt-injection-resistance baseline ([f260fc7](https://github.com/ViktorsBaikers/DevRites/commit/f260fc7b719c8049cb5ecd42b70649f17204080a)), closes [#14](https://github.com/ViktorsBaikers/DevRites/issues/14)
-* **ci:** blocking pack security scan — injection + hidden unicode ([89a8838](https://github.com/ViktorsBaikers/DevRites/commit/89a88383150afd6803ba405198ffc732e1e8a323)), closes [#13](https://github.com/ViktorsBaikers/DevRites/issues/13)
-* **ci:** supply-chain IOC scanner for npm lockfile ([ac9d079](https://github.com/ViktorsBaikers/DevRites/commit/ac9d07976707c45cb8503531b297f9049f314ea2)), closes [#16](https://github.com/ViktorsBaikers/DevRites/issues/16)
-* **ci:** workflow-security validator + pin third-party actions ([4c060c9](https://github.com/ViktorsBaikers/DevRites/commit/4c060c9f3d293b4b43919e7583dfc1f058fab21e)), closes [#15](https://github.com/ViktorsBaikers/DevRites/issues/15)
-* **skills:** add fan-out footprint at seal ([093b366](https://github.com/ViktorsBaikers/DevRites/commit/093b366b22f89a4e6851237c1aa458638a5aa910)), closes [#19](https://github.com/ViktorsBaikers/DevRites/issues/19)
-* **skills:** add rite-adopt brownfield on-ramp skill ([c86b770](https://github.com/ViktorsBaikers/DevRites/commit/c86b7702bf4c8c77736689d369b49375e677a927)), closes [#21](https://github.com/ViktorsBaikers/DevRites/issues/21)
-* **skills:** add rite-doctor health check (two-tier) ([71d2c7b](https://github.com/ViktorsBaikers/DevRites/commit/71d2c7b99fb48cc97de4dfeddf9469af521f180f)), closes [#18](https://github.com/ViktorsBaikers/DevRites/issues/18)
-* **skills:** conventions ledger with write-at-seal ([5de1464](https://github.com/ViktorsBaikers/DevRites/commit/5de1464a5a1d1a0a453aee84d5a515d616a929db)), closes [#17](https://github.com/ViktorsBaikers/DevRites/issues/17)
-* **skills:** ledger read-at-orient with fresh-observation-wins ([2abe806](https://github.com/ViktorsBaikers/DevRites/commit/2abe806f69cdbae78bd90b2431e6009fd6121aa0)), closes [#20](https://github.com/ViktorsBaikers/DevRites/issues/20)
+## [3.2.18](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.17...v3.2.18) (2026-07-28)
 
-## [1.11.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.10.0...v1.11.0) (2026-06-19)
+### Fixed
 
-### Features
+* **devrites:** fail closed on filesystem errors ([e0e6c6c](https://github.com/ViktorsBaikers/DevRites/commit/e0e6c6c5c9114fc423cc704b8031d4bcb3728831))
+* **devrites:** validate archive entry types ([02235fb](https://github.com/ViktorsBaikers/DevRites/commit/02235fb078ff4c15bdd36e58c57cc32e6bba8b75))
 
-* **skills:** add A1 pre-block hook, observe by default ([b7e76d5](https://github.com/ViktorsBaikers/DevRites/commit/b7e76d58f214076a7bd860b7fc3588c2476f5ed5))
+## [3.2.17](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.16...v3.2.17) (2026-07-27)
 
-## [1.10.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.9.0...v1.10.0) (2026-06-19)
+### Fixed
 
-### Features
+* **devrites:** harden agent orchestration and proof gates ([0602313](https://github.com/ViktorsBaikers/DevRites/commit/06023130b918117ae00ab0dadcfab6c000443981))
+* **devrites:** normalize restore prefix on Windows ([27c5646](https://github.com/ViktorsBaikers/DevRites/commit/27c5646a1ed344e38a488dd6fc6584b67f1de09e))
+* **devrites:** preserve restore bytes on Windows ([e6c3233](https://github.com/ViktorsBaikers/DevRites/commit/e6c32332e6ea9137644a8a6f42b542240b44c7e1))
 
-* **installer:** auto-approve read-only scripts + orient hooks ([3807883](https://github.com/ViktorsBaikers/DevRites/commit/38078838d2f4eeb9303c35c42812bbcb9bd9f5fc))
-* **skills:** gate orchestrator out of source edits (A1) ([c64a4a0](https://github.com/ViktorsBaikers/DevRites/commit/c64a4a0f2722089fa938b5291de64eca9e4648c7))
+## [3.2.16](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.15...v3.2.16) (2026-07-27)
 
-### Bug Fixes
+### Fixed
 
-* **skills:** resolve skills-audit findings across pack, evals, and CI ([1499ce2](https://github.com/ViktorsBaikers/DevRites/commit/1499ce274f714544f4983c8e6fc6a11ebe36ee25))
-* **tests:** tolerate preserved settings.json in uninstall smoke ([1d1b3d5](https://github.com/ViktorsBaikers/DevRites/commit/1d1b3d56a0b348d8181fa9fae55e70b4f9e51fd9))
+* **rite:** run root-owned artifact gates ([7614022](https://github.com/ViktorsBaikers/DevRites/commit/7614022b36cf8c887f148e4d12777e20ee2ea3d4))
 
-### Refactors
+## [3.2.15](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.14...v3.2.15) (2026-07-27)
 
-* **skills:** fold attempts, drop lanes note, signpost quick ([02180b5](https://github.com/ViktorsBaikers/DevRites/commit/02180b52dfa9254597b3ae0040690f556f40f5f2))
+### Fixed
 
-## [1.9.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.8.0...v1.9.0) (2026-06-19)
+* **agents:** verify hidden V2 child roles ([e80b62b](https://github.com/ViktorsBaikers/DevRites/commit/e80b62bf53cec440cfad54a3d23d8d3cf5b120f3))
 
-### Features
+## [3.2.14](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.13...v3.2.14) (2026-07-26)
 
-* **skills:** enforce test completeness + assertion strength ([4f825a1](https://github.com/ViktorsBaikers/DevRites/commit/4f825a1d1956138a6db778f8b54d7dcafb3876a8))
-* **skills:** present gaps as ranked option sets with inline resolve ([db70a21](https://github.com/ViktorsBaikers/DevRites/commit/db70a21511ad3ebc17b32e32afed8b02dcd47a22))
-* **skills:** research-driven workflow improvements ([83cb2e0](https://github.com/ViktorsBaikers/DevRites/commit/83cb2e00fb95cdbf974440f098e397ae7c9cde76))
+### Fixed
 
-## [1.8.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.7.0...v1.8.0) (2026-06-19)
+* **agents:** track unarmed retained retries ([44cf3cd](https://github.com/ViktorsBaikers/DevRites/commit/44cf3cd2d111060c76c53095ae76615ddba29c53))
 
-### Features
+## [3.2.13](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.12...v3.2.13) (2026-07-26)
 
-* **skills:** add progress footer to all rite-* lifecycle commands ([6b5eda0](https://github.com/ViktorsBaikers/DevRites/commit/6b5eda051ddc86c0a4d67a42d147cf4e9b7fbd17))
+### Fixed
 
-## [1.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.6.0...v1.7.0) (2026-06-18)
+* **agents:** retain canonical boundary before spawn ([b290aa9](https://github.com/ViktorsBaikers/DevRites/commit/b290aa97851915afcddd85ff43855fc8e07b6860))
 
-### Features
+## [3.2.12](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.11...v3.2.12) (2026-07-26)
 
-* **scripts:** add outcome grader and MCP server ([6b7263c](https://github.com/ViktorsBaikers/DevRites/commit/6b7263cf220508dcb567a7db6f79f619ea185249))
-* **skills:** add state gates, devrites CLI, and Gotchas sections ([25eaa49](https://github.com/ViktorsBaikers/DevRites/commit/25eaa49e55fce2b22734e8c977dd3a59db73c0d1))
+### Fixed
 
-### Documentation
+* **agents:** capture wright boundary before spawn ([4eb95f3](https://github.com/ViktorsBaikers/DevRites/commit/4eb95f3f75c150b9c535972db6d84fadf97f1a87))
 
-* **docs:** sync README, CONTRIBUTING, SECURITY with changes ([cc89594](https://github.com/ViktorsBaikers/DevRites/commit/cc895942a2a12bcff056ca44c957bf39349f00ca))
+## [3.2.11](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.10...v3.2.11) (2026-07-26)
 
-## [1.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.5.1...v1.6.0) (2026-06-18)
+### Fixed
 
-### Features
+* **devrites:** bind canonical state at wright start ([b58a531](https://github.com/ViktorsBaikers/DevRites/commit/b58a531749b94f734b7abf7469656ad543a0cfa0))
 
-* **skills:** add shared devrites-lib orientation preamble ([fd8c8fc](https://github.com/ViktorsBaikers/DevRites/commit/fd8c8fc97fb879c3d81190152ad6f31d971a3bde))
+## [3.2.10](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.9...v3.2.10) (2026-07-26)
 
-### Documentation
+### Fixed
 
-* **skills:** document the orientation preamble and devrites-lib ([4cd0d65](https://github.com/ViktorsBaikers/DevRites/commit/4cd0d6575f69a4b20dae6c5ffe01b9e4c232f93a))
+* **devrites:** allow external dispatch scratch ([fdaac3f](https://github.com/ViktorsBaikers/DevRites/commit/fdaac3f9aaf19af897c6d3d70ce01fc046a60d3e))
 
-## [1.5.1](https://github.com/ViktorsBaikers/DevRites/compare/v1.5.0...v1.5.1) (2026-06-17)
+## [3.2.9](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.8...v3.2.9) (2026-07-26)
 
-### Refactors
+### Fixed
 
-* **skills:** vet every plan at scaled depth, never skip ([ba61859](https://github.com/ViktorsBaikers/DevRites/commit/ba61859dc84871ebe9951dd1dfc68037e58fcb4f))
+* **devrites:** unblock retained reconcile checks ([c1093b0](https://github.com/ViktorsBaikers/DevRites/commit/c1093b00c3e32ba3cc22e0b9a2da548618ead621))
 
-## [1.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.4.0...v1.5.0) (2026-06-17)
+## [3.2.8](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.7...v3.2.8) (2026-07-26)
 
-### Features
+### Fixed
 
-* **skills:** add /rite-vet engineering plan review before build ([8c22b6a](https://github.com/ViktorsBaikers/DevRites/commit/8c22b6af4558540f70853e2d56688f49d528dffa))
+* **devrites:** prevent reconcile self-invalidation ([161ed18](https://github.com/ViktorsBaikers/DevRites/commit/161ed187e600dfc92623b22db5cd7f0824408d1a))
 
-## [1.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.3.0...v1.4.0) (2026-06-17)
+## [3.2.7](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.6...v3.2.7) (2026-07-26)
 
-### Features
+### Fixed
 
-* **skills:** add /rite-temper strategic spec review ([aa95d4d](https://github.com/ViktorsBaikers/DevRites/commit/aa95d4d27735c654a5bea8daf31fb6bc2dfa1767))
+* **agents:** enforce conditional v2 dispatch ([f4169d4](https://github.com/ViktorsBaikers/DevRites/commit/f4169d41c456f352172be8d96afdcdc69800d849))
+* **ci:** satisfy staticcheck error style ([0023265](https://github.com/ViktorsBaikers/DevRites/commit/00232656283647db8d94b2ed61dccb1629091b25))
 
-## [1.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.2.0...v1.3.0) (2026-06-17)
-
-### Features
-
-* **agents:** add devrites-slice-wright write-capable executor ([66a7c14](https://github.com/ViktorsBaikers/DevRites/commit/66a7c1418b727da181f8294e3bf6fdd632fa5711))
-
-## [1.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.1.1...v1.2.0) (2026-06-17)
-
-### Features
-
-* **skills:** plan UX/UI before code via devrites-ux-shape ([e4a45f2](https://github.com/ViktorsBaikers/DevRites/commit/e4a45f27346dc4ab22c5fb7acf215105e947e0a7))
-
-## [1.1.1](https://github.com/ViktorsBaikers/DevRites/compare/v1.1.0...v1.1.1) (2026-06-17)
-
-### Bug Fixes
-
-* **skills:** slice count is always derived, never user-forced ([07eb724](https://github.com/ViktorsBaikers/DevRites/commit/07eb724a785793dd3d38ab4889b202d22d4ca2ef))
-
-### Documentation
-
-* **docs:** /rite-ship in manifest descriptions + autocomplete example ([7d3dfce](https://github.com/ViktorsBaikers/DevRites/commit/7d3dfcee6a9ae99f6ac8d05a6573501c7c8713da))
-* **docs:** list /rite-autocomplete in README table, fix /ship alias ([b5613fa](https://github.com/ViktorsBaikers/DevRites/commit/b5613fa922d2c51cc03149d840d316cc12770a76))
-
-## [1.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.5...v1.1.0) (2026-06-17)
-
-### Features
-
-* **skills:** add /rite-autocomplete — unattended full lifecycle ([acad7e5](https://github.com/ViktorsBaikers/DevRites/commit/acad7e555c4f188665c9a7a5db4dd3dbb4264375))
-* **skills:** add /rite-ship — execute the ship + close the task ([cc7db95](https://github.com/ViktorsBaikers/DevRites/commit/cc7db95f079de8da824187a482451a34aa02b852))
-* **skills:** sharpen the rite-spec interview loop + coverage gate ([72994ea](https://github.com/ViktorsBaikers/DevRites/commit/72994eab298661b39724af955d5988f47035df03))
-
-### Refactors
-
-* **skills:** seal decides only; git ladder moves to /rite-ship ([80f0fbf](https://github.com/ViktorsBaikers/DevRites/commit/80f0fbfae0a77417283ed35efa4f3c8eae921aa7))
-
-### Documentation
-
-* **docs:** reflect ship/autocomplete + seal-decides split ([e9d4a7e](https://github.com/ViktorsBaikers/DevRites/commit/e9d4a7e64ed8cc4b8b0c742dea055e647d112c57))
-* **repo:** fix stale skill count + phantom devrites-rules refs ([3793e1b](https://github.com/ViktorsBaikers/DevRites/commit/3793e1bdf2fecd0c21999c003f5ff09d5b48aef0))
-
-## [1.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.4...v1.0.5) (2026-06-16)
-
-### Bug Fixes
-
-* **installer:** round-trip rules-only flags, cover update.sh ([0e82a76](https://github.com/ViktorsBaikers/DevRites/commit/0e82a76389ad9787c8f7a776fabffb01de6c49f8))
-* **rules:** per-skill core load, dedupe table, validating-gate teeth ([007096e](https://github.com/ViktorsBaikers/DevRites/commit/007096e1f001ac80e1ca6e990afd134d4a8a80cd))
-* **scripts:** correct gate tally, add AFK cap + qid scripts ([f2e46e5](https://github.com/ViktorsBaikers/DevRites/commit/f2e46e5155f7ac43dabf28f6db0a34bca84f0b2c))
-* **skills:** workspace state, AFK budget, evidence + reviewer scope ([a8e9e75](https://github.com/ViktorsBaikers/DevRites/commit/a8e9e7567ae12b8a5cece961786c196323c1847b))
-
-### Documentation
-
-* **docs:** reconcile counts, fix phantom names and loading model ([f29241e](https://github.com/ViktorsBaikers/DevRites/commit/f29241e9aebd026afdd570d88bba500e9aee8b29))
-
-## [1.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.3...v1.0.4) (2026-05-28)
-
-### Bug Fixes
-
-* **docs:** quote inside mermaid edge label broke flow.md diagram ([5112ba3](https://github.com/ViktorsBaikers/DevRites/commit/5112ba3be1cfb9f47195e98a5b7d50927662b64f))
-
-## [1.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.2...v1.0.3) (2026-05-28)
-
-### Bug Fixes
-
-* **installer:** list agents as file array, validate manifest sync ([97d5004](https://github.com/ViktorsBaikers/DevRites/commit/97d50049cdaf4877272e8f555b92b87d1be26887))
-
-### Documentation
-
-* **docs:** bash install is recommended, plugin path is partial ([e729d18](https://github.com/ViktorsBaikers/DevRites/commit/e729d1851498ccda5be7496ffff72d88fd2b4ce7))
-
-## [1.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.1...v1.0.2) (2026-05-28)
-
-### Bug Fixes
-
-* **installer:** plugin.json must use string repo and ./-prefixed paths ([cb50c01](https://github.com/ViktorsBaikers/DevRites/commit/cb50c01efcd45f813cc9fa7aeee7f25795bfd503))
-
-## [1.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v1.0.0...v1.0.1) (2026-05-28)
-
-### Bug Fixes
-
-* **ci:** repair dependabot, sync README on release, use bot author ([d928765](https://github.com/ViktorsBaikers/DevRites/commit/d928765a965e4c49d1618cf07842e907f28deb0a))
-
-## 1.0.0 (2026-05-28)
-
-### Features
-
-* **repo:** ship DevRites skills pack ([0915d40](https://github.com/ViktorsBaikers/DevRites/commit/0915d40f0c88e81dc9c122f5c755c7975957fdd4))
-
-### Bug Fixes
-
-* **ci:** bypass commitlint on semantic-release commits, tidy README ([0cf52a3](https://github.com/ViktorsBaikers/DevRites/commit/0cf52a3f27216ab5edb8197ec22628d03f2e5e31))
-* **ci:** sync lockfile and reject multiline descriptions without PyYAML ([0efa85f](https://github.com/ViktorsBaikers/DevRites/commit/0efa85f052612b94926cf3382f88510059e5a8e8))
-
-# Changelog
-
-All notable changes to DevRites are documented here. The format is based on
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres
-to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Added
-
-- **AFK & HITL run modes — full pause/resume contract.**
-  - `pack/.claude/skills/rite-resolve/` — new public skill (`SKILL.md`,
-    `scripts/resolve.sh`, `reference/answer-protocol.md`). Canonical writer
-    for `questions.md` `status: open → answered` and `state.md` `Awaiting
-    human` clearance. Three input shapes: single `<qid> "<answer>"`,
-    `--drop <qid>`, `--batch <file>`.
-  - `pack/.claude/rules/afk-hitl.md` — master contract: `.devrites/AFK`
-    sentinel format, four-gate taxonomy (`advisory` / `validating` /
-    `blocking` / `escalating`) with SLAs (`none` / `4h` / `15m` / `24h`),
-    irreversible-risk list (destructive migration, auth/authz boundary,
-    public API break, external contract, fs destruction, red tests/types/
-    lint) that always pauses regardless of `allow_gates`.
-  - `pack/.claude/skills/rite-define/reference/gates.md` — gate decision tree
-    + per-gate behavior matrix + AFK interaction table.
-  - `pack/.claude/skills/rite-build/reference/checkpoint-protocol.md` —
-    pre-action render contract + workspace mutations + `notify:` hook env
-    contract.
-  - `pack/.claude/skills/rite-build/reference/afk-discipline.md` — iteration
-    cap, fail-on-red, irreversible-risk list, notify-hook seam.
-  - `.devrites/AFK` sentinel (project-root, gitignore by default) toggles
-    session-level AFK mode. Optional YAML: `max_slices`, `notify`,
-    `allow_gates`. Empty file = AFK with safe defaults
-    (`allow_gates: [advisory]`).
-- **Schema extensions** (`pack/.claude/skills/rite-spec/reference/state-workspace.md`):
-  `state.md` gains `Run mode`, `Status`, `Slice mode`, and an `Awaiting
-  human` block when paused. `tasks.md` slice format extended with `Gate`,
-  `SLA`, `Checkpoint` (required when `Mode: HITL`). `questions.md` entries
-  carry `qid`, `gate`, `status`, `proposed`, `raised_at`, `answered_at`,
-  `answer`.
-- `/rite-build` workflow updated with:
-  - Step 0 — awaiting check (stop and route to `/rite-resolve` when
-    `Status: awaiting_human`).
-  - Step 2a — HITL pre-action checkpoint (renders gate, persists
-    `Awaiting human`, fires `notify:` hook, stops).
-  - Step 10 — fail-on-red (red tests/types/lint never marks the slice
-    `built`; raises a blocking question).
-  - Step 11 — sentinel decrement (`max_slices` ticks down per built slice;
-    0 forces HITL stop).
-- `/rite-status` surfaces `Run mode`, `Status`, the `Awaiting human` block,
-  and open questions broken down by gate (`blocking · validating · advisory
-  · escalating`). `scripts/load-state.sh` parses `.devrites/AFK` + tallies
-  questions by gate.
-- `devrites-doubt` AFK exception: findings at or below the slice's gate
-  ceiling downgrade to advisory entries in `questions.md`; irreversible-risk
-  findings always pause regardless of AFK config.
-- README "Modes — HITL & AFK" section + top-of-doc 2-mode callout + Contents
-  link + phase-table `RESUME` row pointing at `/rite-resolve`.
-- `docs/usage.md` — new sections "9) HITL gate — pre-code pause and resume"
-  and "10) AFK overnight run"; `.devrites/AFK` sentinel row in the workspace
-  table.
-- `docs/flow.md` — feature lifecycle diagram now shows the `Awaiting human`
-  ↔ `/rite-resolve` loop; workspace state-model ER diagram extended with
-  `AFK_SENTINEL`, `state.run_mode`/`status`/`awaiting_human`, and
-  `questions.qid`/`status`/`gate`; new section 9 "AFK & HITL state
-  machine".
-- `docs/architecture.md` — new "Run modes — HITL & AFK" subsection +
-  Surface bullet updated with `rite-resolve`.
-- `docs/command-map.md` — `/rite-resolve` row + updated `/rite-status` row
-  (reports run mode + status + question gate breakdown).
-- `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json` for
-  installation via `claude plugin install devrites@devrites-marketplace`.
-- `SECURITY.md` with private vulnerability-reporting channel, supported
-  versions, disclosure window, and documented security model.
-- `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1).
-- `CODEOWNERS` mandating review on `pack/`, `scripts/`, `install.sh`,
-  `uninstall.sh`, `.claude-plugin/`.
-- Engineering rules ship under `pack/.claude/rules/` (16 rule files +
-  `README.md` index) and are autoloaded natively by Claude Code from
-  `.claude/rules/core.md`; on-demand files are read by the phase that needs
-  them. No carrier skill — `core.md` is always-on, the rest progressive-disclosure.
-- `pack/.claude/agents/devrites-simplifier-reviewer.md` (new) to complete
-  the audit-skill subagent set; existing
-  `devrites-security-auditor.md` + `devrites-performance-reviewer.md`
-  reused for security + performance audits.
-- `## Common Rationalizations` (4-6 rite-specific excuse/rebuttal rows) and
-  `## Red Flags` (3-5 bullets) sections on `rite-spec` and `rite-define`
-  SKILL.md (rollout continues — remaining `rite-*` skills carry the universal
-  anti-pattern table at `pack/.claude/rules/anti-patterns.md` plus
-  per-phase `reference/anti-patterns.md`).
-- Universal anti-rationalization table + red-flags list in
-  `pack/.claude/rules/anti-patterns.md`; minimal always-on subset in
-  `pack/.claude/rules/core.md`.
-- Trigger evals under `evals/<skill>.json` (20 should/should-not-trigger
-  queries per public `rite-*` skill) and `scripts/run-evals.sh`.
-- `scripts/devrites-detect.sh` — deterministic anti-slop regex detector
-  (25-30 rules across UI + code anti-slop).
-- `.github/workflows/ci.yml` running `validate.sh`, install/uninstall
-  smoke, fixture install, commitlint, eval suite on every PR.
-- UI numerical bar — OKLCH-only, 4pt scale, 100/300/500 motion durations
-  + 75 % exit, three-axis dark-mode compensation, fluid-vs-fixed type
-  scale, container queries, semantic z-index — extended into
-  `pack/.claude/skills/devrites-frontend-craft/reference/quality-standards.md`.
-- Extended anti-AI-slop list (side-stripe borders, em-dash overuse, pure
-  `#000` / `#fff`, all-CAPS body, extended reflex-font reject list) in
-  `pack/.claude/skills/rite-polish/reference/anti-ai-slop.md`.
-- `NEVER` lists on the UI discipline references (`shape.md`, `craft.md`,
-  `design-references.md`).
-- `docs/architecture.md`, `docs/command-map.md`, `docs/usage.md` now ship
-  with the repo (`docs/` un-gitignored; `docs/internal/` is the new home
-  for the previously-local research / development notes).
-- Interactive **type-GO** confirmation in `/rite-seal` before irreversible
-  git actions (commit, push, tag) — keeps auto-trigger UX while preventing
-  accidental side effects.
+## [3.2.6](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.5...v3.2.6) (2026-07-25)
 
 ### Changed
 
-- `/rite-review` output now uses the explicit
-  `Critical / Important / Suggestion / Nit / FYI` severity vocabulary.
-- `/rite-seal` gate logic: `Critical == 0` proceeds, `Critical > 0` blocks,
-  `Important > 0` triggers an interactive `y/N` confirmation. No numeric
-  composite score (avoids Goodhart on a self-scoring agent).
-- Audit skills consolidated into a single `devrites-audit` skill that
-  dispatches the security / perf / simplify reviewer subagent on an axis
-  argument — replaces the earlier per-axis skills. Migration from
-  `context: fork` to `Task`-tool subagent dispatch closes Anthropic bug
-  [#49559](https://github.com/anthropics/claude-code/issues/49559)
-  (`context: fork` silently inline under plugin install) and matches the
-  `devrites-doubt` → `devrites-doubt-reviewer.md` pattern already in use.
-- Public `rite-*` skill descriptions rewritten with explicit
-  user-language trigger phrases + `Not for…` negative-scope clauses.
-- README install section now documents the plugin path alongside the bash
-  installer. Added a "Security model" section pointing at `SECURITY.md`.
-- License clarified: personal use and plugin-marketplace **listing** are
-  permitted without approval; redistribution / mirroring / commercial
-  / organizational use still requires approval.
+* **devrites:** remove package-existence gate ([4cbcbe9](https://github.com/ViktorsBaikers/DevRites/commit/4cbcbe9002eaf97f8f921e13e97b4dcfc6b61b34))
 
-## [0.1.0] — unreleased
+## [3.2.5](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.4...v3.2.5) (2026-07-25)
 
-Initial public release line. Tag will be cut once the items above land on
-`main`.
+### Fixed
 
-[Unreleased]: https://github.com/ViktorsBaikers/DevRites/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/ViktorsBaikers/DevRites/releases/tag/v0.1.0
+* **agents:** retain v2 wright dispatch receipt ([84f0c05](https://github.com/ViktorsBaikers/DevRites/commit/84f0c05c9d91d85194dfd4c97593ca1c07183282))
+
+## [3.2.4](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.3...v3.2.4) (2026-07-25)
+
+### Fixed
+
+* **agents:** handle hidden v2 agent_type schema ([31ece9a](https://github.com/ViktorsBaikers/DevRites/commit/31ece9aad686fa3a3fa0308d5a3ede11f5b58c07))
+
+## [3.2.3](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.2...v3.2.3) (2026-07-25)
+
+### Fixed
+
+* **agents:** enforce native specialist dispatch ([4ac3eb1](https://github.com/ViktorsBaikers/DevRites/commit/4ac3eb1a407ed8df4d3097984fbc0e369a5918b4))
+* **agents:** satisfy staticcheck error style ([cc21c46](https://github.com/ViktorsBaikers/DevRites/commit/cc21c4600171111dc30065327a9cd0ffff2420bc))
+* **skills:** avoid false invocation reference ([45f25bb](https://github.com/ViktorsBaikers/DevRites/commit/45f25bb70516460d753bccaa5ba78cce73e2a1d0))
+
+## [3.2.2](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.1...v3.2.2) (2026-07-25)
+
+### Fixed
+
+* **agents:** restore guarded codex dispatch ([2d05e20](https://github.com/ViktorsBaikers/DevRites/commit/2d05e20f6196774827d1496275f4c3cb5c5e22e2))
+* **ci:** govern bundled brace expansion advisory ([d1d0786](https://github.com/ViktorsBaikers/DevRites/commit/d1d078667fa42b61d8bec823136c628ca53fc6d8))
+
+## [3.2.1](https://github.com/ViktorsBaikers/DevRites/compare/v3.2.0...v3.2.1) (2026-07-24)
+
+### Fixed
+
+* **ci:** govern temporary npm audit exceptions ([c2219e0](https://github.com/ViktorsBaikers/DevRites/commit/c2219e0ff11f11ee3f2e2ffa7c5d35b480c5eb76))
+* **rite:** repair doctor compatibility ([811f339](https://github.com/ViktorsBaikers/DevRites/commit/811f339d22d3ec079549a5d50838d7596c72c7da))

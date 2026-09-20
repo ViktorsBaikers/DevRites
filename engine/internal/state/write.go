@@ -29,11 +29,12 @@ func AppendLog(path, record string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("append log %s: %w", path, err)
 	}
+	// #nosec G304 -- workspace artifact path inside the .devrites tree
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return fmt.Errorf("append log %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := f.WriteString(strings.TrimRight(record, "\n") + "\n"); err != nil {
 		return fmt.Errorf("append log %s: %w", path, err)
 	}
@@ -54,6 +55,6 @@ func WithFeatureLock(root, slug string, fn func() error) error {
 	if err != nil {
 		return fmt.Errorf("lock feature %q: %w", slug, err)
 	}
-	defer l.release()
+	defer func() { _ = l.release() }()
 	return fn()
 }

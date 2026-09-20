@@ -1,195 +1,128 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
-	"github.com/devrites/devrites/internal/doctor"
-	"github.com/devrites/devrites/internal/migrate"
+	"github.com/devrites/devrites/internal/rootfacts"
 	"github.com/devrites/devrites/internal/state"
 )
 
-// resolveRootLenient resolves the .devrites root for the workspace-orientation
-// commands (preamble / progress / stuck), which must degrade gracefully outside a
-// workspace rather than erroring like the gates do. When no .devrites is found it
-// returns a nonexistent <cwd>/.devrites so the command reads an empty workspace
-// and no-ops (preamble's "No active workspace", progress's silence).
+type rootMode uint8
+
+const (
+	rootUnused rootMode = iota
+	rootLenient
+	rootStrict
+	rootStrictUsage
+)
+
+// rootModeFor is the single policy boundary between diagnostic/read-only
+// commands, which may degrade outside a workspace, and commands that can write
+// workspace or Git state, which must never fall back after an unsafe root
+// selection.
+func rootModeFor(command string, args []string) rootMode {
+	if hasHelpFlag(args) || (len(args) > 0 && isHelpToken(args[0])) {
+		return rootUnused
+	}
+	subcommand := firstRootOperand(args)
+	switch command {
+	case "secret-scan", "open-visual", "detect":
+		return rootLenient
+	case "state":
+		switch subcommand {
+		case "resolve", "merge-manifest", "close":
+			return rootStrict
+		}
+		return rootUnused
+	case "migrate", "gates":
+		return rootStrictUsage
+	case "check":
+		switch subcommand {
+		case "candidate", "readiness", "seal", "task-graph", "diff-scope", "slice", "regression", "windows", "drift":
+			return rootStrictUsage
+		case "indexes", "dup":
+			return rootLenient
+		}
+		return rootUnused
+	case "orient", "next", "context", "metrics", "dispatch", "handoff", "note":
+		return rootStrictUsage
+	case "claim":
+		switch subcommand {
+		case "add", "release":
+			return rootStrictUsage
+		}
+		return rootLenient
+	case "observe":
+		switch subcommand {
+		case "summary", "slice":
+			return rootStrictUsage
+		}
+		return rootUnused
+	default:
+		return rootUnused
+	}
+}
+
+func firstRootOperand(args []string) string {
+	if len(args) == 0 {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(args[0]))
+}
+
+// resolveRootFor resolves exactly once per command invocation. Strict commands
+// retain root-safety refusals; lenient readers preserve their historical
+// diagnostic/no-workspace behavior.
+func resolveRootFor(command string, args []string) (string, int, error) {
+	switch rootModeFor(command, args) {
+	case rootUnused:
+		return "", exitOK, nil
+	case rootLenient:
+		return resolveRootLenient(), exitOK, nil
+	case rootStrict:
+		root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
+		if err == nil {
+			return root, exitOK, nil
+		}
+		if errors.Is(err, rootfacts.ErrUnsafeRoot) {
+			return "", exitBlocked, err
+		}
+		if errors.Is(err, rootfacts.ErrNoRoot) {
+			return fallbackRoot(), exitOK, nil
+		}
+		return "", exitUsage, err
+	case rootStrictUsage:
+		root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
+		if err != nil {
+			// Workspace-requiring read/check commands have always mapped every
+			// resolution failure to the usage exit code.
+			return "", exitUsage, err
+		}
+		return root, exitOK, nil
+	default:
+		panic("unknown root resolution mode")
+	}
+}
+
+// resolveRootLenient resolves the .devrites root for read-only and diagnostic
+// commands that must degrade cleanly outside a workspace. When no root is found,
+// it returns a nonexistent <cwd>/.devrites so those commands see an empty
+// workspace and keep their established no-workspace behavior.
 func resolveRootLenient() string {
 	if root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT")); err == nil {
 		return root
 	}
+	return fallbackRoot()
+}
+
+func fallbackRoot() string {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return ".devrites"
 	}
 	return filepath.Join(cwd, devritespaths.DevritesRootName)
-}
-
-func readFile(path string) string {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	return string(raw)
-}
-
-func gitDir(projectDir string) string {
-	path := filepath.Join(projectDir, ".git")
-	if info, err := os.Stat(path); err == nil && info.IsDir() {
-		return path
-	}
-	line := strings.TrimSpace(readFile(path))
-	if target, ok := strings.CutPrefix(line, "gitdir:"); ok {
-		target = strings.TrimSpace(target)
-		if filepath.IsAbs(target) {
-			return target
-		}
-		return filepath.Clean(filepath.Join(projectDir, target))
-	}
-	return path
-}
-
-func gitOperation(projectDir string) string {
-	dir := gitDir(projectDir)
-	if _, err := os.Stat(filepath.Join(dir, "MERGE_HEAD")); err == nil {
-		return "merge"
-	}
-	for _, name := range []string{"rebase-merge", "rebase-apply"} {
-		if info, err := os.Stat(filepath.Join(dir, name)); err == nil && info.IsDir() {
-			return "rebase"
-		}
-	}
-	return ""
-}
-
-// cmdDoctor reports the binary / pack / state-schema version triangle and its
-// skew verdict. It exits non-zero only when the state schema is a newer major
-// than the binary can safely parse (a genuine refuse); a mere pack-vs-binary
-// skew is a warning that still exits 0.
-func cmdDoctor(args []string, stdout, stderr io.Writer) int {
-	if len(args) != 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine doctor")
-		return exitUsage
-	}
-	root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: %v\n", err)
-		return exitUsage
-	}
-	// The project directory is the parent of the .devrites root: that is where
-	// an installed pack's version marker (.claude/devrites.version, package.json)
-	// lives.
-	projectDir := filepath.Dir(root)
-	report, err := doctor.Diagnose(projectDir, root)
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: %v\n", err)
-		return exitUsage
-	}
-	fmt.Fprint(stdout, report.Render())
-	if op := gitOperation(projectDir); op != "" {
-		fmt.Fprintf(stdout, "git-state: %s in progress: resolve with .claude/skills/devrites-lib/reference/standards/git-workflow.md#merge-conflict-recovery\n", op)
-	}
-	for _, warning := range extensionProvenanceWarnings(root) {
-		fmt.Fprintf(stdout, "warning: %s\n", warning)
-	}
-	if slug := strings.TrimSpace(readFile(filepath.Join(root, "ACTIVE"))); slug != "" {
-		if snap, err := state.Snapshot(root, slug); err == nil {
-			fmt.Fprintln(stdout)
-			fmt.Fprintln(stdout, "readiness-dashboard:")
-			fmt.Fprintf(stdout, "  active: %s (%s, %s)\n", snap.Slug, snap.Phase, snap.RunMode)
-			fmt.Fprintf(stdout, "  evidence: %s\n", snap.Evidence.Status)
-			fmt.Fprintf(stdout, "  drift: %s\n", snap.Drift.Status)
-			fmt.Fprintf(stdout, "  review: %s\n", snap.Review.Status)
-			fmt.Fprintf(stdout, "  harness: %s: %s\n", snap.Harness.Status, snap.Harness.Detail)
-			fmt.Fprintf(stdout, "  extensions: %s (%d)\n", snap.Extensions.Status, snap.Extensions.Count)
-			fmt.Fprintf(stdout, "  worktree: %s (%d changed)\n", snap.DirtyWorkspace.Status, snap.DirtyWorkspace.Changed)
-			fmt.Fprintln(stdout, "  capabilities:")
-			for _, cap := range snap.Capabilities {
-				fmt.Fprintf(stdout, "    - %s: %s · used by %s · fallback: %s · risk: %s\n", cap.Name, cap.Status, cap.UsedBy, cap.Fallback, cap.Risk)
-			}
-		}
-	}
-	if report.Refuse {
-		return exitBlocked
-	}
-	return exitOK
-}
-
-// cmdMigrate normalizes workspaces to the current schema. It is idempotent
-// (a second run is a no-op) and backs up the pre-migration state first.
-func extensionProvenanceWarnings(root string) []string {
-	dir := filepath.Join(root, "extensions")
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil
-	}
-	var warnings []string
-	for _, entry := range entries {
-		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
-			continue
-		}
-		edir := filepath.Join(dir, entry.Name())
-		hasArtifact := readFile(filepath.Join(edir, "skill", "SKILL.md")) != "" || readFile(filepath.Join(edir, "agent.md")) != "" || readFile(filepath.Join(edir, "component.yaml")) != ""
-		if hasArtifact && readFile(filepath.Join(edir, "provenance.json")) == "" {
-			warnings = append(warnings, fmt.Sprintf("extension %s has no provenance.json", entry.Name()))
-		}
-	}
-	return warnings
-}
-
-func cmdMigrate(args []string, stdout, stderr io.Writer) int {
-	if len(args) != 0 {
-		fmt.Fprintln(stderr, "usage: devrites-engine migrate")
-		return exitUsage
-	}
-	root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: %v\n", err)
-		return exitUsage
-	}
-	result, err := migrate.Run(root)
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: migrate failed: %v\n", err)
-		return 1
-	}
-	if result.Skipped {
-		fmt.Fprintln(stdout, "migrate: already up to date (no workspace normalization needed)")
-		return exitOK
-	}
-	fmt.Fprintf(stdout, "migrated %d feature(s): %v\n", len(result.Migrated), result.Migrated)
-	fmt.Fprintf(stdout, "backup: %s\n", result.BackupDir)
-	return exitOK
-}
-
-func cmdSnapshot(args []string, stdout, stderr io.Writer) int {
-	if len(args) > 1 {
-		fmt.Fprintln(stderr, "usage: devrites-engine snapshot [slug]")
-		return exitUsage
-	}
-	root, err := state.ResolveRoot(os.Getenv("DEVRITES_ROOT"))
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: %v\n", err)
-		return exitUsage
-	}
-	slug := ""
-	if len(args) == 1 {
-		slug = args[0]
-	}
-	snapshot, err := state.Snapshot(root, slug)
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: %v\n", err)
-		return exitUsage
-	}
-	data, err := json.MarshalIndent(snapshot, "", "  ")
-	if err != nil {
-		fmt.Fprintf(stderr, "devrites: cannot render snapshot JSON: %v\n", err)
-		return exitUsage
-	}
-	_, _ = stdout.Write(append(data, '\n'))
-	return exitOK
 }

@@ -17,17 +17,24 @@ or LLM output.
 - Fallback/degradation: <what users see when AI is unavailable>
 
 ## Domain evals
-| Eval ID | Scenario | Expected signal | Gate |
-| --- | --- | --- | --- |
-| EVAL-001 | <domain-specific case> | <pass condition> | build/seal |
+| Eval ID | Scenario / slice | Dataset provenance | Expected signal + threshold | Gate |
+| --- | --- | --- | --- | --- |
+| EVAL-001 | <representative/adversarial/empty-context case> | <held-out source/version> | <pass condition and baseline delta> | build/seal |
+
+For RAG, cover retrieval relevance/context recall, context precision, answer
+faithfulness, citation support, tenant/ACL isolation, poisoned or conflicting documents,
+and insufficient-context fallback as applicable. A single polished example is not an eval.
 
 ## Guardrails
 - Inputs: <validation, prompt-injection boundaries, tenant/data limits>
-- Outputs: <schema checks, refusals, human review, citations>
+- Retrieval: <source provenance, indexing validation, tenant/ACL filter, freshness/deletion>
+- Outputs: <schema checks, refusals, human review, citations only to supporting retrieved sources>
 - Privacy/security: <data sent to model, retention, secrets policy>
+- Unknown/insufficient context: <abstain, clarify, or bounded fallback; never fabricate>
 
 ## Monitoring
-- Runtime metrics/logs: <latency, cost, quality, refusal/error rates>
+- Runtime metrics/logs: <latency, cost, retrieval/quality, refusal/error/fallback rates>
 - Alerts or manual review: <trigger>
-- Rollback/kill switch: <mechanism>
+- Rollback/kill switch: <prompt/model/index version and reversible mechanism>
+- Drift evaluation: <reference set, schedule/trigger, regression threshold, owner>
 ```
