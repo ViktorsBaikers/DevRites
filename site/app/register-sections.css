@@ -1,0 +1,1231 @@
+.register-continuation {
+  --folio-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --folio-shadow: 0 8px 20px rgb(25 24 22 / 8%);
+  background: var(--color-bg) url("/assets/plates/paper-ground.png");
+  color: var(--color-ink);
+  padding: 0 clamp(1.5rem, 4vw, 5rem) 0 clamp(1.5rem, 14vw, 14rem);
+  border-top: 1px solid var(--color-line);
+}
+.register-continuation * {
+  min-width: 0;
+}
+.folio-section {
+  padding: 0 0 5rem;
+  scroll-margin-top: 6rem;
+}
+.folio-heading {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) minmax(12rem, 0.7fr);
+  gap: 1.5rem;
+  align-items: center;
+  padding: 2rem 0;
+  border-top: 1px solid var(--color-line-bright);
+  border-bottom: 1px solid var(--color-line);
+}
+.folio-heading > span {
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+.folio-heading h2 {
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+.folio-heading p {
+  font-size: 0.875rem;
+  color: var(--color-ink-muted);
+  max-width: 28ch;
+}
+.folio-intro {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: end;
+  gap: 3rem;
+  padding: 3rem 0;
+}
+.register-continuation h3 {
+  font-size: clamp(2rem, 3.6vw, 3.75rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+.register-continuation h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.register-continuation p {
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+.folio-intro > p,
+.folio-spec-layout > div > p,
+.folio-ship-layout > div > p {
+  color: var(--color-ink-muted);
+  max-width: 65ch;
+}
+.register-continuation a {
+  text-underline-offset: 0.25em;
+}
+.register-continuation a:has(svg) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.register-continuation a svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+.register-continuation :is(a, button, summary):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+.register-continuation code,
+.folio-heading > span,
+.folio-artifact header,
+.folio-spec-document header {
+  font-family: var(--font-mono);
+}
+.register-continuation code {
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+.folio-workflow {
+  border: 1px solid var(--color-line-bright);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+}
+.folio-stage-controls {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--color-line-bright);
+}
+.folio-stage-controls::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 25%;
+  background: var(--color-ink);
+  transform: translateX(calc(var(--active-stage) * 100%));
+  transition: transform 260ms var(--folio-settle);
+  pointer-events: none;
+  z-index: -1;
+}
+.folio-stage-controls[data-pointer-motion="false"]::before {
+  transition: none;
+}
+.folio-stage-controls button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  cursor: pointer;
+  border-right: 1px solid var(--color-line);
+  font-weight: 700;
+  text-align: left;
+}
+.folio-stage-controls button:last-child {
+  border-right: 0;
+}
+.folio-stage-controls button > * {
+  color: var(--color-paper);
+  mix-blend-mode: difference;
+}
+.folio-stage-controls button span {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+.folio-stage-controls button svg {
+  margin-left: auto;
+  width: 1rem;
+  height: 1rem;
+}
+.folio-stage-controls button[aria-pressed="true"] {
+  background: transparent;
+  color: var(--color-paper);
+}
+.folio-stage-controls button:active {
+  transform: scale(0.98);
+}
+.folio-stage-copy {
+  padding: 2rem;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.folio-stage-copy h4 {
+  font-size: 1.75rem;
+  letter-spacing: -0.025em;
+}
+.folio-stage-copy p {
+  color: var(--color-ink-muted);
+}
+.folio-stage-copy > a {
+  margin-top: auto;
+}
+.folio-command-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+.folio-command-list code {
+  color: var(--color-accent);
+}
+.folio-artifact {
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-line);
+  padding: 1.5rem 2rem;
+}
+.folio-artifact header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 1rem;
+}
+.folio-artifact header svg {
+  width: 1rem;
+  height: 1rem;
+}
+.folio-artifact header > span {
+  font-size: 0.65rem;
+  margin-left: auto;
+  color: var(--color-ink-muted);
+}
+.folio-artifact pre {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.75;
+  min-height: 18rem;
+  padding-top: 1.5rem;
+}
+.register-continuation .folio-note {
+  color: #2d617e;
+  font-family: "Bradley Hand", "Segoe Print", cursive;
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+.folio-footnote {
+  padding-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+.folio-role-register {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--color-line);
+}
+.folio-role-group {
+  padding: 2rem 2rem 2rem 0;
+}
+.folio-role-group:nth-child(even) {
+  padding-left: 2rem;
+  border-left: 1px solid var(--color-line);
+}
+.folio-role-group h4 {
+  margin-bottom: 1rem;
+}
+.folio-role-group dl > div {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-line);
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.85fr) minmax(0, 1.2fr);
+  gap: 1rem;
+}
+.folio-role-group dt {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.folio-role-group dd {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+}
+.folio-bottomline {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-line-bright);
+  font-size: 0.875rem;
+}
+.folio-host-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-block: 1px solid var(--color-line-bright);
+}
+.folio-host-list > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  min-height: 5rem;
+  padding: 1rem 2rem 1rem 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.folio-host-list > div:last-child {
+  border-bottom: 0;
+}
+.folio-host-list strong {
+  font-size: 1.25rem;
+}
+.folio-host-list svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-accent);
+}
+.folio-shared-record {
+  border-left: 1px solid var(--color-line);
+  padding: 2rem;
+  background: var(--color-surface-2);
+}
+.folio-shared-record > code {
+  display: block;
+  margin-top: 0.5rem;
+}
+.folio-shared-record ul {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 2rem 0;
+}
+.folio-shared-record li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.folio-shared-record svg {
+  width: 1rem;
+  height: 1rem;
+}
+.folio-shared-record p {
+  font-size: 0.875rem;
+  color: var(--color-ink-muted);
+}
+.folio-engine-line {
+  padding-top: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.folio-engine-line p {
+  font-size: 0.875rem;
+  color: var(--color-ink-muted);
+  margin-top: 0.5rem;
+}
+.folio-engine-line > code {
+  border: 1px solid var(--color-line);
+  padding: 1rem;
+}
+.folio-spec-layout,
+.folio-ship-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
+  gap: 4rem;
+  padding-top: 3rem;
+}
+.folio-spec-layout > div > p,
+.folio-ship-layout > div > p {
+  margin-top: 1.5rem;
+}
+.folio-spec-layout > div > a,
+.folio-ship-layout > div > a {
+  margin-top: 2rem;
+}
+.folio-spec-layout .folio-note {
+  margin-block: 2rem;
+}
+.folio-spec-document {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-bright);
+  padding: 1.5rem 2rem 2rem;
+}
+.folio-spec-document header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-line);
+  font-size: 0.7rem;
+  color: var(--color-ink-muted);
+}
+.folio-spec-document h4 {
+  font-size: 1.75rem;
+  margin-block: 1.5rem 1rem;
+}
+.folio-spec-document > p {
+  font-size: 0.875rem;
+}
+.folio-spec-document dl {
+  margin-block: 1.5rem;
+}
+.folio-spec-document dl > div {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: 1rem;
+  border-top: 1px solid var(--color-line);
+  padding-block: 0.75rem;
+  font-size: 0.8125rem;
+}
+.folio-spec-document dt {
+  font-weight: 700;
+}
+.folio-spec-document dd {
+  line-height: 1.6;
+}
+.folio-spec-document h5 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+.folio-spec-document ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.folio-spec-document li {
+  padding: 0.75rem 0 0.75rem 0.5rem;
+  border-top: 1px solid var(--color-line);
+  font-size: 0.875rem;
+}
+.folio-spec-document small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #2d617e;
+}
+.folio-review-route {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid var(--color-line-bright);
+}
+.folio-review-route li {
+  padding: 2rem 1.5rem;
+  border-right: 1px solid var(--color-line);
+}
+.folio-review-route li:first-child {
+  padding-left: 0;
+}
+.folio-review-route li:last-child {
+  border-right: 0;
+}
+.folio-review-route p {
+  font-size: 0.875rem;
+  margin-block: 0.75rem 1.5rem;
+}
+.folio-review-route code {
+  color: var(--color-ink-muted);
+  font-size: 0.7rem;
+}
+.folio-review-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding-top: 2rem;
+}
+.folio-review-rule > svg {
+  flex: none;
+  color: var(--color-accent);
+  width: 1.5rem;
+}
+.folio-review-rule p {
+  max-width: 60ch;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  color: var(--color-ink-muted);
+}
+.folio-review-rule a {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.folio-release-checklist li {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--color-line);
+}
+.folio-release-checklist li:last-child {
+  border-bottom: 1px solid var(--color-line);
+}
+.folio-release-checklist svg {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.folio-release-checklist strong {
+  font-size: 1rem;
+}
+.folio-release-checklist p {
+  font-size: 0.875rem;
+  color: var(--color-ink-muted);
+  margin-top: 0.5rem;
+}
+.folio-release-checklist .folio-human-gate {
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+}
+.folio-faq details {
+  border-bottom: 1px solid var(--color-line);
+}
+.folio-faq summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  list-style: none;
+  cursor: pointer;
+  padding: 1.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+.folio-faq summary::-webkit-details-marker {
+  display: none;
+}
+.folio-faq summary svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}
+.folio-faq details[open] summary svg {
+  transform: rotate(45deg);
+  color: var(--color-accent);
+}
+.folio-faq details > p {
+  max-width: 72ch;
+  margin: 0 2rem 1.5rem 0;
+  color: var(--color-ink-muted);
+}
+.folio-install {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 3rem;
+  align-items: center;
+  padding-block: 3rem 4rem;
+  border-block: 1px solid var(--color-line-bright);
+}
+.folio-install h2 {
+  font-size: clamp(2rem, 3.8vw, 4rem);
+  letter-spacing: -0.035em;
+  font-weight: 800;
+  line-height: 1.05;
+}
+.folio-install p {
+  margin-block: 1.5rem;
+  max-width: 52ch;
+  font-size: 0.9375rem;
+  color: var(--color-ink-muted);
+}
+.folio-install-command {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line);
+}
+.folio-install-command > code {
+  font-size: 1rem;
+}
+.folio-install-command > button {
+  border-radius: 0;
+  min-height: 2.75rem;
+}
+.folio-install-command p {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.8rem;
+}
+.folio-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem 2rem;
+  padding: 2rem 0;
+  background-image: none;
+}
+.folio-wordmark {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+.folio-footer p,
+.folio-footer small {
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+}
+.folio-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-left: auto;
+  font-size: 0.875rem;
+}
+.folio-footer small {
+  flex-basis: 100%;
+}
+@keyframes folio-record-change {
+  from {
+    opacity: 0.7;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes folio-faq-answer {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes folio-connector-draw {
+  from {
+    opacity: 0.35;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+.folio-artifact-change {
+  animation: folio-record-change 220ms var(--ease-out-soft);
+}
+/* Physical records share paper and ink, but each explains a different relationship. */
+.folio-workflow {
+  border: 0;
+  column-gap: 2rem;
+  align-items: start;
+}
+.folio-stage-controls {
+  border: 1px solid var(--color-line-bright);
+  margin-bottom: 2rem;
+  background: var(--color-surface-2);
+  z-index: 0;
+}
+.folio-stage-controls button {
+  min-height: 3.5rem;
+}
+.folio-stage-controls button strong {
+  font-weight: 700;
+}
+.folio-stage-copy {
+  padding: 1.5rem 0 2rem;
+  min-height: 24rem;
+}
+.folio-artifact {
+  position: relative;
+  border: 0;
+  box-shadow:
+    var(--folio-shadow),
+    6px 6px 0 var(--color-surface-2),
+    7px 7px 0 var(--color-line);
+  transform: rotate(0.65deg);
+  margin: 0 0.5rem 1rem 0;
+}
+.folio-artifact header {
+  color: var(--color-ink-muted);
+}
+.folio-artifact .folio-note {
+  border-top: 1px solid var(--color-line);
+  padding-top: 1rem;
+}
+.folio-role-register {
+  border: 0;
+  gap: 2rem;
+  padding: 1rem 0.5rem 2.5rem;
+  align-items: start;
+}
+.folio-role-group,
+.folio-role-group:nth-child(even) {
+  position: relative;
+  border: 0;
+  padding: 2rem;
+  background: var(--color-surface);
+  box-shadow: var(--folio-shadow);
+  transform: rotate(-0.7deg);
+}
+.folio-role-group::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: -0.65rem;
+  left: 1.5rem;
+  height: 0.65rem;
+  width: 35%;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line);
+  border-bottom: 0;
+}
+.folio-role-group:nth-child(even) {
+  transform: rotate(0.7deg);
+  margin-top: 2.5rem;
+  background: var(--color-paper);
+}
+.folio-role-group:nth-child(3) {
+  margin-top: -1rem;
+}
+.folio-role-group:nth-child(4) {
+  margin-top: 1.5rem;
+}
+.folio-role-group h4 {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-line-bright);
+}
+.folio-role-count {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+.folio-role-group dl > div {
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+}
+.folio-role-group dt {
+  font-size: 1rem;
+}
+.folio-role-group dd {
+  max-width: 48ch;
+}
+.folio-host-layout {
+  position: relative;
+  border: 0;
+  gap: 4rem;
+  align-items: center;
+  padding: 1rem 0 2rem;
+}
+.folio-host-list {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  padding-right: 2rem;
+  border-right: 1px solid var(--color-line-bright);
+}
+.folio-host-list::after {
+  content: "";
+  width: 4rem;
+  height: 1px;
+  background: var(--color-line-bright);
+  position: absolute;
+  top: 50%;
+  right: -4rem;
+}
+.folio-host-list > div {
+  position: relative;
+  min-height: 4.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+.folio-host-list > div:last-child {
+  border-bottom: 1px solid var(--color-line);
+}
+.folio-host-list > div::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -2rem;
+  width: 2rem;
+  height: 1px;
+  background: var(--color-line-bright);
+}
+.folio-host-list > div:nth-child(even) {
+  margin-left: 1rem;
+}
+.folio-host-list strong {
+  font-size: 1.125rem;
+}
+.folio-shared-record {
+  position: relative;
+  border: 0;
+  padding: 2rem;
+  box-shadow: var(--folio-shadow);
+  background: var(--color-paper);
+}
+.folio-shared-record h4 {
+  font-size: 1.5rem;
+}
+.folio-shared-record ul {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.folio-shared-record li {
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.folio-engine-line {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+.folio-engine-line p {
+  color: var(--color-paper);
+}
+.folio-engine-line > code {
+  border-color: var(--color-line-bright);
+  color: var(--color-paper);
+}
+.folio-spec-layout {
+  align-items: center;
+  padding-top: 4rem;
+  padding-bottom: 1rem;
+}
+.folio-spec-layout > div {
+  padding-right: 1rem;
+}
+.folio-spec-layout .folio-note {
+  margin: 2.5rem 0 2rem 1.5rem;
+  transform: rotate(-4deg);
+}
+.folio-spec-document {
+  position: relative;
+  transform: rotate(1deg);
+  border: 0;
+  box-shadow:
+    var(--folio-shadow),
+    -7px 7px 0 var(--color-surface-2),
+    -8px 8px 0 var(--color-line);
+}
+.folio-spec-document::before {
+  content: "";
+  position: absolute;
+  top: -0.5rem;
+  left: 40%;
+  width: 20%;
+  height: 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line);
+}
+.folio-review-route {
+  border: 0;
+  gap: 1.5rem;
+  padding: 0.5rem 0 4rem;
+  align-items: start;
+}
+.folio-review-route li,
+.folio-review-route li:first-child {
+  position: relative;
+  padding: 1.5rem;
+  border: 0;
+  background: var(--color-surface);
+  box-shadow: var(--folio-shadow);
+}
+.folio-review-route li:nth-child(2) {
+  margin-top: 1.5rem;
+}
+.folio-review-route li:nth-child(3) {
+  margin-top: 3rem;
+}
+.folio-review-route li:nth-child(4) {
+  margin-top: 4.5rem;
+}
+.folio-review-route li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-top: 1px solid var(--color-line-bright);
+  border-right: 1px solid var(--color-line-bright);
+  right: -1.5rem;
+  top: 50%;
+}
+.folio-review-route h4 {
+  font-size: 1.375rem;
+}
+.folio-review-route p {
+  min-height: 4.5rem;
+}
+.folio-review-route li:last-child {
+  background: var(--color-surface-2);
+}
+.folio-release-checklist {
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--color-line);
+}
+.folio-release-checklist li {
+  position: relative;
+  padding: 1.5rem 1rem;
+  border: 0;
+}
+.folio-release-checklist li:last-child {
+  border: 0;
+}
+.folio-release-checklist li::before {
+  content: "";
+  position: absolute;
+  left: -1.5rem;
+  top: 2rem;
+  width: 1rem;
+  height: 1px;
+  background: var(--color-line-bright);
+}
+.folio-release-checklist .folio-human-gate {
+  margin: 0.5rem -1rem 0.5rem 0;
+  padding: 1.5rem;
+  border: 1px solid var(--color-accent);
+  background: var(--color-paper);
+  transform: translateX(0.5rem);
+  box-shadow: var(--folio-shadow);
+}
+.folio-human-gate strong {
+  font-size: 1.25rem;
+}
+.folio-faq {
+  padding-top: 1rem;
+}
+.folio-faq details {
+  padding-inline: 1.25rem;
+  transition: background-color 160ms ease;
+}
+.folio-faq details[open] {
+  background: var(--color-surface);
+}
+.folio-faq summary svg {
+  transition: transform 200ms var(--folio-settle);
+}
+.folio-faq summary:active {
+  color: var(--color-accent);
+}
+.folio-faq details > p {
+  padding-left: 1rem;
+  border-left: 1px solid var(--color-line);
+}
+.folio-faq details[open] > p {
+  animation: folio-faq-answer 200ms var(--folio-settle);
+}
+.folio-install {
+  padding-block: 4rem;
+}
+.folio-install-command {
+  transform: rotate(-1deg);
+  padding: 2rem;
+  border: 0;
+  box-shadow:
+    var(--folio-shadow),
+    5px 5px 0 var(--color-bg-deep);
+  background: var(--color-surface);
+}
+.folio-install-command > button {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  transition: transform 100ms var(--folio-settle);
+}
+.folio-install-command > button:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .folio-stage-controls button:not([aria-pressed="true"]):hover {
+    background: var(--color-surface-2);
+  }
+  .register-continuation a:hover,
+  .folio-faq summary:hover {
+    color: var(--color-accent);
+  }
+}
+@media (max-width: 1100px) {
+  .register-continuation {
+    padding-inline: 2rem;
+  }
+  .folio-heading {
+    grid-template-columns: 3rem 1fr 1fr;
+  }
+  .folio-role-group dl > div {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+  .folio-spec-layout,
+  .folio-ship-layout {
+    gap: 2rem;
+  }
+  .folio-review-rule {
+    flex-wrap: wrap;
+  }
+  .folio-review-rule a {
+    margin-left: 3rem;
+  }
+}
+@media (max-width: 760px) {
+  .register-continuation {
+    padding-inline: 1.25rem;
+  }
+  .folio-section {
+    padding-bottom: 3rem;
+  }
+  .folio-heading {
+    grid-template-columns: 2.5rem 1fr;
+    gap: 0.75rem;
+    padding-block: 1.5rem;
+  }
+  .folio-heading p {
+    grid-column: 2;
+    max-width: none;
+  }
+  .folio-intro {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding-block: 2rem;
+  }
+  .folio-workflow,
+  .folio-role-register,
+  .folio-host-layout,
+  .folio-spec-layout,
+  .folio-ship-layout,
+  .folio-install {
+    grid-template-columns: 1fr;
+  }
+  .folio-stage-controls button {
+    padding: 0.875rem 0.5rem;
+    gap: 0.375rem;
+    justify-content: center;
+    font-size: 0.8125rem;
+    min-height: 3rem;
+  }
+  .folio-stage-controls button svg {
+    display: none;
+  }
+  .folio-stage-controls button span {
+    font-size: 0.6rem;
+  }
+  .folio-stage-copy,
+  .folio-artifact {
+    padding: 1.25rem;
+  }
+  .folio-artifact {
+    border-left: 0;
+    border-top: 1px solid var(--color-line);
+  }
+  .folio-artifact pre {
+    min-height: 0;
+    padding-bottom: 1.5rem;
+  }
+  .folio-role-group,
+  .folio-role-group:nth-child(even) {
+    padding: 1.5rem 0;
+    border-left: 0;
+  }
+  .folio-role-group dl > div {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .folio-host-list > div {
+    padding-right: 0;
+  }
+  .folio-shared-record {
+    padding: 1.5rem;
+    border-left: 0;
+    border-top: 1px solid var(--color-line);
+  }
+  .folio-shared-record ul {
+    grid-template-columns: 1fr;
+  }
+  .folio-spec-document {
+    padding: 1.25rem;
+  }
+  .folio-review-route {
+    grid-template-columns: 1fr 1fr;
+  }
+  .folio-review-route li,
+  .folio-review-route li:first-child {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .folio-review-route li:nth-child(even) {
+    border-right: 0;
+  }
+  .folio-review-rule a {
+    margin-left: 0;
+  }
+  .folio-install {
+    padding-block: 2rem;
+  }
+  .folio-install-command {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  .folio-install-command > code {
+    font-size: 0.875rem;
+  }
+  .folio-footer nav {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .folio-stage-controls::before,
+  .folio-faq summary svg,
+  .folio-install-command > button {
+    transition: none;
+  }
+  .folio-artifact-change,
+  .folio-faq details[open] > p {
+    animation: none;
+  }
+  .folio-stage-controls button:active {
+    transform: none;
+  }
+}
+
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .folio-host-layout {
+      view-timeline: --folio-connectors block;
+    }
+    .folio-host-list::after,
+    .folio-host-list > div::after {
+      transform-origin: left center;
+      animation: folio-connector-draw linear both;
+      animation-timeline: --folio-connectors;
+      animation-range: entry 15% cover 45%;
+    }
+  }
+}
+
+@media (max-width: 760px) {
+  .folio-workflow {
+    gap: 0;
+  }
+  .folio-stage-controls {
+    margin-bottom: 0.5rem;
+  }
+  .folio-stage-copy {
+    min-height: 0;
+    padding: 1.5rem 0 2rem;
+  }
+  .folio-artifact {
+    margin-right: 0.5rem;
+    transform: none;
+    border: 0;
+  }
+  .folio-role-register {
+    gap: 1.75rem;
+    padding: 1rem 0 2rem;
+  }
+  .folio-role-group,
+  .folio-role-group:nth-child(even),
+  .folio-role-group:nth-child(3),
+  .folio-role-group:nth-child(4) {
+    margin-top: 0;
+    transform: none;
+    padding: 1.5rem;
+  }
+  .folio-role-group dl > div {
+    grid-template-columns: 1fr;
+    gap: 0.375rem;
+  }
+  .folio-host-layout {
+    gap: 2rem;
+    padding-bottom: 1rem;
+  }
+  .folio-host-list {
+    border: 0;
+    padding: 0;
+  }
+  .folio-host-list::after {
+    width: 1px;
+    height: 2rem;
+    top: 100%;
+    right: 50%;
+  }
+  .folio-host-list > div {
+    padding: 1rem;
+  }
+  .folio-host-list > div::after {
+    display: none;
+  }
+  .folio-host-list > div:nth-child(even) {
+    margin-left: 0;
+  }
+  .folio-shared-record {
+    border: 0;
+  }
+  .folio-engine-line {
+    padding: 1.25rem;
+  }
+  .folio-spec-document {
+    transform: none;
+    margin-left: 0.5rem;
+  }
+  .folio-spec-layout {
+    padding-top: 2rem;
+  }
+  .folio-spec-layout > div {
+    padding-right: 0;
+  }
+  .folio-review-route {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 0 0 2rem 1.25rem;
+    border-left: 1px solid var(--color-line);
+  }
+  .folio-review-route li,
+  .folio-review-route li:first-child,
+  .folio-review-route li:nth-child(2),
+  .folio-review-route li:nth-child(3),
+  .folio-review-route li:nth-child(4) {
+    margin: 0;
+    border: 0;
+    padding: 1.5rem;
+  }
+  .folio-review-route li:not(:last-child)::after {
+    width: 1.25rem;
+    height: 1px;
+    left: -1.25rem;
+    right: auto;
+    top: 2rem;
+    border-right: 0;
+  }
+  .folio-review-route p {
+    min-height: 0;
+  }
+  .folio-release-checklist {
+    padding-left: 1rem;
+  }
+  .folio-release-checklist li::before {
+    left: -1rem;
+    width: 0.75rem;
+  }
+  .folio-release-checklist .folio-human-gate {
+    margin-right: 0;
+    transform: none;
+  }
+  .folio-faq details {
+    padding-inline: 0.75rem;
+  }
+  .folio-faq details > p {
+    margin-right: 0;
+  }
+  .folio-install-command {
+    transform: none;
+    padding: 1.25rem;
+    margin-right: 0.5rem;
+  }
+}

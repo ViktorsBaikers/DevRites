@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Outfit } from "next/font/google";
 import "./globals.css";
 import { FAQ, SITE_URL, REPO, VERSION } from "@/lib/site";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  display: "optional",
+const schibsted = localFont({
+  src: "./fonts/schibsted-grotesk-latin.woff2",
+  variable: "--font-schibsted",
+  display: "swap",
+  fallback: ["Arial", "sans-serif"],
 });
 
 const jbmono = localFont({
@@ -22,7 +22,7 @@ const jbmono = localFont({
 
 const title = "DevRites: verify AI-written code before release";
 const description =
-  "Give Claude Code and Codex a shared workflow for specs, bounded builds, recorded checks, independent review, and human approval before release.";
+  "Keep AI-assisted feature work reviewable, resumable, and safe to release across Claude Code, Codex, omp, pi, and Devin CLI.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -49,22 +49,19 @@ export const metadata: Metadata = {
     url: SITE_URL,
     title,
     description:
-      "Move Claude Code and Codex work through bounded builds, recorded checks, independent review, and human approval.",
+      "Move AI-assisted changes from a repository-local spec to current evidence, independent review, and human approval.",
   },
   twitter: {
     card: "summary",
     title,
     description:
-      "Move Claude Code and Codex work through bounded builds, recorded checks, independent review, and human approval.",
+      "Move AI-assisted changes from a repository-local spec to current evidence, independent review, and human approval.",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f1f3f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#111722" },
-  ],
-  colorScheme: "light dark",
+  themeColor: "#ebe8e2",
+  colorScheme: "light",
 };
 
 const jsonLd = {
@@ -75,7 +72,7 @@ const jsonLd = {
       "@id": `${SITE_URL}/#website`,
       url: `${SITE_URL}/`,
       name: "DevRites",
-      description: "A shared engineering workflow for Claude Code and Codex.",
+      description: "A repository-local spec-to-ship workflow for AI-assisted engineering.",
       inLanguage: "en",
       publisher: { "@id": `${SITE_URL}/#org` },
     },
@@ -88,7 +85,7 @@ const jsonLd = {
       operatingSystem: "macOS, Linux, Windows",
       softwareVersion: VERSION,
       description:
-        "A spec-driven engineering system for Claude Code and Codex. Generated project-local host artifacts use the same Go control plane and git-diffable workspace, so a new agent can resume from the recorded project state.",
+        "A spec-driven engineering system for Claude Code, Codex, omp, pi, and Devin CLI. Generated project-local host artifacts use the same Go control plane and git-diffable workspace, so another agent can resume from recorded state.",
       license: `${REPO}/blob/main/LICENSE`,
       codeRepository: REPO,
       isAccessibleForFree: true,
@@ -123,14 +120,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${outfit.variable} ${jbmono.variable}`} suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var saved=localStorage.getItem('devrites-theme');var theme=saved==='light'||saved==='dark'?saved:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=theme;}catch(_){}})();`,
-          }}
-        />
-      </head>
+    <html lang="en" className={`${schibsted.variable} ${jbmono.variable}`} data-theme="light">
       <body>
         <script
           type="application/ld+json"

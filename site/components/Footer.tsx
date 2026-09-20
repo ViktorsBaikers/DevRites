@@ -30,7 +30,7 @@ export default function Footer() {
               <b className="text-lg">DevRites</b>
             </a>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-ink-muted">
-              A shared engineering workflow for Claude Code and Codex, with recorded checks, independent review, and human approval before release.
+              A repository-local engineering workflow for five AI coding hosts, with recorded evidence, independent review, and human approval before release.
             </p>
           </div>
 

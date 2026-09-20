@@ -1,69 +1,55 @@
-import { Bot, Braces, Check, Cpu, LockKeyhole } from "lucide-react";
+import { Check, Cpu, LockKeyhole } from "lucide-react";
 
-const WORKSPACE_FILES = ["spec.md", "tasks.md", "evidence.md", "seal.md"];
+const HOSTS = [
+  ["Claude Code", "/rite-prove"],
+  ["Codex", "$rite-prove"],
+  ["omp", "rite-prove"],
+  ["pi", "rite-prove"],
+  ["Devin CLI", "rite-prove"],
+];
+
+const WORKSPACE_FILES = ["spec.md", "tasks.md", "evidence.md", "review.md", "seal.md"];
 
 export default function Anywhere() {
   return (
     <section id="anywhere" className="hosts-section" aria-labelledby="hosts-title">
       <div className="wrap">
         <header className="hosts-heading">
-          <h2 id="hosts-title">Use Claude or Codex without losing release state.</h2>
-          <p>
-            Each host uses its native command syntax, but both read the same project files and call the same engine.
-          </p>
+          <p className="section-kicker">Host register / 05</p>
+          <h2 id="hosts-title">Change the agent. Keep the record.</h2>
+          <p>Five host surfaces read the same repository-local feature workspace and call the same deterministic Go control plane.</p>
         </header>
 
-        <div className="host-router" aria-label="Claude Code and Codex converge on one DevRites engine and workspace">
-          <article className="host-node host-node--claude">
-            <Bot className="size-6" strokeWidth={1.7} aria-hidden />
-            <div>
-              <span>Project skill</span>
-              <strong>Claude Code</strong>
-            </div>
-            <code>/rite-prove</code>
-          </article>
+        <div className="host-register">
+          <ol aria-label="Supported agent hosts">
+            {HOSTS.map(([host, command], index) => (
+              <li key={host}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{host}</strong>
+                <code>{command}</code>
+              </li>
+            ))}
+          </ol>
 
-          <div className="host-route host-route--claude" aria-hidden="true">
-            <span><code>/rite-prove</code></span>
-          </div>
-
-          <article className="host-engine-node">
-            <Cpu className="size-7" strokeWidth={1.6} aria-hidden />
+          <article className="host-engine-card">
+            <Cpu aria-hidden />
             <span>Shared control plane</span>
             <strong>devrites-engine</strong>
-            <code>evidence-fresh</code>
+            <code>check seal &lt;slug&gt;</code>
+            <p>Workspace checks run without model or network calls.</p>
           </article>
 
-          <div className="host-route host-route--codex" aria-hidden="true">
-            <span><code>$rite-prove</code></span>
-          </div>
-
-          <article className="host-node host-node--codex">
-            <Braces className="size-6" strokeWidth={1.7} aria-hidden />
+          <article className="host-workspace-card">
+            <header>
+              <span>Shared on disk</span>
+              <code>.devrites/work/&lt;slug&gt;/</code>
+            </header>
             <div>
-              <span>Project skill</span>
-              <strong>Codex</strong>
+              {WORKSPACE_FILES.map((file) => <span key={file}><Check aria-hidden /><code>{file}</code></span>)}
             </div>
-            <code>$rite-prove</code>
-          </article>
-
-          <article className="host-workspace">
-            <div className="host-workspace-head">
-              <div>
-                <span>Shared on disk</span>
-                <code>.devrites/work/auth-tokens/</code>
-              </div>
-              <p><LockKeyhole className="size-4" strokeWidth={1.8} aria-hidden /> Human approval is still required</p>
-            </div>
-            <div className="host-workspace-files">
-              {WORKSPACE_FILES.map((file) => (
-                <span key={file}><Check className="size-3.5" strokeWidth={2.3} aria-hidden /><code>{file}</code></span>
-              ))}
-            </div>
+            <p><LockKeyhole aria-hidden />Human approval is still required.</p>
           </article>
         </div>
-
-        <p className="hosts-note">Workspace commands run without model or network calls.</p>
       </div>
     </section>
   );

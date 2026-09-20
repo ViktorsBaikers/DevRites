@@ -2,10 +2,10 @@ import { Check, LockKeyhole } from "lucide-react";
 import { STATS } from "@/lib/site";
 
 const ACTORS = [
-  ["Claude Code", "project-local skills"],
-  ["Codex", "project-local skills"],
+  ["Claude Code · Codex", "native project skills"],
+  ["omp · pi · Devin CLI", "generated host surfaces"],
   ["CI and scripts", "engine commands"],
-  ["Humans", "review and release"],
+  ["Humans", "review and release authority"],
 ];
 
 const ARTIFACTS = [
@@ -44,7 +44,7 @@ export default function Trust() {
 
         <figure className="alignment-board mt-14" aria-labelledby="alignment-caption">
           <figcaption id="alignment-caption" className="sr-only">
-            Claude Code, Codex, automation, and humans read the same DevRites feature files, including the scope, acceptance criteria, evidence, and release decision.
+            Supported AI coding hosts, automation, and humans read the same DevRites feature files, including scope, acceptance criteria, evidence, and the release decision.
           </figcaption>
 
           <div className="flex flex-col gap-3 border-b border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">

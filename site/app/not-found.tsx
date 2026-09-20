@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "Page not found · DevRites",
@@ -26,7 +25,6 @@ export default function NotFound() {
         </Link>
         <div className="flex items-center gap-3">
           <span className="mono text-xs text-ink-faint">HTTP 404</span>
-          <ThemeToggle />
         </div>
       </header>
 

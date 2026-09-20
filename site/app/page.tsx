@@ -1,13 +1,6 @@
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
-import Trust from "@/components/Trust";
-import Contrast from "@/components/Contrast";
-import Bento from "@/components/Bento";
-import Pipeline from "@/components/Pipeline";
-import Anywhere from "@/components/Anywhere";
-import Faq from "@/components/Faq";
-import Install from "@/components/Install";
-import Footer from "@/components/Footer";
+import RegisterSections from "@/components/RegisterSections";
 
 export default function Home() {
   return (
@@ -21,15 +14,8 @@ export default function Home() {
       <Nav />
       <main id="main" className="w-full max-w-full overflow-x-clip">
         <Hero />
-        <Trust />
-        <Pipeline />
-        <Contrast />
-        <Bento />
-        <Anywhere />
-        <Faq />
-        <Install />
+        <RegisterSections />
       </main>
-      <Footer />
     </>
   );
 }

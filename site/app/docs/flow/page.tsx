@@ -16,8 +16,8 @@ export default function Flow() {
     <>
       <DocsHeader
         crumb="flow"
-        title="Flow"
-        lead="A feature normally moves through spec, define, vet, build, prove, polish, review, seal, and ship. Temper adds an optional strategy review. Plan repair and converge recover work that no longer matches the plan."
+        title="The feature lifecycle"
+        lead="Agree on the result, build a verifiable slice, then prove and review the current code. Clarify and Vet are required but adapt to the risk; Temper adds an optional strategy review."
       />
 
       <Reveal>

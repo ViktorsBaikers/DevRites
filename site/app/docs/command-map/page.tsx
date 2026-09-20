@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Reveal } from "@/components/ui";
 import DocsHeader from "@/components/docs/DocsHeader";
+import { Row, H2, P } from "@/components/docs/DocsBits";
 import {
   PUBLIC_COMMANDS,
   INTERNAL_SKILLS,
@@ -32,30 +33,18 @@ function Section({ id, title, intro, children }: { id: string; title: string; in
   );
 }
 
-function Row({ left, tag, body }: { left: string; tag?: string; body: string }) {
-  return (
-    <div className="flex flex-col gap-1.5 border-b border-line p-4 last:border-0 sm:flex-row sm:items-baseline sm:gap-4">
-      <div className="flex w-full shrink-0 items-center gap-2 sm:w-56">
-        <code className="mono text-sm text-accent">{left}</code>
-        {tag && (
-          <span className="mono rounded border border-line px-1.5 py-0.5 text-[0.6rem] uppercase tracking-wide text-ink-faint">
-            {tag}
-          </span>
-        )}
-      </div>
-      <p className="text-[0.9rem] leading-relaxed text-ink-muted">{body}</p>
-    </div>
-  );
-}
-
 export default function CommandMap() {
   return (
     <>
       <DocsHeader
         crumb="command map"
         title="Command map"
-        lead="DevRites ships 42 skills, 13 read-only agents, one slice writer, and a shared engine CLI. Claude uses /rite-* and Codex uses $rite-* to run the same generated skills."
+        lead="Find the command for the job. Public rites run engineering work in your coding host. Internal skills and specialist roles are called by the workflow; engine commands run in a terminal."
       />
+
+      <H2 id="choose" first>Which command do I need?</H2>
+      <P>Start with <code className="k">/rite-quick</code> for a small reversible fix, <code className="k">/rite-spec</code> for a feature, or <code className="k">/rite-status</code> to resume. The status report names the next step. You do not need to memorize the inventory below.</P>
+      <P>These examples use slash commands for Claude Code, omp, pi, and Devin CLI. In Codex, use <code className="k">$rite-*</code>. The <code className="k">/rite</code> menu recommends a command without starting a phase.</P>
 
       <Section id="public" title="Public commands" intro="You can run these commands directly. Each one maps to a workflow skill.">
         {PUBLIC_COMMANDS.map((c) => (
@@ -76,7 +65,7 @@ export default function CommandMap() {
       <Section
         id="agents"
         title="Fresh-context agents"
-        intro="Thirteen read-only reviewers, judges, and the archive retrospector. They receive bounded evidence rather than the orchestrator's reasoning."
+        intro="Read-only specialists and one path-bounded slice writer. They receive explicit evidence and contracts rather than the orchestrator's reasoning."
       >
         {REVIEW_AGENTS.map((a) => (
           <Row key={a.name} left={a.name} body={a.checks} />
@@ -95,7 +84,7 @@ export default function CommandMap() {
       <Section
         id="cli"
         title="Go control-plane CLI"
-        intro="The stdlib-only devrites-engine binary handles workspace operations. Claude, Codex, CI, scripts, and humans call the same commands, and the exit code reports the result."
+        intro="The stdlib-only devrites-engine binary handles workspace operations. Every supported host, CI, scripts, and humans call the same commands, and the exit code reports the result."
       >
         <div className="border-b border-line p-4">
           <code className="mono text-sm text-accent">devrites-engine</code>{" "}
@@ -108,18 +97,17 @@ export default function CommandMap() {
             ))}
           </div>
           <p className="mt-3 text-[0.9rem] leading-relaxed text-ink-muted">
-            Run <code className="k">devrites-engine help</code> for the full list of commands and hooks.
+            Run <code className="k">devrites-engine help</code> for the full command inventory.
             Exit 3 is a structured HITL pause; resolve the named gap and retry.
           </p>
         </div>
         <div className="p-4">
           <code className="mono text-sm text-accent">structured automation</code>{" "}
-          <span className="text-ink-faint">JSON + generated hooks</span>
+          <span className="text-ink-faint">JSON + generated adapters</span>
           <p className="mt-2 text-[0.9rem] leading-relaxed text-ink-muted">
-            <code className="k">snapshot</code> emits the stable <code className="k">devrites.workspace.v1</code>{" "}
-            contract; AFK-parsed read commands support <code className="k">--json</code>. Generated Claude
-            and Codex hooks call the same binary for orientation, cursors, red-test watching, source
-            boundaries, reviewer read-only enforcement, and compaction handoffs.
+            <code className="k">observe summary</code> emits sanitized workspace JSON, while context,
+            metrics, and detection commands expose their own machine-readable contracts. Generated host
+            adapters use the same engine for orientation, gates, claims, and handoffs.
           </p>
         </div>
       </Section>
@@ -130,7 +118,7 @@ export default function CommandMap() {
           <p className="mt-2 text-[0.9rem] leading-relaxed text-ink-muted">
             The <code className="k">devrites-</code> prefix prevents name collisions with bundled host
             skills. It does not mean &quot;internal&quot;. Visibility is set by the
-            user-invocable flag in each skill, and generation preserves it for Claude and Codex.
+            user-invocable flag in each skill, and generation preserves it across all five hosts.
           </p>
         </div>
       </Reveal>

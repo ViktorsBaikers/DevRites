@@ -14,17 +14,18 @@ export default function Usage() {
       <DocsHeader
         crumb="usage"
         title="Usage & examples"
-        lead="These examples use Claude's /rite-* syntax. In Codex, use $rite-* instead. Both hosts read the same active workspace and call the same engine gates."
+        lead="Follow a feature, recover a plan, or resume after a pause. Examples use /rite-* in your coding host; use $rite-* in Codex. Run terminal commands separately."
       />
 
       <H2 id="loop" first>The build loop</H2>
       <P>
         The normal workflow builds one slice at a time. <code className="k">/rite-build</code> does not
-        auto-advances, so you decide when the next slice runs. <code className="k">/rite-seal</code>{" "}
+        auto-advance in the default human-in-the-loop mode, so you decide when the next slice runs. <code className="k">/rite-seal</code>{" "}
         decides; <code className="k">/rite-ship</code> executes and closes.
       </P>
       <Code>
         <span className="text-go">/rite-spec</span> add-csv-export{"    "}<span className="text-ink-faint"># investigate → spec.md</span>{"\n"}
+        <span className="text-go">/rite-clarify</span>{"                "}<span className="text-ink-faint"># resolve decisions before planning</span>{"\n"}
         <span className="text-go">/rite-define</span>{"                 "}<span className="text-ink-faint"># spec → plan + vertical slices</span>{"\n"}
         <span className="text-go">/rite-vet</span>{"                    "}<span className="text-ink-faint"># mandatory review; depth scales to stakes</span>{"\n"}
         <span className="text-go">/rite-build</span>{"                  "}<span className="text-ink-faint"># slice 1, stops with evidence</span>{"\n"}
@@ -33,7 +34,7 @@ export default function Usage() {
         <span className="text-go">/rite-polish</span>{"                 "}<span className="text-ink-faint"># code polish, then UI polish if UI</span>{"\n"}
         <span className="text-go">/rite-review</span>{"                 "}<span className="text-ink-faint"># multi-axis review, in parallel</span>{"\n"}
         <span className="text-go">/rite-seal</span>{"                   "}<span className="text-ink-faint"># GO / NO-GO (no git)</span>{"\n"}
-        <span className="text-go">/rite-ship</span>{"                   "}<span className="text-ink-faint"># type-GO → commit · push · tag · archive</span>
+        <span className="text-go">/rite-ship</span>{"                   "}<span className="text-ink-faint"># inspect Git plan → fresh GO → approved actions</span>
       </Code>
 
       <H2 id="drift">Spec drift mid-build</H2>
@@ -65,7 +66,7 @@ export default function Usage() {
       </P>
       <Code>
         <span className="text-go">/rite-build</span>{"\n"}
-        <span className="text-ink-faint">  → slice 03 is HITL (blocking, SLA 15m). STOPS before code:</span>{"\n"}
+        <span className="text-ink-faint">  → slice 03 needs a human decision before code:</span>{"\n"}
         {"    Checkpoint: composite index, or two single-col indexes?\n"}
         {"    Proposed: composite, one read path, both columns filtered together.\n"}
         <span className="text-accent">You: /rite-resolve q-2026-05-28-001 &quot;composite&quot;</span>{"\n"}
@@ -94,17 +95,19 @@ export default function Usage() {
 
       <H2 id="auto">Fully unattended: /rite-autocomplete</H2>
       <P>
-        This command runs the lifecycle in order. At a soft gate, it chooses the specialist's preferred
-        option and records the reason. It still pauses for irreversible risk, a NO-GO, exhausted slices,
-        or low confidence.
+        This command runs the reversible lifecycle after Spec and Clarify have closed the product decisions.
+        It records routine recommended choices and attempts bounded technical recovery when checks fail.
+        Human-only access, irreversible risk, and a remaining NO-GO still stop progress.
       </P>
       <Code>
         <span className="text-go">/rite-autocomplete</span> &quot;add CSV export for admins&quot; --max-slices 8{"\n"}
-        <span className="text-ink-faint">  → interview once → spec → temper → define → vet →</span>{"\n"}
+        <span className="text-ink-faint">  → spec → clarify → temper → define → vet →</span>{"\n"}
         <span className="text-ink-faint">    build ×N → prove → polish → review → seal</span>{"\n"}
         <span className="text-ink-faint">  → seal returns GO → stops, hands off to /rite-ship</span>{"\n"}
-        <span className="text-go">/rite-ship</span> · <span className="text-accent">You: GO</span>{"   "}<span className="text-ink-faint"># or pass --ship for zero-touch</span>
+        <span className="text-go">/rite-ship</span>{"\n"}
+        <span className="text-ink-faint">  → inspect the exact Git plan before typing GO</span>
       </Code>
+      <Callout title="--ship still needs you">Adding <code className="k">--ship</code> continues into Ship preflight. It does not authorize a commit, push, tag, or PR by itself. A fresh literal GO and native approval still apply to the disclosed attempt.</Callout>
 
       <H2 id="checking-in">Checking in</H2>
       <P>

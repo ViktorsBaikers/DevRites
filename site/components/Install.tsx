@@ -22,7 +22,7 @@ export default function Install() {
                 Use DevRites for your next feature.
               </h2>
               <p className="mt-7 max-w-xl text-lg leading-relaxed opacity-80">
-                DevRites is free and open source. It gives Claude Code and Codex the same project-local workflow.
+                DevRites is free and open source. Claude Code, Codex, omp, pi, and Devin CLI share one project-local workflow.
               </p>
 
               <div className="mt-9 flex max-w-xl items-center gap-2 rounded-xl bg-bg-deep py-3 pl-5 pr-3 text-ink">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import DocsShell from "@/components/docs/DocsShell";
+import "../docs-register.css";
 
 export const metadata: Metadata = {
   title: { default: "Docs · DevRites", template: "%s · DevRites docs" },

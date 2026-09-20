@@ -7,7 +7,7 @@ const GROUPS = [
   {
     title: "Model judgment, deterministic gates",
     lead: "The model handles engineering judgment. The engine applies the same state, completeness, evidence, and install rules every time.",
-    proof: "readiness: blocked, missing acceptance proof",
+    proof: "check seal: blocked, evidence stale",
     keys: ["engine", "drift", "ledger"],
     span: "lg:col-span-4",
     treatment: "bento-feature--signal",

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Reveal } from "@/components/ui";
 import DocsHeader from "@/components/docs/DocsHeader";
 import { H2, P, Panel, Row } from "@/components/docs/DocsBits";
 import { PhaseLoop, ProofLadder } from "@/components/docs/Diagrams";
@@ -22,8 +21,8 @@ export default function Concepts() {
 
       <H2 id="big-idea" first>The big idea</H2>
       <P>
-        DevRites separates engineering judgment from workflow bookkeeping. Project-local Claude and Codex
-        skills make engineering decisions. A stdlib-only Go engine manages state, gates, hooks, migration,
+        DevRites separates engineering judgment from workflow bookkeeping. Skills and specialist agents
+        make engineering decisions. A Go engine manages state, gates, candidate binding, migration,
         and derived data in the Markdown files under <code className="k">.devrites/</code>. A new context,
         another host, CI, or a human can resume from those same files.
       </P>
@@ -33,16 +32,7 @@ export default function Concepts() {
       </div>
 
       <H2 id="core">Core concepts</H2>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {CONCEPTS.map((c, i) => (
-          <Reveal key={c.term} delay={Math.min(i * 0.04, 0.25)}>
-            <div className="tile flex h-full flex-col gap-2 p-5">
-              <h3 className="font-bold text-accent">{c.term}</h3>
-              <p className="text-[0.9rem] leading-relaxed text-ink-muted">{c.body}</p>
-            </div>
-          </Reveal>
-        ))}
-      </div>
+      <dl className="docs-glossary">{CONCEPTS.map((c) => <div key={c.term}><dt>{c.term}</dt><dd>{c.body}</dd></div>)}</dl>
 
       <H2 id="proof">The evidence ladder</H2>
       <P>

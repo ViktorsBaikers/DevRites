@@ -1,5 +1,5 @@
 // Docs content - structured so pages stay accurate and in one place.
-// Mirrors the shipped v3 pack: 42 skills, 14 agents, the Go control plane, and workspace schema.
+// Mirrors the current generated host pack, role profiles, Go control plane, and workspace schema.
 
 export const DOCS_NAV = [
   {
@@ -15,7 +15,7 @@ export const DOCS_NAV = [
     group: "Reference",
     items: [
       { href: "/docs/command-map/", label: "Command map" },
-      { href: "/docs/flow/", label: "Flow" },
+      { href: "/docs/flow/", label: "Feature lifecycle" },
       { href: "/docs/cli-mcp/", label: "Engine CLI" },
       { href: "/docs/architecture/", label: "Architecture" },
     ],
@@ -31,17 +31,19 @@ export const PUBLIC_COMMANDS: Cmd[] = [
   { cmd: "/rite-quick", phase: "express", desc: "Handles a small, reversible change in one pass. Risky or multi-slice work moves to /rite-spec." },
   { cmd: "/rite-adopt", phase: "adopt", desc: "Reads an existing codebase and sets up DevRites before the first feature." },
   { cmd: "/rite-spec", phase: "spec", desc: "Investigates the request, writes spec.md, and creates the feature workspace." },
+  { cmd: "/rite-clarify", phase: "clarify", desc: "Closes material ambiguity and records a decision-coverage verdict before planning." },
   { cmd: "/rite-temper", phase: "temper", desc: "Reviews scope, runs a pre-mortem, and strengthens the spec before planning." },
   { cmd: "/rite-define", phase: "define", desc: "Turns the approved spec into a plan and vertical task slices." },
   { cmd: "/rite-vet", phase: "vet", desc: "Reviews the plan before coding and writes the build-readable test-plan.md." },
   { cmd: "/rite-plan", phase: "plan", desc: "Breaks down, reslices, repairs, reorders, splits, or unblocks an active plan." },
-  { cmd: "/rite-build", phase: "build", desc: "Implements one vertical slice test-first, then stops with evidence. Optional forge mode builds rival versions for a judge to compare." },
+  { cmd: "/rite-build", phase: "build", desc: "Implements one path-bounded vertical slice test-first, verifies it, and records evidence." },
   { cmd: "/rite-converge", phase: "recovery", desc: "Compares live code with the spec, plan, and tasks, then adds the remaining work as traceable slices." },
+  { cmd: "/rite-upgrade", phase: "compatibility", desc: "Audits an older active workspace against current contracts and routes only cited defects to the owning phase." },
   { cmd: "/rite-prove", phase: "prove", desc: "Checks the finished feature with tests, a build, the running application, and browser evidence when relevant." },
   { cmd: "/rite-polish", phase: "polish", desc: "Cleans up code without changing behavior, then checks the UI against the design system when relevant." },
   { cmd: "/rite-review", phase: "review", desc: "Runs parallel, fresh-context reviews of the feature diff on separate axes." },
   { cmd: "/rite-seal", phase: "seal", desc: "Checks acceptance, runs the relevant reviewers, and writes a GO or NO-GO decision." },
-  { cmd: "/rite-ship", phase: "ship", desc: "After type-GO, runs the approved commit, push, and tag steps, then archives the workspace." },
+  { cmd: "/rite-ship", phase: "ship", desc: "Shows the exact Git plan, waits for fresh GO, then commits and performs only the approved remote actions before archiving." },
   { cmd: "/rite-autocomplete", phase: "auto", desc: "Runs the lifecycle unattended and pauses at irreversible gates." },
   { cmd: "/rite-status", phase: "status", desc: "Reports the active feature's phase, run mode, next action, evidence, open gates, and risks." },
   { cmd: "/rite-resolve", phase: "resume", desc: "Answers, drops, or resolves a batch of open gates, then resumes the build." },
@@ -57,6 +59,7 @@ export const PUBLIC_COMMANDS: Cmd[] = [
   { cmd: "/rite-pov", phase: "utility", desc: "Evaluates an external option in the context of the project and recommends adopt, trial, hold, or reject." },
   { cmd: "/rite-dogfood", phase: "utility", desc: "Runs browser QA on changed user journeys and writes a dogfood report." },
   { cmd: "/rite-pr-feedback", phase: "utility", desc: "Fetches GitHub PR feedback, evaluates it, applies accepted fixes, replies, and resolves threads with evidence." },
+  { cmd: "/rite-watch-pr", phase: "utility", desc: "Reads one PR, CI, and review snapshot, classifies the next action, and stops without mutation." },
 ];
 
 export const INTERNAL_SKILLS: { name: string; trigger: string; role: string }[] = [
@@ -74,46 +77,52 @@ export const INTERNAL_SKILLS: { name: string; trigger: string; role: string }[] 
 ];
 
 export const REVIEW_AGENTS: { name: string; checks: string }[] = [
+  { name: "devrites-evidence-scout", checks: "Builds a bounded evidence dossier from live code, project records, or cited external facts." },
+  { name: "devrites-plan-drafter", checks: "Produces a read-only architecture and vertical-slice planning candidate." },
+  { name: "devrites-proof-runner", checks: "Validates immutable proof artifacts produced by root-executed commands." },
+  { name: "devrites-upgrade-planner", checks: "Compares an active legacy workspace with the current semantic contract." },
+  { name: "devrites-slice-wright", checks: "The sole write-capable role; implements one exact path-bounded slice or accepted correction." },
+  { name: "devrites-forge-judge", checks: "Compares isolated Forge candidates against the same slice contract and records the winning implementation." },
+  { name: "devrites-strategy-reviewer", checks: "Spec-vs-rubric review at temper: ambition, scope, premise, pre-mortem, and YAGNI." },
+  { name: "devrites-plan-reviewer", checks: "Plan-vs-rubric review at vet: architecture, reuse, tests, performance, and reversibility." },
   { name: "devrites-spec-reviewer", checks: "Does the diff implement the spec? Missing, partial, or wrong criteria; scope creep." },
   { name: "devrites-code-reviewer", checks: "Correctness, readability, architecture, maintainability." },
   { name: "devrites-test-analyst", checks: "Do the tests actually prove the acceptance criteria?" },
   { name: "devrites-frontend-reviewer", checks: "UX, accessibility, responsive behavior, design system, anti-AI-slop." },
   { name: "devrites-security-auditor", checks: "OWASP Top 10 (plus the LLM Top 10 on AI surfaces), trust boundaries, secrets, dependencies." },
   { name: "devrites-performance-reviewer", checks: "N+1 queries, hot paths, payload size." },
+  { name: "devrites-devex-reviewer", checks: "Developer experience at vet and seal: public APIs, CLIs, SDKs, the getting-started path." },
   { name: "devrites-doubt-reviewer", checks: "Adversarial check of a single claim or decision." },
   { name: "devrites-simplifier-reviewer", checks: "Independent simplification judgment under Chesterton's Fence." },
-  { name: "devrites-strategy-reviewer", checks: "Spec-vs-rubric review at temper: ambition, scope, premise, pre-mortem, YAGNI." },
-  { name: "devrites-plan-reviewer", checks: "Plan-vs-rubric review at vet: architecture, reuse, test design, reversibility." },
-  { name: "devrites-devex-reviewer", checks: "Developer experience at vet and seal: public APIs, CLIs, SDKs, the getting-started path." },
-  { name: "devrites-forge-judge", checks: "Scores the rival candidates from a forge build and names the winner." },
   { name: "devrites-retrospector", checks: "Reads across archived features at ship for recurring drift, then drafts rule candidates." },
 ];
 
 export const LAYERS: { name: string; tag: string; body: string }[] = [
-  { name: "Host surfaces", tag: "Claude · Codex", body: "Generated project-local skills, agents, aliases, guidance, and hooks adapt the same canonical pack to each host." },
-  { name: "Workflow skills", tag: "42 skills", body: "The rite-* lifecycle and utilities load only the phase contract and specialist guidance needed for the current step." },
-  { name: "Fresh-context agents", tag: "13 read-only · 1 writer", body: "Reviewers, judges, a retrospector, and the single slice writer receive bounded inputs rather than the orchestrator's reasoning." },
-  { name: "Control plane", tag: "devrites-engine", body: "A stdlib-only Go binary owns deterministic state transitions, gates, hooks, derivations, install/update, and migration for every host." },
+  { name: "Host surfaces", tag: "5 hosts", body: "Generated project-local skills, agents, aliases, guidance, and adapters carry the same canonical workflow into Claude Code, Codex, omp, pi, and Devin CLI." },
+  { name: "Workflow skills", tag: "33 public · 12 internal", body: "The rite-* lifecycle and focused specialists load only the phase contract and guidance needed for the current step." },
+  { name: "Fresh-context agents", tag: "bounded specialist roles", body: "Reviewers, planners, proof roles, and the single slice writer receive bounded inputs rather than the orchestrator's reasoning." },
+  { name: "Control plane", tag: "devrites-engine", body: "A stdlib-only Go binary owns deterministic state transitions, gates, derivations, install/update, and migration for every host." },
   { name: "Persistent state", tag: ".devrites/", body: "Git-diffable Markdown workspaces, living capability specs, principles, conventions, learnings, and append-only traces survive cleared contexts." },
-  { name: "Engineering standards", tag: "devrites-lib", body: "A compact core plus on-demand standards and checklists ship inside the shared library skill for Claude and Codex." },
+  { name: "Engineering standards", tag: "devrites-lib", body: "A compact core plus on-demand standards and checklists ship inside the shared library skill for every supported host." },
   { name: "Install & manifest", tag: "npx devrites", body: "The engine-owned installer manages project artifacts and the optional shared binary; uninstall preserves runtime feature state." },
 ];
 
 export const RATIONALE: { q: string; a: string }[] = [
-  { q: "Why separate skills and an engine?", a: "Judgment stays in small phase skills that load only what they need. Deterministic bookkeeping lives once in the Go engine, where Claude, Codex, CI, and humans cannot drift into different gate logic." },
+  { q: "Why separate skills and an engine?", a: "Judgment stays in small phase skills that load only what they need. Deterministic bookkeeping lives once in the Go engine, so hosts, CI, and humans cannot drift into different gate logic." },
   { q: "Why the rite-* names?", a: "They form one collision-resistant workflow namespace across Claude slash commands and Codex dollar commands. Host-specific invocation changes; the underlying skill and engine command do not." },
   { q: "Why a thin menu skill, not a mega-router?", a: "/rite shows the menu, active status, and suggested next command. It does not run a phase. You can invoke each phase directly without loading the full lifecycle into context." },
   { q: "Why have internal skills?", a: "The model invokes specialists such as devrites-doubt and devrites-frontend-craft when a phase needs them. This keeps them out of the public menu and avoids loading unrelated guidance." },
-  { q: "Why a Go control plane?", a: "State transitions, completeness checks, evidence freshness, hooks, and migration follow fixed rules. One stdlib-only binary makes those operations fast, testable, network-free, and consistent across both host adapters." },
-  { q: "Why generated host artifacts?", a: "pack/.claude is the authoring source. The build generates Claude and Codex surfaces from it, preventing two manually maintained workflows from drifting apart." },
+  { q: "Why a Go control plane?", a: "State transitions, completeness checks, evidence binding, candidate checks, and migration follow fixed rules. One stdlib-only binary makes those operations fast, testable, network-free, and consistent across every host adapter." },
+  { q: "Why generated host artifacts?", a: "pack/.claude is the canonical authoring source. The build generates five host surfaces from it, preventing manually maintained workflows from drifting apart." },
 ];
 
-export const CLI_GATES = ["preamble", "snapshot", "build-readiness", "evidence-fresh", "check-acceptance", "resolve", "doctor", "help"];
+export const CLI_GATES = ["check readiness", "check seal", "check candidate", "check slice", "gates status", "orient", "handoff", "help"];
 
 export const WORKSPACE_FILES: { file: string; by: string; holds: string }[] = [
   { file: "README.md", by: "/rite-spec · every phase", holds: "Compact workspace map: phase, status, next action, artifacts, read-next paths, and blocking gates." },
   { file: "brief.md", by: "/rite-spec", holds: "One-line objective and the definition of done." },
   { file: "spec.md", by: "/rite-spec", holds: "Product WHAT/WHY: REQ-### requirements, AC-### criteria, boundaries, prohibitions, and capability deltas." },
+  { file: "decision-coverage.md", by: "/rite-clarify", holds: "Records whether material product decisions are complete and reconciled against the spec, assumptions, and evidence." },
   { file: "references.md · references/", by: "/rite-spec", holds: "Indexed external and user-supplied references: screenshots, Figma, video, and links." },
   { file: "strategy.md", by: "/rite-temper", holds: "Strategic spec review (optional): scope mode, pre-mortem, dimension scores." },
   { file: "architecture.md · flows.md", by: "/rite-define", holds: "Owning module, integration boundaries, data/API/event shape, risks, and optional clarifying diagrams." },
@@ -168,14 +177,14 @@ export const CONCEPTS: { term: string; body: string }[] = [
 ];
 
 export const CLI_COMMANDS: { cmd: string; note: string; exit?: string }[] = [
-  { cmd: "devrites-engine preamble [slug]", note: "Workspace digest for the active or named feature." },
-  { cmd: "devrites-engine snapshot [slug]", note: "Stable devrites.workspace.v1 status JSON." },
-  { cmd: "devrites-engine build-readiness [slug]", note: "Plan-approved, build-ready gate.", exit: "0 ready · 3 pause" },
-  { cmd: "devrites-engine evidence-fresh [slug]", note: "Proof must post-date every touched file.", exit: "0 fresh · 3 stale" },
-  { cmd: "devrites-engine check-acceptance <dir>", note: "Acceptance criteria graded against seal evidence.", exit: "0 proven · 1 gap" },
-  { cmd: 'devrites-engine resolve <qid> "<answer>"', note: "Answer a HITL gate and keep state.md consistent." },
-  { cmd: "devrites-engine doctor", note: "Binary, pack, and workspace-schema compatibility verdict." },
-  { cmd: "devrites-engine help", note: "Exhaustive current commands, hooks, exit codes, and environment." },
+  { cmd: "devrites-engine check readiness <slug>", note: "Validate required artifacts, the task graph, and Build-input binding.", exit: "0 ready · 3 blocked" },
+  { cmd: "devrites-engine check seal <slug>", note: "Recheck final artifacts, binding, and exact candidate evidence.", exit: "0 ready · 3 blocked" },
+  { cmd: "devrites-engine check candidate <slug>", note: "Validate and hash the closed project candidate.", exit: "0 valid · 3 blocked" },
+  { cmd: "devrites-engine gates status <slug>", note: "Read the machine-checked acceptance gate ledger." },
+  { cmd: "devrites-engine orient <slug>", note: "Emit the sanitized JSON workspace summary." },
+  { cmd: "devrites-engine next [slug]", note: "Print the minimal remaining lifecycle path and advisory skips." },
+  { cmd: 'devrites-engine state resolve <qid> "<answer>"', note: "Answer a HITL gate and update workspace state atomically." },
+  { cmd: "devrites-engine help", note: "Exhaustive current commands, exit codes, and environment." },
 ];
 
 export const RULES_ON_DEMAND = [

@@ -1,45 +1,48 @@
 # DevRites
 
-> DevRites gives Claude Code and Codex the same project-local engineering workflow. Focused skills handle engineering judgment, while a Go control plane manages workflow state and checks. DevRites is free and open source under the MIT license.
+> DevRites gives Claude Code, Codex, omp, pi, and Devin CLI the same repository-local engineering workflow. Focused skills handle engineering judgment, while a Go control plane manages workflow state and deterministic checks. DevRites is free and open source under the MIT license.
 
-DevRites ships 42 skills and 14 fresh-context agents as generated project-local files for Claude and Codex. A CGO-free, stdlib-only `devrites-engine` binary manages workspace state, gates, hooks, derived data, migration, installation, updates, and uninstall. Feature state lives as git-diffable Markdown under `.devrites/work/<slug>/`, so a new agent or another host can resume from the recorded project state.
+DevRites ships 33 public workflow skills, focused internal skills, and 17 fresh-context role profiles through generated project-local surfaces. A CGO-free, stdlib-only `devrites-engine` binary manages workspace state, gates, derived data, migration, installation, updates, and uninstall. Feature state lives as git-diffable Markdown under `.devrites/work/<slug>/`, so another agent or host can resume from recorded project state.
 
 ## Lifecycle
 
 The normal feature path is:
 
 - spec (`/rite-spec` or `$rite-spec`): investigate the codebase and living capability ledger; write the product contract and measurable acceptance criteria
+- clarify (`/rite-clarify` or `$rite-clarify`): close material ambiguity and record decision coverage
+- temper (`/rite-temper` or `$rite-temper`): optional strategic review and pre-mortem; mandatory in autocomplete
 - define (`/rite-define` or `$rite-define`): write architecture, plan, traceable vertical slices, and the acceptance-to-proof matrix
 - vet (`/rite-vet` or `$rite-vet`): mandatory stakes-scaled engineering review before code
 - build (`/rite-build` or `$rite-build`): implement exactly one verified slice test-first, then stop with evidence
+- converge (`/rite-converge` or `$rite-converge`): compare live code with the recorded contract and add traceable remaining work
 - prove (`/rite-prove` or `$rite-prove`): tests, build, runtime, and browser proof against every acceptance criterion
 - polish (`/rite-polish` or `$rite-polish`): behavior-preserving code cleanup and UI polish when relevant
 - review (`/rite-review` or `$rite-review`): independent spec and standards axes over the feature diff
 - seal (`/rite-seal` or `$rite-seal`): GO / NO-GO decision; no git mutation
 - ship (`/rite-ship` or `$rite-ship`): literal type-GO, approved git ladder, capability-ledger sync, and workspace archive
 
-`rite-temper` is the optional strategy review before planning and runs automatically in autocomplete. `rite-plan repair` fixes recorded drift. `rite-converge` compares live code with the recorded spec and plan, then adds the remaining work as traceable slices.
+`rite-plan repair` fixes recorded drift. `rite-upgrade` audits an older active workspace against current contracts and routes only cited defects to the owning phase.
 
 ## Control plane
 
 `devrites-engine help` lists every command and hook. Common commands:
 
-- `devrites-engine preamble [slug]`: active workspace digest
-- `devrites-engine snapshot [slug]`: stable `devrites.workspace.v1` JSON
-- `devrites-engine build-readiness [slug]`: build-readiness gate
-- `devrites-engine evidence-fresh [slug]`: proof freshness gate
-- `devrites-engine check-acceptance <dir>`: acceptance gate
-- `devrites-engine resolve <qid> "<answer>"`: resolve a human gate
-- `devrites-engine doctor`: binary, pack, and workspace-schema compatibility
-- `devrites-engine ledger diff|sync|validate|list|show`: living capability specs
+- `devrites-engine check readiness <slug>`: validate required files, the task graph, and Build-input binding
+- `devrites-engine check seal <slug>`: recheck final files, gates, binding, and candidate evidence
+- `devrites-engine check candidate <slug>`: validate and hash the closed project candidate
+- `devrites-engine gates status <slug>`: read the machine-checked acceptance ledger
+- `devrites-engine orient <slug>`: sanitized JSON workspace summary
+- `devrites-engine next [slug]`: minimal remaining lifecycle path
+- `devrites-engine state resolve <qid> "<answer>"`: resolve a human gate atomically
+- `devrites-engine secret-scan [--staged] [slug]`: block on HIGH-confidence secret findings
 
 Exit 3 is a structured human-in-the-loop pause, not a crash. Workspace state and gate commands make no model or network calls. Explicit install, update, and source-cache I/O is isolated behind named engine boundaries.
 
 ## Hosts and safety
 
-- Claude Code uses `/rite <verb>` or `/rite-<verb>`.
-- Codex uses `$rite <verb>` or `$rite-<verb>`.
-- CI, local scripts, other tools, and humans call `devrites-engine` directly.
+- Claude Code uses `/rite <verb>` or `/rite-<verb>`; Codex uses `$rite <verb>` or `$rite-<verb>`.
+- omp, pi, and Devin CLI use their generated native workflow surfaces.
+- CI, local scripts, and humans call `devrites-engine` directly.
 - Skills, agents, standards, guidance, and hooks stay in the target project rather than global agent directories.
 - The optional shared `devrites-engine` executable may be installed in a user or system bin directory; pass `--no-binary` to skip it.
 - Spec Drift Guard records a plan mismatch and routes it through repair before the build resumes.
@@ -52,7 +55,7 @@ Exit 3 is a structured human-in-the-loop pause, not a crash. Workspace state and
 - [Getting started](https://devrites.com/docs/getting-started/): install, flags, optional tools, and first feature
 - [Command map](https://devrites.com/docs/command-map/): every shipped skill and agent
 - [Flow](https://devrites.com/docs/flow/): lifecycle, recovery loops, HITL, and AFK
-- [Engine CLI](https://devrites.com/docs/cli-mcp/): commands, JSON contracts, hooks, and exit codes
+- [Engine CLI](https://devrites.com/docs/cli-mcp/): commands, JSON contracts, gates, and exit codes
 - [Architecture](https://devrites.com/docs/architecture/): judgment plane, control plane, host adapters, and durable state
 
 ## Install

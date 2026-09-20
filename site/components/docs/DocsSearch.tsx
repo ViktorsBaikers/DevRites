@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DOCS_LINKS } from "@/lib/docs";
+import { DOCS_LINKS, PUBLIC_COMMANDS, CLI_COMMANDS, CONCEPTS, WORKSPACE_FILES, REVIEW_AGENTS } from "@/lib/docs";
 
 const DESCRIPTIONS: Record<string, string> = {
   "/docs/": "How the workflow, engine, hosts, and feature files fit together.",
@@ -16,17 +16,26 @@ const DESCRIPTIONS: Record<string, string> = {
   "/docs/architecture/": "Inspect the generated host surfaces and Go control plane.",
 };
 
+const SEARCH_TERMS: Record<string, string> = {
+  "/docs/getting-started/": "install node npm npx curl update uninstall quick first feature setup doctor",
+  "/docs/usage/": "example csv resume status handoff pause resolve AFK unattended autocomplete ship GO",
+  "/docs/concepts/": [...CONCEPTS.map((item) => `${item.term} ${item.body}`), ...WORKSPACE_FILES.map((item) => `${item.file} ${item.holds}`)].join(" "),
+  "/docs/command-map/": [...PUBLIC_COMMANDS.map((item) => `${item.cmd} ${item.desc}`), ...REVIEW_AGENTS.map((item) => `${item.name} ${item.checks}`)].join(" "),
+  "/docs/cli-mcp/": CLI_COMMANDS.map((item) => `${item.cmd} ${item.note}`).join(" "),
+};
+
 export default function DocsSearch() {
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const matches = DOCS_LINKS.filter((link) =>
-    `${link.label} ${DESCRIPTIONS[link.href]}`.toLowerCase().includes(query.trim().toLowerCase()),
+    `${link.label} ${DESCRIPTIONS[link.href]} ${SEARCH_TERMS[link.href] ?? ""}`.toLowerCase().includes(query.trim().toLowerCase().replace(/^\$/, "/")),
   );
 
   const open = useCallback(() => {
     const modal = dialog.current;
     if (!modal) return;
+    setQuery("");
     if (!modal.open) modal.showModal();
     requestAnimationFrame(() => input.current?.focus());
   }, []);
@@ -53,7 +62,7 @@ export default function DocsSearch() {
         type="button"
         onClick={open}
         aria-label="Search documentation"
-        className="inline-flex h-9 items-center gap-2 rounded-full border border-line px-3 text-sm text-ink-muted transition-colors hover:border-line-bright hover:bg-surface-2 hover:text-ink"
+        className="docs-search-trigger inline-flex h-9 items-center gap-2 rounded-full border border-line px-3 text-sm text-ink-muted transition-colors hover:border-line-bright hover:bg-surface-2 hover:text-ink"
       >
         <Search className="size-4" aria-hidden />
         <span className="hidden sm:inline">Search docs</span>
@@ -66,7 +75,7 @@ export default function DocsSearch() {
         className="docs-search elevated m-auto w-[min(42rem,calc(100%-2rem))] rounded-card border border-line bg-surface p-0 text-ink"
         onClose={() => setQuery("")}
       >
-        <div className="flex items-center gap-3 border-b border-line p-4">
+        <div className="docs-search-input-row flex items-center gap-3 border-b border-line p-4">
           <Search className="size-5 shrink-0 text-ink-faint" aria-hidden />
           <label htmlFor="docs-search" className="sr-only">Search documentation</label>
           <input
@@ -74,27 +83,27 @@ export default function DocsSearch() {
             id="docs-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search documentation"
+            placeholder="Search commands, concepts, or workflows"
             className="min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-ink-faint"
           />
           <button
             type="button"
             onClick={() => dialog.current?.close()}
-            className="inline-flex size-8 items-center justify-center rounded-full text-ink-muted hover:bg-surface-2 hover:text-ink"
+            className="docs-search-close inline-flex size-8 items-center justify-center rounded-full text-ink-muted hover:bg-surface-2 hover:text-ink"
             aria-label="Close search"
           >
             <X className="size-4" aria-hidden />
           </button>
         </div>
 
-        <div className="max-h-[65dvh] overflow-y-auto p-2">
+        <div className="docs-search-results max-h-[65dvh] overflow-y-auto p-2">
           {matches.length ? (
             matches.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => dialog.current?.close()}
-                className="block rounded-xl px-4 py-3 transition-colors hover:bg-surface-2"
+                className="docs-search-result block rounded-xl px-4 py-3 transition-colors hover:bg-surface-2"
               >
                 <strong className="font-semibold text-ink">{link.label}</strong>
                 <span className="mt-1 block text-sm leading-relaxed text-ink-muted">{DESCRIPTIONS[link.href]}</span>

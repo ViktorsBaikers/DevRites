@@ -7,7 +7,7 @@ const STAGE_DEFS = [
     label: "Shape",
     title: "Agree on the contract.",
     body: "Scope, acceptance criteria, and the build plan are agreed before implementation starts.",
-    names: ["spec", "define", "vet"],
+    names: ["spec", "clarify", "temper", "define", "vet"],
     gate: "Implementation starts after vet passes.",
   },
   {
@@ -15,7 +15,7 @@ const STAGE_DEFS = [
     label: "Build",
     title: "Build one slice.",
     body: "A fresh-context writer implements one bounded slice, runs focused tests, records its work, then stops.",
-    names: ["build"],
+    names: ["build", "converge"],
     gate: "Unclaimed source writes are rejected.",
   },
   {

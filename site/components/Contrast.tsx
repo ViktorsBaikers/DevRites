@@ -2,27 +2,27 @@ import { ArrowUpRight, FileWarning, RefreshCw, ScanSearch, ShieldCheck } from "l
 
 const CHECKS = [
   {
-    command: "readiness auth-tokens",
-    title: "Required files exist",
-    body: "Stops a phase change when its contract, decisions, or tasks are missing.",
+    command: "check readiness auth-tokens",
+    title: "Build inputs are bound",
+    body: "Checks required artifacts, the task graph, and the approved Build-input binding.",
     icon: ScanSearch,
   },
   {
-    command: "evidence-fresh auth-tokens",
-    title: "Proof matches the diff",
-    body: "Stops GO when a touched source file is newer than the recorded evidence.",
+    command: "check seal auth-tokens",
+    title: "Proof matches the candidate",
+    body: "Rechecks files, task graph, Build-input binding, and evidence freshness before GO.",
     icon: RefreshCw,
   },
   {
-    command: "check-acceptance .devrites/work/auth-tokens",
-    title: "Acceptance coverage is complete",
-    body: "Names each acceptance ID that is still unproven or unchecked in seal.md.",
+    command: "gates status auth-tokens",
+    title: "Gate results stay on the record",
+    body: "Reports the machine-checked gate ledger for the active feature.",
     icon: FileWarning,
   },
   {
-    command: "review-integrity auth-tokens",
-    title: "Review has a recorded result",
-    body: "Flags an adversarial review axis with neither findings nor a clean justification.",
+    command: "secret-scan auth-tokens",
+    title: "High-risk secrets block",
+    body: "Scans exact staged blobs or touched files and blocks on HIGH findings.",
     icon: ShieldCheck,
   },
 ];
@@ -50,15 +50,15 @@ export default function Contrast() {
               <strong>exit 1</strong>
             </header>
             <div className="engine-output-body">
-              <code className="engine-command">$ devrites-engine check-acceptance .devrites/work/auth-tokens</code>
+              <code className="engine-command">$ devrites-engine check seal auth-tokens</code>
               <div className="engine-verdict">
                 <span>BLOCKED</span>
-                <strong>2 / 3 criteria proven</strong>
+                <strong>seal evidence is stale</strong>
               </div>
               <dl>
-                <div><dt>Missing</dt><dd><code>AC-003</code></dd></div>
-                <div><dt>Record</dt><dd><code>seal.md</code></dd></div>
-                <div><dt>Next</dt><dd>Prove AC-003, check it in the seal, then rerun.</dd></div>
+                <div><dt>Changed</dt><dd><code>site/components/Nav.tsx</code></dd></div>
+                <div><dt>Record</dt><dd><code>evidence.md</code></dd></div>
+                <div><dt>Next</dt><dd>Refresh affected proof, then rerun the seal check.</dd></div>
               </dl>
             </div>
             <footer>The result names the failed rule without calling a model.</footer>

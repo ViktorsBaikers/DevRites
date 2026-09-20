@@ -17,7 +17,7 @@ export default function Architecture() {
       <DocsHeader
         crumb="architecture"
         title="Architecture"
-        lead="DevRites separates engineering judgment from workflow bookkeeping. Focused Claude and Codex skills make engineering decisions, while one stdlib-only Go engine manages workspace state, gates, hooks, derived data, migration, and installation."
+        lead="Skills and agents make engineering decisions. A shared Go engine enforces the workflow's fixed rules. Markdown files connect the two and make the result inspectable."
       />
 
       <div className="mb-12">
@@ -63,7 +63,7 @@ export default function Architecture() {
       <Reveal delay={0.05}>
         <p className="mt-3 text-ink-muted leading-relaxed">
           DevRites includes stack-agnostic standards inside{" "}
-          <code className="k">devrites-lib/reference/standards/</code>, mirrored for both hosts. Workspace
+          <code className="k">devrites-lib/reference/standards/</code>, generated for every supported host. Workspace
           phases load <code className="k">core.md</code> first; specialized standards and checklists load
           only when needed. Prescriptive <code className="k">.devrites/principles.md</code> outranks
           shipped guidance, while observed conventions and mined learnings remain separate inputs.
