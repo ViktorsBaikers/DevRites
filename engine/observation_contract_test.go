@@ -147,6 +147,7 @@ func TestCheckIndexesJSONContract(t *testing.T) {
 		{".codegraph", true},
 		{".code-review-graph", false},
 		{".codebase-memory", false},
+		{"graph.json", false},
 	}
 	if len(report.Indexes) != len(wantIndexes) {
 		t.Fatalf("indexes=%d, want %d", len(report.Indexes), len(wantIndexes))

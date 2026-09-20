@@ -5,6 +5,8 @@ argument-hint: "[the question the prototype is answering]"
 triggers:
   - user
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":[]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-prototype` bundles every file named below into one deduplicated read.
 
 # /rite-prototype: answer one question with throwaway code
 

@@ -4,6 +4,8 @@ description: "Pressure-test a rough/vague idea: ideate, explore 3-5 approaches, 
 argument-hint: "[rough idea or plan to stress-test]"
 user-invocable: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/intent-map.md"],"workspace":["decisions.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-pressure-test` bundles every file named below into one deduplicated read.
 
 # $rite-pressure-test: diverge then converge
 

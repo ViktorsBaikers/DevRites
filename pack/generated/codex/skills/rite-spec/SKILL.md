@@ -5,6 +5,10 @@ argument-hint: "<feature or idea>"
 user-invocable: true
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/standards/agents.md","rite-spec/reference/investigation.md","rite-spec/reference/question-protocol.md","rite-spec/reference/spec-template.md","rite-spec/reference/spec-checklists.md","rite-spec/reference/state-workspace.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/interview-patterns.md","rite-spec/reference/ai-spec-template.md","rite-spec/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"edge-cases":["devrites-lib/reference/standards/edge-case-trace.md"],"frontend":["rite-build/reference/frontend-trigger.md"],"grammar":["devrites-lib/reference/standards/spec-grammar.md"],"principles":["devrites-lib/reference/standards/principles.md"],"references":["rite-spec/reference/references-intake.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md"],"workspaceByRole":{"evidence-scout":["brief.md","spec.md","state.md","questions.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase spec` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # $rite-spec: investigate and write the spec
 
 Investigate and resolve material gaps into a placed, covered `spec.md`.
@@ -20,7 +24,7 @@ For behavioral/high-risk acceptance, use [`spec-grammar.md`](../devrites-lib/ref
 simple criteria stay flat `AC-###`. Apply
 [`acceptance-criteria.md`](reference/acceptance-criteria.md) so each is binary and observable.
 Use [`edge-case-trace.md`](../devrites-lib/reference/standards/edge-case-trace.md)
-to populate only relevant edge/prohibition rows. The spec's applicability map routes
+to populate only relevant edge/prohibition rows (trigger `edge-cases`). The spec's applicability map routes
 topology, data, integration, security, and delivery concerns to their focused standard;
 load a routed standard to discover required behavior, not to prescribe implementation.
 
@@ -57,8 +61,11 @@ load a routed standard to discover required behavior, not to prescribe implement
    an unfinished sequence, propose that next continuation (slug + objective) as the
    recommended option instead of a fresh slug.
 2. **Investigate:** follow [investigation](reference/investigation.md) through its
-   complete findings and done-when gate. Discover the project's **test /
-   build/typecheck/lint** commands, frontend/backend systems, and declared project guidance
+   complete findings and done-when gate. Resolve the project's **test /
+   build/typecheck/lint** commands with `devrites-engine detect commands`
+   (Makefile → package.json → language manifests; read-only) and record the
+   resolved text — an `unresolved` slot means the plan must name the concrete
+   command later, never an invented one. Discover frontend/backend systems, and declared project guidance
    (`PRODUCT.md`, `DESIGN.md`, `CLAUDE.md`, `AGENTS.md`, and `.devrites/principles.md` when
    present).
    **Consult the capability ledger**, which records current system behavior

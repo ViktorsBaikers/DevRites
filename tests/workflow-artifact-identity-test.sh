@@ -120,7 +120,7 @@ LIVE_PROTECTED_SHA256 = {
     ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
     ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
     ".devrites/work/workspace-observation/touched-files.md":
-        "742b66d07324711ed6f0217e7ec32a654c831bc345ae9bed369aa69b420312ad",
+        "cf5ef8aec435896c6844a47ef8a50ae5cacc44e23ab19be7c069f58fa44c871a",
 }
 EXPECTED_NORMAL_GENERATED_DELTA = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md",
@@ -128,15 +128,15 @@ EXPECTED_NORMAL_GENERATED_DELTA = {
 }
 EXPECTED_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "bded5047b72e69863fcdbcb0a3bfe18bff423bf3f0cc99275cfc2fa1ea3042d7",
+        "be5baaf577b7647daa64cf1404edeba15b648f64b87b21e3417873596024415e",
     "codex/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "a424be7e12d511d5b628df07d2ed627d021d69d61428d671c7dcf6e4ebe0e469",
+        "4a13487e6901b243f555ea410f0cd2448592ef4d5468489498255fda3ad09da5",
 }
 PRECHANGE_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "03f75660d35c781986d14edac07dcebccd216bbd06793e596564b59145d40fd7",
+        "bded5047b72e69863fcdbcb0a3bfe18bff423bf3f0cc99275cfc2fa1ea3042d7",
     "codex/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "628e7a58eb958bbacde7e443683e1ff319b93ce4f601f3b149e8cd652a1b1ed5",
+        "a424be7e12d511d5b628df07d2ed627d021d69d61428d671c7dcf6e4ebe0e469",
 }
 RESLICE_PRIOR_RECORDS = {
     'evals/behavioral/acceptance-preserving-reslice.json': (0o600, 'd171e50fd3e8d5d0a6370e7ace58c5b1552967dd4578da6eafe4ab428f69164e'),
@@ -4746,7 +4746,7 @@ def create_actual_delivery_repo(root: Path, full_generator: bool = False) -> dic
     if full_generator:
         shutil.copytree(project / "pack", root / "pack")
         (root / "scripts").mkdir()
-        generator_scripts = ["build-host-artifacts.sh"] + sorted(
+        generator_scripts = ["build-host-artifacts.sh", "expand-includes.py"] + sorted(
             path.name for path in (project / "scripts").glob("*-generate.sh")
         )
         for name in generator_scripts:
@@ -7302,7 +7302,7 @@ def default_tests(root: Path) -> None:
         ("complete_stage_gate_failure_rollback", check_complete_stage_gate_failure_rollback),
         ("instruction_size_baseline", lambda: (
             (lambda measured: require(
-                measured[0] == 230 and measured[1] <= 1100000 and 1100000 - measured[1] > 14,
+                measured[0] == 254 and measured[1] <= 1600000 and 1600000 - measured[1] > 14,
                 "instruction size count/cap/headroom",
             ))(check_instruction_size_baseline(root))
         )),
@@ -9004,7 +9004,7 @@ def _prepare_held_generator_view(repo_fd: int, stage_fd: int, stage_relative: st
         try:
             dst_scripts = os.open("scripts", DIRECTORY_FLAGS, dir_fd=output_fd)
             try:
-                script_names = ["build-host-artifacts.sh"] + sorted(
+                script_names = ["build-host-artifacts.sh", "expand-includes.py"] + sorted(
                     name for name in os.listdir(src_scripts)
                     if name.endswith("-generate.sh")
                 )

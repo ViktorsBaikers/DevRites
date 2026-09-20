@@ -1,7 +1,7 @@
 ---
 name: devrites-proof-runner
 description: Validates root-produced test, build, lint, typecheck, and browser evidence for /rite-prove and affected re-proof; maps it to acceptance and reports gaps. Never executes gates or edits code or evidence.
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

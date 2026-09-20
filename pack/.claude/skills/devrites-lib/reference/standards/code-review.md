@@ -1,5 +1,7 @@
 # Code review
 
+> Applies when: reviewing any diff for design clarity, logic, tests, risk.
+
 Ask whether the change improves or preserves design clarity, logic, tests, and risk.
 If it does not, do not merge it.
 
@@ -18,18 +20,47 @@ If it does not, do not merge it.
 ## What to check (tests first)
 1. **Tests:** do they exist and prove the behavior + failure modes (empty, error,
    boundary, concurrency)? Would they fail if the code were wrong? A `skip`/`only`/
-   `TODO` placeholder or assertion-free test is a finding, not coverage.
-2. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
-3. **Readability:** names, function size, control flow, intent obvious without the author.
-4. **Architecture:** right seam, coupling/cohesion, fits existing patterns, no premature
+   `TODO` placeholder or assertion-free test is a finding, not coverage. Account
+   for coverage per changed function, not per file: name the test that drives each
+   changed function, or list the function under `Missing tests:` — a file-level
+   "tests exist" over a diff whose riskiest function is unexercised is a gap.
+2. **Bar integrity:** sweep the diff for a lowered bar masquerading as a change:
+   new suppression comments (`@ts-ignore`, `eslint-disable`, `noqa`, `nolint`),
+   loosened thresholds (coverage floors, budgets, lint levels, timeout bumps with
+   no justification), stripped assertions, deleted or skipped tests, and new
+   unimplemented stubs or `throw`-only placeholders. Each names what it lowers and
+   needs a recorded reason in the diff or `decisions.md`; unexplained is a finding.
+3. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
+4. **Readability:** names, function size, control flow, intent obvious without the author.
+5. **Architecture:** right seam, coupling/cohesion, fits existing patterns, no premature
    abstraction. Check how it fits the larger system as well as its local behavior.
-5. **Security:** trust boundaries, input validation, authz, secrets.
-6. **Risk:** migrations, destructive changes, rollback.
-7. **Read depth matches risk:** the review's `Basis` names **full reads of the largest
+   Search for a **reimplemented-elsewhere** twin: a new function/module that
+   semantically duplicates an existing one (renamed, reshaped, or vendored) is an
+   architecture finding; reuse the canonical implementation or justify the fork.
+   Run `devrites-engine check dup` in the mode matching the diff (`--base <ref>`
+   for committed work, `--staged`/`--worktree` for uncommitted) for leads and
+   triage each cluster per [`duplicate-code.md`](duplicate-code.md).
+6. **Security:** trust boundaries, input validation, authz, secrets.
+7. **Risk:** migrations, destructive changes, rollback.
+8. **Read depth matches risk:** the review's `Basis` names **full reads of the largest
    diff files** (top three by changed lines), and any config/dependency/SQL/auth/migration
    file is read in full — never skimmed. A review that cannot name what it fully read is
    unproven. **Failing case:** a 600-line diff gets hunk-by-hunk commentary on the first
    screen and silence on the migration file at the bottom.
+9. **Every file in the review set gets its own pass.** Reviewing an implementation
+   file does not cover its header, interface, test, or config counterpart — being the
+   smaller member of a group is no reason to skip it. Findings attach to files inside
+   the review set, never outside it. Report the accounting: a `Coverage:` line names
+   the files reviewed in full, reviewed at hunk level, and explicitly skipped with
+   reason (generated, vendored, lockfile). Files named nowhere count as not reviewed.
+10. **Per-language probes.** For each file, apply [`review/README.md`](review/README.md):
+    `review/default.md` always, plus the checklist for the file's language. These are
+    defect probes with explicit do-not-flag lists — a do-not-flag item raised as
+    Critical/Important is a review defect, not a finding.
+11. **Large diffs get a risk pass.** When the diff exceeds the soft ceiling (~400
+    lines) or touches a migration, auth, dependency, or config file, run a second
+    focused pass over just those surfaces after the general pass — first-pass
+    attention decays with diff size and the risk-bearing file is usually last.
 
 ## Give actionable feedback
 - Read surrounding source before severity: call sites, existing guards, and the nearest consumer decide impact; a diff hunk alone is not enough.
@@ -54,6 +85,15 @@ If it does not, do not merge it.
   was inspected; the consolidated account names what was not covered or marks `gap`.
   **Failing case:** a findings list silent on, say, migration safety is not a clean
   migration review — name the inspection or the gap.
+- **Separate the verdict from its context.** A verdict flips only on evidence
+  scoped to the change under review — its diffs, its acceptance criteria, its
+  blast radius. Whole-repo signals gathered along the way (a global health
+  score, an unrelated security note, a pre-existing smell) are recorded under
+  an informational/deferred heading with that label, never folded silently into
+  the verdict — and never used to soften or harden it either direction.
+  **Failing case:** a clean change is failed because a repo-wide scan surfaced
+  a decade-old finding the diff did not introduce — or a broken change is
+  approved because "overall health" still looked fine.
 - Let automation (linters, formatters, CI) catch the trivial stuff so review focuses on
   design and correctness.
 
@@ -72,6 +112,26 @@ An author who is factually right wins over a reviewer's taste.
 ## Reviewer-vs-reviewer adjudication
 
 Root re-verifies each claimed consequence at the cited site, keeps the surviving evidence, sets final severity itself (reviewer severity advisory), records what decided ([agents.md § Independence](agents.md#independence)); unresolved conflicts stay open blockers.
+
+Adjudication is asymmetric: dropping a true finding destroys it silently, while
+keeping a false one costs only a re-check. A finding is removed only on two
+grounds, each citing evidence:
+
+1. **Refuted at the site** — the quoted code or a direct read shows the claim is
+   factually wrong (the guard exists, the value cannot be nil, the test asserts
+   it). "Looks unlikely" is not refutation.
+2. **Out of scope** — the file is not in the review set or the finding describes
+   pre-existing code the diff did not touch. Route it as a follow-up, never
+   delete the record.
+
+"Cannot verify", "suspicious", "would not have raised it", and "inconvenient to
+fix now" are not grounds for removal — the finding stays open.
+
+**Protected subjects** veto dismissal regardless of convenience: a claim of a
+correctness bug, a security exposure, a data-loss/migration risk, a silently
+dropped error, or a violated project principle survives unless ground 1 produces
+a direct counter-read at the cited site. Never drop a protected-subject finding
+because the fix is large or the release is close — escalate the decision instead.
 
 ## Heuristic checks: FLAG vs NOTE
 

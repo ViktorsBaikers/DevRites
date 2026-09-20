@@ -5,6 +5,10 @@ argument-hint: "[feature-slug] [--mode expand|selective|hold|reduce]"
 user-invocable: true
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/agents.md","rite-temper/reference/significance.md","rite-temper/reference/scope-modes.md","rite-temper/reference/review-dimensions.md","rite-temper/reference/strategy-template.md","rite-temper/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"yagni":["devrites-lib/reference/standards/patterns.md","devrites-lib/reference/standards/coding-style.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","strategy.md","design-brief.md"],"workspaceByRole":{"strategy-reviewer":["brief.md","spec.md","decision-coverage.md","decisions.md","strategy.md","state.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase temper` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # /rite-temper: review scope and risk before planning
 
 Review the readied spec for ambition, scope, pre-mortem risk and unnecessary surface. Fold accepted decisions into the canonical contract before
@@ -16,7 +20,7 @@ the required exact strategy reviewer never changes with profile.
 
 ## Rules consulted (read on demand from `.omp/skills/devrites-lib/reference/standards/`)
 Pull on demand: [`patterns.md`](../devrites-lib/reference/standards/patterns.md) +
-[`coding-style.md`](../devrites-lib/reference/standards/coding-style.md) (the over-engineering / YAGNI rubric (reuse the pack's standard, don't
+[`coding-style.md`](../devrites-lib/reference/standards/coding-style.md) (the over-engineering / YAGNI rubric, trigger `yagni`; reuse the pack's standard, don't
 invent one), [`documentation.md`](../devrites-lib/reference/standards/documentation.md) (ADR-style `decisions.md` entries), [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md)
 (irreversible-risk list + gate ceiling), [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) (the move-set to deepen a section
 that needs more than the default pre-mortem) selected by the section's risk). Load

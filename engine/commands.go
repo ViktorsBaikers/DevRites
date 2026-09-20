@@ -30,7 +30,7 @@ func rootModeFor(command string, args []string) rootMode {
 	}
 	subcommand := firstRootOperand(args)
 	switch command {
-	case "secret-scan", "open-visual":
+	case "secret-scan", "open-visual", "detect":
 		return rootLenient
 	case "state":
 		switch subcommand {
@@ -38,18 +38,24 @@ func rootModeFor(command string, args []string) rootMode {
 			return rootStrict
 		}
 		return rootUnused
-	case "migrate":
+	case "migrate", "gates":
 		return rootStrictUsage
 	case "check":
 		switch subcommand {
-		case "candidate", "readiness", "seal", "task-graph":
+		case "candidate", "readiness", "seal", "task-graph", "diff-scope", "slice", "regression", "windows", "drift":
 			return rootStrictUsage
-		case "indexes":
+		case "indexes", "dup":
 			return rootLenient
 		}
 		return rootUnused
-	case "orient":
+	case "orient", "next", "context", "metrics", "dispatch", "handoff", "note":
 		return rootStrictUsage
+	case "claim":
+		switch subcommand {
+		case "add", "release":
+			return rootStrictUsage
+		}
+		return rootLenient
 	case "observe":
 		switch subcommand {
 		case "summary", "slice":

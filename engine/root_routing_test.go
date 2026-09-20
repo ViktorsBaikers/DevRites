@@ -25,6 +25,11 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "observe summary", command: "observe", args: []string{"summary"}, want: rootStrictUsage},
 		{name: "observe slice", command: "observe", args: []string{"slice"}, want: rootStrictUsage},
 		{name: "orient", command: "orient", want: rootStrictUsage},
+		{name: "handoff", command: "handoff", want: rootStrictUsage},
+		{name: "claim add", command: "claim", args: []string{"add"}, want: rootStrictUsage},
+		{name: "claim release", command: "claim", args: []string{"release"}, want: rootStrictUsage},
+		{name: "claim list", command: "claim", args: []string{"list"}, want: rootLenient},
+		{name: "claim check", command: "claim", args: []string{"check"}, want: rootLenient},
 		{name: "orient help", command: "orient", args: []string{"--help"}, want: rootUnused},
 		{name: "check candidate help", command: "check", args: []string{"candidate", "--help"}, want: rootUnused},
 		{name: "state help flag", command: "state", args: []string{"--help"}, want: rootUnused},
@@ -118,7 +123,11 @@ func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
 		{"check", "readiness"},
 		{"check", "seal"},
 		{"check", "indexes"},
+		{"check", "drift"},
+		{"detect", "commands"},
 		{"orient", "feature"},
+		{"handoff", "feature"},
+		{"claim", "list"},
 		{"observe", "summary", "feature"},
 		{"observe", "slice", "feature", "SLICE-001"},
 		{"state", "resolve"},
@@ -150,7 +159,7 @@ func TestNestedCommandFamilyUsageListsOnlyRetainedCommands(t *testing.T) {
 		want    string
 		removed []string
 	}{
-		{args: []string{"check"}, want: "check <candidate|readiness|seal|path-disjoint|task-graph|skill-trust|indexes>", removed: []string{"spec"}},
+		{args: []string{"check"}, want: "check <candidate|readiness|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup>"},
 		{args: []string{"state"}, want: "state <resolve|merge-manifest|close>", removed: []string{"clarify", "tick-afk", "recovery"}},
 	} {
 		t.Run(test.args[0], func(t *testing.T) {
@@ -180,7 +189,7 @@ func TestCheckCandidateRoutesAndPrintsIdentity(t *testing.T) {
 	writeBasenameFile(t, project, "source.go", "package source\n")
 	manifest := "# Touched files\n\n## Touched files\nCandidate paths are declared below.\n\n## Candidate manifest\n| State | File | Slice | Reason |\n| --- | --- | --- | --- |\n| present | `source.go` | S-1 | Implementation. |\n"
 	writeBasenameFile(t, workspace, "touched-files.md", manifest)
-	writeBasenameFile(t, workspace, "state.md", "| schema | 3 |\n")
+	writeBasenameFile(t, workspace, "state.md", "| schema | 4 |\n")
 	t.Setenv("DEVRITES_ROOT", root)
 	var stdout, stderr bytes.Buffer
 	if code := run([]string{"check", "candidate", "feature"}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
@@ -196,7 +205,7 @@ func TestCheckReadinessEmitBindingRoutesOnlyExactShape(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	workspace := filepath.Join(root, "work", "feature")
 	for name, body := range map[string]string{
-		"state.md":             "| schema | 3 |\n",
+		"state.md":             "| schema | 4 |\n",
 		"spec.md":              "# Spec\n\nReady.\n",
 		"decision-coverage.md": "# Decision coverage\n\nCLEAR\n",
 		"architecture.md":      "# Architecture\n\nReady.\n",
@@ -204,6 +213,7 @@ func TestCheckReadinessEmitBindingRoutesOnlyExactShape(t *testing.T) {
 		"tasks.md":             "# Tasks\n\nReady.\n",
 		"traceability.md":      "# Traceability\n\nReady.\n",
 		"test-plan.md":         "# Test plan\n\nReady.\n",
+		"gates.md":             "# Gates\n\n- [x] G1: fixture outcome\n  EVIDENCE: fixture attestation\n",
 	} {
 		if err := os.MkdirAll(workspace, 0o755); err != nil {
 			t.Fatal(err)

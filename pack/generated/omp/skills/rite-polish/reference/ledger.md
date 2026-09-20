@@ -35,7 +35,9 @@ Run during Polish before Review so ledger edits enter the proved candidate.
 
 1. **Read.** Read the feature spec and only affected ledger specs. Reject a
    capability escaping `.devrites/specs`, symlink/special file, duplicate header,
-   or malformed delta.
+   or malformed delta — an unknown verb, an empty delta section, a REMOVED block
+   carrying scenarios, or a MODIFIED/REMOVED header with no verbatim ledger
+   match (a near-match is a spec typo, not a rename).
 2. **Preview, do not write.** Show exact target paths; every delta with before/after
    header; full requirement order; and changed files. Apply the table to current
    bytes and the preservation rule to MODIFIED and REMOVED. Conflicts stop.

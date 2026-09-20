@@ -7,6 +7,7 @@ code polish (Phase 1) and, when backend is touched, backend polish (Phase 2).
 
 - [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md): Phase 1 (simplify, dead code, naming, comments).
 - [`patterns.md`](../../devrites-lib/reference/standards/patterns.md): Phase 1 simplification: avoid over-engineering.
+- [`duplicate-code.md`](../../devrites-lib/reference/standards/duplicate-code.md): Phase 1 dedupe — `check dup` leads, triage verdicts, ignore ledger.
 - [`error-handling.md`](../../devrites-lib/reference/standards/error-handling.md): Phase 2 backend (no silent catches, consistent errors).
 - [`performance.md`](../../devrites-lib/reference/standards/performance.md): Phase 2 backend (N+1s, query bounds).
 - [`documentation.md`](../../devrites-lib/reference/standards/documentation.md): keep touched docs current; record polish-time decisions.
@@ -34,7 +35,11 @@ feature only.
   conditionals (switch/lookup over a long if-else; decompose a complex boolean
   into well-named parts), dedupe, inline single-use indirection, replace
   hand-rolled utils with the stdlib/existing helper, delete dead code this
-  feature added.
+  feature added. Run `devrites-engine check dup <slug>` (mode matching the
+  candidate diff: `--base <ref>` when committed, `--worktree`/`--staged` when
+  not) for near-duplicate leads and give each reported cluster a verdict per
+  [`duplicate-code.md`](../../devrites-lib/reference/standards/duplicate-code.md)
+  (merge / keep-with-reason / watch).
 - **Chesterton's Fence:** understand *why* something exists before removing it.
   If you can't explain a check, branch, or wrapper, you may not remove it:
   many "useless" lines guard a real edge case. A `devrites:keep` / `simplify-ignore`

@@ -139,6 +139,12 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 		}
 	}
 	if len(missingFiles) == 0 {
+		for _, problem := range gateLedgerProblems(observation, policy) {
+			stateProblems = append(stateProblems, "gates: "+problem)
+			blocked = true
+		}
+	}
+	if len(missingFiles) == 0 {
 		for _, problem := range artifactBudgetProblems(observation, policy) {
 			stateProblems = append(stateProblems, "budget: "+problem)
 			blocked = true
@@ -377,7 +383,7 @@ func retainedHumanGates(observation *state.WorkspaceObservation) ([]string, bool
 	if !ok || (questions.State() != state.ArtifactPresent && questions.State() != state.ArtifactEmpty) {
 		return nil, false
 	}
-	gates := openBlockingQuestionGates(questions.Bytes())
+	gates := OpenBlockingQuestionGates(questions.Bytes())
 	if len(gates) == 0 {
 		return nil, false
 	}
@@ -385,7 +391,11 @@ func retainedHumanGates(observation *state.WorkspaceObservation) ([]string, bool
 	return gates, ok && ledger.State() == state.ArtifactPresent && stateAwaitingHuman(ledger.Bytes())
 }
 
-func openBlockingQuestionGates(data []byte) []string {
+// OpenBlockingQuestionGates returns the deduplicated gate kinds (blocking,
+// validating, escalating) still open in questions.md, tolerating both the
+// per-question block form and the register table form. Exported so the
+// handoff resume record reports the same gates the lifecycle enforces.
+func OpenBlockingQuestionGates(data []byte) []string {
 	lines := splitLinesNoTrailing(data)
 	seen := map[string]bool{}
 	var gates []string

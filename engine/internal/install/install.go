@@ -240,7 +240,13 @@ func Apply(opts Options) error {
 	if opts.Mode == ModeUninstall {
 		return r.uninstall()
 	}
-	return r.install()
+	if err := r.install(); err != nil {
+		return err
+	}
+	if !opts.DryRun {
+		reportStaleWorkspaces(opts.Stdout, r.target)
+	}
+	return nil
 }
 
 func newRunner(opts Options) (*runner, error) {

@@ -26,6 +26,7 @@ func TestWorkspaceObservationInventoryCanonicalArtifactsOnce(t *testing.T) {
 		"traceability.md",
 		"eng-review.md",
 		"test-plan.md",
+		"gates.md",
 		"evidence.md",
 		"touched-files.md",
 		"review.md",

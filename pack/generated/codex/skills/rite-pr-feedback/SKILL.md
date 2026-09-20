@@ -5,6 +5,8 @@ argument-hint: "[PR number|thread URL|blank for current branch]"
 user-invocable: true
 disable-model-invocation: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/git-workflow.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"],"testing":["devrites-lib/reference/standards/testing.md"]},"workspace":[]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-pr-feedback` bundles every file named below into one deduplicated read.
 
 # $rite-pr-feedback: resolve PR review threads
 

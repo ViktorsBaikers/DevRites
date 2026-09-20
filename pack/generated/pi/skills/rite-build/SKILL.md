@@ -5,6 +5,10 @@ argument-hint: "[--parallel N] [slice number or name]"
 user-invocable: true
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/agents.md","rite-build/reference/phase-contract.md","rite-build/reference/one-slice-cycle.md","rite-build/reference/wright-dispatch.md","rite-build/reference/checkpoint.md","rite-build/reference/spec-drift-guard.md","rite-build/reference/output.md","rite-build/reference/anti-patterns.md"],"triggers":{"afk":["rite-build/reference/afk-discipline.md","devrites-lib/reference/standards/afk-hitl.md","rite-build/reference/checkpoint-protocol.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"coding":["devrites-lib/reference/standards/coding-style.md"],"debug-recovery":["devrites-lib/reference/standards/debug-recovery.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"frontend":["rite-build/reference/frontend-trigger.md"],"parallel":["rite-build/reference/parallel-batch.md"],"patterns":["devrites-lib/reference/standards/patterns.md"],"principles":["devrites-lib/reference/standards/principles.md"],"security":["devrites-lib/reference/standards/security.md"],"tdd":["rite-build/reference/tdd.md","devrites-lib/reference/standards/testing.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","strategy.md"],"workspaceByRole":{"code-reviewer":["spec.md","plan.md","tasks.md","test-plan.md","architecture.md","decisions.md","state.md"],"doubt-reviewer":["spec.md","plan.md","tasks.md","state.md","decisions.md"],"slice-wright":["brief.md","spec.md","architecture.md","plan.md","tasks.md","test-plan.md","state.md","decisions.md","assumptions.md","questions.md"],"test-analyst":["spec.md","tasks.md","test-plan.md","state.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase build` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # /rite-build: one verified slice
 
 HITL stops; a later user invocation starts the next slice.
@@ -17,7 +21,8 @@ caps and pause rules. Every wright returns after one slice.
 Root owns gates/bookkeeping; fresh
 [`devrites-slice-wright`](.pi/agents/devrites-slice-wright.md) writes source/tests.
 Workflow Artifacts use
-[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md).
+[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
+(trigger `workflow-artifacts` — only when the plan declares them).
 Execute [`reference/phase-contract.md`](reference/phase-contract.md)
 ([`one-slice-cycle.md`](reference/one-slice-cycle.md),
 [`afk-discipline.md`](reference/afk-discipline.md)); dispatch uses
@@ -32,23 +37,32 @@ Wright applies anti-slop; root verifies returns and never patches source.
 
 ## Invariants
 
-- Default: one slice; writers serial on control. Parallel only via `--parallel N`
-  under [`reference/parallel-batch.md`](reference/parallel-batch.md). Same-worktree
-  multi-writer / root-emulated concurrency forbidden. Native-worktree pilot =
-  single-slice isolation when `wright-dispatch.md` preflight + reconcile hold.
-- Exact feature scope only; reject out-of-allowlist diffs; record adjacent issues.
-- Re-prove affected behavior after edits; reuse observations only under
-  [evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).
+- Default: one slice; writers serial on control (core.md #5). Parallel only via
+  `--parallel N` under [`reference/parallel-batch.md`](reference/parallel-batch.md).
+  Same-worktree multi-writer / root-emulated concurrency forbidden.
+  Native-worktree pilot = single-slice isolation when `wright-dispatch.md`
+  preflight + reconcile hold.
+- Exact feature scope only (core.md #7); reject out-of-allowlist diffs
+  (`devrites-engine check diff-scope <slug> --allow <contract-paths>`); record
+  adjacent issues. An adjacent issue or non-obvious rationale bound to specific
+  code anchors as a note — `devrites-engine note add <slug> <file> "<verbatim
+  quote>" <title>` — so refactors regrade it instead of losing it
+  ([`notes.md`](../devrites-lib/reference/workspace-artifact-schema.md#anchored-notes)).
+- Re-prove affected behavior after edits (core.md #6); reuse observations only
+  under [evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).
 - Unplanned dependency/design-system/gap/repair → Vet/Spec Drift Guard batch
   sweep: every contract-assumption violation recorded before one folded
   repair+vet. Ask only for licensing/cost/security/product or explicit
-  architecture-policy decisions.
-- Root never edits product source/tests (`.devrites/` + Workflow Artifact only).
-  Wright is sole product writer; extras in returned paths/`git diff --name-only` hard-stop.
+  architecture-policy decisions (core.md #8).
+- Root never edits product source/tests (`.devrites/` + Workflow Artifact only;
+  [agents.md](../devrites-lib/reference/standards/agents.md) source-writing
+  boundary). Wright is sole product writer; extras in returned paths/`git diff
+  --name-only` hard-stop via `check diff-scope`.
 - Principles bind; irreversible conflict needs human exception or stop.
-- Evidence beats confidence. Never weaken tests, skip TDD, widen writers, or
-  self-approve. Drift → [`spec-drift-guard.md`](reference/spec-drift-guard.md);
-  checkpoint → [`checkpoint.md`](reference/checkpoint.md).
+- Evidence beats confidence (core.md #6). Never weaken tests, skip TDD, widen
+  writers, or self-approve. Drift →
+  [`spec-drift-guard.md`](reference/spec-drift-guard.md); checkpoint →
+  [`checkpoint.md`](reference/checkpoint.md).
 - Async readiness waits during slice work follow
   [`debug-recovery.md`](../devrites-lib/reference/standards/debug-recovery.md)
   (bounded poll + last-signal artifact; no blind sleep as primary strategy).

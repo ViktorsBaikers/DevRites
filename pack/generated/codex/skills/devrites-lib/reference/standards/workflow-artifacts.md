@@ -1,5 +1,7 @@
 # Workflow Artifact identity
 
+> Applies when: a plan declares root-authored executable workflow files.
+
 Workflow Artifact plans/isolates/proves; never enters product candidate/readiness/
 built count or authorizes consumption. Module owns semantics; callers retain only
 link and entry/return.

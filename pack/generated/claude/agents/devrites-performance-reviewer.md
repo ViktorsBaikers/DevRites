@@ -1,7 +1,7 @@
 ---
 name: devrites-performance-reviewer
 description: Reviews one DevRites feature's performance for /rite-seal in fresh context. Uses source mode for potential static findings or measured mode for Lighthouse, PSI, CrUX, and traces; reports source-labeled numbers without presenting lab data as field data.
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

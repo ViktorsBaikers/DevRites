@@ -1,5 +1,7 @@
 # Agent orchestration
 
+> Applies when: dispatching or admitting any devrites-* role; the source-writing boundary.
+
 Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
 
 ## Authority
@@ -38,6 +40,12 @@ Files own briefs; [`parallel-dispatch.md`](../parallel-dispatch.md) owns rosters
 Skills name exact fresh roles, omit native fields;
 hosts spawn/wait/deliver. Root MUST NOT advance/claim completion before admitting required results;
 running/orphaned/unavailable = `gap` — no root/generic substitute.
+Where a feature workspace exists, every fresh dispatch to a named `devrites-*`
+role — wave or solo — builds its read-set with `devrites-engine context <slug>
+--phase <p> --role <role>` and tracks the launch through `devrites-engine
+dispatch <slug> open|start|seal|return` (a solo dispatch is a wave of one;
+start/return auto-record metrics). Without a workspace the plain host dispatch
+contract above applies and no engine tracking is required.
 Workflow-named skills (e.g. devrites-source-driven) are invoked inline in the root context, never dispatched as agents.
 
 ## Source-writing boundary
@@ -48,9 +56,21 @@ Isolated-worktree pilot only under [`wright-dispatch.md`](../../../rite-build/re
 
 Each job gets objective/exclusions, exact paths/immutable candidate, rubric/result shape, a **stop condition** (when to return), and the exact result shape; a dispatch missing them is malformed and re-issued. Briefs MUST NOT seed verdict/severity cap/conclusion/suppression. Results state status/scope, outcome, commands/escalation; wright adds paths, changed files, gates, stood decisions; results never widen scope.
 
+**Same-tree concurrent sessions claim first.** Worktree dispatch isolates
+parallel batch siblings, but two agent *sessions* (two hosts, two features, or
+a human plus an agent) can share one working tree. Before a same-tree writer
+starts, it records an advisory claim — `devrites-engine claim add --session
+<id> <paths>` — retains the returned `<claim-id>`, then checks the same paths
+with `devrites-engine claim check --session <id> <paths>`; a held claim from a
+live foreign session is a stop-and-report, not a merge-later problem. On every
+terminal path after `add` — success, gap, stop, or launch failure — run
+`devrites-engine claim release --session <id> --id <claim-id>`. Claims expire
+by TTL only as crash recovery; `claim list` shows who holds what. Claims are
+advisory coordination, never a substitute for the one-writer-per-worktree rule.
+
 ## Independence
 
-- A fresh result sees scope/paths-diff/rubric only — never another result's or the root's conclusions, severities, expected verdicts, or edited context; seeding voids the packet.
+- A fresh result sees scope/paths-diff/rubric only — never another result's or the root's conclusions, severities, expected verdicts, chosen verification methods, or edited context; seeding voids the packet.
 - **Verify the packet is clean before admitting the account.** Confirm the returned packet/trace carries no host-injected context: an automatic memory/summary banner naming an earlier phase verdict (e.g. `past Temper PASS … next is /rite-define`) or harness reminder text seeds the pass and voids it. Cancel that account — never admit it — name the lost coverage, and re-dispatch with the host's context injection disabled for that child. Tool config changes that do not stop native child auto-injection are not a fix; verify on the next spawn instead of assuming.
 - A parent-context pass contributes attributed evidence but is not independent: exclude it from independent accounting and name the lost coverage.
 - Final severity is set at reconciliation after re-verifying the claimed consequence at the cited site (reviewer severity advisory); dismissals record a reason, and true facts about neighboring code route elsewhere instead of being dismissed.

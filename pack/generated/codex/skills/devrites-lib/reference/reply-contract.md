@@ -21,6 +21,27 @@ Next: <one recommended action>
 Record: <primary durable artifact path>
 ```
 
+`Changed:` is the complete write set, not a highlight reel: every file written
+or edited this turn — workspace artifact and project source alike — appears
+there or inside one named grouped entry, so a reviewer can `git diff` exactly
+those paths. `Record:` then names the single durable artifact a later session
+reads first.
+
+Mid-flight replies — the turns between completion states — obey the same economy:
+
+- **Restate position.** The reader cannot hold "step 3 of 5" between turns; name it
+  (`step N of M` / `state: <where things stand>`) rather than asking them to remember.
+- **One next action, doable now.** `Next:` names one concrete action completable in
+  under two minutes — a command, a file to open, a yes/no decision. "Want me to
+  continue?" is a stall, not an action.
+- **Numbered steps for multi-step work**, one bounded action each; fold trivial steps
+  into the one before. A short path finished beats a complete path abandoned.
+- **Name the win before the remainder.** A landed slice, a green gate, a merged
+  piece is stated first — visible progress beats an undifferentiated list.
+- **Cap enumerations.** Long lists collapse to a few grouped items with counts;
+  the full enumeration lives in the durable artifact, not the reply.
+- **Errors are matter-of-fact** — cause and fix, never alarm noise.
+
 Pre-send check: delete an opening sentence that only announces ("I'll now…") and a
 closing sentence that only recaps; then apply the two-line test — a reader seeing only
 the first and last lines must know what happened and what to do next.
@@ -66,7 +87,9 @@ Record: .devrites/archive/<slug>/ship.md
 ```
 
 Claims such as proved, reviewed, sealed, shipped, or complete must point to real
-output or an artifact. Use exactly one recommended next action except for
+output or an artifact. An expected verification that was skipped, unavailable, or
+could not start is named in `Evidence:` or `Open:` — omitting it reads as
+ran-and-green. Use exactly one recommended next action except for
 terminal agent-owned technical exhaustion, which has no runnable action.
 
 Use that terminal case only per [`one-shot-actions.md`](standards/one-shot-actions.md):

@@ -28,7 +28,9 @@ This reference owns decomposition; the shared schema owns field names and meanin
 7. Resolve every foreseeable human-owned checkpoint now. Keep a build-time checkpoint only
    when it needs evidence unavailable before code or mandatory action-time approval, and say why.
 8. Make every `Tests/proof` entry executable: exact command, working directory, prerequisites,
-   expected signal, and mutable inputs whose provenance evidence must bind.
+   expected signal, and mutable inputs whose provenance evidence must bind. Source the command
+   from `devrites-engine detect commands` output where a slot resolves; an `unresolved` slot
+   means the plan names the concrete command explicitly, never an invented one.
 
 ## Keep it honest
 - **Interfaces prevent cross-slice drift.** A slice-wright sees only its own contract; the

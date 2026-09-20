@@ -4,6 +4,8 @@ description: Audit one feature read-only for security, performance, or simplific
 argument-hint: "<security | perf | simplify>"
 user-invocable: false
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/parallel-dispatch.md","devrites-lib/reference/standards/agents.md"],"triggers":{"audit-coverage":["devrites-lib/reference/standards/audit-coverage.md"],"architecture-health":["devrites-lib/reference/standards/architecture-health.md"]},"workspace":["spec.md","plan.md","tasks.md","touched-files.md","evidence.md","state.md","decisions.md"],"workspaceByRole":{"performance-reviewer":["spec.md","plan.md","tasks.md","state.md","touched-files.md","evidence.md"],"security-auditor":["spec.md","plan.md","tasks.md","state.md","touched-files.md","evidence.md"],"simplifier-reviewer":["spec.md","plan.md","tasks.md","state.md","touched-files.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-audit` bundles every file named below into one deduplicated read.
 
 # devrites-audit: read-only audit dispatch
 
@@ -20,6 +22,13 @@ decides how to use the report; this skill never edits.
 
 If no axis is supplied, infer only when intent is unambiguous; otherwise the root asks
 the human before dispatch.
+
+When scope is a surface larger than the feature diff — subsystem, protocol surface,
+repo sweep — apply [`audit-coverage.md`](../devrites-lib/reference/standards/audit-coverage.md)
+(trigger `audit-coverage`). When the audit calls for a whole-codebase structural
+score and a code index is present, apply
+[`architecture-health.md`](../devrites-lib/reference/standards/architecture-health.md)
+(trigger `architecture-health`).
 
 ## Gather and dispatch
 

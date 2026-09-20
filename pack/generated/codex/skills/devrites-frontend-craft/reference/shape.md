@@ -13,6 +13,11 @@ these and write the brief per `../../devrites-ux-shape/reference/brief-template.
 return through `$rite-vet` before code.
 
 ## Answer these before writing markup
+0. **Surface intent:** is this a communication surface (a *site*: persuasion,
+   information, one message per section) or a task surface (an *app*: flows,
+   state, density)? Never ship one dressed as the other — a task tool built like
+   a landing page fails its user, and a marketing page built like a dashboard
+   fails its message.
 1. **User goal:** what is the user here to accomplish? One sentence.
 2. **Primary action:** the single most important thing on this surface. It must be
    visually obvious. Everything else is secondary.

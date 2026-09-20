@@ -66,14 +66,14 @@ func TestMigrateExecutesCursorConversionAndStubs(t *testing.T) {
 	if strings.Contains(text, "- Next step:") {
 		t.Fatalf("legacy next step bullet survived:\n%s", text)
 	}
-	if !strings.Contains(text, "| schema | 3 |") {
+	if !strings.Contains(text, "| schema | 4 |") {
 		t.Fatalf("schema row missing:\n%s", text)
 	}
 	if !strings.Contains(text, "# Status\n\nMinting middleware landed.") {
 		t.Fatalf("prose not preserved:\n%s", text)
 	}
 	// Required artifacts for build exist as empty stubs.
-	for _, name := range []string{"spec.md", "brief.md", "eng-review.md", "test-plan.md"} {
+	for _, name := range []string{"spec.md", "brief.md", "eng-review.md", "test-plan.md", "gates.md"} {
 		info, err := os.Stat(filepath.Join(workspace, name))
 		if err != nil {
 			t.Fatalf("stub %s: %v", name, err)
@@ -111,7 +111,7 @@ func TestMigrateUnknownPhaseAsksAndWritesNothing(t *testing.T) {
 		t.Fatalf("answer rerun code=%d stderr=%q", code, stderr.String())
 	}
 	body, _ = os.ReadFile(filepath.Join(workspace, "state.md"))
-	if !strings.Contains(string(body), "| phase | build |") || !strings.Contains(string(body), "| schema | 3 |") {
+	if !strings.Contains(string(body), "| phase | build |") || !strings.Contains(string(body), "| schema | 4 |") {
 		t.Fatalf("answer rerun did not migrate:\n%s", body)
 	}
 }
@@ -127,17 +127,17 @@ func TestMigrateDoneWorkspaceNormalizesWithoutStubs(t *testing.T) {
 		t.Fatalf("code=%d stderr=%q", code, stderr.String())
 	}
 	body, _ := os.ReadFile(filepath.Join(workspace, "state.md"))
-	if !strings.Contains(string(body), "| schema | 3 |") {
+	if !strings.Contains(string(body), "| schema | 4 |") {
 		t.Fatalf("done workspace not normalized:\n%s", body)
 	}
-	if !strings.Contains(stdout.String(), "normalized to schema 3") {
+	if !strings.Contains(stdout.String(), "normalized to schema 4") {
 		t.Fatalf("stdout=%q", stdout.String())
 	}
 }
 
 func TestMigrateCurrentAndNewerSchemaAreRefused(t *testing.T) {
 	root, workspace := seedPreV5Workspace(t, "build")
-	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("| phase | build |\n| schema | 3 |\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte("| phase | build |\n| schema | 4 |\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	var stdout, stderr strings.Builder

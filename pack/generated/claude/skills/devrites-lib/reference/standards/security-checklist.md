@@ -1,5 +1,7 @@
 # Security checklist
 
+> Applies when: compact trust-boundary sweep on security-sensitive diffs.
+
 - Identify trust boundaries: user input, authn/authz, tenant scope, secrets, storage,
   filesystem/parser surfaces, external services, and model/RAG context when applicable.
 - Validate at boundaries; do not scatter defensive slop inside trusted core code.

@@ -5,6 +5,10 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/spec-grammar.md","rite-define/reference/plan-template.md","rite-define/reference/gates.md","rite-define/reference/anti-patterns.md","rite-plan/reference/slicing.md","rite-plan/reference/task-breakdown.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/state-workspace.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"agents":["devrites-lib/reference/standards/agents.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"frontend":["devrites-frontend-craft/reference/fullstack.md"],"principles":["devrites-lib/reference/standards/principles.md"],"visual":["devrites-lib/reference/visual-playbooks/index.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","strategy.md","design-brief.md","references.md"],"workspaceByRole":{"plan-drafter":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","strategy.md","design-brief.md","references.md","state.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase define` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # $rite-define: plan from the spec
 
 Turn `spec.md` into architecture, vertical slices, traceability, and state. Spec owns
@@ -19,7 +23,7 @@ Pull these via `Read` when shaping the plan:
 - [`documentation.md`](../devrites-lib/reference/standards/documentation.md): record plan-time decisions and rationale.
 - [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), and [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md):
   load only for matching `spec.md` applicability rows; each applicable owner is mandatory.
-- `../devrites-lib/reference/workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers.
+- `../devrites-lib/reference/workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers (trigger `workflow-artifacts`).
 
 ## Operating rules
 
@@ -145,7 +149,9 @@ Pull these via `Read` when shaping the plan:
 6a. **Cross-artifact gate.** Read spec, tasks, and traceability together: every
    buildable AC/REQ maps to an existing slice/proof, every slice maps to real
    acceptance, and names/prose agree. Missing, duplicate, contradictory, or
-   meaning-changing mappings block.
+   meaning-changing mappings block. Then run
+   `devrites-engine check task-graph <slug>`; a malformed dependency graph blocks
+   before Vet rather than spending a reviewer context on invalid tasks.
 7. **Readiness gate** (`plan-template.md`): require CLEAR coverage; complete acceptance,
    wiring, shared-contract proof, applicable outputs, and rollback; risk-first acyclic order;
    justified deviations; and every horizon item present, with blockers resolved, planning

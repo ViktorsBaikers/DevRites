@@ -1,5 +1,7 @@
 # Data integrity
 
+> Applies when: a change writes durable state, alters schema, migrates or backfills data.
+
 Load this when a change writes durable state, changes a schema, migrates or backfills
 records, changes retention, can expose one tenant's data to another, or feeds a
 model/feature pipeline (training data, features, labels, embeddings). Data work is
@@ -61,6 +63,12 @@ Treat a partial migration as an explicit mixed-version state: identify migrated/
 rows, compatible readers/writers, resume cursor, rejected records, and reconciliation before
 contracting the old path.
 
+**Green types ≠ applied schema.** When the change touches ORM models, schema files, or
+migration directories, `compiles`/`typechecks` prove nothing about the live store —
+types can generate from config while the database is still old. The plan carries the
+apply step (migrate/push) as an explicit blocking task; proof records the post-apply
+state, not just the passing build.
+
 ## Writes, retries, and concurrency
 
 - Make duplicate requests/jobs/events converge on one effect with a durable idempotency
@@ -85,13 +93,27 @@ contracting the old path.
 - Derive tenant/subject scope from authenticated server-side context, not a caller's
   free-form id. Apply it to reads, writes, indexes, caches, jobs, exports, logs, and RAG
   retrieval.
-- Prove cross-tenant denial with two distinct tenants and data; a single-tenant happy
-  path cannot detect leakage.
+- Prove cross-tenant denial with two distinct principals/tenants and existing data.
+  An allowed control must reach the resource; the other principal must get no
+  forbidden disclosure or effect. Two 404s against a missing fixture prove nothing.
 - Minimize collected and returned fields. Define deletion/retention behavior for
   primary data and derived copies, and do not claim deletion while recoverable copies
   remain without a documented policy basis.
 - Never place secrets or sensitive records in migration logs, rejected-row dumps, or
   evidence artifacts.
+
+## Restore and replay preserve current policy
+
+Before restored or replayed data becomes visible, reconcile it with current
+retention/deletion records and authorization policy. Old backups, events and
+indexes must not resurrect deleted records or revoked grants. Name the durable
+deletion/revocation source and how recovery catches up with concurrent changes;
+if reconciliation cannot be established, keep recovered data inaccessible.
+
+Rehearse a snapshot/event from before deletion and revocation, then restore or
+replay it under current policy. Assert the deleted record stays absent, a
+revoked principal is denied, and an authorized control still reaches retained
+data. Counts or successful restore commands alone do not prove these invariants.
 
 ## Required plan and proof
 

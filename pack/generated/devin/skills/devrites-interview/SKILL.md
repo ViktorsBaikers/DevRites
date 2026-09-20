@@ -4,6 +4,8 @@ description: Interview the user one question at a time to extract intent. Use wh
 triggers:
   - model
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-spec/reference/interview-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["spec.md","questions.md","decisions.md","assumptions.md","decision-coverage.md","state.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-interview` bundles every file named below into one deduplicated read.
 
 # devrites-interview: extract intent
 
@@ -18,6 +20,9 @@ spec, plan, or code.
   > "I recommend CSV only because it covers the use case. Choose CSV, CSV + XLSX,
   > or something else?"
   This is a concrete candidate for the user's decision, not an assumption or confirmation.
+- **Ask in a full sentence that names the decision and why it changes the
+  build** — "Which export formats must v1 ship? Each adds a writer and a proof."
+  — never a bare label ("Formats?") or a context-free "any preference?"
 - **Highest-value question first:** order by how much the answer changes the build. A
   question that moves the data model or acceptance criteria beats a cosmetic one.
 - **Prioritize impact and bound each pass.** Order unknowns **scope > security/privacy > UX >

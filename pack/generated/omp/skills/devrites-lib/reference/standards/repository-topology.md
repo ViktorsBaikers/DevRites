@@ -1,5 +1,7 @@
 # Repository topology
 
+> Applies when: work spans monorepo members, nested projects, languages, or roots.
+
 Load this when work spans a monorepo member, nested project, multiple languages,
 multiple services, or more than one repository. The purpose is to select the real
 owners and roots before planning paths or commands.

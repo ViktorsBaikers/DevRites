@@ -1,5 +1,7 @@
 # Error handling
 
+> Applies when: code can fail; error paths, messages, retries, partial state.
+
 Errors are part of the contract, not an afterthought. Make failure loud, local, and
 recoverable.
 

@@ -361,7 +361,7 @@ grep -q 'Immediately before its final response' "$OUT/codex/skills/devrites-lib/
 grep -q 'devrites-engine check readiness <slug>' "$OUT/codex/skills/devrites-lib/reference/standards/core.md" &&
   ok "Codex core preserves lifecycle rest points" ||
   no "Codex core lost lifecycle rest points"
-if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out|migrate)([[:space:]`]|$)' \
+if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out)([[:space:]`]|$)' \
   "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" "$OUT/devin" >/tmp/dr_host_artifacts_retired 2>/dev/null; then
   no "generated host artifacts retain retired engine commands"
   sed -n '1,20p' /tmp/dr_host_artifacts_retired

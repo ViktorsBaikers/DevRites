@@ -5,6 +5,8 @@ argument-hint: "[\"<lesson or rejected direction>\"]"
 triggers:
   - user
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/documentation.md","devrites-lib/reference/standards/tooling.md"],"workspace":["state.md","decisions.md","drift.md","evidence.md","review.md","seal.md","questions.md"],"workspaceByRole":{"retrospector":["state.md","decisions.md","drift.md","evidence.md","review.md","seal.md","questions.md"]},"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-learn` bundles every file named below into one deduplicated read.
 
 # /rite-learn: review durable lessons
 

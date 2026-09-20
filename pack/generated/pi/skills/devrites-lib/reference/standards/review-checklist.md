@@ -1,5 +1,7 @@
 # Review checklist
 
+> Applies when: compact pass/fail sweep before a review verdict.
+
 Compact sweep only. Contracts live in [`code-review.md`](code-review.md)
 (scope, skip/only, unreviewed ≠ clean), [`agents.md`](agents.md) § Result
 admission (C2 finding shape), and [`testing.md`](testing.md) (verification gap).

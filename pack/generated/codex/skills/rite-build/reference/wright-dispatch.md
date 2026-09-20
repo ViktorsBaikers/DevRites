@@ -42,7 +42,11 @@ worktrees stay forbidden.
 
 ## Prepare
 
-1. Derive the smallest exact project-relative source/test path list; reject
+1. Run `devrites-engine check slice <slug> <SLICE-ID>` first — it fails a
+   malformed contract (missing goal, empty/invalid Writer allowlist,
+   unresolvable `Satisfies` AC ids, empty proof field) before a wright
+   context is spent; a failure is a gap, not a dispatch. Then derive the
+   smallest exact project-relative source/test path list; reject
    directories/globs, traversal, symlink escapes, duplicates, and `.devrites/**`.
    A target composed only of vetted executable workflow artifacts routes to the
    controlling root under
@@ -50,7 +54,12 @@ worktrees stay forbidden.
    its rejection here is not a blocker.
 2. Include goal, verbatim acceptance, exclusions, context,
    `test-plan.md` proof commands, applicable standards, and the exact
-   `WIP(<slug>):` subject (no slice id). For each triggered
+   `WIP(<slug>):` subject (no slice id). Build the wright's read-set with
+   `devrites-engine context <slug> --phase build --role slice-wright --trigger <set>`
+   and hand it the bundle path; evaluate each trigger condition and pass those
+   that fire (TDD slice → `tdd`, AFK run → `afk`, UI work → `frontend`, …).
+   The command prints `unselected=[...]`; an omitted applicable trigger is a gap.
+   For each triggered
    topology/data/integration standard, include only the feature-specific owner/invariant,
    failure or partial-state case, recovery rule, and required proof from the vetted plan.
    Do not paste the whole standard or silently omit an applicable risk.
@@ -62,17 +71,34 @@ worktrees stay forbidden.
 
 ## Run
 
-Ask the host for the exact writer in fresh context and wait. Use at most one writer
-across all linked worktrees for this workspace. Never run two writers in one worktree,
-run isolated and same-worktree writers concurrently, or substitute a generic agent.
-Opt-in `$rite-build --parallel N` fans out only under [`parallel-batch.md`](parallel-batch.md).
+Same-worktree (non-isolated) dispatch claims before writing: `devrites-engine
+claim add --session <id> <task-paths>`; retain its returned `<claim-id>`, then run
+`devrites-engine claim check --session <id> <task-paths>` — a held claim from a
+live foreign session releases the retained claim and stops the dispatch, per
+[`agents.md`](../../devrites-lib/reference/standards/agents.md). Ask the host
+for the exact writer in fresh context and wait. Track it through the
+launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
+<slice-id> --role slice-wright`, then `start` with the host handle, `seal`, and
+`return` on completion (auto-records dispatch/return metrics). Use
+at most one writer across all linked worktrees for this workspace. Never run two
+writers in one worktree, run isolated and same-worktree writers concurrently, or
+substitute a generic agent. Opt-in `$rite-build --parallel N` fans out only under
+[`parallel-batch.md`](parallel-batch.md).
+
+After `claim add`, every terminal path releases the claim with
+`devrites-engine claim release --session <id> --id <claim-id>`: successful
+return, rejected result, gap, stop, or launch failure. TTL is crash recovery,
+not normal cleanup.
 
 ## Inspect and prove
 
 1. Compare the returned file list and `git diff --name-only` with task paths.
+   `devrites-engine check diff-scope <slug> --allow <task-paths>` is the
+   mechanical subset gate — run it before any reviewer dispatch; a violation
+   restores through the bounded wright without spending review.
    Reject a result that omits any required key — the bookkeeping arrays count
-   whether empty or filled — or adds a path. Restore only through the same bounded
-   wright; root never widens scope or edits source.
+   whether empty or filled — or adds a path. Root never widens scope or edits
+   source.
 2. Inspect the test diff for deletion, skipping, focus markers, or loosened
    assertions. Dedicated test analysis treats weakening as Critical.
    Confirm a test for a data/integration/topology risk can actually exhibit that risk;

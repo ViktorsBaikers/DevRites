@@ -4,6 +4,8 @@ description: Observe and prove working UI behavior in a real browser with screen
 triggers:
   - model
 ---
+<!-- loads: {"always":["devrites-browser-proof/reference/browser-performance.md","devrites-browser-proof/reference/visual-verdict.md","devrites-frontend-craft/reference/quality-standards.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-browser-proof` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # devrites-browser-proof: runtime evidence for UI
 

@@ -97,7 +97,13 @@ func runUpdate(opts Options) error {
 		defer cleanup()
 		r.preparedBinary = staged
 	}
-	return r.install()
+	if err := r.install(); err != nil {
+		return err
+	}
+	if !opts.DryRun {
+		reportStaleWorkspaces(opts.Stdout, target)
+	}
+	return nil
 }
 
 var (

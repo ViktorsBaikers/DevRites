@@ -5,6 +5,8 @@ user-invocable: true
 disable-model-invocation: true
 argument-hint: "[the question the prototype is answering]"
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":[]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-prototype` bundles every file named below into one deduplicated read.
 
 # /rite-prototype: answer one question with throwaway code
 

@@ -17,6 +17,26 @@ ownership, relaxes a gate, or authorizes an irreversible action. Missing or
 incompatible exact roles stop for HITL; the root never substitutes a generic
 agent or performs the specialist's work inline.
 
+## Recorded route
+
+The decision is durable, not re-derived each phase: `brief.md` carries a
+`## Route` block (`Size`, `Profile`, `Why`) written by whichever rite first
+classified the change — `$rite-quick`'s significance gate or `$rite-spec` step
+5. Later phases read the recorded profile instead of re-judging size.
+
+| Recorded | Mapping |
+|---|---|
+| `small` + reversible + unambiguous | **Quick** — `$rite-quick` lane; the significance gate still escalates to Standard on auth, migration, public API, destructive, multi-slice, or ambiguous signals. |
+| `standard` (default) | **Standard** — the full required lifecycle. |
+| `large` or any high-stakes signal (security, migration, public contracts, high blast radius, explicit `--full`) | **Full**. |
+
+Route changes are one-directional without a recorded reason: any phase may
+escalate a profile when a significance signal appears; a downgrade needs an
+explicit recorded `Why` revision through the Spec Drift Guard. A recorded
+profile compresses artifact depth and reviewer breadth per the profile table —
+it never removes a named specialist, a required artifact, a gate, or an
+evidence binding.
+
 A child result is a claim. Admit it only against observations (`git diff
 --name-only`, recorded commands, artifact existence) — never against the
 child's prose. **Failing case:** a wright reports "done" and the parent

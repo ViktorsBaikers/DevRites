@@ -1,5 +1,7 @@
 # Git workflow
 
+> Applies when: committing, branching, writing history.
+
 History is documentation. Keep it clean, atomic, and readable.
 
 ## Conventional Commits

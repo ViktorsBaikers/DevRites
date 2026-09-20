@@ -9,9 +9,7 @@ stop.
 Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
-- `FOLD` → keep Plan repair/affected Vet internal; no stop solely for topology/count.
-- `GUARD_AND_REPAIR` → enter Spec Drift Guard/Clarify; pause only at an existing human-owned gate; resume Plan/Vet internally.
-- `BLOCKED_INPUT` → no planning writes; stop internal branch; exact diagnostic; recover authority; reclassify.
+<!-- include:../../devrites-lib/reference/_shared/reslice-autocomplete.md -->
 <!-- END RESLICE ROUTE-TO-ACTION -->
 
 ## Always stop

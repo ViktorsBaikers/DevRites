@@ -1,16 +1,23 @@
 # Performance
 
+> Applies when: optimizing, measuring, or reviewing for speed or cost.
+
 Measure first. An optimization without a measurement is a guess that adds complexity.
 
 ## Measure before you optimize
 - Establish a number: a timing, a query count, a payload/bundle size, a memory figure:
-  against a budget or a baseline.
+  against a budget or a baseline. Hold workload, dataset, cache state, and named
+  environment comparable; use repeated samples and report spread/noise rather
+  than selecting the best run.
 - No measurement → no performance claim, and usually no change. "Feels slow" is a
   hypothesis to test, not a reason to refactor.
 
 ## Optimize responsibly
 - Fix the **measured** bottleneck, then **re-measure** to prove the win (before/after).
   An optimization that doesn't move the number is just added complexity: revert it.
+  Keep compact failed and neutral experiment notes in the existing evidence:
+  hypothesis, change, comparable measurements, and keep/revert decision. Do not
+  create a separate experiment framework or ledger.
 - **Measurement not reproducible in CI** (noisy host, external dependency): label the claim
   `Lab (<named command/environment>)` — never an elapsed-time assertion in shared CI (a
   flaking wall-clock test is a flaky test, [`testing.md`](testing.md)). Budget regression:

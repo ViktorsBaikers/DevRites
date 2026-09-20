@@ -1,0 +1,3 @@
+- `FOLD` → keep Plan repair/affected Vet internal; no stop solely for topology/count.
+- `GUARD_AND_REPAIR` → enter Spec Drift Guard/Clarify; pause only at an existing human-owned gate; resume Plan/Vet internally.
+- `BLOCKED_INPUT` → no planning writes; stop internal branch; exact diagnostic; recover authority; reclassify.

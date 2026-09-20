@@ -28,11 +28,28 @@ current authority. Required feature proof cannot substitute slice results.
 Same-candidate accounts may be cited when permitted. Corrections require
 new candidate checks, affected real proof and fresh affected exact reviewers for
 all open findings and dependency/regression closure, including newly triggered roles.
+After an all-met acceptance ledger has been executed, any candidate digest change
+requires `devrites-engine gates reverify <slug>` against the corrected frozen
+candidate before refreshed evidence or review bindings are written; ordinary
+`gates run` skips already-met rows and cannot refresh them.
 Changed contracts or uncertain closure require a full applicable pass.
 Unchanged sub-scope needs explicit unchanged-input/dependency justification and a
 link to original evidence. Never relabel an old candidate-bound account.
 Keep one current aggregate binding; never copy a historical binding line, even quoted. Root reconciles complete coverage and binds
 it anew. Missing coverage blocks; required roles, criteria, proof and authority remain.
+
+## Resume validation
+
+On resume — compaction, new session, reopened workspace — recorded evidence is
+a claim, not a fact. Before reusing any of it, compare the ledger's candidate
+digest, contract version, environment, gate/fingerprint counters, and coverage
+inventory against the live workspace. Rows whose dependencies changed or cannot
+be bounded invalidate; rows that provably still apply are cited as reuse with
+their original observation. Counters survive session restarts and version
+bumps — a renamed file or a fresh context never resets a spent attempt. See
+[`standards/verification-methods.md`](standards/verification-methods.md) for the
+status (`fresh`/`reused`/`failed`/`missing`/`blocked`) and result
+(`pass`/`fail`/`unverified`) vocabulary coverage rows carry.
 
 ## Existing workspaces
 

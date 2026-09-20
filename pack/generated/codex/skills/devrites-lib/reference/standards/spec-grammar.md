@@ -1,5 +1,7 @@
 # Spec grammar: testable requirements, checked by native re-read
 
+> Applies when: writing or reviewing behavioral requirements and acceptance criteria.
+
 Acceptance criteria are the contract the seal checks ([`testing.md`](testing.md), [`code-review.md`](code-review.md)). Prose criteria can't falsify ambiguity ("handle errors gracefully") — it slips every gate. This adds an **optional, recommended structure** making behavioral requirements testable by construction; the root re-reads the spec before `$rite-define` plans against a malformed requirement. Grammar counterpart to testing: testing proves behavior; this writes each behavior so it can be proven.
 ## Progressive rigor: when to use the structured form
 
@@ -115,15 +117,24 @@ each item against the file's exact headings and text. **No parser or replacement
 
 - [ ] `## Acceptance criteria` exists and every buildable criterion has one
   unique `AC-###` ID; success metrics have none.
-- [ ] Every `### Requirement:` header is non-empty and unique.
+- [ ] Every `### Requirement:` header is non-empty, unique, descriptive, and
+  under ~50 characters.
 - [ ] Every structured requirement contains a normative `SHALL` or `MUST`
   statement and at least one `#### Scenario:`.
-- [ ] Every scenario has an observable trigger/outcome (WHEN/THEN or EARS WHILE/IF), plus an `AC-###` criterion; it describes behavior rather than implementation.
-- [ ] Delta headings use only ADDED, MODIFIED, or REMOVED. Each named capability
+- [ ] Scenario names are unique within their requirement; every scenario has an
+  observable trigger/outcome (WHEN/THEN or EARS WHILE/IF), plus an `AC-###`
+  criterion; it describes behavior rather than implementation.
+- [ ] Delta headings use only ADDED, MODIFIED, or REMOVED; every delta section
+  names at least one `### Requirement:` block, and no structured requirement
+  sits outside a delta H2 when delta sections exist. Each named capability
   is contained under `.devrites/specs/`, and MODIFIED/REMOVED headers match the
-  current ledger exactly.
+  current ledger exactly. A near-match (case, whitespace, or word drift) is a
+  typo to fix in the spec — never a rename-by-append.
 - [ ] Exactly one capability-impact declaration exists and agrees with the ledger
   deltas, or gives a specific `none` justification.
+- [ ] Every requirement admits one reading — the two-engineers test: if two
+  competent engineers could implement the clause differently and both claim
+  compliance, it is ambiguous; sharpen it into a scenario or split it.
 - [ ] Re-read the entire requirements and acceptance sections once more after
   corrections so duplicates and partial edits cannot hide between blocks.
 
@@ -158,6 +169,9 @@ The system SHALL default to the OS colour-scheme on first load.
 ### Requirement: Theme is hard-coded to light
 Removed — superseded by system-preference detection.
 ```
+
+A **REMOVED** block is header plus removal rationale only — it carries no
+`#### Scenario:` blocks; deleted scenarios never fold anywhere.
 
 The Polish fold (`$rite-polish`) previews and writes through the host
 filesystem. **ADDED** appends, **MODIFIED** replaces the same-named requirement, and

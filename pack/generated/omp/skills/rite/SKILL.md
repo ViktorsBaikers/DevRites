@@ -5,6 +5,8 @@ argument-hint: "[verb [args...]]"
 user-invocable: true
 disable-model-invocation: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"triggers":{"intent":["devrites-lib/reference/intent-map.md"],"menu":["rite/reference/menu.md"],"dispatch":["devrites-lib/reference/parallel-dispatch.md"],"reply":["devrites-lib/reference/reply-contract.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # /rite: DevRites menu + router
 

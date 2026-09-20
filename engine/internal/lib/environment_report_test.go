@@ -34,8 +34,8 @@ func TestEnvironmentReportForDetectsManifestAndIndexes(t *testing.T) {
 	if !report.Manifest.Present {
 		t.Fatal("expected manifest present")
 	}
-	if len(report.Indexes) != 3 {
-		t.Fatalf("indexes = %d, want 3", len(report.Indexes))
+	if len(report.Indexes) != 4 {
+		t.Fatalf("indexes = %d, want 4", len(report.Indexes))
 	}
 	if !report.Indexes[0].Present {
 		t.Fatalf("expected .codegraph present, got %+v", report.Indexes)

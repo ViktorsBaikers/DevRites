@@ -123,7 +123,7 @@ Goal: looks complete without an ordering field
 func TestCheckAndRenderReadiness(t *testing.T) {
 	root := t.TempDir()
 	writeFeature(t, root, "alpha", map[string]string{
-		"state.md":             "- Phase: build\n- Schema: 3\n",
+		"state.md":             "- Phase: build\n- Schema: 4\n",
 		"brief.md":             "brief\n",
 		"spec.md":              "real spec\n",
 		"assumptions.md":       "none\n",
@@ -134,6 +134,7 @@ func TestCheckAndRenderReadiness(t *testing.T) {
 		"traceability.md":      "traceability\n",
 		"eng-review.md":        "ready\n",
 		"test-plan.md":         "tests\n",
+		"gates.md":             testutil.CanonicalGatesMarkdown,
 	})
 
 	res, err := Check(Readiness, root, "alpha")
@@ -164,7 +165,7 @@ func TestCheckAndRenderReadiness(t *testing.T) {
 func TestCheckUsesConcreteWorkspaceRequirements(t *testing.T) {
 	root := t.TempDir()
 	files := map[string]string{
-		"state.md":             "| phase | vet |\n| schema | 3 |\n",
+		"state.md":             "| phase | vet |\n| schema | 4 |\n",
 		"brief.md":             "brief\n",
 		"spec.md":              "spec\n",
 		"decisions.md":         "decisions\n",
@@ -177,6 +178,7 @@ func TestCheckUsesConcreteWorkspaceRequirements(t *testing.T) {
 		"traceability.md":      "traceability\n",
 		"eng-review.md":        "ready\n",
 		"test-plan.md":         "", // an empty required file must not satisfy the gate
+		"gates.md":             testutil.CanonicalGatesMarkdown,
 	}
 	writeWorkFeature(t, root, "concrete", files)
 
@@ -192,7 +194,7 @@ func TestCheckUsesConcreteWorkspaceRequirements(t *testing.T) {
 func TestSealRequiresDurableReviewAndSealArtifacts(t *testing.T) {
 	root := t.TempDir()
 	files := map[string]string{
-		"state.md":             "| phase | seal |\n| schema | 3 |\n",
+		"state.md":             "| phase | seal |\n| schema | 4 |\n",
 		"brief.md":             "brief\n",
 		"spec.md":              "spec\n",
 		"decisions.md":         "decisions\n",
@@ -205,6 +207,7 @@ func TestSealRequiresDurableReviewAndSealArtifacts(t *testing.T) {
 		"traceability.md":      "traceability\n",
 		"eng-review.md":        "ready\n",
 		"test-plan.md":         "tests\n",
+		"gates.md":             testutil.CanonicalGatesMarkdown,
 		"evidence.md":          "evidence\n",
 		"touched-files.md":     "none\n",
 	}
@@ -373,7 +376,7 @@ func TestCheckBlocksOpenHumanQuestions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
 			writeFeature(t, root, "alpha", map[string]string{
-				"state.md":     "- Phase: build\n- Status: " + tc.status + "\n- Schema: 3\n",
+				"state.md":     "- Phase: build\n- Status: " + tc.status + "\n- Schema: 4\n",
 				"spec.md":      "spec\n",
 				"plan.md":      "plan\n",
 				"decisions.md": "decisions\n",
@@ -412,7 +415,7 @@ func TestCheckUsesWorkspaceOverrideForStateInvariants(t *testing.T) {
 	override := filepath.Join(physicalRoot, "work", "alpha")
 	t.Setenv("DEVRITES_WORKSPACE", override)
 	testutil.WriteFile(t, filepath.Join(override, "README.md"), "---\nphase: spec\nschemaVersion: 1\n---\n")
-	testutil.WriteFile(t, filepath.Join(override, "state.md"), "- Phase: build\n- Status: running\n- Schema: 3\n")
+	testutil.WriteFile(t, filepath.Join(override, "state.md"), "- Phase: build\n- Status: running\n- Schema: 4\n")
 	testutil.WriteFile(t, filepath.Join(override, "spec.md"), "spec\n")
 	testutil.WriteFile(t, filepath.Join(override, "questions.md"), "## q-1\nstatus: open\ngate: blocking\n")
 
@@ -426,7 +429,7 @@ func TestCheckUsesWorkspaceOverrideForStateInvariants(t *testing.T) {
 }
 
 func TestOpenBlockingQuestionGates(t *testing.T) {
-	got := openBlockingQuestionGates([]byte("## Q-1\nstatus: open\ngate: blocking\n\n## Not a question\n\n## q-2\nstatus: open\ngate: validating\n\n## q-3\nstatus: resolved\ngate: blocking\n\n## q-4\nstatus: open\ngate: blocking\n\n## Q-5\nstatus: open\ngate: escalating\n"))
+	got := OpenBlockingQuestionGates([]byte("## Q-1\nstatus: open\ngate: blocking\n\n## Not a question\n\n## q-2\nstatus: open\ngate: validating\n\n## q-3\nstatus: resolved\ngate: blocking\n\n## q-4\nstatus: open\ngate: blocking\n\n## Q-5\nstatus: open\ngate: escalating\n"))
 	want := []string{"blocking", "validating", "escalating"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("openBlockingQuestionGates=%v, want %v", got, want)
@@ -443,7 +446,7 @@ func TestCheckObservationUsesRetainedPhaseQuestionsReadinessAndReview(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	testutil.WriteFile(t, filepath.Join(workspace, "state.md"), "- Phase: spec\n- Status: running\n- Schema: 3\n")
+	testutil.WriteFile(t, filepath.Join(workspace, "state.md"), "- Phase: spec\n- Status: running\n- Schema: 4\n")
 	testutil.WriteFile(t, filepath.Join(workspace, "questions.md"), "## q-1\nstatus: open\ngate: blocking\n")
 	testutil.WriteFile(t, filepath.Join(workspace, "plan.md"), "# Plan\n\nChanged after observation.\n")
 	testutil.WriteFile(t, filepath.Join(workspace, "eng-review.md"), "# Engineering review\n\nNo binding.\n")
@@ -609,12 +612,14 @@ func writeCompleteGateFeature(t *testing.T, root, slug string, current, required
 		content := "# " + name + "\n\nreal\n"
 		switch name {
 		case "state.md":
-			content = "- Phase: " + string(current) + "\n- Status: running\n- Schema: 3\n"
+			content = "- Phase: " + string(current) + "\n- Status: running\n- Schema: 4\n"
 		case "questions.md":
 			questionsRequired = true
 			content = questions
 		case "tasks.md":
 			content = testutil.CanonicalTasksMarkdown
+		case "gates.md":
+			content = testutil.CanonicalGatesMarkdown
 		}
 		testutil.WriteFile(t, filepath.Join(root, "work", slug, name), content)
 	}
@@ -696,6 +701,9 @@ func TestCheckBlocksOversizedPacketInWorkspaceRoot(t *testing.T) {
 	// Sanctioned conditional artifact over the ceiling: placement stays legal.
 	testutil.WriteFile(t, filepath.Join(workspace, "references.md"),
 		"# refs\n\n"+strings.Repeat("reference line\n", 6000))
+	// Engine-owned machine files over the ceiling: placement stays legal.
+	testutil.WriteFile(t, filepath.Join(workspace, "metrics.jsonl"),
+		strings.Repeat("{}\n", state.PacketMaxBytes/2))
 	// Unsanctioned root payload over the ceiling: blocked.
 	testutil.WriteFile(t, filepath.Join(workspace, "vet-review-input-031.json"),
 		strings.Repeat("x", state.PacketMaxBytes+1))
@@ -711,7 +719,7 @@ func TestCheckBlocksOversizedPacketInWorkspaceRoot(t *testing.T) {
 	if !strings.Contains(joined, "packets/") {
 		t.Fatalf("remediation must name packets/: %q", joined)
 	}
-	if strings.Contains(joined, "references.md") {
+	if strings.Contains(joined, "references.md") || strings.Contains(joined, "metrics.jsonl") {
 		t.Fatalf("sanctioned root artifact must not be treated as misplaced: %q", joined)
 	}
 }

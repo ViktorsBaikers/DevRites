@@ -1,7 +1,7 @@
 ---
 name: devrites-simplifier-reviewer
 description: Read-only simplification reviewer for /rite-polish Phase 1. From a fresh context, finds measured, behavior-preserving ways to reduce complexity in one DevRites feature diff, using guard clauses, Extract Method, simpler conditionals, and Chesterton's Fence. Returns findings only for the caller to apply in feature scope.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 
@@ -41,7 +41,11 @@ files.
   points without removing them. Skip code that is already simple.
 - **Behavior-preserving only.** Observable behavior must stay identical and tests
   must remain green. Report any behavior-changing proposal separately because it is
-  not simplification.
+  not simplification. Green tests alone do not prove equivalence: inspect
+  observable representation, prototypes and key behavior, order, aliasing and
+  mutation, synchronous throws versus promise rejections and timing, and resource
+  lifetime where the proposed transformation touches them. Name the preserving
+  evidence or the unresolved edge case.
 - **Chesterton's Fence.** Explain *why* something exists before recommending its
   removal. If you cannot, flag "needs author intent" instead. A line that looks
   "useless" may protect a real edge case.
@@ -68,7 +72,13 @@ files.
 - **Simplify conditionals:** replace a long `if` and `else` chain with a switch,
   lookup table, or map, or split a complex boolean into well-named parts.
 - **Dedupe:** remove duplication, inline single-use indirection, or replace a
-  hand-rolled utility with the standard library or an existing helper.
+  hand-rolled utility with the standard library or an existing helper. Run
+  `devrites-engine check dup <slug>` for near-duplicate leads that survive
+  renaming — `--base <ref>`/`--worktree` matching the packet's diff, or `--all`
+  when the packet asks for a repo-wide pass. Read both units before proposing a
+  merge — convergent code is a keep, not a dedupe. Report each actionable
+  cluster with its hash per
+  [`duplicate-code.md`](../skills/devrites-lib/reference/standards/duplicate-code.md).
 - **Delete dead code:** remove only unreachable code added by this feature.
 
 ## Output

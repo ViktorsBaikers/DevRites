@@ -47,6 +47,8 @@ WORKFLOW_ARTIFACTS="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/w
 STATE_WORKSPACE="$ROOT/pack/.claude/skills/rite-spec/reference/state-workspace.md"
 REPLY="$ROOT/pack/.claude/skills/devrites-lib/reference/reply-contract.md"
 PROVE="$ROOT/pack/.claude/skills/rite-prove/SKILL.md"
+POLISH="$ROOT/pack/.claude/skills/rite-polish/SKILL.md"
+CONVERGE="$ROOT/pack/.claude/skills/rite-converge/SKILL.md"
 DRIFT="$ROOT/pack/.claude/skills/rite-build/reference/spec-drift-guard.md"
 AUTOCOMPLETE="$ROOT/pack/.claude/skills/rite-autocomplete/SKILL.md"
 AUTOCOMPLETE_LOOP="$ROOT/pack/.claude/skills/rite-autocomplete/reference/loop.md"
@@ -71,6 +73,7 @@ DOUBT="$ROOT/pack/.claude/skills/devrites-doubt/SKILL.md"
 VET_DEPTH="$ROOT/pack/.claude/skills/rite-vet/reference/depth.md"
 REVIEW="$ROOT/pack/.claude/skills/rite-review/SKILL.md"
 DISPATCH="$ROOT/pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md"
+AGENTS="$ROOT/pack/.claude/skills/devrites-lib/reference/standards/agents.md"
 TEMPER="$ROOT/pack/.claude/skills/rite-temper/SKILL.md"
 TEMPER_DIMENSIONS="$ROOT/pack/.claude/skills/rite-temper/reference/review-dimensions.md"
 API_INTERFACE="$ROOT/pack/.claude/skills/devrites-api-interface/SKILL.md"
@@ -106,6 +109,8 @@ forbid "$CLARIFY" 'devrites-engine state clarify' 'clarify has no removed state 
 require "$DEFINE" 'Decision coverage: CLEAR' 'define requires clarified intent'
 require "$DEFINE" '/rite-clarify' 'define returns missing coverage to clarify'
 require "$PLAN_GRAPH" 'check readiness' 'plan graph is enforced at readiness and seal'
+require "$DEFINE" 'devrites-engine check task-graph <slug>' 'define validates its written task graph before Vet'
+require "$CONVERGE" 'devrites-engine check task-graph <slug>' 'converge validates appended slices before Vet'
 
 require "$BUILD" 'devrites-engine check readiness <slug>' 'build uses the structural readiness gate'
 require "$BUILD" 'dispatch the exact `devrites-slice-wright`' 'build does not bypass the writer agent'
@@ -158,6 +163,10 @@ forbid "$BUILD_PARALLEL" 'two corrected re-batches fail' 'batch count cannot rep
 require "$VET" 'Do not fall through to steps 2–7' 'bounded recovery does not accidentally repeat initial Vet'
 require "$DISPATCH" 'fresh-context preflight' 'dispatch checks host context before roster fanout'
 require "$DISPATCH" 'Do not launch a probe agent' 'context preflight does not add a per-task agent'
+require "$DISPATCH" 'dispatch <slug> abandon --wave <w> --reason <reason>' 'dispatch abandons an opened wave that cannot seal'
+require "$WRIGHT_DISPATCH" 'claim check --session <id> <task-paths>' 'same-tree claim preflight carries its session and paths'
+require "$WRIGHT_DISPATCH" 'claim release --session <id> --id <claim-id>' 'same-tree writer releases its retained claim id'
+require "$AGENTS" 'claim release --session <id> --id <claim-id>' 'shared writer contract releases claims on every terminal path'
 require "$CANDIDATE_INTEGRITY" 'source, dependencies, configuration, environment, toolchain, command/cwd' 'evidence references verify applicable provenance'
 require "$CANDIDATE_INTEGRITY" 'External or time-sensitive observations rerun' 'evidence references cannot freeze mutable observations'
 require "$CANDIDATE_INTEGRITY" 'Never relabel an old candidate-bound account' 'new candidate requires new evidence reconciliation'
@@ -174,6 +183,9 @@ require "$WRIGHT" 'no-progress attempts' 'wright shares the per-fingerprint no-p
 forbid "$WRIGHT" 'devrites-engine state recovery' 'wright has no removed recovery counter command'
 
 require "$PROVE" 'sole approved runtime' 'prove treats test-plan as sole command authority'
+require "$CANDIDATE_INTEGRITY" 'devrites-engine gates reverify <slug>' 'candidate changes reverify the acceptance ledger before rebinding proof'
+require "$VET" 'devrites-engine gates lint <slug> --strict' 'vet blocks READY on weak acceptance oracles'
+require "$SEAL" 'devrites-engine check drift <slug>' 'seal attributes stale readiness input before re-vetting'
 require "$PROVE" 'return to the current Vet contract' 'prove routes newly discovered commands through Vet'
 require "$CORE" 'nested phase boundary, not a user-facing handoff' 'nested recovery returns to its controlling rite'
 require "$CORE" 'not from a stale `state.md` label' 'shared caller contract verifies recovery exhaustion from durable attempts'

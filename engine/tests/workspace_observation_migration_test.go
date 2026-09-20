@@ -279,6 +279,7 @@ func Check() { ObserveWorkspace() }
 			"internal/gate/readiness_binding.go": fmt.Sprintf(`package gate
 import %q
 func ReadinessBinding() { state.ObserveWorkspace() }
+func ReadinessInputDigests() { state.ObserveWorkspace() }
 `, migrationStateImport),
 		})
 		if problems := acquisitionProblems(program); len(problems) != 0 {
@@ -545,6 +546,7 @@ func Check() {
 		"internal/gate/readiness_binding.go": fmt.Sprintf(`package gate
 import %q
 func ReadinessBinding() { state.ObserveWorkspace() }
+func ReadinessInputDigests() { state.ObserveWorkspace() }
 `, migrationStateImport),
 	})
 }
@@ -744,10 +746,11 @@ func obsoleteSurfaceProblems(program *migrationProgram) []string {
 
 func acquisitionProblems(program *migrationProgram) []string {
 	allowed := map[migrationAcquisitionUse]int{
-		{file: "internal/state/observation.go", function: "ObserveWorkspace", target: "observeWorkspace"}:            1,
-		{file: "internal/state/status.go", function: "statusWithCallback", target: "observeWorkspace"}:               1,
-		{file: "internal/gate/gate.go", function: "Check", target: "state.ObserveWorkspace"}:                         1,
-		{file: "internal/gate/readiness_binding.go", function: "ReadinessBinding", target: "state.ObserveWorkspace"}: 1,
+		{file: "internal/state/observation.go", function: "ObserveWorkspace", target: "observeWorkspace"}:                 1,
+		{file: "internal/state/status.go", function: "statusWithCallback", target: "observeWorkspace"}:                    1,
+		{file: "internal/gate/gate.go", function: "Check", target: "state.ObserveWorkspace"}:                              1,
+		{file: "internal/gate/readiness_binding.go", function: "ReadinessBinding", target: "state.ObserveWorkspace"}:      1,
+		{file: "internal/gate/readiness_binding.go", function: "ReadinessInputDigests", target: "state.ObserveWorkspace"}: 1,
 	}
 	counts := make(map[migrationAcquisitionUse]int)
 	var problems []string
@@ -855,6 +858,7 @@ func consumerReachabilityProblems(program *migrationProgram, roots []migrationEn
 		"github.com/devrites/devrites/internal/devritespaths": true,
 	}
 	allowedInternalImports := map[string]bool{
+		"github.com/devrites/devrites/internal/acceptance":   true,
 		"github.com/devrites/devrites/internal/markdowntext": true,
 		"github.com/devrites/devrites/internal/reason":       true,
 		migrationStateImport:                                 true,

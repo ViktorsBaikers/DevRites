@@ -36,6 +36,10 @@ test at `file:line`.
 files, not a summary you remember.
 From `spec.md`'s applicability map, load only triggered [`repository-topology.md`](../skills/devrites-lib/reference/standards/repository-topology.md),
 [`data-integrity.md`](../skills/devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../skills/devrites-lib/reference/standards/integration-reliability.md); their cases remain feature-scoped.
+For per-file defect probes, load [`review/README.md`](../skills/devrites-lib/reference/standards/review/README.md):
+[`review/default.md`](../skills/devrites-lib/reference/standards/review/default.md) applies to every file, plus the language checklist matching
+each file's extension. A do-not-flag item raised as Critical/Important is a
+review defect — check that list before reporting.
 
 ## Inputs
 
@@ -75,10 +79,21 @@ for the feature scope and read the touched files.
     cast, or silent fallback that hides an unclear invariant?
   - Are repository/deployable roots, canonical contract and mutable-state ownership,
     shared resources, and sync/async consistency boundaries preserved without a cycle?
+  - Run `devrites-engine check dup <slug>` for near-duplicate leads, using the
+    mode that matches the packet's diff: `--base <ref>` when the feature's work
+    is committed, `--staged`/`--worktree` for uncommitted diffs. Triage each
+    reported cluster per
+    [`duplicate-code.md`](../skills/devrites-lib/reference/standards/duplicate-code.md)
+    — merge, keep-with-reason, or watch. A `*`-marked unit the diff added needs a
+    verdict, not suppression.
 - **Maintainability:** dead code, leftover TODOs or logs, and convention drift. Check
   **file size as well as diff size**. If a small diff pushes an already-large file
   past a healthy boundary, flag decompose-then-add and recommend extracting helpers
   or splitting modules first.
+- **Anchored notes:** when the workspace carries `notes.md`, run
+  `devrites-engine note list <slug>` and grade each anchor; a
+  `moved`/`stale`/`ambiguous`/`lost` note is a finding — the rationale it carries
+  no longer matches the code it names.
 - **Standards:** conformance to the project's conventions and the DevRites rules
   (naming, error handling, security, git/commit hygiene where the diff touches them).
 - **Hand-offs:** when input/auth/data/integration or a hot path/budget is in scope, flag
@@ -130,6 +145,7 @@ Return the report in this shape:
 Code review (<slug>) — independent
 Outcome: <findings | no-findings | gap>
 Account: <admitted findings | No-findings | Gap per Result admission>
+Coverage: <files read fully | hunk-level | skipped: name — reason>
 Finding: <severity> | <file:line> | <observed> | <impact> | <minimum fix>
 Basis: <files read · commands run to reach this finding>
 Tests: <adequate? gaps>

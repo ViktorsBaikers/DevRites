@@ -1,7 +1,7 @@
 ---
 name: devrites-doubt-reviewer
 description: Stress-tests one claim or decision for the devrites-doubt loop from a fresh context. Tries to break the claim rather than validate it.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

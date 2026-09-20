@@ -1,5 +1,7 @@
 # Observability
 
+> Applies when: production proof, logging, metrics, runtime evidence.
+
 Observability is proof the feature works in **production**: the evidence ladder extended
 past your machine. `/rite-prove` shows it works on localhost; observability is how you know
 it still works, and why it broke, once real traffic hits it. Un-instrumented code is a claim

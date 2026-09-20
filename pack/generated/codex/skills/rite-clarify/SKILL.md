@@ -5,6 +5,10 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","rite-clarify/reference/decision-coverage.md","rite-clarify/reference/anti-patterns.md"],"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md"],"workspaceByRole":{"evidence-scout":["brief.md","spec.md","state.md","questions.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase clarify` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # $rite-clarify: resolve product decisions
 
 Run this required pass between spec and strategy. If the spec covers every material

@@ -1,7 +1,7 @@
 ---
 name: devrites-evidence-scout
 description: Answers one bounded evidence question for spec, clarify, converge, or external-fact work from a fresh, read-only context. Returns a cited dossier from live code, project records, installed source, or authoritative versioned documentation. Never asks the user, chooses scope, edits artifacts, or advances a phase.
-tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
+tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

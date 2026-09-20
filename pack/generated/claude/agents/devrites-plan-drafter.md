@@ -1,7 +1,7 @@
 ---
 name: devrites-plan-drafter
 description: Read-only planning drafter for /rite-define and /rite-plan repair. From a fresh context, produces one consistent candidate bundle covering architecture, plan, vertical slices, traceability, and proof mapping. Proposes the technical approach, flags user-owned choices, and never edits workspace artifacts or source.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

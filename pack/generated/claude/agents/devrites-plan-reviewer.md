@@ -1,7 +1,7 @@
 ---
 name: devrites-plan-reviewer
 description: Read-only /rite-vet reviewer for engineering plans before code. Checks plan.md and tasks.md against spec.md for architecture, quality, tests, performance, scope, reversibility, and failure modes; reports high-confidence, line-supported findings and gates on the weakest axis.
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

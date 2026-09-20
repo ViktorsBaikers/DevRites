@@ -4,6 +4,8 @@ description: Fix application test, build, CI, runtime, browser, or 500 failures 
 argument-hint: "[<slug>]"
 user-invocable: false
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/code-navigation.md","devrites-debug-recovery/reference/build-the-loop.md","devrites-debug-recovery/reference/cleanup-and-classify.md","devrites-debug-recovery/reference/hypotheses.md","devrites-debug-recovery/reference/instrumentation.md","devrites-debug-recovery/reference/regression-test.md","devrites-debug-recovery/reference/trace.md","devrites-lib/reference/standards/debug-recovery.md"],"triggers":{"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"security":["devrites-lib/reference/standards/security.md"],"workspace":["devrites-lib/reference/standards/workflow-artifacts.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-debug-recovery` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # devrites-debug-recovery: fix the root cause, not the symptom
 

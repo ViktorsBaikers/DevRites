@@ -5,6 +5,8 @@ argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <
 triggers:
   - user
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-resolve/reference/answer-protocol.md"],"triggers":{"standards":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/documentation.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-resolve` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # /rite-resolve: answer the human gate
 

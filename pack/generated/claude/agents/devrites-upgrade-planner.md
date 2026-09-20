@@ -1,7 +1,7 @@
 ---
 name: devrites-upgrade-planner
 description: Read-only /rite-upgrade assessor returning a cited current, repairable, unsupported, or gap outcome; never writes/delegates.
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

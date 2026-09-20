@@ -25,10 +25,23 @@ else
   note "FAIL baseline is stale or missing the native permission boundary"; fail=1
 fi
 
-# 3) every agent carries the inline reference (the drift guard).
+# 3) every agent carries the inline reference (the drift guard). Canonical
+#    agents may delegate the line to a shared block via <!-- include:... -->;
+#    expand markers (resolved against the agent's directory) before checking.
 missing=0
 for f in "$AGENTS"/*.md; do
-  if ! grep -q 'Untrusted-input safety' "$f"; then
+  if ! awk -v dir="$(dirname "$f")" '
+      match($0, /<!--[[:space:]]*include:[^ >]+[[:space:]]*-->/) {
+        path = substr($0, RSTART, RLENGTH)
+        sub(/<!--[[:space:]]*include:/, "", path)
+        sub(/[[:space:]]*-->/, "", path)
+        target = dir "/" path
+        while ((getline line < target) > 0) print line
+        close(target)
+        next
+      }
+      { print }
+    ' "$f" | grep -q 'Untrusted-input safety'; then
     note "FAIL agent missing injection-resistance reference: $(basename "$f")"; missing=1; fail=1
   fi
 done

@@ -33,14 +33,25 @@ Identify the framework first; apply only its idioms.
   `font-display: swap`; subset with `unicode-range`.
 - **Rendering:** no layout thrashing (batch reads, then writes); animate `transform`/
   `opacity` only; virtualize long lists; `content-visibility: auto` for off-screen sections;
-  don't break bfcache (no `unload` handler, no `Cache-Control: no-store` on HTML).
+  check bfcache eligibility and restoration in supported browsers. Avoid `unload`
+  handlers, but preserve sensitive-data cache policy: `Cache-Control: no-store`
+  eligibility varies by browser and conditions. Never remove a security control
+  for a performance score; test account-switch and restored-page behavior.
 
 ## Backend (every feature, UI or not)
 
 - No N+1 queries; eager-load / join / batch instead.
-- New queries have the indexes they need for their filter/sort columns.
+- Compare query plans and representative measurements before/after adding an
+  index; account for write and storage costs, not just filter/sort columns.
+- Before raising connection caps, count pools across processes and instances,
+  inspect held connections and transactions, and compare aggregate demand with
+  database capacity.
 - List endpoints paginate: never an unbounded `SELECT *`.
-- Per-request work that doesn't change per call is cached or hoisted.
+- Consider caching or hoisting measured repeated work only when its freshness
+  and sensitive-data contract allows it. Keys include every varying input and
+  principal when results differ; bound eviction and coalesce concurrent misses
+  where needed. Distinguish genuine negative results from origin failures; never
+  cache an outage as absence.
 - Responses compressed (gzip/brotli); bulk operations instead of a loop of single calls.
 
 ## Network

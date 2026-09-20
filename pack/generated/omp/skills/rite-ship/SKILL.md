@@ -5,6 +5,10 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/candidate-integrity.md","devrites-lib/reference/standards/git-workflow.md","devrites-lib/reference/standards/definition-of-done.md","devrites-lib/reference/standards/release/ship-checklist.md","rite-ship/reference/git-ship.md","rite-ship/reference/rollout.md","rite-ship/reference/close-out.md","rite-ship/reference/ship-template.md","rite-ship/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md","touched-files.md","review.md","seal.md"]} -->
+> Read-set manifest: `devrites-engine context <slug> --phase ship` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # /rite-ship: ship + close the task
 
 `/rite-seal` decides; `/rite-ship` mutates Git and closes. Read the active workspace;
@@ -13,7 +17,7 @@ if absent, route to `/rite-spec <feature>`. Ship only with current **GO** in `se
 ## Rules consulted (read on demand from `.omp/skills/devrites-lib/reference/standards/`)
 **Step 0:** Read [`core.md`](../devrites-lib/reference/standards/core.md), then pull as needed:
 - [`git-workflow.md`](../devrites-lib/reference/standards/git-workflow.md): Conventional Commits, atomicity, never-commit list.
-- [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md): AFK pause rules for irreversible actions (the type-GO gate itself: [`git-ship.md`](reference/git-ship.md), [`rollout.md`](reference/rollout.md)).
+- [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md): AFK pause rules for irreversible actions (the type-GO gate itself: [`git-ship.md`](reference/git-ship.md), [`rollout.md`](reference/rollout.md)). Trigger `afk` — load when `.devrites/AFK` exists.
 - [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md): acceptance, evidence, drift, rollback, docs.
 - [`release/ship-checklist.md`](../devrites-lib/reference/standards/release/ship-checklist.md): final pass/fail sweep.
 

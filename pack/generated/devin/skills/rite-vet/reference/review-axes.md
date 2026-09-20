@@ -75,6 +75,11 @@ presentation never caps the inventory or hides the ninth substantive defect.
 - Security architecture at the seams (auth, data access, API boundaries): does the plan name
   the trust boundary for each untrusted input?
 - One realistic production failure per new codepath/integration (feeds failure-mode table).
+- **Assumption delta:** when the plan or fresh evidence changes the *kind* of a spec
+  assumption (singular→plural, required→optional, chosen→derived, or back) that is an
+  identity-model change, not a detail. It needs an explicit promote-vs-add-alongside
+  decision routed through the Guard; silently widening the model in the plan is a
+  `broken` finding.
 - Does any key flow deserve an ASCII diagram in the plan or an inline comment in the code the
   build will write? Name the files that should carry one.
 

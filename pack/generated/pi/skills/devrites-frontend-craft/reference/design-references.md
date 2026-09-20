@@ -86,6 +86,10 @@ the probe *chose* a lane; here you *match* the chosen target.
   focus, loading, empty, error: design those from the brief, the reference won't have them).
 
 Then implement to match, in the project's system:
+- **Match to measurable tolerance, not vibes.** Spacing and sizes land within ~10% of
+  the reference or on the nearest 4 pt step; radius within ±2 px; shadow blur/spread
+  within ~20%; color binds to the nearest existing token. Deviations are recorded in
+  the brief, not absorbed silently.
 - **Match the target, fill the gaps from the brief.** A static reference shows one state;
   ship the full state set (see `quality-standards.md`, "Focus & states").
 - **A reference that conflicts with the design system is a question for the user**, not a

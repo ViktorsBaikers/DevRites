@@ -1,5 +1,7 @@
 # Project principles
 
+> Applies when: .devrites/principles.md exists, or a change may violate a declared invariant.
+
 A project principle is a human-approved, falsifiable invariant that the codebase
 must not break, such as "no PII in logs" or "public v1 responses require a
 deprecation cycle before removal." It is not an observed habit or a generic craft
@@ -30,6 +32,18 @@ Each principle must state:
 - any narrow, dated, human-approved exception.
 
 Vague statements such as "write clean code" are not principles.
+
+## File header and governance history
+
+`principles.md` opens with a governance header so reviewers can audit staleness:
+
+```text
+Version: <semver>   Ratified: <date>   Last amended: <date>
+```
+
+Every ratification, amendment, exception grant, or retirement appends a dated
+entry to the file's governance history. A principle with no dated record is
+unaudited.
 
 ## Gate
 

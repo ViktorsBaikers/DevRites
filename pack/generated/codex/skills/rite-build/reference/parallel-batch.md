@@ -53,7 +53,11 @@ duplicates, absolutes, `.devrites/**`. Empty pairwise intersection required.
 **SSOT:** `devrites-engine check path-disjoint [--root <dir>] [<json-file>|-]`
 (N≥2 only; pass `--root`). Input is `{"slices":[{"id":"SLICE-002","paths":["src/policy.rs","src/policy/mod.rs"]}]}`
 (or a top-level array) built from each candidate's `Files likely touched`.
-Exit `0` → fan-out; else force serial. Inspect-time
+Exit `0` proves path disjointness only; fan-out also requires independent
+validation. A shared interface change and its implementers that must compile
+together form one validation unit, even in different files. Repair the slice
+contract into one bounded slice or sequence compatible steps before dispatch;
+do not label coupled siblings independently green. Else force serial. Inspect-time
 overlap → sibling **gap** (a shared path is a contract defect). **Failing
 case:** two parallel wrights share a path and fan-out proceeds without that
 check.
@@ -77,6 +81,9 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    candidates from `orient` `task_graph.slices` + built list, each candidate's
    `Files likely touched` via `observe slice`, then
    `parallel select --cap N` (pairwise disjointness is inside that verb).
+   Preflight each selected slice with `devrites-engine check slice <slug>
+   <id>`; a malformed contract is dropped from the batch and recorded as a
+   gap, not dispatched.
 2. Write lease; freeze `B=HEAD`; `parallel create` worktrees.
 3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`).
 4. Inspect each returned path list, cumulative diff from `B`, transfer identity,
@@ -141,7 +148,9 @@ Repair rejected work in place; never discard/rebuild while budget remains.
   `devrites/parallel/<slug>/<old-batch>/<slice>` ref. If the inventory proves the accepted
   approach unsound and no corrected decomposition exists, that is exhaustion
   → blocked, preserve, STOP. **Reviewer stall/cancel or missing
-  verdict** → re-dispatch the reviewer, not the wright. **Product/policy/
+  verdict** → reconcile the old host handle under
+  [terminal reconciliation](../../devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)
+  before re-dispatching the reviewer, not the wright. **Product/policy/
   irreversible** → stops for the human.
 - Dispatch one fresh repair-all `devrites-slice-wright` (cwd=worktree; step 3
   rules) with the original contract + complete inventory +

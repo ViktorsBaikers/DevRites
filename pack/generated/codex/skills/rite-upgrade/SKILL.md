@@ -5,6 +5,8 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 disable-model-invocation: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/agents.md"],"triggers":{"reslice":["rite-plan/reference/slicing.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","decisions.md","questions.md","evidence.md","touched-files.md","review.md","seal.md","polish-report.md","browser-evidence.md"],"workspaceByRole":{"upgrade-planner":["state.md","spec.md","plan.md","tasks.md","decisions.md","questions.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-upgrade` bundles every file named below into one deduplicated read.
 
 # $rite-upgrade: reconcile a released workspace safely
 
@@ -50,6 +52,11 @@ references, and only current phase contracts needed for the observed gap.
    Archive-only is `current`; otherwise require contained regular `state.md` and read its
    cursor. A damaged/mismatched install stops at Doctor; missing live work routes
    `$rite-spec`; `done` is `current`. An unknown cursor is `unsupported`.
+   A `state.md` whose cursor carries no `schema` row — or any engine refusal naming the
+   workspace schema — means the workspace predates the current engine schema: structural
+   normalization is a human-approved engine step that precedes this audit, not part of
+   it. Stop and surface the refusal verbatim (it names the fail-closed `migrate`
+   command with `--dry-run`/`--answer`); after the human runs it, restart at step 0.
 1. **Freeze preservation evidence.** Record `git status --short`, cursor form/fields,
    `devrites-engine orient <slug>` (cursor, `task_graph`, `artifact_budgets`,
    `bulk_files`), and
@@ -76,7 +83,8 @@ references, and only current phase contracts needed for the observed gap.
      `history/` / `packets/`, current view only; IDs, meaning, answers and decisions
      unchanged; nothing deleted);
    - unbuilt slices beyond the [feature ceiling](../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
-     → `$rite-plan course-correct` (`MVP cut` plus the named continuation sequence;
+     → `$rite-plan course-correct` (trigger `reslice` loads [`slicing.md`](../rite-plan/reference/slicing.md);
+     `MVP cut` plus the named continuation sequence;
      built slices and their evidence stay);
    - live code and recorded intent disagreement → `$rite-converge`;
    - any changed planning input or readiness defect → `$rite-vet`;

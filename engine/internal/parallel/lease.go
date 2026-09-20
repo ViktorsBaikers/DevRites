@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/devrites/devrites/internal/fsutil"
 )
 
 const (
@@ -219,14 +221,7 @@ func WriteLease(path string, lease *Lease) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, []byte(text), 0o644); err != nil {
-		return err
-	}
-	return os.Rename(tmp, path)
+	return fsutil.WriteFileAtomic(path, []byte(text), 0o644)
 }
 
 func ReadLease(path string) (*Lease, error) {

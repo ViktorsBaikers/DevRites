@@ -1,5 +1,7 @@
 # Optional tooling: code intelligence, docs, memory
 
+> Applies when: using or substituting optional tools (indexes, docs, memory).
+
 Every external tool here is optional; fall back to `Read` / `Grep` / `Glob`, always available. Never assume installation or block a phase on a missing tool. A step that needs an optional tool names its fallback chain up front and re-verifies availability after any environment change — a wrapper script or alias can satisfy a "missing" binary, and a skipped step over an absent-in-name tool is a finding, not a shortcut. An unreadable, quarantined, or permission-blocked target is recorded as a finding (`cannot_verify: unreadable <path>`), never silently skipped — a scan that reports clean while skipping files has not run.
 
 For the pack-canonical decision tree (graph vs LSP vs grep vs read), load
@@ -37,6 +39,11 @@ for distinct intents — never a sequential `&&` chain of identical walks. Cavea
 search cannot attribute which pattern matched; split into separate runs when per-pattern
 provenance matters. **Failing case:** three sequential greps over one tree for sibling
 patterns, each paying the full walk.
+
+**Batches are dependency steps.** Calls in one batch must be output-independent; a call whose
+arguments need another call's output goes in the *next* batch — never emit a probe whose inputs
+aren't known yet. Writes are barriers: don't batch a write with calls that must observe its
+result. Read-only calls in the same step may run in parallel; mutating ones order the batch.
 
 ## Primary-first gate (C1)
 
@@ -88,5 +95,10 @@ Per [`prose-style.md`](prose-style.md): say what you learned ("touches three cal
   decisions until verified or resolved by the owning question/Spec Drift route.
 - **Citation contract:** every external claim carries `path:line`/URL, version, and retrieval date; it counts when the source loads, is relevant, and supports it — uncited/unsupported = assumption. A cited URL was opened or its resolution re-verified in the session; a URL quoted from memory is an assumption (3–13% of agent-cited URLs do not resolve). A live URL is not enough: the cited title, identifier (DOI/CVE/commit SHA), and author/publisher must match the retrieved record. Identifier hijacking (a real DOI or CVE paired with the wrong title) is a citation failure, same standing as a dead URL. **Failing case:** the DOI resolves and the title in the claim is a different paper.
 - **Staleness:** re-verify remembered facts that would change a material decision, conflict with local behavior (local wins, delta recorded), or predate the pinned dependency's current release boundary. **Failing case:** a docs-dated API claim from before the pinned dependency's current release is treated as current without re-verify, and it changes a material decision.
+- **Cached evidence:** bind reuse to the fetched representation, version, and
+  research query. Keep a derived summary distinguishable from raw evidence; a
+  later unrelated HEAD response or a 304 for another representation cannot
+  retroactively establish that summary's freshness. Revalidate the same retained
+  representation or fetch supporting content before refreshing its status.
 - **Human checkpoints:** ask only when the answer changes product, risk, scope, security posture, or spend; repository-answerable questions are never asked.
 - **Cost discipline:** depth scales with risk — trivial lookups take one authoritative read; parallel sweeps need a stated reason in the consuming artifact.

@@ -73,7 +73,7 @@ if not manifest.get("present"):
     raise SystemExit("manifest not present")
 indexes = report.get("indexes") or []
 paths = [row.get("path") for row in indexes]
-want = [".codegraph", ".code-review-graph", ".codebase-memory"]
+want = [".codegraph", ".code-review-graph", ".codebase-memory", "graph.json"]
 if paths != want:
     raise SystemExit(f"indexes paths={paths!r}, want {want!r}")
 if not indexes[0].get("present"):

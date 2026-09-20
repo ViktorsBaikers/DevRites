@@ -27,6 +27,11 @@ TMP_GEN_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$TMP_GEN_DIR"; }
 trap cleanup EXIT
 
+# Build into a scratch dir, then swap into place: file watchers were observed
+# deleting/recreating entries under the live output dir mid-build on macOS.
+REAL_OUT="$OUT_ROOT"
+OUT_ROOT="$TMP_GEN_DIR/out"
+
 # shellcheck source=codex-generate.sh
 . "$ROOT/scripts/codex-generate.sh"
 # shellcheck source=omp-generate.sh
@@ -140,12 +145,24 @@ render_devin_skill_tree() {
   done < <(find "$_sd" -type f)
 }
 
-rm -rf "$OUT_ROOT"
 mkdir -p "$OUT_ROOT/claude" "$OUT_ROOT/codex" "$OUT_ROOT/omp" "$OUT_ROOT/pi" "$OUT_ROOT/devin"
+
+# Canonical sources may use <!-- include:REL --> markers for shared blocks
+# (e.g. agents/_shared/). Expand them on a scratch copy so every host renders
+# identical text while the canonical pack stays deduplicated.
+EXPANDED_SRC="$TMP_GEN_DIR/canonical"
+mkdir -p "$EXPANDED_SRC"
+cp -R "$PACK_SRC/." "$EXPANDED_SRC/"
+python3 "$ROOT/scripts/expand-includes.py" "$EXPANDED_SRC"
+PACK_SRC="$EXPANDED_SRC"
+
+# `_shared` dirs exist only to feed expansion; no host ships them.
+find "$PACK_SRC" -type d -name _shared -prune -exec rm -rf {} +
 
 # Claude artifacts are host-native copies of the canonical pack.
 copy_tree "$PACK_SRC/skills" "$OUT_ROOT/claude/skills"
 copy_tree "$PACK_SRC/agents" "$OUT_ROOT/claude/agents"
+rm -rf "$OUT_ROOT/claude/agents/_shared" "$OUT_ROOT/claude/skills/devrites-lib/reference/_shared"
 copy_tree "$PACK_SRC/workflows" "$OUT_ROOT/claude/workflows"
 # Local editor caches under .impeccable/ must never ship in generated hosts.
 rm -rf "$OUT_ROOT/claude/agents/.impeccable" "$OUT_ROOT/claude/skills/.impeccable"
@@ -243,4 +260,33 @@ Do not edit these files by hand. Edit `pack/.claude/`,
 `scripts/pi-generate.sh`, or `scripts/devin-generate.sh`, then rebuild.
 EOF
 
-echo "build-host-artifacts: wrote $OUT_ROOT"
+# Swap the completed tree into place. Watchers can still re-create entries
+# mid-delete, so retry the clear until the old tree is gone, then rename. The
+# held-output security harness runs with the output root as the current
+# directory; that directory cannot be renamed away, so replace only its
+# generated children while leaving the held source tree in place.
+if [ "$REAL_OUT" = "." ]; then
+  for _name in claude codex devin omp pi README.md; do
+    rm -rf "$_name"
+  done
+  for _entry in "$OUT_ROOT"/*; do
+    [ -e "$_entry" ] || continue
+    mv "$_entry" .
+  done
+else
+  for _ in 1 2 3 4 5; do
+    rm -rf "$REAL_OUT" && break
+    sleep 1
+  done
+  [ ! -e "$REAL_OUT" ] || {
+    echo "build-host-artifacts: cannot clear $REAL_OUT" >&2
+    exit 1
+  }
+  mv "$OUT_ROOT" "$REAL_OUT"
+fi
+[ -f "$REAL_OUT/README.md" ] || {
+  echo "build-host-artifacts: swap left no tree at $REAL_OUT" >&2
+  exit 1
+}
+
+echo "build-host-artifacts: wrote $REAL_OUT"

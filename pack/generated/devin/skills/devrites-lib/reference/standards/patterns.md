@@ -1,5 +1,7 @@
 # Patterns & architecture
 
+> Applies when: choosing an abstraction, pattern, or architecture shape.
+
 Use a pattern only when it makes the design easier to understand and reduces coupling.
 
 ## Principles

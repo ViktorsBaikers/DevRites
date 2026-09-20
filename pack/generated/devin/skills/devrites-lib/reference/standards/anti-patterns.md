@@ -1,5 +1,7 @@
 # DevRites: universal anti-patterns
 
+> Applies when: universal rationalizations; load when tempted to shortcut any standard.
+
 The pack-wide rationalizations the agent reaches for when discipline gets in
 the way. Apply at every phase. Each `rite-*/reference/anti-patterns.md`
 extends this with phase-specific items.

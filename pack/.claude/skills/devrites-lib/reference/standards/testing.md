@@ -1,5 +1,7 @@
 # Testing
 
+> Applies when: writing, reviewing, or relying on tests as evidence.
+
 Tests are evidence. They exist to prove behavior and to catch regressions, not to hit a
 coverage number.
 
@@ -51,7 +53,9 @@ implementation is theatre, and it's the shape AI reaches for by default. Reject 
 A behavioral requirement is proved only by observed positive, discriminating evidence that
 would fail if the behavior were absent or wrong. Skipped, focused, filtered, or pending tests,
 zero-test runs, assertion-free tests, tautologies, unexecuted commands, and success inferred
-only from exit status cannot prove behavior.
+only from exit status cannot prove behavior. A fact is something observed in an executed
+run; anything reasoned but unexecuted is an assumption — label it as such in evidence and
+replies, never report it as verified.
 
 Build, compile, typecheck, and lint prove only their corresponding static criterion, never
 runtime behavior. Explicit shell assertions and golden/text comparisons remain valid when the
@@ -78,6 +82,17 @@ discriminates the required result.
   that a test would catch it breaking. Where the project has a mutation runner,
   use its documented command; a surviving mutant is a behaviour no test checks.
 
+### Falsifiable checks and goldens
+
+- **A gate that cannot go red is unproven.** Before trusting a new validator or
+  oracle, feed it a planted defect and observe it fail — a check that stays green on
+  a known-bad input is checking nothing.
+- **Golden fixtures are verified by blind derivation, not inspection.** Derive the
+  expected output from rules and inputs *without looking at the golden*; adjudicate
+  any divergence against the external spec — never by majority vote between
+  reviewers, and never because the fixture is committed. A golden nobody re-derived
+  is a rumor.
+
 ### Safe perturbation
 
 For required mutation or critical-link probes, use a faithful isolated copy of the
@@ -103,7 +118,9 @@ A failing test is a signal, not an obstacle. Never delete it, skip it (`it.skip`
 loosen its assertions to turn the suite green. A red test means one of two things: the code is
 wrong (fix the code) or the test is wrong (surface it as a blocking question and get the change
 agreed): never quietly make the red go away. A test weakened to clear a gate is a **Critical**
-finding. The root's diff review and dedicated test analysis compare the
+finding. The same rule runs in reverse for a red test in code the diff did not touch: check
+whether the assertion is stale, and fix the assertion as a recorded, reviewable change —
+never bend working product code just to satisfy it. The root's diff review and dedicated test analysis compare the
 candidate with its base and reject deleted, skipped, focused, or weakened tests.
 
 ## The verification gap: green, but the test doesn't prove the change

@@ -1,5 +1,7 @@
 # Developer experience
 
+> Applies when: shipping a surface another engineer uses: API, CLI, SDK, config.
+
 When a change ships a surface another engineer has to *use* (a public API, a CLI, an SDK
 or library, a webhook, a config/env contract, an error message, or the getting-started path
 that introduces all of them) the developer using it is a user, and their experience is part

@@ -5,6 +5,10 @@ argument-hint: "<what to change>"
 user-invocable: true
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/definition-of-done.md","devrites-lib/reference/orchestration-profiles.md"],"triggers":{"coding":["devrites-lib/reference/standards/coding-style.md"],"testing":["devrites-lib/reference/standards/testing.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"security":["devrites-lib/reference/standards/security.md"],"principles":["devrites-lib/reference/standards/principles.md"],"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["state.md"]} -->
+> Read-set manifest: `devrites-engine context <slug> --phase quick` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # $rite-quick: express lane for small changes
 
 The full DevRites lifecycle is right for real features; it is **ceremony** for a typo, a
@@ -60,7 +64,9 @@ Load this lane's conditional standards when needed:
    anti-AI-slop) → cover every touched behavior / interactive element with a **real**
    assertion. UI → check the states + a browser glance.
 4. **Prove (scoped).** Run the **targeted** tests + typecheck / lint for what changed (not
-   the whole suite) → green. Record the command + output. A tautological test that can't
+   the whole suite) → green. Record the command + output — resolve the project's real
+   typecheck/lint commands with `devrites-engine detect commands` rather than guessing.
+   A tautological test that can't
    fail is not proof.
 5. **Review-lite + ship.** Self-review the diff for correctness, scope, and idiom. If
    `.devrites/principles.md` exists, confirm that no declared invariant is broken. This is

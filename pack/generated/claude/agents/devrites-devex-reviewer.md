@@ -1,7 +1,7 @@
 ---
 name: devrites-devex-reviewer
 description: Reviews developer experience for one DevRites feature in fresh context. Predicts at /rite-vet and measures at /rite-seal for public APIs, CLIs, SDKs, libraries, webhooks, configuration, errors, and onboarding; reports where the next developer gets stuck.
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

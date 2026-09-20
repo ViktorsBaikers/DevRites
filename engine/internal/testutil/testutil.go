@@ -10,6 +10,10 @@ import (
 // CanonicalTasksMarkdown is a minimal valid slice graph for gate fixtures.
 const CanonicalTasksMarkdown = "# Tasks\n\n## SLICE-001 Ready\nSatisfies: AC-001\nDependencies: none\n"
 
+// CanonicalGatesMarkdown is a minimal all-met acceptance ledger for fixtures:
+// one checked manual gate with human attestation.
+const CanonicalGatesMarkdown = "# Gates\n\n- [x] G1: fixture outcome\n  EVIDENCE: fixture attestation\n"
+
 // CopyTree recursively copies the directory tree at src into dst, creating dst
 // and any parents. It is used to give each test an isolated, writable copy of a
 // read-only fixture.

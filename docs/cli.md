@@ -22,8 +22,34 @@ devrites-engine check candidate <slug>
 devrites-engine check readiness <slug>
 devrites-engine check readiness --emit-binding <slug>
 devrites-engine check seal <slug>
+devrites-engine check slice <slug> <SLICE-ID>
+devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path>
+devrites-engine check task-graph <slug>
+devrites-engine check regression <slug> [--update]
+devrites-engine check drift <slug> [--record]
+devrites-engine check windows <slug> [--worktree|--staged|--base <ref>]
+devrites-engine check dup [slug] [--all|--worktree|--staged|--base <ref>]
+devrites-engine check skill-trust <path>
+devrites-engine check path-disjoint [<json-file>|-]
+devrites-engine check indexes [--root <dir>]
+devrites-engine detect commands [--root <dir>] [--json]
+
+devrites-engine observe summary <slug>
+devrites-engine orient <slug>
+devrites-engine observe slice <slug> <SLICE-ID>
+devrites-engine next [slug]
+devrites-engine handoff [slug]
+devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>]
+devrites-engine metrics record <slug> --phase <p> --event <e>
+devrites-engine metrics summary [slug]
+devrites-engine dispatch <slug> <open|start|seal|return|status|abandon>
+devrites-engine parallel <subcommand>
+devrites-engine gates <subcommand> <slug>
+devrites-engine claim <add|release|list|check>
+devrites-engine note <add|list|check|rm> <slug>
 
 devrites-engine state resolve <qid> "<answer>"
+devrites-engine state merge-manifest <slug> [pred...]
 devrites-engine state close <slug>
 devrites-engine migrate <slug> [--dry-run] [--answer id=choice]
 
@@ -89,6 +115,54 @@ with the self-contained updater.
   readiness binding; only after that aggregate check passes does it verify that
   `evidence.md`, `review.md`, `seal.md`, and optional `browser-evidence.md`
   contain exactly one binding to the current candidate digest.
+- `check regression <slug>` compares the workspace's structural progress facts —
+  phase ordinal, checked `AC-###` boxes, met and abandoned ledger gates,
+  done-state slices, resolved questions, and present required artifacts —
+  against the durable `regression-baseline.json` high-water mark. A lost fact
+  prints `REGRESSION: <detail>` and exits `3`. `--update` rewrites the baseline
+  under the feature lock at a durable checkpoint and prints each regression it
+  blesses as `REGRESSION-BLESSED`; with no baseline recorded the check reports
+  `unproven` and exits `0`. Recommended placement: compare on a cold resume or
+  scheduled wake before acting on durable state, ratchet after a landed slice
+  checkpoint or phase advance, and treat `BLOCKED` at Seal as NO-GO; `--update`
+  never excuses an unreconciled regression.
+- `check drift <slug>` attributes readiness-input drift to the exact artifact.
+  `--record` snapshots per-input SHA-256 digests into `readiness-inputs.json`
+  under the feature lock after Vet records the aggregate binding; a later
+  compare prints `DRIFT: <path> <changed|missing|added>` per differing input.
+  Without a baseline it falls back to the `eng-review.md` aggregate binding and
+  lists inputs modified after that file as candidates. Advisory: drift is
+  reported, never blocked (a change is legal as a dated delta through the
+  owning rite); a corrupt baseline exits `3`.
+- `detect commands [--root <dir>] [--json]` resolves the repository's own
+  command wiring — Makefile targets first, then `package.json` scripts, then
+  language-manifest fallbacks — and the lockfile-derived package manager.
+  Read-only: nothing is installed or executed. Skills use it to cite real
+  commands in `gates.md` `CHECK` lines and proof steps instead of invented
+  ones; unresolved slots print `unresolved` rather than guessing.
+- `check dup [slug] [--all|--worktree|--staged|--base <ref>]` reports advisory
+  near-duplicate code clusters that survive comment stripping, literal
+  collapsing, and identifier renaming. Diff modes mark units overlapping
+  changed hunks with `*`; stable content-derived cluster hashes let
+  `.devrites/dup-ignore` dismissals survive line moves but resurface when the
+  code's structure changes. Staged mode compares index blobs and excludes
+  untracked files. Successful scans exit `0`; usage errors and unavailable or
+  partial scans exit `2`. Empty eligible input and generated exclusions are
+  explicit. This bounded heuristic produces review leads, not exhaustive proof. See `standards/duplicate-code.md` for the triage contract.
+- `claim <add|release|list|check>` manages advisory session-scoped file claims
+  in the append-only `.devrites/claims.jsonl` ledger. `add --session <id>
+  [--ttl <min>] [--reason <s>] <path>...` records write intent for a path set
+  and exits `3` naming the holder when a live claim by another session covers a
+  path; `release --session <id> --id <claim>` frees it; `list [--all]` shows
+  live (or all) claims; `check [--session <id>] <path>...` is the read-only
+  preflight. Claims coordinate concurrent same-tree sessions; they never
+  replace the one-writer-per-worktree rule in `standards/agents.md`.
+- `note <add|list|check|rm>` manages `notes.md` anchored notes: `add <slug>
+  <subject> <quote> <title> [body]` binds a note to a verbatim quote in one
+  repository file; `list`/`check` regrade each anchor `exact`/`moved`/`stale`/
+  `ambiguous`/`lost` by relocating the quote repo-wide (dependency and workspace
+  trees excluded); `check --repair` rewrites a `moved` subject; `rm` deletes by
+  `NOTE-###`. `check seal` refuses a malformed file or any non-`exact` anchor.
 
 Semantic readiness, traceability, acceptance interpretation, evidence quality,
 doubt, test quality, reviewer reconciliation, and capability interpretation
@@ -96,6 +170,22 @@ belong to the active skill and exact native agents. Normative spec grammar is
 checked by the root's explicit native re-read checklist. Repository build,
 test, lint, typecheck, schema, and release commands belong to that repository
 or CI.
+
+## Acceptance ledger
+
+`gates` operates the `gates.md` ledger inside a feature workspace: one gate per
+required outcome, runnable (`CHECK`+`EXPECT`, optional `CWD`) or manual
+(`EVIDENCE` only). Subcommands: `scaffold`, `status`, `run`, `reverify`,
+`lint`, `attest <id> <note>`, `abandon <id> <why>`.
+
+A runnable gate executes only when its `(CHECK, CWD)` pair exactly matches a
+`test-plan.md` `## Build-entry preflight` row. Passing writes
+`automatic-evidence` bound to the gate definition digest; editing the gate
+marks prior evidence stale. `status` prints a stable reduction ending in
+`result: all-met|not-met|handoff|malformed`; exit `3` unless every gate is met
+and none is abandoned. `check readiness`/`check seal` enforce the same
+reduction whenever `gates.md` is a required artifact, so a partially compliant
+ledger blocks the phase exit.
 
 ## Atomic state operations
 
